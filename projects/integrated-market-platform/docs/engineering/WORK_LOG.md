@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 persist stamps prospective corpus authority
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration` |
+| **Summary** | `persist_receipt` now stamps `corpus_evidence_authority=PROSPECTIVE_FEATURE_EVIDENCE` on new Mode B prospective writes when the field is absent, without upgrading an explicit `HISTORICAL_DEVELOPMENT` stamp. Historical-development output dirs remain refused; frozen `item9-prospective-proof-receipts` artifacts not rewritten. Item 9 stays `PARTIAL_NOT_CALIBRATED`. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tests/platform/test_dual_corpus_contamination.py` |
+| **Tests** | `imp.py test focused` (3 new persist tests, 3 passed); `imp.py validate changed` — **3810 passed**, 29 skipped, 0 fail |
+| **Related** | PR #242 branch `data/dual-corpus-contract` |
+| **Notes** | Retrospective transport receipts unchanged (no authority stamp). |
+
 ## 2026-09-17 — IMP-DUAL-CORPUS-01 Lane A evidence contract
 
 | Field | Value |
