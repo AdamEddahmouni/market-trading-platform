@@ -36,6 +36,31 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 persist stamps prospective corpus authority
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration` |
+| **Summary** | `persist_receipt` now stamps `corpus_evidence_authority=PROSPECTIVE_FEATURE_EVIDENCE` on new Mode B prospective writes when the field is absent, without upgrading an explicit `HISTORICAL_DEVELOPMENT` stamp. Historical-development output dirs remain refused; frozen `item9-prospective-proof-receipts` artifacts not rewritten. Item 9 stays `PARTIAL_NOT_CALIBRATED`. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tests/platform/test_dual_corpus_contamination.py` |
+| **Tests** | `imp.py test focused` (3 new persist tests, 3 passed); `imp.py validate changed` — **3810 passed**, 29 skipped, 0 fail |
+| **Related** | PR #242 branch `data/dual-corpus-contract` |
+| **Notes** | Retrospective transport receipts unchanged (no authority stamp). |
+
+## 2026-09-17 — IMP-DUAL-CORPUS-01 Lane A evidence contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, architecture docs |
+| **Summary** | Land dual-corpus authority taxonomy (`HISTORICAL_DEVELOPMENT`, prospective/post-horizon/untouched classes), versioned historical dataset manifest + provenance validators, Item 9 discovery/persist contamination guards, and training consumption protection for `UNTOUCHED_FORWARD_EVALUATION`. Item 9 remains `PARTIAL_NOT_CALIBRATED`; frozen empirical artifacts untouched. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/dual_corpus/*`; `bar_ohlcv_prospective_proof.py`; `intelligence/production/training_build.py`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_A_RECON.md`; `manifests/paper/schemas/historical_development_dataset_manifest.schema.json`; `tests/platform/test_dual_corpus_contamination.py` |
+| **Tests** | `python tools/imp.py test affected` + `validate changed` — **3847 passed**, 29 skipped, 0 fail |
+| **Related** | Branch `data/dual-corpus-contract`; [DUAL_CORPUS_EVIDENCE_CONTRACT.md](../architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
+| **Notes** | Lane B historical CLI and Lane C post-horizon label artifacts deferred. Compatible with unmerged `item9_calibration_protocol` worktree. |
+
+
 ## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
 
 | Field | Value |

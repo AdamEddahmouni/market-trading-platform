@@ -178,6 +178,20 @@ def build_path_a_production_artifacts(
             reason_codes=("NO_GOVERNED_PATH_A_TRAINING_CORPUS",),
         )
 
+    try:
+        from ...paper.calibration.dual_corpus.consumption import (
+            ProtectedCorpusConsumptionError,
+            assert_corpus_consumable_for_selection_or_training,
+        )
+
+        assert_corpus_consumable_for_selection_or_training(
+            corpus_evidence_authority=str(payload.get("corpus_evidence_authority") or ""),
+            payload=payload,
+            purpose="path_a_training_build",
+        )
+    except ProtectedCorpusConsumptionError as error:
+        return ProductionBuildResult(status="BLOCKED", reason_codes=(str(error),))
+
     instrument = str(payload.get("target_instrument_id") or "AAPL").strip().upper()
     target = path_a_direction_target(instrument)
     horizon = path_a_horizon()
