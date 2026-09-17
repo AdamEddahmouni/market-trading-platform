@@ -27,6 +27,15 @@ from .bar_ohlcv_prospective_proof import (
     hash_raw_kline_rows,
 )
 from .bar_ohlcv_sources import BAR_CAPABILITY, ONE_MINUTE_NS, SOURCE_MOOMOO_OPEND_KLINE_1M
+from .dual_corpus.admission import (
+    ITEM9_ADMISSION_ACCEPTED,
+    evaluate_item9_prospective_corpus_admission,
+)
+from .dual_corpus.discovery import (
+    ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT,
+    is_historical_development_storage_path,
+    iter_item9_prospective_receipt_paths,
+)
 from .thresholds import THRESHOLD_UNSET_BLOCKING, default_unset_threshold_config
 
 PROTOCOL_VERSION = "item9.calibration-protocol/1.0.0"
@@ -315,6 +324,18 @@ def classify_item9_receipt(receipt: Mapping[str, Any]) -> Item9ObservationClassi
         bar_start_ns=bar_start,
         bar_available_ns=bar_available,
     )
+    admission = evaluate_item9_prospective_corpus_admission(payload=receipt)
+    if admission.get("disposition") != ITEM9_ADMISSION_ACCEPTED:
+        return Item9ObservationClassification(
+            observation_id=observation_id,
+            evidence_class=evidence,
+            inclusion_state=INCLUSION_EXCLUDED,
+            exclusion_reason=str(admission.get("reason_code") or EXCL_AMBIGUOUS),
+            path_a_label_state=path_a_state,
+            simulator_fill_is_market_truth=False,
+            labelable_path_a_now=False,
+            corpus_admissible=False,
+        )
     return Item9ObservationClassification(
         observation_id=observation_id,
         evidence_class=evidence,
@@ -386,11 +407,13 @@ def build_dataset_row(
 
 
 def governed_receipt_paths(receipt_dir: Path) -> tuple[Path, ...]:
-    """Scan only the governed receipt directory. Never walk ``.local``."""
+    """Scan only lawful Item 9 prospective receipt roots (never historical development)."""
 
     if not receipt_dir.is_dir():
         return ()
-    return tuple(sorted(path for path in receipt_dir.glob(GOVERNED_RECEIPT_GLOB) if path.is_file()))
+    if is_historical_development_storage_path(receipt_dir):
+        return ()
+    return iter_item9_prospective_receipt_paths(receipt_dir)
 
 
 def load_governed_receipt(path: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -411,7 +434,11 @@ def audit_receipt_directory(receipt_dir: Path) -> dict[str, Any]:
     rows: list[dict[str, Any]] = []
     seen: dict[str, str] = {}
     counts: Counter[str] = Counter()
-    for path in governed_receipt_paths(receipt_dir):
+    discovery_refusal: str | None = None
+    if is_historical_development_storage_path(receipt_dir):
+        discovery_refusal = ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT
+    scan_paths = governed_receipt_paths(receipt_dir)
+    for path in scan_paths:
         payload, load_error = load_governed_receipt(path)
         if payload is None:
             counts["invalid"] += 1
@@ -462,7 +489,7 @@ def audit_receipt_directory(receipt_dir: Path) -> dict[str, Any]:
         if classified.corpus_admissible:
             counts["corpus_admissible"] += 1
         rows.append({"path": str(path), **classified.to_dict()})
-    return {
+    result: dict[str, Any] = {
         "protocol_version": PROTOCOL_VERSION,
         "receipt_dir": str(receipt_dir),
         "calibration_state": CALIBRATION_STATE,
@@ -473,6 +500,9 @@ def audit_receipt_directory(receipt_dir: Path) -> dict[str, Any]:
         "bar_may_compose_path_a_label": False,
         "empty_raw_kline_hash": EMPTY_RAW_KLINE_HASH,
     }
+    if discovery_refusal is not None:
+        result["discovery_refusal"] = discovery_refusal
+    return result
 
 
 def chronological_split(rows: Sequence[Mapping[str, Any]]) -> dict[str, tuple[str, ...]]:
