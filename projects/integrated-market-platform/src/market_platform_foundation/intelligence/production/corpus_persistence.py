@@ -140,16 +140,17 @@ def _load_intelligence_jsonl(
 ) -> GovernedPersistenceSource:
     loaded = 0
     errors = 0
+    from .governed_jsonl_discovery import GovernedJsonlParseError, read_governed_jsonl_text
+
     if not path.is_file():
         return GovernedPersistenceSource(kind="intelligence_jsonl", path=str(path))
-    for line_index, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for line_index, line in enumerate(read_governed_jsonl_text(path).splitlines(), start=1):
         if not line.strip():
             continue
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
-            errors += 1
-            continue
+            raise GovernedJsonlParseError(path, line_index, "MALFORMED_JSON") from None
         if not isinstance(row, dict):
             errors += 1
             continue
