@@ -210,7 +210,8 @@ describe("CopyableIdentifier", () => {
   });
 });
 
-describe("LinkTabs", () => {  it("marks the active tab with aria-current", () => {
+describe("LinkTabs", () => {
+  it("marks the active tab with aria-current", () => {
     render(
       <MemoryRouter initialEntries={["/radar/screeners"]}>
         <LinkTabs
