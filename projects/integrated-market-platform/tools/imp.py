@@ -855,6 +855,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Forward-test campaign slug (default: FTEP-V1-002)",
     )
     finviz_preflight.add_argument("--json", action="store_true")
+
+    historical = groups.add_parser(
+        "historical-data",
+        help="historical RTH development corpus builder (HISTORICAL_DEVELOPMENT)",
+    )
+    historical_actions = historical.add_subparsers(dest="action", required=True)
+    hist_build = historical_actions.add_parser("build", help="build 1m US equity RTH dataset")
+    hist_build.add_argument("--provider", required=True, choices=("moomoo-opend", "fixture"))
+    hist_build.add_argument("--instrument", required=True)
+    hist_build.add_argument("--start", required=True, dest="start_date")
+    hist_build.add_argument("--end", required=True, dest="end_date")
+    hist_build.add_argument("--resolution", default="1m")
+    hist_build.add_argument("--session", default="RTH")
+    hist_build.add_argument("--fixture-path", type=Path)
+    hist_build.add_argument("--artifact-root", type=Path)
+    hist_build.add_argument("--holidays", default="")
+    hist_build.add_argument("--early-closes", default="")
+    hist_build.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -881,6 +900,49 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
     result = _run(
         root,
         label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action != "build":
+        print(f"unknown historical-data action: {args.action}", file=sys.stderr)
+        return 2
+    python = _validation_python(root)
+    env = _python_environment(root)
+    command = [python, str(root / "tools" / "historical_data" / "build_cli.py")]
+    command.extend(
+        [
+            "--provider",
+            args.provider,
+            "--instrument",
+            args.instrument,
+            "--start",
+            args.start_date,
+            "--end",
+            args.end_date,
+            "--resolution",
+            args.resolution,
+            "--session",
+            args.session,
+        ]
+    )
+    if args.fixture_path:
+        command.extend(["--fixture-path", str(args.fixture_path)])
+    if args.artifact_root:
+        command.extend(["--artifact-root", str(args.artifact_root)])
+    if args.holidays:
+        command.extend(["--holidays", args.holidays])
+    if args.early_closes:
+        command.extend(["--early-closes", args.early_closes])
+    if args.json:
+        command.append("--json")
+    result = _run(
+        root,
+        label="historical-data build",
         command=command,
         env=env,
         stream_output=True,
@@ -1128,6 +1190,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "ftep":
         return _ftep_command(root, args)
+
+    if args.group == "historical-data":
+        return _historical_data_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)
