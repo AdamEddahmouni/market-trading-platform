@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — PROGRAM_STATUS canonical SHA after IMP-ACTUAL-01
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin **current Canonical** `origin/main` SHA to `fed2d9f7e183aecfcac61a7664df69aafc12ea25` (merge tips [#236](https://github.com/AdamEddahmouni/market-trading-platform/pull/236) `fed2d9f7`, [#235](https://github.com/AdamEddahmouni/market-trading-platform/pull/235) `e2c55dd4`, [#234](https://github.com/AdamEddahmouni/market-trading-platform/pull/234) `f47b449a`). Distinguish that SHA from the Sep 15 **historical pin** `7aade60b…` and from **empirical observation** receipt `runtime_git_sha` values (`aae13fd1…` PATH_PROOF_ONLY; `fed2d9f7…` phase-d Mode B). Item 9 stays **PARTIAL** / **NOT_CALIBRATED**; Item 7 stays **`ITEM7_PENDING_NATURAL_EVIDENCE`**. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `python tools/imp.py format`; `python tools/check_docs_links.py` |
+| **Related** | [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); IMP-ACTUAL-01 Phase A/B/C entries below |
+| **Notes** | Did not calibrate, collect receipts, touch Item 7 / PR #222 / `item7/natural-settlement`, or mutate Sep 17 / Phase D receipt files. |
+
 ## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
 
 | Field | Value |

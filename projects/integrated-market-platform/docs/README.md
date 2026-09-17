@@ -39,7 +39,7 @@ it in the authoritative doc — do not silently choose.
 |-------|----------|
 | What IMP is | [README.md](../README.md) |
 | Agent operating system (models, parallelism, worktrees, handoff) | [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md) |
-| Current program status | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
+| Current program status (Canonical `origin/main` SHA field) | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
