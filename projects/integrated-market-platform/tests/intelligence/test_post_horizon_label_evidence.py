@@ -177,6 +177,26 @@ class PostHorizonLabelEvidenceTests(unittest.TestCase):
             labeler_code_sha="cafebabe",
         )
         self.assertEqual(result.label_evidence["refusal_reason"], NO_ELIGIBLE_TRADE)
+        self.assertEqual(result.label_evidence["terminal_candidates"], [])
+
+    def test_no_eligible_trade_terminal_candidates_are_filtered_not_full_tape(self) -> None:
+        out_of_window = _terminal_trade(price=101.0, event_time_ns=TARGET_NS - 1_000_000_000)
+        result = attach_label_evidence(
+            _sample_source(),
+            trades=[out_of_window],
+            request_time_ns=REQUEST_OK_NS,
+            actual_retrieval_time_ns=REQUEST_OK_NS,
+            provider_id="ibkr.observational",
+            capability_id="IBKR_HISTORICAL_TRADES",
+            retrieval_params={},
+            raw_trade_ref="fixture",
+            raw_trade_payload_sha256="abc",
+            source_code_sha="deadbeef",
+            labeler_code_sha="cafebabe",
+        )
+        self.assertEqual(result.label_evidence["refusal_reason"], NO_ELIGIBLE_TRADE)
+        self.assertEqual(result.label_evidence["terminal_candidates"], [])
+        self.assertEqual(result.label_evidence["returned_trade_count"], 1)
 
     def test_bar_only_capability_refused(self) -> None:
         with self.assertRaises(LabelEvidenceError) as ctx:

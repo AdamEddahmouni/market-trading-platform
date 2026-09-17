@@ -149,7 +149,7 @@ def select_terminal_trade(
         filtered.append(row)
     filtered.sort(key=_terminal_sort_key)
     if not filtered:
-        return None, tuple(candidates)
+        return None, tuple(filtered)
     return filtered[0], tuple(filtered)
 
 

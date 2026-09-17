@@ -85,6 +85,26 @@ class G11HistoricalTradesTests(unittest.TestCase):
         self.assertFalse(result.accepted)
         self.assertEqual(result.reason, "RETRIEVAL_BEFORE_TERMINAL_WINDOW_END")
 
+    def test_query_service_refuses_when_post_horizon_timing_omitted(self) -> None:
+        provider = FakeQueryProvider(secdef_rows={"AAPL": [{"symbol": "AAPL", "conid": 1}]})
+        service = IbkrObservationalQueryService(provider=provider, lookup=FakeLookup(AAPL))
+        terminal_end = 100
+        for kwargs in (
+            {"request_time_ns": None, "terminal_window_end_ns": terminal_end},
+            {"request_time_ns": terminal_end, "terminal_window_end_ns": None},
+            {},
+        ):
+            with self.subTest(kwargs=kwargs):
+                result = service.fetch_historical_trades(
+                    "AAPL",
+                    start_time_ns=0,
+                    end_time_ns=terminal_end,
+                    con_id=1,
+                    **kwargs,
+                )
+                self.assertFalse(result.accepted)
+                self.assertEqual(result.reason, "POST_HORIZON_RETRIEVAL_TIMING_REQUIRED")
+
 
 if __name__ == "__main__":
     unittest.main()

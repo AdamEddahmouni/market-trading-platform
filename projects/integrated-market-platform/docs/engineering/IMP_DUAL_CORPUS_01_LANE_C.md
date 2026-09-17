@@ -1,6 +1,6 @@
 # IMP-DUAL-CORPUS-01 Lane C — Post-Horizon Historical Label Evidence
 
-**Branch:** `intelligence/post-horizon-label-evidence` (stacked on `data/dual-corpus-contract` @ `94ca33ae`)  
+**Branch:** `intelligence/post-horizon-label-evidence` (stacked on `main` @ `859251ae`, includes dual-corpus @ `f9009723`)
 **Increment:** Lane C only — label artifacts + IBKR historical TRADE capability spike
 
 ## Scope delivered

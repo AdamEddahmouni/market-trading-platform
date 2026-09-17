@@ -444,16 +444,24 @@ class IbkrObservationalQueryService:
             return HistoricalTradesResult(
                 accepted=False, reason="QUERY_PROVIDER_UNAVAILABLE"
             )
-        if request_time_ns is not None and terminal_window_end_ns is not None:
-            if request_time_ns < terminal_window_end_ns:
-                return HistoricalTradesResult(
-                    accepted=False,
-                    reason="RETRIEVAL_BEFORE_TERMINAL_WINDOW_END",
-                    selection={
-                        "request_time_ns": request_time_ns,
-                        "terminal_window_end_ns": terminal_window_end_ns,
-                    },
-                )
+        if request_time_ns is None or terminal_window_end_ns is None:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="POST_HORIZON_RETRIEVAL_TIMING_REQUIRED",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
+        if request_time_ns < terminal_window_end_ns:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="RETRIEVAL_BEFORE_TERMINAL_WINDOW_END",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
         selection = self._gate(
             CAP_HISTORICAL_TRADES, instrument_id, require_real_time=False
         )
