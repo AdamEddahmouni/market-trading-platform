@@ -39,6 +39,7 @@ class BarLoadResult:
     bars: tuple[dict[str, Any], ...]
     provenance: dict[str, Any]
     reason_code: str | None = None
+    raw_rows: tuple[Mapping[str, Any], ...] = ()
 
     @property
     def ok(self) -> bool:
@@ -378,6 +379,7 @@ def load_moomoo_opend_kline_bars(
                 **window_provenance,
             },
             reason_code="EXPERIMENT_CONTRACT_MISMATCH",
+            raw_rows=raw_tuple,
         )
     return BarLoadResult(
         source_id=SOURCE_MOOMOO_OPEND_KLINE_1M,
@@ -393,6 +395,7 @@ def load_moomoo_opend_kline_bars(
             "timing_basis": "available_time_at_bar_end",
             **window_provenance,
         },
+        raw_rows=raw_tuple,
     )
 
 
