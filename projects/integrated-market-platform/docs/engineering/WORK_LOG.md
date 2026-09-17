@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — PROGRAM_STATUS after IMP-DUAL-CORPUS-01 #246 merge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pin `PROGRAM_STATUS` v1.39 to `origin/main` `da237fd14fa60117c50952de79bc20acdad1454d` after optional [#246](https://github.com/AdamEddahmouni/market-trading-platform/pull/246) Lane D (`92d7396e`) **`HISTORICAL_DEVELOPMENT_ONLY`** fixture e2e demo — **not** prospective, **not** `CALIBRATED`, **not** Item 9 evidence. Item 9 protocol floors unchanged; #222 remains isolated; no Moomoo/IBKR live verified claims. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `python tools/imp.py lint`; `python tools/imp.py validate changed`; `python tools/check_docs_links.py` |
+| **Related** | [IMP_DUAL_CORPUS_01_HISTORICAL_DEMO.md](IMP_DUAL_CORPUS_01_HISTORICAL_DEMO.md); branch `docs/program-status-after-246` |
+| **Notes** | Docs-only follow-up to merged #246; frozen collector SHA `fed2d9f7` unchanged. |
+
 ## 2026-09-17 — IMP-DUAL-CORPUS-01 PR D docs/status sync
 
 | Field | Value |
