@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useResearchSimulationQuery } from "../../api/hooks";
 import { resolveSemanticState } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
@@ -109,6 +110,10 @@ export function ResearchSimulationSection() {
           units because the contract carries no currency field. This run is evidence about the
           simulator and risk policy — it is not a governed campaign result, not a calibration
           claim, and it never places orders.
+        </p>
+        <p className="research-muted">
+          <Link to="/lab/simulation">Inspect this simulation workflow in Lab</Link> — Lab is the
+          process surface; this page stays the interpretation of the snapshot.
         </p>
       </section>
 

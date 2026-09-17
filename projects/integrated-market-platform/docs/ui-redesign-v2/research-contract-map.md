@@ -162,9 +162,10 @@ fetch — the old eager triple-fetch tab widget is removed):
 | `/research/evidence` | Evidence | analytics only | What are the current findings, from what source, with what availability? `?panel=<key>` deep-links + highlights one finding. |
 | `/research/validation` | Validation | models only (+ Paper strategy-profitability in Paper mode) | Which strategy/model, how validated (folds, preregistration), what did each observation conclude, why abstentions? |
 | `/research/simulation` | Simulation | simulation only | How did the deterministic simulation behave — decisions, fills, reconciliation? |
-| `/research/vela-chart-lab` | Chart Lab | none (local synthetic) | unchanged existing page |
+| `/research/vela-chart-lab` | (redirect) | none | Compatibility alias → `/lab/chart-lab` |
 
-`/lab` keeps redirecting to `/research`. Nav labels unchanged.
+`/lab` is a real Lab workbench (UIR-01H). Nav includes Lab. Chart Lab lives at
+`/lab/chart-lab`.
 
 ### Layering inside a finding/record
 
@@ -176,18 +177,14 @@ fetch — the old eager triple-fetch tab widget is removed):
   raw enums, hashes (CopyableIdentifier), raw epoch timestamps, raw JSON
   (JsonDetailPanel).
 
-## Research vs Lab boundary (for the next increment)
+## Research vs Lab boundary
 
-Lab remains **unbuilt**; `/lab` → `/research`. The boundary when a Lab
-increment is scheduled: Lab is the *experiment workbench* (model manifests,
-simulation ledger drill-down, chart playground — i.e. what
-[pages/lab.md](pages/lab.md) describes), while Research keeps the
-*interpretation* layer (findings, validation state, evidence honesty). This
-increment deliberately does **not** split: the validation and simulation
-contracts are evidence records, not workbench interactions, and no Lab-only
-contract exists. When Lab lands, `/research/validation` and
-`/research/simulation` are the migration candidates; endpoints and queryKeys
-stay unchanged either way.
+Lab is landed as UIR-01H. Research remains the *interpretation* layer
+(findings, validation results as evidence, simulation results as evidence).
+Lab is the *process* layer (workflow identity, recorded configuration, honest
+runnability, current snapshot, Research handoff). Endpoints and queryKeys stay
+`/research/models` and `/research/simulation`. `/lab` is a real workbench;
+`/research/validation` and `/research/simulation` are **not** removed.
 
 ## Presentation adapter additions
 

@@ -131,12 +131,12 @@ Primary nav (operator mental model):
 | 2 | Radar | `/radar` | Canonical discovery queue; `/discover` redirects; `/explore` → `/radar/screeners` |
 | 3 | Workspace | `/workspace` | Decision cockpit (Paper submit boundary) — unchanged |
 | 4 | Portfolio | `/portfolio` | Unchanged |
-| 5 | Research | `/research` | GATED badge removed (no gate logic exists) |
-| 6 | Control | `/control` | Renamed from "Risk" (route unchanged) |
+| 5 | Research | `/research` | Interpretation-first evidence |
+| 6 | Lab | `/lab` | Experimental workbench (UIR-01H); `/research/vela-chart-lab` → `/lab/chart-lab` |
+| 7 | Control | `/control` | Renamed from "Risk" (route unchanged) |
 
 Operator group (unchanged targets): Live Canary `/live-canary`, Settings
-`/settings`, Diagnostics `/diagnostics/provider`. `/lab` still redirects to
-`/research` (real Lab page is a later increment). Mode stays session-scoped
+`/settings`, Diagnostics `/diagnostics/provider`. Mode stays session-scoped
 React state (not URL). Redirects use `<Navigate replace>`; old deep links land.
 
 Radar tabs: **Opportunities** (`/radar`) = ranked OE queue + selected

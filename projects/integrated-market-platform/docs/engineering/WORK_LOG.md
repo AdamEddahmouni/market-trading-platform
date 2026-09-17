@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-16 — UIR-01 Increment H: Lab experimental workbench
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Landed `/lab` as IMP's operator experimental workbench on current contracts: Overview, Validation, Simulation, and Chart Lab. Research keeps interpretation of the same `/research/models` and `/research/simulation` GETs. No Lab mutations. FTEP and hypotheses remain explicit gaps. `/lab`→`/research` redirect removed; `/research/vela-chart-lab` redirects to `/lab/chart-lab`. |
+| **Key files** | Created: `docs/ui-redesign-v2/lab-contract-map.md`; `ui/src/components/lab-shared/*`; `ui/src/components/{demo,paper,live}-lab/*`; `ui/src/components/ModeLabRoute.tsx`; `ui/src/styles/lab.css`. Modified: `App.tsx`, `App.test.tsx`, `NavShell.tsx`(+test), `ModeResearchRoute.tsx`, Research validation/simulation/overview (Lab handoff links), `ImpVelaChartLabPage.tsx`, `impVelaLazyRoute.test.ts`, `FRONTEND_GUIDE.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/lab.md`, `information-architecture.md`, `research-contract-map.md`, `migration-map.md`. |
+| **Tests** | Env healthy (worktree). Format pass. Lint/typecheck pass. `ui` vitest **740/740**, build initial **200.66 KiB gzip** (budget 203). `test affected` / `validate changed` **80/80** with CPython 3.11 (first affected run on system 3.10 errored ui1 collection — not a product failure). Docs links **OK 226 files**. Live browser API `:8881` + Vite `:5211`: Demo Lab overview and `/lab/validation` loaded; CDP overflow **ok** at 1440 (`1425/1425`), 768 (`753/753`), 390 (`390/390`). No Run control on validation. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) |
+| **Notes** | `item7/natural-settlement` untouched. `IMP_PAPER_EXECUTION` not enabled. **NO LAB MUTATIONS ADDED.** Implemented on Grok 4.6 after Kimi budget exhaustion. |
+
 ## 2026-09-16 — UIR-01 Increment G: Portfolio surface redesign
 
 | Field | Value |

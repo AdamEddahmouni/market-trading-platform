@@ -136,8 +136,8 @@ tests/redirects last.
 5. **Phase 5 — Portfolio** `/portfolio`; humanize money/time; Attribution tab
    (strategy profitability single home — decision-log D6).
 6. **Phase 6 — Research** `/research` interpretation-first; Methodology disclosure.
-7. **Phase 7 — Lab** `/lab` real page + `/lab/simulation` + `/lab/chart-lab`; land
-   `/research/vela-chart-lab` redirect; remove `/lab`→`/research` redirect.
+7. **Phase 7 — Lab** `/lab` real page + `/lab/validation` + `/lab/simulation` + `/lab/chart-lab`; land
+   `/research/vela-chart-lab` redirect; `/lab`→`/research` redirect removed (UIR-01H).
 8. **Phase 8 — Control** `/control` + sub-pages; nav Risk→Control; retarget StatusBar
    health indicator to `/diagnostics/provider`.
 9. **Phase 9 — Responsive/a11y pass** per responsive-contract; axe + viewport matrix

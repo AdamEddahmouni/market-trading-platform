@@ -16,7 +16,8 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 | Radar | `/radar` | Discovery queue (Opportunities + Screeners tabs). `/discover` → `/radar`; `/explore` → `/radar/screeners` |
 | Workspace | `/workspace` | Decision desk (Paper submit boundary) |
 | Portfolio | `/portfolio` | Simulated/observed holdings, P&L, risk context, order history (not the submit surface) |
-| Research | `/research` | Interpretation-first evidence workspace: Overview, Evidence, Validation, Simulation sections (routable). `/lab` redirects here; it is not a workspace alias |
+| Research | `/research` | Interpretation-first evidence workspace: Overview, Evidence, Validation, Simulation sections (routable) |
+| Lab | `/lab` | Experimental workbench: Overview, Validation, Simulation, Chart Lab. Inspectable/read-only on current contracts; `/research/vela-chart-lab` redirects to `/lab/chart-lab` |
 | Control | `/control` | Operator control center (was labeled "Risk") |
 
 Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Paper positions; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
@@ -81,7 +82,7 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 ## CSS organization
 
-Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/styles/research.css` (Research surface) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
+Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/styles/research.css` (Research surface) + `ui/src/styles/lab.css` (Lab workbench, lazy-imported from Lab pages) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.
 
 ## Opportunity presentation (one language)
 
@@ -144,10 +145,18 @@ Routable sections (one fetch family per section; Overview synthesizes all three)
 | `/research/evidence` | Evidence | `/research/analytics` (`?panel=` deep-link) |
 | `/research/validation` | Validation | `/research/models` (+ Paper strategy-profitability in Paper) |
 | `/research/simulation` | Simulation | `/research/simulation` |
-| `/research/vela-chart-lab` | Chart Lab | local synthetic (unchanged) |
+| `/research/vela-chart-lab` | (redirect) | → `/lab/chart-lab` |
 
-`/lab` still redirects to `/research`. Lab workbench is unbuilt; validation and
-simulation stay on Research as evidence records, not experiment tools. Hypotheses,
+Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md)):
+
+| Route | Section | Endpoints |
+|-------|---------|-----------|
+| `/lab` | Overview | models + simulation (workflow status) |
+| `/lab/validation` | Validation workbench | `/research/models` |
+| `/lab/simulation` | Simulation workbench | `/research/simulation` |
+| `/lab/chart-lab` | Chart Lab | none (local synthetic) |
+
+Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Hypotheses,
 domains, source catalogs, supporting/contradictory flags, and FTEP campaign
 state have **no UI contract** and are disclosed as gaps. The only conflict signal
 is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations. Radar Screeners

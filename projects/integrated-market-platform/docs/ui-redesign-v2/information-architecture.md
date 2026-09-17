@@ -67,11 +67,11 @@ Landed IA (UIR-01F): Overview (default), Evidence, Validation, Simulation. Curre
 contracts have no hypothesis, domain, or source-catalog objects — those stay
 honest gaps on Overview. See [research-contract-map.md](research-contract-map.md).
 
-### LAB — `/lab` (+ `/lab/simulation`, `/lab/chart-lab`)
-**Responsibility (future):** models, strategies, replay/simulation, calibration,
-walk-forward, evaluation. **Not built.** `/lab` still redirects to `/research`.
-Validation and simulation remain Research evidence records until a Lab increment
-splits the workbench. Endpoints stay `/research/models` and `/research/simulation`.
+### LAB — `/lab` (+ `/lab/validation`, `/lab/simulation`, `/lab/chart-lab`)
+**Responsibility:** experimental workbench for inspecting validation and
+simulation workflows (read-only on current contracts) plus the local Chart Lab.
+**Not** an execution cockpit and not a second Research page.
+See [lab-contract-map.md](lab-contract-map.md). `/lab` is a real route.
 
 ### CONTROL — `/control` (+ `/diagnostics/provider`, `/live-canary`, `/settings`)
 **Responsibility:** platform operations: provider health matrix (state / provides /
@@ -100,7 +100,7 @@ wrapper pattern is preserved (audit 05, FRONTEND_GUIDE lockstep rule).
 | 3 | `/explore` | Markets | RADAR, Screeners tab `/radar/screeners` | Redirect | Screener bridges are discovery-adjacent; live `LiveObservationalPanel` subscribe flow must survive; dead `?q=` param gets wired (see decision-log). |
 | 4 | `/discover` | Opportunity Radar | RADAR `/radar` | Redirect | Already the discovery cockpit. Paper-only mutations (refresh/promote/release incl. unmount keepalive POST) preserved exactly. |
 | 5 | `/workspace` | Workspace | WORKSPACE index `/workspace` | Stays | Smart redirect (live active instrument / admitted replay instrument / selection empty state) preserved. |
-| 6 | `/lab` | Lab | LAB `/lab` | Repoint | Today redirects to `/research`; becomes a real page. |
+| 6 | `/lab` | Lab | LAB `/lab` | Landed (UIR-01H) | Real workbench; no longer a Research redirect. |
 | 7 | `/workspace/:symbol` | — | WORKSPACE overview | Stays | The cockpit. `location.state` paper-draft handoff preserved (formalized); layout persistence POST `/operator/workspace` preserved. |
 | 8–17 | `/workspace/:symbol/{squeeze, order-flow, order-book, futures, catalyst, fund-etf, options, large-transactions, disclosure, institutional-flow}` | (lane tab bar) | WORKSPACE lane tabs | Stays (routes), re-presented as Tabs | Deep links kept; `?data_mode=current` on squeeze kept; `laneRegistry.ts` order **not** reordered (backend provenance contract); 2s/5s live polling cadences kept. |
 | 18 | `/research` | Research | RESEARCH `/research` | Stays; loses Model Lab + Simulation tabs to LAB | Analytics remains; tab state was local `useState` — split makes tabs routable under `/lab`. |

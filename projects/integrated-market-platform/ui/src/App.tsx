@@ -153,6 +153,11 @@ const ModeResearchRoute = lazy(() =>
     default: module.ModeResearchRoute,
   })),
 );
+const ModeLabRoute = lazy(() =>
+  import("./components/ModeLabRoute").then((module) => ({
+    default: module.ModeLabRoute,
+  })),
+);
 /* StatusBar is lazy like the rest of the product chrome (ImpProductChrome is
  * lazy): the 203 KiB entry budget has ~2 KiB headroom, so the semantic-state
  * adapter and imp-ui primitives load with the shell chunk, not the entry. */
@@ -472,7 +477,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               }
             />
             <Route path="/workspace" element={<WorkspaceIndex />} />
-            <Route path="/lab" element={<Navigate to="/research" replace />} />
+            <Route path="/lab/*" element={<ModeLabRoute mode={mode} />} />
             <Route
               path="/workspace/:symbol"
               element={
