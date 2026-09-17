@@ -96,7 +96,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 |------|------|-------------------|
 | Finviz prospective | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | Not via `rth_empirical_ops` live ingress |
 | **Item 9** | `python tools\moomoo\opend_bar_1m_prospective_proof.py prospective --poll …` | Contract `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
-| **Item 7** | `item7_corpus_collector.py status|diagnose|collect …`; optional `item7_opend_capture_append.py` (lawful SNAPSHOT_BBO; auto-persist default **on** → `intelligence_records.jsonl`; `--no-auto-persist` to skip; fail-closed bind/P0 → event only, **no** ledger) | `--training-cutoff-ns` required; governed rows **0** on `main` until earned; auto-persist is **SOFTWARE/CONTROLLED**, not empirical corpus |
+| **Item 7** | `item7_corpus_collector.py status|diagnose|collect …`; optional `item7_opend_capture_append.py` (lawful SNAPSHOT_BBO; auto-persist default **on** → `intelligence_records.jsonl`; `--no-auto-persist` to skip; fail-closed bind/P0 → event only, **no** ledger) | `--training-cutoff-ns` required; governed rows **0** on `main` until earned; auto-persist is **SOFTWARE/CONTROLLED**, not empirical corpus; status/diagnose load only governed `intelligence_records.jsonl` paths under `IMP_STATE_DIR` (UTF-8 fail-closed) — not a recursive `.local/**/*.jsonl` sweep |
 | Ops bundle | `python tools\rth_empirical_ops.py --json run-observational` | Optional `--write-run-artifact`; dry-run (`live_ingress=False`) |
 | Close | `python tools\rth_empirical_ops.py --json summarize` | |
 

@@ -32,6 +32,11 @@ from ..fusion.calibration_data import MINIMUM_CALIBRATION_SAMPLES, MINIMUM_CLASS
 from ..fusion.types import CONTROL_FORECAST_STAGE, ForecastContributorRole
 from ..outcomes.opend_capture_ledger import iter_jsonl_envelopes
 from ..persistence.repository import IntelligenceRepository
+from .governed_jsonl_discovery import (
+    GovernedJsonlEncodingError,
+    GovernedJsonlParseError,
+    discover_governed_outcome_jsonl_paths,
+)
 from .identity import (
     MINIMUM_SPECIALIST_CLASS_COUNT,
     MINIMUM_SPECIALIST_SAMPLES,
@@ -57,12 +62,6 @@ LABEL_SOURCE_OUTCOME_V1 = "OUTCOME_V1_SETTLED"
 LABEL_SOURCE_FIXTURE = "FIXTURE_ONLY"
 
 FORBIDDEN_LABEL_SOURCES = frozenset({"manual", "operator_invented", "quote_synthetic"})
-
-DEFAULT_JSONL_SEARCH_GLOBS = (
-    "artifacts/**/*.jsonl",
-    ".local/**/*.jsonl",
-)
-
 
 class CorpusLayer(StrEnum):
     CANDIDATE_CORPUS = "CANDIDATE_CORPUS"
@@ -617,22 +616,6 @@ def export_manifest_candidate(
     }
 
 
-def discover_jsonl_paths(repo_root: Path, *, extra_globs: Iterable[str] = ()) -> tuple[Path, ...]:
-    globs = (*DEFAULT_JSONL_SEARCH_GLOBS, *extra_globs)
-    found: set[Path] = set()
-    for pattern in globs:
-        for path in repo_root.glob(pattern):
-            if not path.is_file():
-                continue
-            normalized = str(path).replace("\\", "/")
-            if "/forward-test-campaigns/" in normalized and "FTEP-V1-00" in normalized:
-                continue
-            if ".worktrees/weekday-opend-hop-d1ba" in normalized:
-                continue
-            found.add(path.resolve())
-    return tuple(sorted(found))
-
-
 def scan_jsonl_for_settled_outcomes(paths: Iterable[Path]) -> JsonlOutcomeScanSummary:
     paths_scanned = 0
     settled = 0
@@ -641,24 +624,27 @@ def scan_jsonl_for_settled_outcomes(paths: Iterable[Path]) -> JsonlOutcomeScanSu
         if not path.is_file():
             continue
         paths_scanned += 1
-        for _line, record, error in iter_jsonl_envelopes(path):
-            if error is not None:
-                parse_errors += 1
-                continue
-            if record is None:
-                continue
-            body = record.get("body") if isinstance(record.get("body"), dict) else record
-            if not isinstance(body, dict):
-                continue
-            status = str(body.get("resolution_status") or "").upper()
-            if status != OutcomeResolutionStatus.SETTLED.value:
-                continue
-            try:
-                outcome_v1_from_dict(body)
-            except (TypeError, ValueError):
-                parse_errors += 1
-                continue
-            settled += 1
+        try:
+            envelope_iter = iter_jsonl_envelopes(path)
+            for line_index, record, error in envelope_iter:
+                if error is not None:
+                    raise GovernedJsonlParseError(path, line_index, error)
+                if record is None:
+                    continue
+                body = record.get("body") if isinstance(record.get("body"), dict) else record
+                if not isinstance(body, dict):
+                    raise GovernedJsonlParseError(path, line_index, "ENVELOPE_NOT_OBJECT")
+                status = str(body.get("resolution_status") or "").upper()
+                if status != OutcomeResolutionStatus.SETTLED.value:
+                    continue
+                try:
+                    outcome_v1_from_dict(body)
+                except (TypeError, ValueError):
+                    parse_errors += 1
+                    continue
+                settled += 1
+        except UnicodeDecodeError as exc:
+            raise GovernedJsonlEncodingError(path, exc.start) from exc
     return JsonlOutcomeScanSummary(
         paths_scanned=paths_scanned,
         settled_outcome_envelopes=settled,
@@ -670,6 +656,7 @@ def run_corpus_collection_pipeline(
     *,
     repository: IntelligenceRepository | None = None,
     repo_root: Path | None = None,
+    persistence_root: Path | None = None,
     training_cutoff_ns: int,
     include_fixture_proof: bool = False,
     jsonl_paths: Iterable[Path] | None = None,
@@ -684,8 +671,10 @@ def run_corpus_collection_pipeline(
         )
 
     scan_summary = None
-    if repo_root is not None:
-        paths = tuple(jsonl_paths) if jsonl_paths is not None else discover_jsonl_paths(repo_root)
+    if jsonl_paths is not None:
+        scan_summary = scan_jsonl_for_settled_outcomes(tuple(jsonl_paths))
+    elif persistence_root is not None:
+        paths = discover_governed_outcome_jsonl_paths(persistence_root=persistence_root)
         scan_summary = scan_jsonl_for_settled_outcomes(paths)
 
     fixture_rows: tuple[PathATrainingCandidateRow, ...] = ()
@@ -785,8 +774,10 @@ __all__ = [
     "assert_not_governed_production_manifest",
     "build_fixture_proof_candidates",
     "collect_candidates_from_repository",
-    "discover_jsonl_paths",
+    "discover_governed_outcome_jsonl_paths",
     "export_candidate_corpus",
+    "GovernedJsonlEncodingError",
+    "GovernedJsonlParseError",
     "export_manifest_candidate",
     "export_pit_validated_corpus",
     "floor_counters",

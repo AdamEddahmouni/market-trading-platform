@@ -116,6 +116,7 @@ def run_governed_corpus_collection_status(
     report, rows = run_corpus_collection_pipeline(
         repository=repository,
         repo_root=repo_root,
+        persistence_root=root,
         training_cutoff_ns=training_cutoff_ns,
         include_fixture_proof=include_fixture_proof,
     )

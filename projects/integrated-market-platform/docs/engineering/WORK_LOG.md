@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Governed JSONL discovery scope (IMP-ACTUAL-01 Phase C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `intelligence`, `docs` |
+| **Summary** | Item 7 corpus status no longer recursively scans `artifacts/**/*.jsonl` or `.local/**/*.jsonl`; governed outcome discovery is limited to known `intelligence_records.jsonl` paths under `IMP_STATE_DIR`. Non-governed local JSONL is ignored; governed UTF-8 violations and malformed lines fail closed with explicit errors. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/governed_jsonl_discovery.py` (created); `corpus_collector.py`, `corpus_persistence.py`, `corpus_collection_status.py`; `tests/intelligence/test_governed_jsonl_discovery.py`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/imp.py test focused tests/intelligence/test_governed_jsonl_discovery.py`; `test_item7_corpus_collector.py`; `validate changed` |
+| **Related** | IMP-ACTUAL-01 Phase C; Phase A `f47b449a` (PR #234) |
+| **Notes** | Item 7 remains `ITEM7_PENDING_NATURAL_EVIDENCE`; no settlement or corpus minting. |
+
 ## 2026-09-17 — Item 9 governed calibration protocol V1 (ITEM9-02)
 
 | Field | Value |
