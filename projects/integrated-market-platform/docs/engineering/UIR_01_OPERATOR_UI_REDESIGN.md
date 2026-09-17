@@ -4,8 +4,9 @@
 `ui/operator-redesign-current` (PR #226); Increment C landed on
 `ui/operator-redesign-command-convergence`; Increment D landed on
 `ui/operator-redesign-command-depth`; Increment E landed on
-`ui/operator-redesign-control`; Increment F (Research) lands on
-`ui/operator-redesign-research`.
+`ui/operator-redesign-control`; Increment F landed on
+`ui/operator-redesign-research`; Increment G (Portfolio) lands on
+`ui/operator-redesign-portfolio`.
 **Scope:** Increment A (design system + shell + navigation) and Increment B
 (Discover/Radar + opportunity state/evidence presentation) on top of current
 canonical contracts at `origin/main` (`42b1237a`). Increment C (Command /
@@ -308,3 +309,21 @@ composition per mode).
   visibility pause.
 - React Query keys and cadences; no new endpoints; no invented fields.
 - `App.test.tsx` updated for route/nav changes (standing obligation C6).
+
+### Increment G — Portfolio operator view (this increment)
+
+- **Role:** `/portfolio` answers what the account holds, what the backend says
+  it is worth, which positions need attention, and the safe next action.
+  Workspace remains the only Paper submit boundary; in-page `OrderTicket` is
+  removed from Portfolio.
+- **Contracts:** [portfolio-contract-map.md](../ui-redesign-v2/portfolio-contract-map.md).
+  Cash uses `cash_display`; buying power is formatted from `buying_power_minor`
+  (never substituted with cash). No NAV, daily P&L, dollar allocation, or
+  frontend risk score.
+- **Hierarchy:** account → summary (including shared Paper risk ribbon) →
+  contract-backed attention (`derivePaperExceptions`) → positions (desktop
+  table / mobile cards) → share exposure → fills + order history.
+- **Honesty:** Paper/Demo labeled simulated; Live labeled observational
+  broker-reported. Paper P&L is never presented as live capital.
+- **Handoff:** position `instrument_id` → `/workspace/:id` with no draft
+  state. Session archive/new remain Paper-gated.
