@@ -43,6 +43,9 @@ class SqliteForwardTestRepository:
     def __init__(self, connection: LocalStateConnection) -> None:
         self._connection = connection
 
+    def close(self) -> None:
+        self._connection.close()
+
     def _run_write(self, callback):
         if self._connection.in_transaction:
             return callback()
