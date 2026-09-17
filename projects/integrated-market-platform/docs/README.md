@@ -71,6 +71,7 @@ it in the authoritative doc — do not silently choose.
 | IMP scope / FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Market-data capability contract | [MARKET_DATA_CAPABILITY_CONTRACT.md](architecture/MARKET_DATA_CAPABILITY_CONTRACT.md) |
 | Paper simulator calibration contract | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) |
+| Dual-corpus evidence (historical vs prospective) | [DUAL_CORPUS_EVIDENCE_CONTRACT.md](architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
 | Item 9 calibration protocol V1 | [ITEM9_CALIBRATION_PROTOCOL_V1.md](architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md) |
 | Common Opportunity Contract | [OPPORTUNITY_CONTRACT.md](architecture/OPPORTUNITY_CONTRACT.md) |
 | Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |

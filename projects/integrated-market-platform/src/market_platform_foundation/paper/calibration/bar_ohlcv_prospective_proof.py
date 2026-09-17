@@ -530,6 +530,11 @@ def poll_prospective_proof(
 
 
 def persist_receipt(receipt: Mapping[str, Any], *, out_dir: Path) -> Path:
+    from .dual_corpus.discovery import validate_item9_prospective_receipt_output_dir
+
+    gate = validate_item9_prospective_receipt_output_dir(out_dir)
+    if not gate["ok"]:
+        raise ValueError(str(gate["reason_code"]))
     out_dir.mkdir(parents=True, exist_ok=True)
     experiment_id = str(receipt.get("experiment_id") or uuid.uuid4().hex)
     path = out_dir / f"{experiment_id}.json"
