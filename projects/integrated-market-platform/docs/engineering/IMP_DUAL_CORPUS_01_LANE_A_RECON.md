@@ -13,7 +13,7 @@
 | Frozen Sep 17 Item 9 collector | `fed2d9f7…` | On `main` ancestry | No — do not touch |
 | Coordinator worktree HEAD | — | `c44231fa` on `item7/natural-settlement` (dirty) | No — isolated worktree used |
 | Open PR #222 Item 7 | OPEN | OPEN | No — not merged/touched |
-| Item 9 calibration | NOT_CALIBRATED / INSUFFICIENT | No `item9_calibration_protocol.py` on `main` yet (exists in local worktrees only) | Yes — Lane A adds dual-corpus gates compatible with future protocol merge |
+| Item 9 calibration | NOT_CALIBRATED / INSUFFICIENT | `item9_calibration_protocol.py` on `main`; dual-corpus admission/discovery wiring lands in Lane A PR #242 | Yes — Lane A wires `dual_corpus` into protocol scan/classify |
 | FTEP | not EMPIRICAL_ACTIVE | Unchanged | No |
 
 ## Recon matrix

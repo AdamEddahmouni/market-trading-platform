@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -11,12 +12,21 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.paper.calibration.bar_ohlcv_prospective_proof import (  # noqa: E402
+    hash_raw_kline_rows,
     persist_receipt,
 )
+from market_platform_foundation.paper.calibration.bar_ohlcv_sources import ONE_MINUTE_NS  # noqa: E402
 from market_platform_foundation.paper.calibration.dual_corpus.admission import (  # noqa: E402
     ITEM9_ADMISSION_REFUSED,
+    REFUSAL_AUTHORITY_CONTRADICTS_PROSPECTIVE_RECEIPT,
     REFUSAL_HISTORICAL_DEVELOPMENT,
     evaluate_item9_prospective_corpus_admission,
+)
+from market_platform_foundation.paper.calibration.item9_calibration_protocol import (  # noqa: E402
+    audit_receipt_directory,
+    build_item9_corpus_status_report,
+    classify_item9_receipt,
+    governed_receipt_paths,
 )
 from market_platform_foundation.paper.calibration.dual_corpus.consumption import (  # noqa: E402
     CONSUMPTION_REFUSED_PROTECTED_CORPUS,
@@ -45,6 +55,61 @@ from market_platform_foundation.paper.calibration.dual_corpus.historical_provena
 from market_platform_foundation.paper.calibration.dual_corpus.normalization import (  # noqa: E402
     normalize_historical_development_bars,
 )
+
+
+_BAR_START = 1_789_661_220_000_000_000
+_BAR_END = _BAR_START + ONE_MINUTE_NS
+_SIGNAL_NS = 1_789_661_252_872_965_400
+
+
+def _kline_row(time_key: str = "2023-11-14 10:30:00") -> dict[str, object]:
+    return {
+        "close": 10.2,
+        "high": 10.5,
+        "low": 9.5,
+        "open": 10.0,
+        "time_key": time_key,
+        "volume": 50_000,
+    }
+
+
+def _prospective_item9_receipt(**overrides: object) -> dict[str, object]:
+    body: dict[str, object] = {
+        "experiment_id": "item9-dual-corpus-fixture-1",
+        "proof_mode": "PROSPECTIVE_BAR_OHLCV_1M",
+        "not_prospective_evidence": False,
+        "evidence_class": "PROSPECTIVE_BAR_OHLCV_1M",
+        "instrument_id": "AAPL",
+        "signal_time_ns": _SIGNAL_NS,
+        "signal_established_at_ns": _SIGNAL_NS,
+        "observation_time_ns": _BAR_END + 1,
+        "bar_id": "bar-1",
+        "bar_start_ns": _BAR_START,
+        "bar_available_time_ns": _BAR_END,
+        "bar_source_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+        "provider_id": "moomoo.opend",
+        "raw_provenance_hash": hash_raw_kline_rows((_kline_row(),)),
+        "calibrated": False,
+        "empirical_active": False,
+        "item9_status": "PARTIAL_NOT_CALIBRATED",
+        "runtime_git_sha": "test-sha",
+        "receipt_contract_version": "item9.bar-ohlcv-prospective-proof/1.1.0",
+        "sim_order_state": "FILLED",
+        "bar_provenance": {
+            "evidence_class": "PROSPECTIVE_OPEND_KLINE",
+            "provider_id": "moomoo.opend",
+            "fetched_at_ns": _BAR_END + 1,
+            "timing_basis": "available_time_at_bar_end",
+        },
+        "first_post_signal_bar": {
+            "event_time_ns": _BAR_START,
+            "available_time_ns": _BAR_END,
+            "normalized_event_id": "bar-1",
+            "bar_payload": {"close": "10.2", "high": "10.5", "low": "9.5", "open": "10.0"},
+        },
+    }
+    body.update(overrides)
+    return body
 
 
 def _sample_provenance(**overrides: object) -> dict[str, object]:
@@ -134,6 +199,59 @@ class DualCorpusContaminationTests(unittest.TestCase):
             with self.assertRaises(ValueError) as ctx:
                 persist_receipt({"experiment_id": "x"}, out_dir=bad)
             self.assertEqual(str(ctx.exception), ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT)
+
+    def test_admission_refuses_empty_authority_without_prospective_receipt_shape(self) -> None:
+        outcome = evaluate_item9_prospective_corpus_admission(payload={"experiment_id": "x"})
+        self.assertEqual(outcome["disposition"], ITEM9_ADMISSION_REFUSED)
+
+    def test_classify_excludes_historical_corpus_authority_on_prospective_receipt(self) -> None:
+        receipt = _prospective_item9_receipt(
+            corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_HISTORICAL_DEVELOPMENT,
+        )
+        classified = classify_item9_receipt(receipt)
+        self.assertFalse(classified.corpus_admissible)
+        self.assertEqual(classified.exclusion_reason, REFUSAL_HISTORICAL_DEVELOPMENT)
+
+    def test_classify_excludes_mislabeled_prospective_with_untouched_authority(self) -> None:
+        receipt = _prospective_item9_receipt(
+            corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+        )
+        classified = classify_item9_receipt(receipt)
+        self.assertFalse(classified.corpus_admissible)
+        self.assertEqual(classified.exclusion_reason, REFUSAL_AUTHORITY_CONTRADICTS_PROSPECTIVE_RECEIPT)
+
+    def test_governed_receipt_paths_empty_on_historical_development_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            hist = Path(tmp) / "historical-rth-development" / "receipts"
+            hist.mkdir(parents=True)
+            (hist / "leak.json").write_text(json.dumps(_prospective_item9_receipt()), encoding="utf-8")
+            self.assertEqual(governed_receipt_paths(hist), ())
+
+    def test_audit_refuses_historical_development_scan_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            hist = Path(tmp) / "historical-development-corpus" / "receipts"
+            hist.mkdir(parents=True)
+            (hist / "leak.json").write_text(json.dumps(_prospective_item9_receipt()), encoding="utf-8")
+            audit = audit_receipt_directory(hist)
+        self.assertEqual(audit.get("discovery_refusal"), ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT)
+        self.assertEqual(audit["observations"], [])
+        self.assertEqual(audit["counts"].get("corpus_admissible", 0), 0)
+
+    def test_corpus_status_report_empty_on_historical_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            hist = Path(tmp) / "historical-development" / "receipts"
+            hist.mkdir(parents=True)
+            (hist / "leak.json").write_text(json.dumps(_prospective_item9_receipt()), encoding="utf-8")
+            report = build_item9_corpus_status_report(hist)
+        self.assertEqual(report["counts"]["corpus_admissible"], 0)
+        self.assertEqual(report["item9_status"], "PARTIAL_NOT_CALIBRATED")
+
+    def test_classify_accepts_explicit_prospective_feature_authority(self) -> None:
+        receipt = _prospective_item9_receipt(
+            corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE,
+        )
+        classified = classify_item9_receipt(receipt)
+        self.assertTrue(classified.corpus_admissible)
 
     def test_historical_manifest_declares_authority_explicitly(self) -> None:
         provenance = _sample_provenance()
