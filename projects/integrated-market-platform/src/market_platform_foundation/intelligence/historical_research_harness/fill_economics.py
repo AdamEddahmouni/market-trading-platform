@@ -104,6 +104,7 @@ def aggregate_fill_economics(
     policy: Mapping[str, Any] | None = None,
     cost_slippage_bps: float,
     instrument_id: str | None = None,
+    mark_price_minor_override: int | None = None,
 ) -> dict[str, Any]:
     """Apply fills through ledger accounting and compute research economics."""
 
@@ -177,7 +178,9 @@ def aggregate_fill_economics(
             }
         )
 
-    mark_minor = _mark_price_minor_from_events(events, instrument_id=instrument_id, price_scale=scale)
+    mark_minor = mark_price_minor_override
+    if mark_minor is None:
+        mark_minor = _mark_price_minor_from_events(events, instrument_id=instrument_id, price_scale=scale)
     position_shares = int(ledger["position_shares"])
     basis_minor = int(ledger.get("position_cost_basis_minor", 0))
     gross_unrealized_minor = 0

@@ -1,0 +1,27 @@
+{
+  "artifact_kind": "historical_fill_price_realism_spec_freeze_receipt_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "base_git_sha": "2306ff4a0db74d6ed35d9c5d1bb82bf8b3dc7c56",
+  "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
+  "experiment_definition_hash": "C4FCD3AB6CA6AEE57C91A0D709EC8D77EBFA6AA774542BF9AAD9FC761C2D1149",
+  "experiment_id": "imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
+  "freeze_timestamp_ns": 1789791600000000000,
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/frozen_experiment_definition.json",
+  "hypothesis_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "independent_review_path": "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/independent_review_v1.json",
+  "increment_id": "IMP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "lane": "IMP-POST-RTH-CLOSE-08-F",
+  "methodology_path": "docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md",
+  "observation_class": "BOUNDED_HISTORICAL_OBSERVATION",
+  "protocol_path": "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/experiment_protocol_v1.json",
+  "spec_bundle_sha256": "bcf758df3cf7a2047f1c7caaae1e4b9f5df4542710edcd1d2bc582cb12ccbb34",
+  "spec_frozen": true,
+  "spec_paths": [
+    "docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md",
+    "docs/engineering/IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md",
+    "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/experiment_protocol_v1.json",
+    "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/frozen_experiment_definition.json"
+  ],
+  "worktree_branch": "research/fill-price-realism-v1",
+  "worktree_path": ".worktrees/lane-f-fill-realism"
+}

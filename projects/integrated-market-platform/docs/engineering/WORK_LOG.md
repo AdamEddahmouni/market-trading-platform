@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Fill-price realism v1 harness + bounded run (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical_research_harness`, `tools/research`, `evidence/historical-research` |
+| **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `59C04BC53904D3C9BA9C77F7382D7AF0` under experiment 06 evidence. Costs locked at 5 bps; v3 receipts untouched. |
+| **Key files** | `fill_price_realism_harness.py`; `fill_price_realism_v1_cli.py`; `tests/platform/test_fill_price_realism_v1.py`; `evidence/.../fill_price_realism_run_record.json` |
+| **Tests** | `python -m unittest tests.platform.test_fill_price_realism_v1` — OK (3 passed, 1 skipped) |
+| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…`; branch `research/fill-price-realism-v1` |
+| **Notes** | `research_code_sha` recorded in run receipt at commit time; no merge to main. |
+
+## 2026-09-18 — Fill-price realism v1 spec freeze (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/research/methodology/fill`, `evidence/historical-research` |
+| **Summary** | Froze bounded fill-price realism experiment separate from Lane E cost sensitivity: six predeclared OHLC fill/MTM arms, locked v3 fill schedule + `cost_slippage_bps=5.0`, no Item 9 simulator semantic change. Independent review `APPROVE_FOR_FROZEN_EXECUTION`; execution deferred pending repricing harness. |
+| **Key files** | `docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md`; `evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/*` |
+| **Tests** | `python` canonical hash verify for `EXPERIMENT_HASH` `C4FCD3AB…`; no harness run |
+| **Related** | `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1`; v3 hash `81EFC1B1…`; worktree `.worktrees/lane-f-fill-realism` @ `research/fill-price-realism-v1` |
+| **Notes** | `SPEC_BUNDLE_SHA256=bcf758df…`; harness landed in follow-up entry. |
+
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 
 | Field | Value |
