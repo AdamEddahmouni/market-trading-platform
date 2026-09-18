@@ -45,8 +45,8 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Addressed independent re-review REQUEST_CHANGES without gaming gold: refreshed `imp-05-i1-nonstub-sut.md` (limitation, freeze `4720493F…`, 1/10 fixture coverage, synthetic gold vs grounded citations, Smoke10 not justified for facts); hardened `FIXTURE_REPLAY` against live promotion on `load_decoded_snapshot`; documented gold audit (10/10 synthetic). |
 | **Key files** | `imp-05-i1-nonstub-sut.md`, `store.py`, `test_replay_store_loading.py` |
 | **Tests** | `python -m unittest tests.validation.test_replay_store_loading`; `python tools/imp.py validate changed` |
-| **Related** | PR #267 worktree `ui/nonstub-facts-sut-resolvers` |
-| **Notes** | Freeze `code_sha` remains `109fd650…` (SUT logic); no Smoke10/Full30; push still blocked. |
+| **Related** | PR #272 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Notes** | Freeze `code_sha` remains `109fd650…` (SUT logic); no Smoke10/Full30. |
 
 ## 2026-09-18 — IBP facts SUT historical evidence resolvers (Lane C)
 
@@ -57,8 +57,32 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Wired `build_historical_fixture_evidence_context` so `run_ibp_facts_sut` supplies MRA-001-style `resolve_explain` / `resolve_inspect` from Lane B historical fixtures via replay projections; fail-closed `UNKNOWN` when resolvers absent; regenerated nonstub Smoke10 freeze fingerprint. |
 | **Key files** | `historical_evidence_context.py`, `facts_sut.py`, `store.py` (`load_decoded_snapshot`), `sut_profiles.py`, `test_intelligence_benchmark_nonstub_sut_protocol.py`, `ibp_smoke10_nonstub_sut_freeze_v1.json` |
 | **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_nonstub_sut_protocol` (14 OK); `python tools/imp.py validate changed` (3785 passed, 41 skipped) |
-| **Related** | PR #267 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Related** | PR #272 worktree `ui/nonstub-facts-sut-resolvers` |
 | **Notes** | Smoke10/Full30 not executed; limitation class `BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL`. |
+
+## 2026-09-18 — Fill economics V3 pre-fee gross (review fix)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Review found policy fees double-subtracted: ledger realized is post-fee while transaction_costs also summed commission/fees. Research gross now adds policy fees back once from ledger totals; net = gross − transaction_costs. ACCOUNTING_VERSION bumped to 3.0.1; fee regression tests added. |
+| **Key files** | `fill_economics.py`, `simulator.py`, `test_simulator_fill_economics_v3.py` |
+| **Tests** | `unittest tests.platform.test_simulator_fill_economics_v3` (17 OK); `validate changed` |
+| **Related** | `research/simulator-fill-economics-v3` follow-up to REQUEST_CHANGES |
+| **Notes** | `max_drawdown` / `coverage` labeled `RISK_PORTFOLIO_INHERITED`. V3 performance not executed. |
+
+## 2026-09-18 — Simulator fill economics V3 (Lane H)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Prediction-coupled simulator research now applies fills through `portfolio.ledger.apply_fill` (weighted average cost basis), computes gross realized/unrealized PnL, and charges transaction costs from traded notional × bps plus policy fees—not from `abs(gross_pnl)`. Fail-closed invariants and unit/integration tests added for IMP-SIMULATOR-FILL-ECONOMICS-V3. |
+| **Key files** | `fill_economics.py` (new), `simulator.py`, `prediction_coupling.py`, `metrics.py`, `tests/platform/test_simulator_fill_economics_v3.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_fill_economics_v3` (14 OK); `python tools/imp.py validate changed` (2875 passed, 29 skipped) |
+| **Related** | Branch `research/simulator-fill-economics-v3` @ base `6d6b27de` |
+| **Notes** | `ACCOUNTING_VERSION` / `COST_MODEL_VERSION` / `SIMULATOR_VERSION` (`phase7.bar-conservative/1.1.0`) frozen for Lane B. `estimated_costs` retained as alias of `transaction_costs`. Open-position `max_drawdown` still from risk portfolio summary when present. |
 
 ## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
 

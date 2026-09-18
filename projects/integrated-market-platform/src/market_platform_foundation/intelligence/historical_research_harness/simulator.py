@@ -10,6 +10,7 @@ from ...risk_simulation.evaluation import (
     risk_simulation_root_hash,
     run_risk_simulation_from_signal_interpretations,
 )
+from .fill_economics import assert_fill_economics_invariants
 from .prediction_coupling import (
     PREDICTION_COUPLING_SCHEMA_VERSION,
     PredictionCoupledSimulatorError,
@@ -64,15 +65,22 @@ def run_historical_development_simulator_research(
             "signal_count": len(interpretations),
         },
     )
-    execution = summarize_risk_execution(risk_result)
+    execution = summarize_risk_execution(
+        risk_result,
+        events=events,
+        cost_slippage_bps=cost_slippage_bps,
+        instrument_id=instrument_id,
+    )
     assert_no_trade_baseline_invariant(
         trade_intent_count=execution["trade_intents"],
         fill_count=execution["fills"],
         turnover=execution["turnover"],
         external_position_documented=external_position_documented,
     )
-    estimated_costs = abs(execution["gross_pnl"]) * (cost_slippage_bps / 10_000.0)
-    net_pnl = execution["gross_pnl"] - estimated_costs
+    assert_fill_economics_invariants(
+        execution,
+        trade_intent_count=execution["trade_intents"],
+    )
     return {
         "result_kind": SIMULATOR_RESEARCH_RESULT_KIND,
         "not_result_kind": ITEM9_CALIBRATION_RESULT_KIND,
@@ -82,6 +90,8 @@ def run_historical_development_simulator_research(
         "prediction_coupling_schema": PREDICTION_COUPLING_SCHEMA_VERSION,
         "simulator_version": simulator_version,
         "cost_slippage_bps": cost_slippage_bps,
+        "accounting_version": execution.get("accounting_version"),
+        "cost_model_version": execution.get("cost_model_version"),
         "risk_simulation_root_hash": risk_simulation_root_hash(risk_result),
         "signals": signals,
         "signal_count": len(signals),
@@ -89,17 +99,27 @@ def run_historical_development_simulator_research(
         "accepted_intents": execution["accepted_intents"],
         "rejected_intents": execution["rejected_intents"],
         "fills": execution["fills"],
+        "fill_economics": execution.get("fill_economics"),
         "partial_fills": execution["partial_fills"],
         "fill_count": execution["fills"],
         "order_count": len(risk_result.get("orders") or []),
         "intent_count": execution["trade_intents"],
+        "gross_realized_pnl": execution.get("gross_realized_pnl"),
+        "gross_unrealized_pnl": execution.get("gross_unrealized_pnl"),
         "gross_pnl": execution["gross_pnl"],
-        "net_pnl": net_pnl,
-        "estimated_costs": estimated_costs,
+        "net_pnl": execution["net_pnl"],
+        "transaction_costs": execution.get("transaction_costs"),
+        "estimated_costs": execution.get("estimated_costs"),
+        "traded_notional": execution.get("traded_notional"),
         "turnover": execution["turnover"],
+        "position_count": execution.get("position_count"),
+        "winning_closed_trades": execution.get("winning_closed_trades"),
+        "losing_closed_trades": execution.get("losing_closed_trades"),
         "max_drawdown": risk_result.get("portfolio", {}).get("max_drawdown"),
+        "max_drawdown_source": "RISK_PORTFOLIO_INHERITED",
         "exposure": execution["exposure"],
         "coverage": risk_result.get("portfolio", {}).get("coverage"),
+        "coverage_source": "RISK_PORTFOLIO_INHERITED",
         "scoped_event_times_ns": scoped_event_times_ns,
         "prediction_coupled": True,
         "independent_bar_replay_trading": False,
