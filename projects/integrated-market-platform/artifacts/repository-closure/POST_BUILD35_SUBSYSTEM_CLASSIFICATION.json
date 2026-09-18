@@ -585,6 +585,7 @@
         "tools/evidence_capture_context.py",
         "src/market_platform_foundation/evidence_capture",
         "src/market_platform_foundation/operations",
+        "tools/benchmarks",
         "tools/research",
         "tools/state",
         "tools/state_path_diagnostic.py",

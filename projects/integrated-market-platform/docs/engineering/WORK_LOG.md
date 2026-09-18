@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane E IBP harness integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `tools/benchmarks`, `docs` |
+| **Summary** | Added minimal greenfield Intelligence Benchmark Protocol v1 adapter from Lane B `historical_research_run_manifest_v1` to IBP run records with contamination stripping, 30-case catalog + Smoke10 invocation contract (no scores executed), and `imp benchmark intelligence` CLI. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/*`, `tools/benchmarks/intelligence_cli.py`, `tests/fixtures/intelligence_benchmark/ibp_suite_catalog_v1.json`, `tests/intelligence/test_intelligence_benchmark_harness_adapter.py`, `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_harness_adapter` — 6/6 OK |
+| **Related** | [IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md](IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md), Lane B [#256](https://github.com/AdamEddahmouni/market-trading-platform/pull/256) |
+| **Notes** | `BENCHMARK_SMOKE10_READY=YES` when catalog + adapter wiring pass; full 30-case benchmark scores **not** run. Branch `benchmarks/intelligence-harness-integration` stacked on `research/historical-harness-v1`. |
+
 ## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 historical research harness v1
 
 | Field | Value |
