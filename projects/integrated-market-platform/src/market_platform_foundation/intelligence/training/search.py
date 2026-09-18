@@ -24,6 +24,19 @@ def expand_candidate_specs(
     base_hyperparameters: dict[str, Any],
     authorized_mutation_surface: tuple[str, ...],
 ) -> tuple[CandidateTrainingSpec, ...]:
+    from ...paper.calibration.dual_corpus.consumption import (
+        ProtectedCorpusConsumptionError,
+        assert_metadata_consumable_for_selection_or_training,
+    )
+
+    try:
+        assert_metadata_consumable_for_selection_or_training(
+            manifest.metadata,
+            purpose="expand_candidate_specs",
+        )
+    except ProtectedCorpusConsumptionError as exc:
+        raise TrainingFactoryError(str(exc)) from exc
+
     search_space = manifest.search_space
     seeds = _resolve_seeds(manifest.seed_policy, manifest.search_space)
     if search_space is None or not search_space.parameters:

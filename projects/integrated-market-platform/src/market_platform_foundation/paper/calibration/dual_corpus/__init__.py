@@ -6,7 +6,12 @@ from .admission import (
 )
 from .consumption import (
     CONSUMPTION_REFUSED_PROTECTED_CORPUS,
+    TRAINING_OR_SELECTION_USE_REFUSED,
     assert_corpus_consumable_for_selection_or_training,
+    assert_metadata_consumable_for_selection_or_training,
+    assert_payload_samples_consumable_for_selection_or_training,
+    is_protected_corpus_authority,
+    protected_corpus_authorities_for_selection_training,
 )
 from .discovery import (
     iter_item9_prospective_receipt_paths,
@@ -44,11 +49,16 @@ __all__ = [
     "HISTORICAL_DEVELOPMENT_PROVENANCE_KIND",
     "HISTORICAL_PROVENANCE_SCHEMA_VERSION",
     "ITEM9_ADMISSION_REFUSED",
+    "TRAINING_OR_SELECTION_USE_REFUSED",
     "assert_corpus_consumable_for_selection_or_training",
+    "assert_metadata_consumable_for_selection_or_training",
+    "assert_payload_samples_consumable_for_selection_or_training",
     "build_historical_development_dataset_manifest",
     "build_historical_development_provenance",
     "evaluate_item9_prospective_corpus_admission",
+    "is_protected_corpus_authority",
     "iter_item9_prospective_receipt_paths",
+    "protected_corpus_authorities_for_selection_training",
     "normalize_historical_development_bars",
     "resolve_effective_corpus_evidence_authority",
     "validate_historical_development_dataset_manifest",

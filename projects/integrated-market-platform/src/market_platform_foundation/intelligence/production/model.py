@@ -140,8 +140,21 @@ def fit_production_specialist(
     target: ForecastTarget,
     horizon: TimeHorizonNs,
     training_cutoff_ns: int,
+    corpus_evidence_authority: str | None = None,
+    corpus_guard_payload: dict[str, object] | None = None,
 ) -> ProductionSpecialistModel | None:
     """Fit a Path A PRODUCTION specialist. Insufficient support → None."""
+
+    if corpus_evidence_authority or corpus_guard_payload:
+        from ...paper.calibration.dual_corpus.consumption import (
+            assert_payload_samples_consumable_for_selection_or_training,
+        )
+
+        assert_payload_samples_consumable_for_selection_or_training(
+            payload=corpus_guard_payload or {},
+            corpus_evidence_authority=corpus_evidence_authority,
+            purpose="fit_production_specialist",
+        )
 
     normalized = _normalize_examples(
         examples,
