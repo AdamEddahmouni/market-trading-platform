@@ -7,21 +7,57 @@ from typing import Any, Mapping, Sequence
 from ...canonical import canonical_bytes, sha256_bytes
 from .rth_session import (
     RTH_MINUTES_FULL_SESSION,
+    UsEquitySessionDayKind,
+    classify_us_equity_session_day,
+    count_us_equity_holidays_in_range,
     expected_rth_minute_keys,
     ohlc_row_valid,
     parse_moomoo_time_key_local,
 )
 
 
+def _missing_intervals_for_sessions(
+    session_dates: Sequence[str],
+    raw_rows: Sequence[Mapping[str, Any]],
+    *,
+    early_closes: frozenset[str],
+) -> list[dict[str, Any]]:
+    missing_by_day: list[dict[str, Any]] = []
+    for day in session_dates:
+        expected = set(expected_rth_minute_keys(day, early_closes=early_closes))
+        present: set[str] = set()
+        for row in raw_rows:
+            key = str(row.get("time_key") or "")
+            if key.startswith(day):
+                parsed = parse_moomoo_time_key_local(key)
+                if parsed is not None:
+                    present.add(parsed.strftime("%Y-%m-%d %H:%M:%S"))
+        missing = sorted(expected - present)
+        if missing:
+            kind = classify_us_equity_session_day(day, early_closes=early_closes)
+            missing_by_day.append(
+                {
+                    "session_date": day,
+                    "session_kind": kind.value,
+                    "expected_minute_count": len(expected),
+                    "missing_minute_count": len(missing),
+                    "sample_missing_time_keys": missing[:5],
+                }
+            )
+    return missing_by_day
+
+
 def count_incomplete_final_bars(
     session_dates: Sequence[str],
     raw_rows: Sequence[Mapping[str, Any]],
+    *,
+    early_closes: frozenset[str] = frozenset(),
 ) -> int:
-    """Count session days missing the expected final RTH 1m bar (15:59 ET start)."""
+    """Count session days missing the expected final RTH 1m bar for that session kind."""
 
     incomplete = 0
     for day in session_dates:
-        expected = expected_rth_minute_keys(day)
+        expected = expected_rth_minute_keys(day, early_closes=early_closes)
         if not expected:
             continue
         final_key = expected[-1]
@@ -39,8 +75,33 @@ def count_incomplete_final_bars(
     return incomplete
 
 
+def _derive_quality_status(
+    *,
+    missing_rows: int,
+    duplicate_rows: int,
+    out_of_order_rows: int,
+    malformed_rows: int,
+    invalid_ohlc_rows: int,
+    incomplete_rows: int,
+    provider_gap_intervals: int,
+) -> str:
+    if malformed_rows > 0 or invalid_ohlc_rows > 0:
+        return "FAIL"
+    if (
+        missing_rows > 0
+        or incomplete_rows > 0
+        or duplicate_rows > 0
+        or out_of_order_rows > 0
+        or provider_gap_intervals > 0
+    ):
+        return "WARN"
+    return "PASS"
+
+
 def build_quality_report(
     *,
+    start_date: str,
+    end_date: str,
     session_dates: Sequence[str],
     raw_rows: Sequence[Mapping[str, Any]],
     normalized_bars: Sequence[Mapping[str, Any]],
@@ -55,25 +116,18 @@ def build_quality_report(
     corporate_action_status: str,
     volume_anomaly_count: int,
 ) -> dict[str, Any]:
-    missing_by_day: list[dict[str, Any]] = []
-    for day in session_dates:
-        expected = set(expected_rth_minute_keys(day))
-        present: set[str] = set()
-        for row in raw_rows:
-            key = str(row.get("time_key") or "")
-            if key.startswith(day):
-                parsed = parse_moomoo_time_key_local(key)
-                if parsed is not None:
-                    present.add(parsed.strftime("%Y-%m-%d %H:%M:%S"))
-        missing = sorted(expected - present)
-        if missing:
-            missing_by_day.append(
-                {
-                    "session_date": day,
-                    "missing_minute_count": len(missing),
-                    "sample_missing_time_keys": missing[:5],
-                }
-            )
+    holiday_set = frozenset(holidays)
+    early_close_set = frozenset(early_closes)
+    missing_by_day = _missing_intervals_for_sessions(
+        session_dates,
+        raw_rows,
+        early_closes=early_close_set,
+    )
+    missing_rows = sum(item["missing_minute_count"] for item in missing_by_day)
+    expected_rows = sum(
+        len(expected_rth_minute_keys(day, early_closes=early_close_set)) for day in session_dates
+    )
+    observed_rows = len(normalized_bars)
     ordering_violations = 0
     last_ns: int | None = None
     for bar in normalized_bars:
@@ -82,8 +136,44 @@ def build_quality_report(
             ordering_violations += 1
         last_ns = at
     ohlc_invalid = sum(1 for row in raw_rows if not ohlc_row_valid(row))
+    short_session_count = sum(
+        1
+        for day in session_dates
+        if classify_us_equity_session_day(day, holidays=holiday_set, early_closes=early_close_set)
+        == UsEquitySessionDayKind.EARLY_CLOSE
+    )
+    holiday_count = count_us_equity_holidays_in_range(
+        start_date,
+        end_date,
+        holidays=holiday_set,
+    )
+    quality_status = _derive_quality_status(
+        missing_rows=missing_rows,
+        duplicate_rows=int(duplicate_row_count),
+        out_of_order_rows=ordering_violations,
+        malformed_rows=int(malformed_timestamp_count),
+        invalid_ohlc_rows=int(ohlc_invalid),
+        incomplete_rows=int(incomplete_final_bar_count),
+        provider_gap_intervals=int(provider_gap_pages),
+    )
     body: dict[str, Any] = {
         "artifact_kind": "historical_development_quality_report_v1",
+        "requested_sessions": len(session_dates),
+        "actual_sessions": len(session_dates),
+        "expected_rows": int(expected_rows),
+        "observed_rows": int(observed_rows),
+        "missing_rows": int(missing_rows),
+        "duplicate_rows": int(duplicate_row_count),
+        "out_of_order_rows": int(ordering_violations),
+        "malformed_rows": int(malformed_timestamp_count),
+        "outside_session_rows": int(outside_session_count),
+        "incomplete_rows": int(incomplete_final_bar_count),
+        "invalid_ohlc_rows": int(ohlc_invalid),
+        "volume_anomalies": int(volume_anomaly_count),
+        "provider_gap_intervals": int(provider_gap_pages),
+        "short_session_count": int(short_session_count),
+        "holiday_count": int(holiday_count),
+        "quality_status": quality_status,
         "row_count": len(normalized_bars),
         "raw_row_count": len(raw_rows),
         "expected_rth_minutes_per_full_session": RTH_MINUTES_FULL_SESSION,
@@ -102,6 +192,17 @@ def build_quality_report(
         "early_close_dates_declared": list(early_closes),
         "corporate_action_status": corporate_action_status,
         "forward_fill_applied": False,
+        "transformations": [
+            "provider_fetch",
+            "rth_filter",
+            "dedupe",
+            "normalize_moomoo_kline_row",
+        ],
+        "exclusions": {
+            "outside_session_rows": int(outside_session_count),
+            "invalid_ohlc_rows": int(ohlc_invalid),
+            "malformed_timestamp_rows": int(malformed_timestamp_count),
+        },
     }
     body["quality_fingerprint"] = sha256_bytes(canonical_bytes(body))
     return body

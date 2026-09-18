@@ -48,6 +48,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-EVIDENCE-HARDENING-02 Lane A; `IMP_DUAL_CORPUS_01_LANE_C.md` |
 | **Notes** | No #222 file overlap. Item 9 remains NOT_CALIBRATED; no fitting or gate changes. |
 
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane D session calendar + quality schema
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development` |
+| **Summary** | Historical RTH builds now treat declared early-close dates as short tradable sessions (210 expected 1m bars, 13:00 ET close) instead of excluding them or assuming 390-minute grids. Quality reports expose machine-readable session/row counters, session-kind-aware missing intervals, and `quality_status` while preserving legacy v1 field names. |
+| **Key files** | `market_data/historical_development/rth_session.py`, `quality.py`, `builder.py`, `shadow/session.py`, `tests/platform/test_historical_session_quality.py`, `docs/engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md` |
+| **Tests** | `unittest` historical/session suites (24 OK); `python tools/imp.py validate changed` (1842 passed, 3 skipped) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane D; IMP-DUAL-CORPUS-01 Lane B |
+| **Notes** | Shadow-run preflight still excludes early-close dates from full-grid capture; historical development uses `rth_session` session-kind classification. |
 
 ## 2026-09-17 — PROGRAM_STATUS after IMP-DUAL-CORPUS-01 #246 merge
 

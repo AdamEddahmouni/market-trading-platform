@@ -64,5 +64,5 @@ Item 9 remains `NOT_CALIBRATED`; historical corpora never admit as prospective.
 
 ## Methodology gaps (this pass)
 
-- **Early-close sessions:** `--early-closes` excludes a date from the build calendar but does not yet shorten expected RTH minute grids for partial sessions; quality `missing_intervals` and `incomplete_final_bar_count` assume full 390-minute RTH until a dedicated calendar lands.
+- **Early-close sessions:** declared `--early-closes` dates are tradable short sessions (13:00 ET close, 210 expected 1m bars). Shadow-run preflight still excludes early-close dates from full-grid capture; historical development uses `market_data/historical_development/rth_session.py` for session-kind-aware expectations.
 - **Corporate actions:** provider QFQ only; no cross-source reconciliation.

@@ -34,6 +34,12 @@ class SessionBoundsTests(unittest.TestCase):
         self.assertEqual((e.hour, e.minute), (16, 0))
         self.assertEqual(s.date().isoformat(), "2026-08-24")
 
+    def test_early_close_bounds(self):
+        et = ZoneInfo("America/New_York")
+        start_ns, end_ns = session_bounds_ns("2026-08-24", early_close=True)
+        e = datetime.fromtimestamp(end_ns / 1e9, tz=et)
+        self.assertEqual((e.hour, e.minute), (13, 0))
+
 
 class SessionListTests(unittest.TestCase):
     def test_skips_weekends_holidays_early_closes(self):
