@@ -1,0 +1,206 @@
+"""IBP non-stub SUT: BUILD 09 SmartRouter + grounded evidence inference (no gold, no LLM)."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Any
+
+from ...assistant.grounded_inference import GroundedEvidenceInference
+from ..contracts import (
+    ComponentLineage,
+    ContractKind,
+    ContractReference,
+    DetectionSeverity,
+    DetectionV1,
+    IntelligenceScope,
+    QualityState,
+    QualitySummary,
+    SemanticEventType,
+)
+from ..quality import DecisionAction, IntelligenceCapability, QualityAssessment, QualityDecision
+from ..routing import RoutingPolicyV1, SmartRouter
+from .contamination import assert_no_evaluator_gold_in_system_bundle
+from .historical_evidence_context import build_historical_fixture_evidence_context
+from .sut_profiles import (
+    IBP_FACTS_SUT_MODEL_ID,
+    IBP_FACTS_SUT_PROFILE_ID,
+    IBP_FACTS_SUT_VERSION,
+)
+
+_ROUTER_BASE_TIME_NS = 1_700_000_000_000_000_000
+_SCOPE = IntelligenceScope(instrument_ids=("IBP-FIXTURE",))
+
+_BLIND_MODE_EVENT: dict[str, SemanticEventType] = {
+    "A": SemanticEventType.ORDER_FLOW_REVERSAL,
+    "B": SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY,
+    "C": SemanticEventType.BORROW_CHANGE,
+    "D": SemanticEventType.NEWS_EVENT,
+    "E": SemanticEventType.REGIME_SHIFT,
+}
+
+_BLIND_MODE_CAPABILITIES: dict[str, tuple[IntelligenceCapability, ...]] = {
+    "A": (IntelligenceCapability.QUOTES, IntelligenceCapability.TRADES),
+    "B": (IntelligenceCapability.OPTIONS_CHAIN,),
+    "C": (IntelligenceCapability.SHORT_INTEREST,),
+    "D": (IntelligenceCapability.NEWS,),
+    "E": (IntelligenceCapability.MACRO, IntelligenceCapability.QUOTES),
+}
+
+
+def ibp_blind_mode_routing_plan(blind_mode: str | None) -> tuple[SemanticEventType, tuple[IntelligenceCapability, ...]]:
+    mode = str(blind_mode or "A")
+    if mode not in _BLIND_MODE_EVENT:
+        raise ValueError(f"IBP_BLIND_MODE_UNSUPPORTED:{mode}")
+    return _BLIND_MODE_EVENT[mode], _BLIND_MODE_CAPABILITIES[mode]
+
+
+def _detection_for_blind_mode(
+    blind_mode: str,
+    *,
+    context_reset_token: str,
+    case_id: str,
+) -> DetectionV1:
+    event_type, _ = ibp_blind_mode_routing_plan(blind_mode)
+    detected_at = _ROUTER_BASE_TIME_NS + abs(hash(context_reset_token)) % 1_000_000
+    return DetectionV1(
+        detection_id=f"IBP-DET-{case_id}",
+        schema_version="1",
+        semantic_event_type=event_type,
+        detected_at_ns=detected_at,
+        source_snapshot_ref=ContractReference(kind=ContractKind.SNAPSHOT.value, id=f"ibp-snap-{case_id}"),
+        detector_lineage=ComponentLineage(component_id="ibp-facts-sut", component_version=IBP_FACTS_SUT_VERSION),
+        scope=_SCOPE,
+        severity=DetectionSeverity.MEDIUM,
+        reason_codes=("IBP_BLIND_MODE_FIXTURE",),
+        quality=QualitySummary(state=QualityState.GOOD),
+    )
+
+
+def _quality_decision_for_mode(
+    blind_mode: str,
+    *,
+    decision_time_ns: int,
+) -> QualityDecision:
+    _, capabilities = ibp_blind_mode_routing_plan(blind_mode)
+    assessment = QualityAssessment(decision_time_ns=decision_time_ns)
+    return QualityDecision(
+        action=DecisionAction.USE,
+        quality_state=QualityState.GOOD,
+        assessment=assessment,
+        satisfied_requirements=capabilities,
+        degraded_requirements=(),
+        reasons=("IBP_HISTORICAL_FIXTURE_CAPABILITIES",),
+    )
+
+
+def _load_historical_fixture_summary(repository_root: Path, fixture_rel: str | None) -> dict[str, Any] | None:
+    if not fixture_rel:
+        return None
+    path = repository_root / fixture_rel
+    if not path.is_file():
+        return None
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict) and payload and all(isinstance(value, list) for value in payload.values()):
+        rows: list[Any] = []
+        for value in payload.values():
+            rows.extend(value)
+        row_count = len(rows)
+        instruments = sorted(
+            {
+                str(row.get("code") or row.get("instrument_id") or row.get("symbol") or "UNKNOWN")
+                for row in rows[:32]
+                if isinstance(row, dict)
+            }
+        )
+    elif isinstance(payload, list):
+        row_count = len(payload)
+        instruments = sorted({str(row.get("instrument_id") or row.get("symbol") or "UNKNOWN") for row in payload[:32]})
+    elif isinstance(payload, dict):
+        rows = payload.get("rows") or payload.get("bars") or []
+        row_count = len(rows) if isinstance(rows, list) else 0
+        instruments = sorted({str(payload.get("instrument_id") or payload.get("symbol") or "UNKNOWN")})
+    else:
+        return None
+    return {
+        "fixture_path": fixture_rel,
+        "row_count": row_count,
+        "instruments": instruments[:8],
+        "authority": "HISTORICAL_DEVELOPMENT",
+    }
+
+
+def _facts_prompt(case_id: str, blind_mode: str) -> str:
+    return (
+        f"IBP bounded facts probe for {case_id} blind mode {blind_mode}; "
+        "cite grounded historical development evidence only."
+    )
+
+
+def run_ibp_facts_sut(
+    blind_input: dict[str, Any],
+    *,
+    repository_root: Path,
+) -> dict[str, Any]:
+    """Route through SmartRouter and grounded inference without evaluator gold."""
+    assert_no_evaluator_gold_in_system_bundle(blind_input)
+    blind_mode = str(blind_input.get("blind_mode") or "A")
+    case_id = str(blind_input["case_id"])
+    context_reset_token = str(blind_input.get("context_reset_token") or "")
+
+    detection = _detection_for_blind_mode(
+        blind_mode,
+        context_reset_token=context_reset_token,
+        case_id=case_id,
+    )
+    quality = _quality_decision_for_mode(blind_mode, decision_time_ns=detection.detected_at_ns)
+    router = SmartRouter(RoutingPolicyV1())
+    route = router.route(detection, quality_decision=quality)
+
+    fixture_rel = blind_input.get("historical_harness_fixture")
+    fixture_summary = _load_historical_fixture_summary(repository_root, fixture_rel)
+    evidence_context: dict[str, Any] = {
+        "ibp_case_id": case_id,
+        "ibp_blind_mode": blind_mode,
+        "historical_fixture": fixture_summary,
+    }
+    grounded_context = build_historical_fixture_evidence_context(
+        repository_root,
+        str(fixture_rel) if fixture_rel else None,
+    )
+    if grounded_context is not None:
+        evidence_context = {**grounded_context, **evidence_context}
+    inference = GroundedEvidenceInference()
+    outcome = inference.infer(_facts_prompt(case_id, blind_mode), evidence_context=evidence_context)
+    answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
+    operator_close = "OK"
+
+    return {
+        "case_id": case_id,
+        "sut_profile_id": IBP_FACTS_SUT_PROFILE_ID,
+        "sut_model_id": IBP_FACTS_SUT_MODEL_ID,
+        "sut_version": IBP_FACTS_SUT_VERSION,
+        "blind_mode": blind_mode,
+        "routing": blind_mode,
+        "route_action": route.route_action.value,
+        "routing_decision_id": route.routing_decision_id,
+        "expert_domain": route.expert_domain.value,
+        "answer": answer,
+        "freshness": "HISTORICAL_DEVELOPMENT" if fixture_summary else "FIXTURE",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "provenance_complete": True,
+        "inference_provider_id": outcome.provider_id,
+        "inference_model_id": outcome.model_id,
+        "inference_abstention_reason": outcome.abstention_reason,
+        "final_state": "CLOSED",
+        "operator_close": operator_close,
+        "catastrophic": False,
+        "context_reset_token": context_reset_token,
+        "historical_fixture_loaded": fixture_summary is not None,
+    }
+
+
+__all__ = [
+    "ibp_blind_mode_routing_plan",
+    "run_ibp_facts_sut",
+]
