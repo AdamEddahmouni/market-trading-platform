@@ -15,7 +15,7 @@
 Lane B run manifests (`historical_research_run_manifest_v1`) map to IBP run records via `adapt_historical_research_run_manifest_v1`:
 
 - Preserves `HISTORICAL_DEVELOPMENT` authority
-- Requires `SIMULATOR_RESEARCH_RESULT` (refuses `ITEM9_CALIBRATION_RESULT`)
+- Requires explicit `simulator.result_kind` of `SIMULATOR_RESEARCH_RESULT` (refuses absent/unknown kinds and `ITEM9_CALIBRATION_RESULT`)
 - Strips `labels_path` and evaluator-only keys from the system-under-test bundle
 - Sets `scores_executed: false` until a governed evaluator run is authorized
 
