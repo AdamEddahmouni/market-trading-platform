@@ -48,6 +48,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-DUAL-CORPUS-01 Lane B builder; `tools/ibkr/verify_historical_trades_provider.py` |
 | **Notes** | Worktree `.worktrees/imp-04-lane-b-provider` @ branch `data/real-historical-verification`. Verified corpus under `artifacts/historical-rth-development-real-provider-verification/`. Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
 
+## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |
 |-------|-------|
