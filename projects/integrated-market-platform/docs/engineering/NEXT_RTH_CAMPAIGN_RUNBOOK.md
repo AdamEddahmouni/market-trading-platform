@@ -8,13 +8,13 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (`origin/main` / git tip) | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` | Mutable tip after IMP-INTEGRATE-AND-EXPERIMENT-05 [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) on ancestry through IMP-RESEARCH-VALIDATION-04 @ `7d67d48e`. Docs-only merges advance this label only. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` | Matches **CURRENT_MAIN** after research stack + R1/R2/H merges. Open [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) not yet on `main`. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` | **Software landing** on `main` through IMP-INTEGRATE-AND-EXPERIMENT-05 [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274). `git rev-parse origin/main` may advance on **docs-only** merges (Lane F status reconcile [#275](https://github.com/AdamEddahmouni/market-trading-platform/pull/275)) without moving this pin until the next **software-bearing** merge. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` | Matches **CURRENT_MAIN** after [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) non-stub IBP facts SUT (**supersedes** closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)), simulator accounting [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271), OpenD v3 evidence [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273), Lane E findings [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274). **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
 
-Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md).
+Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (Item 9 pins and Lane F OpenD v3 closeout: [IMP program status header](../platform/PROGRAM_STATUS.md#imp-program-status) and [Lane F closure](../platform/PROGRAM_STATUS.md#imp-opend-fill-economics-v3--lane-f-statusdocs-closure)). Do **not** retarget **ITEM9_FROZEN_COLLECTOR** when reconciling operator docs.
 
 **Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — use current `main` files plus this page.
 
@@ -27,7 +27,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md).
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from **CURRENT_MAIN** / a software worktree (`19a5ebd5…`) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `e0ab919f…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 ## Workstation bootstrap (once per day)
 
@@ -41,7 +41,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `a1b556f8`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `e0ab919f`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -138,7 +138,9 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | PR | Purpose | Merge SHA on `main` |
 |----|---------|---------------------|
-| [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) | Item 9 next-RTH preflight (**CURRENT_SOFTWARE_IMPLEMENTATION**) | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` |
+| [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) | Item 9 next-RTH preflight (superseded as software tip by [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274)) | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` |
+| [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) | Non-stub IBP facts SUT (supersedes closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)) | `ccc41a7f` |
+| [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) | Lane E OpenD v3 findings (**CURRENT_SOFTWARE_IMPLEMENTATION** landing) | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` |
 | [#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252) | IBKR historical TRADE pagination (Lane C) | `2d4a6d37` |
 | [#250](https://github.com/AdamEddahmouni/market-trading-platform/pull/250) | Holdout consumption guards (Lane B) | `f533413e` |
 | [#249](https://github.com/AdamEddahmouni/market-trading-platform/pull/249) | Historical session calendar + quality (Lane D) | `3dc472cd` |
@@ -152,7 +154,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `origin/main` = **CURRENT_MAIN** `0fb32d44` | Operator | `git fetch origin main && git rev-parse origin/main` |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — docs-only tip may differ from software landing `e0ab919f` |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
@@ -162,7 +164,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 ## Recommended next RTH operator actions
 
-1. Night before: `git fetch origin main`; confirm **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md).
+1. Night before: `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** and **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (do not conflate git tip with collector pin).
 2. Morning: bootstrap venv/state path; start platform; confirm `:8766` / `:5173`.
 3. T−15: run full preflight block including `item9 next-rth-preflight`; set temporary Finviz/catalyst gates; confirm OpenD loopback.
 4. ≥ 09:30 only: when preflight allows, run Finviz watch → governed Item 9 `--poll` (frozen collector) → `corpus-status` → Item 7 status → ops dry-run; summarize.

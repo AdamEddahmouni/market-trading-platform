@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — NEXT_RTH runbook SHA reconcile (post–Lane F #275)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) operator SHA table with [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) after [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) / closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) and Lane F [#275](https://github.com/AdamEddahmouni/market-trading-platform/pull/275). **ITEM9_FROZEN_COLLECTOR** remains `fed2d9f7`; **ITEM9_CALIBRATED** unchanged. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | Lane F OpenD v3 status reconcile; IMP-EVIDENCE-HARDENING-02 Item 9 preflight [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) |
+| **Notes** | Software landing pin `e0ab919f`; no collector retarget; no RTH collection |
+
 ## 2026-09-18 — OpenD v3 Lane F status reconcile (IMP-IBP-FACTUAL-GOLD-V1 Phase 1D)
 
 | Field | Value |
