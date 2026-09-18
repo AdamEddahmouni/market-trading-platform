@@ -60,6 +60,7 @@ class IbkrOuterReadOnlyQueryProvider:
         con_id: int,
         start_time_ns: int,
         end_time_ns: int,
+        number_of_ticks: int = 1000,
     ) -> Mapping[str, Any]:
         fetch = getattr(self._client, "fetch_historical_trades", None)
         if not callable(fetch):
@@ -72,6 +73,7 @@ class IbkrOuterReadOnlyQueryProvider:
             con_id=con_id,
             start_time_ns=start_time_ns,
             end_time_ns=end_time_ns,
+            number_of_ticks=number_of_ticks,
         )
         if not isinstance(payload, Mapping):
             return {"data": []}

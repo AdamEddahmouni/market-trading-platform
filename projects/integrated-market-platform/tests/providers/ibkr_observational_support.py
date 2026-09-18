@@ -221,6 +221,7 @@ class FakeQueryProvider:
         con_id: int,
         start_time_ns: int,
         end_time_ns: int,
+        number_of_ticks: int = 1000,
     ) -> dict[str, Any]:
         self.requests.append(
             (
@@ -229,23 +230,23 @@ class FakeQueryProvider:
                     "con_id": con_id,
                     "start_time_ns": start_time_ns,
                     "end_time_ns": end_time_ns,
+                    "number_of_ticks": number_of_ticks,
                 },
             )
         )
-        return dict(
-            self.historical_trades_payloads.get(
-                con_id,
+        static = self.historical_trades_payloads.get(con_id)
+        if static is not None:
+            return dict(static)
+        start_s = max(start_time_ns // 1_000_000_000, 1)
+        return {
+            "data": [
                 {
-                    "data": [
-                        {
-                            "t": max(start_time_ns // 1_000_000_000, 1),
-                            "price": 101.0,
-                            "size": 10,
-                        }
-                    ]
-                },
-            )
-        )
+                    "t": start_s,
+                    "price": 101.0,
+                    "size": 10,
+                }
+            ]
+        }
 
     def fetch_portfolio_accounts(self) -> dict[str, Any]:
         self.requests.append(("accounts", {}))
