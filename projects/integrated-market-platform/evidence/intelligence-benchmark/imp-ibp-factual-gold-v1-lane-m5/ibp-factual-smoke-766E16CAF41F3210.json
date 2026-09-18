@@ -1,6 +1,5 @@
 {
   "artifact_kind": "intelligence_benchmark_factual_smoke_run_v1",
-  "artifact_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\grounded-fact-extraction-v1\\projects\\integrated-market-platform\\evidence\\intelligence-benchmark\\imp-ibp-factual-gold-v1-lane-m5\\ibp-factual-smoke-766E16CAF41F3210.json",
   "case_count": 11,
   "case_ids": [
     "IBP-FACTUAL-001",
