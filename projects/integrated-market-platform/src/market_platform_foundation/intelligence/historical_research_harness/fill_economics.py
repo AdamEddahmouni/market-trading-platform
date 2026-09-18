@@ -4,11 +4,20 @@ Authority: HISTORICAL_DEVELOPMENT only. Uses weighted average cost basis via
 ``portfolio.ledger.apply_fill`` (not FIFO). Does not bind Paper session or
 ``PaperExecutionLedger``.
 
-Cost policy (frozen for Lane B ``COST_MODEL_VERSION`` pin):
+Gross / cost / net identity (Lane B pins after re-review):
+
+``portfolio.ledger.apply_fill`` records **post-policy-fee** realized deltas
+(``_realized_delta`` subtracts commission and fees). Research **gross** is
+**pre-policy-fee market PnL**: ledger ``realized_pnl_minor`` plus
+``total_commission_minor`` and ``total_fees_minor`` added back once; unrealized
+uses bar mark vs cost basis (unchanged). **transaction_costs** = sum(slippage
+from notional × bps) + policy commission + policy fees (charged once in net).
+**net_pnl** = gross_pnl − transaction_costs. Slippage does NOT depend on PnL sign.
+
+Cost formula (``COST_MODEL_VERSION``):
   fill_notional_native = abs(fill_quantity) * (fill_price_minor / price_scale)
   slippage_cost_native = fill_notional_native * (cost_slippage_bps / 10_000)
-  transaction_costs_native = sum(slippage) + sum(ledger commission/fees)
-Slippage does NOT depend on realized PnL sign or magnitude.
+  transaction_costs = sum(slippage) + policy commission + policy fees
 """
 
 from __future__ import annotations
@@ -20,7 +29,7 @@ from ...numeric import decimal_to_minor_units
 from ...portfolio.ledger import apply_fill, build_ledger_state
 from ...risk.policy import DEFAULT_RISK_POLICY
 
-ACCOUNTING_VERSION = "simulator-research-fill-economics/3.0.0"
+ACCOUNTING_VERSION = "simulator-research-fill-economics/3.0.1"
 COST_MODEL_VERSION = "simulator-research/notional-linear-bps/1.0.0"
 NET_PNL_TOLERANCE = 1e-6
 
@@ -178,15 +187,17 @@ def aggregate_fill_economics(
         else:
             gross_unrealized_minor = abs(basis_minor) - abs(position_shares) * mark_minor
 
-    gross_realized_minor = int(ledger["realized_pnl_minor"])
+    ledger_post_fee_realized_minor = int(ledger["realized_pnl_minor"])
+    policy_fees_total_minor = int(ledger.get("total_commission_minor", 0)) + int(
+        ledger.get("total_fees_minor", 0)
+    )
+    # Ledger realized is post-fee; gross is market PnL before policy commission/fees.
+    gross_realized_minor = ledger_post_fee_realized_minor + policy_fees_total_minor
     gross_realized = _minor_to_native(gross_realized_minor, scale)
     gross_unrealized = _minor_to_native(gross_unrealized_minor, scale)
     gross_pnl = gross_realized + gross_unrealized
 
-    policy_fees_total_native = _minor_to_native(
-        int(ledger.get("total_commission_minor", 0)) + int(ledger.get("total_fees_minor", 0)),
-        scale,
-    )
+    policy_fees_total_native = _minor_to_native(policy_fees_total_minor, scale)
     transaction_costs = slippage_total + policy_fees_total_native
     net_pnl = gross_pnl - transaction_costs
 
@@ -214,7 +225,9 @@ def aggregate_fill_economics(
         "losing_closed_trades": losing_closed,
         "mark_price_minor": mark_minor,
         "position_shares": position_shares,
-        "ledger_realized_pnl_minor": gross_realized_minor,
+        "ledger_post_fee_realized_pnl_minor": ledger_post_fee_realized_minor,
+        "policy_fees_total_minor": policy_fees_total_minor,
+        "ledger_realized_pnl_minor": ledger_post_fee_realized_minor,
     }
 
 

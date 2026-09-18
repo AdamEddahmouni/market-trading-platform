@@ -36,7 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — Simulator fill economics V3 (research harness)
+## 2026-09-18 — Fill economics V3 pre-fee gross (review fix)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Review found policy fees double-subtracted: ledger realized is post-fee while transaction_costs also summed commission/fees. Research gross now adds policy fees back once from ledger totals; net = gross − transaction_costs. ACCOUNTING_VERSION bumped to 3.0.1; fee regression tests added. |
+| **Key files** | `fill_economics.py`, `simulator.py`, `test_simulator_fill_economics_v3.py` |
+| **Tests** | `unittest tests.platform.test_simulator_fill_economics_v3` (17 OK); `validate changed` |
+| **Related** | `research/simulator-fill-economics-v3` follow-up to REQUEST_CHANGES |
+| **Notes** | `max_drawdown` / `coverage` labeled `RISK_PORTFOLIO_INHERITED`. V3 performance not executed. |
+
 
 | Field | Value |
 |-------|-------|

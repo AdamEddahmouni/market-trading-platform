@@ -125,6 +125,62 @@ class SimulatorFillEconomicsV3UnitTests(unittest.TestCase):
         self.assertEqual(summary["position_shares"], -50)
         self.assertAlmostEqual(summary["gross_realized_pnl"], 200.0)
 
+    def test_reversal_short_to_long(self) -> None:
+        summary = _economics(
+            _fill("s", direction="short", quantity=100, price_dollars=10.0),
+            _fill("r", direction="long", quantity=150, price_dollars=8.0),
+            events=[_bar(8.0)],
+            cost_bps=0.0,
+        )
+        self.assertEqual(summary["position_shares"], 50)
+        self.assertAlmostEqual(summary["gross_realized_pnl"], 200.0)
+
+    def test_policy_fees_charged_once_not_doubled(self) -> None:
+        fee_policy = {
+            **POLICY,
+            "fee_minor_per_order": 100,
+            "commission_minor_per_share": 2,
+        }
+        fills = [
+            _fill("b", direction="long", quantity=10, price_dollars=10.0),
+            _fill("s", direction="short", quantity=10, price_dollars=11.0),
+        ]
+        summary = aggregate_fill_economics(
+            fills,
+            events=[_bar(11.0)],
+            policy=fee_policy,
+            cost_slippage_bps=0.0,
+        )
+        market_realized = 10.0
+        per_fill_fees = 100 + 2 * 10
+        expected_policy_fees = 2 * per_fill_fees / 100.0
+        self.assertAlmostEqual(summary["gross_realized_pnl"], market_realized)
+        self.assertAlmostEqual(summary["transaction_costs"], expected_policy_fees)
+        self.assertAlmostEqual(summary["net_pnl"], market_realized - expected_policy_fees)
+        self.assertAlmostEqual(
+            summary["ledger_post_fee_realized_pnl_minor"],
+            int(round((market_realized - expected_policy_fees) * 100)),
+        )
+        assert_fill_economics_invariants(summary, trade_intent_count=2)
+
+    def test_commission_only_policy_net_identity(self) -> None:
+        policy = {**POLICY, "commission_minor_per_share": 5, "fee_minor_per_order": 0}
+        summary = aggregate_fill_economics(
+            [
+                _fill("b", direction="long", quantity=20, price_dollars=10.0),
+                _fill("s", direction="short", quantity=20, price_dollars=10.5),
+            ],
+            events=[_bar(10.5)],
+            policy=policy,
+            cost_slippage_bps=10.0,
+        )
+        notional = 20 * 10.0 + 20 * 10.5
+        slippage = notional * (10.0 / 10_000.0)
+        policy_fees = (5 * 20 + 5 * 20) / 100.0
+        self.assertAlmostEqual(summary["gross_realized_pnl"], 10.0)
+        self.assertAlmostEqual(summary["transaction_costs"], slippage + policy_fees)
+        self.assertAlmostEqual(summary["net_pnl"], summary["gross_pnl"] - summary["transaction_costs"])
+
     def test_costs_from_notional_independent_of_pnl_sign(self) -> None:
         win = _economics(
             _fill("b", direction="long", quantity=100, price_dollars=10.0),
@@ -185,7 +241,7 @@ class SimulatorFillEconomicsV3UnitTests(unittest.TestCase):
         self.assertAlmostEqual(summary["gross_pnl"], 50.0)
 
     def test_version_strings_frozen(self) -> None:
-        self.assertEqual(ACCOUNTING_VERSION, "simulator-research-fill-economics/3.0.0")
+        self.assertEqual(ACCOUNTING_VERSION, "simulator-research-fill-economics/3.0.1")
         self.assertEqual(COST_MODEL_VERSION, "simulator-research/notional-linear-bps/1.0.0")
         self.assertEqual(SIMULATOR_VERSION, "phase7.bar-conservative/1.1.0")
 
@@ -239,6 +295,7 @@ class SimulatorFillEconomicsV3IntegrationTests(unittest.TestCase):
         self.assertGreater(result["transaction_costs"], 0.0)
         self.assertIsInstance(result["fill_economics"], list)
         self.assertEqual(len(result["fill_economics"]), result["fills"])
+        self.assertEqual(len(result["fill_economics"]), result["fill_count"])
         self.assertEqual(result["accounting_version"], ACCOUNTING_VERSION)
         self.assertEqual(result["cost_model_version"], COST_MODEL_VERSION)
 
