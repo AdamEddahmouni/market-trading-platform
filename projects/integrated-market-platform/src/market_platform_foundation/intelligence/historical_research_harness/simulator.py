@@ -16,6 +16,7 @@ def run_historical_development_simulator_research(
     simulator_version: str,
     cost_slippage_bps: float,
 ) -> dict[str, Any]:
+    scoped_event_times_ns = sorted({int(event["available_time"]) for event in events})
     risk_result = run_risk_simulation_evaluation(events, enable_squeeze_replay=True)
     fills = list(risk_result.get("fills") or [])
     gross_pnl = sum(float(fill.get("realized_pnl", 0) or 0) for fill in fills)
@@ -38,6 +39,7 @@ def run_historical_development_simulator_research(
         "max_drawdown": risk_result.get("portfolio", {}).get("max_drawdown"),
         "exposure": risk_result.get("portfolio", {}).get("gross_exposure"),
         "coverage": risk_result.get("portfolio", {}).get("coverage"),
+        "scoped_event_times_ns": scoped_event_times_ns,
         "raw_risk_result_keys": sorted(risk_result.keys()),
     }
 

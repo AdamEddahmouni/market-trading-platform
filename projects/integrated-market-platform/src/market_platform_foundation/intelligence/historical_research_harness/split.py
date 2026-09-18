@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from .types import (
     ChronologicalSplitPolicy,
@@ -81,9 +82,35 @@ def assert_chronological_order(assignments: Sequence[HistoricalResearchSplitAssi
         raise ValueError("SPLIT_TIMELINE_NOT_CHRONOLOGICAL")
 
 
+def decision_times_for_split(
+    assignments: Sequence[HistoricalResearchSplitAssignment],
+    split: HistoricalResearchSplitName,
+) -> frozenset[int]:
+    return frozenset(row.decision_time_ns for row in assignments if row.split == split)
+
+
+def filter_events_to_decision_times(
+    events: Sequence[Mapping[str, Any]],
+    decision_times_ns: frozenset[int],
+) -> list[dict[str, Any]]:
+    """Keep only replay events whose available_time is in the allowed decision-time set."""
+
+    if not decision_times_ns:
+        return []
+    filtered = [
+        dict(row)
+        for row in events
+        if int(row.get("available_time", 0)) in decision_times_ns
+    ]
+    filtered.sort(key=lambda row: (int(row["available_time"]), str(row.get("normalized_event_id", ""))))
+    return filtered
+
+
 __all__ = [
     "assign_chronological_splits",
     "assert_chronological_order",
     "chronological_split_boundaries",
+    "decision_times_for_split",
+    "filter_events_to_decision_times",
     "splits_overlap",
 ]

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -25,6 +26,16 @@ from market_platform_foundation.intelligence.historical_research_harness import 
     reconstruct_historical_research_features,
     run_historical_research_harness,
     splits_overlap,
+)
+from market_platform_foundation.intelligence.historical_research_harness.simulator import (  # noqa: E402
+    run_historical_development_simulator_research,
+)
+from market_platform_foundation.intelligence.historical_research_harness.split import (  # noqa: E402
+    decision_times_for_split,
+    filter_events_to_decision_times,
+)
+from market_platform_foundation.market_data.historical_development.e2e_demo import (  # noqa: E402
+    normalized_bars_to_replay_events,
 )
 from market_platform_foundation.intelligence.historical_research_harness.labels import (  # noqa: E402
     historical_research_forward_return_label,
@@ -182,6 +193,79 @@ class HistoricalResearchHarnessTests(unittest.TestCase):
                 SIMULATOR_RESEARCH_RESULT_KIND,
             )
             self.assertTrue(first.artifact_path.is_file())
+
+    def test_manifest_simulator_metrics_exclude_research_test_holdout(self) -> None:
+        provider = FixtureHistoricalMarketDataProvider(load_fixture_rows_from_json(FIXTURE))
+        with tempfile.TemporaryDirectory() as tmp:
+            corpus_root = Path(tmp) / "corpus"
+            harness_root = Path(tmp) / "harness"
+            build = build_historical_rth_dataset(
+                repository_root=ROOT,
+                provider=provider,
+                instrument="AAPL",
+                start_date=SESSION_DAY,
+                end_date=SESSION_DAY,
+                artifact_root=corpus_root,
+                fixture_only=True,
+            )
+            self.assertTrue(build.ok)
+            config = HistoricalResearchRunConfig(
+                experiment_id="hist-harness-holdout-scope",
+                hypothesis_id="hist-harness-holdout-scope-hyp",
+            )
+            result = run_historical_research_harness(
+                repository_root=ROOT,
+                build=build,
+                config=config,
+                artifact_root=harness_root,
+            )
+            self.assertTrue(result.ok)
+            normalized_path = build.paths.normalized_dir
+            bars = json.loads(
+                sorted(normalized_path.glob("*_normalized.json"))[0].read_text(encoding="utf-8")
+            )
+            clocks = sorted({int(bar["available_time"]) for bar in bars})
+            assignments = assign_chronological_splits(clocks, config.split_policy)
+            ingest_run_id = f"HIST-RESEARCH-{build.normalized_fingerprint[:12]}"
+            events = normalized_bars_to_replay_events(bars, ingest_run_id=ingest_run_id)
+            dev_times = decision_times_for_split(
+                assignments,
+                HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE,
+            )
+            test_times = decision_times_for_split(
+                assignments,
+                HistoricalResearchSplitName.HISTORICAL_RESEARCH_TEST,
+            )
+            dev_events = filter_events_to_decision_times(events, dev_times)
+            dev_sim = run_historical_development_simulator_research(
+                dev_events,
+                simulator_version=config.simulator_version,
+                cost_slippage_bps=config.cost_slippage_bps,
+            )
+            full_sim = run_historical_development_simulator_research(
+                events,
+                simulator_version=config.simulator_version,
+                cost_slippage_bps=config.cost_slippage_bps,
+            )
+            metrics = result.body["metrics"]
+            self.assertEqual(
+                metrics["evaluation_split"],
+                HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value,
+            )
+            self.assertEqual(metrics["simulated_fills"], dev_sim["fill_count"])
+            self.assertEqual(metrics["gross_pnl"], dev_sim["gross_pnl"])
+            self.assertEqual(metrics["net_pnl"], dev_sim["net_pnl"])
+            self.assertTrue(test_times.isdisjoint(frozenset(dev_sim["scoped_event_times_ns"])))
+            self.assertEqual(
+                result.body["simulator"]["risk_simulation_root_hash"],
+                dev_sim["risk_simulation_root_hash"],
+            )
+            if test_times:
+                self.assertTrue(test_times.issubset(frozenset(full_sim["scoped_event_times_ns"])))
+                self.assertNotEqual(
+                    frozenset(full_sim["scoped_event_times_ns"]),
+                    frozenset(dev_sim["scoped_event_times_ns"]),
+                )
 
 
 if __name__ == "__main__":

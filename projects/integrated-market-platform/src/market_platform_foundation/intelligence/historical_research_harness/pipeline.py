@@ -38,7 +38,11 @@ from .manifest import (
 )
 from .metrics import compute_component_research_metrics
 from .simulator import run_historical_development_simulator_research
-from .split import assign_chronological_splits
+from .split import (
+    assign_chronological_splits,
+    decision_times_for_split,
+    filter_events_to_decision_times,
+)
 from .types import (
     HISTORICAL_RESEARCH_LABEL_KIND,
     HistoricalResearchRunConfig,
@@ -198,8 +202,13 @@ def run_historical_research_harness(
         if label is not None:
             labels.append({**label, "split": assignment.split.value})
         warnings.extend(features.get("warnings") or [])
+    dev_validate_times = decision_times_for_split(
+        assignments,
+        HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE,
+    )
+    dev_validate_events = filter_events_to_decision_times(events, dev_validate_times)
     simulator_result = run_historical_development_simulator_research(
-        events,
+        dev_validate_events,
         simulator_version=config.simulator_version,
         cost_slippage_bps=config.cost_slippage_bps,
     )
@@ -211,13 +220,14 @@ def run_historical_research_harness(
     dev_validate_labels = [
         row
         for row in labels
-        if row.get("split") == HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
+        if row["split"] == HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
     ]
     metrics = compute_component_research_metrics(
         predictions=dev_validate_predictions,
         labels=dev_validate_labels,
         simulator_summary=simulator_result,
     )
+    metrics["evaluation_split"] = HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
     research_code_sha = resolve_runtime_git_sha(start=repository_root)
     config_fp = config_fingerprint(config)
     dataset_fingerprint = str(build.manifest.get("dataset_fingerprint") or build.normalized_fingerprint)
