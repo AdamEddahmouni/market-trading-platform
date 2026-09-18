@@ -15,6 +15,8 @@ from market_platform_foundation.intelligence.benchmark_protocol import (  # noqa
     adapt_historical_research_run_manifest_v1,
     assess_benchmark_smoke10_readiness,
     build_smoke10_invocation_contract,
+    execute_smoke10_baseline,
+    freeze_smoke10_run_configuration,
     load_suite_catalog,
     suite_catalog_fingerprint,
 )
@@ -40,6 +42,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     smoke10.add_argument("--manifest", type=Path, help="optional historical harness manifest")
     smoke10.add_argument("--json", action="store_true")
+
+    smoke10_run = actions.add_parser(
+        "smoke10-run",
+        help="execute one bounded Smoke10 baseline (scores executed)",
+    )
+    smoke10_run.add_argument("--manifest", type=Path, help="optional historical harness manifest")
+    smoke10_run.add_argument(
+        "--artifact-root",
+        type=Path,
+        help="directory for frozen_config.json, smoke10_run_record.json, contamination_audit.json",
+    )
+    smoke10_run.add_argument("--json", action="store_true")
 
     suite_info = actions.add_parser("suite-info", help="print suite catalog metadata")
     suite_info.add_argument("--json", action="store_true")
@@ -94,6 +108,38 @@ def main(argv: list[str] | None = None) -> int:
         contract = build_smoke10_invocation_contract(ROOT, historical_run_record=historical_record)
         print(json.dumps(contract, indent=2, sort_keys=True))
         return 0
+
+    if args.action == "smoke10-run":
+        historical_record = None
+        if args.manifest is not None:
+            manifest = json.loads(args.manifest.read_text(encoding="utf-8"))
+            catalog = load_suite_catalog(ROOT)
+            historical_record = adapt_historical_research_run_manifest_v1(
+                manifest,
+                suite_id=catalog.get("suite_id"),
+                suite_catalog_fingerprint=suite_catalog_fingerprint(catalog),
+            )
+        frozen = freeze_smoke10_run_configuration(ROOT, historical_run_record=historical_record)
+        record = execute_smoke10_baseline(
+            ROOT,
+            frozen_config=frozen,
+            historical_run_record=historical_record,
+            artifact_root=args.artifact_root,
+        )
+        payload = {
+            "RUN_ID": record["run_id"],
+            "PROTOCOL_VERSION": record["protocol_version"],
+            "CONFIG": record["frozen_config_fingerprint"],
+            "CASES": record["case_ids"],
+            "SCORES_EXECUTED": "YES" if record["scores_executed"] else "NO",
+            "FULL30_EXECUTED": "YES" if record["full30_executed"] else "NO",
+            "contamination_audit": record["contamination_audit"],
+            "summaries": record["summaries"],
+            "artifact_root": str(args.artifact_root) if args.artifact_root else None,
+        }
+        print(json.dumps(payload, indent=2, sort_keys=True) if args.json else json.dumps(payload))
+        audit = record["contamination_audit"]
+        return 0 if audit.get("overall") == "PASS" else 1
 
     print(f"unknown action: {args.action}", file=sys.stderr)
     return 2

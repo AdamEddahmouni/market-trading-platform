@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane D Smoke10 baseline execution
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | Added governed Smoke10 baseline execution (`smoke10-run`): freeze config before case 1, deterministic synthetic SUT on blind inputs, evaluator-only gold scoring, contamination audit, and dimension summaries without a vanity total score. Executed one baseline run to `artifacts/benchmarks/smoke10_baseline_v1/`. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/smoke10_execution.py`, `smoke10_evaluator.py`, `smoke10_contamination_audit.py`, `synthetic_sut.py`; `tools/benchmarks/intelligence_cli.py`; `tools/imp.py`; `tests/intelligence/test_intelligence_benchmark_smoke10_execution.py`; `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter` — 15 OK; `python tools/imp.py validate changed` — PASSED 3534 tests, 0 failures |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane D; Lane A @ `1bb540fb`; branch `benchmarks/smoke10-baseline` |
+| **Notes** | Canonical Smoke10 case IDs = first ten catalog entries `IBP-CASE-001`…`010`. Baseline stub answers `UNKNOWN` → all cases `facts` FAIL (`FACTS_MISMATCH`); contamination checks PASS. Full30 not executed. |
+
 ## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane A result_kind fail-closed
 
 | Field | Value |

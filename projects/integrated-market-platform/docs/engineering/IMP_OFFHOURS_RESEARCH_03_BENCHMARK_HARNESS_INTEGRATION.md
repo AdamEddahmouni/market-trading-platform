@@ -8,7 +8,8 @@
 |---|---|
 | Intelligence Benchmark Protocol (IBP) | **MINIMAL_GREENFIELD_V1** — no pre-existing IBP branch in tree; adapter layer added under `intelligence/benchmark_protocol/` |
 | Full 30-case suite | **Catalog present** (`tests/fixtures/intelligence_benchmark/ibp_suite_catalog_v1.json`); **scores not executed** in this increment |
-| Smoke10 | **Invocation contract only** (`ibp-smoke10-invocation-v1`); wiring + contamination checks |
+| Smoke10 plan | **Invocation contract** (`ibp-smoke10-invocation-v1`); wiring + contamination checks |
+| Smoke10 baseline run | **One bounded execution** via `smoke10-run` (`intelligence_benchmark_smoke10_run_v1`); scores executed for 10 cases only |
 
 ## Integration
 
@@ -26,6 +27,7 @@ python tools/imp.py benchmark intelligence readiness --json
 python tools/imp.py benchmark intelligence suite-info --json
 python tools/imp.py benchmark intelligence adapt --manifest <path/to/run_manifest.json>
 python tools/imp.py benchmark intelligence smoke10-plan --manifest <path/to/run_manifest.json>
+python tools/imp.py benchmark intelligence smoke10-run --artifact-root <dir> [--manifest <path/to/run_manifest.json>] --json
 ```
 
 Historical harness (Lane B) remains:
