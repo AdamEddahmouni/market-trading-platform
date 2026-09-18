@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B freeze + bounded performance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `intelligence/historical_research_harness`, `tools/research` |
+| **Summary** | Merged APPROVED Lane A accounting; promoted v3 pre-execution definition to `frozen_experiment_definition.json` with pinned dataset fingerprint; executed one canonical baseline pack + full deterministic rerun (`deterministic_rerun_match`: true). Contamination auditor PASS. v2 evidence untouched. |
+| **Key files** | `baseline_pack_v3.py`, `historical_baseline_pack_v3_cli.py`, `evidence/.../imp-integrate-experiment-05-r3-opend-fill-economics-v3/*` |
+| **Tests** | `unittest tests.platform.test_historical_baseline_pack_v3_prep`, `test_simulator_fill_economics_v3`; `python tools/imp.py validate changed` |
+| **Related** | `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`; `EXPERIMENT_HASH` `81EFC1B1…` |
+| **Notes** | Not profitable/validated/production. Item 9 not calibrated. |
+
 ## 2026-09-18 — Fill economics V3 pre-fee gross (review fix)
 
 | Field | Value |

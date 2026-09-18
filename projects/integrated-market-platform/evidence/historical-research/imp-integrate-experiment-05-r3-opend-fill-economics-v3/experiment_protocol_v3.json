@@ -1,16 +1,10 @@
 {
   "artifact_kind": "historical_baseline_pack_v3_experiment_protocol_v1",
-  "increment_id": "IMP-SIMULATOR-FILL-ECONOMICS-V3",
-  "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
-  "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
-  "execution_phase": "PRE_EXECUTION_DEFINITION_ONLY",
-  "performance_run_authorized": false,
-  "purpose": "Bounded OpenD historical baselines with prediction-conditioned fills and declared fill economics (PnL + costs). Not optimization, promotion, or calibration.",
   "authority": {
-    "primary": "HISTORICAL_DEVELOPMENT",
-    "observation_class": "BOUNDED_HISTORICAL_OBSERVATION",
     "item9_effect": "NONE",
-    "live_authority": "NONE"
+    "live_authority": "NONE",
+    "observation_class": "BOUNDED_HISTORICAL_OBSERVATION",
+    "primary": "HISTORICAL_DEVELOPMENT"
   },
   "contamination_auditor_checks_required_before_execution": [
     {
@@ -34,8 +28,24 @@
       "description": "Historical development corpus must not be admitted into Item 9 prospective paths."
     }
   ],
-  "contamination_auditor_execution_status": "NOT_RUN_PRE_EXECUTION",
+  "contamination_auditor_execution_status": "EXECUTED",
+  "execution_phase": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "forbidden_actions": [
+    "Rerun or mutate imp-integrate-experiment-05-r2-opend-baseline-pack-v2 evidence",
+    "Retune baseline strategies or thresholds for v3",
+    "Use HISTORICAL_RESEARCH_TEST to choose cost or accounting parameters",
+    "Hash EXPERIMENT_HASH before Lane A accounting versions are known"
+  ],
+  "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+  "increment_id": "IMP-SIMULATOR-FILL-ECONOMICS-V3",
+  "lane_b_prep_receipt": {
+    "dataset_fingerprint_verification_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/dataset_fingerprint_verification.json",
+    "pre_execution_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_frozen_experiment_definition.json"
+  },
   "metrics_contract": {
+    "descriptive_holdout_split": "HISTORICAL_RESEARCH_TEST",
+    "primary_split_for_simulator_metrics": "HISTORICAL_DEVELOPMENT_VALIDATE",
     "required": [
       "signals",
       "intents",
@@ -54,18 +64,8 @@
       "abstention",
       "coverage"
     ],
-    "unsupported_value_token": "METRIC_UNSUPPORTED",
-    "primary_split_for_simulator_metrics": "HISTORICAL_DEVELOPMENT_VALIDATE",
-    "descriptive_holdout_split": "HISTORICAL_RESEARCH_TEST"
+    "unsupported_value_token": "METRIC_UNSUPPORTED"
   },
-  "forbidden_actions": [
-    "Rerun or mutate imp-integrate-experiment-05-r2-opend-baseline-pack-v2 evidence",
-    "Retune baseline strategies or thresholds for v3",
-    "Use HISTORICAL_RESEARCH_TEST to choose cost or accounting parameters",
-    "Hash EXPERIMENT_HASH before Lane A accounting versions are known"
-  ],
-  "lane_b_prep_receipt": {
-    "dataset_fingerprint_verification_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/dataset_fingerprint_verification.json",
-    "pre_execution_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_frozen_experiment_definition.json"
-  }
+  "performance_run_authorized": true,
+  "purpose": "Bounded OpenD historical baselines with prediction-conditioned fills and declared fill economics (PnL + costs). Not optimization, promotion, or calibration."
 }

@@ -1,0 +1,20 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "accounting_version": "simulator-research-fill-economics/3.0.1",
+  "artifact_kind": "historical_baseline_pack_v3_freeze_receipt_v1",
+  "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "cost_model_version": "simulator-research/notional-linear-bps/1.0.0",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "dataset_fingerprint_verification_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/dataset_fingerprint_verification.json",
+  "execution_status": "DEFINITION_FROZEN_READY_FOR_EXECUTION",
+  "experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+  "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/frozen_experiment_definition.json",
+  "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+  "performance_run": "NO",
+  "pre_execution_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_frozen_experiment_definition.json",
+  "prior_immutable_experiment_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+  "promoted_timestamp_ns": 1789713003045899100,
+  "research_code_sha": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+  "simulator_version": "phase7.bar-conservative/1.1.0"
+}

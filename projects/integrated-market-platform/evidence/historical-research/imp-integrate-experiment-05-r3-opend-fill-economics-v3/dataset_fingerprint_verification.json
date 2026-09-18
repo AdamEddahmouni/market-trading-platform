@@ -4,7 +4,6 @@
   "expected_normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
   "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
   "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
-  "increment_id": "IMP-SIMULATOR-FILL-ECONOMICS-V3",
   "lane_b_receipt_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
   "manifest_dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
   "ok": true,
@@ -18,5 +17,5 @@
     "2026-09-16"
   ],
   "verification_method": "recompute_normalized_corpus_fingerprint(bars, lineage.historical_provenance)",
-  "verification_phase": "PRE_EXECUTION_LANE_B_PREP"
+  "verified_at_promotion": true
 }

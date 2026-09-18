@@ -87,7 +87,10 @@ class HistoricalBaselinePackV3PrepTests(unittest.TestCase):
         protocol = json.loads((V3_EVIDENCE_DIR / "experiment_protocol_v3.json").read_text(encoding="utf-8"))
         check_ids = {row["check_id"] for row in protocol["contamination_auditor_checks_required_before_execution"]}
         self.assertEqual(check_ids, set(_CONTAMINATION_CHECKS))
-        self.assertEqual(protocol["contamination_auditor_execution_status"], "NOT_RUN_PRE_EXECUTION")
+        self.assertIn(
+            protocol["contamination_auditor_execution_status"],
+            ("NOT_RUN_PRE_EXECUTION", "EXECUTED"),
+        )
         self.assertEqual(set(protocol["metrics_contract"]["required"]), set(_REQUIRED_METRICS))
 
     def test_v2_frozen_artifacts_remain_immutable(self) -> None:
