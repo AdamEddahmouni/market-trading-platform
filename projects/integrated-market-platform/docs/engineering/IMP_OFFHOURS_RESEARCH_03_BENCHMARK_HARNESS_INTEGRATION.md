@@ -8,14 +8,15 @@
 |---|---|
 | Intelligence Benchmark Protocol (IBP) | **MINIMAL_GREENFIELD_V1** — no pre-existing IBP branch in tree; adapter layer added under `intelligence/benchmark_protocol/` |
 | Full 30-case suite | **Catalog present** (`tests/fixtures/intelligence_benchmark/ibp_suite_catalog_v1.json`); **scores not executed** in this increment |
-| Smoke10 | **Invocation contract only** (`ibp-smoke10-invocation-v1`); wiring + contamination checks |
+| Smoke10 plan | **Invocation contract** (`ibp-smoke10-invocation-v1`); wiring + contamination checks |
+| Smoke10 baseline run | **One bounded execution** via `smoke10-run` (`intelligence_benchmark_smoke10_run_v1`); scores executed for 10 cases only |
 
 ## Integration
 
 Lane B run manifests (`historical_research_run_manifest_v1`) map to IBP run records via `adapt_historical_research_run_manifest_v1`:
 
 - Preserves `HISTORICAL_DEVELOPMENT` authority
-- Requires `SIMULATOR_RESEARCH_RESULT` (refuses `ITEM9_CALIBRATION_RESULT`)
+- Requires explicit `simulator.result_kind` of `SIMULATOR_RESEARCH_RESULT` (refuses absent/unknown kinds and `ITEM9_CALIBRATION_RESULT`)
 - Strips `labels_path` and evaluator-only keys from the system-under-test bundle
 - Sets `scores_executed: false` until a governed evaluator run is authorized
 
@@ -26,6 +27,7 @@ python tools/imp.py benchmark intelligence readiness --json
 python tools/imp.py benchmark intelligence suite-info --json
 python tools/imp.py benchmark intelligence adapt --manifest <path/to/run_manifest.json>
 python tools/imp.py benchmark intelligence smoke10-plan --manifest <path/to/run_manifest.json>
+python tools/imp.py benchmark intelligence smoke10-run --artifact-root <dir> [--manifest <path/to/run_manifest.json>] --json
 ```
 
 Historical harness (Lane B) remains:
@@ -43,6 +45,10 @@ python tools/imp.py historical-data harness --fixture-path tests/fixtures/histor
 ## `BENCHMARK_SMOKE10_READY`
 
 `YES` when: suite catalog validates (30 cases, 10 Smoke10 ids), Smoke10 contract builds, and historical manifest adapter passes on a fixture harness manifest. **Does not** require benchmark scores.
+
+## Smoke10 baseline evidence (Lane D)
+
+Pinned receipts (no rescoring): `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` (`smoke10_baseline_evidence_receipt.json`, `frozen_config.json`, `smoke10_run_record.json`, `contamination_audit.json`).
 
 ## Non-goals
 

@@ -1,0 +1,34 @@
+{
+  "artifact_kind": "imp_research_validation_04_lane_e_synthesis_receipt_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "branch": "research/baseline-findings",
+  "evidence_class": "HISTORICAL_DEVELOPMENT",
+  "frozen_collector_pin": {
+    "note": "untouched",
+    "path": ".imp-actual-01-phase-d",
+    "sha": "fed2d9f7"
+  },
+  "increment_id": "IMP-RESEARCH-VALIDATION-04",
+  "lane": "E",
+  "non_goals_observed": [
+    "no baseline experiment definition edits",
+    "no Smoke10 config edits",
+    "no retuning",
+    "no follow-up experiment implementation",
+    "no Item 9 collection",
+    "no PR 222",
+    "no merge of Lane C/D code"
+  ],
+  "outputs": {
+    "findings_registry": "evidence/historical-research/imp-research-validation-04-lane-e-findings/findings_registry_v1.json",
+    "hypothesis_queue": "evidence/historical-research/imp-research-validation-04-lane-e-findings/hypothesis_queue_v1.json",
+    "operator_doc": "docs/engineering/IMP_RESEARCH_VALIDATION_04_LANE_E.md"
+  },
+  "read_only_source_artifacts": {
+    "lane_c_pack_manifest": "artifacts/historical-research-harness/baseline-pack-v1/pack-runs/17158E3B946EC1A418D184D0A2B9F761/baseline_pack_run_manifest.json @ research/historical-baselines-v1 worktree",
+    "lane_d_smoke10_run": "artifacts/benchmarks/smoke10_baseline_v1/smoke10_run_record.json @ benchmarks/smoke10-baseline worktree",
+    "lane_b_opend_verification": "evidence/market_data/lane_b/real-historical-provider-verification.json @ data/real-historical-verification worktree"
+  },
+  "synthesis_base_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+  "synthesis_timestamp_utc": "2026-09-18T03:35:00Z"
+}

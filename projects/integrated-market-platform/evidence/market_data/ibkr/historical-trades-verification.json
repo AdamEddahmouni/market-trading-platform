@@ -1,0 +1,1 @@
+{"not_prospective_evidence":true,"reason":"IMP_IBKR_LIVE_NOT_ENABLED","receipt_sha256":"034C3F5D4F8160C0D526895D775039786919C4A0C02BE3094ED05D0DCBE4398C","recorded_at_utc":"2026-09-18T03:15:00.644301+00:00","status":"PROVIDER_UNVERIFIED","transport":"rest","verification_kind":"IBKR_HISTORICAL_TRADES_BOUNDED"}

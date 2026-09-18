@@ -333,4 +333,96 @@ def build_historical_rth_dataset(
     )
 
 
-__all__ = ["HistoricalDevelopmentBuildResult", "build_historical_rth_dataset"]
+def load_historical_development_build_from_evidence_corpus(
+    *,
+    repository_root: Path,
+    corpus_dir: Path,
+) -> HistoricalDevelopmentBuildResult:
+    """Load a pinned corpus from git-tracked evidence (manifest + normalized bars)."""
+
+    manifest_path = corpus_dir / "dataset_manifest.json"
+    quality_path = corpus_dir / "quality_report.json"
+    if not manifest_path.is_file():
+        return HistoricalDevelopmentBuildResult(
+            ok=False,
+            run_id="",
+            paths=run_artifact_paths(repository_root, run_id="missing"),
+            manifest={},
+            quality={},
+            provider_status=ProviderFetchStatus(
+                verified=False,
+                reason_code="CORPUS_MANIFEST_MISSING",
+                provider_id="unknown",
+            ),
+            normalized_fingerprint="",
+            reason_code="CORPUS_MANIFEST_MISSING",
+        )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    quality = (
+        json.loads(quality_path.read_text(encoding="utf-8"))
+        if quality_path.is_file()
+        else {}
+    )
+    run_id = str(manifest.get("dataset_id") or "evidence-corpus")
+    normalized_dir = corpus_dir / "normalized"
+    paths = RunArtifactPaths(
+        run_root=corpus_dir,
+        raw_dir=corpus_dir / "raw",
+        normalized_dir=normalized_dir,
+        manifests_dir=corpus_dir,
+        quality_dir=corpus_dir,
+    )
+    fingerprint = str(manifest.get("dataset_fingerprint") or "")
+    gate = validate_historical_development_dataset_manifest(manifest)
+    if not gate.get("ok"):
+        return HistoricalDevelopmentBuildResult(
+            ok=False,
+            run_id=run_id,
+            paths=paths,
+            manifest=manifest,
+            quality=quality,
+            provider_status=ProviderFetchStatus(
+                verified=False,
+                reason_code=str(gate.get("reason_code")),
+                provider_id="fixture.historical",
+            ),
+            normalized_fingerprint=fingerprint,
+            reason_code=str(gate.get("reason_code") or "CORPUS_MANIFEST_INVALID"),
+        )
+    normalized_files = sorted(normalized_dir.glob("*_normalized.json"))
+    if not normalized_files:
+        return HistoricalDevelopmentBuildResult(
+            ok=False,
+            run_id=run_id,
+            paths=paths,
+            manifest=manifest,
+            quality=quality,
+            provider_status=ProviderFetchStatus(
+                verified=False,
+                reason_code="CORPUS_NORMALIZED_MISSING",
+                provider_id="fixture.historical",
+            ),
+            normalized_fingerprint=fingerprint,
+            reason_code="CORPUS_NORMALIZED_MISSING",
+        )
+    return HistoricalDevelopmentBuildResult(
+        ok=True,
+        run_id=run_id,
+        paths=paths,
+        manifest=manifest,
+        quality=quality,
+        provider_status=ProviderFetchStatus(
+            verified=True,
+            reason_code=None,
+            provider_id="fixture.historical",
+        ),
+        normalized_fingerprint=fingerprint,
+        reason_code=None,
+    )
+
+
+__all__ = [
+    "HistoricalDevelopmentBuildResult",
+    "build_historical_rth_dataset",
+    "load_historical_development_build_from_evidence_corpus",
+]

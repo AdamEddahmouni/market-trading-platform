@@ -1,0 +1,115 @@
+{
+  "actual_sessions": 3,
+  "artifact_kind": "historical_development_quality_report_v1",
+  "bars_outside_session_count": 0,
+  "corporate_action_status": "PROVIDER_QFQ_NOT_RECONCILED",
+  "duplicate_row_count": 0,
+  "duplicate_rows": 0,
+  "early_close_dates_declared": [],
+  "excluded_row_count": 0,
+  "exclusions": {
+    "invalid_ohlc_rows": 0,
+    "malformed_timestamp_rows": 0,
+    "outside_session_rows": 0
+  },
+  "expected_rows": 1170,
+  "expected_rth_minutes_per_full_session": 390,
+  "forward_fill_applied": false,
+  "holiday_count": 0,
+  "holiday_dates_declared": [],
+  "incomplete_final_bar_count": 3,
+  "incomplete_rows": 3,
+  "invalid_ohlc_rows": 0,
+  "malformed_rows": 0,
+  "malformed_timestamp_count": 0,
+  "missing_intervals": [
+    {
+      "expected_minute_count": 390,
+      "missing_minute_count": 360,
+      "sample_missing_time_keys": [
+        "2026-09-11 10:00:00",
+        "2026-09-11 10:01:00",
+        "2026-09-11 10:02:00",
+        "2026-09-11 10:03:00",
+        "2026-09-11 10:04:00"
+      ],
+      "session_date": "2026-09-11",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "missing_minute_count": 390,
+      "sample_missing_time_keys": [
+        "2026-09-14 09:30:00",
+        "2026-09-14 09:31:00",
+        "2026-09-14 09:32:00",
+        "2026-09-14 09:33:00",
+        "2026-09-14 09:34:00"
+      ],
+      "session_date": "2026-09-14",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "missing_minute_count": 360,
+      "sample_missing_time_keys": [
+        "2026-09-15 10:00:00",
+        "2026-09-15 10:01:00",
+        "2026-09-15 10:02:00",
+        "2026-09-15 10:03:00",
+        "2026-09-15 10:04:00"
+      ],
+      "session_date": "2026-09-15",
+      "session_kind": "REGULAR"
+    }
+  ],
+  "missing_rows": 1110,
+  "observed_rows": 60,
+  "ohlc_validity_violation_count": 0,
+  "ordering_violation_count": 0,
+  "out_of_order_rows": 0,
+  "outside_session_rows": 0,
+  "provider_gap_intervals": 0,
+  "provider_gap_pages": 0,
+  "quality_fingerprint": "14D2199184928F6E4EE587DBD40F164570A5048880796063EEAD5CE34777661C",
+  "quality_status": "WARN",
+  "raw_row_count": 60,
+  "raw_time_key_ordering_violations": 0,
+  "requested_sessions": 3,
+  "row_count": 60,
+  "session_date_count": 3,
+  "session_dates": [
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-15"
+  ],
+  "session_summaries": [
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 30,
+      "session_date": "2026-09-11",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 0,
+      "session_date": "2026-09-14",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 30,
+      "session_date": "2026-09-15",
+      "session_kind": "REGULAR"
+    }
+  ],
+  "short_session_count": 0,
+  "transformations": [
+    "provider_fetch",
+    "rth_filter",
+    "dedupe",
+    "normalize_moomoo_kline_row"
+  ],
+  "volume_anomalies": 0,
+  "volume_anomaly_count": 0
+}
