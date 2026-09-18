@@ -1,0 +1,137 @@
+{
+  "artifact_kind": "imp_ibp_factual_gold_v1_lane_m5_findings_registry_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "benchmark_gold_authority": "EVALUATOR_ONLY",
+  "evidence_language": "historical_observation_and_candidate_hypothesis_not_production_ready",
+  "increment_id": "IMP-IBP-FACTUAL-GOLD-V1",
+  "lane": "M5",
+  "registry_version": "1.0.0",
+  "source_runs": {
+    "ibp_factual_smoke_v1_baseline": {
+      "branch": "research/ibp-factual-smoke-v1-run",
+      "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
+      "caseset_version": "IBP_FACTUAL_SMOKE_V1",
+      "contamination_audit_overall": "PASS",
+      "evidence_receipt": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/factual_smoke_baseline_evidence_receipt.json",
+      "freeze_commit": "c50a99e5",
+      "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
+      "merge_pr": 280,
+      "merge_sha": "3aa87e51",
+      "pre_run_gates_overall": "PASS",
+      "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+      "run_commit": "2c02e2d7",
+      "run_id": "ibp-factual-smoke-28EA7748057E312D",
+      "scores_executed": true,
+      "scored_case_count": 11,
+      "software_landing_sha": "3aa87e511a68b2ef962f86d8924cd9b174c8c421",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_code_sha_at_freeze": "936e233528cbce68d4047a6200fc579287e78033"
+    },
+    "legacy_lane_d_stub_smoke10": {
+      "branch": "benchmarks/smoke10-baseline",
+      "note": "Structural comparison only; not rewritten",
+      "run_id": "ibp-smoke10-76DDD188CD080365",
+      "synthetic_gold": true
+    }
+  },
+  "invariants": {
+    "BENCHMARK_GOLD_AUTHORITY": "EVALUATOR_ONLY",
+    "FTEP_EMPIRICAL_ACTIVE": "NO",
+    "ITEM7_FORECAST_READY": "NO",
+    "ITEM9_CALIBRATED": "NO",
+    "ITEM9_FROZEN_COLLECTOR_SHA": "fed2d9f7e183aecfcac61a7664df69aafc12ea25",
+    "LIVE_OFF": true,
+    "PR222_ISOLATED": true,
+    "V3_AUTHORITY": "HISTORICAL_DEVELOPMENT"
+  },
+  "findings": [
+    {
+      "FINDING_ID": "LANE-M5-FND-001",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:run_id=ibp-factual-smoke-28EA7748057E312D",
+      "OBSERVATION": "Exactly one IBP_FACTUAL_SMOKE_V1 baseline executed with SCORES_EXECUTED=YES, FULL30_EXECUTED=NO, CASE_COUNT=11, and pre-run gates overall PASS (GOLD_SOURCE_INDEPENDENT, GOLD_EVIDENCE_ADMITTED, SUT_CANNOT_ACCESS_GOLD, contamination DID_SYSTEM_SEE_GOLD=PASS).",
+      "LIMITATION": "Methodology and contamination observation only; not an intelligence pass claim.",
+      "POSSIBLE_CAUSE": "Lane M5 freeze-then-run discipline satisfied admitted factual gold protocol.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-002",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:run_id=ibp-factual-smoke-28EA7748057E312D",
+      "OBSERVATION": "Facts dimension FAIL 11/11 on scored subset under imp_historical_routing_grounded_facts_v1 against admitted evaluator-only gold.",
+      "LIMITATION": "Preserves failures as historical evidence; does not justify patching SUT from gold.",
+      "POSSIBLE_CAUSE": "Grounded facts capability gap versus evaluator EXPECTED_FACTS on admitted evidence (intelligence), not routing or gold methodology failure.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1",
+      "REQUIRED_DATA": "New experiment design only; distinct run_id; no gold retrofit.",
+      "PROPOSED_TEST": "Follow-up capability experiment after hypothesis pre-registration; forbid gold-matching current SUT outputs.",
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-003",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:summaries.by_fact_verdict",
+      "OBSERVATION": "Fact verdict FACT_MISMATCH count=5 across the 11-case scored subset.",
+      "LIMITATION": "Per-case structured fact comparison under evaluator contract; not a tradable-edge claim.",
+      "POSSIBLE_CAUSE": "SUT structured fact emission or normalization does not align with admitted gold facts where evidence is answerable.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1",
+      "REQUIRED_DATA": "Diagnostic traces of SUT structured_facts vs EXPECTED_FACTS without exposing evaluator gold to SUT context.",
+      "PROPOSED_TEST": "Capability hypothesis experiment with frozen IBP_FACTUAL_SMOKE_V1 corpus; primary metric FACT_MISMATCH rate reduction without gold leakage.",
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-004",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:summaries.by_fact_verdict",
+      "OBSERVATION": "Fact verdict UNNECESSARY_UNKNOWN count=7; unknown_handling dimension FAIL 7 / PASS 4.",
+      "LIMITATION": "Unknown policy encoded in evaluator contract; abstention where evidence supports answer is scored FAIL.",
+      "POSSIBLE_CAUSE": "Capability gap distinguishing CORRECT_UNKNOWN from answerable admitted evidence (not a routing PASS).",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1",
+      "REQUIRED_DATA": "Case-level unknown policy labels and SUT abstention traces on same frozen caseset.",
+      "PROPOSED_TEST": "Follow-up experiment targeting UNNECESSARY_UNKNOWN rate; must not relabel historical run_id scores.",
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-005",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:summaries.by_dimension",
+      "OBSERVATION": "Non-facts dimensions (catastrophic, final_state, freshness, operator_close, provenance, routing) PASS 11/11 each.",
+      "LIMITATION": "Dimensional harness pass does not imply factual intelligence adequacy.",
+      "POSSIBLE_CAUSE": "Protocol dimensions other than facts/unknown_handling satisfied under current SUT profile and admitted fixtures.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-006",
+      "SOURCE_RUN": "ibp_factual_smoke_v1:summaries.by_dimension.routing",
+      "OBSERVATION": "Routing dimension PASS 11/11.",
+      "LIMITATION": "Routing success must not be read as SUT factual quality or production readiness.",
+      "POSSIBLE_CAUSE": "Smart-router expectations met for admitted cases; orthogonal to facts FAIL 11/11.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-007",
+      "SOURCE_RUN": "governance:comparison_note_vs_legacy_smoke10",
+      "OBSERVATION": "Legacy ibp-smoke10-76DDD188CD080365 used synthetic evaluator gold and deterministic UNKNOWN stub SUT; IBP_FACTUAL_SMOKE_V1 uses admitted-evidence factual gold and imp_historical_routing_grounded_facts_v1. Comparison is structural only, not an apples-to-apples intelligence delta.",
+      "LIMITATION": "Old synthetic gold vs new methodology; no score translation between run_ids.",
+      "POSSIBLE_CAUSE": "Distinct protocol generations with different gold authority and SUT profiles.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-M5-FND-008",
+      "SOURCE_RUN": "lane_e:governance LANE-E-FND-023; ibp_factual_smoke_v1 baseline",
+      "OBSERVATION": "SMOKE10_JUSTIFIED=YES for protocol IBP_FACTUAL_SMOKE_V1 after exactly one executed baseline (facts failed; methodology and contamination valid). Legacy stub Smoke10 catalog SMOKE10_JUSTIFIED remains NO for synthetic-gold-NNN facts scoring.",
+      "LIMITATION": "Justification is protocol-specific; does not authorize Full30 or legacy non-stub Smoke10 without separate gates.",
+      "POSSIBLE_CAUSE": "Admitted factual gold corpus and freeze-then-run gates satisfied preconditions that synthetic Smoke10 catalog lacked.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1",
+      "REQUIRED_DATA": "Operator authorization for distinct legacy-catalog run_id only after factual protocol intelligence gaps are addressed or explicitly scoped.",
+      "PROPOSED_TEST": "Defer legacy IBP-CASE-001..010 non-stub Smoke10 until intelligence follow-ups; IBP_FACTUAL_SMOKE_V1 baseline remains immutable.",
+      "AUTHORITY": "BENCHMARK"
+    }
+  ]
+}
