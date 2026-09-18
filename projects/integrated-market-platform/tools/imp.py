@@ -856,6 +856,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     finviz_preflight.add_argument("--json", action="store_true")
 
+    item9 = groups.add_parser("item9", help="Item 9 BAR_OHLCV prospective operator helpers")
+    item9_actions = item9.add_subparsers(dest="action", required=True)
+    item9_preflight = item9_actions.add_parser(
+        "next-rth-preflight",
+        help="read-only next-RTH prospective collection preflight (no --poll)",
+    )
+    item9_preflight.add_argument("--instrument-id", default="AAPL")
+    item9_preflight.add_argument("--receipt-dir", type=Path, default=None)
+    item9_preflight.add_argument("--json", action="store_true")
+    item9_preflight.add_argument("--now-ns", type=int, default=None)
+
     historical = groups.add_parser(
         "historical-data",
         help="historical RTH development corpus builder (HISTORICAL_DEVELOPMENT)",
@@ -913,6 +924,31 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
     result = _run(
         root,
         label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _item9_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action != "next-rth-preflight":
+        print(f"unknown item9 action: {args.action}", file=sys.stderr)
+        return 2
+    command = [python, str(root / "tools" / "item9_next_rth_preflight.py")]
+    if args.instrument_id:
+        command.extend(["--instrument-id", str(args.instrument_id)])
+    if args.receipt_dir is not None:
+        command.extend(["--receipt-dir", str(args.receipt_dir)])
+    if args.json:
+        command.append("--json")
+    if args.now_ns is not None:
+        command.extend(["--now-ns", str(args.now_ns)])
+    result = _run(
+        root,
+        label="item9 next-rth-preflight",
         command=command,
         env=env,
         stream_output=True,
@@ -1224,6 +1260,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "ftep":
         return _ftep_command(root, args)
+
+    if args.group == "item9":
+        return _item9_command(root, args)
 
     if args.group == "historical-data":
         return _historical_data_command(root, args)

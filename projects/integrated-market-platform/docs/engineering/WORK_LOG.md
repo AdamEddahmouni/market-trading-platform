@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 next-RTH preflight (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `docs` |
+| **Summary** | Added read-only Item 9 `next-rth-preflight` (library + CLI + `imp.py item9`) for next-RTH prospective collection readiness: RTH calendar, OpenD reachability, frozen collector authority `fed2d9f7…`, receipt path gate, duplicate `--poll` detection, governed invocation hints, and post-run `corpus-status` command. Does not run prospective collection or fit calibration. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/item9_next_rth_preflight.py`, `tools/item9_next_rth_preflight.py`, `tools/item9.py`, `tools/imp.py`, `tests/platform/test_item9_next_rth_preflight.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python tools/imp.py test focused test_item9_next_rth_preflight`; `validate changed` (PR) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane E; frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` |
+| **Notes** | Collector semantics unchanged — preflight is observability only. |
+
 ## 2026-09-17 — PROGRAM_STATUS after IMP-DUAL-CORPUS-01 #246 merge
 
 | Field | Value |

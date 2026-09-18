@@ -9,7 +9,25 @@ From `projects/integrated-market-platform/` with `PYTHONPATH=src`:
 ```powershell
 python tools/moomoo/opend_bar_1m_prospective_proof.py readiness
 python tools/moomoo/opend_bar_1m_prospective_proof.py display --instrument-id AAPL
+python tools/imp.py item9 next-rth-preflight --json
 ```
+
+### Next-RTH preflight (read-only)
+
+`next-rth-preflight` validates calendar (`America/New_York` / `US_EQUITY_RTH`), loopback
+OpenD reachability, governed receipt directory writability, frozen collector authority
+(`fed2d9f7…` worktree under repo `.imp-actual-01-phase-d/`), and duplicate prospective
+`--poll` processes. It **never** runs Mode B `--poll` and **never** writes a receipt.
+Off-hours disposition `NOT_RTH` is software success (exit 0). During RTH with all gates
+passing, disposition is `READY_TO_COLLECT` — operator still starts collection manually.
+
+After a successful prospective receipt:
+
+```powershell
+python tools/item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts
+```
+
+No automatic calibration fitting.
 
 `display` may call loopback OpenD for recent completed 1m bars. Off-hours that
 fetch is **diagnostic / transport visibility only** — not prospective evidence
