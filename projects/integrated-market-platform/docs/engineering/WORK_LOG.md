@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — OpenD v3 Lane F status reconcile (IMP-IBP-FACTUAL-GOLD-V1 Phase 1D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Reconciled stale `docs/opend-v3-status` narrative against landed `origin/main` @ `e0ab919f` ([#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) findings, [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) v3 evidence, [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) SUT, [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) accounting). Pins `ACCOUNTING_ON_MAIN` / `V3_EVIDENCE_ON_MAIN` / `V3_FINDINGS_ON_MAIN` / `SUT_WIRING_ON_MAIN` = **YES**; `SMOKE10_EXECUTED=NO`; `V3_AUTHORITY=HISTORICAL_DEVELOPMENT`. **No** v3 rerun, Smoke10, collector mutation, or #222 merge. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_E_V3.md` |
+| **Tests** | `python -m unittest tests.platform.test_imp_integrate_experiment_05_lane_e_v3_findings`; `python tools/imp.py env`; `format` / `lint` / `validate changed` |
+| **Related** | Branch `docs/opend-v3-status-reconcile`; worktree `.worktrees/v3-status-docs`; superseded draft `docs/opend-v3-status` @ `97a8ec41` |
+| **Notes** | `IMP05_V3_SOFTWARE_LANDING_SHA=e0ab919f` — not the docs PR commit (avoid self-pin loop). Next: independent review, then Phase 2 M1 factual gold methodology contract. |
+
 ## 2026-09-18 — Lane E v3 findings registry (OpenD fill economics)
 
 | Field | Value |
