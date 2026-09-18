@@ -1,0 +1,212 @@
+{
+  "artifact_kind": "imp_research_validation_04_lane_e_hypothesis_queue_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-RESEARCH-VALIDATION-04",
+  "lane": "E",
+  "queue_version": "1.0.0",
+  "ranking_policy": "priority_rank_ascending; lower rank = higher priority for follow-up experiment design (not implemented in Lane E)",
+  "implementation_status": "PROPOSED_ONLY_NOT_IMPLEMENTED",
+  "compatible_with": "market_platform_foundation.intelligence.research_experiments.ResearchHypothesisV1",
+  "hypotheses": [
+    {
+      "queue_rank": 1,
+      "hypothesis_queue_id": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "source_finding_ids": [
+        "LANE-E-FND-001",
+        "LANE-E-FND-006"
+      ],
+      "claim": "Replaying frozen baseline-pack strategy definitions on Lane B verified OpenD AAPL five-session corpus (fingerprint 355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B) yields directional_accuracy and PnL metrics that are not pathologically pinned at 0.0/1.0 across opposite-signed baselines.",
+      "required_features": "historical-research-bar-features/1.0.0 as used in baseline pack v1",
+      "required_dataset": {
+        "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+        "instrument": "AAPL",
+        "provider_id": "moomoo.real_historical",
+        "session_count": 5
+      },
+      "train_dev_test_policy": "historical_chronological_split_v1; HISTORICAL_RESEARCH_TEST locked; no training on test; NEW experiment_id distinct from imp-research-validation-04-lane-c-baseline-pack-v1",
+      "metrics": {
+        "primary": "directional_accuracy",
+        "secondary": [
+          "net_pnl",
+          "simulated_fills",
+          "abstention_rate"
+        ],
+        "guardrails": [
+          "contamination_audit_PASS"
+        ]
+      },
+      "failure_conditions": [
+        "Opposite-signed momentum/mean-reversion baselines still show accuracies pinned at 1.0 and 0.0 on validate with n>=30",
+        "CONTAMINATION_STATUS=FAIL"
+      ],
+      "leakage_risks": [
+        "Reusing Lane C experiment_definition_hash would blend fixture development knowledge with OpenD evaluation footprint"
+      ],
+      "evidence_needed_for_promotion": [
+        "Independent BUILD 19 validation on locked holdout",
+        "Non-pathological metric dispersion documented in EvaluationReportV1",
+        "No upgrade to paper/live authority"
+      ],
+      "proposed_test": "NEW ExperimentManifestV1 only; do not mutate C2E70673… frozen definition"
+    },
+    {
+      "queue_rank": 2,
+      "hypothesis_queue_id": "LANE-E-HYP-BASELINE3-VOLUME-THRESHOLD",
+      "source_finding_ids": [
+        "LANE-E-FND-004"
+      ],
+      "claim": "Volume-momentum baseline abstention and accuracy on real multi-session OpenD corpus are sensitive to volume threshold parameter; fixture-perfect accuracy does not persist under threshold ablation.",
+      "required_features": "baseline_3_volume_momentum_5m_v1 feature dependencies",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+        "minimum_sessions": 5
+      },
+      "train_dev_test_policy": "Threshold search limited to HISTORICAL_TRAIN/HISTORICAL_DEVELOPMENT_VALIDATE; HISTORICAL_RESEARCH_TEST untouched until pre-registered manifest",
+      "metrics": {
+        "primary": "abstention_rate",
+        "secondary": [
+          "directional_accuracy",
+          "sample_count"
+        ],
+        "guardrails": [
+          "max_threshold_grid_size<=8"
+        ]
+      },
+      "failure_conditions": [
+        "Accuracy remains 1.0 for all thresholds on validate",
+        "Test split used during threshold selection"
+      ],
+      "leakage_risks": [
+        "Threshold tuning on HISTORICAL_RESEARCH_TEST",
+        "Using fixture EFCC71DF… for threshold selection then reporting on OpenD"
+      ],
+      "evidence_needed_for_promotion": [
+        "Pre-registered search space in ExperimentManifestV1",
+        "Locked holdout evaluation with purge/embargo flags true"
+      ],
+      "proposed_test": "NEW experiment; forbidden: editing Lane C baseline_3 frozen parameters in place"
+    },
+    {
+      "queue_rank": 3,
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-PREDICTION-COUPLED-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-002"
+      ],
+      "claim": "A prediction-conditioned research simulator produces fill counts and PnL that differ across baseline strategies on the same corpus, unlike bar-path-only replay.",
+      "required_features": "predictions.json streams per baseline run",
+      "required_dataset": {
+        "dataset_fingerprint_fixture_baseline": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+        "dataset_fingerprint_real_followup": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B"
+      },
+      "train_dev_test_policy": "Compare simulator modes on identical split assignments per run_manifest",
+      "metrics": {
+        "primary": "simulated_fills",
+        "secondary": [
+          "net_pnl",
+          "turnover"
+        ]
+      },
+      "failure_conditions": [
+        "Fill counts remain identical across baselines 0–3 under prediction-conditioned mode"
+      ],
+      "leakage_risks": [
+        "Using future bar paths to gate past predictions"
+      ],
+      "evidence_needed_for_promotion": [
+        "Simulator version bump with documented event gating",
+        "Contamination audit PASS for feature/simulator alignment"
+      ],
+      "proposed_test": "Harness experiment toggling simulator coupling flag; not implemented in Lane E"
+    },
+    {
+      "queue_rank": 4,
+      "hypothesis_queue_id": "LANE-E-HYP-BASELINE0-SIM-ALIGNMENT-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-003"
+      ],
+      "claim": "No-trade baseline reports zero simulator fills when abstention_rate=1.0 and sample_count=0 on validate split.",
+      "required_features": "baseline_0_no_trade_v1 predictor outputs",
+      "required_dataset": {
+        "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794"
+      },
+      "train_dev_test_policy": "Regression harness check on fixture before OpenD generalization",
+      "metrics": {
+        "primary": "simulated_fills",
+        "secondary": [
+          "abstention_rate"
+        ]
+      },
+      "failure_conditions": [
+        "simulated_fills>0 when strategy_id=baseline_0_no_trade_v1 and abstention_rate=1.0"
+      ],
+      "leakage_risks": [
+        "Low risk; metric alignment only"
+      ],
+      "evidence_needed_for_promotion": [
+        "Documented harness invariant test passing on CI"
+      ],
+      "proposed_test": "Unit/integration harness assertion experiment"
+    },
+    {
+      "queue_rank": 5,
+      "hypothesis_queue_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-008",
+        "LANE-E-FND-009"
+      ],
+      "claim": "A non-stub intelligence benchmark SUT can achieve facts dimension PASS on Smoke10 synthetic cases without gold contamination.",
+      "required_features": "IBP case fixtures synthetic_intelligence_fixture_v1",
+      "required_dataset": "benchmark evaluator_only gold under tests/fixtures/intelligence_benchmark",
+      "train_dev_test_policy": "Benchmark observation only; no training on gold",
+      "metrics": {
+        "primary": "facts_PASS_rate",
+        "secondary": [
+          "unknown_handling_PASS_rate",
+          "contamination_audit_overall"
+        ]
+      },
+      "failure_conditions": [
+        "FACTS_MISMATCH on all cases",
+        "DID_SYSTEM_SEE_GOLD=FAIL"
+      ],
+      "leakage_risks": [
+        "Gold loaded into SUT context",
+        "Case context leak across blind modes"
+      ],
+      "evidence_needed_for_promotion": [
+        "Smoke10 PASS on facts with scores_executed true",
+        "Explicit statement that benchmark ≠ production readiness"
+      ],
+      "proposed_test": "Rerun ibp-smoke10 contract with alternate sut_profile_id"
+    },
+    {
+      "queue_rank": 6,
+      "hypothesis_queue_id": "LANE-E-HYP-IBP-FULL30-BENCHMARK-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-007"
+      ],
+      "claim": "FULL30 ibp-v1-30 suite execution completes with contamination PASS and dimension summaries stable relative to Smoke10 stub baseline.",
+      "required_features": "full suite catalog fingerprint 3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "required_dataset": "IBP-CASE-001..030 per suite catalog",
+      "train_dev_test_policy": "Benchmark only",
+      "metrics": {
+        "primary": "cases_executed",
+        "secondary": [
+          "by_dimension_PASS_counts"
+        ]
+      },
+      "failure_conditions": [
+        "full30_executed=false after governed run",
+        "contamination FAIL"
+      ],
+      "leakage_risks": [
+        "Partial suite execution mislabeled as FULL30"
+      ],
+      "evidence_needed_for_promotion": [
+        "run record with full30_executed=true and run_id distinct from ibp-smoke10-76DDD188CD080365"
+      ],
+      "proposed_test": "Lane D follow-up execution outside Lane E scope"
+    }
+  ]
+}
