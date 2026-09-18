@@ -50,6 +50,10 @@ python tools/imp.py historical-data harness --fixture-path tests/fixtures/histor
 
 Pinned receipts (no rescoring): `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` (`smoke10_baseline_evidence_receipt.json`, `frozen_config.json`, `smoke10_run_record.json`, `contamination_audit.json`).
 
+## Admitted factual gold (Lane M1)
+
+Contract-only increment: [IBP_ADMITTED_FACTUAL_GOLD_V1.md](IBP_ADMITTED_FACTUAL_GOLD_V1.md) (`imp.ibp-admitted-factual-gold/1.0.0`, protocol `IBP_FACTUAL_SMOKE_V1`). No cases, no Smoke10.
+
 ## Non-goals
 
 No Item 9 calibration, no 30-case score chase, no gold mutation, no PROGRAM_STATUS SHA fabrication.
