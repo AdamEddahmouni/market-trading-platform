@@ -1,0 +1,14 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "artifact_kind": "historical_baseline_pack_v2_freeze_receipt_v1",
+  "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "dataset_fingerprint_verification_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/dataset_fingerprint_verification.json",
+  "execution_status": "NOT_EXECUTED",
+  "experiment_definition_hash": "109F3499BD70CB006707BAA2242EDCD5A4614714C61481BF2540B56655677F74",
+  "experiment_id": "imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/frozen_experiment_definition.json",
+  "hypothesis_id": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+  "performance_run": "NO",
+  "research_code_sha": "7d67d48edc5760e218f946ee7fd836d6b5c431a2"
+}
