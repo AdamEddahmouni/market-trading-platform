@@ -88,21 +88,24 @@ def audit_allocation_ledger(
     }
 
 
-def run_risk_simulation_evaluation(
+def run_risk_simulation_from_signal_interpretations(
     events: list[dict[str, Any]],
+    interpretations: list[dict[str, Any]],
     *,
     policy: dict[str, Any] | None = None,
     kill_switch: KillSwitchState | None = None,
     desired_quantity: int | None = None,
     enable_squeeze_replay: bool = True,
+    strategy_result: dict[str, object] | None = None,
 ) -> dict[str, object]:
+    """Execute risk + bar simulator only for supplied strategy signal interpretations."""
+
     from ..donor_bridge.squeeze_simulation_context import resolve_squeeze_context_at_cutoff
 
     active_policy = policy or DEFAULT_RISK_POLICY
     switch = kill_switch or KillSwitchState()
     qty_default = desired_quantity or 1
 
-    strategy_result = run_strategy_evaluation(events)
     bars = _bars_from_events(events)
     simulator = BarConservativeSimulator(policy=active_policy)
 
@@ -117,7 +120,6 @@ def run_risk_simulation_evaluation(
     open_orders = 0
     squeeze_timeline: list[dict[str, Any]] = []
 
-    interpretations = strategy_result.get("interpretations", [])
     for interpretation in interpretations:
         if not isinstance(interpretation, dict):
             continue
@@ -215,6 +217,29 @@ def run_risk_simulation_evaluation(
         "squeeze_timeline": squeeze_timeline,
         "strategy_result": strategy_result,
     }
+
+
+def run_risk_simulation_evaluation(
+    events: list[dict[str, Any]],
+    *,
+    policy: dict[str, Any] | None = None,
+    kill_switch: KillSwitchState | None = None,
+    desired_quantity: int | None = None,
+    enable_squeeze_replay: bool = True,
+) -> dict[str, object]:
+    strategy_result = run_strategy_evaluation(events)
+    interpretations = [
+        row for row in strategy_result.get("interpretations", []) if isinstance(row, dict)
+    ]
+    return run_risk_simulation_from_signal_interpretations(
+        events,
+        interpretations,
+        policy=policy,
+        kill_switch=kill_switch,
+        desired_quantity=desired_quantity,
+        enable_squeeze_replay=enable_squeeze_replay,
+        strategy_result=strategy_result,
+    )
 
 
 def risk_simulation_root_hash(result: dict[str, object]) -> str:

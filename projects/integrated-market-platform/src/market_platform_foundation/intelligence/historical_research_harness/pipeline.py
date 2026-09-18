@@ -197,16 +197,17 @@ def run_historical_research_harness(
         HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE,
     )
     dev_validate_events = filter_events_to_decision_times(events, dev_validate_times)
-    simulator_result = run_historical_development_simulator_research(
-        dev_validate_events,
-        simulator_version=config.simulator_version,
-        cost_slippage_bps=config.cost_slippage_bps,
-    )
     dev_validate_predictions = [
         row
         for row in predictions
         if row["split"] == HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
     ]
+    simulator_result = run_historical_development_simulator_research(
+        dev_validate_events,
+        predictions=dev_validate_predictions,
+        simulator_version=config.simulator_version,
+        cost_slippage_bps=config.cost_slippage_bps,
+    )
     dev_validate_labels = [
         row
         for row in labels
