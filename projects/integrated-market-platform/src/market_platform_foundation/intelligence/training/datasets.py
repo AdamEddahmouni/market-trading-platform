@@ -35,6 +35,19 @@ def materialize_development_dataset(
     training_cutoff_ns: int | None = None,
     target: ForecastTarget | None = None,
 ) -> PreparedTrainingDataset:
+    from ...paper.calibration.dual_corpus.consumption import (
+        ProtectedCorpusConsumptionError,
+        assert_metadata_consumable_for_selection_or_training,
+    )
+
+    try:
+        assert_metadata_consumable_for_selection_or_training(
+            manifest.metadata,
+            purpose="materialize_development_dataset",
+        )
+    except ProtectedCorpusConsumptionError as exc:
+        raise TrainingFactoryError(str(exc)) from exc
+
     schema = feature_schema or DEFAULT_STATISTICAL_FEATURE_SCHEMA
     data_spec = manifest.data_spec
     cutoff = training_cutoff_ns if training_cutoff_ns is not None else data_spec.decision_end_ns
@@ -147,11 +160,14 @@ def materialize_development_dataset(
         instrument_id=data_spec.instrument_ids[0] if data_spec.instrument_ids else "unknown",
     )
 
+    corpus_authority = str((manifest.metadata or {}).get("corpus_evidence_authority") or "") or None
     baseline_dataset = build_training_dataset(
         raw_examples=raw_examples,
         feature_schema=schema,
         target=forecast_target,
         training_cutoff_ns=cutoff,
+        corpus_evidence_authority=corpus_authority,
+        corpus_guard_payload=dict(manifest.metadata or {}),
     )
 
     dataset_fp = derive_training_dataset_fingerprint(

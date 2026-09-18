@@ -57,6 +57,19 @@ class TrainingFactory:
         except UnadmittedCaptureError as exc:
             raise TrainingFactoryError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
 
+        from ...paper.calibration.dual_corpus.consumption import (
+            ProtectedCorpusConsumptionError,
+            assert_metadata_consumable_for_selection_or_training,
+        )
+
+        try:
+            assert_metadata_consumable_for_selection_or_training(
+                manifest.metadata,
+                purpose="training_factory_generate_candidates",
+            )
+        except ProtectedCorpusConsumptionError as exc:
+            raise TrainingFactoryError(str(exc)) from exc
+
         if is_frontier_historical_teacher_blocked(manifest):
             raise TrainingFactoryError(
                 "VALIDATION_BLOCKED_PENDING_BUILD19",

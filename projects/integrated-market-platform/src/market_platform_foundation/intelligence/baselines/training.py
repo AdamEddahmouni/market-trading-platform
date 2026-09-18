@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, Mapping
 
 from ..contracts.common import ForecastTarget
 from ..contracts.signal import SignalV1
@@ -32,6 +33,8 @@ class BaselineTrainingDataset:
     target: ForecastTarget
     training_cutoff_ns: int
     allow_degraded_training_examples: bool = False
+    corpus_evidence_authority: str | None = None
+    corpus_guard_payload: Mapping[str, Any] | None = None
 
     @property
     def fingerprint(self) -> str:
@@ -96,6 +99,24 @@ def build_training_example(
     )
 
 
+def enforce_baseline_dataset_consumption_policy(
+    dataset: BaselineTrainingDataset,
+    *,
+    purpose: str,
+) -> None:
+    if not dataset.corpus_evidence_authority and not dataset.corpus_guard_payload:
+        return
+    from ...paper.calibration.dual_corpus.consumption import (
+        assert_corpus_consumable_for_selection_or_training,
+    )
+
+    assert_corpus_consumable_for_selection_or_training(
+        corpus_evidence_authority=dataset.corpus_evidence_authority,
+        payload=dict(dataset.corpus_guard_payload or {}),
+        purpose=purpose,
+    )
+
+
 def build_training_dataset(
     *,
     raw_examples: list[BaselineTrainingExample],
@@ -103,6 +124,8 @@ def build_training_dataset(
     target: ForecastTarget,
     training_cutoff_ns: int,
     allow_degraded_training_examples: bool = False,
+    corpus_evidence_authority: str | None = None,
+    corpus_guard_payload: Mapping[str, Any] | None = None,
 ) -> BaselineTrainingDataset:
     if not raw_examples:
         raise BaselineTrainingError("TRAINING_DATASET_EMPTY")
@@ -133,13 +156,17 @@ def build_training_dataset(
 
     canonical.sort(key=lambda row: (row.decision_time_ns, row.snapshot_id))
 
-    return BaselineTrainingDataset(
+    dataset = BaselineTrainingDataset(
         examples=tuple(canonical),
         feature_schema=feature_schema,
         target=target,
         training_cutoff_ns=training_cutoff_ns,
         allow_degraded_training_examples=allow_degraded_training_examples,
+        corpus_evidence_authority=corpus_evidence_authority,
+        corpus_guard_payload=corpus_guard_payload,
     )
+    enforce_baseline_dataset_consumption_policy(dataset, purpose="build_training_dataset")
+    return dataset
 
 
 __all__ = [
@@ -147,4 +174,5 @@ __all__ = [
     "BaselineTrainingExample",
     "build_training_dataset",
     "build_training_example",
+    "enforce_baseline_dataset_consumption_policy",
 ]

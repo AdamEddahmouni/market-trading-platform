@@ -64,8 +64,21 @@ def train_production_calibration(
     calibration_cutoff_ns: int,
     mode: str,
     regime_key: str | None = None,
+    corpus_evidence_authority: str | None = None,
+    corpus_guard_payload: dict[str, object] | None = None,
 ) -> ProductionCalibrationResult:
     """Fit a Path A PRODUCTION calibrator. Persist is a separate lawful step."""
+
+    if corpus_evidence_authority or corpus_guard_payload:
+        from ...paper.calibration.dual_corpus.consumption import (
+            assert_payload_samples_consumable_for_selection_or_training,
+        )
+
+        assert_payload_samples_consumable_for_selection_or_training(
+            payload=corpus_guard_payload or {},
+            corpus_evidence_authority=corpus_evidence_authority,
+            purpose="train_production_calibration",
+        )
 
     mode_n = _normalize_mode(mode)
     if mode_n in FORBIDDEN_LIVE_MODES:
@@ -123,6 +136,8 @@ def train_production_calibration(
         dataset,
         method=method,
         available_time_ns=available_time_ns,
+        corpus_evidence_authority=corpus_evidence_authority,
+        corpus_guard_payload=corpus_guard_payload,
     )
     if artifact is None:
         return _unavailable("CALIBRATION_TRAINING_ABSTAINED")

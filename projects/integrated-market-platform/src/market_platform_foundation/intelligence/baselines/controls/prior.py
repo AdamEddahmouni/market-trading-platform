@@ -9,7 +9,7 @@ from ...contracts.common import ForecastTarget
 from ..errors import BaselineTrainingError
 from ..features import BaselineFeatureSchema
 from ..identity import derive_model_id, parameter_fingerprint_from_payload
-from ..training import BaselineTrainingDataset
+from ..training import BaselineTrainingDataset, enforce_baseline_dataset_consumption_policy
 from ..types import (
     BaselineClassLabel,
     BaselineFeatureVector,
@@ -49,6 +49,7 @@ class EmpiricalPriorBaseline:
         return self._descriptor is not None
 
     def fit(self, dataset: BaselineTrainingDataset) -> FitSummary:
+        enforce_baseline_dataset_consumption_policy(dataset, purpose="baseline_empirical_prior_fit")
         if not dataset.examples:
             raise BaselineTrainingError("TRAINING_DATASET_EMPTY")
         up_count = sum(1 for example in dataset.examples if example.label == BaselineClassLabel.UP)
@@ -132,6 +133,7 @@ class RegimeConditionedPriorBaseline:
         return self._descriptor
 
     def fit(self, dataset: BaselineTrainingDataset) -> FitSummary:
+        enforce_baseline_dataset_consumption_policy(dataset, purpose="baseline_regime_prior_fit")
         if not dataset.examples:
             raise BaselineTrainingError("TRAINING_DATASET_EMPTY")
         up_count = 0
