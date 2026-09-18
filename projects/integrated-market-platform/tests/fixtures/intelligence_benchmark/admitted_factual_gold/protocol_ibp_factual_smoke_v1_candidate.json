@@ -887,7 +887,7 @@
     }
   ],
   "freeze": {
-    "status": "UNFROZEN",
+    "status": "FROZEN",
     "cases_constructed": true,
     "smoke10_executed": false
   }

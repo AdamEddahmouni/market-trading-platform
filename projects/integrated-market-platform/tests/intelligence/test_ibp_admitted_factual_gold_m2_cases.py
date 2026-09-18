@@ -39,7 +39,7 @@ class IbpAdmittedFactualGoldM2CaseTests(unittest.TestCase):
     def test_candidate_protocol_freeze_state(self) -> None:
         freeze = self.protocol["freeze"]
         self.assertTrue(freeze["cases_constructed"])
-        self.assertEqual(freeze["status"], "UNFROZEN")
+        self.assertEqual(freeze["status"], "FROZEN")
         self.assertFalse(freeze["smoke10_executed"])
 
     def test_caseset_and_goldset_hashes_match(self) -> None:
