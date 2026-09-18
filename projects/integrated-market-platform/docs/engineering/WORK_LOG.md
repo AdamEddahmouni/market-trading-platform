@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Grounded fact extraction v1 (Lanes A+B+C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / IBP facts SUT |
+| **Summary** | Added generic admitted-evidence fact extraction (`question_class` handlers → structured facts → answer or UNKNOWN) and wired `run_ibp_facts_sut` factual protocol path; bumped facts SUT profile to `imp.ibp-facts-sut/1.1.0`. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/grounded_fact_extraction/*`, `facts_sut.py`, `sut_profiles.py`, `tests/intelligence/test_grounded_fact_extraction_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_extraction/*`, nonstub freeze fingerprint refresh |
+| **Tests** | `unittest tests.intelligence.test_grounded_fact_extraction_v1` + M4 evaluator (28 OK); `python tools/imp.py validate changed` PASSED (3656 tests) |
+| **Related** | `LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1`, `LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1`, `LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1` |
+| **Notes** | No smoke rerun; no evaluator gold read; worktree `intelligence/grounded-fact-extraction-v1` @ `origin/main` `2306ff4a` |
+
+
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 
 | Field | Value |

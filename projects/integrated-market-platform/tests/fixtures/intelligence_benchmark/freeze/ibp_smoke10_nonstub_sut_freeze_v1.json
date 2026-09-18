@@ -126,7 +126,7 @@
   "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
   "sut_definition": {
     "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
-    "SUT_VERSION": "imp.ibp-facts-sut/1.0.0",
+    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
     "CODE_SHA": "109fd650df4998d953450eda267e8edfdad6de81",
     "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
     "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
@@ -168,6 +168,6 @@
     "scores_after_sut_response_only"
   ],
   "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-  "frozen_config_fingerprint": "4720493F6448021E5AD4DE878E31B7EB63909BE75558992B275C9F6CCE9CF2D2",
+  "frozen_config_fingerprint": "D985016E6E0A118485414E9A5133563DDD55062A59774B863406C1F922FFC340",
   "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK"
 }

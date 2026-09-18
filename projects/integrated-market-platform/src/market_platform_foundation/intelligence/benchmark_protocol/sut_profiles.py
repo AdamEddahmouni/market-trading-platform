@@ -11,16 +11,15 @@ IBP_SYNTHETIC_SUT_PROFILE_ID = "synthetic_intelligence_fixture_v1_baseline_v1"
 IBP_SYNTHETIC_SUT_MODEL_ID = "ibp-deterministic-stub-v1"
 
 IBP_FACTS_SUT_NAME = "IMP SmartRouter + Grounded Facts Responder"
-IBP_FACTS_SUT_VERSION = "imp.ibp-facts-sut/1.0.0"
+IBP_FACTS_SUT_VERSION = "imp.ibp-facts-sut/1.1.0"
 IBP_FACTS_SUT_PROFILE_ID = "imp_historical_routing_grounded_facts_v1"
 IBP_FACTS_SUT_MODEL_ID = "grounded.evidence:deterministic.v1"
 
 IBP_FACTS_SUT_LIMITATION_CLASS = "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL"
 IBP_FACTS_SUT_LIMITATION_SUMMARY = (
-    "Uses in-repo SmartRouter (BUILD 09) and GroundedEvidenceInference with "
-    "historical-development replay projections (resolve_explain/resolve_inspect); "
-    "no Anthropic/network LLM and no evaluator gold. IBP evaluator fact strings may "
-    "still diverge from grounded citations; UNKNOWN when evidence or resolvers are absent."
+    "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction "
+    "(question_class handlers), and legacy GroundedEvidenceInference for non-factual "
+    "blind modes; no Anthropic/network LLM and no evaluator gold."
 )
 
 IBP_FACTS_MODEL_ROUTING = {
@@ -35,6 +34,7 @@ IBP_FACTS_TOOLS_AVAILABLE = (
     "historical_development_fixture_reader",
     "smart_router_route",
     "grounded_evidence_infer",
+    "grounded_fact_extraction_v1",
 )
 
 IBP_FACTS_CONTEXT_RULES = (
