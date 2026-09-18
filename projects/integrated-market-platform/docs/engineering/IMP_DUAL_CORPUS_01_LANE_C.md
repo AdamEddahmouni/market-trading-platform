@@ -65,7 +65,7 @@ Source prospective observations are never mutated; linkage is returned separatel
 
 - Lane B historical bar corpus population CLI and artifact directories
 - Item 9 calibration protocol merge / fitting / gate changes
-- Automated linker from Item 9 receipts → `path_a_label_evidence_ids` population
+- Automated linker from Item 9 receipts → `path_a_label_evidence_ids` population — delivered in Lane A (`path_a_label_linker.py`, IMP-EVIDENCE-HARDENING-02)
 - Live pagination strategy for >1000 ticks per window
 - JSON schema publication under manifests (optional follow-up)
 - Runtime composition wrapper method (callers can use query service directly)

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — Item 9 next-RTH preflight CI fixes (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `docs` |
+| **Summary** | PR #251 review fixes: moved OS process listing for duplicate `--poll` detection from governed `src/` into `tools/item9_next_rth_preflight.py`; classified new Item 9 CLIs in repository-closure audit. Preflight behavior unchanged (read-only, six dispositions). |
+| **Key files** | `item9_next_rth_preflight.py` (src + tools), `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `phase0/test_analysis`, `validation/test_repository_closure`, `test_item9_next_rth_preflight`; `validate changed` |
+| **Related** | PR #251; IMP-EVIDENCE-HARDENING-02 Lane E |
+| **Notes** | Collector / OpenD poll modules untouched. |
+
 ## 2026-09-17 — Item 9 next-RTH preflight (Lane E)
 
 | Field | Value |
@@ -47,6 +59,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test focused test_item9_next_rth_preflight`; `validate changed` (PR) |
 | **Related** | IMP-EVIDENCE-HARDENING-02 Lane E; frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | **Notes** | Collector semantics unchanged — preflight is observability only. |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane A Path A label linker
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, `paper/calibration` |
+| **Summary** | Added fail-closed Path A linkage from Item 9 prospective receipts to post-horizon TRADE label evidence IDs without mutating source observation hashes or embedding labels into feature payloads. `build_dataset_row` optionally populates `path_a_label_evidence_ids` when lawful label artifacts are supplied. |
+| **Key files** | `src/market_platform_foundation/intelligence/outcomes/path_a_label_linker.py` (created); `src/market_platform_foundation/paper/calibration/item9_calibration_protocol.py`; `tests/intelligence/test_path_a_label_linker.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Tests** | `unittest` `test_path_a_label_linker` + `test_item9_calibration_protocol` + `test_post_horizon_label_evidence` **44 passed**; `python tools/imp.py validate changed` **3901 passed**, 29 skipped, 0 fail |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane A; `IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Notes** | No #222 file overlap. Item 9 remains NOT_CALIBRATED; no fitting or gate changes. |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane D session calendar + quality schema
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development` |
+| **Summary** | Historical RTH builds now treat declared early-close dates as short tradable sessions (210 expected 1m bars, 13:00 ET close) instead of excluding them or assuming 390-minute grids. Quality reports expose machine-readable session/row counters, session-kind-aware missing intervals, and `quality_status` while preserving legacy v1 field names. |
+| **Key files** | `market_data/historical_development/rth_session.py`, `quality.py`, `builder.py`, `shadow/session.py`, `tests/platform/test_historical_session_quality.py`, `docs/engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md` |
+| **Tests** | `unittest` historical/session suites (24 OK); `python tools/imp.py validate changed` (1842 passed, 3 skipped) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane D; IMP-DUAL-CORPUS-01 Lane B |
+| **Notes** | Shadow-run preflight still excludes early-close dates from full-grid capture; historical development uses `rth_session` session-kind classification. |
 
 ## 2026-09-17 — PROGRAM_STATUS after IMP-DUAL-CORPUS-01 #246 merge
 

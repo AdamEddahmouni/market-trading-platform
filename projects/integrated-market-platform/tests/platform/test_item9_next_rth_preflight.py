@@ -44,7 +44,7 @@ class Item9NextRthPreflightTests(unittest.TestCase):
             "python tools/item9_next_rth_preflight.py next-rth-preflight --json",
             "python tools/moomoo/opend_bar_1m_prospective_proof.py prospective --poll",
         ]
-        active, matches = detect_active_item9_prospective_collector(command_lines=lines)
+        active, matches = detect_active_item9_prospective_collector(command_lines=tuple(lines))
         self.assertTrue(active)
         self.assertEqual(len(matches), 1)
 
@@ -80,11 +80,11 @@ class Item9NextRthPreflightTests(unittest.TestCase):
                         receipt_dir=receipt_dir,
                         now_ns=T_RTH_CLOSED_NS,
                     ),
-                    active_collector_probe=lambda: (False, []),
                 )
         self.assertEqual(report["disposition"], DISPOSITION_NOT_RTH)
         self.assertTrue(report["does_not_start_collector"])
         self.assertFalse(report["readiness"]["rth_active"])
+        self.assertEqual(report["active_collector"]["process_probe_status"], "NOT_RUN")
 
     def test_wrong_runtime_when_current_sha_not_frozen(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

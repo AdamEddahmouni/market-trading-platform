@@ -14,6 +14,7 @@ ET = ZoneInfo("America/New_York")
 
 _OPEN_MINUTES = 9 * 60 + 30
 _CLOSE_MINUTES = 16 * 60
+_EARLY_CLOSE_MINUTES = 13 * 60
 _NS = 1_000_000_000
 
 
@@ -28,9 +29,10 @@ def _et_ns(day: date, minutes_after_midnight: int) -> int:
     return int(stamp.timestamp() * _NS)
 
 
-def session_bounds_ns(date_iso: str) -> tuple[int, int]:
+def session_bounds_ns(date_iso: str, *, early_close: bool = False) -> tuple[int, int]:
     day = date.fromisoformat(date_iso)
-    return _et_ns(day, _OPEN_MINUTES), _et_ns(day, _CLOSE_MINUTES)
+    close_minutes = _EARLY_CLOSE_MINUTES if early_close else _CLOSE_MINUTES
+    return _et_ns(day, _OPEN_MINUTES), _et_ns(day, close_minutes)
 
 
 def build_session_list(

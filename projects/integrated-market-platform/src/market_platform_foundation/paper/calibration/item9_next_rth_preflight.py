@@ -11,7 +11,6 @@ import argparse
 import json
 import os
 import shutil
-import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -20,10 +19,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from ...git_ref import main_working_tree, read_git_head
-from ...intelligence.paper_forward_bridge.session_policy import (
-    CALENDAR_US_EQUITY_RTH,
-    is_within_us_equity_rth,
-)
+from ...intelligence.paper_forward_bridge.session_policy import CALENDAR_US_EQUITY_RTH
 from ...providers.equity_quote_selection import opend_readiness
 from .bar_ohlcv_prospective_proof import (
     DEFAULT_RECEIPT_DIR,
@@ -125,7 +121,7 @@ def _receipt_dir_writable(receipt_dir: Path) -> tuple[bool, str | None]:
         receipt_dir.mkdir(parents=True, exist_ok=True)
     except OSError as exc:
         return False, type(exc).__name__
-    probe = receipt_dir / ".item9-preflight-write-probe"
+    probe = receipt_dir / "._item9_preflight_write_probe"
     try:
         probe.write_text("", encoding="utf-8")
         probe.unlink(missing_ok=True)
@@ -143,49 +139,13 @@ def _disk_sane(path: Path, *, min_free_mb: int = 64) -> tuple[bool, dict[str, An
     return free_mb >= min_free_mb, {"free_mb": free_mb, "min_free_mb": min_free_mb}
 
 
-def _iter_process_command_lines() -> tuple[str, ...]:
-    if sys.platform == "win32":
-        try:
-            completed = subprocess.run(
-                [
-                    "wmic",
-                    "process",
-                    "where",
-                    "name='python.exe' or name='python3.exe'",
-                    "get",
-                    "CommandLine",
-                ],
-                capture_output=True,
-                text=True,
-                timeout=8,
-                check=False,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            return ()
-        lines = [line.strip() for line in completed.stdout.splitlines() if line.strip()]
-        return tuple(line for line in lines if line.lower() != "commandline")
-    try:
-        completed = subprocess.run(
-            ["ps", "-eo", "args="],
-            capture_output=True,
-            text=True,
-            timeout=8,
-            check=False,
-        )
-    except (OSError, subprocess.TimeoutExpired):
-        return ()
-    if completed.returncode != 0:
-        return ()
-    return tuple(line.strip() for line in completed.stdout.splitlines() if line.strip())
-
-
 def detect_active_item9_prospective_collector(
     *,
-    command_lines: Sequence[str] | None = None,
+    command_lines: Sequence[str],
 ) -> tuple[bool, list[str]]:
     """True when another Item 9 Mode B prospective collector appears to be running."""
 
-    lines = list(command_lines) if command_lines is not None else list(_iter_process_command_lines())
+    lines = list(command_lines)
     matches: list[str] = []
     for line in lines:
         lowered = line.lower()
@@ -275,8 +235,12 @@ def run_item9_next_rth_preflight(
     writable, write_reason = _receipt_dir_writable(receipt_dir)
     disk_ok, disk_report = _disk_sane(receipt_dir)
 
-    probe = active_collector_probe or (lambda: detect_active_item9_prospective_collector())
-    active_collector, active_matches = probe()
+    process_probe_status = "NOT_RUN"
+    active_collector = False
+    active_matches: list[str] = []
+    if active_collector_probe is not None:
+        active_collector, active_matches = active_collector_probe()
+        process_probe_status = "COMPLETED"
 
     blockers: list[str] = []
     reason_codes: list[str] = []
@@ -368,6 +332,7 @@ def run_item9_next_rth_preflight(
         "active_collector": {
             "detected": active_collector,
             "matching_command_lines": active_matches[:3],
+            "process_probe_status": process_probe_status,
         },
         "poll_limits": {
             "poll_interval_s": POLL_INTERVAL_S_DEFAULT,
