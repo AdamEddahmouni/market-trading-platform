@@ -913,6 +913,33 @@ def build_parser() -> argparse.ArgumentParser:
     hist_harness.add_argument("--hypothesis-id", default="hist-research-default-hypothesis")
     hist_harness.add_argument("--json", action="store_true")
 
+    benchmark = groups.add_parser(
+        "benchmark",
+        help="intelligence benchmark protocol integration (IBP v1 minimal)",
+    )
+    benchmark_actions = benchmark.add_subparsers(dest="action", required=True)
+    bench_intel = benchmark_actions.add_parser(
+        "intelligence",
+        help="IBP harness adapter, Smoke10 plan, readiness",
+    )
+    bench_intel_actions = bench_intel.add_subparsers(dest="bench_action", required=True)
+    bench_readiness = bench_intel_actions.add_parser("readiness", help="Smoke10 readiness")
+    bench_readiness.add_argument("--json", action="store_true")
+    bench_adapt = bench_intel_actions.add_parser(
+        "adapt",
+        help="adapt historical_research_run_manifest_v1 to IBP record",
+    )
+    bench_adapt.add_argument("--manifest", type=Path, required=True)
+    bench_adapt.add_argument("--json", action="store_true")
+    bench_smoke = bench_intel_actions.add_parser(
+        "smoke10-plan",
+        help="Smoke10 invocation contract (scores NOT executed)",
+    )
+    bench_smoke.add_argument("--manifest", type=Path)
+    bench_smoke.add_argument("--json", action="store_true")
+    bench_suite = bench_intel_actions.add_parser("suite-info", help="suite catalog metadata")
+    bench_suite.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -964,6 +991,27 @@ def _item9_command(root: Path, args: argparse.Namespace) -> int:
     result = _run(
         root,
         label="item9 next-rth-preflight",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _benchmark_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action != "intelligence":
+        print(f"unknown benchmark action: {args.action}", file=sys.stderr)
+        return 2
+    python = _validation_python(root)
+    env = _python_environment(root)
+    command = [python, str(root / "tools" / "benchmarks" / "intelligence_cli.py"), args.bench_action]
+    if args.bench_action in {"adapt", "smoke10-plan"} and getattr(args, "manifest", None) is not None:
+        command.extend(["--manifest", str(args.manifest)])
+    if getattr(args, "json", False):
+        command.append("--json")
+    result = _run(
+        root,
+        label=f"benchmark intelligence {args.bench_action}",
         command=command,
         env=env,
         stream_output=True,
@@ -1309,6 +1357,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "historical-data":
         return _historical_data_command(root, args)
+
+    if args.group == "benchmark":
+        return _benchmark_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)
