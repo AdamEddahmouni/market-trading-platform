@@ -54,8 +54,8 @@
     "start_date": "2026-09-10"
   },
   "evidence_label": "HISTORICAL_BASELINE_V2_OPEND",
-  "execution_status": "DEFINITION_FROZEN_NOT_EXECUTED",
-  "experiment_definition_hash": "109F3499BD70CB006707BAA2242EDCD5A4614714C61481BF2540B56655677F74",
+  "execution_status": "DEFINITION_FROZEN_READY_FOR_EXECUTION",
+  "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
   "experiment_id": "imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
   "feature_definitions": [
     {
@@ -107,7 +107,15 @@
   },
   "harness_version": "historical-research-harness-v1",
   "hypothesis_id": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
-  "research_code_sha": "7d67d48edc5760e218f946ee7fd836d6b5c431a2",
+  "pre_execution_freeze_amendment": {
+    "amended_timestamp_ns": 1789708239447515600,
+    "amendment_kind": "R1_PREDICTION_COUPLED_SIMULATOR_CODE_SHA",
+    "amendment_receipt_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/pre_execution_freeze_amendment.json",
+    "coupling_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+    "prior_experiment_definition_hash": "109F3499BD70CB006707BAA2242EDCD5A4614714C61481BF2540B56655677F74",
+    "prior_research_code_sha": "7d67d48edc5760e218f946ee7fd836d6b5c431a2"
+  },
+  "research_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
   "run_parameters": {
     "cost_slippage_bps": 5.0,
     "exclusions": [

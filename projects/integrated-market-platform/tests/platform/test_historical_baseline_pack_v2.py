@@ -69,13 +69,18 @@ class HistoricalBaselinePackV2FreezeTests(unittest.TestCase):
         self.assertEqual(result["computed_normalized_fingerprint"], OPEND_AAPL_VERIFIED_NORMALIZED_FINGERPRINT)
         self.assertEqual(result["row_count"], 1950)
 
-    def test_freeze_receipt_declares_not_executed(self) -> None:
+    def test_freeze_receipt_frozen_and_execution_receipt_when_present(self) -> None:
         receipt_path = canonical_baseline_pack_v2_evidence_dir(ROOT) / "baseline_pack_v2_freeze_receipt.json"
         self.assertTrue(receipt_path.is_file())
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
         self.assertEqual(receipt["EXPERIMENT_DEFINITION_FROZEN"], "YES")
-        self.assertEqual(receipt["performance_run"], "NO")
-        self.assertEqual(receipt["execution_status"], "NOT_EXECUTED")
+        exec_receipt_path = canonical_baseline_pack_v2_evidence_dir(ROOT) / "baseline_pack_v2_evidence_receipt.json"
+        if exec_receipt_path.is_file():
+            exec_receipt = json.loads(exec_receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(exec_receipt["performance_run"], "YES")
+            self.assertEqual(exec_receipt["EXPERIMENT_DEFINITION_FROZEN"], "YES")
+        else:
+            self.assertEqual(receipt["performance_run"], "NO")
 
     def test_frozen_metadata_matches_hypothesis(self) -> None:
         frozen = json.loads(
