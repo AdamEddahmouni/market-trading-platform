@@ -93,6 +93,10 @@ def assert_no_trade_baseline_invariant(
 
 def summarize_risk_execution(
     risk_result: Mapping[str, Any],
+    *,
+    events: Sequence[Mapping[str, Any]] | None = None,
+    cost_slippage_bps: float = 0.0,
+    instrument_id: str | None = None,
 ) -> dict[str, Any]:
     intents = list(risk_result.get("intents") or [])
     risk_decisions = list(risk_result.get("risk_decisions") or [])
@@ -111,17 +115,23 @@ def summarize_risk_execution(
     partial_fills = sum(
         1 for order in orders if isinstance(order, dict) and order.get("state") == "PARTIALLY_FILLED"
     )
-    gross_pnl = sum(float(fill.get("realized_pnl", 0) or 0) for fill in fills if isinstance(fill, dict))
-    position_shares = int(risk_result.get("ledger", {}).get("position_shares", 0))
+    from .fill_economics import aggregate_fill_economics
+
+    policy = risk_result.get("risk_policy")
+    economics = aggregate_fill_economics(
+        fills,
+        events=events or [],
+        policy=policy if isinstance(policy, dict) else None,
+        cost_slippage_bps=cost_slippage_bps,
+        instrument_id=instrument_id,
+    )
     return {
         "trade_intents": len(intents),
         "accepted_intents": len(accepted),
         "rejected_intents": len(rejected),
-        "fills": len(fills),
+        "fills": economics["fill_count"],
         "partial_fills": partial_fills,
-        "gross_pnl": gross_pnl,
-        "turnover": len(fills),
-        "exposure": abs(position_shares),
+        **economics,
     }
 
 

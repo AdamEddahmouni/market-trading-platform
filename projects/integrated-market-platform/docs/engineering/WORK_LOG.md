@@ -36,6 +36,29 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Fill economics V3 pre-fee gross (review fix)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Review found policy fees double-subtracted: ledger realized is post-fee while transaction_costs also summed commission/fees. Research gross now adds policy fees back once from ledger totals; net = gross − transaction_costs. ACCOUNTING_VERSION bumped to 3.0.1; fee regression tests added. |
+| **Key files** | `fill_economics.py`, `simulator.py`, `test_simulator_fill_economics_v3.py` |
+| **Tests** | `unittest tests.platform.test_simulator_fill_economics_v3` (17 OK); `validate changed` |
+| **Related** | `research/simulator-fill-economics-v3` follow-up to REQUEST_CHANGES |
+| **Notes** | `max_drawdown` / `coverage` labeled `RISK_PORTFOLIO_INHERITED`. V3 performance not executed. |
+
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Prediction-coupled simulator research now applies fills through `portfolio.ledger.apply_fill` (weighted average cost basis), computes gross realized/unrealized PnL, and charges transaction costs from traded notional × bps plus policy fees—not from `abs(gross_pnl)`. Fail-closed invariants and unit/integration tests added for IMP-SIMULATOR-FILL-ECONOMICS-V3. |
+| **Key files** | `fill_economics.py` (new), `simulator.py`, `prediction_coupling.py`, `metrics.py`, `tests/platform/test_simulator_fill_economics_v3.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_fill_economics_v3` (14 OK); `python tools/imp.py validate changed` (2875 passed, 29 skipped) |
+| **Related** | Branch `research/simulator-fill-economics-v3` @ base `6d6b27de` |
+| **Notes** | `ACCOUNTING_VERSION` / `COST_MODEL_VERSION` / `SIMULATOR_VERSION` (`phase7.bar-conservative/1.1.0`) frozen for Lane B. `estimated_costs` retained as alias of `transaction_costs`. Open-position `max_drawdown` still from risk portfolio summary when present. |
+
 ## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
 
 | Field | Value |
