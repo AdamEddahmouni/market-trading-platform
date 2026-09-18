@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 research contamination auditor (Lane D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `tools/research` |
+| **Summary** | Added reusable research-run contamination auditor composing dual-corpus admission/consumption gates with contractual train/test, feature cutoff, holdout, authority-mixing, fingerprint, and Item 9 admission checks. Emits `CONTAMINATION_STATUS` PASS/FAIL with five canonical questions and evidence language (`AUTHORITY`, `ITEM9_EFFECT`). |
+| **Key files** | `dual_corpus/{contamination_auditor,leak_audit,run_manifest}.py`; `tools/research/audit_research_contamination.py`; `tests/platform/test_research_contamination_auditor.py`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md` |
+| **Tests** | `python tools/imp.py` format/lint/validate changed; `unittest` `test_research_contamination_auditor` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane D; dual-corpus contract |
+| **Notes** | Contractual leakage properties only; no frozen receipts or Item 9 calibration changes. |
+
 ## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane F docs/status hygiene
 
 | Field | Value |
