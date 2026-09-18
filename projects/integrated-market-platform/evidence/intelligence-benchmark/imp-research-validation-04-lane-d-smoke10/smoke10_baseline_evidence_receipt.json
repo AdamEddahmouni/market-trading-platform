@@ -1,0 +1,96 @@
+{
+  "artifact_kind": "intelligence_benchmark_smoke10_evidence_receipt_v1",
+  "case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ],
+  "contamination_audit_overall": "PASS",
+  "contamination_audit_path": "evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/contamination_audit.json",
+  "evidence_label": "HISTORICAL_DEVELOPMENT_SMOKE10_BASELINE_V1",
+  "execution_implementation_sha": "495e7db257c135e8f4f6169bb93320f19cd22636",
+  "frozen_code_sha": "1bb540fb92e878334559603f27284db3b696f9c7",
+  "frozen_config_fingerprint": "76DDD188CD080365F1A7C45070519A84640AC9F750A4558CFF6B7B5E47FA8FFC",
+  "frozen_config_path": "evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/frozen_config.json",
+  "full30_executed": false,
+  "protocol_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "reviewer_id": "114aef56-8cd5-41a4-bdcf-d272c1e0889b",
+  "reviewer_note": "Baseline scores copied from first run; no rescoring. facts dimension FAIL x10 (FACTS_MISMATCH).",
+  "run_id": "ibp-smoke10-76DDD188CD080365",
+  "scores_executed": true,
+  "smoke10_run_record_path": "evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/smoke10_run_record.json",
+  "summaries": {
+    "by_dimension": {
+      "catastrophic": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "facts": {
+        "FAIL": 10,
+        "PASS": 0
+      },
+      "final_state": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "freshness": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "operator_close": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "provenance": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "routing": {
+        "FAIL": 0,
+        "PASS": 10
+      },
+      "unknown_handling": {
+        "FAIL": 0,
+        "PASS": 10
+      }
+    },
+    "by_failure_type": {
+      "FACTS_MISMATCH": 10
+    },
+    "by_mode": {
+      "A": {
+        "cases": 2,
+        "dimension_failures": 2
+      },
+      "B": {
+        "cases": 2,
+        "dimension_failures": 2
+      },
+      "C": {
+        "cases": 2,
+        "dimension_failures": 2
+      },
+      "D": {
+        "cases": 2,
+        "dimension_failures": 2
+      },
+      "E": {
+        "cases": 2,
+        "dimension_failures": 2
+      }
+    },
+    "by_system": {
+      "synthetic_intelligence_fixture_v1_baseline_v1": {
+        "cases": 10,
+        "dimension_failures": 10
+      }
+    }
+  }
+}
