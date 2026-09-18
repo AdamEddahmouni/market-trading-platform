@@ -937,6 +937,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bench_smoke.add_argument("--manifest", type=Path)
     bench_smoke.add_argument("--json", action="store_true")
+    bench_smoke_run = bench_intel_actions.add_parser(
+        "smoke10-run",
+        help="execute one bounded Smoke10 baseline (scores executed)",
+    )
+    bench_smoke_run.add_argument("--manifest", type=Path)
+    bench_smoke_run.add_argument("--artifact-root", type=Path)
+    bench_smoke_run.add_argument("--json", action="store_true")
     bench_suite = bench_intel_actions.add_parser("suite-info", help="suite catalog metadata")
     bench_suite.add_argument("--json", action="store_true")
 
@@ -1005,8 +1012,12 @@ def _benchmark_command(root: Path, args: argparse.Namespace) -> int:
     python = _validation_python(root)
     env = _python_environment(root)
     command = [python, str(root / "tools" / "benchmarks" / "intelligence_cli.py"), args.bench_action]
-    if args.bench_action in {"adapt", "smoke10-plan"} and getattr(args, "manifest", None) is not None:
+    if args.bench_action in {"adapt", "smoke10-plan", "smoke10-run"} and getattr(
+        args, "manifest", None
+    ) is not None:
         command.extend(["--manifest", str(args.manifest)])
+    if args.bench_action == "smoke10-run" and getattr(args, "artifact_root", None) is not None:
+        command.extend(["--artifact-root", str(args.artifact_root)])
     if getattr(args, "json", False):
         command.append("--json")
     result = _run(

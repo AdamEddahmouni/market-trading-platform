@@ -1,0 +1,47 @@
+{
+  "artifact_kind": "imp_research_validation_04_lane_b_real_provider_verification_v1",
+  "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+  "evidence_class": "HISTORICAL_DEVELOPMENT",
+  "ibkr": {
+    "COMPLETENESS": null,
+    "IBKR_HISTORICAL_TRADES": "PROVIDER_UNVERIFIED",
+    "INTERVAL": null,
+    "LIMITATIONS": [
+      "IMP_IBKR_LIVE_NOT_ENABLED"
+    ],
+    "PAGINATION": {
+      "provenance_page_count": null,
+      "transport": "rest"
+    },
+    "TRADE_COUNT": 0,
+    "reason": "IMP_IBKR_LIVE_NOT_ENABLED"
+  },
+  "increment_id": "IMP-RESEARCH-VALIDATION-04",
+  "moomoo": {
+    "DATES": [
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16"
+    ],
+    "FINGERPRINT": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "INSTRUMENTS": [
+      "AAPL"
+    ],
+    "LIMITATIONS": [],
+    "MOOMOO_REAL_HISTORICAL": "VERIFIED_BOUNDED",
+    "QUALITY": "PASS",
+    "ROWS": 1950,
+    "artifact_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-b-provider\\projects\\integrated-market-platform\\artifacts\\historical-rth-development-real-provider-verification",
+    "dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+    "excluded_sessions": [],
+    "normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "provider_reason": null,
+    "quality_fingerprint": "5794350B879B8EBC53CDC17FC1C1DA349B51BD251F0AF1C72D9B778A03303AD2",
+    "rerun_fingerprint_match": true,
+    "run_id": "hist-rth-AAPL-6c57619101"
+  },
+  "prospective_item9_admission": "NOT_ALLOWED",
+  "receipt_sha256": "168F7A394A1B4C2BDEB6F98C2088452FBD267FDC897E597F3FB66F7B06E4B492"
+}

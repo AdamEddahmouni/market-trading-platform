@@ -9,6 +9,8 @@ from .contamination import (
 from .historical_harness_adapter import adapt_historical_research_run_manifest_v1
 from .readiness import assess_benchmark_smoke10_readiness
 from .smoke10 import build_smoke10_invocation_contract
+from .smoke10_contamination_audit import audit_smoke10_run_contamination
+from .smoke10_execution import execute_smoke10_baseline, freeze_smoke10_run_configuration
 from .suite_catalog import load_suite_catalog, smoke10_case_ids, suite_catalog_fingerprint
 from .types import (
     IBP_FULL_SUITE_CASE_COUNT,
@@ -27,7 +29,10 @@ __all__ = [
     "assert_historical_manifest_admissible",
     "assert_no_evaluator_gold_in_system_bundle",
     "assess_benchmark_smoke10_readiness",
+    "audit_smoke10_run_contamination",
     "build_smoke10_invocation_contract",
+    "execute_smoke10_baseline",
+    "freeze_smoke10_run_configuration",
     "load_suite_catalog",
     "smoke10_case_ids",
     "strip_evaluator_only_fields",
