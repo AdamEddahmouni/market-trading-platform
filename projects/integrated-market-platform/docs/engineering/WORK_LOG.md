@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only orchestrator closure at **ENDING_MAIN** / **CURRENT_GIT_MAIN** `0fb32d44`: record IMP-RESEARCH-VALIDATION-04 **merged** @ `7d67d48e`; IMP-INTEGRATE-AND-EXPERIMENT-05 **partial** ([#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) R1, [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) OpenD v2 **`BOUNDED_HISTORICAL_OBSERVATION`**, [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) Lane H); **OPEN** [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) (review aborted — do not restart autonomously); non-stub Smoke10 **`NOT_EXECUTED`**; Full30 **`NOT_RUN`**; Item 9 **`NOT_CALIBRATED`** (**1**/3 RTH); #222 **isolated**. **No** merge #267/#222, collector mutation, Smoke10 fabrication, or Live enable. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed`; `check_docs_links.py` |
+| **Related** | IMP-INTEGRATE-AND-EXPERIMENT-05; branch `docs/imp-integrate-experiment-05-status`; [IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md](IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md) |
+| **Notes** | Next engineering: **`LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`**. Next intelligence: I1 then non-stub Smoke10; **not** Full30. |
+
 ## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane G status/documentation closure
 
 | Field | Value |

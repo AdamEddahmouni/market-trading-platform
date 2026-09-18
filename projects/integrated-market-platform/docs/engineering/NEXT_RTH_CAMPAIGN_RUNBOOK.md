@@ -8,8 +8,8 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (`origin/main` / git tip) | `19a5ebd5370cd249bee1cf0cc667a737dec6e634` | Mutable tip after [#253](https://github.com/AdamEddahmouni/market-trading-platform/pull/253) docs post–dual-corpus hygiene (prior IMP-EVIDENCE-HARDENING-02 software [#248](https://github.com/AdamEddahmouni/market-trading-platform/pull/248)–[#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252)). Docs-only merges advance this label only. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` | Last **software-bearing** merge: [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) Item 9 `next-rth-preflight`. Stays pinned until the next software merge. Commands and labels below assume this implementation. |
+| **CURRENT_MAIN** (`origin/main` / git tip) | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` | Mutable tip after IMP-INTEGRATE-AND-EXPERIMENT-05 [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) on ancestry through IMP-RESEARCH-VALIDATION-04 @ `7d67d48e`. Docs-only merges advance this label only. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` | Matches **CURRENT_MAIN** after research stack + R1/R2/H merges. Open [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) not yet on `main`. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
@@ -152,7 +152,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| `origin/main` = **CURRENT_MAIN** `a1b556f8` | Operator | `git fetch origin main && git rev-parse origin/main` |
+| `origin/main` = **CURRENT_MAIN** `0fb32d44` | Operator | `git fetch origin main && git rev-parse origin/main` |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
