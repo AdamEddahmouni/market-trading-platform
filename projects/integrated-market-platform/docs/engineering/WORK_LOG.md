@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Simulator experiment specs Lane C (cost / fill / drawdown review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `evidence/historical-research`, `tests/platform` |
+| **Summary** | Frozen methodology for `LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4` (canonical `notional-linear-bps` + v3 baseline 5.0 bps grid) and `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1` (bar-conservative vs lawful historical alternatives). Read-only review of drawdown wiring on `research/simulator-drawdown-wiring-v1` worktree. `EXECUTED=NO` for all three; no OpenD runs; v3 receipts untouched. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, `IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`, `IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md`; `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json`; cost/fill methodology JSON |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` (3 tests, pass) |
+| **Related** | Branch `research/simulator-experiment-specs-sep18` @ `2306ff4a`; Lane E v3 hypothesis queue |
+| **Notes** | Drawdown implementation remains uncommitted on sibling worktree; no PROGRAM_STATUS edit. |
+
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 
 | Field | Value |

@@ -1,0 +1,48 @@
+{
+  "artifact_kind": "imp_simulator_fill_price_realism_v1_methodology_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "source_finding_ids": ["LANE-E-FND-017"],
+  "spec_ready": true,
+  "implementation_ready": false,
+  "executed": false,
+  "dataset": {
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "dataset_id": "HIST-DEV-AAPL",
+    "instrument": "AAPL"
+  },
+  "current_fill_binding": {
+    "simulator_version": "phase7.bar-conservative/1.1.0",
+    "fill_price_long": "bar_high",
+    "fill_price_short": "bar_low",
+    "activation": "next_bar_after_signal",
+    "fill_bar": "first_bar_at_or_after_activation",
+    "source_capability": "BAR_OHLCV_1M"
+  },
+  "mtm_mark_policy_current": "last_bar_close_on_scoped_events",
+  "accounting_version": "simulator-research-fill-economics/3.0.1",
+  "alternative_fill_policies_historical_research_only": [
+    {
+      "policy_id": "historical-research/bar-conservative/1.1.0",
+      "fill_price": "long_high_short_low",
+      "notes": "Alias of current v3 binding"
+    },
+    {
+      "policy_id": "historical-research/bar-close/1.0.0",
+      "fill_price": "bar_close"
+    },
+    {
+      "policy_id": "historical-research/bar-open/1.0.0",
+      "fill_price": "bar_open"
+    },
+    {
+      "policy_id": "historical-research/bar-mid/1.0.0",
+      "fill_price": "mid_high_low"
+    }
+  ],
+  "primary_metric": "gross_realized_pnl_vs_directional_accuracy_correlation",
+  "secondary_metrics": ["gross_unrealized_pnl", "exposure", "simulated_fills"],
+  "no_tuning_policy": "Do not select fill policy from validate PnL ordering.",
+  "item9_fill_internals": "UNTOUCHED",
+  "methodology_doc": "docs/engineering/IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md"
+}
