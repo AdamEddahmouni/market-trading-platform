@@ -30,6 +30,10 @@ Lane E synthesizes **bounded historical observations** from the executed OpenD f
 - `SMOKE10_EXECUTED=NO`
 - No Item 9 collector mutation; no PR #222 / #267 merge
 
+## Post-synthesis main reconcile (PR base)
+
+Findings were synthesized against v3 evidence @ `436a0ed7` before Phase 1B landed on `main`. This PR targets `main` after **#273** (`a8dc0a65`), which includes v3 receipts unchanged. **#272** merged non-stub facts SUT wiring (`ccc41a7f`) without executing Smoke10; Lane E deferral (`SMOKE10_EXECUTED=NO`) remains in force. See `lane_e_v3_synthesis_receipt.json` → `post_synthesis_main_reconcile`.
+
 ## Related
 
 - Prior Lane E (validation-04): `IMP_RESEARCH_VALIDATION_04_LANE_E.md`

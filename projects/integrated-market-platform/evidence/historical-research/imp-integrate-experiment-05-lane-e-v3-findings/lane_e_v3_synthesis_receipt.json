@@ -56,5 +56,13 @@
     "findings_registry": "evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/findings_registry_v1.json",
     "hypothesis_queue": "evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/hypothesis_queue_v1.json"
   },
-  "synthesis_timestamp_utc": "2026-09-18T06:40:00Z"
+  "synthesis_timestamp_utc": "2026-09-18T06:40:00Z",
+  "post_synthesis_main_reconcile": {
+    "reconciled_utc": "2026-09-18T07:30:00Z",
+    "pr_base_main": "a8dc0a6503fa9c5e64c23094877c4865ea82db22",
+    "v3_evidence_merged_pr": 273,
+    "nonstub_sut_wiring_merged_pr": 272,
+    "nonstub_sut_wiring_merge_commit": "ccc41a7fce7b08c6468d608fe7e44e65f9ecdbfe",
+    "note": "nonstub_sut_wiring.merged=false is the synthesis-time review snapshot; IBP facts SUT wiring later landed on main via PR #272 without Lane E Smoke10 execution. v3 pack receipts remain pinned to 436a0ed7."
+  }
 }
