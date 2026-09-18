@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IBP facts SUT re-review hygiene (Lane C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering/lane-notes`, `ui_api/store`, tests |
+| **Summary** | Addressed independent re-review REQUEST_CHANGES without gaming gold: refreshed `imp-05-i1-nonstub-sut.md` (limitation, freeze `4720493F…`, 1/10 fixture coverage, synthetic gold vs grounded citations, Smoke10 not justified for facts); hardened `FIXTURE_REPLAY` against live promotion on `load_decoded_snapshot`; documented gold audit (10/10 synthetic). |
+| **Key files** | `imp-05-i1-nonstub-sut.md`, `store.py`, `test_replay_store_loading.py` |
+| **Tests** | `python -m unittest tests.validation.test_replay_store_loading`; `python tools/imp.py validate changed` |
+| **Related** | PR #267 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Notes** | Freeze `code_sha` remains `109fd650…` (SUT logic); no Smoke10/Full30; push still blocked. |
+
 ## 2026-09-18 — IBP facts SUT historical evidence resolvers (Lane C)
 
 | Field | Value |

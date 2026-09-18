@@ -250,7 +250,8 @@ class ReplayStore:
         )
         from ..market_data.live_config import live_observational_enabled, moomoo_live_enabled
 
-        if live_observational_enabled():
+        fixture_replay_locked = str(self.data_mode).upper() == "FIXTURE_REPLAY"
+        if live_observational_enabled() and not fixture_replay_locked:
             self.data_mode = "LIVE_OBSERVATIONAL"
             self.data_provider = "MOOMOO" if moomoo_live_enabled() else self.data_provider
         self.paper_ledger.data_mode = self.data_mode
