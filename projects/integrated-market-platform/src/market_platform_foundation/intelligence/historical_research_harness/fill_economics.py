@@ -28,6 +28,14 @@ from typing import Any
 from ...numeric import decimal_to_minor_units
 from ...portfolio.ledger import apply_fill, build_ledger_state
 from ...risk.policy import DEFAULT_RISK_POLICY
+from .simulator_drawdown import (
+    DRAWDOWN_METRICS_VERSION,
+    MAX_DRAWDOWN_SOURCE_EQUITY_CURVE,
+    gross_unrealized_minor as compute_gross_unrealized_minor,
+    mark_price_minor_at_or_before,
+    max_peak_to_trough_drawdown,
+    net_mtm_pnl_native,
+)
 
 ACCOUNTING_VERSION = "simulator-research-fill-economics/3.0.1"
 COST_MODEL_VERSION = "simulator-research/notional-linear-bps/1.0.0"
@@ -115,6 +123,7 @@ def aggregate_fill_economics(
     slippage_total = 0.0
     winning_closed = 0
     losing_closed = 0
+    net_mtm_curve: list[float] = [0.0]
 
     for fill in fills:
         if not isinstance(fill, Mapping):
@@ -177,6 +186,34 @@ def aggregate_fill_economics(
             }
         )
 
+        fill_time = int(fill.get("fill_time", 0))
+        mark_at_fill = mark_price_minor_at_or_before(
+            events,
+            at_time_ns=fill_time,
+            instrument_id=instrument_id,
+            price_scale=scale,
+        )
+        ledger_post_fee_minor = int(ledger["realized_pnl_minor"])
+        policy_fees_minor = int(ledger.get("total_commission_minor", 0)) + int(
+            ledger.get("total_fees_minor", 0)
+        )
+        gross_realized_at_fill_minor = ledger_post_fee_minor + policy_fees_minor
+        unrealized_at_fill_minor = compute_gross_unrealized_minor(
+            position_shares=position_after,
+            basis_minor=basis_after,
+            mark_minor=mark_at_fill,
+        )
+        policy_fees_native = _minor_to_native(policy_fees_minor, scale)
+        net_mtm_curve.append(
+            net_mtm_pnl_native(
+                gross_market_realized_minor=gross_realized_at_fill_minor,
+                gross_unrealized_minor=unrealized_at_fill_minor,
+                scale=scale,
+                slippage_total_native=slippage_total,
+                policy_fees_total_native=policy_fees_native,
+            )
+        )
+
     mark_minor = _mark_price_minor_from_events(events, instrument_id=instrument_id, price_scale=scale)
     position_shares = int(ledger["position_shares"])
     basis_minor = int(ledger.get("position_cost_basis_minor", 0))
@@ -200,6 +237,17 @@ def aggregate_fill_economics(
     policy_fees_total_native = _minor_to_native(policy_fees_total_minor, scale)
     transaction_costs = slippage_total + policy_fees_total_native
     net_pnl = gross_pnl - transaction_costs
+
+    terminal_net = net_mtm_pnl_native(
+        gross_market_realized_minor=gross_realized_minor,
+        gross_unrealized_minor=gross_unrealized_minor,
+        scale=scale,
+        slippage_total_native=slippage_total,
+        policy_fees_total_native=policy_fees_total_native,
+    )
+    if not net_mtm_curve or abs(net_mtm_curve[-1] - terminal_net) > NET_PNL_TOLERANCE:
+        net_mtm_curve.append(terminal_net)
+    max_drawdown = max_peak_to_trough_drawdown(net_mtm_curve)
 
     turnover = traded_notional_native
     exposure = abs(position_shares)
@@ -228,6 +276,10 @@ def aggregate_fill_economics(
         "ledger_post_fee_realized_pnl_minor": ledger_post_fee_realized_minor,
         "policy_fees_total_minor": policy_fees_total_minor,
         "ledger_realized_pnl_minor": ledger_post_fee_realized_minor,
+        "max_drawdown": max_drawdown,
+        "max_drawdown_source": MAX_DRAWDOWN_SOURCE_EQUITY_CURVE,
+        "drawdown_metrics_version": DRAWDOWN_METRICS_VERSION,
+        "equity_curve_point_count": len(net_mtm_curve),
     }
 
 
