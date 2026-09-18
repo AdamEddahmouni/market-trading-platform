@@ -1,0 +1,197 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_e_v3_findings_registry_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "evidence_language": "bounded_historical_observation_and_candidate_hypothesis_not_production_ready",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "E",
+  "registry_version": "1.0.0",
+  "source_runs": {
+    "integrate_r3_opend_fill_economics_v3_frozen": {
+      "branch": "research/opend-fill-economics-v3",
+      "worktree_head_observed": "436a0ed7309737264c3787553228f3791a12e43f",
+      "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+      "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+      "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+      "experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+      "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+      "pack_run_id": "C3DE72960BAC86F9E743E14B9DBC2BF1",
+      "frozen_research_code_sha": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+      "reproducibility_fingerprint": "AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490",
+      "note": "read-only consumption; V3 historical run immutable in Lane E"
+    },
+    "integrate_r2_opend_baseline_pack_v2_frozen": {
+      "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+      "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+      "note": "identity verified read-only; not edited in Lane E"
+    },
+    "lane_d_smoke10_stub_frozen": {
+      "run_id": "ibp-smoke10-76DDD188CD080365",
+      "sut_profile": "ibp-deterministic-stub-v1",
+      "note": "read-only; Smoke10 not re-executed in Lane E"
+    },
+    "lane_i1_nonstub_sut_wiring": {
+      "branch_reference": "ui/nonstub-facts-sut-resolvers",
+      "commit_reference": "f5220ddd",
+      "review_disposition": "APPROVE_WIRING_NO_SMOKE10",
+      "smoke10_executed": false,
+      "note": "wiring review only; no merge/push; no new ibp-smoke10 run_id"
+    }
+  },
+  "synthesis_code_sha": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+  "findings": [
+    {
+      "FINDING_ID": "LANE-E-FND-012",
+      "SOURCE_RUN": "integrate_r3_v3:pack_run_id=C3DE72960BAC86F9E743E14B9DBC2BF1; frozen_experiment_definition.json",
+      "OBSERVATION": "Frozen v3 pack records HYPOTHESIS_ID=LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3, EXPERIMENT_ID=imp-integrate-experiment-05-r3-opend-fill-economics-v3, DATASET_FINGERPRINT=355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B, EXPERIMENT_HASH=81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61, CODE_SHA=c6447a0498ddaaa5b1a8edf0160208e63495d6dd, reproducibility first=second=AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490, contamination CONTAMINATION_STATUS=PASS.",
+      "LIMITATION": "Identity audit only; does not certify edge, calibration, or deployability.",
+      "POSSIBLE_CAUSE": "Pre-registered v3 experiment executed once under frozen definition with deterministic harness replay.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-013",
+      "SOURCE_RUN": "integrate_r3_v3:baseline_0_no_trade_v1 HISTORICAL_DEVELOPMENT_VALIDATE",
+      "OBSERVATION": "baseline_0_no_trade_v1 maintains null economics invariant: coupling_observation intents=0, fills=0, traded_notional=0.0, gross_pnl=0.0, estimated_costs=0.0, net_pnl=0.0, exposure=0; validate split simulated_fills=0 with abstention_rate=1.0 and sample_count=0.",
+      "LIMITATION": "BOUNDED_HISTORICAL_OBSERVATION on five AAPL RTH sessions; prediction-coupled simulator scope only.",
+      "POSSIBLE_CAUSE": "No-trade strategy emits no trade intents under prediction coupling; fill economics accounting never activates.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-014",
+      "SOURCE_RUN": "integrate_r3_v3:baselines 1–3 HISTORICAL_DEVELOPMENT_VALIDATE vs integrate_r2_v2 zero-PnL observation",
+      "OBSERVATION": "After accounting_version simulator-research-fill-economics/3.0.1, directional baselines report non-zero gross_pnl, estimated_costs, net_pnl, and traded_notional on validate (e.g. baseline_1 gross=-90.46, costs≈63.71, net≈-154.17, notional≈127411.82; baseline_2 gross=-5.07, costs≈63.71, net≈-68.78; baseline_3 gross=-13.37, costs≈24.27, net≈-37.64). v2 frozen pack on the same corpus pin reported 0.0 for these columns.",
+      "LIMITATION": "Documents simulator fill-economics machinery change only; not profitability or strategy ranking.",
+      "POSSIBLE_CAUSE": "v3 harness populates realized/unrealized PnL and notional-linear-bps costs where v2 left fill economics at zero defaults.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": "Close LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3 as OBSERVED_MACHINERY; forbid v2 receipt edits.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-015",
+      "SOURCE_RUN": "integrate_r3_v3:baselines 1–3 coupling_observation and validate metrics",
+      "OBSERVATION": "Fill counts remain aligned with v2 coupling pattern: baseline_1 intents=387, fills=386, simulated_fills=386; baseline_2 387/386/386; baseline_3 intents=148, fills=147, simulated_fills=147. Directional_accuracy on validate≈0.463 (b1), 0.527 (b2), 0.473 (b3) with sample_count 387, 387, 148.",
+      "LIMITATION": "Five-session OpenD corpus; accuracies near 0.5 are descriptive only.",
+      "POSSIBLE_CAUSE": "Prediction coupling unchanged from v2; economics layer added without altering intent/fill gating counts on this corpus.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-EXTENDED-OPEND-SESSION-CORPUS-V1",
+      "REQUIRED_DATA": "Pre-registered extended session holdout before any ranking or edge language.",
+      "PROPOSED_TEST": "NEW experiment on expanded corpus pin; do not retune v3 definition hash.",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-016",
+      "SOURCE_RUN": "integrate_r3_v3:baseline_1 and baseline_2 validate win/loss and costs",
+      "OBSERVATION": "baseline_1_momentum_5m_sign_v1 validate reports winning_closed_trades=7 and losing_closed_trades=182; baseline_2_mean_reversion_5m_sign_v1 reports 60 wins and 126 losses. estimated_costs≈63.71 apply on traded_notional≈127412 despite small gross magnitudes (-90.46 and -5.07), yielding net_pnl more negative than gross for both.",
+      "LIMITATION": "Cost model is research notional-linear-bps/1.0.0; not broker-fee calibrated.",
+      "POSSIBLE_CAUSE": "Linear bps charges scale with turnover/notional independent of per-trade win rate.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4",
+      "REQUIRED_DATA": "Pre-registered bps grid and fill-price realism audit in a NEW experiment_id.",
+      "PROPOSED_TEST": "Sensitivity run varying cost_model bps only with locked strategies and splits; primary metric net_pnl dispersion vs bps.",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-017",
+      "SOURCE_RUN": "integrate_r3_v3:baseline_1 vs baseline_2 validate",
+      "OBSERVATION": "Mean-reversion baseline shows higher directional_accuracy (≈0.527) than momentum (≈0.463) on the same validate split, yet both report negative gross and net PnL under v3 economics (net≈-68.78 vs -154.17).",
+      "LIMITATION": "Directional accuracy is label alignment, not economic edge; five sessions only.",
+      "POSSIBLE_CAUSE": "Sign prediction quality decouples from simulated fill prices, exposure, and cost drag on this harness.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+      "REQUIRED_DATA": "Per-fill mark policy and bar conservative fill audit trail in a new bounded experiment.",
+      "PROPOSED_TEST": "Compare forward-return sign metrics vs gross_pnl per baseline without selecting a winner on v3 receipts.",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-018",
+      "SOURCE_RUN": "integrate_r3_v3:baseline_3_volume_momentum_5m_v1",
+      "OBSERVATION": "Volume-momentum baseline shows abstention_rate≈0.621, exposure=19 (vs exposure=8 for baselines 1–2), traded_notional≈48540.89, and validate win/loss 9/54 with net_pnl≈-37.64.",
+      "LIMITATION": "Small validate sample_count=148; volume gate behavior not ablated in v3.",
+      "POSSIBLE_CAUSE": "relative_volume_10m>=1.0 gate reduces intents/fills and increases concurrent exposure versus always-on momentum.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-H-HYP-BASELINE3-VOLUME-OPEND-V3",
+      "REQUIRED_DATA": "Pre-registered threshold grid on OpenD pin in NEW experiment.",
+      "PROPOSED_TEST": "Defer to ranked Lane H queue entry; no in-place v3 parameter edits.",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-019",
+      "SOURCE_RUN": "integrate_r3_v3:metrics_by_split drawdown fields",
+      "OBSERVATION": "drawdown remains null for all baselines on HISTORICAL_DEVELOPMENT_VALIDATE and HISTORICAL_RESEARCH_TEST in v3 pack manifest despite non-zero net_pnl on validate for baselines 1–3.",
+      "LIMITATION": "Null drawdown is an reporting gap, not evidence of zero risk.",
+      "POSSIBLE_CAUSE": "Fill-economics accounting v3.0.1 emits PnL columns without wired drawdown aggregation in baseline pack v3 metrics.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1",
+      "REQUIRED_DATA": "Explicit drawdown policy and harness metric contract in a NEW engineering increment.",
+      "PROPOSED_TEST": "Follow-up experiment requiring non-null drawdown when net_pnl variance >0 on validate.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-020",
+      "SOURCE_RUN": "integrate_r3_v3:baselines 1–3 HISTORICAL_RESEARCH_TEST split",
+      "OBSERVATION": "On locked HISTORICAL_RESEARCH_TEST split, baselines 1–3 report simulated_fills=0, turnover=0, gross_pnl=0.0, net_pnl=0.0, and estimated_costs=0.0 while directional_accuracy and sample_count remain populated (e.g. b1 n=386, accuracy≈0.503).",
+      "LIMITATION": "Observed split policy behavior; test split is not an execution authority.",
+      "POSSIBLE_CAUSE": "Research harness evaluates prediction labels on test split without replaying simulator fills/PnL on that split in this pack configuration.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-TEST-SPLIT-FILL-POLICY-V1",
+      "REQUIRED_DATA": "Documented split-scoped simulator policy before any test-split PnL claims.",
+      "PROPOSED_TEST": "NEW experiment manifest stating whether test-split fills are in scope; forbidden: backfilling v3 test metrics.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-021",
+      "SOURCE_RUN": "integrate_r3_v3:contamination_audit run_id=C3DE72960BAC86F9E743E14B9DBC2BF1",
+      "OBSERVATION": "v3 pack contractual contamination audit CONTAMINATION_STATUS=PASS with all five questions PASS, supplemental_violations=[], ITEM9_EFFECT=NONE.",
+      "LIMITATION": "PASS is contractual leakage scope only; does not validate economics realism.",
+      "POSSIBLE_CAUSE": "Chronological split and corpus pin respected for multi-session OpenD replay under v3 definition.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-022",
+      "SOURCE_RUN": "integrate_r2_v2:experiment_definition_hash identity check",
+      "OBSERVATION": "OpenD baseline pack v2 frozen receipts remain at EXPERIMENT_HASH=E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4; Lane E did not mutate v2 evidence tree or hashes.",
+      "LIMITATION": "Read-only verification at synthesis time; does not re-run v2 harness.",
+      "POSSIBLE_CAUSE": "Evidence immutability policy separates v3 successor from v2 frozen artifacts.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-023",
+      "SOURCE_RUN": "lane_e:governance; lane_i1_nonstub_sut_wiring",
+      "OBSERVATION": "SMOKE10_EXECUTED=NO for Lane E synthesis. Independent review records SMOKE10_JUSTIFIED=NO because IBP-CASE-001..010 evaluator gold_answer values are synthetic-gold-NNN (catalog generator), with only CASE-001 carrying a distinct historical fixture; executing non-UNKNOWN CASE-001 under a new SUT risks unknown_handling regression versus frozen stub run ibp-smoke10-76DDD188CD080365.",
+      "LIMITATION": "Protocol/gold mismatch observation; not a benchmark score claim.",
+      "POSSIBLE_CAUSE": "Smoke10 catalog optimized for dimensional stub checks, not grounded factual extraction against admitted historical evidence.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+      "REQUIRED_DATA": "Independently specified factual gold/prompt corpus over admitted evidence classes; must not gold-match current non-stub SUT outputs.",
+      "PROPOSED_TEST": "Design NEW benchmark corpus + invocation contract; execute only after operator authorization with distinct run_id.",
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-024",
+      "SOURCE_RUN": "lane_i1:branch ui/nonstub-facts-sut-resolvers @ f5220ddd; lane_d stub frozen",
+      "OBSERVATION": "Non-stub facts SUT resolver wiring review disposition APPROVE_WIRING_NO_SMOKE10: engineering path approved without executing Smoke10. Frozen stub Smoke10 still shows facts FAIL 10/10 FACTS_MISMATCH; no new non-stub run_id was produced in Lane E.",
+      "LIMITATION": "Wiring approval is not benchmark validation; PR #267 not merged per Lane E non-goals.",
+      "POSSIBLE_CAUSE": "Benchmark execution gated on gold corpus adequacy and regression risk on unknown_handling.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1",
+      "REQUIRED_DATA": "Merged or explicitly authorized SUT profile plus revised gold corpus per LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1.",
+      "PROPOSED_TEST": "Defer Smoke10 until factual gold corpus exists; DID_SYSTEM_SEE_GOLD must remain PASS.",
+      "AUTHORITY": "BENCHMARK"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-025",
+      "SOURCE_RUN": "ibp catalog fixtures evaluator_only/gold IBP-CASE-001..010",
+      "OBSERVATION": "Ten-case smoke subset uses synthetic-gold-NNN evaluator answers for every case; grounded historical fixture coverage for facts benchmarking is 1/10 cases (CASE-001 only in current fixture layout).",
+      "LIMITATION": "Catalog inspection only; facts dimension scores under synthetic gold are not informative for grounded SUT evaluation.",
+      "POSSIBLE_CAUSE": "IBP v1 catalog seed values prioritize protocol isolation over multi-case admitted historical fact keys.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+      "REQUIRED_DATA": "Multi-case admitted-evidence fact keys with evaluator-only storage and contamination gates.",
+      "PROPOSED_TEST": "Corpus design milestone before any non-stub Smoke10 score interpretation.",
+      "AUTHORITY": "BENCHMARK"
+    }
+  ]
+}

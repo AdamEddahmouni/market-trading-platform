@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Lane E v3 findings registry (OpenD fill economics)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `tests/platform` |
+| **Summary** | Registered bounded Lane E findings from immutable v3 pack `81EFC1B1…` (five AAPL sessions) and intelligence Smoke10 deferral (`SMOKE10_EXECUTED=NO`); closed `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` at machinery observation without edge/deployability language. v2 `E8C9ADB9…` and v3 execution receipts untouched. |
+| **Key files** | `evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/*`; `tests/platform/test_imp_integrate_experiment_05_lane_e_v3_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_integrate_experiment_05_lane_e_v3_findings` — 3/3 OK |
+| **Related** | Worktree `research/opend-v3-findings` from v3 HEAD `436a0ed7`; source run `research/opend-fill-economics-v3` |
+| **Notes** | No Smoke10 run; no v3 rerun; no PR #222/#267 merge. |
+
 ## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B freeze + bounded performance
 
 | Field | Value |

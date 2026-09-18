@@ -1,0 +1,68 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_e_v3_synthesis_receipt_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "branch": "research/opend-v3-findings",
+  "evidence_class": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "E",
+  "v3_freeze_identity_verified": {
+    "HYPOTHESIS_ID": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+    "EXPERIMENT_ID": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+    "DATASET_FINGERPRINT": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "EXPERIMENT_HASH": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+    "CODE_SHA": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+    "FIRST_SECOND_FINGERPRINT": "AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490",
+    "CONTAMINATION_STATUS": "PASS",
+    "pack_run_id": "C3DE72960BAC86F9E743E14B9DBC2BF1",
+    "source_worktree_head": "436a0ed7309737264c3787553228f3791a12e43f"
+  },
+  "v2_immutable_identity_verified": {
+    "EXPERIMENT_HASH": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+    "mutated_in_lane_e": false
+  },
+  "SMOKE10_EXECUTED": "NO",
+  "smoke10_justified": "NO",
+  "smoke10_justification_note": "IBP-CASE-001..010 gold_answer synthetic-gold-NNN; 1/10 historical fixture coverage; CASE-001 non-UNKNOWN execution risks unknown_handling regression vs ibp-smoke10-76DDD188CD080365",
+  "nonstub_sut_wiring": {
+    "disposition": "APPROVE_WIRING_NO_SMOKE10",
+    "reference_commit": "f5220ddd",
+    "reference_branch": "ui/nonstub-facts-sut-resolvers",
+    "merged": false
+  },
+  "frozen_runs_untouched": [
+    {
+      "name": "OpenD baseline pack v3 executed receipts",
+      "note": "Lane E added findings only; did not edit frozen_experiment_definition.json or v3 pack manifests on research/opend-fill-economics-v3 @ 436a0ed7"
+    },
+    {
+      "name": "OpenD baseline pack v2",
+      "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4"
+    },
+    {
+      "name": "Smoke10 stub",
+      "run_id": "ibp-smoke10-76DDD188CD080365"
+    }
+  ],
+  "non_goals_observed": [
+    "no V3 rerun or PnL retune",
+    "no v2 evidence rewrite",
+    "no Smoke10 execution",
+    "no PR 222 merge",
+    "no Item 9 collector mutation",
+    "no PR 267 merge/push",
+    "no LIVE trading"
+  ],
+  "outputs": {
+    "findings_registry": "evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/findings_registry_v1.json",
+    "hypothesis_queue": "evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/hypothesis_queue_v1.json"
+  },
+  "synthesis_timestamp_utc": "2026-09-18T06:40:00Z",
+  "post_synthesis_main_reconcile": {
+    "reconciled_utc": "2026-09-18T07:30:00Z",
+    "pr_base_main": "a8dc0a6503fa9c5e64c23094877c4865ea82db22",
+    "v3_evidence_merged_pr": 273,
+    "nonstub_sut_wiring_merged_pr": 272,
+    "nonstub_sut_wiring_merge_commit": "ccc41a7fce7b08c6468d608fe7e44e65f9ecdbfe",
+    "note": "nonstub_sut_wiring.merged=false is the synthesis-time review snapshot; IBP facts SUT wiring later landed on main via PR #272 without Lane E Smoke10 execution. v3 pack receipts remain pinned to 436a0ed7."
+  }
+}
