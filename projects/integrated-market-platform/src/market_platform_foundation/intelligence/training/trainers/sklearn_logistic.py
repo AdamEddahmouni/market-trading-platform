@@ -45,6 +45,12 @@ class SklearnLogisticCandidateTrainer:
         spec: CandidateTrainingSpec,
         dataset: PreparedTrainingDataset,
     ) -> CandidateTrainingResult:
+        from ...baselines.training import enforce_baseline_dataset_consumption_policy
+
+        enforce_baseline_dataset_consumption_policy(
+            dataset.baseline_dataset,
+            purpose="sklearn_logistic_candidate_train",
+        )
         baseline_dataset = dataset.baseline_dataset
         hyperparams = dict(DEFAULT_LOGISTIC_HYPERPARAMETERS)
         hyperparams.update(

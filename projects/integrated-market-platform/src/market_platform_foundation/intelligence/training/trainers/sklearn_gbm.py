@@ -43,6 +43,12 @@ class SklearnGbmCandidateTrainer:
         spec: CandidateTrainingSpec,
         dataset: PreparedTrainingDataset,
     ) -> CandidateTrainingResult:
+        from ...baselines.training import enforce_baseline_dataset_consumption_policy
+
+        enforce_baseline_dataset_consumption_policy(
+            dataset.baseline_dataset,
+            purpose="sklearn_gbm_candidate_train",
+        )
         baseline_dataset = dataset.baseline_dataset
         hyperparams = dict(DEFAULT_GBM_HYPERPARAMETERS)
         hyperparams.update(

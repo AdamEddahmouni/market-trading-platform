@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane B holdout guard hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, intelligence training/production/fusion |
+| **Summary** | Expanded fail-closed `UNTOUCHED_FORWARD_EVALUATION` (and taxonomy-derived forward holdout authorities) guards across Path A production fit/calibrate, BUILD 08 baseline fit, BUILD 14 calibration trainer, BUILD 18 training factory/materialization, and hyperparameter grid expansion. Evaluation-only surfaces (validation inference, calibration apply, promotion ranking) remain unblocked. |
+| **Key files** | `paper/calibration/dual_corpus/consumption.py`; `intelligence/production/{training_build,model,calibrator}.py`; `intelligence/fusion/calibrators.py`; `intelligence/baselines/{training,controls/*}.py`; `intelligence/training/{factory,datasets,search,trainers/*}.py`; `tests/platform/test_holdout_consumption_guards.py` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` (4128 passed, 30 skipped); `unittest` `test_holdout_consumption_guards` + `test_dual_corpus_contamination` (26 passed) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane B; dual-corpus contract |
+| **Notes** | Item 9 split logic untouched; no #222 merge. |
+
 ## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane A Path A label linker
 
 | Field | Value |
