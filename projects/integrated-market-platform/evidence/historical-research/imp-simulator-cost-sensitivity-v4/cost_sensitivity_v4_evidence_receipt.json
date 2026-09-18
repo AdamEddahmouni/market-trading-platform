@@ -1,0 +1,15 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "artifact_kind": "historical_cost_sensitivity_v4_evidence_receipt_v1",
+  "contamination_status": "PASS",
+  "cost_sensitivity_run_manifest_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_run_manifest.json",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "evidence_label": "HISTORICAL_COST_SENSITIVITY_V4",
+  "execution_status": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_definition_hash": "30FB6972170147A49B9C23423596451F5EC865433B888B1DD5F48AA1E9020B53",
+  "invariant_violations": [],
+  "observation_language": "BOUNDED_HISTORICAL_OBSERVATION",
+  "pack_run_id": "1DEF586AD729B270E20814B03606A718",
+  "parent_experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+  "performance_run": "YES"
+}

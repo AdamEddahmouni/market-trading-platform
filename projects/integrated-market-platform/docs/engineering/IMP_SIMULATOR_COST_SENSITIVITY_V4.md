@@ -4,13 +4,22 @@
 **Source finding:** `LANE-E-FND-016`  
 **Authority:** `HISTORICAL_DEVELOPMENT` only — not Item 9 calibration, not broker-fee truth.
 
-## Status (Lane C — Sep 18)
+## Status (Lane E execution — Sep 18)
 
 | Gate | Value |
 |------|-------|
-| `SPEC_READY` | **YES** |
-| `IMPLEMENTATION_READY` | **NO** (methodology frozen; v4 experiment pack + runner not landed) |
-| `EXECUTED` | **NO** |
+| `SPEC_READY` | **YES** (pre-registration unchanged: `pre_registered_methodology_v1.json`) |
+| `IMPLEMENTATION_READY` | **YES** (`cost_sensitivity_v4.py`, `historical_cost_sensitivity_v4_cli.py`) |
+| `EXECUTED` | **YES** (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`) |
+
+| Field | Value |
+|-------|-------|
+| `experiment_id` | `imp-simulator-cost-sensitivity-v4-lane-e` |
+| `experiment_definition_hash` | `30FB6972170147A49B9C23423596451F5EC865433B888B1DD5F48AA1E9020B53` |
+| `pack_run_id` | `1DEF586AD729B270E20814B03606A718` |
+| Post-exec status | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/execution_status_v1.json` |
+| Run manifest | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_run_manifest.json` |
+| Evidence receipt | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_v4_evidence_receipt.json` |
 
 ## Frozen methodology (pre-registered)
 
@@ -120,20 +129,25 @@ From v3 `run_parameters.split_policy`:
 
 **Forbidden claims:** production fee calibration, broker truth, strategy winner from validate ordering.
 
-### Proposed v4 experiment identity (not executed)
+### v4 experiment identity (executed)
 
-| Field | Proposed value |
-|-------|----------------|
+| Field | Value |
+|-------|-------|
 | `increment_id` | `IMP-SIMULATOR-COST-SENSITIVITY-V4` |
 | `experiment_id` | `imp-simulator-cost-sensitivity-v4-lane-e` |
 | `evidence_label` | `HISTORICAL_COST_SENSITIVITY_V4` |
-| Definition artifact | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/pre_registered_methodology_v1.json` |
+| Pre-registration (immutable) | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/pre_registered_methodology_v1.json` |
+| Frozen definition | `evidence/historical-research/imp-simulator-cost-sensitivity-v4/frozen_experiment_definition.json` |
 
-Execution requires a **NEW** `experiment_definition_hash` after implementation lands; provider-heavy OpenD replay only when Item 9 collector is not contended.
+No further grid expansion or in-place v3 edits. Parent v3 hash remains immutable.
 
-## Machine-readable freeze
+## Machine-readable artifacts
 
-`evidence/historical-research/imp-simulator-cost-sensitivity-v4/pre_registered_methodology_v1.json`
+| Role | Path |
+|------|------|
+| Pre-registered methodology | `pre_registered_methodology_v1.json` |
+| Post-execution status | `execution_status_v1.json` |
+| Lane C readiness rollup | `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
 
 ## Related
 

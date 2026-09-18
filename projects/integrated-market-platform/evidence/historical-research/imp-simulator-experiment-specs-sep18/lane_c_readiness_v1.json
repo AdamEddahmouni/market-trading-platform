@@ -9,10 +9,20 @@
   "hypotheses": {
     "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4": {
       "SPEC_READY": true,
-      "IMPLEMENTATION_READY": false,
-      "EXECUTED": false,
+      "IMPLEMENTATION_READY": true,
+      "EXECUTED": true,
+      "execution_status": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
       "methodology_json": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/pre_registered_methodology_v1.json",
-      "methodology_doc": "docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md"
+      "execution_status_json": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/execution_status_v1.json",
+      "methodology_doc": "docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md",
+      "experiment_id": "imp-simulator-cost-sensitivity-v4-lane-e",
+      "experiment_definition_hash": "30FB6972170147A49B9C23423596451F5EC865433B888B1DD5F48AA1E9020B53",
+      "pack_run_id": "1DEF586AD729B270E20814B03606A718",
+      "frozen_experiment_definition_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/frozen_experiment_definition.json",
+      "cost_sensitivity_run_manifest_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_run_manifest.json",
+      "evidence_receipt_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_v4_evidence_receipt.json",
+      "execution_worktree": ".worktrees/lane-e-cost-v4",
+      "execution_branch": "benchmark/lane-e-cost-sensitivity-v4"
     },
     "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1": {
       "SPEC_READY": true,
