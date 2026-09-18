@@ -42,11 +42,11 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `intelligence` / grounded fact SUT integration |
-| **Summary** | Rebased approved SUT stack onto current `origin/main` (`2306ff4a`, #281); landed Lane B synthetic fixtures and `test_grounded_fact_independent_fixtures_v1.py` on `feat/grounded-fact-extraction-v1` in worktree `.worktrees/lane-bc-grounded-facts` (no merge to main, no smoke). |
+| **Summary** | Rebased approved SUT stack onto current `origin/main` (`2306ff4a`, #281); landed Lane B synthetic fixtures and `test_grounded_fact_independent_fixtures_v1.py` on `feat/grounded-fact-extraction-v1` in worktree `.worktrees/lane-bc-grounded-facts` (HELD pending main merge; no smoke rerun on this integration step). |
 | **Key files** | `tests/intelligence/test_grounded_fact_independent_fixtures_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_independent/*` |
 | **Tests** | `python -m unittest tests.intelligence.test_grounded_fact_extraction_v1 tests.intelligence.test_grounded_fact_independent_fixtures_v1` — 31 OK; `python tools/imp.py test focused` (2 representative selectors) — 2 OK |
-| **Related** | Lane A receipt `evidence/intelligence-benchmark/imp-post-rth-close-08-lane-a/grounded_fact_extraction_review_v1.json` |
-| **Notes** | `PROVENANCE_HYGIENE=skipped` (preserve freeze `SUT_CODE_SHA=b43cfd53`). `GOLD_INSPECTED=NO`, `SMOKE_EXECUTED=NO`. |
+| **Related** | Lane A receipt `evidence/intelligence-benchmark/imp-post-rth-close-08-lane-a/grounded_fact_extraction_review_v1.json`; historical factual smoke `RUN_ID=ibp-factual-smoke-766E16CAF41F3210` persisted @ `f7486f42`/`90773a41` |
+| **Notes** | `PROVENANCE_HYGIENE=skipped` (preserve freeze `SUT_CODE_SHA=b43cfd53`). `GOLD_INSPECTED=NO`. Historical smoke **executed and persisted** (facts 11/11, unknown_handling 11/11); `FULL30_EXECUTED=NO`; no post-`b43cfd53` SUT change — ancestry-only integration must not rerun smoke. |
 
 ## 2026-09-18 — Grounded fact extraction v1 (Lanes A+B+C)
 
@@ -58,7 +58,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/grounded_fact_extraction/*`, `facts_sut.py`, `sut_profiles.py`, `tests/intelligence/test_grounded_fact_extraction_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_extraction/*`, nonstub freeze fingerprint refresh |
 | **Tests** | `unittest tests.intelligence.test_grounded_fact_extraction_v1` + M4 evaluator (28 OK); `python tools/imp.py validate changed` PASSED (3656 tests) |
 | **Related** | `LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1`, `LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1`, `LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1` |
-| **Notes** | No smoke rerun; no evaluator gold read; worktree `intelligence/grounded-fact-extraction-v1` @ `origin/main` `2306ff4a` |
+| **Notes** | No smoke rerun on integration; historical smoke receipt retained (`ibp-factual-smoke-766E16CAF41F3210`); no evaluator gold read; no Full30; worktree `feat/grounded-fact-extraction-v1` @ `90773a41` |
 
 
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
