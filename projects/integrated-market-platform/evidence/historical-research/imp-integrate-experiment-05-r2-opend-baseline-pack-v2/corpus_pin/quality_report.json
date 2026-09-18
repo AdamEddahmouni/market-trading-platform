@@ -1,0 +1,89 @@
+{
+  "actual_sessions": 5,
+  "artifact_kind": "historical_development_quality_report_v1",
+  "bars_outside_session_count": 5011,
+  "corporate_action_status": "PROVIDER_QFQ_NOT_RECONCILED",
+  "duplicate_row_count": 0,
+  "duplicate_rows": 0,
+  "early_close_dates_declared": [],
+  "excluded_row_count": 5011,
+  "exclusions": {
+    "invalid_ohlc_rows": 0,
+    "malformed_timestamp_rows": 0,
+    "outside_session_rows": 5011
+  },
+  "expected_rows": 1950,
+  "expected_rth_minutes_per_full_session": 390,
+  "forward_fill_applied": false,
+  "holiday_count": 0,
+  "holiday_dates_declared": [],
+  "incomplete_final_bar_count": 0,
+  "incomplete_rows": 0,
+  "invalid_ohlc_rows": 0,
+  "malformed_rows": 0,
+  "malformed_timestamp_count": 0,
+  "missing_intervals": [],
+  "missing_rows": 0,
+  "observed_rows": 1950,
+  "ohlc_validity_violation_count": 0,
+  "ordering_violation_count": 0,
+  "out_of_order_rows": 0,
+  "outside_session_rows": 5011,
+  "provider_gap_intervals": 0,
+  "provider_gap_pages": 0,
+  "quality_fingerprint": "5794350B879B8EBC53CDC17FC1C1DA349B51BD251F0AF1C72D9B778A03303AD2",
+  "quality_status": "PASS",
+  "raw_row_count": 1950,
+  "raw_time_key_ordering_violations": 0,
+  "requested_sessions": 5,
+  "row_count": 1950,
+  "session_date_count": 5,
+  "session_dates": [
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-15",
+    "2026-09-16"
+  ],
+  "session_summaries": [
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 390,
+      "session_date": "2026-09-10",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 390,
+      "session_date": "2026-09-11",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 390,
+      "session_date": "2026-09-14",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 390,
+      "session_date": "2026-09-15",
+      "session_kind": "REGULAR"
+    },
+    {
+      "expected_minute_count": 390,
+      "observed_minute_count": 390,
+      "session_date": "2026-09-16",
+      "session_kind": "REGULAR"
+    }
+  ],
+  "short_session_count": 0,
+  "transformations": [
+    "provider_fetch",
+    "rth_filter",
+    "dedupe",
+    "normalize_moomoo_kline_row"
+  ],
+  "volume_anomalies": 0,
+  "volume_anomaly_count": 0
+}

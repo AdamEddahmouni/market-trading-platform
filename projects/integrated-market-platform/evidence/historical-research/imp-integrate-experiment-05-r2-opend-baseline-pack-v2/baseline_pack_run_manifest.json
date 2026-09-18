@@ -1,0 +1,334 @@
+{
+  "artifact_kind": "historical_baseline_pack_run_v2",
+  "baseline_results": [
+    {
+      "baseline_index": 0,
+      "config_fingerprint": "D9DC1E0395F206470105BB867A7398B2E13CB7FB15653AF248E5B39B4147873E",
+      "coupling_observation": {
+        "directional_signals": 0,
+        "estimated_costs": 0.0,
+        "fills": 0,
+        "gross_pnl": 0,
+        "net_pnl": 0.0,
+        "trade_intents": 0,
+        "turnover": 0
+      },
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-05-r2-opend-v2\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v2\\runs\\8AA92F4B17365AC33EE59D0C929EB53CB019FE01A27DCEA112CD0AA4D8FAFBA9\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 1.0,
+          "avg_forward_return": null,
+          "coverage": null,
+          "directional_accuracy": null,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": 0,
+          "gross_pnl": 0,
+          "hit_rate": null,
+          "median_forward_return": null,
+          "net_pnl": 0.0,
+          "precision": null,
+          "recall": null,
+          "sample_count": 0,
+          "simulated_fills": 0,
+          "tail_summary": {
+            "p10_forward_return": null,
+            "p90_forward_return": null
+          },
+          "turnover": 0
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 1.0,
+          "avg_forward_return": null,
+          "coverage": null,
+          "directional_accuracy": null,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": null,
+          "median_forward_return": null,
+          "net_pnl": 0.0,
+          "precision": null,
+          "recall": null,
+          "sample_count": 0,
+          "signal_count": 0,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": null,
+            "p90_forward_return": null
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B",
+      "run_id": "8AA92F4B17365AC33EE59D0C929EB53CB019FE01A27DCEA112CD0AA4D8FAFBA9",
+      "strategy_id": "baseline_0_no_trade_v1"
+    },
+    {
+      "baseline_index": 1,
+      "config_fingerprint": "E68B6F070804BDD837FA27767324CB220E7E3E8205C4C0B0BD71634B3D2CAEFE",
+      "coupling_observation": {
+        "directional_signals": 387,
+        "estimated_costs": 0.0,
+        "fills": 386,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "trade_intents": 387,
+        "turnover": 386
+      },
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-05-r2-opend-v2\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v2\\runs\\A08B50518E9FEF29082F24B5385C2348D9C1C26F91285D3EE2DB8EA772CF9FBA\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.007692307692307693,
+          "avg_forward_return": 1.5101482594649135e-05,
+          "coverage": null,
+          "directional_accuracy": 0.4625322997416021,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": 8,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.4625322997416021,
+          "median_forward_return": 3.0236601405997376e-05,
+          "net_pnl": 0.0,
+          "precision": 0.4625322997416021,
+          "recall": 0.4625322997416021,
+          "sample_count": 387,
+          "simulated_fills": 386,
+          "tail_summary": {
+            "p10_forward_return": -0.0005169545358297833,
+            "p90_forward_return": 0.000560444720459019
+          },
+          "turnover": 386
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.007692307692307693,
+          "avg_forward_return": -1.343195475818255e-06,
+          "coverage": null,
+          "directional_accuracy": 0.5025906735751295,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.5025906735751295,
+          "median_forward_return": 1.4999475018262487e-05,
+          "net_pnl": 0.0,
+          "precision": 0.5025906735751295,
+          "recall": 0.5025906735751295,
+          "sample_count": 386,
+          "signal_count": 387,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": -0.0007062040779529655,
+            "p90_forward_return": 0.00063415370677955
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "46EDB3A79048C140E13E98F58E4C05FE48A927E19AC5241B31E697D0831804CD",
+      "run_id": "A08B50518E9FEF29082F24B5385C2348D9C1C26F91285D3EE2DB8EA772CF9FBA",
+      "strategy_id": "baseline_1_momentum_5m_sign_v1"
+    },
+    {
+      "baseline_index": 2,
+      "config_fingerprint": "A332E661DF6CB569CF26F41C8CF07585D273B182AEEAA9D889E4827F8B49DE33",
+      "coupling_observation": {
+        "directional_signals": 387,
+        "estimated_costs": 0.0,
+        "fills": 386,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "trade_intents": 387,
+        "turnover": 386
+      },
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-05-r2-opend-v2\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v2\\runs\\FF5DC3CCC6A9021D5E9DF73B1431B38997278F54D10FE96AC71E32EC57ECE870\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.007692307692307693,
+          "avg_forward_return": 1.5101482594649135e-05,
+          "coverage": null,
+          "directional_accuracy": 0.5271317829457365,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": 8,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.5271317829457365,
+          "median_forward_return": 3.0236601405997376e-05,
+          "net_pnl": 0.0,
+          "precision": 0.5271317829457365,
+          "recall": 0.5271317829457365,
+          "sample_count": 387,
+          "simulated_fills": 386,
+          "tail_summary": {
+            "p10_forward_return": -0.0005169545358297833,
+            "p90_forward_return": 0.000560444720459019
+          },
+          "turnover": 386
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.007692307692307693,
+          "avg_forward_return": -1.343195475818255e-06,
+          "coverage": null,
+          "directional_accuracy": 0.49222797927461137,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.49222797927461137,
+          "median_forward_return": 1.4999475018262487e-05,
+          "net_pnl": 0.0,
+          "precision": 0.49222797927461137,
+          "recall": 0.49222797927461137,
+          "sample_count": 386,
+          "signal_count": 387,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": -0.0007062040779529655,
+            "p90_forward_return": 0.00063415370677955
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "9F71B4ABED54CDE753CF0DC117E11A9646764551E710517E9B85B7EB5E5F94DB",
+      "run_id": "FF5DC3CCC6A9021D5E9DF73B1431B38997278F54D10FE96AC71E32EC57ECE870",
+      "strategy_id": "baseline_2_mean_reversion_5m_sign_v1"
+    },
+    {
+      "baseline_index": 3,
+      "config_fingerprint": "83C9BFF529000E9F919F6A8D35EA23EB05E1BA0BFE45E3444F8A3E40FEBEC7C0",
+      "coupling_observation": {
+        "directional_signals": 148,
+        "estimated_costs": 0.0,
+        "fills": 147,
+        "gross_pnl": 0.0,
+        "net_pnl": 0.0,
+        "trade_intents": 148,
+        "turnover": 147
+      },
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-05-r2-opend-v2\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v2\\runs\\A2B29D9120E2471489CE7A0018657ECA4914E84EF54734D385539249DC8ECF32\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.6205128205128205,
+          "avg_forward_return": -2.4998096525533613e-05,
+          "coverage": null,
+          "directional_accuracy": 0.47297297297297297,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": 19,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.47297297297297297,
+          "median_forward_return": 0.0,
+          "net_pnl": 0.0,
+          "precision": 0.47297297297297297,
+          "recall": 0.47297297297297297,
+          "sample_count": 148,
+          "simulated_fills": 147,
+          "tail_summary": {
+            "p10_forward_return": -0.0005732733910629451,
+            "p90_forward_return": 0.000530495937916875
+          },
+          "turnover": 147
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.6256410256410256,
+          "avg_forward_return": -0.00012494683564677182,
+          "coverage": null,
+          "directional_accuracy": 0.496551724137931,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.496551724137931,
+          "median_forward_return": -6.0033018159932894e-05,
+          "net_pnl": 0.0,
+          "precision": 0.496551724137931,
+          "recall": 0.496551724137931,
+          "sample_count": 145,
+          "signal_count": 146,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": -0.0008701131147049734,
+            "p90_forward_return": 0.0005545064892245044
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "58B5FA1CA7010872A9F71A9E2273AC2FA0B8807EA97E94A4C3EF628F90058373",
+      "run_id": "A2B29D9120E2471489CE7A0018657ECA4914E84EF54734D385539249DC8ECF32",
+      "strategy_id": "baseline_3_volume_momentum_5m_v1"
+    }
+  ],
+  "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+  "contamination_audit": {
+    "CONTAMINATION_STATUS": "PASS",
+    "contract_scope": "contractual_leakage_properties_only",
+    "evidence_language": {
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT",
+      "ITEM9_EFFECT": "NONE"
+    },
+    "questions": {
+      "DID_FEATURES_SEE_FUTURE_DATA": "PASS",
+      "DID_HISTORICAL_DATA_ENTER_PROSPECTIVE_ITEM9": "PASS",
+      "DID_HOLDOUT_ENTER_TRAINING": "PASS",
+      "DID_PROSPECTIVE_RECEIPTS_ENTER_HISTORICAL_RESEARCH": "PASS",
+      "DID_TRAIN_SEE_TEST": "PASS"
+    },
+    "run_fail_policy": "CONTAMINATION_STATUS=FAIL when any question FAIL, any violation recorded, or supplemental_violations non-empty",
+    "run_id": "F660218C05BD2EDDD943938FF90BB5FE",
+    "supplemental_violations": [],
+    "violations": []
+  },
+  "contamination_manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-05-r2-opend-v2\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v2\\pack-runs\\F660218C05BD2EDDD943938FF90BB5FE\\contamination_manifest.json",
+  "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+  "created_timestamp_ns": 1789708346502055500,
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "dataset_identity": {
+    "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+    "corpus_pin_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/corpus_pin",
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "dataset_id": "HIST-DEV-AAPL",
+    "end_date": "2026-09-16",
+    "instrument": "AAPL",
+    "lane_b_verification_receipt_path": "evidence/market_data/lane_b/real-historical-provider-verification.json",
+    "manifest_dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+    "provider_id": "moomoo.real_historical",
+    "provider_lineage_id": "moomoo.opend",
+    "row_count": 1950,
+    "session_dates": [
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16"
+    ],
+    "start_date": "2026-09-10"
+  },
+  "evidence_label": "HISTORICAL_BASELINE_V2_OPEND",
+  "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+  "experiment_id": "imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+  "feature_version": "historical-research-bar-features/1.0.0",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/frozen_experiment_definition.json",
+  "frozen_research_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+  "hypothesis_id": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+  "observation_language": "BOUNDED_HISTORICAL_OBSERVATION",
+  "pack_run_id": "F660218C05BD2EDDD943938FF90BB5FE",
+  "prediction_coupled_simulator": true,
+  "reproducibility": {
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "deterministic_rerun_first_baseline_match": true,
+    "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+    "first_run_fingerprint": "32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B",
+    "second_run_fingerprint": "32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B"
+  },
+  "research_code_sha": "a83fdabb599bebb6b3f27517fcef62e72729e39b",
+  "schema_version": "imp.historical-baseline-pack/2.0.0",
+  "simulator_version": "paper_bar_conservative_v1"
+}
