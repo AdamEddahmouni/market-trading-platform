@@ -29,6 +29,7 @@ from .quality import build_quality_report, count_incomplete_final_bars
 from .rth_session import (
     US_EQUITY_BAR_TZ,
     US_EQUITY_RTH_SESSION_POLICY,
+    classify_us_equity_session_day,
     expected_rth_minute_keys,
     filter_raw_rows_rth,
     iter_us_equity_session_dates,
@@ -163,7 +164,7 @@ def build_historical_rth_dataset(
         if not fixture_only:
             time.sleep(0.05)
 
-    rth_rows, outside_session = filter_raw_rows_rth(all_raw)
+    rth_rows, outside_session = filter_raw_rows_rth(all_raw, early_closes=early_closes)
     deduped, duplicate_count, empty_time_key_count = _dedupe_raw_rows(rth_rows)
     malformed = empty_time_key_count + sum(
         1 for row in deduped if parse_moomoo_time_key_local(str(row.get("time_key") or "")) is None
@@ -234,7 +235,7 @@ def build_historical_rth_dataset(
     fingerprint = str(normalized_result.get("fingerprint") or "")
     missing_intervals: list[dict[str, Any]] = []
     for day in session_dates:
-        expected_keys = set(expected_rth_minute_keys(day))
+        expected_keys = set(expected_rth_minute_keys(day, early_closes=early_closes))
         present = set()
         for row in valid_rows:
             if not str(row.get("time_key") or "").startswith(day):
@@ -245,7 +246,14 @@ def build_historical_rth_dataset(
         gap = sorted(expected_keys - present)
         if gap:
             missing_intervals.append(
-                {"session_date": day, "missing_minute_count": len(gap), "sample": gap[:3]}
+                {
+                    "session_date": day,
+                    "session_kind": classify_us_equity_session_day(
+                        day, holidays=holidays, early_closes=early_closes
+                    ).value,
+                    "missing_minute_count": len(gap),
+                    "sample": gap[:3],
+                }
             )
 
     manifest = build_historical_development_dataset_manifest(
@@ -282,6 +290,8 @@ def build_historical_rth_dataset(
     manifest_path = paths.manifests_dir / "dataset_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     quality = build_quality_report(
+        start_date=start_date,
+        end_date=end_date,
         session_dates=session_dates,
         raw_rows=valid_rows,
         normalized_bars=bars,
@@ -289,7 +299,11 @@ def build_historical_rth_dataset(
         excluded_row_count=excluded,
         malformed_timestamp_count=malformed,
         outside_session_count=outside_session,
-        incomplete_final_bar_count=count_incomplete_final_bars(session_dates, valid_rows),
+        incomplete_final_bar_count=count_incomplete_final_bars(
+            session_dates,
+            valid_rows,
+            early_closes=early_closes,
+        ),
         provider_gap_pages=provider_gap_pages,
         holidays=sorted(holidays),
         early_closes=sorted(early_closes),
