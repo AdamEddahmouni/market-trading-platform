@@ -36,7 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane B real historical provider verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development`, `tools/historical_data` |
+| **Summary** | Bounded OpenD verification for AAPL 1m RTH (5 sessions) via `verify_real_historical_providers.py`; fail-closed IBKR gate when TWS/4001 closed and `IMP_IBKR_LIVE` unset. **HISTORICAL_DEVELOPMENT** only; Item 9 admission refused. |
+| **Key files** | `src/market_platform_foundation/market_data/historical_development/real_provider_verification.py`, `tools/historical_data/verify_real_historical_providers.py`, `tests/platform/test_real_historical_provider_verification.py` |
+| **Tests** | `python -m unittest tests.platform.test_real_historical_provider_verification` — 6 passed; `python tools/imp.py validate changed` — 1899 passed, 3 skipped |
+| **Related** | IMP-DUAL-CORPUS-01 Lane B builder; `tools/ibkr/verify_historical_trades_provider.py` |
+| **Notes** | Worktree `.worktrees/imp-04-lane-b-provider` @ branch `data/real-historical-verification`. Verified corpus under `artifacts/historical-rth-development-real-provider-verification/`. Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
 
 | Field | Value |
 |-------|-------|
