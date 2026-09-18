@@ -45,9 +45,10 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | IBP historical manifest admissibility now requires an explicit `simulator.result_kind` of `SIMULATOR_RESEARCH_RESULT`; absent or unknown kinds fail closed so historical simulator output cannot be ingested without an explicit research contract. |
 | **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/contamination.py`; `tests/intelligence/test_intelligence_benchmark_harness_adapter.py`; `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
 | **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_harness_adapter` — 10 passed; `python tools/imp.py validate changed` — PASSED 3529 tests, 0 failures |
-| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane E; branch `benchmarks/result-contract-hardening` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane A; IMP-OFFHOURS-RESEARCH-03 Lane E; branch `benchmarks/result-contract-hardening` |
 | **Notes** | Evidence class remains `HISTORICAL_DEVELOPMENT` only; no Item 9 / FTEP / Live upgrade paths. |
 
+## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |
 |-------|-------|
