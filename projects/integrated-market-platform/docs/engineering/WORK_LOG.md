@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 historical research harness v1
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `tools/historical_data`, `docs/engineering` |
+| **Summary** | Reusable historical development research pipeline: dataset → PIT features → chronological train/dev-validate/research-test splits → momentum challenger → paper simulator research result → component metrics → `historical_research_run_manifest_v1` with deterministic fingerprints. Authority remains `HISTORICAL_DEVELOPMENT`; labels distinct from POST_HORIZON; holdout consumption fails closed. |
+| **Key files** | `src/market_platform_foundation/intelligence/historical_research_harness/*`, `tools/historical_data/harness_cli.py`, `tools/imp.py`, `tests/platform/test_historical_research_harness.py`, `docs/engineering/IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Tests** | `python -m unittest tests.platform.test_historical_research_harness` (see validation) |
+| **Related** | [#246](https://github.com/AdamEddahmouni/market-trading-platform/pull/246) Lane D demo, `IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Notes** | Branch `research/historical-harness-v1`; no Item 9 calibration; no PROGRAM_STATUS SHA loop |
+
 ## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 research contamination auditor (Lane D)
 
 | Field | Value |
