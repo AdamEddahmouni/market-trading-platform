@@ -1,0 +1,12 @@
+{
+  "2024-11-07": [
+    {"code": "US.LANE_B", "time_key": "2024-11-07 09:30:00", "close": 42.0},
+    {"code": "US.LANE_B", "time_key": "2024-11-07 09:31:00", "close": 42.5},
+    {"code": "US.LANE_B", "time_key": "2024-11-07 09:32:00", "close": 43.0},
+    {"code": "US.LANE_B", "time_key": "2024-11-07 09:33:00", "close": 43.1},
+    {"code": "US.LANE_B", "time_key": "2024-11-07 09:34:00", "close": 43.2}
+  ],
+  "2024-11-08": [
+    {"code": "US.LANE_B", "time_key": "2024-11-08 10:00:00", "close": 44.0}
+  ]
+}
