@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-011",
+  "MODE": "UNKNOWN",
+  "QUESTION": {
+    "text": "From the admitted 2026-09-15 AAPL sample fixture only, what is the closing price for MSFT on 2026-09-15?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "ABSTENTION"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+  "TEMPORAL_CUTOFF": {
+    "kind": "SESSION_END",
+    "cutoff_instant": "2026-09-15T20:00:00Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "answerability",
+        "value": "NOT_IN_ADMITTED_EVIDENCE"
+      },
+      "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+      "source_record": "session:2026-09-15;instrument_scope",
+      "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "CORRECT_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "UNKNOWN_ABSTAIN",
+    "lane": "market_data"
+  },
+  "GOLD_HASH": "1352060E78B8EE497D40A4C5306CBA101037D1FE73F9465D6B4AAF13C844CE65",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-011.json",
+  "evaluator_notes": "M2 candidate — correct abstention; MSFT not present in evidence."
+}

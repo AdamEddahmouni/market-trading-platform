@@ -1,0 +1,894 @@
+{
+  "artifact_kind": "ibp_admitted_factual_gold_protocol_v1",
+  "schema_version": "imp.ibp-admitted-factual-gold/1.0.0",
+  "hypothesis_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+  "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+  "hash_algorithm": "sha256-canonical-json-v1",
+  "gold_source_independent": true,
+  "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
+  "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
+  "cases": [
+    {
+      "CASE_ID": "IBP-FACTUAL-001",
+      "MODE": "FACTUAL",
+      "QUESTION": {
+        "text": "From the admitted AAPL historical development sample for 2026-09-15, what instrument code appears on the first bar row?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "MARKET_INSTRUMENT"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+      "TEMPORAL_CUTOFF": {
+        "kind": "SESSION_END",
+        "cutoff_instant": "2026-09-15T20:00:00Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "instrument_code",
+            "value": "US.AAPL"
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+          "source_record": "session:2026-09-15;row:0;field:code",
+          "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "HISTORICAL_FACTUAL",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "17306E9897A635DCAC600CAD404310F03A8F567CA1E28F3149FD33E6B9D30116",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-001.json",
+      "evaluator_notes": "M2 candidate — instrument from first admitted bar row."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-002",
+      "MODE": "FACTUAL",
+      "QUESTION": {
+        "text": "How many top-level session date keys are present in the admitted multi-session AAPL historical development fixture?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "SESSION_IDENTITY"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:246dba20a28e9e40962cd5153e15076b96c821679bb35372de94efad556f83be",
+      "TEMPORAL_CUTOFF": {
+        "kind": "EVIDENCE_MAX_TIMESTAMP",
+        "cutoff_instant": "2026-09-15T20:00:00Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "session_key_count",
+            "value": 3
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json",
+          "source_record": "root:session_keys",
+          "source_hash": "sha256:0369113535c49549b8db0840d9a8ec006c6c24bfc5aa1bfc8d1d8e5c5230a4aa"
+        },
+        {
+          "expected_fact": {
+            "field": "session_dates",
+            "value": [
+              "2026-09-11",
+              "2026-09-12",
+              "2026-09-15"
+            ]
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json",
+          "source_record": "root:session_keys",
+          "source_hash": "sha256:0369113535c49549b8db0840d9a8ec006c6c24bfc5aa1bfc8d1d8e5c5230a4aa"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "HISTORICAL_FACTUAL",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "F1092317F4F0ACDAEABBD64A68F6782968923007D7F5C0EA996157F0DED2DF1C",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-002.json",
+      "evaluator_notes": "M2 candidate — session coverage from fixture keys only."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-003",
+      "MODE": "FACTUAL",
+      "QUESTION": {
+        "text": "In the admitted 2026-09-15 AAPL sample fixture, how many raw bar rows are recorded under the 2026-09-15 session key?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "ROW_COUNT"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+      "TEMPORAL_CUTOFF": {
+        "kind": "SESSION_END",
+        "cutoff_instant": "2026-09-15T20:00:00Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "raw_row_count",
+            "value": 5
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+          "source_record": "session:2026-09-15",
+          "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "HISTORICAL_FACTUAL",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "9AD013BF5B4F1E9FE6454345CFDD177E5AA9BA2DD3722944FE7FE78603F45A80",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-003.json",
+      "evaluator_notes": "M2 candidate — includes contamination rows by design."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-004",
+      "MODE": "STATE",
+      "QUESTION": {
+        "text": "In the admitted 2026-09-15 AAPL sample fixture, how many rows use the literal time_key value 'not-a-timestamp'?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "CONTAMINATION_SIGNAL"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+      "TEMPORAL_CUTOFF": {
+        "kind": "SESSION_END",
+        "cutoff_instant": "2026-09-15T20:00:00Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "malformed_time_key_rows",
+            "value": 1
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+          "source_record": "session:2026-09-15;filter:time_key=not-a-timestamp",
+          "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "QUALITY_INTERPRETATION",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "EC1682E3C00C804884E1788F8CBEEC175EB113FCFAA1122D5DDE0525F66475A1",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-004.json",
+      "evaluator_notes": "M2 candidate — malformed timestamp row in admitted fixture."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-005",
+      "MODE": "RESEARCH",
+      "QUESTION": {
+        "text": "What dataset_id is declared in the admitted frozen historical baseline pack experiment definition?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "GOVERNED_MANIFEST"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "GOVERNED_RESEARCH_MANIFEST",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:3988c64fef9fd1a4d7a5697aec53493eb7559223c646609e0c3913a381139656",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "dataset_id",
+            "value": "HIST-DEV-AAPL"
+          },
+          "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+          "source_record": "dataset:dataset_id",
+          "source_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "RESEARCH_MANIFEST",
+        "lane": "historical_research"
+      },
+      "GOLD_HASH": "848C32CF5AE01C7D148C55B01D4A1AD713FC1FCEF11C06A03EA44520092A9BA3",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-005.json",
+      "evaluator_notes": "M2 candidate — frozen Lane C experiment definition pin."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-006",
+      "MODE": "RESEARCH",
+      "QUESTION": {
+        "text": "How many baseline_strategies entries are listed in the admitted frozen historical baseline pack experiment definition?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "BASELINE_PACK"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "GOVERNED_RESEARCH_MANIFEST",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:3988c64fef9fd1a4d7a5697aec53493eb7559223c646609e0c3913a381139656",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "baseline_strategy_count",
+            "value": 4
+          },
+          "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+          "source_record": "baseline_strategies",
+          "source_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "RESEARCH_MANIFEST",
+        "lane": "historical_research"
+      },
+      "GOLD_HASH": "E878C9AD080C99463E27106CFFF8B28C2D77DE21946AFBB2167CE24CE7AAC39A",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-006.json",
+      "evaluator_notes": "M2 candidate — strategy enumeration from frozen definition."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-007",
+      "MODE": "ROUTING",
+      "QUESTION": {
+        "text": "What corpus_evidence_authority value is declared at the top level of the admitted frozen historical baseline pack experiment definition?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "AUTHORITY_CLASS"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "GOVERNED_RESEARCH_MANIFEST",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:3988c64fef9fd1a4d7a5697aec53493eb7559223c646609e0c3913a381139656",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "corpus_evidence_authority",
+            "value": "HISTORICAL_DEVELOPMENT"
+          },
+          "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+          "source_record": "corpus_evidence_authority",
+          "source_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "AUTHORITY_ROUTING",
+        "lane": "governance"
+      },
+      "GOLD_HASH": "C94EC267388D3E8D2B10CD700005D2C922462B7A3DBEFC06481651949AA7A15F",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-007.json",
+      "evaluator_notes": "M2 candidate — authority routing from admitted manifest."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-008",
+      "MODE": "RESEARCH",
+      "QUESTION": {
+        "text": "What validation_dataset_id is declared in the admitted Wave-1 non-empirical research export fixture?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "VALIDATION_MANIFEST"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "GOVERNED_RESEARCH_MANIFEST",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/research/wave1_non_empirical_export.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:f6a60c041da57a97e488f9d716dc999adea5d8d29081a4be4f836a70e34761cf",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "validation_dataset_id",
+            "value": "VALDS-W1-FIXTURE"
+          },
+          "source_artifact": "tests/fixtures/research/wave1_non_empirical_export.json",
+          "source_record": "validation_dataset_manifest:validation_dataset_id",
+          "source_hash": "sha256:e962350f8dab2c41d85399c74fa4b0ab873fff1024c8bd36c565e524a19cd2f0"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "RESEARCH_MANIFEST",
+        "lane": "wave1"
+      },
+      "GOLD_HASH": "33B096DD9BED46152F7179BB3DDC7EE03E19C5E0F18FAD79580B2D8C79A5D9E8",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-008.json",
+      "evaluator_notes": "M2 candidate — Wave-1 validation manifest id."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-009",
+      "MODE": "RESEARCH",
+      "QUESTION": {
+        "text": "In the admitted MATLAB golden research result fixture, what feature_row_count is recorded under diagnostics?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "PARITY_RECEIPT"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "ADMITTED_FIXTURE_RECORD",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/research/matlab_golden_result_v1.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:6316aaaccbf25222979254068b3e060732909321ac98cbf7c933f165fe222e08",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "feature_row_count",
+            "value": 40
+          },
+          "source_artifact": "tests/fixtures/research/matlab_golden_result_v1.json",
+          "source_record": "diagnostics:feature_row_count",
+          "source_hash": "sha256:8d77cbe085e26206cb5afc285457fc4fb9bcff9f21526efc318be8b150be32d1"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "RESEARCH_RECEIPT",
+        "lane": "matlab_parity"
+      },
+      "GOLD_HASH": "FA70D6164C4DCC3BA0F9B9FF814311081A8D0749A53A2E217694FD6C26E8B02C",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-009.json",
+      "evaluator_notes": "M2 candidate — structured diagnostics from golden result fixture."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-010",
+      "MODE": "PROVENANCE",
+      "QUESTION": {
+        "text": "In the admitted Lane B real historical provider verification receipt, what ROWS count is recorded for the moomoo block?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "PROVIDER_VERIFICATION"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "evidence/market_data/lane_b/real-historical-provider-verification.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:6a1f2f3647a3e78811ccdded974c62f8e1fca12b837284cfd4b0e6e0f206003b",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-16T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "moomoo_rows",
+            "value": 1950
+          },
+          "source_artifact": "evidence/market_data/lane_b/real-historical-provider-verification.json",
+          "source_record": "moomoo:ROWS",
+          "source_hash": "sha256:573c72d081b4e8c4c8b14c1b48012d97dd53432da093b2138713921074151a0d"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "PROVENANCE_RECEIPT",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "16776CAF646EEC6CA843AAECECD794496A5748F6BF76457188996F00A6636CA5",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-010.json",
+      "evaluator_notes": "M2 candidate — bounded provider verification receipt (not Item 9)."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-011",
+      "MODE": "UNKNOWN",
+      "QUESTION": {
+        "text": "From the admitted 2026-09-15 AAPL sample fixture only, what is the closing price for MSFT on 2026-09-15?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "ABSTENTION"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+      "TEMPORAL_CUTOFF": {
+        "kind": "SESSION_END",
+        "cutoff_instant": "2026-09-15T20:00:00Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "answerability",
+            "value": "NOT_IN_ADMITTED_EVIDENCE"
+          },
+          "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+          "source_record": "session:2026-09-15;instrument_scope",
+          "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "CORRECT_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "UNKNOWN_ABSTAIN",
+        "lane": "market_data"
+      },
+      "GOLD_HASH": "1352060E78B8EE497D40A4C5306CBA101037D1FE73F9465D6B4AAF13C844CE65",
+      "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-011.json",
+      "evaluator_notes": "M2 candidate — correct abstention; MSFT not present in evidence."
+    },
+    {
+      "CASE_ID": "IBP-FACTUAL-EXCL-001",
+      "MODE": "RESEARCH",
+      "QUESTION": {
+        "text": "What directional_accuracy did baseline_1_momentum_5m_sign_v1 achieve on HISTORICAL_DEVELOPMENT_VALIDATE for the frozen baseline pack?",
+        "constructed_from_admitted_evidence_only": true,
+        "question_class": "UNANSWERABLE_METRIC"
+      },
+      "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+      "EVIDENCE_SET": {
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "sources": [
+          {
+            "source_type": "GOVERNED_RESEARCH_MANIFEST",
+            "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+            "artifact_ref": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
+          }
+        ]
+      },
+      "EVIDENCE_FINGERPRINT": "sha256:3988c64fef9fd1a4d7a5697aec53493eb7559223c646609e0c3913a381139656",
+      "TEMPORAL_CUTOFF": {
+        "kind": "AS_OF_INSTANT",
+        "cutoff_instant": "2026-09-15T23:59:59Z",
+        "contamination_control": true
+      },
+      "EXPECTED_FACTS": [
+        {
+          "expected_fact": {
+            "field": "exclusion_reason",
+            "value": "METRIC_NOT_IN_ADMITTED_ARTIFACT"
+          },
+          "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+          "source_record": "baseline_strategies:baseline_1_momentum_5m_sign_v1",
+          "source_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865"
+        }
+      ],
+      "ANSWER_NORMALIZATION": {
+        "structured_facts_preferred": true,
+        "case_folding": true,
+        "trim_whitespace": true,
+        "collapse_internal_whitespace": true,
+        "instrument_symbol_canonicalization": true,
+        "iso_timestamp_normalization": true,
+        "numeric_tolerance": {
+          "relative": 1e-09
+        },
+        "boolean_label_equivalence": true,
+        "state_label_equivalence": true
+      },
+      "ACCEPTABLE_EQUIVALENTS": [],
+      "UNKNOWN_POLICY": {
+        "correct_unknown_verdict": "CORRECT_UNKNOWN",
+        "encoded_in_evaluator_contract": true
+      },
+      "PROVENANCE_REQUIREMENTS": {
+        "gold_source_independent": true,
+        "chain": [
+          "expected_fact",
+          "source_artifact",
+          "source_record",
+          "source_hash"
+        ]
+      },
+      "ROUTING_EXPECTATION": {
+        "template": "EXCLUDED",
+        "lane": "historical_research"
+      },
+      "GOLD_HASH": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "SCORING_GATE": "EXCLUDED_UNANSWERABLE",
+      "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-EXCL-001.json",
+      "evaluator_notes": "M2 exclusion — run metrics are not serialized in the frozen definition artifact."
+    }
+  ],
+  "freeze": {
+    "status": "UNFROZEN",
+    "cases_constructed": true,
+    "smoke10_executed": false
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-010",
+  "MODE": "PROVENANCE",
+  "QUESTION": {
+    "text": "In the admitted Lane B real historical provider verification receipt, what ROWS count is recorded for the moomoo block?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "PROVIDER_VERIFICATION"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "evidence/market_data/lane_b/real-historical-provider-verification.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:6a1f2f3647a3e78811ccdded974c62f8e1fca12b837284cfd4b0e6e0f206003b",
+  "TEMPORAL_CUTOFF": {
+    "kind": "AS_OF_INSTANT",
+    "cutoff_instant": "2026-09-16T23:59:59Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "moomoo_rows",
+        "value": 1950
+      },
+      "source_artifact": "evidence/market_data/lane_b/real-historical-provider-verification.json",
+      "source_record": "moomoo:ROWS",
+      "source_hash": "sha256:573c72d081b4e8c4c8b14c1b48012d97dd53432da093b2138713921074151a0d"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "PROVENANCE_RECEIPT",
+    "lane": "market_data"
+  },
+  "GOLD_HASH": "16776CAF646EEC6CA843AAECECD794496A5748F6BF76457188996F00A6636CA5",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-010.json",
+  "evaluator_notes": "M2 candidate — bounded provider verification receipt (not Item 9)."
+}

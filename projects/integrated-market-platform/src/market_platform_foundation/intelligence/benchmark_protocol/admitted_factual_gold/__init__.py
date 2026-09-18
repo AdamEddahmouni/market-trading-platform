@@ -7,7 +7,13 @@ from .hashing import (
     compute_goldset_hash,
     factual_gold_hash_algorithm,
 )
-from .protocol import default_factual_gold_protocol_path, empty_protocol_template, load_factual_gold_protocol
+from .protocol import (
+    candidate_factual_gold_protocol_path,
+    default_factual_gold_protocol_path,
+    empty_protocol_template,
+    load_candidate_factual_gold_protocol,
+    load_factual_gold_protocol,
+)
 from .sut_projection import (
     assert_factual_case_safe_for_sut,
     project_factual_case_for_sut,
@@ -46,9 +52,11 @@ __all__ = [
     "compute_case_gold_hash",
     "compute_caseset_hash",
     "compute_goldset_hash",
+    "candidate_factual_gold_protocol_path",
     "default_factual_gold_protocol_path",
     "empty_protocol_template",
     "factual_gold_hash_algorithm",
+    "load_candidate_factual_gold_protocol",
     "load_factual_gold_protocol",
     "project_factual_case_for_sut",
     "strip_factual_gold_evaluator_fields",

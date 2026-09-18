@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-005",
+  "MODE": "RESEARCH",
+  "QUESTION": {
+    "text": "What dataset_id is declared in the admitted frozen historical baseline pack experiment definition?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "GOVERNED_MANIFEST"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "GOVERNED_RESEARCH_MANIFEST",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:3988c64fef9fd1a4d7a5697aec53493eb7559223c646609e0c3913a381139656",
+  "TEMPORAL_CUTOFF": {
+    "kind": "AS_OF_INSTANT",
+    "cutoff_instant": "2026-09-15T23:59:59Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "dataset_id",
+        "value": "HIST-DEV-AAPL"
+      },
+      "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+      "source_record": "dataset:dataset_id",
+      "source_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "RESEARCH_MANIFEST",
+    "lane": "historical_research"
+  },
+  "GOLD_HASH": "848C32CF5AE01C7D148C55B01D4A1AD713FC1FCEF11C06A03EA44520092A9BA3",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-005.json",
+  "evaluator_notes": "M2 candidate — frozen Lane C experiment definition pin."
+}
