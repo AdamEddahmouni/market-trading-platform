@@ -45,10 +45,12 @@ class SklearnLogisticCandidateTrainer:
         spec: CandidateTrainingSpec,
         dataset: PreparedTrainingDataset,
     ) -> CandidateTrainingResult:
-        from ...baselines.training import enforce_baseline_dataset_consumption_policy
+        from ....paper.calibration.dual_corpus.consumption import (
+            assert_prepared_training_dataset_consumable_for_selection_or_training,
+        )
 
-        enforce_baseline_dataset_consumption_policy(
-            dataset.baseline_dataset,
+        assert_prepared_training_dataset_consumable_for_selection_or_training(
+            dataset,
             purpose="sklearn_logistic_candidate_train",
         )
         baseline_dataset = dataset.baseline_dataset

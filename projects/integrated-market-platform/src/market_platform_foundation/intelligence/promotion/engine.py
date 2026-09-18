@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import replace
 from typing import Any
 
@@ -53,6 +54,26 @@ from .types import (
 class PromotionEngine:
     """Deterministic champion-challenger promotion gate."""
 
+    @staticmethod
+    def _assert_training_corpus_metadata_consumable(
+        metadata: Mapping[str, Any] | None,
+        *,
+        purpose: str,
+    ) -> None:
+        from ...paper.calibration.dual_corpus.consumption import (
+            ProtectedCorpusConsumptionError,
+            assert_metadata_consumable_for_selection_or_training,
+            promotion_error_code_for_protected_corpus_consumption,
+        )
+
+        try:
+            assert_metadata_consumable_for_selection_or_training(metadata, purpose=purpose)
+        except ProtectedCorpusConsumptionError as exc:
+            raise PromotionError(
+                promotion_error_code_for_protected_corpus_consumption(exc),
+                details={"purpose": purpose, "message": str(exc)},
+            ) from exc
+
     def assess_eligibility(
         self,
         *,
@@ -83,6 +104,10 @@ class PromotionEngine:
             assert_admitted_for_promotion(candidate.metadata)
         except UnadmittedCaptureError as exc:
             raise PromotionError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
+        self._assert_training_corpus_metadata_consumable(
+            candidate.metadata,
+            purpose="promotion_register_challenger",
+        )
         assessment = eligibility or self.assess_eligibility(
             policy=policy,
             candidate=candidate,
@@ -155,6 +180,15 @@ class PromotionEngine:
             )
         except UnadmittedCaptureError as exc:
             raise PromotionError(exc.code, details={"surface": exc.surface, **exc.details}) from exc
+        self._assert_training_corpus_metadata_consumable(
+            candidate.metadata,
+            purpose="promotion_evaluate_challenger",
+        )
+        if experiment is not None:
+            self._assert_training_corpus_metadata_consumable(
+                experiment.metadata,
+                purpose="promotion_evaluate_experiment_corpus",
+            )
         reason_codes: list[PromotionReasonCode] = []
         decision = PromotionDecisionKind.PROMOTE
 
@@ -388,6 +422,10 @@ class PromotionEngine:
         effective_from_ns: int,
         candidate_artifact_bytes: bytes | None = None,
     ) -> ChampionAssignmentV1:
+        self._assert_training_corpus_metadata_consumable(
+            candidate.metadata,
+            purpose="promotion_bootstrap_champion",
+        )
         assignment_id = derive_champion_assignment_id(
             champion_scope=champion_scope,
             candidate_id=candidate.candidate_id,

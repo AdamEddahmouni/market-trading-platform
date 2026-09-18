@@ -48,6 +48,42 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-OFFHOURS-RESEARCH-03; IMP-DUAL-CORPUS-01 Lane B |
 | **Notes** | Branch `data/historical-development-expansion`; holidays/early closes operator-declared only. |
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 historical research harness v1
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `tools/historical_data`, `docs/engineering` |
+| **Summary** | Reusable historical development research pipeline: dataset → PIT features → chronological train/dev-validate/research-test splits → momentum challenger → paper simulator research result → component metrics → `historical_research_run_manifest_v1` with deterministic fingerprints. Authority remains `HISTORICAL_DEVELOPMENT`; labels distinct from POST_HORIZON; holdout consumption fails closed. |
+| **Key files** | `src/market_platform_foundation/intelligence/historical_research_harness/*`, `tools/historical_data/harness_cli.py`, `tools/imp.py`, `tests/platform/test_historical_research_harness.py`, `docs/engineering/IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Tests** | `python -m unittest tests.platform.test_historical_research_harness` (see validation) |
+| **Related** | [#246](https://github.com/AdamEddahmouni/market-trading-platform/pull/246) Lane D demo, `IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Notes** | Branch `research/historical-harness-v1`; no Item 9 calibration; no PROGRAM_STATUS SHA loop |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 research contamination auditor (Lane D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `tools/research` |
+| **Summary** | Added reusable research-run contamination auditor composing dual-corpus admission/consumption gates with contractual train/test, feature cutoff, holdout, authority-mixing, fingerprint, and Item 9 admission checks. Emits `CONTAMINATION_STATUS` PASS/FAIL with five canonical questions and evidence language (`AUTHORITY`, `ITEM9_EFFECT`). |
+| **Key files** | `dual_corpus/{contamination_auditor,leak_audit,run_manifest}.py`; `tools/research/audit_research_contamination.py`; `tests/platform/test_research_contamination_auditor.py`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md` |
+| **Tests** | `python tools/imp.py` format/lint/validate changed; `unittest` `test_research_contamination_auditor` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane D; dual-corpus contract |
+| **Notes** | Contractual leakage properties only; no frozen receipts or Item 9 calibration changes. |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane A holdout guard closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `intelligence/training`, `intelligence/promotion`, `tests/platform` |
+| **Summary** | Closed residual training/selection holdout leakage paths: `build_dataset_from_examples`, `build_distillation_dataset`, BUILD 18 sklearn trainers (manifest + baseline), and promotion challenger registration now fail closed on `UNTOUCHED_FORWARD_EVALUATION` / taxonomy-derived protected authorities. Evaluation-only holdout use (validation metrics, promotion ranking) unchanged. |
+| **Key files** | `dual_corpus/consumption.py`; `training/{datasets,distillation/dataset,trainers/sklearn_*.py}`; `promotion/engine.py`; `tests/platform/test_holdout_consumption_guards.py` |
+| **Tests** | `python tools/imp.py test focused test_holdout_consumption_guards`; `format`; `lint`; `validate changed` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane A; IMP-EVIDENCE-HARDENING-02 Lane B baseline guards |
+| **Notes** | No Item 9 split or #222 changes; repository-backed training manifest load at validation remains governed separately (`verify_training_dataset_fingerprint`). |
+
 ## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane F docs/status hygiene
 
 | Field | Value |
