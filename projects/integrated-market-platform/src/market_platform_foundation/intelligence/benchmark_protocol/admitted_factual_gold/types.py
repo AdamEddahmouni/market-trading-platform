@@ -45,10 +45,22 @@ class FactualCaseScoringGate(StrEnum):
     EXCLUDED_UNANSWERABLE = "EXCLUDED_UNANSWERABLE"
 
 
+class FactualFactVerdict(StrEnum):
+    """Structured fact matching outcomes for IBP factual evaluator."""
+
+    SUPPORTED_FACT = "SUPPORTED_FACT"
+    CORRECT_UNKNOWN = "CORRECT_UNKNOWN"
+    UNNECESSARY_UNKNOWN = "UNNECESSARY_UNKNOWN"
+    UNSUPPORTED_ASSERTION = "UNSUPPORTED_ASSERTION"
+    FACT_MISMATCH = "FACT_MISMATCH"
+    PROVENANCE_MISSING = "PROVENANCE_MISSING"
+
+
 __all__ = [
     "AdmittedFactualEvidenceAccessMode",
     "AdmittedFactualSourceType",
     "FactualCaseScoringGate",
+    "FactualFactVerdict",
     "FactualUnknownVerdict",
     "FORBIDDEN_SYNTHETIC_GOLD_PREFIX",
     "IBP_ADMITTED_FACTUAL_GOLD_ARTIFACT_KIND",
