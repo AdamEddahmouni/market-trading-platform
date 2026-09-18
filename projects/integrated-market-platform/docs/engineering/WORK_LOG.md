@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B pre-execution freeze prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Prepared v3 OpenD fill-economics experiment definition on branch `research/opend-fill-economics-v3`: pinned corpus fingerprint verified PASS, pre-execution freeze template and protocol committed with `PENDING_LANE_A` placeholders; no performance run. |
+| **Key files** | `evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/*`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md`; `tests/platform/test_historical_baseline_pack_v3_prep.py`; `evidence/.../lane-h-findings/hypothesis_queue_v1.json` |
+| **Tests** | `python tools/imp.py env` healthy; `python tools/imp.py test focused tests/platform/test_historical_baseline_pack_v3_prep.py` |
+| **Related** | [IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md](IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md); `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` |
+| **Notes** | Final `EXPERIMENT_HASH` blocked on Lane A accounting; v2 `E8C9ADB9…` evidence untouched. |
+
 ## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
 
 | Field | Value |
