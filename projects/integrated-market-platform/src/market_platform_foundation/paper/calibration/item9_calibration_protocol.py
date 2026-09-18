@@ -36,6 +36,11 @@ from .dual_corpus.discovery import (
     is_historical_development_storage_path,
     iter_item9_prospective_receipt_paths,
 )
+from ...intelligence.outcomes.path_a_label_linker import (
+    PathALabelLinkageError,
+    link_path_a_label_evidence,
+    prospective_source_observation_from_item9_receipt,
+)
 from .thresholds import THRESHOLD_UNSET_BLOCKING, default_unset_threshold_config
 
 PROTOCOL_VERSION = "item9.calibration-protocol/1.0.0"
@@ -353,6 +358,9 @@ def build_dataset_row(
     *,
     protocol_version: str = PROTOCOL_VERSION,
     classification: Item9ObservationClassification | None = None,
+    label_evidences: Sequence[Mapping[str, Any]] | None = None,
+    prospective_p0: Mapping[str, Any] | None = None,
+    linkage_evaluation_time_ns: int | None = None,
 ) -> dict[str, Any]:
     classified = classification or classify_item9_receipt(receipt)
     first = receipt.get("first_post_signal_bar") or {}
@@ -360,6 +368,27 @@ def build_dataset_row(
     bar_available = int(receipt.get("bar_available_time_ns") or first.get("available_time_ns") or 0)
     target_ns = path_a_target_time_ns(signal_ns) if signal_ns else None
     window = path_a_terminal_window(signal_ns) if signal_ns else (None, None)
+    path_a_label_evidence_ids: list[str] = []
+    path_a_label_value: str | None = None
+    path_a_label_availability_ns: int | None = None
+    if label_evidences:
+        if prospective_p0 is None:
+            raise PathALabelLinkageError(
+                "LABEL_INVALID_PROVENANCE",
+                details={"field": "prospective_p0"},
+            )
+        source = prospective_source_observation_from_item9_receipt(
+            receipt,
+            p0=prospective_p0,
+        )
+        linkage = link_path_a_label_evidence(
+            source,
+            label_evidences,
+            evaluation_time_ns=linkage_evaluation_time_ns,
+        )
+        path_a_label_evidence_ids = list(linkage.path_a_label_evidence_ids)
+        path_a_label_value = linkage.path_a_label_value
+        path_a_label_availability_ns = linkage.path_a_label_availability_ns
     return {
         "schema_version": DATASET_SCHEMA_VERSION,
         "protocol_version": protocol_version,
@@ -385,10 +414,10 @@ def build_dataset_row(
         "evidence_class": classified.evidence_class,
         "label_horizon_ns": PATH_A_HORIZON_NS,
         "path_a_target_kind": PATH_A_TARGET_KIND,
-        "path_a_label_value": None,
+        "path_a_label_value": path_a_label_value,
         "path_a_label_state": classified.path_a_label_state,
-        "path_a_label_evidence_ids": [],
-        "path_a_label_availability_ns": None,
+        "path_a_label_evidence_ids": path_a_label_evidence_ids,
+        "path_a_label_availability_ns": path_a_label_availability_ns,
         "path_a_target_time_ns": target_ns,
         "path_a_target_window_start_ns": window[0],
         "path_a_target_window_end_ns": window[1],
