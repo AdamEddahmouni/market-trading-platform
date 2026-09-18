@@ -23,6 +23,11 @@ from .manifest import (
     derive_historical_research_run_id,
 )
 from .pipeline import HistoricalResearchHarnessResult, run_historical_research_harness
+from .prediction_coupling import (
+    PREDICTION_COUPLING_SCHEMA_VERSION,
+    PredictionCoupledSimulatorError,
+    build_signal_interpretations_from_predictions,
+)
 from .simulator import (
     ITEM9_CALIBRATION_RESULT_KIND,
     SIMULATOR_RESEARCH_RESULT_KIND,
@@ -57,12 +62,15 @@ __all__ = [
     "HistoricalResearchRunConfig",
     "HistoricalResearchSplitName",
     "ITEM9_CALIBRATION_RESULT_KIND",
+    "PREDICTION_COUPLING_SCHEMA_VERSION",
+    "PredictionCoupledSimulatorError",
     "SIMULATOR_RESEARCH_RESULT_KIND",
     "assert_chronological_order",
     "assert_split_consumable_for_training_or_selection",
     "assign_chronological_splits",
     "build_frozen_baseline_pack_experiment_definition",
     "build_historical_research_run_manifest",
+    "build_signal_interpretations_from_predictions",
     "chronological_split_boundaries",
     "config_fingerprint",
     "derive_historical_research_run_id",

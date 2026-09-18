@@ -237,13 +237,27 @@ class HistoricalResearchHarnessTests(unittest.TestCase):
                 HistoricalResearchSplitName.HISTORICAL_RESEARCH_TEST,
             )
             dev_events = filter_events_to_decision_times(events, dev_times)
+            predictions_rows = json.loads(
+                (harness_root / "runs" / result.run_id / "predictions.json").read_text(encoding="utf-8")
+            )
             dev_sim = run_historical_development_simulator_research(
                 dev_events,
+                predictions=[
+                    row
+                    for row in predictions_rows
+                    if row.get("split")
+                    == HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
+                ],
                 simulator_version=config.simulator_version,
                 cost_slippage_bps=config.cost_slippage_bps,
             )
             full_sim = run_historical_development_simulator_research(
-                events,
+                filter_events_to_decision_times(events, test_times),
+                predictions=[
+                    row for row in predictions_rows if row.get("split") == HistoricalResearchSplitName.HISTORICAL_RESEARCH_TEST.value
+                ]
+                if test_times
+                else [],
                 simulator_version=config.simulator_version,
                 cost_slippage_bps=config.cost_slippage_bps,
             )
