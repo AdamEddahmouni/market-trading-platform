@@ -47,6 +47,18 @@ HISTORICAL_BASELINE_PACK_RANDOM_SEED = 0
 DEFAULT_MULTI_SESSION_FIXTURE_REL = (
     "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json"
 )
+CANONICAL_BASELINE_PACK_EVIDENCE_REL = (
+    "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1"
+)
+
+_BASELINE_PACK_OPERATOR_INTERPRETATION_NOTES: tuple[str, ...] = (
+    "Directional accuracy 1.0 or 0.0 on small development-validate sample sizes (e.g. n≈12) "
+    "on the monotone synthetic multi-session fixture is a pathological observation, not evidence of edge.",
+    "Simulator fill counts and gross/net PnL may be identical across baselines because the "
+    "paper_bar_conservative_v1 research simulator is bar-path scoped, not prediction-conditioned.",
+    "Baseline 0 (no-trade) may show abstention_rate=1.0 while simulator fills remain nonzero "
+    "because predictor abstention and simulator event replay are decoupled in this harness path.",
+)
 
 _BASELINE_STRATEGY_SPECS: tuple[dict[str, Any], ...] = (
     {
@@ -154,12 +166,49 @@ def build_frozen_baseline_pack_experiment_definition(
     return body
 
 
-def experiment_definition_hash(definition: dict[str, Any]) -> str:
-    embedded = definition.get("experiment_definition_hash")
-    if isinstance(embedded, str) and embedded:
-        return embedded
+def compute_experiment_definition_hash(definition: dict[str, Any]) -> str:
+    """Recompute hash from payload; never trust an embedded hash field."""
+
     payload = {k: v for k, v in definition.items() if k != "experiment_definition_hash"}
     return sha256_bytes(canonical_bytes(payload))
+
+
+def experiment_definition_hash(definition: dict[str, Any]) -> str:
+    return compute_experiment_definition_hash(definition)
+
+
+def verify_frozen_experiment_definition(definition: dict[str, Any]) -> dict[str, Any]:
+    """Fail closed when embedded hash is missing or does not match recomputed payload."""
+
+    embedded = definition.get("experiment_definition_hash")
+    if not isinstance(embedded, str) or not embedded.strip():
+        return {
+            "ok": False,
+            "reason_code": "EXPERIMENT_DEFINITION_HASH_MISSING",
+            "experiment_definition_hash": None,
+            "embedded_hash": embedded,
+            "computed_hash": compute_experiment_definition_hash(definition),
+        }
+    computed = compute_experiment_definition_hash(definition)
+    if embedded != computed:
+        return {
+            "ok": False,
+            "reason_code": "EXPERIMENT_DEFINITION_HASH_MISMATCH",
+            "experiment_definition_hash": computed,
+            "embedded_hash": embedded,
+            "computed_hash": computed,
+        }
+    return {
+        "ok": True,
+        "reason_code": None,
+        "experiment_definition_hash": computed,
+        "embedded_hash": embedded,
+        "computed_hash": computed,
+    }
+
+
+def canonical_baseline_pack_evidence_dir(repository_root: Path) -> Path:
+    return repository_root / CANONICAL_BASELINE_PACK_EVIDENCE_REL
 
 
 def _split_intervals(assignments: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
@@ -269,6 +318,49 @@ class BaselinePackRunResult:
     reason_code: str | None = None
 
 
+def publish_baseline_pack_evidence_receipt(
+    *,
+    repository_root: Path,
+    frozen_definition: dict[str, Any],
+    pack_result: BaselinePackRunResult,
+) -> Path:
+    """Write git-tracked receipts (manifests only; no raw bar corpus)."""
+
+    evidence_dir = canonical_baseline_pack_evidence_dir(repository_root)
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    frozen_path = evidence_dir / "frozen_experiment_definition.json"
+    frozen_path.write_text(json.dumps(frozen_definition, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    pack_manifest = dict(pack_result.body)
+    pack_manifest["frozen_definition_path"] = frozen_path.relative_to(repository_root).as_posix()
+    pack_manifest["canonical_evidence_dir"] = CANONICAL_BASELINE_PACK_EVIDENCE_REL
+    pack_manifest["operator_interpretation_notes"] = list(_BASELINE_PACK_OPERATOR_INTERPRETATION_NOTES)
+    pack_manifest_path = evidence_dir / "baseline_pack_run_manifest.json"
+    pack_manifest_path.write_text(json.dumps(pack_manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    contamination_src = pack_result.artifact_dir / "contamination_manifest.json"
+    if contamination_src.is_file():
+        contamination_body = json.loads(contamination_src.read_text(encoding="utf-8"))
+        (evidence_dir / "contamination_manifest.json").write_text(
+            json.dumps(contamination_body, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    receipt = {
+        "artifact_kind": "historical_baseline_pack_evidence_receipt_v1",
+        "evidence_label": HISTORICAL_BASELINE_PACK_V1,
+        "experiment_definition_hash": pack_result.experiment_definition_hash,
+        "dataset_fingerprint": pack_result.dataset_fingerprint,
+        "pack_run_id": pack_result.pack_run_id,
+        "frozen_definition_path": frozen_path.relative_to(repository_root).as_posix(),
+        "pack_run_manifest_path": pack_manifest_path.relative_to(repository_root).as_posix(),
+        "execution_research_code_sha": pack_manifest.get("research_code_sha"),
+        "frozen_research_code_sha": frozen_definition.get("research_code_sha"),
+        "corpus_pin_path": f"{CANONICAL_BASELINE_PACK_EVIDENCE_REL}/corpus_pin",
+        "operator_interpretation_notes": list(_BASELINE_PACK_OPERATOR_INTERPRETATION_NOTES),
+    }
+    receipt_path = evidence_dir / "baseline_pack_evidence_receipt.json"
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return receipt_path
+
+
 def run_frozen_historical_baseline_pack_v1(
     *,
     repository_root: Path,
@@ -277,18 +369,18 @@ def run_frozen_historical_baseline_pack_v1(
     artifact_root: Path | None = None,
     deterministic_rerun: bool = True,
 ) -> BaselinePackRunResult:
-    expected_hash = experiment_definition_hash(frozen_definition)
-    embedded = frozen_definition.get("experiment_definition_hash")
-    if embedded and str(embedded) != expected_hash:
+    verify = verify_frozen_experiment_definition(frozen_definition)
+    if not verify.get("ok"):
         return BaselinePackRunResult(
             ok=False,
             pack_run_id="",
-            experiment_definition_hash=expected_hash,
+            experiment_definition_hash=str(verify.get("computed_hash") or ""),
             dataset_fingerprint="",
             artifact_dir=Path(),
-            body={},
-            reason_code="EXPERIMENT_DEFINITION_HASH_MISMATCH",
+            body={"verify": verify},
+            reason_code=str(verify.get("reason_code") or "EXPERIMENT_DEFINITION_HASH_MISMATCH"),
         )
+    expected_hash = str(verify["experiment_definition_hash"])
     if not build.ok or not build.normalized_fingerprint:
         return BaselinePackRunResult(
             ok=False,
@@ -449,8 +541,9 @@ def run_frozen_historical_baseline_pack_v1(
         "experiment_id": HISTORICAL_BASELINE_PACK_EXPERIMENT_ID,
         "experiment_definition_hash": expected_hash,
         "frozen_definition_path": str(
-            out_root / "frozen_experiment_definition.json"
+            canonical_baseline_pack_evidence_dir(repository_root) / "frozen_experiment_definition.json"
         ),
+        "operator_interpretation_notes": list(_BASELINE_PACK_OPERATOR_INTERPRETATION_NOTES),
         "dataset_fingerprint": dataset_fp,
         "dataset_identity": frozen_definition.get("dataset"),
         "research_code_sha": research_code_sha,
@@ -510,10 +603,15 @@ __all__ = [
     "BaselinePackRunResult",
     "HISTORICAL_BASELINE_PACK_EXPERIMENT_ID",
     "HISTORICAL_BASELINE_PACK_V1",
+    "CANONICAL_BASELINE_PACK_EVIDENCE_REL",
     "DEFAULT_MULTI_SESSION_FIXTURE_REL",
     "build_frozen_baseline_pack_experiment_definition",
     "build_baseline_pack_contamination_manifest",
+    "canonical_baseline_pack_evidence_dir",
+    "compute_experiment_definition_hash",
     "experiment_definition_hash",
     "freeze_baseline_pack_definition_to_disk",
+    "publish_baseline_pack_evidence_receipt",
     "run_frozen_historical_baseline_pack_v1",
+    "verify_frozen_experiment_definition",
 ]

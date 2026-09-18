@@ -15,9 +15,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from market_platform_foundation.intelligence.historical_research_harness.baseline_pack import (  # noqa: E402
     HISTORICAL_BASELINE_PACK_V1,
     build_frozen_baseline_pack_experiment_definition,
+    compute_experiment_definition_hash,
     experiment_definition_hash,
     freeze_baseline_pack_definition_to_disk,
     run_frozen_historical_baseline_pack_v1,
+    verify_frozen_experiment_definition,
 )
 from market_platform_foundation.intelligence.historical_research_harness.strategies import (  # noqa: E402
     BASELINE_STRATEGY_MOMENTUM_5M_SIGN_V1,
@@ -58,9 +60,48 @@ class HistoricalBaselinePackV1Tests(unittest.TestCase):
             code_sha="deadbeef",
         )
         first["created_timestamp_ns"] = second["created_timestamp_ns"] = 1
-        first_hash = experiment_definition_hash({**first, "experiment_definition_hash": None})
-        second_hash = experiment_definition_hash({**second, "experiment_definition_hash": None})
+        first_hash = compute_experiment_definition_hash(first)
+        second_hash = compute_experiment_definition_hash(second)
         self.assertEqual(first_hash, second_hash)
+        first["experiment_definition_hash"] = first_hash
+        self.assertTrue(verify_frozen_experiment_definition(first)["ok"])
+
+    def test_tampered_frozen_definition_refused(self) -> None:
+        dataset_identity = {
+            "dataset_id": "fixture-dataset",
+            "dataset_fingerprint": "fp-abc",
+            "fixture_path": "tests/fixtures/historical_development/sample.json",
+        }
+        frozen = build_frozen_baseline_pack_experiment_definition(
+            repository_root=ROOT,
+            dataset_identity=dataset_identity,
+            code_sha="deadbeef",
+        )
+        frozen["baseline_strategies"][0]["description"] = "tampered after freeze"
+        result = verify_frozen_experiment_definition(frozen)
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["reason_code"], "EXPERIMENT_DEFINITION_HASH_MISMATCH")
+
+        provider = FixtureHistoricalMarketDataProvider(load_fixture_rows_from_json(MULTI_SESSION_FIXTURE))
+        with tempfile.TemporaryDirectory() as tmp:
+            build = build_historical_rth_dataset(
+                repository_root=ROOT,
+                provider=provider,
+                instrument="AAPL",
+                start_date="2026-09-11",
+                end_date="2026-09-15",
+                artifact_root=Path(tmp) / "corpus",
+                fixture_only=True,
+            )
+            self.assertTrue(build.ok)
+            pack = run_frozen_historical_baseline_pack_v1(
+                repository_root=ROOT,
+                build=build,
+                frozen_definition=frozen,
+                artifact_root=Path(tmp) / "pack",
+            )
+            self.assertFalse(pack.ok)
+            self.assertEqual(pack.reason_code, "EXPERIMENT_DEFINITION_HASH_MISMATCH")
 
     def test_baseline_predictors_no_trade_and_momentum(self) -> None:
         features = {"values": {"momentum_5m": 0.02}}

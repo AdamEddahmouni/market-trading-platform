@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-RESEARCH-VALIDATION-04 Lane C baseline pack integrity fix
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `evidence/historical-research`, `tools/research` |
+| **Summary** | Independent review request-changes: frozen experiment definitions now fail closed on hash tampering (always recompute canonical payload hash), git-tracked receipts under `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/`, operator interpretation notes for fixture-pathological metrics and simulator/predictor decoupling (no baseline retune). |
+| **Key files** | `baseline_pack.py`, `historical_baseline_pack_v1_cli.py`, `test_historical_baseline_pack_v1.py`, `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/*` |
+| **Tests** | `python -m unittest tests.platform.test_historical_baseline_pack_v1`; `python tools/research/historical_baseline_pack_v1_cli.py --frozen-definition evidence/.../frozen_experiment_definition.json` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane C; reviewer `e50cef56-dc4f-4544-a5d7-fe5db9d32433` |
+| **Notes** | **EXPERIMENT_HASH** unchanged (`C2E706…`) — strategy/dataset payload unchanged; `research_code_sha` in frozen file remains base pin `f31e30f` while execution SHA recorded in pack manifest/receipt. Lane F WORK_LOG heading preserved. |
+
 ## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |
