@@ -10,6 +10,8 @@ from .consumption import (
     assert_corpus_consumable_for_selection_or_training,
     assert_metadata_consumable_for_selection_or_training,
     assert_payload_samples_consumable_for_selection_or_training,
+    assert_prepared_training_dataset_consumable_for_selection_or_training,
+    promotion_error_code_for_protected_corpus_consumption,
     is_protected_corpus_authority,
     protected_corpus_authorities_for_selection_training,
 )
@@ -53,6 +55,8 @@ __all__ = [
     "assert_corpus_consumable_for_selection_or_training",
     "assert_metadata_consumable_for_selection_or_training",
     "assert_payload_samples_consumable_for_selection_or_training",
+    "assert_prepared_training_dataset_consumable_for_selection_or_training",
+    "promotion_error_code_for_protected_corpus_consumption",
     "build_historical_development_dataset_manifest",
     "build_historical_development_provenance",
     "evaluate_item9_prospective_corpus_admission",

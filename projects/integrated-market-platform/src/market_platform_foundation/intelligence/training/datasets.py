@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from typing import Any
 
 from ..baselines.features import BaselineFeatureSchema, DEFAULT_STATISTICAL_FEATURE_SCHEMA, FeatureVectorBuilder
@@ -222,13 +223,35 @@ def build_dataset_from_examples(
     mode: str = "ACTUAL_LIVE",
     horizon_ns: int,
     supervision_kind: SupervisionKind = SupervisionKind.OUTCOME_LABEL,
+    corpus_evidence_authority: str | None = None,
+    corpus_guard_payload: Mapping[str, Any] | None = None,
 ) -> PreparedTrainingDataset:
     """Deterministic dataset builder for tests and synthetic vertical slices."""
+    from ...paper.calibration.dual_corpus.consumption import (
+        ProtectedCorpusConsumptionError,
+        assert_corpus_consumable_for_selection_or_training,
+    )
+
+    guard_payload = dict(corpus_guard_payload or {})
+    if corpus_evidence_authority:
+        guard_payload.setdefault("corpus_evidence_authority", corpus_evidence_authority)
+    if corpus_evidence_authority or corpus_guard_payload:
+        try:
+            assert_corpus_consumable_for_selection_or_training(
+                corpus_evidence_authority=corpus_evidence_authority,
+                payload=guard_payload,
+                purpose="build_dataset_from_examples",
+            )
+        except ProtectedCorpusConsumptionError as exc:
+            raise TrainingFactoryError(str(exc)) from exc
+
     baseline_dataset = build_training_dataset(
         raw_examples=examples,
         feature_schema=feature_schema,
         target=target,
         training_cutoff_ns=training_cutoff_ns,
+        corpus_evidence_authority=corpus_evidence_authority,
+        corpus_guard_payload=guard_payload or None,
     )
     fingerprint_rows = []
     refs = []
@@ -277,6 +300,7 @@ def build_dataset_from_examples(
         example_refs=tuple(sorted(refs, key=lambda ref: (ref.decision_time_ns, ref.snapshot_id))),
         dataset_fingerprint=dataset_fp,
         supervision_kind=supervision_kind,
+        metadata=guard_payload,
     )
     return PreparedTrainingDataset(manifest=manifest, baseline_dataset=baseline_dataset)
 
