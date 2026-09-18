@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `tools` |
+| **Summary** | Off-hours dry verification from worktree @ **CURRENT_MAIN** `19a5ebd5`: `imp.py item9 next-rth-preflight --json` shows `rth_active=false`, `process_probe_status=COMPLETED`, no active collector, receipt path gate OK; disposition `WRONG_RUNTIME` honest for software SHA vs **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. Closed process-probe nit: subprocess listing stays in tools wrapper ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); governed library `NOT_RUN` without injection is intentional. `tools/item9.py` now delegates preflight to tools wrapper. **COLLECTION_STARTED=NO.** |
+| **Key files** | `docs/engineering/{ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF,NEXT_RTH_CAMPAIGN_RUNBOOK,WORK_LOG}.md`; `docs/platform/PROGRAM_STATUS.md`; `tools/item9.py` |
+| **Tests** | `python tools/imp.py item9 next-rth-preflight --json` (off-hours); `item9_corpus_status.py corpus-status` (local receipt dir empty; canonical gate still **1/3** distinct RTH dates per PROGRAM_STATUS — not fabricated) |
+| **Related** | IMP-OFFHOURS-RESEARCH-03; branch `ops/item9-next-rth-final-check` |
+| **Notes** | No `--poll`, receipts, or frozen-collector edits. |
+
 ## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane E IBP harness integration
 
 | Field | Value |
