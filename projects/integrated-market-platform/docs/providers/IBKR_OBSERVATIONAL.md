@@ -171,6 +171,16 @@ compatibility only (`CAPTURED_REPLAY_NOT_ADMITTED`).
   canonical L1 (same provider, freshness gate). UNKNOWN when quote context is
   missing/stale/cross-provider. No stable provider event id — replay dedup uses
   a local composite key only.
+- G11 historical TRADE prints (`IBKR_HISTORICAL_TRADES`): TWS
+  `reqHistoricalTicks` (`whatToShow=TRADES`, `useRTH=True`). Canonical
+  `IbkrObservationalQueryService.fetch_historical_trades` paginates with a
+  stable time cursor (`last_event_time_ns + 1`), deterministic sort, boundary
+  dedup, per-page raw payload SHA-256, aggregate content hash, explicit
+  `complete` / `incomplete_reason`, default `1000` ticks per page, default
+  `10` page cap, and `15s` minimum inter-page spacing (pacing-aware). Post-horizon
+  label retrieval timing gates are unchanged (`request_time_ns >= terminal_window_end_ns`).
+  Bounded operator verification:
+  `tools/ibkr/verify_historical_trades_provider.py` (never prospective evidence).
 - Quality: reuse existing quality flag vocabulary; delayed timestamps are
   annotated, never presented as real time.
 

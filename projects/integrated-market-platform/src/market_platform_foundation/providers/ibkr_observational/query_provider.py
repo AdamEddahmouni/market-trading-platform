@@ -7,6 +7,7 @@ imports tools.
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -40,9 +41,13 @@ from .historical_bars import (
     ObservationalHistoricalBar,
     normalize_ibkr_history_payload,
 )
-from .historical_trades import (
-    ObservationalHistoricalTrade,
-    normalize_ibkr_historical_trades_payload,
+from .historical_trades import ObservationalHistoricalTrade
+from .historical_trades_pagination import (
+    DEFAULT_MAX_PAGES,
+    DEFAULT_MIN_INTER_PAGE_INTERVAL_NS,
+    DEFAULT_TICKS_PER_PAGE,
+    HistoricalTradesRetrievalProvenance,
+    paginate_historical_trades,
 )
 from .identity import IdentityAdmissionError, InstrumentLookup, Xa01Admission
 
@@ -68,6 +73,7 @@ class IbkrReadOnlyQueryProvider(Protocol):
         con_id: int,
         start_time_ns: int,
         end_time_ns: int,
+        number_of_ticks: int = DEFAULT_TICKS_PER_PAGE,
     ) -> Mapping[str, Any]: ...
 
     def fetch_portfolio_accounts(self) -> Mapping[str, Any]: ...
@@ -118,6 +124,8 @@ class HistoricalTradesResult:
     trades: tuple[ObservationalHistoricalTrade, ...] = ()
     reason: str | None = None
     selection: dict[str, Any] = field(default_factory=dict)
+    complete: bool = True
+    provenance: HistoricalTradesRetrievalProvenance | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -126,6 +134,10 @@ class HistoricalTradesResult:
             "trades": [trade.to_dict() for trade in self.trades],
             "reason": self.reason,
             "selection": dict(self.selection),
+            "complete": self.complete,
+            "provenance": None
+            if self.provenance is None
+            else self.provenance.as_dict(),
         }
 
 
@@ -439,6 +451,9 @@ class IbkrObservationalQueryService:
         received_time_ns: int | None = None,
         request_time_ns: int | None = None,
         terminal_window_end_ns: int | None = None,
+        ticks_per_page: int = DEFAULT_TICKS_PER_PAGE,
+        max_pages: int = DEFAULT_MAX_PAGES,
+        min_inter_page_interval_ns: int = DEFAULT_MIN_INTER_PAGE_INTERVAL_NS,
     ) -> HistoricalTradesResult:
         if self._shutdown_complete or not self.provider.is_available():
             return HistoricalTradesResult(
@@ -486,16 +501,35 @@ class IbkrObservationalQueryService:
                 reason="HISTORICAL_TRADES_NOT_IMPLEMENTED",
                 selection=selection,
             )
+        con_id_int = int(resolved_con_id)
+
+        fetch_params = inspect.signature(fetch).parameters
+
+        def _fetch_page(
+            page_start_ns: int, page_end_ns: int, number_of_ticks: int
+        ) -> Mapping[str, Any]:
+            kwargs: dict[str, Any] = {
+                "con_id": con_id_int,
+                "start_time_ns": int(page_start_ns),
+                "end_time_ns": int(page_end_ns),
+            }
+            if "number_of_ticks" in fetch_params:
+                kwargs["number_of_ticks"] = int(number_of_ticks)
+            payload = fetch(**kwargs)
+            if not isinstance(payload, Mapping):
+                raise ValueError("MALFORMED_HISTORICAL_TRADES_PAYLOAD")
+            return payload
+
         try:
-            payload = fetch(
-                con_id=int(resolved_con_id),
-                start_time_ns=int(start_time_ns),
-                end_time_ns=int(end_time_ns),
-            )
-            trades = normalize_ibkr_historical_trades_payload(
-                payload,
+            trades, provenance = paginate_historical_trades(
+                _fetch_page,
                 instrument_id=instrument_id,
+                window_start_time_ns=int(start_time_ns),
+                window_end_time_ns=int(end_time_ns),
                 received_time_ns=received_time_ns,
+                ticks_per_page=int(ticks_per_page),
+                max_pages=int(max_pages),
+                min_inter_page_interval_ns=int(min_inter_page_interval_ns),
             )
         except ValueError as exc:
             return HistoricalTradesResult(
@@ -514,12 +548,22 @@ class IbkrObservationalQueryService:
                         "con_id": resolved_con_id,
                         "start_time_ns": start_time_ns,
                         "end_time_ns": end_time_ns,
+                        "ticks_per_page": ticks_per_page,
+                        "max_pages": max_pages,
                     },
-                    response={"trade_count": len(trades)},
+                    response={
+                        "trade_count": len(trades),
+                        "complete": provenance.complete,
+                        "page_count": provenance.page_count,
+                    },
                 )
             )
         return HistoricalTradesResult(
-            accepted=True, trades=tuple(trades), selection=selection
+            accepted=True,
+            trades=tuple(trades),
+            selection=selection,
+            complete=provenance.complete,
+            provenance=provenance,
         )
 
     def fetch_account_observation(
