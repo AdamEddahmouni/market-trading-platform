@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-EVIDENCE-HARDENING-02 Lane B; dual-corpus contract |
 | **Notes** | Item 9 split logic untouched; no #222 merge. |
 
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane A Path A label linker
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, `paper/calibration` |
+| **Summary** | Added fail-closed Path A linkage from Item 9 prospective receipts to post-horizon TRADE label evidence IDs without mutating source observation hashes or embedding labels into feature payloads. `build_dataset_row` optionally populates `path_a_label_evidence_ids` when lawful label artifacts are supplied. |
+| **Key files** | `src/market_platform_foundation/intelligence/outcomes/path_a_label_linker.py` (created); `src/market_platform_foundation/paper/calibration/item9_calibration_protocol.py`; `tests/intelligence/test_path_a_label_linker.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Tests** | `unittest` `test_path_a_label_linker` + `test_item9_calibration_protocol` + `test_post_horizon_label_evidence` **44 passed**; `python tools/imp.py validate changed` **3901 passed**, 29 skipped, 0 fail |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane A; `IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Notes** | No #222 file overlap. Item 9 remains NOT_CALIBRATED; no fitting or gate changes. |
+
 ## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane D session calendar + quality schema
 
 | Field | Value |
