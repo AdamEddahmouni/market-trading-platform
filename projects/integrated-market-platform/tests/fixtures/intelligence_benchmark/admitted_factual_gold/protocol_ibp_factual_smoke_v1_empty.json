@@ -1,0 +1,16 @@
+{
+  "artifact_kind": "ibp_admitted_factual_gold_protocol_v1",
+  "schema_version": "imp.ibp-admitted-factual-gold/1.0.0",
+  "hypothesis_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+  "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+  "hash_algorithm": "sha256-canonical-json-v1",
+  "gold_source_independent": true,
+  "caseset_hash": "B91368CFB58AE03157633A288BD668AE10418A035EFBD676DEE40057A3DBC122",
+  "goldset_hash": "26FBEFC0EB4F1009A783F89F6819CD410E9C65EABC9F8D65CBC29603678C3C26",
+  "cases": [],
+  "freeze": {
+    "status": "UNFROZEN",
+    "cases_constructed": false,
+    "smoke10_executed": false
+  }
+}

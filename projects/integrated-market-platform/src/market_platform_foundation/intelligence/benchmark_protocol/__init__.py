@@ -12,6 +12,11 @@ from .smoke10 import build_smoke10_invocation_contract
 from .smoke10_contamination_audit import audit_smoke10_run_contamination
 from .smoke10_execution import execute_smoke10_baseline, freeze_smoke10_run_configuration
 from .suite_catalog import load_suite_catalog, smoke10_case_ids, suite_catalog_fingerprint
+from .admitted_factual_gold import (
+    IBP_ADMITTED_FACTUAL_GOLD_SCHEMA_VERSION,
+    IBP_FACTUAL_SMOKE_PROTOCOL_VERSION,
+    load_factual_gold_protocol,
+)
 from .types import (
     IBP_FULL_SUITE_CASE_COUNT,
     IBP_PROTOCOL_ID,
@@ -20,6 +25,8 @@ from .types import (
 )
 
 __all__ = [
+    "IBP_ADMITTED_FACTUAL_GOLD_SCHEMA_VERSION",
+    "IBP_FACTUAL_SMOKE_PROTOCOL_VERSION",
     "BenchmarkContaminationError",
     "IBP_FULL_SUITE_CASE_COUNT",
     "IBP_PROTOCOL_ID",
@@ -33,6 +40,7 @@ __all__ = [
     "build_smoke10_invocation_contract",
     "execute_smoke10_baseline",
     "freeze_smoke10_run_configuration",
+    "load_factual_gold_protocol",
     "load_suite_catalog",
     "smoke10_case_ids",
     "strip_evaluator_only_fields",

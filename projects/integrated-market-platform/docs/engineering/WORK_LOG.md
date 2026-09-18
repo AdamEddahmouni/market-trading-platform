@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IBP admitted factual gold M1 contract (IMP-IBP-FACTUAL-GOLD-V1 Phase 2)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `docs/engineering`, `manifests` |
+| **Summary** | Lane M1: versioned methodology contract `imp.ibp-admitted-factual-gold/1.0.0` / protocol `IBP_FACTUAL_SMOKE_V1` with validators, SUT/evaluator field partition, UNKNOWN verdict enum, temporal cutoff + contamination invariants, and empty protocol fixture (no cases, no Smoke10). Legacy `ibp-smoke10` stub gold untouched. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/admitted_factual_gold/*`; `manifests/intelligence_benchmark/schemas/ibp_admitted_factual_gold_protocol.schema.json`; `tests/fixtures/intelligence_benchmark/admitted_factual_gold/protocol_ibp_factual_smoke_v1_empty.json`; `tests/intelligence/test_ibp_admitted_factual_gold_contract.py`; `docs/engineering/IBP_ADMITTED_FACTUAL_GOLD_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ibp_admitted_factual_gold_contract` — 10/10 OK; `python tools/imp.py format` / `lint` / `validate changed` |
+| **Related** | Hypothesis `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1`; branch `research/ibp-admitted-factual-gold-v1-contract`; worktree `.worktrees/ibp-factual-gold-m1` |
+| **Notes** | M2 case builder may use validators, hashing, SUT projection, schema paths, empty protocol template. `REVIEW_VERDICT=APPROVE_M1_CONTRACT` pending independent review; `MERGE_PERFORMED=NO`. |
+
 ## 2026-09-18 — NEXT_RTH runbook SHA reconcile (post–Lane F #275)
 
 | Field | Value |
