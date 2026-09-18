@@ -23,6 +23,11 @@ from .manifest import (
     derive_historical_research_run_id,
 )
 from .pipeline import HistoricalResearchHarnessResult, run_historical_research_harness
+from .fill_economics import (
+    ACCOUNTING_VERSION,
+    COST_MODEL_VERSION,
+    FillEconomicsInvariantError,
+)
 from .prediction_coupling import (
     PREDICTION_COUPLING_SCHEMA_VERSION,
     PredictionCoupledSimulatorError,
@@ -49,7 +54,10 @@ from .types import (
 )
 
 __all__ = [
+    "ACCOUNTING_VERSION",
+    "COST_MODEL_VERSION",
     "ChronologicalSplitPolicy",
+    "FillEconomicsInvariantError",
     "DEFAULT_HISTORICAL_RESEARCH_FEATURES",
     "HISTORICAL_RESEARCH_FEATURE_SCHEMA_VERSION",
     "HISTORICAL_RESEARCH_HARNESS_VERSION",
