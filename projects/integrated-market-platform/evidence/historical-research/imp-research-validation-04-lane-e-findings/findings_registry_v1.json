@@ -1,0 +1,155 @@
+{
+  "artifact_kind": "imp_research_validation_04_lane_e_findings_registry_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "evidence_language": "historical_observation_and_candidate_hypothesis_not_production_ready",
+  "increment_id": "IMP-RESEARCH-VALIDATION-04",
+  "lane": "E",
+  "registry_version": "1.0.0",
+  "source_runs": {
+    "lane_c_baseline_pack": {
+      "branch": "research/historical-baselines-v1",
+      "dataset_fingerprint_fixture": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+      "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+      "pack_run_id": "17158E3B946EC1A418D184D0A2B9F761",
+      "research_code_sha_observed": "5b1566806baa02d8b666c7b12abbbcafcc797e54",
+      "worktree_head_observed": "07e80410"
+    },
+    "lane_d_smoke10": {
+      "branch": "benchmarks/smoke10-baseline",
+      "full30_executed": false,
+      "protocol_version": "imp.intelligence-benchmark-protocol/1.0.0",
+      "run_id": "ibp-smoke10-76DDD188CD080365",
+      "scores_executed": true,
+      "worktree_head_observed": "495e7db2"
+    },
+    "lane_b_opend_corpus_reference": {
+      "dataset_fingerprint_normalized": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+      "evidence_receipt": "evidence/market_data/lane_b/real-historical-provider-verification.json",
+      "note": "read-only consumption for follow-up hypothesis dataset pin; not re-run in Lane E"
+    }
+  },
+  "synthesis_code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+  "findings": [
+    {
+      "FINDING_ID": "LANE-E-FND-001",
+      "SOURCE_RUN": "lane_c:pack_run_id=17158E3B946EC1A418D184D0A2B9F761",
+      "OBSERVATION": "On fixture HIST-DEV-AAPL (EFCC71DF…, three RTH sessions), baseline_1_momentum_5m_sign_v1 shows directional_accuracy=1.0 (n=12) on HISTORICAL_DEVELOPMENT_VALIDATE while baseline_2_mean_reversion_5m_sign_v1 shows directional_accuracy=0.0 (n=12) on the same split.",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in recorded metrics; LOW external validity — monotone synthetic multi-session fixture yields pathological perfect/inverse accuracy, not evidence of tradable edge.",
+      "POSSIBLE_CAUSE": "Signed 5m momentum and mean-reversion baselines are logical opposites on a fixture whose forward-return sign aligns with the 5m bar sign each decision.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "DATA NEEDED": "Lane B verified OpenD AAPL corpus (fingerprint 355FDBB85…, five sessions) under HISTORICAL_DEVELOPMENT split policy; new experiment definition only.",
+      "PROPOSED TEST": "Register NEW frozen experiment (distinct experiment_id/hash) replaying baseline pack strategies on OpenD corpus; compare accuracy/PnL dispersion vs fixture pack without retuning frozen Lane C definitions.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-002",
+      "SOURCE_RUN": "lane_c:pack_run_id=17158E3B946EC1A418D184D0A2B9F761",
+      "OBSERVATION": "Across baselines 0–3 on HISTORICAL_DEVELOPMENT_VALIDATE, simulated_fills=9 and net_pnl=0.0 for each strategy despite differing predictors and abstention rates.",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in harness output; interpretation limited to paper_bar_conservative_v1 research simulator scope.",
+      "POSSIBLE_CAUSE": "Research simulator replays bar-path events and is not prediction-conditioned in this harness path.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-PREDICTION-COUPLED-V1",
+      "DATA NEEDED": "Same fixture pack plus instrumented simulator run manifest showing event source vs prediction linkage.",
+      "PROPOSED TEST": "Design follow-up experiment comparing bar-path replay fills vs prediction-gated simulator fills on identical corpus; primary metric simulated_fills delta vs baseline_0.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-003",
+      "SOURCE_RUN": "lane_c:pack_run_id=17158E3B946EC1A418D184D0A2B9F761; baseline_0_no_trade_v1",
+      "OBSERVATION": "baseline_0_no_trade_v1 reports abstention_rate=1.0 and sample_count=0 on HISTORICAL_DEVELOPMENT_VALIDATE while simulated_fills=9 and turnover=9.",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in decoupled counters; not a contamination failure (pack contamination PASS).",
+      "POSSIBLE_CAUSE": "Predictor abstention metrics and simulator event replay are independently computed in baseline pack v1.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-BASELINE0-SIM-ALIGNMENT-V1",
+      "DATA NEEDED": "Harness trace for baseline_0 prediction stream vs simulator event list.",
+      "PROPOSED TEST": "Follow-up experiment requiring zero simulator fills when strategy_id is no_trade and abstention_rate=1.0 on validate split.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-004",
+      "SOURCE_RUN": "lane_c:pack_run_id=17158E3B946EC1A418D184D0A2B9F761; baseline_3_volume_momentum_5m_v1",
+      "OBSERVATION": "baseline_3_volume_momentum_5m_v1 shows abstention_rate≈0.17 and directional_accuracy=1.0 with sample_count=10 on HISTORICAL_DEVELOPMENT_VALIDATE.",
+      "CONFIDENCE / LIMITATION": "MEDIUM confidence in threshold behavior on fixture; small n; not calibrated for production.",
+      "POSSIBLE_CAUSE": "Volume gate suppresses a subset of decisions on fixture while remaining decisions retain monotone sign alignment.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-BASELINE3-VOLUME-THRESHOLD",
+      "DATA NEEDED": "OpenD multi-session corpus plus ablation grid over volume threshold parameter only.",
+      "PROPOSED TEST": "NEW experiment manifest varying volume_momentum threshold with locked holdout and contamination audit; falsify if validate accuracy remains 1.0 at multiple thresholds on real corpus.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-005",
+      "SOURCE_RUN": "lane_c:contamination_audit pack_run_id=17158E3B946EC1A418D184D0A2B9F761",
+      "OBSERVATION": "Baseline pack contractual contamination audit CONTAMINATION_STATUS=PASS (all five questions PASS, no violations).",
+      "CONFIDENCE / LIMITATION": "PASS applies to contractual_leakage_properties_only scope; does not certify economic edge or simulator fidelity.",
+      "POSSIBLE_CAUSE": "Fixture corpus and split policy respected dual-corpus boundaries for this harness invocation.",
+      "FOLLOW-UP_HYPOTHESIS": null,
+      "DATA NEEDED": null,
+      "PROPOSED TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-006",
+      "SOURCE_RUN": "lane_c:pack_run_id=17158E3B946EC1A418D184D0A2B9F761",
+      "OBSERVATION": "Pack manifest records deterministic_rerun_first_baseline_match=true for experiment_definition_hash C2E70673… on dataset EFCC71DF….",
+      "CONFIDENCE / LIMITATION": "HIGH for reproducibility of first baseline fingerprint; does not extend to OpenD corpus until separately executed.",
+      "POSSIBLE_CAUSE": "Frozen definition hash gate and deterministic harness replay.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "DATA NEEDED": "Independent rerun receipt on OpenD corpus with new experiment hash.",
+      "PROPOSED TEST": "Reproducibility checklist on NEW experiment only.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-007",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365",
+      "OBSERVATION": "Smoke10 invocation executed scores_executed=true for IBP-CASE-001 through IBP-CASE-010 with full30_executed=false (suite catalog ibp-v1-30 referenced, ten-case smoke subset only).",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in execution flags; Smoke10 is intelligence-benchmark observation, not production readiness.",
+      "POSSIBLE_CAUSE": "Lane D scope deliberately runs frozen smoke contract ibp-smoke10-invocation-v1 without FULL30.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-IBP-FULL30-BENCHMARK-V1",
+      "DATA NEEDED": "Governed FULL30 run authorization and non-stub SUT profile when available.",
+      "PROPOSED TEST": "Separate benchmark experiment executing full 30-case catalog with same contamination gates.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-008",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365",
+      "OBSERVATION": "All ten cases FAIL facts dimension with failure_reason FACTS_MISMATCH; sut ibp-deterministic-stub-v1 returns answer UNKNOWN while evaluator gold expects fixture facts.",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in expected stub behavior; does not characterize any production model.",
+      "POSSIBLE_CAUSE": "Baseline SUT profile synthetic_intelligence_fixture_v1_baseline_v1 is intentionally non-answering for fact extraction.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+      "DATA NEEDED": "Benchmark SUT profile capable of governed fact emission without gold leakage.",
+      "PROPOSED TEST": "Smoke10 rerun with alternate SUT profile; primary metric facts PASS rate; contamination DID_SYSTEM_SEE_GOLD must remain PASS.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-009",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365",
+      "OBSERVATION": "Dimensions catastrophic, final_state, freshness, operator_close, provenance, routing, and unknown_handling each PASS 10/10 cases.",
+      "CONFIDENCE / LIMITATION": "HIGH for stub profile; limited to synthetic fixture inputs.",
+      "POSSIBLE_CAUSE": "Stub response template satisfies non-facts dimensions by construction.",
+      "FOLLOW-UP_HYPOTHESIS": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+      "DATA NEEDED": "Non-stub SUT to test whether non-facts PASS rates persist under real reasoning.",
+      "PROPOSED TEST": "A/B smoke run stub vs candidate SUT with dimension-level dashboards.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-010",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365",
+      "OBSERVATION": "Smoke10 contamination_audit overall PASS; evaluator_gold_loaded_for_sut=false for executed cases; DID_SYSTEM_SEE_GOLD PASS.",
+      "CONFIDENCE / LIMITATION": "HIGH for benchmark isolation properties on this run.",
+      "POSSIBLE_CAUSE": "Gold references evaluator_only paths; SUT responses exclude gold payloads.",
+      "FOLLOW-UP_HYPOTHESIS": null,
+      "DATA NEEDED": null,
+      "PROPOSED TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-E-FND-011",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365",
+      "OBSERVATION": "Case IDs IBP-CASE-001..010 from ibp-v1-30 repo catalog were exercised; this is not the legacy CASE-019 list.",
+      "CONFIDENCE / LIMITATION": "HIGH confidence in case_id enumeration in run record.",
+      "POSSIBLE_CAUSE": "Protocol catalog versioning separates smoke10 subset from deprecated case lists.",
+      "FOLLOW-UP_HYPOTHESIS": null,
+      "DATA NEEDED": null,
+      "PROPOSED TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    }
+  ]
+}

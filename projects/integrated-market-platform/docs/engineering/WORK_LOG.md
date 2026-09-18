@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-RESEARCH-VALIDATION-04 Lane E baseline findings queue
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `docs/engineering` |
+| **Summary** | Structured findings (11) from Lane C baseline pack v1 and Lane D Smoke10 run observations; ranked hypothesis queue (6 proposed, not implemented). No baseline/Smoke10 config edits, retuning, or follow-up experiments. |
+| **Key files** | `evidence/historical-research/imp-research-validation-04-lane-e-findings/*`; `docs/engineering/IMP_RESEARCH_VALIDATION_04_LANE_E.md`; `tests/platform/test_imp_research_validation_04_lane_e_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_research_validation_04_lane_e_findings` — 2/2 OK |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lanes C/D/B (read-only artifacts); BUILD 17 research experiment system |
+| **Notes** | Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. Language: historical observation / candidate hypothesis only. |
+
 ## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |
