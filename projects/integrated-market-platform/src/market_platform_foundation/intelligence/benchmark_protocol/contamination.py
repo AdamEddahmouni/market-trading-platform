@@ -56,9 +56,11 @@ def assert_historical_manifest_admissible(manifest: dict[str, Any]) -> None:
         raise BenchmarkContaminationError("HISTORICAL_AUTHORITY_REQUIRED")
     simulator = manifest.get("simulator") or {}
     result_kind = simulator.get("result_kind")
+    if result_kind is None:
+        raise BenchmarkContaminationError("SIMULATOR_RESULT_KIND_REQUIRED")
     if result_kind == ITEM9_CALIBRATION_RESULT_KIND:
         raise BenchmarkContaminationError("ITEM9_CALIBRATION_RESULT_FORBIDDEN")
-    if result_kind is not None and result_kind != SIMULATOR_RESEARCH_RESULT_KIND:
+    if result_kind != SIMULATOR_RESEARCH_RESULT_KIND:
         raise BenchmarkContaminationError("UNEXPECTED_SIMULATOR_RESULT_KIND")
 
 

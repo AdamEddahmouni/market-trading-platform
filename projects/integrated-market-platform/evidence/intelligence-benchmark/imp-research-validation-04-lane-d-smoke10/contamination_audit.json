@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "DID_CASE_CONTEXT_LEAK": "PASS",
+    "DID_CONFIG_CHANGE_MID_RUN": "PASS",
+    "DID_ITEM9_UPGRADE": "PASS",
+    "DID_PROSPECTIVE_RECEIPTS_ENTER": "PASS",
+    "DID_SYSTEM_SEE_GOLD": "PASS"
+  },
+  "overall": "PASS",
+  "reasons": {}
+}
