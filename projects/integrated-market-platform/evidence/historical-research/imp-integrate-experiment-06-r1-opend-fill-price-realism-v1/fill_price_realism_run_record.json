@@ -32,8 +32,8 @@
   "experiment_definition_hash": "C4FCD3AB6CA6AEE57C91A0D709EC8D77EBFA6AA774542BF9AAD9FC761C2D1149",
   "experiment_id": "imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
   "hypothesis_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
-  "pack_run_id": "59C04BC53904D3C9BA9C77F7382D7AF0",
-  "research_code_sha": "2306ff4a0db74d6ed35d9c5d1bb82bf8b3dc7c56",
+  "pack_run_id": "6A66AE5C50700426F71B3734E6FC6A43",
+  "research_code_sha": "274377894f4302066f43e37500a2673635d5a17b",
   "results": [
     {
       "baseline_index": 0,
@@ -991,6 +991,6 @@
     }
   ],
   "spec_bundle_sha256": "bcf758df3cf7a2047f1c7caaae1e4b9f5df4542710edcd1d2bc582cb12ccbb34",
-  "timestamp_ns": 1789769153329989800,
+  "timestamp_ns": 1789769200827922100,
   "v3_pack_manifest_path": "evidence\\historical-research\\imp-integrate-experiment-05-r3-opend-fill-economics-v3\\baseline_pack_run_manifest.json"
 }
