@@ -38,6 +38,7 @@ from .manifest import (
 )
 from .metrics import compute_component_research_metrics
 from .simulator import run_historical_development_simulator_research
+from .strategies import predict_direction
 from .split import (
     assign_chronological_splits,
     decision_times_for_split,
@@ -70,17 +71,6 @@ def _load_normalized_bars(build: HistoricalDevelopmentBuildResult) -> list[dict[
     if not isinstance(bars, list):
         return []
     return [dict(row) for row in bars]
-
-
-def _momentum_sign_prediction(features: dict[str, Any]) -> int:
-    momentum = features.get("values", {}).get("momentum_5m")
-    if momentum is None:
-        return 0
-    if momentum > 0:
-        return 1
-    if momentum < 0:
-        return -1
-    return 0
 
 
 def default_historical_research_experiment_manifest(
@@ -190,7 +180,7 @@ def run_historical_research_harness(
             decision_time_ns=assignment.decision_time_ns,
             forward_horizon_bars=config.forward_horizon_bars,
         )
-        predicted_direction = _momentum_sign_prediction(features)
+        predicted_direction = predict_direction(config.strategy_id, features)
         predictions.append(
             {
                 "decision_time_ns": assignment.decision_time_ns,

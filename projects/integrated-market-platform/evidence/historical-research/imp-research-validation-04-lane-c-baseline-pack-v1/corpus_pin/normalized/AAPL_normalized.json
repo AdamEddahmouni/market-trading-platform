@@ -1,0 +1,1562 @@
+[
+  {
+    "available_time": 1789133460000000000,
+    "bar_payload": {
+      "close": "100.0",
+      "high": "100.1",
+      "low": "99.9",
+      "open": "99.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1000
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133400000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "aa9148d9-6a42-5085-b4c2-50700c153fec",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133400"
+  },
+  {
+    "available_time": 1789133520000000000,
+    "bar_payload": {
+      "close": "100.1",
+      "high": "100.19999999999999",
+      "low": "100.0",
+      "open": "100.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1010
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133460000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "85ec15f4-8595-597e-aeba-ae8568d04537",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133460"
+  },
+  {
+    "available_time": 1789133580000000000,
+    "bar_payload": {
+      "close": "100.2",
+      "high": "100.3",
+      "low": "100.10000000000001",
+      "open": "100.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1020
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133520000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4abd8793-6ab2-5a3c-9974-a54bbbcf7299",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133520"
+  },
+  {
+    "available_time": 1789133640000000000,
+    "bar_payload": {
+      "close": "100.3",
+      "high": "100.39999999999999",
+      "low": "100.2",
+      "open": "100.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1030
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133580000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4d6891ef-e529-5483-90c9-b29e5ff7b2e6",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133580"
+  },
+  {
+    "available_time": 1789133700000000000,
+    "bar_payload": {
+      "close": "100.4",
+      "high": "100.5",
+      "low": "100.30000000000001",
+      "open": "100.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1040
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133640000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "d366993f-05f6-5c70-ac29-24de18d8f7da",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133640"
+  },
+  {
+    "available_time": 1789133760000000000,
+    "bar_payload": {
+      "close": "100.5",
+      "high": "100.6",
+      "low": "100.4",
+      "open": "100.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1050
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133700000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "bb8283b0-8142-5e3a-8e1a-eab54d46d477",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133700"
+  },
+  {
+    "available_time": 1789133820000000000,
+    "bar_payload": {
+      "close": "100.6",
+      "high": "100.69999999999999",
+      "low": "100.5",
+      "open": "100.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1060
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133760000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4793525c-5f12-594f-bbb8-4cafde1bc312",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133760"
+  },
+  {
+    "available_time": 1789133880000000000,
+    "bar_payload": {
+      "close": "100.7",
+      "high": "100.8",
+      "low": "100.60000000000001",
+      "open": "100.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1070
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133820000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "9315884f-49de-566d-8948-882a92b5b41a",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133820"
+  },
+  {
+    "available_time": 1789133940000000000,
+    "bar_payload": {
+      "close": "100.8",
+      "high": "100.89999999999999",
+      "low": "100.7",
+      "open": "100.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1080
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133880000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "7065498a-909a-5344-b3f1-ef1884b2787d",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133880"
+  },
+  {
+    "available_time": 1789134000000000000,
+    "bar_payload": {
+      "close": "100.9",
+      "high": "101.0",
+      "low": "100.80000000000001",
+      "open": "100.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1090
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789133940000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b091ec8a-2034-55b7-bcef-6d35fb4ba57d",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789133940"
+  },
+  {
+    "available_time": 1789134060000000000,
+    "bar_payload": {
+      "close": "101.0",
+      "high": "101.1",
+      "low": "100.9",
+      "open": "100.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1100
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134000000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "bc4f1ed0-ce9f-5ec2-836f-efb94f20ccfb",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134000"
+  },
+  {
+    "available_time": 1789134120000000000,
+    "bar_payload": {
+      "close": "101.1",
+      "high": "101.19999999999999",
+      "low": "101.0",
+      "open": "101.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1110
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134060000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "0c408c69-ee42-5c4f-b5e0-5b53cb1084b2",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134060"
+  },
+  {
+    "available_time": 1789134180000000000,
+    "bar_payload": {
+      "close": "101.2",
+      "high": "101.3",
+      "low": "101.10000000000001",
+      "open": "101.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1120
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134120000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "9dcd87cb-5f28-5f4a-b5a6-de4b1ba54a2c",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134120"
+  },
+  {
+    "available_time": 1789134240000000000,
+    "bar_payload": {
+      "close": "101.3",
+      "high": "101.39999999999999",
+      "low": "101.2",
+      "open": "101.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1130
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134180000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b8cb349f-e5ba-5c79-b016-751e0311ac5c",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134180"
+  },
+  {
+    "available_time": 1789134300000000000,
+    "bar_payload": {
+      "close": "101.4",
+      "high": "101.5",
+      "low": "101.30000000000001",
+      "open": "101.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1140
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134240000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "d6a5778b-9791-5698-aa06-ae0f90b8865d",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134240"
+  },
+  {
+    "available_time": 1789134360000000000,
+    "bar_payload": {
+      "close": "101.5",
+      "high": "101.6",
+      "low": "101.4",
+      "open": "101.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1150
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134300000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "d2f9baff-40cb-5470-b14e-3d57021fba20",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134300"
+  },
+  {
+    "available_time": 1789134420000000000,
+    "bar_payload": {
+      "close": "101.6",
+      "high": "101.69999999999999",
+      "low": "101.5",
+      "open": "101.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1160
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134360000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "eb79a6fc-f298-5258-8e43-5494e80de5d5",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134360"
+  },
+  {
+    "available_time": 1789134480000000000,
+    "bar_payload": {
+      "close": "101.7",
+      "high": "101.8",
+      "low": "101.60000000000001",
+      "open": "101.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1170
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134420000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "58e44f21-bf9b-5a8c-992b-6d7aca7aafca",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134420"
+  },
+  {
+    "available_time": 1789134540000000000,
+    "bar_payload": {
+      "close": "101.8",
+      "high": "101.89999999999999",
+      "low": "101.7",
+      "open": "101.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1180
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134480000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "fddfbf2e-fdc9-51d2-9015-3a0487bfb328",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134480"
+  },
+  {
+    "available_time": 1789134600000000000,
+    "bar_payload": {
+      "close": "101.9",
+      "high": "102.0",
+      "low": "101.80000000000001",
+      "open": "101.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1190
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134540000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "463057f1-32fc-5e42-aec6-1fc52310d874",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134540"
+  },
+  {
+    "available_time": 1789134660000000000,
+    "bar_payload": {
+      "close": "102.0",
+      "high": "102.1",
+      "low": "101.9",
+      "open": "101.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1200
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134600000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "346628c8-e637-534b-8ac9-091cdd8d3df6",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134600"
+  },
+  {
+    "available_time": 1789134720000000000,
+    "bar_payload": {
+      "close": "102.1",
+      "high": "102.19999999999999",
+      "low": "102.0",
+      "open": "102.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1210
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134660000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "ce829456-7da2-5255-b2a6-d82c51cbc0b5",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134660"
+  },
+  {
+    "available_time": 1789134780000000000,
+    "bar_payload": {
+      "close": "102.2",
+      "high": "102.3",
+      "low": "102.10000000000001",
+      "open": "102.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1220
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134720000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "00fc64c3-c455-5d49-90fc-1f6729da3ec3",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134720"
+  },
+  {
+    "available_time": 1789134840000000000,
+    "bar_payload": {
+      "close": "102.3",
+      "high": "102.39999999999999",
+      "low": "102.2",
+      "open": "102.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1230
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134780000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "6df468f4-034e-5131-a5c5-60190bf77fa9",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134780"
+  },
+  {
+    "available_time": 1789134900000000000,
+    "bar_payload": {
+      "close": "102.4",
+      "high": "102.5",
+      "low": "102.30000000000001",
+      "open": "102.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1240
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134840000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "e115d861-420d-58ec-a0c7-81a2f9f734f0",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134840"
+  },
+  {
+    "available_time": 1789134960000000000,
+    "bar_payload": {
+      "close": "102.5",
+      "high": "102.6",
+      "low": "102.4",
+      "open": "102.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1250
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134900000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "945ca8c5-cdc7-5e5f-a872-4b962a21901a",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134900"
+  },
+  {
+    "available_time": 1789135020000000000,
+    "bar_payload": {
+      "close": "102.6",
+      "high": "102.69999999999999",
+      "low": "102.5",
+      "open": "102.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1260
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789134960000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "60cd42df-41e5-52d8-8c76-eafe52227853",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789134960"
+  },
+  {
+    "available_time": 1789135080000000000,
+    "bar_payload": {
+      "close": "102.7",
+      "high": "102.8",
+      "low": "102.60000000000001",
+      "open": "102.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1270
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789135020000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "5e479999-849a-5d76-8a2c-d2c186ed4cdb",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789135020"
+  },
+  {
+    "available_time": 1789135140000000000,
+    "bar_payload": {
+      "close": "102.8",
+      "high": "102.89999999999999",
+      "low": "102.7",
+      "open": "102.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1280
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789135080000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "8793a563-fd45-5d36-bfe6-187cd620f299",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789135080"
+  },
+  {
+    "available_time": 1789135200000000000,
+    "bar_payload": {
+      "close": "102.9",
+      "high": "103.0",
+      "low": "102.80000000000001",
+      "open": "102.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1290
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789135140000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "fc4370fb-4733-508b-b692-accdf08ec78e",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789135140"
+  },
+  {
+    "available_time": 1789479060000000000,
+    "bar_payload": {
+      "close": "100.0",
+      "high": "100.1",
+      "low": "99.9",
+      "open": "99.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1000
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479000000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "a269a9a1-8b26-5796-9741-5ea1a138a09b",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479000"
+  },
+  {
+    "available_time": 1789479120000000000,
+    "bar_payload": {
+      "close": "100.1",
+      "high": "100.19999999999999",
+      "low": "100.0",
+      "open": "100.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1010
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479060000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "2039f98c-8bf2-5c3f-b701-8a0d9728d1c4",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479060"
+  },
+  {
+    "available_time": 1789479180000000000,
+    "bar_payload": {
+      "close": "100.2",
+      "high": "100.3",
+      "low": "100.10000000000001",
+      "open": "100.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1020
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479120000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "da9189b4-41d0-5a8e-90d3-2dd8b26bd923",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479120"
+  },
+  {
+    "available_time": 1789479240000000000,
+    "bar_payload": {
+      "close": "100.3",
+      "high": "100.39999999999999",
+      "low": "100.2",
+      "open": "100.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1030
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479180000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "73714960-614c-5a7e-9a0f-da9eb8e801f1",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479180"
+  },
+  {
+    "available_time": 1789479300000000000,
+    "bar_payload": {
+      "close": "100.4",
+      "high": "100.5",
+      "low": "100.30000000000001",
+      "open": "100.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1040
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479240000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "233825ef-f20e-55ba-aedd-9a10fe61aec9",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479240"
+  },
+  {
+    "available_time": 1789479360000000000,
+    "bar_payload": {
+      "close": "100.5",
+      "high": "100.6",
+      "low": "100.4",
+      "open": "100.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1050
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479300000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "820266b4-31df-58da-8c3d-4eb1c7293559",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479300"
+  },
+  {
+    "available_time": 1789479420000000000,
+    "bar_payload": {
+      "close": "100.6",
+      "high": "100.69999999999999",
+      "low": "100.5",
+      "open": "100.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1060
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479360000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "27a22de7-18ad-57f2-8799-1d429e18a860",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479360"
+  },
+  {
+    "available_time": 1789479480000000000,
+    "bar_payload": {
+      "close": "100.7",
+      "high": "100.8",
+      "low": "100.60000000000001",
+      "open": "100.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1070
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479420000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "0f56dca0-c571-54f0-b86b-fbff6281f627",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479420"
+  },
+  {
+    "available_time": 1789479540000000000,
+    "bar_payload": {
+      "close": "100.8",
+      "high": "100.89999999999999",
+      "low": "100.7",
+      "open": "100.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1080
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479480000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "dc7d7dcb-3881-5b6d-8824-6873234d835a",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479480"
+  },
+  {
+    "available_time": 1789479600000000000,
+    "bar_payload": {
+      "close": "100.9",
+      "high": "101.0",
+      "low": "100.80000000000001",
+      "open": "100.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1090
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479540000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "1ee871fb-fb01-529f-827e-92867eb6a01c",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479540"
+  },
+  {
+    "available_time": 1789479660000000000,
+    "bar_payload": {
+      "close": "101.0",
+      "high": "101.1",
+      "low": "100.9",
+      "open": "100.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1100
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479600000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "fd4f7b5e-b810-58f1-b06e-f6a88c439756",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479600"
+  },
+  {
+    "available_time": 1789479720000000000,
+    "bar_payload": {
+      "close": "101.1",
+      "high": "101.19999999999999",
+      "low": "101.0",
+      "open": "101.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1110
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479660000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "6de59c9b-ab3c-512d-8b49-0c2152ebc6e7",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479660"
+  },
+  {
+    "available_time": 1789479780000000000,
+    "bar_payload": {
+      "close": "101.2",
+      "high": "101.3",
+      "low": "101.10000000000001",
+      "open": "101.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1120
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479720000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "c1d5bf90-00c7-5073-9928-09aaa20477b2",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479720"
+  },
+  {
+    "available_time": 1789479840000000000,
+    "bar_payload": {
+      "close": "101.3",
+      "high": "101.39999999999999",
+      "low": "101.2",
+      "open": "101.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1130
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479780000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b350ae7e-b56e-5a98-a03b-8adf6cd43c14",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479780"
+  },
+  {
+    "available_time": 1789479900000000000,
+    "bar_payload": {
+      "close": "101.4",
+      "high": "101.5",
+      "low": "101.30000000000001",
+      "open": "101.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1140
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479840000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "e94a752d-4c86-561e-97d1-2d05dbc0fce8",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479840"
+  },
+  {
+    "available_time": 1789479960000000000,
+    "bar_payload": {
+      "close": "101.5",
+      "high": "101.6",
+      "low": "101.4",
+      "open": "101.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1150
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479900000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "e1c35cd9-ccfd-50f6-9128-55c9141ff585",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479900"
+  },
+  {
+    "available_time": 1789480020000000000,
+    "bar_payload": {
+      "close": "101.6",
+      "high": "101.69999999999999",
+      "low": "101.5",
+      "open": "101.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1160
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789479960000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "69c37954-02f4-586d-8ec5-5fd7b6e74751",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789479960"
+  },
+  {
+    "available_time": 1789480080000000000,
+    "bar_payload": {
+      "close": "101.7",
+      "high": "101.8",
+      "low": "101.60000000000001",
+      "open": "101.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1170
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480020000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4bcecf94-45b1-5f72-83c0-363213ee5e73",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480020"
+  },
+  {
+    "available_time": 1789480140000000000,
+    "bar_payload": {
+      "close": "101.8",
+      "high": "101.89999999999999",
+      "low": "101.7",
+      "open": "101.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1180
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480080000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "64d958d7-5072-5cc9-92ed-1ea2a63a15ac",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480080"
+  },
+  {
+    "available_time": 1789480200000000000,
+    "bar_payload": {
+      "close": "101.9",
+      "high": "102.0",
+      "low": "101.80000000000001",
+      "open": "101.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1190
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480140000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "232e3fdb-c6df-5cc7-834b-33a3ad0197d5",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480140"
+  },
+  {
+    "available_time": 1789480260000000000,
+    "bar_payload": {
+      "close": "102.0",
+      "high": "102.1",
+      "low": "101.9",
+      "open": "101.95",
+      "timeframe": "1_MINUTE",
+      "volume": 1200
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480200000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b74cb9d5-7caf-5e21-b385-e978cdfb1453",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480200"
+  },
+  {
+    "available_time": 1789480320000000000,
+    "bar_payload": {
+      "close": "102.1",
+      "high": "102.19999999999999",
+      "low": "102.0",
+      "open": "102.05",
+      "timeframe": "1_MINUTE",
+      "volume": 1210
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480260000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "cb3389c4-9195-57ed-95fd-9e3b53e9af7e",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480260"
+  },
+  {
+    "available_time": 1789480380000000000,
+    "bar_payload": {
+      "close": "102.2",
+      "high": "102.3",
+      "low": "102.10000000000001",
+      "open": "102.15",
+      "timeframe": "1_MINUTE",
+      "volume": 1220
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480320000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b94053a9-e19b-5847-bb85-9f10b00367a3",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480320"
+  },
+  {
+    "available_time": 1789480440000000000,
+    "bar_payload": {
+      "close": "102.3",
+      "high": "102.39999999999999",
+      "low": "102.2",
+      "open": "102.25",
+      "timeframe": "1_MINUTE",
+      "volume": 1230
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480380000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "11ef46ed-a9e2-5cb3-9aca-53a4193ba371",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480380"
+  },
+  {
+    "available_time": 1789480500000000000,
+    "bar_payload": {
+      "close": "102.4",
+      "high": "102.5",
+      "low": "102.30000000000001",
+      "open": "102.35000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1240
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480440000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "7c3a4d3f-ba05-5069-93a4-9a461972133f",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480440"
+  },
+  {
+    "available_time": 1789480560000000000,
+    "bar_payload": {
+      "close": "102.5",
+      "high": "102.6",
+      "low": "102.4",
+      "open": "102.45",
+      "timeframe": "1_MINUTE",
+      "volume": 1250
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480500000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4a2d57dc-91ea-56a5-a28b-535610d75af5",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480500"
+  },
+  {
+    "available_time": 1789480620000000000,
+    "bar_payload": {
+      "close": "102.6",
+      "high": "102.69999999999999",
+      "low": "102.5",
+      "open": "102.55",
+      "timeframe": "1_MINUTE",
+      "volume": 1260
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480560000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "ac733cc0-7094-57aa-8f92-cf99d0de3512",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480560"
+  },
+  {
+    "available_time": 1789480680000000000,
+    "bar_payload": {
+      "close": "102.7",
+      "high": "102.8",
+      "low": "102.60000000000001",
+      "open": "102.65",
+      "timeframe": "1_MINUTE",
+      "volume": 1270
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480620000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "4f83d5b6-f3e8-56cf-aaca-e722b40b954b",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480620"
+  },
+  {
+    "available_time": 1789480740000000000,
+    "bar_payload": {
+      "close": "102.8",
+      "high": "102.89999999999999",
+      "low": "102.7",
+      "open": "102.75",
+      "timeframe": "1_MINUTE",
+      "volume": 1280
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480680000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "a2852bee-a4b4-55bd-914b-e10ad15628af",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480680"
+  },
+  {
+    "available_time": 1789480800000000000,
+    "bar_payload": {
+      "close": "102.9",
+      "high": "103.0",
+      "low": "102.80000000000001",
+      "open": "102.85000000000001",
+      "timeframe": "1_MINUTE",
+      "volume": 1290
+    },
+    "channel_id": "canonical:EQUITY:XNAS:AAPL",
+    "event_time": 1789480740000000000,
+    "event_type": "BAR_OHLCV_1M",
+    "historical_provenance_ref": {
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703"
+    },
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "normalized_event_id": "b6d5c938-4d8c-528b-9d36-95c775045f8e",
+    "publisher_id": "moomoo.opend",
+    "source_instance_id": "MOOMOO_OPEND_HISTORY_KLINE_1M",
+    "source_record_id": "canonical:EQUITY:XNAS:AAPL-1_MINUTE-1789480740"
+  }
+]

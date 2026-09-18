@@ -1,0 +1,17 @@
+{
+  "artifact_kind": "historical_baseline_pack_evidence_receipt_v1",
+  "corpus_pin_path": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/corpus_pin",
+  "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+  "evidence_label": "HISTORICAL_BASELINE_V1",
+  "execution_research_code_sha": "5b1566806baa02d8b666c7b12abbbcafcc797e54",
+  "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+  "frozen_definition_path": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+  "frozen_research_code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+  "operator_interpretation_notes": [
+    "Directional accuracy 1.0 or 0.0 on small development-validate sample sizes (e.g. n\u224812) on the monotone synthetic multi-session fixture is a pathological observation, not evidence of edge.",
+    "Simulator fill counts and gross/net PnL may be identical across baselines because the paper_bar_conservative_v1 research simulator is bar-path scoped, not prediction-conditioned.",
+    "Baseline 0 (no-trade) may show abstention_rate=1.0 while simulator fills remain nonzero because predictor abstention and simulator event replay are decoupled in this harness path."
+  ],
+  "pack_run_id": "17158E3B946EC1A418D184D0A2B9F761",
+  "pack_run_manifest_path": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/baseline_pack_run_manifest.json"
+}
