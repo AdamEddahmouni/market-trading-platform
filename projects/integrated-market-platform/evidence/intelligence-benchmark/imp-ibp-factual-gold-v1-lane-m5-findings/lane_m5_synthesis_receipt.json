@@ -1,0 +1,44 @@
+{
+  "artifact_kind": "imp_ibp_factual_gold_v1_lane_m5_synthesis_receipt_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "branch": "docs/ibp-factual-gold-v1-findings",
+  "evidence_class": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-IBP-FACTUAL-GOLD-V1",
+  "lane": "M5",
+  "MERGE_PERFORMED": "NO",
+  "REVIEW_VERDICT": "PENDING_INDEPENDENT_REVIEW",
+  "APPROVE_M5_EVIDENCE": "YES",
+  "baseline_run_id": "ibp-factual-smoke-28EA7748057E312D",
+  "IBP_FACTUAL_SMOKE_V1_EXECUTED": "YES",
+  "SMOKE10_JUSTIFIED_IBP_FACTUAL_PROTOCOL": "YES",
+  "SMOKE10_JUSTIFIED_LEGACY_STUB_CATALOG": "NO",
+  "SMOKE10_EXECUTED_LEGACY_CATALOG_NONSTUB": "NO",
+  "FULL30_EXECUTED": "NO",
+  "frozen_collector_pin": {
+    "note": "untouched",
+    "path": ".imp-actual-01-phase-d",
+    "sha": "fed2d9f7"
+  },
+  "software_landing_sha": "3aa87e511a68b2ef962f86d8924cd9b174c8c421",
+  "software_landing_note": "Merge [#280](https://github.com/AdamEddahmouni/market-trading-platform/pull/280) Lane M5 freeze+run; not this docs-only findings commit",
+  "non_goals_observed": [
+    "no SUT patch from gold",
+    "no factual smoke rerun",
+    "no PR 222 merge",
+    "no Item 9 mutation",
+    "no Full30 execution",
+    "no legacy stub Smoke10 rewrite"
+  ],
+  "outputs": {
+    "findings_registry": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5-findings/findings_registry_v1.json",
+    "hypothesis_queue": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5-findings/hypothesis_queue_v1.json",
+    "operator_doc": "docs/engineering/IMP_IBP_FACTUAL_GOLD_V1_LANE_M5_FINDINGS.md"
+  },
+  "read_only_source_artifacts": {
+    "m5_baseline_receipt": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/factual_smoke_baseline_evidence_receipt.json @ origin/main after #280",
+    "m5_run_record": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/factual_smoke_run_record.json",
+    "legacy_stub_smoke10": "run_id ibp-smoke10-76DDD188CD080365 @ benchmarks/smoke10-baseline worktree"
+  },
+  "synthesis_base_sha": "3aa87e511a68b2ef962f86d8924cd9b174c8c421",
+  "synthesis_timestamp_utc": "2026-09-18T12:00:00Z"
+}

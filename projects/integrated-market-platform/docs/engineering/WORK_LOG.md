@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/intelligence-benchmark`, `docs/platform`, `docs/engineering` |
+| **Summary** | Post–[#280](https://github.com/AdamEddahmouni/market-trading-platform/pull/280) findings lane: registered eight observations from `RUN_ID` `ibp-factual-smoke-28EA7748057E312D` (facts FAIL 11/11; FACT_MISMATCH 5; UNNECESSARY_UNKNOWN 7; unknown_handling FAIL 7/4; other dimensions PASS 11/11). Ranked three **capability-gap** hypotheses only; closed `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1` at methodology observed. `SMOKE10_JUSTIFIED=YES` for `IBP_FACTUAL_SMOKE_V1` only; routing PASS not interpreted as SUT quality. |
+| **Key files** | `evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5-findings/*`; `docs/engineering/IMP_IBP_FACTUAL_GOLD_V1_LANE_M5_FINDINGS.md`; `docs/platform/PROGRAM_STATUS.md`; `tests/platform/test_imp_ibp_factual_gold_v1_lane_m5_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_ibp_factual_gold_v1_lane_m5_findings` |
+| **Related** | Baseline receipt `imp-ibp-factual-gold-v1-lane-m5/factual_smoke_baseline_evidence_receipt.json`; legacy stub `ibp-smoke10-76DDD188CD080365` |
+| **Notes** | `IMP_IBP_FACTUAL_GOLD_V1_SOFTWARE_LANDING_SHA=3aa87e51` — not this docs PR commit. `MERGE_PERFORMED=NO` pending independent review. No SUT gold patch, smoke rerun, #222 merge, or Item 9 mutation. |
+
 ## 2026-09-18 — IBP factual smoke v1 Lane M5 baseline run (IMP-IBP-FACTUAL-GOLD-V1)
 
 | Field | Value |
@@ -46,7 +58,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `tests/fixtures/intelligence_benchmark/freeze/ibp_factual_smoke_v1_freeze.json`; `evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/*`; `tools/benchmarks/run_ibp_factual_smoke_m5_lane.py` |
 | **Tests** | `python -m unittest tests.intelligence.test_ibp_admitted_factual_gold_m4_evaluator tests.intelligence.test_ibp_admitted_factual_gold_contract` — 25 OK |
 | **Related** | [IBP_ADMITTED_FACTUAL_GOLD_V1.md](IBP_ADMITTED_FACTUAL_GOLD_V1.md); Lane D receipt `imp-research-validation-04-lane-d-smoke10` |
-| **Notes** | `ITEM9_CALIBRATED=NO`; PR #222 isolated; `MERGE_PERFORMED=NO` pending independent evidence review |
+| **Notes** | `ITEM9_CALIBRATED=NO`; PR #222 isolated; evidence merged via [#280](https://github.com/AdamEddahmouni/market-trading-platform/pull/280) (`APPROVE_M5_EVIDENCE`); findings closeout is separate docs PR |
 
 ## 2026-09-18 — IBP admitted factual gold M1 contract (IMP-IBP-FACTUAL-GOLD-V1 Phase 2)
 
