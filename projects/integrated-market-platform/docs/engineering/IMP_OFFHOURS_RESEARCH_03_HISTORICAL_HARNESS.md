@@ -9,7 +9,7 @@
 2. **Feature reconstruction** — `reconstruct_historical_research_features` with explicit `prediction_cutoff_ns`, lookback, schema version, and missing-data behavior; Path A bar features via `derive_bar_features` at cutoff.
 3. **Chronological research split** — `assign_chronological_splits` → `HISTORICAL_TRAIN` / `HISTORICAL_DEVELOPMENT_VALIDATE` / `HISTORICAL_RESEARCH_TEST` (all remain `HISTORICAL_DEVELOPMENT`; no shuffle by default).
 4. **Strategy / challenger** — default `historical_momentum_sign_v1` (development-only; not promotional).
-5. **Simulator research** — `run_historical_development_simulator_research` → `SIMULATOR_RESEARCH_RESULT` (explicitly not `ITEM9_CALIBRATION_RESULT`).
+5. **Simulator research** — prediction-conditioned `run_historical_development_simulator_research(predictions=…)` → `SIMULATOR_RESEARCH_RESULT` (explicitly not `ITEM9_CALIBRATION_RESULT`; no independent bar-replay trading).
 6. **Metrics** — `compute_component_research_metrics` on development-validate split only; simulator input restricted to `HISTORICAL_DEVELOPMENT_VALIDATE` decision times (holdout excluded from selection-facing PnL/fills and `run_fingerprint` metrics).
 7. **Manifest** — `historical_research_run_manifest_v1` written beside predictions/labels; `experiment_manifest.json` cross-ref to `ExperimentManifestV1` fields (no parallel ledger).
 
