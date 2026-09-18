@@ -8,15 +8,18 @@ from typing import Any
 
 from ...canonical import canonical_bytes, sha256_bytes
 from ...paper.calibration.bar_ohlcv_prospective_proof import resolve_runtime_git_sha
+from .blind_input import build_blind_case_input
 from .smoke10 import build_smoke10_invocation_contract
 from .smoke10_contamination_audit import audit_smoke10_run_contamination
 from .smoke10_evaluator import CASE_DIMENSIONS, load_evaluator_gold, score_case_dimensions
 from .suite_catalog import load_suite_catalog, smoke10_case_ids, suite_catalog_fingerprint
-from .synthetic_sut import (
+from .sut_dispatch import resolve_sut_runner
+from .sut_profiles import (
+    IBP_FACTS_SUT_PROFILE_ID,
     IBP_SYNTHETIC_SUT_MODEL_ID,
     IBP_SYNTHETIC_SUT_PROFILE_ID,
-    build_blind_case_input,
-    run_synthetic_intelligence_sut,
+    resolve_sut_profile,
+    sut_profile_documentation,
 )
 from .types import (
     IBP_PROTOCOL_ID,
@@ -28,6 +31,7 @@ from .types import (
 IBP_SMOKE10_RUN_KIND = "intelligence_benchmark_smoke10_run_v1"
 IBP_SMOKE10_RUN_SCHEMA_VERSION = "imp.intelligence-benchmark-smoke10-run/1.0.0"
 CONTEXT_RESET_POLICY = "one_fresh_context_per_case_v1"
+IBP_NONSTUB_SMOKE10_FREEZE_ARTIFACT_KIND = "ibp_smoke10_nonstub_sut_freeze_v1"
 
 
 def freeze_smoke10_run_configuration(
@@ -35,10 +39,12 @@ def freeze_smoke10_run_configuration(
     *,
     historical_run_record: dict[str, Any] | None = None,
     code_sha: str | None = None,
+    sut_profile_id: str = IBP_SYNTHETIC_SUT_PROFILE_ID,
 ) -> dict[str, Any]:
     """Capture immutable run configuration before case 1."""
     catalog = load_suite_catalog(repository_root)
     resolved_sha = code_sha or resolve_runtime_git_sha(start=repository_root)
+    profile = resolve_sut_profile(sut_profile_id)
     case_ids = list(smoke10_case_ids(catalog))
     contract = build_smoke10_invocation_contract(
         repository_root,
@@ -53,12 +59,23 @@ def freeze_smoke10_run_configuration(
         "case_ids": case_ids,
         "case_count": IBP_SMOKE10_CASE_COUNT,
         "context_reset_policy": CONTEXT_RESET_POLICY,
-        "sut_profile_id": IBP_SYNTHETIC_SUT_PROFILE_ID,
-        "sut_model_id": IBP_SYNTHETIC_SUT_MODEL_ID,
+        "sut_profile_id": profile.profile_id,
+        "sut_model_id": profile.model_id,
         "evaluator_only_gold_prefix": "evaluator_only/",
         "code_sha": resolved_sha,
         "invocation_contract": contract,
     }
+    if profile.hypothesis_id is not None:
+        config_body["sut_hypothesis_id"] = profile.hypothesis_id
+        config_body["sut_definition"] = sut_profile_documentation(profile, code_sha=resolved_sha)
+        config_body["tool_policy"] = {
+            "tools_available": list(profile.tools_available),
+            "evaluator_gold_access": "DENY",
+            "network_llm_access": "DENY",
+        }
+        config_body["context_rules"] = list(profile.context_rules)
+        if profile.limitation_class:
+            config_body["sut_limitation_class"] = profile.limitation_class
     fingerprint = sha256_bytes(canonical_bytes(config_body))
     return {
         **config_body,
@@ -69,6 +86,40 @@ def freeze_smoke10_run_configuration(
 
 def _context_reset_token(case_id: str, frozen_config_fingerprint: str) -> str:
     return sha256_bytes(canonical_bytes({"case_id": case_id, "config": frozen_config_fingerprint}))
+
+
+def execute_smoke10_case(
+    *,
+    repository_root: Path,
+    case: dict[str, Any],
+    frozen_config_fingerprint: str,
+    sut_runner,
+) -> dict[str, Any]:
+    """Run one Smoke10 case: SUT first, evaluator gold loaded only after response."""
+    case_id = case["case_id"]
+    token = _context_reset_token(case_id, frozen_config_fingerprint)
+    blind_input = build_blind_case_input(case, context_reset_token=token)
+    sut_response = sut_runner(blind_input)
+    gold = load_evaluator_gold(repository_root, case["evaluator_gold_ref"])
+    scoring = score_case_dimensions(
+        sut_response=sut_response,
+        gold=gold,
+        blind_mode=case.get("blind_mode"),
+    )
+    return {
+        "case_id": case_id,
+        "blind_mode": case.get("blind_mode"),
+        "context_reset_token": token,
+        "prior_case_ids_visible_to_sut": False,
+        "evaluator_gold_loaded_for_sut": False,
+        "sut_response_includes_gold": "gold_answer" in sut_response,
+        "sut_profile_id": sut_response.get("sut_profile_id"),
+        "sut_model_id": sut_response.get("sut_model_id"),
+        "sut_response": sut_response,
+        "dimension_scores": scoring["dimensions"],
+        "failure_reasons": scoring["failure_reasons"],
+        "scores_executed": True,
+    }
 
 
 def execute_smoke10_baseline(
@@ -86,36 +137,22 @@ def execute_smoke10_baseline(
     if list(frozen_config.get("case_ids", ())) != list(smoke10_case_ids(catalog)):
         raise ValueError("FROZEN_CONFIG_CASE_LIST_MISMATCH")
 
+    profile_id = str(frozen_config.get("sut_profile_id") or IBP_SYNTHETIC_SUT_PROFILE_ID)
+    sut_runner = resolve_sut_runner(profile_id, repository_root=repository_root)
+
     run_id = f"ibp-smoke10-{frozen_fp[:16]}"
     case_results: list[dict[str, Any]] = []
     cases_by_id = {row["case_id"]: row for row in catalog["cases"]}
 
     for case_id in frozen_config["case_ids"]:
         case = cases_by_id[case_id]
-        token = _context_reset_token(case_id, frozen_fp)
-        blind_input = build_blind_case_input(case, context_reset_token=token)
-        sut_response = run_synthetic_intelligence_sut(blind_input)
-        gold = load_evaluator_gold(repository_root, case["evaluator_gold_ref"])
-        scoring = score_case_dimensions(
-            sut_response=sut_response,
-            gold=gold,
-            blind_mode=case.get("blind_mode"),
-        )
         case_results.append(
-            {
-                "case_id": case_id,
-                "blind_mode": case.get("blind_mode"),
-                "context_reset_token": token,
-                "prior_case_ids_visible_to_sut": False,
-                "evaluator_gold_loaded_for_sut": False,
-                "sut_response_includes_gold": "gold_answer" in sut_response,
-                "sut_profile_id": IBP_SYNTHETIC_SUT_PROFILE_ID,
-                "sut_model_id": IBP_SYNTHETIC_SUT_MODEL_ID,
-                "sut_response": sut_response,
-                "dimension_scores": scoring["dimensions"],
-                "failure_reasons": scoring["failure_reasons"],
-                "scores_executed": True,
-            }
+            execute_smoke10_case(
+                repository_root=repository_root,
+                case=case,
+                frozen_config_fingerprint=frozen_fp,
+                sut_runner=sut_runner,
+            )
         )
 
     governance = {
@@ -224,9 +261,11 @@ def summarize_smoke10_run(case_results: list[dict[str, Any]]) -> dict[str, Any]:
 
 __all__ = [
     "CONTEXT_RESET_POLICY",
+    "IBP_NONSTUB_SMOKE10_FREEZE_ARTIFACT_KIND",
     "IBP_SMOKE10_RUN_KIND",
     "IBP_SMOKE10_RUN_SCHEMA_VERSION",
     "execute_smoke10_baseline",
+    "execute_smoke10_case",
     "freeze_smoke10_run_configuration",
     "summarize_smoke10_run",
 ]
