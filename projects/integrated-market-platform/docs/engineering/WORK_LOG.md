@@ -48,6 +48,54 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | IMP-RESEARCH-VALIDATION-04 Lanes C/D/B (read-only artifacts); BUILD 17 research experiment system |
 | **Notes** | Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. Language: historical observation / candidate hypothesis only. |
 
+## 2026-09-18 — IMP-RESEARCH-VALIDATION-04 Lane C baseline pack integrity fix
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `evidence/historical-research`, `tools/research` |
+| **Summary** | Independent review request-changes: frozen experiment definitions now fail closed on hash tampering (always recompute canonical payload hash), git-tracked receipts under `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/`, operator interpretation notes for fixture-pathological metrics and simulator/predictor decoupling (no baseline retune). |
+| **Key files** | `baseline_pack.py`, `historical_baseline_pack_v1_cli.py`, `test_historical_baseline_pack_v1.py`, `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/*` |
+| **Tests** | `python -m unittest tests.platform.test_historical_baseline_pack_v1`; `python tools/research/historical_baseline_pack_v1_cli.py --frozen-definition evidence/.../frozen_experiment_definition.json` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane C; reviewer `e50cef56-dc4f-4544-a5d7-fe5db9d32433` |
+| **Notes** | **EXPERIMENT_HASH** unchanged (`C2E706…`) — strategy/dataset payload unchanged; `research_code_sha` in frozen file remains base pin `f31e30f` while execution SHA recorded in pack manifest/receipt. Lane F WORK_LOG heading preserved. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane B real historical provider verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development`, `tools/historical_data` |
+| **Summary** | Bounded OpenD verification for AAPL 1m RTH (5 sessions) via `verify_real_historical_providers.py`; fail-closed IBKR gate when TWS/4001 closed and `IMP_IBKR_LIVE` unset. **HISTORICAL_DEVELOPMENT** only; Item 9 admission refused. |
+| **Key files** | `src/market_platform_foundation/market_data/historical_development/real_provider_verification.py`, `tools/historical_data/verify_real_historical_providers.py`, `tests/platform/test_real_historical_provider_verification.py` |
+| **Tests** | `python -m unittest tests.platform.test_real_historical_provider_verification` — 6 passed; `python tools/imp.py validate changed` — 1899 passed, 3 skipped |
+| **Related** | IMP-DUAL-CORPUS-01 Lane B builder; `tools/ibkr/verify_historical_trades_provider.py` |
+| **Notes** | Worktree `.worktrees/imp-04-lane-b-provider` @ branch `data/real-historical-verification`. Verified corpus under `artifacts/historical-rth-development-real-provider-verification/`. Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane D Smoke10 baseline + evidence pin
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `evidence` |
+| **Summary** | Added governed Smoke10 baseline execution (`smoke10-run`) and git-tracked baseline receipts under `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` pinning RUN_ID `ibp-smoke10-76DDD188CD080365`, frozen config `76DDD188…`, contamination PASS, and per-dimension summaries (no rescoring). Rebased onto Lane A `c2ac4c59` (Lane F WORK_LOG heading preserved). |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/smoke10_*.py`, `synthetic_sut.py`; `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/*`; `tools/benchmarks/intelligence_cli.py`; `tests/intelligence/test_intelligence_benchmark_smoke10_execution.py` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter`; `python tools/imp.py validate changed` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane D; reviewer `114aef56-8cd5-41a4-bdcf-d272c1e0889b`; Lane A `c2ac4c59`; branch `benchmarks/smoke10-baseline` |
+| **Notes** | Canonical Smoke10 = `IBP-CASE-001`…`010`. Baseline stub `UNKNOWN` → 10× `facts` FAIL (`FACTS_MISMATCH`); scores frozen in pinned JSON. Ephemeral harness paths redacted in run record. Full30 not executed. Frozen collector untouched. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane A result_kind fail-closed
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | IBP historical manifest admissibility now requires an explicit `simulator.result_kind` of `SIMULATOR_RESEARCH_RESULT`; absent or unknown kinds fail closed so historical simulator output cannot be ingested without an explicit research contract. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/contamination.py`; `tests/intelligence/test_intelligence_benchmark_harness_adapter.py`; `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_harness_adapter` — 10 passed; `python tools/imp.py validate changed` — PASSED 3529 tests, 0 failures |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane A; IMP-OFFHOURS-RESEARCH-03 Lane E; branch `benchmarks/result-contract-hardening` |
+| **Notes** | Evidence class remains `HISTORICAL_DEVELOPMENT` only; no Item 9 / FTEP / Live upgrade paths. |
+
 ## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |

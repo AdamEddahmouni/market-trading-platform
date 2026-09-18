@@ -1,0 +1,292 @@
+{
+  "artifact_kind": "historical_baseline_pack_run_v1",
+  "baseline_results": [
+    {
+      "baseline_index": 0,
+      "config_fingerprint": "A4A5B6529A424787088C3B4E0D81241A4219AAF45CD7C5959BB05822E976A5BE",
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-c-baselines\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v1\\runs\\603C43F9C52304B5456DD24510BC766B41CF612FEECF029E21A204B2D28E1F4C\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 1.0,
+          "avg_forward_return": null,
+          "coverage": null,
+          "directional_accuracy": null,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": null,
+          "median_forward_return": null,
+          "net_pnl": 0.0,
+          "precision": null,
+          "recall": null,
+          "sample_count": 0,
+          "simulated_fills": 9,
+          "tail_summary": {
+            "p10_forward_return": null,
+            "p90_forward_return": null
+          },
+          "turnover": 9
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 1.0,
+          "avg_forward_return": null,
+          "coverage": null,
+          "directional_accuracy": null,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": null,
+          "median_forward_return": null,
+          "net_pnl": 0.0,
+          "precision": null,
+          "recall": null,
+          "sample_count": 0,
+          "signal_count": 0,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": null,
+            "p90_forward_return": null
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "321AC852C3507A6790DE75E1BDA538F30FAA78336C48B0CB27382A2434B7D375",
+      "run_id": "603C43F9C52304B5456DD24510BC766B41CF612FEECF029E21A204B2D28E1F4C",
+      "strategy_id": "baseline_0_no_trade_v1"
+    },
+    {
+      "baseline_index": 1,
+      "config_fingerprint": "7123419AB1FEF12CB1143EA7B0D03A55F6DCE4CDA587C1BBDE5C86C3E9D03A07",
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-c-baselines\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v1\\runs\\CC097BE6AB7310061E161085B05F50B92F621E3B068E0F6D033ECB073822A6CF\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.0,
+          "avg_forward_return": 0.0009886422614747332,
+          "coverage": null,
+          "directional_accuracy": 1.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 1.0,
+          "median_forward_return": 0.0009891196834816984,
+          "net_pnl": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "sample_count": 12,
+          "simulated_fills": 9,
+          "tail_summary": {
+            "p10_forward_return": 0.0009842519685039353,
+            "p90_forward_return": 0.0009930486593843213
+          },
+          "turnover": 9
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.0,
+          "avg_forward_return": 0.0009775264472722054,
+          "coverage": null,
+          "directional_accuracy": 1.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 1.0,
+          "median_forward_return": 0.0009775171065493637,
+          "net_pnl": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "sample_count": 11,
+          "signal_count": 12,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": 0.0009737098344693162,
+            "p90_forward_return": 0.0009813542688910104
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "17786C6889EACABC50EBB2A7D6C3FBEB5B3C3DBD0636E2BB666FED1E814DCE7D",
+      "run_id": "CC097BE6AB7310061E161085B05F50B92F621E3B068E0F6D033ECB073822A6CF",
+      "strategy_id": "baseline_1_momentum_5m_sign_v1"
+    },
+    {
+      "baseline_index": 2,
+      "config_fingerprint": "F035380E14DFE4F0AA1548081C4F4B636F7BD27A19F00DB9ADDA0C1EB40D8C30",
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-c-baselines\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v1\\runs\\FAE00939651347718D966892BFDCA720C0BE748D43B7DE6F2BC6D163C3667509\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.0,
+          "avg_forward_return": 0.0009886422614747332,
+          "coverage": null,
+          "directional_accuracy": 0.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.0,
+          "median_forward_return": 0.0009891196834816984,
+          "net_pnl": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "sample_count": 12,
+          "simulated_fills": 9,
+          "tail_summary": {
+            "p10_forward_return": 0.0009842519685039353,
+            "p90_forward_return": 0.0009930486593843213
+          },
+          "turnover": 9
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.0,
+          "avg_forward_return": 0.0009775264472722054,
+          "coverage": null,
+          "directional_accuracy": 0.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 0.0,
+          "median_forward_return": 0.0009775171065493637,
+          "net_pnl": 0.0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "sample_count": 11,
+          "signal_count": 12,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": 0.0009737098344693162,
+            "p90_forward_return": 0.0009813542688910104
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "BC7F1734AF1F6366A14F59F85D76F4FEC4432944C3C997F836AEDCE535CE4F2C",
+      "run_id": "FAE00939651347718D966892BFDCA720C0BE748D43B7DE6F2BC6D163C3667509",
+      "strategy_id": "baseline_2_mean_reversion_5m_sign_v1"
+    },
+    {
+      "baseline_index": 3,
+      "config_fingerprint": "81F34E29865094AF40B13E6BC58D1BE0CA23408A91DC091784E76ECF62D8CBFA",
+      "manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-c-baselines\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v1\\runs\\B172FF26F8F19F238AC0FBAF57DF18FE36386FD7B107BC2B09CE7CA6B6D1183C\\run_manifest.json",
+      "metrics_by_split": {
+        "HISTORICAL_DEVELOPMENT_VALIDATE": {
+          "abstention_rate": 0.16666666666666666,
+          "avg_forward_return": 0.000987662269302403,
+          "coverage": null,
+          "directional_accuracy": 1.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 1.0,
+          "median_forward_return": 0.000987166831194486,
+          "net_pnl": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "sample_count": 10,
+          "simulated_fills": 9,
+          "tail_summary": {
+            "p10_forward_return": 0.0009842519685039353,
+            "p90_forward_return": 0.0009910802775023875
+          },
+          "turnover": 9
+        },
+        "HISTORICAL_RESEARCH_TEST": {
+          "abstention_rate": 0.0,
+          "avg_forward_return": 0.0009775264472722054,
+          "coverage": null,
+          "directional_accuracy": 1.0,
+          "drawdown": null,
+          "estimated_costs": 0.0,
+          "exposure": null,
+          "gross_pnl": 0.0,
+          "hit_rate": 1.0,
+          "median_forward_return": 0.0009775171065493637,
+          "net_pnl": 0.0,
+          "precision": 1.0,
+          "recall": 1.0,
+          "sample_count": 11,
+          "signal_count": 12,
+          "simulated_fills": 0,
+          "split": "HISTORICAL_RESEARCH_TEST",
+          "tail_summary": {
+            "p10_forward_return": 0.0009737098344693162,
+            "p90_forward_return": 0.0009813542688910104
+          },
+          "turnover": 0
+        }
+      },
+      "run_fingerprint": "B9DFCC1C9C2CE0A00DEB88C0F4066B5EE4FD02808275C34A376DFEAF8927F749",
+      "run_id": "B172FF26F8F19F238AC0FBAF57DF18FE36386FD7B107BC2B09CE7CA6B6D1183C",
+      "strategy_id": "baseline_3_volume_momentum_5m_v1"
+    }
+  ],
+  "canonical_evidence_dir": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1",
+  "contamination_audit": {
+    "CONTAMINATION_STATUS": "PASS",
+    "contract_scope": "contractual_leakage_properties_only",
+    "evidence_language": {
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT",
+      "ITEM9_EFFECT": "NONE"
+    },
+    "questions": {
+      "DID_FEATURES_SEE_FUTURE_DATA": "PASS",
+      "DID_HISTORICAL_DATA_ENTER_PROSPECTIVE_ITEM9": "PASS",
+      "DID_HOLDOUT_ENTER_TRAINING": "PASS",
+      "DID_PROSPECTIVE_RECEIPTS_ENTER_HISTORICAL_RESEARCH": "PASS",
+      "DID_TRAIN_SEE_TEST": "PASS"
+    },
+    "run_fail_policy": "CONTAMINATION_STATUS=FAIL when any question FAIL, any violation recorded, or supplemental_violations non-empty",
+    "run_id": "17158E3B946EC1A418D184D0A2B9F761",
+    "supplemental_violations": [],
+    "violations": []
+  },
+  "contamination_manifest_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\imp-04-lane-c-baselines\\projects\\integrated-market-platform\\artifacts\\historical-research-harness\\baseline-pack-v1\\pack-runs\\17158E3B946EC1A418D184D0A2B9F761\\contamination_manifest.json",
+  "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+  "created_timestamp_ns": 1789702115648662700,
+  "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+  "dataset_identity": {
+    "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+    "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+    "dataset_id": "HIST-DEV-AAPL",
+    "end_date": "2026-09-15",
+    "fixture_path": "tests\\fixtures\\historical_development\\aapl_2026-09-11_2026-09-15_rth_multi_session.json",
+    "instrument": "AAPL",
+    "provider_id": "fixture.historical",
+    "session_dates": [
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15"
+    ],
+    "start_date": "2026-09-11"
+  },
+  "evidence_label": "HISTORICAL_BASELINE_V1",
+  "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+  "experiment_id": "imp-research-validation-04-lane-c-baseline-pack-v1",
+  "feature_version": "historical-research-bar-features/1.0.0",
+  "frozen_definition_path": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+  "operator_interpretation_notes": [
+    "Directional accuracy 1.0 or 0.0 on small development-validate sample sizes (e.g. n\u224812) on the monotone synthetic multi-session fixture is a pathological observation, not evidence of edge.",
+    "Simulator fill counts and gross/net PnL may be identical across baselines because the paper_bar_conservative_v1 research simulator is bar-path scoped, not prediction-conditioned.",
+    "Baseline 0 (no-trade) may show abstention_rate=1.0 while simulator fills remain nonzero because predictor abstention and simulator event replay are decoupled in this harness path."
+  ],
+  "pack_run_id": "17158E3B946EC1A418D184D0A2B9F761",
+  "reproducibility": {
+    "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+    "deterministic_rerun_first_baseline_match": true,
+    "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+    "run_fingerprint": "321AC852C3507A6790DE75E1BDA538F30FAA78336C48B0CB27382A2434B7D375"
+  },
+  "research_code_sha": "5b1566806baa02d8b666c7b12abbbcafcc797e54",
+  "schema_version": "imp.historical-baseline-pack/1.0.0",
+  "simulator_version": "paper_bar_conservative_v1"
+}
