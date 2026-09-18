@@ -35,6 +35,7 @@ from .rth_session import (
     iter_us_equity_session_dates,
     ohlc_row_valid,
     parse_moomoo_time_key_local,
+    sort_raw_rows_by_time_key,
 )
 
 BAR_RESOLUTION = "1_MINUTE"
@@ -176,6 +177,7 @@ def build_historical_rth_dataset(
         for row in deduped
         if parse_moomoo_time_key_local(str(row.get("time_key") or "")) is not None and ohlc_row_valid(row)
     ]
+    valid_rows = sort_raw_rows_by_time_key(valid_rows)
 
     fetched_at_ns = req_end_ns + 86_400_000_000_000
     combined_raw_sha = sha256_bytes(canonical_bytes({"rows": valid_rows}))
@@ -261,7 +263,11 @@ def build_historical_rth_dataset(
         dataset_version=dataset_version,
         providers=[provider.provider_id],
         universe=[instrument_id],
-        interval={"start_date": start_date, "end_date": end_date},
+        interval={
+            "start_date": start_date,
+            "end_date": end_date,
+            "session_dates": list(session_dates),
+        },
         session_policy=session_policy,
         bar_resolution=BAR_RESOLUTION,
         source_artifacts=source_artifacts,
