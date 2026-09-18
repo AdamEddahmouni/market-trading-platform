@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -43,6 +44,15 @@ def _bar_event(time_ns: int, *, close: float = 100.0) -> dict:
     }
 
 
+def _fillable_events(*, decision_time_ns: int = 1_000_000, bar_count: int = 3) -> list[dict]:
+    """Bars with decision on the first timestamp and post-signal bars for conservative fills."""
+
+    return [
+        _bar_event(decision_time_ns + index * 60_000_000_000, close=100.0 + index * 0.1)
+        for index in range(bar_count)
+    ]
+
+
 class PredictionCoupledSimulatorResearchTests(unittest.TestCase):
     def _run(self, predictions: list[dict], events: list[dict] | None = None, **kwargs):
         event_list = events or [_bar_event(1_000_000)]
@@ -62,21 +72,38 @@ class PredictionCoupledSimulatorResearchTests(unittest.TestCase):
         self.assertEqual(result["result_kind"], SIMULATOR_RESEARCH_RESULT_KIND)
 
     def test_one_long_signal_single_long_intent(self) -> None:
-        result = self._run([{"decision_time_ns": 1_000_000, "predicted_direction": 1}])
+        decision_time_ns = 1_000_000
+        result = self._run(
+            [{"decision_time_ns": decision_time_ns, "predicted_direction": 1}],
+            events=_fillable_events(decision_time_ns=decision_time_ns),
+        )
         self.assertEqual(result["trade_intents"], 1)
         self.assertEqual(result["signals"][0]["signal_direction"], "long")
-        intents = result["trade_intents"]
-        self.assertEqual(intents, 1)
-        self.assertFalse(result["independent_bar_replay_trading"])
+        self.assertGreaterEqual(result["accepted_intents"], 1)
+        self.assertGreaterEqual(result["fills"], 1)
 
-    def test_one_short_signal_single_short_intent(self) -> None:
-        interpretations, signals = build_signal_interpretations_from_predictions(
-            [{"decision_time_ns": 2_000_000, "predicted_direction": -1}],
-            instrument_id="canonical:EQUITY:XNAS:AAPL",
+    def test_one_short_signal_e2e_when_risk_accepts(self) -> None:
+        decision_time_ns = 2_000_000
+        result = self._run(
+            [{"decision_time_ns": decision_time_ns, "predicted_direction": -1}],
+            events=_fillable_events(decision_time_ns=decision_time_ns),
         )
-        self.assertEqual(len(interpretations), 1)
-        self.assertEqual(interpretations[0]["direction"], "short")
-        self.assertEqual(signals[0]["signal_direction"], "short")
+        self.assertEqual(result["trade_intents"], 1)
+        self.assertEqual(result["signals"][0]["signal_direction"], "short")
+        self.assertGreaterEqual(result["accepted_intents"], 1)
+        self.assertGreaterEqual(result["fills"], 1)
+
+    def test_research_path_does_not_invoke_walk_forward_strategy(self) -> None:
+        decision_time_ns = 1_000_000
+        with mock.patch(
+            "market_platform_foundation.risk_simulation.evaluation.run_strategy_evaluation"
+        ) as strategy_eval:
+            result = self._run(
+                [{"decision_time_ns": decision_time_ns, "predicted_direction": 1}],
+                events=_fillable_events(decision_time_ns=decision_time_ns),
+            )
+            strategy_eval.assert_not_called()
+        self.assertTrue(result["prediction_coupled"])
 
     def test_abstain_produces_no_intent(self) -> None:
         interpretations, _ = build_signal_interpretations_from_predictions(
@@ -86,6 +113,12 @@ class PredictionCoupledSimulatorResearchTests(unittest.TestCase):
         self.assertEqual(interpretations, [])
         result = self._run([{"decision_time_ns": 3_000_000, "predicted_direction": 0}])
         self.assertEqual(result["trade_intents"], 0)
+
+    def test_invalid_predicted_direction_abstains(self) -> None:
+        result = self._run([{"decision_time_ns": 1_000_000, "predicted_direction": 99}])
+        self.assertEqual(result["trade_intents"], 0)
+        self.assertEqual(result["fills"], 0)
+        self.assertTrue(result["signals"][0]["abstained"])
 
     def test_rejected_intent_produces_no_fill(self) -> None:
         result = self._run(
@@ -114,13 +147,25 @@ class PredictionCoupledSimulatorResearchTests(unittest.TestCase):
         self.assertFalse(result["item9_calibration"])
         self.assertFalse(result["item9_calibration_authority"])
 
-    def test_no_trade_invariant_fails_closed_on_phantom_fills(self) -> None:
+    @mock.patch(
+        "market_platform_foundation.intelligence.historical_research_harness.simulator.summarize_risk_execution"
+    )
+    def test_no_trade_invariant_fails_closed_on_phantom_fills(
+        self,
+        mock_summarize: mock.MagicMock,
+    ) -> None:
+        mock_summarize.return_value = {
+            "trade_intents": 0,
+            "accepted_intents": 0,
+            "rejected_intents": 0,
+            "fills": 1,
+            "partial_fills": 0,
+            "gross_pnl": 10.0,
+            "turnover": 1,
+            "exposure": 1,
+        }
         with self.assertRaises(PredictionCoupledSimulatorError):
-            from market_platform_foundation.intelligence.historical_research_harness.prediction_coupling import (
-                assert_no_trade_baseline_invariant,
-            )
-
-            assert_no_trade_baseline_invariant(trade_intent_count=0, fill_count=1, turnover=1)
+            self._run([{"decision_time_ns": 1_000_000, "predicted_direction": 0}])
 
 
 if __name__ == "__main__":
