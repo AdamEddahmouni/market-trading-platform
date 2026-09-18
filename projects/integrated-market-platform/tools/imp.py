@@ -898,6 +898,21 @@ def build_parser() -> argparse.ArgumentParser:
     hist_demo.add_argument("--demo-artifact-root", type=Path)
     hist_demo.add_argument("--json", action="store_true")
 
+    hist_harness = historical_actions.add_parser(
+        "harness",
+        help="historical research harness v1 (HISTORICAL_DEVELOPMENT)",
+    )
+    hist_harness.add_argument("--provider", default="fixture", choices=("fixture",))
+    hist_harness.add_argument("--instrument", default="AAPL")
+    hist_harness.add_argument("--start", required=True, dest="start_date")
+    hist_harness.add_argument("--end", required=True, dest="end_date")
+    hist_harness.add_argument("--fixture-path", type=Path, required=True)
+    hist_harness.add_argument("--corpus-artifact-root", type=Path)
+    hist_harness.add_argument("--harness-artifact-root", type=Path)
+    hist_harness.add_argument("--experiment-id", default="hist-research-default-experiment")
+    hist_harness.add_argument("--hypothesis-id", default="hist-research-default-hypothesis")
+    hist_harness.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -957,12 +972,17 @@ def _item9_command(root: Path, args: argparse.Namespace) -> int:
 
 
 def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
-    if args.action not in {"build", "demo"}:
+    if args.action not in {"build", "demo", "harness"}:
         print(f"unknown historical-data action: {args.action}", file=sys.stderr)
         return 2
     python = _validation_python(root)
     env = _python_environment(root)
-    script = "build_cli.py" if args.action == "build" else "demo_cli.py"
+    if args.action == "build":
+        script = "build_cli.py"
+    elif args.action == "harness":
+        script = "harness_cli.py"
+    else:
+        script = "demo_cli.py"
     command = [python, str(root / "tools" / "historical_data" / script)]
     if args.action == "build":
         command.extend(
@@ -989,7 +1009,7 @@ def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
             command.extend(["--holidays", args.holidays])
         if args.early_closes:
             command.extend(["--early-closes", args.early_closes])
-    else:
+    elif args.action == "demo":
         command.extend(
             [
                 "--provider",
@@ -1008,6 +1028,29 @@ def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
             command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
         if args.demo_artifact_root:
             command.extend(["--demo-artifact-root", str(args.demo_artifact_root)])
+    else:
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--fixture-path",
+                str(args.fixture_path),
+            ]
+        )
+        if args.corpus_artifact_root:
+            command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
+        if args.harness_artifact_root:
+            command.extend(["--harness-artifact-root", str(args.harness_artifact_root)])
+        if args.experiment_id:
+            command.extend(["--experiment-id", str(args.experiment_id)])
+        if args.hypothesis_id:
+            command.extend(["--hypothesis-id", str(args.hypothesis_id)])
     if args.json:
         command.append("--json")
     result = _run(
