@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-008",
+  "MODE": "RESEARCH",
+  "QUESTION": {
+    "text": "What validation_dataset_id is declared in the admitted Wave-1 non-empirical research export fixture?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "VALIDATION_MANIFEST"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "GOVERNED_RESEARCH_MANIFEST",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "tests/fixtures/research/wave1_non_empirical_export.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:f6a60c041da57a97e488f9d716dc999adea5d8d29081a4be4f836a70e34761cf",
+  "TEMPORAL_CUTOFF": {
+    "kind": "AS_OF_INSTANT",
+    "cutoff_instant": "2026-09-15T23:59:59Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "validation_dataset_id",
+        "value": "VALDS-W1-FIXTURE"
+      },
+      "source_artifact": "tests/fixtures/research/wave1_non_empirical_export.json",
+      "source_record": "validation_dataset_manifest:validation_dataset_id",
+      "source_hash": "sha256:e962350f8dab2c41d85399c74fa4b0ab873fff1024c8bd36c565e524a19cd2f0"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "RESEARCH_MANIFEST",
+    "lane": "wave1"
+  },
+  "GOLD_HASH": "33B096DD9BED46152F7179BB3DDC7EE03E19C5E0F18FAD79580B2D8C79A5D9E8",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-008.json",
+  "evaluator_notes": "M2 candidate — Wave-1 validation manifest id."
+}

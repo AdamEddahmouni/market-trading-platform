@@ -12,10 +12,17 @@ from .validation import validate_factual_gold_protocol
 _PROTOCOL_RELATIVE = Path(
     "tests/fixtures/intelligence_benchmark/admitted_factual_gold/protocol_ibp_factual_smoke_v1_empty.json"
 )
+_CANDIDATE_PROTOCOL_RELATIVE = Path(
+    "tests/fixtures/intelligence_benchmark/admitted_factual_gold/protocol_ibp_factual_smoke_v1_candidate.json"
+)
 
 
 def default_factual_gold_protocol_path(repository_root: Path) -> Path:
     return repository_root / _PROTOCOL_RELATIVE
+
+
+def candidate_factual_gold_protocol_path(repository_root: Path) -> Path:
+    return repository_root / _CANDIDATE_PROTOCOL_RELATIVE
 
 
 def load_factual_gold_protocol(repository_root: Path) -> dict[str, Any]:
@@ -24,6 +31,15 @@ def load_factual_gold_protocol(repository_root: Path) -> dict[str, Any]:
         raise FileNotFoundError(f"IBP_FACTUAL_GOLD_PROTOCOL_MISSING:{path}")
     protocol = json.loads(path.read_text(encoding="utf-8"))
     validate_factual_gold_protocol(protocol)
+    return protocol
+
+
+def load_candidate_factual_gold_protocol(repository_root: Path) -> dict[str, Any]:
+    path = candidate_factual_gold_protocol_path(repository_root)
+    if not path.is_file():
+        raise FileNotFoundError(f"IBP_FACTUAL_GOLD_CANDIDATE_PROTOCOL_MISSING:{path}")
+    protocol = json.loads(path.read_text(encoding="utf-8"))
+    validate_factual_gold_protocol(protocol, allow_empty_cases=False)
     return protocol
 
 
@@ -49,7 +65,9 @@ def empty_protocol_template() -> dict[str, Any]:
 
 
 __all__ = [
+    "candidate_factual_gold_protocol_path",
     "default_factual_gold_protocol_path",
     "empty_protocol_template",
+    "load_candidate_factual_gold_protocol",
     "load_factual_gold_protocol",
 ]
