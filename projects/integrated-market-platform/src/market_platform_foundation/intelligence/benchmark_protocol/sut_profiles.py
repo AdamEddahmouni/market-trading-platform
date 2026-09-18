@@ -15,11 +15,12 @@ IBP_FACTS_SUT_VERSION = "imp.ibp-facts-sut/1.0.0"
 IBP_FACTS_SUT_PROFILE_ID = "imp_historical_routing_grounded_facts_v1"
 IBP_FACTS_SUT_MODEL_ID = "grounded.evidence:deterministic.v1"
 
-IBP_FACTS_SUT_LIMITATION_CLASS = "BOUNDED_OFFLINE_NO_LLM_NO_IBP_FACT_PROMPT"
+IBP_FACTS_SUT_LIMITATION_CLASS = "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL"
 IBP_FACTS_SUT_LIMITATION_SUMMARY = (
-    "Uses in-repo SmartRouter (BUILD 09) and GroundedEvidenceInference only; "
-    "no Anthropic/network LLM, no IBP fact prompt corpus, and no evaluator gold. "
-    "Facts answers remain UNKNOWN until Lane I2 executes Smoke10 with authorized inference."
+    "Uses in-repo SmartRouter (BUILD 09) and GroundedEvidenceInference with "
+    "historical-development replay projections (resolve_explain/resolve_inspect); "
+    "no Anthropic/network LLM and no evaluator gold. IBP evaluator fact strings may "
+    "still diverge from grounded citations; UNKNOWN when evidence or resolvers are absent."
 )
 
 IBP_FACTS_MODEL_ROUTING = {

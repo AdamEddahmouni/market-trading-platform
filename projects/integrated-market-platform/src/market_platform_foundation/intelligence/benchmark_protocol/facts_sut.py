@@ -16,13 +16,12 @@ from ..contracts import (
     IntelligenceScope,
     QualityState,
     QualitySummary,
-    RouteAction,
     SemanticEventType,
 )
 from ..quality import DecisionAction, IntelligenceCapability, QualityAssessment, QualityDecision
 from ..routing import RoutingPolicyV1, SmartRouter
-from .blind_input import build_blind_case_input
 from .contamination import assert_no_evaluator_gold_in_system_bundle
+from .historical_evidence_context import build_historical_fixture_evidence_context
 from .sut_profiles import (
     IBP_FACTS_SUT_MODEL_ID,
     IBP_FACTS_SUT_PROFILE_ID,
@@ -158,19 +157,21 @@ def run_ibp_facts_sut(
     router = SmartRouter(RoutingPolicyV1())
     route = router.route(detection, quality_decision=quality)
 
-    fixture_summary = _load_historical_fixture_summary(
+    fixture_rel = blind_input.get("historical_harness_fixture")
+    fixture_summary = _load_historical_fixture_summary(repository_root, fixture_rel)
+    evidence_context: dict[str, Any] = {
+        "ibp_case_id": case_id,
+        "ibp_blind_mode": blind_mode,
+        "historical_fixture": fixture_summary,
+    }
+    grounded_context = build_historical_fixture_evidence_context(
         repository_root,
-        blind_input.get("historical_harness_fixture"),
+        str(fixture_rel) if fixture_rel else None,
     )
+    if grounded_context is not None:
+        evidence_context = {**grounded_context, **evidence_context}
     inference = GroundedEvidenceInference()
-    outcome = inference.infer(
-        _facts_prompt(case_id, blind_mode),
-        evidence_context={
-            "ibp_case_id": case_id,
-            "ibp_blind_mode": blind_mode,
-            "historical_fixture": fixture_summary,
-        },
-    )
+    outcome = inference.infer(_facts_prompt(case_id, blind_mode), evidence_context=evidence_context)
     answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
     operator_close = "OK"
 
@@ -200,7 +201,6 @@ def run_ibp_facts_sut(
 
 
 __all__ = [
-    "build_blind_case_input",
     "ibp_blind_mode_routing_plan",
     "run_ibp_facts_sut",
 ]

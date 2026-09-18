@@ -22,6 +22,9 @@ from market_platform_foundation.intelligence.benchmark_protocol.facts_sut import
     ibp_blind_mode_routing_plan,
     run_ibp_facts_sut,
 )
+from market_platform_foundation.intelligence.benchmark_protocol.historical_evidence_context import (  # noqa: E402
+    build_historical_fixture_evidence_context,
+)
 from market_platform_foundation.intelligence.benchmark_protocol.smoke10_execution import (  # noqa: E402
     execute_smoke10_case,
     freeze_smoke10_run_configuration,
@@ -88,7 +91,7 @@ class IntelligenceBenchmarkNonstubSutProtocolTests(unittest.TestCase):
         self.assertTrue(FREEZE_FIXTURE.is_file(), "missing nonstub freeze fixture")
         expected = freeze_smoke10_run_configuration(
             ROOT,
-            code_sha="7d67d48edc5760e218f946ee7fd836d6b5c431a2",
+            code_sha="ec6ab1367392b5525d337781178bea14ae3fc24b",
             sut_profile_id=IBP_FACTS_SUT_PROFILE_ID,
         )
         pinned = json.loads(FREEZE_FIXTURE.read_text(encoding="utf-8"))
@@ -112,6 +115,53 @@ class IntelligenceBenchmarkNonstubSutProtocolTests(unittest.TestCase):
         )
         self.assertNotIn("gold_answer", response)
         self.assertEqual(response["sut_profile_id"], IBP_FACTS_SUT_PROFILE_ID)
+
+    def test_facts_sut_without_fixture_resolver_missing_is_unknown(self) -> None:
+        catalog = load_suite_catalog(ROOT)
+        case = next(row for row in catalog["cases"] if not row.get("historical_harness_fixture"))
+        response = run_ibp_facts_sut(
+            build_blind_case_input(case, context_reset_token="ctx-no-fixture"),
+            repository_root=ROOT,
+        )
+        self.assertEqual(response["answer"], "UNKNOWN")
+        self.assertEqual(response["inference_abstention_reason"], "EVIDENCE_RESOLVER_MISSING")
+
+    def test_historical_fixture_evidence_context_exposes_resolvers(self) -> None:
+        fixture_rel = "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+        context = build_historical_fixture_evidence_context(ROOT, fixture_rel)
+        self.assertIsNotNone(context)
+        assert context is not None
+        self.assertTrue(callable(context.get("resolve_explain")))
+        self.assertTrue(callable(context.get("resolve_inspect")))
+        self.assertIn("explain:quality:system", context.get("available_explain_refs", ()))
+
+    def test_facts_sut_with_fixture_can_emit_cited_non_unknown(self) -> None:
+        catalog = load_suite_catalog(ROOT)
+        case = next(row for row in catalog["cases"] if row.get("historical_harness_fixture"))
+        response = run_ibp_facts_sut(
+            build_blind_case_input(case, context_reset_token="ctx-fixture-cite"),
+            repository_root=ROOT,
+        )
+        self.assertTrue(response["historical_fixture_loaded"])
+        self.assertIsNone(response["inference_abstention_reason"])
+        self.assertNotEqual(response["answer"], "UNKNOWN")
+        self.assertTrue(response["answer"])
+
+    def test_facts_sut_context_reset_is_per_case(self) -> None:
+        catalog = load_suite_catalog(ROOT)
+        case = catalog["cases"][0]
+        first = run_ibp_facts_sut(
+            build_blind_case_input(case, context_reset_token="ctx-reset-a"),
+            repository_root=ROOT,
+        )
+        second = run_ibp_facts_sut(
+            build_blind_case_input(case, context_reset_token="ctx-reset-b"),
+            repository_root=ROOT,
+        )
+        self.assertEqual(first["context_reset_token"], "ctx-reset-a")
+        self.assertEqual(second["context_reset_token"], "ctx-reset-b")
+        self.assertEqual(first["case_id"], second["case_id"])
+        self.assertEqual(second["final_state"], "CLOSED")
 
     def test_blind_modes_map_to_smart_router_event_types(self) -> None:
         expected = {

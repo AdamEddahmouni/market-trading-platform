@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IBP facts SUT historical evidence resolvers (Lane C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `ui_api/store`, tests |
+| **Summary** | Wired `build_historical_fixture_evidence_context` so `run_ibp_facts_sut` supplies MRA-001-style `resolve_explain` / `resolve_inspect` from Lane B historical fixtures via replay projections; fail-closed `UNKNOWN` when resolvers absent; regenerated nonstub Smoke10 freeze fingerprint. |
+| **Key files** | `historical_evidence_context.py`, `facts_sut.py`, `store.py` (`load_decoded_snapshot`), `sut_profiles.py`, `test_intelligence_benchmark_nonstub_sut_protocol.py`, `ibp_smoke10_nonstub_sut_freeze_v1.json` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_nonstub_sut_protocol` (14 OK); `python tools/imp.py validate changed` (3785 passed, 41 skipped) |
+| **Related** | PR #267 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Notes** | Smoke10/Full30 not executed; limitation class `BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL`. |
+
 ## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
 
 | Field | Value |

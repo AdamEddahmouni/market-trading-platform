@@ -177,6 +177,30 @@ class ReplayStore:
         self._session_id = str(decoded.get("session_id", ""))
         self.refresh_mutable_runtime()
 
+    def load_decoded_snapshot(self, decoded: dict[str, Any]) -> None:
+        """Hydrate replay projections from an in-memory canonical pipeline snapshot."""
+
+        snapshot = copy.deepcopy(decoded)
+        self._feature_cache = BoundedMemoryCache(max_bytes=256 * 1024, max_entries=32)
+        self._projection_cache = {}
+        events = snapshot.get("events")
+        if not isinstance(events, list):
+            raise ValueError("UI_STORE_SNAPSHOT_INVALID")
+        self._events = [event for event in events if isinstance(event, dict)]
+        self._bars = _bars_from_events(self._events)
+        if not self._bars:
+            raise ValueError("UI_STORE_NO_BARS")
+        self._instrument_id = str(snapshot.get("instrument_id", ""))
+        evaluation = snapshot.get("evaluation")
+        strategy = snapshot.get("strategy")
+        if not isinstance(evaluation, dict) or not isinstance(strategy, dict):
+            raise ValueError("UI_STORE_SNAPSHOT_INVALID")
+        self._evaluation = evaluation
+        self._strategy = strategy
+        self.cursor_index = len(self._bars) - 1
+        self._session_id = str(snapshot.get("session_id", ""))
+        self.refresh_mutable_runtime()
+
     def hydrate_replay_bars_from(self, source: ReplayStore) -> None:
         """Copy immutable replay bars/events from a warmed store without reloading fixtures."""
 
