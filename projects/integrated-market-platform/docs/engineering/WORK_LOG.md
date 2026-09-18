@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane A holdout guard closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `intelligence/training`, `intelligence/promotion`, `tests/platform` |
+| **Summary** | Closed residual training/selection holdout leakage paths: `build_dataset_from_examples`, `build_distillation_dataset`, BUILD 18 sklearn trainers (manifest + baseline), and promotion challenger registration now fail closed on `UNTOUCHED_FORWARD_EVALUATION` / taxonomy-derived protected authorities. Evaluation-only holdout use (validation metrics, promotion ranking) unchanged. |
+| **Key files** | `dual_corpus/consumption.py`; `training/{datasets,distillation/dataset,trainers/sklearn_*.py}`; `promotion/engine.py`; `tests/platform/test_holdout_consumption_guards.py` |
+| **Tests** | `python tools/imp.py test focused test_holdout_consumption_guards`; `format`; `lint`; `validate changed` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane A; IMP-EVIDENCE-HARDENING-02 Lane B baseline guards |
+| **Notes** | No Item 9 split or #222 changes; repository-backed training manifest load at validation remains governed separately (`verify_training_dataset_fingerprint`). |
+
 ## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane F docs/status hygiene
 
 | Field | Value |
