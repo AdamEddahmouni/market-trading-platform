@@ -21,6 +21,8 @@ from ..contracts import (
 from ..quality import DecisionAction, IntelligenceCapability, QualityAssessment, QualityDecision
 from ..routing import RoutingPolicyV1, SmartRouter
 from .contamination import assert_no_evaluator_gold_in_system_bundle
+from .admitted_factual_gold.admitted_evidence_context import build_admitted_evidence_context
+from .admitted_factual_gold.types import IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
 from .historical_evidence_context import build_historical_fixture_evidence_context
 from .sut_profiles import (
     IBP_FACTS_SUT_MODEL_ID,
@@ -130,11 +132,22 @@ def _load_historical_fixture_summary(repository_root: Path, fixture_rel: str | N
     }
 
 
-def _facts_prompt(case_id: str, blind_mode: str) -> str:
+def _facts_prompt(case_id: str, blind_mode: str, *, question_text: str | None = None) -> str:
+    if question_text:
+        return (
+            f"IBP bounded factual probe for {case_id}; "
+            f"question: {question_text}; cite admitted evidence only."
+        )
     return (
         f"IBP bounded facts probe for {case_id} blind mode {blind_mode}; "
         "cite grounded historical development evidence only."
     )
+
+
+def _routing_template_for_factual(blind_input: dict[str, Any]) -> str | None:
+    routing = blind_input.get("routing_expectation") or {}
+    template = routing.get("template")
+    return str(template) if template else None
 
 
 def run_ibp_facts_sut(
@@ -147,6 +160,10 @@ def run_ibp_facts_sut(
     blind_mode = str(blind_input.get("blind_mode") or "A")
     case_id = str(blind_input["case_id"])
     context_reset_token = str(blind_input.get("context_reset_token") or "")
+    factual_protocol = blind_input.get("protocol_version") == IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
+    routing_template = _routing_template_for_factual(blind_input) if factual_protocol else None
+    question = blind_input.get("question") if factual_protocol else None
+    question_text = question.get("text") if isinstance(question, dict) else None
 
     detection = _detection_for_blind_mode(
         blind_mode,
@@ -158,37 +175,60 @@ def run_ibp_facts_sut(
     route = router.route(detection, quality_decision=quality)
 
     fixture_rel = blind_input.get("historical_harness_fixture")
-    fixture_summary = _load_historical_fixture_summary(repository_root, fixture_rel)
+    admitted_loaded: list[str] = []
+    evidence_data_mode = "FIXTURE_REPLAY"
     evidence_context: dict[str, Any] = {
         "ibp_case_id": case_id,
         "ibp_blind_mode": blind_mode,
-        "historical_fixture": fixture_summary,
     }
-    grounded_context = build_historical_fixture_evidence_context(
-        repository_root,
-        str(fixture_rel) if fixture_rel else None,
-    )
-    if grounded_context is not None:
-        evidence_context = {**grounded_context, **evidence_context}
+    if factual_protocol:
+        evidence_set = blind_input.get("evidence_set") or {}
+        admitted_context = build_admitted_evidence_context(repository_root, evidence_set)
+        admitted_loaded = list(admitted_context.get("admitted_evidence_artifacts_loaded") or ())
+        evidence_context = {**admitted_context, **evidence_context}
+        evidence_data_mode = str(admitted_context.get("evidence_data_mode") or evidence_data_mode)
+    else:
+        fixture_summary = _load_historical_fixture_summary(repository_root, fixture_rel)
+        evidence_context["historical_fixture"] = fixture_summary
+        grounded_context = build_historical_fixture_evidence_context(
+            repository_root,
+            str(fixture_rel) if fixture_rel else None,
+        )
+        if grounded_context is not None:
+            evidence_context = {**grounded_context, **evidence_context}
+
     inference = GroundedEvidenceInference()
-    outcome = inference.infer(_facts_prompt(case_id, blind_mode), evidence_context=evidence_context)
+    outcome = inference.infer(
+        _facts_prompt(case_id, blind_mode, question_text=question_text),
+        evidence_context=evidence_context,
+    )
     answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
     operator_close = "OK"
+    if factual_protocol:
+        freshness = "ADMITTED_EVIDENCE_FIXED" if admitted_loaded else "FIXTURE"
+        authority = "ADMITTED_EVIDENCE_FIXED" if admitted_loaded else "FIXTURE"
+        provenance_complete = bool(admitted_loaded)
+    else:
+        fixture_summary = evidence_context.get("historical_fixture")
+        freshness = "HISTORICAL_DEVELOPMENT" if fixture_summary else "FIXTURE"
+        authority = "HISTORICAL_DEVELOPMENT"
+        provenance_complete = True
 
-    return {
+    response = {
         "case_id": case_id,
         "sut_profile_id": IBP_FACTS_SUT_PROFILE_ID,
         "sut_model_id": IBP_FACTS_SUT_MODEL_ID,
         "sut_version": IBP_FACTS_SUT_VERSION,
         "blind_mode": blind_mode,
-        "routing": blind_mode,
+        "routing": routing_template or blind_mode,
+        "routing_template": routing_template,
         "route_action": route.route_action.value,
         "routing_decision_id": route.routing_decision_id,
         "expert_domain": route.expert_domain.value,
         "answer": answer,
-        "freshness": "HISTORICAL_DEVELOPMENT" if fixture_summary else "FIXTURE",
-        "authority": "HISTORICAL_DEVELOPMENT",
-        "provenance_complete": True,
+        "freshness": freshness,
+        "authority": authority,
+        "provenance_complete": provenance_complete,
         "inference_provider_id": outcome.provider_id,
         "inference_model_id": outcome.model_id,
         "inference_abstention_reason": outcome.abstention_reason,
@@ -196,8 +236,16 @@ def run_ibp_facts_sut(
         "operator_close": operator_close,
         "catastrophic": False,
         "context_reset_token": context_reset_token,
-        "historical_fixture_loaded": fixture_summary is not None,
+        "evidence_data_mode": evidence_data_mode,
+        "live_promotion_allowed": False,
     }
+    if factual_protocol:
+        response["admitted_evidence_artifacts_loaded"] = admitted_loaded
+        response["protocol_version"] = IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
+    else:
+        fixture_summary = evidence_context.get("historical_fixture")
+        response["historical_fixture_loaded"] = fixture_summary is not None
+    return response
 
 
 __all__ = [
