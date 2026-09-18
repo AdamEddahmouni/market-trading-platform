@@ -38,9 +38,33 @@ from .historical_provenance import (
     build_historical_development_provenance,
     validate_historical_development_provenance,
 )
+from .contamination_auditor import (
+    CONTAMINATION_STATUS_FAIL,
+    CONTAMINATION_STATUS_PASS,
+    audit_research_contamination_run,
+    build_evidence_language_summary,
+)
+from .leak_audit import (
+    VIOLATION_MISSING_LINEAGE,
+    VIOLATION_TRAIN_TEST_OVERLAP,
+)
 from .normalization import normalize_historical_development_bars
+from .run_manifest import (
+    RESEARCH_CONTAMINATION_RUN_MANIFEST_KIND,
+    RESEARCH_CONTAMINATION_RUN_SCHEMA_VERSION,
+    validate_research_contamination_run_manifest,
+)
 
 __all__ = [
+    "CONTAMINATION_STATUS_FAIL",
+    "CONTAMINATION_STATUS_PASS",
+    "RESEARCH_CONTAMINATION_RUN_MANIFEST_KIND",
+    "RESEARCH_CONTAMINATION_RUN_SCHEMA_VERSION",
+    "VIOLATION_MISSING_LINEAGE",
+    "VIOLATION_TRAIN_TEST_OVERLAP",
+    "audit_research_contamination_run",
+    "build_evidence_language_summary",
+    "validate_research_contamination_run_manifest",
     "CONSUMPTION_REFUSED_PROTECTED_CORPUS",
     "CORPUS_EVIDENCE_AUTHORITY_HISTORICAL_DEVELOPMENT",
     "CORPUS_EVIDENCE_AUTHORITY_POST_HORIZON_HISTORICAL_LABEL_EVIDENCE",
