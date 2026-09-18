@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 from ...baselines.features import BaselineFeatureSchema
 from ...baselines.training import BaselineTrainingExample, build_training_dataset
 from ...baselines.types import BaselineClassLabel, BaselineFeatureVector
 from ...contracts.common import ForecastTarget
+from ..errors import TrainingFactoryError
 from ..identity import derive_distillation_dataset_id, derive_training_dataset_fingerprint, derive_training_dataset_id
 from ..types import (
     DistillationDatasetManifestV1,
@@ -35,8 +37,28 @@ def build_distillation_dataset(
     development_end_ns: int,
     mode: str,
     horizon_ns: int,
+    corpus_evidence_authority: str | None = None,
+    corpus_guard_payload: Mapping[str, Any] | None = None,
 ) -> tuple[PreparedTrainingDataset, DistillationDatasetManifestV1]:
     """Build distillation dataset with teacher soft targets (not market OutcomeV1)."""
+    from ....paper.calibration.dual_corpus.consumption import (
+        ProtectedCorpusConsumptionError,
+        assert_corpus_consumable_for_selection_or_training,
+    )
+
+    guard_payload = dict(corpus_guard_payload or {})
+    if corpus_evidence_authority:
+        guard_payload.setdefault("corpus_evidence_authority", corpus_evidence_authority)
+    if corpus_evidence_authority or corpus_guard_payload:
+        try:
+            assert_corpus_consumable_for_selection_or_training(
+                corpus_evidence_authority=corpus_evidence_authority,
+                payload=guard_payload,
+                purpose="build_distillation_dataset",
+            )
+        except ProtectedCorpusConsumptionError as exc:
+            raise TrainingFactoryError(str(exc)) from exc
+
     teacher_outputs: list[TeacherOutputV1] = []
     training_examples: list[BaselineTrainingExample] = []
     distillation_targets: dict[str, float] = {}
@@ -93,6 +115,8 @@ def build_distillation_dataset(
         feature_schema=feature_schema,
         target=target,
         training_cutoff_ns=training_cutoff_ns,
+        corpus_evidence_authority=corpus_evidence_authority,
+        corpus_guard_payload=guard_payload or None,
     )
     dataset_fp = derive_training_dataset_fingerprint(
         feature_schema_fingerprint=feature_schema.fingerprint,
@@ -127,6 +151,7 @@ def build_distillation_dataset(
         teacher_identity=teacher.teacher_id,
         teacher_version=teacher.teacher_version,
         builder_version=TRAINING_IMPLEMENTATION_VERSION,
+        metadata=guard_payload,
     )
     distillation_id = derive_distillation_dataset_id(
         experiment_id=experiment_id,
