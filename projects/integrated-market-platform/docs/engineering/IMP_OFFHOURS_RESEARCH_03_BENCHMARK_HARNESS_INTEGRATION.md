@@ -46,6 +46,10 @@ python tools/imp.py historical-data harness --fixture-path tests/fixtures/histor
 
 `YES` when: suite catalog validates (30 cases, 10 Smoke10 ids), Smoke10 contract builds, and historical manifest adapter passes on a fixture harness manifest. **Does not** require benchmark scores.
 
+## Smoke10 baseline evidence (Lane D)
+
+Pinned receipts (no rescoring): `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` (`smoke10_baseline_evidence_receipt.json`, `frozen_config.json`, `smoke10_run_record.json`, `contamination_audit.json`).
+
 ## Non-goals
 
 No Item 9 calibration, no 30-case score chase, no gold mutation, no PROGRAM_STATUS SHA fabrication.

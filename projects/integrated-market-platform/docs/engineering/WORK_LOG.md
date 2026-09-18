@@ -36,17 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane D Smoke10 baseline execution
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane D Smoke10 baseline + evidence pin
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `intelligence/benchmark_protocol` |
-| **Summary** | Added governed Smoke10 baseline execution (`smoke10-run`): freeze config before case 1, deterministic synthetic SUT on blind inputs, evaluator-only gold scoring, contamination audit, and dimension summaries without a vanity total score. Executed one baseline run to `artifacts/benchmarks/smoke10_baseline_v1/`. |
-| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/smoke10_execution.py`, `smoke10_evaluator.py`, `smoke10_contamination_audit.py`, `synthetic_sut.py`; `tools/benchmarks/intelligence_cli.py`; `tools/imp.py`; `tests/intelligence/test_intelligence_benchmark_smoke10_execution.py`; `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
-| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter` — 15 OK; `python tools/imp.py validate changed` — PASSED 3534 tests, 0 failures |
-| **Related** | IMP-RESEARCH-VALIDATION-04 Lane D; Lane A @ `1bb540fb`; branch `benchmarks/smoke10-baseline` |
-| **Notes** | Canonical Smoke10 case IDs = first ten catalog entries `IBP-CASE-001`…`010`. Baseline stub answers `UNKNOWN` → all cases `facts` FAIL (`FACTS_MISMATCH`); contamination checks PASS. Full30 not executed. |
+| **Area** | `intelligence/benchmark_protocol`, `evidence` |
+| **Summary** | Added governed Smoke10 baseline execution (`smoke10-run`) and git-tracked baseline receipts under `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` pinning RUN_ID `ibp-smoke10-76DDD188CD080365`, frozen config `76DDD188…`, contamination PASS, and per-dimension summaries (no rescoring). Rebased onto Lane A `c2ac4c59` (Lane F WORK_LOG heading preserved). |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/smoke10_*.py`, `synthetic_sut.py`; `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/*`; `tools/benchmarks/intelligence_cli.py`; `tests/intelligence/test_intelligence_benchmark_smoke10_execution.py` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter`; `python tools/imp.py validate changed` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane D; reviewer `114aef56-8cd5-41a4-bdcf-d272c1e0889b`; Lane A `c2ac4c59`; branch `benchmarks/smoke10-baseline` |
+| **Notes** | Canonical Smoke10 = `IBP-CASE-001`…`010`. Baseline stub `UNKNOWN` → 10× `facts` FAIL (`FACTS_MISMATCH`); scores frozen in pinned JSON. Ephemeral harness paths redacted in run record. Full30 not executed. Frozen collector untouched. |
 
 ## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane A result_kind fail-closed
 
