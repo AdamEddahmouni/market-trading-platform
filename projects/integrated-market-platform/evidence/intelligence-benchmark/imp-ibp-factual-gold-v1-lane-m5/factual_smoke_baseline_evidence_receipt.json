@@ -1,0 +1,84 @@
+{
+  "CASE_COUNT": 11,
+  "FTEP_EMPIRICAL_ACTIVE": "NO",
+  "FULL30_EXECUTED": "NO",
+  "ITEM9_CALIBRATED": "NO",
+  "LIVE_OFF": true,
+  "MERGE_PERFORMED": "NO",
+  "PR222_ISOLATED": true,
+  "RUN_ID": "ibp-factual-smoke-28EA7748057E312D",
+  "SCORES_EXECUTED": "YES",
+  "artifact_kind": "intelligence_benchmark_factual_smoke_evidence_receipt_v1",
+  "comparison_note_vs_legacy_smoke10": "Structural comparison only: legacy ibp-smoke10-76DDD188CD080365 used synthetic evaluator gold and deterministic UNKNOWN stub SUT; IBP_FACTUAL_SMOKE_V1 uses admitted-evidence factual gold and imp_historical_routing_grounded_facts_v1. Not an apples-to-apples intelligence delta.",
+  "contamination_audit": {
+    "checks": {
+      "DID_CASE_CONTEXT_LEAK": "PASS",
+      "DID_CONFIG_CHANGE_MID_RUN": "PASS",
+      "DID_SYSTEM_SEE_GOLD": "PASS",
+      "FIXTURE_REPLAY_NOT_PROMOTED_TO_LIVE": "PASS",
+      "SUT_CAN_ACCESS_REQUIRED_EVIDENCE": "PASS"
+    },
+    "overall": "PASS",
+    "reasons": {}
+  },
+  "evidence_label": "HISTORICAL_DEVELOPMENT_FACTUAL_SMOKE_V1_BASELINE",
+  "factual_smoke_run_record_path": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/factual_smoke_run_record.json",
+  "freeze_envelope_path": "tests/fixtures/intelligence_benchmark/freeze/ibp_factual_smoke_v1_freeze.json",
+  "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+  "frozen_evidence_unchanged": true,
+  "lane_id": "IMP-IBP-FACTUAL-GOLD-V1-M5",
+  "pre_run_gates": {
+    "gates": {
+      "CASES_ANSWERABLE": "PASS",
+      "CONFIG_FROZEN": "PASS",
+      "CONTEXT_RESET": "PASS",
+      "GOLD_EVIDENCE_ADMITTED": "PASS",
+      "GOLD_SOURCE_INDEPENDENT": "PASS",
+      "SUT_CANNOT_ACCESS_GOLD": "PASS",
+      "SUT_CAN_ACCESS_REQUIRED_EVIDENCE": "PASS"
+    },
+    "overall": "PASS",
+    "reasons": {}
+  },
+  "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+  "smoke10_executed": false,
+  "summaries": {
+    "by_dimension": {
+      "catastrophic": {
+        "PASS": 11
+      },
+      "facts": {
+        "FAIL": 11
+      },
+      "final_state": {
+        "PASS": 11
+      },
+      "freshness": {
+        "PASS": 11
+      },
+      "operator_close": {
+        "PASS": 11
+      },
+      "provenance": {
+        "PASS": 11
+      },
+      "routing": {
+        "PASS": 11
+      },
+      "unknown_handling": {
+        "FAIL": 7,
+        "PASS": 4
+      }
+    },
+    "by_fact_verdict": {
+      "FACT_MISMATCH": 5,
+      "UNNECESSARY_UNKNOWN": 7
+    },
+    "by_failure_type": {
+      "FACTS_DIMENSION_FAIL": 11,
+      "FACT_MISSING": 5,
+      "UNNECESSARY_ASSERTION": 1,
+      "UNNECESSARY_UNKNOWN": 6
+    }
+  }
+}
