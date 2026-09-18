@@ -48,7 +48,7 @@ Source prospective observations are never mutated; linkage is returned separatel
 | Adapter reuse | Extends existing G11 stack: `IbkrReadOnlyQueryProvider` → `IbkrObservationalQueryService` → `historical_trades` normalizer (parallel to `historical_bars`). |
 | Endpoint | **TWS/Gateway:** `reqHistoricalTicks` with `whatToShow=TRADES`, `useRTH=True`, up to `numberOfTicks` (default 1000). **Client Portal REST:** no historical tick endpoint in allowlist — outer REST returns `REST_HISTORICAL_TRADES_UNAVAILABLE`. |
 | Granularity | Tick-level TRADE prints (not aggregated bars). |
-| Max records | Bounded by IB `numberOfTicks` per request (implementation default 1000); pagination not implemented in this spike. |
+| Max records | Bounded per IB request (default 1000); **bounded pagination** for >1000 ticks landed on `main` via IMP-EVIDENCE-HARDENING-02 [#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252) (`2d4a6d37`). Live IBKR remains **`PROVIDER_UNVERIFIED`**. |
 | RTH | `useRTH=True` on TWS historical ticks request. |
 | Pacing | Inherits `ibkr.pacing.history` capability registration; no new live pacing run in CI. |
 | Entitlements | Live TRADES streaming remains entitlement-gated separately; historical TRADES capability registered as `IBKR_HISTORICAL_TRADES` / `OBSERVATIONAL_HISTORICAL_TRADES`. |
@@ -66,7 +66,7 @@ Source prospective observations are never mutated; linkage is returned separatel
 - Lane B historical bar corpus population CLI and artifact directories
 - Item 9 calibration protocol merge / fitting / gate changes
 - Automated linker from Item 9 receipts → `path_a_label_evidence_ids` population — delivered in Lane A (`path_a_label_linker.py`, IMP-EVIDENCE-HARDENING-02)
-- Live pagination strategy for >1000 ticks per window
+- Live IBKR verification of paginated historical TRADE fetches (software landed [#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252); **`PROVIDER_UNVERIFIED`**)
 - JSON schema publication under manifests (optional follow-up)
 - Runtime composition wrapper method (callers can use query service directly)
 

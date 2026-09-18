@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane F docs/status hygiene
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Post–dual-corpus + hardening docs sync: distinguish **CURRENT_MAIN** vs **CURRENT_SOFTWARE_IMPLEMENTATION** vs frozen **ITEM9_FROZEN_COLLECTOR** / **SEP15_FROZEN_EMPIRICAL_AUTHORITY** in `PROGRAM_STATUS` v1.40; refresh [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) (was anchored to `6e9e88b`/`73da9fdb`); update Notion-sync summary and Lane C pagination note ([#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252)). Item 9 gates and #222 isolation unchanged; no receipt or collector retarget. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/{WORK_LOG,NEXT_RTH_CAMPAIGN_RUNBOOK,IMP_DUAL_CORPUS_01_NOTION_SYNC,IMP_DUAL_CORPUS_01_LANE_C}.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` / `check_docs_links` as applicable |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane F; **CURRENT_SOFTWARE_IMPLEMENTATION** `a1b556f8` ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)) |
+| **Notes** | Docs-only; does not advance **CURRENT_SOFTWARE_IMPLEMENTATION** when merged. |
+
 ## 2026-09-17 — Item 9 next-RTH preflight CI fixes (Lane E)
 
 | Field | Value |
