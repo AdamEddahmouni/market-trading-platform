@@ -19,7 +19,7 @@ Lane E synthesizes **bounded historical observations** from the executed OpenD f
 
 | Item | Value |
 |------|-------|
-| Branch / worktree | `research/opend-fill-economics-v3` @ `436a0ed7` |
+| Merge on `main` | [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) `a8dc0a65` — lane tip `436a0ed7` |
 | `EXPERIMENT_HASH` | `81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61` |
 | `pack_run_id` | `C3DE72960BAC86F9E743E14B9DBC2BF1` |
 | Prior immutable v2 hash | `E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4` (unchanged) |
@@ -30,9 +30,9 @@ Lane E synthesizes **bounded historical observations** from the executed OpenD f
 - `SMOKE10_EXECUTED=NO`
 - No Item 9 collector mutation; no PR #222 / #267 merge
 
-## Post-synthesis main reconcile (PR base)
+## Lane F status closure (docs)
 
-Findings were synthesized against v3 evidence @ `436a0ed7` before Phase 1B landed on `main`. This PR targets `main` after **#273** (`a8dc0a65`), which includes v3 receipts unchanged. **#272** merged non-stub facts SUT wiring (`ccc41a7f`) without executing Smoke10; Lane E deferral (`SMOKE10_EXECUTED=NO`) remains in force. See `lane_e_v3_synthesis_receipt.json` → `post_synthesis_main_reconcile`.
+Program-level invariants, v3 receipt pins, merge SHAs ([#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274)), and the recommended next increment are recorded in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) § [IMP-OPEND-FILL-ECONOMICS-V3 — Lane F status/docs closure](../platform/PROGRAM_STATUS.md#imp-opend-fill-economics-v3--lane-f-statusdocs-closure). Lane F does not alter frozen JSON under `evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/`. **`SMOKE10_EXECUTED=NO`** remains in force after **#272** (`ccc41a7f`).
 
 ## Related
 

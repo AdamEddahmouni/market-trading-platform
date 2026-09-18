@@ -7,10 +7,10 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.43` |
+| Version | `1.44` |
 | Last Verified | `2026-09-18` |
-| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` — tip merge [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) IMP-INTEGRATE-AND-EXPERIMENT-05 Lane H findings on ancestry [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) OpenD Baseline Pack v2 @ `a080337d`, [#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) prediction-coupled simulator @ `0ef9a72c`, IMP-RESEARCH-VALIDATION-04 stack merged @ `7d67d48e` ([#260](https://github.com/AdamEddahmouni/market-trading-platform/pull/260)–[#265](https://github.com/AdamEddahmouni/market-trading-platform/pull/265)). **IMP-INTEGRATE-AND-EXPERIMENT-05 ENDING_MAIN** = this SHA until Lane Docs + [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) land. **Docs-only** merges advance **CURRENT_MAIN** only. **Not** `ITEM9_FROZEN_COLLECTOR`. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `0fb32d445b0937cd22a2d3a2c550ae790bdf8863` — matches **CURRENT_MAIN** after research-validation stack [#260](https://github.com/AdamEddahmouni/market-trading-platform/pull/260)–[#265](https://github.com/AdamEddahmouni/market-trading-platform/pull/265), R1 [#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266), OpenD v2 [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268), Lane H registry/tests [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269). Docs-only status PRs advance **CURRENT_MAIN** only until the next **software-bearing** merge. **Not** empirical evidence. |
+| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` — merge [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) Lane E v3 findings on ancestry [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) OpenD fill-economics v3 evidence, [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) non-stub IBP facts SUT (supersedes closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)), [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) simulator fill-economics accounting, Lane Docs `6d6b27de`, [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269)–[#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266). **IMP-INTEGRATE-AND-EXPERIMENT-05** v3 stack **on `main`**; increment **not complete** (factual Smoke10 gold, Item 9 calibration). Lane F status reconcile (`docs/opend-v3-status-reconcile`) is **docs-only**. **Not** `ITEM9_FROZEN_COLLECTOR`. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` — matches **CURRENT_MAIN** after [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) (accounting, SUT wiring, v3 evidence, Lane E findings). **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** / frozen collector SHA | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` — IMP-ACTUAL-01 [#236](https://github.com/AdamEddahmouni/market-trading-platform/pull/236) OpenD persistent Mode B poll; governed checkout `.imp-actual-01-phase-d` @ this SHA. **Sep 17 Mode B observation epoch is frozen here**; do **not** retarget prospective collection onto **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** / frozen Sep 15 RTH empirical SHA | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` — Sep 15 observational **historical pin** (`HISTORICAL_TRUTH`); **not** **CURRENT_MAIN**; **not** **ITEM9_FROZEN_COLLECTOR**; do not rewrite findings |
 | Empirical observation SHAs (receipt `runtime_git_sha`) | Distinct from the current git tip. Sep 17 AAPL Mode B `item9-prospective-20260917-rth-aapl` ran on `aae13fd1…` (`PATH_PROOF_ONLY` / empty raw hash — **not** corpus-admissible; immutable). Sep 17 phase-d and `epoch-fed2d9f7-aapl-*` receipts ran on frozen collector `fed2d9f7…` (non-empty raw hash; corpus-admissible candidates; **not** `CALIBRATED`). Do not rewrite receipts. |
@@ -91,7 +91,8 @@ links to evidence; it does not redefine architecture or executable behavior.
 | IMP-EVIDENCE-HARDENING-02 Lane D — historical session calendar + quality (#249) | **MERGED** on `main` at `3dc472cd` — early-close RTH session kinds + quality counters for `HISTORICAL_DEVELOPMENT` builds; **SOFTWARE**; **not** prospective Item 9 evidence | `CURRENT_CANONICAL_TRUTH` | [IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md](../engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md) · [#249](https://github.com/AdamEddahmouni/market-trading-platform/pull/249) |
 | IMP-EVIDENCE-HARDENING-02 Lane E — Item 9 next-RTH preflight (#251) | **MERGED** on `main` at `a1b556f8` — read-only `python tools/imp.py item9 next-rth-preflight --json`; RTH calendar, OpenD reachability, **ITEM9_FROZEN_COLLECTOR** worktree gate, receipt path, duplicate `--poll` detection; **never** runs Mode B `--poll` or fits calibration | `CURRENT_CANONICAL_TRUTH` | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](../engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md) · [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) · [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) |
 | IMP-RESEARCH-VALIDATION-04 (off-hours research validation burst) | **`MERGED` / `CAMPAIGN_CLOSED`** on `main` at **`7d67d48e`** ([#265](https://github.com/AdamEddahmouni/market-trading-platform/pull/265) Lane G status + stack [#260](https://github.com/AdamEddahmouni/market-trading-platform/pull/260)–[#264](https://github.com/AdamEddahmouni/market-trading-platform/pull/264), [#263](https://github.com/AdamEddahmouni/market-trading-platform/pull/263)). **STARTING_MAIN** was `f31e30fa`. **A** result_kind fail-closed; **B** Moomoo **VERIFIED_BOUNDED** fingerprint `355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B`; **C** Baseline Pack v1 **`HISTORICAL_DEVELOPMENT`**; **D** stub Smoke10 `ibp-smoke10-76DDD188CD080365` (**10×** `FACTS_MISMATCH`); **E** findings queue (**not** implemented). Superseded as active queue by **IMP-INTEGRATE-AND-EXPERIMENT-05** on **`0fb32d44`**. | `CURRENT_CANONICAL_TRUTH` | [WORK_LOG](../engineering/WORK_LOG.md) 2026-09-17 IMP-RESEARCH-VALIDATION-04 Lane G |
-| IMP-INTEGRATE-AND-EXPERIMENT-05 (integrate + bounded experiments) | **`PARTIAL`** — **ENDING_MAIN** **`0fb32d44`**; increment **not complete**. **Merged:** [#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) `0ef9a72c` prediction-coupled simulator (R1); [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) `a080337d` OpenD Baseline Pack v2 **`BOUNDED_HISTORICAL_OBSERVATION`** (dataset `355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B`, **`EXPERIMENT_HASH`** `E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4`, **`CODE_SHA`** `0ef9a72c`, NULL **0/0/0**, momentum **387/387/386**, MR **387/387/386**, volume **148/148/147**, PnL/costs **0**, contamination **PASS**, deterministic rerun **MATCH** `32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B`); [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) Lane H findings/hypothesis registry (**FULL30 not run**). **Open:** [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) non-stub IBP SUT — independent review **aborted by operator**; **do not restart** review autonomously. **Not executed:** non-stub Smoke10 (`LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1`); Full30. **Next engineering:** `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`. **Next intelligence:** I1 review then non-stub Smoke10; **not** Full30. Item 9 **`NOT_CALIBRATED`**; [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) **isolated**; FTEP **not** `EMPIRICAL_ACTIVE`; Live **OFF**. | `CURRENT_CANONICAL_TRUTH` | [IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md](../engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md) · [Lane Docs closure](#imp-integrate-and-experiment-05--lane-docs-closure-docs-only) |
+| IMP-INTEGRATE-AND-EXPERIMENT-05 (integrate + bounded experiments) | **`PARTIAL`** — **software landing** **`e0ab919f`** (`origin/main`); increment **not complete**. **Merged on main:** [#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) R1; [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) OpenD v2 **`E8C9ADB9…`** (frozen; **not rewritten**); [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) Lane H registry; [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) simulator fill-economics accounting `7542d7e9` (tip `62a0542a`); [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) non-stub facts SUT `ccc41a7f` (tip `f5220ddd`; **supersedes** closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)); [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) OpenD fill-economics v3 evidence `a8dc0a65` (tip `436a0ed7`); [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) Lane E v3 findings `e0ab919f`. **On-main v3 observation:** `imp-integrate-experiment-05-r3-opend-fill-economics-v3` **`EXPERIMENT_HASH`** `81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61`, **`DATASET_FINGERPRINT`** `355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B`, **`RUN_FINGERPRINT`** `AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490`, **`V3_AUTHORITY=HISTORICAL_DEVELOPMENT`**, repro **MATCH**, contamination **PASS**; validate **net_pnl** b0 **0**; b1 **-154.17**; b2 **-68.78**; b3 **-37.64** — **`BOUNDED_HISTORICAL_OBSERVATION`** only. Lane E **`LANE-E-FND-012`…`025`** on main; `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` **closed** `OBSERVED_MACHINERY`. **Not executed:** non-stub Smoke10 (`SMOKE10_EXECUTED=NO`; synthetic gold); Full30. Item 9 **`NOT_CALIBRATED`**; [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) **isolated**; FTEP **not** `EMPIRICAL_ACTIVE`; Live **OFF**. | `CURRENT_CANONICAL_TRUTH` | [IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md](../engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md) · [Lane E v3](../engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_E_V3.md) · [OpenD v3 Lane F closure](#imp-opend-fill-economics-v3--lane-f-statusdocs-closure) |
+| OpenD fill-economics v3 + Lane E findings (on `main`) | **`OBSERVED_MACHINERY`** — frozen pack under `evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/`; synthesis `imp-integrate-experiment-05-lane-e-v3-findings/` (**`HISTORICAL_DEVELOPMENT`** / **`BOUNDED_HISTORICAL_OBSERVATION`**). **No** v2/v3 receipt rewrite; **no** v3 rerun in Lane F. Stub Smoke10 `ibp-smoke10-76DDD188CD080365` frozen (**10×** `FACTS_MISMATCH`). | `HISTORICAL_DEVELOPMENT` | [IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md](../engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md) · [IMP_INTEGRATE_EXPERIMENT_05_LANE_E_V3.md](../engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_E_V3.md) |
 | RTH15 repair train (#203–#208, #211–#218) | **MERGED on `main` at `6e9e88b`** — [#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#204](https://github.com/AdamEddahmouni/market-trading-platform/pull/204), [#206](https://github.com/AdamEddahmouni/market-trading-platform/pull/206)–[#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208), [#209](https://github.com/AdamEddahmouni/market-trading-platform/pull/209)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205) on ancestry. Frozen empirical `7aade60` — do **not** rewrite Sep 15 evidence | `CURRENT_CANONICAL_TRUTH` | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
 | Phase 5.5B pre-RTH empirical software queue | **CLOSED on `main` (software)** — lanes **A** [#197](https://github.com/AdamEddahmouni/market-trading-platform/pull/197), **B** [#196](https://github.com/AdamEddahmouni/market-trading-platform/pull/196) capture-context sidecar **superseded by** [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224) `dbccd92d` (do not treat #196 as an open queue member), **C** [#195](https://github.com/AdamEddahmouni/market-trading-platform/pull/195), **D** [#199](https://github.com/AdamEddahmouni/market-trading-platform/pull/199), **E2** [#198](https://github.com/AdamEddahmouni/market-trading-platform/pull/198), **J** [#200](https://github.com/AdamEddahmouni/market-trading-platform/pull/200) merged. Empirical gates remain **NO** / unearned. Live OFF; FTEP **not** `EMPIRICAL_ACTIVE`; simulator **not** `CALIBRATED`; empirical locks **0**. | `CURRENT_CANONICAL_TRUTH` | [PHASE5_SOFTWARE_CLOSE_MEMO.md](../engineering/PHASE5_SOFTWARE_CLOSE_MEMO.md) + [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) + [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224) |
 | Phase 5 engineering merge queue | `EMPTY` at canonical `origin/main` `d16511d2` — lanes **A–J** merged: **A** #189 `c0b759d2` `PRODUCTION_ASYNC_INTELLIGENCE_WORKER_READY` (durable worker **OFF** by default; **not** `GROK_AUTOMATION_PRODUCTION_ACTIVE`); **B** #191 `d16511d2` `TRADE_REVIEW_DURABLE_LOOP_READY`; **C** #187 `abf9d33e` `EXECUTION_DECISION_TRACE_RUNTIME_READY`; **D** #185 `e5542267` `MATLAB_STRATEGY_RUNTIME_READY` (host R2026a; CI `UNAVAILABLE`/fixture); **E** #192 `29f17df7` `PINETS_PARTIAL_PARITY_READY` (**not** prod-graph runnable; **not** `FTEP_ELIGIBLE`); **F** #184 `e375bcf9` `VELA_SHADOW_RETAINED_INCOMPLETE_INTERACTIVE_ACCEPTANCE`; **G** #193 `4cc929b9` `INTELLIGENCE_BOUNDARY_SECURITY_HARDENED` (`LOOPBACK_TRUST` default; **ENFORCED** on exposed APIs); **H** #188 `42401118` `RTH_EMPIRICAL_OPS_READY` (software; **no** live collection this session); **I** #186 `6ecdbea3` `PUBLIC_RECORD_PRIMARY_SOURCE_VERIFICATION_READY` (congressional fetch **NOT_SUPPORTED**); **J** #190 `35a3e789` `STRATEGY_RESEARCH_PROMOTION_REGISTRY_READY` (in-memory; **no** auto Paper/Live). Program labels `PHASE5_ENGINEERING_READY` + `RTH_EMPIRICAL_RUN_PENDING` — orchestrator did **not** run RTH observational capture, create empirical locks, or place Paper/Live orders. Empirical gates `FINVIZ_PROSPECTIVE_OBSERVATION_CAPTURED`, `ITEM9_PROSPECTIVE_BAR_RECEIPT_CAPTURED`, `ITEM7_GOVERNED_ROW_CAPTURED`, `PROSPECTIVE_HOT_PATH_LATENCY_CAPTURED` remain **unearned**. Phase 4 (#171–#182) unchanged in meaning. Live OFF; FTEP **not** `EMPIRICAL_ACTIVE`; simulator **not** `CALIBRATED`; Item 7/9 **PARTIAL**. | `CURRENT_CANONICAL_TRUTH` | [PHASE5_SOFTWARE_CLOSE_MEMO.md](../engineering/PHASE5_SOFTWARE_CLOSE_MEMO.md) + [WORK_LOG](../engineering/WORK_LOG.md) 2026-09-15 Phase 5 software close + PRs [#184](https://github.com/AdamEddahmouni/market-trading-platform/pull/184)–[#193](https://github.com/AdamEddahmouni/market-trading-platform/pull/193) |
@@ -149,12 +150,12 @@ mandatory. Automatic broker failover remains disabled.
 
 **Only during US equity cash RTH (≥ 09:30 ET).** Do **not** run governed prospective Item 9 collection off-hours.
 
-1. `git fetch origin main`; confirm **CURRENT_GIT_MAIN** matches [header](#imp-program-status) (`0fb32d44` **ENDING_MAIN** for IMP-INTEGRATE-AND-EXPERIMENT-05 until Lane Docs + [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) land). **CURRENT_SOFTWARE_IMPLEMENTATION** matches **`0fb32d44`** until the next **software-bearing** merge after open [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267).
+1. `git fetch origin main`; confirm **CURRENT_GIT_MAIN** matches [header](#imp-program-status) (`e0ab919f` software landing through [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) until a newer **software-bearing** merge). **CURRENT_SOFTWARE_IMPLEMENTATION** matches **`e0ab919f`** on current `main`.
 2. Preflight (read-only): `python tools/imp.py item9 next-rth-preflight --json` — off-hours **`NOT_RTH`** and on **CURRENT_GIT_MAIN** (non-collector checkout) **`WRONG_RUNTIME`** are honest software outcomes, not empirical failure.
 3. When disposition is `READY_TO_COLLECT`, run governed Mode B `--poll` from frozen collector checkout **`.imp-actual-01-phase-d`** @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` (see [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](../engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); do not retarget collector to **CURRENT_MAIN**).
 4. After receipt: `python tools/item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts` — no automatic calibration fitting.
 
-**Honest gates (unchanged):** `ITEM9_CALIBRATED` = **NO**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **1** / **3** (canonical PROGRAM_STATUS + protocol floors; re-verify with read-only `corpus-status` on **ITEM9_FROZEN_COLLECTOR** checkout — do **not** mutate collector `fed2d9f7` or empirical `7aade60`). `ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY` = **NO**; `ITEM7_FORCED_SETTLEMENT` = **NO**; `ITEM7_STATE` = **`ITEM7_PENDING_NATURAL_EVIDENCE`**. `FTEP_EMPIRICAL_ACTIVE` = **NO**. `LIVE_EXECUTION` = **OFF**. `PR222_MERGED` = **NO**. `PR267_MERGED` = **NO**. `SMOKE10_NONSTUB` = **`NOT_EXECUTED`**. `FULL30` = **`NOT_RUN`**. `IMP05_INCREMENT_COMPLETE` = **NO**. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) and [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) remain **open/isolated** — **do not merge** #222 or #267 from Lane Docs.
+**Honest gates (unchanged):** `ITEM9_CALIBRATED` = **NO**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **1** / **3** (canonical PROGRAM_STATUS + protocol floors; re-verify with read-only `corpus-status` on **ITEM9_FROZEN_COLLECTOR** checkout — do **not** mutate collector `fed2d9f7` or empirical `7aade60`). `ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY` = **NO**; `ITEM7_FORCED_SETTLEMENT` = **NO**; `ITEM7_STATE` = **`ITEM7_PENDING_NATURAL_EVIDENCE`**. `FTEP_EMPIRICAL_ACTIVE` = **NO**. `LIVE_EXECUTION` = **OFF**. `PR222_MERGED` = **NO**. `PR272_MERGED` = **YES** ([#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) **closed/superseded**). `SMOKE10_EXECUTED` = **NO** (`SMOKE10_NONSTUB` = **`NOT_EXECUTED`**). `FULL30` = **`NOT_RUN`**. `IMP05_INCREMENT_COMPLETE` = **NO**. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) remains **isolated** — **do not merge** #222 from status docs.
 
 Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md).
 
@@ -164,7 +165,59 @@ Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT
 
 ## IMP-INTEGRATE-AND-EXPERIMENT-05 — Lane Docs closure (docs only)
 
-**ENDING_MAIN:** **CURRENT_GIT_MAIN** `0fb32d44` ([#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) merged). **Frozen pins (do not conflate):** **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`; **SEP15_FROZEN_EMPIRICAL** `7aade60`; **CURRENT_SOFTWARE_IMPLEMENTATION** `0fb32d44` until [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) or later software lands.
+**Software landing SHA:** `e0ab919f` ([#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) merged). **Frozen pins (do not conflate):** **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`; **SEP15_FROZEN_EMPIRICAL** `7aade60`; **CURRENT_SOFTWARE_IMPLEMENTATION** `e0ab919f` on `main` until the next **software-bearing** merge.
+
+## IMP-OPEND-FILL-ECONOMICS-V3 — Lane F status/docs closure
+
+**Branch:** `docs/opend-v3-status-reconcile` (from `origin/main` @ `e0ab919f`). **Docs-only**; **does not** rerun v3, execute Smoke10, merge [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222), or mutate frozen evidence. Accounting / v3 evidence / findings / SUT wiring **already merged** via [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274).
+
+**Closeout invariants (read-only verify; 2026-09-18):**
+
+```text
+ACCOUNTING_ON_MAIN=YES
+V3_EVIDENCE_ON_MAIN=YES
+V3_FINDINGS_ON_MAIN=YES
+SUT_WIRING_ON_MAIN=YES
+SMOKE10_EXECUTED=NO
+ITEM9_CALIBRATED=NO
+ITEM9_DISTINCT_RTH_DATES=1 / 3
+ITEM9_FROZEN_COLLECTOR=fed2d9f7e183aecfcac61a7664df69aafc12ea25
+SEP15_FROZEN_EMPIRICAL=7aade60bf8041df5ebf9f0ac856d5d8802845c8d
+ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY=NO
+ITEM7_FORCED_SETTLEMENT=NO
+PR222_MERGED=NO
+PR267_SUPERSEDED_BY_272=YES
+FTEP_EMPIRICAL_ACTIVE=NO
+LIVE_EXECUTION=OFF
+FROZEN_COLLECTOR_MUTATED=NO
+FROZEN_EVIDENCE_MUTATED=NO
+V3_AUTHORITY=HISTORICAL_DEVELOPMENT
+SMOKE10_NONSTUB=NOT_EXECUTED
+FULL30_EXECUTED=NO
+IMP05_V3_SOFTWARE_LANDING_SHA=e0ab919f6bfe0d681f035d7e00c4f609d596f74b
+```
+
+(`ITEM9_DISTINCT_RTH_DATES` per canonical PROGRAM_STATUS + protocol floors — **not** bumped from v3 pack. `.imp-actual-01-phase-d` @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` verified unchanged. Frozen Sep 15 / Sep 17 / V1 / V2 / stub Smoke10 `76DDD188…` receipts **not** rewritten.)
+
+**v3 bounded observation (frozen; do not rewrite):**
+
+| Field | Value |
+|---|---|
+| **`EXPERIMENT_ID`** | `imp-integrate-experiment-05-r3-opend-fill-economics-v3` |
+| **`EXPERIMENT_HASH`** | `81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61` |
+| **`CODE_SHA`** | `c6447a0498ddaaa5b1a8edf0160208e63495d6dd` |
+| Accounting | `simulator-research-fill-economics/3.0.1` + `simulator-research/notional-linear-bps/1.0.0` |
+| **`DATASET_FINGERPRINT`** | `355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B` |
+| **`RUN_FINGERPRINT`** | `AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490` |
+| **`pack_run_id`** | `C3DE72960BAC86F9E743E14B9DBC2BF1` |
+| Contamination | **PASS** |
+| Validate **net_pnl** (b0/b1/b2/b3) | **0** / **-154.17** / **-68.78** / **-37.64** — **`BOUNDED_HISTORICAL_OBSERVATION`** |
+| Lane A (accounting) | **MERGED** [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) `7542d7e9` — lane tip `62a0542a` |
+| Lane B / v3 execution | **MERGED** [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) `a8dc0a65` — lane tip `436a0ed7` |
+| Lane E findings | **MERGED** [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) `e0ab919f` — tips `9d10e9a2` / `6125b352` in history |
+| I1 SUT wiring | **MERGED** [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) `ccc41a7f` — lane tip `f5220ddd`; **`APPROVE_WIRING_NO_SMOKE10`**; [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) **closed/superseded** |
+
+**Recommended next increment (primary):** **METHODOLOGY** — `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1` (rank **1** in Lane E v3 hypothesis queue): independently specified IBP factual gold over admitted evidence classes so non-stub Smoke10 is evaluable without synthetic-gold-NNN placeholders or gold-matching the current SUT. V3 fill-economics machinery is **trustworthy as bounded historical machinery** on `main`; the **synthetic-gold Smoke10 block** is the higher-leverage gate than calendar-only Item 9 progress. Secondary queue: **RESEARCH** `LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4`; **CALENDAR** Item 9 Mode B @ frozen collector when `READY_TO_COLLECT`; **ENGINEERING** drawdown wiring / test-split fill policy as **new** experiment hashes.
 
 | Phase / lane | PR | Merge SHA | Disposition |
 |---|---|---|---|
@@ -172,8 +225,12 @@ Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT
 | R1 prediction-coupled simulator | [#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) | `0ef9a72c` | **MERGED** |
 | R2 OpenD Baseline Pack v2 | [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) | `a080337d` | **MERGED** — **`BOUNDED_HISTORICAL_OBSERVATION`**; frozen evidence under `imp-integrate-experiment-05-r2-opend-baseline-pack-v2/` |
 | Lane H findings / hypotheses | [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) | `0fb32d44` | **MERGED** — registry only; **no** Smoke10 / Full30 execution |
-| I1 non-stub IBP SUT | [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) | — | **OPEN** — review **aborted by operator**; **do not restart** autonomously |
-| Lane Docs — status / documentation | (this PR) | docs branch | Docs-only; **does not** merge #267 or #222 |
+| Lane Docs — status / documentation | (Lane Docs merge on `main`) | `6d6b27de` | **MERGED** — docs-only |
+| Simulator fill-economics accounting (Lane A) | [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) | `7542d7e9` | **MERGED** — lane tip `62a0542a` |
+| I1 non-stub IBP SUT | [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) | `ccc41a7f` | **MERGED** — lane tip `f5220ddd`; **supersedes** [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267); **no** Smoke10 executed |
+| OpenD fill-economics v3 evidence | [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) | `a8dc0a65` | **MERGED** — lane tip `436a0ed7`; frozen receipts on `main` |
+| Lane E v3 findings | [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) | `e0ab919f` | **MERGED** — `LANE-E-FND-012`…`025` on `main` |
+| Lane F — OpenD v3 status reconcile | (this PR) | docs branch | Docs-only; **does not** merge #222 or execute Smoke10 |
 
 **OpenD v2 bounded observation (frozen; do not rewrite):**
 
@@ -186,7 +243,7 @@ Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT
 | Momentum fills | **387/387/386** |
 | Mean-reversion fills | **387/387/386** |
 | Volume baseline | **148/148/147** |
-| PnL / costs | **0** (follow-up **`LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`**) |
+| PnL / costs | **0** (superseded for economics by on-main v3 **`81EFC1B1…`** — v2 frozen) |
 | Contamination | **PASS** |
 | Deterministic rerun | **MATCH** `32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B` |
 
@@ -194,18 +251,18 @@ Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT
 
 | Class | Blocker |
 |---|---|
-| **ENGINEERING** | [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) non-stub SUT **OPEN**; simulator fill economics **0** PnL/costs despite fills |
-| **INTELLIGENCE** | Non-stub Smoke10 **`NOT_EXECUTED`**; Full30 **`NOT_RUN`**; I1 review before Smoke10 |
+| **METHODOLOGY** | IBP Smoke10 factual gold **synthetic-gold-NNN** — blocks informative non-stub facts scoring until `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1` |
+| **INTELLIGENCE** | Non-stub Smoke10 **`NOT_EXECUTED`** (`SMOKE10_EXECUTED=NO`); Full30 **`NOT_RUN`** |
 | **CALENDAR** | Item 9 **`NOT_CALIBRATED`** — **1**/3 distinct US cash RTH dates unless re-verified read-only via `corpus-status` @ frozen collector |
 | **OWNER_DECISION** | [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) **isolated** (Item 7 not ready); FTEP **not** `EMPIRICAL_ACTIVE`; Live **OFF** |
 
 **Recommended next actions (evidence-led):**
 
-1. **ENGINEERING:** authorize/freeze **`LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`** (new v3 experiment — **no** v2 evidence rewrite).
-2. **INTELLIGENCE:** complete I1 / [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) operator review path, then **`LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1`** — **not** Full30 first.
-3. **CALENDAR:** on next RTH, governed Item 9 `--poll` from **`.imp-actual-01-phase-d`** @ `fed2d9f7` after preflight **`READY_TO_COLLECT`** (inspect-only `corpus-status` off frozen checkout; **do not** retarget collector).
+1. **METHODOLOGY:** `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1` — factual gold corpus + protocol over admitted evidence (**before** non-stub Smoke10).
+2. **INTELLIGENCE:** **`LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1`** with **new** run_id after factual gold — **not** Full30 first.
+3. **CALENDAR:** on next RTH, governed Item 9 `--poll` from **`.imp-actual-01-phase-d`** @ `fed2d9f7` after preflight **`READY_TO_COLLECT`** (inspect-only `corpus-status`; **do not** retarget collector).
 
-**Increment honesty:** IMP-INTEGRATE-AND-EXPERIMENT-05 is **not complete** until operator dispositions **#267** and any follow-on benchmark runs; Lane Docs records state only.
+**Increment honesty:** IMP-INTEGRATE-AND-EXPERIMENT-05 is **not complete** until factual gold methodology and follow-on benchmark runs; Lane F records state only.
 
 ## Material current limitations
 
@@ -341,11 +398,12 @@ Full RTH campaign sequencing: [NEXT_RTH_CAMPAIGN_RUNBOOK.md](../engineering/NEXT
   contradict durable truth — select canonical state via `IMP_STATE_DIR` on the
   primary IMP `.local` directory before preflight or watch. Paper EXECUTION and
   Live remain unauthorized.
-- **IMP-INTEGRATE-AND-EXPERIMENT-05** (Lane Docs @ **ENDING_MAIN** `0fb32d44`):
-  Phase 1 IMP-RESEARCH-VALIDATION-04 **merged** @ `7d67d48e`; integrate **R1/R2/H merged** ([#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266), [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268), [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269)).
-  [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) **OPEN**; non-stub Smoke10 **`NOT_EXECUTED`**; Full30 **`NOT_RUN`**.
+- **IMP-INTEGRATE-AND-EXPERIMENT-05** (software landing **`e0ab919f`**; Lane F status reconcile **docs-only**):
+  Phase 1 IMP-RESEARCH-VALIDATION-04 **merged** @ `7d67d48e`; integrate **R1/R2/H + v3 stack merged** on `main` ([#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274)).
+  OpenD fill-economics **v3** observed on `main` (`81EFC1B1…`); Lane E **`LANE-E-FND-012`…`025`** registered; `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` **OBSERVED_MACHINERY**.
+  [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) **merged** (supersedes [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)); non-stub Smoke10 **`NOT_EXECUTED`** (`SMOKE10_EXECUTED=NO`); Full30 **`NOT_RUN`**.
   Item 9 / Item 7 / #222 / Live / FTEP gates unchanged (**1**/3 RTH dates).
-  See [Lane Docs closure](#imp-integrate-and-experiment-05--lane-docs-closure-docs-only).
+  See [OpenD v3 Lane F closure](#imp-opend-fill-economics-v3--lane-f-statusdocs-closure).
 
 These are program limitations, not defects in REBASE-01 acceptance.
 
