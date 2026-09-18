@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane G status/documentation closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only orchestrator closure at campaign **STARTING_MAIN** / **CURRENT_GIT_MAIN** `f31e30fa`: pin **CURRENT_SOFTWARE_IMPLEMENTATION** `a1b556f8`, **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`, **SEP15_FROZEN_EMPIRICAL** `7aade60`; record open lanes **A–E** ([#260](https://github.com/AdamEddahmouni/market-trading-platform/pull/260)–[#264](https://github.com/AdamEddahmouni/market-trading-platform/pull/264), [#263](https://github.com/AdamEddahmouni/market-trading-platform/pull/263)); honest gates (`ITEM9_CALIBRATED=NO`, **1/3** RTH dates, `PR222_MERGED=NO`); off-main preflight **`WRONG_RUNTIME`** + off-hours **`NOT_RTH`** expected. **No** lane merges, collector mutation, or Item 9 collection. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed`; `check_docs_links.py` |
+| **Related** | IMP-RESEARCH-VALIDATION-04; branch `docs/imp-research-validation-04-status` |
+| **Notes** | Recommended next: merge **#260→#261/#262→#264→#263**; fix Smoke10 `FACTS_MISMATCH`; freeze **`LANE-E-HYP-OPEND-MULTI-SESSION-V2`**; RTH Item 9 poll @ frozen collector only. |
+
 ## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
 
 | Field | Value |
