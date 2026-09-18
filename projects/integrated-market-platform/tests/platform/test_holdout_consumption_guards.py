@@ -10,9 +10,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
+from market_platform_foundation.intelligence.baselines.controls.gradient_boosting import (  # noqa: E402
+    GradientBoostingBaseline,
+)
 from market_platform_foundation.intelligence.baselines.controls.logistic import (  # noqa: E402
     LogisticRegressionBaseline,
 )
+from market_platform_foundation.intelligence.baselines.features import BaselineFeatureSchema  # noqa: E402
 from market_platform_foundation.intelligence.baselines.features import (  # noqa: E402
     DEFAULT_STATISTICAL_FEATURE_SCHEMA,
 )
@@ -46,9 +50,25 @@ from market_platform_foundation.intelligence.production.identity import (  # noq
 from market_platform_foundation.intelligence.production.model import (  # noqa: E402
     fit_production_specialist,
 )
+from market_platform_foundation.intelligence.promotion import PromotionEngine, PromotionError  # noqa: E402
+from market_platform_foundation.intelligence.training.datasets import build_dataset_from_examples  # noqa: E402
+from market_platform_foundation.intelligence.training.distillation import (  # noqa: E402
+    FixtureTeacher,
+    build_distillation_dataset,
+)
 from market_platform_foundation.intelligence.training.errors import TrainingFactoryError  # noqa: E402
 from market_platform_foundation.intelligence.training.search import expand_candidate_specs  # noqa: E402
-from market_platform_foundation.intelligence.training.types import TrainerKind  # noqa: E402
+from market_platform_foundation.intelligence.training.trainers import get_trainer  # noqa: E402
+from market_platform_foundation.intelligence.training.types import (  # noqa: E402
+    CandidateTrainingSpec,
+    TrainerKind,
+)
+from tests.intelligence.outcome_fixtures import HORIZON_5M, T  # noqa: E402
+from tests.intelligence.promotion_fixtures import (  # noqa: E402
+    bootstrap_control_champion,
+    default_promotion_policy,
+    validated_candidate_bundle,
+)
 from market_platform_foundation.paper.calibration.dual_corpus.consumption import (  # noqa: E402
     CONSUMPTION_REFUSED_PROTECTED_CORPUS,
     ProtectedCorpusConsumptionError,
@@ -138,6 +158,86 @@ class HoldoutConsumptionGuardTests(unittest.TestCase):
         with self.assertRaises(ProtectedCorpusConsumptionError):
             LogisticRegressionBaseline().fit(dataset)
 
+    def test_baseline_gbm_fit_refuses_protected_dataset(self) -> None:
+        dataset = BaselineTrainingDataset(
+            examples=tuple(_training_examples()),
+            feature_schema=DEFAULT_STATISTICAL_FEATURE_SCHEMA,
+            target=_target(),
+            training_cutoff_ns=10,
+            corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+        )
+        with self.assertRaises(ProtectedCorpusConsumptionError):
+            GradientBoostingBaseline().fit(dataset)
+
+    def test_build_dataset_from_examples_refuses_protected_authority(self) -> None:
+        with self.assertRaises(TrainingFactoryError) as ctx:
+            build_dataset_from_examples(
+                experiment_id="exp-protected",
+                examples=_training_examples(),
+                feature_schema=DEFAULT_STATISTICAL_FEATURE_SCHEMA,
+                target=_target(),
+                training_cutoff_ns=10,
+                development_start_ns=0,
+                development_end_ns=10,
+                horizon_ns=HORIZON_5M,
+                corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+            )
+        self.assertIn(CONSUMPTION_REFUSED_PROTECTED_CORPUS, str(ctx.exception))
+
+    def test_build_distillation_dataset_refuses_protected_authority(self) -> None:
+        schema = BaselineFeatureSchema(selectors=())
+        teacher = FixtureTeacher()
+        with self.assertRaises(TrainingFactoryError) as ctx:
+            build_distillation_dataset(
+                experiment_id="exp-distill",
+                teacher=teacher,
+                input_examples=[
+                    ("s1", T, _training_examples()[0].feature_vector, T + HORIZON_5M),
+                    ("s2", T + 1, _training_examples()[1].feature_vector, T + HORIZON_5M),
+                ],
+                feature_schema=schema,
+                target=_target(),
+                training_cutoff_ns=T + HORIZON_5M,
+                development_start_ns=T,
+                development_end_ns=T + 10,
+                mode="ACTUAL_LIVE",
+                horizon_ns=HORIZON_5M,
+                corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+            )
+        self.assertIn(CONSUMPTION_REFUSED_PROTECTED_CORPUS, str(ctx.exception))
+
+    def test_sklearn_trainer_refuses_protected_manifest_metadata(self) -> None:
+        prepared = build_dataset_from_examples(
+            experiment_id="exp-trainer",
+            examples=_training_examples(),
+            feature_schema=DEFAULT_STATISTICAL_FEATURE_SCHEMA,
+            target=_target(),
+            training_cutoff_ns=10,
+            development_start_ns=0,
+            development_end_ns=10,
+            horizon_ns=HORIZON_5M,
+        )
+        protected_manifest = replace(
+            prepared.manifest,
+            metadata={"corpus_evidence_authority": CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION},
+        )
+        protected_prepared = replace(prepared, manifest=protected_manifest)
+        spec = CandidateTrainingSpec(
+            candidate_spec_id="csp",
+            experiment_id="exp-trainer",
+            training_dataset_id=protected_manifest.training_dataset_id,
+            dataset_fingerprint=protected_manifest.dataset_fingerprint,
+            trainer_kind=TrainerKind.LOGISTIC_REGRESSION,
+            hyperparameters={"random_state": 11},
+            seed=11,
+            authorized_mutation_surface=("baseline_model",),
+            target_kind="direction_up_down",
+            horizon_ns=HORIZON_5M,
+            mode="ACTUAL_LIVE",
+        )
+        with self.assertRaises(ProtectedCorpusConsumptionError):
+            get_trainer(TrainerKind.LOGISTIC_REGRESSION).train(spec, protected_prepared)
+
     def test_fit_production_specialist_refuses_protected_corpus(self) -> None:
         with self.assertRaises(ProtectedCorpusConsumptionError):
             fit_production_specialist(
@@ -196,6 +296,49 @@ class HoldoutConsumptionGuardTests(unittest.TestCase):
                 available_time_ns=20,
                 corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
             )
+
+    def test_isotonic_threshold_fit_refuses_protected_corpus(self) -> None:
+        target = path_a_direction_target("AAPL")
+        horizon = path_a_horizon()
+        policy = DEFAULT_PRODUCTION_FUSION_POLICY.policy_identity
+        dataset = CalibrationDataset(
+            dataset_id="ds-iso",
+            examples=(),
+            target=target,
+            horizon=horizon,
+            fusion_policy_identity=policy,
+            calibration_cutoff_ns=10,
+        )
+        with self.assertRaises(ProtectedCorpusConsumptionError):
+            CalibrationTrainer().fit(
+                dataset,
+                method=CalibrationMethod.ISOTONIC,
+                available_time_ns=20,
+                corpus_evidence_authority=CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+            )
+
+    def test_register_challenger_refuses_protected_training_corpus_metadata(self) -> None:
+        _repo, _manifest, candidate, artifact_bytes, report, _plan = validated_candidate_bundle()
+        policy = default_promotion_policy()
+        engine = PromotionEngine()
+        champion = bootstrap_control_champion(engine, candidate)
+        dirty = replace(
+            candidate,
+            metadata={
+                **candidate.metadata,
+                "corpus_evidence_authority": CORPUS_EVIDENCE_AUTHORITY_UNTOUCHED_FORWARD_EVALUATION,
+            },
+        )
+        with self.assertRaises(PromotionError) as ctx:
+            engine.register_challenger(
+                policy=policy,
+                candidate=dirty,
+                validation_report=report,
+                current_champion=champion,
+                registered_at_ns=T,
+                candidate_artifact_bytes=artifact_bytes,
+            )
+        self.assertEqual(ctx.exception.code, CONSUMPTION_REFUSED_PROTECTED_CORPUS)
 
     def test_hyperparameter_search_refuses_protected_experiment_metadata(self) -> None:
         manifest = _experiment_manifest()

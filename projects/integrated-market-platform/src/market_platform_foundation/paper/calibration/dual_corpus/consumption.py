@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from market_platform_foundation.intelligence.training.types import PreparedTrainingDataset
 
 from .evidence_authority import (
     CORPUS_EVIDENCE_AUTHORITIES,
@@ -106,6 +109,35 @@ def assert_metadata_consumable_for_selection_or_training(
     )
 
 
+def assert_prepared_training_dataset_consumable_for_selection_or_training(
+    prepared: PreparedTrainingDataset,
+    *,
+    purpose: str,
+) -> None:
+    """Fail closed when a prepared BUILD 18 dataset carries protected corpus markers."""
+
+    from market_platform_foundation.intelligence.baselines.training import (
+        BaselineTrainingDataset,
+        enforce_baseline_dataset_consumption_policy,
+    )
+
+    baseline = prepared.baseline_dataset
+    if isinstance(baseline, BaselineTrainingDataset):
+        enforce_baseline_dataset_consumption_policy(baseline, purpose=purpose)
+    manifest = prepared.manifest
+    assert_metadata_consumable_for_selection_or_training(
+        manifest.metadata,
+        purpose=f"{purpose}:manifest",
+    )
+
+
+def promotion_error_code_for_protected_corpus_consumption(exc: ProtectedCorpusConsumptionError) -> str:
+    message = str(exc)
+    if CONSUMPTION_REFUSED_PROTECTED_CORPUS in message:
+        return CONSUMPTION_REFUSED_PROTECTED_CORPUS
+    return message
+
+
 __all__ = [
     "CONSUMPTION_REFUSED_PROTECTED_CORPUS",
     "ProtectedCorpusConsumptionError",
@@ -113,6 +145,8 @@ __all__ = [
     "assert_corpus_consumable_for_selection_or_training",
     "assert_metadata_consumable_for_selection_or_training",
     "assert_payload_samples_consumable_for_selection_or_training",
+    "assert_prepared_training_dataset_consumable_for_selection_or_training",
+    "promotion_error_code_for_protected_corpus_consumption",
     "authority_refuses_selection_or_training",
     "is_protected_corpus_authority",
     "protected_corpus_authorities_for_selection_training",

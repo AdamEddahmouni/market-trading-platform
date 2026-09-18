@@ -155,6 +155,18 @@ def filter_raw_rows_rth(
     return kept, excluded
 
 
+def sort_raw_rows_by_time_key(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Stable ascending order by bar-start time_key (invalid keys last)."""
+
+    def _sort_key(row: Mapping[str, Any]) -> tuple[int, str]:
+        parsed = parse_moomoo_time_key_local(str(row.get("time_key") or ""))
+        if parsed is None:
+            return (1, "")
+        return (0, parsed.strftime("%Y-%m-%d %H:%M:%S"))
+
+    return sorted((dict(row) for row in rows), key=_sort_key)
+
+
 def ohlc_row_valid(row: Mapping[str, Any]) -> bool:
     try:
         o = float(row.get("open"))
@@ -185,4 +197,5 @@ __all__ = [
     "iter_us_equity_session_dates",
     "ohlc_row_valid",
     "parse_moomoo_time_key_local",
+    "sort_raw_rows_by_time_key",
 ]

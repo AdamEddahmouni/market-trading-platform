@@ -40,9 +40,24 @@ Lane A defines the `POST_HORIZON_HISTORICAL_LABEL_EVIDENCE` class and manifest h
 
 Use explicit **HISTORICAL_DEVELOPMENT** vs **PROSPECTIVE** labels. Do not describe historical research pulls as “calibrated” or generic “real data” for Item 9.
 
+## Research contamination auditor (IMP-OFFHOURS-RESEARCH-03)
+
+Offline manifests (`research_contamination_run_manifest_v1`) can be audited for **contractual** leakage properties — not a statistical leakage-proof certificate.
+
+| Question | Check | Violation codes (→ question FAIL) |
+| --- | --- | --- |
+| Did train see test? | Declared train/test interval overlap | `TRAIN_TEST_INTERVAL_OVERLAP` |
+| Did features see future data? | `feature_as_of_ns` vs `decision_cutoff_ns`; target timing at cutoff | `FEATURE_TIMESTAMP_AFTER_DECISION_CUTOFF`, `TARGET_LEAKAGE_INDICATOR` |
+| Did holdout enter training? | Holdout window vs training example decision times; protected corpus used for selection/training | `HOLDOUT_ENTERED_TRAINING`, `PROTECTED_CORPUS_CONSUMPTION` |
+| Did prospective receipts enter historical research? | Authority on `historical_research` corpus inputs; dataset fingerprint bindings | `PROSPECTIVE_RECEIPTS_IN_HISTORICAL_RESEARCH`, `AUTHORITY_CLASS_MIXING`, `DATASET_FINGERPRINT_MISMATCH` |
+| Did historical data enter prospective Item 9? | `evaluate_item9_prospective_corpus_admission` | `HISTORICAL_DATA_ENTERED_ITEM9_PROSPECTIVE` |
+
+API: `audit_research_contamination_run` → `CONTAMINATION_STATUS` `PASS` or `FAIL` with explicit `violations`, per-question verdicts, and evidence language (`AUTHORITY=…`, `ITEM9_EFFECT=…`). **Run fail policy:** `CONTAMINATION_STATUS=FAIL` when any question is `FAIL`, when any violation is recorded, or when `supplemental_violations` lists reason codes not mapped to the five questions (fail-closed for out-of-band codes). Missing lineage fails closed with **all five** questions `FAIL`. CLI: `tools/research/audit_research_contamination.py`.
+
 ## Implementation map
 
 - Authority + admission: `src/market_platform_foundation/paper/calibration/dual_corpus/`
+- Research contamination auditor: `contamination_auditor.py`, `leak_audit.py`, `run_manifest.py`
 - Item 9 receipt persist guard: `bar_ohlcv_prospective_proof.persist_receipt`
 - Path A training guard: `intelligence/production/training_build.py`
 

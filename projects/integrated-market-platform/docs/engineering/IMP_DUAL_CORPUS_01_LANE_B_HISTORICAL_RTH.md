@@ -62,7 +62,14 @@ Paths are excluded from Item 9 prospective discovery (`historical-rth-developmen
 
 Item 9 remains `NOT_CALIBRATED`; historical corpora never admit as prospective.
 
+## Multi-session expansion (IMP-OFFHOURS-RESEARCH-03 Lane C)
+
+Bounded date ranges may include multiple completed RTH sessions. The builder emits one `raw/<TICKER>_<YYYY-MM-DD>.json` per tradable session day, merges with deterministic `time_key` ordering, and records `interval.session_dates` plus per-day `session_summaries` in the quality report. Holidays and early closes remain **operator-declared** (`--holidays`, `--early-closes`); IMP does not fetch exchange calendars at build time.
+
+CLI JSON includes `provider_availability`: `FIXTURE` (fixture provider), `AVAILABLE` (OpenD verified), or `UNAVAILABLE` (OpenD absent / unverified). Fingerprints: `dataset_fingerprint` (manifest body), `normalized_fingerprint` (bars + provenance), `quality_fingerprint` (quality body excluding its self-hash field).
+
 ## Methodology gaps (this pass)
 
 - **Early-close sessions:** declared `--early-closes` dates are tradable short sessions (13:00 ET close, 210 expected 1m bars). Shadow-run preflight still excludes early-close dates from full-grid capture; historical development uses `market_data/historical_development/rth_session.py` for session-kind-aware expectations.
 - **Corporate actions:** provider QFQ only; no cross-source reconciliation.
+- **IBKR historical TRADE pagination:** when a full page shares one `event_time_ns`, continuation cannot be proven safe; retrieval is marked incomplete with `SUSPECTED_SAME_TIMESTAMP_TRUNCATION` (bounded pages, no infinite loop).

@@ -210,6 +210,29 @@ class G11HistoricalTradesTests(unittest.TestCase):
         self.assertEqual(result.provenance.incomplete_reason, "MAX_PAGES_REACHED")
         self.assertEqual(len(result.trades), 4)
 
+    def test_pagination_marks_incomplete_on_same_timestamp_full_page(self) -> None:
+        same_t = 2_000_000_000_000_000_000
+        rows = [
+            {"t": same_t, "price": 100.0 + index, "size": 1.0, "trade_id": f"id-{index}"}
+            for index in range(3)
+        ]
+
+        def fetch_page(start_ns: int, end_ns: int, number_of_ticks: int) -> dict[str, object]:
+            return {"data": rows}
+
+        trades, provenance = paginate_historical_trades(
+            fetch_page,
+            instrument_id="AAPL",
+            window_start_time_ns=same_t,
+            window_end_time_ns=same_t,
+            ticks_per_page=3,
+            max_pages=5,
+            min_inter_page_interval_ns=0,
+        )
+        self.assertEqual(len(trades), 3)
+        self.assertFalse(provenance.complete)
+        self.assertEqual(provenance.incomplete_reason, "SUSPECTED_SAME_TIMESTAMP_TRUNCATION")
+
     def test_pagination_unit_orders_and_hashes(self) -> None:
         rows = [
             {"t": 3, "price": 1.0, "size": 1.0},

@@ -16,13 +16,30 @@ from market_platform_foundation.market_data.historical_development import (  # n
     MoomooOpendHistoricalMarketDataProvider,
     build_historical_rth_dataset,
 )
+from market_platform_foundation.market_data.historical_development.instrument import (  # noqa: E402
+    resolve_us_equity_instrument_id,
+)
 from market_platform_foundation.market_data.historical_development.provider import (  # noqa: E402
+    ProviderFetchStatus,
     load_fixture_rows_from_json,
 )
 from market_platform_foundation.paper.calibration.dual_corpus import (  # noqa: E402
     CORPUS_EVIDENCE_AUTHORITY_HISTORICAL_DEVELOPMENT,
     evaluate_item9_prospective_corpus_admission,
 )
+
+
+def _provider_availability_label(
+    provider_name: str,
+    status: ProviderFetchStatus,
+    *,
+    fixture_only: bool,
+) -> str:
+    if fixture_only or provider_name == "fixture":
+        return "FIXTURE"
+    if status.verified:
+        return "AVAILABLE"
+    return "UNAVAILABLE"
 
 
 def _print_governance_lines() -> None:
@@ -85,15 +102,33 @@ def main(argv: list[str] | None = None) -> int:
         early_closes=early_closes,
         fixture_only=fixture_only,
     )
+    instrument_id = resolve_us_equity_instrument_id(args.instrument)
+    session_dates = list(result.manifest.get("interval", {}).get("session_dates") or ())
     payload = {
         "ok": result.ok,
         "run_id": result.run_id,
         "reason_code": result.reason_code,
+        "instrument": instrument_id,
+        "start_date": args.start_date,
+        "end_date": args.end_date,
+        "session_dates": session_dates,
+        "session_count": len(session_dates),
+        "row_count": result.manifest.get("row_count"),
+        "early_close_dates_declared": sorted(early_closes),
+        "holiday_dates_declared": sorted(holidays),
+        "provider": args.provider,
+        "provider_availability": _provider_availability_label(
+            args.provider,
+            result.provider_status,
+            fixture_only=fixture_only,
+        ),
         "provider_verified": result.provider_status.verified,
         "provider_reason": result.provider_status.reason_code,
         "dataset_fingerprint": result.manifest.get("dataset_fingerprint"),
         "normalized_fingerprint": result.normalized_fingerprint,
         "quality_fingerprint": result.quality.get("quality_fingerprint"),
+        "quality_status": result.quality.get("quality_status"),
+        "session_summaries": result.quality.get("session_summaries"),
         "manifest_path": str(result.paths.manifests_dir / "dataset_manifest.json"),
     }
     if args.json:

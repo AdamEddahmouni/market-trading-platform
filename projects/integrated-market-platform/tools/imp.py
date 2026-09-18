@@ -898,6 +898,48 @@ def build_parser() -> argparse.ArgumentParser:
     hist_demo.add_argument("--demo-artifact-root", type=Path)
     hist_demo.add_argument("--json", action="store_true")
 
+    hist_harness = historical_actions.add_parser(
+        "harness",
+        help="historical research harness v1 (HISTORICAL_DEVELOPMENT)",
+    )
+    hist_harness.add_argument("--provider", default="fixture", choices=("fixture",))
+    hist_harness.add_argument("--instrument", default="AAPL")
+    hist_harness.add_argument("--start", required=True, dest="start_date")
+    hist_harness.add_argument("--end", required=True, dest="end_date")
+    hist_harness.add_argument("--fixture-path", type=Path, required=True)
+    hist_harness.add_argument("--corpus-artifact-root", type=Path)
+    hist_harness.add_argument("--harness-artifact-root", type=Path)
+    hist_harness.add_argument("--experiment-id", default="hist-research-default-experiment")
+    hist_harness.add_argument("--hypothesis-id", default="hist-research-default-hypothesis")
+    hist_harness.add_argument("--json", action="store_true")
+
+    benchmark = groups.add_parser(
+        "benchmark",
+        help="intelligence benchmark protocol integration (IBP v1 minimal)",
+    )
+    benchmark_actions = benchmark.add_subparsers(dest="action", required=True)
+    bench_intel = benchmark_actions.add_parser(
+        "intelligence",
+        help="IBP harness adapter, Smoke10 plan, readiness",
+    )
+    bench_intel_actions = bench_intel.add_subparsers(dest="bench_action", required=True)
+    bench_readiness = bench_intel_actions.add_parser("readiness", help="Smoke10 readiness")
+    bench_readiness.add_argument("--json", action="store_true")
+    bench_adapt = bench_intel_actions.add_parser(
+        "adapt",
+        help="adapt historical_research_run_manifest_v1 to IBP record",
+    )
+    bench_adapt.add_argument("--manifest", type=Path, required=True)
+    bench_adapt.add_argument("--json", action="store_true")
+    bench_smoke = bench_intel_actions.add_parser(
+        "smoke10-plan",
+        help="Smoke10 invocation contract (scores NOT executed)",
+    )
+    bench_smoke.add_argument("--manifest", type=Path)
+    bench_smoke.add_argument("--json", action="store_true")
+    bench_suite = bench_intel_actions.add_parser("suite-info", help="suite catalog metadata")
+    bench_suite.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -956,13 +998,39 @@ def _item9_command(root: Path, args: argparse.Namespace) -> int:
     return int(result["exit_code"])
 
 
+def _benchmark_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action != "intelligence":
+        print(f"unknown benchmark action: {args.action}", file=sys.stderr)
+        return 2
+    python = _validation_python(root)
+    env = _python_environment(root)
+    command = [python, str(root / "tools" / "benchmarks" / "intelligence_cli.py"), args.bench_action]
+    if args.bench_action in {"adapt", "smoke10-plan"} and getattr(args, "manifest", None) is not None:
+        command.extend(["--manifest", str(args.manifest)])
+    if getattr(args, "json", False):
+        command.append("--json")
+    result = _run(
+        root,
+        label=f"benchmark intelligence {args.bench_action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
 def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
-    if args.action not in {"build", "demo"}:
+    if args.action not in {"build", "demo", "harness"}:
         print(f"unknown historical-data action: {args.action}", file=sys.stderr)
         return 2
     python = _validation_python(root)
     env = _python_environment(root)
-    script = "build_cli.py" if args.action == "build" else "demo_cli.py"
+    if args.action == "build":
+        script = "build_cli.py"
+    elif args.action == "harness":
+        script = "harness_cli.py"
+    else:
+        script = "demo_cli.py"
     command = [python, str(root / "tools" / "historical_data" / script)]
     if args.action == "build":
         command.extend(
@@ -989,7 +1057,7 @@ def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
             command.extend(["--holidays", args.holidays])
         if args.early_closes:
             command.extend(["--early-closes", args.early_closes])
-    else:
+    elif args.action == "demo":
         command.extend(
             [
                 "--provider",
@@ -1008,6 +1076,29 @@ def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
             command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
         if args.demo_artifact_root:
             command.extend(["--demo-artifact-root", str(args.demo_artifact_root)])
+    else:
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--fixture-path",
+                str(args.fixture_path),
+            ]
+        )
+        if args.corpus_artifact_root:
+            command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
+        if args.harness_artifact_root:
+            command.extend(["--harness-artifact-root", str(args.harness_artifact_root)])
+        if args.experiment_id:
+            command.extend(["--experiment-id", str(args.experiment_id)])
+        if args.hypothesis_id:
+            command.extend(["--hypothesis-id", str(args.hypothesis_id)])
     if args.json:
         command.append("--json")
     result = _run(
@@ -1266,6 +1357,9 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "historical-data":
         return _historical_data_command(root, args)
+
+    if args.group == "benchmark":
+        return _benchmark_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)
