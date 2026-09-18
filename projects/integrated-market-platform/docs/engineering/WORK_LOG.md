@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IBP factual smoke v1 Lane M5 baseline run (IMP-IBP-FACTUAL-GOLD-V1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `evidence/intelligence-benchmark` |
+| **Summary** | Lane M5: froze `IBP_FACTUAL_SMOKE_V1` at main `936e233` (11 answerable cases; `IBP-FACTUAL-EXCL-001` excluded) with all pre-run gates PASS, then executed exactly one factual smoke baseline (`RUN_ID` `ibp-factual-smoke-28EA7748057E312D`, `FULL30_EXECUTED=NO`). Contamination audit PASS; facts dimension FAIL 11/11 on grounded facts SUT (failures preserved). Legacy `ibp-smoke10-76DDD188CD080365` untouched. |
+| **Key files** | `tests/fixtures/intelligence_benchmark/freeze/ibp_factual_smoke_v1_freeze.json`; `evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/*`; `tools/benchmarks/run_ibp_factual_smoke_m5_lane.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_ibp_admitted_factual_gold_m4_evaluator tests.intelligence.test_ibp_admitted_factual_gold_contract` — 25 OK |
+| **Related** | [IBP_ADMITTED_FACTUAL_GOLD_V1.md](IBP_ADMITTED_FACTUAL_GOLD_V1.md); Lane D receipt `imp-research-validation-04-lane-d-smoke10` |
+| **Notes** | `ITEM9_CALIBRATED=NO`; PR #222 isolated; `MERGE_PERFORMED=NO` pending independent evidence review |
+
 ## 2026-09-18 — IBP admitted factual gold M1 contract (IMP-IBP-FACTUAL-GOLD-V1 Phase 2)
 
 | Field | Value |

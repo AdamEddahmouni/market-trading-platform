@@ -1,0 +1,31 @@
+{
+  "case_count": 11,
+  "case_ids": [
+    "IBP-FACTUAL-001",
+    "IBP-FACTUAL-002",
+    "IBP-FACTUAL-003",
+    "IBP-FACTUAL-004",
+    "IBP-FACTUAL-005",
+    "IBP-FACTUAL-006",
+    "IBP-FACTUAL-007",
+    "IBP-FACTUAL-008",
+    "IBP-FACTUAL-009",
+    "IBP-FACTUAL-010",
+    "IBP-FACTUAL-011"
+  ],
+  "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
+  "code_sha": "936e233528cbce68d4047a6200fc579287e78033",
+  "context_reset_policy": "one_fresh_context_per_case_v1",
+  "evaluator_only_gold_prefix": "evaluator_only/admitted_factual_gold/",
+  "factual_gold_hypothesis_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+  "factual_gold_schema_version": "imp.ibp-admitted-factual-gold/1.0.0",
+  "factual_smoke_contract_id": "ibp-factual-smoke-invocation-v1",
+  "frozen_at_utc": "FACTUAL_SMOKE_V1_NO_WALL_CLOCK",
+  "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+  "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
+  "legacy_smoke10_run_id_preserved": "ibp-smoke10-76DDD188CD080365",
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+  "sut_profile_id": "imp_historical_routing_grounded_facts_v1"
+}
