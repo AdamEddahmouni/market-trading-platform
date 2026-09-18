@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane C multi-session historical expansion
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development`, `tools/historical_data`, IBKR observational pagination |
+| **Summary** | Bounded multi-session RTH historical-development builds now record `interval.session_dates`, per-session quality summaries, deterministic raw `time_key` ordering before normalization, and richer CLI deliverable JSON (`provider_availability`, session counts, fingerprints). IBKR trade pagination fails closed on same-timestamp full pages (`SUSPECTED_SAME_TIMESTAMP_TRUNCATION`). |
+| **Key files** | `market_data/historical_development/{builder,rth_session,quality}.py`; `tools/historical_data/build_cli.py`; `providers/ibkr_observational/historical_trades_pagination.py`; `tests/platform/test_historical_multi_session_build.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md` |
+| **Tests** | `unittest` historical multi-session + session quality + g11 pagination suites; `python tools/imp.py validate changed` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03; IMP-DUAL-CORPUS-01 Lane B |
+| **Notes** | Branch `data/historical-development-expansion`; holidays/early closes operator-declared only. |
+
 ## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 historical research harness v1
 
 | Field | Value |

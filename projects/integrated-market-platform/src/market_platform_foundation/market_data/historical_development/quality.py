@@ -47,6 +47,50 @@ def _missing_intervals_for_sessions(
     return missing_by_day
 
 
+def _session_summaries(
+    session_dates: Sequence[str],
+    raw_rows: Sequence[Mapping[str, Any]],
+    *,
+    holidays: frozenset[str],
+    early_closes: frozenset[str],
+) -> list[dict[str, Any]]:
+    summaries: list[dict[str, Any]] = []
+    for day in session_dates:
+        expected_keys = expected_rth_minute_keys(day, early_closes=early_closes)
+        present: set[str] = set()
+        for row in raw_rows:
+            key = str(row.get("time_key") or "")
+            if not key.startswith(day):
+                continue
+            parsed = parse_moomoo_time_key_local(key)
+            if parsed is not None:
+                present.add(parsed.strftime("%Y-%m-%d %H:%M:%S"))
+        kind = classify_us_equity_session_day(day, holidays=holidays, early_closes=early_closes)
+        summaries.append(
+            {
+                "session_date": day,
+                "session_kind": kind.value,
+                "expected_minute_count": len(expected_keys),
+                "observed_minute_count": len(present),
+            }
+        )
+    return summaries
+
+
+def _raw_time_key_ordering_violations(raw_rows: Sequence[Mapping[str, Any]]) -> int:
+    last_key: str | None = None
+    violations = 0
+    for row in raw_rows:
+        parsed = parse_moomoo_time_key_local(str(row.get("time_key") or ""))
+        if parsed is None:
+            continue
+        key = parsed.strftime("%Y-%m-%d %H:%M:%S")
+        if last_key is not None and key < last_key:
+            violations += 1
+        last_key = key
+    return violations
+
+
 def count_incomplete_final_bars(
     session_dates: Sequence[str],
     raw_rows: Sequence[Mapping[str, Any]],
@@ -147,10 +191,17 @@ def build_quality_report(
         end_date,
         holidays=holiday_set,
     )
+    session_summaries = _session_summaries(
+        session_dates,
+        raw_rows,
+        holidays=holiday_set,
+        early_closes=early_close_set,
+    )
+    raw_ordering_violations = _raw_time_key_ordering_violations(raw_rows)
     quality_status = _derive_quality_status(
         missing_rows=missing_rows,
         duplicate_rows=int(duplicate_row_count),
-        out_of_order_rows=ordering_violations,
+        out_of_order_rows=ordering_violations + raw_ordering_violations,
         malformed_rows=int(malformed_timestamp_count),
         invalid_ohlc_rows=int(ohlc_invalid),
         incomplete_rows=int(incomplete_final_bar_count),
@@ -178,6 +229,9 @@ def build_quality_report(
         "raw_row_count": len(raw_rows),
         "expected_rth_minutes_per_full_session": RTH_MINUTES_FULL_SESSION,
         "session_date_count": len(session_dates),
+        "session_dates": list(session_dates),
+        "session_summaries": session_summaries,
+        "raw_time_key_ordering_violations": int(raw_ordering_violations),
         "missing_intervals": missing_by_day,
         "duplicate_row_count": int(duplicate_row_count),
         "excluded_row_count": int(excluded_row_count),

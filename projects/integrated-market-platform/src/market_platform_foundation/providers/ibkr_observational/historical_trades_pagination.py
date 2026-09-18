@@ -184,6 +184,21 @@ def paginate_historical_trades(
             incomplete_reason = "STALLED_PAGINATION_CURSOR"
             break
 
+        in_window_times = [
+            trade.event_time_ns
+            for trade in page_trades
+            if cursor_ns <= trade.event_time_ns <= end_ns
+        ]
+        same_timestamp_full_page = (
+            len(page_trades) >= ticks_per_page
+            and in_window_times
+            and min(in_window_times) == max(in_window_times)
+        )
+        if same_timestamp_full_page:
+            complete = False
+            incomplete_reason = "SUSPECTED_SAME_TIMESTAMP_TRUNCATION"
+            break
+
         if len(page_trades) < ticks_per_page:
             break
 
