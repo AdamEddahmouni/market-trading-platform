@@ -8,7 +8,7 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` | Mutable `origin/main` tip after IMP-EVIDENCE-HARDENING-02 software ([#248](https://github.com/AdamEddahmouni/market-trading-platform/pull/248)–[#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252); merge [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)). Docs-only merges advance this label only. |
+| **CURRENT_MAIN** (`origin/main` / git tip) | `19a5ebd5370cd249bee1cf0cc667a737dec6e634` | Mutable tip after [#253](https://github.com/AdamEddahmouni/market-trading-platform/pull/253) docs post–dual-corpus hygiene (prior IMP-EVIDENCE-HARDENING-02 software [#248](https://github.com/AdamEddahmouni/market-trading-platform/pull/248)–[#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252)). Docs-only merges advance this label only. |
 | **CURRENT_SOFTWARE_IMPLEMENTATION** | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` | Last **software-bearing** merge: [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) Item 9 `next-rth-preflight`. Stays pinned until the next software merge. Commands and labels below assume this implementation. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
@@ -27,7 +27,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md).
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` may show `NOT_RTH` — that is **software success**, not empirical failure. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from **CURRENT_MAIN** / a software worktree (`19a5ebd5…`) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 ## Workstation bootstrap (once per day)
 

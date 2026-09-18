@@ -21,6 +21,28 @@ OpenD reachability, governed receipt directory writability, frozen collector aut
 Off-hours disposition `NOT_RTH` is software success (exit 0). During RTH with all gates
 passing, disposition is `READY_TO_COLLECT` — operator still starts collection manually.
 
+**Off-hours from a non-frozen software worktree:** `calendar.rth_active=false` is still the
+expected calendar outcome. Overall disposition may be `WRONG_RUNTIME` (exit 1) because the
+frozen-collector SHA gate runs before the not-RTH branch — that is honest, not a calendar
+failure. Governed Mode B `--poll` must still be launched from `.imp-actual-01-phase-d` @
+`fed2d9f7…`, not from **CURRENT_MAIN**.
+
+### Process probe architecture ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251))
+
+Duplicate `--poll` detection uses OS process command lines. That subprocess I/O lives in
+**non-governed** `tools/item9_next_rth_preflight.py` and is injected via
+`active_collector_probe` into the governed library. The library alone defaults
+`active_collector.process_probe_status` to `NOT_RUN` (unit tests and direct `src/` entry).
+
+| Entry | Process probe |
+|-------|----------------|
+| `python tools/imp.py item9 next-rth-preflight` | `COMPLETED` (tools wrapper lists processes) |
+| `python tools/item9_next_rth_preflight.py` | `COMPLETED` |
+| `python tools/item9.py next-rth-preflight` | `COMPLETED` (delegates to tools wrapper) |
+| Governed `src/.../item9_next_rth_preflight.main` without injection | `NOT_RUN` (intentional) |
+
+Do not move subprocess handling back into governed `src/`.
+
 After a successful prospective receipt:
 
 ```powershell
