@@ -105,6 +105,9 @@ def build_historical_research_run_manifest(
             "version": config.simulator_version,
             "cost_slippage_bps": config.cost_slippage_bps,
             "result_kind": simulator_result.get("result_kind"),
+            "evaluation_split": "HISTORICAL_DEVELOPMENT_VALIDATE",
+            "event_count": len(simulator_result.get("scoped_event_times_ns") or []),
+            "risk_simulation_root_hash": simulator_result.get("risk_simulation_root_hash"),
         },
         "parameters": {
             "forward_horizon_bars": config.forward_horizon_bars,
