@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B freeze + bounded performance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `intelligence/historical_research_harness`, `tools/research` |
+| **Summary** | Merged APPROVED Lane A accounting; promoted v3 pre-execution definition to `frozen_experiment_definition.json` with pinned dataset fingerprint; executed one canonical baseline pack + full deterministic rerun (`deterministic_rerun_match`: true). Contamination auditor PASS. v2 evidence untouched. |
+| **Key files** | `baseline_pack_v3.py`, `historical_baseline_pack_v3_cli.py`, `evidence/.../imp-integrate-experiment-05-r3-opend-fill-economics-v3/*` |
+| **Tests** | `unittest tests.platform.test_historical_baseline_pack_v3_prep`, `test_simulator_fill_economics_v3`; `python tools/imp.py validate changed` |
+| **Related** | `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`; `EXPERIMENT_HASH` `81EFC1B1…` |
+| **Notes** | Not profitable/validated/production. Item 9 not calibrated. |
+
 ## 2026-09-18 — IBP facts SUT re-review hygiene (Lane C)
 
 | Field | Value |
@@ -72,7 +84,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `research/simulator-fill-economics-v3` follow-up to REQUEST_CHANGES |
 | **Notes** | `max_drawdown` / `coverage` labeled `RISK_PORTFOLIO_INHERITED`. V3 performance not executed. |
 
-## 2026-09-18 — Simulator fill economics V3 (Lane H)
+## 2026-09-18 — Fill economics V3 simulator accounting (Lane A)
 
 | Field | Value |
 |-------|-------|
@@ -83,6 +95,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python -m unittest tests.platform.test_simulator_fill_economics_v3` (14 OK); `python tools/imp.py validate changed` (2875 passed, 29 skipped) |
 | **Related** | Branch `research/simulator-fill-economics-v3` @ base `6d6b27de` |
 | **Notes** | `ACCOUNTING_VERSION` / `COST_MODEL_VERSION` / `SIMULATOR_VERSION` (`phase7.bar-conservative/1.1.0`) frozen for Lane B. `estimated_costs` retained as alias of `transaction_costs`. Open-position `max_drawdown` still from risk portfolio summary when present. |
+
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B pre-execution freeze prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Prepared v3 OpenD fill-economics experiment definition on branch `research/opend-fill-economics-v3`: pinned corpus fingerprint verified PASS, pre-execution freeze template and protocol committed with `PENDING_LANE_A` placeholders; no performance run. |
+| **Key files** | `evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/*`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md`; `tests/platform/test_historical_baseline_pack_v3_prep.py`; `evidence/.../lane-h-findings/hypothesis_queue_v1.json` |
+| **Tests** | `python tools/imp.py env` healthy; `python tools/imp.py test focused tests/platform/test_historical_baseline_pack_v3_prep.py` |
+| **Related** | [IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md](IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md); `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` |
+| **Notes** | Final `EXPERIMENT_HASH` blocked on Lane A accounting; v2 `E8C9ADB9…` evidence untouched. |
 
 ## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
 

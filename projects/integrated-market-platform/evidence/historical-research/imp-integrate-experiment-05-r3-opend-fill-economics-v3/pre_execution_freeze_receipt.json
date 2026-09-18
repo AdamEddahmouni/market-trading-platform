@@ -1,0 +1,23 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "PRE_EXECUTION_PARTIAL",
+  "artifact_kind": "historical_baseline_pack_v3_pre_execution_freeze_receipt_v1",
+  "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "dataset_fingerprint_verification_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/dataset_fingerprint_verification.json",
+  "dataset_fingerprint_verification_status": "PASS",
+  "execution_status": "PRE_EXECUTION_AWAITING_LANE_A_ACCOUNTING",
+  "experiment_definition_hash": "PENDING_LANE_A_REVIEW",
+  "experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "hypothesis_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+  "increment_id": "IMP-SIMULATOR-FILL-ECONOMICS-V3",
+  "lane": "B",
+  "performance_run": "NO",
+  "pre_execution_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_frozen_experiment_definition.json",
+  "pre_execution_freeze_template_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_freeze_template.json",
+  "protocol_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/experiment_protocol_v3.json",
+  "research_code_sha": "PENDING_LANE_A",
+  "v2_immutable_experiment_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+  "v2_immutable_experiment_id": "imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+  "worktree_branch": "research/opend-fill-economics-v3",
+  "worktree_base_sha": "6d6b27de0842b02c57df3bd94c239edf7d6b2e5d"
+}

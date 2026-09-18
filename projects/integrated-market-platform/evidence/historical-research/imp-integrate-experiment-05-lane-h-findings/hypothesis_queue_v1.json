@@ -75,7 +75,11 @@
         "New v3 pack run with distinct experiment_definition_hash",
         "No upgrade to paper/live authority"
       ],
-      "proposed_test": "imp-integrate-experiment-05-r3 (or successor) after simulator PnL engineering; Lane H does not implement simulator code"
+      "proposed_test": "imp-integrate-experiment-05-r3-opend-fill-economics-v3 after simulator PnL engineering; Lane H does not implement simulator code",
+      "proposed_experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+      "pre_execution_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/pre_execution_frozen_experiment_definition.json",
+      "lane_b_prep_status": "PRE_EXECUTION_DEFINITION_ONLY",
+      "lane_b_prep_increment": "IMP-SIMULATOR-FILL-ECONOMICS-V3"
     },
     {
       "queue_rank": 2,

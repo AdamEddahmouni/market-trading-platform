@@ -1,0 +1,23 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "artifact_kind": "historical_baseline_pack_v3_evidence_receipt_v1",
+  "contamination_status": "PASS",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "evidence_label": "HISTORICAL_BASELINE_V3_OPEND_FILL_ECONOMICS",
+  "execution_research_code_sha": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+  "execution_status": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/frozen_experiment_definition.json",
+  "frozen_research_code_sha": "c6447a0498ddaaa5b1a8edf0160208e63495d6dd",
+  "observation_language": "BOUNDED_HISTORICAL_OBSERVATION",
+  "pack_run_id": "C3DE72960BAC86F9E743E14B9DBC2BF1",
+  "pack_run_manifest_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/baseline_pack_run_manifest.json",
+  "performance_run": "YES",
+  "reproducibility": {
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "deterministic_rerun_match": true,
+    "experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+    "first_run_fingerprint": "AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490",
+    "second_run_fingerprint": "AA9CBA00361DEAA27EF3A538BB0BB388070EC54399E7FB72C690622F85AB1490"
+  }
+}
