@@ -44,15 +44,15 @@ Use explicit **HISTORICAL_DEVELOPMENT** vs **PROSPECTIVE** labels. Do not descri
 
 Offline manifests (`research_contamination_run_manifest_v1`) can be audited for **contractual** leakage properties — not a statistical leakage-proof certificate.
 
-| Question | Check |
-| --- | --- |
-| Did train see test? | Declared train/test interval overlap |
-| Did features see future data? | `feature_as_of_ns` vs `decision_cutoff_ns` |
-| Did holdout enter training? | Holdout window vs training example decision times; protected corpus consumption |
-| Did prospective receipts enter historical research? | Authority on `historical_research` corpus inputs |
-| Did historical data enter prospective Item 9? | `evaluate_item9_prospective_corpus_admission` |
+| Question | Check | Violation codes (→ question FAIL) |
+| --- | --- | --- |
+| Did train see test? | Declared train/test interval overlap | `TRAIN_TEST_INTERVAL_OVERLAP` |
+| Did features see future data? | `feature_as_of_ns` vs `decision_cutoff_ns`; target timing at cutoff | `FEATURE_TIMESTAMP_AFTER_DECISION_CUTOFF`, `TARGET_LEAKAGE_INDICATOR` |
+| Did holdout enter training? | Holdout window vs training example decision times; protected corpus used for selection/training | `HOLDOUT_ENTERED_TRAINING`, `PROTECTED_CORPUS_CONSUMPTION` |
+| Did prospective receipts enter historical research? | Authority on `historical_research` corpus inputs; dataset fingerprint bindings | `PROSPECTIVE_RECEIPTS_IN_HISTORICAL_RESEARCH`, `AUTHORITY_CLASS_MIXING`, `DATASET_FINGERPRINT_MISMATCH` |
+| Did historical data enter prospective Item 9? | `evaluate_item9_prospective_corpus_admission` | `HISTORICAL_DATA_ENTERED_ITEM9_PROSPECTIVE` |
 
-API: `audit_research_contamination_run` → `CONTAMINATION_STATUS` `PASS` or `FAIL` with explicit `violations` and evidence language (`AUTHORITY=…`, `ITEM9_EFFECT=…`). CLI: `tools/research/audit_research_contamination.py`. Missing lineage fails closed.
+API: `audit_research_contamination_run` → `CONTAMINATION_STATUS` `PASS` or `FAIL` with explicit `violations`, per-question verdicts, and evidence language (`AUTHORITY=…`, `ITEM9_EFFECT=…`). **Run fail policy:** `CONTAMINATION_STATUS=FAIL` when any question is `FAIL`, when any violation is recorded, or when `supplemental_violations` lists reason codes not mapped to the five questions (fail-closed for out-of-band codes). Missing lineage fails closed with **all five** questions `FAIL`. CLI: `tools/research/audit_research_contamination.py`.
 
 ## Implementation map
 

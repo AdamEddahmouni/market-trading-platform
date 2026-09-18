@@ -6,11 +6,15 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from .leak_audit import (
+    VIOLATION_AUTHORITY_MIXING,
+    VIOLATION_DATASET_FINGERPRINT_MISMATCH,
     VIOLATION_FEATURE_AFTER_CUTOFF,
     VIOLATION_HISTORICAL_IN_ITEM9,
     VIOLATION_HOLDOUT_IN_TRAINING,
     VIOLATION_MISSING_LINEAGE,
+    VIOLATION_PROTECTED_CORPUS_CONSUMPTION,
     VIOLATION_PROSPECTIVE_IN_HISTORICAL_RESEARCH,
+    VIOLATION_TARGET_LEAKAGE,
     VIOLATION_TRAIN_TEST_OVERLAP,
     check_authority_mixing_in_historical_research,
     check_dataset_fingerprint_bindings,
@@ -44,19 +48,53 @@ ITEM9_EFFECT_NONE = "NONE"
 ITEM9_EFFECT_PROSPECTIVE_INPUT = "PROSPECTIVE_CALIBRATION_INPUT"
 
 
+# Canonical mapping: violation reason_code → audit question (see DUAL_CORPUS_EVIDENCE_CONTRACT.md).
+_QUESTION_VIOLATION_TRIGGERS: dict[str, frozenset[str]] = {
+    QUESTION_TRAIN_SAW_TEST: frozenset({VIOLATION_TRAIN_TEST_OVERLAP}),
+    QUESTION_FEATURES_SAW_FUTURE: frozenset(
+        {VIOLATION_FEATURE_AFTER_CUTOFF, VIOLATION_TARGET_LEAKAGE}
+    ),
+    QUESTION_HOLDOUT_IN_TRAINING: frozenset(
+        {VIOLATION_HOLDOUT_IN_TRAINING, VIOLATION_PROTECTED_CORPUS_CONSUMPTION}
+    ),
+    QUESTION_PROSPECTIVE_IN_HISTORICAL: frozenset(
+        {
+            VIOLATION_PROSPECTIVE_IN_HISTORICAL_RESEARCH,
+            VIOLATION_AUTHORITY_MIXING,
+            VIOLATION_DATASET_FINGERPRINT_MISMATCH,
+        }
+    ),
+    QUESTION_HISTORICAL_IN_ITEM9: frozenset({VIOLATION_HISTORICAL_IN_ITEM9}),
+}
+
+
+def _mapped_violation_codes() -> frozenset[str]:
+    codes: set[str] = set()
+    for triggers in _QUESTION_VIOLATION_TRIGGERS.values():
+        codes |= set(triggers)
+    return frozenset(codes)
+
+
 def _question_verdict(*, question: str, violations: Sequence[Mapping[str, Any]]) -> str:
     codes = {str(v.get("reason_code") or "") for v in violations}
-    mapping: dict[str, set[str]] = {
-        QUESTION_TRAIN_SAW_TEST: {VIOLATION_TRAIN_TEST_OVERLAP},
-        QUESTION_FEATURES_SAW_FUTURE: {VIOLATION_FEATURE_AFTER_CUTOFF},
-        QUESTION_HOLDOUT_IN_TRAINING: {VIOLATION_HOLDOUT_IN_TRAINING},
-        QUESTION_PROSPECTIVE_IN_HISTORICAL: {VIOLATION_PROSPECTIVE_IN_HISTORICAL_RESEARCH},
-        QUESTION_HISTORICAL_IN_ITEM9: {VIOLATION_HISTORICAL_IN_ITEM9},
-    }
-    triggers = mapping.get(question, set())
+    triggers = _QUESTION_VIOLATION_TRIGGERS.get(question, frozenset())
     if codes & triggers:
         return CONTAMINATION_STATUS_FAIL
     return CONTAMINATION_STATUS_PASS
+
+
+def _supplemental_violation_codes(violations: Sequence[Mapping[str, Any]]) -> tuple[str, ...]:
+    """Violations that fail the run but are not mapped to any of the five questions."""
+
+    mapped = _mapped_violation_codes()
+    supplemental = sorted(
+        {
+            str(v.get("reason_code") or "")
+            for v in violations
+            if str(v.get("reason_code") or "") and str(v.get("reason_code") or "") not in mapped
+        }
+    )
+    return tuple(supplemental)
 
 
 def build_evidence_language_summary(authority_context: Mapping[str, Any]) -> dict[str, str]:
@@ -87,6 +125,11 @@ def audit_research_contamination_run(manifest: Mapping[str, Any]) -> dict[str, A
             "CONTAMINATION_STATUS": CONTAMINATION_STATUS_FAIL,
             "questions": questions,
             "violations": violations,
+            "supplemental_violations": _supplemental_violation_codes(violations),
+            "run_fail_policy": (
+                "CONTAMINATION_STATUS=FAIL when any question FAIL, any violation recorded, "
+                "or supplemental_violations non-empty"
+            ),
             "evidence_language": build_evidence_language_summary(authority_context),
             "contract_scope": "contractual_leakage_properties_only",
         }
@@ -133,8 +176,11 @@ def audit_research_contamination_run(manifest: Mapping[str, Any]) -> dict[str, A
     violations.extend(check_target_leakage_indicators(manifest.get("target_leakage")))
 
     questions = {q: _question_verdict(question=q, violations=violations) for q in _AUDIT_QUESTIONS}
+    supplemental = _supplemental_violation_codes(violations)
     status = CONTAMINATION_STATUS_PASS if all(v == CONTAMINATION_STATUS_PASS for v in questions.values()) else CONTAMINATION_STATUS_FAIL
     if violations and status == CONTAMINATION_STATUS_PASS:
+        status = CONTAMINATION_STATUS_FAIL
+    if supplemental:
         status = CONTAMINATION_STATUS_FAIL
 
     return {
@@ -142,6 +188,11 @@ def audit_research_contamination_run(manifest: Mapping[str, Any]) -> dict[str, A
         "CONTAMINATION_STATUS": status,
         "questions": questions,
         "violations": violations,
+        "supplemental_violations": supplemental,
+        "run_fail_policy": (
+            "CONTAMINATION_STATUS=FAIL when any question FAIL, any violation recorded, "
+            "or supplemental_violations non-empty"
+        ),
         "evidence_language": build_evidence_language_summary(authority_context),
         "contract_scope": "contractual_leakage_properties_only",
     }

@@ -77,6 +77,15 @@ class ResearchContaminationAuditorTests(unittest.TestCase):
         self.assertEqual(report["CONTAMINATION_STATUS"], CONTAMINATION_STATUS_FAIL)
         self.assertTrue(report["violations"])
         self.assertEqual(report["violations"][0]["reason_code"], VIOLATION_MISSING_LINEAGE)
+        for question in (
+            QUESTION_TRAIN_SAW_TEST,
+            QUESTION_FEATURES_SAW_FUTURE,
+            QUESTION_HOLDOUT_IN_TRAINING,
+            QUESTION_PROSPECTIVE_IN_HISTORICAL,
+            QUESTION_HISTORICAL_IN_ITEM9,
+        ):
+            self.assertEqual(report["questions"][question], CONTAMINATION_STATUS_FAIL)
+        self.assertIn(VIOLATION_MISSING_LINEAGE, report.get("supplemental_violations", ()))
 
     def test_train_test_overlap(self) -> None:
         manifest = _clean_manifest(
@@ -138,6 +147,32 @@ class ResearchContaminationAuditorTests(unittest.TestCase):
         )
         report = audit_research_contamination_run(manifest)
         self.assertEqual(report["CONTAMINATION_STATUS"], CONTAMINATION_STATUS_FAIL)
+        self.assertEqual(report["questions"][QUESTION_HOLDOUT_IN_TRAINING], CONTAMINATION_STATUS_FAIL)
+
+    def test_holdout_window_clean_without_overlap_or_protected_training(self) -> None:
+        report = audit_research_contamination_run(_clean_manifest())
+        self.assertEqual(report["questions"][QUESTION_HOLDOUT_IN_TRAINING], CONTAMINATION_STATUS_PASS)
+
+    def test_dataset_fingerprint_mismatch_fails_historical_question_and_run(self) -> None:
+        manifest = _clean_manifest(
+            corpus_inputs=[
+                {
+                    "expected_dataset_fingerprint": "expected-fp",
+                    "dataset_fingerprint": "actual-fp",
+                }
+            ]
+        )
+        report = audit_research_contamination_run(manifest)
+        self.assertEqual(report["CONTAMINATION_STATUS"], CONTAMINATION_STATUS_FAIL)
+        self.assertEqual(report["questions"][QUESTION_PROSPECTIVE_IN_HISTORICAL], CONTAMINATION_STATUS_FAIL)
+
+    def test_target_leakage_fails_features_question_and_run(self) -> None:
+        manifest = _clean_manifest(
+            target_leakage=[{"decision_cutoff_ns": 100, "label_available_ns": 50}]
+        )
+        report = audit_research_contamination_run(manifest)
+        self.assertEqual(report["CONTAMINATION_STATUS"], CONTAMINATION_STATUS_FAIL)
+        self.assertEqual(report["questions"][QUESTION_FEATURES_SAW_FUTURE], CONTAMINATION_STATUS_FAIL)
 
 
 if __name__ == "__main__":
