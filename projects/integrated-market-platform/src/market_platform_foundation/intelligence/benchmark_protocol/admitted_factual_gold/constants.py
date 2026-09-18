@@ -7,6 +7,7 @@ FACTUAL_GOLD_EVALUATOR_ONLY_CASE_KEYS = frozenset(
         "EXPECTED_FACTS",
         "GOLD_HASH",
         "evaluator_notes",
+        "evaluator_gold_ref",
         "ACCEPTABLE_EQUIVALENTS",
         "expected_facts",
         "gold_hash",

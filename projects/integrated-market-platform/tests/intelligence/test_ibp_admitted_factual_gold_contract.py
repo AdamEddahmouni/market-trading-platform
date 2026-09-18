@@ -122,21 +122,41 @@ class IbpAdmittedFactualGoldContractTests(unittest.TestCase):
 
     def test_sut_projection_strips_evaluator_fields(self) -> None:
         case = _sample_answerable_case()
+        self.assertIn("evaluator_gold_ref", case)
         sut = project_factual_case_for_sut(case)
+        self.assertNotIn("evaluator_gold_ref", sut)
         for key in FACTUAL_GOLD_EVALUATOR_ONLY_CASE_KEYS:
             self.assertNotIn(key, sut)
         self.assertIn("QUESTION", sut)
         self.assertIn("TEMPORAL_CUTOFF", sut)
 
     def test_evaluator_leak_detected(self) -> None:
+        from market_platform_foundation.intelligence.benchmark_protocol.admitted_factual_gold import (
+            assert_factual_case_safe_for_sut,
+        )
+
         bundle = project_factual_case_for_sut(_sample_answerable_case())
         bundle["GOLD_HASH"] = "tamper"
-        with self.assertRaises(BenchmarkContaminationError):
-            from market_platform_foundation.intelligence.benchmark_protocol.admitted_factual_gold import (
-                assert_factual_case_safe_for_sut,
-            )
-
+        with self.assertRaises(BenchmarkContaminationError) as ctx:
             assert_factual_case_safe_for_sut(bundle)
+        self.assertEqual(str(ctx.exception), "FACTUAL_EVALUATOR_GOLD_LEAK:GOLD_HASH")
+
+        bundle = project_factual_case_for_sut(_sample_answerable_case())
+        bundle["evaluator_gold_ref"] = "evaluator_only/admitted_factual_gold/leak.json"
+        with self.assertRaises(BenchmarkContaminationError) as ctx:
+            assert_factual_case_safe_for_sut(bundle)
+        self.assertEqual(str(ctx.exception), "FACTUAL_EVALUATOR_GOLD_LEAK:evaluator_gold_ref")
+
+    def test_temporal_cutoff_requires_contamination_control(self) -> None:
+        case = copy.deepcopy(_sample_answerable_case())
+        case["TEMPORAL_CUTOFF"] = {
+            "kind": "SESSION_END",
+            "cutoff_instant": "2026-09-15T20:00:00Z",
+            "contamination_control": False,
+        }
+        with self.assertRaises(AdmittedFactualGoldContractError) as ctx:
+            validate_factual_gold_case(case)
+        self.assertEqual(str(ctx.exception), "FACTUAL_TEMPORAL_CONTAMINATION_CONTROL_REQUIRED")
 
     def test_unknown_verdict_enum_required(self) -> None:
         case = _sample_answerable_case()

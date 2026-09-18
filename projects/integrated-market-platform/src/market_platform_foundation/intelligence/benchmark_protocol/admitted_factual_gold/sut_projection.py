@@ -14,6 +14,8 @@ def strip_factual_gold_evaluator_fields(case: dict[str, Any]) -> dict[str, Any]:
 
 
 def assert_factual_case_safe_for_sut(bundle: dict[str, Any]) -> None:
+    if "evaluator_gold_ref" in bundle:
+        raise BenchmarkContaminationError("FACTUAL_EVALUATOR_GOLD_LEAK:evaluator_gold_ref")
     for key in FACTUAL_GOLD_EVALUATOR_ONLY_CASE_KEYS:
         if key in bundle:
             raise BenchmarkContaminationError(f"FACTUAL_EVALUATOR_GOLD_LEAK:{key}")
