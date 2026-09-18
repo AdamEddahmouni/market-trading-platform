@@ -21,7 +21,7 @@
   "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
   "sut_model_id": "grounded.evidence:deterministic.v1",
   "evaluator_only_gold_prefix": "evaluator_only/",
-  "code_sha": "ec6ab1367392b5525d337781178bea14ae3fc24b",
+  "code_sha": "109fd650df4998d953450eda267e8edfdad6de81",
   "invocation_contract": {
     "contract_id": "ibp-smoke10-invocation-v1",
     "suite_id": "ibp-v1-30",
@@ -127,7 +127,7 @@
   "sut_definition": {
     "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
     "SUT_VERSION": "imp.ibp-facts-sut/1.0.0",
-    "CODE_SHA": "ec6ab1367392b5525d337781178bea14ae3fc24b",
+    "CODE_SHA": "109fd650df4998d953450eda267e8edfdad6de81",
     "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
     "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
     "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
@@ -168,6 +168,6 @@
     "scores_after_sut_response_only"
   ],
   "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-  "frozen_config_fingerprint": "8E9ABFFEB9784C00D48DA1957269F4933578D18B1AE3C00783AAA7604FB4C9C0",
+  "frozen_config_fingerprint": "4720493F6448021E5AD4DE878E31B7EB63909BE75558992B275C9F6CCE9CF2D2",
   "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK"
 }

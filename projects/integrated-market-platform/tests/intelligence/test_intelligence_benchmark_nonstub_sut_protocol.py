@@ -91,7 +91,7 @@ class IntelligenceBenchmarkNonstubSutProtocolTests(unittest.TestCase):
         self.assertTrue(FREEZE_FIXTURE.is_file(), "missing nonstub freeze fixture")
         expected = freeze_smoke10_run_configuration(
             ROOT,
-            code_sha="ec6ab1367392b5525d337781178bea14ae3fc24b",
+            code_sha="109fd650df4998d953450eda267e8edfdad6de81",
             sut_profile_id=IBP_FACTS_SUT_PROFILE_ID,
         )
         pinned = json.loads(FREEZE_FIXTURE.read_text(encoding="utf-8"))
