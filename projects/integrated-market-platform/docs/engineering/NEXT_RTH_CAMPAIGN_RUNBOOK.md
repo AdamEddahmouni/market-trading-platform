@@ -160,7 +160,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | OpenD loopback | Operator | Required for Item 9 collection |
 | `item9 next-rth-preflight` | Operator | Off-hours `NOT_RTH` expected |
 | Campaign / Live OFF | **Policy** | FTEP not `EMPIRICAL_ACTIVE`; Moomoo/IBKR **`PROVIDER_UNVERIFIED`** unless operator earns live receipts |
-| Item 9 / Item 7 gates | **Unearned** | `ITEM9_CALIBRATED`=NO; `ITEM9_DISTINCT_RTH_DATES`=1/3; Item 7 governed rows **0** |
+| Item 9 / Item 7 gates | **Unearned** | `ITEM9_CALIBRATED`=NO; `ITEM9_DISTINCT_RTH_DATES`=**2**/3 (admitted **2026-09-17** + **2026-09-18** per [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md)); Item 7 governed rows **0** |
 
 ## Recommended next RTH operator actions
 

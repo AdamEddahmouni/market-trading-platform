@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only closure after 2026-09-18 RTH Item 9 stop: reconciled stale **1/3** → governed **2/3** distinct **admitted** RTH dates (Sep 17 + Sep 18); **`188`/`189`** receipts; outage epoch `121031` **NONE** / not backfilled; **`ACTIVE_COLLECTORS=0`**. Bumped **CURRENT_MAIN** to `2306ff4a` ([#281](https://github.com/AdamEddahmouni/market-trading-platform/pull/281)). Documented **HELD** facts/drawdown/fill/cost lanes; **no** #222 merge, calibration, or receipt mutation. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md` |
+| **Tests** | `python tools/check_docs_links.py` — governance markdown link check |
+| **Related** | Lane 0 closeout `.imp-actual-01-phase-d/.../item9-lane0-provider-outage-closeout-20260918.json`; branch `docs/imp-post-rth-close-08-status` @ `.worktrees/lane-g-status` |
+| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`. Next increment = next natural distinct RTH + HELD engineering landings when reviewed. |
+
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 
 | Field | Value |
