@@ -1,0 +1,53 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_h_synthesis_receipt_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "branch": "research/validation04-followups",
+  "evidence_class": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "H",
+  "frozen_runs_untouched": [
+    {
+      "name": "Baseline Pack v1",
+      "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+      "pack_run_id": "17158E3B946EC1A418D184D0A2B9F761"
+    },
+    {
+      "name": "Smoke10 stub",
+      "run_id": "ibp-smoke10-76DDD188CD080365"
+    },
+    {
+      "name": "OpenD baseline pack v2",
+      "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+      "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+      "frozen_research_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+      "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2"
+    }
+  ],
+  "smoke10_non_stub": {
+    "execution_status": "NOT_EXECUTED",
+    "review_status": "PENDING_I1_REVIEW",
+    "pull_request": 267
+  },
+  "non_goals_observed": [
+    "no edits to frozen v2 OpenD evidence files",
+    "no Smoke10 execution (stub or non-stub)",
+    "no simulator PnL engineering in Lane H",
+    "no Item 9 prospective collection",
+    "no PR 222 merge",
+    "no PR 267 merge",
+    "no LIVE trading"
+  ],
+  "outputs": {
+    "findings_registry": "evidence/historical-research/imp-integrate-experiment-05-lane-h-findings/findings_registry_v1.json",
+    "hypothesis_queue": "evidence/historical-research/imp-integrate-experiment-05-lane-h-findings/hypothesis_queue_v1.json",
+    "operator_doc": "docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md"
+  },
+  "read_only_source_artifacts": {
+    "lane_c_v1_manifest": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/baseline_pack_run_manifest.json",
+    "integrate_r2_v2_manifest": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/baseline_pack_run_manifest.json",
+    "lane_e_findings": "evidence/historical-research/imp-research-validation-04-lane-e-findings/findings_registry_v1.json",
+    "lane_d_smoke10_reference": "evidence/historical-research/imp-research-validation-04-lane-e-findings/findings_registry_v1.json (LANE-E-FND-007..011)"
+  },
+  "synthesis_base_sha": "a080337d7f2fdff9e86c4345aa6116689172d3ba",
+  "synthesis_timestamp_utc": "2026-09-18T05:25:00Z"
+}

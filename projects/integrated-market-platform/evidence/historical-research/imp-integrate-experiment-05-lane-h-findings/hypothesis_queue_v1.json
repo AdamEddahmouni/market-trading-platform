@@ -1,0 +1,176 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_h_hypothesis_queue_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "H",
+  "queue_version": "1.0.0",
+  "ranking_policy": "priority_rank_ascending; lower rank = higher priority for follow-up experiment design (not implemented in Lane H)",
+  "implementation_status": "PROPOSED_ONLY_NOT_IMPLEMENTED",
+  "compatible_with": "market_platform_foundation.intelligence.research_experiments.ResearchHypothesisV1",
+  "prior_increment_queue": "evidence/historical-research/imp-research-validation-04-lane-e-findings/hypothesis_queue_v1.json",
+  "lane_e_hypothesis_closure": [
+    {
+      "hypothesis_queue_id": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "closure_status": "OBSERVED_BOUNDED",
+      "closure_finding_ids": [
+        "LANE-H-FND-002",
+        "LANE-H-FND-009"
+      ],
+      "note": "OpenD v2 pack E8C9ADB9… executed on fingerprint 355FDBB…; non-pathological accuracy dispersion observed; no edge claim."
+    },
+    {
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-PREDICTION-COUPLED-V1",
+      "closure_status": "OBSERVED_MACHINERY",
+      "closure_finding_ids": [
+        "LANE-H-FND-001",
+        "LANE-H-FND-002"
+      ],
+      "note": "Fill counts differ across baselines under prediction_coupled_simulator=true; machinery fix only."
+    },
+    {
+      "hypothesis_queue_id": "LANE-E-HYP-BASELINE0-SIM-ALIGNMENT-V1",
+      "closure_status": "OBSERVED_SATISFIED",
+      "closure_finding_ids": [
+        "LANE-H-FND-001"
+      ],
+      "note": "No-trade baseline reports zero fills/intents on v2 OpenD pack."
+    }
+  ],
+  "hypotheses": [
+    {
+      "queue_rank": 1,
+      "hypothesis_queue_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+      "source_finding_ids": [
+        "LANE-H-FND-003"
+      ],
+      "claim": "A NEW frozen baseline pack experiment (v3 successor) with non-zero fill economics produces distinguishable gross_pnl, estimated_costs, and net_pnl across directional baselines on the same OpenD corpus pin, without editing E8C9ADB9… v2 evidence.",
+      "required_features": "historical-research-bar-features/1.0.0; prediction-coupled simulator with populated fill.realized_pnl or documented MTM policy",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+        "instrument": "AAPL",
+        "session_count": 5
+      },
+      "train_dev_test_policy": "Reuse v2 chronological splits; NEW experiment_id and definition hash; v2 frozen artifacts immutable",
+      "metrics": {
+        "primary": "net_pnl",
+        "secondary": [
+          "gross_pnl",
+          "estimated_costs",
+          "simulated_fills"
+        ],
+        "guardrails": [
+          "contamination_audit_PASS"
+        ]
+      },
+      "failure_conditions": [
+        "gross_pnl remains 0.0 for all directional baselines despite fills>0 after economics fix",
+        "Mutation of imp-integrate-experiment-05-r2-opend-baseline-pack-v2 evidence files"
+      ],
+      "leakage_risks": [
+        "Tuning cost model on HISTORICAL_RESEARCH_TEST",
+        "Backfilling PnL into v2 manifests"
+      ],
+      "evidence_needed_for_promotion": [
+        "Engineering PR implementing fill economics separate from Lane H",
+        "New v3 pack run with distinct experiment_definition_hash",
+        "No upgrade to paper/live authority"
+      ],
+      "proposed_test": "imp-integrate-experiment-05-r3 (or successor) after simulator PnL engineering; Lane H does not implement simulator code"
+    },
+    {
+      "queue_rank": 2,
+      "hypothesis_queue_id": "LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1",
+      "source_finding_ids": [
+        "LANE-H-FND-007",
+        "LANE-H-FND-008"
+      ],
+      "claim": "After I1 review of PR #267, a governed Smoke10 rerun with the non-stub SUT profile yields facts dimension PASS rate >0 without gold contamination (DID_SYSTEM_SEE_GOLD=PASS).",
+      "required_features": "ibp-smoke10-invocation-v1; non-stub sut_profile from benchmarks/nonstub-smoke10-sut",
+      "required_dataset": "IBP-CASE-001..010 smoke subset; evaluator_only gold unchanged",
+      "train_dev_test_policy": "Benchmark observation only; distinct run_id from ibp-smoke10-76DDD188CD080365",
+      "metrics": {
+        "primary": "facts_PASS_rate",
+        "secondary": [
+          "by_dimension_PASS_counts",
+          "contamination_audit_overall"
+        ]
+      },
+      "failure_conditions": [
+        "Execution attempted before I1 review completes",
+        "FACTS_MISMATCH 10/10 with non-stub SUT",
+        "DID_SYSTEM_SEE_GOLD=FAIL"
+      ],
+      "leakage_risks": [
+        "Gold loaded into SUT context",
+        "Reusing stub run_id label for non-stub scores"
+      ],
+      "evidence_needed_for_promotion": [
+        "scores_executed=true with new run_id",
+        "Explicit NOT_PRODUCTION_READY language"
+      ],
+      "proposed_test": "Benchmark lane execution outside Lane H after PR #267 merge or operator authorization"
+    },
+    {
+      "queue_rank": 3,
+      "hypothesis_queue_id": "LANE-H-HYP-BASELINE3-VOLUME-OPEND-V3",
+      "source_finding_ids": [
+        "LANE-H-FND-002"
+      ],
+      "claim": "Volume-momentum baseline abstention_rate≈0.62 on OpenD v2 validate is stable under pre-registered threshold ablation in a NEW experiment, falsifying fixture-perfect accuracy persistence.",
+      "required_features": "baseline_3_volume_momentum_5m_v1 dependencies",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+        "minimum_sessions": 5
+      },
+      "train_dev_test_policy": "Threshold search limited to HISTORICAL_TRAIN/HISTORICAL_DEVELOPMENT_VALIDATE; holdout locked",
+      "metrics": {
+        "primary": "abstention_rate",
+        "secondary": [
+          "directional_accuracy",
+          "sample_count"
+        ]
+      },
+      "failure_conditions": [
+        "Accuracy pinned at 1.0 across ablation grid on validate",
+        "In-place edit of v2 frozen baseline_3 parameters"
+      ],
+      "leakage_risks": [
+        "Threshold tuning on HISTORICAL_RESEARCH_TEST"
+      ],
+      "evidence_needed_for_promotion": [
+        "Pre-registered manifest with max_threshold_grid_size<=8"
+      ],
+      "proposed_test": "Successor to LANE-E-HYP-BASELINE3-VOLUME-THRESHOLD on OpenD corpus; not executed in Lane H"
+    },
+    {
+      "queue_rank": 4,
+      "hypothesis_queue_id": "LANE-H-HYP-IBP-FULL30-AFTER-SMOKE-V1",
+      "source_finding_ids": [
+        "LANE-H-FND-007",
+        "LANE-H-FND-008"
+      ],
+      "claim": "FULL30 ibp-v1-30 suite execution remains deferred until non-stub Smoke10 observation exists; stub-only FULL30 would not characterize facts dimension under real SUT.",
+      "required_features": "full suite catalog fingerprint 3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "required_dataset": "IBP-CASE-001..030",
+      "train_dev_test_policy": "Benchmark only; after LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1",
+      "metrics": {
+        "primary": "cases_executed",
+        "secondary": [
+          "facts_PASS_rate",
+          "contamination_audit_overall"
+        ]
+      },
+      "failure_conditions": [
+        "full30_executed=true labeled while only stub SUT ran",
+        "contamination FAIL"
+      ],
+      "leakage_risks": [
+        "Partial suite mislabeled FULL30"
+      ],
+      "evidence_needed_for_promotion": [
+        "run record with full30_executed=true and distinct run_id"
+      ],
+      "proposed_test": "Lane D / benchmark follow-up after non-stub smoke observation"
+    }
+  ]
+}
