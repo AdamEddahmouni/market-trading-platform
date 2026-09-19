@@ -153,4 +153,26 @@ describe("operatorDiagnosticsPresentation", () => {
     const corpusSection = runtime.item9_corpus_status as Record<string, unknown>;
     expect(mapItem9CorpusProgressTruth(corpusSection, "0/3")).toBe("NOT_OBSERVED");
   });
+
+  it("uses operator_truth for Item 9 IDLE vs DEGRADED when the field is present", () => {
+    const withTruth: OperatorDiagnostics = {
+      ...SAMPLE_DIAGNOSTICS,
+      operator_truth: {
+        schema_version: "operator-truth/1.0.0",
+        by_id: {
+          "item9-corpus": "IDLE",
+          "item9-preflight": "IDLE",
+          "live-execution": "BLOCKED",
+        },
+      },
+    };
+    const rows = buildOperatorTruthRows(withTruth);
+    expect(rows.find((row) => row.id === "item9-corpus")?.truth).toBe("IDLE");
+    expect(rows.find((row) => row.id === "item9-corpus")?.truth).not.toBe("DEGRADED");
+    expect(rows.find((row) => row.id === "item9-preflight")?.truth).toBe("BLOCKED");
+    const live = rows.find((row) => row.id === "live-execution");
+    expect(live?.truth).toBe("POLICY");
+    expect(live?.detail).toMatch(/Live OFF/);
+    expect(live?.kind).toBe("policy");
+  });
 });

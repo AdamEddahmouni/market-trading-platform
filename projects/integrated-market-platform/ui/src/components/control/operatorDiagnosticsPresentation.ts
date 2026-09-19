@@ -1,6 +1,7 @@
 import type { OperatorDiagnostics, OperatorLifecycleStatus, OperatorReadiness } from "../../api/schemas";
 import type { SemanticTone } from "../../state/semanticState";
 import { matchKnownDataIncident } from "../operator-shared/knownDataIncidents";
+import { preferItem9OperatorTruth } from "./consumeOperatorTruth";
 
 /** Canonical operator truth tokens — do not collapse into generic pass/fail. */
 export type OperatorTruthClass =
@@ -213,9 +214,8 @@ export function item9CorpusProgressIsCalendarIncomplete(
 ): boolean {
   const runtime = diagnosticsRuntimeSection(diagnostics);
   const corpus = formatItem9CorpusProgress(runtime?.item9_corpus_status);
-  return (
-    mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates) === "IDLE"
-  );
+  const local = mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates);
+  return preferItem9OperatorTruth(diagnostics, "item9-corpus", local) === "IDLE";
 }
 
 export function formatItem9CorpusProgress(
@@ -336,8 +336,16 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
     JSON.stringify(cycle?.missing_receipt_epochs ?? []) + (cycle?.gap_note ?? ""),
   );
 
-  const corpusTruth = mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates);
-  const preflightTruth = mapItem9DispositionTruth(String(item9Preflight.disposition));
+  const corpusTruth = preferItem9OperatorTruth(
+    diagnostics,
+    "item9-corpus",
+    mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates),
+  );
+  const preflightTruth = preferItem9OperatorTruth(
+    diagnostics,
+    "item9-preflight",
+    mapItem9DispositionTruth(String(item9Preflight.disposition)),
+  );
   const preflightToken = String(item9Preflight.disposition ?? "UNKNOWN");
   const liveOff = !governance?.live_execution_env;
 

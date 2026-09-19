@@ -112,7 +112,8 @@ re-deriving truth in `operatorDiagnosticsPresentation.ts`. Command KPIs should u
 1. Lane B exports `active_collector_probe` adapter callable from a stable module.
 2. Lane C wires probe into `build_operator_diagnostics_snapshot` (keep default `NOT_RUN` in tests).
 3. Lane B adds `expected_cycle_failure` / `recovery_observed` tokens to lifecycle or heartbeat receipts.
-4. Weekend Wave B Lane B consumes `operator_truth` / `ui/src/api/operatorTruth.ts` on Control (do not re-infer Item 9 2/3 as DEGRADED).
+4. Control consumes `GET /operator/diagnostics` via `OperatorDiagnosticsSchema` and `ui/src/api/operatorTruth.ts` (do not re-infer Item 9 2/3 as DEGRADED).
+5. `preferItem9OperatorTruth` keeps calendar-incomplete local IDLE when backend says DEGRADED. Live OFF remains Control POLICY — not remapped from backend `live-execution`. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` stay presentation tokens.
 
 ## Evidence integrity
 

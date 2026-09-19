@@ -36,17 +36,53 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-19 — Pin CURRENT_MAIN to #298 (`2003eced`)
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/platform` |
-| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) from stale `a0b03d2a` (#294 pin) to `origin/main` **`2003eced`** after [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298). Historical log snapshots and Item 9 **2/3 IDLE**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated left unchanged. |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`3609d508`** after [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) (post–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312) `61335412`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
 | **Key files** | `docs/platform/PROGRAM_STATUS.md` |
-| **Tests** | Docs SHA pin only — no code tests run |
-| **Related** | [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) |
-| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; do not merge from this lane. |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; absorbed `origin/main` with WORK_LOG keep-both. |
+
+## 2026-09-19 — Weekend Wave B Lane G: unit-test artifact hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `validation` |
+| **Summary** | Stopped G14 performance unittest from writing `artifacts/g14-runtime-performance.json` relative to process cwd; anchored dual-corpus path fixtures to IMP package root; cleaned state-path diagnostic temp dirs via `TemporaryDirectory`; added regression guard that G14 performance measurement does not touch tracked artifact paths. |
+| **Key files** | `tests/cross_lane/test_g14_product_convergence.py`; `tests/platform/test_dual_corpus_contamination.py`; `tests/platform/test_state_path_diagnostic.py`; `tests/validation/test_unit_test_repo_artifact_hermeticity.py` |
+| **Tests** | `python -m unittest tests.validation.test_unit_test_repo_artifact_hermeticity tests.platform.test_state_path_diagnostic tests.platform.test_dual_corpus_contamination tests.cross_lane.test_g14_product_convergence` |
+| **Related** | [#299](https://github.com/AdamEddahmouni/market-trading-platform/pull/299) process-env isolation |
+| **Notes** | Item 9 2/3 IDLE frozen invariants unchanged; no `snapshot.py`, collector `fed2d9f7`, or evidence mutation. |
+
+## 2026-09-19 — PR #307 merge origin/main 2003eced post-#298 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` **`2003eced`** (#298 `operator_truth` on main) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Conflicts: WORK_LOG, OPERATOR_DIAGNOSTICS_MODEL, `schemas.ts` — keep-both / integrate. Control `preferItem9OperatorTruth` IDLE clamp preserved; re-exports `ui/src/api/operatorTruth.ts` reader. Item 9 2/3 stays IDLE. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`; `ui/src/api/schemas.ts`; `docs/engineering/WORK_LOG.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` control + schemas; GitHub Actions on push |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) merged |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 collector `fed2d9f7` / evidence untouched. |
+
+## 2026-09-19 — PR #307 merge origin/main post-#293 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `1d2377ea` (#293) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged; did not adopt #298 backend `operator_truth` emission. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub Actions on push after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 / collector / evidence untouched. |
 
 ## 2026-09-19 — Lane E: absorb origin/main 1d2377ea (#293) into #298 snapshot keep-both
 
@@ -60,6 +96,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-e-api-contracts`; push only — do not merge #298 or #222. Did not mutate Item 9 collector `fed2d9f7` / evidence. |
 
+## 2026-09-19 — PR #307 merge origin/main (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `2a831ac5` into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | See PR #307 lane validation after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; no merge to main; Item 9 / collector / evidence untouched. |
+
 ## 2026-09-19 — Lane E: merge origin/main 2a831ac5 (#306)
 
 | Field | Value |
@@ -71,6 +119,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Docs merge only — snapshot.py unconflicted |
 | **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
 | **Notes** | Do not merge #298. |
+
+## 2026-09-19 — Control optionally consumes operator_truth for Item 9 IDLE
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Control now reads optional `diagnostics.operator_truth` (or `sections.operator_truth`) for Item 9 IDLE vs DEGRADED when the field is present, matching the `operatorTruth.ts` shape from #298 without requiring that PR. Missing field keeps local mapping. Item 9 `2/3` stays IDLE (never DEGRADED). Live OFF stays POLICY. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` unchanged. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`, `operatorDiagnosticsPresentation.ts`, `OperatorControlCenterPage.test.tsx`; `ui/src/api/schemas.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` consumeOperatorTruth / operatorDiagnosticsPresentation / OperatorControlCenterPage / schemas.test **45 passed**; `npm run typecheck` pass |
+| **Related** | [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) merged Control UX; [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) still open for backend `operator_truth` |
+| **Notes** | Isolated worktree `ui/weekend-operator-truth-consume` from `origin/main` `58e56ca9`. Does not import `ui/src/api/operatorTruth.ts`. Does not remap live-execution from backend BLOCKED. No merge. |
 
 ## 2026-09-19 — Absorb origin/main 2a831ac5 (#294+#306) into #293 snapshot.py keep-both
 
