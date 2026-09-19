@@ -12,11 +12,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.platform.artifact_path_resolver import (  # noqa: E402
+    ITEM9_COLLECTOR_LOG_ENV,
     StoredPathAvailability,
     analyze_item9_collect_log_gaps,
     analyze_item9_receipt_directory,
     classify_stored_path,
     portable_stored_path,
+    read_item9_collector_log_text,
     resolve_stored_file_path,
     resolve_v3_baseline_run_dir,
 )
@@ -86,6 +88,18 @@ class ArtifactPathResolverTests(unittest.TestCase):
             )
             inventory = analyze_item9_receipt_directory(receipt_dir)
             self.assertEqual(inventory["receipt_file_count"], 1)
+
+    def test_read_collector_log_via_env_override(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            imp_root = Path(tmp)
+            log_path = imp_root / "session.utf8.log"
+            log_path.write_text(_EPOCH_121031_LOG.strip() + "\n", encoding="utf-8")
+            env = {ITEM9_COLLECTOR_LOG_ENV: str(log_path)}
+            text, meta = read_item9_collector_log_text(imp_root, env)
+            self.assertIsNotNone(text)
+            self.assertEqual(meta.get("availability"), StoredPathAvailability.AVAILABLE.value)
+            gaps = analyze_item9_collect_log_gaps(text or "")
+            self.assertEqual(len(gaps["missing_receipt_epochs"]), 1)
 
 
 if __name__ == "__main__":

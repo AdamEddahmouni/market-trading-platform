@@ -311,6 +311,7 @@ def run_frozen_fill_price_realism_v1(
     frozen_definition: dict[str, Any],
     build: HistoricalDevelopmentBuildResult | None = None,
     artifact_root: Path | None = None,
+    persist_canonical_evidence: bool = True,
 ) -> FillPriceRealismRunResult:
     verify = verify_frozen_experiment_definition(frozen_definition)
     if not verify.get("ok"):
@@ -585,7 +586,6 @@ def run_frozen_fill_price_realism_v1(
         )
     )[:32].upper()
     evidence_dir = canonical_fill_price_realism_evidence_dir(repository_root)
-    evidence_dir.mkdir(parents=True, exist_ok=True)
     run_record = {
         "artifact_kind": "historical_fill_price_realism_run_v1",
         "authority": "HISTORICAL_DEVELOPMENT",
@@ -602,26 +602,31 @@ def run_frozen_fill_price_realism_v1(
         "timestamp_ns": time.time_ns(),
         "v3_pack_manifest_path": str(v3_pack_path.relative_to(repository_root)),
     }
-    run_path = evidence_dir / "fill_price_realism_run_record.json"
-    run_path.write_text(json.dumps(run_record, indent=2) + "\n", encoding="utf-8")
-    receipt = {
-        "artifact_kind": "historical_fill_price_realism_evidence_receipt_v1",
-        "contamination_status": contamination_report.get("CONTAMINATION_STATUS"),
-        "executed": True,
-        "experiment_definition_hash": expected_hash,
-        "experiment_id": FILL_PRICE_REALISM_EXPERIMENT_ID,
-        "pack_run_id": pack_run_id,
-        "research_code_sha": research_code_sha,
-        "run_record_path": str(run_path.relative_to(repository_root)),
-    }
-    receipt_path = evidence_dir / "fill_price_realism_evidence_receipt.json"
-    receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+    if persist_canonical_evidence:
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        run_path = evidence_dir / "fill_price_realism_run_record.json"
+        run_path.write_text(json.dumps(run_record, indent=2) + "\n", encoding="utf-8")
+        receipt = {
+            "artifact_kind": "historical_fill_price_realism_evidence_receipt_v1",
+            "contamination_status": contamination_report.get("CONTAMINATION_STATUS"),
+            "executed": True,
+            "experiment_definition_hash": expected_hash,
+            "experiment_id": FILL_PRICE_REALISM_EXPERIMENT_ID,
+            "pack_run_id": pack_run_id,
+            "research_code_sha": research_code_sha,
+            "run_record_path": str(run_path.relative_to(repository_root)),
+        }
+        receipt_path = evidence_dir / "fill_price_realism_evidence_receipt.json"
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        artifact_dir = evidence_dir
+    else:
+        artifact_dir = out_root
 
     return FillPriceRealismRunResult(
         ok=True,
         pack_run_id=pack_run_id,
         experiment_definition_hash=expected_hash,
-        artifact_dir=evidence_dir,
+        artifact_dir=artifact_dir,
         body=run_record,
         reason_code=None,
     )

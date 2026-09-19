@@ -72,6 +72,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Branch `research/simulator-experiment-specs-cleanup`; worktree `.worktrees/simulator-specs-cleanup`; PR [#288](https://github.com/AdamEddahmouni/market-trading-platform/pull/288); merges [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285), Cost v4 [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284) |
 | **Notes** | Docs-only routing; recommend deleting merged local/remote simulator research branches after operator review. |
 
+## 2026-09-18 — Lane F observability gap wiring + test hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform`, `operations`, `tests` |
+| **Summary** | Wired read-only Item 9 collector log ingestion (`IMP_ITEM9_COLLECTOR_LOG_PATH` or default `artifacts/ftep-v1-002/item9-prospective-collector.log`) into `build_runtime_resilience_diagnostic`, so RTH empirical preflight and `/operator/diagnostics` expected-cycle gap analysis can classify epoch `121031`-class failures when operators capture logs. Stopped `run_frozen_fill_price_realism_v1` integration tests from rewriting tracked fill-price evidence JSON (`persist_canonical_evidence=False`). |
+| **Key files** | `platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `intelligence/historical_research_harness/fill_price_realism_harness.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,fill_price_realism_v1}.py` |
+| **Tests** | `PYTHONPATH=src` + main checkout `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_fill_price_realism_v1 tests.platform.test_operator_diagnostics_snapshot` — **15 OK** (2 skipped) |
+| **Related** | Post-#287/#289 operator diagnostics; branch `fix/obs-hermeticity` |
+| **Notes** | Path portability: v3 manifest resolution already centralized in #287; no new unsafe cross-host opens found. Does not mutate frozen collector or historical evidence bytes. |
+
 ## 2026-09-18 — Lane B runtime/provider resilience (path resolver + diagnostics)
 
 | Field | Value |
