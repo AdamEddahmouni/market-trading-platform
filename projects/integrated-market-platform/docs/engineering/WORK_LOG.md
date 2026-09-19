@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2f6aeeef` after #333
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | After absorbing `origin/main` (merge [#333](https://github.com/AdamEddahmouni/market-trading-platform/pull/333)) into [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334), retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`2f6aeeef`** so the pin is not stale on `edd79432`. Ancestry includes [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**. Did **not** merge #222, #314, or #334. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334); [#333](https://github.com/AdamEddahmouni/market-trading-platform/pull/333); prior pin entry `edd79432` after #335 |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-331`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. Prior CI CLEAR on #334 is stale after this absorb; do not merge #334 without a new CLEAR on the new HEAD. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `edd79432` after #335
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | After absorbing `origin/main` (merge [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335)) into [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334), retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`edd79432`** so the pin is not stale on `1847c766`. Ancestry includes [#331](https://github.com/AdamEddahmouni/market-trading-platform/pull/331). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**. Did **not** merge #222, #314, #333, or #334. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334); [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335); prior pin entry `1847c766` after #331 |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-331`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. Prior CI CLEARs on #333/#334 are stale after this absorb. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `1847c766` after #331
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`1847c766`** (merge [#331](https://github.com/AdamEddahmouni/market-trading-platform/pull/331) Lab validation honesty; ancestry includes [#332](https://github.com/AdamEddahmouni/market-trading-platform/pull/332) provider failure-handling coverage plus [#330](https://github.com/AdamEddahmouni/market-trading-platform/pull/330)–[#328](https://github.com/AdamEddahmouni/market-trading-platform/pull/328) weekend UI/tests). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#327](https://github.com/AdamEddahmouni/market-trading-platform/pull/327) prior pin (`84275b20`); [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321); [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-331` from `origin/main` @ `1847c766`. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
 ## 2026-09-19 — Research claim-to-implementation hops (finding-scoped Lab)
 
 | Field | Value |
