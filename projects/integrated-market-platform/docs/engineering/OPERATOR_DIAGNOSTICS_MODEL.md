@@ -91,7 +91,9 @@ This model elevates those failures into `severity`, `human_summary`, and `operat
 
 Clock: `as_of_utc` + `as_of_clock_kind: wall_utc` (ISO-8601 wall clock). The payload
 does **not** include `generated_at_monotonic`. Item 9 corpus exposes
-`sample_gate_progress` and does not leak `receipt_dir`.
+`sample_gate_progress` and does **not** emit top-level `receipt_dir` (Lane E).
+
+`sections.runtime.item9_corpus_status.progress_truth` is calendar/methodology state: **`2/3` → `IDLE`** (not platform `DEGRADED`); **`3/3` → `HEALTHY`** for the distinct-RTH-date floor only (still **not** `CALIBRATED`). Nested `report.receipt_dir` and `expected_cycle` host-absolute filesystem paths stay redacted or normalized to repo-relative / `.imp-actual-01-phase-d/…` form (#294).
 
 Lane B (Control presentation) should consume `ui/src/api/operatorTruth.ts` instead of
 re-deriving truth in `operatorDiagnosticsPresentation.ts`. Command KPIs should use

@@ -17,12 +17,17 @@ from ...operations.runtime_resilience_diagnostic import build_runtime_resilience
 from ...paper.calibration.item9_next_rth_preflight import (
     FROZEN_COLLECTOR_AUTHORITY_SHA,
     FROZEN_COLLECTOR_WORKTREE_REL,
+    monorepo_root_from_imp,
 )
 from ...ui_api import projections
 from ...ui_api.live_projections import build_provider_health_payload
 from ...ui_api.opportunity_projections import build_opportunities_summary_payload
 from ...ui_api.operator_projections import build_operator_config_payload, build_operator_readiness_payload
 from ...ui_api.store import ReplayStore
+from ..artifact_path_resolver import (
+    looks_like_posix_absolute_path,
+    looks_like_windows_absolute_path,
+)
 from .operator_truth import build_operator_truth_section
 
 _SCHEMA_VERSION = "operator-diagnostics/1.1.0"
@@ -59,6 +64,124 @@ def _imp_root() -> Path:
 _SECRET_TOKEN_RE = re.compile(
     r"(?i)(api[_-]?key|secret|token|password|authorization)\s*[=:]\s*\S+"
 )
+_SAMPLE_GATE_FRACTION_RE = re.compile(r"^(\d+)\s*/\s*(\d+)$")
+_FROZEN_COLLECTOR_PATH_MARKER = ".imp-actual-01-phase-d"
+_REDACTED_FS_PATH = "<redacted>"
+
+
+def _is_windows_host_absolute(text: str, posix: str) -> bool:
+    """Drive-letter or UNC paths must not be Path.resolve()'d on POSIX.
+
+    On POSIX, ``C:\\Users\\…`` / ``C:/Users/…`` is a relative ``C:`` segment, so
+    ``resolve()`` + ``relative_to(imp_root)`` can treat a host path as in-repo.
+    """
+
+    if looks_like_windows_absolute_path(text) or looks_like_windows_absolute_path(posix):
+        return True
+    return posix.startswith("//") and not posix.startswith("///")
+
+
+def _operator_safe_fs_path(value: object, *, imp_root: Path) -> str | None:
+    """Normalize operator-facing paths; redact host-absolute locations."""
+
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    posix = text.replace("\\", "/")
+    marker_at = posix.lower().find(_FROZEN_COLLECTOR_PATH_MARKER)
+    if marker_at >= 0:
+        return posix[marker_at:]
+    if _is_windows_host_absolute(text, posix):
+        return _REDACTED_FS_PATH
+    try:
+        resolved = Path(text)
+        try:
+            resolved = resolved.resolve()
+        except OSError:
+            pass
+    except (TypeError, ValueError):
+        return _REDACTED_FS_PATH
+    roots = [imp_root.resolve()]
+    try:
+        roots.append(monorepo_root_from_imp(imp_root).resolve())
+    except OSError:
+        pass
+    for root in roots:
+        try:
+            return resolved.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    if looks_like_posix_absolute_path(posix):
+        return _REDACTED_FS_PATH
+    return posix
+
+
+def _parse_sample_gate_fraction(value: object) -> tuple[int, int] | None:
+    match = _SAMPLE_GATE_FRACTION_RE.match(str(value or "").strip())
+    if match is None:
+        return None
+    admitted = int(match.group(1))
+    required = int(match.group(2))
+    if required <= 0:
+        return None
+    return admitted, required
+
+
+def classify_item9_corpus_progress_truth(corpus_section: Mapping[str, Any]) -> str:
+    """Calendar/methodology Item 9 n/m progress — not platform degradation.
+
+    2/3 admitted distinct RTH dates is IDLE (incomplete sample gate).
+    3/3 is HEALTHY for the date floor only; it does not imply CALIBRATED.
+    """
+
+    availability = str(corpus_section.get("availability") or "NOT_OBSERVED").upper()
+    if availability != "AVAILABLE":
+        return "UNAVAILABLE" if availability == "UNAVAILABLE" else "NOT_OBSERVED"
+    top_progress = (
+        corpus_section.get("sample_gate_progress")
+        if isinstance(corpus_section.get("sample_gate_progress"), dict)
+        else {}
+    )
+    report = corpus_section.get("report") if isinstance(corpus_section.get("report"), dict) else {}
+    nested_progress = (
+        report.get("sample_gate_progress") if isinstance(report.get("sample_gate_progress"), dict) else {}
+    )
+    progress = top_progress or nested_progress
+    fraction_text = progress.get("distinct_rth_dates")
+    token = str(fraction_text or "").strip().upper()
+    if token in {"NOT_OBSERVED", "UNKNOWN", "UNAVAILABLE"}:
+        return "UNAVAILABLE" if token == "UNAVAILABLE" else "NOT_OBSERVED"
+    parsed = _parse_sample_gate_fraction(fraction_text)
+    if parsed is None:
+        return "UNKNOWN"
+    admitted, required = parsed
+    if admitted == 0:
+        return "NOT_OBSERVED"
+    if admitted < required:
+        return "IDLE"
+    if admitted == required:
+        return "HEALTHY"
+    return "UNKNOWN"
+
+
+def _sanitize_mapping_paths(payload: Mapping[str, Any], *, imp_root: Path) -> dict[str, Any]:
+    cleaned = dict(payload)
+    for key in ("receipt_dir", "frozen_collector_imp_root"):
+        if key in cleaned and cleaned[key] is not None:
+            cleaned[key] = _operator_safe_fs_path(cleaned[key], imp_root=imp_root)
+    nested = cleaned.get("receipt_inventory")
+    if isinstance(nested, dict) and nested.get("receipt_dir") is not None:
+        inventory = dict(nested)
+        inventory["receipt_dir"] = _operator_safe_fs_path(inventory["receipt_dir"], imp_root=imp_root)
+        cleaned["receipt_inventory"] = inventory
+    nested_report = cleaned.get("report")
+    if isinstance(nested_report, dict) and nested_report.get("receipt_dir") is not None:
+        report = dict(nested_report)
+        report["receipt_dir"] = _operator_safe_fs_path(report["receipt_dir"], imp_root=imp_root)
+        cleaned["report"] = report
+    return cleaned
 
 
 def _sanitize_collector_match_lines(lines: list[str]) -> list[str]:
@@ -76,7 +199,7 @@ def _sanitize_collector_match_lines(lines: list[str]) -> list[str]:
     return summaries
 
 
-def _item9_view_from_resilience(resilience: Mapping[str, Any]) -> dict[str, Any]:
+def _item9_view_from_resilience(resilience: Mapping[str, Any], *, imp_root: Path) -> dict[str, Any]:
     runtime_identity = (
         resilience.get("runtime_identity") if isinstance(resilience.get("runtime_identity"), dict) else {}
     )
@@ -89,6 +212,7 @@ def _item9_view_from_resilience(resilience: Mapping[str, Any]) -> dict[str, Any]
         else {}
     )
     matches = list(collector_process.get("active_collector_matches") or [])
+    frozen_root = _operator_safe_fs_path(runtime_identity.get("frozen_collector_imp_root"), imp_root=imp_root)
     return {
         "disposition": item9_summary.get("disposition"),
         "blockers": item9_summary.get("blockers"),
@@ -97,7 +221,7 @@ def _item9_view_from_resilience(resilience: Mapping[str, Any]) -> dict[str, Any]
             "runtime_matches_frozen_authority": runtime_identity.get("runtime_matches_frozen_authority"),
             "frozen_collector_git_sha": runtime_identity.get("frozen_collector_worktree_sha"),
             "frozen_collector_available": bool(runtime_identity.get("frozen_collector_imp_root")),
-            "frozen_collector_imp_root": runtime_identity.get("frozen_collector_imp_root"),
+            "frozen_collector_imp_root": frozen_root,
         },
         "active_collector": {
             "detected": collector_process.get("active_collector_detected"),
@@ -133,6 +257,7 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
             "availability": "NOT_OBSERVED",
             "reason_code": "RECEIPT_DIR_MISSING",
             "receipt_scope": receipt_scope,
+            "progress_truth": "NOT_OBSERVED",
             "does_not_infer_calibrated": True,
         }
     try:
@@ -142,6 +267,7 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
             "availability": "UNAVAILABLE",
             "reason_code": "CORPUS_STATUS_READ_FAILED",
             "receipt_scope": receipt_scope,
+            "progress_truth": "UNAVAILABLE",
             "does_not_infer_calibrated": True,
         }
     progress = report.get("sample_gate_progress") if isinstance(report, dict) else None
@@ -152,7 +278,7 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
             "admissible": progress.get("admissible"),
             "evaluation_rows": progress.get("evaluation_rows"),
         }
-    return {
+    section = {
         "availability": "AVAILABLE",
         "receipt_scope": receipt_scope,
         "sample_gate_progress": public_progress,
@@ -161,25 +287,30 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
         "report": report,
         "does_not_infer_calibrated": True,
     }
+    section = _sanitize_mapping_paths(section, imp_root=imp_root)
+    section.pop("receipt_dir", None)
+    section["progress_truth"] = classify_item9_corpus_progress_truth(section)
+    return section
 
 
-def _public_runtime_resilience_section(resilience: Mapping[str, Any]) -> dict[str, Any]:
+def _public_runtime_resilience_section(resilience: Mapping[str, Any], *, imp_root: Path) -> dict[str, Any]:
     collector = dict(resilience.get("collector_process") or {})
     matches = list(collector.pop("active_collector_matches", []) or [])
     collector["active_collector_match_count"] = len(matches)
     collector["active_collector_match_summaries"] = _sanitize_collector_match_lines(matches)
     runtime_identity = dict(resilience.get("runtime_identity") or {})
     runtime_identity.pop("frozen_collector_authority_sha", None)
+    expected_cycle = resilience.get("expected_cycle") if isinstance(resilience.get("expected_cycle"), dict) else {}
     return {
         "artifact_kind": resilience.get("artifact_kind"),
         "schema_version": resilience.get("schema_version"),
         "observed_at_ns": resilience.get("observed_at_ns"),
         "evidence_class": resilience.get("evidence_class"),
-        "runtime_identity": runtime_identity,
+        "runtime_identity": _sanitize_mapping_paths(runtime_identity, imp_root=imp_root),
         "provider_connectivity": resilience.get("provider_connectivity"),
         "collector_process": collector,
         "item9_next_rth_preflight": resilience.get("item9_next_rth_preflight"),
-        "expected_cycle": resilience.get("expected_cycle"),
+        "expected_cycle": _sanitize_mapping_paths(expected_cycle, imp_root=imp_root),
         "readiness_vs_liveness": resilience.get("readiness_vs_liveness"),
         "does_not_start_collector": True,
     }
@@ -552,8 +683,8 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
         resilience.get("runtime_identity") if isinstance(resilience.get("runtime_identity"), dict) else {}
     )
     runtime_sha = str(runtime_identity.get("runtime_git_sha") or "")
-    item9 = _item9_view_from_resilience(resilience)
-    resilience_public = _public_runtime_resilience_section(resilience)
+    item9 = _item9_view_from_resilience(resilience, imp_root=imp_root)
+    resilience_public = _public_runtime_resilience_section(resilience, imp_root=imp_root)
 
     lifecycle = build_control_status(imp_root)
     readiness = build_operator_readiness_payload(store)
