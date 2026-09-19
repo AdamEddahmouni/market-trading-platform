@@ -78,21 +78,24 @@ export function LabOverviewSection() {
   const simulationFailed = simulationQuery.isError && !simulationQuery.data;
   if (modelsFailed && simulationFailed) {
     return (
-      <ErrorState
-        title="Lab cannot load the current experimental snapshots."
-        affects="Validation and simulation workflow status are unavailable until the research projections respond."
-        rawDetail={
-          modelsQuery.error instanceof Error
-            ? modelsQuery.error.message
-            : simulationQuery.error instanceof Error
-              ? simulationQuery.error.message
-              : undefined
-        }
-        onRetry={() => {
-          void modelsQuery.refetch();
-          void simulationQuery.refetch();
-        }}
-      />
+      <>
+        <ErrorState
+          title="Lab cannot load the current experimental snapshots."
+          affects="Validation and simulation workflow status are unavailable until the research projections respond."
+          rawDetail={
+            modelsQuery.error instanceof Error
+              ? modelsQuery.error.message
+              : simulationQuery.error instanceof Error
+                ? simulationQuery.error.message
+                : undefined
+          }
+          onRetry={() => {
+            void modelsQuery.refetch();
+            void simulationQuery.refetch();
+          }}
+        />
+        <LabCalibrationHonesty />
+      </>
     );
   }
 
