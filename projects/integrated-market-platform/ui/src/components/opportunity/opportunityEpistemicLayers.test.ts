@@ -34,4 +34,10 @@ describe("opportunityEpistemicLayers", () => {
     });
     expect(layers.observed.some((row) => row.label === "Grounded fact disposition")).toBe(true);
   });
+
+  it("does not treat an empty conflict list as a verified empty set", () => {
+    const layers = buildOpportunityEpistemicLayers(fixtureOpportunityRowBase);
+    expect(layers.contradiction[0]?.value).toMatch(/^UNKNOWN/);
+    expect(layers.unknown.some((row) => /UNKNOWN|MISSING/.test(row.value))).toBe(true);
+  });
 });
