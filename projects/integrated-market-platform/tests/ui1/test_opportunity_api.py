@@ -329,6 +329,14 @@ class OpportunityApiTests(unittest.TestCase):
         clocks = evidence.get("pipeline_clocks") or {}
         self.assertTrue(clocks.get("created_at_is_persist_minted"))
         self.assertEqual(clocks.get("persist_created_at_ns"), opportunity.created_at_ns)
+        freshness_eval = (evidence.get("data_quality") or {}).get("freshness_evaluation") or {}
+        self.assertEqual(clocks.get("freshness_status"), freshness_eval.get("status"))
+        self.assertEqual(clocks.get("freshness_reason_code"), freshness_eval.get("reason_code"))
+        if freshness_eval.get("reason_code") in {
+            "HONESTY_SOURCE_NOT_LIVE_FRESHNESS",
+            "LIVE_AS_OF_UNAVAILABLE",
+        }:
+            self.assertNotEqual(clocks.get("live_receive_clock"), opportunity.created_at_ns)
         self.assertNotIn("rank_score", evidence)
         self.assertNotIn("order_id", evidence)
         self.assertNotIn("MONITORED", str(evidence.get("evidence_class")))
@@ -350,6 +358,10 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertEqual(evidence["copy"], "not OpportunityV1")
         self.assertIsNone(evidence["evidence_class"])
         self.assertEqual(evidence["items"], item.get("lineage_refs") or [])
+        clocks = evidence.get("pipeline_clocks") or {}
+        self.assertIsNone(clocks.get("persist_created_at_ns"))
+        self.assertFalse(clocks.get("created_at_is_persist_minted"))
+        self.assertIsNone(evidence.get("created_at_ns"))
 
 
 if __name__ == "__main__":

@@ -787,6 +787,8 @@ export const WorkspaceSqueezeResponseSchema = z.object({
         observed_at: z.string().nullable().optional(),
         quality_flags: z.array(z.string()).optional(),
         provenance_class: z.string().optional(),
+        inference_kind: z.string().optional(),
+        observed_at_presence: z.string().optional(),
       }),
     )
     .optional(),
