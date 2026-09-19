@@ -36,17 +36,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
+## 2026-09-18 — Weekend Lane C UI regression fixes
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `backend`, `platform`, `operations`, `tests` |
-| **Summary** | Hardened Item 9 expected-cycle / collector-log gap machinery from [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291): truncation and stale/missing log facts, snapshot copy isolation, duplicate/hung/foreign-path classification, and operator-visible diagnostic fields. Read-only; no collector or receipt mutation. |
-| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,operator_diagnostics_snapshot}.py` |
-| **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
-| **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
-| **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+| **Area** | `ui/radar`, `ui/workspace`, `ui/nav`, `ui/diagnostics` |
+| **Summary** | Fixed non-Control product defects found in origin/main browser QA: mobile nav backdrop leaked as an unnamed button, provider diagnostics treated loading/error as Live-disabled, Workspace overview assumed Demo replay when `/context` failed, and empty-instrument copy still pointed at retired Explore/Discover routes. Added a tested route error-boundary primitive; it is not wrapped around `LazyBoundary` because that stalls lazy `ImpProductChrome` load. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/live/ProviderHealthPanel.tsx`, `ui/src/components/WorkspaceIndex.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `ui/src/components/RouteErrorBoundary.tsx` |
+| **Tests** | `npx vitest run` ImpProductChrome, InstrumentSelectionEmpty, RouteErrorBoundary, WorkspaceIndex, ProviderHealthPanel, LazyBoundary — **15 passed** (ProviderHealthPanel 4/4 including pre-existing CONNECTED case); `npm run typecheck` — **pass**. Full `App.test.tsx` not re-run (no `App.tsx` change). |
+| **Related** | `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/ACCESSIBILITY.md` |
+| **Notes** | Control inspected only (Lane B). Item 9 2/3 / not calibrated / Live OFF not hidden. Error-boundary wiring around Suspense remains deferred. |
 
 ## 2026-09-18 — Lane F provider resilience (offline fixtures)
 
@@ -671,7 +671,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test affected` + `validate changed` — **3847 passed**, 29 skipped, 0 fail |
 | **Related** | Branch `data/dual-corpus-contract`; [DUAL_CORPUS_EVIDENCE_CONTRACT.md](../architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
 | **Notes** | Lane B historical CLI and Lane C post-horizon label artifacts deferred. Compatible with unmerged `item9_calibration_protocol` worktree. |
-
 
 ## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
 
@@ -1380,7 +1379,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 7 capture funnel; BUILD 15 ledger/settlement |
 | **Notes** | No AdamsGalaxyBook JSONL processed on cloud. Pre-existing normalizer wired; orchestrator is new. |
 
-
 ## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
 
 | Field | Value |
@@ -1621,7 +1619,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
 | **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
 
-
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
 | Field | Value |
@@ -1789,7 +1786,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `tests.providers.test_moomoo_opend_primary_l1` **40 passed**. Combined with Path A hop + live-p21 trade-context + phase0 analysis **43 passed**. Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. Did not edit Path A `forecast_resolver`, prereg store, or catalog evaluators. |
 | **Related** | Stacked on #48 `ff139ac` (OpenD hop + prereg). Follows hop unify #47. |
 | **Notes** | Operator OpenD + vendor SDK remain required for an empirical tick. Cloud VM has no loopback `:11111` and no `moomoo-api`. No secrets printed. Did not add paid vendors. Did not merge to main or Wave B. |
-
 
 ## 2026-09-13 — Restack Path A prereg load onto OpenD hop
 
@@ -2186,7 +2182,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
 | **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
 
-
 ## 2026-09-12 — FTEP split PR #28 rebase onto #27
 
 | Field | Value |
@@ -2318,7 +2313,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
 | **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
 | **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
-
 
 ## 2026-09-12 — FTEP v1 implementation goal closure audit
 
@@ -3121,7 +3115,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm run typecheck` clean; `npm test` — 85 files / 436 tests passed (incl. new `laneRegistry.test.ts`, 7 tests). Backend: `py_compile` of `decision_source.py` OK; grep confirms zero references to removed `KNOWN_LANE_MODULES` in `src`/`tests` (only stale `.pyc`). Full manifest validation (`tools/imp.py validate`) runs in CI on push — local Python 3.10 cannot collect the suite (repo requires 3.11 `StrEnum`/tz db) and the project `.venv` is not test-equipped. |
 | **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-3; [ADD_WORKSPACE_LANE.md](sops/ADD_WORKSPACE_LANE.md) |
 | **Notes** | Adding a lane now edits exactly one identity source (`laneRegistry.ts`) plus its per-lane feature surfaces (route component, content builder, backend projection only when a new API is needed). Zero behavior change: derived lists are identical to the prior literals; order of `MODULES_WITHOUT_EVIDENCE_LANE` follows registry nav order (no consumer depends on the old ordering). |
-
 
 ## 2026-09-04 — Full validation green receipt and closure-audit cleanup
 
