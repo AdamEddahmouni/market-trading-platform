@@ -8,8 +8,16 @@ import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { formatResearchTime, presentCheckStatus } from "../research-shared/researchPresentation";
-import { simulationResultSummary } from "./labPresentation";
 import { SimulationHarnessMetricsPanel } from "../research-shared/SimulationHarnessMetricsPanel";
+import { LabFactGrid, LabWarningList } from "./LabFactGrid";
+import {
+  capabilityStateFacts,
+  costFillAssumptionFacts,
+  evidenceLineageFacts,
+  reproducibilityFacts,
+  simulationMethodWarnings,
+  simulationResultSummary,
+} from "./labPresentation";
 
 /**
  * Lab Simulation workbench — configuration, current snapshot, and honest
@@ -69,11 +77,7 @@ export function LabSimulationSection() {
           />
         </div>
         <p className="lab-claim">{simulationResultSummary(payload)}</p>
-        <p className="lab-muted">
-          Simulation is not forward-test evidence and not production readiness. This is a
-          deterministic bar-conservative snapshot, not a governed FTEP campaign, and it never
-          places Paper or Live orders. There is no run-history list — only the current result.
-        </p>
+        <LabWarningList warnings={simulationMethodWarnings(payload)} />
         <div className="lab-actions">
           <Link to="/research/simulation">View interpretation in Research</Link>
         </div>
@@ -103,7 +107,7 @@ export function LabSimulationSection() {
               {payload.risk_policy_id ? (
                 <CopyableIdentifier value={payload.risk_policy_id} chars={6} />
               ) : (
-                "Unavailable"
+                "UNKNOWN"
               )}
             </dd>
           </div>
@@ -113,6 +117,26 @@ export function LabSimulationSection() {
           Lab does not offer simulation parameter editors. The UI API accepts no simulation
           request body, so any frontend knob would do nothing.
         </p>
+      </section>
+
+      <section className="lab-panel" aria-labelledby="lab-simulation-costs-heading">
+        <div className="lab-stage">
+          <div className="lab-panel-kicker">Assumptions</div>
+          <h2 id="lab-simulation-costs-heading">Cost and fill assumptions</h2>
+        </div>
+        <LabFactGrid facts={costFillAssumptionFacts(payload)} />
+      </section>
+
+      <section className="lab-panel" aria-labelledby="lab-simulation-lineage-heading">
+        <div className="lab-stage">
+          <div className="lab-panel-kicker">Evidence lineage</div>
+          <h2 id="lab-simulation-lineage-heading">How this snapshot was produced</h2>
+        </div>
+        <LabFactGrid facts={evidenceLineageFacts(payload)} />
+        <h3 className="lab-subheading">Capability states</h3>
+        <LabFactGrid facts={capabilityStateFacts(payload.capability_states)} />
+        <h3 className="lab-subheading">Reproducibility</h3>
+        <LabFactGrid facts={reproducibilityFacts({ simulation: payload })} />
       </section>
 
       <section className="lab-panel" aria-labelledby="lab-simulation-during-heading">
@@ -134,15 +158,15 @@ export function LabSimulationSection() {
         <dl className="lab-fact-grid">
           <div>
             <dt>Cash (minor units)</dt>
-            <dd>{ledger.cash_minor ?? "Unavailable"}</dd>
+            <dd>{ledger.cash_minor ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Position (shares)</dt>
-            <dd>{ledger.position_shares ?? "Unavailable"}</dd>
+            <dd>{ledger.position_shares ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Realized P&amp;L (minor units)</dt>
-            <dd>{ledger.realized_pnl_minor ?? "Unavailable"}</dd>
+            <dd>{ledger.realized_pnl_minor ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Ledger entries</dt>
@@ -181,7 +205,7 @@ export function LabSimulationSection() {
                         <StatePill tone={decision.tone} label={decision.label} raw={decision.raw} size="sm" />
                       </td>
                       <td>{String(row.constraint_detail ?? row.reason_code ?? "—")}</td>
-                      <td>{formatResearchTime(row.signal_prediction_cutoff) ?? "Unavailable"}</td>
+                      <td>{formatResearchTime(row.signal_prediction_cutoff) ?? "UNKNOWN"}</td>
                       <td>
                         {intentId ? <CopyableIdentifier value={intentId} chars={4} /> : "—"}
                       </td>
@@ -195,7 +219,7 @@ export function LabSimulationSection() {
                       qty {String(row.fill_quantity ?? "—")} · price {String(row.fill_price_minor ?? "—")}{" "}
                       minor
                     </td>
-                    <td>{formatResearchTime(row.fill_time) ?? "Unavailable"}</td>
+                    <td>{formatResearchTime(row.fill_time) ?? "UNKNOWN"}</td>
                     <td>
                       {row.fill_id ? <CopyableIdentifier value={String(row.fill_id)} chars={4} /> : "—"}
                     </td>
@@ -212,7 +236,7 @@ export function LabSimulationSection() {
         <dl className="lab-fact-grid">
           <div>
             <dt>Epistemic class (raw)</dt>
-            <dd>{payload.epistemic_class ?? "Unavailable"}</dd>
+            <dd>{payload.epistemic_class ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Authority boundary (raw)</dt>
