@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to #294 (`a0b03d2a`)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) from stale `1f33bf9e` (#295) to `origin/main` **`a0b03d2a`** after [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294). Historical log snapshots and Item 9 **2/3 IDLE**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated left unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main`; do not merge from this lane. |
+
 ## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
 
 | Field | Value |
