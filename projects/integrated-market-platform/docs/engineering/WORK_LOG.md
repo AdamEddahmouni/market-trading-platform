@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Lane D simulator experiment specs reconciliation (branch absorption)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Compared `research/simulator-experiment-specs-sep18` (`e149b739`) and sibling simulator research branches against `origin/main` @ `270ce2a6` — all fully absorbed (0 unique commits). Routed fill-price realism doc to experiment 06 / #285 without mutating frozen `lane_c_readiness_v1.json` or Cost v4 evidence. Marked drawdown Lane C review as historical provenance only. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (5 passed) |
+| **Related** | Branch `research/simulator-experiment-specs-cleanup`; worktree `.worktrees/simulator-specs-cleanup`; PR [#288](https://github.com/AdamEddahmouni/market-trading-platform/pull/288); merges [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285), Cost v4 [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284) |
+| **Notes** | Docs-only routing; recommend deleting merged local/remote simulator research branches after operator review. |
+
 ## 2026-09-18 — Lane B runtime/provider resilience (path resolver + diagnostics)
 
 | Field | Value |
@@ -45,7 +57,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Centralized manifest path portability (`artifact_path_resolver`) so foreign Windows-absolute v3 `manifest_path` values fail safely on Linux without `OSError`; new v3 pack runs store repo-relative POSIX paths. Added `build_runtime_resilience_diagnostic` (provider connectivity, collector process probe, Item 9 preflight disposition, expected-cycle log gap analysis for epoch `121031` class) wired into `rth_empirical_ops` preflight. No frozen collector/evidence mutation. |
 | **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `fill_price_realism_harness.py`; `baseline_pack_v3.py`; `rth_empirical_ops.py`; `tests/platform/test_artifact_path_resolver.py`; `tests/platform/test_runtime_resilience_diagnostic.py` |
 | **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_fill_price_realism_v1` — **11 OK** (2 skipped) |
-| **Related** | PR #285 CI portability; Sep 18 outage closeout `item9-lane0-provider-outage-closeout-20260918.json` (read-only) |
+| **Related** | PR [#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287); PR #285 CI portability; Sep 18 outage closeout `item9-lane0-provider-outage-closeout-20260918.json` (read-only) |
 | **Notes** | Lane C may surface `runtime_resilience` DTO from `rth_empirical_ops` preflight; does not auto-restart collectors. |
 
 ## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (five-package closure)
