@@ -310,7 +310,7 @@ export function DiscoverObservability({
     <div className="discover-observability">
       <header className="discover-header">
         <div>
-          <p className="discover-eyebrow">DISCOVERY DESK</p>
+          <p className="discover-eyebrow">INVESTIGATION DESK</p>
           <h2>Investigation screener</h2>
           <p className="discover-subtitle">
             Finviz finds the setup. Connected market data confirms what is happening now.

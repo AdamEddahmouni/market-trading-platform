@@ -91,6 +91,8 @@ describe("DiscoverObservability investigation boundary", () => {
     expect(screen.getByTestId("discover-investigation-boundary")).toHaveTextContent(
       /read-only: refresh, live-analysis promotion, and mixed-screener release stay off/i,
     );
+    expect(screen.getByText("INVESTIGATION DESK")).toBeInTheDocument();
+    expect(screen.queryByText("DISCOVERY DESK")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Investigation screener" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Investigation" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("region", { name: "Investigation screener candidates" })).toBeInTheDocument();
