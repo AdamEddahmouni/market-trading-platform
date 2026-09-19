@@ -132,4 +132,13 @@ describe("ResearchValidationSection", () => {
       screen.getByRole("heading", { name: "Strategy outcomes in Paper" }),
     ).toBeInTheDocument();
   });
+
+  it("does not follow squeeze into a fake Lab validation process hop", () => {
+    renderSection("DEMO", "/research/validation?claim=squeeze_outcomes");
+    expect(screen.queryByRole("link", { name: "Follow implementation" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Inspect this validation workflow in Lab" })).toHaveAttribute(
+      "href",
+      "/lab/validation",
+    );
+  });
 });
