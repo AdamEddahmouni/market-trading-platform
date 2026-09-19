@@ -205,6 +205,11 @@ absent from `NavShell` (only a redirect existed).
 - Do not invent progress, extra timestamps, or run identities.
 - Hashes and fingerprints: CopyableIdentifier in methodology, never silent
   truncation as the only identity.
+- Missing recorded fields stay `UNKNOWN`. Fetch failures stay `UNAVAILABLE`.
+- Experiment ID, run ID, benchmark comparison, FTEP, and hypothesis objects
+  are `UNKNOWN` / unsupported — never synthesized.
+- `fill_audit.status` is an audit check, not fill-price realism, cost, or
+  slippage. Those remain `UNKNOWN`/`UNAVAILABLE` until dedicated fields exist.
 
 ## Backend / API issues
 
