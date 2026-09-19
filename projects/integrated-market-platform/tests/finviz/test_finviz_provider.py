@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -11,12 +10,6 @@ ROOT = Path(__file__).resolve().parents[2]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-from market_platform_foundation.discovery import DiscoveryEngine
-from market_platform_foundation.discovery.capture import (
-    load_discovery_capture,
-    persist_discovery_capture,
-    replay_capture_equivalence,
-)
 from market_platform_foundation.discovery.models import CandidateTransition
 from market_platform_foundation.discovery.transitions import compute_transitions
 from market_platform_foundation.finviz.fields import classify_screener_columns
@@ -88,9 +81,7 @@ class FinvizDiscoveryOfflineTests(unittest.TestCase):
         self.assertGreater(len(rows), 0)
 
     def test_capture_replay_equivalence(self) -> None:
-        os.environ["IMP_FINVIZ_CAPTURE_DIR"] = str(ROOT / "tests" / "fixtures" / "finviz" / "captures_tmp")
-        engine = DiscoveryEngine(screener=FinvizScreenerClient(api_key=None))
-        # Build synthetic candidate set from fixture parse
+        # Fixture parse only — do not point capture roots into the tree or leak env.
         text = (FIXTURES / "screener_sample.csv").read_text(encoding="utf-8")
         rows, columns, _ = parse_screener_csv(text)
         self.assertEqual(len(rows), 2)

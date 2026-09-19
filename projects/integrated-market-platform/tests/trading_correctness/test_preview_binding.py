@@ -14,6 +14,7 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -26,10 +27,19 @@ from market_platform_foundation.ui_api.store import ReplayStore
 from tests.platform.test_paper_p0 import COLLECTION_ROOT  # reuse fixture root
 
 
+def setUpModule() -> None:
+    global _paper_env
+    _paper_env = patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"})
+    _paper_env.start()
+
+
+def tearDownModule() -> None:
+    _paper_env.stop()
+
+
 def _open_store(mode: str = "INTERNAL_SIMULATION") -> ReplayStore:
     store = ReplayStore(collection_root=COLLECTION_ROOT)
     store.load()
-    os.environ["IMP_PAPER_EXECUTION"] = "1"
     from market_platform_foundation.ui_api.paper_projections import open_paper_session
 
     open_paper_session(store, {"execution_mode": mode})

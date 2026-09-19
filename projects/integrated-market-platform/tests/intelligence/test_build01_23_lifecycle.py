@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.execution import PaperExecutionOrchestrator
 from market_platform_foundation.intelligence.governance import (
@@ -48,7 +49,7 @@ from tests.intelligence.test_validation_temporal_firewall import (
 
 class Build0123LifecycleTests(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
+        self.enterContext(patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}))
 
     def test_governed_opportunity_to_paper_with_runtime_activation(self) -> None:
         repo, manifest, candidate, artifact_bytes, report, plan = validated_candidate_bundle()
