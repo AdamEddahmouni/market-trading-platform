@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lane E CI: do not require diagnostics severity OK for Item 9 2/3
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform` |
+| **Summary** | Dropped `severity == OK` from the operator-truth snapshot test. Item 9 2/3 remains `IDLE` in `operator_truth`; snapshot severity may honestly be `DEGRADED` when readiness is not READY or evidence_gaps is non-empty. |
+| **Key files** | `tests/platform/test_operator_truth_contract.py` |
+| **Tests** | `python tools/imp.py test focused` snapshot truth + 2/3 IDLE selectors **3 passed** |
+| **Related** | PR #298 review; Weekend Wave B Lane E |
+| **Notes** | Did not coerce 2/3 to OK/HEALTHY. Did not edit Control UI or `snapshot.py` severity mapping. |
+
 ## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
 
 | Field | Value |

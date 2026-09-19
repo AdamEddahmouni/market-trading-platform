@@ -117,7 +117,9 @@ class OperatorDiagnosticsSnapshotTruthTests(unittest.TestCase):
         self.assertNotIn("receipt_dir", corpus)
         self.assertEqual(payload["operator_truth"]["by_id"]["item9-corpus"], "IDLE")
         self.assertNotEqual(payload["operator_truth"]["by_id"]["item9-corpus"], "DEGRADED")
-        self.assertEqual(payload["severity"], "OK")
+        self.assertNotEqual(payload["operator_truth"]["by_id"]["item9-corpus"], "HEALTHY")
+        # Snapshot severity is independent of Item 9 2/3: readiness != READY or
+        # non-empty evidence_gaps may honestly yield DEGRADED. Do not require OK.
         serialized = json.dumps(payload)
         self.assertNotIn("generated_at_monotonic", serialized)
 
