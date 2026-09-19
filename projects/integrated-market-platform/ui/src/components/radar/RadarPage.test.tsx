@@ -393,7 +393,12 @@ describe("RadarPage opportunities tab", () => {
   it("marks demo read-only", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("DEMO");
-    expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
+    const note = screen.getByRole("note");
+    expect(note).toHaveTextContent(/exploration only/i);
+    expect(note).toHaveTextContent(/full investigation desk/i);
+    expect(note).not.toHaveTextContent(/discovery desk/i);
+    expect(screen.getByText(/investigation screeners on recorded data/i)).toBeInTheDocument();
+    expect(screen.queryByText(/discovery screeners/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
   });
 
