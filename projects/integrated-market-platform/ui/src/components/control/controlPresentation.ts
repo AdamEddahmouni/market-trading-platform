@@ -239,6 +239,14 @@ export type ControlAttentionInput = {
   diagnosticsError?: boolean;
 };
 
+/** Live ranked rows withheld for a missing receive clock — honesty, not a radar repair. */
+export function isLiveClockWithheldFeed(input: {
+  feedStatus?: string;
+  feedUnreadyReason?: string | null;
+}): boolean {
+  return input.feedStatus === "UNREADY" && input.feedUnreadyReason === "LIVE_AS_OF_UNAVAILABLE";
+}
+
 const TONE_RANK: Record<SemanticTone, number> = {
   critical: 0,
   caution: 1,
@@ -354,15 +362,17 @@ export function buildAttentionItems(input: ControlAttentionInput): ControlAttent
       action: { label: "Review feed status", href: controlSectionHref("feed") },
     });
   } else if (input.feedStatus === "UNREADY") {
-    items.push({
-      id: "feed-unready",
-      tone: "caution",
-      title: "Opportunity radar isn't ready",
-      detail: input.humanizedUnreadyReason
-        ? `${input.humanizedUnreadyReason}. The ranked opportunity queue may be incomplete.`
-        : "The ranked opportunity queue may be incomplete.",
-      action: { label: "Review feed status", href: controlSectionHref("feed") },
-    });
+    if (!isLiveClockWithheldFeed(input)) {
+      items.push({
+        id: "feed-unready",
+        tone: "caution",
+        title: "Opportunity radar isn't ready",
+        detail: input.humanizedUnreadyReason
+          ? `${input.humanizedUnreadyReason}. The ranked opportunity queue may be incomplete.`
+          : "The ranked opportunity queue may be incomplete.",
+        action: { label: "Review feed status", href: controlSectionHref("feed") },
+      });
+    }
   } else if (input.feedStatus === "UNAVAILABLE" && input.mode !== "LIVE") {
     items.push({
       id: "feed-unavailable",
