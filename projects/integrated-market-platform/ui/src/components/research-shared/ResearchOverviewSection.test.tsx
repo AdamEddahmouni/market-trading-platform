@@ -178,10 +178,20 @@ describe("ResearchOverviewSection", () => {
     expect(
       picker.querySelector('[aria-current="page"]')?.getAttribute("aria-label"),
     ).toBe("Follow finding Squeeze screener outcomes");
-    expect(screen.getByRole("link", { name: "Follow source" })).toHaveAttribute(
+    const claimNav = screen.getByRole("navigation", { name: "Claim navigation" });
+    expect(claimNav.querySelector('[aria-current="page"]')).toBeNull();
+    expect(
+      screen.getByRole("link", { name: /Source[\s\S]*short-squeeze-project/i }),
+    ).toHaveAttribute(
       "href",
       "/research/evidence?panel=squeeze_outcomes&claim=squeeze_outcomes",
     );
+    expect(
+      screen.getByRole("link", { name: /Strategy[\s\S]*Not on this finding's path/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /Hypothesis[\s\S]*NOT_EXPOSED/i }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/Not on this finding's path/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("NOT_EXPOSED").length).toBeGreaterThan(0);
   });
