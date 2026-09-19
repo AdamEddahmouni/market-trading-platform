@@ -9,12 +9,33 @@ from __future__ import annotations
 import json
 import os
 import unittest
-from unittest.mock import patch
+from dataclasses import replace
+from pathlib import Path
+from unittest.mock import MagicMock, patch
 
-from market_platform_foundation.operating_modes import live_execution_env_enabled
+from market_platform_foundation.execution.simulator import SIMULATOR_VERSION
+from market_platform_foundation.intelligence.paper_forward_bridge.repository import ForwardTestRepositoryError
+from market_platform_foundation.intelligence.paper_forward_bridge.types import (
+    EvaluationState,
+    ForwardTestDecision,
+    ForwardTestEvidenceClass,
+    ForwardTestMode,
+    ForwardTestRunKind,
+    ForwardTestState,
+)
+from market_platform_foundation.operating_modes import (
+    live_execution_env_enabled,
+    resolve_execution_authority,
+)
+from market_platform_foundation.paper.calibration.item9_calibration_protocol import (
+    INSUFFICIENT_CALIBRATION_EVIDENCE,
+    evaluate_sample_gate,
+)
+from market_platform_foundation.paper.calibration.persistence import persist_run_status
 from market_platform_foundation.paper.calibration.runner import (
     STATUS_LIVE_FORBIDDEN,
     classify_calibration_run,
+    run_calibration_campaign,
 )
 from market_platform_foundation.platform.operator_diagnostics.operator_truth import (
     OPERATOR_TRUTH_CLASSES,
@@ -31,6 +52,7 @@ from market_platform_foundation.platform.operator_diagnostics.operator_truth imp
 )
 from market_platform_foundation.platform.operator_diagnostics.snapshot import (
     _FORBIDDEN_OPERATOR_ACTIONS,
+    _READ_ONLY_OPERATOR_ACTIONS,
     _classify_session_evidence,
     _config_summary,
     _cycle_recovery_view,
@@ -40,9 +62,40 @@ from market_platform_foundation.platform.operator_diagnostics.snapshot import (
     _operator_questions,
     _provider_rollups,
     _sanitize_collector_match_lines,
+    _sanitize_mapping_paths,
     classify_item9_corpus_progress_truth,
 )
 from tools.validation_worker import sanitize_diagnostic
+
+_CALIBRATION_DECISION_NS = 1_789_661_252_872_965_400
+
+
+def _paper_calibration_decision() -> ForwardTestDecision:
+    return ForwardTestDecision(
+        forward_test_id="ftd-lane-h-boundary",
+        session_id="fts-lane-h",
+        account_id="paper-lane-h",
+        mode="PAPER",
+        run_kind=ForwardTestRunKind.FORWARD_TEST,
+        test_mode=ForwardTestMode.EXECUTION,
+        symbol="AAPL",
+        decision_time_ns=_CALIBRATION_DECISION_NS,
+        source_time_ns=_CALIBRATION_DECISION_NS - 1,
+        state=ForwardTestState.LOCKED,
+        direction="BUY",
+        quantity=1,
+        confidence=None,
+        strategy_id="calibration",
+        strategy_version="1",
+        research_artifact_ref=None,
+        evaluation_horizon_ns=3_600_000_000_000,
+        decision_payload={"asset_class": "EQUITY"},
+        provenance_snapshot={"simulator_version": SIMULATOR_VERSION},
+        locked_at_ns=_CALIBRATION_DECISION_NS,
+        evaluation_state=EvaluationState.PENDING,
+        evidence_class=ForwardTestEvidenceClass.SOFTWARE_FIXTURE_ONLY,
+        observations=(),
+    )
 
 
 class OperatorTruthBoundaryTests(unittest.TestCase):
@@ -545,6 +598,167 @@ class DiagnosticsSanitizationBoundaryTests(unittest.TestCase):
         self.assertNotIn("not-a-real-key", serialized)
         self.assertEqual(summary["providers"][0]["fields_configured"], 1)
         self.assertNotIn("value", summary["providers"][0])
+
+
+class Item9CorpusClassifierParityTests(unittest.TestCase):
+    def _section(self, *, fraction: str) -> dict[str, object]:
+        return {
+            "availability": "AVAILABLE",
+            "sample_gate_progress": {"distinct_rth_dates": fraction},
+            "report": {"sample_gate_progress": {"distinct_rth_dates": fraction}},
+        }
+
+    def test_map_and_classify_agree_on_two_of_three_idle(self) -> None:
+        section = self._section(fraction="2/3")
+        self.assertEqual(map_item9_corpus_progress_truth(section), "IDLE")
+        self.assertEqual(classify_item9_corpus_progress_truth(section), "IDLE")
+        self.assertNotEqual(classify_item9_corpus_progress_truth(section), "HEALTHY")
+
+    def test_map_and_classify_agree_on_three_of_three_healthy_not_calibrated(self) -> None:
+        section = self._section(fraction="3/3")
+        self.assertEqual(map_item9_corpus_progress_truth(section), "HEALTHY")
+        self.assertEqual(classify_item9_corpus_progress_truth(section), "HEALTHY")
+        self.assertNotEqual(classify_item9_corpus_progress_truth(section), "CALIBRATED")
+
+    def test_over_admitted_fraction_is_unknown_in_both_classifiers(self) -> None:
+        section = self._section(fraction="4/3")
+        self.assertEqual(map_item9_corpus_progress_truth(section), "UNKNOWN")
+        self.assertEqual(classify_item9_corpus_progress_truth(section), "UNKNOWN")
+
+
+class Item9CalibrationRunForbiddenContractTests(unittest.TestCase):
+    def test_sample_gate_blocked_and_governance_forbids_auto_fit(self) -> None:
+        gate = evaluate_sample_gate(
+            [
+                {
+                    "observation_id": "a",
+                    "signal_timestamp_ns": _CALIBRATION_DECISION_NS,
+                    "corpus_admissible": True,
+                    "inclusion_state": "INCLUDED",
+                },
+                {
+                    "observation_id": "b",
+                    "signal_timestamp_ns": _CALIBRATION_DECISION_NS + 86_400_000_000_000,
+                    "corpus_admissible": True,
+                    "inclusion_state": "INCLUDED",
+                },
+            ]
+        )
+        self.assertEqual(gate["status"], INSUFFICIENT_CALIBRATION_EVIDENCE)
+        self.assertEqual(f"{gate['distinct_rth_dates']}/{gate['minimum_distinct_rth_dates']}", "2/3")
+        self.assertFalse(gate["fitting_allowed"])
+        self.assertTrue(gate["execution_claims_blocked"])
+        self.assertIn("auto_fit_item9_calibration", _FORBIDDEN_OPERATOR_ACTIONS)
+        self.assertIn("run_item9_corpus_status_read_only", _READ_ONLY_OPERATOR_ACTIONS)
+
+    def test_governance_read_only_never_includes_forbidden_actions(self) -> None:
+        block = _governance_block(
+            lifecycle_status="HEALTHY",
+            readiness_status="READY",
+            item9_disposition="READY_TO_COLLECT",
+            state_warnings=[],
+            interventions=[],
+        )
+        allowed = set(block["allowed_read_only"])
+        forbidden = set(block["forbidden"])
+        self.assertFalse(allowed & forbidden)
+        self.assertIn("run_item9_corpus_status_read_only", allowed)
+        self.assertNotIn("auto_fit_item9_calibration", allowed)
+        self.assertIn("enable_live_execution", forbidden)
+
+    def test_worktree_state_mismatch_surfaces_in_governance_headline(self) -> None:
+        block = _governance_block(
+            lifecycle_status="HEALTHY",
+            readiness_status="READY",
+            item9_disposition="NOT_RTH",
+            state_warnings=["WORKTREE_STATE_MISMATCH"],
+            interventions=[],
+        )
+        self.assertIn("linked worktree", block["headline"])
+        self.assertIn("canonical state dir", block["headline"])
+
+
+class LiveAuthorityVsOperatorGovernanceTests(unittest.TestCase):
+    def test_live_env_opt_in_authorizes_mode_but_operator_still_blocks(self) -> None:
+        with patch.dict(os.environ, {"IMP_LIVE_EXECUTION": "1"}, clear=False):
+            self.assertTrue(live_execution_env_enabled())
+            self.assertEqual(resolve_execution_authority(requested_mode="LIVE"), "AUTHORIZED")
+            self.assertEqual(map_live_execution_truth(True), "DEGRADED")
+            block = _governance_block(
+                lifecycle_status="HEALTHY",
+                readiness_status="READY",
+                item9_disposition="READY_TO_COLLECT",
+                state_warnings=[],
+                interventions=[],
+            )
+            self.assertTrue(block["live_execution_env"])
+            self.assertIn("enable_live_execution", block["forbidden"])
+            self.assertIn("auto_fit_item9_calibration", block["forbidden"])
+
+
+class CalibrationPersistenceBoundaryTests(unittest.TestCase):
+    def test_persist_run_status_refuses_live_forward_test_mode(self) -> None:
+        repository = MagicMock()
+        decision = _paper_calibration_decision()
+        live_decision = replace(decision, mode="LIVE")
+        with self.assertRaises(ForwardTestRepositoryError):
+            persist_run_status(
+                repository,
+                decision=live_decision,
+                status="WAITING_FOR_MARKET",
+                detail={"orders_placed": False},
+            )
+        repository.put_decision.assert_not_called()
+
+    def test_live_forbidden_campaign_persists_not_observable_status_label(self) -> None:
+        repository = MagicMock()
+        stored = _paper_calibration_decision()
+
+        def _put(decision: ForwardTestDecision) -> None:
+            nonlocal stored
+            stored = decision
+
+        def _get(_forward_test_id: str) -> ForwardTestDecision:
+            return stored
+
+        repository.put_decision.side_effect = _put
+        repository.get_decision.side_effect = _get
+
+        result = run_calibration_campaign(
+            env={"IMP_LIVE_EXECUTION": "1"},
+            now_ns=_CALIBRATION_DECISION_NS,
+            requested_mode="LIVE",
+            decision=stored,
+            repository=repository,
+        )
+        self.assertEqual(result.status, STATUS_LIVE_FORBIDDEN)
+        self.assertFalse(result.calibrated)
+        self.assertEqual(len(stored.observations), 1)
+        payload = stored.observations[0].payload
+        self.assertEqual(payload["kind"], "CALIBRATION_RUN_STATUS")
+        self.assertEqual(payload["observation_label"], "NOT_OBSERVABLE")
+        self.assertFalse(payload["calibrated"])
+
+
+class DiagnosticsPathSanitizationBoundaryTests(unittest.TestCase):
+    def test_sanitize_mapping_paths_redacts_unc_and_windows_receipt_and_log(self) -> None:
+        imp_root = Path(__file__).resolve().parents[2]
+        host_receipt = r"\\filer\corp\item9-prospective-proof-receipts"
+        host_log = r"C:\Users\operator\secret\item9-prospective-collector.log"
+        cleaned = _sanitize_mapping_paths(
+            {
+                "receipt_dir": host_receipt,
+                "collector_log_source": {"log_path": host_log, "availability": "AVAILABLE"},
+                "receipt_inventory": {"receipt_dir": host_receipt},
+            },
+            imp_root=imp_root,
+        )
+        serialized = json.dumps(cleaned)
+        self.assertEqual(cleaned["receipt_dir"], "<redacted>")
+        self.assertEqual(cleaned["receipt_inventory"]["receipt_dir"], "<redacted>")
+        self.assertEqual(cleaned["collector_log_source"]["log_path"], "<redacted>")
+        self.assertNotIn("secret", serialized)
+        self.assertNotIn("filer", serialized.lower())
 
 
 class ValidationWorkerSanitizationTests(unittest.TestCase):
