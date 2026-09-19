@@ -4,6 +4,8 @@
 
 This document is the **current-main** operator surface for the **next** US equity regular-hours (RTH) window. It does **not** rewrite Sep 15 empirical findings or Sep 17 frozen receipts.
 
+**Monday 2026-09-21 mechanical Item 9 checklist** (frozen collector SHA, `$rcpt`, `121031` prohibition, READY_TO_COLLECT vs wait): [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md). That page does **not** pin **CURRENT_MAIN** — use [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) for the mutable git tip.
+
 ## Authority layers (do not conflate)
 
 | Label | Git SHA | Role |
