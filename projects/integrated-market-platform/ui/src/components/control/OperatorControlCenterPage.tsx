@@ -50,6 +50,14 @@ function providerLabel(provider: ProviderReadiness): string {
   return provider.label ?? provider.provider;
 }
 
+function CheckingFact({ children }: { children: string }) {
+  return (
+    <span className="control-checking" role="status" aria-busy="true">
+      {children}
+    </span>
+  );
+}
+
 /**
  * Control — the operator's destination for "can IMP operate correctly and
  * safely right now?": operating state, execution authority, provider/data
@@ -90,15 +98,6 @@ export function OperatorControlCenterPage({ mode }: Props) {
   // it so the operator sees where they landed.
   const hash = location.hash.replace(/^#/, "");
   const [settledHash, setSettledHash] = useState<string | null>(null);
-  useEffect(() => {
-    if (!hash || settledHash === hash) return;
-    const target = document.getElementById(hash);
-    if (!target) return;
-    if (typeof target.scrollIntoView === "function") {
-      target.scrollIntoView({ block: "start" });
-    }
-    setSettledHash(hash);
-  });
 
   const feedStatus = opportunitySurface?.feed_status;
   const humanizedReason = humanizeUnreadyReason(opportunitySurface?.unready_reason);
@@ -130,6 +129,32 @@ export function OperatorControlCenterPage({ mode }: Props) {
   });
 
   const allSettled = !diagnosticsQuery.isLoading && contextState !== "loading";
+
+  useEffect(() => {
+    if (!hash || settledHash === hash) return;
+    const target = document.getElementById(hash);
+    if (!target) return;
+    if (typeof target.scrollIntoView === "function") {
+      target.scrollIntoView({ block: "start" });
+    }
+    if (typeof target.focus === "function") {
+      target.focus({ preventScroll: true });
+    }
+    setSettledHash(hash);
+  }, [
+    hash,
+    settledHash,
+    diagnosticsQuery.isLoading,
+    diagnosticsQuery.isError,
+    contextState,
+    attentionItems.length,
+  ]);
+
+  useEffect(() => {
+    if (!confirmingUpdate) return;
+    const confirm = document.getElementById("control-confirm-apply");
+    confirm?.focus();
+  }, [confirmingUpdate]);
 
   const refreshAll = () => {
     setMessage(null);
@@ -178,6 +203,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
 
   return (
     <section className="page control-page">
+      <a className="control-skip-link" href={`#${CONTROL_SECTIONS.systemStatus}`}>
+        Skip to system status
+      </a>
       <PageHeader
         eyebrow="Control"
         title="Platform control"
@@ -194,12 +222,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
         }
       />
 
-      <a className="control-skip-link" href={`#${CONTROL_SECTIONS.systemStatus}`}>
-        Skip to system status
-      </a>
       <nav className="control-page-nav" aria-label="Control sections">
         {CONTROL_SECTION_NAV.map((item) => (
-          <a key={item.id} href={`#${item.id}`}>
+          <a key={item.id} href={`#${item.id}`} aria-current={hash === item.id ? "location" : undefined}>
             {item.label}
           </a>
         ))}
@@ -215,7 +240,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel control-hero"
         id={CONTROL_SECTIONS.overview}
+        tabIndex={-1}
         aria-labelledby="control-overview-heading"
+        aria-busy={diagnosticsQuery.isLoading || contextState === "loading" || undefined}
         data-highlighted={hash === CONTROL_SECTIONS.overview ? "true" : undefined}
       >
         <div className="control-panel-heading">
@@ -232,7 +259,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
             <dt>Setup readiness</dt>
             <dd>
               {diagnosticsQuery.isLoading ? (
-                <span className="control-checking">Checking…</span>
+                <CheckingFact>Checking…</CheckingFact>
               ) : diagnosticsQuery.isError || !readinessState ? (
                 <StatePill tone="neutral" label="Unavailable" raw="UNAVAILABLE" />
               ) : (
@@ -249,7 +276,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
             <dt>Platform runtime</dt>
             <dd>
               {diagnosticsQuery.isLoading ? (
-                <span className="control-checking">Checking…</span>
+                <CheckingFact>Checking…</CheckingFact>
               ) : diagnosticsQuery.isError || !lifecycleState ? (
                 <StatePill tone="neutral" label="Unavailable" raw="UNAVAILABLE" />
               ) : (
@@ -266,7 +293,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
             <dt>Backend context</dt>
             <dd>
               {contextState === "loading" ? (
-                <span className="control-checking">Verifying…</span>
+                <CheckingFact>Verifying…</CheckingFact>
               ) : contextState === "error" ? (
                 <StatePill tone="caution" label="Unavailable — controls locked" raw="UNAVAILABLE" />
               ) : (
@@ -338,6 +365,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
           {confirmingUpdate && updateAvailable ? (
             <span className="control-confirm-group" role="group" aria-label="Confirm update">
               <button
+                id="control-confirm-apply"
                 type="button"
                 className="control-confirm-action"
                 onClick={() => void runLifecycleAction("apply_update")}
@@ -378,7 +406,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel control-system-status-panel"
         id={CONTROL_SECTIONS.systemStatus}
+        tabIndex={-1}
         aria-labelledby="control-system-status-heading"
+        aria-busy={diagnosticsQuery.isLoading || undefined}
         data-highlighted={hash === CONTROL_SECTIONS.systemStatus ? "true" : undefined}
       >
         <div className="control-panel-heading">
@@ -408,6 +438,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel"
         id={CONTROL_SECTIONS.governance}
+        tabIndex={-1}
         aria-labelledby="control-governance-heading"
         data-highlighted={hash === CONTROL_SECTIONS.governance ? "true" : undefined}
       >
@@ -438,7 +469,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel"
         id={CONTROL_SECTIONS.authority}
+        tabIndex={-1}
         aria-labelledby="control-authority-heading"
+        aria-busy={contextState === "loading" || undefined}
         data-highlighted={hash === CONTROL_SECTIONS.authority ? "true" : undefined}
       >
         <div className="control-panel-heading">
@@ -556,7 +589,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
         <section
           className="control-panel control-attention"
           id={CONTROL_SECTIONS.attention}
+          tabIndex={-1}
           aria-labelledby="control-attention-heading"
+          aria-live="polite"
           data-highlighted={hash === CONTROL_SECTIONS.attention ? "true" : undefined}
         >
           <div className="control-panel-heading">
@@ -586,7 +621,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel"
         id={CONTROL_SECTIONS.providers}
+        tabIndex={-1}
         aria-labelledby="control-providers-heading"
+        aria-busy={diagnosticsQuery.isLoading || undefined}
         data-highlighted={hash === CONTROL_SECTIONS.providers ? "true" : undefined}
       >
         <div className="control-panel-heading">
@@ -622,7 +659,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel"
         id={CONTROL_SECTIONS.feed}
+        tabIndex={-1}
         aria-labelledby="control-feed-heading"
+        aria-busy={diagnosticsQuery.isLoading || undefined}
         data-highlighted={hash === CONTROL_SECTIONS.feed ? "true" : undefined}
       >
         <div className="control-panel-heading">
@@ -667,7 +706,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <section
         className="control-panel"
         id={CONTROL_SECTIONS.technical}
+        tabIndex={-1}
         aria-labelledby="control-technical-heading"
+        data-highlighted={hash === CONTROL_SECTIONS.technical ? "true" : undefined}
       >
         <div className="control-panel-heading">
           <div>

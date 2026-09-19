@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Stale draft [#128](https://github.com/AdamEddahmouni/market-trading-platform/pull/128) targeted removed `DiscoverPageSections`; this branch is current-main nested-screener honesty |
 | **Notes** | Isolated worktree `.worktrees/weekend-discover-honesty` from `origin/main` `7b91bce4`. Live OFF. Did not merge. |
 
+## 2026-09-19 — Weekend Lane B: Operator Control keyboard/focus a11y
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Polished Operator Control for keyboard users: skip-link first, hash deep-links move focus, confirm-update receives focus, loading facts announce via `role="status"` / `aria-busy`, and forced-colors/focus-visible match Demo/Live Now. Item 9 2/3 remains IDLE not DEGRADED; Live stays OFF POLICY; NOT CALIBRATED / CALIBRATION FORBIDDEN unchanged. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/control/OperatorControlCenterPage.test.tsx`; `ui/src/styles/operator-control.css`; `docs/engineering/ACCESSIBILITY.md` |
+| **Tests** | `npx vitest run` Control suites — **57/57 passed**; `npm run typecheck` — **pass** |
+| **Related** | [ACCESSIBILITY.md](ACCESSIBILITY.md); existing Item 9 operator-truth Control tests |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-b-control-a11y` from `origin/main` @ `2d1b508c`, rebased onto `7b91bce4`. Did not merge. Did not touch `snapshot.py`, #222, or #317 Research files. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9d219537` after #317 weekend wave
 
 | Field | Value |
