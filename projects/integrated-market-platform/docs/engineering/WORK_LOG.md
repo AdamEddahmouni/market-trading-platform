@@ -48,6 +48,66 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); merge [#303](https://github.com/AdamEddahmouni/market-trading-platform/pull/303) |
 | **Notes** | Do not merge #294 from this lane. No collector/evidence mutation. |
 
+## 2026-09-19 — Weekend Wave A Lane A: pin CURRENT_MAIN to #295
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Merged `origin/main` **`1f33bf9e`** (#295) into `fix/weekend-lane-a-status-nits` and pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout SHA) to that tip. Item 9 **2/3** IDLE, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin after merge — no code tests run |
+| **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Merge (not rebase). Do not merge #294 from this lane. |
+
+## 2026-09-18 — Weekend Wave A Lane A: pin CURRENT_MAIN to #292
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) from stale `50a1477f` (#289) to `origin/main` **`b16e0bbe`** (#292). Historical #289 merge rows left unchanged. Item 9 **2/3**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-a-status-nits`; do not merge from this lane. |
+
+## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs/platform` |
+| **Summary** | Corrected PROGRAM_STATUS corpus-status to frozen `$rcpt` (not CURRENT_MAIN artifacts). Diagnostics now classify Item 9 distinct-RTH progress **`2/3` → `IDLE`** (not `DEGRADED`) and **`3/3` → `HEALTHY`** without implying CALIBRATED, and redact/normalize operator-facing `receipt_dir` / host-absolute paths. No evidence mutation, collection, or UI edits. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` — 7/7 passed (`OperatorDiagnosticsSnapshotTests`); `python tools/imp.py lint` — exit 0 |
+| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); merge [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292) |
+| **Notes** | Frozen collector `fed2d9f7` untouched. Item 9 remains NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF. Lane B Control UI not edited. `q03` `state_dir` still host-absolute (operational). |
+
+## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Review fix on [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304): Monday step 4 is composed GO from the software `item9 next-rth-preflight` JSON. Do **not** require CLI `READY_TO_COLLECT` from frozen `fed2d9f7` (no `item9` group). `WRONG_RUNTIME` must not send operators to retarget CURRENT_MAIN onto `.imp-actual-01-phase-d`. `--poll` starts only from frozen `opend_bar_1m_prospective_proof.py` after RTH / SHA / collectors=0 / OpenD / Live OFF. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; this log |
+| **Tests** | Docs-only review edit; no `--poll`. Frozen collector not mutated. |
+| **Related** | [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md); PR [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304) |
+| **Notes** | Merged `origin/main` `b1b3f7e8` (#302) keep-both WORK_LOG. `121031` still forbidden. Item 9 **2/3 IDLE**. Live OFF. PR #222 unmerged. |
+
+## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Added [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md) so Monday 2026-09-21 Item 9 Mode B is mechanical: frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7`, read-only preflight, `$rcpt` corpus-status, Live OFF, `121031` backfill forbidden, 2/3 IDLE not DEGRADED, READY_TO_COLLECT vs wait. Points at PROGRAM_STATUS for mutable `origin/main`. Does **not** start `--poll`, calibrate, run Full30, enable Live, or merge #222. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; pointer in `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/README.md`; this log |
+| **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
+| **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
+| **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
+
 ## 2026-09-19 — Lane K: unique Research Evidence tab name
 
 | Field | Value |
@@ -107,42 +167,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
 | **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
-
-## 2026-09-19 — Weekend Wave A Lane A: pin CURRENT_MAIN to #295
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `docs/platform` |
-| **Summary** | Merged `origin/main` **`1f33bf9e`** (#295) into `fix/weekend-lane-a-status-nits` and pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout SHA) to that tip. Item 9 **2/3** IDLE, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
-| **Tests** | Docs SHA pin after merge — no code tests run |
-| **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
-| **Notes** | Merge (not rebase). Do not merge #294 from this lane. |
-
-## 2026-09-18 — Weekend Wave A Lane A: pin CURRENT_MAIN to #292
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `docs/platform` |
-| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) from stale `50a1477f` (#289) to `origin/main` **`b16e0bbe`** (#292). Historical #289 merge rows left unchanged. Item 9 **2/3**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
-| **Tests** | Docs SHA pin only — no code tests run |
-| **Related** | [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
-| **Notes** | Isolated worktree `.worktrees/weekend-lane-a-status-nits`; do not merge from this lane. |
-
-## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `platform/operator_diagnostics`, `docs/platform` |
-| **Summary** | Corrected PROGRAM_STATUS corpus-status to frozen `$rcpt` (not CURRENT_MAIN artifacts). Diagnostics now classify Item 9 distinct-RTH progress **`2/3` → `IDLE`** (not `DEGRADED`) and **`3/3` → `HEALTHY`** without implying CALIBRATED, and redact/normalize operator-facing `receipt_dir` / host-absolute paths. No evidence mutation, collection, or UI edits. |
-| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
-| **Tests** | `python tools/imp.py test focused` — 7/7 passed (`OperatorDiagnosticsSnapshotTests`); `python tools/imp.py lint` — exit 0 |
-| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); merge [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292) |
-| **Notes** | Frozen collector `fed2d9f7` untouched. Item 9 remains NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF. Lane B Control UI not edited. `q03` `state_dir` still host-absolute (operational). |
 
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
