@@ -46,7 +46,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; this log |
 | **Tests** | Docs-only review edit; no `--poll`. Frozen collector not mutated. |
 | **Related** | [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md); PR [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304) |
-| **Notes** | Merged `origin/main` `829316ff` (#299) keep-both WORK_LOG. Do not merge #304. `121031` still forbidden. Item 9 **2/3 IDLE**. |
+| **Notes** | Merged `origin/main` `b1b3f7e8` (#302) keep-both WORK_LOG. `121031` still forbidden. Item 9 **2/3 IDLE**. Live OFF. PR #222 unmerged. |
 
 ## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
 
@@ -59,6 +59,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
 | **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
 | **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
+
+## 2026-09-19 — Lane K: unique Research Evidence tab name
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Claim-graph and hop links now use accessible names `Follow <node>` so the Research section tab `Evidence` stays uniquely queryable. Visible hop copy is unchanged. App.test queries the Evidence tab inside `Research sections`. |
+| **Key files** | `ui/src/components/research-shared/ResearchClaimGraph.tsx`, `researchPresentation.ts`(+test), `ResearchEvidenceSection.test.tsx`, `App.test.tsx`, `DemoResearchPage.test.tsx` |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/App.test.tsx` **74 passed** (includes `navigates Demo Research sections as routes`); research-shared + DemoResearchPage **58 passed**. |
+| **Related** | [PR #302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302) validate-ui hold |
+| **Notes** | Hypothesis/FTEP remain NOT_EXPOSED; simulation is not a forward test. Did not merge #302. Merged `origin/main` `829316ff` (#299) keep-both. |
 
 ## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
 
@@ -83,6 +95,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
 | **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
+
+## 2026-09-19 — Weekend Lane K: Research claim navigation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Research Overview is now a claim graph (source → hypothesis → strategy → experiment → evidence → contradiction → implementation → forward-test) instead of a gap-list dump. Synthesis sentences and section hops deep-link; `?conflict=1` filters the only contract-backed conflict. Hypothesis/FTEP stay NOT_EXPOSED; simulation is not labeled a forward test; Paper forward tests link to Workspace without fetching them. |
+| **Key files** | Created: `ui/src/components/research-shared/ResearchClaimGraph.tsx`. Modified: `researchPresentation.ts`(+test), `ResearchOverviewSection.tsx`(+test), `ResearchEvidenceSection.tsx`(+test), `ResearchValidationSection.tsx`(+test), `ResearchSimulationSection.tsx`(+test), `ResearchSurface.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`, `ui/src/styles/research.css`, `docs/ui-redesign-v2/research-contract-map.md`, `docs/engineering/FRONTEND_GUIDE.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npm test --` research-shared + demo/paper/live-research **62 passed / 0 failed**. Browser: Demo `/research` on worktree Vite `127.0.0.1:5298` — claim graph present; Strategy node → `/research/validation` hops; Evidence hops present. (Earlier `:5198` was a different already-bound UI.) |
+| **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md); Weekend Wave C Lane K |
+| **Notes** | Did not edit Control, Radar, Lab, `snapshot.py`, or PROGRAM_STATUS. No Item 9 collection, no Full30, no Live, no #222 merge, no collector mutation. Remaining dump-like gaps: Evidence still lists five analytics panels; Validation still shows a full interpretation table; no first-class hypothesis/source-catalog/FTEP endpoints. Merged `origin/main` `d8a02448` (#301 Lab honesty taken as-is; claim graph kept). |
 
 ## 2026-09-19 — Lane J Lab honesty refinement
 

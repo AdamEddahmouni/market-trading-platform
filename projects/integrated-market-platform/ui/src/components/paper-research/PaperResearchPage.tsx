@@ -12,7 +12,7 @@ export function PaperResearchPage({ section }: Props) {
       <PageHeader
         eyebrow="Paper · Research to simulation"
         title="Research"
-        subtitle="What the evidence shows, how the strategy research is validated, and how the deterministic simulation behaved. Research informs paper review — it never places orders."
+        subtitle="Navigate the claim to validation, simulation, and Paper Workspace forward tests. Research informs paper review — it never places orders."
       />
 
       <ResearchSurface mode="PAPER" section={section} />
