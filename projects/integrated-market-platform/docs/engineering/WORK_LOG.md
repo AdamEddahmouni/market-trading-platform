@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lane J Lab honesty refinement
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab`, `docs/ui-redesign-v2` |
+| **Summary** | Made Lab a clearer inspectable research/validation workbench: experiment/run IDs stay UNKNOWN, strategy identity and dataset provenance are first-class, recorded parameters and evidence lineage are visible, methodological warnings and a test-vs-forward-test map are explicit, and cost/fill assumptions no longer treat `fill_audit.status` as fill realism. No Lab mutations, no evidence-class upgrades. |
+| **Key files** | Created: `ui/src/components/lab-shared/LabFactGrid.tsx`. Modified: `ui/src/components/lab-shared/{labPresentation.ts,LabOverviewSection.tsx,LabValidationSection.tsx,LabSimulationSection.tsx,lab.css}`, `ui/src/components/research-shared/simulationHarnessMetrics.ts`, matching tests, `docs/ui-redesign-v2/lab-contract-map.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
+
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
 | Field | Value |
@@ -707,7 +719,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test affected` + `validate changed` — **3847 passed**, 29 skipped, 0 fail |
 | **Related** | Branch `data/dual-corpus-contract`; [DUAL_CORPUS_EVIDENCE_CONTRACT.md](../architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
 | **Notes** | Lane B historical CLI and Lane C post-horizon label artifacts deferred. Compatible with unmerged `item9_calibration_protocol` worktree. |
-
 
 ## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
 
@@ -1416,7 +1427,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 7 capture funnel; BUILD 15 ledger/settlement |
 | **Notes** | No AdamsGalaxyBook JSONL processed on cloud. Pre-existing normalizer wired; orchestrator is new. |
 
-
 ## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
 
 | Field | Value |
@@ -1657,7 +1667,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
 | **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
 
-
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
 | Field | Value |
@@ -1825,7 +1834,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `tests.providers.test_moomoo_opend_primary_l1` **40 passed**. Combined with Path A hop + live-p21 trade-context + phase0 analysis **43 passed**. Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. Did not edit Path A `forecast_resolver`, prereg store, or catalog evaluators. |
 | **Related** | Stacked on #48 `ff139ac` (OpenD hop + prereg). Follows hop unify #47. |
 | **Notes** | Operator OpenD + vendor SDK remain required for an empirical tick. Cloud VM has no loopback `:11111` and no `moomoo-api`. No secrets printed. Did not add paid vendors. Did not merge to main or Wave B. |
-
 
 ## 2026-09-13 — Restack Path A prereg load onto OpenD hop
 
@@ -2222,7 +2230,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
 | **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
 
-
 ## 2026-09-12 — FTEP split PR #28 rebase onto #27
 
 | Field | Value |
@@ -2354,7 +2361,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
 | **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
 | **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
-
 
 ## 2026-09-12 — FTEP v1 implementation goal closure audit
 
@@ -3157,7 +3163,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm run typecheck` clean; `npm test` — 85 files / 436 tests passed (incl. new `laneRegistry.test.ts`, 7 tests). Backend: `py_compile` of `decision_source.py` OK; grep confirms zero references to removed `KNOWN_LANE_MODULES` in `src`/`tests` (only stale `.pyc`). Full manifest validation (`tools/imp.py validate`) runs in CI on push — local Python 3.10 cannot collect the suite (repo requires 3.11 `StrEnum`/tz db) and the project `.venv` is not test-equipped. |
 | **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-3; [ADD_WORKSPACE_LANE.md](sops/ADD_WORKSPACE_LANE.md) |
 | **Notes** | Adding a lane now edits exactly one identity source (`laneRegistry.ts`) plus its per-lane feature surfaces (route component, content builder, backend projection only when a new API is needed). Zero behavior change: derived lists are identical to the prior literals; order of `MODULES_WITHOUT_EVIDENCE_LANE` follows registry nav order (no consumer depends on the old ordering). |
-
 
 ## 2026-09-04 — Full validation green receipt and closure-audit cleanup
 
