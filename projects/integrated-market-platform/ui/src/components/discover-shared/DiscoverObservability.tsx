@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
+import { EmptyState } from "../imp-ui/FeedbackStates";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 
 type Screen = {
@@ -240,7 +241,7 @@ export function DiscoverObservability({
   }, [autoRefreshOnMount, mode, readMixed, refreshMixed]);
 
   useEffect(() => {
-    if (mode !== "MIXED") return;
+    if (mode !== "MIXED" || !allowMutations) return;
     return () => {
       void fetch(new URL("/discover/mixed/release", window.location.href), {
         method: "POST",
@@ -249,7 +250,7 @@ export function DiscoverObservability({
         keepalive: true,
       });
     };
-  }, [mode]);
+  }, [allowMutations, mode]);
 
   useEffect(() => {
     if (mode !== "MIXED") return;
@@ -313,6 +314,7 @@ export function DiscoverObservability({
           <h2>Mixed live screener</h2>
           <p className="discover-subtitle">
             Finviz finds the setup. Connected market data confirms what is happening now.
+            This desk does not rank opportunity contracts and cannot place Live trades.
           </p>
         </div>
         <div className="discover-authority" aria-label="Screener execution boundary">
@@ -330,7 +332,12 @@ export function DiscoverObservability({
         </button>
       </nav>
 
-      <p className="discover-disclosure">Candidates are INVESTIGATE, not trade signals.</p>
+      <p className="discover-disclosure" data-testid="discover-investigation-boundary">
+        Candidates are INVESTIGATE, not trade signals.
+        {allowMutations
+          ? " Paper may refresh screens and promote a symbol into workspace analysis. That is not Live execution."
+          : " Read-only: refresh, live-analysis promotion, and mixed-screener release stay off. Workspace links inspect only."}
+      </p>
 
       {error ? (
         <div className="discover-error" role="alert">
@@ -340,7 +347,7 @@ export function DiscoverObservability({
 
       {mode === "MIXED" ? (
         <section aria-label="Mixed live discovery queue">
-          <div className="discover-live-banner" aria-label="Live screener status">
+          <div className="discover-live-banner" aria-label="Mixed screener status">
             <span className="discover-session">
               {mixed?.market_session?.replace(/_/g, " ") ?? "SESSION —"}
             </span>
@@ -349,7 +356,7 @@ export function DiscoverObservability({
             </span>
             {mixed?.live_subscription_summary ? (
               <span>
-                Live quotes{" "}
+                Quote subscriptions{" "}
                 <strong>
                   {mixed.live_subscription_summary.active} / {mixed.live_subscription_summary.cap}
                 </strong>
@@ -515,7 +522,11 @@ export function DiscoverObservability({
           </div>
 
           {mixed && mixed.candidates.length === 0 ? (
-            <div className="discover-empty">No eligible candidates in the latest discovery captures.</div>
+            <EmptyState
+              className="discover-empty"
+              title="No eligible investigation candidates"
+              reason="The latest mixed-screener snapshot has no candidates. This desk is investigation-only: it is not an empty ranked opportunity queue and not a signal to trade."
+            />
           ) : null}
         </section>
       ) : (
