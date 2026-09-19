@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.paper_execution_qualification import (
     DEFAULT_HORIZON_NS,
@@ -155,21 +156,21 @@ class FunnelTests(unittest.TestCase):
 
 class ScenarioTests(unittest.TestCase):
     def test_required_scenarios_pass(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
-        results = run_scenarios(REQUIRED_SCENARIOS)
+        with patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}):
+            results = run_scenarios(REQUIRED_SCENARIOS)
         failures = [r for r in results if r.status == ScenarioStatus.FAIL]
         self.assertEqual(failures, [], msg=str(failures))
 
 
 class FixtureLifecycleTests(unittest.TestCase):
     def test_prospective_fixture_lifecycle(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
-        result = run_prospective_paper_fixture_lifecycle(
-            source_build26_ref=BUILD26_HEAD,
-            source_release_candidate_ref=BUILD25_HEAD,
-            source_head=BUILD26_HEAD,
-            qualification_start_ns=T,
-        )
+        with patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}):
+            result = run_prospective_paper_fixture_lifecycle(
+                source_build26_ref=BUILD26_HEAD,
+                source_release_candidate_ref=BUILD25_HEAD,
+                source_head=BUILD26_HEAD,
+                qualification_start_ns=T,
+            )
         self.assertTrue(result.spec_id.startswith("PEQSPEC-"))
         self.assertTrue(result.run_id.startswith("PEQRUN-"))
         self.assertIsNotNone(result.forward_receipt_ref)
@@ -177,13 +178,13 @@ class FixtureLifecycleTests(unittest.TestCase):
 
 class RunnerTests(unittest.TestCase):
     def test_run_paper_execution_qualification(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
-        result = run_paper_execution_qualification(
-            source_build26_ref=BUILD26_HEAD,
-            source_release_candidate_ref=BUILD25_HEAD,
-            source_head=BUILD26_HEAD,
-            qualification_start_ns=T,
-        )
+        with patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}):
+            result = run_paper_execution_qualification(
+                source_build26_ref=BUILD26_HEAD,
+                source_release_candidate_ref=BUILD25_HEAD,
+                source_head=BUILD26_HEAD,
+                qualification_start_ns=T,
+            )
         self.assertIn(
             result.disposition,
             {

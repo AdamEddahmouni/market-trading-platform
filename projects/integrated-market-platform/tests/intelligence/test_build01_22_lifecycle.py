@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.execution import PaperExecutionOrchestrator
 from market_platform_foundation.intelligence.opportunity import AssessmentAction, OpportunityEngine
@@ -45,7 +46,7 @@ from market_platform_foundation.intelligence.promotion import (
 
 class Build0122LifecycleTests(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
+        self.enterContext(patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}))
 
     def test_opportunity_to_paper_execution(self) -> None:
         repo = InMemoryIntelligenceRepository()

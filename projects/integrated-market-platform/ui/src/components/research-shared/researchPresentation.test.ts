@@ -16,6 +16,10 @@ import {
   presentFindingAvailability,
   presentPreregistration,
   RESEARCH_FINDINGS,
+  claimFollowAccessibleName,
+  buildClaimNavigation,
+  claimHopsForFinding,
+  sectionClaimHops,
   researchPanel,
 } from "./researchPresentation";
 
@@ -243,5 +247,83 @@ describe("listFindingSources", () => {
     expect(rows.find((row) => row.source === "short-squeeze-project")?.findings).toContain(
       "Squeeze screener outcomes",
     );
+  });
+});
+
+describe("buildClaimNavigation", () => {
+  it("exposes eight hops and does not invent hypothesis or FTEP objects", () => {
+    const nodes = buildClaimNavigation(
+      {
+        analytics: analyticsFixture,
+        models: modelsFixture,
+        simulation: simulationFixture,
+      },
+      "DEMO",
+    );
+    expect(nodes.map((node) => node.key)).toEqual([
+      "source",
+      "hypothesis",
+      "strategy",
+      "experiment",
+      "evidence",
+      "contradiction",
+      "implementation",
+      "forward-test",
+    ]);
+    const hypothesis = nodes.find((node) => node.key === "hypothesis");
+    expect(hypothesis?.statusLabel).toBe("NOT_EXPOSED");
+    expect(hypothesis?.href).toBe("/research/validation#research-interpretations-heading");
+    const forward = nodes.find((node) => node.key === "forward-test");
+    expect(forward?.statusLabel).toBe("NOT_EXPOSED");
+    expect(forward?.href).toBeNull();
+    const experiment = nodes.find((node) => node.key === "experiment");
+    expect(experiment?.evidenceClass).toMatch(/not prospective forward-test/i);
+    expect(experiment?.href).toBe("/research/simulation");
+  });
+
+  it("links Paper forward-test to Workspace without fetching campaign state", () => {
+    const nodes = buildClaimNavigation({ models: modelsFixture }, "PAPER");
+    const forward = nodes.find((node) => node.key === "forward-test");
+    expect(forward?.href).toBe("/workspace");
+    expect(forward?.destinationKind).toBe("related");
+    expect(forward?.detail).toMatch(/not a forward test/i);
+  });
+
+  it("reports only contract-backed conflicts", () => {
+    const withConflict = {
+      ...modelsFixture,
+      interpretations: [{ abstention_reason_codes: ["ABSTAIN_CONFLICTING_EVIDENCE"] }],
+    } as unknown as ResearchModelsResponse;
+    const nodes = buildClaimNavigation({ models: withConflict }, "DEMO");
+    const contradiction = nodes.find((node) => node.key === "contradiction");
+    expect(contradiction?.href).toBe("/research/validation?conflict=1");
+    expect(contradiction?.statusLabel).toMatch(/1 contract-backed conflict/);
+  });
+});
+
+describe("claimFollowAccessibleName", () => {
+  it("prefixes Follow so section tabs stay uniquely named", () => {
+    expect(claimFollowAccessibleName("Evidence")).toBe("Follow evidence");
+    expect(claimFollowAccessibleName("Strategy")).toBe("Follow strategy");
+  });
+});
+
+describe("claim hops", () => {
+  it("keeps finding hops static so Evidence does not extra-fetch", () => {
+    const hops = claimHopsForFinding("strategy_outcomes", "DEMO");
+    expect(hops.map((hop) => hop.key)).toEqual([
+      "strategy",
+      "contradiction",
+      "experiment",
+      "implementation",
+      "forward-test",
+    ]);
+    expect(hops.find((hop) => hop.key === "forward-test")?.href).toBeNull();
+  });
+
+  it("routes simulation hops away from treating the run as a forward test", () => {
+    const hops = sectionClaimHops("simulation", "PAPER");
+    expect(hops.find((hop) => hop.key === "forward-test")?.note).toMatch(/not a prospective forward test/i);
+    expect(hops.find((hop) => hop.key === "forward-test")?.href).toBe("/workspace");
   });
 });

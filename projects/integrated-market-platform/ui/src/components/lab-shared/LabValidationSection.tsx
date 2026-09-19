@@ -4,7 +4,6 @@ import { resolveSemanticState } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
 import { ErrorState } from "../imp-ui/FeedbackStates";
 import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
-import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import {
@@ -13,11 +12,15 @@ import {
   presentAbstentionReason,
   presentPreregistration,
 } from "../research-shared/researchPresentation";
+import { LabFactGrid, LabWarningList } from "./LabFactGrid";
 import {
-  datasetFingerprint,
-  modelAlignment,
-  modelFamily,
-  strategyIdentityHash,
+  capabilityStateFacts,
+  datasetProvenanceFacts,
+  evidenceLineageFacts,
+  recordedParameterFacts,
+  reproducibilityFacts,
+  strategyIdentityFacts,
+  validationMethodWarnings,
   validationResultSummary,
 } from "./labPresentation";
 
@@ -47,10 +50,6 @@ export function LabValidationSection() {
   const preregistration = presentPreregistration(payload.preregistration_status);
   const boundary = resolveSemanticState("research", payload.authority_boundary);
   const epistemic = resolveSemanticState("research", payload.epistemic_class);
-  const identityHash = strategyIdentityHash(payload);
-  const fingerprint = datasetFingerprint(payload);
-  const family = modelFamily(payload);
-  const alignment = modelAlignment(payload);
 
   return (
     <>
@@ -71,11 +70,7 @@ export function LabValidationSection() {
           <StatePill tone={epistemic.tone} label={epistemic.label} raw={epistemic.raw} />
         </div>
         <p className="lab-claim">{validationResultSummary(payload)}</p>
-        <p className="lab-muted">
-          This workflow cannot be started, cancelled, or retried from Lab. There is no live run
-          state in the contract — only the current projection at cutoff. A passing walk-forward
-          does not make this an active production strategy or grant execution authority.
-        </p>
+        <LabWarningList warnings={validationMethodWarnings(payload)} />
         <div className="lab-actions">
           <Link to="/research/validation">View interpretation in Research</Link>
         </div>
@@ -86,34 +81,27 @@ export function LabValidationSection() {
           <div className="lab-panel-kicker">Before run</div>
           <h2 id="lab-validation-before-heading">Target and recorded methodology</h2>
         </div>
-        <dl className="lab-fact-grid">
-          <div>
-            <dt>Model family</dt>
-            <dd>{family}</dd>
-          </div>
-          <div>
-            <dt>Alignment</dt>
-            <dd>{alignment}</dd>
-          </div>
-          <div>
-            <dt>Walk-forward folds</dt>
-            <dd>{payload.walk_forward_fold_count}</dd>
-          </div>
-          <div>
-            <dt>Preregistration</dt>
-            <dd>
-              <StatePill
-                tone={preregistration.tone}
-                label={preregistration.label}
-                raw={preregistration.raw}
-              />
-            </dd>
-          </div>
-        </dl>
+        <LabFactGrid facts={strategyIdentityFacts(payload)} />
+        <h3 className="lab-subheading">Dataset provenance</h3>
+        <LabFactGrid facts={datasetProvenanceFacts(payload)} />
+        <h3 className="lab-subheading">Recorded parameters</h3>
+        <LabFactGrid facts={recordedParameterFacts(payload)} />
         <p className="lab-muted">
           Configuration is recorded on the payload. Lab does not expose editor fields because the
           backend accepts no validation request body.
         </p>
+      </section>
+
+      <section className="lab-panel" aria-labelledby="lab-validation-lineage-heading">
+        <div className="lab-stage">
+          <div className="lab-panel-kicker">Evidence lineage</div>
+          <h2 id="lab-validation-lineage-heading">How this snapshot was produced</h2>
+        </div>
+        <LabFactGrid facts={evidenceLineageFacts(payload)} />
+        <h3 className="lab-subheading">Capability states</h3>
+        <LabFactGrid facts={capabilityStateFacts(payload.capability_states)} />
+        <h3 className="lab-subheading">Reproducibility</h3>
+        <LabFactGrid facts={reproducibilityFacts({ models: payload })} />
       </section>
 
       <section className="lab-panel" aria-labelledby="lab-validation-during-heading">
@@ -178,7 +166,7 @@ export function LabValidationSection() {
                       key={`${String(row.observation_time ?? index)}-${index}`}
                       data-conflicted={interpretationHasConflict(row) ? "true" : undefined}
                     >
-                      <td>{formatResearchTime(row.observation_time) ?? "Unavailable"}</td>
+                      <td>{formatResearchTime(row.observation_time) ?? "UNKNOWN"}</td>
                       <td>
                         <StatePill tone={outcome.tone} label={outcome.label} raw={outcome.raw} size="sm" />
                       </td>
@@ -202,20 +190,8 @@ export function LabValidationSection() {
         <summary>Methodology and technical detail</summary>
         <dl className="lab-fact-grid">
           <div>
-            <dt>Strategy identity hash</dt>
-            <dd>
-              {identityHash ? <CopyableIdentifier value={identityHash} chars={6} /> : "Unavailable"}
-            </dd>
-          </div>
-          <div>
-            <dt>Dataset fingerprint</dt>
-            <dd>
-              {fingerprint ? <CopyableIdentifier value={fingerprint} chars={6} /> : "Unavailable"}
-            </dd>
-          </div>
-          <div>
             <dt>Epistemic class (raw)</dt>
-            <dd>{payload.epistemic_class ?? "Unavailable"}</dd>
+            <dd>{payload.epistemic_class ?? "UNKNOWN"}</dd>
           </div>
           <div>
             <dt>Authority boundary (raw)</dt>
