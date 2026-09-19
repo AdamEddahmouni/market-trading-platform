@@ -9,6 +9,7 @@ from .evidence import (
     inference_kind_for_provenance,
     lane_evidence_from_dict,
     lane_evidence_to_dict,
+    observation_clock_key,
     observed_at_presence,
     validate_evidence_dag,
 )
@@ -50,6 +51,7 @@ __all__ = [
     "lane_evidence_from_dict",
     "lane_evidence_to_dict",
     "load_opportunity_fixture",
+    "observation_clock_key",
     "observed_at_presence",
     "validate_evidence_dag",
 ]

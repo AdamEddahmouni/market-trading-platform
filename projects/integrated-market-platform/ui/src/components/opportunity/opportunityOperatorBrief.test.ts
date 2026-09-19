@@ -172,6 +172,112 @@ describe("opportunityOperatorBrief", () => {
     );
   });
 
+  it("labels agent contradiction as inferred conflict, not an observation", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      metadata: { agent_enrichment: { status: "CONTRADICTED" } },
+    };
+    expect(collectOpportunityConflicts(row)).toEqual(["Agent enrichment status CONTRADICTED"]);
+    const brief = buildOpportunityOperatorBrief(row);
+    const inference = brief.find((item) => item.question === "Inference vs observation?");
+    const conflicts = brief.find((item) => item.question === "Which facts conflict?");
+    expect(inference?.honesty).toBe("INFERRED");
+    expect(inference?.answer).toMatch(/interpretive/i);
+    expect(inference?.answer).toMatch(/not a provider observation/i);
+    expect(conflicts?.honesty).toBe("OBSERVED");
+    expect(conflicts?.answer).toMatch(/CONTRADICTED/);
+  });
+
+  it("does not let grounded-fact disposition hide a contradicted agent as observation", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      metadata: {
+        grounded_fact_extraction: { disposition: "EXTRACTED" },
+        agent_enrichment: { status: "CONTRADICTED" },
+      },
+    };
+    const brief = buildOpportunityOperatorBrief(row);
+    const inference = brief.find((item) => item.question === "Inference vs observation?");
+    expect(inference?.honesty).toBe("INFERRED");
+    expect(inference?.answer).toMatch(/CONTRADICTED/);
+    expect(collectOpportunityConflicts(row)).toEqual(["Agent enrichment status CONTRADICTED"]);
+  });
+
+  it("does not treat persist-minted created_at as a live receive clock", () => {
+    const persistNs = 1_700_000_000_000_000_000;
+    const row = {
+      ...fixtureOpportunityRowBase,
+      created_at_ns: persistNs,
+      data_quality: {
+        status: "UNAVAILABLE",
+        freshness: "NOT_APPLICABLE",
+        source: "LIVE_OBSERVATIONAL",
+        freshness_evaluation: {
+          status: "NOT_APPLICABLE",
+          reason_code: "LIVE_AS_OF_UNAVAILABLE",
+          source: "LIVE_OBSERVATIONAL",
+          actionable: false,
+        },
+      },
+    };
+    const evidence = {
+      created_at_ns: persistNs,
+      pipeline_clocks: {
+        persist_created_at_ns: persistNs,
+        created_at_is_persist_minted: true,
+        live_receive_clock: null,
+        freshness_status: "NOT_APPLICABLE",
+        freshness_reason_code: "LIVE_AS_OF_UNAVAILABLE",
+      },
+    };
+    const view = readOpportunityFreshnessView(row, evidence);
+    expect(view.asOfTimeNs).toBeNull();
+    expect(view.status).toBe("NOT_APPLICABLE");
+    expect(view.reasonCode).toBe("LIVE_AS_OF_UNAVAILABLE");
+    expect(view.operatorAnswer).toMatch(/created_at is not a live clock/i);
+    expect(collectOpportunityUnknowns(row, evidence)).toContain("live_receive_clock");
+  });
+
+  it("keeps STALE distinct from FRESH and does not upgrade a lagged row", () => {
+    const stale = readOpportunityFreshnessView({
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "DEGRADED",
+        freshness: "STALE",
+        source: "MOOMOO",
+        freshness_evaluation: {
+          status: "STALE",
+          reason_code: "STALE_AFTER_THRESHOLD",
+          source: "OBSERVATIONAL",
+          actionable: false,
+          as_of_time_ns: 1_700_000_000_005_000_001,
+          age_ns: 5_000_001,
+        },
+      },
+    });
+    const fresh = readOpportunityFreshnessView({
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "PASS",
+        freshness: "FRESH",
+        source: "MOOMOO",
+        freshness_evaluation: {
+          status: "FRESH",
+          reason_code: "FRESH",
+          source: "OBSERVATIONAL",
+          actionable: true,
+          as_of_time_ns: 1_700_000_000_001_000_000,
+          age_ns: 1_000_000,
+        },
+      },
+    });
+    expect(stale.status).toBe("STALE");
+    expect(stale.actionable).toBe(false);
+    expect(fresh.status).toBe("FRESH");
+    expect(fresh.actionable).toBe(true);
+    expect(stale.status).not.toBe(fresh.status);
+  });
+
   it("does not claim live freshness for honesty-source evaluations", () => {
     const row = {
       ...fixtureOpportunityRowBase,

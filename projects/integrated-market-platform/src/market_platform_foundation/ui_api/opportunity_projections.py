@@ -344,7 +344,7 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
         "created_at_ns": detail.get("created_at_ns"),
         "pipeline_clocks": {
             "persist_created_at_ns": detail.get("created_at_ns"),
-            "created_at_is_persist_minted": True,
+            "created_at_is_persist_minted": detail.get("created_at_ns") is not None,
             "live_receive_clock": freshness_eval.get("as_of_time_ns"),
             "freshness_status": freshness_eval.get("status"),
             "freshness_reason_code": freshness_eval.get("reason_code"),
