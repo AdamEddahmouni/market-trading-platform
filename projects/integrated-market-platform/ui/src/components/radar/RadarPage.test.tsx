@@ -244,6 +244,16 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("DEMO");
     expect(screen.getByText(/No opportunities right now/i)).toBeInTheDocument();
     expect(screen.getByText(/empty queue is valid/i)).toBeInTheDocument();
+    expect(screen.getByText(/investigation screener on the Screeners tab/i)).toBeInTheDocument();
+    expect(screen.queryByText(/mixed live/i)).not.toBeInTheDocument();
+  });
+
+  it("does not call Paper discovery a mixed live screener", () => {
+    renderRadar("PAPER", "opportunities", true);
+    expect(
+      screen.getByText(/Ranked opportunities, the investigation screener, and donor research screens/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/mixed live/i)).not.toBeInTheDocument();
   });
 
   it("renders the feed UNREADY state as a human banner with an action", () => {
