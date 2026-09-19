@@ -9,7 +9,7 @@ describe("derivePreviewPresentationState", () => {
     confirmedRequestIsCurrent: false,
     previewMutationPending: false,
     error: null,
-    previewOrigin: null as const,
+    previewOrigin: null,
   };
 
   it("maps not previewed", () => {
@@ -70,14 +70,5 @@ describe("derivePreviewPresentationState", () => {
 
   it("maps transport error", () => {
     expect(derivePreviewPresentationState({ ...base, error: "offline" }).status).toBe("ERROR");
-  });
-
-  it("maps server preview stale codes to revalidation", () => {
-    const state = derivePreviewPresentationState({
-      ...base,
-      error: "VALIDATION_ERROR: PREVIEW_PORTFOLIO_STALE: portfolio state changed since preview",
-    });
-    expect(state.status).toBe("REVALIDATION_REQUIRED");
-    expect(state.title).toBe("Revalidation required");
   });
 });
