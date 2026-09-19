@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lane E: merge origin/main 2a831ac5 (#306)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Merged `origin/main` **`2a831ac5`** (#306 CURRENT_MAIN pin) into `fix/weekend-lane-e-api-contracts`. Snapshot resolve unchanged (sanitization + `operator_truth`). WORK_LOG keep-both. |
+| **Key files** | `docs/engineering/WORK_LOG.md`; `docs/platform/PROGRAM_STATUS.md` (from main) |
+| **Tests** | Docs merge only — snapshot.py unconflicted |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
+| **Notes** | Do not merge #298. |
+
 ## 2026-09-19 — Lane E: merge origin/main a0b03d2a (#294) into operator_truth
 
 | Field | Value |
@@ -71,6 +83,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
 | **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
 | **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to #294 (`a0b03d2a`)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) from stale `1f33bf9e` (#295) to `origin/main` **`a0b03d2a`** after [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294). Historical log snapshots and Item 9 **2/3 IDLE**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated left unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main`; do not merge from this lane. |
 
 ## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
 
