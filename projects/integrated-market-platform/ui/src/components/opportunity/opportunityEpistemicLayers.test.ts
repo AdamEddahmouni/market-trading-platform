@@ -40,4 +40,24 @@ describe("opportunityEpistemicLayers", () => {
     expect(layers.contradiction[0]?.value).toMatch(/^UNKNOWN/);
     expect(layers.unknown.some((row) => /UNKNOWN|MISSING/.test(row.value))).toBe(true);
   });
+
+  it("keeps STALE freshness in the derived layer instead of promoting it to FRESH", () => {
+    const layers = buildOpportunityEpistemicLayers({
+      ...fixtureOpportunityRowBase,
+      data_quality: { status: "DEGRADED", freshness: "STALE", source: "FINVIZ_ELITE" },
+    });
+    expect(layers.derived.find((row) => row.label === "Data freshness")?.value).toBe("STALE");
+    expect(JSON.stringify(layers.observed)).not.toMatch(/FRESH/);
+  });
+
+  it("surfaces attached contradictions without inventing a clean conflict set", () => {
+    const layers = buildOpportunityEpistemicLayers({
+      ...fixtureOpportunityRowBase,
+      supersession_reason: "REPLACED_BY_NEWER",
+      metadata: { agent_enrichment: { status: "CONTRADICTED", count: 1 } },
+    });
+    expect(layers.contradiction.map((row) => row.value).join(" ")).toMatch(/REPLACED_BY_NEWER/);
+    expect(layers.contradiction.map((row) => row.value).join(" ")).toMatch(/CONTRADICTED/);
+    expect(layers.model_research.some((row) => row.nonFactual)).toBe(true);
+  });
 });
