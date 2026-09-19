@@ -125,7 +125,7 @@ export function RadarPage({
         <div className="imp-radar-screeners" data-testid="imp-radar-screeners">
           <section
             className="imp-radar-screener-section imp-radar-investigation-only"
-            aria-label="Mixed live screener"
+            aria-label="Investigation-only screener"
           >
             <p className="imp-radar-section-lead">
               Finviz finds the setup; connected market data confirms what is happening now.

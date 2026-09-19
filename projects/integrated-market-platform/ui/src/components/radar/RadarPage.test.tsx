@@ -494,10 +494,11 @@ describe("RadarPage screeners tab", () => {
     vi.unstubAllGlobals();
   });
 
-  it("hosts the mixed live screener with explicit market-data status", async () => {
+  it("hosts the investigation-only screener with explicit market-data status", async () => {
     renderRadar("PAPER", "screeners", true);
-    expect(await screen.findByRole("heading", { name: "Mixed live screener" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Mixed Live" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByRole("heading", { name: "Investigation screener" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Investigation" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("region", { name: "Investigation-only screener" })).toBeInTheDocument();
     expect(screen.getByText("EXEC NONE · INVESTIGATE only")).toBeInTheDocument();
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
     expect(screen.getByText("LIVE · 480 ms")).toBeInTheDocument();
@@ -527,7 +528,7 @@ describe("RadarPage screeners tab", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(screen.getByRole("heading", { name: "Mixed live screener" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Investigation screener" })).toBeInTheDocument();
 
     await act(async () => {
       vi.advanceTimersByTime(3_000);
