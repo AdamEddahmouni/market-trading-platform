@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `edd79432` after #335
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | After absorbing `origin/main` (merge [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335)) into [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334), retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`edd79432`** so the pin is not stale on `1847c766`. Ancestry includes [#331](https://github.com/AdamEddahmouni/market-trading-platform/pull/331). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**. Did **not** merge #222, #314, #333, or #334. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334); [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335); prior pin entry `1847c766` after #331 |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-331`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. Prior CI CLEARs on #333/#334 are stale after this absorb. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `1847c766` after #331
 
 | Field | Value |
