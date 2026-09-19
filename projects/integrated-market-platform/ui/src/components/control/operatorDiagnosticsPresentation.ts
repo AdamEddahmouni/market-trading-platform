@@ -201,9 +201,10 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
     missing_receipt_epochs?: Array<Record<string, string>>;
     gap_note?: string;
   }>(diagnostics, "cycle_recovery");
-  const evidenceGaps = diagnosticsSection<
-    Array<{ domain?: string; gap_class?: string; detail?: string }>
-  >(diagnostics, "evidence_gaps");
+  const evidenceGapsRaw = diagnostics?.sections?.evidence_gaps;
+  const evidenceGaps = Array.isArray(evidenceGapsRaw)
+    ? (evidenceGapsRaw as Array<{ domain?: string; gap_class?: string; detail?: string }>)
+    : undefined;
 
   const lifecycleStatus = String(lifecycle?.status ?? "UNKNOWN").toUpperCase();
   const lifecycleTruth: OperatorTruthClass =

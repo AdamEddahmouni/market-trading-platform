@@ -625,7 +625,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
           <FeedReadiness
             mode={mode}
             feedStatus={feedStatus}
-            unreadyReason={opportunitySurface.unready_reason}
+            unreadyReason={opportunitySurface.unready_reason ?? undefined}
             humanizedReason={humanizedReason}
             nextAction={undefined}
             itemCount={undefined}
@@ -667,7 +667,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                 <dt>Update status (raw)</dt>
                 <dd>{lifecycle.update?.status ?? "—"}</dd>
               </div>
-              {(lifecycle.services ?? []).map((service) => (
+              {(lifecycle.services ?? []).map((service: Record<string, unknown>) => (
                 <div key={String(service.name)}>
                   <dt>{String(service.name)}</dt>
                   <dd>

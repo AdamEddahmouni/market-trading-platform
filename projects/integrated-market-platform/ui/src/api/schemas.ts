@@ -132,6 +132,7 @@ export const CapabilityStateSchema = z.object({
 
 export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
+export type OperatorLifecycleStatus = z.infer<typeof OperatorLifecycleStatusSchema>;
 export type OperatorDiagnostics = z.infer<typeof OperatorDiagnosticsSchema>;
 
 export const AttentionReasonSchema = z.object({
