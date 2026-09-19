@@ -5,6 +5,7 @@ import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import type { Mode } from "../mode-session/types";
 import { humanizeUnreadyReason } from "./opportunityPresentation";
+import { liveFeedClockHonesty } from "./opportunityOperatorBrief";
 import { matchKnownDataIncident } from "../operator-shared/knownDataIncidents";
 import { PrecisionFailureBanner } from "../imp-ui/PrecisionFailureBanner";
 
@@ -19,6 +20,8 @@ export type OpportunityFeedStateProps = {
   onRetry?: () => void;
   /** Page-specific empty reason; defaults to the canonical empty-queue copy. */
   emptyReason?: string;
+  /** Ranked rows withheld for missing live receive clock (optional honesty). */
+  withheldRankedCount?: number;
   /** Rendered only when the queue is ready with items. */
   children: ReactNode;
 };
@@ -43,6 +46,7 @@ export function OpportunityFeedState({
   itemCount,
   onRetry,
   emptyReason = "An empty queue is valid: nothing has been minted for the current coverage.",
+  withheldRankedCount,
   children,
 }: OpportunityFeedStateProps) {
   if (state === "loading") {
@@ -76,6 +80,7 @@ export function OpportunityFeedState({
     const unready = resolveSemanticState("research", "UNREADY", {
       params: { reason: reason ?? "" },
     });
+    const clockHonesty = liveFeedClockHonesty({ unreadyReason, withheldRankedCount });
     return (
       <AttentionBanner
         tone={unready.tone}
@@ -83,6 +88,7 @@ export function OpportunityFeedState({
         action={{ label: "Open Control", href: controlHref(nextAction) }}
       >
         {unready.sentence ?? unready.label}
+        {clockHonesty}
         {unreadyReason ? (
           <span className="imp-radar-muted" title="Raw reason code">
             {" "}

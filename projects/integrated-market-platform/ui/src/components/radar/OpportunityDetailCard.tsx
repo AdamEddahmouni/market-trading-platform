@@ -18,7 +18,11 @@ import {
   hasNonFactualResearchOutput,
   type EpistemicLayerKey,
 } from "../opportunity/opportunityEpistemicLayers";
-import { buildOpportunityOperatorBrief } from "../opportunity/opportunityOperatorBrief";
+import {
+  buildOpportunityOperatorBrief,
+  opportunityFreshnessQueueLabel,
+  type OperatorBriefFeedContext,
+} from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   evidenceInputsSentence,
@@ -36,6 +40,10 @@ export type OpportunityDetailCardProps = {
   paperAccountId?: string;
   paperActions?: boolean;
   readOnly?: boolean;
+  feed?: OperatorBriefFeedContext | null;
+  withheldRankedCount?: number;
+  bookHonesty?: string;
+  unreadyReason?: string;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
@@ -90,6 +98,10 @@ export function OpportunityDetailCard({
   paperAccountId,
   paperActions = false,
   readOnly = false,
+  feed = null,
+  withheldRankedCount,
+  bookHonesty,
+  unreadyReason,
   onExplain,
   onInspect,
   onOpenWorkspace,
@@ -97,7 +109,14 @@ export function OpportunityDetailCard({
 }: OpportunityDetailCardProps) {
   const attention = attentionItemFromOpportunity(row);
   const model = buildOpportunityDetailSections(row, { evidence, paperActions, readOnly });
-  const operatorBrief = buildOpportunityOperatorBrief(row, evidence, { paperActions, readOnly });
+  const operatorBrief = buildOpportunityOperatorBrief(row, evidence, {
+    paperActions,
+    readOnly,
+    feed,
+    withheldRankedCount,
+    bookHonesty,
+    unreadyReason,
+  });
   const epistemic = buildOpportunityEpistemicLayers(row, evidence);
   const epistemicLayerOrder: EpistemicLayerKey[] = [
     "observed",
@@ -160,9 +179,7 @@ export function OpportunityDetailCard({
           <div>
             <dt>Freshness</dt>
             <dd>
-              <FreshnessIndicator
-                backendLabel={quality.freshness == null ? null : String(quality.freshness)}
-              />
+              <FreshnessIndicator backendLabel={opportunityFreshnessQueueLabel(row, evidence)} />
             </dd>
           </div>
           <div>
