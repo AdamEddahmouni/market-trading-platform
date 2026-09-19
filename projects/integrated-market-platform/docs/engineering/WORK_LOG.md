@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9d219537` after #317 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`9d219537`** (merge [#317](https://github.com/AdamEddahmouni/market-trading-platform/pull/317) Weekend Lane K claim lineage; ancestry [#320](https://github.com/AdamEddahmouni/market-trading-platform/pull/320)–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321) retarget; prior stale pin `2d1b508c` |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-320`; merged `origin/main` @ `9d219537` before pin. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2d1b508c` after #320 weekend wave
 
 | Field | Value |
