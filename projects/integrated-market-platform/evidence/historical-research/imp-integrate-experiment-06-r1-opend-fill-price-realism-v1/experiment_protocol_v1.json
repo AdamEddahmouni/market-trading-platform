@@ -1,0 +1,69 @@
+{
+  "artifact_kind": "historical_fill_price_realism_experiment_protocol_v1",
+  "authority": {
+    "item9_effect": "NONE",
+    "live_authority": "NONE",
+    "observation_class": "BOUNDED_HISTORICAL_OBSERVATION",
+    "primary": "HISTORICAL_DEVELOPMENT"
+  },
+  "contamination_auditor_checks_required_before_execution": [
+    {
+      "check_id": "DID_TRAIN_SEE_TEST",
+      "description": "Train split decision times must not overlap HISTORICAL_RESEARCH_TEST intervals."
+    },
+    {
+      "check_id": "DID_FEATURES_SEE_FUTURE_DATA",
+      "description": "Feature reconstruction must reject PIT violations at each decision cutoff."
+    },
+    {
+      "check_id": "DID_HOLDOUT_ENTER_TRAINING",
+      "description": "HISTORICAL_RESEARCH_TEST must not be consumed for parameter, cost, or fill-reference selection."
+    },
+    {
+      "check_id": "DID_PROSPECTIVE_RECEIPTS_ENTER_HISTORICAL_RESEARCH",
+      "description": "No Item 9 / prospective corpus receipts may enter historical research inputs."
+    },
+    {
+      "check_id": "DID_HISTORICAL_DATA_ENTER_PROSPECTIVE_ITEM9",
+      "description": "Historical development corpus must not be admitted into Item 9 prospective paths."
+    },
+    {
+      "check_id": "DID_FILL_REFERENCE_TUNE_ON_VALIDATE",
+      "description": "No fill or MTM reference arm may be added or removed after observing validate gross_pnl."
+    }
+  ],
+  "contamination_auditor_execution_status": "EXECUTED",
+  "execution_phase": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_id": "imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
+  "forbidden_actions": [
+    "Mutate imp-integrate-experiment-05-r3-opend-fill-economics-v3 evidence",
+    "Vary cost_slippage_bps or cost model across arms",
+    "Change BarConservativeSimulator or Item 9 calibration semantics",
+    "Re-run prediction coupling to alter fill counts for this experiment",
+    "Select a winning strategy or fill arm from validate net_pnl"
+  ],
+  "hypothesis_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "increment_id": "IMP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "lane_separation": {
+    "cost_sensitivity_owner": "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4",
+    "fill_price_realism_owner": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+    "note": "Cost bps grid is forbidden in this experiment; fill OHLC grid is forbidden in Lane E v4."
+  },
+  "metrics_contract": {
+    "descriptive_holdout_split": "HISTORICAL_RESEARCH_TEST",
+    "primary_split_for_simulator_metrics": "HISTORICAL_DEVELOPMENT_VALIDATE",
+    "required": [
+      "directional_accuracy",
+      "gross_realized_pnl",
+      "gross_unrealized_pnl",
+      "gross_pnl",
+      "transaction_costs",
+      "net_pnl",
+      "exposure",
+      "fill_audit_records"
+    ],
+    "unsupported_value_token": "METRIC_UNSUPPORTED"
+  },
+  "performance_run_authorized": true,
+  "purpose": "Counterfactual OHLC fill and MTM repricing on locked v3 fill schedules; diagnostic only."
+}

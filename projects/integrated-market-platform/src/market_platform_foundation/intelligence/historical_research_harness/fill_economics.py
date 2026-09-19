@@ -112,6 +112,7 @@ def aggregate_fill_economics(
     policy: Mapping[str, Any] | None = None,
     cost_slippage_bps: float,
     instrument_id: str | None = None,
+    mark_price_minor_override: int | None = None,
 ) -> dict[str, Any]:
     """Apply fills through ledger accounting and compute research economics."""
 
@@ -203,18 +204,20 @@ def aggregate_fill_economics(
             basis_minor=basis_after,
             mark_minor=mark_at_fill,
         )
-        policy_fees_native = _minor_to_native(policy_fees_minor, scale)
+        policy_fees_native_loop = _minor_to_native(policy_fees_minor, scale)
         net_mtm_curve.append(
             net_mtm_pnl_native(
                 gross_market_realized_minor=gross_realized_at_fill_minor,
                 gross_unrealized_minor=unrealized_at_fill_minor,
                 scale=scale,
                 slippage_total_native=slippage_total,
-                policy_fees_total_native=policy_fees_native,
+                policy_fees_total_native=policy_fees_native_loop,
             )
         )
 
-    mark_minor = _mark_price_minor_from_events(events, instrument_id=instrument_id, price_scale=scale)
+    mark_minor = mark_price_minor_override
+    if mark_minor is None:
+        mark_minor = _mark_price_minor_from_events(events, instrument_id=instrument_id, price_scale=scale)
     position_shares = int(ledger["position_shares"])
     basis_minor = int(ledger.get("position_cost_basis_minor", 0))
     gross_unrealized_minor = 0
