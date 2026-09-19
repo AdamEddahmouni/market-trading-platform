@@ -6,7 +6,10 @@ from .evidence import (
     LaneId,
     NormalizedLaneEvidence,
     apply_evidence_lag_rules,
+    inference_kind_for_provenance,
+    lane_evidence_from_dict,
     lane_evidence_to_dict,
+    observed_at_presence,
     validate_evidence_dag,
 )
 from .fusion import (
@@ -43,7 +46,10 @@ __all__ = [
     "apply_evidence_lag_rules",
     "build_opportunity_snapshot",
     "fuse_opportunity_v1",
+    "inference_kind_for_provenance",
+    "lane_evidence_from_dict",
     "lane_evidence_to_dict",
     "load_opportunity_fixture",
+    "observed_at_presence",
     "validate_evidence_dag",
 ]

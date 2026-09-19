@@ -73,10 +73,9 @@ def project_opportunity_data_quality(
     if source == "LIVE_OBSERVATIONAL":
         status = "UNAVAILABLE"
         reason_codes = ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"]
-        if evaluation.status != "NOT_APPLICABLE":
-            freshness = evaluation.status
-            if evaluation.entitlement:
-                entitlement = evaluation.entitlement
+        freshness = evaluation.status
+        if evaluation.entitlement:
+            entitlement = evaluation.entitlement
     elif source not in {"FIXTURE", "REPLAY", "RECORDED_ARTIFACTS"}:
         freshness = evaluation.status
         if evaluation.entitlement:

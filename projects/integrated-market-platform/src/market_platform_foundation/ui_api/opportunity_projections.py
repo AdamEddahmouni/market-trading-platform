@@ -327,6 +327,12 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     identity = detail.get("identity_kind")
     ranking_vector = detail.get("ranking_vector") if isinstance(detail.get("ranking_vector"), dict) else {}
     copy = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else None
+    data_quality = detail.get("data_quality") if isinstance(detail.get("data_quality"), dict) else {}
+    freshness_eval = (
+        data_quality.get("freshness_evaluation")
+        if isinstance(data_quality.get("freshness_evaluation"), dict)
+        else {}
+    )
     payload: dict[str, Any] = {
         "identity_kind": identity,
         "evidence_class": detail.get("evidence_class"),
@@ -336,6 +342,13 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
         "data_quality": detail.get("data_quality"),
         "ranking_basis": ranking_vector.get("basis"),
         "created_at_ns": detail.get("created_at_ns"),
+        "pipeline_clocks": {
+            "persist_created_at_ns": detail.get("created_at_ns"),
+            "created_at_is_persist_minted": True,
+            "live_receive_clock": freshness_eval.get("as_of_time_ns"),
+            "freshness_status": freshness_eval.get("status"),
+            "freshness_reason_code": freshness_eval.get("reason_code"),
+        },
         "duplicates": detail.get("duplicates") or [],
         "supersession_reason": detail.get("supersession_reason"),
         "unavailable_fields": detail.get("unavailable_fields") or [],

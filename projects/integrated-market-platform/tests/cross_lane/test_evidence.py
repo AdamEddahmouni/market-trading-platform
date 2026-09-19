@@ -10,11 +10,15 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.cross_lane.evidence import (  # noqa: E402
+    OBSERVED_AT_EMPTY,
+    OBSERVED_AT_UNKNOWN,
     EvidenceProvenanceClass,
     EvidenceSignal,
     LaneId,
     NormalizedLaneEvidence,
     apply_evidence_lag_rules,
+    lane_evidence_from_dict,
+    lane_evidence_to_dict,
     validate_evidence_dag,
 )
 
@@ -38,8 +42,6 @@ class CrossLaneEvidenceTests(unittest.TestCase):
         )
 
     def test_provenance_class_serialized(self) -> None:
-        from market_platform_foundation.cross_lane.evidence import lane_evidence_to_dict
-
         item = NormalizedLaneEvidence(
             lane=LaneId.OPTIONS,
             signal=EvidenceSignal.CALL_DEMAND_ANOMALY,
@@ -51,6 +53,55 @@ class CrossLaneEvidenceTests(unittest.TestCase):
         )
         payload = lane_evidence_to_dict(item)
         self.assertEqual(payload["provenance_class"], "DERIVED")
+        self.assertEqual(payload["inference_kind"], "DERIVED")
+        self.assertEqual(payload["observed_at_presence"], OBSERVED_AT_UNKNOWN)
+
+    def test_model_output_labels_inference_kind(self) -> None:
+        item = NormalizedLaneEvidence(
+            lane=LaneId.MARKET_CONTEXT,
+            signal=EvidenceSignal.EVENT_SURPRISE_POSITIVE,
+            strength="MODERATE",
+            available=True,
+            source_ref="mc6",
+            detail="surprise",
+            provenance_class=EvidenceProvenanceClass.MODEL_OUTPUT,
+        )
+        payload = lane_evidence_to_dict(item)
+        self.assertEqual(payload["inference_kind"], "MODEL_INFERENCE")
+
+    def test_empty_observed_at_is_not_unknown_timestamp(self) -> None:
+        item = NormalizedLaneEvidence(
+            lane=LaneId.OPTIONS,
+            signal=EvidenceSignal.CALL_DEMAND_ANOMALY,
+            strength="LOW",
+            available=True,
+            source_ref="test",
+            detail="detail",
+            observed_at="",
+            provenance_class=EvidenceProvenanceClass.DERIVED,
+        )
+        payload = lane_evidence_to_dict(item)
+        self.assertEqual(payload["observed_at_presence"], OBSERVED_AT_EMPTY)
+        round_trip = lane_evidence_from_dict(payload)
+        self.assertIsNone(round_trip.observed_at)
+
+    def test_lane_evidence_from_dict_round_trip(self) -> None:
+        original = NormalizedLaneEvidence(
+            lane=LaneId.FUTURES,
+            signal=EvidenceSignal.FUTURES_DATA_CONFIDENCE,
+            strength="HIGH",
+            available=True,
+            source_ref="futures:fixture",
+            detail="fixture confidence",
+            observed_at="2026-07-15T14:45:00.000000000Z",
+            quality_flags=("DELAYED",),
+            provenance_class=EvidenceProvenanceClass.RAW,
+        )
+        restored = lane_evidence_from_dict(lane_evidence_to_dict(original))
+        self.assertEqual(restored.lane, original.lane)
+        self.assertEqual(restored.signal, original.signal)
+        self.assertEqual(restored.provenance_class, original.provenance_class)
+        self.assertEqual(restored.observed_at, original.observed_at)
 
     def test_validate_evidence_dag_empty_when_clean(self) -> None:
         items = [
