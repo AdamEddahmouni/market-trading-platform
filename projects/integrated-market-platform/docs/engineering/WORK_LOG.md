@@ -46,7 +46,19 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `ui/src/components/research-shared/ResearchClaimGraph.tsx`, `researchPresentation.ts`(+test), `ResearchEvidenceSection.test.tsx`, `App.test.tsx`, `DemoResearchPage.test.tsx` |
 | **Tests** | `npm run typecheck` **pass**; `npx vitest run src/App.test.tsx` **74 passed** (includes `navigates Demo Research sections as routes`); research-shared + DemoResearchPage **58 passed**. |
 | **Related** | [PR #302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302) validate-ui hold |
-| **Notes** | Hypothesis/FTEP remain NOT_EXPOSED; simulation is not a forward test. Did not merge #302. |
+| **Notes** | Hypothesis/FTEP remain NOT_EXPOSED; simulation is not a forward test. Did not merge #302. Merged `origin/main` `252bad4b` (#303) keep-both. |
+
+## 2026-09-19 — Weekend Lane H high-value testing coverage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform`, `tests/ui1`, `ui/radar`, `ui/opportunity` |
+| **Summary** | Added fail-closed tests at high-value boundaries on landed #295/#296/#300 contracts: Item 9 sample-gate 2/3 insufficient vs 3/3 met without calibration, Live OFF / LIVE_FORBIDDEN, UNKNOWN provider incidents, restart generations, diagnostic redaction, session AUTH_REQUIRED/INVALID, Radar STALE/INELIGIBLE/EXPIRED refusal. No product-code rewrite; did not edit snapshot.py, Control, Lab, Research, or merge #222. |
+| **Key files** | Created: `tests/platform/test_weekend_lane_h_high_value_boundaries.py`. Modified: `tests/ui1/test_error_taxonomy.py`; `ui/src/components/opportunity/opportunityEpistemicLayers.test.ts`; `opportunityOperatorBrief.test.ts`; `opportunityPresentation.test.ts`; `ui/src/components/radar/RadarPage.test.tsx`. |
+| **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
+| **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
 
 ## 2026-09-19 — Weekend Lane K: Research claim navigation
 
