@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildLiveWithheldOperatorBrief,
   buildOpportunityOperatorBrief,
+  buildOpportunityQueueScan,
   collectOpportunityConflicts,
   collectOpportunityInvalidationLines,
   collectOpportunityProviderLabels,
@@ -230,6 +231,56 @@ describe("opportunityOperatorBrief", () => {
     expect(inference?.honesty).toBe("INFERRED");
     expect(inference?.answer).toMatch(/CONTRADICTED/);
     expect(collectOpportunityConflicts(row)).toEqual(["Agent enrichment status CONTRADICTED"]);
+  });
+
+  it("scans observed vs inferred on the queue without a next-action CTA", () => {
+    const scan = buildOpportunityQueueScan(fixtureOpportunityRowBase, null, {
+      paperActions: true,
+    });
+    const byQuestion = Object.fromEntries(scan.map((row) => [row.question, row]));
+    expect(byQuestion["What happened?"]?.answer).toMatch(/^BIYA/);
+    expect(byQuestion["What happened?"]?.answer).not.toMatch(/continuation candidate/i);
+    expect(byQuestion["What happened?"]?.honesty).toBe("OBSERVED");
+    expect(byQuestion["Inference vs observation?"]?.answer).toMatch(/continuation candidate/i);
+    expect(byQuestion["Inference vs observation?"]?.answer).toMatch(/not a provider observation/i);
+    expect(byQuestion["Inference vs observation?"]?.honesty).toBe("DERIVED");
+    expect(byQuestion["Which providers support it?"]?.answer).toBe("REPLAY");
+    expect(byQuestion["Which facts conflict?"]?.answer).toMatch(/^UNKNOWN/);
+    expect(byQuestion["Why might action be refused?"]?.answer).toMatch(
+      /next_safe_action OPEN_WORKSPACE is a research gate/i,
+    );
+    expect(byQuestion["Why might action be refused?"]?.answer).toMatch(/never grants live execution/i);
+    expect(scan.some((row) => row.question === "What action is available?")).toBe(false);
+    expect(JSON.stringify(scan)).not.toMatch(/calibrat/i);
+    expect(JSON.stringify(scan)).not.toMatch(/Item 9/);
+    expect(JSON.stringify(scan)).not.toMatch(/3\/3/);
+    expect(JSON.stringify(scan)).not.toMatch(/place a (live|real-money) /i);
+  });
+
+  it("keeps LIVE_AS_OF_UNAVAILABLE as withheld-clock honesty on the queue scan", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "UNAVAILABLE",
+        freshness: "NOT_APPLICABLE",
+        source: "LIVE_OBSERVATIONAL",
+        freshness_evaluation: {
+          status: "NOT_APPLICABLE",
+          reason_code: "LIVE_AS_OF_UNAVAILABLE",
+          source: "LIVE_OBSERVATIONAL",
+          actionable: false,
+        },
+      },
+    };
+    const scan = buildOpportunityQueueScan(row, null, { readOnly: true, paperActions: false });
+    const freshness = scan.find((item) => item.question === "How fresh?");
+    const refusal = scan.find((item) => item.question === "Why might action be refused?");
+    expect(freshness?.answer).toMatch(/live receive clock unavailable/i);
+    expect(freshness?.answer).not.toMatch(/Fresh(?!ness)/);
+    expect(refusal?.answer).toMatch(/withheld-clock honesty, not a repair/i);
+    expect(refusal?.answer).not.toMatch(/Open Control to repair/i);
+    expect(JSON.stringify(scan)).not.toMatch(/calibrat/i);
+    expect(JSON.stringify(scan)).not.toMatch(/DEGRADED/);
   });
 
   it("does not treat persist-minted created_at as a live receive clock", () => {
