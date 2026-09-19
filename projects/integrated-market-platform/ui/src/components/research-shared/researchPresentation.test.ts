@@ -284,6 +284,9 @@ describe("buildClaimNavigation", () => {
     const experiment = nodes.find((node) => node.key === "experiment");
     expect(experiment?.evidenceClass).toMatch(/not prospective forward-test/i);
     expect(experiment?.href).toBe("/research/simulation");
+    const implementation = nodes.find((node) => node.key === "implementation");
+    expect(implementation?.href).toBe("/lab");
+    expect(implementation?.destinationKind).toBe("related");
   });
 
   it("links Paper forward-test to Workspace without fetching campaign state", () => {
@@ -347,6 +350,11 @@ describe("claim lineage", () => {
     const hypothesis = lineage.nodes.find((node) => node.key === "hypothesis");
     expect(hypothesis?.relation).toBe("on-path");
     expect(hypothesis?.statusLabel).toBe("NOT_EXPOSED");
+    const implementation = lineage.nodes.find((node) => node.key === "implementation");
+    expect(implementation?.relation).toBe("off-path");
+    expect(implementation?.href).toBeNull();
+    expect(implementation?.destinationKind).toBe("gap");
+    expect(implementation?.detail).toMatch(/No Lab process contract/i);
     const forward = lineage.nodes.find((node) => node.key === "forward-test");
     expect(forward?.href).toBeNull();
     expect(withResearchClaimQuery("/workspace", "strategy_outcomes")).toBe("/workspace");
@@ -361,6 +369,9 @@ describe("claim lineage", () => {
     const experiment = lineage.nodes.find((node) => node.key === "experiment");
     expect(experiment?.relation).toBe("on-path");
     expect(experiment?.evidenceClass).toMatch(/not prospective forward-test/i);
+    const implementation = lineage.nodes.find((node) => node.key === "implementation");
+    expect(implementation?.relation).toBe("on-path");
+    expect(implementation?.href).toBe("/lab/validation");
     const forward = lineage.nodes.find((node) => node.key === "forward-test");
     expect(forward?.href).toBe("/workspace");
   });
@@ -390,6 +401,41 @@ describe("claim hops", () => {
     expect(hops.find((hop) => hop.key === "contradiction")?.href).toBe(
       "/research/validation?conflict=1&claim=strategy_outcomes",
     );
+    expect(hops.find((hop) => hop.key === "implementation")?.href).toBe("/lab/validation");
+    expect(hops.find((hop) => hop.key === "implementation")?.note).toMatch(/cannot start or mutate/i);
+  });
+
+  it("hops risk decisions to Lab simulation and squeeze stays without a fake Lab workflow", () => {
+    expect(claimPathKeys("risk_decisions")).toEqual([
+      "source",
+      "strategy",
+      "experiment",
+      "evidence",
+      "implementation",
+      "forward-test",
+    ]);
+    expect(claimHopsForFinding("risk_decisions", "DEMO").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/simulation",
+    );
+    const riskLineage = buildClaimLineage(
+      { analytics: analyticsFixture, simulation: simulationFixture },
+      "DEMO",
+      "risk_decisions",
+    );
+    const implementation = riskLineage.nodes.find((node) => node.key === "implementation");
+    expect(implementation?.relation).toBe("on-path");
+    expect(implementation?.href).toBe("/lab/simulation");
+    expect(implementation?.detail).toMatch(/not a forward test/i);
+    expect(sectionClaimHops("evidence", "DEMO", "risk_decisions").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/simulation",
+    );
+    expect(sectionClaimHops("evidence", "DEMO", "strategy_outcomes").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/validation",
+    );
+    expect(sectionClaimHops("evidence", "DEMO", "squeeze_outcomes").map((hop) => hop.key)).not.toContain(
+      "implementation",
+    );
+    expect(sectionClaimHops("evidence", "DEMO").map((hop) => hop.key)).not.toContain("implementation");
   });
 
   it("keeps source and evidence on squeeze and attention paths", () => {
@@ -413,5 +459,6 @@ describe("claim hops", () => {
     const hops = sectionClaimHops("simulation", "PAPER");
     expect(hops.find((hop) => hop.key === "forward-test")?.note).toMatch(/not a prospective forward test/i);
     expect(hops.find((hop) => hop.key === "forward-test")?.href).toBe("/workspace");
+    expect(hops.find((hop) => hop.key === "implementation")?.href).toBe("/lab/simulation");
   });
 });

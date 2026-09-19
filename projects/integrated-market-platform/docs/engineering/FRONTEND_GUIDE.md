@@ -172,7 +172,11 @@ Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-
 | `/lab/simulation` | Simulation workbench | `/research/simulation` + shared operator diagnostics (calibration honesty) |
 | `/lab/chart-lab` | Chart Lab | none (local synthetic) |
 
-Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Item 9 / Live
+Research keeps interpretation; Lab inspects process. Claim-to-implementation hops
+are finding-scoped: walk-forward strategy outcomes land on `/lab/validation`,
+risk-decision findings land on `/lab/simulation`, and squeeze/attention findings
+stay honest gaps (no Lab process contract). Unscoped Overview implementation
+points at `/lab`. **NO LAB MUTATIONS.** Item 9 / Live
 honesty stays mounted when Overview dual-loads fail or Simulation snapshot errors;
 diagnostics failures stay `UNAVAILABLE` (never a minted 2/3). Hypotheses,
 domains, source catalogs, supporting/contradictory flags, and FTEP campaign
