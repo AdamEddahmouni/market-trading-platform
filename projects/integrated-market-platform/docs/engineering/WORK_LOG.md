@@ -36,17 +36,29 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-19 — Weekend Lane H high-value testing coverage
+## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `tests/platform`, `tests/ui1`, `ui/radar`, `ui/opportunity` |
-| **Summary** | Added fail-closed tests at high-value boundaries on landed #295/#296/#300 contracts: Item 9 sample-gate 2/3 insufficient vs 3/3 met without calibration, Live OFF / LIVE_FORBIDDEN, UNKNOWN provider incidents, restart generations, diagnostic redaction, session AUTH_REQUIRED/INVALID, Radar STALE/INELIGIBLE/EXPIRED refusal. No product-code rewrite; did not edit snapshot.py, Control, Lab, Research, or merge #222. |
-| **Key files** | Created: `tests/platform/test_weekend_lane_h_high_value_boundaries.py`. Modified: `tests/ui1/test_error_taxonomy.py`; `ui/src/components/opportunity/opportunityEpistemicLayers.test.ts`; `opportunityOperatorBrief.test.ts`; `opportunityPresentation.test.ts`; `ui/src/components/radar/RadarPage.test.tsx`. |
-| **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
-| **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
-| **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
+| **Area** | `backend`, `platform`, `operations`, `tests` |
+| **Summary** | Hardened Item 9 expected-cycle / collector-log gap machinery from [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291): truncation and stale/missing log facts, snapshot copy isolation, duplicate/hung/foreign-path classification, and operator-visible diagnostic fields. Read-only; no collector or receipt mutation. |
+| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,operator_diagnostics_snapshot}.py` |
+| **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
+| **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
+| **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+
+## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api/opportunity_projections` |
+| **Summary** | Live ranked-row freshness no longer treats `OpportunityV1.created_at` or leftover fixture `as_of` as a receive clock. Missing live receive is `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE` (not `FRESH`). Attention ingest rows stay `accepted=false` when eligibility is `UNAVAILABLE`. Operator feed still withholds unclocked live rows. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/freshness.py`, `ingest.py`, `ui_api/opportunity_projections.py`, `docs/architecture/DATA_CONTRACTS.md`, tests for freshness/ingest/opportunity API |
+| **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
+| **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
+| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `61ea8110` (#304) keep-both. |
 
 ## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
 
@@ -96,17 +108,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
 | **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
 
-## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
+## 2026-09-19 — Weekend Lane H high-value testing coverage
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `backend`, `platform`, `operations`, `tests` |
-| **Summary** | Hardened Item 9 expected-cycle / collector-log gap machinery from [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291): truncation and stale/missing log facts, snapshot copy isolation, duplicate/hung/foreign-path classification, and operator-visible diagnostic fields. Read-only; no collector or receipt mutation. |
-| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,operator_diagnostics_snapshot}.py` |
-| **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
-| **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
-| **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+| **Area** | `tests/platform`, `tests/ui1`, `ui/radar`, `ui/opportunity` |
+| **Summary** | Added fail-closed tests at high-value boundaries on landed #295/#296/#300 contracts: Item 9 sample-gate 2/3 insufficient vs 3/3 met without calibration, Live OFF / LIVE_FORBIDDEN, UNKNOWN provider incidents, restart generations, diagnostic redaction, session AUTH_REQUIRED/INVALID, Radar STALE/INELIGIBLE/EXPIRED refusal. No product-code rewrite; did not edit snapshot.py, Control, Lab, Research, or merge #222. |
+| **Key files** | Created: `tests/platform/test_weekend_lane_h_high_value_boundaries.py`. Modified: `tests/ui1/test_error_taxonomy.py`; `ui/src/components/opportunity/opportunityEpistemicLayers.test.ts`; `opportunityOperatorBrief.test.ts`; `opportunityPresentation.test.ts`; `ui/src/components/radar/RadarPage.test.tsx`. |
+| **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
+| **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
 
 ## 2026-09-19 — Weekend Lane K: Research claim navigation
 
