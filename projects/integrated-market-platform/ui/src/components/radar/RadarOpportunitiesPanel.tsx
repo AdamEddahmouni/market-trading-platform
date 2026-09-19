@@ -119,6 +119,7 @@ export function RadarOpportunitiesPanel({
       mode={mode}
       itemCount={items.length}
       withheldRankedCount={query.data?.withheld_ranked_count}
+      bookHonesty={query.data?.book_honesty}
       onRetry={() => void query.refetch()}
       emptyReason="An empty queue is valid: nothing has been minted for the current coverage. The mixed live screener on the Screeners tab shows what discovery is seeing."
     >
