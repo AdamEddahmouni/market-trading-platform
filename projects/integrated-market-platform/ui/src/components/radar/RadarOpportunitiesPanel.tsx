@@ -121,7 +121,7 @@ export function RadarOpportunitiesPanel({
       withheldRankedCount={query.data?.withheld_ranked_count}
       bookHonesty={query.data?.book_honesty}
       onRetry={() => void query.refetch()}
-      emptyReason="An empty queue is valid: nothing has been minted for the current coverage. The mixed live screener on the Screeners tab shows what discovery is seeing."
+      emptyReason="An empty queue is valid: nothing has been minted for the current coverage. The investigation screener on the Screeners tab shows what discovery is seeing."
     >
     <div className="imp-radar-opportunities" data-testid="imp-radar-opportunities">
       <section className="imp-radar-queue-section" aria-label="Ranked opportunity queue">
