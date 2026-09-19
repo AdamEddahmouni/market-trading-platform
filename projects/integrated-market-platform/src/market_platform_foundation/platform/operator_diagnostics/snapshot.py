@@ -7,7 +7,6 @@ heartbeat probes, or collector process identity (Lane B). UI rendering is Lane E
 from __future__ import annotations
 
 import re
-import time
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -30,8 +29,9 @@ from ..artifact_path_resolver import (
     looks_like_posix_absolute_path,
     looks_like_windows_absolute_path,
 )
+from .operator_truth import build_operator_truth_section
 
-_SCHEMA_VERSION = "operator-diagnostics/1.0.0"
+_SCHEMA_VERSION = "operator-diagnostics/1.1.0"
 
 # Program pins (canonical prose: docs/platform/PROGRAM_STATUS.md) — not upgraded by this module.
 _PIN_ITEM9_FROZEN_COLLECTOR_SHA = FROZEN_COLLECTOR_AUTHORITY_SHA
@@ -140,8 +140,16 @@ def classify_item9_corpus_progress_truth(corpus_section: Mapping[str, Any]) -> s
     availability = str(corpus_section.get("availability") or "NOT_OBSERVED").upper()
     if availability != "AVAILABLE":
         return "UNAVAILABLE" if availability == "UNAVAILABLE" else "NOT_OBSERVED"
+    top_progress = (
+        corpus_section.get("sample_gate_progress")
+        if isinstance(corpus_section.get("sample_gate_progress"), dict)
+        else {}
+    )
     report = corpus_section.get("report") if isinstance(corpus_section.get("report"), dict) else {}
-    progress = report.get("sample_gate_progress") if isinstance(report.get("sample_gate_progress"), dict) else {}
+    nested_progress = (
+        report.get("sample_gate_progress") if isinstance(report.get("sample_gate_progress"), dict) else {}
+    )
+    progress = top_progress or nested_progress
     fraction_text = progress.get("distinct_rth_dates")
     token = str(fraction_text or "").strip().upper()
     if token in {"NOT_OBSERVED", "UNKNOWN", "UNAVAILABLE"}:
@@ -263,14 +271,25 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
             "progress_truth": "UNAVAILABLE",
             "does_not_infer_calibrated": True,
         }
+    progress = report.get("sample_gate_progress") if isinstance(report, dict) else None
+    public_progress = None
+    if isinstance(progress, dict):
+        public_progress = {
+            "distinct_rth_dates": progress.get("distinct_rth_dates"),
+            "admissible": progress.get("admissible"),
+            "evaluation_rows": progress.get("evaluation_rows"),
+        }
     section = {
         "availability": "AVAILABLE",
         "receipt_scope": receipt_scope,
-        "receipt_dir": _operator_safe_fs_path(receipt_dir, imp_root=imp_root),
+        "sample_gate_progress": public_progress,
+        "calibration_state": report.get("calibration_state") if isinstance(report, dict) else None,
+        "fitting_allowed": report.get("fitting_allowed") if isinstance(report, dict) else False,
         "report": report,
         "does_not_infer_calibrated": True,
     }
     section = _sanitize_mapping_paths(section, imp_root=imp_root)
+    section.pop("receipt_dir", None)
     section["progress_truth"] = classify_item9_corpus_progress_truth(section)
     return section
 
@@ -757,12 +776,34 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     if str(item9.get("disposition")) in {"WRONG_RUNTIME", "PROVIDER_UNAVAILABLE", "OUTPUT_PATH_INVALID"}:
         severity = "ACTION_REQUIRED"
 
+    as_of_utc = datetime.now(timezone.utc).isoformat()
+    collector = item9.get("active_collector") if isinstance(item9.get("active_collector"), dict) else {}
+    corpus_section = _item9_corpus_status_section(imp_root)
+    operator_truth = build_operator_truth_section(
+        as_of_utc=as_of_utc,
+        lifecycle_status=str(lifecycle.get("status") or "UNKNOWN"),
+        readiness_status=str(readiness.get("status") or "UNKNOWN"),
+        runtime_git_sha=runtime_sha or None,
+        item9_disposition=str(item9.get("disposition") or "UNKNOWN"),
+        item9_corpus_status=corpus_section,
+        collector_detected=bool(collector.get("detected")),
+        collector_probe_status=(
+            str(collector.get("process_probe_status")) if collector.get("process_probe_status") else None
+        ),
+        live_execution_env=bool(governance.get("live_execution_env")),
+        expected_cycle_failure=str(cycle.get("expected_cycle_failure") or "NOT_OBSERVED"),
+        cycle_gap_note=str(cycle.get("gap_note") or ""),
+        evidence_gaps=evidence_gaps,
+    )
+
     return {
         "schema_version": _SCHEMA_VERSION,
-        "as_of_utc": datetime.now(timezone.utc).isoformat(),
+        "as_of_utc": as_of_utc,
+        "as_of_clock_kind": "wall_utc",
         "severity": severity,
         "secrets_included": False,
         "operator_questions": questions,
+        "operator_truth": operator_truth,
         "sections": {
             "lifecycle": {
                 "status": lifecycle.get("status"),
@@ -781,8 +822,9 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
                     "runtime": item9.get("runtime"),
                     "does_not_start_collector": True,
                 },
-                "item9_corpus_status": _item9_corpus_status_section(imp_root),
+                "item9_corpus_status": corpus_section,
             },
+            "operator_truth": operator_truth,
             "configuration": {
                 "summary": config_summary,
                 "state_path": state_path,
@@ -824,5 +866,4 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "operations.runtime_resilience_diagnostic.build_runtime_resilience_diagnostic",
             "paper.calibration.item9_calibration_protocol.build_item9_corpus_status_report",
         ],
-        "generated_at_monotonic": time.monotonic(),
     }

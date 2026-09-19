@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   OpportunitySnapshotSchema,
+  OperatorDiagnosticsSchema,
   WorkspaceFuturesResponseSchema,
   WorkspaceOptionsResponseSchema,
   WorkspaceOrderBookResponseSchema,
@@ -365,5 +366,32 @@ describe("WorkspaceFuturesResponseSchema", () => {
       "futures_family_engineered_v1",
     );
     expect(parsed.latest_futures_forecast?.research_only).toBe(true);
+  });
+});
+
+describe("OperatorDiagnosticsSchema", () => {
+  it("accepts backend-owned operator_truth including Item 9 2/3 IDLE", () => {
+    const parsed = OperatorDiagnosticsSchema.parse({
+      schema_version: "operator-diagnostics/1.1.0",
+      as_of_utc: "2026-09-18T00:00:00+00:00",
+      as_of_clock_kind: "wall_utc",
+      severity: "OK",
+      operator_truth: {
+        schema_version: "operator-truth/1.0.0",
+        clock: { as_of_utc: "2026-09-18T00:00:00+00:00", kind: "wall_utc" },
+        rows: [
+          {
+            id: "item9-corpus",
+            truth: "IDLE",
+            detail: "2/3",
+            source_field: "sections.runtime.item9_corpus_status.sample_gate_progress.distinct_rth_dates",
+          },
+        ],
+        by_id: { "item9-corpus": "IDLE" },
+      },
+      sections: {},
+    });
+    expect(parsed.operator_truth?.by_id["item9-corpus"]).toBe("IDLE");
+    expect(parsed.operator_truth?.by_id["item9-corpus"]).not.toBe("DEGRADED");
   });
 });
