@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 import unittest
 
@@ -145,15 +144,6 @@ class G14ProductProjectionTests(unittest.TestCase):
         for _ in range(100):
             build_futures_product_payload(self.store, contract_id, mode="PAPER")
         elapsed_ms = (time.perf_counter() - start) * 1000
-        artifact = {
-            "classification": "G14_PRODUCT_PERFORMANCE_MEASURED",
-            "futures_product_projection_ms_per_100": elapsed_ms,
-        }
-        from pathlib import Path
-
-        out = Path("artifacts/g14-runtime-performance.json")
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps(artifact, indent=2) + "\n", encoding="utf-8")
         self.assertLess(elapsed_ms, 5000)
 
 
