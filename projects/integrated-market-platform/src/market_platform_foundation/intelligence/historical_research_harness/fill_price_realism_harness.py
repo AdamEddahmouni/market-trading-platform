@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -12,6 +11,10 @@ from typing import Any, Mapping, Sequence
 from ...canonical import canonical_bytes, sha256_bytes
 from ...market_data.historical_development.builder import HistoricalDevelopmentBuildResult
 from ...numeric import decimal_to_minor_units
+from ...platform.artifact_path_resolver import (
+    resolve_stored_file_path,
+    resolve_v3_baseline_run_dir,
+)
 from ...paper.calibration.bar_ohlcv_prospective_proof import resolve_runtime_git_sha
 from ...paper.calibration.dual_corpus.contamination_auditor import audit_research_contamination_run
 from ...risk.policy import DEFAULT_RISK_POLICY
@@ -192,71 +195,6 @@ def reprice_locked_fills(
     return economics
 
 
-def _looks_like_windows_absolute_path(path_str: str) -> bool:
-    if len(path_str) >= 2 and path_str[0].isalpha() and path_str[1] == ":":
-        return True
-    return path_str.startswith("\\\\")
-
-
-def _path_is_readable_file(path: Path) -> bool:
-    try:
-        return path.is_file()
-    except OSError:
-        return False
-
-
-def _path_is_readable_dir(path: Path) -> bool:
-    try:
-        return path.is_dir()
-    except OSError:
-        return False
-
-
-def resolve_v3_baseline_run_dir(
-    repository_root: Path,
-    *,
-    run_id: str,
-    manifest_path: str | None,
-) -> Path | None:
-    if manifest_path:
-        manifest_raw = str(manifest_path).strip()
-        foreign_windows = sys.platform != "win32" and _looks_like_windows_absolute_path(manifest_raw)
-        if manifest_raw and not foreign_windows:
-            candidate = Path(manifest_path)
-            if _path_is_readable_file(candidate):
-                return candidate.parent
-    local = (
-        repository_root
-        / "artifacts"
-        / "historical-research-harness"
-        / "baseline-pack-v3"
-        / "runs"
-        / run_id
-    )
-    if _path_is_readable_dir(local):
-        return local
-    monorepo_root = repository_root
-    for _ in range(8):
-        if (monorepo_root / ".git").exists():
-            break
-        monorepo_root = monorepo_root.parent
-    sibling = (
-        monorepo_root
-        / ".worktrees"
-        / "opend-fill-economics-v3"
-        / "projects"
-        / "integrated-market-platform"
-        / "artifacts"
-        / "historical-research-harness"
-        / "baseline-pack-v3"
-        / "runs"
-        / run_id
-    )
-    if _path_is_readable_dir(sibling):
-        return sibling
-    return None
-
-
 def _dev_validate_scope_from_v3_run(
     repository_root: Path,
     build: HistoricalDevelopmentBuildResult,
@@ -291,9 +229,13 @@ def _dev_validate_scope_from_v3_run(
         for row in v3_predictions
         if str(row.get("split")) == HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value
     ]
-    labels_path = Path(str((v3_run_manifest.get("outputs") or {}).get("labels_path") or ""))
-    if not labels_path.is_file():
-        raise FillPriceRealismHarnessError(f"V3_LABELS_MISSING:{labels_path}")
+    labels_raw = str((v3_run_manifest.get("outputs") or {}).get("labels_path") or "")
+    labels_resolution = resolve_stored_file_path(labels_raw, repository_root=repository_root)
+    if labels_resolution.resolved_path is None:
+        raise FillPriceRealismHarnessError(
+            f"V3_LABELS_UNAVAILABLE:{labels_resolution.reason_code}:{labels_raw}"
+        )
+    labels_path = labels_resolution.resolved_path
     labels = json.loads(labels_path.read_text(encoding="utf-8"))
     dev_labels = [
         row

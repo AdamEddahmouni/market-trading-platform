@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from ...canonical import canonical_bytes, sha256_bytes
+from ...platform.artifact_path_resolver import portable_stored_path
 from ...execution.simulator import SIMULATOR_VERSION
 from ...market_data.historical_development.builder import (
     HistoricalDevelopmentBuildResult,
@@ -280,7 +281,10 @@ def _execute_baseline_pack_once(
                     HistoricalResearchSplitName.HISTORICAL_DEVELOPMENT_VALIDATE.value: dev_metrics,
                     HistoricalResearchSplitName.HISTORICAL_RESEARCH_TEST.value: holdout_metrics,
                 },
-                "manifest_path": str(harness_result.artifact_path),
+                "manifest_path": portable_stored_path(
+                    harness_result.artifact_path,
+                    repository_root=repository_root,
+                ),
             }
         )
 

@@ -47,6 +47,7 @@ from ..paper.calibration.runner import (
 from ..providers.adapters.finviz_elite_context import configured_token, finviz_live_enabled
 from ..providers.adapters.moomoo_opend_equity_quote import opend_moomoo_auth_entitlements
 from ..providers.equity_quote_selection import opend_readiness
+from .runtime_resilience_diagnostic import build_runtime_resilience_diagnostic
 
 ACCEPTANCE_LABEL_READY = "RTH_EMPIRICAL_OPS_READY"
 ARTIFACT_KIND_PREFLIGHT = "rth_empirical_ops_preflight"
@@ -257,6 +258,11 @@ def run_rth_empirical_ops_preflight(
             "blockers": list(item7_body.get("blockers") or ()),
         },
         "item9_tool_readiness": item9,
+        "runtime_resilience": build_runtime_resilience_diagnostic(
+            repository_root,
+            env=mapping,
+            now_ns=now,
+        ),
         "paper_comparator": comparator,
         "delegated_preflight": {
             "ftep_finviz_prospective_preflight": _redact_secrets(finviz_report),
