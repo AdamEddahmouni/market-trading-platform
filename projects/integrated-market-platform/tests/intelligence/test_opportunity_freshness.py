@@ -240,7 +240,25 @@ class OpportunityFreshnessHonestyAndGateTests(unittest.TestCase):
         live = project_opportunity_data_quality(source="LIVE_OBSERVATIONAL")
         self.assertEqual(live["status"], "UNAVAILABLE")
         self.assertEqual(live["reason_codes"], ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"])
-        self.assertEqual(live["freshness_evaluation"]["status"], FRESHNESS_UNKNOWN)
+        self.assertEqual(live["freshness_evaluation"]["status"], FRESHNESS_NOT_APPLICABLE)
+        self.assertEqual(live["freshness_evaluation"]["reason_code"], "LIVE_AS_OF_UNAVAILABLE")
+        self.assertNotEqual(live["freshness_evaluation"]["status"], FRESHNESS_FRESH)
+
+    def test_live_observational_missing_clock_is_not_fresh(self) -> None:
+        result = evaluate_opportunity_freshness(source="LIVE_OBSERVATIONAL")
+        self.assertEqual(result.status, FRESHNESS_NOT_APPLICABLE)
+        self.assertEqual(result.reason_code, "LIVE_AS_OF_UNAVAILABLE")
+        self.assertFalse(result.actionable)
+        self.assertNotEqual(result.status, FRESHNESS_FRESH)
+
+    def test_live_observational_with_receive_clock_can_be_fresh(self) -> None:
+        result = evaluate_opportunity_freshness(
+            source="LIVE_OBSERVATIONAL",
+            as_of_time_ns=T0 + 1_000,
+            last_source_time_ns=T0,
+        )
+        self.assertEqual(result.status, FRESHNESS_FRESH)
+        self.assertEqual(result.age_ns, 1_000)
 
     def test_stale_fail_closes_eligibility_and_ranking(self) -> None:
         rows = assemble_opportunity_review_rows(

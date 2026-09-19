@@ -211,31 +211,17 @@ def _opportunity_source(store: ReplayStore) -> str:
     return "REPLAY"
 
 
-def _latest_repository_opportunity_created_at_ns(repository: Any | None) -> int | None:
-    from ..intelligence.opportunity.ingest import _opportunities_from_repository
-
-    latest = 0
-    found = False
-    for opportunity in _opportunities_from_repository(repository):
-        created = int(getattr(opportunity, "created_at_ns", 0) or 0)
-        if created > latest:
-            latest = created
-            found = True
-    return latest if found else None
-
-
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
-    receive_ns = projections._live_receive_ns(store) if _is_live(store) else None
-    as_of_ns = getattr(store, "as_of_time_ns", None)
-    last_ns = getattr(store, "last_source_time_ns", None)
-    if as_of_ns is None:
+    if _is_live(store):
+        # Live freshness uses the observational receive clock only. Opportunity
+        # created_at and leftover fixture as_of are not live clocks.
+        receive_ns = projections._live_receive_ns(store)
         as_of_ns = receive_ns
-    if last_ns is None:
         last_ns = receive_ns
-    if _is_live(store) and receive_ns is None and as_of_ns is None:
-        as_of_ns = _latest_repository_opportunity_created_at_ns(repository)
-        last_ns = as_of_ns
+    else:
+        as_of_ns = getattr(store, "as_of_time_ns", None)
+        last_ns = getattr(store, "last_source_time_ns", None)
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
