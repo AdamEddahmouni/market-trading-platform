@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Lab Overview and Simulation now inspect `GET /operator/diagnostics` so Item 9 **2/3** stays **IDLE**, **Live OFF**, and **NOT CALIBRATED** are visible on the research workbench. Full30 is labeled not a Lab workflow; no calibrate/collect/run mutations. |
+| **Key files** | `ui/src/components/lab-shared/labPresentation.ts`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm test -- src/components/lab-shared src/App.test.tsx` — **98 passed**; `npm run typecheck` — pass |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md); shared `queryKeys.operatorDiagnostics` / `preferItem9OperatorTruth` |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab-lineage` from `61335412` (#312). Did not merge. Did not touch #222, `snapshot.py`, #308 G14, #310 Radar, #311 PROGRAM_STATUS. No Full30. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `eee44352` after #310 weekend wave
 
 | Field | Value |
@@ -71,18 +83,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `npx vitest run` 4 files **43 passed**; `npm run typecheck` **pass**. Browser not run (no local Radar session). |
 | **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) Opportunity presentation; Lane L pipeline note that event vs receive lag was not on Radar cards |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-i-radar-provenance` from `origin/main` **65becd61** (#309). Did not touch #222, `snapshot.py`, Control operator_truth, G14/hermeticity tests, or operator diagnostics snapshot. Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED** unchanged. Do not merge from this lane. |
-
-## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `ui/lab` |
-| **Summary** | Lab Overview and Simulation now inspect `GET /operator/diagnostics` so Item 9 **2/3** stays **IDLE**, **Live OFF**, and **NOT CALIBRATED** are visible on the research workbench. Full30 is labeled not a Lab workflow; no calibrate/collect/run mutations. |
-| **Key files** | `ui/src/components/lab-shared/labPresentation.ts`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
-| **Tests** | `cd ui && npm test -- src/components/lab-shared src/App.test.tsx` — **98 passed**; `npm run typecheck` — pass |
-| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md); shared `queryKeys.operatorDiagnostics` / `preferItem9OperatorTruth` |
-| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab-lineage` from `61335412` (#312). Did not merge. Did not touch #222, `snapshot.py`, #308 G14, #310 Radar, #311 PROGRAM_STATUS. No Full30. |
 
 ## 2026-09-19 — Weekend Wave B Lane F: provider reason-code operator projections
 
