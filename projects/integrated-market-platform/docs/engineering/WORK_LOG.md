@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave B Lane F: provider reason-code operator projections
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `ui_api` |
+| **Summary** | Increment on merged [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295): map adapter/discovery `reason_code` values to backend-owned operator explanations via `incident_for_reason_code`, expose `build_provider_error_payload` for UI API envelopes, and add `equity_quote_discovery_operator_view` for value-blind discovery diagnostics. Item 9 **2/3 IDLE**, Live **OFF**; no market evidence fabrication. |
+| **Key files** | `src/market_platform_foundation/providers/resilience.py`; `src/market_platform_foundation/providers/equity_quote_discovery.py`; `src/market_platform_foundation/ui_api/errors.py`; `tests/providers/test_provider_resilience.py` |
+| **Tests** | `python -m unittest tests.providers.test_provider_resilience tests.ui1.test_error_taxonomy` |
+| **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291) runtime resilience |
+| **Notes** | Did not touch `snapshot.py`, PROGRAM_STATUS #311, Radar #310, Lab #313, or #222. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
 
 | Field | Value |

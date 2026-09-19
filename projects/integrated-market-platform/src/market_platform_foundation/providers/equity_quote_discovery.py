@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Any
 
 from .adapters.moomoo_opend_equity_quote import opend_sdk_available
 from .adapters.yahoo_delayed_equity_quote import YAHOO_PROVIDER_ID
 from .contracts import EquityQuoteProvider
 from .equity_quote_selection import opend_readiness, primary_equity_quote_provider
+from .resilience import incident_for_reason_code
 from .stubs import UnconfiguredEquityQuoteProvider
 
 _PLACEHOLDERS = frozenset({"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
@@ -104,10 +106,32 @@ def unconfigured_equity_quote() -> EquityQuoteProvider:
     return UnconfiguredEquityQuoteProvider()
 
 
+def equity_quote_discovery_operator_view(discovery: EquityQuoteDiscovery) -> dict[str, Any]:
+    """Operator-facing discovery summary without secret values or fabricated quotes."""
+
+    incident = incident_for_reason_code(discovery.reason_code)
+    return {
+        "provider_id": discovery.provider_id,
+        "classification": discovery.classification,
+        "reason_code": discovery.reason_code,
+        "overlay_provider_id": discovery.overlay_provider_id,
+        "opend_reachable": discovery.opend_reachable,
+        "config_names_present": list(discovery.config_names_present),
+        "finviz_token_names_present": list(discovery.finviz_token_names_present),
+        "operator_explanation": incident.operator_message,
+        "status_token": incident.status_token,
+        "fallback": incident.fallback.to_dict(),
+        "live_execution": incident.live_execution,
+        "item9_mode": "IDLE",
+        "item9_calibration": "NOT_CALIBRATED",
+    }
+
+
 __all__ = [
     "EquityQuoteDiscovery",
     "FINVIZ_TOKEN_NAMES",
     "discover_equity_quote_stack",
+    "equity_quote_discovery_operator_view",
     "moomoo_config_names_present",
     "names_present",
     "unconfigured_equity_quote",

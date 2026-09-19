@@ -93,6 +93,26 @@ OPERATOR_MESSAGES: dict[str, str] = {
     ),
     OPEND_REACHABLE: "Moomoo OpenD is reachable on loopback. Reachability is not a tick.",
     HEALTHY: "Primary observational provider connectivity looks healthy (software probe).",
+    "OPEND_SDK_PRESENT": (
+        "Moomoo OpenD is reachable and the vendor SDK is loadable. SDK presence is "
+        "diagnostic only — not a quote and not FTEP evidence."
+    ),
+    "MOOMOO_SDK_MISSING": (
+        "Moomoo OpenD is reachable on loopback but the vendor SDK is not available in "
+        "this environment. Primary L1 quotes fail closed; Yahoo overlay is not hop L1."
+    ),
+    "OPEND_NON_LOOPBACK_BLOCKED": (
+        "Moomoo OpenD must be configured on loopback only. Non-loopback endpoints are "
+        "blocked for observational safety."
+    ),
+    "MOOMOO_AUTH_FAILURE": (
+        "Moomoo OpenD rejected authentication. No quote is synthesized; check the "
+        "operator session and entitlements."
+    ),
+    "MOOMOO_LAST_PRICE_MISSING": (
+        "Moomoo OpenD returned a row without an honest last_price. Bid/ask/close are "
+        "not substituted."
+    ),
 }
 
 _ITEM9_UNTOUCHED = {
@@ -212,6 +232,51 @@ def fallback_for_primary(
         overlay_role_allowed=overlay_available,
         overlay_as_hop_l1=False,
         boundary_token=FALLBACK_BLOCKED if not overlay_available else OVERLAY_ALLOWED,
+    )
+
+
+_PRIMARY_UNAVAILABLE_TOKENS = frozenset(
+    {
+        OPEND_UNAVAILABLE,
+        PROVIDER_TIMEOUT,
+        EMPTY_PAYLOAD,
+        MALFORMED_RESPONSE,
+        TEMPORARY_NETWORK_FAILURE,
+        "MOOMOO_SDK_MISSING",
+        "OPEND_NON_LOOPBACK_BLOCKED",
+        "MOOMOO_AUTH_FAILURE",
+        "MOOMOO_PROTOCOL_ERROR",
+        "MOOMOO_LAST_PRICE_MISSING",
+        FALLBACK_BLOCKED,
+    }
+)
+
+
+def incident_for_reason_code(
+    reason_code: str | None,
+    *,
+    promote_overlay_to_l1: bool = False,
+    overlay_available: bool = True,
+) -> ProviderIncident:
+    """Map an adapter or discovery ``reason_code`` to an operator incident (offline-safe)."""
+
+    token = normalize_reason_token(reason_code) or "UNKNOWN"
+    primary_available = token not in _PRIMARY_UNAVAILABLE_TOKENS and token != "UNKNOWN"
+    severity = "UNAVAILABLE"
+    if token in {DELAYED_DATA}:
+        severity = "DELAYED"
+    elif token in {PARTIALLY_STALE}:
+        severity = "STALE"
+    elif token in {RECONNECTING, RESTART_RECOVERY}:
+        severity = "RECOVERING"
+    elif token in {OPEND_REACHABLE, HEALTHY, "OPEND_SDK_PRESENT"}:
+        severity = "HEALTHY"
+    return _incident(
+        token,
+        severity,
+        primary_available=primary_available,
+        overlay_available=overlay_available,
+        promote=promote_overlay_to_l1,
     )
 
 
@@ -425,6 +490,7 @@ __all__ = [
     "TEMPORARY_NETWORK_FAILURE",
     "classify_opend_connectivity",
     "classify_provider_incident",
+    "incident_for_reason_code",
     "classify_source_disagreement",
     "fallback_for_primary",
     "normalize_reason_token",
