@@ -284,6 +284,14 @@ function inferenceVersusObservation(
   const grounded = asRecord(metadata?.grounded_fact_extraction ?? metadata?.grounded_facts);
   const agent = asRecord(metadata?.agent_enrichment);
   const evidenceClass = String(evidence?.evidence_class ?? row.evidence_class ?? "");
+  const agentStatus = isPresent(agent?.status) ? String(agent?.status) : "";
+  if (agentStatus.toUpperCase() === "CONTRADICTED") {
+    return {
+      question: "Inference vs observation?",
+      answer: `Agent enrichment ${agentStatus} is interpretive. Headline and rank are derived by IMP, not a provider observation.`,
+      honesty: "INFERRED",
+    };
+  }
   if (grounded?.disposition) {
     return {
       question: "Inference vs observation?",
