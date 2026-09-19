@@ -188,6 +188,41 @@
   font-size: var(--imp-text-xs);
 }
 
+.imp-radar-operator-brief {
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-radar-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--imp-space-3);
+  margin: var(--imp-space-2) 0 0;
+}
+
+.imp-radar-brief-row dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.imp-radar-brief-row dd {
+  margin: var(--imp-space-1) 0 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-primary);
+}
+
+.imp-radar-brief-honesty {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--imp-text-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
 /* ---- Disclosures (L2/L3/L4) ---- */
 .imp-radar-disclosure {
   border: 1px solid var(--border-subtle);
