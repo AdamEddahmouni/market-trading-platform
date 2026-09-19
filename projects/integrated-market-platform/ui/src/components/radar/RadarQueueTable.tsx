@@ -122,17 +122,29 @@ export function RadarQueueTable({
                 </td>
                 <td className="imp-radar-queue-actions">
                   {onExplain ? (
-                    <button type="button" onClick={() => onExplain(attention)}>
+                    <button
+                      type="button"
+                      aria-label={`Explain ${opportunitySymbol(row)}`}
+                      onClick={() => onExplain(attention)}
+                    >
                       Explain
                     </button>
                   ) : null}
                   {onInspect ? (
-                    <button type="button" onClick={() => onInspect(attention)}>
+                    <button
+                      type="button"
+                      aria-label={`Inspect ${opportunitySymbol(row)}`}
+                      onClick={() => onInspect(attention)}
+                    >
                       Inspect
                     </button>
                   ) : null}
                   {canOpen && onOpenWorkspace ? (
-                    <button type="button" onClick={() => onOpenWorkspace(attention)}>
+                    <button
+                      type="button"
+                      aria-label={`Open workspace for ${opportunitySymbol(row)}`}
+                      onClick={() => onOpenWorkspace(attention)}
+                    >
                       Workspace
                     </button>
                   ) : null}
