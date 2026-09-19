@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `84275b20` after #326
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`84275b20`** (merge [#326](https://github.com/AdamEddahmouni/market-trading-platform/pull/326) Discover honesty; ancestry includes [#323](https://github.com/AdamEddahmouni/market-trading-platform/pull/323) Lab honesty/error a11y plus [#325](https://github.com/AdamEddahmouni/market-trading-platform/pull/325)–[#324](https://github.com/AdamEddahmouni/market-trading-platform/pull/324) weekend UI). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321) prior pin (`9d219537`); [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319); [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-326` from `origin/main` @ `84275b20`. Existing `.worktrees/weekend-pin-current-main` was occupied by stale `docs/weekend-pin-current-main` @ `5b2577b1`. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
 ## 2026-09-19 — Weekend Wave C: Discover nested screener investigation honesty
 
 | Field | Value |
