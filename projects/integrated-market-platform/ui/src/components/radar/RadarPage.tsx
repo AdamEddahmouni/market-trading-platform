@@ -34,10 +34,10 @@ const MODE_COPY: Record<
   DEMO: {
     eyebrow: "Demo replay",
     subtitle:
-      "Inspect the ranked opportunity queue and discovery screeners on recorded data. Everything here is read-only.",
+      "Inspect the ranked opportunity queue and investigation screeners on recorded data. Everything here is read-only.",
     restriction: {
       title: "Demo is exploration only.",
-      body: "Discovery refresh and promote actions are unavailable. Switch to Paper mode to run the full discovery desk.",
+      body: "Investigation refresh and promote actions are unavailable. Switch to Paper mode to run the full investigation desk.",
     },
   },
   PAPER: {
