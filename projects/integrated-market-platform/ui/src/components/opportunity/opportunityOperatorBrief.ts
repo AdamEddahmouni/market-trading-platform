@@ -54,6 +54,122 @@ function collectNamesFromUnknown(target: Set<string>, value: unknown): void {
   pushNamed(target, rec.provider ?? rec.provider_id ?? rec.source ?? rec.name);
 }
 
+function asIntNs(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return value;
+}
+
+function qualityRecord(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+): Record<string, unknown> {
+  return asRecord(row.data_quality) ?? asRecord(evidence?.data_quality) ?? {};
+}
+
+export type OpportunityFreshnessView = {
+  status: string | null;
+  reasonCode: string | null;
+  source: string | null;
+  asOfTimeNs: number | null;
+  ageNs: number | null;
+  /** True when an attached age is 0 — receive and event clocks are the same value. */
+  sameClock: boolean;
+  actionable: boolean | null;
+  queueBackendLabel: string | null;
+  operatorAnswer: string;
+  honesty: OperatorBriefHonesty;
+};
+
+/**
+ * Read attached freshness without promoting created_at or a zero lag into a live clock.
+ * Backend `data_quality.freshness` is a word; `freshness_evaluation` is the structured record.
+ */
+export function readOpportunityFreshnessView(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+): OpportunityFreshnessView {
+  const quality = qualityRecord(row, evidence);
+  const evaluation = asRecord(quality.freshness_evaluation);
+  const statusRaw = evaluation?.status ?? quality.freshness;
+  const status = isPresent(statusRaw) ? String(statusRaw) : null;
+  const reasonCode = isPresent(evaluation?.reason_code) ? String(evaluation?.reason_code) : null;
+  const source = isPresent(evaluation?.source)
+    ? String(evaluation?.source)
+    : isPresent(quality.source)
+      ? String(quality.source)
+      : null;
+  const asOfTimeNs = asIntNs(evaluation?.as_of_time_ns);
+  const ageNs = asIntNs(evaluation?.age_ns);
+  const sameClock = ageNs === 0 && asOfTimeNs != null;
+  const actionable = typeof evaluation?.actionable === "boolean" ? evaluation.actionable : null;
+
+  const parts: string[] = [];
+  if (status) parts.push(humanizeEnum(status));
+  if (reasonCode === "LIVE_AS_OF_UNAVAILABLE") {
+    parts.push("live receive clock unavailable — created_at is not a live clock");
+  } else if (reasonCode === "HONESTY_SOURCE_NOT_LIVE_FRESHNESS") {
+    parts.push("replay/fixture source does not claim live freshness");
+  } else if (reasonCode === "MISSING_AS_OF") {
+    parts.push("no as-of clock attached");
+  } else if (reasonCode === "NO_EVENT" || reasonCode === "MISSING_SOURCE_TIME") {
+    parts.push("event/source time not attached");
+  } else if (reasonCode) {
+    parts.push(humanizeEnum(reasonCode));
+  }
+  if (sameClock) {
+    parts.push("event vs receive lag UNKNOWN — the same attached clock is used for both");
+  } else if (ageNs != null && asOfTimeNs != null) {
+    const ageMs = ageNs / 1_000_000;
+    parts.push(`attached event-to-receive age ${ageMs >= 1000 ? `${Math.round(ageMs / 1000)}s` : `${Math.round(ageMs)}ms`}`);
+  }
+  if (actionable === false) {
+    parts.push("freshness evaluation is not actionable");
+  }
+
+  let operatorAnswer: string;
+  let honesty: OperatorBriefHonesty;
+  if (!status && !reasonCode) {
+    operatorAnswer = "UNKNOWN — no freshness word or freshness_evaluation attached";
+    honesty = "UNKNOWN";
+  } else {
+    operatorAnswer = parts.join(" · ");
+    honesty = evaluation ? "OBSERVED" : status ? "OBSERVED" : "UNKNOWN";
+    if (sameClock) honesty = "DERIVED";
+  }
+
+  return {
+    status,
+    reasonCode,
+    source,
+    asOfTimeNs,
+    ageNs,
+    sameClock,
+    actionable,
+    queueBackendLabel: status ?? reasonCode,
+    operatorAnswer,
+    honesty,
+  };
+}
+
+export function liveFeedClockHonesty(options: {
+  unreadyReason?: string;
+  withheldRankedCount?: number;
+}): string | null {
+  if (options.unreadyReason !== "LIVE_AS_OF_UNAVAILABLE") return null;
+  const withheld =
+    typeof options.withheldRankedCount === "number" && options.withheldRankedCount > 0
+      ? ` IMP withheld ${options.withheldRankedCount} ranked row(s) because no live receive clock is attached.`
+      : " Ranked live rows stay withheld until a live receive clock is attached.";
+  return `${withheld} created_at is not that clock. This is not Item 9 calibration. Live execution stays OFF.`;
+}
+
+export function opportunityFreshnessQueueLabel(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+): string | null {
+  return readOpportunityFreshnessView(row, evidence).queueBackendLabel;
+}
+
 export function collectOpportunityProviderLabels(
   row: OpportunityReviewRow,
   evidence?: OpportunityEvidenceResponse | null,
@@ -96,6 +212,12 @@ export function collectOpportunityUnknowns(
     out.push(`ranking.${dimension.name} ${status}${reason}`);
   }
   if (!row.instrument_id?.trim()) out.push("instrument_id");
+  const freshness = readOpportunityFreshnessView(row, evidence);
+  if (freshness.reasonCode === "LIVE_AS_OF_UNAVAILABLE") out.push("live_receive_clock");
+  if (freshness.reasonCode === "MISSING_AS_OF" || freshness.reasonCode === "NO_EVENT") {
+    out.push(freshness.reasonCode);
+  }
+  if (freshness.sameClock) out.push("event_vs_receive_lag");
   return out;
 }
 
@@ -131,11 +253,16 @@ export function collectOpportunityInvalidationLines(
   if (lifecycle.includes("EXPIRED")) {
     lines.push("Lifecycle state is expired.");
   }
-  const freshness = String(
-    asRecord(row.data_quality)?.freshness ?? asRecord(evidence?.data_quality)?.freshness ?? "",
-  ).toUpperCase();
-  if (freshness === "STALE" || freshness === "DELAYED") {
-    lines.push(`Attached freshness is ${freshness} — treat the row as lagged, not current.`);
+  const freshness = readOpportunityFreshnessView(row, evidence);
+  const status = (freshness.status ?? "").toUpperCase();
+  if (status === "STALE" || status === "DELAYED") {
+    lines.push(`Attached freshness is ${status} — treat the row as lagged, not current.`);
+  }
+  if (freshness.reasonCode === "LIVE_AS_OF_UNAVAILABLE") {
+    lines.push("A missing live receive clock withholds or invalidates live queue presentation.");
+  }
+  if (freshness.actionable === false) {
+    lines.push("Freshness evaluation is not actionable.");
   }
   for (const gap of collectOpportunityUnknowns(row, evidence)) {
     if (gap.startsWith("ranking.")) {
@@ -185,9 +312,21 @@ function inferenceVersusObservation(
   };
 }
 
+export type OperatorBriefFeedContext = {
+  as_of_time?: string;
+  as_of_provenance?: string;
+  data_mode?: string;
+  data_provider?: string;
+  mode?: string;
+};
+
 export type OperatorBriefOptions = {
   readOnly?: boolean;
   paperActions?: boolean;
+  feed?: OperatorBriefFeedContext | null;
+  withheldRankedCount?: number;
+  bookHonesty?: string;
+  unreadyReason?: string;
 };
 
 export function buildOpportunityOperatorBrief(
@@ -195,22 +334,30 @@ export function buildOpportunityOperatorBrief(
   evidence?: OpportunityEvidenceResponse | null,
   options: OperatorBriefOptions = {},
 ): OperatorBriefRow[] {
-  const { readOnly = false, paperActions = false } = options;
+  const { readOnly = false, paperActions = false, feed, withheldRankedCount, bookHonesty, unreadyReason } =
+    options;
   const instrument = row.instrument_id?.trim() || "UNKNOWN instrument";
   const providers = collectOpportunityProviderLabels(row, evidence);
+  if (feed?.data_provider?.trim()) {
+    const name = feed.data_provider.trim();
+    if (!providers.includes(name)) providers.push(name);
+  }
   const unknowns = collectOpportunityUnknowns(row, evidence);
   const conflicts = collectOpportunityConflicts(row, evidence);
   const invalidation = collectOpportunityInvalidationLines(row, evidence);
-  const quality = asRecord(row.data_quality) ?? {};
-  const freshness = isPresent(quality.freshness)
-    ? humanizeEnum(String(quality.freshness))
-    : "UNKNOWN";
-  const why =
-    (isPresent(evidence?.evidence_promotion_reason) && String(evidence?.evidence_promotion_reason)) ||
-    (isPresent(row.evidence_promotion_reason) && String(row.evidence_promotion_reason)) ||
-    (row.ranking_vector?.basis
-      ? `Ranked on ${humanizeEnum(row.ranking_vector.basis)}`
-      : "UNKNOWN — no promotion reason attached");
+  const freshness = readOpportunityFreshnessView(row, evidence);
+  const whyParts: string[] = [];
+  if (isPresent(evidence?.evidence_promotion_reason)) whyParts.push(String(evidence?.evidence_promotion_reason));
+  else if (isPresent(row.evidence_promotion_reason)) whyParts.push(String(row.evidence_promotion_reason));
+  else if (row.ranking_vector?.basis) whyParts.push(`Ranked on ${humanizeEnum(row.ranking_vector.basis)}`);
+  if (unreadyReason === "LIVE_AS_OF_UNAVAILABLE") {
+    whyParts.push("Live feed is withholding ranked rows without a receive clock");
+  }
+  if (typeof withheldRankedCount === "number" && withheldRankedCount > 0) {
+    whyParts.push(`${withheldRankedCount} ranked row(s) withheld`);
+  }
+  if (bookHonesty) whyParts.push(humanizeEnum(bookHonesty));
+  const why = whyParts.length ? whyParts.join(". ") : "UNKNOWN — no promotion reason attached";
   const next = resolveSemanticState(
     "research",
     isOpportunityIneligible(row) ? "STOP" : row.next_safe_action,
@@ -223,6 +370,9 @@ export function buildOpportunityOperatorBrief(
   if (!row.instrument_id?.trim()) refusal.push("No instrument_id — workspace preview cannot be offered.");
   if (!canOpen && row.next_safe_action && row.next_safe_action !== "OPEN_WORKSPACE") {
     refusal.push(`Backend next safe action is ${next.label}, not workspace preview.`);
+  }
+  if (unreadyReason === "LIVE_AS_OF_UNAVAILABLE") {
+    refusal.push("Live receive clock unavailable — ranked presentation is withheld, not executable.");
   }
   refusal.push("Radar never grants live execution. Visibility is not actionability.");
 
@@ -257,8 +407,15 @@ export function buildOpportunityOperatorBrief(
     },
     {
       question: "How fresh?",
-      answer: freshness,
-      honesty: isPresent(quality.freshness) ? "OBSERVED" : "UNKNOWN",
+      answer: [
+        freshness.operatorAnswer,
+        feed?.as_of_time ? `Feed as-of ${feed.as_of_time}` : null,
+        feed?.as_of_provenance ? `provenance ${feed.as_of_provenance}` : null,
+        feed?.data_mode ? `data mode ${humanizeEnum(feed.data_mode)}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+      honesty: freshness.honesty,
     },
     {
       question: "Which providers support it?",
