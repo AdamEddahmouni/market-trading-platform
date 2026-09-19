@@ -44,8 +44,31 @@ const modelsState = {
   refetch: vi.fn(),
 };
 
+const diagnosticsState = {
+  isLoading: false,
+  isError: false,
+  data: {
+    schema_version: "operator-diagnostics/1.0.0",
+    severity: "OK",
+    sections: {
+      runtime: {
+        item9_corpus_status: {
+          availability: "AVAILABLE",
+          report: {
+            calibration_state: "NOT_CALIBRATED",
+            fitting_allowed: false,
+            sample_gate_progress: { distinct_rth_dates: "2/3" },
+          },
+        },
+      },
+      governance: { live_execution_env: false },
+    },
+  } as Record<string, unknown> | undefined,
+};
+
 vi.mock("../../api/hooks", () => ({
   useResearchModelsQuery: () => modelsState,
+  useOperatorDiagnosticsQuery: () => diagnosticsState,
 }));
 
 describe("LabValidationSection", () => {
@@ -54,6 +77,25 @@ describe("LabValidationSection", () => {
     modelsState.isError = false;
     modelsState.error = null;
     modelsState.data = modelsFixture;
+    diagnosticsState.isLoading = false;
+    diagnosticsState.isError = false;
+    diagnosticsState.data = {
+      schema_version: "operator-diagnostics/1.0.0",
+      severity: "OK",
+      sections: {
+        runtime: {
+          item9_corpus_status: {
+            availability: "AVAILABLE",
+            report: {
+              calibration_state: "NOT_CALIBRATED",
+              fitting_allowed: false,
+              sample_gate_progress: { distinct_rth_dates: "2/3" },
+            },
+          },
+        },
+        governance: { live_execution_env: false },
+      },
+    };
     vi.clearAllMocks();
   });
 
@@ -74,6 +116,30 @@ describe("LabValidationSection", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(/validation workflow snapshot is unavailable/i);
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 date-gate: IDLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: Live OFF")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps Item 9 UNAVAILABLE on snapshot error instead of minting 2/3", () => {
+    modelsState.isError = true;
+    modelsState.data = undefined;
+    diagnosticsState.isError = true;
+    diagnosticsState.data = undefined;
+    render(
+      <MemoryRouter>
+        <LabValidationSection />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(/validation workflow snapshot is unavailable/i);
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 date-gate: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 calibration: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.queryByText("2/3")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Item 9 date-gate: IDLE")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
   });
 
   it("presents process, recorded config, and a Research bridge without a Run control", () => {
@@ -96,6 +162,8 @@ describe("LabValidationSection", () => {
     );
     expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
     expect(screen.getByText("Research-only — not tradeable")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: Live OFF")).toBeInTheDocument();
   });
 
   it("keeps hashes copyable without leaking epoch ns", () => {

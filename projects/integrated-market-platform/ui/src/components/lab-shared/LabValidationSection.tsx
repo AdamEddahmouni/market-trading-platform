@@ -12,6 +12,7 @@ import {
   presentAbstentionReason,
   presentPreregistration,
 } from "../research-shared/researchPresentation";
+import { LabCalibrationHonesty } from "./LabCalibrationHonesty";
 import { LabFactGrid, LabWarningList } from "./LabFactGrid";
 import {
   capabilityStateFacts,
@@ -37,12 +38,15 @@ export function LabValidationSection() {
 
   if (modelsQuery.isError || !modelsQuery.data) {
     return (
-      <ErrorState
-        title="The validation workflow snapshot is unavailable."
-        affects="Target, methodology, and current result cannot be inspected until /research/models responds."
-        rawDetail={modelsQuery.error instanceof Error ? modelsQuery.error.message : undefined}
-        onRetry={() => void modelsQuery.refetch()}
-      />
+      <>
+        <ErrorState
+          title="The validation workflow snapshot is unavailable."
+          affects="Target, methodology, and current result cannot be inspected until /research/models responds."
+          rawDetail={modelsQuery.error instanceof Error ? modelsQuery.error.message : undefined}
+          onRetry={() => void modelsQuery.refetch()}
+        />
+        <LabCalibrationHonesty />
+      </>
     );
   }
 
@@ -75,6 +79,8 @@ export function LabValidationSection() {
           <Link to="/research/validation">View interpretation in Research</Link>
         </div>
       </section>
+
+      <LabCalibrationHonesty />
 
       <section className="lab-panel" aria-labelledby="lab-validation-before-heading">
         <div className="lab-stage">
