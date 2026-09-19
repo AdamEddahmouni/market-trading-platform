@@ -1,4 +1,9 @@
 import type { OpportunityEvidenceResponse, OpportunityReviewRow } from "../../api/opportunityClient";
+import {
+  collectOpportunityConflicts,
+  collectOpportunityProviderLabels,
+  collectOpportunityUnknowns,
+} from "./opportunityOperatorBrief";
 
 export type EpistemicLayerKey =
   | "observed"
@@ -82,10 +87,15 @@ export function buildOpportunityEpistemicLayers(
   const quality = (row.data_quality ?? {}) as Record<string, unknown>;
   const agent = agentEnrichmentMeta(row);
 
+  const providers = collectOpportunityProviderLabels(row, evidence);
   const observed: EpistemicLayerItem[] = [
     { label: "Instrument", value: display(row.instrument_id) },
     { label: "Evidence class", value: display(evidence?.evidence_class ?? row.evidence_class) },
     { label: "Source", value: display(quality.source) },
+    {
+      label: "Supporting providers",
+      value: providers.length ? providers.join(", ") : "UNKNOWN — no provider or source identifiers attached",
+    },
     { label: "Primary source status", value: display(quality.status) },
     { label: "Surfaced headline", value: display(row.headline) },
     ...collectGroundedFactLines(row, evidence),
@@ -135,27 +145,26 @@ export function buildOpportunityEpistemicLayers(
     hypothesis.push({ label: "Explain ref", value: display(row.explanation_ref), nonFactual: true });
   }
 
-  const unknown: EpistemicLayerItem[] = (evidence?.unavailable_fields ?? row.unavailable_fields ?? []).map(
-    (field) => ({
-      label: "Unavailable field",
-      value: display(field),
-    }),
-  );
+  const unknown: EpistemicLayerItem[] = collectOpportunityUnknowns(row, evidence).map((field) => ({
+    label: "Unavailable field",
+    value: display(field),
+  }));
   if (!unknown.length) {
-    unknown.push({ label: "Contract gaps", value: "None reported" });
+    unknown.push({
+      label: "Contract gaps",
+      value: "UNKNOWN — no unavailable_fields or missing ranking inputs attached",
+    });
   }
 
-  const contradiction: EpistemicLayerItem[] = [];
-  const supersession = display(evidence?.supersession_reason ?? row.supersession_reason);
-  if (supersession !== "UNAVAILABLE") {
-    contradiction.push({ label: "Supersession", value: supersession });
-  }
-  const duplicateReason = display(row.duplicate_reason);
-  if (duplicateReason !== "UNAVAILABLE") {
-    contradiction.push({ label: "Duplicate", value: duplicateReason });
-  }
+  const contradiction: EpistemicLayerItem[] = collectOpportunityConflicts(row, evidence).map((line) => ({
+    label: "Conflict",
+    value: line,
+  }));
   if (!contradiction.length) {
-    contradiction.push({ label: "Conflicts", value: "None reported" });
+    contradiction.push({
+      label: "Conflicts",
+      value: "UNKNOWN — no conflict or supersession fields attached",
+    });
   }
 
   return {
