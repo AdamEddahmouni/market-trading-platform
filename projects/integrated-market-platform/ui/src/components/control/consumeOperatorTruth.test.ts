@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { OperatorDiagnostics } from "../../api/schemas";
-import {
-  operatorTruthById,
-  operatorTruthSection,
-  preferItem9OperatorTruth,
-} from "./consumeOperatorTruth";
+import { operatorTruthById, operatorTruthSection } from "../../api/operatorTruth";
+import { preferItem9OperatorTruth } from "./consumeOperatorTruth";
 
 const BASE: OperatorDiagnostics = {
   schema_version: "operator-diagnostics/1.0.0",
