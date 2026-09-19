@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Lane C Control+Radar QA
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/control` |
+| **Summary** | Radar Live UNAVAILABLE is presented as a by-design empty engine (policy), not a feed fault. Ranked-queue Explain/Inspect/Workspace buttons now have symbol-scoped accessible names. Control Item 9 2/3 IDLE vs DEGRADED and Live OFF POLICY were already correct and were re-verified. |
+| **Key files** | `ui/src/components/opportunity/OpportunityFeedState.tsx`; `ui/src/components/radar/RadarQueueTable.tsx`; `RadarPage.test.tsx`; `OpportunityCard.test.tsx` |
+| **Tests** | Isolated UI: `npm run typecheck` **pass**; `npx vitest run src/components/control src/components/radar src/components/opportunity/OpportunityCard.test.tsx` **92 passed** |
+| **Related** | Weekend Lane C Control+Radar browser/QA increment |
+| **Notes** | Isolated worktree `ui/weekend-lane-c-control-radar-qa` from `origin/main` @ `9d219537` (2d1b508c ancestor). Browser MCP present but no IMP UI server in this worktree; Vitest/RTL used as substitute. Frozen collector `fed2d9f7` untouched. `#222` not merged. |
+
 ## 2026-09-19 — Weekend Wave B Lane H: operator lifecycle boundary tests
 
 | Field | Value |

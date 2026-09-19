@@ -103,8 +103,8 @@ export function OpportunityFeedState({
     if (mode === "LIVE") {
       return (
         <EmptyState
-          title="Opportunity feed unavailable"
-          reason="Live mode has no opportunity engine — use Radar screeners and workspace evidence to investigate instruments."
+          title="Live has no opportunity engine"
+          reason="This is by design, not a feed fault. Use Radar screeners and workspace evidence to investigate instruments. Live execution stays OFF."
         />
       );
     }
