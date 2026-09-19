@@ -204,6 +204,13 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/operator/config":
                 self._send_json(operator_projections.build_operator_config_payload())
                 return
+            if path == "/operator/diagnostics":
+                from market_platform_foundation.platform.operator_diagnostics import (
+                    build_operator_diagnostics_snapshot,
+                )
+
+                self._send_json(build_operator_diagnostics_snapshot(self.store))
+                return
             if path == "/operator/lifecycle/status":
                 from tools.platform.control_service import build_control_status
 
