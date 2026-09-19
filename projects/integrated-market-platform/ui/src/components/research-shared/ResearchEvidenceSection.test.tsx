@@ -176,6 +176,22 @@ describe("ResearchEvidenceSection", () => {
       "href",
       "/research/validation?conflict=1",
     );
+    expect(screen.queryByRole("navigation", { name: "From this evidence" })).not.toHaveTextContent(
+      "Follow implementation",
+    );
+    const strategyFinding = document.getElementById("research-finding-strategy-outcomes");
+    expect(strategyFinding).not.toBeNull();
+    expect(strategyFinding?.querySelector('a[href="/lab/validation"]')).not.toBeNull();
+    const riskFinding = document.getElementById("research-finding-risk-decisions");
+    expect(riskFinding?.querySelector('a[href="/lab/simulation"]')).not.toBeNull();
+    const squeezeFinding = document.getElementById("research-finding-squeeze-outcomes");
+    expect(squeezeFinding?.querySelector('a[href^="/lab"]')).toBeNull();
+  });
+
+  it("adds a Lab implementation hop on Evidence when following a process-backed claim", () => {
+    renderSection("/research/evidence?claim=strategy_outcomes");
+    const pageHops = screen.getByRole("navigation", { name: "From this evidence" });
+    expect(pageHops.querySelector('a[href="/lab/validation"]')).not.toBeNull();
   });
 
   it("keeps provenance and cohort metadata behind methodology disclosure", () => {
