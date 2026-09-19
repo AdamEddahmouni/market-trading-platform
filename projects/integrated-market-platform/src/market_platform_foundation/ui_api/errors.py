@@ -188,9 +188,34 @@ def build_error_response_payload(reason_code: str, message: str) -> dict[str, An
     }
 
 
+def build_provider_error_payload(
+    reason_code: str,
+    message: str | None = None,
+) -> dict[str, Any]:
+    """Error envelope plus backend-owned provider resilience operator explanation."""
+
+    from ..providers.resilience import incident_for_reason_code
+
+    incident = incident_for_reason_code(reason_code)
+    operator_explanation = incident.operator_message
+    payload = build_error_response_payload(
+        reason_code,
+        message if message is not None else operator_explanation,
+    )
+    payload["operator_explanation"] = operator_explanation
+    payload["provider_status_token"] = incident.status_token
+    payload["fallback_boundary"] = incident.fallback.boundary_token
+    payload["overlay_as_hop_l1"] = incident.fallback.overlay_as_hop_l1
+    payload["live_execution"] = incident.live_execution
+    payload["item9_mode"] = "IDLE"
+    payload["item9_calibration"] = "NOT_CALIBRATED"
+    return payload
+
+
 __all__ = [
     "CANONICAL_ERROR_CATEGORY_VALUES",
     "CanonicalErrorCategory",
     "build_error_response_payload",
+    "build_provider_error_payload",
     "canonical_error_category",
 ]
