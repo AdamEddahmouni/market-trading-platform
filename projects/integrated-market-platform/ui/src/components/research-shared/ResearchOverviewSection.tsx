@@ -146,7 +146,7 @@ export function ResearchOverviewSection({ mode }: Props) {
         ) : (
           <>
             <p className="research-finding-claim">{claimLineage.reading}</p>
-            <ResearchClaimGraph nodes={claimLineage.nodes} activeKey="evidence" />
+            <ResearchClaimGraph nodes={claimLineage.nodes} />
           </>
         )}
       </section>

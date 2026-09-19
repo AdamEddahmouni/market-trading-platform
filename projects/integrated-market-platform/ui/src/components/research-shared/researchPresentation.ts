@@ -878,18 +878,16 @@ export function claimHopsForFinding(
     ...hop,
     href: withResearchClaimQuery(hop.href, key),
   });
-  const extraKeys = CLAIM_PATH_BY_FINDING[key];
-  if (!extraKeys.length) {
-    return [
-      scoped({
-        key: "source",
-        title: CLAIM_TITLES.source,
-        href: `/research?claim=${key}`,
-        note: "This finding's path is source → evidence. Provenance is on this panel; there is no catalog.",
-      }),
-    ];
-  }
-  return extraKeys.map((hopKey) => scoped(shared[hopKey]));
+  return claimPathKeys(key).map((hopKey) => {
+    const hop = shared[hopKey];
+    if (hopKey === "source" || hopKey === "evidence") {
+      return scoped({
+        ...hop,
+        href: `/research/evidence?panel=${key}`,
+      });
+    }
+    return scoped(hop);
+  });
 }
 
 function scopeSectionHops(hops: ClaimHop[], findingKey?: ResearchPanelKey): ClaimHop[] {

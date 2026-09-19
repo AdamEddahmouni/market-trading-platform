@@ -48,7 +48,6 @@ export function ResearchClaimGraph({ nodes, activeKey }: GraphProps) {
                 <Link
                   to={node.href}
                   className="research-claim-graph-link"
-                  aria-label={claimFollowAccessibleName(node.title)}
                   aria-current={activeKey === node.key ? "page" : undefined}
                 >
                   {body}
