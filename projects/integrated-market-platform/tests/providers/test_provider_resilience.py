@@ -31,6 +31,10 @@ from market_platform_foundation.providers.adapters.yahoo_delayed_equity_quote im
     YAHOO_PROVIDER_ID,
     YahooDelayedEquityQuoteProvider,
 )
+from market_platform_foundation.providers.equity_quote_discovery import (  # noqa: E402
+    discover_equity_quote_stack,
+    equity_quote_discovery_operator_view,
+)
 from market_platform_foundation.providers.equity_quote_selection import (  # noqa: E402
     OpenDReadiness,
     delayed_cloud_overlay_provider,
@@ -49,12 +53,14 @@ from market_platform_foundation.providers.resilience import (  # noqa: E402
     ProviderSessionState,
     classify_opend_connectivity,
     classify_provider_incident,
+    incident_for_reason_code,
     note_disconnect,
     note_process_restart,
     note_reconnect,
 )
 from market_platform_foundation.ui_api.errors import (  # noqa: E402
     CanonicalErrorCategory,
+    build_provider_error_payload,
     canonical_error_category,
 )
 from tests.support.hermetic_environment import env, unreachable_opend_env  # noqa: E402
@@ -215,6 +221,34 @@ class AdapterResilienceMockTests(unittest.TestCase):
         self.assertEqual(timed.reason_code, PROVIDER_TIMEOUT)
         self.assertEqual(reset.reason_code, TEMPORARY_NETWORK_FAILURE)
         self.assertEqual(empty.events, ())
+
+
+class ReasonCodeProjectionTests(unittest.TestCase):
+    def test_incident_for_reason_code_sdk_and_loopback_messages(self) -> None:
+        sdk = incident_for_reason_code("MOOMOO_SDK_MISSING")
+        self.assertEqual(sdk.status_token, "MOOMOO_SDK_MISSING")
+        self.assertIn("vendor SDK", sdk.operator_message)
+        self.assertFalse(sdk.fallback.overlay_as_hop_l1)
+        blocked = incident_for_reason_code("OPEND_NON_LOOPBACK_BLOCKED")
+        self.assertIn("loopback", blocked.operator_message.lower())
+
+    def test_build_provider_error_payload_is_additive(self) -> None:
+        payload = build_provider_error_payload(OPEND_UNAVAILABLE)
+        self.assertEqual(payload["reason_code"], OPEND_UNAVAILABLE)
+        self.assertEqual(payload["error_category"], CanonicalErrorCategory.PROVIDER_UNAVAILABLE.value)
+        self.assertEqual(payload["operator_explanation"], payload["error"])
+        self.assertFalse(payload["overlay_as_hop_l1"])
+        self.assertEqual(payload["live_execution"], "OFF")
+        self.assertEqual(payload["item9_mode"], "IDLE")
+
+    def test_discovery_operator_view_when_opend_down(self) -> None:
+        with unreachable_opend_env():
+            _, discovery = discover_equity_quote_stack()
+        view = equity_quote_discovery_operator_view(discovery)
+        self.assertEqual(view["reason_code"], OPEND_UNAVAILABLE)
+        self.assertIn("not hop L1", view["operator_explanation"])
+        self.assertFalse(view["fallback"]["overlay_as_hop_l1"])
+        self.assertEqual(view["item9_mode"], "IDLE")
 
 
 class DiagnosticAndTaxonomyTests(unittest.TestCase):
