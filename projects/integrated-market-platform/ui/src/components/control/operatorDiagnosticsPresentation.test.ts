@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOperatorSituation,
   buildOperatorTruthRows,
   formatItem9CorpusProgress,
   humanDiagnosticsHeadline,
@@ -71,8 +72,48 @@ describe("operatorDiagnosticsPresentation", () => {
     const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
     const corpusRow = rows.find((row) => row.id === "item9-corpus");
     expect(corpusRow?.truth).toBe("IDLE");
+    expect(corpusRow?.kind).toBe("waiting");
     expect(corpusRow?.detail).toMatch(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/);
+    expect(corpusRow?.meaning).toMatch(/IDLE, not DEGRADED/);
     expect(corpusRow?.truth).not.toBe("DEGRADED");
+  });
+
+  it("explains Live OFF as a policy lock, not platform degradation", () => {
+    const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
+    const live = rows.find((row) => row.id === "live-execution");
+    expect(live?.detail).toMatch(/Live OFF/);
+    expect(live?.kind).toBe("policy");
+    expect(live?.truth).not.toBe("DEGRADED");
+  });
+
+  it("treats calendar-incomplete Item 9 as waiting even when another row is blocked", () => {
+    const situation = buildOperatorSituation(SAMPLE_DIAGNOSTICS);
+    expect(situation.kind).toBe("impaired");
+    expect(situation.explanation).toMatch(/2\/3/);
+    expect(situation.explanation).toMatch(/Live OFF/);
+  });
+
+  it("classifies calendar-only incomplete corpus as waiting, not impaired", () => {
+    const calendarOnly: OperatorDiagnostics = {
+      ...SAMPLE_DIAGNOSTICS,
+      severity: "OK",
+      sections: {
+        ...SAMPLE_DIAGNOSTICS.sections,
+        governance: {
+          ...(SAMPLE_DIAGNOSTICS.sections.governance as Record<string, unknown>),
+          headline: "No blocking operator headline.",
+        },
+        runtime: {
+          ...(SAMPLE_DIAGNOSTICS.sections.runtime as Record<string, unknown>),
+          item9_preflight: { disposition: "NOT_RTH" },
+        },
+      },
+    };
+    const situation = buildOperatorSituation(calendarOnly);
+    expect(situation.kind).toBe("waiting");
+    expect(situation.title).toMatch(/calendar/i);
+    expect(situation.explanation).toMatch(/IDLE, not DEGRADED/);
+    expect(situation.explanation).toMatch(/Live OFF/);
   });
 
   it("maps 0/3 corpus progress to NOT_OBSERVED when receipts are missing", () => {

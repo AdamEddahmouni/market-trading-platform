@@ -12,13 +12,77 @@ export type OperatorTruthClass =
   | "UNAVAILABLE"
   | "NOT_OBSERVED";
 
+export type OperatorRowKind = "ok" | "waiting" | "policy" | "fault" | "unknown";
+
 export type OperatorTruthRow = {
   id: string;
   label: string;
   truth: OperatorTruthClass;
   detail: string;
+  /** Plain-language meaning for a trader who does not know IMP internals. */
+  meaning: string;
+  kind: OperatorRowKind;
   tone: SemanticTone;
 };
+
+export type OperatorSituation = {
+  kind: "waiting" | "impaired" | "healthy" | "unavailable";
+  title: string;
+  explanation: string;
+};
+
+export function explainTruthClass(truth: OperatorTruthClass): string {
+  switch (truth) {
+    case "HEALTHY":
+      return "Working as expected.";
+    case "IDLE":
+      return "Waiting — a calendar or schedule gate, not a broken platform.";
+    case "DEGRADED":
+      return "Impaired — something that should be working is not.";
+    case "BLOCKED":
+      return "Stopped or locked — this path cannot proceed until a gate is cleared.";
+    case "UNAVAILABLE":
+      return "This fact could not be read from the platform snapshot. Treat as unknown, not healthy.";
+    case "NOT_OBSERVED":
+      return "No observation yet. Absence of evidence is not a passing result.";
+    case "UNKNOWN":
+    default:
+      return "Not classified. Treat as unverified, not healthy.";
+  }
+}
+
+export function truthTone(truth: OperatorTruthClass): SemanticTone {
+  switch (truth) {
+    case "HEALTHY":
+      return "live";
+    case "DEGRADED":
+    case "UNAVAILABLE":
+      return "caution";
+    case "BLOCKED":
+      return "critical";
+    case "IDLE":
+    case "NOT_OBSERVED":
+    case "UNKNOWN":
+    default:
+      return "neutral";
+  }
+}
+
+export function classifyOperatorRow(row: {
+  id: string;
+  truth: OperatorTruthClass;
+  detail: string;
+}): OperatorRowKind {
+  if (row.id === "live-execution") {
+    return /Live OFF/i.test(row.detail) ? "policy" : "fault";
+  }
+  if (row.truth === "IDLE") return "waiting";
+  if (row.truth === "HEALTHY") return "ok";
+  if (row.truth === "DEGRADED" || row.truth === "BLOCKED" || row.truth === "UNAVAILABLE") {
+    return "fault";
+  }
+  return "unknown";
+}
 
 export function diagnosticsSection<T extends Record<string, unknown>>(
   diagnostics: OperatorDiagnostics | null | undefined,
@@ -218,7 +282,13 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
 
   const readinessStatus = String(readiness?.status ?? "UNKNOWN").toUpperCase();
   const readinessTruth: OperatorTruthClass =
-    readinessStatus === "READY" ? "HEALTHY" : readinessStatus === "ACTION_REQUIRED" ? "DEGRADED" : "UNKNOWN";
+    readinessStatus === "READY"
+      ? "HEALTHY"
+      : readinessStatus === "ACTION_REQUIRED"
+        ? "DEGRADED"
+        : readinessStatus === "BLOCKED"
+          ? "BLOCKED"
+          : "UNKNOWN";
 
   const collector = (resilience.collector_process ?? {}) as Record<string, unknown>;
   const collectorDetected = collector.active_collector_detected === true;
@@ -243,44 +313,60 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
   );
 
   const corpusTruth = mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates);
-  const corpusTone: SemanticTone =
-    corpusTruth === "HEALTHY" ? "live" : corpusTruth === "IDLE" ? "neutral" : "caution";
+  const preflightTruth = mapItem9DispositionTruth(String(item9Preflight.disposition));
+  const preflightToken = String(item9Preflight.disposition ?? "UNKNOWN");
+  const liveOff = !governance?.live_execution_env;
 
-  return [
+  const rows: OperatorTruthRow[] = [
     {
       id: "imp-lifecycle",
       label: "IMP platform lifecycle",
       truth: lifecycleTruth,
       detail: `Lifecycle status ${lifecycleStatus}.`,
-      tone: lifecycleTruth === "HEALTHY" ? "live" : lifecycleTruth === "BLOCKED" ? "critical" : "caution",
+      meaning: "Whether local platform services are running. This is workstation health, not trading skill.",
+      kind: "unknown",
+      tone: truthTone(lifecycleTruth),
     },
     {
       id: "operator-readiness",
       label: "Operator readiness",
       truth: readinessTruth,
       detail: `Readiness status ${readinessStatus}.`,
-      tone: readinessTruth === "HEALTHY" ? "live" : "caution",
+      meaning: "Whether setup checks passed so this workstation can operate. A calendar wait is not a failed setup.",
+      kind: "unknown",
+      tone: truthTone(readinessTruth),
     },
     {
       id: "runtime-sha",
       label: "Runtime git SHA",
       truth: runtime?.git_sha ? "HEALTHY" : "UNAVAILABLE",
       detail: runtime?.git_sha ? String(runtime.git_sha) : "Diagnostics did not include runtime SHA.",
+      meaning: "Exact software revision the API is running. Copy it when comparing collectors — do not infer health from the hash.",
+      kind: "unknown",
       tone: "neutral",
     },
     {
       id: "item9-preflight",
       label: "Item 9 preflight disposition",
-      truth: mapItem9DispositionTruth(String(item9Preflight.disposition)),
-      detail: String(item9Preflight.disposition ?? "UNKNOWN"),
-      tone: mapItem9DispositionTruth(String(item9Preflight.disposition)) === "BLOCKED" ? "critical" : "caution",
+      truth: preflightTruth,
+      detail: preflightToken,
+      meaning:
+        preflightTruth === "IDLE"
+          ? `Regular trading hours are closed (${preflightToken}). Collection waits for the next US cash session — IDLE, not DEGRADED.`
+          : preflightTruth === "BLOCKED"
+            ? `Item 9 collection is blocked (${preflightToken}). This is a gate failure, not a calendar wait.`
+            : `Item 9 preflight token ${preflightToken}. ${explainTruthClass(preflightTruth)}`,
+      kind: "unknown",
+      tone: preflightTruth === "IDLE" ? "neutral" : truthTone(preflightTruth),
     },
     {
       id: "item9-corpus",
       label: "Distinct admitted RTH dates",
       truth: corpusTruth,
       detail: `${corpus.distinctRthDates} · ${corpus.calibrationLabel} · ${corpus.calibrationForbidden}. ${corpus.receiptScopeNote}`,
-      tone: corpusTone,
+      meaning: `Paper fill calibration still needs more distinct regular-trading-hours dates. Canonical tokens: Item 9 ${corpus.distinctRthDates}, ${corpus.calibrationLabel}, ${corpus.calibrationForbidden}. Incomplete dates are IDLE, not DEGRADED.`,
+      kind: "unknown",
+      tone: truthTone(corpusTruth),
     },
     {
       id: "collector",
@@ -289,27 +375,44 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
       detail: collectorDetected
         ? "Active collector process detected (summarized — no raw command lines)."
         : `Probe ${String(collector.probe_status ?? item9Preflight.disposition ?? "NOT_OBSERVED")}.`,
+      meaning: collectorDetected
+        ? "A governed collector process is running. This screen does not start or stop it."
+        : "No active collector was observed. Off-hours that is expected (waiting), not a crash.",
+      kind: "unknown",
       tone: collectorDetected ? "live" : "neutral",
     },
     {
       id: "live-execution",
       label: "Live real-money execution",
       truth: liveTruth,
-      detail: governance?.live_execution_env ? "Live execution env flag is on — still governed." : "Live OFF",
-      tone: governance?.live_execution_env ? "critical" : "neutral",
+      detail: liveOff ? "Live OFF" : "Live execution env flag is on — still governed.",
+      meaning: liveOff
+        ? "Intentional safety lock. Canonical token: Live OFF. Observational live data never places broker orders."
+        : "A live-execution environment flag is on. Still subject to platform gates — this is not a go-live.",
+      kind: "unknown",
+      tone: liveOff ? "neutral" : "critical",
     },
     {
       id: "expected-cycle",
       label: "Expected cycle failure",
       truth: cycleTruth,
       detail: cycle?.gap_note ?? "Cycle ledger not observed.",
-      tone: cycleTruth === "DEGRADED" ? "caution" : "neutral",
+      meaning:
+        cycleTruth === "DEGRADED"
+          ? "A scheduled evidence cycle did not complete as expected. That is a recorded gap, not a passing wait."
+          : "No expected-cycle failure is on this snapshot. Missing ledger is NOT_OBSERVED, not healthy.",
+      kind: "unknown",
+      tone: truthTone(cycleTruth),
     },
     {
       id: "evidence-gaps",
       label: "Evidence gaps (composed)",
       truth: evidenceGaps?.length ? "DEGRADED" : "NOT_OBSERVED",
       detail: gapDetail,
+      meaning: evidenceGaps?.length
+        ? "Composed evidence gaps are listed below. They stay explicit; the UI does not upgrade them to passing."
+        : "No composed evidence gaps in this snapshot.",
+      kind: "unknown",
       tone: evidenceGaps?.length ? "caution" : "neutral",
     },
     ...(incident
@@ -319,11 +422,65 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
             label: incident.title,
             truth: "DEGRADED" as OperatorTruthClass,
             detail: incident.detail,
+            meaning: "A known data incident matched this snapshot. Treat the named outage as impaired, not a calendar wait.",
+            kind: "fault" as OperatorRowKind,
             tone: incident.tone,
           },
         ]
       : []),
   ];
+
+  return rows.map((row) => ({
+    ...row,
+    kind: classifyOperatorRow(row),
+  }));
+}
+
+export function buildOperatorSituation(
+  diagnostics: OperatorDiagnostics | null | undefined,
+): OperatorSituation {
+  if (!diagnostics) {
+    return {
+      kind: "unavailable",
+      title: "Platform snapshot unavailable",
+      explanation:
+        "Control cannot explain operating state until the operator diagnostics snapshot responds. This is a load failure, not a calendar wait.",
+    };
+  }
+
+  const rows = buildOperatorTruthRows(diagnostics);
+  const corpus = rows.find((row) => row.id === "item9-corpus");
+  const live = rows.find((row) => row.id === "live-execution");
+  const hasFault = rows.some((row) => row.kind === "fault");
+
+  if (hasFault) {
+    const firstFault = rows.find((row) => row.kind === "fault");
+    return {
+      kind: "impaired",
+      title: "Something needs attention",
+      explanation: `${firstFault?.meaning ?? "A platform fact is impaired."} Item 9 calendar progress stays separate from this fault: ${corpus?.detail ?? "NOT_OBSERVED"}. ${live?.detail === "Live OFF" ? "Live OFF." : ""}`.trim(),
+    };
+  }
+
+  if (corpus?.kind === "waiting") {
+    return {
+      kind: "waiting",
+      title: "Waiting on the trading calendar",
+      explanation: `Item 9 is ${corpus.detail} That wait is IDLE, not DEGRADED. ${live?.detail === "Live OFF" ? "Live OFF." : ""} You do not need to “fix” the workstation for the missing dates.`.replace(
+        /\s+/g,
+        " ",
+      ),
+    };
+  }
+
+  return {
+    kind: "healthy",
+    title: "No blocking platform faults",
+    explanation: `Readiness and lifecycle are not raising a repair item. ${live?.detail === "Live OFF" ? "Live OFF remains the safety lock." : ""} Canonical Item 9 tokens stay on this page.`.replace(
+      /\s+/g,
+      " ",
+    ),
+  };
 }
 
 export function humanDiagnosticsHeadline(diagnostics: OperatorDiagnostics | null | undefined): string {

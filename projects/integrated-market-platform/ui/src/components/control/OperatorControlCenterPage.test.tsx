@@ -256,6 +256,12 @@ describe("OperatorControlCenterPage", () => {
     ).toBeInTheDocument();
     expect(await screen.findByText(/No blocking issues detected/)).toBeInTheDocument();
     expect(await screen.findByText(/calendar-incomplete \(2\/3\)/)).toBeInTheDocument();
+    expect(screen.getAllByText(/IDLE, not DEGRADED/).length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: "Skip to system status" })).toHaveAttribute(
+      "href",
+      "#control-system-status",
+    );
+    expect(screen.getByRole("navigation", { name: "Control sections" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Needs your attention" })).not.toBeInTheDocument();
     // Distinct real states, not a composite score.
     expect(screen.getByText("Setup readiness")).toBeInTheDocument();
@@ -514,6 +520,10 @@ describe("OperatorControlCenterPage", () => {
       .getByText("Distinct admitted RTH dates")
       .closest("li");
     expect(corpusRow).toHaveAttribute("data-truth", "IDLE");
+    expect(corpusRow).toHaveAttribute("data-kind", "waiting");
     expect(corpusRow).not.toHaveAttribute("data-truth", "DEGRADED");
+    expect(systemStatus).toHaveTextContent(/Waiting on the trading calendar/);
+    expect(systemStatus).toHaveTextContent(/NOT CALIBRATED/);
+    expect(systemStatus).toHaveTextContent(/CALIBRATION FORBIDDEN/);
   });
 });

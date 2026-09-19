@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Lane B Operator Control UX (trader-readable status)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Refined Control so a trader can tell waiting vs failure: Item 9 incomplete dates stay **IDLE** (not **DEGRADED**), Live OFF is a policy lock, and diagnostics load errors are labeled as load failures. Canonical tokens remain visible. Did not add a UI route at `/operator/diagnostics` because Vite proxies that path to the API. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/control/OperatorSystemStatusSection.tsx`; `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `ui/src/styles/operator-control.css`; `ui/src/components/control/*.test.ts(x)` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **49 passed**. Browser: Vite `:5194` Demo Control — load-failure copy, **Live OFF**, **NOT CALIBRATED**, **CALIBRATION FORBIDDEN**; Item 9 **2/3 IDLE** covered by Vitest (API snapshot unavailable in that session). Did not click Restart / collectors. |
+| **Related** | `docs/engineering/ACCESSIBILITY.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Full `App.test.tsx` showed intermittent lazy-load flakes when run as a heavy suite; Control-focused Vitest is the claimed gate. |
+
 ## 2026-09-18 — Control system status consumes GET /operator/diagnostics
 
 | Field | Value |
