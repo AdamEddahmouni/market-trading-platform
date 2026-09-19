@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `d27fb164` after #349
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`d27fb164`** (merge [#349](https://github.com/AdamEddahmouni/market-trading-platform/pull/349) Discover leftover discovery-mode operator copy; ancestry includes [#348](https://github.com/AdamEddahmouni/market-trading-platform/pull/348) Radar leftover Live discovery-surface copy and [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) status pin on `cf3c9686`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222/#314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#349](https://github.com/AdamEddahmouni/market-trading-platform/pull/349); [#348](https://github.com/AdamEddahmouni/market-trading-platform/pull/348); [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) prior pin (`cf3c9686` on `2ce1d9d1`) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-344` on branch `docs/weekend-pin-current-main-349` from `origin/main` @ `d27fb164` (dedicated `weekend-pin-current-main-349` worktree add failed — disk). **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2ce1d9d1` after #347
 
 | Field | Value |
