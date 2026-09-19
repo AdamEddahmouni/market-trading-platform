@@ -14,6 +14,7 @@ import { ResearchClaimHops } from "./ResearchClaimGraph";
 import {
   RESEARCH_FINDINGS,
   claimHopsForFinding,
+  parseClaimFindingParam,
   presentFindingAvailability,
   researchPanel,
   sectionClaimHops,
@@ -39,6 +40,8 @@ export function ResearchEvidenceSection({ mode }: Props) {
   const panelParam = searchParams.get("panel");
   const [availabilityFilter, setAvailabilityFilter] = useState<AvailabilityFilter>("all");
 
+  const followedFinding =
+    parseClaimFindingParam(searchParams.get("claim")) ?? parseClaimFindingParam(panelParam);
   const highlighted = RESEARCH_FINDINGS.find((finding) => finding.key === panelParam)?.anchor;
   const [settledHighlight, setSettledHighlight] = useState<string | null>(null);
   useEffect(() => {
@@ -97,7 +100,10 @@ export function ResearchEvidenceSection({ mode }: Props) {
         outcomes, or authorize any action. The contracts do not mark evidence as supporting or
         contradictory, so no such claim is made here.
       </p>
-      <ResearchClaimHops hops={sectionClaimHops("evidence", mode)} label="From this evidence" />
+      <ResearchClaimHops
+        hops={sectionClaimHops("evidence", mode, followedFinding ?? undefined)}
+        label="From this evidence"
+      />
       <div className="research-local-filter">
         <label htmlFor="research-finding-filter">Show findings</label>
         <select

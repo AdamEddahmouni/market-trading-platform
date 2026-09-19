@@ -3,18 +3,22 @@ import { StatePill } from "../imp-ui/StatePill";
 import {
   claimFollowAccessibleName,
   type ClaimHop,
+  type ClaimPathRelation,
   type ResearchClaimNode,
   type ResearchClaimNodeKey,
 } from "./researchPresentation";
 
+type GraphNode = ResearchClaimNode & { relation?: ClaimPathRelation };
+
 type GraphProps = {
-  nodes: ReadonlyArray<ResearchClaimNode>;
+  nodes: ReadonlyArray<GraphNode>;
   activeKey?: ResearchClaimNodeKey;
 };
 
 /**
  * Overview claim graph: eight operator hops with payload status or an honest
  * gap. Links navigate; gap nodes stay visible without inventing objects.
+ * Finding-scoped lineage marks off-path nodes without hiding them.
  */
 export function ResearchClaimGraph({ nodes, activeKey }: GraphProps) {
   return (
@@ -37,6 +41,7 @@ export function ResearchClaimGraph({ nodes, activeKey }: GraphProps) {
               key={node.key}
               className="research-claim-graph-item"
               data-kind={node.destinationKind}
+              data-relation={node.relation}
               data-active={activeKey === node.key ? "true" : undefined}
             >
               {node.href ? (
@@ -44,6 +49,7 @@ export function ResearchClaimGraph({ nodes, activeKey }: GraphProps) {
                   to={node.href}
                   className="research-claim-graph-link"
                   aria-label={claimFollowAccessibleName(node.title)}
+                  aria-current={activeKey === node.key ? "page" : undefined}
                 >
                   {body}
                 </Link>

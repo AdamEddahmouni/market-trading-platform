@@ -13,6 +13,7 @@ import { ResearchClaimHops } from "./ResearchClaimGraph";
 import {
   formatResearchTime,
   interpretationHasConflict,
+  parseClaimFindingParam,
   presentAbstentionReason,
   presentPreregistration,
   sectionClaimHops,
@@ -120,7 +121,10 @@ export function ResearchValidationSection({ mode }: Props) {
           <Link to="/lab/validation">Inspect this validation workflow in Lab</Link> — Lab is the
           process surface; this page stays the interpretation of the result.
         </p>
-        <ResearchClaimHops hops={sectionClaimHops("validation", mode)} label="From this strategy" />
+        <ResearchClaimHops
+          hops={sectionClaimHops("validation", mode, parseClaimFindingParam(searchParams.get("claim")) ?? undefined)}
+          label="From this strategy"
+        />
       </section>
 
       <section className="research-panel" aria-labelledby="research-interpretations-heading">

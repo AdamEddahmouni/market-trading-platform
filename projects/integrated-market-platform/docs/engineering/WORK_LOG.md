@@ -46,7 +46,31 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/imp-ui/StatePill.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
 | **Tests** | `cd ui && npm test -- src/components/lab-shared src/components/imp-ui/StatePill.tsx src/App.test.tsx` — **99 passed**; `npm run typecheck` — pass |
 | **Related** | Follow-up to merged #313 REQUEST_CHANGES (stale HEAD `8c08dec0`); `lab-contract-map.md` |
-| **Notes** | Isolated `ui/weekend-lab-honesty-error-a11y` from `origin/main` `2d1b508c`. Did not merge #222. Frozen collector `fed2d9f7` untouched. |
+| **Notes** | Isolated `ui/weekend-lab-honesty-error-a11y` from `origin/main` `2d1b508c`, then absorbed `7b91bce4`. Did not merge #222. Frozen collector `fed2d9f7` untouched. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9d219537` after #317 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`9d219537`** (merge [#317](https://github.com/AdamEddahmouni/market-trading-platform/pull/317) Weekend Lane K claim lineage; ancestry [#320](https://github.com/AdamEddahmouni/market-trading-platform/pull/320)–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321) retarget; prior stale pin `2d1b508c` |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-320`; merged `origin/main` @ `9d219537` before pin. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2d1b508c` after #320 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`2d1b508c`** (merge [#320](https://github.com/AdamEddahmouni/market-trading-platform/pull/320); ancestry [#313](https://github.com/AdamEddahmouni/market-trading-platform/pull/313) Lab Lane J, [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) docs pin, [#318](https://github.com/AdamEddahmouni/market-trading-platform/pull/318)–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) prior pin (`eee44352`); [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-320` from `origin/main` @ `2d1b508c`. **ITEM9_FROZEN_COLLECTOR** untouched. |
 
 ## 2026-09-19 — Weekend Wave B Lane H: operator lifecycle boundary tests
 
@@ -59,6 +83,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python -m unittest tests.platform.test_operator_lifecycle_boundaries` — **17/17 OK** (Python 3.11 venv) |
 | **Related** | `OPERATOR_DIAGNOSTICS_MODEL.md`; existing `test_operator_diagnostics_snapshot.py`, `test_operator_truth_contract.py` |
 | **Notes** | Isolated worktree `feat/weekend-lane-h-lifecycle-tests` from `origin/main` @ `d547f96e`. Did not touch `snapshot.py` implementation or Item 9 collector state. |
+
+## 2026-09-19 — Weekend Wave C Lane K: research claim lineage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Increment after [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302): Overview `?claim=` scopes the eight-node claim graph to one analytics finding. Source/evidence deep-link to that panel; off-path nodes stay visible as gaps; hops carry `claim` on Research routes only. Hypothesis and FTEP remain `NOT_EXPOSED`; simulation is not a forward test. |
+| **Key files** | `ui/src/components/research-shared/researchPresentation.ts`; `ResearchClaimGraph.tsx`; `ResearchOverviewSection.tsx`; Evidence/Validation/Simulation sections; `ui/src/styles/research.css`; `docs/ui-redesign-v2/research-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` research-shared + demo/paper/live-research **67 passed**; `npm run typecheck` **pass** |
+| **Related** | [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302); [research-contract-map.md](../ui-redesign-v2/research-contract-map.md) |
+| **Notes** | Isolated `.worktrees/weekend-lane-k-research-lineage` from `origin/main` `be0e7e1a` (post-#315 absorb). Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED**. No Full30, #222, `snapshot.py`, Radar, Lab, provider, or PROGRAM_STATUS edits. Do not merge from this lane. |
 
 ## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
 

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   useResearchAnalyticsQuery,
   useResearchModelsQuery,
@@ -13,10 +13,12 @@ import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import type { Mode } from "../mode-session/types";
 import { ResearchClaimGraph } from "./ResearchClaimGraph";
 import {
-  buildClaimNavigation,
+  RESEARCH_FINDINGS,
+  buildClaimLineage,
   buildEvidenceAvailability,
   buildResearchSynthesis,
   listFindingSources,
+  resolveFollowedFinding,
   type ResearchSynthesisInput,
 } from "./researchPresentation";
 
@@ -32,6 +34,7 @@ type Props = {
  * flags, FTEP campaign state) are stated as honest gaps, never fabricated.
  */
 export function ResearchOverviewSection({ mode }: Props) {
+  const [searchParams] = useSearchParams();
   const analyticsQuery = useResearchAnalyticsQuery();
   const modelsQuery = useResearchModelsQuery();
   const simulationQuery = useResearchSimulationQuery();
@@ -46,7 +49,8 @@ export function ResearchOverviewSection({ mode }: Props) {
   };
   const synthesis = buildResearchSynthesis(input);
   const availability = buildEvidenceAvailability(input);
-  const claimGraph = buildClaimNavigation(input, mode);
+  const followedFinding = resolveFollowedFinding(searchParams.get("claim"), input.analytics);
+  const claimLineage = buildClaimLineage(input, mode, followedFinding);
 
   const epistemicClass =
     analyticsQuery.data?.epistemic_class ??
@@ -121,14 +125,29 @@ export function ResearchOverviewSection({ mode }: Props) {
           </div>
         </div>
         <p className="research-muted">
-          Follow one research claim from source through strategy, evidence, conflict, and
-          implementation. Nodes without a UI contract stay labeled NOT_EXPOSED or Not on this
-          surface — they are not filled in from program docs.
+          Follow one analytics finding through source, hypothesis, strategy, experiment, evidence,
+          contradiction, implementation, and forward-test status. Choosing a finding scopes the
+          path; it does not create a trade or a ranked opportunity.
         </p>
+        <nav className="research-claim-picker" aria-label="Finding to follow">
+          {RESEARCH_FINDINGS.map((finding) => (
+            <Link
+              key={finding.key}
+              to={`/research?claim=${finding.key}`}
+              aria-current={followedFinding === finding.key ? "page" : undefined}
+              aria-label={`Follow finding ${finding.title}`}
+            >
+              {finding.title}
+            </Link>
+          ))}
+        </nav>
         {loading ? (
           <LoadingState label="Loading claim navigation…" />
         ) : (
-          <ResearchClaimGraph nodes={claimGraph} />
+          <>
+            <p className="research-finding-claim">{claimLineage.reading}</p>
+            <ResearchClaimGraph nodes={claimLineage.nodes} activeKey="evidence" />
+          </>
         )}
       </section>
 
@@ -199,8 +218,8 @@ export function ResearchOverviewSection({ mode }: Props) {
         </div>
         <p className="research-muted">
           Hypothesis objects, supporting/contradictory flags, a source catalog, and FTEP campaign
-          state have no Research UI contract. They appear as Hypothesis, Contradiction, Source, and
-          Forward-test nodes above — not as a document dump and not as fabricated objects.
+          state have no Research UI contract. Off-path and gap nodes stay labeled — they are not
+          filled in from program docs and they are not action buttons.
         </p>
       </section>
 
