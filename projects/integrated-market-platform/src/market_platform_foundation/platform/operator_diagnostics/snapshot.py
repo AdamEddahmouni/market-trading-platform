@@ -169,7 +169,7 @@ def classify_item9_corpus_progress_truth(corpus_section: Mapping[str, Any]) -> s
 
 def _sanitize_mapping_paths(payload: Mapping[str, Any], *, imp_root: Path) -> dict[str, Any]:
     cleaned = dict(payload)
-    for key in ("receipt_dir", "frozen_collector_imp_root"):
+    for key in ("receipt_dir", "frozen_collector_imp_root", "log_path"):
         if key in cleaned and cleaned[key] is not None:
             cleaned[key] = _operator_safe_fs_path(cleaned[key], imp_root=imp_root)
     nested = cleaned.get("receipt_inventory")
@@ -182,6 +182,9 @@ def _sanitize_mapping_paths(payload: Mapping[str, Any], *, imp_root: Path) -> di
         report = dict(nested_report)
         report["receipt_dir"] = _operator_safe_fs_path(report["receipt_dir"], imp_root=imp_root)
         cleaned["report"] = report
+    nested_source = cleaned.get("collector_log_source")
+    if isinstance(nested_source, dict):
+        cleaned["collector_log_source"] = _sanitize_mapping_paths(nested_source, imp_root=imp_root)
     return cleaned
 
 
