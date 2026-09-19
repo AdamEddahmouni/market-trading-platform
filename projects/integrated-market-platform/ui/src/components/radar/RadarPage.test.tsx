@@ -398,6 +398,27 @@ describe("RadarPage opportunities tab", () => {
     expect(brief).toHaveTextContent(/INELIGIBLE/i);
   });
 
+  it("surfaces contradicted agent enrichment as inference, not observation", async () => {
+    const contradictedRow: OpportunityReviewRow = {
+      ...rankedRow,
+      metadata: { agent_enrichment: { status: "CONTRADICTED" } },
+    };
+    summaryMock.data = {
+      items: [contradictedRow],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
+      "imp-radar-operator-brief",
+    );
+    expect(brief).toHaveTextContent(/Inference vs observation/i);
+    expect(brief).toHaveTextContent(/CONTRADICTED/);
+    expect(brief).toHaveTextContent(/not a provider observation/i);
+    expect(brief).toHaveTextContent(/Which facts conflict/i);
+  });
+
   it("keeps detail inline on wide layouts without a sheet", async () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);

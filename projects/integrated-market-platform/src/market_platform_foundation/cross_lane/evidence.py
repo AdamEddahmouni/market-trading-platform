@@ -187,6 +187,14 @@ def observed_at_presence(observed_at: str | None) -> str:
     return OBSERVED_AT_PRESENT
 
 
+def observation_clock_key(observed_at: str | None) -> str | None:
+    """Grouping key for same-timestamp DAG rules. Blank clocks are not a time."""
+
+    if observed_at_presence(observed_at) != OBSERVED_AT_PRESENT:
+        return None
+    return str(observed_at).strip()
+
+
 def inference_kind_for_provenance(provenance_class: EvidenceProvenanceClass) -> str:
     return _INFERENCE_KIND_BY_PROVENANCE.get(provenance_class, "UNKNOWN")
 
@@ -282,15 +290,16 @@ def validate_evidence_dag(evidence_items: list[NormalizedLaneEvidence]) -> list[
         for item in evidence_items
         if item.provenance_class
         in {EvidenceProvenanceClass.MODEL_OUTPUT, EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT}
-        and item.observed_at
+        and observation_clock_key(item.observed_at)
     ]
     by_timestamp: dict[str, list[NormalizedLaneEvidence]] = {}
     for item in model_outputs:
-        by_timestamp.setdefault(item.observed_at or "", []).append(item)
+        clock_key = observation_clock_key(item.observed_at)
+        if clock_key is None:
+            continue
+        by_timestamp.setdefault(clock_key, []).append(item)
 
     for observed_at, group in by_timestamp.items():
-        if not observed_at:
-            continue
         mc_signals = {
             item.signal
             for item in group
@@ -319,8 +328,9 @@ def apply_evidence_lag_rules(
     drop_keys: set[tuple[str, str, str]] = set()
     by_timestamp: dict[str, list[NormalizedLaneEvidence]] = {}
     for item in evidence_items:
-        if item.observed_at:
-            by_timestamp.setdefault(item.observed_at, []).append(item)
+        clock_key = observation_clock_key(item.observed_at)
+        if clock_key is not None:
+            by_timestamp.setdefault(clock_key, []).append(item)
 
     for observed_at, group in by_timestamp.items():
         mc_signals = {
