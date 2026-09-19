@@ -568,6 +568,12 @@ class YahooDelayedOverlayTests(unittest.TestCase):
         result = provider.fetch_quote("AAPL")
         self.assertEqual(result.reason_code, "MALFORMED_RECORD")
 
+    def test_empty_payload_fails_closed(self) -> None:
+        provider = YahooDelayedEquityQuoteProvider(fetch=lambda url: (200, b""))
+        result = provider.fetch_quote("AAPL")
+        self.assertEqual(result.reason_code, "EMPTY_PAYLOAD")
+        self.assertEqual(result.events, ())
+
     def test_empty_symbol_required(self) -> None:
         provider = YahooDelayedEquityQuoteProvider(fetch=lambda url: (200, b"{}"))
         result = provider.fetch_quote("   ")
