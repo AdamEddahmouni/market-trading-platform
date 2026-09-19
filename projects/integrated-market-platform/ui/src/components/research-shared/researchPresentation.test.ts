@@ -461,4 +461,28 @@ describe("claim hops", () => {
     expect(hops.find((hop) => hop.key === "forward-test")?.href).toBe("/workspace");
     expect(hops.find((hop) => hop.key === "implementation")?.href).toBe("/lab/simulation");
   });
+
+  it("does not invent a Lab process hop for squeeze on Validation or Simulation", () => {
+    expect(sectionClaimHops("validation", "DEMO").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/validation",
+    );
+    expect(sectionClaimHops("validation", "DEMO", "strategy_outcomes").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/validation",
+    );
+    expect(sectionClaimHops("validation", "DEMO", "risk_decisions").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/simulation",
+    );
+    expect(sectionClaimHops("validation", "DEMO", "squeeze_outcomes").map((hop) => hop.key)).not.toContain(
+      "implementation",
+    );
+    expect(sectionClaimHops("simulation", "DEMO", "strategy_outcomes").find((hop) => hop.key === "implementation")?.href).toBe(
+      "/lab/validation",
+    );
+    expect(sectionClaimHops("simulation", "DEMO", "squeeze_outcomes").map((hop) => hop.key)).not.toContain(
+      "implementation",
+    );
+    expect(sectionClaimHops("simulation", "DEMO", "attention_tiers").map((hop) => hop.key)).not.toContain(
+      "implementation",
+    );
+  });
 });
