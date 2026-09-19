@@ -1,5 +1,11 @@
 # IMP simulator drawdown wiring — read-only review (Lane C)
 
+> **Provenance:** Frozen Lane C read-only review captured **2026-09-18** before merge
+> [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283). Do not edit
+> the body for current gate truth. **Authoritative post-merge spec:**
+> [IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md](IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md). Branch
+> `research/simulator-drawdown-wiring-v1` is fully absorbed on `main` (no unique commits).
+
 **Hypothesis:** `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`  
 **Source finding:** `LANE-E-FND-019`  
 **Reviewed implementation (uncommitted):** worktree `.worktrees/simulator-drawdown-wiring-v1`, branch `research/simulator-drawdown-wiring-v1`  
