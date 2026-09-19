@@ -73,7 +73,31 @@ Observed diagnostic gaps during the Sep 18 engineering window (treat `121031` as
 
 This model elevates those failures into `severity`, `human_summary`, and `operator_questions` without mutating receipts or restarting collectors.
 
-`sections.runtime.item9_corpus_status.progress_truth` is calendar/methodology state: **`2/3` → `IDLE`** (not platform `DEGRADED`); **`3/3` → `HEALTHY`** for the distinct-RTH-date floor only (still **not** `CALIBRATED`). Operator-facing `receipt_dir` and host-absolute filesystem paths are redacted or normalized to repo-relative / `.imp-actual-01-phase-d/…` form.
+## Operator truth contract (Weekend Wave B — Lane E)
+
+`GET /operator/diagnostics` schema `operator-diagnostics/1.1.0` adds backend-owned
+`operator_truth` (`operator-truth/1.0.0`). Control must not remap these tokens.
+
+| `by_id` | Meaning |
+|---|---|
+| `item9-corpus` | Calendar/methodology progress. **2/3 is `IDLE`, never `DEGRADED`.** |
+| `imp-lifecycle` | Platform lifecycle |
+| `operator-readiness` | Operator readiness |
+| `item9-preflight` | Item 9 preflight disposition |
+| `collector` | Prospective collector process probe |
+| `live-execution` | Live real-money execution env |
+| `expected-cycle` | Consumes `cycle_recovery.expected_cycle_failure` (Lane D parsers stay Lane D) |
+| `evidence-gaps` | Composed gaps list |
+
+Clock: `as_of_utc` + `as_of_clock_kind: wall_utc` (ISO-8601 wall clock). The payload
+does **not** include `generated_at_monotonic`. Item 9 corpus exposes
+`sample_gate_progress` and does **not** emit top-level `receipt_dir` (Lane E).
+
+`sections.runtime.item9_corpus_status.progress_truth` is calendar/methodology state: **`2/3` → `IDLE`** (not platform `DEGRADED`); **`3/3` → `HEALTHY`** for the distinct-RTH-date floor only (still **not** `CALIBRATED`). Nested `report.receipt_dir` and `expected_cycle` host-absolute filesystem paths stay redacted or normalized to repo-relative / `.imp-actual-01-phase-d/…` form (#294).
+
+Lane B (Control presentation) should consume `ui/src/api/operatorTruth.ts` instead of
+re-deriving truth in `operatorDiagnosticsPresentation.ts`. Command KPIs should use
+`data_quality.operator_surface_flag` (`OK` or `STALE_OR_DEGRADED`).
 
 ## Lane boundaries
 
@@ -88,7 +112,8 @@ This model elevates those failures into `severity`, `human_summary`, and `operat
 1. Lane B exports `active_collector_probe` adapter callable from a stable module.
 2. Lane C wires probe into `build_operator_diagnostics_snapshot` (keep default `NOT_RUN` in tests).
 3. Lane B adds `expected_cycle_failure` / `recovery_observed` tokens to lifecycle or heartbeat receipts.
-4. Lane E consumes `GET /operator/diagnostics` on Control (optional `OperatorDiagnosticsSchema` in `schemas.ts`).
+4. Control consumes `GET /operator/diagnostics` via `OperatorDiagnosticsSchema` and `ui/src/api/operatorTruth.ts` (do not re-infer Item 9 2/3 as DEGRADED).
+5. `preferItem9OperatorTruth` keeps calendar-incomplete local IDLE when backend says DEGRADED. Live OFF remains Control POLICY — not remapped from backend `live-execution`. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` stay presentation tokens.
 
 ## Evidence integrity
 

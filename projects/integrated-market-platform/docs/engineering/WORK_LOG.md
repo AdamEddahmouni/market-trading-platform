@@ -48,6 +48,90 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) Opportunity presentation; Lane L pipeline note that event vs receive lag was not on Radar cards |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-i-radar-provenance` from `origin/main` **65becd61** (#309). Did not touch #222, `snapshot.py`, Control operator_truth, G14/hermeticity tests, or operator diagnostics snapshot. Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED** unchanged. Do not merge from this lane. |
 
+## 2026-09-19 — Weekend Wave B Lane G: unit-test artifact hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `validation` |
+| **Summary** | Stopped G14 performance unittest from writing `artifacts/g14-runtime-performance.json` relative to process cwd; anchored dual-corpus path fixtures to IMP package root; cleaned state-path diagnostic temp dirs via `TemporaryDirectory`; added regression guard that G14 performance measurement does not touch tracked artifact paths. |
+| **Key files** | `tests/cross_lane/test_g14_product_convergence.py`; `tests/platform/test_dual_corpus_contamination.py`; `tests/platform/test_state_path_diagnostic.py`; `tests/validation/test_unit_test_repo_artifact_hermeticity.py` |
+| **Tests** | `python -m unittest tests.validation.test_unit_test_repo_artifact_hermeticity tests.platform.test_state_path_diagnostic tests.platform.test_dual_corpus_contamination tests.cross_lane.test_g14_product_convergence` |
+| **Related** | [#299](https://github.com/AdamEddahmouni/market-trading-platform/pull/299) process-env isolation |
+| **Notes** | Item 9 2/3 IDLE frozen invariants unchanged; no `snapshot.py`, collector `fed2d9f7`, or evidence mutation. |
+
+## 2026-09-19 — PR #307 merge origin/main 2003eced post-#298 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` **`2003eced`** (#298 `operator_truth` on main) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Conflicts: WORK_LOG, OPERATOR_DIAGNOSTICS_MODEL, `schemas.ts` — keep-both / integrate. Control `preferItem9OperatorTruth` IDLE clamp preserved; re-exports `ui/src/api/operatorTruth.ts` reader. Item 9 2/3 stays IDLE. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`; `ui/src/api/schemas.ts`; `docs/engineering/WORK_LOG.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` control + schemas; GitHub Actions on push |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) merged |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 collector `fed2d9f7` / evidence untouched. |
+
+## 2026-09-19 — PR #307 merge origin/main post-#293 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `1d2377ea` (#293) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged; did not adopt #298 backend `operator_truth` emission. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub Actions on push after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 / collector / evidence untouched. |
+
+## 2026-09-19 — Lane E: absorb origin/main 1d2377ea (#293) into #298 snapshot keep-both
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs` |
+| **Summary** | Merged `origin/main` **`1d2377eaf`** (#293 observability on main) into `fix/weekend-lane-e-api-contracts` (#298 `operator_truth`). Hand-merged `snapshot.py`: #294 Windows/UNC redaction before `Path.resolve` and `receipt_dir` sanitization; #293 `deepcopy` `expected_cycle`, `PARTIAL_TAIL`, truncated-tail `recovery_observed=UNKNOWN`, STALE freshness; #298 `operator_truth` payload and tests (no `severity==OK` when fixture is DEGRADED). Item 9 2/3 remains `IDLE`. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `$env:PYTHONPATH="src"` + IMP `.venv`: `python -m unittest tests.platform.test_operator_diagnostics_snapshot tests.platform.test_operator_truth_contract tests.platform.test_artifact_path_resolver` — **33 OK** (1 skipped) |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-e-api-contracts`; push only — do not merge #298 or #222. Did not mutate Item 9 collector `fed2d9f7` / evidence. |
+
+## 2026-09-19 — PR #307 merge origin/main (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `2a831ac5` into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | See PR #307 lane validation after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; no merge to main; Item 9 / collector / evidence untouched. |
+
+## 2026-09-19 — Lane E: merge origin/main 2a831ac5 (#306)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Merged `origin/main` **`2a831ac5`** (#306 CURRENT_MAIN pin) into `fix/weekend-lane-e-api-contracts`. Snapshot resolve unchanged (sanitization + `operator_truth`). WORK_LOG keep-both. |
+| **Key files** | `docs/engineering/WORK_LOG.md`; `docs/platform/PROGRAM_STATUS.md` (from main) |
+| **Tests** | Docs merge only — snapshot.py unconflicted |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
+| **Notes** | Do not merge #298. |
+
+## 2026-09-19 — Control optionally consumes operator_truth for Item 9 IDLE
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Control now reads optional `diagnostics.operator_truth` (or `sections.operator_truth`) for Item 9 IDLE vs DEGRADED when the field is present, matching the `operatorTruth.ts` shape from #298 without requiring that PR. Missing field keeps local mapping. Item 9 `2/3` stays IDLE (never DEGRADED). Live OFF stays POLICY. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` unchanged. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`, `operatorDiagnosticsPresentation.ts`, `OperatorControlCenterPage.test.tsx`; `ui/src/api/schemas.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` consumeOperatorTruth / operatorDiagnosticsPresentation / OperatorControlCenterPage / schemas.test **45 passed**; `npm run typecheck` pass |
+| **Related** | [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) merged Control UX; [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) still open for backend `operator_truth` |
+| **Notes** | Isolated worktree `ui/weekend-operator-truth-consume` from `origin/main` `58e56ca9`. Does not import `ui/src/api/operatorTruth.ts`. Does not remap live-execution from backend BLOCKED. No merge. |
+
 ## 2026-09-19 — Absorb origin/main 2a831ac5 (#294+#306) into #293 snapshot.py keep-both
 
 | Field | Value |
@@ -60,6 +144,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293); [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
 | **Notes** | Isolated worktree `.worktrees/weekend-293-snapshot-resolve`; push only, do not merge the PR. |
 
+## 2026-09-19 — Lane E: merge origin/main a0b03d2a (#294) into operator_truth
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Merged `origin/main` **`a0b03d2a`** (#294). Kept Lane E `operator_truth` / no top-level corpus `receipt_dir` and the 8b320e0d severity-OK test fix. Kept #294 path sanitization so nested `report` / `expected_cycle` host paths stay redacted. Item 9 2/3 remains `IDLE`. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` snapshot sanitization + operator_truth + 2/3 IDLE **8 passed** |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); merge [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | WORK_LOG keep-both. Do not merge #298 until #293 lands if snapshot still conflicts with Lane D. |
+
 ## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
 
 | Field | Value |
@@ -71,6 +167,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
 | **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
 | **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+
+## 2026-09-19 — Lane E CI: do not require diagnostics severity OK for Item 9 2/3
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform` |
+| **Summary** | Dropped `severity == OK` from the operator-truth snapshot test. Item 9 2/3 remains `IDLE` in `operator_truth`; snapshot severity may honestly be `DEGRADED` when readiness is not READY or evidence_gaps is non-empty. |
+| **Key files** | `tests/platform/test_operator_truth_contract.py` |
+| **Tests** | `python tools/imp.py test focused` snapshot truth + 2/3 IDLE selectors **3 passed** |
+| **Related** | PR #298 review; Weekend Wave B Lane E |
+| **Notes** | Did not coerce 2/3 to OK/HEALTHY. Did not edit Control UI or `snapshot.py` severity mapping. |
+
+## 2026-09-18 — Operator API contract: backend-owned truth tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `platform/operator_diagnostics`, `ui/src/api` |
+| **Summary** | Added `operator_truth` on `GET /operator/diagnostics` (schema 1.1.0) so Control/Command consume backend facts instead of remapping status. Item 9 2/3 corpus progress is `IDLE` not `DEGRADED`. Stripped monotonic clock and `receipt_dir`. Added `data_quality.operator_surface_flag` for Command stale/degraded KPIs. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/{operator_truth.py,snapshot.py}`; `ui/src/api/{schemas.ts,operatorTruth.ts,opportunityClient.ts,hooks.ts}`; `ui/src/components/imp-product/impOverviewMetrics.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
+| **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
 
 ## 2026-09-19 — Pin CURRENT_MAIN to #294 (`a0b03d2a`)
 

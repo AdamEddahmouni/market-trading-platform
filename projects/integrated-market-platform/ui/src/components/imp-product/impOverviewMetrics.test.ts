@@ -113,4 +113,42 @@ describe("overviewDecisionKpis", () => {
       tone: "neutral",
     });
   });
+
+  it("prefers backend operator_surface_flag over local status inference", () => {
+    const flagged = overviewDecisionKpis(
+      input({
+        opportunityItems: [
+          row({
+            data_quality: {
+              status: "GOOD",
+              freshness: "FRESH",
+              operator_surface_flag: "STALE_OR_DEGRADED",
+            },
+          }),
+        ],
+      }),
+    );
+    expect(flagged.find((cell) => cell.id === "degraded")).toMatchObject({
+      value: "1",
+      tone: "caution",
+    });
+
+    const honestUnavailable = overviewDecisionKpis(
+      input({
+        opportunityItems: [
+          row({
+            data_quality: {
+              status: "UNAVAILABLE",
+              freshness: "UNAVAILABLE",
+              operator_surface_flag: "OK",
+            },
+          }),
+        ],
+      }),
+    );
+    expect(honestUnavailable.find((cell) => cell.id === "degraded")).toMatchObject({
+      value: "0",
+      tone: "neutral",
+    });
+  });
 });

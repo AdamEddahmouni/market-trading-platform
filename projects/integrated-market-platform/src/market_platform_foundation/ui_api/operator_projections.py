@@ -172,6 +172,7 @@ def queue_provider_refresh(provider: str) -> dict[str, Any]:
         "provider": normalized,
         "status": "QUEUED",
         "created_at": time.time(),
+        "created_at_clock_kind": "unix_seconds",
         "secrets_included": False,
     }
     root = Path(__file__).resolve().parents[3]

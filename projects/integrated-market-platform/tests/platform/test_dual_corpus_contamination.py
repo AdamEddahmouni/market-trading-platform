@@ -151,12 +151,14 @@ class DualCorpusContaminationTests(unittest.TestCase):
         self.assertEqual(outcome["reason_code"], REFUSAL_HISTORICAL_DEVELOPMENT)
 
     def test_historical_directories_never_scanned_for_item9_receipts(self) -> None:
-        hist = Path("artifacts/historical-rth-development/receipts")
+        hist = ROOT / "artifacts/historical-rth-development/receipts"
         self.assertTrue(is_historical_development_storage_path(hist))
         with self.assertRaises(ValueError) as ctx:
             iter_item9_prospective_receipt_paths(hist)
         self.assertEqual(str(ctx.exception), ITEM9_DISCOVERY_REFUSED_HISTORICAL_ROOT)
-        filtered = filter_item9_prospective_scan_roots((hist, Path("artifacts/ftep-v1-002/item9-prospective-proof-receipts")))
+        filtered = filter_item9_prospective_scan_roots(
+            (hist, ROOT / "artifacts/ftep-v1-002/item9-prospective-proof-receipts")
+        )
         self.assertEqual(len(filtered), 1)
 
     def test_manifest_cannot_upgrade_historical_authority(self) -> None:
