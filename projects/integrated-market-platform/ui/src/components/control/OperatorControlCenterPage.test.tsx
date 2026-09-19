@@ -100,6 +100,7 @@ function buildDiagnostics(overrides: {
   lifecycle?: unknown;
   feed?: unknown;
   diagnosticsOk?: boolean;
+  operatorTruth?: unknown;
 }) {
   const readiness = overrides.readiness ?? READY_READINESS;
   const lifecycle = overrides.lifecycle ?? LIFECYCLE_READY;
@@ -107,6 +108,7 @@ function buildDiagnostics(overrides: {
   return {
     schema_version: "operator-diagnostics/1.0.0",
     severity: "OK",
+    ...(overrides.operatorTruth ? { operator_truth: overrides.operatorTruth } : {}),
     sections: {
       lifecycle,
       readiness,
@@ -198,6 +200,7 @@ type StubOverrides = {
   contextOk?: boolean;
   feed?: unknown;
   portfolio?: unknown;
+  operatorTruth?: unknown;
 };
 
 function stubFetch(overrides: StubOverrides = {}) {
@@ -210,8 +213,9 @@ function stubFetch(overrides: StubOverrides = {}) {
     contextOk = true,
     feed = FEED_READY,
     portfolio = PAPER_PORTFOLIO,
+    operatorTruth,
   } = overrides;
-  const diagnostics = buildDiagnostics({ readiness, lifecycle, feed });
+  const diagnostics = buildDiagnostics({ readiness, lifecycle, feed, operatorTruth });
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
@@ -534,5 +538,41 @@ describe("OperatorControlCenterPage", () => {
     expect(systemStatus).toHaveTextContent(/Waiting on the trading calendar/);
     expect(systemStatus).toHaveTextContent(/NOT CALIBRATED/);
     expect(systemStatus).toHaveTextContent(/CALIBRATION FORBIDDEN/);
+  });
+
+  it("consumes operator_truth Item 9 IDLE when present and keeps Live OFF as POLICY", async () => {
+    stubFetch({
+      operatorTruth: {
+        schema_version: "operator-truth/1.0.0",
+        rows: [
+          { id: "item9-corpus", truth: "IDLE", detail: "2/3" },
+          { id: "item9-preflight", truth: "IDLE", detail: "preflight" },
+          { id: "live-execution", truth: "BLOCKED", detail: "LIVE-001" },
+        ],
+        by_id: {
+          "item9-corpus": "IDLE",
+          "item9-preflight": "IDLE",
+          "live-execution": "BLOCKED",
+        },
+      },
+    });
+    renderControl("DEMO");
+
+    const systemStatus = document.getElementById(CONTROL_SECTIONS.systemStatus);
+    expect(systemStatus).toBeTruthy();
+    await waitFor(() =>
+      expect(systemStatus).toHaveTextContent(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/),
+    );
+    const corpusRow = within(systemStatus as HTMLElement)
+      .getByText("Distinct admitted RTH dates")
+      .closest("li");
+    expect(corpusRow).toHaveAttribute("data-truth", "IDLE");
+    expect(corpusRow).not.toHaveAttribute("data-truth", "DEGRADED");
+    const liveRow = within(systemStatus as HTMLElement)
+      .getByText("Live real-money execution")
+      .closest("li");
+    expect(liveRow).toHaveAttribute("data-truth", "POLICY");
+    expect(liveRow).toHaveTextContent(/Live OFF/);
+    expect(liveRow).not.toHaveAttribute("data-truth", "BLOCKED");
   });
 });
