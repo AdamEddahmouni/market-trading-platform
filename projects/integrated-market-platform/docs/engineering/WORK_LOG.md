@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Research claim-to-implementation hops (finding-scoped Lab)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Remaining claim-to-implementation hops now land on the matching Lab workbench when a process contract exists: walk-forward strategy outcomes → `/lab/validation`, risk-decision findings → `/lab/simulation`. Squeeze/attention stay honest gaps (no Lab hop). Unscoped Overview Implementation points at `/lab`. No Lab mutations, no fake actionability. |
+| **Key files** | `ui/src/components/research-shared/researchPresentation.ts`; `researchPresentation.test.ts`; `ResearchEvidenceSection.test.tsx`; `docs/engineering/FRONTEND_GUIDE.md`; `docs/ui-redesign-v2/research-contract-map.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `npx vitest run` research-shared + demo/paper/live-research — **68 passed**; `npm run typecheck` — **pass** |
+| **Related** | [#326](https://github.com/AdamEddahmouni/market-trading-platform/pull/326)–[#322](https://github.com/AdamEddahmouni/market-trading-platform/pull/322) landed honesty/a11y; [research-contract-map.md](../ui-redesign-v2/research-contract-map.md) |
+| **Notes** | Isolated worktree `.worktrees/weekend-research-impl-hops` from `origin/main` `84275b20`. Radar invalidate/refusal already landed; this increment is the remaining Research Lab hop gap. Did not merge #222. Frozen collector `fed2d9f7` untouched. Live OFF. |
+
 ## 2026-09-19 — Weekend Wave C: Discover nested screener investigation honesty
 
 | Field | Value |

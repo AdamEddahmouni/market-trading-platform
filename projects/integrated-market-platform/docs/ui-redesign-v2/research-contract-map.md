@@ -173,7 +173,11 @@ does not fetch `/paper/forward-tests`. Choosing a finding is navigation, not
 actionability.
 
 `/lab` is a real Lab workbench (UIR-01H). Nav includes Lab. Chart Lab lives at
-`/lab/chart-lab`.
+`/lab/chart-lab`. Claim-to-implementation hops use that workbench only when the
+finding has a recorded process contract: `strategy_outcomes` → `/lab/validation`,
+`risk_decisions` → `/lab/simulation`. Squeeze/attention findings do **not** mint
+a Lab hop. Overview's unscoped Implementation node lands on `/lab`. Lab remains
+inspect-only.
 
 ### Layering inside a finding/record
 

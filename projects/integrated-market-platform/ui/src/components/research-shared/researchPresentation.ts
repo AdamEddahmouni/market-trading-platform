@@ -314,11 +314,80 @@ const CLAIM_TITLES: Record<ResearchClaimNodeKey, string> = {
  */
 const CLAIM_PATH_BY_FINDING: Record<ResearchPanelKey, ReadonlyArray<ResearchClaimNodeKey>> = {
   strategy_outcomes: ["strategy", "contradiction", "experiment", "implementation", "forward-test"],
-  risk_decisions: ["experiment", "strategy", "forward-test"],
+  risk_decisions: ["experiment", "strategy", "implementation", "forward-test"],
   attention_tiers: [],
   squeeze_outcomes: ["hypothesis"],
   squeeze_historical_cohort: ["hypothesis"],
 };
+
+/**
+ * Lab process hops exist only where a recorded workbench inspects the same
+ * contract. Squeeze/attention findings have no Lab mutation or snapshot.
+ */
+const LAB_IMPLEMENTATION_BY_FINDING: Partial<
+  Record<ResearchPanelKey, { href: string; note: string }>
+> = {
+  strategy_outcomes: {
+    href: "/lab/validation",
+    note: "Inspect the recorded walk-forward validation workflow in Lab. Lab cannot start or mutate the run.",
+  },
+  risk_decisions: {
+    href: "/lab/simulation",
+    note: "Inspect the recorded deterministic simulation workflow in Lab. Simulation is not a forward test.",
+  },
+};
+
+const NO_LAB_IMPLEMENTATION =
+  "No Lab process contract for this finding. Donor/replay distributions are not Lab validation or simulation.";
+
+export function labImplementationHref(findingKey?: ResearchPanelKey): string | null {
+  if (!findingKey) return "/lab";
+  return LAB_IMPLEMENTATION_BY_FINDING[findingKey]?.href ?? null;
+}
+
+export function labImplementationNote(findingKey?: ResearchPanelKey): string {
+  if (!findingKey) {
+    return "Lab inspects recorded validation and simulation workflows. Finding-specific hops land on the matching workbench. No mutations from Research.";
+  }
+  return LAB_IMPLEMENTATION_BY_FINDING[findingKey]?.note ?? NO_LAB_IMPLEMENTATION;
+}
+
+function implementationClaimNode(findingKey?: ResearchPanelKey): ResearchClaimNode {
+  const href = labImplementationHref(findingKey);
+  if (!href) {
+    return {
+      key: "implementation",
+      title: CLAIM_TITLES.implementation,
+      role: "Recorded workflow to inspect",
+      statusLabel: "NOT_EXPOSED",
+      statusTone: "neutral",
+      detail: NO_LAB_IMPLEMENTATION,
+      href: null,
+      destinationKind: "gap",
+      evidenceClass: "NOT_EXPOSED",
+    };
+  }
+  return {
+    key: "implementation",
+    title: CLAIM_TITLES.implementation,
+    role: "Recorded workflow to inspect",
+    statusLabel: "Inspect in Lab",
+    statusTone: "research",
+    detail: labImplementationNote(findingKey),
+    href,
+    destinationKind: "related",
+    evidenceClass: "Process surface (Lab) · not a new evidence class",
+  };
+}
+
+function implementationClaimHop(findingKey?: ResearchPanelKey): ClaimHop {
+  return {
+    key: "implementation",
+    title: CLAIM_TITLES.implementation,
+    href: labImplementationHref(findingKey),
+    note: labImplementationNote(findingKey),
+  };
+}
 
 export function forwardTestWorkspaceHref(mode: ResearchSessionMode): string | null {
   return mode === "PAPER" ? "/workspace" : null;
@@ -712,18 +781,7 @@ export function buildClaimNavigation(
       ...contradiction,
       evidenceClass: "ABSTAIN_CONFLICTING_EVIDENCE only",
     },
-    implementation: {
-      key: "implementation",
-      title: CLAIM_TITLES.implementation,
-      role: "Recorded workflow to inspect",
-      statusLabel: "Inspect in Lab",
-      statusTone: "research",
-      detail:
-        "Research interprets results. Lab inspects the recorded validation/simulation workflow. No mutations from this page.",
-      href: "/lab/validation",
-      destinationKind: "related",
-      evidenceClass: "Process surface (Lab) · not a new evidence class",
-    },
+    implementation: implementationClaimNode(),
     "forward-test": {
       key: "forward-test",
       title: CLAIM_TITLES["forward-test"],
@@ -787,6 +845,13 @@ export function buildClaimLineage(
         statusLabel: input.analytics ? availability.label : "Unavailable",
         statusTone: availability.tone,
         detail: `${finding.title}: ${availability.detail}`,
+      };
+    }
+    if (node.key === "implementation") {
+      next = {
+        ...next,
+        ...implementationClaimNode(findingKey),
+        relation: onPath.has("implementation") ? "on-path" : "off-path",
       };
     }
     if (next.relation === "off-path") {
@@ -858,12 +923,7 @@ export function claimHopsForFinding(
       href: "/research/validation?conflict=1",
       note: "Only ABSTAIN_CONFLICTING_EVIDENCE is a conflict signal.",
     },
-    implementation: {
-      key: "implementation",
-      title: CLAIM_TITLES.implementation,
-      href: "/lab/validation",
-      note: "Inspect the recorded workflow in Lab.",
-    },
+    implementation: implementationClaimHop(key),
     "forward-test": {
       key: "forward-test",
       title: CLAIM_TITLES["forward-test"],
@@ -902,24 +962,25 @@ export function sectionClaimHops(
 ): ClaimHop[] {
   const forwardTestHref = forwardTestWorkspaceHref(mode);
   if (section === "evidence") {
-    return scopeSectionHops(
-      [
-        { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
-        {
-          key: "contradiction",
-          title: CLAIM_TITLES.contradiction,
-          href: "/research/validation?conflict=1",
-          note: "Conflict abstentions only.",
-        },
-        {
-          key: "experiment",
-          title: CLAIM_TITLES.experiment,
-          href: "/research/simulation",
-          note: "Simulation, not FTEP.",
-        },
-      ],
-      findingKey,
-    );
+    const hops: ClaimHop[] = [
+      { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
+      {
+        key: "contradiction",
+        title: CLAIM_TITLES.contradiction,
+        href: "/research/validation?conflict=1",
+        note: "Conflict abstentions only.",
+      },
+      {
+        key: "experiment",
+        title: CLAIM_TITLES.experiment,
+        href: "/research/simulation",
+        note: "Simulation, not FTEP.",
+      },
+    ];
+    if (findingKey && labImplementationHref(findingKey)) {
+      hops.push(implementationClaimHop(findingKey));
+    }
+    return scopeSectionHops(hops, findingKey);
   }
   if (section === "validation") {
     return scopeSectionHops(
@@ -936,12 +997,7 @@ export function sectionClaimHops(
           href: "/research/simulation",
           note: "Deterministic simulation.",
         },
-        {
-          key: "implementation",
-          title: CLAIM_TITLES.implementation,
-          href: "/lab/validation",
-          note: "Lab process surface.",
-        },
+        implementationClaimHop("strategy_outcomes"),
         {
           key: "forward-test",
           title: CLAIM_TITLES["forward-test"],
@@ -967,12 +1023,7 @@ export function sectionClaimHops(
         href: forwardTestHref,
         note: "This run is simulated, not a prospective forward test.",
       },
-      {
-        key: "implementation",
-        title: CLAIM_TITLES.implementation,
-        href: "/lab/simulation",
-        note: "Inspect simulation workflow in Lab.",
-      },
+        implementationClaimHop("risk_decisions"),
     ],
     findingKey,
   );
