@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs/platform` |
+| **Summary** | Corrected PROGRAM_STATUS corpus-status to frozen `$rcpt` (not CURRENT_MAIN artifacts). Diagnostics now classify Item 9 distinct-RTH progress **`2/3` → `IDLE`** (not `DEGRADED`) and **`3/3` → `HEALTHY`** without implying CALIBRATED, and redact/normalize operator-facing `receipt_dir` / host-absolute paths. No evidence mutation, collection, or UI edits. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` — 7/7 passed (`OperatorDiagnosticsSnapshotTests`); `python tools/imp.py lint` — exit 0 |
+| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); merge [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292) |
+| **Notes** | Frozen collector `fed2d9f7` untouched. Item 9 remains NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF. Lane B Control UI not edited. `q03` `state_dir` still host-absolute (operational). |
+
 ## 2026-09-18 — Control system status consumes GET /operator/diagnostics
 
 | Field | Value |

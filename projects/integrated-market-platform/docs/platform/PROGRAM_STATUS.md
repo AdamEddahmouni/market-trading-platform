@@ -156,7 +156,14 @@ mandatory. Automatic broker failover remains disabled.
 1. `git fetch origin main`; confirm **CURRENT_GIT_MAIN** matches [header](#imp-program-status) (`50a1477f` through [#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289) until a newer **software-bearing** merge). **CURRENT_SOFTWARE_IMPLEMENTATION** matches **`50a1477f`** on current `main`.
 2. Preflight (read-only): `python tools/imp.py item9 next-rth-preflight --json` — off-hours **`NOT_RTH`** and on **CURRENT_GIT_MAIN** (non-collector checkout) **`WRONG_RUNTIME`** are honest software outcomes, not empirical failure.
 3. When disposition is `READY_TO_COLLECT`, run governed Mode B `--poll` from frozen collector checkout **`.imp-actual-01-phase-d`** @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` (see [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](../engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); do not retarget collector to **CURRENT_MAIN**).
-4. After receipt: `python tools/item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts` — no automatic calibration fitting.
+4. After receipt (read-only; **frozen collector receipts**, not the software checkout copy). From IMP project root, `$rcpt` is the governed store under `.imp-actual-01-phase-d`:
+
+```powershell
+$rcpt = Join-Path (git rev-parse --show-toplevel) ".imp-actual-01-phase-d\projects\integrated-market-platform\artifacts\ftep-v1-002\item9-prospective-proof-receipts"
+python tools\item9_corpus_status.py corpus-status --receipt-dir $rcpt
+```
+
+Do **not** treat `projects/integrated-market-platform/artifacts/ftep-v1-002/item9-prospective-proof-receipts` on **CURRENT_MAIN** as the canonical corpus. No automatic calibration fitting.
 
 **Honest gates (post–2026-09-18 close):** `ITEM9_CALIBRATED` = **NO**; `ITEM9_CALIBRATION_RUN` = **FORBIDDEN**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **2** / **3** (admitted dates **2026-09-17** + **2026-09-18** only; re-verify read-only `corpus-status` on **ITEM9_FROZEN_COLLECTOR** checkout `.imp-actual-01-phase-d` — do **not** mutate collector `fed2d9f7`, receipts, or empirical `7aade60`). `ACTIVE_COLLECTORS` = **0** until next governed collection. `ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY` = **NO**; `ITEM7_FORCED_SETTLEMENT` = **NO**; `ITEM7_STATE` = **`ITEM7_PENDING_NATURAL_EVIDENCE`**. `FTEP_EMPIRICAL_ACTIVE` = **NO**. `LIVE_EXECUTION` = **OFF**. `PR222_MERGED` = **NO**. `PR272_MERGED` = **YES** ([#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) **closed/superseded**). `IBP_FACTUAL_SMOKE_V1_EXECUTED` = **YES** (baseline `ibp-factual-smoke-28EA7748057E312D`; facts failed; methodology valid). `SMOKE10_JUSTIFIED` (**`IBP_FACTUAL_SMOKE_V1`**) = **YES**; `SMOKE10_JUSTIFIED` (legacy stub IBP-CASE catalog) = **NO**. `SMOKE10_EXECUTED` (legacy non-stub catalog) = **NO** (`SMOKE10_NONSTUB` = **`NOT_EXECUTED`**). `FULL30` = **`NOT_RUN`**. `IMP05_INCREMENT_COMPLETE` = **NO**. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) remains **isolated** — **do not merge** #222 from status docs.
 
