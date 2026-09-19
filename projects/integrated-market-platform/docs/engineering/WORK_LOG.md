@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave B Lane H: operator lifecycle boundary tests
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform`, operator diagnostics |
+| **Summary** | Added focused unittest coverage for operator truth refusal tokens, Item 9 corpus IDLE/HEALTHY/UNKNOWN edges, cycle STALE vs FRESH recovery, evidence-gap composition, governance calibration/Live forbidden actions, collector cmdline sanitization, and validation-worker diagnostic redaction — no product behavior changes. |
+| **Key files** | `tests/platform/test_operator_lifecycle_boundaries.py` |
+| **Tests** | `python -m unittest tests.platform.test_operator_lifecycle_boundaries` — **17/17 OK** (Python 3.11 venv) |
+| **Related** | `OPERATOR_DIAGNOSTICS_MODEL.md`; existing `test_operator_diagnostics_snapshot.py`, `test_operator_truth_contract.py` |
+| **Notes** | Isolated worktree `feat/weekend-lane-h-lifecycle-tests` from `origin/main` @ `d547f96e`. Did not touch `snapshot.py` implementation or Item 9 collector state. |
+
 ## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
 
 | Field | Value |
