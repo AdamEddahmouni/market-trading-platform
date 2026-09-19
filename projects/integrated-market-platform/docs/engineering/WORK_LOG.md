@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `ce8cd20f` after #340
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`ce8cd20f`** (merge [#340](https://github.com/AdamEddahmouni/market-trading-platform/pull/340) Weekend Control live-clock UNREADY off the repair list; ancestry includes [#339](https://github.com/AdamEddahmouni/market-trading-platform/pull/339) docs pin on `a2914ad2` plus [#338](https://github.com/AdamEddahmouni/market-trading-platform/pull/338)). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#339](https://github.com/AdamEddahmouni/market-trading-platform/pull/339) prior pin (`a2914ad2`); [#340](https://github.com/AdamEddahmouni/market-trading-platform/pull/340); [#338](https://github.com/AdamEddahmouni/market-trading-platform/pull/338) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-340` from `origin/main` @ `ce8cd20f`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `a2914ad2` after #338
 
 | Field | Value |
