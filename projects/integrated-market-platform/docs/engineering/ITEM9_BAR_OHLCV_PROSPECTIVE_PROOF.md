@@ -43,13 +43,15 @@ Duplicate `--poll` detection uses OS process command lines. That subprocess I/O 
 
 Do not move subprocess handling back into governed `src/`.
 
-After a successful prospective receipt:
+After a successful prospective receipt (governed dir under `.imp-actual-01-phase-d/…/item9-prospective-proof-receipts/`):
 
 ```powershell
 python tools/item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts
 ```
 
-No automatic calibration fitting.
+When running from a non-collector checkout, pass the **absolute** frozen-collector receipt path so `corpus-status` scans admitted receipts (expect **`distinct_rth_dates`: `2/3`** until a third date is earned).
+
+No automatic calibration fitting. **`ITEM9_CALIBRATION_RUN=FORBIDDEN`.**
 
 `display` may call loopback OpenD for recent completed 1m bars. Off-hours that
 fetch is **diagnostic / transport visibility only** — not prospective evidence
