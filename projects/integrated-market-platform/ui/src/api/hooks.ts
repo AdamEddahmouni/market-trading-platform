@@ -53,6 +53,7 @@ export const queryKeys = {
     ["live", "canary-reconciliation", accountId ?? "fp-canary-local"] as const,
   providerHealth: ["provider", "health"] as const,
   operatorReadiness: ["operator", "readiness"] as const,
+  operatorDiagnostics: ["operator", "diagnostics"] as const,
   operatorLifecycleStatus: ["operator", "lifecycle-status"] as const,
   operatorConfig: ["operator", "config"] as const,
   symbolSearch: (query: string) => ["symbols", "search", query] as const,
@@ -75,6 +76,15 @@ export function useOperatorReadinessQuery(enabled = true) {
     queryFn: api.getOperatorReadiness,
     enabled,
     staleTime: 60_000,
+  });
+}
+
+export function useOperatorDiagnosticsQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.operatorDiagnostics,
+    queryFn: api.getOperatorDiagnostics,
+    enabled,
+    staleTime: 30_000,
   });
 }
 

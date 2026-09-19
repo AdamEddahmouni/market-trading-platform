@@ -108,17 +108,64 @@ def _item9_view_from_resilience(resilience: Mapping[str, Any]) -> dict[str, Any]
     }
 
 
+def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
+    """Read-only Item 9 corpus sample gate; never fits calibration or mutates receipts."""
+
+    from ...paper.calibration.bar_ohlcv_prospective_proof import DEFAULT_RECEIPT_DIR
+    from ...paper.calibration.item9_calibration_protocol import build_item9_corpus_status_report
+    from ...paper.calibration.item9_next_rth_preflight import resolve_frozen_collector_imp_root
+
+    local_dir = imp_root / DEFAULT_RECEIPT_DIR
+    frozen_imp = resolve_frozen_collector_imp_root(imp_root)
+    frozen_dir = (frozen_imp / DEFAULT_RECEIPT_DIR) if frozen_imp is not None else None
+
+    receipt_dir: Path | None = None
+    receipt_scope = "NOT_OBSERVED"
+    if frozen_dir is not None and frozen_dir.is_dir():
+        receipt_dir = frozen_dir
+        receipt_scope = "FROZEN_COLLECTOR_WORKTREE_READ_ONLY"
+    elif local_dir.is_dir():
+        receipt_dir = local_dir
+        receipt_scope = "RUNTIME_IMP_ROOT_READ_ONLY"
+
+    if receipt_dir is None:
+        return {
+            "availability": "NOT_OBSERVED",
+            "reason_code": "RECEIPT_DIR_MISSING",
+            "receipt_scope": receipt_scope,
+            "does_not_infer_calibrated": True,
+        }
+    try:
+        report = build_item9_corpus_status_report(receipt_dir)
+    except OSError:
+        return {
+            "availability": "UNAVAILABLE",
+            "reason_code": "CORPUS_STATUS_READ_FAILED",
+            "receipt_scope": receipt_scope,
+            "does_not_infer_calibrated": True,
+        }
+    return {
+        "availability": "AVAILABLE",
+        "receipt_scope": receipt_scope,
+        "receipt_dir": str(receipt_dir),
+        "report": report,
+        "does_not_infer_calibrated": True,
+    }
+
+
 def _public_runtime_resilience_section(resilience: Mapping[str, Any]) -> dict[str, Any]:
     collector = dict(resilience.get("collector_process") or {})
     matches = list(collector.pop("active_collector_matches", []) or [])
     collector["active_collector_match_count"] = len(matches)
     collector["active_collector_match_summaries"] = _sanitize_collector_match_lines(matches)
+    runtime_identity = dict(resilience.get("runtime_identity") or {})
+    runtime_identity.pop("frozen_collector_authority_sha", None)
     return {
         "artifact_kind": resilience.get("artifact_kind"),
         "schema_version": resilience.get("schema_version"),
         "observed_at_ns": resilience.get("observed_at_ns"),
         "evidence_class": resilience.get("evidence_class"),
-        "runtime_identity": resilience.get("runtime_identity"),
+        "runtime_identity": runtime_identity,
         "provider_connectivity": resilience.get("provider_connectivity"),
         "collector_process": collector,
         "item9_next_rth_preflight": resilience.get("item9_next_rth_preflight"),
@@ -309,18 +356,18 @@ def _evidence_gaps(opportunity_summary: Mapping[str, Any], item9: Mapping[str, A
         gaps.append(
             {
                 "domain": "opportunity_feed",
-                "token": "UNAVAILABLE" if opportunity_summary.get("unready_reason") == "LIVE_AS_OF_UNAVAILABLE" else "UNREADY",
+                "gap_class": "UNAVAILABLE" if opportunity_summary.get("unready_reason") == "LIVE_AS_OF_UNAVAILABLE" else "UNREADY",
                 "detail": str(opportunity_summary.get("unready_reason") or "feed_unready"),
             }
         )
     elif feed == "EMPTY":
-        gaps.append({"domain": "opportunity_feed", "token": "NOT_EXPECTED", "detail": "empty_ranked_set"})
+        gaps.append({"domain": "opportunity_feed", "gap_class": "NOT_EXPECTED", "detail": "empty_ranked_set"})
     blockers = item9.get("blockers") if isinstance(item9.get("blockers"), list) else []
     if "OUTPUT_PATH_INVALID" in blockers:
         gaps.append(
             {
                 "domain": "item9_receipt_path",
-                "token": "INVALID",
+                "gap_class": "INVALID",
                 "detail": "item9_preflight_output_path_invalid",
             }
         )
@@ -328,7 +375,7 @@ def _evidence_gaps(opportunity_summary: Mapping[str, Any], item9: Mapping[str, A
         gaps.append(
             {
                 "domain": "runtime_authority",
-                "token": "UNAVAILABLE",
+                "gap_class": "UNAVAILABLE",
                 "detail": "api_runtime_sha_not_frozen_collector_authority",
             }
         )
@@ -405,8 +452,8 @@ def _operator_questions(
         },
         "q09_collector_identity": {
             "answer": {
-                "authorized_worktree": _PIN_FROZEN_COLLECTOR_WORKTREE,
-                "authorized_sha_prefix": _PIN_ITEM9_FROZEN_COLLECTOR_SHA[:8],
+                "governed_worktree_rel": _PIN_FROZEN_COLLECTOR_WORKTREE,
+                "governed_sha_prefix": _PIN_ITEM9_FROZEN_COLLECTOR_SHA[:8],
                 "frozen_collector_git_sha": runtime.get("frozen_collector_git_sha"),
                 "frozen_collector_available": runtime.get("frozen_collector_available"),
             },
@@ -580,6 +627,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
                     "runtime": item9.get("runtime"),
                     "does_not_start_collector": True,
                 },
+                "item9_corpus_status": _item9_corpus_status_section(imp_root),
             },
             "configuration": {
                 "summary": config_summary,
@@ -620,6 +668,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "GET /opportunities/summary",
             "tools/state_path_diagnostic.collect_state_path_report",
             "operations.runtime_resilience_diagnostic.build_runtime_resilience_diagnostic",
+            "paper.calibration.item9_calibration_protocol.build_item9_corpus_status_report",
         ],
         "generated_at_monotonic": time.monotonic(),
     }

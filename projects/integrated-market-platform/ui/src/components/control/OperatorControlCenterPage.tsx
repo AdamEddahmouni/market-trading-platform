@@ -2,16 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/endpoints";
-import type { LifecycleAction, ProviderReadiness } from "../../api/schemas";
+import type { LifecycleAction, OperatorLifecycleStatus, ProviderReadiness } from "../../api/schemas";
 import {
   queryKeys,
   useContextQuery,
   useOperatorConfigQuery,
-  useOperatorLifecycleStatusQuery,
-  useOperatorReadinessQuery,
+  useOperatorDiagnosticsQuery,
   usePaperPortfolioQuery,
 } from "../../api/hooks";
-import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { resolveSemanticState, SEMANTIC_TONE_ICON } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
@@ -30,6 +28,16 @@ import {
   presentProviderRole,
   providerNeedsAction,
 } from "./controlPresentation";
+import { buildGovernanceFacts } from "../operator-shared/governanceStatusPresentation";
+import { OperatorSystemStatusSection } from "./OperatorSystemStatusSection";
+import {
+  diagnosticsLifecycle,
+  diagnosticsOpportunitySurface,
+  diagnosticsReadiness,
+  diagnosticsRuntimeSection,
+  formatItem9CorpusProgress,
+  item9CorpusProgressIsCalendarIncomplete,
+} from "./operatorDiagnosticsPresentation";
 
 type Props = {
   mode: Mode;
@@ -53,12 +61,15 @@ function providerLabel(provider: ProviderReadiness): string {
 export function OperatorControlCenterPage({ mode }: Props) {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const readinessQuery = useOperatorReadinessQuery();
-  const lifecycleQuery = useOperatorLifecycleStatusQuery();
+  const diagnosticsQuery = useOperatorDiagnosticsQuery();
   const configQuery = useOperatorConfigQuery();
   const contextQuery = useContextQuery();
-  const feedQuery = useOpportunitiesSummaryQuery();
   const paperPortfolioQuery = usePaperPortfolioQuery("PAPER", mode === "PAPER");
+
+  const diagnostics = diagnosticsQuery.data;
+  const readiness = diagnosticsReadiness(diagnostics);
+  const lifecycle = diagnosticsLifecycle(diagnostics) as OperatorLifecycleStatus | undefined;
+  const opportunitySurface = diagnosticsOpportunitySurface(diagnostics);
 
   const [message, setMessage] = useState<string | null>(null);
   const [busyProvider, setBusyProvider] = useState<string | null>(null);
@@ -88,11 +99,14 @@ export function OperatorControlCenterPage({ mode }: Props) {
     setSettledHash(hash);
   });
 
-  const readiness = readinessQuery.data;
-  const lifecycle = lifecycleQuery.data;
-  const feed = feedQuery.data;
-  const feedStatus = feed?.feed_status;
-  const humanizedReason = humanizeUnreadyReason(feed?.unready_reason);
+  const feedStatus = opportunitySurface?.feed_status;
+  const humanizedReason = humanizeUnreadyReason(opportunitySurface?.unready_reason);
+  const governanceFacts = buildGovernanceFacts({
+    asOf,
+    capabilityStates: contextQuery.data?.capability_states,
+    readinessRoot: readiness?.root ?? null,
+    diagnostics,
+  });
   const paperSessionOpen =
     mode === "PAPER" && paperPortfolioQuery.data
       ? Boolean(paperPortfolioQuery.data.session)
@@ -103,29 +117,24 @@ export function OperatorControlCenterPage({ mode }: Props) {
     contextState,
     evaluation: contextState === "ready" ? evaluation : undefined,
     readiness,
-    readinessError: readinessQuery.isError,
+    readinessError: diagnosticsQuery.isError,
     lifecycleStatus: lifecycle?.status,
-    lifecycleError: lifecycleQuery.isError,
+    lifecycleError: diagnosticsQuery.isError,
     feedStatus,
-    feedUnreadyReason: feed?.unready_reason,
-    feedError: feedQuery.isError,
+    feedUnreadyReason: opportunitySurface?.unready_reason,
+    feedError: diagnosticsQuery.isError,
     paperSessionOpen,
     humanizedUnreadyReason: humanizedReason,
+    diagnosticsError: diagnosticsQuery.isError,
   });
 
-  const allSettled =
-    !readinessQuery.isLoading &&
-    !lifecycleQuery.isLoading &&
-    contextState !== "loading" &&
-    !feedQuery.isLoading;
+  const allSettled = !diagnosticsQuery.isLoading && contextState !== "loading";
 
   const refreshAll = () => {
     setMessage(null);
-    void readinessQuery.refetch();
-    void lifecycleQuery.refetch();
+    void diagnosticsQuery.refetch();
     void configQuery.refetch();
     void contextQuery.refetch();
-    void feedQuery.refetch();
     if (mode === "PAPER") void paperPortfolioQuery.refetch();
   };
 
@@ -135,7 +144,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
     try {
       await api.runOperatorLifecycleAction(action);
       setMessage(`${action.replace(/_/g, " ")} queued.`);
-      await lifecycleQuery.refetch();
+      await diagnosticsQuery.refetch();
     } catch {
       setMessage(`Could not queue ${action.replace(/_/g, " ")}. Start the local platform first.`);
     } finally {
@@ -150,7 +159,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
     try {
       await api.refreshOperatorProvider(provider.provider);
       setMessage(`Refresh queued for ${providerLabel(provider)}.`);
-      await readinessQuery.refetch();
+      await diagnosticsQuery.refetch();
     } catch {
       setMessage(`Refresh could not be queued for ${providerLabel(provider)}.`);
     } finally {
@@ -176,9 +185,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
           <button
             type="button"
             onClick={refreshAll}
-            disabled={readinessQuery.isFetching && lifecycleQuery.isFetching}
+            disabled={diagnosticsQuery.isFetching}
           >
-            {readinessQuery.isFetching ? "Checking…" : "Check again"}
+            {diagnosticsQuery.isFetching ? "Checking…" : "Check again"}
           </button>
         }
       />
@@ -201,17 +210,17 @@ export function OperatorControlCenterPage({ mode }: Props) {
             <div className="control-panel-kicker">Operating state</div>
             <h2 id="control-overview-heading">Platform status</h2>
           </div>
-          {readinessQuery.dataUpdatedAt ? (
-            <FreshnessIndicator asOf={readinessQuery.dataUpdatedAt} cadenceSeconds={60} />
+          {diagnosticsQuery.dataUpdatedAt ? (
+            <FreshnessIndicator asOf={diagnosticsQuery.dataUpdatedAt} cadenceSeconds={60} />
           ) : null}
         </div>
         <dl className="control-fact-grid">
           <div className="control-fact">
             <dt>Setup readiness</dt>
             <dd>
-              {readinessQuery.isLoading ? (
+              {diagnosticsQuery.isLoading ? (
                 <span className="control-checking">Checking…</span>
-              ) : readinessQuery.isError || !readinessState ? (
+              ) : diagnosticsQuery.isError || !readinessState ? (
                 <StatePill tone="neutral" label="Unavailable" raw="UNAVAILABLE" />
               ) : (
                 <StatePill
@@ -225,9 +234,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
           <div className="control-fact">
             <dt>Platform runtime</dt>
             <dd>
-              {lifecycleQuery.isLoading ? (
+              {diagnosticsQuery.isLoading ? (
                 <span className="control-checking">Checking…</span>
-              ) : lifecycleQuery.isError || !lifecycleState ? (
+              ) : diagnosticsQuery.isError || !lifecycleState ? (
                 <StatePill tone="neutral" label="Unavailable" raw="UNAVAILABLE" />
               ) : (
                 <StatePill
@@ -278,10 +287,20 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </div>
         </dl>
         {allSettled && attentionItems.length === 0 ? (
-          <p className="control-all-clear" role="status">
-            No blocking issues detected across readiness, authority, providers, and the opportunity
-            feed.
-          </p>
+          <>
+            <p className="control-all-clear" role="status">
+              No blocking issues detected across readiness, authority, providers, and the opportunity
+              feed.
+            </p>
+            {item9CorpusProgressIsCalendarIncomplete(diagnostics) ? (
+              <p className="control-muted" role="note">
+                Item 9 prospective sample gate is calendar-incomplete (
+                {formatItem9CorpusProgress(diagnosticsRuntimeSection(diagnostics)?.item9_corpus_status)
+                  .distinctRthDates}
+                ) — methodology blocked, not a platform failure. See System status.
+              </p>
+            ) : null}
+          </>
         ) : null}
         <div className="control-hero-actions" role="group" aria-label="Platform actions">
           <button
@@ -336,6 +355,61 @@ export function OperatorControlCenterPage({ mode }: Props) {
           Lifecycle controls manage this local workstation only — they do not change trading
           authority. Live execution remains locked.
         </p>
+      </section>
+
+      <section
+        className="control-panel control-system-status-panel"
+        id={CONTROL_SECTIONS.systemStatus}
+        aria-labelledby="control-system-status-heading"
+        data-highlighted={hash === CONTROL_SECTIONS.systemStatus ? "true" : undefined}
+      >
+        <div className="control-panel-heading">
+          <div>
+            <div className="control-panel-kicker">Diagnostics</div>
+            <h2 id="control-system-status-heading">System status</h2>
+          </div>
+        </div>
+        <p className="control-muted">
+          Composed from <code>GET /operator/diagnostics</code> — lifecycle, readiness, Item 9
+          preflight, runtime resilience, and governance policy. Truth classes stay separate; missing
+          evidence is not upgraded to healthy.
+        </p>
+        <OperatorSystemStatusSection
+          diagnostics={diagnostics}
+          isLoading={diagnosticsQuery.isLoading}
+          isError={diagnosticsQuery.isError}
+          onRetry={() => void diagnosticsQuery.refetch()}
+        />
+      </section>
+
+      {/* Governance & empirical honesty (read-only) */}
+      <section
+        className="control-panel"
+        id={CONTROL_SECTIONS.governance}
+        aria-labelledby="control-governance-heading"
+        data-highlighted={hash === CONTROL_SECTIONS.governance ? "true" : undefined}
+      >
+        <div className="control-panel-heading">
+          <div>
+            <div className="control-panel-kicker">Governance</div>
+            <h2 id="control-governance-heading">Program gates & runtime truth</h2>
+          </div>
+        </div>
+        <p className="control-muted">
+          Calibration, collector, and runtime SHA come from backend contracts only. Missing fields stay
+          explicit — the UI never fabricates Item 9 3/3 or backfills observational gaps.
+        </p>
+        <dl className="control-fact-grid">
+          {governanceFacts.map((fact) => (
+            <div key={fact.id} className="control-fact">
+              <dt>{fact.label}</dt>
+              <dd>
+                <StatePill tone={fact.tone} label={fact.value} raw={fact.raw ?? fact.value} />
+                {fact.detail ? <p className="control-muted">{fact.detail}</p> : null}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* B. Execution / authority */}
@@ -502,15 +576,15 @@ export function OperatorControlCenterPage({ mode }: Props) {
             View provider diagnostics
           </Link>
         </div>
-        {readinessQuery.isLoading ? (
+        {diagnosticsQuery.isLoading ? (
           <p className="control-checking" role="status">
             Checking providers…
           </p>
-        ) : readinessQuery.isError ? (
+        ) : diagnosticsQuery.isError ? (
           <ErrorState
             title="Provider readiness is unavailable."
             affects="Provider states are unknown until the local platform responds."
-            onRetry={() => void readinessQuery.refetch()}
+            onRetry={() => void diagnosticsQuery.refetch()}
           />
         ) : (
           <ProviderGroups
@@ -537,25 +611,25 @@ export function OperatorControlCenterPage({ mode }: Props) {
             Open Radar
           </Link>
         </div>
-        {feedQuery.isLoading ? (
+        {diagnosticsQuery.isLoading ? (
           <p className="control-checking" role="status">
             Checking the opportunity feed…
           </p>
-        ) : feedQuery.isError ? (
+        ) : diagnosticsQuery.isError ? (
           <ErrorState
             title="Opportunity feed status could not be loaded."
             affects="Feed readiness is unknown; the ranked queue may be incomplete."
-            onRetry={() => void feedQuery.refetch()}
+            onRetry={() => void diagnosticsQuery.refetch()}
           />
-        ) : feed ? (
+        ) : opportunitySurface ? (
           <FeedReadiness
             mode={mode}
             feedStatus={feedStatus}
-            unreadyReason={feed?.unready_reason}
+            unreadyReason={opportunitySurface.unready_reason ?? undefined}
             humanizedReason={humanizedReason}
-            nextAction={feed?.next_action}
-            itemCount={feed?.items.length ?? 0}
-            qualityState={feed?.quality_summary?.state}
+            nextAction={undefined}
+            itemCount={undefined}
+            qualityState={opportunitySurface.quality_summary?.state}
           />
         ) : null}
       </section>
@@ -593,7 +667,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                 <dt>Update status (raw)</dt>
                 <dd>{lifecycle.update?.status ?? "—"}</dd>
               </div>
-              {(lifecycle.services ?? []).map((service) => (
+              {(lifecycle.services ?? []).map((service: Record<string, unknown>) => (
                 <div key={String(service.name)}>
                   <dt>{String(service.name)}</dt>
                   <dd>
@@ -796,7 +870,7 @@ function FeedReadiness({
   unreadyReason?: string;
   humanizedReason: string | null;
   nextAction?: string;
-  itemCount: number;
+  itemCount?: number;
   qualityState?: string;
 }) {
   const feedState = resolveSemanticState("research", feedStatus);
@@ -815,9 +889,11 @@ function FeedReadiness({
 
       {feedStatus === "READY" ? (
         <p className="control-muted">
-          The ranked opportunity queue is ready — {itemCount}{" "}
-          {itemCount === 1 ? "opportunity" : "opportunities"} currently listed. An empty queue is
-          valid: nothing has been minted for the current coverage.
+          The ranked opportunity queue is ready
+          {itemCount != null
+            ? ` — ${itemCount} ${itemCount === 1 ? "opportunity" : "opportunities"} currently listed`
+            : " — row count not included in diagnostics snapshot"}
+          . An empty queue is valid: nothing has been minted for the current coverage.
         </p>
       ) : null}
 

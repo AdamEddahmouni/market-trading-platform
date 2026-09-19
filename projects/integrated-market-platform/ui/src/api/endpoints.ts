@@ -41,6 +41,7 @@ import {
   OptionsProductResponseSchema,
   FuturesProductResponseSchema,
   OperatorLifecycleStatusSchema,
+  OperatorDiagnosticsSchema,
   OperatorReadinessSchema,
   OperatorConfigSchema,
   OperationStatusSchema,
@@ -231,6 +232,7 @@ export const api = {
     fetchJson(`/market-state/${encodeURIComponent(instrumentId)}`, MarketStateResponseSchema),
   getOperatorLifecycleStatus: () =>
     fetchJson("/operator/lifecycle/status", OperatorLifecycleStatusSchema),
+  getOperatorDiagnostics: () => fetchJson("/operator/diagnostics", OperatorDiagnosticsSchema),
   getOperatorReadiness: () => fetchJson("/operator/readiness", OperatorReadinessSchema),
   getOperatorConfig: () => fetchJson("/operator/config", OperatorConfigSchema),
   runOperatorLifecycleAction: (action: LifecycleAction) =>

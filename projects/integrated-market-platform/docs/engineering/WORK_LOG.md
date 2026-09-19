@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Control system status consumes GET /operator/diagnostics
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `platform/operator_diagnostics` |
+| **Summary** | Wired Control to a single `GET /operator/diagnostics` query for lifecycle, readiness, feed surface, governance, and Item 9 corpus gate presentation; added System status truth hierarchy UI and fixed diagnostics payload secret-leak audit blockers. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`, `OperatorSystemStatusSection.tsx`, `operatorDiagnosticsPresentation.ts`, `ui/src/api/{schemas,endpoints,hooks}.ts`, `platform/operator_diagnostics/snapshot.py`, `operator-shared/governanceStatusPresentation.ts` |
+| **Tests** | `ui`: vitest control/governance suites 44 passed; `python -m unittest tests.platform.test_operator_diagnostics_snapshot` 2 passed |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Browser-verified Control on worktree Vite `:5181` + API `:8767`; Radar/Lab spot-check blocked by session gate on cold navigation. Opportunity row count not in diagnostics snapshot (shown explicitly). |
+
 ## 2026-09-18 — Canonical status Item 9 prep (Lane A + G docs)
 
 | Field | Value |
@@ -83,6 +95,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_fill_price_realism_v1` — **11 OK** (2 skipped) |
 | **Related** | PR [#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287); PR #285 CI portability; Sep 18 outage closeout `item9-lane0-provider-outage-closeout-20260918.json` (read-only) |
 | **Notes** | Lane C may surface `runtime_resilience` DTO from `rth_empirical_ops` preflight; does not auto-restart collectors. |
+
+## 2026-09-18 — Lane E operator UI epistemic depth (UIR-01I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `ui/radar`, `ui/lab`, `ui/research` |
+| **Summary** | On `ui/operator-redesign-lab` reconciled to `origin/main` `270ce2a6`: opportunity detail uses epistemic layers + grounded-fact metadata; Control adds governance facts (Live OFF, Item 9 status only when capability_states expose it); known epoch `121031` gap uses precision banner; Lab/Research surface drawdown/cost/fill-realism when simulation contract carries them. |
+| **Key files** | `ui/src/components/opportunity/opportunityEpistemicLayers.ts`; `ui/src/components/operator-shared/`; `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/research-shared/simulationHarnessMetrics.ts`; `ui/src/components/imp-ui/PrecisionFailureBanner.tsx` |
+| **Tests** | `npm test` vitest: operator-shared, epistemic layers, simulationHarnessMetrics, opportunityDetailModel, OperatorControlCenterPage (17) — pass |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md); worktree `.worktrees/ui-lab-redesign` |
+| **Notes** | Browser not re-run this session. Lane C requests: runtime SHA, Item 9 corpus `distinct_rth_dates`/`calibrated` on `/operator/readiness` or `/context`; simulation `max_drawdown` on `/research/simulation`. |
 
 ## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (five-package closure)
 

@@ -58,6 +58,8 @@ export const OperatorReadinessSchema = z.object({
   checks: z.array(PreflightCheckSchema),
   providers: z.array(ProviderReadinessSchema),
   secrets_included: z.literal(false).optional(),
+  root: z.string().optional(),
+  as_of_context: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const OperatorLifecycleStatusSchema = z.object({
@@ -67,6 +69,18 @@ export const OperatorLifecycleStatusSchema = z.object({
   logs: z.array(z.string()).optional(),
   last_action: z.string().nullable().optional(),
   update: UpdateStatusSchema.optional(),
+});
+
+/** Composed operator health snapshot (`GET /operator/diagnostics`). */
+export const OperatorDiagnosticsSchema = z.object({
+  schema_version: z.string(),
+  as_of_utc: z.string().optional(),
+  severity: z.string(),
+  secrets_included: z.literal(false).optional(),
+  operator_questions: z.record(z.string(), z.unknown()).optional(),
+  sections: z.record(z.string(), z.unknown()),
+  human_summary: z.array(z.string()).optional(),
+  sources_composed: z.array(z.string()).optional(),
 });
 
 export const OperatorConfigSchema = z.object({
@@ -118,6 +132,8 @@ export const CapabilityStateSchema = z.object({
 
 export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
+export type OperatorLifecycleStatus = z.infer<typeof OperatorLifecycleStatusSchema>;
+export type OperatorDiagnostics = z.infer<typeof OperatorDiagnosticsSchema>;
 
 export const AttentionReasonSchema = z.object({
   code: z.string(),
@@ -1675,12 +1691,14 @@ export const ResearchSimulationResponseSchema = z.object({
   disclaimer: z.string().optional(),
   epistemic_class: z.string().optional(),
   risk_policy_id: z.string().nullable().optional(),
-  ledger_summary: z.object({
-    cash_minor: z.number().nullable().optional(),
-    position_shares: z.number().nullable().optional(),
-    realized_pnl_minor: z.number().nullable().optional(),
-    entry_count: z.number(),
-  }),
+  ledger_summary: z
+    .object({
+      cash_minor: z.number().nullable().optional(),
+      position_shares: z.number().nullable().optional(),
+      realized_pnl_minor: z.number().nullable().optional(),
+      entry_count: z.number(),
+    })
+    .passthrough(),
   risk_decisions: z.array(z.record(z.unknown())),
   fills: z.array(z.record(z.unknown())),
   orders: z.array(z.record(z.unknown())),

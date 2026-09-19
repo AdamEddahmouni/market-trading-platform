@@ -297,9 +297,9 @@ describe("RadarPage opportunities tab", () => {
     const card = await screen.findByTestId("imp-radar-detail-card");
     expect(card).toHaveTextContent("BIYA momentum ignition watch");
     expect(card).toHaveTextContent("2 of 3 ranking inputs present");
-    // L2/L3/L4 content stays behind disclosures until opened
-    const evidenceDisclosure = screen.getByText("Evidence & verification");
-    fireEvent.click(evidenceDisclosure);
+    // L2 epistemic layers (Evidence layers) open by default; deeper sections stay collapsed
+    expect(within(card).getByText("Evidence layers")).toBeInTheDocument();
+    expect(card).toHaveTextContent("Observed facts");
     expect(card).toHaveTextContent("Data freshness");
     const technical = screen.getByText("Technical details");
     fireEvent.click(technical);

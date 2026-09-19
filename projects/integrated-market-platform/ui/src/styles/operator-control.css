@@ -23,6 +23,77 @@
   font-size: var(--imp-text-sm);
 }
 
+.control-system-status-headline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-2);
+  margin-bottom: var(--imp-space-3);
+}
+
+.control-system-status-lead {
+  margin: 0;
+  font-size: var(--imp-text-md);
+  color: var(--text-primary);
+}
+
+.control-truth-list {
+  list-style: none;
+  margin: 0 0 var(--imp-space-3);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-2);
+}
+
+.control-truth-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--imp-space-2);
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-0);
+}
+
+.control-truth-label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-1);
+  min-width: 12rem;
+}
+
+.control-truth-class {
+  font-size: var(--imp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.control-truth-value {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-1);
+  align-items: flex-start;
+}
+
+.control-truth-detail {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.control-interventions ul,
+.control-forbidden-list {
+  margin: var(--imp-space-2) 0 0;
+  padding-left: var(--imp-space-4);
+}
+
 .control-panel {
   min-width: 0;
   margin-bottom: var(--imp-space-4);
