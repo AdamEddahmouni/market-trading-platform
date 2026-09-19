@@ -1,94 +1,59 @@
-# Agent handoff — RTH15-00
+# Agent handoff — IMP-POST-RTH-CLOSE-08
 
-Skill: `imp-handoff`. Session: RTH15-00 orchestration & reconciliation.
+Skill: `imp-handoff`. Session: Lane G status / roadmap reconciliation (docs-only).
 
 ## Canonical state
 
 - repository: `AdamEddahmouni/market-trading-platform` (IMP at `projects/integrated-market-platform/`)
-- branch: `docs/post-224-rth15-00-pin` (docs pin after merge)
-- worktree: `.worktrees/docs-post-224`
-- HEAD SHA of merged RTH15-00: `dbccd92d9b7a6316c74c70336e1efd5ab25120b1` (`origin/main` after [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224))
-- starting SHA: `d06f1f4c1154913c561fc3c7c42aa46f452a2a15`
-- upstream / ahead-behind vs `origin/main`: pin branch from that merge commit; do not use stale local `main` `3aaa3e8a`
-- worktree cleanliness: docs pin only; primary checkout `item7/natural-settlement` remains dirty/untracked and **was not cleaned**
+- branch: `docs/imp-post-rth-close-08-status`
+- worktree: `.worktrees/lane-g-status`
+- **CURRENT_GIT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION**: `d06d57e7e64efa458fca411ded60d821ad7dbabc` (`origin/main` after [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285))
+- **ITEM9_FROZEN_COLLECTOR**: `fed2d9f7e183aecfcac61a7664df69aafc12ea25` (`.imp-actual-01-phase-d`; collector **stopped** `2026-09-18T16:00:11` ET; **`ACTIVE_COLLECTORS=0`**)
+- **SEP15_FROZEN_EMPIRICAL**: `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` — do not rewrite
 
 ## Objective
 
-Reconcile isolated and post-close RTH-cycle work onto current canonical `main` without mutating evidence or Item 7.
+Reconcile authoritative status after 2026-09-18 RTH Item 9 close (Lane 0) and five-package engineering integration without mutating receipts, merging #222, or calibrating Item 9.
 
-## Completed
+## Completed (Lane G)
 
-See [RTH15_00_TARGET_STATE.md](RTH15_00_TARGET_STATE.md) and [RTH15_00_RECONCILIATION_MATRIX.md](RTH15_00_RECONCILIATION_MATRIX.md).
+- [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md): **CURRENT_MAIN** `d06d57e7`; Item 9 **`2`/`3`** admitted RTH dates; **IMP-POST-RTH-CLOSE-08** landings [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285)
+- [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md) — Lane 0 closeout + date ledger + merged lane matrix
+- [WORK_LOG.md](WORK_LOG.md) five-package closure entry
 
-Landed on this branch (software/docs only):
+## Honest gates
 
-- evidence capture-context sidecar (`#196` unique)
-- ranked-summary leak hygiene (`instrument_key` / `decision_support.authority` omitted from public cards)
-- next-RTH latency hop catalog (read-only)
-- selected UX on current contracts (#123/#124/#126/#128/#201 subset)
-- Sep 15 diagnosis/review archives + UI redesign **plan docs**
+```text
+ITEM9_DISTINCT_RTH_DATES=2/3
+ITEM9_CALIBRATED=NO
+ITEM9_GATE_STATE=INSUFFICIENT_CALIBRATION_EVIDENCE
+PR222_MERGED=NO
+LIVE_EXECUTION=OFF
+FTEP_EMPIRICAL_ACTIVE=NO
+RECEIPTS_REWRITTEN=NO
+```
+
+## Engineering landings (on `origin/main`)
+
+| Lane | Branch @ SHA | Disposition |
+|---|---|---|
+| Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | **MERGED** [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282) |
+| Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **MERGED** [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283) |
+| Cost v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | **MERGED** [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284); **APPROVE** |
+| Fill | `research/fill-price-realism-v1` @ `a36ab28b` | **MERGED** [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285); pack `6A66AE5C` |
 
 ## Validated
 
-- `python tools/imp.py env` — healthy (IMP `.venv` junction)
-- `python tools/imp.py format` — exit 0
-- `python tools/imp.py lint` — exit 0 after `ui/npm ci` (worktree had no `node_modules`; first lint failed `'tsc' is not recognized`)
-- `python tools/imp.py validate fast` — 23/0/0, exit 0; `perf=SEVERE_REGRESSION` vs FAST baseline (10.2s vs 1.8s median) — environment/timing, tests passed
-- unittest modules evidence/leak/opportunity_api/latency — 33/0, exit 0
-- `python tools/check_docs_links.py` — OK, 223 governance markdown files
-- `python tools/imp.py validate changed` — first run: intelligence **error** (sidecar CLI printed to worker stdout); providers **failed** 11. After capturing CLI stdout, intelligence worker **1937 passed / 0 failed**. Providers 11 failures remain `ENVIRONMENT` (OpenD reachable / vendor SDK present on this VM; tests expect unreachable/SDK-missing). Not a product regression from this branch. Not success for providers on this machine.
-- UI `npm test` — 113 files / 526 tests passed
-- `npm run typecheck` — exit 0
-- `npm run build` — exit 0
-- `validate full` / `closure` — `NOT_RUN`
-- Intelligence Benchmark Protocol — **not found / not executed**
-- Prospective/natural-cycle jobs — **not executed**
-
-## Active isolated work
-
-| Worktree / branch | Purpose | Owner | Base SHA | Status | Disposition |
-|---|---|---|---|---|---|
-| primary `item7/natural-settlement` @ `c44231fa` | Item 7 natural settlement (#222) | operator | behind 1 / ahead 3 vs origin | dirty untracked review artifacts | `KEEP_ISOLATED_PENDING_EVIDENCE` — do not clean |
-| `ui/operator-redesign-v2` | Operator redesign implementation | isolated | 66 behind | incomplete shell | `KEEP_ISOLATED`; plan docs recovered |
-| `.worktrees/ops-canonical-agent-os` | OPS-00 | merged via #223 | `6618c8d9` | landed | canonical |
-| Phase 2–5 / diagnosis / repair leftovers | Campaign leftovers | various | many remotes `gone` | retain | `SUPERSEDED_BY_MAIN` or archive |
+- `python tools/check_docs_links.py` — run on Lane G doc set (see WORK_LOG)
+- Item 9 `corpus-status` — **not** re-run in Lane G (Lane 0 authority recorded in closeout JSON)
 
 ## Evidence-sensitive state
 
-`NONE OBSERVED` for `STAGE_2_APPLIED_AWAITING_NATURAL_CYCLE` (no branch, artifact, or matching Windows scheduled task).
-
-Item 7 #222 remains isolated. Frozen Sep 15 empirical pin `7aade60`. `PROSPECTIVE_NO_POST_SIGNAL_BAR` not rewritten.
-
-`NO HISTORICAL OR PROSPECTIVE EVIDENCE MUTATED`.
-
-## Blockers
-
-- Item 7 natural settlement: evidence/acceptance gate on #222 (orthogonal; did not freeze this increment)
-- Providers CHANGED on this VM: OpenD/SDK environment (do not weaken tests)
-
-## Deferred
-
-- UI redesign foundation/shell implementation
-- Intelligence Benchmark Protocol (not found; not executed)
-- Open UX drafts after selective recovery
-- Phase leftover worktree deletion
+- Lane 0 closeout: `artifacts/ftep-v1-002/item9-lane0-provider-outage-closeout-20260918.json` (under `.imp-actual-01-phase-d`)
+- **NO** receipt rewrite; outage epoch `121031` gap preserved
 
 ## Next work
 
-Highest leverage after this PR merges: **Item 7 #222 natural-settlement review on its own isolated tree** (do not mix with this worktree), or continue operator UX redesign **reimplementation** on current Opportunity contracts — Composer default; Grok 4.6 High only if schema/architecture conflict appears.
-
-Starting SHA: `origin/main` `dbccd92d9b7a6316c74c70336e1efd5ab25120b1`.
-
-## Model / escalation notes
-
-Stayed on Composer. No Grok 4.6 High escalation. No Fast models. No parallel mutating agents.
-
-## Architecture decisions
-
-- Public ranked cards omit leak-shaped names; keep `instrument_id`; real secrets still 500.
-- Sidecar is optional metadata; cannot upgrade evidence class.
-- Latency catalog is diagnostic, not production telemetry.
-
-## Docs
-
-WORK_LOG, PROGRAM_STATUS RTH15-00 row, target state, matrix, this handoff.
+1. **CALENDAR:** next US equity cash RTH — governed Item 9 `--poll` @ frozen collector when preflight `READY_TO_COLLECT` (third distinct admitted date).
+2. **PR #222:** remains open; do not merge from status work.
+3. **Lane G docs PR [#286](https://github.com/AdamEddahmouni/market-trading-platform/pull/286):** merge when CI green after push.

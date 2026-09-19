@@ -12,7 +12,7 @@
 
 ## Program truths (do not soften)
 
-- **Item 9:** `ITEM9_CALIBRATED` = **NO**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **1** / **3** (do not assume a second date). Floors: **20** observations, **3** distinct US cash RTH dates, **5** evaluation rows. Sep 17 `PATH_PROOF_ONLY` receipt immutable.
+- **Item 9:** `ITEM9_CALIBRATED` = **NO**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **2** / **3** (admitted **2026-09-17** + **2026-09-18**; Sep 14–16 **NOT_ADMITTED** — RTH activity ≠ admission). Floors: **20** observations, **3** distinct US cash RTH dates, **5** evaluation rows. Sep 17 `PATH_PROOF_ONLY` immutable; Sep 18 outage epoch `121031` receipt **NONE** (not backfilled).
 - **Item 7:** `ITEM7_STATE` = **`ITEM7_PENDING_NATURAL_EVIDENCE`**; `ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY` = **NO**; governed rows **0**.
 - **FTEP:** `FTEP_EMPIRICAL_ACTIVE` = **NO**; empirical locks **0**.
 - **Live:** `LIVE_EXECUTION` = **OFF**.

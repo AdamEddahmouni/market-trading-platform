@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (five-package closure)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only closure after **IMP-POST-RTH-CLOSE-08** Sep 18 close and sequential engineering landings [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285). Item 9 **2/3** admitted RTH dates, **188/189** receipts, outage epoch `121031` **not** backfilled, collector `fed2d9f7` stopped **16:00:11 ET**. **CURRENT_MAIN** `d06d57e7` (fill merge includes CI portability hardening @ `a36ab28b`; frozen v3 manifest paths untouched). Cost v4 **APPROVE** @ `7b5e4be9`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md` |
+| **Tests** | `python tools/check_docs_links.py` |
+| **Related** | Lane 0 closeout JSON (operator tree); branch `docs/imp-post-rth-close-08-status`; merge [#286](https://github.com/AdamEddahmouni/market-trading-platform/pull/286) |
+| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`; no receipt rewrite; no fill experiment rerun. |
+
 ## 2026-09-18 — Fill-price realism v1 harness + bounded run (IMP-POST-RTH-CLOSE-08 Lane F)
 
 | Field | Value |
@@ -45,7 +57,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `6A66AE5C50700426F71B3734E6FC6A43` under experiment 06 evidence (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`). Costs locked at 5 bps; v3 receipts untouched; validate gross sign unchanged on corpus. |
 | **Key files** | `fill_price_realism_harness.py`; `fill_price_realism_v1_cli.py`; `tests/platform/test_fill_price_realism_v1.py`; `evidence/.../fill_price_realism_run_record.json` |
 | **Tests** | `python -m unittest tests.platform.test_fill_price_realism_v1` — OK (3 passed, 1 skipped) |
-| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…1149`; branch `research/fill-price-realism-v1` @ `0732de35` |
+| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…1149`; merged #285 @ `a36ab28b` |
 | **Notes** | `research_code_sha` recorded in run receipt at commit time; no experiment rerun on integration. |
 
 ## 2026-09-18 — Fill-price realism v1 spec freeze (IMP-POST-RTH-CLOSE-08 Lane F)
