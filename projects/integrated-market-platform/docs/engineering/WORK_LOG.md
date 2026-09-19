@@ -48,17 +48,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
 | **Notes** | Merge (not rebase). Do not merge #294 from this lane. |
 
-## 2026-09-18 — Weekend Wave A Lane A: pin CURRENT_MAIN to #292
+## 2026-09-18 — Weekend Lane C UI regression fixes
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `docs/platform` |
-| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) from stale `50a1477f` (#289) to `origin/main` **`b16e0bbe`** (#292). Historical #289 merge rows left unchanged. Item 9 **2/3**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
-| **Tests** | Docs SHA pin only — no code tests run |
-| **Related** | [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
-| **Notes** | Isolated worktree `.worktrees/weekend-lane-a-status-nits`; do not merge from this lane. |
+| **Area** | `ui/radar`, `ui/workspace`, `ui/nav`, `ui/diagnostics` |
+| **Summary** | Fixed non-Control product defects found in origin/main browser QA: mobile nav backdrop leaked as an unnamed button, provider diagnostics treated loading/error as Live-disabled, Workspace overview assumed Demo replay when `/context` failed, and empty-instrument copy still pointed at retired Explore/Discover routes. Added a tested route error-boundary primitive; it is not wrapped around `LazyBoundary` because that stalls lazy `ImpProductChrome` load. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/live/ProviderHealthPanel.tsx`, `ui/src/components/WorkspaceIndex.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `ui/src/components/RouteErrorBoundary.tsx` |
+| **Tests** | `npx vitest run` ImpProductChrome, InstrumentSelectionEmpty, RouteErrorBoundary, WorkspaceIndex, ProviderHealthPanel, LazyBoundary — **15 passed** (ProviderHealthPanel 4/4 including pre-existing CONNECTED case); `npm run typecheck` — **pass**. Full `App.test.tsx` not re-run (no `App.tsx` change). |
+| **Related** | `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/ACCESSIBILITY.md` |
+| **Notes** | Control inspected only (Lane B). Item 9 2/3 / not calibrated / Live OFF not hidden. Error-boundary wiring around Suspense remains deferred. |
 
 ## 2026-09-18 — Lane F provider resilience (offline fixtures)
 
@@ -71,18 +71,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test focused` (10 Lane F selectors) **passed 10/0/0**; `python -m unittest` provider/yahoo/error-taxonomy/diagnostic modules **68 OK**. |
 | **Related** | [PROVIDER_READINESS.md](PROVIDER_READINESS.md); runtime resilience diagnostic (Lane B composition consumed by diagnostics snapshot, this lane did not edit `snapshot.py`). |
 | **Notes** | Leftover **CALENDAR**: Item 9 `2/3` IDLE not DEGRADED, `NOT_CALIBRATED`. **PROVIDER**: OpenD still unavailable on this workstation; Yahoo overlay remains DELAYED-only. No Item 9 collection, no collector mutation, no #222 merge. |
-
-## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `platform/operator_diagnostics`, `docs/platform` |
-| **Summary** | Corrected PROGRAM_STATUS corpus-status to frozen `$rcpt` (not CURRENT_MAIN artifacts). Diagnostics now classify Item 9 distinct-RTH progress **`2/3` → `IDLE`** (not `DEGRADED`) and **`3/3` → `HEALTHY`** without implying CALIBRATED, and redact/normalize operator-facing `receipt_dir` / host-absolute paths. No evidence mutation, collection, or UI edits. |
-| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
-| **Tests** | `python tools/imp.py test focused` — 7/7 passed (`OperatorDiagnosticsSnapshotTests`); `python tools/imp.py lint` — exit 0 |
-| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); merge [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292) |
-| **Notes** | Frozen collector `fed2d9f7` untouched. Item 9 remains NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF. Lane B Control UI not edited. `q03` `state_dir` still host-absolute (operational). |
 
 ## 2026-09-18 — Control system status consumes GET /operator/diagnostics
 
@@ -695,7 +683,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py test affected` + `validate changed` — **3847 passed**, 29 skipped, 0 fail |
 | **Related** | Branch `data/dual-corpus-contract`; [DUAL_CORPUS_EVIDENCE_CONTRACT.md](../architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
 | **Notes** | Lane B historical CLI and Lane C post-horizon label artifacts deferred. Compatible with unmerged `item9_calibration_protocol` worktree. |
-
 
 ## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
 
@@ -1404,7 +1391,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 7 capture funnel; BUILD 15 ledger/settlement |
 | **Notes** | No AdamsGalaxyBook JSONL processed on cloud. Pre-existing normalizer wired; orchestrator is new. |
 
-
 ## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
 
 | Field | Value |
@@ -1645,7 +1631,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
 | **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
 
-
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
 | Field | Value |
@@ -1813,7 +1798,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `tests.providers.test_moomoo_opend_primary_l1` **40 passed**. Combined with Path A hop + live-p21 trade-context + phase0 analysis **43 passed**. Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. Did not edit Path A `forecast_resolver`, prereg store, or catalog evaluators. |
 | **Related** | Stacked on #48 `ff139ac` (OpenD hop + prereg). Follows hop unify #47. |
 | **Notes** | Operator OpenD + vendor SDK remain required for an empirical tick. Cloud VM has no loopback `:11111` and no `moomoo-api`. No secrets printed. Did not add paid vendors. Did not merge to main or Wave B. |
-
 
 ## 2026-09-13 — Restack Path A prereg load onto OpenD hop
 
@@ -2210,7 +2194,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
 | **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
 
-
 ## 2026-09-12 — FTEP split PR #28 rebase onto #27
 
 | Field | Value |
@@ -2342,7 +2325,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
 | **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
 | **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
-
 
 ## 2026-09-12 — FTEP v1 implementation goal closure audit
 
@@ -3145,7 +3127,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm run typecheck` clean; `npm test` — 85 files / 436 tests passed (incl. new `laneRegistry.test.ts`, 7 tests). Backend: `py_compile` of `decision_source.py` OK; grep confirms zero references to removed `KNOWN_LANE_MODULES` in `src`/`tests` (only stale `.pyc`). Full manifest validation (`tools/imp.py validate`) runs in CI on push — local Python 3.10 cannot collect the suite (repo requires 3.11 `StrEnum`/tz db) and the project `.venv` is not test-equipped. |
 | **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-3; [ADD_WORKSPACE_LANE.md](sops/ADD_WORKSPACE_LANE.md) |
 | **Notes** | Adding a lane now edits exactly one identity source (`laneRegistry.ts`) plus its per-lane feature surfaces (route component, content builder, backend projection only when a new API is needed). Zero behavior change: derived lists are identical to the prior literals; order of `MODULES_WITHOUT_EVIDENCE_LANE` follows registry nav order (no consumer depends on the old ordering). |
-
 
 ## 2026-09-04 — Full validation green receipt and closure-audit cleanup
 

@@ -110,4 +110,13 @@ describe("ImpProductChrome mobile navigation", () => {
     expect(screen.queryByRole("dialog", { name: "Product navigation" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
   });
+
+  it("keeps the dimming backdrop out of the accessibility tree while the menu is open", () => {
+    renderChrome();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByRole("dialog", { name: "Product navigation" })).toBeInTheDocument();
+    const unnamedButtons = screen.queryAllByRole("button").filter((button) => !button.textContent?.trim());
+    expect(unnamedButtons).toHaveLength(0);
+    expect(document.querySelector(".imp-sidebar-backdrop")).toHaveAttribute("aria-hidden", "true");
+  });
 });
