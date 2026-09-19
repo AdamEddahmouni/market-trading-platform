@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildOperatorSituation,
   buildOperatorTruthRows,
+  explainTruthClass,
   formatItem9CorpusProgress,
   humanDiagnosticsHeadline,
+  item9CorpusMeaning,
   mapItem9CorpusProgressTruth,
 } from "./operatorDiagnosticsPresentation";
 import type { OperatorDiagnostics } from "../../api/schemas";
@@ -71,8 +74,78 @@ describe("operatorDiagnosticsPresentation", () => {
     const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
     const corpusRow = rows.find((row) => row.id === "item9-corpus");
     expect(corpusRow?.truth).toBe("IDLE");
+    expect(corpusRow?.kind).toBe("waiting");
     expect(corpusRow?.detail).toMatch(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/);
+    expect(corpusRow?.meaning).toMatch(/still needs more distinct regular-trading-hours dates/);
+    expect(corpusRow?.meaning).toMatch(/IDLE, not DEGRADED/);
     expect(corpusRow?.truth).not.toBe("DEGRADED");
+  });
+
+  it("explains Live OFF as a policy lock, not platform degradation", () => {
+    const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
+    const live = rows.find((row) => row.id === "live-execution");
+    expect(live?.detail).toMatch(/Live OFF/);
+    expect(live?.kind).toBe("policy");
+    expect(live?.truth).toBe("POLICY");
+    expect(live?.truth).not.toBe("BLOCKED");
+    expect(live?.truth).not.toBe("DEGRADED");
+    expect(explainTruthClass(live!.truth, live!.kind)).toMatch(/Intentional safety lock/);
+    expect(explainTruthClass(live!.truth, live!.kind)).not.toMatch(/gate is cleared/);
+  });
+
+  it("reserves BLOCKED for real Item 9 gates such as WRONG_RUNTIME", () => {
+    const preflight = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS).find((row) => row.id === "item9-preflight");
+    expect(preflight?.truth).toBe("BLOCKED");
+    expect(explainTruthClass(preflight!.truth, preflight!.kind)).toMatch(/real gate/);
+  });
+
+  it("does not say Item 9 still needs dates when the 3/3 gate is complete", () => {
+    const complete = formatItem9CorpusProgress({
+      availability: "AVAILABLE",
+      report: {
+        calibration_state: "NOT_CALIBRATED",
+        fitting_allowed: false,
+        sample_gate_progress: { distinct_rth_dates: "3/3" },
+      },
+    });
+    expect(complete.distinctRthDates).toBe("3/3");
+    expect(complete.calibrationLabel).toBe("NOT CALIBRATED");
+    expect(complete.calibrationForbidden).toBe("CALIBRATION FORBIDDEN");
+    const meaning = item9CorpusMeaning(complete, "HEALTHY");
+    expect(meaning).toMatch(/date gate is complete \(3\/3\)/);
+    expect(meaning).not.toMatch(/still needs more/);
+    expect(meaning).toMatch(/NOT CALIBRATED/);
+    expect(meaning).toMatch(/CALIBRATION FORBIDDEN/);
+  });
+
+  it("treats calendar-incomplete Item 9 as waiting even when another row is blocked", () => {
+    const situation = buildOperatorSituation(SAMPLE_DIAGNOSTICS);
+    expect(situation.kind).toBe("impaired");
+    expect(situation.explanation).toMatch(/2\/3/);
+    expect(situation.explanation).toMatch(/Live OFF/);
+  });
+
+  it("classifies calendar-only incomplete corpus as waiting, not impaired", () => {
+    const calendarOnly: OperatorDiagnostics = {
+      ...SAMPLE_DIAGNOSTICS,
+      severity: "OK",
+      sections: {
+        ...SAMPLE_DIAGNOSTICS.sections,
+        governance: {
+          ...(SAMPLE_DIAGNOSTICS.sections.governance as Record<string, unknown>),
+          headline: "No blocking operator headline.",
+        },
+        runtime: {
+          ...(SAMPLE_DIAGNOSTICS.sections.runtime as Record<string, unknown>),
+          item9_preflight: { disposition: "NOT_RTH" },
+        },
+      },
+    };
+    const situation = buildOperatorSituation(calendarOnly);
+    expect(situation.kind).toBe("waiting");
+    expect(situation.title).toMatch(/calendar/i);
+    expect(situation.explanation).toMatch(/IDLE, not DEGRADED/);
+    expect(situation.explanation).toMatch(/Live OFF/);
   });
 
   it("maps 0/3 corpus progress to NOT_OBSERVED when receipts are missing", () => {
