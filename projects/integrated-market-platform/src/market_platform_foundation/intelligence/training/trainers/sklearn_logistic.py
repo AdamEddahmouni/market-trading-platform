@@ -45,6 +45,14 @@ class SklearnLogisticCandidateTrainer:
         spec: CandidateTrainingSpec,
         dataset: PreparedTrainingDataset,
     ) -> CandidateTrainingResult:
+        from ....paper.calibration.dual_corpus.consumption import (
+            assert_prepared_training_dataset_consumable_for_selection_or_training,
+        )
+
+        assert_prepared_training_dataset_consumable_for_selection_or_training(
+            dataset,
+            purpose="sklearn_logistic_candidate_train",
+        )
         baseline_dataset = dataset.baseline_dataset
         hyperparams = dict(DEFAULT_LOGISTIC_HYPERPARAMETERS)
         hyperparams.update(

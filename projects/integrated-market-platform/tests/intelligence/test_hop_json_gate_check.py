@@ -98,14 +98,11 @@ class HopJsonGateCheckTests(unittest.TestCase):
 
     def test_cli_reads_file_and_exits_zero_on_skip(self) -> None:
         payload = _opend_l1_stack(actionable=False, status="G7_NOT_ACTIONABLE")
-        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False, encoding="utf-8") as handle:
-            json.dump(payload, handle)
-            path = handle.name
-        try:
-            code = main([path])
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "hop.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            code = main([str(path)])
             self.assertEqual(code, 0)
-        finally:
-            Path(path).unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

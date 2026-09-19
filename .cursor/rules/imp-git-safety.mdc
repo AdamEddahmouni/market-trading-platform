@@ -1,0 +1,31 @@
+---
+description: Git/worktree safety, secrets, validation honesty, and continue-or-block
+alwaysApply: true
+---
+
+# Git, secrets, validation, progress
+
+**Git:** inspect status, HEAD, and base SHA before mutation. Preserve unrelated
+changes. No destructive resets, force-push, or deletion of unique work unless
+the operator explicitly requests it. Keep commits coherent; inspect the final
+diff. Isolated implementation uses `<repo>/.worktrees/<purpose>` on an
+intent-named branch (`fix/`, `feat/`, `ui/`, `research/`, `diagnostic/`,
+`reconcile/`, `ops/`, `benchmark/`).
+
+**Secrets:** never commit secrets, print credentials, or put API keys in
+tracked configuration.
+
+**Validation:** run the applicable tests/builds/lint/type/schema/contract
+checks. Report exact commands and results. Do not claim validation that was
+not performed. A failed result stays failed until genuinely resolved.
+
+**Failures:** distinguish implementation, test, environment, credential,
+evidence-unavailable, upstream-unavailable, and intentional deferral.
+
+**Stuck:** inspect evidence, try the safest reasonable fix, validate, then a
+materially different approach. Escalate to Grok 4.6 High for reasoning
+difficulty, not after one ordinary error, and not for endless Composer retries
+on a clearly architectural problem.
+
+**Progress:** block the dependency, not the whole project. Do not bypass
+evidence gates, missing authorization, or fabricated prerequisites.

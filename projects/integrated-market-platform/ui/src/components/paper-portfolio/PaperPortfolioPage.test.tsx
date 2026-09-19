@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPaperOrderHistoryInfiniteQueryMock } from "../../test/paperOrderHistoryQueryMock";
 import { PaperPortfolioPage } from "./PaperPortfolioPage";
@@ -53,6 +54,7 @@ vi.mock("../../api/hooks", () => ({
     isLoading: false,
     isError: false,
     data: portfolio,
+    refetch: vi.fn(),
   }),
   usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
   usePaperOrderHistoryInfiniteQuery: () => createPaperOrderHistoryInfiniteQueryMock(portfolio.orders),
@@ -66,7 +68,9 @@ function renderPage(paperActionsPermitted: boolean) {
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
-      <PaperPortfolioPage paperActionsPermitted={paperActionsPermitted} />
+      <MemoryRouter>
+        <PaperPortfolioPage paperActionsPermitted={paperActionsPermitted} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -92,6 +96,7 @@ describe("PaperPortfolioPage", () => {
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Archive session" })).not.toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/Paper authority unavailable/i);
+    expect(screen.getAllByRole("link", { name: "Open Workspace" }).length).toBeGreaterThan(0);
   });
 
   it("fails closed when the action payload lacks Paper authority", () => {
@@ -108,9 +113,11 @@ describe("PaperPortfolioPage", () => {
 
     renderPage(true);
 
-    expect(screen.getByText("Order ticket")).toBeInTheDocument();
+    expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Open Workspace" }).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "New Paper Session" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Archive session" })).toBeInTheDocument();
+    expect(screen.getByText(/Paper simulation account — not live capital/i)).toBeInTheDocument();
   });
 
   it("keeps operational history and trace readable when Paper authority is unavailable", async () => {
@@ -138,10 +145,13 @@ describe("PaperPortfolioPage", () => {
     expect(screen.getByRole("button", { name: /View trace for BIYA/i })).toBeInTheDocument();
   });
 
-  it("renders order history empty state", () => {
+  it("renders empty holdings with a Workspace handoff and never submits from Portfolio", () => {
     portfolio.account.execution_mode = "INTERNAL_SIMULATION";
     portfolio.account.execution_authority = "PAPER_ONLY";
     renderPage(true);
+    expect(screen.getByRole("heading", { name: "No open positions" })).toBeInTheDocument();
     expect(screen.getByText(/No simulated orders yet/i)).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: "Open Workspace" }).length).toBeGreaterThan(0);
+    expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
   });
 });

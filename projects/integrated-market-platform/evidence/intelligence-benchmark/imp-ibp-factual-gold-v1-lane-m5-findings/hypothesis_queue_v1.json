@@ -1,0 +1,132 @@
+{
+  "artifact_kind": "imp_ibp_factual_gold_v1_lane_m5_hypothesis_queue_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "benchmark_gold_authority": "EVALUATOR_ONLY",
+  "increment_id": "IMP-IBP-FACTUAL-GOLD-V1",
+  "lane": "M5",
+  "queue_version": "1.0.0",
+  "ranking_policy": "priority_rank_ascending; lower rank = higher priority for follow-up capability design (not implemented in Lane M5 findings)",
+  "implementation_status": "PROPOSED_ONLY_NOT_IMPLEMENTED",
+  "compatible_with": "market_platform_foundation.intelligence.research_experiments.ResearchHypothesisV1",
+  "prior_increment_queues": [
+    "evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/hypothesis_queue_v1.json"
+  ],
+  "methodology_hypothesis_closure": [
+    {
+      "hypothesis_queue_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+      "closure_status": "METHODOLOGY_OBSERVED_BASELINE_RECORDED",
+      "closure_finding_ids": [
+        "LANE-M5-FND-001",
+        "LANE-M5-FND-007"
+      ],
+      "note": "M1–M4 corpus + IBP_FACTUAL_SMOKE_V1 baseline run_id ibp-factual-smoke-28EA7748057E312D on main; facts dimension failures preserved. Does not close intelligence capability gaps."
+    }
+  ],
+  "hypotheses": [
+    {
+      "queue_rank": 1,
+      "hypothesis_queue_id": "LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1",
+      "source_finding_ids": [
+        "LANE-M5-FND-002"
+      ],
+      "claim": "A governed intelligence capability can extract structured facts from admitted historical evidence such that the IBP_FACTUAL_SMOKE_V1 facts dimension is not universally FAIL on answerable cases, without retrofitting evaluator gold to match current SUT outputs.",
+      "required_features": "grounded_evidence_infer; admitted fixture reader; evaluator-only gold isolation",
+      "required_dataset": {
+        "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
+        "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
+        "protocol_version": "IBP_FACTUAL_SMOKE_V1",
+        "baseline_run_id": "ibp-factual-smoke-28EA7748057E312D"
+      },
+      "train_dev_test_policy": "NEW run_id only; frozen caseset/goldset hashes; baseline receipt immutable",
+      "metrics": {
+        "primary": "facts_dimension_pass_rate",
+        "secondary": [
+          "FACT_MISMATCH_count",
+          "contamination_audit_overall"
+        ]
+      },
+      "failure_conditions": [
+        "Facts dimension remains FAIL 11/11 with no pre-registered capability change",
+        "DID_SYSTEM_SEE_GOLD=FAIL",
+        "Gold edited to match SUT after baseline observation"
+      ],
+      "leakage_risks": [
+        "Patching SUT answers from evaluator gold",
+        "Reusing baseline run_id while relabeling scores"
+      ],
+      "evidence_needed_for_promotion": [
+        "Pre-registered capability manifest distinct from baseline",
+        "Operator review before any score comparison to baseline"
+      ],
+      "proposed_test": "Capability experiment under IMP-IBP-FACTUAL-GOLD-V1; not Lane M5 findings implementation"
+    },
+    {
+      "queue_rank": 2,
+      "hypothesis_queue_id": "LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1",
+      "source_finding_ids": [
+        "LANE-M5-FND-004"
+      ],
+      "claim": "A governed unknown-handling capability can reduce UNNECESSARY_UNKNOWN verdicts on cases where UNKNOWN_POLICY marks evidence as answerable, without weakening CORRECT_UNKNOWN cases.",
+      "required_features": "UNKNOWN_POLICY.correct_unknown_verdict contract; structured_facts_preferred scoring",
+      "required_dataset": {
+        "baseline_run_id": "ibp-factual-smoke-28EA7748057E312D",
+        "observed_UNNECESSARY_UNKNOWN": 7,
+        "unknown_handling_fail": 7,
+        "unknown_handling_pass": 4
+      },
+      "train_dev_test_policy": "Same frozen corpus; new run_id; no post-hoc unknown relabeling on baseline",
+      "metrics": {
+        "primary": "UNNECESSARY_UNKNOWN_count",
+        "secondary": [
+          "unknown_handling_pass_rate",
+          "CORRECT_UNKNOWN_regression_count"
+        ]
+      },
+      "failure_conditions": [
+        "UNNECESSARY_UNKNOWN remains 7 with identical SUT profile",
+        "CORRECT_UNKNOWN cases regress to unsupported assertions"
+      ],
+      "leakage_risks": [
+        "Broadening UNKNOWN to pass facts without evidence support"
+      ],
+      "evidence_needed_for_promotion": [
+        "Case-level abstention audit trail",
+        "Contamination audit PASS on follow-up run"
+      ],
+      "proposed_test": "Capability experiment; orthogonal to routing PASS 11/11"
+    },
+    {
+      "queue_rank": 3,
+      "hypothesis_queue_id": "LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1",
+      "source_finding_ids": [
+        "LANE-M5-FND-003"
+      ],
+      "claim": "Structured fact normalization (symbols, timestamps, numeric tolerance, equivalent labels) can resolve a material subset of FACT_MISMATCH verdicts on admitted gold without accepting incorrect facts.",
+      "required_features": "ANSWER_NORMALIZATION rules in IBP admitted factual gold contract",
+      "required_dataset": {
+        "baseline_FACT_MISMATCH": 5,
+        "protocol_version": "IBP_FACTUAL_SMOKE_V1"
+      },
+      "train_dev_test_policy": "Normalization policy must be pre-registered; baseline scores immutable",
+      "metrics": {
+        "primary": "FACT_MISMATCH_count",
+        "secondary": [
+          "facts_dimension_pass_rate",
+          "UNSUPPORTED_ASSERTION_count"
+        ]
+      },
+      "failure_conditions": [
+        "Normalization accepts factually incorrect values",
+        "FACT_MISMATCH unchanged with no registered policy change"
+      ],
+      "leakage_risks": [
+        "Expanding ACCEPTABLE_EQUIVALENTS post-hoc from SUT outputs"
+      ],
+      "evidence_needed_for_promotion": [
+        "Published normalization policy version",
+        "Evaluator-only gold unchanged except pre-registered equivalents"
+      ],
+      "proposed_test": "Capability or evaluator-policy experiment distinct from baseline run_id"
+    }
+  ]
+}

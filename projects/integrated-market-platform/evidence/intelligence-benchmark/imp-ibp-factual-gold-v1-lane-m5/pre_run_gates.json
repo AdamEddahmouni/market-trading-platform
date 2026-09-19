@@ -1,0 +1,13 @@
+{
+  "gates": {
+    "CASES_ANSWERABLE": "PASS",
+    "CONFIG_FROZEN": "PASS",
+    "CONTEXT_RESET": "PASS",
+    "GOLD_EVIDENCE_ADMITTED": "PASS",
+    "GOLD_SOURCE_INDEPENDENT": "PASS",
+    "SUT_CANNOT_ACCESS_GOLD": "PASS",
+    "SUT_CAN_ACCESS_REQUIRED_EVIDENCE": "PASS"
+  },
+  "overall": "PASS",
+  "reasons": {}
+}

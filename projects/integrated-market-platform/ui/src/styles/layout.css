@@ -47,7 +47,7 @@ body,
   background: var(--surface-1);
   display: grid;
   grid-template-rows: auto auto auto 1fr auto auto;
-  min-height: calc(100vh - var(--nav-height) - var(--context-bar-height));
+  min-height: calc(100vh - var(--imp-topbar-height) - var(--imp-statusbar-height));
 }
 
 .assistant-sidecar header {
@@ -166,16 +166,6 @@ body,
   border: 0;
 }
 
-.nav-shell {
-  display: flex;
-  gap: 8px;
-  padding: 0 16px;
-  height: var(--nav-height);
-  align-items: center;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
 .nav-link {
   color: var(--text-secondary);
   text-decoration: none;
@@ -188,12 +178,6 @@ body,
   background: rgba(255, 106, 0, 0.1);
 }
 
-.gated-badge {
-  margin-left: 6px;
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
 .nav-mode-hint {
   display: block;
   margin-top: 2px;
@@ -202,36 +186,6 @@ body,
   letter-spacing: 0.04em;
   color: var(--text-muted);
   text-transform: uppercase;
-}
-
-.context-bar {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  padding: 0 16px;
-  height: var(--context-bar-height);
-  background: var(--replay-bg);
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.context-bar-unavailable {
-  color: var(--text-muted);
-  font-size: 0.78rem;
-}
-
-.context-segment {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  background: transparent;
-  border: 0;
-  color: inherit;
-  font: inherit;
-}
-
-.context-segment .label {
-  color: var(--text-muted);
-  font-size: 11px;
 }
 
 .main-content {
@@ -261,47 +215,132 @@ body,
   padding: 14px;
 }
 
+.attention-card {
+  display: grid;
+  gap: var(--imp-space-2);
+  min-width: 0;
+}
+
+/* Tier accent: paired with the tier StatePill text — never color alone. */
 .attention-card.tier-1 {
   border-color: rgba(212, 160, 23, 0.4);
 }
 
-.opportunity-review-list {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.opportunity-review-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px;
-}
-
-.opportunity-review-card .card-head {
+.attention-card .card-head {
   display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 8px;
+  gap: var(--imp-space-2) var(--imp-space-3);
 }
 
-.opportunity-review-card .card-head h3 {
+.attention-card-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-1);
+  min-width: 0;
+}
+
+.attention-card-title h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--imp-text-md);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 
-.opportunity-identity,
-.opportunity-provisional,
-.opportunity-quality,
-.opportunity-account,
-.opportunity-decision-support,
-.opportunity-next {
+/* Object-class eyebrow: attention cards are signals, not opportunities. */
+.attention-card-kind {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.attention-card-badges {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2);
+  flex-shrink: 0;
+}
+
+.attention-card-badges .symbol {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.attention-card-why {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.attention-card-why-label {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.attention-card-bridge {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2);
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+}
+
+.attention-card-bridge a {
+  color: var(--accent-primary-bright);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.attention-card-bridge a:hover {
+  text-decoration: underline;
+}
+
+.attention-card-raw {
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.attention-card-raw > summary {
+  cursor: pointer;
+  padding: var(--imp-space-1) 0;
+  border-radius: var(--imp-radius-sm);
+}
+
+.attention-card-raw > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.attention-card-raw .reason-codes {
+  margin: var(--imp-space-1) 0 0;
+}
+
+.reason-label {
+  color: var(--text-primary);
+}
+
+.reason-code-raw {
+  color: var(--text-muted);
+  font-size: var(--imp-text-xs);
+}
+
+.opportunity-quality {
   margin: 8px 0 0;
   color: var(--text-secondary);
   font-size: 0.82rem;
-}
-
-.opportunity-provisional {
-  color: var(--warning, #e1b85b);
 }
 
 .reason-codes {
@@ -401,7 +440,7 @@ body,
 .drawer,
 .inspector-panel {
   position: fixed;
-  top: calc(var(--nav-height) + var(--context-bar-height));
+  top: calc(var(--imp-topbar-height) + var(--imp-statusbar-height));
   bottom: 0;
   background: var(--surface-1);
   border-left: 1px solid var(--border-subtle);
@@ -715,7 +754,7 @@ body,
 
 .workspace-module-nav-sticky {
   position: sticky;
-  top: calc(var(--nav-height) + var(--context-bar-height) + 36px);
+  top: calc(var(--imp-topbar-height) + var(--imp-statusbar-height) + 36px);
   z-index: 5;
   margin-top: 12px;
   padding: 8px 0 10px;
@@ -903,8 +942,9 @@ body,
 
 .portfolio-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
+  min-width: 0;
 }
 
 .portfolio-grid {
@@ -1018,10 +1058,6 @@ body,
   padding: 8px 10px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-}
-
-.context-segment.mode-live strong {
-  color: #3dd68c;
 }
 
 .startup-recovery-banner {
@@ -1610,11 +1646,6 @@ body,
   color: var(--text-primary);
   background: rgba(196, 78, 82, 0.1);
   margin: 10px 0;
-}
-
-.discover-screen-inspector pre {
-  font-size: 0.75rem;
-  overflow: auto;
 }
 
 @media (max-width: 1100px) {

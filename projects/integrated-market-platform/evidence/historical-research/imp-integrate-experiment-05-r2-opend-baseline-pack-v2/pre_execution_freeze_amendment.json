@@ -1,0 +1,28 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "amended_timestamp_ns": 1789708239447515600,
+  "amendment_kind": "R1_PREDICTION_COUPLED_SIMULATOR_CODE_SHA",
+  "artifact_kind": "historical_baseline_pack_v2_pre_execution_amendment_v1",
+  "coupling_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "fingerprint_verification": {
+    "computed_normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "expected_normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "lane_b_receipt_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "manifest_dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+    "ok": true,
+    "reason_code": null,
+    "row_count": 1950,
+    "session_dates": [
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16"
+    ],
+    "verification_method": "recompute_normalized_corpus_fingerprint(bars, lineage.historical_provenance)"
+  },
+  "prior_experiment_definition_hash": "109F3499BD70CB006707BAA2242EDCD5A4614714C61481BF2540B56655677F74",
+  "prior_research_code_sha": "7d67d48edc5760e218f946ee7fd836d6b5c431a2",
+  "reason": "Record post-merge main research_code_sha before first performance run; baselines, split, costs, sessions, and lookbacks unchanged."
+}

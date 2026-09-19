@@ -1,0 +1,26 @@
+---
+description: Composer-first model ladder; never Fast variants; escalate only for reasoning difficulty
+alwaysApply: true
+---
+
+# IMP Model Policy
+
+1. Start with **Composer**. Remain on Composer while it is solving the task reliably.
+2. Escalate to **Grok 4.6 High** only for demonstrated reasoning complexity,
+   architectural reconciliation, difficult debugging, high-risk evidence-sensitive
+   decisions, multi-agent synthesis, or material Composer failure/stall.
+3. Do not escalate merely because a task is large, many files exist, Grok is
+   available, or a prior task needed Grok. Prefer decomposition + Composer.
+4. **Never use Fast model variants** (Composer Fast, Grok Fast, or any
+   speed-optimized substitution that reduces reasoning quality). Use the
+   normal/high-quality variant or do not use that family.
+5. Parallel workers follow this ladder **individually**. One lane's escalation
+   does not escalate the others.
+6. Do not automatically assign Grok as orchestrator. Composer may orchestrate
+   ordinary multi-agent work; escalate orchestration only when findings conflict
+   or evidence-sensitive architecture must be decided.
+7. Prefer the least expensive model that can perform the task correctly.
+   Correctness and evidence integrity override model-cost optimization.
+
+Current Cursor slugs and triggers: `.cursor/model-routing.json` (repo root)
+and `docs/engineering/AI_MODEL_STRATEGY.md`.

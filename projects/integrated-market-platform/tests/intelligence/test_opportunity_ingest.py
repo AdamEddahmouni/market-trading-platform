@@ -91,6 +91,24 @@ class OpportunityIngestTests(unittest.TestCase):
         self.assertEqual([row.opportunity_id for row in rows], ["opp-repo"])
         self.assertNotIn("_id", rows[0].to_dict())
 
+    def test_attention_rows_are_not_accepted_opportunity_v1(self) -> None:
+        rows = assemble_opportunity_review_rows(
+            attention_rows=(
+                {
+                    "attention_id": "att-honest",
+                    "symbol": "NVDA",
+                    "headline": "catalyst attention",
+                    "catalyst_ids": ("earnings",),
+                },
+            )
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0].identity_kind, "NOT_OPPORTUNITY_V1")
+        self.assertFalse(rows[0].accepted)
+        self.assertEqual(rows[0].eligibility_state, "UNAVAILABLE")
+        self.assertIsNone(rows[0].evidence_class)
+        self.assertEqual(rows[0].next_safe_action, "STOP")
+
     def test_repository_does_not_mint_second_opportunity(self) -> None:
         repo = InMemoryIntelligenceRepository()
         opportunity = _opportunity("opp-repo")

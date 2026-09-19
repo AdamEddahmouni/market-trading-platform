@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { ProviderHealthResponseSchema } from "../../api/schemas";
+import { resolveSemanticState, type SemanticTone } from "../../state/semanticState";
 import type { LiveCanarySnapshot } from "./liveCanarySnapshot";
 
 export type ProviderHealthResponse = z.infer<typeof ProviderHealthResponseSchema>;
@@ -8,6 +9,10 @@ export type LiveMetric = {
   id: string;
   label: string;
   value: string;
+  /** Semantic tone when the value is a backend state (renders as StatePill). */
+  tone?: SemanticTone;
+  /** Raw backend value preserved for the tooltip/L4. */
+  raw?: string;
   detail?: string;
 };
 
@@ -20,6 +25,17 @@ export type LiveSafetyAlert = {
 export function channelHealthLabel(entitled?: boolean, tested?: boolean): string {
   if (!entitled) return "UNAVAILABLE";
   return tested ? "HEALTHY" : "DEGRADED";
+}
+
+/** Semantic presentation for a provider-health state value. */
+function providerMetric(
+  id: string,
+  label: string,
+  raw: string,
+  params?: Record<string, string>,
+): LiveMetric {
+  const state = resolveSemanticState("providerHealth", raw, { params });
+  return { id, label, value: state.label, tone: state.tone, raw };
 }
 
 export function liveConnectionMetrics(health?: ProviderHealthResponse): LiveMetric[] {
@@ -42,13 +58,15 @@ export function liveConnectionMetrics(health?: ProviderHealthResponse): LiveMetr
   const depth = capabilities.US_EQUITY_DEPTH;
   const executionUse =
     lifecycle.execution_use === "INTERNAL_PAPER_ELIGIBLE" ? "INTERNAL_PAPER_ELIGIBLE" : "DISPLAY_ONLY";
+  const provider = String(summary.provider ?? "MOOMOO");
+  const connectionRaw = String(lifecycle.connection_state ?? summary.opend ?? "UNKNOWN");
+  const eligibilityRaw = String(summary.execution_eligibility ?? executionUse);
+  const eligibility = resolveSemanticState("executionAuthority", eligibilityRaw);
 
   return [
     {
-      id: "connection",
-      label: "Connection",
-      value: String(lifecycle.connection_state ?? summary.opend ?? "UNKNOWN"),
-      detail: String(summary.provider ?? "MOOMOO"),
+      ...providerMetric("connection", "Connection", connectionRaw, { provider }),
+      detail: provider,
     },
     {
       id: "session",
@@ -60,25 +78,15 @@ export function liveConnectionMetrics(health?: ProviderHealthResponse): LiveMetr
       label: "Subscription quota",
       value: `${health.quota?.active_count ?? 0} / ${health.quota?.max_quota ?? "?"}`,
     },
-    {
-      id: "quote",
-      label: "Basic quote",
-      value: channelHealthLabel(Boolean(l1?.account_entitled), Boolean(l1?.runtime_tested)),
-    },
-    {
-      id: "trades",
-      label: "Trades",
-      value: channelHealthLabel(Boolean(trades?.account_entitled), Boolean(trades?.runtime_tested)),
-    },
-    {
-      id: "depth",
-      label: "L2 depth",
-      value: channelHealthLabel(Boolean(depth?.account_entitled), Boolean(depth?.runtime_tested)),
-    },
+    providerMetric("quote", "Basic quote", channelHealthLabel(Boolean(l1?.account_entitled), Boolean(l1?.runtime_tested))),
+    providerMetric("trades", "Trades", channelHealthLabel(Boolean(trades?.account_entitled), Boolean(trades?.runtime_tested))),
+    providerMetric("depth", "L2 depth", channelHealthLabel(Boolean(depth?.account_entitled), Boolean(depth?.runtime_tested))),
     {
       id: "execution",
       label: "Execution eligibility",
-      value: String(summary.execution_eligibility ?? executionUse),
+      value: eligibility.label,
+      tone: eligibility.tone,
+      raw: eligibilityRaw,
     },
     {
       id: "lag",

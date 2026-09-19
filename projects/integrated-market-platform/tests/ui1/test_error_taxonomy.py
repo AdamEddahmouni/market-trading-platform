@@ -57,6 +57,9 @@ class ErrorTaxonomyTests(unittest.TestCase):
             "PAPER_EXECUTION_NOT_AUTHORIZED": CanonicalErrorCategory.MODE_BLOCKED,
             "OPERATIONAL_ACCOUNT_UNKNOWN": CanonicalErrorCategory.ACCOUNT_UNAVAILABLE,
             "OPEND_UNAVAILABLE": CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
+            "EMPTY_PAYLOAD": CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
+            "PROVIDER_TIMEOUT": CanonicalErrorCategory.TIMEOUT,
+            "FALLBACK_BLOCKED": CanonicalErrorCategory.UNSUPPORTED_CAPABILITY,
             "AUTH_REQUIRED": CanonicalErrorCategory.AUTH_ERROR,
             "RISK_MAX_ORDER_EXCEEDED": CanonicalErrorCategory.RISK_BLOCKED,
             "UI_INTERNAL_ERROR": CanonicalErrorCategory.INTERNAL_ERROR,
@@ -65,6 +68,10 @@ class ErrorTaxonomyTests(unittest.TestCase):
             "CONTROL_ROUTE_NOT_FOUND": CanonicalErrorCategory.VALIDATION_ERROR,
             "CONTROL_JSON_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
             "CONTROL_ACTION_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
+            "AUTH_INVALID": CanonicalErrorCategory.AUTH_ERROR,
+            "CAPABILITY_DENIED": CanonicalErrorCategory.AUTH_ERROR,
+            "STALE_PREVIEW": CanonicalErrorCategory.STALE_DATA,
+            "PARTIALLY_STALE": CanonicalErrorCategory.STALE_DATA,
         }
         for code, category in samples.items():
             with self.subTest(reason_code=code):

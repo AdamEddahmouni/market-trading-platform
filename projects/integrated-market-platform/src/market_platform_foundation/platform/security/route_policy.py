@@ -56,6 +56,7 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             "/operator/state",
             "/operator/readiness",
             "/operator/config",
+            "/operator/diagnostics",
             "/operator/lifecycle/status",
             "/accounts",
             "/assistant/status",

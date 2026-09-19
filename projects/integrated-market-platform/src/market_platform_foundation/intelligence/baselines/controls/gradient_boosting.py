@@ -12,7 +12,7 @@ from ...contracts.common import ForecastTarget
 from ..errors import BaselineTrainingError
 from ..features import BaselineFeatureSchema, DEFAULT_STATISTICAL_FEATURE_SCHEMA
 from ..identity import derive_model_id, parameter_fingerprint_from_payload
-from ..training import BaselineTrainingDataset
+from ..training import BaselineTrainingDataset, enforce_baseline_dataset_consumption_policy
 from ..types import (
     BaselineClassLabel,
     BaselineFeatureVector,
@@ -49,6 +49,7 @@ class GradientBoostingBaseline:
         return self._descriptor
 
     def fit(self, dataset: BaselineTrainingDataset) -> FitSummary:
+        enforce_baseline_dataset_consumption_policy(dataset, purpose="baseline_gbm_fit")
         if len(dataset.examples) < 2:
             raise BaselineTrainingError("INSUFFICIENT_TRAINING_EXAMPLES")
         labels = [example.label for example in dataset.examples]

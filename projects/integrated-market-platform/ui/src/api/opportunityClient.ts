@@ -4,6 +4,19 @@ import { fetchJson, postJson } from "./fetchJson";
 import { queryKeys } from "./hooks";
 import { AsOfContextSchema } from "./schemas";
 
+export const OpportunityDataQualitySchema = z
+  .object({
+    status: z.string().optional(),
+    freshness: z.string().optional(),
+    entitlement: z.string().optional(),
+    connection: z.string().optional(),
+    source: z.string().optional(),
+    reason_codes: z.array(z.string()).optional(),
+    /** Backend-owned Command flag. Do not re-derive STALE/DEGRADED/INVALID in the UI. */
+    operator_surface_flag: z.enum(["OK", "STALE_OR_DEGRADED"]).optional(),
+  })
+  .passthrough();
+
 export const OpportunityReviewRowSchema = z
   .object({
     schema_version: z.string().optional(),
@@ -34,7 +47,7 @@ export const OpportunityReviewRowSchema = z
       })
       .nullable()
       .optional(),
-    data_quality: z.record(z.string(), z.unknown()).nullable().optional(),
+    data_quality: OpportunityDataQualitySchema.nullable().optional(),
     decision_support: z
       .object({
         authority: z.string().optional(),
@@ -55,6 +68,9 @@ export const OpportunitiesSummaryResponseSchema = z.object({
   next_action: z.string().optional(),
   items: z.array(OpportunityReviewRowSchema),
   next_cursor: z.string().nullable().optional(),
+  /** Present when live ranked rows exist but the receive clock is missing. */
+  withheld_ranked_count: z.number().int().nonnegative().optional(),
+  book_honesty: z.string().optional(),
 });
 
 export type OpportunityReviewRow = z.infer<typeof OpportunityReviewRowSchema>;
@@ -103,8 +119,9 @@ export const OpportunityEvidenceResponseSchema = z
     evidence_promotion_reason: z.string().nullable().optional(),
     family_admission_status: z.string().nullable().optional(),
     family_admission_reason: z.string().nullable().optional(),
-    data_quality: z.record(z.string(), z.unknown()).nullable().optional(),
+    data_quality: OpportunityDataQualitySchema.nullable().optional(),
     ranking_basis: z.string().nullable().optional(),
+    /** Epoch nanoseconds. Distinct from operator `created_at` unix seconds. */
     created_at_ns: z.number().nullable().optional(),
     duplicates: z.array(z.unknown()).optional(),
     supersession_reason: z.string().nullable().optional(),

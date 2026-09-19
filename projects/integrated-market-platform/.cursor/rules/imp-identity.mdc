@@ -1,0 +1,22 @@
+---
+description: IMP identity — the platform is not a campaign, strategy, or provider
+alwaysApply: true
+---
+
+# IMP identity
+
+IMP is the whole Integrated Market Platform: opportunity discovery, evidence,
+portfolio/risk, governed Paper, monitoring, and operator workflow.
+
+IMP is not:
+
+- ES or any single instrument
+- FTEP (the protocol, not the product)
+- V1-001 / V1-002 (campaigns)
+- one strategy family, data provider, or interface
+
+Edit only `projects/integrated-market-platform/`. Do not edit the leftover
+nested `integrated-market-platform/` clone.
+
+Doctrine: `docs/architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md`.
+Operating index: `docs/engineering/AGENT_OPERATING_SYSTEM.md`.

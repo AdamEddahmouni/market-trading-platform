@@ -25,11 +25,11 @@ describe("LivePortfolioPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Live Portfolio" })).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("ord-42")).toBeInTheDocument();
-    expect(screen.getByText("HUMAN_CONFIRMATION_REQUIRED")).toBeInTheDocument();
+    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ord-42").length).toBeGreaterThan(0);
+    expect(screen.getByText(/Live blocked: Human confirmation required/i)).toBeInTheDocument();
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open live canary" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Open live canary" })[0]).toHaveAttribute(
       "href",
       "/live-canary",
     );

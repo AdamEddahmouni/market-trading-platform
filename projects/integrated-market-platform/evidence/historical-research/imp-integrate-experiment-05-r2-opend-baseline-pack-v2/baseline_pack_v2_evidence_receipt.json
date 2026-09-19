@@ -1,0 +1,23 @@
+{
+  "EXPERIMENT_DEFINITION_FROZEN": "YES",
+  "artifact_kind": "historical_baseline_pack_v2_evidence_receipt_v1",
+  "contamination_status": "PASS",
+  "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "evidence_label": "HISTORICAL_BASELINE_V2_OPEND",
+  "execution_research_code_sha": "a83fdabb599bebb6b3f27517fcef62e72729e39b",
+  "execution_status": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/frozen_experiment_definition.json",
+  "frozen_research_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+  "observation_language": "BOUNDED_HISTORICAL_OBSERVATION",
+  "pack_run_id": "F660218C05BD2EDDD943938FF90BB5FE",
+  "pack_run_manifest_path": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2/baseline_pack_run_manifest.json",
+  "performance_run": "YES",
+  "reproducibility": {
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "deterministic_rerun_first_baseline_match": true,
+    "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+    "first_run_fingerprint": "32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B",
+    "second_run_fingerprint": "32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B"
+  }
+}

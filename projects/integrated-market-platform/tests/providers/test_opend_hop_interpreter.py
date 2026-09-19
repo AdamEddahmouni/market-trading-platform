@@ -59,21 +59,14 @@ class OpenDHopInterpreterTests(unittest.TestCase):
             self.assertIsNone(payload["row"])
 
     def test_tools_moomoo_shadow_is_not_vendor_sdk(self) -> None:
-        tools_dir = str(_ROOT / "tools")
-        prior_path = list(sys.path)
-        prior = sys.modules.get("moomoo")
-        try:
-            sys.path.insert(0, tools_dir)
-            sys.modules.pop("moomoo", None)
-            report = diagnose_hop_interpreter()
-            self.assertFalse(report["vendor_sdk"])
-            self.assertFalse(report["vendor_sdk_is_opend_quote_context"])
-            self.assertFalse(sdk_available())
-        finally:
-            sys.path[:] = prior_path
-            sys.modules.pop("moomoo", None)
-            if prior is not None:
-                sys.modules["moomoo"] = prior
+        from types import ModuleType
+
+        from tools.moomoo import opend_quote_transport as transport
+
+        self.assertFalse((_ROOT / "tools" / "moomoo" / "__init__.py").is_file())
+        self.assertFalse(transport.is_vendor_sdk(ModuleType("shadow_moomoo")))
+        with patch.object(transport, "load_vendor_sdk", return_value=None):
+            self.assertFalse(transport.sdk_available())
 
     def test_foreign_moomoo_api_test_path_is_mixed_not_required(self) -> None:
         fake = r"C:\Users\adame\moomoo-api-test\.venv\Lib\site-packages"
@@ -152,8 +145,12 @@ class OpenDHopCliInterpreterTests(unittest.TestCase):
 
         stdout = StringIO()
         with patch.dict(os.environ, {"IMP_MOOMOO_HOST": "127.0.0.1", "IMP_MOOMOO_PORT": "1"}):
-            with patch("sys.stdout", stdout):
-                code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
+            with patch("tools.moomoo.opend_hop_interpreter._load_transport") as load_transport:
+                transport = load_transport.return_value
+                transport.load_vendor_sdk.return_value = None
+                transport.is_vendor_sdk.return_value = False
+                with patch("sys.stdout", stdout):
+                    code = path_a_cli_main(["--symbol", "AAPL", "--mode", "paper"])
         self.assertEqual(code, 0)
         dumped = stdout.getvalue()
         payload = json.loads(dumped)

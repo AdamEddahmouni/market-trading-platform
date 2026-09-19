@@ -40,14 +40,14 @@ describe("ImpProductChrome", () => {
     stubMatchMedia(false);
   });
 
-  it("exposes a skip link, Live-off posture, and board-03 keyboard hint", () => {
+  it("exposes a skip link, Live-off posture, and the keyboard hint", () => {
     renderChrome();
     expect(screen.getByRole("link", { name: "Skip to main content" })).toHaveAttribute(
       "href",
       "#imp-main-content",
     );
     expect(screen.getByLabelText("Execution posture")).toHaveTextContent("Live off");
-    expect(screen.getByText(/board 03 · Ctrl\+K · \?/)).toBeInTheDocument();
+    expect(screen.getByText(/Ctrl\+K · \?/)).toBeInTheDocument();
   });
 
   it("opens keyboard shortcuts from ? and the header control, then closes on Escape", () => {
@@ -109,5 +109,14 @@ describe("ImpProductChrome mobile navigation", () => {
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog", { name: "Product navigation" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Menu" })).toHaveFocus();
+  });
+
+  it("keeps the dimming backdrop out of the accessibility tree while the menu is open", () => {
+    renderChrome();
+    fireEvent.click(screen.getByRole("button", { name: "Menu" }));
+    expect(screen.getByRole("dialog", { name: "Product navigation" })).toBeInTheDocument();
+    const unnamedButtons = screen.queryAllByRole("button").filter((button) => !button.textContent?.trim());
+    expect(unnamedButtons).toHaveLength(0);
+    expect(document.querySelector(".imp-sidebar-backdrop")).toHaveAttribute("aria-hidden", "true");
   });
 });

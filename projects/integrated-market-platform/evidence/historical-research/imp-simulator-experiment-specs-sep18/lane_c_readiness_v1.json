@@ -1,0 +1,43 @@
+{
+  "artifact_kind": "imp_simulator_experiment_specs_lane_c_readiness_v1",
+  "lane": "C",
+  "worktree": ".worktrees/simulator-experiment-specs-v1",
+  "branch": "research/simulator-experiment-specs-sep18",
+  "base_sha": "2306ff4a0db74d6ed35d9c5d1bb82bf8b3dc7c56",
+  "as_of": "2026-09-18",
+  "provider_heavy_runs": "DEFERRED_ITEM9_COLLECTOR_ACTIVE",
+  "hypotheses": {
+    "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4": {
+      "SPEC_READY": true,
+      "IMPLEMENTATION_READY": true,
+      "EXECUTED": true,
+      "execution_status": "EXECUTED_BOUNDED_HISTORICAL_OBSERVATION",
+      "methodology_json": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/pre_registered_methodology_v1.json",
+      "execution_status_json": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/execution_status_v1.json",
+      "methodology_doc": "docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md",
+      "experiment_id": "imp-simulator-cost-sensitivity-v4-lane-e",
+      "experiment_definition_hash": "30FB6972170147A49B9C23423596451F5EC865433B888B1DD5F48AA1E9020B53",
+      "pack_run_id": "1DEF586AD729B270E20814B03606A718",
+      "frozen_experiment_definition_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/frozen_experiment_definition.json",
+      "cost_sensitivity_run_manifest_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_run_manifest.json",
+      "evidence_receipt_path": "evidence/historical-research/imp-simulator-cost-sensitivity-v4/cost_sensitivity_v4_evidence_receipt.json",
+      "execution_worktree": ".worktrees/lane-e-cost-v4",
+      "execution_branch": "benchmark/lane-e-cost-sensitivity-v4"
+    },
+    "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1": {
+      "SPEC_READY": true,
+      "IMPLEMENTATION_READY": false,
+      "EXECUTED": false,
+      "methodology_json": "evidence/historical-research/imp-simulator-fill-price-realism-v1/methodology_v1.json",
+      "methodology_doc": "docs/engineering/IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md"
+    },
+    "LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1": {
+      "SPEC_READY": true,
+      "IMPLEMENTATION_READY": true,
+      "IMPLEMENTATION_LOCATION": "origin/main via #283 (research/simulator-drawdown-wiring-v1 @ 2b194d74)",
+      "EXECUTED": false,
+      "review_doc": "docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md",
+      "implementation_doc": "docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md"
+    }
+  }
+}

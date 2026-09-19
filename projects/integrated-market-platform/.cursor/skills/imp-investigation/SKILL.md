@@ -5,7 +5,7 @@ description: Investigate IMP behavior, failures, or architecture boundaries with
 
 # IMP investigation
 
-1. Start with `python tools/imp.py env` and the root agent router.
+1. Start with skill `imp-repo-recon` (or `python tools/imp.py env` and the root agent router).
 2. Map the relevant authority, source roots, test owners, docs, and recent Git
    changes before forming a hypothesis.
 3. Prefer focused selectors, `--explain`, and manifest metadata over full-suite

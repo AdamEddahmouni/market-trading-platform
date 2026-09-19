@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-009",
+  "MODE": "RESEARCH",
+  "QUESTION": {
+    "text": "In the admitted MATLAB golden research result fixture, what feature_row_count is recorded under diagnostics?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "PARITY_RECEIPT"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "ADMITTED_FIXTURE_RECORD",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "tests/fixtures/research/matlab_golden_result_v1.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:6316aaaccbf25222979254068b3e060732909321ac98cbf7c933f165fe222e08",
+  "TEMPORAL_CUTOFF": {
+    "kind": "AS_OF_INSTANT",
+    "cutoff_instant": "2026-09-15T23:59:59Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "feature_row_count",
+        "value": 40
+      },
+      "source_artifact": "tests/fixtures/research/matlab_golden_result_v1.json",
+      "source_record": "diagnostics:feature_row_count",
+      "source_hash": "sha256:8d77cbe085e26206cb5afc285457fc4fb9bcff9f21526efc318be8b150be32d1"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "RESEARCH_RECEIPT",
+    "lane": "matlab_parity"
+  },
+  "GOLD_HASH": "FA70D6164C4DCC3BA0F9B9FF814311081A8D0749A53A2E217694FD6C26E8B02C",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-009.json",
+  "evaluator_notes": "M2 candidate — structured diagnostics from golden result fixture."
+}

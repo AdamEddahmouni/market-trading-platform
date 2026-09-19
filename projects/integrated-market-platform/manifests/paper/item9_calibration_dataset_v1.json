@@ -1,0 +1,33 @@
+{
+  "schema_id": "item9.calibration-dataset",
+  "schema_version": "item9.calibration-dataset/1.0.0",
+  "protocol_version": "item9.calibration-protocol/1.0.0",
+  "persistence": "derived_jsonl_rebuilt_from_immutable_receipts",
+  "source_of_truth": "artifacts/ftep-v1-002/item9-prospective-proof-receipts/*.json",
+  "do_not_scan": [".local", "**/*.jsonl outside governed receipt dir"],
+  "calibration_state": "NOT_CALIBRATED",
+  "item9_status": "PARTIAL_NOT_CALIBRATED",
+  "required_fields": [
+    "schema_version",
+    "protocol_version",
+    "observation_id",
+    "instrument_id",
+    "signal_timestamp_ns",
+    "signal_established_timestamp_ns",
+    "feature_cutoff_ns",
+    "feature_ref",
+    "feature_provenance",
+    "provider_id",
+    "source",
+    "evidence_class",
+    "label_horizon_ns",
+    "path_a_label_value",
+    "path_a_label_state",
+    "path_a_label_evidence_ids",
+    "path_a_label_availability_ns",
+    "inclusion_state",
+    "exclusion_reason",
+    "runtime_git_sha",
+    "raw_provenance_hash"
+  ]
+}

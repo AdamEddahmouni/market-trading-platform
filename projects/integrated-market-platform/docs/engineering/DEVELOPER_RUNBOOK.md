@@ -6,6 +6,8 @@
 
 **Historical topology and lane tables** live in [DEVELOPER_OPERATING_SYSTEM.md](DEVELOPER_OPERATING_SYSTEM.md) under *Local lane topology (historical 2026-09-10)* — not current procedure.
 
+Agent model, parallelism, and isolated-worktree rules: [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) and [sops/GIT_WORKTREE.md](sops/GIT_WORKTREE.md).
+
 Use **`python3`** (CPython 3.11) from an activated project `.venv`. On Windows, `.venv\Scripts\python.exe` is equivalent. Never print or commit secrets.
 
 ---
@@ -110,11 +112,14 @@ Open `http://127.0.0.1:5173` after API + UI start. Use **sidebar labels** from `
 
 | Nav label | Route | Operator meaning |
 |-----------|-------|------------------|
+| **Command** | `/` | Now desk (Overview + Signals desks via `?desk=`); `/signals` redirects to `/?desk=signals` |
+| **Radar** | `/radar` | Discovery queue: Opportunities tab + Screeners tab (`/radar/screeners`); `/discover` → `/radar`, `/explore` → `/radar/screeners` |
 | **Workspace** | `/workspace` | Decision desk (canonical Paper submit boundary) |
-| **Portfolio** | `/portfolio` | Orders history — not the submit surface |
-| **Lab** | `/research` | Model and sim labs. `/lab` redirects to `/research` |
+| **Portfolio** | `/portfolio` | Paper/Demo simulated holdings and P&L; Live broker-observed positions — not the submit surface |
+| **Research** | `/research` | Research and model labs. `/lab` redirects to `/research` |
+| **Control** | `/control` | Operator control center (lifecycle, readiness, safety) |
 
-A gated **Research** item also opens `/research`. **Risk** in the sidebar is `/control` (control center row above). Live stays observational; this runbook does not enable Live execution.
+Operator group: **Live Canary** `/live-canary`, **Settings** `/settings`, **Diagnostics** `/diagnostics/provider`. Live stays observational; this runbook does not enable Live execution.
 
 Source: `ui/src/components/NavShell.tsx` and `ui/src/App.tsx`. Patterns: [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md).
 

@@ -1,13 +1,20 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DemoResearchPage } from "./DemoResearchPage";
 
 const analyticsFixture = {
   epistemic_class: "RESEARCH_PROJECTION",
-  authority_boundary: "READ_ONLY",
+  authority_boundary: "READ_ONLY_RESEARCH_VISUALIZATION",
   disclaimer: "Research only.",
-  panels: [],
+  panels: {
+    attention_tiers: { available: false, provenance: { source: "test" }, series: [] },
+    squeeze_outcomes: { available: false, provenance: { source: "test" }, series: [] },
+    squeeze_historical_cohort: { available: false, provenance: { source: "test" }, series: [] },
+    strategy_outcomes: { available: false, provenance: { source: "test" }, series: [] },
+    risk_decisions: { available: false, provenance: { source: "test" }, series: [] },
+  },
 };
 
 vi.mock("../../api/hooks", () => ({
@@ -16,15 +23,13 @@ vi.mock("../../api/hooks", () => ({
   useResearchSimulationQuery: () => ({ isLoading: false, data: undefined }),
 }));
 
-vi.mock("../research/ResearchAnalyticsPanel", () => ({
-  ResearchAnalyticsPanel: () => <div data-testid="analytics-panel" />,
-}));
-
-function renderPage() {
+function renderPage(section: "overview" | "evidence" | "validation" | "simulation" = "overview") {
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
-      <DemoResearchPage />
+      <MemoryRouter initialEntries={["/research"]}>
+        <DemoResearchPage section={section} />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -38,7 +43,24 @@ describe("DemoResearchPage", () => {
     renderPage();
     expect(screen.getByRole("heading", { name: "Research" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByTestId("analytics-panel")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /place order/i })).not.toBeInTheDocument();
+  });
+
+  it("renders routable research section tabs", () => {
+    renderPage();
+    const tabs = screen.getByRole("navigation", { name: "Research sections" });
+    expect(tabs).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(within(tabs).getByRole("link", { name: "Evidence" })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Validation" })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Simulation" })).toBeInTheDocument();
+  });
+
+  it("leads the overview with the evidence synthesis", () => {
+    renderPage();
+    expect(
+      screen.getByRole("heading", { name: "Current research picture" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/0 of 5 evidence findings have data/i)).toBeInTheDocument();
   });
 });

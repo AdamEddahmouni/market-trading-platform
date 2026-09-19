@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import type { AttentionItem, PaperPortfolioResponse } from "../../api/client";
 import { useOpportunitiesSummaryQuery } from "../../api/opportunityClient";
 import { AttentionFeed } from "../AttentionFeed";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
-import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
+import { overviewDecisionKpis } from "../imp-product/impOverviewMetrics";
+import { attentionOpportunityLinks } from "../opportunity/opportunityPresentation";
 import { DemoInspectNext } from "./DemoInspectNext";
 import { DemoPortfolioSummary } from "./DemoPortfolioSummary";
 import { DemoReplayOverview, deriveReplayProgress } from "./DemoReplayOverview";
@@ -26,6 +28,8 @@ export type DemoNowPageProps = {
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  /** Retries the shell-owned attention query (invalidation flows from App). */
+  onAttentionRetry?: () => void;
   desk?: NowDeskVariant;
 };
 
@@ -36,15 +40,21 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
     : opportunitiesQuery.isError || !opportunitiesQuery.data
       ? "error"
       : "ready";
+  const opportunityItems = useMemo(
+    () => opportunitiesQuery.data?.items ?? [],
+    [opportunitiesQuery.data],
+  );
   const progress = props.replayState === "ready" ? deriveReplayProgress(props.cursorIndex, props.eventCount) : null;
   const canAdvance = Boolean(progress?.hasNext);
-  const kpiState =
-    props.portfolioState === "loading"
-      ? "loading"
-      : props.portfolioState === "error"
-        ? "error"
-        : "ready";
-  const kpiCells = overviewKpisFromPortfolio(props.portfolio, kpiState);
+  const kpiCells = overviewDecisionKpis({
+    opportunityState,
+    feedStatus: opportunitiesQuery.data?.feed_status,
+    unreadyReason: opportunitiesQuery.data?.unready_reason,
+    opportunityItems,
+    attentionState: props.attentionState,
+    attentionItems: props.items,
+  });
+  const opportunityLinks = useMemo(() => attentionOpportunityLinks(opportunityItems), [opportunityItems]);
   const signalsDesk = desk === "signals";
 
   const attentionPanel = (
@@ -59,10 +69,12 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
         items={props.items}
         state={props.attentionState}
         emptyMessage="Nothing requires attention at the current event."
+        opportunityLinks={opportunityLinks}
         onWhy={props.onWhy}
         onExplain={props.onExplain}
         onInspect={props.onInspect}
         onOpenWorkspace={props.onOpenWorkspace}
+        onRetry={props.onAttentionRetry}
       />
     </section>
   );
@@ -118,16 +130,18 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
       ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
-        kpiState={kpiState}
         attentionItems={props.items}
         attentionState={props.attentionState}
         attentionEmptyMessage="Nothing requires attention at the current event."
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityItems={opportunityItems}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        mode="DEMO"
         readOnly
+        onOpportunityRetry={() => void opportunitiesQuery.refetch()}
+        onAttentionRetry={props.onAttentionRetry}
         onWhy={props.onWhy}
         onExplain={props.onExplain}
         onInspect={props.onInspect}

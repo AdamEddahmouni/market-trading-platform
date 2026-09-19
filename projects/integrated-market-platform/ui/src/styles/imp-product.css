@@ -235,14 +235,6 @@
   box-shadow: 0 0 20px rgba(255, 106, 0, 0.12);
 }
 
-.nav-shell-sidebar .nav-link-radar {
-  font-weight: 600;
-}
-
-.nav-shell-sidebar .nav-link-radar:not(.active) {
-  color: var(--text-primary);
-}
-
 .nav-shell-sidebar .nav-link-operator {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -250,24 +242,6 @@
 
 .nav-shell-sidebar .nav-mode-hint {
   font-size: 0.62rem;
-}
-
-.imp-product-main .mode-environment-bar button {
-  display: none;
-}
-
-.opportunity-radar-banner {
-  margin: 0 0 1rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 106, 0, 0.3);
-  background: linear-gradient(90deg, rgba(255, 106, 0, 0.12), transparent);
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
-.opportunity-radar-banner strong {
-  color: var(--accent-primary-bright);
 }
 
 .imp-overview-board {
@@ -294,16 +268,6 @@
   gap: 0.5rem;
 }
 
-.imp-overview-kpi-banner {
-  margin: 0;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(255, 106, 0, 0.25);
-  background: rgba(255, 106, 0, 0.06);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
 .imp-overview-kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
@@ -313,14 +277,41 @@
   list-style: none;
 }
 
+/*
+ * Decision-metric cards. Tone is semantic, not decorative: a left accent +
+ * icon in the tone color, label/value in normal text. Neutral cells stay
+ * unaccented so caution/critical cells carry the visual weight (UIR-01D).
+ */
 .imp-overview-kpi-card {
   display: grid;
   gap: 0.15rem;
   padding: 0.65rem 0.75rem;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-subtle);
+  border-left: 3px solid transparent;
   background: linear-gradient(165deg, var(--surface-2), var(--surface-1));
   min-height: 4.25rem;
+}
+
+.imp-overview-kpi-card[data-tone="live"] {
+  border-left-color: var(--imp-state-live-border);
+}
+.imp-overview-kpi-card[data-tone="paper"] {
+  border-left-color: var(--imp-state-paper-border);
+}
+.imp-overview-kpi-card[data-tone="replay"] {
+  border-left-color: var(--imp-state-replay-border);
+}
+.imp-overview-kpi-card[data-tone="research"] {
+  border-left-color: var(--imp-state-research-border);
+}
+.imp-overview-kpi-card[data-tone="caution"] {
+  border-left-color: var(--imp-state-caution-border);
+  background: linear-gradient(165deg, var(--imp-state-caution-bg), var(--surface-1) 70%);
+}
+.imp-overview-kpi-card[data-tone="critical"] {
+  border-left-color: var(--imp-state-critical-border);
+  background: linear-gradient(165deg, var(--imp-state-critical-bg), var(--surface-1) 70%);
 }
 
 .imp-overview-kpi-label {
@@ -332,9 +323,38 @@
 }
 
 .imp-overview-kpi-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-1);
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-primary);
+  min-width: 0;
+}
+
+.imp-overview-kpi-icon {
+  font-size: 0.75em;
+  line-height: 1;
+  color: var(--text-muted);
+}
+
+.imp-overview-kpi-card[data-tone="live"] .imp-overview-kpi-icon {
+  color: var(--imp-state-live-fg);
+}
+.imp-overview-kpi-card[data-tone="paper"] .imp-overview-kpi-icon {
+  color: var(--imp-state-paper-fg);
+}
+.imp-overview-kpi-card[data-tone="replay"] .imp-overview-kpi-icon {
+  color: var(--imp-state-replay-fg);
+}
+.imp-overview-kpi-card[data-tone="research"] .imp-overview-kpi-icon {
+  color: var(--imp-state-research-fg);
+}
+.imp-overview-kpi-card[data-tone="caution"] .imp-overview-kpi-icon {
+  color: var(--imp-state-caution-fg);
+}
+.imp-overview-kpi-card[data-tone="critical"] .imp-overview-kpi-icon {
+  color: var(--imp-state-critical-fg);
 }
 
 .imp-overview-kpi-detail {
@@ -342,247 +362,11 @@
   color: var(--text-muted);
 }
 
-.imp-top-opportunities {
-  display: grid;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid rgba(255, 106, 0, 0.22);
-  background: linear-gradient(135deg, rgba(255, 106, 0, 0.08), transparent 55%), var(--surface-1);
-}
-
-.imp-top-opportunities-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-}
-
-.imp-top-opportunities-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.imp-top-opportunities-link {
+.imp-overview-radar-link {
   font-size: 0.78rem;
   color: var(--accent-primary-bright);
   text-decoration: none;
   border-bottom: 1px solid rgba(255, 106, 0, 0.35);
-}
-
-.imp-top-opportunity-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
-  gap: 0.65rem;
-}
-
-.imp-top-opportunity-card {
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-0);
-}
-
-.imp-top-opportunity-card-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.imp-top-opportunity-rank {
-  display: inline-block;
-  margin-right: 0.35rem;
-  font-size: 0.65rem;
-  font-family: var(--font-mono);
-  color: var(--accent-primary-bright);
-}
-
-.imp-top-opportunity-symbol {
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.imp-top-opportunity-chip {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.15rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid var(--border-subtle);
-}
-
-.imp-top-opportunity-chip.chip-ok {
-  border-color: rgba(255, 106, 0, 0.35);
-  color: var(--accent-primary-bright);
-}
-
-.imp-top-opportunity-chip.chip-stop {
-  border-color: rgba(220, 80, 80, 0.45);
-  color: #f0a0a0;
-}
-
-.imp-top-opportunity-headline {
-  margin: 0;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: var(--text-secondary);
-}
-
-.imp-top-opportunity-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.imp-top-opportunity-tags li {
-  font-size: 0.62rem;
-  padding: 0.12rem 0.4rem;
-  border-radius: 999px;
-  background: rgba(255, 106, 0, 0.12);
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.imp-top-opportunity-tags-empty {
-  font-size: 0.72rem;
-  color: var(--text-muted);
-}
-
-.imp-top-opportunity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.imp-top-opportunity-actions button {
-  font-size: 0.72rem;
-  padding: 0.25rem 0.45rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-2);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.imp-top-opportunity-actions button:hover,
-.imp-top-opportunity-actions button:focus-visible {
-  border-color: var(--accent-primary);
-}
-
-.imp-radar-dense-panel {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0 0 1.25rem;
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-1);
-}
-
-.imp-radar-dense-header {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 0.5rem;
-}
-
-.imp-radar-dense-header h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.imp-radar-dense-feed {
-  font-size: 0.68rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
-.imp-radar-dense-table-wrap {
-  overflow-x: auto;
-}
-
-.imp-radar-dense-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-
-.imp-radar-dense-table th,
-.imp-radar-dense-table td {
-  padding: 0.45rem 0.5rem;
-  border-bottom: 1px solid var(--border-subtle);
-  text-align: left;
-  vertical-align: top;
-}
-
-.imp-radar-dense-table th {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.imp-radar-dense-headline {
-  max-width: 22rem;
-  line-height: 1.35;
-}
-
-.imp-radar-dense-tags {
-  justify-content: flex-start;
-}
-
-.imp-radar-dense-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-
-.imp-radar-dense-actions button {
-  font-size: 0.68rem;
-  padding: 0.2rem 0.4rem;
-}
-
-.imp-opportunity-feed-banner {
-  margin: 0 0 0.75rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  background: var(--surface-2);
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
-
-.imp-opportunity-feed-banner-alert {
-  border-color: rgba(196, 78, 82, 0.45);
-  color: var(--text-primary);
-}
-
-.imp-discover-section {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.imp-discover-section-header {
-  margin-bottom: 0.75rem;
-}
-
-.imp-discover-section-lead {
-  margin: 0.35rem 0 0;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  max-width: 52rem;
 }
 
 .imp-overview-primary-queue {
@@ -629,6 +413,39 @@
 .imp-overview-queue-panels {
   display: grid;
   gap: 0.85rem;
+}
+
+.imp-overview-queue-ranked,
+.imp-overview-queue-attention {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.imp-overview-queue-subhead {
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* UIR-01 review fix: allow the queue → panels → card chain to shrink below
+   content min-width so long unbreakable tokens cannot force page-level
+   horizontal overflow on narrow viewports. */
+.imp-overview-primary-queue,
+.imp-overview-queue-panels,
+.imp-overview-queue-ranked,
+.imp-opportunity-queue,
+.imp-opportunity-card {
+  min-width: 0;
+}
+
+/* Raw 64-char account/session hex IDs and enum words wrap instead of
+   overflowing (same rule as .paper-risk-ribbon dd). */
+.imp-opportunity-card code {
+  overflow-wrap: anywhere;
 }
 
 .imp-nav-toggle {
@@ -812,143 +629,6 @@
   padding-left: 18px;
 }
 
-.imp-opportunity-radar-cockpit {
-  display: grid;
-  gap: 1rem;
-}
-
-@media (min-width: 1080px) {
-  .imp-opportunity-radar-cockpit {
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    align-items: start;
-  }
-}
-
-.imp-opportunity-cockpit-detail {
-  padding: 0.85rem 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  background: color-mix(in srgb, var(--surface-1) 82%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-primary) 12%, transparent);
-}
-
-.imp-opportunity-cockpit-detail-header h2 {
-  margin: 0.15rem 0 0.5rem;
-  font-size: 1rem;
-}
-
-.imp-radar-dense-table tr.imp-radar-row-selected {
-  background: color-mix(in srgb, var(--accent-primary) 10%, var(--surface-2));
-  outline: 1px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
-}
-
-.imp-radar-dense-table tr[tabindex="0"] {
-  cursor: pointer;
-}
-
-.progressive-opportunity-card {
-  display: grid;
-  gap: 0.75rem;
-  font-size: 0.82rem;
-}
-
-.progressive-opp-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.progressive-opp-head h3 {
-  margin: 0.25rem 0 0;
-  font-size: 1.05rem;
-}
-
-.progressive-opp-state {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.15rem 0.45rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
-  color: var(--accent-primary);
-  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
-}
-
-.progressive-opp-surface-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-  gap: 0.35rem 0.75rem;
-  margin: 0;
-}
-
-.progressive-opp-surface-meta dt {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.progressive-opp-surface-meta dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-}
-
-.progressive-opp-surface-why {
-  grid-column: 1 / -1;
-}
-
-.progressive-opp-section h4 {
-  margin: 0 0 0.35rem;
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-
-.progressive-opp-meta-grid {
-  display: grid;
-  gap: 0.25rem;
-  margin: 0;
-}
-
-.progressive-opp-meta-row {
-  display: grid;
-  grid-template-columns: 8.5rem 1fr;
-  gap: 0.5rem;
-  padding: 0.2rem 0;
-  border-bottom: 1px dashed var(--border-subtle);
-}
-
-.progressive-opp-meta-row dt {
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-}
-
-.progressive-opp-meta-row dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  word-break: break-word;
-}
-
-.progressive-opp-lines {
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.progressive-opp-visibility-note {
-  font-size: 0.72rem;
-}
-
-.progressive-opp-actions {
-  flex-wrap: wrap;
-}
-
 .imp-shortcuts-layer {
   position: fixed;
   inset: 0;
@@ -1021,5 +701,234 @@
 @media (prefers-reduced-motion: reduce) {
   .imp-product-sidebar {
     transition: none;
+  }
+}
+
+/* Tone-coded decision-metric cards keep a visible border under forced colors;
+   the icon + text encoding is unaffected. */
+@media (forced-colors: active) {
+  .imp-overview-kpi-card {
+    border: 2px solid CanvasText;
+  }
+}
+
+/* ---- UIR-01 StatusBar (consolidates ModeEnvironmentBar + ContextBar) ---- */
+.imp-status-bar-stack {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.imp-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--imp-space-2) var(--imp-space-4);
+  min-height: var(--imp-statusbar-height);
+  padding: var(--imp-space-1) var(--imp-space-4);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-status-bar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.imp-status-bar-data {
+  color: var(--text-secondary);
+}
+
+.imp-status-bar-data time {
+  color: var(--text-muted);
+  font-size: var(--imp-text-xs);
+}
+
+.imp-status-bar-scope {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.imp-status-bar-health {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-2);
+  padding: 2px var(--imp-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--imp-radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.imp-status-bar-health:hover {
+  background: var(--surface-2);
+}
+
+.imp-status-bar-health:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+
+.imp-status-bar-details {
+  margin-left: auto;
+  position: relative;
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.imp-status-bar-details > summary {
+  cursor: pointer;
+  padding: var(--imp-space-1) var(--imp-space-2);
+  border-radius: var(--imp-radius-sm);
+  list-style: none;
+}
+
+.imp-status-bar-details > summary::-webkit-details-marker {
+  display: none;
+}
+
+.imp-status-bar-details > summary::before {
+  content: "? ";
+}
+
+.imp-status-bar-details[open] > summary::before {
+  content: "? ";
+}
+
+.imp-status-bar-details > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+}
+
+.imp-status-bar-details-grid {
+  position: absolute;
+  right: 0;
+  top: calc(100% + var(--imp-space-1));
+  z-index: 40;
+  min-width: 260px;
+  margin: 0;
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: var(--imp-space-1) var(--imp-space-3);
+}
+
+.imp-status-bar-details-grid div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--imp-space-3);
+}
+
+.imp-status-bar-details-grid dt {
+  color: var(--text-muted);
+}
+
+.imp-status-bar-details-grid dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.imp-status-bar-note {
+  margin: 0;
+  padding: var(--imp-space-1) var(--imp-space-4);
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.imp-status-bar-stack .imp-ui-attention-banner {
+  margin: var(--imp-space-2) var(--imp-space-4);
+}
+
+/* Command desk tabs sit directly above the desk page header */
+.imp-command-desk-tabs {
+  padding: 0 var(--imp-space-4);
+  margin-bottom: 0;
+}
+
+.imp-status-bar-mode {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--imp-space-2);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.imp-status-bar-mode-sentence {
+  color: var(--text-secondary);
+  font-size: var(--imp-text-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+/* ---- Small-viewport containment (BP_SM = 720px) ---- */
+@media (max-width: 720px) {
+  /* The mode sentence wraps instead of forcing the status bar wide */
+  .imp-status-bar-mode {
+    flex: 1 1 100%;
+  }
+
+  .imp-status-bar-mode-sentence {
+    white-space: normal;
+  }
+
+  /*
+   * StatusBar segment collapse (responsive-contract §3): below BP_SM the bar
+   * keeps ModeBadge + authority + data health + the details popover; the
+   * data-mode sentence and scope move into the popover (nothing is lost).
+   */
+  .imp-status-bar-data,
+  .imp-status-bar-scope {
+    display: none;
+  }
+
+  /*
+   * Command mobile prioritization (UIR-01D): the actionable queue leads;
+   * the decision-metric strip follows compactly, then mode-specific rows.
+   * KPI cells are non-interactive, so visual reorder cannot trap focus.
+   */
+  .imp-overview-primary-queue {
+    order: -1;
+  }
+
+  .imp-overview-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+  }
+
+  .imp-overview-kpi-card {
+    min-height: 0;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .imp-overview-kpi-value {
+    font-size: 0.95rem;
+  }
+
+  /* Capability chips truncate their reason harder instead of overflowing */
+  .imp-capability-chip {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .imp-capability-reason {
+    max-width: 120px;
+    min-width: 0;
   }
 }

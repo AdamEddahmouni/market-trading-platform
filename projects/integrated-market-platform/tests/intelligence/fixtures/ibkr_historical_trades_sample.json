@@ -1,0 +1,14 @@
+[
+  {
+    "t": 1700000000,
+    "price": 150.25,
+    "size": 100,
+    "exchange": "NASDAQ"
+  },
+  {
+    "t": 1700000060,
+    "price": 150.5,
+    "size": 50,
+    "exchange": "NASDAQ"
+  }
+]

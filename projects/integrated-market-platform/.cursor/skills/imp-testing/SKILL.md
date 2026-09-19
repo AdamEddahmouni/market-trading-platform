@@ -14,4 +14,5 @@ description: Select and run the cheapest safe IMP validation, including focused 
   `npm run build`.
 - Docs changes require `tools/check_docs_links.py`.
 - Treat `core_checkpoint_required=true` as a required later FULL gate.
-- Preserve exact counts, skips, failures, errors, and baseline classification.
+- Report exact counts, skips, failures, errors, and baseline classification.
+- For the full honesty/reporting workflow, use repo-root skill `imp-validation`.

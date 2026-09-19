@@ -10,13 +10,17 @@ This index points to authoritative documents. It does not duplicate their conten
 When documents disagree, resolve in this order (highest first):
 
 1. **Safety invariants** — [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md), [SECURITY.md](engineering/SECURITY.md), env gates in [CONFIGURATION.md](engineering/CONFIGURATION.md)
-2. **[AGENTS.md](../AGENTS.md)** — agent entry point
-3. **Scoped agent files** — `ui/AGENTS.md`, `src/market_platform_foundation/paper/AGENTS.md`
-4. **Architecture** — [ARCHITECTURE.md](architecture/ARCHITECTURE.md) and linked specs
-5. **Engineering handbook & SOPs** — [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md), [sops/](engineering/sops/)
-6. **Current product/engineering specs** — `docs/superpowers/specs/`, BUILD specs in `docs/engineering/*_V1.md`
-7. **Completion records** — `docs/superpowers/plans/*-completion.md` (historical snapshots of delivered work)
-8. **Work log** — [WORK_LOG.md](engineering/WORK_LOG.md) (chronological change record)
+2. **Always-on agent operating rules** — repo-root `.cursor/rules/imp-*.mdc` and [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md)
+3. **[AGENTS.md](../AGENTS.md)** — agent entry point (plus repo-root `AGENTS.md`)
+4. **Scoped agent files** — `ui/AGENTS.md`, `src/market_platform_foundation/paper/AGENTS.md`
+5. **Architecture** — [ARCHITECTURE.md](architecture/ARCHITECTURE.md) and linked specs
+6. **Engineering handbook & SOPs** — [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md), [sops/](engineering/sops/)
+7. **Current product/engineering specs** — `docs/superpowers/specs/`, BUILD specs in `docs/engineering/*_V1.md`
+8. **Completion records** — `docs/superpowers/plans/*-completion.md` (historical snapshots of delivered work)
+9. **Work log** — [WORK_LOG.md](engineering/WORK_LOG.md) (chronological change record)
+
+If two documents at the same layer conflict, identify the conflict and reconcile
+it in the authoritative doc — do not silently choose.
 
 **Completion records are not automatically current architecture.** Verify against code and authoritative architecture docs.
 
@@ -34,11 +38,15 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | What IMP is | [README.md](../README.md) |
-| Current program status | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
+| Agent operating system (models, parallelism, worktrees, handoff) | [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md) |
+| Current program status (git tip vs frozen collector vs historical pin) | [PROGRAM_STATUS.md](platform/PROGRAM_STATUS.md) |
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
 | Next US equity RTH campaign (current `main`) | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
+| RTH15-00 reconciliation target | [RTH15_00_TARGET_STATE.md](engineering/RTH15_00_TARGET_STATE.md) |
+| RTH15-00 reconciliation matrix | [RTH15_00_RECONCILIATION_MATRIX.md](engineering/RTH15_00_RECONCILIATION_MATRIX.md) |
+| Current agent handoff | [AGENT_HANDOFF.md](engineering/AGENT_HANDOFF.md) |
 | Project status snapshot (2026-09-11 @ `a4858103`, **not** current campaign state) | [PROJECT_STATUS.md](PROJECT_STATUS.md) |
 | Pre-implementation planning closure | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | FTEP activation gates | [FTEP_ACTIVATION_GATES.md](engineering/FTEP_ACTIVATION_GATES.md) |
@@ -63,6 +71,12 @@ When documents disagree, resolve in this order (highest first):
 | IMP scope / FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Market-data capability contract | [MARKET_DATA_CAPABILITY_CONTRACT.md](architecture/MARKET_DATA_CAPABILITY_CONTRACT.md) |
 | Paper simulator calibration contract | [PAPER_SIMULATOR_CALIBRATION_CONTRACT.md](architecture/PAPER_SIMULATOR_CALIBRATION_CONTRACT.md) |
+| Dual-corpus evidence (historical vs prospective) | [DUAL_CORPUS_EVIDENCE_CONTRACT.md](architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
+| IMP-DUAL-CORPUS-01 Lane A recon | [IMP_DUAL_CORPUS_01_LANE_A_RECON.md](engineering/IMP_DUAL_CORPUS_01_LANE_A_RECON.md) |
+| IMP-DUAL-CORPUS-01 Lane B historical RTH | [IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md](engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md) |
+| IMP-DUAL-CORPUS-01 Lane C post-horizon labels | [IMP_DUAL_CORPUS_01_LANE_C.md](engineering/IMP_DUAL_CORPUS_01_LANE_C.md) |
+| IMP-DUAL-CORPUS-01 Notion sync summary | [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md) |
+| Item 9 calibration protocol V1 | [ITEM9_CALIBRATION_PROTOCOL_V1.md](architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md) |
 | Common Opportunity Contract | [OPPORTUNITY_CONTRACT.md](architecture/OPPORTUNITY_CONTRACT.md) |
 | Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |
 | Mode authority (Demo/Paper/Live) | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
@@ -92,6 +106,7 @@ When documents disagree, resolve in this order (highest first):
 | Topic | Document |
 |-------|----------|
 | Handbook (primary reference) | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |
+| Agent operating system | [AGENT_OPERATING_SYSTEM.md](engineering/AGENT_OPERATING_SYSTEM.md) |
 | Frontend patterns | [FRONTEND_GUIDE.md](engineering/FRONTEND_GUIDE.md) |
 | Backend patterns | [BACKEND_GUIDE.md](engineering/BACKEND_GUIDE.md) |
 | Testing strategy | [TESTING.md](engineering/TESTING.md) |
@@ -106,6 +121,7 @@ When documents disagree, resolve in this order (highest first):
 | Configuration / env vars | [CONFIGURATION.md](engineering/CONFIGURATION.md) |
 | State path / worktree `.local` convention | [STATE_PATH_OPERATOR_CONVENTION.md](engineering/STATE_PATH_OPERATOR_CONVENTION.md) |
 | Provider readiness | [PROVIDER_READINESS.md](engineering/PROVIDER_READINESS.md) |
+| Monday 2026-09-21 Item 9 preflight (no collection) | [MONDAY_ITEM9_PREFLIGHT.md](engineering/MONDAY_ITEM9_PREFLIGHT.md) |
 | Operator probe runbook (FTEP-V1) | [OPERATOR_PROBE_RUNBOOK.md](engineering/OPERATOR_PROBE_RUNBOOK.md) |
 | Performance & bundle budget | [PERFORMANCE.md](engineering/PERFORMANCE.md) |
 | Accessibility | [ACCESSIBILITY.md](engineering/ACCESSIBILITY.md) |
@@ -121,6 +137,8 @@ When documents disagree, resolve in this order (highest first):
 
 | SOP | Path |
 |-----|------|
+| Git worktrees / isolated implementation | [sops/GIT_WORKTREE.md](engineering/sops/GIT_WORKTREE.md) |
+| Branch reconciliation onto current main | [sops/BRANCH_RECONCILIATION.md](engineering/sops/BRANCH_RECONCILIATION.md) |
 | API / schema change | [sops/API_SCHEMA_CHANGE.md](engineering/sops/API_SCHEMA_CHANGE.md) |
 | Frontend feature | [sops/FRONTEND_FEATURE.md](engineering/sops/FRONTEND_FEATURE.md) |
 | Paper execution change | [sops/PAPER_EXECUTION_CHANGE.md](engineering/sops/PAPER_EXECUTION_CHANGE.md) |
@@ -135,7 +153,7 @@ When documents disagree, resolve in this order (highest first):
 ### Checklists & templates
 
 - [checklists/](engineering/checklists/) — quick verification lists
-- [templates/](engineering/templates/) — completion, handoff, bug report
+- [templates/](engineering/templates/) — completion, handoff, task contract, bug report
 - [prompts/](engineering/prompts/) — reusable AI task templates
 
 ---
@@ -183,6 +201,9 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Pre-implementation planning closure (2026-09-11) | [PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md](platform/PREIMPLEMENTATION_PLANNING_CLOSURE_2026-09-11.md) |
 | Post-G15 professor-directed CCN forensic audit | [post-g15-professor-directed/](audits/post-g15-professor-directed/README.md) |
 | IMP reconciliation program (G0–G15) | [imp-reconciliation/](audits/imp-reconciliation/README.md) |
+| Sep 15 live-integration test-gap matrix | [rth-live-integration-20260915/](audits/rth-live-integration-20260915/README.md) |
+| Next-RTH source→operator latency catalog | [next-rth-source-operator-latency-20260915/](audits/next-rth-source-operator-latency-20260915/README.md) |
+| UI/UX redesign v2 plan (implementation isolated) | [ui-redesign-v2/](ui-redesign-v2/README.md) |
 | Donor-identity correction (GridIQ / DS-340W) | [Donor Authority Supersession Notice](superpowers/governance/2026-09-07-donor-authority-supersession-notice.md) |
 
 ---
@@ -196,3 +217,7 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | BUILD specifications | `docs/engineering/*_V1.md` |
 | Phase evidence | `docs/engineering/EVIDENCE_01*.md` |
 | ADRs | [architecture/adr/](architecture/adr/) |
+| Sep 15 Item 7 upstream diagnosis | [ITEM7_UPSTREAM_GAP_DIAGNOSIS_20260915.md](engineering/ITEM7_UPSTREAM_GAP_DIAGNOSIS_20260915.md) |
+| Sep 15 Item 9 kline P12 review | [ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md](engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md) |
+| Sep 15 live OE P12/P13 reviews | [reviews/](engineering/reviews/) |
+| Sep 15 Item 7 / provider drafts | [drafts/20260915-rth-runbook-item7-provider/](engineering/drafts/20260915-rth-runbook-item7-provider/README.md) |

@@ -1,0 +1,72 @@
+{
+  "CASE_ID": "IBP-FACTUAL-004",
+  "MODE": "STATE",
+  "QUESTION": {
+    "text": "In the admitted 2026-09-15 AAPL sample fixture, how many rows use the literal time_key value 'not-a-timestamp'?",
+    "constructed_from_admitted_evidence_only": true,
+    "question_class": "CONTAMINATION_SIGNAL"
+  },
+  "EVIDENCE_ACCESS_MODE": "ADMITTED_EVIDENCE_FIXED",
+  "EVIDENCE_SET": {
+    "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+    "sources": [
+      {
+        "source_type": "HISTORICAL_DEVELOPMENT_ARTIFACT",
+        "evidence_access_mode": "ADMITTED_EVIDENCE_FIXED",
+        "artifact_ref": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+      }
+    ]
+  },
+  "EVIDENCE_FINGERPRINT": "sha256:947f71ed3d12de000706b628d2c4acd4cbb7a2a7fa3cc312b0507c0fb18ddeea",
+  "TEMPORAL_CUTOFF": {
+    "kind": "SESSION_END",
+    "cutoff_instant": "2026-09-15T20:00:00Z",
+    "contamination_control": true
+  },
+  "EXPECTED_FACTS": [
+    {
+      "expected_fact": {
+        "field": "malformed_time_key_rows",
+        "value": 1
+      },
+      "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+      "source_record": "session:2026-09-15;filter:time_key=not-a-timestamp",
+      "source_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0"
+    }
+  ],
+  "ANSWER_NORMALIZATION": {
+    "structured_facts_preferred": true,
+    "case_folding": true,
+    "trim_whitespace": true,
+    "collapse_internal_whitespace": true,
+    "instrument_symbol_canonicalization": true,
+    "iso_timestamp_normalization": true,
+    "numeric_tolerance": {
+      "relative": 1e-09
+    },
+    "boolean_label_equivalence": true,
+    "state_label_equivalence": true
+  },
+  "ACCEPTABLE_EQUIVALENTS": [],
+  "UNKNOWN_POLICY": {
+    "correct_unknown_verdict": "UNNECESSARY_UNKNOWN",
+    "encoded_in_evaluator_contract": true
+  },
+  "PROVENANCE_REQUIREMENTS": {
+    "gold_source_independent": true,
+    "chain": [
+      "expected_fact",
+      "source_artifact",
+      "source_record",
+      "source_hash"
+    ]
+  },
+  "ROUTING_EXPECTATION": {
+    "template": "QUALITY_INTERPRETATION",
+    "lane": "market_data"
+  },
+  "GOLD_HASH": "EC1682E3C00C804884E1788F8CBEEC175EB113FCFAA1122D5DDE0525F66475A1",
+  "SCORING_GATE": "ANSWERABLE_FROM_ADMITTED_EVIDENCE",
+  "evaluator_gold_ref": "evaluator_only/admitted_factual_gold/IBP-FACTUAL-004.json",
+  "evaluator_notes": "M2 candidate — malformed timestamp row in admitted fixture."
+}

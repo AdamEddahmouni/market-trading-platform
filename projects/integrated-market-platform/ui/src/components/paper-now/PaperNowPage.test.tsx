@@ -80,7 +80,12 @@ describe("PaperNowPage", () => {
   it("composes one Paper Command heading and four named decision regions", () => {
     renderPage();
     expect(screen.getByRole("heading", { level: 1, name: "Paper Command" })).toBeInTheDocument();
-    expect(screen.getByText("paper-acct")).toBeInTheDocument();
+    // Account/session identifiers render truncate-middle with the full value preserved.
+    const identifiers = screen.getAllByTestId("imp-ui-copyable-id");
+    expect(identifiers.map((node) => node.getAttribute("title"))).toEqual([
+      "paper-acct",
+      "paper-session",
+    ]);
     expect(screen.getByRole("region", { name: "Risk summary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Candidate queue" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Order preview" })).toBeInTheDocument();
@@ -142,7 +147,7 @@ describe("PaperNowPage", () => {
       execution_model: "INTERNAL_FILL",
       execution_model_version: "v1",
     }));
-    const { props } = renderPage();
+    renderPage();
     completeDraft();
     fireEvent.click(screen.getByRole("button", { name: "Preview order" }));
 
@@ -267,7 +272,7 @@ describe("Paper Command visual accessibility contract", () => {
     expect(paperNowCss).toContain(".paper-now-page a { display: inline-flex");
     expect(paperNowCss).toContain(".paper-preview-result h3:focus { outline: 3px solid var(--paper-accent)");
     expect(paperNowCss).toContain(":focus-visible");
-    expect(paperNowCss).toContain("@media (max-width: 1080px)");
+    expect(paperNowCss).toContain("@media (max-width: 1024px)");
     expect(paperNowCss).toContain("@media (max-width: 720px)");
     expect(paperNowCss).toContain("@media (prefers-reduced-motion: reduce)");
     expect(paperNowCss).toContain("@media (forced-colors: active)");

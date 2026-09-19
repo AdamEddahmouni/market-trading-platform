@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "DID_CASE_CONTEXT_LEAK": "PASS",
+    "DID_CONFIG_CHANGE_MID_RUN": "PASS",
+    "DID_SYSTEM_SEE_GOLD": "PASS",
+    "FIXTURE_REPLAY_NOT_PROMOTED_TO_LIVE": "PASS",
+    "SUT_CAN_ACCESS_REQUIRED_EVIDENCE": "PASS"
+  },
+  "overall": "PASS",
+  "reasons": {}
+}

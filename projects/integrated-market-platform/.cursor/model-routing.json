@@ -1,28 +1,109 @@
 {
-  "schema_version": "1.0",
-  "policy": "route by task risk and reasoning depth, not vendor branding",
+  "schema_version": "2.0",
+  "policy": "Composer-first. Escalate to Grok 4.6 High only for reasoning difficulty. Never Fast variants.",
+  "canonical_docs": [
+    "docs/engineering/AGENT_OPERATING_SYSTEM.md",
+    "docs/engineering/AI_MODEL_STRATEGY.md"
+  ],
+  "canonical_copy": "Keep identical to repo-root .cursor/model-routing.json",
+  "default_model": {
+    "name": "Composer",
+    "cursor_slug": "composer-2.5",
+    "use_for": [
+      "repository inspection",
+      "ordinary implementation",
+      "straightforward bug fixes",
+      "tests",
+      "refactoring",
+      "documentation",
+      "configuration",
+      "routine integration",
+      "UI implementation",
+      "file operations",
+      "mechanical migrations",
+      "well-specified feature work",
+      "standard Git operations",
+      "ordinary orchestration"
+    ]
+  },
+  "escalation_model": {
+    "name": "Grok 4.6 High",
+    "cursor_slug": "cursor-grok-4.6-high",
+    "use_when": [
+      "complex architectural reasoning across disagreeing subsystems",
+      "major schema or state-machine design",
+      "difficult debugging after Composer stall",
+      "architectural branch reconciliation",
+      "high-risk prospective/temporal/evidence decisions",
+      "multi-agent synthesis of conflicting findings",
+      "material Composer failure: repetition, lost architecture, unsafe simplification"
+    ]
+  },
+  "forbidden": [
+    "composer-2.5-fast",
+    "any Fast Composer variant",
+    "any Fast Grok variant",
+    "automatic fast substitutions",
+    "speed-optimized variants that reduce reasoning quality"
+  ],
+  "do_not_escalate_merely_because": [
+    "the task is large",
+    "many files exist",
+    "Grok is available",
+    "quota remains",
+    "a previous task needed Grok"
+  ],
   "tiers": {
     "cheap": {
+      "maps_to": "Composer",
+      "not": "Fast",
       "tasks": ["exploration", "inventory", "formatting", "mechanical edits", "simple test expansion"],
       "delegates": ["explore", "implementation"]
     },
     "normal": {
-      "tasks": ["ordinary implementation", "focused debugging", "routine documentation", "routine testing"],
+      "maps_to": "Composer",
+      "tasks": ["ordinary implementation", "focused debugging", "routine documentation", "routine testing", "ordinary orchestration"],
       "delegates": ["implementation", "testing", "debugging", "documentation-review"]
     },
     "high_reasoning": {
-      "tasks": ["architecture", "Paper execution", "authority", "persistence", "security", "cross-cutting review", "closure"],
+      "maps_to": "Grok 4.6 High",
+      "start_on": "Composer unless an escalation trigger already applies",
+      "tasks": ["architecture", "difficult debugging", "reconciliation", "evidence-sensitive high-risk decisions", "multi-agent synthesis", "closure when evidence conflicts"],
       "delegates": ["architecture", "safety-review", "frontend-review", "documentation-review"]
     }
   },
   "escalate_when": [
-    "a change crosses an authority or persistence boundary",
-    "Demo/Paper/Live behavior could differ",
-    "source-time or account identity semantics could change",
-    "validation evidence is contradictory or baseline attribution is unclear"
+    "Composer repeats failed attempts or cannot explain the root cause",
+    "subsystems disagree or schema/state-machine design is required",
+    "cross-service or nondeterministic failure after reasonable Composer diagnosis",
+    "substantial branch divergence or architectural merge conflicts",
+    "forward-test temporal integrity, prospective evidence, scheduler/liveness, trading-state, or provenance is at risk",
+    "findings from multiple agents conflict and a canonical decision is required"
   ],
+  "orchestrator": {
+    "default": "Composer",
+    "escalate_to": "Grok 4.6 High",
+    "escalate_when": [
+      "several findings conflict",
+      "an important architecture decision must be made",
+      "reconciliation spans deeply coupled systems",
+      "evidence-sensitive decisions are involved",
+      "Composer cannot reliably synthesize results"
+    ]
+  },
   "parallelism": {
-    "allowed": ["independent discovery", "independent pure edits", "isolated PARALLEL_SAFE tests"],
-    "forbidden": ["shared files", "authority", "execution", "persistence", "validation inventory", "final closure"]
+    "default": "one agent",
+    "allowed": [
+      "independent substantial investigations",
+      "independent read-only audits",
+      "isolated implementation in separate worktrees with stable interfaces"
+    ],
+    "forbidden": [
+      "concurrent mutation of the same worktree",
+      "shared files with integration conflicts likely",
+      "undecided architecture",
+      "evidence-sensitive runtime or scheduler disturbance",
+      "decorative extra agents"
+    ]
   }
 }

@@ -36,6 +36,1337 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9d219537` after #317 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`9d219537`** (merge [#317](https://github.com/AdamEddahmouni/market-trading-platform/pull/317) Weekend Lane K claim lineage; ancestry [#320](https://github.com/AdamEddahmouni/market-trading-platform/pull/320)–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321) retarget; prior stale pin `2d1b508c` |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-320`; merged `origin/main` @ `9d219537` before pin. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2d1b508c` after #320 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`2d1b508c`** (merge [#320](https://github.com/AdamEddahmouni/market-trading-platform/pull/320); ancestry [#313](https://github.com/AdamEddahmouni/market-trading-platform/pull/313) Lab Lane J, [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) docs pin, [#318](https://github.com/AdamEddahmouni/market-trading-platform/pull/318)–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) prior pin (`eee44352`); [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-320` from `origin/main` @ `2d1b508c`. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
+## 2026-09-19 — Weekend Wave B Lane H: operator lifecycle boundary tests
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform`, operator diagnostics |
+| **Summary** | Added focused unittest coverage for operator truth refusal tokens, Item 9 corpus IDLE/HEALTHY/UNKNOWN edges, cycle STALE vs FRESH recovery, evidence-gap composition, governance calibration/Live forbidden actions, collector cmdline sanitization, and validation-worker diagnostic redaction — no product behavior changes. |
+| **Key files** | `tests/platform/test_operator_lifecycle_boundaries.py` |
+| **Tests** | `python -m unittest tests.platform.test_operator_lifecycle_boundaries` — **17/17 OK** (Python 3.11 venv) |
+| **Related** | `OPERATOR_DIAGNOSTICS_MODEL.md`; existing `test_operator_diagnostics_snapshot.py`, `test_operator_truth_contract.py` |
+| **Notes** | Isolated worktree `feat/weekend-lane-h-lifecycle-tests` from `origin/main` @ `d547f96e`. Did not touch `snapshot.py` implementation or Item 9 collector state. |
+
+## 2026-09-19 — Weekend Wave C Lane K: research claim lineage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Increment after [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302): Overview `?claim=` scopes the eight-node claim graph to one analytics finding. Source/evidence deep-link to that panel; off-path nodes stay visible as gaps; hops carry `claim` on Research routes only. Hypothesis and FTEP remain `NOT_EXPOSED`; simulation is not a forward test. |
+| **Key files** | `ui/src/components/research-shared/researchPresentation.ts`; `ResearchClaimGraph.tsx`; `ResearchOverviewSection.tsx`; Evidence/Validation/Simulation sections; `ui/src/styles/research.css`; `docs/ui-redesign-v2/research-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` research-shared + demo/paper/live-research **67 passed**; `npm run typecheck` **pass** |
+| **Related** | [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302); [research-contract-map.md](../ui-redesign-v2/research-contract-map.md) |
+| **Notes** | Isolated `.worktrees/weekend-lane-k-research-lineage` from `origin/main` `be0e7e1a` (post-#315 absorb). Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED**. No Full30, #222, `snapshot.py`, Radar, Lab, provider, or PROGRAM_STATUS edits. Do not merge from this lane. |
+
+## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Lab Overview and Simulation now inspect `GET /operator/diagnostics` so Item 9 **2/3** stays **IDLE**, **Live OFF**, and **NOT CALIBRATED** are visible on the research workbench. Full30 is labeled not a Lab workflow; no calibrate/collect/run mutations. |
+| **Key files** | `ui/src/components/lab-shared/labPresentation.ts`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm test -- src/components/lab-shared src/App.test.tsx` — **98 passed**; `npm run typecheck` — pass |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md); shared `queryKeys.operatorDiagnostics` / `preferItem9OperatorTruth` |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab-lineage` from `61335412` (#312). Did not merge. Did not touch #222, `snapshot.py`, #308 G14, #310 Radar, #311 PROGRAM_STATUS. No Full30. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `eee44352` after #310 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`eee44352`** (merge [#318](https://github.com/AdamEddahmouni/market-trading-platform/pull/318); post–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298), [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307)–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312), [#315](https://github.com/AdamEddahmouni/market-trading-platform/pull/315), [#316](https://github.com/AdamEddahmouni/market-trading-platform/pull/316)). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | Supersedes open [#314](https://github.com/AdamEddahmouni/market-trading-platform/pull/314); [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) prior pin |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-310` from `origin/main` @ fetch time. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
+## 2026-09-19 — Weekend Wave C Lane L: opportunity/evidence pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `cross_lane`, `intelligence/opportunity`, `ui_api` |
+| **Summary** | Labeled cross-lane evidence serialization (`inference_kind`, `observed_at_presence`, `lane_evidence_from_dict`), clarified LIVE `data_quality.freshness` as `NOT_APPLICABLE` without receive clock, stopped attention ingest from advertising `OPEN_WORKSPACE` when `UNAVAILABLE`, and exposed `pipeline_clocks` on opportunity evidence bundles (persist `created_at` vs live receive). |
+| **Key files** | `cross_lane/evidence.py`; `intelligence/opportunity/{data_quality,ingest}.py`; `ui_api/opportunity_projections.py`; tests under `tests/cross_lane`, `tests/intelligence`, `tests/ui1` |
+| **Tests** | `python tools/imp.py validate changed` — **4367 passed**, 42 skipped, 0 failures |
+| **Related** | [#305](https://github.com/AdamEddahmouni/market-trading-platform/pull/305) live clock honesty |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-l-pipeline-provenance` @ `origin/main` `6a40a3a2`. Item 9 **2/3 IDLE**, Live **OFF**. No Radar/Lab/Research/#222/PROGRAM_STATUS edits. |
+
+## 2026-09-19 — Radar operator brief freshness provenance (Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Radar now reads attached `freshness_evaluation` and summary `withheld_ranked_count` so operator questions about freshness, providers, withheld live rows, and refused action stay source-backed. Same-clock event/receive lag stays UNKNOWN. Missing live receive clocks stay `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE`, not FRESH. No fake live actionability. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `ui/src/components/opportunity/OpportunityFeedState.tsx`; `ui/src/components/radar/{RadarOpportunitiesPanel,OpportunityDetailCard,RadarQueueTable}.tsx`; `ui/src/api/opportunityClient.ts`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` 4 files **43 passed**; `npm run typecheck` **pass**. Browser not run (no local Radar session). |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) Opportunity presentation; Lane L pipeline note that event vs receive lag was not on Radar cards |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-i-radar-provenance` from `origin/main` **65becd61** (#309). Did not touch #222, `snapshot.py`, Control operator_truth, G14/hermeticity tests, or operator diagnostics snapshot. Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED** unchanged. Do not merge from this lane. |
+
+## 2026-09-19 — Weekend Wave B Lane F: provider reason-code operator projections
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `ui_api` |
+| **Summary** | Increment on merged [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295): map adapter/discovery `reason_code` values to backend-owned operator explanations via `incident_for_reason_code`, expose `build_provider_error_payload` for UI API envelopes, and add `equity_quote_discovery_operator_view` for value-blind discovery diagnostics. Item 9 **2/3 IDLE**, Live **OFF**; no market evidence fabrication. |
+| **Key files** | `src/market_platform_foundation/providers/resilience.py`; `src/market_platform_foundation/providers/equity_quote_discovery.py`; `src/market_platform_foundation/ui_api/errors.py`; `tests/providers/test_provider_resilience.py` |
+| **Tests** | `python -m unittest tests.providers.test_provider_resilience tests.ui1.test_error_taxonomy` |
+| **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291) runtime resilience |
+| **Notes** | Did not touch `snapshot.py`, PROGRAM_STATUS #311, Radar #310, Lab #313, or #222. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`3609d508`** after [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) (post–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312) `61335412`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; absorbed `origin/main` with WORK_LOG keep-both. |
+
+## 2026-09-19 — Weekend Wave B Lane G: unit-test artifact hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `validation` |
+| **Summary** | Stopped G14 performance unittest from writing `artifacts/g14-runtime-performance.json` relative to process cwd; anchored dual-corpus path fixtures to IMP package root; cleaned state-path diagnostic temp dirs via `TemporaryDirectory`; added regression guard that G14 performance measurement does not touch tracked artifact paths. |
+| **Key files** | `tests/cross_lane/test_g14_product_convergence.py`; `tests/platform/test_dual_corpus_contamination.py`; `tests/platform/test_state_path_diagnostic.py`; `tests/validation/test_unit_test_repo_artifact_hermeticity.py` |
+| **Tests** | `python -m unittest tests.validation.test_unit_test_repo_artifact_hermeticity tests.platform.test_state_path_diagnostic tests.platform.test_dual_corpus_contamination tests.cross_lane.test_g14_product_convergence` |
+| **Related** | [#299](https://github.com/AdamEddahmouni/market-trading-platform/pull/299) process-env isolation |
+| **Notes** | Item 9 2/3 IDLE frozen invariants unchanged; no `snapshot.py`, collector `fed2d9f7`, or evidence mutation. |
+
+## 2026-09-19 — PR #307 merge origin/main 2003eced post-#298 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` **`2003eced`** (#298 `operator_truth` on main) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Conflicts: WORK_LOG, OPERATOR_DIAGNOSTICS_MODEL, `schemas.ts` — keep-both / integrate. Control `preferItem9OperatorTruth` IDLE clamp preserved; re-exports `ui/src/api/operatorTruth.ts` reader. Item 9 2/3 stays IDLE. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`; `ui/src/api/schemas.ts`; `docs/engineering/WORK_LOG.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` control + schemas; GitHub Actions on push |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) merged |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 collector `fed2d9f7` / evidence untouched. |
+
+## 2026-09-19 — PR #307 merge origin/main post-#293 (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `1d2377ea` (#293) into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged; did not adopt #298 backend `operator_truth` emission. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | GitHub Actions on push after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; Item 9 / collector / evidence untouched. |
+
+## 2026-09-19 — Lane E: absorb origin/main 1d2377ea (#293) into #298 snapshot keep-both
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs` |
+| **Summary** | Merged `origin/main` **`1d2377eaf`** (#293 observability on main) into `fix/weekend-lane-e-api-contracts` (#298 `operator_truth`). Hand-merged `snapshot.py`: #294 Windows/UNC redaction before `Path.resolve` and `receipt_dir` sanitization; #293 `deepcopy` `expected_cycle`, `PARTIAL_TAIL`, truncated-tail `recovery_observed=UNKNOWN`, STALE freshness; #298 `operator_truth` payload and tests (no `severity==OK` when fixture is DEGRADED). Item 9 2/3 remains `IDLE`. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `$env:PYTHONPATH="src"` + IMP `.venv`: `python -m unittest tests.platform.test_operator_diagnostics_snapshot tests.platform.test_operator_truth_contract tests.platform.test_artifact_path_resolver` — **33 OK** (1 skipped) |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-e-api-contracts`; push only — do not merge #298 or #222. Did not mutate Item 9 collector `fed2d9f7` / evidence. |
+
+## 2026-09-19 — PR #307 merge origin/main (WORK_LOG keep-both)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `docs` |
+| **Summary** | Merged `origin/main` `2a831ac5` into `ui/weekend-operator-truth-consume` for [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307). Sole conflict: `WORK_LOG.md` — kept both weekend entries. Control operator_truth consume behavior unchanged. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | See PR #307 lane validation after merge commit |
+| **Related** | [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307) |
+| **Notes** | Isolated worktree `.worktrees/weekend-operator-truth-consume`; no merge to main; Item 9 / collector / evidence untouched. |
+
+## 2026-09-19 — Lane E: merge origin/main 2a831ac5 (#306)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Merged `origin/main` **`2a831ac5`** (#306 CURRENT_MAIN pin) into `fix/weekend-lane-e-api-contracts`. Snapshot resolve unchanged (sanitization + `operator_truth`). WORK_LOG keep-both. |
+| **Key files** | `docs/engineering/WORK_LOG.md`; `docs/platform/PROGRAM_STATUS.md` (from main) |
+| **Tests** | Docs merge only — snapshot.py unconflicted |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
+| **Notes** | Do not merge #298. |
+
+## 2026-09-19 — Control optionally consumes operator_truth for Item 9 IDLE
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Control now reads optional `diagnostics.operator_truth` (or `sections.operator_truth`) for Item 9 IDLE vs DEGRADED when the field is present, matching the `operatorTruth.ts` shape from #298 without requiring that PR. Missing field keeps local mapping. Item 9 `2/3` stays IDLE (never DEGRADED). Live OFF stays POLICY. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` unchanged. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`, `operatorDiagnosticsPresentation.ts`, `OperatorControlCenterPage.test.tsx`; `ui/src/api/schemas.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` consumeOperatorTruth / operatorDiagnosticsPresentation / OperatorControlCenterPage / schemas.test **45 passed**; `npm run typecheck` pass |
+| **Related** | [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) merged Control UX; [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) still open for backend `operator_truth` |
+| **Notes** | Isolated worktree `ui/weekend-operator-truth-consume` from `origin/main` `58e56ca9`. Does not import `ui/src/api/operatorTruth.ts`. Does not remap live-execution from backend BLOCKED. No merge. |
+
+## 2026-09-19 — Absorb origin/main 2a831ac5 (#294+#306) into #293 snapshot.py keep-both
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs` |
+| **Summary** | Merged `origin/main` `2a831ac5` into `fix/weekend-lane-d-observability` without dropping either side of `snapshot.py`: keep #294 `_operator_safe_fs_path` / `_sanitize_mapping_paths` / POSIX Windows-absolute-before-resolve, and #293 deepcopy of `expected_cycle`, `PARTIAL_TAIL`, UNKNOWN recovery (not false OBSERVED), and STALE log freshness. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | IMP `.venv` + `PYTHONPATH=src`: `python -m unittest tests.platform.test_operator_diagnostics_snapshot` — **8 OK** |
+| **Related** | [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293); [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
+| **Notes** | Isolated worktree `.worktrees/weekend-293-snapshot-resolve`; push only, do not merge the PR. |
+
+## 2026-09-19 — Lane E: merge origin/main a0b03d2a (#294) into operator_truth
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Merged `origin/main` **`a0b03d2a`** (#294). Kept Lane E `operator_truth` / no top-level corpus `receipt_dir` and the 8b320e0d severity-OK test fix. Kept #294 path sanitization so nested `report` / `expected_cycle` host paths stay redacted. Item 9 2/3 remains `IDLE`. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` snapshot sanitization + operator_truth + 2/3 IDLE **8 passed** |
+| **Related** | PR [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298); merge [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | WORK_LOG keep-both. Do not merge #298 until #293 lands if snapshot still conflicts with Lane D. |
+
+## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform`, `operations`, `tests` |
+| **Summary** | Hardened Item 9 expected-cycle / collector-log gap machinery from [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291): truncation and stale/missing log facts, snapshot copy isolation, duplicate/hung/foreign-path classification, and operator-visible diagnostic fields. Read-only; no collector or receipt mutation. |
+| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,operator_diagnostics_snapshot}.py` |
+| **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
+| **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
+| **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+
+## 2026-09-19 — Lane E CI: do not require diagnostics severity OK for Item 9 2/3
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform` |
+| **Summary** | Dropped `severity == OK` from the operator-truth snapshot test. Item 9 2/3 remains `IDLE` in `operator_truth`; snapshot severity may honestly be `DEGRADED` when readiness is not READY or evidence_gaps is non-empty. |
+| **Key files** | `tests/platform/test_operator_truth_contract.py` |
+| **Tests** | `python tools/imp.py test focused` snapshot truth + 2/3 IDLE selectors **3 passed** |
+| **Related** | PR #298 review; Weekend Wave B Lane E |
+| **Notes** | Did not coerce 2/3 to OK/HEALTHY. Did not edit Control UI or `snapshot.py` severity mapping. |
+
+## 2026-09-18 — Operator API contract: backend-owned truth tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `platform/operator_diagnostics`, `ui/src/api` |
+| **Summary** | Added `operator_truth` on `GET /operator/diagnostics` (schema 1.1.0) so Control/Command consume backend facts instead of remapping status. Item 9 2/3 corpus progress is `IDLE` not `DEGRADED`. Stripped monotonic clock and `receipt_dir`. Added `data_quality.operator_surface_flag` for Command stale/degraded KPIs. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/{operator_truth.py,snapshot.py}`; `ui/src/api/{schemas.ts,operatorTruth.ts,opportunityClient.ts,hooks.ts}`; `ui/src/components/imp-product/impOverviewMetrics.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
+| **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to #294 (`a0b03d2a`)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) from stale `1f33bf9e` (#295) to `origin/main` **`a0b03d2a`** after [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294). Historical log snapshots and Item 9 **2/3 IDLE**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated left unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main`; do not merge from this lane. |
+
+## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api/opportunity_projections` |
+| **Summary** | Live ranked-row freshness no longer treats `OpportunityV1.created_at` or leftover fixture `as_of` as a receive clock. Missing live receive is `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE` (not `FRESH`). Attention ingest rows stay `accepted=false` when eligibility is `UNAVAILABLE`. Operator feed still withholds unclocked live rows. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/freshness.py`, `ingest.py`, `ui_api/opportunity_projections.py`, `docs/architecture/DATA_CONTRACTS.md`, tests for freshness/ingest/opportunity API |
+| **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
+| **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
+| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `61ea8110` (#304) keep-both. |
+
+## 2026-09-19 — Weekend Wave A Lane A: redact Windows receipt_dir on POSIX
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Merged `origin/main` **`252bad4b`** (#303). `_operator_safe_fs_path` now classifies drive-letter / UNC Windows host paths **before** `Path.resolve()` / `relative_to`, so POSIX CI cannot leak `expected_cycle.receipt_dir`. Item 9 **2/3 IDLE**, **3/3 HEALTHY**, not CALIBRATED. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py` |
+| **Tests** | `python tools/imp.py test focused` — 8/8 `OperatorDiagnosticsSnapshotTests` passed |
+| **Related** | PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); merge [#303](https://github.com/AdamEddahmouni/market-trading-platform/pull/303) |
+| **Notes** | Do not merge #294 from this lane. No collector/evidence mutation. Merged `origin/main` `58e56ca9` (#305) keep-both. |
+
+## 2026-09-19 — Weekend Wave A Lane A: pin CURRENT_MAIN to #295
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Merged `origin/main` **`1f33bf9e`** (#295) into `fix/weekend-lane-a-status-nits` and pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout SHA) to that tip. Item 9 **2/3** IDLE, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin after merge — no code tests run |
+| **Related** | [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Merge (not rebase). Do not merge #294 from this lane. |
+
+## 2026-09-18 — Weekend Wave A Lane A: pin CURRENT_MAIN to #292
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) from stale `50a1477f` (#289) to `origin/main` **`b16e0bbe`** (#292). Historical #289 merge rows left unchanged. Item 9 **2/3**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-a-status-nits`; do not merge from this lane. |
+
+## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs/platform` |
+| **Summary** | Corrected PROGRAM_STATUS corpus-status to frozen `$rcpt` (not CURRENT_MAIN artifacts). Diagnostics now classify Item 9 distinct-RTH progress **`2/3` → `IDLE`** (not `DEGRADED`) and **`3/3` → `HEALTHY`** without implying CALIBRATED, and redact/normalize operator-facing `receipt_dir` / host-absolute paths. No evidence mutation, collection, or UI edits. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` — 7/7 passed (`OperatorDiagnosticsSnapshotTests`); `python tools/imp.py lint` — exit 0 |
+| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); merge [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292) |
+| **Notes** | Frozen collector `fed2d9f7` untouched. Item 9 remains NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF. Lane B Control UI not edited. `q03` `state_dir` still host-absolute (operational). |
+
+## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Review fix on [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304): Monday step 4 is composed GO from the software `item9 next-rth-preflight` JSON. Do **not** require CLI `READY_TO_COLLECT` from frozen `fed2d9f7` (no `item9` group). `WRONG_RUNTIME` must not send operators to retarget CURRENT_MAIN onto `.imp-actual-01-phase-d`. `--poll` starts only from frozen `opend_bar_1m_prospective_proof.py` after RTH / SHA / collectors=0 / OpenD / Live OFF. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; this log |
+| **Tests** | Docs-only review edit; no `--poll`. Frozen collector not mutated. |
+| **Related** | [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md); PR [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304) |
+| **Notes** | Merged `origin/main` `b1b3f7e8` (#302) keep-both WORK_LOG. `121031` still forbidden. Item 9 **2/3 IDLE**. Live OFF. PR #222 unmerged. |
+
+## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Added [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md) so Monday 2026-09-21 Item 9 Mode B is mechanical: frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7`, read-only preflight, `$rcpt` corpus-status, Live OFF, `121031` backfill forbidden, 2/3 IDLE not DEGRADED, READY_TO_COLLECT vs wait. Points at PROGRAM_STATUS for mutable `origin/main`. Does **not** start `--poll`, calibrate, run Full30, enable Live, or merge #222. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; pointer in `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/README.md`; this log |
+| **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
+| **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
+| **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
+
+## 2026-09-19 — Lane K: unique Research Evidence tab name
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Claim-graph and hop links now use accessible names `Follow <node>` so the Research section tab `Evidence` stays uniquely queryable. Visible hop copy is unchanged. App.test queries the Evidence tab inside `Research sections`. |
+| **Key files** | `ui/src/components/research-shared/ResearchClaimGraph.tsx`, `researchPresentation.ts`(+test), `ResearchEvidenceSection.test.tsx`, `App.test.tsx`, `DemoResearchPage.test.tsx` |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/App.test.tsx` **74 passed** (includes `navigates Demo Research sections as routes`); research-shared + DemoResearchPage **58 passed**. |
+| **Related** | [PR #302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302) validate-ui hold |
+| **Notes** | Hypothesis/FTEP remain NOT_EXPOSED; simulation is not a forward test. Did not merge #302. Merged `origin/main` `829316ff` (#299) keep-both. |
+
+## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests` |
+| **Summary** | Isolated process-environment leaks so unit tests no longer leave `IMP_FINVIZ_CAPTURE_DIR`, `IMP_PERSIST_STATE`, or `IMP_PAPER_EXECUTION` set for later cases, and stopped pointing Finviz capture roots into the tree. |
+| **Key files** | `tests/platform/test_discovery_p33.py`; `tests/finviz/test_finviz_provider.py`; `tests/intelligence/test_ftep_campaign_status.py`; `tests/intelligence/test_build01_22_lifecycle.py`; `tests/intelligence/test_build01_23_lifecycle.py`; `tests/intelligence/test_build01_24_lifecycle.py`; `tests/intelligence/test_paper_execution_qualification.py`; `tests/intelligence/test_paper_execution_governance.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/trading_correctness/test_preview_binding.py`; `tests/validation/test_process_env_isolation.py` |
+| **Tests** | `python -m unittest` on changed modules **101 passed**; `python tools/imp.py validate changed` **3336 passed**, 31 skipped, 0 fail |
+| **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
+| **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
+
+## 2026-09-19 — Weekend Lane H high-value testing coverage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform`, `tests/ui1`, `ui/radar`, `ui/opportunity` |
+| **Summary** | Added fail-closed tests at high-value boundaries on landed #295/#296/#300 contracts: Item 9 sample-gate 2/3 insufficient vs 3/3 met without calibration, Live OFF / LIVE_FORBIDDEN, UNKNOWN provider incidents, restart generations, diagnostic redaction, session AUTH_REQUIRED/INVALID, Radar STALE/INELIGIBLE/EXPIRED refusal. No product-code rewrite; did not edit snapshot.py, Control, Lab, Research, or merge #222. |
+| **Key files** | Created: `tests/platform/test_weekend_lane_h_high_value_boundaries.py`. Modified: `tests/ui1/test_error_taxonomy.py`; `ui/src/components/opportunity/opportunityEpistemicLayers.test.ts`; `opportunityOperatorBrief.test.ts`; `opportunityPresentation.test.ts`; `ui/src/components/radar/RadarPage.test.tsx`. |
+| **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
+| **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
+
+## 2026-09-19 — Weekend Lane K: Research claim navigation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Research Overview is now a claim graph (source → hypothesis → strategy → experiment → evidence → contradiction → implementation → forward-test) instead of a gap-list dump. Synthesis sentences and section hops deep-link; `?conflict=1` filters the only contract-backed conflict. Hypothesis/FTEP stay NOT_EXPOSED; simulation is not labeled a forward test; Paper forward tests link to Workspace without fetching them. |
+| **Key files** | Created: `ui/src/components/research-shared/ResearchClaimGraph.tsx`. Modified: `researchPresentation.ts`(+test), `ResearchOverviewSection.tsx`(+test), `ResearchEvidenceSection.tsx`(+test), `ResearchValidationSection.tsx`(+test), `ResearchSimulationSection.tsx`(+test), `ResearchSurface.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`, `ui/src/styles/research.css`, `docs/ui-redesign-v2/research-contract-map.md`, `docs/engineering/FRONTEND_GUIDE.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npm test --` research-shared + demo/paper/live-research **62 passed / 0 failed**. Browser: Demo `/research` on worktree Vite `127.0.0.1:5298` — claim graph present; Strategy node → `/research/validation` hops; Evidence hops present. (Earlier `:5198` was a different already-bound UI.) |
+| **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md); Weekend Wave C Lane K |
+| **Notes** | Did not edit Control, Radar, Lab, `snapshot.py`, or PROGRAM_STATUS. No Item 9 collection, no Full30, no Live, no #222 merge, no collector mutation. Remaining dump-like gaps: Evidence still lists five analytics panels; Validation still shows a full interpretation table; no first-class hypothesis/source-catalog/FTEP endpoints. Merged `origin/main` `d8a02448` (#301 Lab honesty taken as-is; claim graph kept). |
+
+## 2026-09-19 — Lane J Lab honesty refinement
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab`, `docs/ui-redesign-v2` |
+| **Summary** | Made Lab a clearer inspectable research/validation workbench: experiment/run IDs stay UNKNOWN, strategy identity and dataset provenance are first-class, recorded parameters and evidence lineage are visible, methodological warnings and a test-vs-forward-test map are explicit, and cost/fill assumptions no longer treat `fill_audit.status` as fill realism. No Lab mutations, no evidence-class upgrades. |
+| **Key files** | Created: `ui/src/components/lab-shared/LabFactGrid.tsx`. Modified: `ui/src/components/lab-shared/{labPresentation.ts,LabOverviewSection.tsx,LabValidationSection.tsx,LabSimulationSection.tsx,lab.css}`, `ui/src/components/research-shared/simulationHarnessMetrics.ts`, matching tests, `docs/ui-redesign-v2/lab-contract-map.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
+
+## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Review fix on #297: Live OFF uses truth class **POLICY** (not **BLOCKED**); BLOCKED stays for real gates such as WRONG_RUNTIME. Item 9 corpus meaning now branches — 2/3 still “needs more dates”, 3/3 says the date gate is complete and does not claim more dates are required. |
+| **Key files** | `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `OperatorSystemStatusSection.tsx`; `operatorDiagnosticsPresentation.test.ts`; `ui/src/styles/operator-control.css` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **50 passed** |
+| **Related** | PR [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) |
+| **Notes** | Merged `origin/main` @ `1f33bf9e` (#295) first. No collector / Item 9 mutation. |
+
+## 2026-09-18 — Lane B Operator Control UX (trader-readable status)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Refined Control so a trader can tell waiting vs failure: Item 9 incomplete dates stay **IDLE** (not **DEGRADED**), Live OFF is a policy lock, and diagnostics load errors are labeled as load failures. Canonical tokens remain visible. Did not add a UI route at `/operator/diagnostics` because Vite proxies that path to the API. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/control/OperatorSystemStatusSection.tsx`; `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `ui/src/styles/operator-control.css`; `ui/src/components/control/*.test.ts(x)` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **49 passed**. Browser: Vite `:5194` Demo Control — load-failure copy, **Live OFF**, **NOT CALIBRATED**, **CALIBRATION FORBIDDEN**; Item 9 **2/3 IDLE** covered by Vitest (API snapshot unavailable in that session). Did not click Restart / collectors. |
+| **Related** | `docs/engineering/ACCESSIBILITY.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Full `App.test.tsx` showed intermittent lazy-load flakes when run as a heavy suite; Control-focused Vitest is the claimed gate. |
+
+## 2026-09-18 — Radar operator brief (Weekend Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Radar opportunity detail now answers the operator discovery questions from attached fields only (what happened, why shown, freshness, providers, conflicts, inference vs observation, unknowns, invalidation, available action, refusal). Empty conflict/provider/invalidation sets stay `UNKNOWN` instead of “none reported.” Queue rows expose attached providers. No fake live actionability; Demo remains read-only. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `opportunityOperatorBrief.test.ts`; `opportunityEpistemicLayers.ts`; `opportunityDetailModel.ts`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `RadarQueueTable.tsx`; `RadarPage.test.tsx`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` opportunity brief/epistemic/detail/presentation + `RadarPage.test.tsx`: 43 passed; `npm run typecheck`: pass. Demo Radar on worktree Vite `:5199` against API `:8766`: operator brief present; providers `REPLAY`; conflicts `UNKNOWN`; `live.quotes` UNSUPPORTED. |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md); design-principles opportunity 9-field rule |
+| **Notes** | Item 9 collection/calibration and Operator Control were not touched. Invalidation criteria remain UNKNOWN unless eligibility, expiry, staleness, supersession, or missing ranking inputs are attached. Branch started at `origin/main` `b16e0bbe`; do not merge. |
+
+## 2026-09-18 — Weekend Lane C UI regression fixes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/workspace`, `ui/nav`, `ui/diagnostics` |
+| **Summary** | Fixed non-Control product defects found in origin/main browser QA: mobile nav backdrop leaked as an unnamed button, provider diagnostics treated loading/error as Live-disabled, Workspace overview assumed Demo replay when `/context` failed, and empty-instrument copy still pointed at retired Explore/Discover routes. Added a tested route error-boundary primitive; it is not wrapped around `LazyBoundary` because that stalls lazy `ImpProductChrome` load. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/live/ProviderHealthPanel.tsx`, `ui/src/components/WorkspaceIndex.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `ui/src/components/RouteErrorBoundary.tsx` |
+| **Tests** | `npx vitest run` ImpProductChrome, InstrumentSelectionEmpty, RouteErrorBoundary, WorkspaceIndex, ProviderHealthPanel, LazyBoundary — **15 passed** (ProviderHealthPanel 4/4 including pre-existing CONNECTED case); `npm run typecheck` — **pass**. Full `App.test.tsx` not re-run (no `App.tsx` change). |
+| **Related** | `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/ACCESSIBILITY.md` |
+| **Notes** | Control inspected only (Lane B). Item 9 2/3 / not calibrated / Live OFF not hidden. Error-boundary wiring around Suspense remains deferred. |
+
+## 2026-09-18 — Lane F provider resilience (offline fixtures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `operations`, `ui_api/errors` |
+| **Summary** | Added backend-owned provider incident tokens and operator messages for OpenD down, delayed data, partial staleness, source disagreement, reconnect, timeout, empty/malformed payloads, temporary network failure, restart recovery, and Yahoo-as-hop-L1 fallback blocked. OpenD/Yahoo adapters fail closed on empty/timeout/reset without substituting overlay as primary L1. Item 9 remains IDLE / NOT_CALIBRATED; Live stays OFF. |
+| **Key files** | Created: `src/market_platform_foundation/providers/resilience.py`, `tests/providers/test_provider_resilience.py`, `tests/fixtures/providers/resilience/incidents.json`. Modified: `providers/adapters/moomoo_opend_equity_quote.py`, `providers/adapters/yahoo_delayed_equity_quote.py`, `operations/runtime_resilience_diagnostic.py`, `ui_api/errors.py`, `docs/engineering/PROVIDER_READINESS.md`, `tests/providers/test_moomoo_opend_primary_l1.py`, `tests/ui1/test_error_taxonomy.py`. |
+| **Tests** | `python tools/imp.py test focused` (10 Lane F selectors) **passed 10/0/0**; `python -m unittest` provider/yahoo/error-taxonomy/diagnostic modules **68 OK**. |
+| **Related** | [PROVIDER_READINESS.md](PROVIDER_READINESS.md); runtime resilience diagnostic (Lane B composition consumed by diagnostics snapshot, this lane did not edit `snapshot.py`). |
+| **Notes** | Leftover **CALENDAR**: Item 9 `2/3` IDLE not DEGRADED, `NOT_CALIBRATED`. **PROVIDER**: OpenD still unavailable on this workstation; Yahoo overlay remains DELAYED-only. No Item 9 collection, no collector mutation, no #222 merge. |
+
+## 2026-09-18 — Control system status consumes GET /operator/diagnostics
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `platform/operator_diagnostics` |
+| **Summary** | Wired Control to a single `GET /operator/diagnostics` query for lifecycle, readiness, feed surface, governance, and Item 9 corpus gate presentation; added System status truth hierarchy UI and fixed diagnostics payload secret-leak audit blockers. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`, `OperatorSystemStatusSection.tsx`, `operatorDiagnosticsPresentation.ts`, `ui/src/api/{schemas,endpoints,hooks}.ts`, `platform/operator_diagnostics/snapshot.py`, `operator-shared/governanceStatusPresentation.ts` |
+| **Tests** | `ui`: vitest control/governance suites 44 passed; `python -m unittest tests.platform.test_operator_diagnostics_snapshot` 2 passed |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Browser-verified Control on worktree Vite `:5181` + API `:8767`; Radar/Lab spot-check blocked by session gate on cold navigation. Opportunity row count not in diagnostics snapshot (shown explicitly). |
+
+## 2026-09-18 — Canonical status Item 9 prep (Lane A + G docs)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Reconciled canonical program status and operator runbooks to `origin/main` @ **`50a1477f`** ([#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287)–[#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289)); pinned Item 9 **`2/3`** admitted RTH dates from read-only `corpus-status` on frozen collector receipts; documented **`GET /operator/diagnostics`**, governed receipt path, and fail-closed **`READY_TO_COLLECT`** preflight gates. **No** collection, calibration, or collector mutation. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python tools/item9_corpus_status.py corpus-status` (frozen collector receipt dir → `2/3`); `python tools/imp.py item9 next-rth-preflight --json` (off-hours `WRONG_RUNTIME`, no active collector); `python tools/check_docs_links.py` (pending in PR) |
+| **Related** | [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); branch `docs/canonical-status-item9-prep` |
+| **Notes** | Primary desktop checkout remains detached @ `44b8673e` — untouched. UI redesign isolated on `ui/operator-redesign-lab`. |
+
+## 2026-09-18 — Lane D simulator experiment specs reconciliation (branch absorption)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Compared `research/simulator-experiment-specs-sep18` (`e149b739`) and sibling simulator research branches against `origin/main` @ `270ce2a6` — all fully absorbed (0 unique commits). Routed fill-price realism doc to experiment 06 / #285 without mutating frozen `lane_c_readiness_v1.json` or Cost v4 evidence. Marked drawdown Lane C review as historical provenance only. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (5 passed) |
+| **Related** | Branch `research/simulator-experiment-specs-cleanup`; worktree `.worktrees/simulator-specs-cleanup`; PR [#288](https://github.com/AdamEddahmouni/market-trading-platform/pull/288); merges [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285), Cost v4 [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284) |
+| **Notes** | Docs-only routing; recommend deleting merged local/remote simulator research branches after operator review. |
+
+## 2026-09-18 — Lane F observability gap wiring + test hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform`, `operations`, `tests` |
+| **Summary** | Wired read-only Item 9 collector log ingestion (`IMP_ITEM9_COLLECTOR_LOG_PATH` or default `artifacts/ftep-v1-002/item9-prospective-collector.log`) into `build_runtime_resilience_diagnostic`, so RTH empirical preflight and `/operator/diagnostics` expected-cycle gap analysis can classify epoch `121031`-class failures when operators capture logs. Stopped `run_frozen_fill_price_realism_v1` integration tests from rewriting tracked fill-price evidence JSON (`persist_canonical_evidence=False`). |
+| **Key files** | `platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `intelligence/historical_research_harness/fill_price_realism_harness.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,fill_price_realism_v1}.py` |
+| **Tests** | `PYTHONPATH=src` + main checkout `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_fill_price_realism_v1 tests.platform.test_operator_diagnostics_snapshot` — **15 OK** (2 skipped) |
+| **Related** | Post-#287/#289 operator diagnostics; branch `fix/obs-hermeticity` |
+| **Notes** | Path portability: v3 manifest resolution already centralized in #287; no new unsafe cross-host opens found. Does not mutate frozen collector or historical evidence bytes. |
+
+## 2026-09-18 — Lane B runtime/provider resilience (path resolver + diagnostics)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform`, `operations` |
+| **Summary** | Centralized manifest path portability (`artifact_path_resolver`) so foreign Windows-absolute v3 `manifest_path` values fail safely on Linux without `OSError`; new v3 pack runs store repo-relative POSIX paths. Added `build_runtime_resilience_diagnostic` (provider connectivity, collector process probe, Item 9 preflight disposition, expected-cycle log gap analysis for epoch `121031` class) wired into `rth_empirical_ops` preflight. No frozen collector/evidence mutation. |
+| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `fill_price_realism_harness.py`; `baseline_pack_v3.py`; `rth_empirical_ops.py`; `tests/platform/test_artifact_path_resolver.py`; `tests/platform/test_runtime_resilience_diagnostic.py` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_fill_price_realism_v1` — **11 OK** (2 skipped) |
+| **Related** | PR [#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287); PR #285 CI portability; Sep 18 outage closeout `item9-lane0-provider-outage-closeout-20260918.json` (read-only) |
+| **Notes** | Lane C may surface `runtime_resilience` DTO from `rth_empirical_ops` preflight; does not auto-restart collectors. |
+
+## 2026-09-18 — Lane E operator UI epistemic depth (UIR-01I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `ui/radar`, `ui/lab`, `ui/research` |
+| **Summary** | On `ui/operator-redesign-lab` reconciled to `origin/main` `270ce2a6`: opportunity detail uses epistemic layers + grounded-fact metadata; Control adds governance facts (Live OFF, Item 9 status only when capability_states expose it); known epoch `121031` gap uses precision banner; Lab/Research surface drawdown/cost/fill-realism when simulation contract carries them. |
+| **Key files** | `ui/src/components/opportunity/opportunityEpistemicLayers.ts`; `ui/src/components/operator-shared/`; `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/research-shared/simulationHarnessMetrics.ts`; `ui/src/components/imp-ui/PrecisionFailureBanner.tsx` |
+| **Tests** | `npm test` vitest: operator-shared, epistemic layers, simulationHarnessMetrics, opportunityDetailModel, OperatorControlCenterPage (17) — pass |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md); worktree `.worktrees/ui-lab-redesign` |
+| **Notes** | Browser not re-run this session. Lane C requests: runtime SHA, Item 9 corpus `distinct_rth_dates`/`calibrated` on `/operator/readiness` or `/context`; simulation `max_drawdown` on `/research/simulation`. |
+
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (five-package closure)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only closure after **IMP-POST-RTH-CLOSE-08** Sep 18 close and sequential engineering landings [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285). Item 9 **2/3** admitted RTH dates, **188/189** receipts, outage epoch `121031` **not** backfilled, collector `fed2d9f7` stopped **16:00:11 ET**. **CURRENT_MAIN** `d06d57e7` (fill merge includes CI portability hardening @ `a36ab28b`; frozen v3 manifest paths untouched). Cost v4 **APPROVE** @ `7b5e4be9`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md` |
+| **Tests** | `python tools/check_docs_links.py` |
+| **Related** | Lane 0 closeout JSON (operator tree); branch `docs/imp-post-rth-close-08-status`; merge [#286](https://github.com/AdamEddahmouni/market-trading-platform/pull/286) |
+| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`; no receipt rewrite; no fill experiment rerun. |
+
+## 2026-09-18 — Fill-price realism v1 harness + bounded run (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical_research_harness`, `tools/research`, `evidence/historical-research` |
+| **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `6A66AE5C50700426F71B3734E6FC6A43` under experiment 06 evidence (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`). Costs locked at 5 bps; v3 receipts untouched; validate gross sign unchanged on corpus. |
+| **Key files** | `fill_price_realism_harness.py`; `fill_price_realism_v1_cli.py`; `tests/platform/test_fill_price_realism_v1.py`; `evidence/.../fill_price_realism_run_record.json` |
+| **Tests** | `python -m unittest tests.platform.test_fill_price_realism_v1` — OK (3 passed, 1 skipped) |
+| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…1149`; merged #285 @ `a36ab28b` |
+| **Notes** | `research_code_sha` recorded in run receipt at commit time; no experiment rerun on integration. |
+
+## 2026-09-18 — Fill-price realism v1 spec freeze (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/research/methodology/fill`, `evidence/historical-research` |
+| **Summary** | Froze bounded fill-price realism experiment separate from Lane E cost sensitivity: six predeclared OHLC fill/MTM arms, locked v3 fill schedule + `cost_slippage_bps=5.0`, no Item 9 simulator semantic change. Independent review `APPROVE_FOR_FROZEN_EXECUTION`; historical execution recorded in harness entry (`6A66AE5C…`). |
+| **Key files** | `docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md`; `evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/*` |
+| **Tests** | `python` canonical hash verify for `EXPERIMENT_HASH` `C4FCD3AB…`; harness tests in follow-up entry |
+| **Related** | `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1`; v3 hash `81EFC1B1…`; worktree `.worktrees/lane-f-fill-realism` |
+| **Notes** | `SPEC_BUNDLE_SHA256=bcf758df…`; numbers frozen — integration updates status text only. |
+
+## 2026-09-18 — Cost sensitivity v4 review follow-up (Lane E readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Addressed independent review `65cedf09` REQUEST_CHANGES: added `execution_status_v1.json` (post-exec gates without rewriting pre-registration); refreshed `lane_c_readiness_v1.json`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, and Lane C tests for `EXECUTED_BOUNDED_HISTORICAL_OBSERVATION` with receipt pointers. No re-run; same `pack_run_id` `1DEF586AD729B270E20814B03606A718`. |
+| **Key files** | `execution_status_v1.json`, `lane_c_readiness_v1.json`, `test_simulator_experiment_specs_lane_c_v1.py`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1 tests.platform.test_historical_cost_sensitivity_v4_prep` — OK (8) |
+| **Related** | Review `65cedf09`; merged #284 @ `7b5e4be9` |
+| **Notes** | `pre_registered_methodology_v1.json` remains pre-exec artifact (`executed=false`). |
+
+## 2026-09-18 — Cost sensitivity v4 execution (IMP-POST-RTH-CLOSE-08 Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research` |
+| **Summary** | Confirmed Lane C frozen `pre_registered_methodology_v1.json`; promoted v4 `frozen_experiment_definition.json` (`EXPERIMENT_HASH` `30FB6972…`); executed pre-registered 7-point `cost_slippage_bps` grid on pinned OpenD HIST-DEV-AAPL corpus with v3-locked baselines/splits. All fill/gross invariants held; `bps=5.0` replicates v3 validate economics; contamination PASS. V3 receipts untouched. |
+| **Key files** | `cost_sensitivity_v4.py`, `historical_cost_sensitivity_v4_cli.py`, `evidence/.../imp-simulator-cost-sensitivity-v4/*` |
+| **Tests** | `unittest tests.platform.test_historical_cost_sensitivity_v4_prep tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (6) |
+| **Related** | `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`; merged #284 |
+| **Notes** | `pack_run_id` `1DEF586AD729B270E20814B03606A718`; authority `HISTORICAL_DEVELOPMENT` / `BOUNDED_HISTORICAL_OBSERVATION` only. |
+
+## 2026-09-18 — Simulator experiment specs Lane C (cost / fill / drawdown review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `evidence/historical-research`, `tests/platform` |
+| **Summary** | Frozen methodology for cost v4 and fill realism; consolidated Lane C readiness in `imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` (supersedes standalone `research/simulator-experiment-specs-sep18` landing). Cost v4 **EXECUTED** (#284); drawdown **merged** (#283); fill realism **EXECUTED** on branch pending merge. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, `IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`, `IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md`; `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` (3 tests, pass) |
+| **Related** | Lane E v3 hypothesis queue; drawdown #283; cost #284; fill realism branch |
+| **Notes** | No v3 rerun; no PROGRAM_STATUS edit on this branch. |
+
+## 2026-09-18 — Simulator drawdown wiring v1 (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Diagnosed v3 `drawdown: null` as missing equity-curve aggregation (simulator read nonexistent `risk_result.portfolio.max_drawdown`). Wired net-MTM PnL curve → `max_drawdown` in fill economics with source `EQUITY_CURVE_NET_MTM`; documented contract; v3 evidence untouched. |
+| **Key files** | `simulator_drawdown.py`, `fill_economics.py`, `simulator.py`, `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md`, `tests/platform/test_simulator_drawdown_wiring_v1.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_drawdown_wiring_v1 tests.platform.test_simulator_fill_economics_v3` |
+| **Related** | Hypothesis `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`; finding `LANE-E-FND-019`; merged #283 @ `2b194d74` |
+| **Notes** | `ACCOUNTING_VERSION` unchanged (`3.0.1`). Promotion needs NEW experiment hash; no v3 manifest backfill. |
+
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane B+C (rebase + independent fixtures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / grounded fact SUT integration |
+| **Summary** | Rebased approved SUT stack onto current `origin/main` (`2306ff4a`, #281); landed Lane B synthetic fixtures and `test_grounded_fact_independent_fixtures_v1.py` on `feat/grounded-fact-extraction-v1` in worktree `.worktrees/lane-bc-grounded-facts` (merged #282; no smoke rerun on integration step). |
+| **Key files** | `tests/intelligence/test_grounded_fact_independent_fixtures_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_independent/*` |
+| **Tests** | `python -m unittest tests.intelligence.test_grounded_fact_extraction_v1 tests.intelligence.test_grounded_fact_independent_fixtures_v1` — 31 OK; `python tools/imp.py test focused` (2 representative selectors) — 2 OK |
+| **Related** | Lane A receipt `evidence/intelligence-benchmark/imp-post-rth-close-08-lane-a/grounded_fact_extraction_review_v1.json`; historical factual smoke `RUN_ID=ibp-factual-smoke-766E16CAF41F3210` persisted @ `f7486f42`/`90773a41` |
+| **Notes** | `PROVENANCE_HYGIENE=skipped` (preserve freeze `SUT_CODE_SHA=b43cfd53`). `GOLD_INSPECTED=NO`. Historical smoke **executed and persisted** (facts 11/11, unknown_handling 11/11); `FULL30_EXECUTED=NO`; no post-`b43cfd53` SUT change — ancestry-only integration must not rerun smoke. |
+
+## 2026-09-18 — Grounded fact extraction v1 (Lanes A+B+C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / IBP facts SUT |
+| **Summary** | Added generic admitted-evidence fact extraction (`question_class` handlers → structured facts → answer or UNKNOWN) and wired `run_ibp_facts_sut` factual protocol path; bumped facts SUT profile to `imp.ibp-facts-sut/1.1.0`. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/grounded_fact_extraction/*`, `facts_sut.py`, `sut_profiles.py`, `tests/intelligence/test_grounded_fact_extraction_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_extraction/*`, nonstub freeze fingerprint refresh |
+| **Tests** | `unittest tests.intelligence.test_grounded_fact_extraction_v1` + M4 evaluator (28 OK); `python tools/imp.py validate changed` PASSED (3656 tests) |
+| **Related** | `LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1`, `LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1`, `LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1` |
+| **Notes** | No smoke rerun on integration; historical smoke receipt retained (`ibp-factual-smoke-766E16CAF41F3210`); no evaluator gold read; no Full30; merged #282 |
+
+## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/intelligence-benchmark`, `docs/platform`, `docs/engineering` |
+| **Summary** | Post–[#280](https://github.com/AdamEddahmouni/market-trading-platform/pull/280) findings lane: registered eight observations from `RUN_ID` `ibp-factual-smoke-28EA7748057E312D` (facts FAIL 11/11; FACT_MISMATCH 5; UNNECESSARY_UNKNOWN 7; unknown_handling FAIL 7/4; other dimensions PASS 11/11). Ranked three **capability-gap** hypotheses only; closed `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1` at methodology observed. `SMOKE10_JUSTIFIED=YES` for `IBP_FACTUAL_SMOKE_V1` only; routing PASS not interpreted as SUT quality. |
+| **Key files** | `evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5-findings/*`; `docs/engineering/IMP_IBP_FACTUAL_GOLD_V1_LANE_M5_FINDINGS.md`; `docs/platform/PROGRAM_STATUS.md`; `tests/platform/test_imp_ibp_factual_gold_v1_lane_m5_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_ibp_factual_gold_v1_lane_m5_findings` |
+| **Related** | Baseline receipt `imp-ibp-factual-gold-v1-lane-m5/factual_smoke_baseline_evidence_receipt.json`; legacy stub `ibp-smoke10-76DDD188CD080365` |
+| **Notes** | `IMP_IBP_FACTUAL_GOLD_V1_SOFTWARE_LANDING_SHA=3aa87e51` — not this docs PR commit. `MERGE_PERFORMED=NO` pending independent review. No SUT gold patch, smoke rerun, #222 merge, or Item 9 mutation. |
+
+## 2026-09-18 — IBP factual smoke v1 Lane M5 baseline run (IMP-IBP-FACTUAL-GOLD-V1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `evidence/intelligence-benchmark` |
+| **Summary** | Lane M5: froze `IBP_FACTUAL_SMOKE_V1` at main `936e233` (11 answerable cases; `IBP-FACTUAL-EXCL-001` excluded) with all pre-run gates PASS, then executed exactly one factual smoke baseline (`RUN_ID` `ibp-factual-smoke-28EA7748057E312D`, `FULL30_EXECUTED=NO`). Contamination audit PASS; facts dimension FAIL 11/11 on grounded facts SUT (failures preserved). Legacy `ibp-smoke10-76DDD188CD080365` untouched. |
+| **Key files** | `tests/fixtures/intelligence_benchmark/freeze/ibp_factual_smoke_v1_freeze.json`; `evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/*`; `tools/benchmarks/run_ibp_factual_smoke_m5_lane.py` |
+| **Tests** | `python -m unittest tests.intelligence.test_ibp_admitted_factual_gold_m4_evaluator tests.intelligence.test_ibp_admitted_factual_gold_contract` — 25 OK |
+| **Related** | [IBP_ADMITTED_FACTUAL_GOLD_V1.md](IBP_ADMITTED_FACTUAL_GOLD_V1.md); Lane D receipt `imp-research-validation-04-lane-d-smoke10` |
+| **Notes** | `ITEM9_CALIBRATED=NO`; PR #222 isolated; evidence merged via [#280](https://github.com/AdamEddahmouni/market-trading-platform/pull/280) (`APPROVE_M5_EVIDENCE`); findings closeout is separate docs PR |
+
+## 2026-09-18 — IBP admitted factual gold M1 contract (IMP-IBP-FACTUAL-GOLD-V1 Phase 2)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `docs/engineering`, `manifests` |
+| **Summary** | Lane M1: versioned methodology contract `imp.ibp-admitted-factual-gold/1.0.0` / protocol `IBP_FACTUAL_SMOKE_V1` with validators, SUT/evaluator field partition, UNKNOWN verdict enum, temporal cutoff + contamination invariants, and empty protocol fixture (no cases, no Smoke10). Legacy `ibp-smoke10` stub gold untouched. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/admitted_factual_gold/*`; `manifests/intelligence_benchmark/schemas/ibp_admitted_factual_gold_protocol.schema.json`; `tests/fixtures/intelligence_benchmark/admitted_factual_gold/protocol_ibp_factual_smoke_v1_empty.json`; `tests/intelligence/test_ibp_admitted_factual_gold_contract.py`; `docs/engineering/IBP_ADMITTED_FACTUAL_GOLD_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_ibp_admitted_factual_gold_contract` — 10/10 OK; `python tools/imp.py format` / `lint` / `validate changed` |
+| **Related** | Hypothesis `LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1`; branch `research/ibp-admitted-factual-gold-v1-contract`; worktree `.worktrees/ibp-factual-gold-m1` |
+| **Notes** | M2 case builder may use validators, hashing, SUT projection, schema paths, empty protocol template. `REVIEW_VERDICT=APPROVE_M1_CONTRACT` pending independent review; `MERGE_PERFORMED=NO`. |
+
+## 2026-09-18 — NEXT_RTH runbook SHA reconcile (post–Lane F #275)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) operator SHA table with [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) after [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) / closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) and Lane F [#275](https://github.com/AdamEddahmouni/market-trading-platform/pull/275). **ITEM9_FROZEN_COLLECTOR** remains `fed2d9f7`; **ITEM9_CALIBRATED** unchanged. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | Lane F OpenD v3 status reconcile; IMP-EVIDENCE-HARDENING-02 Item 9 preflight [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) |
+| **Notes** | Software landing pin `e0ab919f`; no collector retarget; no RTH collection |
+
+## 2026-09-18 — OpenD v3 Lane F status reconcile (IMP-IBP-FACTUAL-GOLD-V1 Phase 1D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Reconciled stale `docs/opend-v3-status` narrative against landed `origin/main` @ `e0ab919f` ([#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274) findings, [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273) v3 evidence, [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) SUT, [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271) accounting). Pins `ACCOUNTING_ON_MAIN` / `V3_EVIDENCE_ON_MAIN` / `V3_FINDINGS_ON_MAIN` / `SUT_WIRING_ON_MAIN` = **YES**; `SMOKE10_EXECUTED=NO`; `V3_AUTHORITY=HISTORICAL_DEVELOPMENT`. **No** v3 rerun, Smoke10, collector mutation, or #222 merge. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_E_V3.md` |
+| **Tests** | `python -m unittest tests.platform.test_imp_integrate_experiment_05_lane_e_v3_findings`; `python tools/imp.py env`; `format` / `lint` / `validate changed` |
+| **Related** | Branch `docs/opend-v3-status-reconcile`; worktree `.worktrees/v3-status-docs`; superseded draft `docs/opend-v3-status` @ `97a8ec41` |
+| **Notes** | `IMP05_V3_SOFTWARE_LANDING_SHA=e0ab919f` — not the docs PR commit (avoid self-pin loop). Next: independent review, then Phase 2 M1 factual gold methodology contract. |
+
+## 2026-09-18 — Lane E v3 findings registry (OpenD fill economics)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `tests/platform` |
+| **Summary** | Registered bounded Lane E findings from immutable v3 pack `81EFC1B1…` (five AAPL sessions) and intelligence Smoke10 deferral (`SMOKE10_EXECUTED=NO`); closed `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` at machinery observation without edge/deployability language. v2 `E8C9ADB9…` and v3 execution receipts untouched. |
+| **Key files** | `evidence/historical-research/imp-integrate-experiment-05-lane-e-v3-findings/*`; `tests/platform/test_imp_integrate_experiment_05_lane_e_v3_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_integrate_experiment_05_lane_e_v3_findings` — 3/3 OK |
+| **Related** | Worktree `research/opend-v3-findings` from v3 HEAD `436a0ed7`; source run `research/opend-fill-economics-v3` |
+| **Notes** | No Smoke10 run; no v3 rerun; no PR #222/#267 merge. |
+
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B freeze + bounded performance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `intelligence/historical_research_harness`, `tools/research` |
+| **Summary** | Merged APPROVED Lane A accounting; promoted v3 pre-execution definition to `frozen_experiment_definition.json` with pinned dataset fingerprint; executed one canonical baseline pack + full deterministic rerun (`deterministic_rerun_match`: true). Contamination auditor PASS. v2 evidence untouched. |
+| **Key files** | `baseline_pack_v3.py`, `historical_baseline_pack_v3_cli.py`, `evidence/.../imp-integrate-experiment-05-r3-opend-fill-economics-v3/*` |
+| **Tests** | `unittest tests.platform.test_historical_baseline_pack_v3_prep`, `test_simulator_fill_economics_v3`; `python tools/imp.py validate changed` |
+| **Related** | `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`; `EXPERIMENT_HASH` `81EFC1B1…` |
+| **Notes** | Not profitable/validated/production. Item 9 not calibrated. |
+
+## 2026-09-18 — IBP facts SUT re-review hygiene (Lane C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering/lane-notes`, `ui_api/store`, tests |
+| **Summary** | Addressed independent re-review REQUEST_CHANGES without gaming gold: refreshed `imp-05-i1-nonstub-sut.md` (limitation, freeze `4720493F…`, 1/10 fixture coverage, synthetic gold vs grounded citations, Smoke10 not justified for facts); hardened `FIXTURE_REPLAY` against live promotion on `load_decoded_snapshot`; documented gold audit (10/10 synthetic). |
+| **Key files** | `imp-05-i1-nonstub-sut.md`, `store.py`, `test_replay_store_loading.py` |
+| **Tests** | `python -m unittest tests.validation.test_replay_store_loading`; `python tools/imp.py validate changed` |
+| **Related** | PR #272 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Notes** | Freeze `code_sha` remains `109fd650…` (SUT logic); no Smoke10/Full30. |
+
+## 2026-09-18 — IBP facts SUT historical evidence resolvers (Lane C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `ui_api/store`, tests |
+| **Summary** | Wired `build_historical_fixture_evidence_context` so `run_ibp_facts_sut` supplies MRA-001-style `resolve_explain` / `resolve_inspect` from Lane B historical fixtures via replay projections; fail-closed `UNKNOWN` when resolvers absent; regenerated nonstub Smoke10 freeze fingerprint. |
+| **Key files** | `historical_evidence_context.py`, `facts_sut.py`, `store.py` (`load_decoded_snapshot`), `sut_profiles.py`, `test_intelligence_benchmark_nonstub_sut_protocol.py`, `ibp_smoke10_nonstub_sut_freeze_v1.json` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_nonstub_sut_protocol` (14 OK); `python tools/imp.py validate changed` (3785 passed, 41 skipped) |
+| **Related** | PR #272 worktree `ui/nonstub-facts-sut-resolvers` |
+| **Notes** | Smoke10/Full30 not executed; limitation class `BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL`. |
+
+## 2026-09-18 — Fill economics V3 pre-fee gross (review fix)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Review found policy fees double-subtracted: ledger realized is post-fee while transaction_costs also summed commission/fees. Research gross now adds policy fees back once from ledger totals; net = gross − transaction_costs. ACCOUNTING_VERSION bumped to 3.0.1; fee regression tests added. |
+| **Key files** | `fill_economics.py`, `simulator.py`, `test_simulator_fill_economics_v3.py` |
+| **Tests** | `unittest tests.platform.test_simulator_fill_economics_v3` (17 OK); `validate changed` |
+| **Related** | `research/simulator-fill-economics-v3` follow-up to REQUEST_CHANGES |
+| **Notes** | `max_drawdown` / `coverage` labeled `RISK_PORTFOLIO_INHERITED`. V3 performance not executed. |
+
+## 2026-09-18 — Fill economics V3 simulator accounting (Lane A)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Prediction-coupled simulator research now applies fills through `portfolio.ledger.apply_fill` (weighted average cost basis), computes gross realized/unrealized PnL, and charges transaction costs from traded notional × bps plus policy fees—not from `abs(gross_pnl)`. Fail-closed invariants and unit/integration tests added for IMP-SIMULATOR-FILL-ECONOMICS-V3. |
+| **Key files** | `fill_economics.py` (new), `simulator.py`, `prediction_coupling.py`, `metrics.py`, `tests/platform/test_simulator_fill_economics_v3.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_fill_economics_v3` (14 OK); `python tools/imp.py validate changed` (2875 passed, 29 skipped) |
+| **Related** | Branch `research/simulator-fill-economics-v3` @ base `6d6b27de` |
+| **Notes** | `ACCOUNTING_VERSION` / `COST_MODEL_VERSION` / `SIMULATOR_VERSION` (`phase7.bar-conservative/1.1.0`) frozen for Lane B. `estimated_costs` retained as alias of `transaction_costs`. Open-position `max_drawdown` still from risk portfolio summary when present. |
+
+## 2026-09-18 — IMP-SIMULATOR-FILL-ECONOMICS-V3 Lane B pre-execution freeze prep
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Prepared v3 OpenD fill-economics experiment definition on branch `research/opend-fill-economics-v3`: pinned corpus fingerprint verified PASS, pre-execution freeze template and protocol committed with `PENDING_LANE_A` placeholders; no performance run. |
+| **Key files** | `evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/*`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md`; `tests/platform/test_historical_baseline_pack_v3_prep.py`; `evidence/.../lane-h-findings/hypothesis_queue_v1.json` |
+| **Tests** | `python tools/imp.py env` healthy; `python tools/imp.py test focused tests/platform/test_historical_baseline_pack_v3_prep.py` |
+| **Related** | [IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md](IMP_INTEGRATE_EXPERIMENT_05_LANE_B_V3_FILL_ECONOMICS.md); `LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3` |
+| **Notes** | Final `EXPERIMENT_HASH` blocked on Lane A accounting; v2 `E8C9ADB9…` evidence untouched. |
+
+## 2026-09-18 — IMP-INTEGRATE-AND-EXPERIMENT-05 Lane Docs status/documentation closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only orchestrator closure at **ENDING_MAIN** / **CURRENT_GIT_MAIN** `0fb32d44`: record IMP-RESEARCH-VALIDATION-04 **merged** @ `7d67d48e`; IMP-INTEGRATE-AND-EXPERIMENT-05 **partial** ([#266](https://github.com/AdamEddahmouni/market-trading-platform/pull/266) R1, [#268](https://github.com/AdamEddahmouni/market-trading-platform/pull/268) OpenD v2 **`BOUNDED_HISTORICAL_OBSERVATION`**, [#269](https://github.com/AdamEddahmouni/market-trading-platform/pull/269) Lane H); **OPEN** [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267) (review aborted — do not restart autonomously); non-stub Smoke10 **`NOT_EXECUTED`**; Full30 **`NOT_RUN`**; Item 9 **`NOT_CALIBRATED`** (**1**/3 RTH); #222 **isolated**. **No** merge #267/#222, collector mutation, Smoke10 fabrication, or Live enable. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed`; `check_docs_links.py` |
+| **Related** | IMP-INTEGRATE-AND-EXPERIMENT-05; branch `docs/imp-integrate-experiment-05-status`; [IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md](IMP_INTEGRATE_EXPERIMENT_05_LANE_H.md) |
+| **Notes** | Next engineering: **`LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3`**. Next intelligence: I1 then non-stub Smoke10; **not** Full30. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane G status/documentation closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Docs-only orchestrator closure at campaign **STARTING_MAIN** / **CURRENT_GIT_MAIN** `f31e30fa`: pin **CURRENT_SOFTWARE_IMPLEMENTATION** `a1b556f8`, **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`, **SEP15_FROZEN_EMPIRICAL** `7aade60`; record open lanes **A–E** ([#260](https://github.com/AdamEddahmouni/market-trading-platform/pull/260)–[#264](https://github.com/AdamEddahmouni/market-trading-platform/pull/264), [#263](https://github.com/AdamEddahmouni/market-trading-platform/pull/263)); honest gates (`ITEM9_CALIBRATED=NO`, **1/3** RTH dates, `PR222_MERGED=NO`); off-main preflight **`WRONG_RUNTIME`** + off-hours **`NOT_RTH`** expected. **No** lane merges, collector mutation, or Item 9 collection. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed`; `check_docs_links.py` |
+| **Related** | IMP-RESEARCH-VALIDATION-04; branch `docs/imp-research-validation-04-status` |
+| **Notes** | Recommended next: merge **#260→#261/#262→#264→#263**; fix Smoke10 `FACTS_MISMATCH`; freeze **`LANE-E-HYP-OPEND-MULTI-SESSION-V2`**; RTH Item 9 poll @ frozen collector only. |
+
+## 2026-09-18 — IMP-RESEARCH-VALIDATION-04 Lane E baseline findings queue
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `evidence/historical-research`, `docs/engineering` |
+| **Summary** | Structured findings (11) from Lane C baseline pack v1 and Lane D Smoke10 run observations; ranked hypothesis queue (6 proposed, not implemented). No baseline/Smoke10 config edits, retuning, or follow-up experiments. |
+| **Key files** | `evidence/historical-research/imp-research-validation-04-lane-e-findings/*`; `docs/engineering/IMP_RESEARCH_VALIDATION_04_LANE_E.md`; `tests/platform/test_imp_research_validation_04_lane_e_findings.py` |
+| **Tests** | `python -m unittest tests.platform.test_imp_research_validation_04_lane_e_findings` — 2/2 OK |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lanes C/D/B (read-only artifacts); BUILD 17 research experiment system |
+| **Notes** | Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. Language: historical observation / candidate hypothesis only. |
+
+## 2026-09-18 — IMP-RESEARCH-VALIDATION-04 Lane C baseline pack integrity fix
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `evidence/historical-research`, `tools/research` |
+| **Summary** | Independent review request-changes: frozen experiment definitions now fail closed on hash tampering (always recompute canonical payload hash), git-tracked receipts under `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/`, operator interpretation notes for fixture-pathological metrics and simulator/predictor decoupling (no baseline retune). |
+| **Key files** | `baseline_pack.py`, `historical_baseline_pack_v1_cli.py`, `test_historical_baseline_pack_v1.py`, `evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/*` |
+| **Tests** | `python -m unittest tests.platform.test_historical_baseline_pack_v1`; `python tools/research/historical_baseline_pack_v1_cli.py --frozen-definition evidence/.../frozen_experiment_definition.json` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane C; reviewer `e50cef56-dc4f-4544-a5d7-fe5db9d32433` |
+| **Notes** | **EXPERIMENT_HASH** unchanged (`C2E706…`) — strategy/dataset payload unchanged; `research_code_sha` in frozen file remains base pin `f31e30f` while execution SHA recorded in pack manifest/receipt. Lane F WORK_LOG heading preserved. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane B real historical provider verification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development`, `tools/historical_data` |
+| **Summary** | Bounded OpenD verification for AAPL 1m RTH (5 sessions) via `verify_real_historical_providers.py`; fail-closed IBKR gate when TWS/4001 closed and `IMP_IBKR_LIVE` unset. **HISTORICAL_DEVELOPMENT** only; Item 9 admission refused. |
+| **Key files** | `src/market_platform_foundation/market_data/historical_development/real_provider_verification.py`, `tools/historical_data/verify_real_historical_providers.py`, `tests/platform/test_real_historical_provider_verification.py` |
+| **Tests** | `python -m unittest tests.platform.test_real_historical_provider_verification` — 6 passed; `python tools/imp.py validate changed` — 1899 passed, 3 skipped |
+| **Related** | IMP-DUAL-CORPUS-01 Lane B builder; `tools/ibkr/verify_historical_trades_provider.py` |
+| **Notes** | Worktree `.worktrees/imp-04-lane-b-provider` @ branch `data/real-historical-verification`. Verified corpus under `artifacts/historical-rth-development-real-provider-verification/`. Frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane D Smoke10 baseline + evidence pin
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `evidence` |
+| **Summary** | Added governed Smoke10 baseline execution (`smoke10-run`) and git-tracked baseline receipts under `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/` pinning RUN_ID `ibp-smoke10-76DDD188CD080365`, frozen config `76DDD188…`, contamination PASS, and per-dimension summaries (no rescoring). Rebased onto Lane A `c2ac4c59` (Lane F WORK_LOG heading preserved). |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/smoke10_*.py`, `synthetic_sut.py`; `evidence/intelligence-benchmark/imp-research-validation-04-lane-d-smoke10/*`; `tools/benchmarks/intelligence_cli.py`; `tests/intelligence/test_intelligence_benchmark_smoke10_execution.py` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter`; `python tools/imp.py validate changed` |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane D; reviewer `114aef56-8cd5-41a4-bdcf-d272c1e0889b`; Lane A `c2ac4c59`; branch `benchmarks/smoke10-baseline` |
+| **Notes** | Canonical Smoke10 = `IBP-CASE-001`…`010`. Baseline stub `UNKNOWN` → 10× `facts` FAIL (`FACTS_MISMATCH`); scores frozen in pinned JSON. Ephemeral harness paths redacted in run record. Full30 not executed. Frozen collector untouched. |
+
+## 2026-09-17 — IMP-RESEARCH-VALIDATION-04 Lane A result_kind fail-closed
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | IBP historical manifest admissibility now requires an explicit `simulator.result_kind` of `SIMULATOR_RESEARCH_RESULT`; absent or unknown kinds fail closed so historical simulator output cannot be ingested without an explicit research contract. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/contamination.py`; `tests/intelligence/test_intelligence_benchmark_harness_adapter.py`; `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
+| **Tests** | `.venv\\Scripts\\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_harness_adapter` — 10 passed; `python tools/imp.py validate changed` — PASSED 3529 tests, 0 failures |
+| **Related** | IMP-RESEARCH-VALIDATION-04 Lane A; IMP-OFFHOURS-RESEARCH-03 Lane E; branch `benchmarks/result-contract-hardening` |
+| **Notes** | Evidence class remains `HISTORICAL_DEVELOPMENT` only; no Item 9 / FTEP / Live upgrade paths. |
+
+## 2026-09-18 — IMP-OFFHOURS-RESEARCH-03 Lane F next-RTH dry preflight
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `tools` |
+| **Summary** | Off-hours dry verification from worktree @ **CURRENT_MAIN** `19a5ebd5`: `imp.py item9 next-rth-preflight --json` shows `rth_active=false`, `process_probe_status=COMPLETED`, no active collector, receipt path gate OK; disposition `WRONG_RUNTIME` honest for software SHA vs **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. Closed process-probe nit: subprocess listing stays in tools wrapper ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); governed library `NOT_RUN` without injection is intentional. `tools/item9.py` now delegates preflight to tools wrapper. **COLLECTION_STARTED=NO.** |
+| **Key files** | `docs/engineering/{ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF,NEXT_RTH_CAMPAIGN_RUNBOOK,WORK_LOG}.md`; `docs/platform/PROGRAM_STATUS.md`; `tools/item9.py` |
+| **Tests** | `python tools/imp.py item9 next-rth-preflight --json` (off-hours); `item9_corpus_status.py corpus-status` (local receipt dir empty; canonical gate still **1/3** distinct RTH dates per PROGRAM_STATUS — not fabricated) |
+| **Related** | IMP-OFFHOURS-RESEARCH-03; branch `ops/item9-next-rth-final-check` |
+| **Notes** | No `--poll`, receipts, or frozen-collector edits. |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane E IBP harness integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol`, `tools/benchmarks`, `docs` |
+| **Summary** | Added minimal greenfield Intelligence Benchmark Protocol v1 adapter from Lane B `historical_research_run_manifest_v1` to IBP run records with contamination stripping, 30-case catalog + Smoke10 invocation contract (no scores executed), and `imp benchmark intelligence` CLI. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/*`, `tools/benchmarks/intelligence_cli.py`, `tests/fixtures/intelligence_benchmark/ibp_suite_catalog_v1.json`, `tests/intelligence/test_intelligence_benchmark_harness_adapter.py`, `docs/engineering/IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_harness_adapter` — 6/6 OK |
+| **Related** | [IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md](IMP_OFFHOURS_RESEARCH_03_BENCHMARK_HARNESS_INTEGRATION.md), Lane B [#256](https://github.com/AdamEddahmouni/market-trading-platform/pull/256) |
+| **Notes** | `BENCHMARK_SMOKE10_READY=YES` when catalog + adapter wiring pass; full 30-case benchmark scores **not** run. Branch `benchmarks/intelligence-harness-integration` stacked on `research/historical-harness-v1`. |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane C multi-session historical expansion
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development`, `tools/historical_data`, IBKR observational pagination |
+| **Summary** | Bounded multi-session RTH historical-development builds now record `interval.session_dates`, per-session quality summaries, deterministic raw `time_key` ordering before normalization, and richer CLI deliverable JSON (`provider_availability`, session counts, fingerprints). IBKR trade pagination fails closed on same-timestamp full pages (`SUSPECTED_SAME_TIMESTAMP_TRUNCATION`). |
+| **Key files** | `market_data/historical_development/{builder,rth_session,quality}.py`; `tools/historical_data/build_cli.py`; `providers/ibkr_observational/historical_trades_pagination.py`; `tests/platform/test_historical_multi_session_build.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md` |
+| **Tests** | `unittest` historical multi-session + session quality + g11 pagination suites; `python tools/imp.py validate changed` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03; IMP-DUAL-CORPUS-01 Lane B |
+| **Notes** | Branch `data/historical-development-expansion`; holidays/early closes operator-declared only. |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 historical research harness v1
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness`, `tools/historical_data`, `docs/engineering` |
+| **Summary** | Reusable historical development research pipeline: dataset → PIT features → chronological train/dev-validate/research-test splits → momentum challenger → paper simulator research result → component metrics → `historical_research_run_manifest_v1` with deterministic fingerprints. Authority remains `HISTORICAL_DEVELOPMENT`; labels distinct from POST_HORIZON; holdout consumption fails closed. |
+| **Key files** | `src/market_platform_foundation/intelligence/historical_research_harness/*`, `tools/historical_data/harness_cli.py`, `tools/imp.py`, `tests/platform/test_historical_research_harness.py`, `docs/engineering/IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Tests** | `python -m unittest tests.platform.test_historical_research_harness` (see validation) |
+| **Related** | [#246](https://github.com/AdamEddahmouni/market-trading-platform/pull/246) Lane D demo, `IMP_OFFHOURS_RESEARCH_03_HISTORICAL_HARNESS.md` |
+| **Notes** | Branch `research/historical-harness-v1`; no Item 9 calibration; no PROGRAM_STATUS SHA loop |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 research contamination auditor (Lane D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `tools/research` |
+| **Summary** | Added reusable research-run contamination auditor composing dual-corpus admission/consumption gates with contractual train/test, feature cutoff, holdout, authority-mixing, fingerprint, and Item 9 admission checks. Emits `CONTAMINATION_STATUS` PASS/FAIL with five canonical questions and evidence language (`AUTHORITY`, `ITEM9_EFFECT`). |
+| **Key files** | `dual_corpus/{contamination_auditor,leak_audit,run_manifest}.py`; `tools/research/audit_research_contamination.py`; `tests/platform/test_research_contamination_auditor.py`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md` |
+| **Tests** | `python tools/imp.py` format/lint/validate changed; `unittest` `test_research_contamination_auditor` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane D; dual-corpus contract |
+| **Notes** | Contractual leakage properties only; no frozen receipts or Item 9 calibration changes. |
+
+## 2026-09-17 — IMP-OFFHOURS-RESEARCH-03 Lane A holdout guard closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, `intelligence/training`, `intelligence/promotion`, `tests/platform` |
+| **Summary** | Closed residual training/selection holdout leakage paths: `build_dataset_from_examples`, `build_distillation_dataset`, BUILD 18 sklearn trainers (manifest + baseline), and promotion challenger registration now fail closed on `UNTOUCHED_FORWARD_EVALUATION` / taxonomy-derived protected authorities. Evaluation-only holdout use (validation metrics, promotion ranking) unchanged. |
+| **Key files** | `dual_corpus/consumption.py`; `training/{datasets,distillation/dataset,trainers/sklearn_*.py}`; `promotion/engine.py`; `tests/platform/test_holdout_consumption_guards.py` |
+| **Tests** | `python tools/imp.py test focused test_holdout_consumption_guards`; `format`; `lint`; `validate changed` |
+| **Related** | IMP-OFFHOURS-RESEARCH-03 Lane A; IMP-EVIDENCE-HARDENING-02 Lane B baseline guards |
+| **Notes** | No Item 9 split or #222 changes; repository-backed training manifest load at validation remains governed separately (`verify_training_dataset_fingerprint`). |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane F docs/status hygiene
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Post–dual-corpus + hardening docs sync: distinguish **CURRENT_MAIN** vs **CURRENT_SOFTWARE_IMPLEMENTATION** vs frozen **ITEM9_FROZEN_COLLECTOR** / **SEP15_FROZEN_EMPIRICAL_AUTHORITY** in `PROGRAM_STATUS` v1.40; refresh [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) (was anchored to `6e9e88b`/`73da9fdb`); update Notion-sync summary and Lane C pagination note ([#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252)). Item 9 gates and #222 isolation unchanged; no receipt or collector retarget. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/{WORK_LOG,NEXT_RTH_CAMPAIGN_RUNBOOK,IMP_DUAL_CORPUS_01_NOTION_SYNC,IMP_DUAL_CORPUS_01_LANE_C}.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` / `check_docs_links` as applicable |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane F; **CURRENT_SOFTWARE_IMPLEMENTATION** `a1b556f8` ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)) |
+| **Notes** | Docs-only; does not advance **CURRENT_SOFTWARE_IMPLEMENTATION** when merged. |
+
+## 2026-09-17 — Item 9 next-RTH preflight CI fixes (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `docs` |
+| **Summary** | PR #251 review fixes: moved OS process listing for duplicate `--poll` detection from governed `src/` into `tools/item9_next_rth_preflight.py`; classified new Item 9 CLIs in repository-closure audit. Preflight behavior unchanged (read-only, six dispositions). |
+| **Key files** | `item9_next_rth_preflight.py` (src + tools), `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `phase0/test_analysis`, `validation/test_repository_closure`, `test_item9_next_rth_preflight`; `validate changed` |
+| **Related** | PR #251; IMP-EVIDENCE-HARDENING-02 Lane E |
+| **Notes** | Collector / OpenD poll modules untouched. |
+
+## 2026-09-17 — Item 9 next-RTH preflight (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `docs` |
+| **Summary** | Added read-only Item 9 `next-rth-preflight` (library + CLI + `imp.py item9`) for next-RTH prospective collection readiness: RTH calendar, OpenD reachability, frozen collector authority `fed2d9f7…`, receipt path gate, duplicate `--poll` detection, governed invocation hints, and post-run `corpus-status` command. Does not run prospective collection or fit calibration. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/item9_next_rth_preflight.py`, `tools/item9_next_rth_preflight.py`, `tools/item9.py`, `tools/imp.py`, `tests/platform/test_item9_next_rth_preflight.py`, `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python tools/imp.py test focused test_item9_next_rth_preflight`; `validate changed` (PR) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane E; frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` |
+| **Notes** | Collector semantics unchanged — preflight is observability only. |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane B holdout guard hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration/dual_corpus`, intelligence training/production/fusion |
+| **Summary** | Expanded fail-closed `UNTOUCHED_FORWARD_EVALUATION` (and taxonomy-derived forward holdout authorities) guards across Path A production fit/calibrate, BUILD 08 baseline fit, BUILD 14 calibration trainer, BUILD 18 training factory/materialization, and hyperparameter grid expansion. Evaluation-only surfaces (validation inference, calibration apply, promotion ranking) remain unblocked. |
+| **Key files** | `paper/calibration/dual_corpus/consumption.py`; `intelligence/production/{training_build,model,calibrator}.py`; `intelligence/fusion/calibrators.py`; `intelligence/baselines/{training,controls/*}.py`; `intelligence/training/{factory,datasets,search,trainers/*}.py`; `tests/platform/test_holdout_consumption_guards.py` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` (4128 passed, 30 skipped); `unittest` `test_holdout_consumption_guards` + `test_dual_corpus_contamination` (26 passed) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane B; dual-corpus contract |
+| **Notes** | Item 9 split logic untouched; no #222 merge. |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane A Path A label linker
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, `paper/calibration` |
+| **Summary** | Added fail-closed Path A linkage from Item 9 prospective receipts to post-horizon TRADE label evidence IDs without mutating source observation hashes or embedding labels into feature payloads. `build_dataset_row` optionally populates `path_a_label_evidence_ids` when lawful label artifacts are supplied. |
+| **Key files** | `src/market_platform_foundation/intelligence/outcomes/path_a_label_linker.py` (created); `src/market_platform_foundation/paper/calibration/item9_calibration_protocol.py`; `tests/intelligence/test_path_a_label_linker.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Tests** | `unittest` `test_path_a_label_linker` + `test_item9_calibration_protocol` + `test_post_horizon_label_evidence` **44 passed**; `python tools/imp.py validate changed` **3901 passed**, 29 skipped, 0 fail |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane A; `IMP_DUAL_CORPUS_01_LANE_C.md` |
+| **Notes** | No #222 file overlap. Item 9 remains NOT_CALIBRATED; no fitting or gate changes. |
+
+## 2026-09-17 — IMP-EVIDENCE-HARDENING-02 Lane D session calendar + quality schema
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `market_data/historical_development` |
+| **Summary** | Historical RTH builds now treat declared early-close dates as short tradable sessions (210 expected 1m bars, 13:00 ET close) instead of excluding them or assuming 390-minute grids. Quality reports expose machine-readable session/row counters, session-kind-aware missing intervals, and `quality_status` while preserving legacy v1 field names. |
+| **Key files** | `market_data/historical_development/rth_session.py`, `quality.py`, `builder.py`, `shadow/session.py`, `tests/platform/test_historical_session_quality.py`, `docs/engineering/IMP_DUAL_CORPUS_01_LANE_B_HISTORICAL_RTH.md` |
+| **Tests** | `unittest` historical/session suites (24 OK); `python tools/imp.py validate changed` (1842 passed, 3 skipped) |
+| **Related** | IMP-EVIDENCE-HARDENING-02 Lane D; IMP-DUAL-CORPUS-01 Lane B |
+| **Notes** | Shadow-run preflight still excludes early-close dates from full-grid capture; historical development uses `rth_session` session-kind classification. |
+
+## 2026-09-17 — PROGRAM_STATUS after IMP-DUAL-CORPUS-01 #246 merge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pin `PROGRAM_STATUS` v1.39 to `origin/main` `da237fd14fa60117c50952de79bc20acdad1454d` after optional [#246](https://github.com/AdamEddahmouni/market-trading-platform/pull/246) Lane D (`92d7396e`) **`HISTORICAL_DEVELOPMENT_ONLY`** fixture e2e demo — **not** prospective, **not** `CALIBRATED`, **not** Item 9 evidence. Item 9 protocol floors unchanged; #222 remains isolated; no Moomoo/IBKR live verified claims. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format`; `python tools/imp.py lint`; `python tools/imp.py validate changed`; `python tools/check_docs_links.py` |
+| **Related** | [IMP_DUAL_CORPUS_01_HISTORICAL_DEMO.md](IMP_DUAL_CORPUS_01_HISTORICAL_DEMO.md); branch `docs/program-status-after-246` |
+| **Notes** | Docs-only follow-up to merged #246; frozen collector SHA `fed2d9f7` unchanged. |
+
+## 2026-09-17 — IMP-DUAL-CORPUS-01 PR D docs/status sync
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, dual-corpus architecture |
+| **Summary** | Pin `PROGRAM_STATUS` v1.38 to `origin/main` `84d197d2` after IMP-DUAL-CORPUS-01 [#242](https://github.com/AdamEddahmouni/market-trading-platform/pull/242)–[#244](https://github.com/AdamEddahmouni/market-trading-platform/pull/244). Record dual-corpus authority boundaries, Item 9 `NOT_CALIBRATED` sample-gate honesty (floors 20/3/5; epoch **1**/1 below gate), Phase 5.5B #196 superseded by #224, #222 isolated. Add Notion sync summary markdown. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md`; `docs/README.md`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_{A_RECON,B_HISTORICAL_RTH,C}.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/imp.py format`; `lint`; `validate changed` (docs-heavy) |
+| **Related** | [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](IMP_DUAL_CORPUS_01_NOTION_SYNC.md); branch `docs/dual-corpus-status-sync` |
+| **Notes** | Did not recalibrate Item 9, merge #222, or mutate frozen receipts. Item 9 counts from canonical PROGRAM_STATUS + protocol constants; operator receipt dir not re-scanned in CI. |
+
+## 2026-09-17 — Lane C post-horizon review fixes + main merge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/outcomes`, IBKR observational query |
+| **Summary** | Merged `main` @ `859251ae` (dual-corpus #242) into PR #244; fail-closed IBKR historical TRADE fetch when post-horizon timing omitted; `NO_ELIGIBLE_TRADE` provenance uses filtered terminal candidates only. Item 9 remains `NOT_CALIBRATED`; frozen empirical artifacts untouched; IBKR live still `PROVIDER_UNVERIFIED`. |
+| **Key files** | `providers/ibkr_observational/query_provider.py`; `intelligence/outcomes/label_evidence.py`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_C.md`; `tests/providers/test_g11_historical_trades.py`; `tests/intelligence/test_post_horizon_label_evidence.py` |
+| **Tests** | `imp.py format` + `lint` pass; `test affected` / `validate changed` — 0 selected (clean vs merge-base in worktree); focused review tests — **3 passed**, 0 fail |
+| **Related** | PR #244 `intelligence/post-horizon-label-evidence` |
+| **Notes** | PR #244 not merged; Item 9 linker / feature-pipeline wiring / >1000 tick pagination still deferred. |
+
+## 2026-09-17 — Item 9 persist stamps prospective corpus authority
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration` |
+| **Summary** | `persist_receipt` now stamps `corpus_evidence_authority=PROSPECTIVE_FEATURE_EVIDENCE` on new Mode B prospective writes when the field is absent, without upgrading an explicit `HISTORICAL_DEVELOPMENT` stamp. Historical-development output dirs remain refused; frozen `item9-prospective-proof-receipts` artifacts not rewritten. Item 9 stays `PARTIAL_NOT_CALIBRATED`. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py`; `tests/platform/test_dual_corpus_contamination.py` |
+| **Tests** | `imp.py test focused` (3 new persist tests, 3 passed); `imp.py validate changed` — **3810 passed**, 29 skipped, 0 fail |
+| **Related** | PR #242 branch `data/dual-corpus-contract` |
+| **Notes** | Retrospective transport receipts unchanged (no authority stamp). |
+
+## 2026-09-17 — IMP-DUAL-CORPUS-01 Lane A evidence contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, architecture docs |
+| **Summary** | Land dual-corpus authority taxonomy (`HISTORICAL_DEVELOPMENT`, prospective/post-horizon/untouched classes), versioned historical dataset manifest + provenance validators, Item 9 discovery/persist contamination guards, and training consumption protection for `UNTOUCHED_FORWARD_EVALUATION`. Item 9 remains `PARTIAL_NOT_CALIBRATED`; frozen empirical artifacts untouched. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/dual_corpus/*`; `bar_ohlcv_prospective_proof.py`; `intelligence/production/training_build.py`; `docs/architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md`; `docs/engineering/IMP_DUAL_CORPUS_01_LANE_A_RECON.md`; `manifests/paper/schemas/historical_development_dataset_manifest.schema.json`; `tests/platform/test_dual_corpus_contamination.py` |
+| **Tests** | `python tools/imp.py test affected` + `validate changed` — **3847 passed**, 29 skipped, 0 fail |
+| **Related** | Branch `data/dual-corpus-contract`; [DUAL_CORPUS_EVIDENCE_CONTRACT.md](../architecture/DUAL_CORPUS_EVIDENCE_CONTRACT.md) |
+| **Notes** | Lane B historical CLI and Lane C post-horizon label artifacts deferred. Compatible with unmerged `item9_calibration_protocol` worktree. |
+
+## 2026-09-17 — PROGRAM_STATUS SHA classes: git tip vs frozen collector
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Distinguish **current git `origin/main` tip** `03cd7280` (#238/#239/#240/#237) from the **frozen collector / evidence** SHA `fed2d9f7` (Sep 17 Mode B epoch through 16:00 ET) and the Sep 15 **historical pin** `7aade60b`. Item 9 stays **PARTIAL** / **NOT_CALIBRATED**; Item 7 stays **`ITEM7_PENDING_NATURAL_EVIDENCE`**. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `python tools/check_docs_links.py` |
+| **Related** | [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); prior 2026-09-17 canonical-SHA entry |
+| **Notes** | Docs-only. Did not retarget the collector, rewrite receipts, calibrate, or touch Item 7 / PR #222. |
+
+## 2026-09-17 — PROGRAM_STATUS canonical SHA after IMP-ACTUAL-01
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin **current Canonical** `origin/main` SHA to `fed2d9f7e183aecfcac61a7664df69aafc12ea25` (merge tips [#236](https://github.com/AdamEddahmouni/market-trading-platform/pull/236) `fed2d9f7`, [#235](https://github.com/AdamEddahmouni/market-trading-platform/pull/235) `e2c55dd4`, [#234](https://github.com/AdamEddahmouni/market-trading-platform/pull/234) `f47b449a`). Distinguish that SHA from the Sep 15 **historical pin** `7aade60b…` and from **empirical observation** receipt `runtime_git_sha` values (`aae13fd1…` PATH_PROOF_ONLY; `fed2d9f7…` phase-d Mode B). Item 9 stays **PARTIAL** / **NOT_CALIBRATED**; Item 7 stays **`ITEM7_PENDING_NATURAL_EVIDENCE`**. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `python tools/imp.py format`; `python tools/check_docs_links.py` |
+| **Related** | [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md); IMP-ACTUAL-01 Phase A/B/C entries below |
+| **Notes** | Did not calibrate, collect receipts, touch Item 7 / PR #222 / `item7/natural-settlement`, or mutate Sep 17 / Phase D receipt files. |
+
+## 2026-09-17 — Offline unit-test environment hermeticity (Lane B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `backend` |
+| **Summary** | Offline provider/platform tests no longer assume OpenD is down on default loopback or that ``moomoo-api`` is absent. Unit cases inject unreachable loopback ports and explicit SDK-absence patches; live loopback reachability moved to ``tests/live_moomoo`` behind ``IMP_MOOMOO_LIVE``. Service-health unit probe uses an ephemeral port plus injected HTTP probe. SQLite forward-test repos and ``LocalStateConnection`` close before temp-dir cleanup on Windows. |
+| **Key files** | `tests/support/hermetic_environment.py`; `tests/providers/test_moomoo_opend_primary_l1.py`; `tests/providers/test_opend_hop_interpreter.py`; `tests/platform/test_service_health.py`; `tests/platform/test_calibration_harness.py`; `tests/validation/test_offline_environment_hermeticity.py`; `src/market_platform_foundation/local_state/connection.py`; `src/market_platform_foundation/intelligence/paper_forward_bridge/sqlite_repository.py` |
+| **Tests** | Focused unittest on changed modules; `imp.py validate fast` |
+| **Related** | IMP-NEXT Lane B; Item 9 collector may keep OpenD on ``127.0.0.1:11111`` |
+| **Notes** | Did not stop the collector, mutate Item 7/9 evidence, or merge. |
+
+## 2026-09-17 — Lab Chart Lab accessibility polish
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Closed known Lab defects without redesign: Chart Lab tick/backfill and LinkTabs reach the 44px touch floor (including BP_SM), Lab/chart-lab muted/meta copy uses `--imp-text-md` instead of 13px `--imp-text-sm`, and the inner Vela heading is an `h3` aligned with CSS. Canonical `/lab/chart-lab` and `/research/vela-chart-lab` redirect unchanged. |
+| **Key files** | `ui/src/styles/lab.css`; `ui/src/styles/imp-vela-chart-lab.css`; `ui/src/components/imp-ui/imp-ui.css`; `ui/src/components/charts/ImpVelaChartLabPage.tsx`; `ui/src/components/lab-shared/labAccessibilityContract.test.ts`; `ui/src/App.test.tsx` |
+| **Tests** | Focused UI: 100/100 (`labAccessibilityContract`, `impVelaLazyRoute`, `imp-ui`, `App.test` including `/research/vela-chart-lab` redirect). `npm run typecheck` pass. `npm run build` **200.66 KiB gzip** initial JS (budget 203 KiB unchanged). |
+| **Related** | [ACCESSIBILITY.md](ACCESSIBILITY.md); [pages/lab.md](../ui-redesign-v2/pages/lab.md) |
+| **Notes** | Browser on `/lab/chart-lab` (vite preview): tick/backfill and LinkTabs measured 44px at 760 and 390; muted/meta 14px; headings `h1` Lab / `h2` playground / `h3` Vela; backfill 120→170; no page overflow at 390. Vela vendor toolbar targets unchanged. Global `--imp-text-sm` unchanged. Item 7/9 out of scope. |
+
+## 2026-09-17 — Item 9 read-only corpus-status CLI (Lane D)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, `tools`, `tests/platform` |
+| **Summary** | Added governed-receipt corpus status and validation helpers on the frozen Item 9 calibration protocol, plus `tools/item9_corpus_status.py` (`corpus-status`, `classify`, `validate`) for operator read-only scans of `artifacts/ftep-v1-002/item9-prospective-proof-receipts/*.json` with sample-gate progress (never fits or writes receipts). |
+| **Key files** | `item9_calibration_protocol.py`, `tools/item9_corpus_status.py`, `tests/platform/test_item9_corpus_status_cli.py`, `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json` |
+| **Tests** | `python -m unittest tests.platform.test_item9_corpus_status_cli tests.platform.test_item9_calibration_protocol` |
+| **Related** | `ITEM9_CALIBRATION_PROTOCOL_V1.md`, Item 7 `item7_corpus_collector.py` (separate semantics) |
+| **Notes** | Skipped OpenD readiness sidecar (PR #236); not needed for JSON receipt scans. Classified `tools/item9_corpus_status.py` under `qualification-and-operations-tooling` after CI `unclassified path` on `validate-python-changed`. |
+
+## 2026-09-17 — Item 9 Mode B OpenD quote-context reuse (IMP-ACTUAL-01 Phase B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 OpenD transport |
+| **Summary** | Mode B `--poll` reuses one loopback OpenD quote context for the bounded run (open on first fetch, `finally` close on success/timeout/fail-closed exit). Each poll step still issues one `request_history_kline`; PIT, receipt schema, `raw_provenance_hash`, and fail-closed semantics unchanged. Single-shot `display`/non-poll loads remain open/close per call. |
+| **Key files** | `tools/moomoo/opend_quote_transport.py` (`OpendQuoteKlineSession`); `bar_ohlcv_sources.py`, `bar_ohlcv_prospective_proof.py`; `ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md`; `tests/providers/test_opend_history_kline_1m.py`, `tests/platform/test_bar_ohlcv_prospective_proof.py` |
+| **Tests** | `unittest` `test_bar_ohlcv_prospective_proof` + `test_opend_history_kline_1m` (46 OK); platform `test_bar_ohlcv*` (41 OK); `imp.py format`/`lint` OK |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); Phase A PR #234; base includes Phase C PR #235 (`e2c55dd4`) |
+| **Notes** | Item 9 remains `NOT_CALIBRATED`; Item 7 `ITEM7_PENDING_NATURAL_EVIDENCE`. No calibration, no new prospective receipts. Live reconnect smoke not claimed. |
+
+## 2026-09-17 — Governed JSONL discovery scope (IMP-ACTUAL-01 Phase C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `intelligence`, `docs` |
+| **Summary** | Item 7 corpus status no longer recursively scans `artifacts/**/*.jsonl` or `.local/**/*.jsonl`; governed outcome discovery is limited to known `intelligence_records.jsonl` paths under `IMP_STATE_DIR`. Non-governed local JSONL is ignored; governed UTF-8 violations and malformed lines fail closed with explicit errors. |
+| **Key files** | `src/market_platform_foundation/intelligence/production/governed_jsonl_discovery.py` (created); `corpus_collector.py`, `corpus_persistence.py`, `corpus_collection_status.py`; `tests/intelligence/test_governed_jsonl_discovery.py`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/imp.py test focused tests/intelligence/test_governed_jsonl_discovery.py`; `test_item7_corpus_collector.py`; `validate changed` |
+| **Related** | IMP-ACTUAL-01 Phase C; Phase A `f47b449a` (PR #234) |
+| **Notes** | Item 7 remains `ITEM7_PENDING_NATURAL_EVIDENCE`; no settlement or corpus minting. |
+
+## 2026-09-17 — Item 9 governed calibration protocol V1 (ITEM9-02)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — `ITEM9_CALIBRATION_PROTOCOL_READY`; Item 9 remains `PARTIAL / NOT_CALIBRATED` |
+| **Area** | `paper/calibration`, Item 9 |
+| **Summary** | Froze Item 9 calibration protocol/schema/tests without fitting. Path A 5m labels remain TRADE-only (bars cannot compose them). Future Mode B receipts hash fetched kline rows; the 2026-09-17 path-proof receipt is immutable and `PATH_PROOF_ONLY` due to SHA256(`[]`). |
+| **Key files** | `docs/architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md`; `manifests/paper/item9_calibration_dataset_v1.json`; `src/market_platform_foundation/paper/calibration/item9_calibration_protocol.py`; `bar_ohlcv_sources.py`; `bar_ohlcv_prospective_proof.py`; `tests/platform/test_item9_calibration_protocol.py` |
+| **Tests** | `PYTHONPATH=src` venv 3.11 `unittest tests.platform.test_item9_calibration_protocol tests.platform.test_bar_ohlcv_prospective_proof` → **42 passed**. `imp.py format` / `lint` pass. `check_docs_links.py` **OK 227 files**. `validate changed` **3779 / 29 skip / 12 fail / 5 err** — OpenD-live + SDK-present provider tests, port-bound health, and Windows SQLite temp cleanup; not Item 9 protocol regressions. |
+| **Related** | [ITEM9_CALIBRATION_PROTOCOL_V1.md](../architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md); Sep 17 `ITEM9_PROSPECTIVE_BAR_PATH_PROVEN` |
+| **Notes** | Did not calibrate, did not edit the Sep 17 receipt, did not touch Item 7 / PR #222. Connect-churn left as a separate increment. |
+
+## 2026-09-16 — UIR-01 Increment H: Lab experimental workbench
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Landed `/lab` as IMP's operator experimental workbench on current contracts: Overview, Validation, Simulation, and Chart Lab. Research keeps interpretation of the same `/research/models` and `/research/simulation` GETs. No Lab mutations. FTEP and hypotheses remain explicit gaps. `/lab`→`/research` redirect removed; `/research/vela-chart-lab` redirects to `/lab/chart-lab`. |
+| **Key files** | Created: `docs/ui-redesign-v2/lab-contract-map.md`; `ui/src/components/lab-shared/*`; `ui/src/components/{demo,paper,live}-lab/*`; `ui/src/components/ModeLabRoute.tsx`; `ui/src/styles/lab.css`. Modified: `App.tsx`, `App.test.tsx`, `NavShell.tsx`(+test), `ModeResearchRoute.tsx`, Research validation/simulation/overview (Lab handoff links), `ImpVelaChartLabPage.tsx`, `impVelaLazyRoute.test.ts`, `FRONTEND_GUIDE.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/lab.md`, `information-architecture.md`, `research-contract-map.md`, `migration-map.md`. |
+| **Tests** | Env healthy (worktree). Format pass. Lint/typecheck pass. `ui` vitest **740/740**, build initial **200.66 KiB gzip** (budget 203). `test affected` / `validate changed` **80/80** with CPython 3.11 (first affected run on system 3.10 errored ui1 collection — not a product failure). Docs links **OK 226 files**. Live browser API `:8881` + Vite `:5211`: Demo Lab overview and `/lab/validation` loaded; CDP overflow **ok** at 1440 (`1425/1425`), 768 (`753/753`), 390 (`390/390`). No Run control on validation. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) |
+| **Notes** | `item7/natural-settlement` untouched. `IMP_PAPER_EXECUTION` not enabled. **NO LAB MUTATIONS ADDED.** Implemented on Grok 4.6 after Kimi budget exhaustion. |
+
+## 2026-09-16 — UIR-01 Increment G: Portfolio surface redesign
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Rebuilt `/portfolio` as the operator view of simulated/observed holdings, cash, P&L, risk context, and position-level Workspace handoff on current contracts (`origin/main` `54b82805`). Removed in-page `OrderTicket` so Workspace stays the Paper submit boundary. Buying power is formatted from `buying_power_minor` (never substituted with cash). No NAV, daily P&L, dollar allocation, or frontend risk score. Paper/Demo P&L is labeled simulated; Live is observational broker-reported. Attention reuses `derivePaperExceptions`. Desktop tables / mobile cards; trace overlay instead of a 360px column. |
+| **Key files** | Created: `docs/ui-redesign-v2/portfolio-contract-map.md`; `ui/src/components/paper-portfolio/paperPortfolioPresentation.ts`(+test). Modified: `PaperPortfolioPage.tsx`(+test), `PaperPortfolioObservability.tsx`, `{Demo,Live}PortfolioPage.tsx`(+tests), `App.test.tsx`, `NavShell.tsx`(+test), `layout.css`, `{paper,demo,live}-portfolio.css`, `FRONTEND_GUIDE.md`, `DEVELOPER_RUNBOOK.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/portfolio.md`, `information-architecture.md`. |
+| **Tests** | `ui`: vitest **720/720 passed**, `tsc --noEmit` pass, `vite build` pass (initial **200.60 KiB gzip**). Repo: `imp.py env` healthy, `format` pass, `lint` pass, `test affected` **80/80**, `validate changed` **80/80**, `check_docs_links.py` **OK 226 files**. Browser (worktree API `:8878` + Vite `:5204`): Paper empty/degraded authority at 1440/768/390 with CDP **no page-level overflow** (1425/1425, 753/753, 390/390); StatusBar intact; Workspace `/workspace/BIYA` cockpit still loads. |
+| **Related** | [portfolio-contract-map.md](../ui-redesign-v2/portfolio-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+| **Notes** | `item7/natural-settlement` untouched. Lab not started. Paper execution remains env-gated (`IMP_PAPER_EXECUTION`). Live populated broker P&L is still canary snapshot only. Remaining UI: Lab. |
+
+## 2026-09-16 — UIR-01 Increment F: Research surface redesign
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Rebuilt `/research` as an interpretation-first evidence workspace on current IMP contracts (`origin/main` `6f5b6f3e`). Overview synthesizes what the evidence currently shows; Evidence, Validation, and Simulation are deep-linkable sections that fetch only their own endpoints. Claims, state, and honest availability lead; hashes, raw enums, and timestamps stay in methodology disclosures. Hypotheses, domains, source catalogs, supporting/contradictory flags, and FTEP campaign state are disclosed as contract gaps. The only conflict signal rendered is `ABSTAIN_CONFLICTING_EVIDENCE`. Radar Screeners and Opportunity L3 bridge into Research without fabricating relations. `/lab` still redirects here — Lab is unbuilt. |
+| **Key files** | Created: `docs/ui-redesign-v2/research-contract-map.md`; `ui/src/components/research-shared/{ResearchSurface,ResearchOverviewSection,ResearchEvidenceSection,ResearchValidationSection,ResearchSimulationSection,researchPresentation}.{ts,tsx}` (+tests); `ui/src/styles/research.css`; `ui/src/components/charts/ResearchChartPanels.test.tsx`. Modified: `ModeResearchRoute.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`(+tests), `App.tsx`/`App.test.tsx`, `NavShell.tsx`(+test), `RadarPage.tsx`(+test), `OpportunityDetailCard.tsx`, `ResearchChartPanels.tsx` (timeline table + claim slot), `semanticState.ts`(+test), `FRONTEND_GUIDE.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`, `pages/research.md`, `information-architecture.md`. Deleted: `ResearchObservability.tsx`, `research/{ModelLabPanel,ResearchAnalyticsPanel,SimulationLabPanel}.tsx`, mode-specific `*-research.css`. |
+| **Tests** | `ui`: vitest **713/713 passed** (prior Control baseline 652; +61 net), `tsc --noEmit` pass, `vite build` pass (initial **200.57 KiB gzip**; budget check passed). Repo: `imp.py env` healthy, `format` pass, `lint` pass (UI typecheck), `test affected` **80/80 pass**, `validate changed` **80/80 pass** (first `validate changed` hit a one-off ui1 ERROR; retry and direct `tests/ui1` **57/57 pass**), `check_docs_links.py` **OK 226 files**. |
+| **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+| **Notes** | `item7/natural-settlement` untouched. No backend rewrite. Live populated visual walkthrough not clicked (protected Live boundary); behavioral coverage includes loading/empty/failure/conflict/deep-link/bridges. Remaining UI: Lab (deferred), Portfolio redesign. |
+
+## 2026-09-16 — BE-01: operator endpoint leak-audit false positives
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform/security` |
+| **Summary** | Fixed pre-existing `UI_SECRET_LEAK_BLOCKED` 500s on `GET /operator/readiness` and `GET /operator/config` by teaching `leak_audit.scan_snapshot` to treat provider `credential_state` status enums and operator-config `fields[n].key` env-var identifiers as benign metadata (path- and shape-bounded). Real secret-shaped keys with live values and textual `SECRET_SCAN_RULES` matches remain blocked. Opportunity `instrument_key` stays DTO-stripped per RTH15 (`test_opportunity_summary_leak_audit.py`). |
+| **Key files** | `src/market_platform_foundation/platform/security/leak_audit.py`; `tests/platform/test_security_foundations_p5.py`, `test_operator_configuration.py`, `test_operator_endpoint_leak_audit.py` (new) |
+| **Tests** | `unittest` SecretAuditTest + OperatorConfigurationTests + OperatorEndpointLeakAuditTests (19 cases) pass; `imp.py format`/`lint` pass; `validate changed` hit unrelated Windows baseline noise in platform/providers (sqlite temp cleanup, service health port probe) |
+| **Related** | UIR-01E Control isolation note in prior WORK_LOG entry; P5 `leak_audit.py` spec |
+| **Notes** | No UI contract rename; `item7/natural-settlement` untouched |
+
+## 2026-09-16 — UIR-01 Increment E: Control center rebuild
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Rebuilt `/control` from a legacy setup console into the operator's platform-health destination on a fresh worktree off canonical `d5a45b3f`. The page now answers what is wrong / what is affected / how serious / whether it is safe to operate / what to do next, in priority order: Platform status (readiness, runtime, backend context, market data as four distinct real facts — no synthetic health score) with lifecycle actions; Execution & authority (mode, data mode, execution mode, authority as separate concepts with a plain-language capability summary and the Paper account/session line); Needs your attention (only actionable items derived from real contract states); Providers (attention-first rows translating the backend `role` contract into capability + degradation-impact language, refresh actions, inactive providers behind disclosure); Opportunity feed readiness (the same READY/UNREADY/UNAVAILABLE/EMPTY semantics and humanized reasons as Command/Radar, so Command's "Open Control" lands on an explanation of that exact condition); Technical detail (router links + raw states behind disclosures). Sections degrade independently on partial endpoint failure and never render unknown state as healthy. Section anchors (`/control#control-feed`, `/control#control-authority`) make Command/StatusBar degraded-state links resolve into the matching explanation with scroll + highlight. The semantic adapter gained a reusable `platform` domain (lifecycle/readiness/check/update values) and the documented-but-missing providerHealth transport/credential values; readiness rows now surface the backend `role`/`required_credentials` fields the UI schema used to strip. `window.confirm` became an inline two-step confirm; `<a href>` full reloads became router links; the blue off-system styling and raw-enum pills are gone. |
+| **Key files** | Created: `ui/src/components/control/{OperatorControlCenterPage.tsx,controlPresentation.ts}` (+2 test files). Modified: `ui/src/state/semanticState.ts`(+test; `platform` domain + providerHealth gaps + deep-link hrefs), `ui/src/api/schemas.ts` (provider `role`, `required_credentials`), `ui/src/api/hooks.ts` (`operatorLifecycleStatus`, `operatorConfig` keys/hooks), `ui/src/components/opportunity/OpportunityFeedState.tsx` (feed deep-link), `ui/src/components/mode-session/StatusBar.tsx`(+test; authority deep-link), `ui/src/components/imp-product/ImpProviderMatrixDrawer.tsx` (stale "Risk control" labels), `ui/src/App.tsx` (lazy import + mode prop), `ui/src/App.test.tsx` (Control route test + hooks mock), `ui/src/styles/operator-control.css` (rewritten on design tokens), `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/UIR_01_OPERATOR_UI_REDESIGN.md`. Deleted: `ui/src/components/OperatorControlCenterPage.tsx`(+test) (legacy page). |
+| **Tests** | `ui`: vitest **652/652 passed** (baseline 610; +42 net), `tsc --noEmit` pass, `vite build` pass (initial **200.52 KiB gzip ≤ 203 KiB**; baseline 200.41). Repo: `imp.py env` healthy, `format` pass, `lint` pass (UI typecheck), `test affected` **80/80 pass**, `validate changed` pass. Browser review (dedicated worktree API :8866 + vite :5199): Paper Control at 1440/768/390 with CDP-measured **no page-level horizontal overflow** (390/390, 753/753, 1425/1425); Demo Control with provider degradation + feed UNREADY explanation; Paper authority mismatch + Paper account line; Command UNREADY banner → Open Control deep link; in-page hash navigation (`#control-overview`) verified live; Radar regression-checked. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) |
+| **Notes** | `item7/natural-settlement` untouched. **Backend issue isolated (pre-existing on canonical main, not caused by this change):** `GET /operator/readiness` and `GET /operator/config` return 500 `UI_SECRET_LEAK_BLOCKED` — the response secret-leak audit (`platform/security/leak_audit.py scan_snapshot`) flags the secret-shaped key *names* `credential_state` (enum values like `NOT_REQUIRED`) and config `fields[].key` (names like `APCA_API_KEY_ID`) as live secrets. Reproducible in-process on unmodified canonical code; the Control page handles it as designed (independent section error + retry). Fix belongs to the backend lane (e.g. benign-key allowance or payload restructure, mirroring the `/opportunities/summary` instrument_key fix in `tests/ui1/test_opportunity_summary_leak_audit.py`). A stale API server from the `ui-operator-redesign-current` worktree was found double-bound to port 8766; this session's servers were moved to dedicated ports (8866/5199) and this session's 8766 processes were stopped. Remaining: Research/Lab redesign, Portfolio redesign. |
+
+## 2026-09-16 — UIR-01 Increment D: Command overview depth and decision hierarchy
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Turned Command from a functional summary into an operator command desk on a fresh worktree off canonical `02ac7072`. The KPI strip is now decision-oriented — Opportunity feed trust, Actionable now, Needs review (tier-1 urgent callout), Stale or degraded — derived from the live opportunities/attention contracts with semantic tones (icon + text + accent, never color alone); the phantom `tone-*` classes and the portfolio/live-context KPI duplicates (StatusBar/risk-ribbon overlap) are gone. Attention cards gained decision depth: explicit Signal object class, tier StatePill, a why-now line from human reason labels (raw codes in an L4 disclosure), absolute replay-aware surfaced timing, and an honest signal→opportunity bridge (`summary_id = attention_id` ingest identity) with a `/radar?selected=` deep link that preselects the row (and auto-opens the mobile detail sheet). The overview queue shows both queues by default with subsection headings, tab counts, and the full ARIA tabs keyboard pattern; Paper defaults to ranked because its candidate queue already presents the signals (no double rendering). Feed-UNREADY reasons humanize (`QUALITY_SUMMARY_NOT_HEALTHY` → "market data quality is degraded"); freshness words render operator labels ("Stale", "Replay", "Unavailable" — no mechanical lowercase) and UNAVAILABLE freshness is neutral honesty, not a critical alarm. StatusBar collapses the data/scope segments into the details popover below 720px (scope added to the popover so nothing is lost); Command mobile order is queue → KPIs → mode rows. Fixed a latent Paper-header 768px overflow (nowrap authority pill in squeezed tracks) by stacking the header at BP_MD; Command page breakpoints re-mapped to the contract scale (980/1080 → 1024). |
+| **Key files** | Created: `ui/src/components/attentionPresentation.ts`(+test), `ui/src/components/imp-product/ImpOverviewKpiStrip.test.tsx`. Modified: `impOverviewMetrics.ts`(+test rewrite), `ImpOverviewKpiStrip.tsx`, `ImpOverviewBoard.tsx`, `ImpOverviewPrimaryQueue.tsx`(+test), `AttentionFeed.tsx`(+test), `opportunityPresentation.ts`(+test; bridge builder + unready humanizer), `OpportunityFeedState.tsx`, `FreshnessIndicator.tsx`, `imp-ui.css`, `imp-ui.test.tsx`, `{Demo,Paper,Live}NowPage.tsx`(+tests), `PaperCandidateQueue.tsx`, `ModeNowRoute.tsx`, `App.tsx` (attention retry wiring), `RadarPage.tsx`, `RadarOpportunitiesPanel.tsx` (`?selected=` deep link), `StatusBar.tsx`(+test), `imp-product.css` (KPI tones, mobile reorder, StatusBar collapse, dead `.imp-top-opportunities*` removal), `layout.css` (attention card structure), `{demo,paper,live}-now.css` (breakpoint re-map + Paper header stack), `App.test.tsx`. |
+| **Tests** | `ui`: vitest **610/610 passed** (baseline 587; +23 net), `tsc --noEmit` pass, `vite build` pass (initial **200.42 KiB gzip ≤ 203 KiB**; baseline 200.40). Repo: `imp.py env` healthy, `format` pass, `lint` pass (UI typecheck), `test affected` **80/80 pass**, `validate changed` pass. Browser review (worktree API :8768 + vite :5176): Demo Command/Signals, Paper Command/Signals, Radar at 1440/768/390; CDP measured **no page-level horizontal overflow** at 390/768/1024/1280/1440; signal→Radar deep link verified end-to-end (desktop inline selection + mobile sheet auto-open); mobile order queue→KPIs→mode rows verified by geometry. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) |
+| **Notes** | `item7/natural-settlement` untouched. Live interactive walkthrough not clicked through (protected boundary); Live non-mutation covered by `LiveNowPage` tests. The Paper-header 768px overflow was latent from Increment C (data-dependent: long authority pill labels) and is now fixed. Remaining: Control center rebuild (next major surface), Research/Lab redesign. |
+
+## 2026-09-16 — UIR-01 Increment C: Command/Paper-Now convergence on the shared opportunity language
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui`, `docs` |
+| **Summary** | Converged Command and Paper-Now opportunity presentation onto the Radar semantic primitives from a fresh worktree off canonical `21ab1ac1`. New shared module `ui/src/components/opportunity/` holds the single copy of presentation-state derivation, state label/tone maps, evidence-input summaries, eligibility/workspace/ack predicates, next-action resolution, the L1–L4 detail model (moved from `progressiveOpportunityModel.ts`), the compact `OpportunityCard`, and `OpportunityQueue` + `OpportunityFeedState` (one feed-state presentation: loading / error+retry / UNREADY banner / UNAVAILABLE / empty-why). Command's primary queue and Radar now render identical semantics; Paper-Now's candidate queue holds attention signals only (the dead embedded opportunity list was removed) and its header routes account/session IDs through `CopyableIdentifier` and execution/authority/data-health through `resolveSemanticState`. Provider health (`LiveProviderRibbon`, Live header, Live KPI strip) renders through the semantic adapter — no synthetic scores; `/diagnostics/provider` stays raw L4 by design. `ProgressiveOpportunityCard`, `now/OpportunityReviewCard`, `OpportunityFeedStatusBanner`, `impOpportunityDisplay.ts` (dead `opportunityTags`), and the legacy `progressive-opp-*` CSS are retired. Mobile Radar detail is now an overlay sheet below 1024px (backdrop, focus trap, Escape/close, scroll lock; full-screen below 720px). Action gating is unchanged: Workspace remains the only Paper submit boundary; STOP/INELIGIBLE suppress workspace and ack actions on every surface. |
+| **Key files** | Created: `ui/src/components/opportunity/{opportunityPresentation.ts,opportunityDetailModel.ts,opportunityDetailFixtures.ts,researchArtifactEvidenceProjection.ts,OpportunityCard.tsx,OpportunityQueue.tsx,OpportunityFeedState.tsx,opportunity.css}` (+3 test files), `ui/src/components/radar/RadarDetailSheet.tsx`, `ui/src/lib/useMediaQuery.ts`. Modified: `RadarQueueTable.tsx`, `OpportunityDetailCard.tsx`, `RadarOpportunitiesPanel.tsx`, `ImpOverviewPrimaryQueue.tsx`, `ImpOverviewBoard.tsx`, `{Demo,Paper,Live}NowPage.tsx`, `PaperCandidateQueue.tsx`, `LiveProviderRibbon.tsx`, `liveDashboardViewModel.ts`, `impOverviewMetrics.ts`, `semanticState.ts` (ELIGIBLE entry), `App.tsx` (css import), `imp-product.css`, `layout.css`, `radar.css`, `TradeReviewLearningPanel.tsx`, tests for the touched surfaces, `FRONTEND_GUIDE.md`, `UIR_01_OPERATOR_UI_REDESIGN.md`. Deleted: `ProgressiveOpportunityCard.tsx`, `now/OpportunityReviewCard.tsx`(+test), `OpportunityFeedStatusBanner.tsx`(+test), `impOpportunityDisplay.ts`, `progressiveOpportunityModel.ts`, `progressiveOpportunityCockpit.test.ts`. |
+| **Tests** | `ui`: vitest **587/587 passed** (baseline 559; +28 net), `tsc --noEmit` pass, `vite build` pass (initial **200.40 KiB gzip ≤ 203 KiB**; A+B was 200.36). Repo: `imp.py env` healthy, `format`/`lint` pass, `test affected` **80/80 pass**, `validate changed` pass. Browser review (worktree API :8768 + vite :5175): Demo Command/Signals/Radar and Paper Command/Signals at 1440/768/390; mobile sheet open/Escape/close verified; CDP measured **no page-level horizontal overflow** at 390/768/1440; Paper ack gating and authority-gated preview verified live. Live interactive walkthrough not clicked through (confirmation gate is a protected boundary); Live non-mutation covered by `LiveNowPage` tests. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) |
+| **Notes** | `item7/natural-settlement` untouched (main checkout left dirty/on-branch as found). Freshness word `REPLAY` renders mechanically ("replay") — acceptable backend translation. Remaining: deeper Command rebuild (KPI tone styling, attention-card evidence), Research/Lab surfaces, Control rebuild (Phase 8). |
+
+## 2026-09-16 — UIR-01 A+B review gate: feed-copy mode fix + mobile overflow fixes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui` |
+| **Summary** | Review-gate fixes on `ui/operator-redesign-current` before PR. (1) `RadarOpportunitiesPanel` rendered the Live by-design copy ("Live mode has no opportunity engine") for `feed_status=UNAVAILABLE` in **all** modes; now mode-aware — Live keeps the by-design explanation, other modes get the generic feed-unavailable empty state with an Open Control action (plus regression test). (2) Fresh CDP measurement at 390px in Paper mode found page-level horizontal overflow (648px) from two pre-existing unbreakable-token surfaces: the Paper-Now header `dl` (raw 64-char account/session hex IDs; `align-items: start` shrink-to-fit sized children to max-content) and the Command overview `ProgressiveOpportunityCard` (`Paper account <code>` hex + raw enum `dd`s). Fixed with `min-width: 0` on the grid/flex chain, `overflow-wrap: anywhere` on the token elements (mirroring the existing `.paper-risk-ribbon dd` rule), and `align-items: stretch` in the ≤720px header media query. No component/API changes; Increment C scope untouched. |
+| **Key files** | `ui/src/components/radar/RadarOpportunitiesPanel.tsx`, `ui/src/components/radar/RadarPage.tsx` (pass `mode`), `ui/src/components/radar/RadarPage.test.tsx` (+1 test), `ui/src/styles/paper-now.css`, `ui/src/styles/imp-product.css` |
+| **Tests** | `ui`: vitest **567/567 passed**, `tsc --noEmit` pass, `vite build` pass (initial **200.36 KiB gzip ≤ 203 KiB**). Repo: `imp.py format`/`lint` pass, `imp.py test affected` **80/80 pass**, `check_docs_links.py` OK (226 files). Browser re-verified: no page-level horizontal overflow at 390/768/1440 in Demo and Paper; `/signals`→`/?desk=signals`, `/explore?q=GME`→`/radar/screeners?q=GME` (filter note renders), `/discover`→`/radar`, `/lab`→`/research` verified live. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) |
+
+## 2026-09-16 — UIR-01 operator UI redesign: design system + shell + Radar (Increment A+B)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (Increment A+B; Increment C partially landed — Command desk tabs + attention card tier/freshness labels) |
+| **Area** | `ui`, `docs` |
+| **Summary** | Reimplemented the operator shell and discovery workflow on current canonical contracts (`origin/main` `42b1237a`), using `docs/ui-redesign-v2/` recovered plans as design guidance only (the stale `ui/operator-redesign-v2` branch was read as reference, never used as a base). Shipped the semantic design-token layer (7 state tones, spacing/radius/type scales, AA contrast fixes, 9 previously-undefined vars aliased), the pure `resolveSemanticState` adapter (translate-never-invent; unknown → neutral + raw + dev warning), an `imp-ui` primitive set (StatePill, AttentionBanner, FreshnessIndicator, ConfidenceIndicator, EmptyState/ErrorState, LinkTabs, CopyableIdentifier), a consolidated 40px `StatusBar` replacing the stacked ModeEnvironmentBar + ContextBar (raw enums/ISO timestamps moved behind an L4 details disclosure; mismatch/unavailable fail-closed banners preserved), and the new Radar section (`/radar` Opportunities + `/radar/screeners`) replacing `/discover` and `/explore` (redirects preserve deep links; `?q=` now filters screener rows). Opportunity presentation is progressive-disclosure: L1 decision summary always visible; L2 evidence/verification + risk, L3 historical/research, L4 technical (ranking vector, data quality, identifiers) behind disclosures. Paper acks (watch/dismiss/review) are authority-gated via `paperActionsPermitted` from the shell; Discover mixed-screener mutations, unmount release POST, 3s/120s timers, and visibility pause are preserved byte-identical. |
+| **Key files** | Created: `ui/src/state/semanticState.ts` (+test), `ui/src/components/imp-ui/{StatePill,AttentionBanner,FreshnessIndicator,ConfidenceIndicator,CopyableIdentifier,FeedbackStates,LinkTabs}.tsx`, `imp-ui.css`, `imp-ui.test.tsx`, `ui/src/components/mode-session/StatusBar.tsx` (+test), `ui/src/components/radar/{RadarPage,RadarOpportunitiesPanel,RadarQueueTable,OpportunityDetailCard}.tsx`, `RadarPage.test.tsx`, `ui/src/components/ModeRadarRoute.tsx`, `ui/src/styles/radar.css`, `ui/src/lib/breakpoints.ts`, `docs/engineering/UIR_01_OPERATOR_UI_REDESIGN.md`. Modified: `ui/src/App.tsx` (routes/redirects/StatusBar/desk param), `NavShell.tsx` (operator IA: Command/Radar/Workspace/Portfolio/Research/Control; GATED badge removed), `ImpCommandSearch.tsx` (text queries → `/radar/screeners?q=`), `ImpExecutionPosture.tsx` (CopyableIdentifier), `ExploreObservability.tsx` (`filterQuery`), `DiscoverObservability.tsx` (human timestamps), `AttentionFeed.tsx` (tier text label, human reason label primary, surfaced freshness), `progressiveOpportunityModel.ts` (human age label), `tokens.css`, `imp-product.css`, `layout.css`, `mode-session.css` (dead CSS removed), `App.test.tsx`, `NavShell.test.tsx`, `ImpProductChrome.test.tsx`, `ImpExecutionPosture.test.tsx`, `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/DEVELOPER_RUNBOOK.md`. Deleted: `ModeDiscoverRoute`, `ModeExploreRoute`, `ContextBar`(+test), `ModeEnvironmentBar`(+test), `{Demo,Paper,Live}DiscoverPage`(+tests), `{Demo,Paper,Live}ExplorePage`(+tests), `DiscoverPageSections`(+test), `discoverInspectorActions`, `discoverPageTestActions`, `OpportunityRadarCockpit`, `OpportunityRadarDensePanel`(+test), `OpportunityRadarIntro`, 6 per-mode discover/explore CSS files. |
+| **Tests** | `ui`: vitest **566/566 passed** (baseline 526; +40 net), `tsc --noEmit` pass, `vite build` pass with bundle budget (**initial 200.36 KiB gzip ≤ 203 KiB enforced**; baseline was 201.10). Repo: `imp.py env` healthy, `imp.py format` pass, `imp.py lint` pass (UI typecheck), `imp.py test affected` **80/80 pass** (mandatory invariants + ui1). Browser review (local API + vite): Demo/Paper Command, Radar Opportunities/Screeners at 1440/768/390px; fixed two real mobile overflow defects found in review (35-char account id in top bar → CopyableIdentifier; status-bar sentence min-content → wrap ≤720px); verified no page-level horizontal overflow at 768/390 via CDP measurements. |
+| **Related** | [UIR_01_OPERATOR_UI_REDESIGN.md](UIR_01_OPERATOR_UI_REDESIGN.md) (contract map + IA), `docs/ui-redesign-v2/` (design guidance), [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md), [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md) |
+| **Notes** | `ProgressiveOpportunityCard` remains in use on Command/Paper-Now queues (Increment C convergence candidate). Mobile Radar keeps the dense table with contained internal scroll (drawer-based card is a follow-up). Provider-health chips in the mixed screener still render raw connection enums (adapter migration candidate). No backend changes; no new endpoints; no polling/cadence changes. `item7/natural-settlement` untouched. |
+
+## 2026-09-16 — PROGRAM_STATUS pin after RTH15-00 merge (#224)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` |
+| **Summary** | Pin PROGRAM_STATUS v1.35 to canonical `origin/main` `dbccd92d` after #224 merge. RTH15-00 row is MERGED. No product or evidence change. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`, `docs/engineering/WORK_LOG.md`, `docs/engineering/AGENT_HANDOFF.md` |
+| **Tests** | docs-only pin; `check_docs_links.py` on this worktree |
+| **Related** | [#224](https://github.com/AdamEddahmouni/market-trading-platform/pull/224), [RTH15_00_TARGET_STATE.md](RTH15_00_TARGET_STATE.md) |
+| **Notes** | Item 7 #222 remains isolated. No evidence mutation. |
+
+## 2026-09-16 — RTH15-00 isolated-work reconciliation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (software/docs increment; Item 7 #222 still isolated) |
+| **Area** | `evidence_capture`, `ui_api`, `hot_path_telemetry`, `ui`, `docs` |
+| **Summary** | Reconciled isolated/post-close RTH-cycle work onto `origin/main` `d06f1f4c`. Recovered the optional evidence capture-context sidecar, ranked-summary leak hygiene, selected UX on current contracts, next-RTH hop catalog, and Sep 15 diagnosis archives. Did not mutate empirical/prospective evidence, Item 7 settlement, or schedulers. |
+| **Key files** | `src/market_platform_foundation/evidence_capture/`, `tools/evidence_capture_context.py`, `src/market_platform_foundation/ui_api/opportunity_projections.py`, `src/market_platform_foundation/hot_path_telemetry/next_rth_latency_audit.py`, Discover/NavShell UI hygiene, `docs/engineering/RTH15_00_TARGET_STATE.md`, `docs/engineering/RTH15_00_RECONCILIATION_MATRIX.md` |
+| **Tests** | `imp.py format` 0; `imp.py lint` 0 (after worktree `ui/npm ci`); FAST 23/0/0; focused unittest 33/0; docs links OK (223); intelligence worker 1937/0; UI vitest 526/0, typecheck 0, build 0. `validate changed` providers 11 failures = OpenD/SDK `ENVIRONMENT` on this VM (not product). FULL/closure `NOT_RUN`. Benchmark **not executed**. |
+| **Related** | [RTH15_00_TARGET_STATE.md](RTH15_00_TARGET_STATE.md), [RTH15_00_RECONCILIATION_MATRIX.md](RTH15_00_RECONCILIATION_MATRIX.md), [AGENT_HANDOFF.md](AGENT_HANDOFF.md), PRs #196 #123 #124 #126 #128 #201 #222 |
+| **Notes** | `STAGE_2_APPLIED_AWAITING_NATURAL_CYCLE` **NONE OBSERVED**. Primary `item7/natural-settlement` checkout not mutated. Intelligence Benchmark Protocol not found. |
+
+## 2026-09-16 — OPS-00 canonical agent operating system
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs`, `.cursor/rules`, `.cursor/skills` |
+| **Summary** | Established the reusable IMP agent operating system: Composer-first model ladder with Grok 4.6 High escalation, Fast-model prohibition, single-agent default, worktree isolation, evidence-class protection, and skills/runbooks for recon, reconciliation, validation, orchestration, and handoff. RTH15-00 is sequenced after this layer and was not started. |
+| **Key files** | Repo-root `.cursor/rules/imp-*.mdc`, `.cursor/skills/imp-*`, `.cursor/model-routing.json`; IMP `docs/engineering/AGENT_OPERATING_SYSTEM.md`, `sops/GIT_WORKTREE.md`, `sops/BRANCH_RECONCILIATION.md`, `templates/AGENT_HANDOFF.md`, `templates/AGENT_TASK_CONTRACT.md`; updates to `AGENTS.md`, `AI_MODEL_STRATEGY.md`, `DEVELOPER_OPERATING_SYSTEM.md`, `docs/README.md` |
+| **Tests** | OPS-01 re-ran in `.worktrees/ops-canonical-agent-os`: `git diff --check` clean after trailing-whitespace fix; `python tools/check_docs_links.py` from IMP **OK (210 governance markdown files)**; `model-routing.json` policy assertions passed (Composer/`composer-2.5` default, Grok 4.6 High/`cursor-grok-4.6-high` escalation, Fast forbidden, one-agent default, Composer orchestrator, cheap maps to Composer not Fast, root/IMP rules identical, no nested skill copies); 44 rule/skill/agent files have valid single frontmatter. No product tests, runtime, or FTEP mutation. |
+| **Related** | [AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) |
+| **Notes** | Isolated branch `ops/canonical-agent-operating-system` from `origin/main` `b8f1bf86` (unchanged at OPS-01). OPS-01 review removed accidental nested IMP skill copies (`skills/<name>/<name>/SKILL.md`), collapsed duplicate agent frontmatter on `architecture.md`/`implementation.md`, and stripped `git diff --check` trailing whitespace. Did not merge RTH branches or alter Item 7 checkout. |
+
 ## 2026-09-15 — Reconstruct launcher/Vite routing onto origin/main (isolated)
 
 | Field | Value |
@@ -504,7 +1835,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Item 7 capture funnel; BUILD 15 ledger/settlement |
 | **Notes** | No AdamsGalaxyBook JSONL processed on cloud. Pre-existing normalizer wired; orchestrator is new. |
 
-
 ## 2026-09-14 — FTEP integrity: durable counts when SIGNAL_ONLY started
 
 | Field | Value |
@@ -745,7 +2075,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | AdamsGalaxyBook weekday OpenD hop dry-run (`weekday-opend-hop-dryrun.md`) |
 | **Notes** | Did not activate Live. Did not flip FTEP. Did not weaken OpenD/vendor-pin tests. |
 
-
 ## 2026-09-14 — PROGRAM_STATUS SHA pin after merged #62
 
 | Field | Value |
@@ -913,7 +2242,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `tests.providers.test_moomoo_opend_primary_l1` **40 passed**. Combined with Path A hop + live-p21 trade-context + phase0 analysis **43 passed**. Honest CLI with OpenD down: `discovery.provider_id=moomoo.opend.observational`, `overlay_provider_id=yahoo.finance.delayed`, `opend_reachable=false`, `result.status=PROVIDER_UNAVAILABLE`, `reason_codes=["OPEND_UNAVAILABLE"]`, `path_a_status=null`. `--mode live` still argparse-refused. Did not edit Path A `forecast_resolver`, prereg store, or catalog evaluators. |
 | **Related** | Stacked on #48 `ff139ac` (OpenD hop + prereg). Follows hop unify #47. |
 | **Notes** | Operator OpenD + vendor SDK remain required for an empirical tick. Cloud VM has no loopback `:11111` and no `moomoo-api`. No secrets printed. Did not add paid vendors. Did not merge to main or Wave B. |
-
 
 ## 2026-09-13 — Restack Path A prereg load onto OpenD hop
 
@@ -1310,7 +2638,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md` |
 | **Notes** | US equity RTH closed on pass date; no production session started. Second cohort arm may record `FORWARD_TEST_CONCURRENT_CAMPAIGN_ACTIVE` until binding supports multiple sessions per campaign. |
 
-
 ## 2026-09-12 — FTEP split PR #28 rebase onto #27
 
 | Field | Value |
@@ -1442,7 +2769,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py validate fast` (21 pass); `validate changed` (2116 pass); `unittest tests.providers.test_coverage_gap_engine` (6 pass); calibration discover (4 pass) |
 | **Related** | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](./FTEP_V1_ACTIVATION_BLOCKER_REPORT.md), [OPERATOR_PROBE_RUNBOOK.md](./OPERATOR_PROBE_RUNBOOK.md) |
 | **Notes** | Campaign-readiness remains NOT_READY (manifest pending OD-11, probes, entitlements). Local uncommitted delta on branch `work/ftep-v1-activation`. |
-
 
 ## 2026-09-12 — FTEP v1 implementation goal closure audit
 
@@ -2245,7 +3571,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm run typecheck` clean; `npm test` — 85 files / 436 tests passed (incl. new `laneRegistry.test.ts`, 7 tests). Backend: `py_compile` of `decision_source.py` OK; grep confirms zero references to removed `KNOWN_LANE_MODULES` in `src`/`tests` (only stale `.pyc`). Full manifest validation (`tools/imp.py validate`) runs in CI on push — local Python 3.10 cannot collect the suite (repo requires 3.11 `StrEnum`/tz db) and the project `.venv` is not test-equipped. |
 | **Related** | [Hardening task plan](../../../../docs/reviews/2026-09-04-hardening-task-plan.md) P0-3; [ADD_WORKSPACE_LANE.md](sops/ADD_WORKSPACE_LANE.md) |
 | **Notes** | Adding a lane now edits exactly one identity source (`laneRegistry.ts`) plus its per-lane feature surfaces (route component, content builder, backend projection only when a new API is needed). Zero behavior change: derived lists are identical to the prior literals; order of `MODULES_WITHOUT_EVIDENCE_LANE` follows registry nav order (no consumer depends on the old ordering). |
-
 
 ## 2026-09-04 — Full validation green receipt and closure-audit cleanup
 

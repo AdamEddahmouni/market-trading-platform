@@ -50,6 +50,7 @@ function PaperNowRoute({ paperActionsPermitted, ...props }: SharedProps & { pape
       onWhy={props.onWhy}
       onExplain={props.onExplain}
       onInspect={props.onInspect}
+      onAttentionRetry={props.onAttentionRetry}
     />
   );
 }
@@ -82,6 +83,7 @@ function LiveNowRoute(props: SharedProps) {
       onExplain={props.onExplain}
       onInspect={props.onInspect}
       onOpenWorkspace={props.onOpenWorkspace}
+      onAttentionRetry={props.onAttentionRetry}
     />
   );
 }

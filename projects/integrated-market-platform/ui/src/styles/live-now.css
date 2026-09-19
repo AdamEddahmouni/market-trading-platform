@@ -262,7 +262,8 @@
   outline-offset: 3px;
 }
 
-@media (max-width: 1080px) {
+/* BP_MD: provider ribbon pairs and the live grid collapse (responsive-contract §1). */
+@media (max-width: 1024px) {
   .live-provider-ribbon dl {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -1,0 +1,411 @@
+/*
+ * Radar surface styles (UIR-01) — ranked queue + opportunity detail.
+ * Tokens only; state colors come from the --imp-state-* semantic tokens.
+ */
+
+.imp-radar-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-4);
+}
+
+.imp-radar-opportunities {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--imp-space-4);
+  align-items: start;
+}
+
+.imp-radar-queue-section,
+.imp-radar-detail-section {
+  min-width: 0;
+}
+
+/* ---- Queue table ---- */
+.imp-radar-queue-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-lg);
+  background: var(--surface-1);
+}
+
+.imp-radar-queue-table {
+  width: 100%;
+  min-width: var(--imp-table-min-compact);
+  border-collapse: collapse;
+  font-size: var(--imp-text-sm);
+}
+
+.imp-radar-queue-table th {
+  text-align: left;
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  background: var(--surface-1);
+}
+
+.imp-radar-queue-table td {
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+  color: var(--text-primary);
+}
+
+.imp-radar-queue-table tbody tr {
+  cursor: pointer;
+}
+
+.imp-radar-queue-table tbody tr:hover {
+  background: var(--surface-2);
+}
+
+.imp-radar-queue-table tbody tr:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+.imp-radar-queue-table tbody tr.imp-radar-row-selected {
+  background: var(--surface-2);
+  box-shadow: inset 2px 0 0 var(--accent-primary);
+}
+
+.imp-radar-queue-headline {
+  max-width: 36ch;
+}
+
+.imp-radar-queue-table code {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+}
+
+.imp-radar-queue-actions {
+  white-space: nowrap;
+}
+
+.imp-radar-queue-actions button {
+  margin-right: var(--imp-space-1);
+}
+
+.imp-radar-epistemic-layer {
+  margin-block: var(--imp-space-3);
+}
+
+.imp-radar-epistemic-layer[data-layer="model_research"] {
+  padding: var(--imp-space-3);
+  border-radius: var(--imp-radius-md);
+  border: 1px dashed var(--border-subtle);
+  background: var(--surface-2);
+}
+
+.imp-precision-failure-detail {
+  margin: var(--imp-space-2) 0 0;
+}
+
+/* ---- Detail card ---- */
+.imp-radar-detail-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-lg);
+  background: var(--surface-1);
+  padding: var(--imp-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-3);
+}
+
+.imp-radar-detail-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-radar-detail-title {
+  margin: var(--imp-space-2) 0 0;
+  font-size: var(--imp-text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.imp-radar-detail-identity {
+  margin: var(--imp-space-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-radar-detail-identity code {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+}
+
+.imp-radar-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--imp-space-3);
+  margin: var(--imp-space-3) 0 0;
+  padding: var(--imp-space-3);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-radar-detail-summary dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.imp-radar-detail-summary dd {
+  margin: var(--imp-space-1) 0 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-primary);
+}
+
+.imp-radar-detail-next {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--imp-space-3);
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+}
+
+.imp-radar-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  margin-top: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-radar-visibility-note {
+  margin: var(--imp-space-2) 0 0;
+  font-size: var(--imp-text-xs);
+}
+
+.imp-radar-operator-brief {
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-radar-brief-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--imp-space-3);
+  margin: var(--imp-space-2) 0 0;
+}
+
+.imp-radar-brief-row dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.imp-radar-brief-row dd {
+  margin: var(--imp-space-1) 0 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-primary);
+}
+
+.imp-radar-brief-honesty {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--imp-text-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* ---- Disclosures (L2/L3/L4) ---- */
+.imp-radar-disclosure {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-radar-disclosure > summary {
+  cursor: pointer;
+  padding: var(--imp-space-2) var(--imp-space-3);
+  font-size: var(--imp-text-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  list-style-position: inside;
+}
+
+.imp-radar-disclosure > summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+  border-radius: var(--imp-radius-md);
+}
+
+.imp-radar-disclosure-body {
+  padding: 0 var(--imp-space-3) var(--imp-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-3);
+}
+
+.imp-radar-subhead {
+  margin: 0;
+  font-size: var(--imp-text-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.imp-radar-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--imp-space-2) var(--imp-space-4);
+  margin: 0;
+}
+
+.imp-radar-meta-row dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.imp-radar-meta-row dd {
+  margin: 1px 0 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.imp-radar-lines {
+  margin: 0;
+  padding-left: var(--imp-space-4);
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-radar-muted {
+  color: var(--text-muted);
+}
+
+.imp-radar-unavailable {
+  color: var(--imp-state-caution-fg);
+}
+
+/* ---- Screeners tab ---- */
+.imp-radar-screeners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-5);
+}
+
+.imp-radar-section-header {
+  margin-bottom: var(--imp-space-3);
+}
+
+.imp-radar-section-header h2 {
+  margin: 0;
+  font-size: var(--imp-text-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.imp-radar-section-lead {
+  margin: var(--imp-space-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+  max-width: 72ch;
+}
+
+/* ---- Responsive: stack queue + detail below the overlay-nav breakpoint ---- */
+@media (max-width: 1024px) {
+  .imp-radar-opportunities {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- Mobile detail sheet (below BP_MD; see responsive-contract §3) ---- */
+.imp-radar-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  border: 0;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: default;
+}
+
+.imp-radar-detail-sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 59;
+  width: min(420px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border-left: 1px solid var(--border-subtle);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.35);
+}
+
+.imp-radar-detail-sheet-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.imp-radar-detail-sheet-close {
+  min-height: 44px;
+  padding: 0 var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+  color: var(--text-primary);
+  font: inherit;
+  cursor: pointer;
+}
+
+.imp-radar-detail-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--imp-space-3);
+}
+
+.imp-radar-detail-sheet-body .imp-radar-detail-card {
+  border: 0;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .imp-radar-detail-sheet {
+    width: 100%;
+    border-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imp-radar-detail-sheet {
+    transition: none;
+  }
+}
+
+/* ---- Utility: visually hidden (screen-reader only) ---- */
+.imp-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}

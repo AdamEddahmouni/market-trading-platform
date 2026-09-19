@@ -1,0 +1,129 @@
+{
+  "case_count": 10,
+  "case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ],
+  "code_sha": "1bb540fb92e878334559603f27284db3b696f9c7",
+  "context_reset_policy": "one_fresh_context_per_case_v1",
+  "evaluator_only_gold_prefix": "evaluator_only/",
+  "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
+  "frozen_config_fingerprint": "76DDD188CD080365F1A7C45070519A84640AC9F750A4558CFF6B7B5E47FA8FFC",
+  "invocation_contract": {
+    "case_count": 10,
+    "case_plans": [
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-001",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
+        "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-002",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-003",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-004",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-005",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-006",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-007",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-008",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-009",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-010",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      }
+    ],
+    "contract_id": "ibp-smoke10-invocation-v1",
+    "evaluator_invoked": false,
+    "historical_harness_ibp_record_fingerprint": "06FBF215B28A6E15CA5A22D7ED47EDF47061F786244D087AD173E744B1DB61E9",
+    "historical_harness_integration": true,
+    "scores_executed": false,
+    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+    "suite_id": "ibp-v1-30"
+  },
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "smoke10_contract_id": "ibp-smoke10-invocation-v1",
+  "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+  "suite_id": "ibp-v1-30",
+  "sut_model_id": "ibp-deterministic-stub-v1",
+  "sut_profile_id": "synthetic_intelligence_fixture_v1_baseline_v1"
+}

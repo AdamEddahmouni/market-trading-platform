@@ -7,6 +7,7 @@ imports tools.
 
 from __future__ import annotations
 
+import inspect
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Protocol, Sequence
 
@@ -14,6 +15,7 @@ from ..runtime_capability import (
     CAP_ACCOUNT_READ,
     CAP_CONTRACT_RESOLUTION,
     CAP_HISTORICAL_BARS,
+    CAP_HISTORICAL_TRADES,
     RuntimeCapabilityRegistry,
     RuntimeCapabilityState,
 )
@@ -21,6 +23,7 @@ from .capability import (
     IBKR_CAPABILITY_ACCOUNT_READ,
     IBKR_CAPABILITY_CONTRACT_RESOLUTION,
     IBKR_CAPABILITY_HISTORICAL_BARS,
+    IBKR_CAPABILITY_HISTORICAL_TRADES,
     IBKR_PROVIDER_ID,
 )
 from .account_observation import (
@@ -38,6 +41,14 @@ from .historical_bars import (
     ObservationalHistoricalBar,
     normalize_ibkr_history_payload,
 )
+from .historical_trades import ObservationalHistoricalTrade
+from .historical_trades_pagination import (
+    DEFAULT_MAX_PAGES,
+    DEFAULT_MIN_INTER_PAGE_INTERVAL_NS,
+    DEFAULT_TICKS_PER_PAGE,
+    HistoricalTradesRetrievalProvenance,
+    paginate_historical_trades,
+)
 from .identity import IdentityAdmissionError, InstrumentLookup, Xa01Admission
 
 
@@ -54,6 +65,15 @@ class IbkrReadOnlyQueryProvider(Protocol):
         con_id: int,
         period: str,
         bar: str,
+    ) -> Mapping[str, Any]: ...
+
+    def fetch_historical_trades(
+        self,
+        *,
+        con_id: int,
+        start_time_ns: int,
+        end_time_ns: int,
+        number_of_ticks: int = DEFAULT_TICKS_PER_PAGE,
     ) -> Mapping[str, Any]: ...
 
     def fetch_portfolio_accounts(self) -> Mapping[str, Any]: ...
@@ -95,6 +115,29 @@ class HistoricalBarsResult:
             "bars": [bar.to_dict() for bar in self.bars],
             "reason": self.reason,
             "selection": dict(self.selection),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class HistoricalTradesResult:
+    accepted: bool
+    trades: tuple[ObservationalHistoricalTrade, ...] = ()
+    reason: str | None = None
+    selection: dict[str, Any] = field(default_factory=dict)
+    complete: bool = True
+    provenance: HistoricalTradesRetrievalProvenance | None = None
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "accepted": self.accepted,
+            "trade_count": len(self.trades),
+            "trades": [trade.to_dict() for trade in self.trades],
+            "reason": self.reason,
+            "selection": dict(self.selection),
+            "complete": self.complete,
+            "provenance": None
+            if self.provenance is None
+            else self.provenance.as_dict(),
         }
 
 
@@ -200,6 +243,7 @@ class IbkrObservationalQueryService:
         registry_cap = {
             CAP_CONTRACT_RESOLUTION: IBKR_CAPABILITY_CONTRACT_RESOLUTION,
             CAP_HISTORICAL_BARS: IBKR_CAPABILITY_HISTORICAL_BARS,
+            CAP_HISTORICAL_TRADES: IBKR_CAPABILITY_HISTORICAL_TRADES,
             CAP_ACCOUNT_READ: IBKR_CAPABILITY_ACCOUNT_READ,
         }.get(lane_capability_id, lane_capability_id)
         view = registry.view_capability(
@@ -397,6 +441,131 @@ class IbkrObservationalQueryService:
             accepted=True, bars=tuple(bars), selection=selection
         )
 
+    def fetch_historical_trades(
+        self,
+        instrument_id: str,
+        *,
+        start_time_ns: int,
+        end_time_ns: int,
+        con_id: int | None = None,
+        received_time_ns: int | None = None,
+        request_time_ns: int | None = None,
+        terminal_window_end_ns: int | None = None,
+        ticks_per_page: int = DEFAULT_TICKS_PER_PAGE,
+        max_pages: int = DEFAULT_MAX_PAGES,
+        min_inter_page_interval_ns: int = DEFAULT_MIN_INTER_PAGE_INTERVAL_NS,
+    ) -> HistoricalTradesResult:
+        if self._shutdown_complete or not self.provider.is_available():
+            return HistoricalTradesResult(
+                accepted=False, reason="QUERY_PROVIDER_UNAVAILABLE"
+            )
+        if request_time_ns is None or terminal_window_end_ns is None:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="POST_HORIZON_RETRIEVAL_TIMING_REQUIRED",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
+        if request_time_ns < terminal_window_end_ns:
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="RETRIEVAL_BEFORE_TERMINAL_WINDOW_END",
+                selection={
+                    "request_time_ns": request_time_ns,
+                    "terminal_window_end_ns": terminal_window_end_ns,
+                },
+            )
+        selection = self._gate(
+            CAP_HISTORICAL_TRADES, instrument_id, require_real_time=False
+        )
+        if selection.get("outcome") != "SELECTED":
+            return HistoricalTradesResult(
+                accepted=False, reason="CAPABILITY_REJECTED", selection=selection
+            )
+        resolved_con_id = con_id
+        if resolved_con_id is None:
+            resolution = self.resolve_contract(instrument_id)
+            if not resolution.accepted or resolution.qualification is None:
+                return HistoricalTradesResult(
+                    accepted=False,
+                    reason=resolution.reason or "CONTRACT_RESOLUTION_FAILED",
+                    selection=selection,
+                )
+            resolved_con_id = resolution.qualification.con_id
+        fetch = getattr(self.provider, "fetch_historical_trades", None)
+        if not callable(fetch):
+            return HistoricalTradesResult(
+                accepted=False,
+                reason="HISTORICAL_TRADES_NOT_IMPLEMENTED",
+                selection=selection,
+            )
+        con_id_int = int(resolved_con_id)
+
+        fetch_params = inspect.signature(fetch).parameters
+
+        def _fetch_page(
+            page_start_ns: int, page_end_ns: int, number_of_ticks: int
+        ) -> Mapping[str, Any]:
+            kwargs: dict[str, Any] = {
+                "con_id": con_id_int,
+                "start_time_ns": int(page_start_ns),
+                "end_time_ns": int(page_end_ns),
+            }
+            if "number_of_ticks" in fetch_params:
+                kwargs["number_of_ticks"] = int(number_of_ticks)
+            payload = fetch(**kwargs)
+            if not isinstance(payload, Mapping):
+                raise ValueError("MALFORMED_HISTORICAL_TRADES_PAYLOAD")
+            return payload
+
+        try:
+            trades, provenance = paginate_historical_trades(
+                _fetch_page,
+                instrument_id=instrument_id,
+                window_start_time_ns=int(start_time_ns),
+                window_end_time_ns=int(end_time_ns),
+                received_time_ns=received_time_ns,
+                ticks_per_page=int(ticks_per_page),
+                max_pages=int(max_pages),
+                min_inter_page_interval_ns=int(min_inter_page_interval_ns),
+            )
+        except ValueError as exc:
+            return HistoricalTradesResult(
+                accepted=False, reason=str(exc), selection=selection
+            )
+        except Exception as exc:
+            return HistoricalTradesResult(
+                accepted=False, reason=f"PROVIDER_ERROR:{exc}", selection=selection
+            )
+        if self.capture is not None:
+            self.capture.record(
+                capture_query_record(
+                    query_kind="HISTORICAL_TRADES",
+                    instrument_id=instrument_id.upper(),
+                    request={
+                        "con_id": resolved_con_id,
+                        "start_time_ns": start_time_ns,
+                        "end_time_ns": end_time_ns,
+                        "ticks_per_page": ticks_per_page,
+                        "max_pages": max_pages,
+                    },
+                    response={
+                        "trade_count": len(trades),
+                        "complete": provenance.complete,
+                        "page_count": provenance.page_count,
+                    },
+                )
+            )
+        return HistoricalTradesResult(
+            accepted=True,
+            trades=tuple(trades),
+            selection=selection,
+            complete=provenance.complete,
+            provenance=provenance,
+        )
+
     def fetch_account_observation(
         self,
         *,
@@ -445,6 +614,7 @@ __all__ = [
     "AccountObservationResult",
     "ContractResolutionResult",
     "HistoricalBarsResult",
+    "HistoricalTradesResult",
     "IbkrObservationalQueryService",
     "IbkrReadOnlyQueryProvider",
 ]

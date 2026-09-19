@@ -9,7 +9,49 @@ From `projects/integrated-market-platform/` with `PYTHONPATH=src`:
 ```powershell
 python tools/moomoo/opend_bar_1m_prospective_proof.py readiness
 python tools/moomoo/opend_bar_1m_prospective_proof.py display --instrument-id AAPL
+python tools/imp.py item9 next-rth-preflight --json
 ```
+
+### Next-RTH preflight (read-only)
+
+`next-rth-preflight` validates calendar (`America/New_York` / `US_EQUITY_RTH`), loopback
+OpenD reachability, governed receipt directory writability, frozen collector authority
+(`fed2d9f7…` worktree under repo `.imp-actual-01-phase-d/`), and duplicate prospective
+`--poll` processes. It **never** runs Mode B `--poll` and **never** writes a receipt.
+Off-hours disposition `NOT_RTH` is software success (exit 0). During RTH with all gates
+passing, disposition is `READY_TO_COLLECT` — operator still starts collection manually.
+
+**Off-hours from a non-frozen software worktree:** `calendar.rth_active=false` is still the
+expected calendar outcome. Overall disposition may be `WRONG_RUNTIME` (exit 1) because the
+frozen-collector SHA gate runs before the not-RTH branch — that is honest, not a calendar
+failure. Governed Mode B `--poll` must still be launched from `.imp-actual-01-phase-d` @
+`fed2d9f7…`, not from **CURRENT_MAIN**.
+
+### Process probe architecture ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251))
+
+Duplicate `--poll` detection uses OS process command lines. That subprocess I/O lives in
+**non-governed** `tools/item9_next_rth_preflight.py` and is injected via
+`active_collector_probe` into the governed library. The library alone defaults
+`active_collector.process_probe_status` to `NOT_RUN` (unit tests and direct `src/` entry).
+
+| Entry | Process probe |
+|-------|----------------|
+| `python tools/imp.py item9 next-rth-preflight` | `COMPLETED` (tools wrapper lists processes) |
+| `python tools/item9_next_rth_preflight.py` | `COMPLETED` |
+| `python tools/item9.py next-rth-preflight` | `COMPLETED` (delegates to tools wrapper) |
+| Governed `src/.../item9_next_rth_preflight.main` without injection | `NOT_RUN` (intentional) |
+
+Do not move subprocess handling back into governed `src/`.
+
+After a successful prospective receipt (governed dir under `.imp-actual-01-phase-d/…/item9-prospective-proof-receipts/`):
+
+```powershell
+python tools/item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts
+```
+
+When running from a non-collector checkout, pass the **absolute** frozen-collector receipt path so `corpus-status` scans admitted receipts (expect **`distinct_rth_dates`: `2/3`** until a third date is earned).
+
+No automatic calibration fitting. **`ITEM9_CALIBRATION_RUN=FORBIDDEN`.**
 
 `display` may call loopback OpenD for recent completed 1m bars. Off-hours that
 fetch is **diagnostic / transport visibility only** — not prospective evidence
@@ -33,8 +75,12 @@ Each `request_history_kline` attempt writes fail-closed diagnostics to stderr
 `vendor_ret_msg`, `kline_start`/`kline_end`, `max_count_requested`,
 `connection_host`/`connection_port`, `request_duration_ms`,
 `protocol_error_category`) and attaches the same fields as `kline_fetch` on poll
-outcomes, plus `poll_attempt_index` during Mode B `--poll` (one OpenD history
-call per poll step — not a transport retry counter). Unmatched
+outcomes, plus `poll_attempt_index` during Mode B `--poll` (one history
+`request_history_kline` per poll step — not a transport retry counter). Mode B
+`--poll` reuses one loopback OpenD **quote context** for the bounded run
+(opens on first fetch, closes in `finally` on success, timeout, or fail-closed
+exit). Single-shot `display` and non-poll loads still open/close per call.
+Unmatched
 `MOOMOO_PROTOCOL_ERROR` maps to `protocol_unclassified`, not a fabricated
 exception label. Categories classify transport for logging only — they do **not**
 uniquely explain Sep 15 poll #1 (no row-level detail in poll #1 logs) or
@@ -42,8 +88,8 @@ hour-2 `MOOMOO_PROTOCOL_ERROR` (separate open hypotheses). Timeout
 still reports `PROSPECTIVE_NO_POST_SIGNAL_BAR`; the last fetch stats distinguish
 empty vs TZ-dropped vs pre-signal rows. PIT is unchanged.
 
-Follow-up (not in this repair): reuse one quote context and poll `get_cur_kline`
-to cut 5s connect-churn. Hour-2 `MOOMOO_PROTOCOL_ERROR` may include frequency
+Follow-up (not in this repair): poll `get_cur_kline` instead of repeated history
+pulls where vendor semantics allow. Hour-2 `MOOMOO_PROTOCOL_ERROR` may include frequency
 limit, timeout, connect-churn, or other vendor conditions — operator notes about
 quota/resume are lore, not receipt-cited facts. `retMsg` is preserved for the
 next RTH attempt.
@@ -108,6 +154,10 @@ python tools/providers/run_bar_ohlcv_comparator_experiment.py `
 ```
 
 Item 9 remains **PARTIAL / NOT_CALIBRATED** after receipts; a successful bar fetch is not calibration.
+Governed future calibration follows [ITEM9_CALIBRATION_PROTOCOL_V1.md](../architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md).
+Mode B receipts must hash fetched kline rows (`BarLoadResult.raw_rows`). Empty
+`raw_provenance_hash` (SHA256 of `[]`) is path-proof only and is not corpus-admissible.
+Do not rewrite already-persisted receipts.
 
 ## Related harness
 

@@ -119,6 +119,23 @@ function formatPercent(value: unknown, digits = 1) {
   return Number.isFinite(number) ? `${number.toFixed(digits)}%` : "—";
 }
 
+/** Human short timestamp for L2 meta lines; raw ISO stays in detail surfaces. */
+function formatShortTime(iso: string | null | undefined): string {
+  if (!iso) return "awaiting snapshot";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    }).format(date);
+  } catch {
+    return iso;
+  }
+}
+
 async function readJson<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, init);
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim());
@@ -404,7 +421,7 @@ export function DiscoverObservability({
               </button>
             ))}
             <span className="discover-as-of">
-              Discovery {mixed?.discovery_as_of ?? "awaiting snapshot"} · Market poll every{" "}
+              Discovery {formatShortTime(mixed?.discovery_as_of)} · Market poll every{" "}
               {mixed?.poll_interval_seconds ?? 3}s
             </span>
           </div>
@@ -534,7 +551,7 @@ export function DiscoverObservability({
               <span>
                 Preset: {candidateSet.screen_id} v{candidateSet.screen_version}
               </span>
-              <span>Last refresh: {candidateSet.received_at}</span>
+              <span>Last refresh: {formatShortTime(candidateSet.received_at)}</span>
               <span>Candidates: {candidateSet.candidate_count}</span>
               <span>Quality: {candidateSet.quality}</span>
             </div>
@@ -564,7 +581,7 @@ export function DiscoverObservability({
                   ) : null}
                 </div>
                 <div className="discover-card-footer">
-                  <span>Freshness: {candidateSet?.received_at ?? "—"}</span>
+                  <span>Freshness: {formatShortTime(candidateSet?.received_at)}</span>
                   <span>Quality: {candidate.quality}</span>
                   {allowMutations ? (
                     <button type="button" onClick={() => void openWorkspace(candidate.instrument_id)}>

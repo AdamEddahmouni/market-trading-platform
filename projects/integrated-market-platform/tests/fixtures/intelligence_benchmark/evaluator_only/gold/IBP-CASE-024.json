@@ -1,0 +1,6 @@
+{
+  "case_id": "IBP-CASE-024",
+  "authority": "EVALUATOR_ONLY",
+  "gold_answer": "synthetic-gold-024",
+  "do_not_expose_to_sut": true
+}

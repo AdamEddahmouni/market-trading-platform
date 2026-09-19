@@ -1,0 +1,107 @@
+{
+  "artifact_kind": "historical_development_dataset_manifest_v1",
+  "bar_resolution": "1_MINUTE",
+  "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+  "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+  "created_at_ns": 1789701293745231100,
+  "dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+  "dataset_id": "HIST-DEV-AAPL",
+  "dataset_version": "0.1.0",
+  "duplicate_row_count": 0,
+  "excluded_row_count": 5011,
+  "interval": {
+    "end_date": "2026-09-16",
+    "session_dates": [
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16"
+    ],
+    "start_date": "2026-09-10"
+  },
+  "lineage": {
+    "historical_provenance": {
+      "artifact_kind": "historical_development_provenance_v1",
+      "availability_semantics": "bar_end_available",
+      "bar_resolution": "1_MINUTE",
+      "capability_id": "BAR_OHLCV_1M",
+      "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_id": "HIST-DEV-AAPL",
+      "dataset_version": "0.1.0",
+      "exclusion_reason": null,
+      "inclusion_reason": "historical_development_rth_build",
+      "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+      "provider_id": "moomoo.opend",
+      "provider_response_identity": "US.AAPL:2026-09-16:page:1",
+      "raw_payload_ref": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw",
+      "raw_payload_sha256": "5AC8CCA927FA8D16DD17B0A21537169FF17885E1EA1FB76AD134051D6A61CCB6",
+      "raw_timestamp_semantics": "bar_start_local",
+      "request_params": {
+        "bar_resolution": "1_MINUTE",
+        "end_date": "2026-09-16",
+        "session_policy": "US_EQUITY_RTH",
+        "start_date": "2026-09-10",
+        "ticker": "AAPL"
+      },
+      "requested_interval_end_ns": 1789617599000000000,
+      "requested_interval_start_ns": 1789012800000000000,
+      "retrieval_timestamp_ns": 1789701293745231100,
+      "returned_interval_end_ns": 1789617599000000000,
+      "returned_interval_start_ns": 1789012800000000000,
+      "schema_version": "dual_corpus.historical-provenance/1.0.0",
+      "session_policy": "US_EQUITY_RTH",
+      "timezone_policy": "America/New_York",
+      "transformation_lineage": [
+        "provider_fetch",
+        "rth_filter",
+        "dedupe",
+        "normalize_moomoo_kline_row"
+      ]
+    }
+  },
+  "missing_intervals": [],
+  "normalized_artifact_ref": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\normalized\\AAPL_normalized.json",
+  "providers": [
+    "moomoo.opend"
+  ],
+  "row_count": 1950,
+  "schema_version": "dual_corpus.historical-dataset-manifest/1.0.0",
+  "session_policy": "US_EQUITY_RTH",
+  "source_artifacts": [
+    {
+      "path": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw\\AAPL_2026-09-10.json",
+      "provider_response_identity": "US.AAPL:2026-09-10:page:1",
+      "session_date": "2026-09-10",
+      "sha256": "DE4CBD20836EBC820EC63BB5AB3E4CCD3532AF28C51C7152AE0CC668F72CE92D"
+    },
+    {
+      "path": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw\\AAPL_2026-09-11.json",
+      "provider_response_identity": "US.AAPL:2026-09-11:page:1",
+      "session_date": "2026-09-11",
+      "sha256": "B894AAD0C103A91BE7A1C0CDF58DD546023B228D29E17D3A6AF534E3E151D464"
+    },
+    {
+      "path": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw\\AAPL_2026-09-14.json",
+      "provider_response_identity": "US.AAPL:2026-09-14:page:1",
+      "session_date": "2026-09-14",
+      "sha256": "79994C14C5B44D28161405A874D09DEFA2E7494D1B710358F3C6D4F11BB05E7F"
+    },
+    {
+      "path": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw\\AAPL_2026-09-15.json",
+      "provider_response_identity": "US.AAPL:2026-09-15:page:1",
+      "session_date": "2026-09-15",
+      "sha256": "FE4166D6D1B0879B740AB93ED5CB50741AEDA041560A0BFA996802BE57232402"
+    },
+    {
+      "path": "artifacts\\historical-rth-development-real-provider-verification\\runs\\hist-rth-AAPL-6c57619101\\raw\\AAPL_2026-09-16.json",
+      "provider_response_identity": "US.AAPL:2026-09-16:page:1",
+      "session_date": "2026-09-16",
+      "sha256": "AED676583F0CE081DEFE6D050F1E0ADABD2C7BBAAC7CA8A594DF626A3387CA97"
+    }
+  ],
+  "universe": [
+    "canonical:EQUITY:XNAS:AAPL"
+  ]
+}

@@ -338,13 +338,18 @@ class PersistenceRestartTests(unittest.TestCase):
             self.assertFalse(payload["is_market_truth"])
             self.assertTrue(payload["equity_paper_does_not_validate_es"])
 
+            restarted.close()
+
 
 class IsolationTests(unittest.TestCase):
     def test_paper_vs_live_isolation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             repo = SqliteForwardTestRepository(LocalStateConnection(Path(tmp) / "s.sqlite3"))
-            with self.assertRaises(ForwardTestRepositoryError):
-                repo.put_decision(_decision(mode="LIVE"))
+            try:
+                with self.assertRaises(ForwardTestRepositoryError):
+                    repo.put_decision(_decision(mode="LIVE"))
+            finally:
+                repo.close()
         self.assertEqual(
             classify_calibration_run(env=SANDBOX_ENV, now_ns=T0, requested_mode="LIVE"),
             STATUS_LIVE_FORBIDDEN,
@@ -436,6 +441,7 @@ class IsolationTests(unittest.TestCase):
                     observation_label="FIXTURE_BACKED_NOT_PROSPECTIVE",
                     observed_at_ns=T0 + 1,
                 )
+            repo.close()
 
 
 class RunnerTests(unittest.TestCase):
@@ -541,6 +547,7 @@ class RunnerTests(unittest.TestCase):
             self.assertFalse(waiting_payload["calibrated"])
             self.assertFalse(missing_payload["empirical_active"])
             self.assertFalse(waiting_payload["empirical_active"])
+            restarted.close()
 
     def test_equity_firewall_blocks_es_with_tradier(self) -> None:
         with self.assertRaises(CalibrationAssetScopeError):
@@ -727,6 +734,7 @@ class HarnessReadyScoringTests(unittest.TestCase):
             self.assertFalse(result.calibrated)
             loaded = repo.get_decision(decision.forward_test_id)
             self.assertEqual(len(loaded.observations), 1)
+            repo.close()
 
 
 if __name__ == "__main__":

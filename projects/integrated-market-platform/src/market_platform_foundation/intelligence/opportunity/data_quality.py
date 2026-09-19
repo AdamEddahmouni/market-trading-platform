@@ -73,16 +73,20 @@ def project_opportunity_data_quality(
     if source == "LIVE_OBSERVATIONAL":
         status = "UNAVAILABLE"
         reason_codes = ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"]
-        if evaluation.status != "NOT_APPLICABLE":
-            freshness = evaluation.status
-            if evaluation.entitlement:
-                entitlement = evaluation.entitlement
+        freshness = evaluation.status
+        if evaluation.entitlement:
+            entitlement = evaluation.entitlement
     elif source not in {"FIXTURE", "REPLAY", "RECORDED_ARTIFACTS"}:
         freshness = evaluation.status
         if evaluation.entitlement:
             entitlement = evaluation.entitlement
         if fail_closed_for_actionable(evaluation) and status == "UNAVAILABLE":
             reason_codes = [evaluation.reason_code]
+    surface_flag = "OK"
+    freshness_token = str(freshness or "").upper()
+    status_token = str(status or "").upper()
+    if freshness_token == "STALE" or status_token in {"DEGRADED", "INVALID"}:
+        surface_flag = "STALE_OR_DEGRADED"
     return {
         "status": status,
         "freshness": freshness,
@@ -90,5 +94,6 @@ def project_opportunity_data_quality(
         "connection": connection,
         "source": source,
         "reason_codes": reason_codes,
+        "operator_surface_flag": surface_flag,
         "freshness_evaluation": evaluation.to_dict(),
     }

@@ -1,0 +1,201 @@
+{
+  "schema_version": "imp.intelligence-benchmark-suite/1.0.0",
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "suite_id": "ibp-v1-30",
+  "description": "Minimal IBP v1 catalog (30 cases; evaluator gold isolated)",
+  "cases": [
+    {
+      "case_id": "IBP-CASE-001",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
+      "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
+    },
+    {
+      "case_id": "IBP-CASE-002",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json"
+    },
+    {
+      "case_id": "IBP-CASE-003",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json"
+    },
+    {
+      "case_id": "IBP-CASE-004",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json"
+    },
+    {
+      "case_id": "IBP-CASE-005",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json"
+    },
+    {
+      "case_id": "IBP-CASE-006",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json"
+    },
+    {
+      "case_id": "IBP-CASE-007",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json"
+    },
+    {
+      "case_id": "IBP-CASE-008",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json"
+    },
+    {
+      "case_id": "IBP-CASE-009",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json"
+    },
+    {
+      "case_id": "IBP-CASE-010",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json"
+    },
+    {
+      "case_id": "IBP-CASE-011",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-011.json"
+    },
+    {
+      "case_id": "IBP-CASE-012",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-012.json"
+    },
+    {
+      "case_id": "IBP-CASE-013",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-013.json"
+    },
+    {
+      "case_id": "IBP-CASE-014",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-014.json"
+    },
+    {
+      "case_id": "IBP-CASE-015",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-015.json"
+    },
+    {
+      "case_id": "IBP-CASE-016",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-016.json"
+    },
+    {
+      "case_id": "IBP-CASE-017",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-017.json"
+    },
+    {
+      "case_id": "IBP-CASE-018",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-018.json"
+    },
+    {
+      "case_id": "IBP-CASE-019",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-019.json"
+    },
+    {
+      "case_id": "IBP-CASE-020",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-020.json"
+    },
+    {
+      "case_id": "IBP-CASE-021",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-021.json"
+    },
+    {
+      "case_id": "IBP-CASE-022",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-022.json"
+    },
+    {
+      "case_id": "IBP-CASE-023",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-023.json"
+    },
+    {
+      "case_id": "IBP-CASE-024",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-024.json"
+    },
+    {
+      "case_id": "IBP-CASE-025",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-025.json"
+    },
+    {
+      "case_id": "IBP-CASE-026",
+      "blind_mode": "A",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-026.json"
+    },
+    {
+      "case_id": "IBP-CASE-027",
+      "blind_mode": "B",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-027.json"
+    },
+    {
+      "case_id": "IBP-CASE-028",
+      "blind_mode": "C",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-028.json"
+    },
+    {
+      "case_id": "IBP-CASE-029",
+      "blind_mode": "D",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-029.json"
+    },
+    {
+      "case_id": "IBP-CASE-030",
+      "blind_mode": "E",
+      "input_profile": "synthetic_intelligence_fixture_v1",
+      "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-030.json"
+    }
+  ],
+  "smoke10_case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ]
+}

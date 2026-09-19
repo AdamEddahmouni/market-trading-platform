@@ -57,6 +57,36 @@ class ReplayStoreLoadingTests(unittest.TestCase):
         first.bars[0]["instrument_id"] = "MUTATED"
         self.assertEqual(second.bars[0]["instrument_id"], "TEST")
 
+    def test_load_decoded_snapshot_keeps_fixture_replay_under_live_gate(self) -> None:
+        snapshot = {
+            "evaluation": {"risk_decisions": []},
+            "events": [
+                {
+                    "available_time": 1,
+                    "event_type": "BAR_OHLCV_1M",
+                    "instrument_id": "HIST",
+                    "normalized_event_id": "hist-event-1",
+                    "bar_payload": {"open": 1.0, "high": 1.0, "low": 1.0, "close": 1.0, "volume": 1},
+                }
+            ],
+            "instrument_id": "HIST",
+            "session_id": "hist-session",
+            "strategy": {"interpretations": []},
+        }
+        with tempfile.TemporaryDirectory() as audit_dir:
+            store = store_module.ReplayStore(
+                collection_root=Path("collection"),
+                data_mode="FIXTURE_REPLAY",
+                mode="REPLAY",
+                assistant_audit_root=Path(audit_dir),
+            )
+            with patch(
+                "market_platform_foundation.market_data.live_config.live_observational_enabled",
+                return_value=True,
+            ):
+                store.load_decoded_snapshot(snapshot)
+        self.assertEqual(store.data_mode, "FIXTURE_REPLAY")
+
 
 if __name__ == "__main__":
     unittest.main()

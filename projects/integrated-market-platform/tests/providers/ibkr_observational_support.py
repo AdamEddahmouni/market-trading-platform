@@ -168,11 +168,13 @@ class FakeQueryProvider:
         *,
         secdef_rows: dict[str, list[dict[str, Any]]] | None = None,
         history_payloads: dict[int, dict[str, Any]] | None = None,
+        historical_trades_payloads: dict[int, dict[str, Any]] | None = None,
         accounts_payload: dict[str, Any] | None = None,
         available: bool = True,
     ) -> None:
         self.secdef_rows = secdef_rows or {}
         self.history_payloads = history_payloads or {}
+        self.historical_trades_payloads = historical_trades_payloads or {}
         self.accounts_payload = accounts_payload or {"accounts": ["DU1234567"]}
         self.available = available
         self.shutdown_calls = 0
@@ -212,6 +214,39 @@ class FakeQueryProvider:
                 },
             )
         )
+
+    def fetch_historical_trades(
+        self,
+        *,
+        con_id: int,
+        start_time_ns: int,
+        end_time_ns: int,
+        number_of_ticks: int = 1000,
+    ) -> dict[str, Any]:
+        self.requests.append(
+            (
+                "historical_trades",
+                {
+                    "con_id": con_id,
+                    "start_time_ns": start_time_ns,
+                    "end_time_ns": end_time_ns,
+                    "number_of_ticks": number_of_ticks,
+                },
+            )
+        )
+        static = self.historical_trades_payloads.get(con_id)
+        if static is not None:
+            return dict(static)
+        start_s = max(start_time_ns // 1_000_000_000, 1)
+        return {
+            "data": [
+                {
+                    "t": start_s,
+                    "price": 101.0,
+                    "size": 10,
+                }
+            ]
+        }
 
     def fetch_portfolio_accounts(self) -> dict[str, Any]:
         self.requests.append(("accounts", {}))

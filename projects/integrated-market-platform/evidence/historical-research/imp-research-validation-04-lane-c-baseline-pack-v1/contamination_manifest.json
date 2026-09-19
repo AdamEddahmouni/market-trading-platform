@@ -1,0 +1,605 @@
+{
+  "artifact_kind": "research_contamination_run_manifest_v1",
+  "authority_context": {
+    "item9_effect": "NONE",
+    "primary_authority": "HISTORICAL_DEVELOPMENT"
+  },
+  "corpus_inputs": [
+    {
+      "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+      "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+      "expected_dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794"
+    }
+  ],
+  "feature_lineage": [
+    {
+      "decision_cutoff_ns": 1789133460000000000,
+      "feature_as_of_ns": 1789133460000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133520000000000,
+      "feature_as_of_ns": 1789133520000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133580000000000,
+      "feature_as_of_ns": 1789133580000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133640000000000,
+      "feature_as_of_ns": 1789133640000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133700000000000,
+      "feature_as_of_ns": 1789133700000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133760000000000,
+      "feature_as_of_ns": 1789133760000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133820000000000,
+      "feature_as_of_ns": 1789133820000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133880000000000,
+      "feature_as_of_ns": 1789133880000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789133940000000000,
+      "feature_as_of_ns": 1789133940000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134000000000000,
+      "feature_as_of_ns": 1789134000000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134060000000000,
+      "feature_as_of_ns": 1789134060000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134120000000000,
+      "feature_as_of_ns": 1789134120000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134180000000000,
+      "feature_as_of_ns": 1789134180000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134240000000000,
+      "feature_as_of_ns": 1789134240000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134300000000000,
+      "feature_as_of_ns": 1789134300000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134360000000000,
+      "feature_as_of_ns": 1789134360000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134420000000000,
+      "feature_as_of_ns": 1789134420000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134480000000000,
+      "feature_as_of_ns": 1789134480000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134540000000000,
+      "feature_as_of_ns": 1789134540000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134600000000000,
+      "feature_as_of_ns": 1789134600000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134660000000000,
+      "feature_as_of_ns": 1789134660000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134720000000000,
+      "feature_as_of_ns": 1789134720000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134780000000000,
+      "feature_as_of_ns": 1789134780000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134840000000000,
+      "feature_as_of_ns": 1789134840000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134900000000000,
+      "feature_as_of_ns": 1789134900000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789134960000000000,
+      "feature_as_of_ns": 1789134960000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789135020000000000,
+      "feature_as_of_ns": 1789135020000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789135080000000000,
+      "feature_as_of_ns": 1789135080000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789135140000000000,
+      "feature_as_of_ns": 1789135140000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789135200000000000,
+      "feature_as_of_ns": 1789135200000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479060000000000,
+      "feature_as_of_ns": 1789479060000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479120000000000,
+      "feature_as_of_ns": 1789479120000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479180000000000,
+      "feature_as_of_ns": 1789479180000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479240000000000,
+      "feature_as_of_ns": 1789479240000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479300000000000,
+      "feature_as_of_ns": 1789479300000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479360000000000,
+      "feature_as_of_ns": 1789479360000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479420000000000,
+      "feature_as_of_ns": 1789479420000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479480000000000,
+      "feature_as_of_ns": 1789479480000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479540000000000,
+      "feature_as_of_ns": 1789479540000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479600000000000,
+      "feature_as_of_ns": 1789479600000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479660000000000,
+      "feature_as_of_ns": 1789479660000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479720000000000,
+      "feature_as_of_ns": 1789479720000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479780000000000,
+      "feature_as_of_ns": 1789479780000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479840000000000,
+      "feature_as_of_ns": 1789479840000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479900000000000,
+      "feature_as_of_ns": 1789479900000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789479960000000000,
+      "feature_as_of_ns": 1789479960000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480020000000000,
+      "feature_as_of_ns": 1789480020000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480080000000000,
+      "feature_as_of_ns": 1789480080000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480140000000000,
+      "feature_as_of_ns": 1789480140000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480200000000000,
+      "feature_as_of_ns": 1789480200000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480260000000000,
+      "feature_as_of_ns": 1789480260000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480320000000000,
+      "feature_as_of_ns": 1789480320000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480380000000000,
+      "feature_as_of_ns": 1789480380000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480440000000000,
+      "feature_as_of_ns": 1789480440000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480500000000000,
+      "feature_as_of_ns": 1789480500000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480560000000000,
+      "feature_as_of_ns": 1789480560000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480620000000000,
+      "feature_as_of_ns": 1789480620000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480680000000000,
+      "feature_as_of_ns": 1789480680000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480740000000000,
+      "feature_as_of_ns": 1789480740000000000,
+      "ref": "baseline_0_no_trade_v1"
+    },
+    {
+      "decision_cutoff_ns": 1789480800000000000,
+      "feature_as_of_ns": 1789480800000000000,
+      "ref": "baseline_0_no_trade_v1"
+    }
+  ],
+  "historical_dataset_manifest": {
+    "artifact_kind": "historical_development_dataset_manifest_v1",
+    "bar_resolution": "1_MINUTE",
+    "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+    "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+    "created_at_ns": 1789701547525029300,
+    "dataset_fingerprint": "EFCC71DFB5E3DABC8231E8CA000734784B2F250B84616F7341E19D9D031CF794",
+    "dataset_id": "HIST-DEV-AAPL",
+    "dataset_version": "0.1.0",
+    "duplicate_row_count": 0,
+    "excluded_row_count": 0,
+    "interval": {
+      "end_date": "2026-09-15",
+      "session_dates": [
+        "2026-09-11",
+        "2026-09-14",
+        "2026-09-15"
+      ],
+      "start_date": "2026-09-11"
+    },
+    "lineage": {
+      "historical_provenance": {
+        "artifact_kind": "historical_development_provenance_v1",
+        "availability_semantics": "bar_end_available",
+        "bar_resolution": "1_MINUTE",
+        "capability_id": "BAR_OHLCV_1M",
+        "code_sha": "f31e30fadf0b637bb6bfc26b37f337d8e8cf9bd7",
+        "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+        "dataset_id": "HIST-DEV-AAPL",
+        "dataset_version": "0.1.0",
+        "exclusion_reason": null,
+        "inclusion_reason": "historical_development_rth_build",
+        "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+        "provider_id": "fixture.historical",
+        "provider_response_identity": "fixture:canonical:EQUITY:XNAS:AAPL:2026-09-15",
+        "raw_payload_ref": "artifacts\\historical-rth-development\\runs\\hist-rth-AAPL-5aa3930b95\\raw",
+        "raw_payload_sha256": "A0ACBC384077BA7335AEEC548FBA6A383C9B6F81F52CB544F2939F618B725703",
+        "raw_timestamp_semantics": "bar_start_local",
+        "request_params": {
+          "bar_resolution": "1_MINUTE",
+          "end_date": "2026-09-15",
+          "session_policy": "US_EQUITY_RTH",
+          "start_date": "2026-09-11",
+          "ticker": "AAPL"
+        },
+        "requested_interval_end_ns": 1789531199000000000,
+        "requested_interval_start_ns": 1789099200000000000,
+        "retrieval_timestamp_ns": 1789701547525029300,
+        "returned_interval_end_ns": 1789531199000000000,
+        "returned_interval_start_ns": 1789099200000000000,
+        "schema_version": "dual_corpus.historical-provenance/1.0.0",
+        "session_policy": "US_EQUITY_RTH",
+        "timezone_policy": "America/New_York",
+        "transformation_lineage": [
+          "provider_fetch",
+          "rth_filter",
+          "dedupe",
+          "normalize_moomoo_kline_row"
+        ]
+      }
+    },
+    "missing_intervals": [
+      {
+        "missing_minute_count": 360,
+        "sample": [
+          "2026-09-11 10:00:00",
+          "2026-09-11 10:01:00",
+          "2026-09-11 10:02:00"
+        ],
+        "session_date": "2026-09-11",
+        "session_kind": "REGULAR"
+      },
+      {
+        "missing_minute_count": 390,
+        "sample": [
+          "2026-09-14 09:30:00",
+          "2026-09-14 09:31:00",
+          "2026-09-14 09:32:00"
+        ],
+        "session_date": "2026-09-14",
+        "session_kind": "REGULAR"
+      },
+      {
+        "missing_minute_count": 360,
+        "sample": [
+          "2026-09-15 10:00:00",
+          "2026-09-15 10:01:00",
+          "2026-09-15 10:02:00"
+        ],
+        "session_date": "2026-09-15",
+        "session_kind": "REGULAR"
+      }
+    ],
+    "normalized_artifact_ref": "artifacts\\historical-rth-development\\runs\\hist-rth-AAPL-5aa3930b95\\normalized\\AAPL_normalized.json",
+    "providers": [
+      "fixture.historical"
+    ],
+    "row_count": 60,
+    "schema_version": "dual_corpus.historical-dataset-manifest/1.0.0",
+    "session_policy": "US_EQUITY_RTH",
+    "source_artifacts": [
+      {
+        "path": "artifacts\\historical-rth-development\\runs\\hist-rth-AAPL-5aa3930b95\\raw\\AAPL_2026-09-11.json",
+        "provider_response_identity": "fixture:canonical:EQUITY:XNAS:AAPL:2026-09-11",
+        "session_date": "2026-09-11",
+        "sha256": "A39393E004CD93817423179F7CCF9C5641849F5D8B78E4E23A0575FCE566143A"
+      },
+      {
+        "path": "artifacts\\historical-rth-development\\runs\\hist-rth-AAPL-5aa3930b95\\raw\\AAPL_2026-09-14.json",
+        "provider_response_identity": "fixture:canonical:EQUITY:XNAS:AAPL:2026-09-14",
+        "session_date": "2026-09-14",
+        "sha256": "6C45288A5E9D1444AB024FAC905B02495E73426D74E22544BBF867E5F4811680"
+      },
+      {
+        "path": "artifacts\\historical-rth-development\\runs\\hist-rth-AAPL-5aa3930b95\\raw\\AAPL_2026-09-15.json",
+        "provider_response_identity": "fixture:canonical:EQUITY:XNAS:AAPL:2026-09-15",
+        "session_date": "2026-09-15",
+        "sha256": "898CF6421FD33B081E32E624DBB8336BFE05372E2BB3CF94453AEF2CBE7EB402"
+      }
+    ],
+    "universe": [
+      "canonical:EQUITY:XNAS:AAPL"
+    ]
+  },
+  "holdout": {
+    "holdout_end_ns": 1789480800000000000,
+    "holdout_start_ns": 1789480140000000000
+  },
+  "item9_prospective_inputs": [],
+  "lineage_complete": true,
+  "run_id": "17158E3B946EC1A418D184D0A2B9F761",
+  "schema_version": "dual_corpus.research-contamination-run/1.0.0",
+  "splits": {
+    "test": {
+      "end_ns": 1789480800000000000,
+      "start_ns": 1789480140000000000
+    },
+    "train": {
+      "end_ns": 1789479360000000000,
+      "start_ns": 1789133460000000000
+    }
+  },
+  "target_leakage": [],
+  "training_examples": [
+    {
+      "decision_time_ns": 1789133460000000000,
+      "snapshot_id": "train-1789133460000000000"
+    },
+    {
+      "decision_time_ns": 1789133520000000000,
+      "snapshot_id": "train-1789133520000000000"
+    },
+    {
+      "decision_time_ns": 1789133580000000000,
+      "snapshot_id": "train-1789133580000000000"
+    },
+    {
+      "decision_time_ns": 1789133640000000000,
+      "snapshot_id": "train-1789133640000000000"
+    },
+    {
+      "decision_time_ns": 1789133700000000000,
+      "snapshot_id": "train-1789133700000000000"
+    },
+    {
+      "decision_time_ns": 1789133760000000000,
+      "snapshot_id": "train-1789133760000000000"
+    },
+    {
+      "decision_time_ns": 1789133820000000000,
+      "snapshot_id": "train-1789133820000000000"
+    },
+    {
+      "decision_time_ns": 1789133880000000000,
+      "snapshot_id": "train-1789133880000000000"
+    },
+    {
+      "decision_time_ns": 1789133940000000000,
+      "snapshot_id": "train-1789133940000000000"
+    },
+    {
+      "decision_time_ns": 1789134000000000000,
+      "snapshot_id": "train-1789134000000000000"
+    },
+    {
+      "decision_time_ns": 1789134060000000000,
+      "snapshot_id": "train-1789134060000000000"
+    },
+    {
+      "decision_time_ns": 1789134120000000000,
+      "snapshot_id": "train-1789134120000000000"
+    },
+    {
+      "decision_time_ns": 1789134180000000000,
+      "snapshot_id": "train-1789134180000000000"
+    },
+    {
+      "decision_time_ns": 1789134240000000000,
+      "snapshot_id": "train-1789134240000000000"
+    },
+    {
+      "decision_time_ns": 1789134300000000000,
+      "snapshot_id": "train-1789134300000000000"
+    },
+    {
+      "decision_time_ns": 1789134360000000000,
+      "snapshot_id": "train-1789134360000000000"
+    },
+    {
+      "decision_time_ns": 1789134420000000000,
+      "snapshot_id": "train-1789134420000000000"
+    },
+    {
+      "decision_time_ns": 1789134480000000000,
+      "snapshot_id": "train-1789134480000000000"
+    },
+    {
+      "decision_time_ns": 1789134540000000000,
+      "snapshot_id": "train-1789134540000000000"
+    },
+    {
+      "decision_time_ns": 1789134600000000000,
+      "snapshot_id": "train-1789134600000000000"
+    },
+    {
+      "decision_time_ns": 1789134660000000000,
+      "snapshot_id": "train-1789134660000000000"
+    },
+    {
+      "decision_time_ns": 1789134720000000000,
+      "snapshot_id": "train-1789134720000000000"
+    },
+    {
+      "decision_time_ns": 1789134780000000000,
+      "snapshot_id": "train-1789134780000000000"
+    },
+    {
+      "decision_time_ns": 1789134840000000000,
+      "snapshot_id": "train-1789134840000000000"
+    },
+    {
+      "decision_time_ns": 1789134900000000000,
+      "snapshot_id": "train-1789134900000000000"
+    },
+    {
+      "decision_time_ns": 1789134960000000000,
+      "snapshot_id": "train-1789134960000000000"
+    },
+    {
+      "decision_time_ns": 1789135020000000000,
+      "snapshot_id": "train-1789135020000000000"
+    },
+    {
+      "decision_time_ns": 1789135080000000000,
+      "snapshot_id": "train-1789135080000000000"
+    },
+    {
+      "decision_time_ns": 1789135140000000000,
+      "snapshot_id": "train-1789135140000000000"
+    },
+    {
+      "decision_time_ns": 1789135200000000000,
+      "snapshot_id": "train-1789135200000000000"
+    },
+    {
+      "decision_time_ns": 1789479060000000000,
+      "snapshot_id": "train-1789479060000000000"
+    },
+    {
+      "decision_time_ns": 1789479120000000000,
+      "snapshot_id": "train-1789479120000000000"
+    },
+    {
+      "decision_time_ns": 1789479180000000000,
+      "snapshot_id": "train-1789479180000000000"
+    },
+    {
+      "decision_time_ns": 1789479240000000000,
+      "snapshot_id": "train-1789479240000000000"
+    },
+    {
+      "decision_time_ns": 1789479300000000000,
+      "snapshot_id": "train-1789479300000000000"
+    },
+    {
+      "decision_time_ns": 1789479360000000000,
+      "snapshot_id": "train-1789479360000000000"
+    }
+  ]
+}

@@ -4,59 +4,33 @@ import type { Mode } from "./mode-session/types";
 type NavLinkDef = {
   to: string;
   label: string;
-  gated?: boolean;
-  emphasis?: "radar";
+  end?: boolean;
   modeHint?: Partial<Record<Mode, string>>;
   operatorOnly?: boolean;
 };
 
+/**
+ * Primary IA (UIR-01): operator mental model, not service structure.
+ * Routes and labels stay in lockstep with App.tsx (FRONTEND_GUIDE rule).
+ */
 const primaryLinks: NavLinkDef[] = [
-  { to: "/", label: "Overview" },
   {
-    to: "/explore",
-    label: "Markets",
+    to: "/",
+    label: "Command",
+    end: true,
     modeHint: {
-      DEMO: "Frozen bridges",
+      DEMO: "Replay desk",
+      PAPER: "Decision desk",
+      LIVE: "Observation desk",
+    },
+  },
+  {
+    to: "/radar",
+    label: "Radar",
+    modeHint: {
+      DEMO: "Replay discovery",
       PAPER: "Candidate discovery",
-      LIVE: "Live scanner",
-    },
-  },
-  {
-    to: "/discover",
-    label: "Opportunity Radar",
-    emphasis: "radar",
-    modeHint: {
-      DEMO: "Observational queue",
-      PAPER: "Discovery desk",
-      LIVE: "Read-only monitor",
-    },
-  },
-  {
-    to: "/signals",
-    label: "Signals",
-    modeHint: {
-      DEMO: "Replay attention",
-      PAPER: "Attention queue",
-      LIVE: "Live attention",
-    },
-  },
-  {
-    to: "/research",
-    label: "Research",
-    gated: true,
-    modeHint: {
-      DEMO: "Replay-bound",
-      PAPER: "Research to sim",
-      LIVE: "Read-only",
-    },
-  },
-  {
-    to: "/portfolio",
-    label: "Portfolio",
-    modeHint: {
-      DEMO: "Read-only",
-      PAPER: "Orders history",
-      LIVE: "Broker-observed",
+      LIVE: "Live monitor",
     },
   },
   {
@@ -69,21 +43,39 @@ const primaryLinks: NavLinkDef[] = [
     },
   },
   {
-    to: "/control",
-    label: "Risk",
+    to: "/portfolio",
+    label: "Portfolio",
     modeHint: {
-      DEMO: "Operator controls",
-      PAPER: "Operator controls",
-      LIVE: "Operator controls",
+      DEMO: "Read-only",
+      PAPER: "Paper positions",
+      LIVE: "Broker-observed",
     },
   },
   {
     to: "/research",
+    label: "Research",
+    modeHint: {
+      DEMO: "Replay-bound evidence",
+      PAPER: "Evidence & validation",
+      LIVE: "Read-only evidence",
+    },
+  },
+  {
+    to: "/lab",
     label: "Lab",
     modeHint: {
-      DEMO: "Model & sim labs",
-      PAPER: "Model & sim labs",
-      LIVE: "Read-only labs",
+      DEMO: "Experimental workbench",
+      PAPER: "Experimental workbench",
+      LIVE: "Read-only workbench",
+    },
+  },
+  {
+    to: "/control",
+    label: "Control",
+    modeHint: {
+      DEMO: "Platform operations",
+      PAPER: "Platform operations",
+      LIVE: "Platform operations",
     },
   },
 ];
@@ -103,7 +95,6 @@ const operatorLinks: NavLinkDef[] = [
 
 type Props = {
   mode?: Mode;
-  layout?: "horizontal" | "sidebar";
 };
 
 function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
@@ -113,22 +104,19 @@ function accessibleLabel(link: NavLinkDef, mode?: Mode): string | undefined {
 
 function NavItem({ link, mode }: { link: NavLinkDef; mode?: Mode }) {
   const ariaLabel = accessibleLabel(link, mode);
-  const isOverview = link.to === "/" && link.label === "Overview";
   return (
     <NavLink
       to={link.to}
       className={({ isActive }) => {
         const classes = ["nav-link"];
         if (isActive) classes.push("active");
-        if (link.emphasis === "radar") classes.push("nav-link-radar");
         if (link.operatorOnly) classes.push("nav-link-operator");
         return classes.join(" ");
       }}
-      end={isOverview}
+      end={link.end ?? false}
       aria-label={ariaLabel}
     >
       {link.label}
-      {link.gated ? <span className="gated-badge">GATED</span> : null}
       {mode && link.modeHint?.[mode] ? (
         <span className="nav-mode-hint">{link.modeHint[mode]}</span>
       ) : null}
@@ -136,10 +124,9 @@ function NavItem({ link, mode }: { link: NavLinkDef; mode?: Mode }) {
   );
 }
 
-export function NavShell({ mode, layout = "sidebar" }: Props) {
-  const navClass = layout === "sidebar" ? "nav-shell nav-shell-sidebar" : "nav-shell";
+export function NavShell({ mode }: Props) {
   return (
-    <nav className={navClass} aria-label="Primary">
+    <nav className="nav-shell nav-shell-sidebar" aria-label="Primary">
       <div className="nav-primary-group">
         {primaryLinks.map((link) => (
           <NavItem key={`${link.to}-${link.label}`} link={link} mode={mode} />

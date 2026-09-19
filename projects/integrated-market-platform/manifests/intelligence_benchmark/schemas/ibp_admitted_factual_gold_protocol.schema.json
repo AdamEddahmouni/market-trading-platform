@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://imp.local/schemas/intelligence_benchmark/ibp_admitted_factual_gold_protocol.schema.json",
+  "title": "IbpAdmittedFactualGoldProtocolV1",
+  "type": "object",
+  "required": [
+    "artifact_kind",
+    "schema_version",
+    "hypothesis_id",
+    "protocol_version",
+    "hash_algorithm",
+    "gold_source_independent",
+    "caseset_hash",
+    "goldset_hash",
+    "cases",
+    "freeze"
+  ],
+  "properties": {
+    "artifact_kind": {
+      "const": "ibp_admitted_factual_gold_protocol_v1"
+    },
+    "schema_version": {
+      "const": "imp.ibp-admitted-factual-gold/1.0.0"
+    },
+    "hypothesis_id": {
+      "const": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1"
+    },
+    "protocol_version": {
+      "const": "IBP_FACTUAL_SMOKE_V1"
+    },
+    "hash_algorithm": {
+      "const": "sha256-canonical-json-v1"
+    },
+    "gold_source_independent": {
+      "const": true
+    },
+    "caseset_hash": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "goldset_hash": {
+      "type": "string",
+      "pattern": "^[A-F0-9]{64}$"
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/case"
+      }
+    },
+    "freeze": {
+      "type": "object",
+      "required": ["status", "cases_constructed", "smoke10_executed"],
+      "properties": {
+        "status": { "enum": ["UNFROZEN", "FROZEN"] },
+        "cases_constructed": { "type": "boolean" },
+        "smoke10_executed": { "type": "boolean" }
+      }
+    }
+  },
+  "$defs": {
+    "case": {
+      "type": "object",
+      "required": [
+        "CASE_ID",
+        "MODE",
+        "QUESTION",
+        "EVIDENCE_SET",
+        "EVIDENCE_FINGERPRINT",
+        "TEMPORAL_CUTOFF",
+        "EXPECTED_FACTS",
+        "ANSWER_NORMALIZATION",
+        "ACCEPTABLE_EQUIVALENTS",
+        "UNKNOWN_POLICY",
+        "PROVENANCE_REQUIREMENTS",
+        "ROUTING_EXPECTATION",
+        "GOLD_HASH",
+        "SCORING_GATE",
+        "EVIDENCE_ACCESS_MODE",
+        "evaluator_gold_ref"
+      ],
+      "properties": {
+        "CASE_ID": { "type": "string" },
+        "MODE": { "type": "string" },
+        "SCORING_GATE": {
+          "enum": ["ANSWERABLE_FROM_ADMITTED_EVIDENCE", "EXCLUDED_UNANSWERABLE"]
+        },
+        "EVIDENCE_ACCESS_MODE": {
+          "enum": ["ADMITTED_EVIDENCE_FIXED", "CURRENT_WEB_LOOKUP"]
+        },
+        "evaluator_gold_ref": {
+          "type": "string",
+          "pattern": "^evaluator_only/admitted_factual_gold/"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

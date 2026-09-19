@@ -1,0 +1,103 @@
+/*
+ * Shared opportunity primitives (UIR-01C) — compact card + queue used by
+ * Command and Paper surfaces. Tokens only; state colors come from the
+ * --imp-state-* semantic tokens via StatePill/FreshnessIndicator.
+ */
+
+.imp-opportunity-queue {
+  display: grid;
+  gap: var(--imp-space-3);
+  min-width: 0;
+}
+
+.imp-opportunity-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-3);
+  min-width: 0;
+  padding: var(--imp-space-3) var(--imp-space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-lg);
+  background: var(--surface-1);
+}
+
+.imp-opportunity-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-1);
+  min-width: 0;
+}
+
+.imp-opportunity-card-state-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-opportunity-card-title {
+  margin: 0;
+  font-size: var(--imp-text-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.imp-opportunity-card-identity {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-opportunity-card-identity code {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  overflow-wrap: anywhere;
+}
+
+.imp-opportunity-card-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--imp-space-2) var(--imp-space-4);
+  margin: 0;
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-opportunity-card-meta dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.imp-opportunity-card-meta dd {
+  margin: 1px 0 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.imp-opportunity-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-opportunity-muted {
+  color: var(--text-muted);
+  font-size: var(--imp-text-xs);
+}
+
+.imp-opportunity-visibility-note {
+  margin: 0;
+}
+
+.imp-opportunity-lines {
+  margin: 0;
+  padding-left: var(--imp-space-4);
+}

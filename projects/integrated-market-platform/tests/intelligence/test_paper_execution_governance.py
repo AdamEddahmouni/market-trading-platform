@@ -255,7 +255,7 @@ class DailyLossTests(unittest.TestCase):
 
 class PaperIntegrationTests(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
+        self.enterContext(mock.patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}))
 
     def test_no_live_broker_import_in_execution_path(self) -> None:
         from market_platform_foundation.intelligence import execution as package

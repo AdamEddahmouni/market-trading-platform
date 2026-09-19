@@ -1,3 +1,4 @@
+import { StatePill } from "../imp-ui/StatePill";
 import type { ProviderHealthResponse } from "./liveDashboardViewModel";
 import { liveConnectionMetrics } from "./liveDashboardViewModel";
 
@@ -6,6 +7,10 @@ type Props = {
   state: "loading" | "ready" | "error";
 };
 
+/**
+ * Live connection summary. Provider/data-health states render through the
+ * semantic-state adapter (tone + human label); plain metrics stay plain.
+ */
 export function LiveProviderRibbon({ health, state }: Props) {
   return (
     <section className="live-provider-ribbon" aria-label="Connection summary">
@@ -17,7 +22,13 @@ export function LiveProviderRibbon({ health, state }: Props) {
           {liveConnectionMetrics(health).map((metric) => (
             <div key={metric.id} className={metric.value === "UNAVAILABLE" ? "unavailable" : undefined}>
               <dt>{metric.label}</dt>
-              <dd>{metric.value}</dd>
+              <dd>
+                {metric.tone ? (
+                  <StatePill tone={metric.tone} label={metric.value} raw={metric.raw} size="sm" />
+                ) : (
+                  metric.value
+                )}
+              </dd>
               {metric.detail ? <span>{metric.detail}</span> : null}
             </div>
           ))}

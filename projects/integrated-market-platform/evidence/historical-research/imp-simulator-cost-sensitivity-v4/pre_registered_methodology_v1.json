@@ -1,0 +1,44 @@
+{
+  "artifact_kind": "imp_simulator_cost_sensitivity_v4_pre_registered_methodology_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4",
+  "source_finding_ids": ["LANE-E-FND-016"],
+  "spec_ready": true,
+  "implementation_ready": false,
+  "executed": false,
+  "parent_experiment_id": "imp-integrate-experiment-05-r3-opend-fill-economics-v3",
+  "parent_experiment_definition_hash": "81EFC1B1E2650010962F81F5B58B7E614E1AC1C2232E7862890CBB37BF5F3F61",
+  "proposed_experiment_id": "imp-simulator-cost-sensitivity-v4-lane-e",
+  "dataset": {
+    "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+    "dataset_id": "HIST-DEV-AAPL",
+    "instrument": "AAPL",
+    "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT"
+  },
+  "accounting_version": "simulator-research-fill-economics/3.0.1",
+  "cost_model_version": "simulator-research/notional-linear-bps/1.0.0",
+  "simulator_version": "phase7.bar-conservative/1.1.0",
+  "v3_baseline_cost_slippage_bps": 5.0,
+  "risk_policy_defaults": {
+    "commission_minor_per_share": 0,
+    "fee_minor_per_order": 0,
+    "price_scale": 100,
+    "initial_cash_minor": 100000000
+  },
+  "cost_slippage_bps_grid": [0.0, 1.25, 2.5, 5.0, 7.5, 10.0, 20.0],
+  "cost_slippage_bps_grid_size_max": 7,
+  "no_tuning_policy": "Grid and baselines fixed before execution; no HISTORICAL_RESEARCH_TEST selection; no v3 definition in-place edits.",
+  "split_policy_id": "historical_chronological_split_v1",
+  "metrics_scope": {
+    "simulator_and_primary_metrics": "HISTORICAL_DEVELOPMENT_VALIDATE",
+    "descriptive_holdout": "HISTORICAL_RESEARCH_TEST"
+  },
+  "primary_metric": "net_pnl",
+  "secondary_metrics": ["transaction_costs", "gross_pnl", "simulated_fills", "traded_notional"],
+  "invariants": [
+    "fills_unchanged_vs_bps0_sibling",
+    "gross_pnl_unchanged_vs_bps0_sibling",
+    "contamination_audit_PASS"
+  ],
+  "methodology_doc": "docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md"
+}

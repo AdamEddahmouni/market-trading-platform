@@ -70,25 +70,32 @@ Use `.cursor/agents/` for role-specific instructions:
 - `frontend-review` — query/state semantics, mode surfaces, accessibility, and
   bundle behavior.
 
-Parallel delegation is appropriate only for independent read-only discovery,
-independent pure implementation slices, or isolated `PARALLEL_SAFE` tests.
-Keep shared files, validation-manifest changes, persistence, authority,
-execution, CI, and documentation-index changes serial. A reviewer must inspect
-the combined diff after parallel work.
+Default to **one agent**. Parallel delegation is appropriate only for
+independent read-only discovery, independent pure implementation slices in
+separate worktrees, or isolated `PARALLEL_SAFE` tests. Keep shared files,
+validation-manifest changes, persistence, authority, execution, evidence-
+sensitive runtime, CI, and documentation-index changes serial. A reviewer must
+inspect the combined diff after parallel work. See
+[AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md) and
+[sops/GIT_WORKTREE.md](sops/GIT_WORKTREE.md).
 
 ## Model routing
 
-The machine-readable policy is `.cursor/model-routing.json` and the durable
-explanation is [AI_MODEL_STRATEGY.md](AI_MODEL_STRATEGY.md):
+Canonical policy is repo-root `.cursor/rules/imp-model-policy.mdc` plus
+[AGENT_OPERATING_SYSTEM.md](AGENT_OPERATING_SYSTEM.md). Machine-readable copy:
+`.cursor/model-routing.json`. Durable explanation:
+[AI_MODEL_STRATEGY.md](AI_MODEL_STRATEGY.md).
 
-- **cheap:** exploration, inventory, formatting, mechanical edits, and
-  straightforward test expansion;
-- **normal:** ordinary implementation, focused debugging, and routine docs;
-- **high-reasoning:** architecture, safety, Paper execution, persistence,
-  cross-cutting review, and final closure.
+- **Composer (default):** exploration, mechanical edits, ordinary
+  implementation, tests, docs, UI, Git, and ordinary orchestration.
+  The historical **cheap** and **normal** tiers both map here — never to a
+  Fast variant.
+- **Grok 4.6 High (escalation only):** architectural reconciliation, difficult
+  debugging after Composer stall, high-risk evidence-sensitive decisions,
+  multi-agent synthesis, or material Composer failure.
 
-Model names are intentionally policy aliases rather than permanent vendor
-versions. The task risk determines the tier.
+Do not start on Grok because a task is large or because a Paper/architecture
+file appears in the diff. Never use Fast model variants.
 
 ## Evidence and closure
 

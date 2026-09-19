@@ -1,0 +1,139 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_h_findings_registry_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "evidence_language": "bounded_historical_observation_and_candidate_hypothesis_not_production_ready",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "H",
+  "registry_version": "1.0.0",
+  "source_runs": {
+    "lane_c_baseline_pack_v1_frozen": {
+      "canonical_evidence_dir": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1",
+      "experiment_definition_hash": "C2E706736B1EE70EDB99BDA9F7533FA59C6FAA2623995EB4422AE6FC02D66E1E",
+      "pack_run_id": "17158E3B946EC1A418D184D0A2B9F761",
+      "prediction_coupled_simulator": false,
+      "note": "read-only frozen pack; not re-executed in Lane H"
+    },
+    "integrate_r2_opend_baseline_pack_v2_frozen": {
+      "canonical_evidence_dir": "evidence/historical-research/imp-integrate-experiment-05-r2-opend-baseline-pack-v2",
+      "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+      "experiment_definition_hash": "E8C9ADB9E295EBE913C254FCBBBDDC48A794D9FDE79492CB341138855A67C2A4",
+      "frozen_research_code_sha": "0ef9a72c0709165d48b2e6819f78f266231536a4",
+      "pack_run_id": "F660218C05BD2EDDD943938FF90BB5FE",
+      "prediction_coupled_simulator": true,
+      "note": "read-only frozen pack merged on main @ a080337d (PR #268); not mutated in Lane H"
+    },
+    "lane_d_smoke10_stub_frozen": {
+      "run_id": "ibp-smoke10-76DDD188CD080365",
+      "sut_profile": "ibp-deterministic-stub-v1",
+      "note": "read-only; not re-executed in Lane H"
+    },
+    "lane_i1_nonstub_sut_pr267": {
+      "pull_request": 267,
+      "execution_status": "NOT_EXECUTED",
+      "review_status": "PENDING_I1_REVIEW",
+      "note": "non-stub SUT defined only; Smoke10 non-stub run deliberately not executed in Lane H"
+    }
+  },
+  "synthesis_main_sha": "a080337d7f2fdff9e86c4345aa6116689172d3ba",
+  "findings": [
+    {
+      "FINDING_ID": "LANE-H-FND-001",
+      "SOURCE_RUN": "lane_c_v1:pack_run_id=17158E3B946EC1A418D184D0A2B9F761 vs integrate_r2_v2:pack_run_id=F660218C05BD2EDDD943938FF90BB5FE; baseline_0_no_trade_v1",
+      "OBSERVATION": "Baseline pack v1 (bar-path / non-prediction-coupled harness) reports simulated_fills=9, turnover=9, gross_pnl=0, net_pnl=0 on HISTORICAL_DEVELOPMENT_VALIDATE for every strategy including baseline_0_no_trade_v1 (abstention_rate=1.0, sample_count=0). Frozen OpenD baseline pack v2 with prediction_coupled_simulator=true reports coupling_observation trade_intents=0, fills=0, turnover=0 for the same no-trade strategy on the five-session AAPL OpenD corpus.",
+      "LIMITATION": "HIGH confidence in recorded counters from frozen manifests; comparison spans different corpora (fixture EFCC71DF… vs OpenD 355FDBB…). This documents simulator/predictor alignment machinery, not tradable edge.",
+      "POSSIBLE_CAUSE": "Prediction-conditioned simulator gating (PR #266) stops bar-path replay fills when the strategy emits no trade intents; v1 harness replayed bar-path events independent of predictor abstention.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-SIMULATOR-PREDICTION-COUPLED-V1",
+      "REQUIRED_DATA": "None for closure; optional regression trace comparing v1 vs v2 harness flags on a single corpus in a future engineering experiment.",
+      "PROPOSED_TEST": "Treat LANE-E-HYP-SIMULATOR-PREDICTION-COUPLED-V1 and LANE-E-HYP-BASELINE0-SIM-ALIGNMENT-V1 as satisfied at bounded historical authority; do not retune frozen v2 definition.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-002",
+      "SOURCE_RUN": "integrate_r2_v2:pack_run_id=F660218C05BD2EDDD943938FF90BB5FE; baselines 1–3 HISTORICAL_DEVELOPMENT_VALIDATE",
+      "OBSERVATION": "With prediction coupling enabled, baseline_1_momentum_5m_sign_v1 shows trade_intents=387, fills=386, simulated_fills=386; baseline_2_mean_reversion_5m_sign_v1 shows 387/386/386; baseline_3_volume_momentum_5m_v1 shows 148/147/147. Directional_accuracy on HISTORICAL_DEVELOPMENT_VALIDATE is approximately 0.463 (momentum), 0.527 (mean reversion), and 0.473 (volume-momentum) with sample_count 387, 387, and 148 respectively.",
+      "LIMITATION": "BOUNDED_HISTORICAL_OBSERVATION on five AAPL RTH sessions only; accuracies near 0.5 are descriptive and do not establish calibration, profitability, or production readiness.",
+      "POSSIBLE_CAUSE": "Real OpenD bar paths break fixture monotone sign pathology; fill counts now track non-abstaining predictions rather than identical bar-path replay.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "REQUIRED_DATA": "Larger session holdout and pre-registered manifests before any edge claim.",
+      "PROPOSED_TEST": "Close LANE-E-HYP-OPEND-MULTI-SESSION-V2 as observed; any strategy comparison at scale requires a NEW experiment (not v2 retune).",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-003",
+      "SOURCE_RUN": "integrate_r2_v2:pack_run_id=F660218C05BD2EDDD943938FF90BB5FE; baselines 1–3 coupling_observation",
+      "OBSERVATION": "Despite hundreds of simulated fills for directional baselines, coupling_observation and split metrics report gross_pnl=0.0, net_pnl=0.0, and estimated_costs=0.0 for baselines 1–3 on HISTORICAL_DEVELOPMENT_VALIDATE.",
+      "LIMITATION": "HIGH confidence in zero PnL columns; interpretation limited to research simulator paper_bar_conservative_v1 with current fill economics wiring.",
+      "POSSIBLE_CAUSE": "Prediction-coupled fill aggregation sums fill.realized_pnl (defaulting missing values to 0); estimated_costs applies abs(gross_pnl)*bps so zero gross yields zero costs.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+      "REQUIRED_DATA": "Instrumented fill records with non-null realized_pnl (or explicit mark-to-market policy) and cost model inputs in a NEW v3 experiment after an engineering change.",
+      "PROPOSED_TEST": "Register imp-integrate-experiment-05-r3 (or successor) with frozen v2 strategies but updated simulator economics; forbidden: editing E8C9ADB9… v2 evidence or retuning v2 in Lane H.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-004",
+      "SOURCE_RUN": "integrate_r2_v2:contamination_audit run_id=F660218C05BD2EDDD943938FF90BB5FE",
+      "OBSERVATION": "OpenD baseline pack v2 contractual contamination audit CONTAMINATION_STATUS=PASS with all five questions PASS, supplemental_violations=[], ITEM9_EFFECT=NONE.",
+      "LIMITATION": "PASS scope is contractual leakage properties only; does not certify predictive skill.",
+      "POSSIBLE_CAUSE": "Chronological split and corpus pin policies held for multi-session OpenD replay.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-005",
+      "SOURCE_RUN": "integrate_r2_v2:pack_run_id=F660218C05BD2EDDD943938FF90BB5FE; reproducibility.first_run_fingerprint",
+      "OBSERVATION": "Deterministic rerun for baseline_0_no_trade_v1 reports first_run_fingerprint=32B9F7CAE41FCEA9922DDF1BBF012CFF690D9B26C353348F243964F13BF7AB4B matching second_run_fingerprint with deterministic_rerun_first_baseline_match=true.",
+      "LIMITATION": "Match asserted for first baseline fingerprint in pack reproducibility block; does not re-execute frozen pack in Lane H.",
+      "POSSIBLE_CAUSE": "Frozen definition, corpus pin, and prediction-coupled simulator path are deterministic at recorded code SHA.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-006",
+      "SOURCE_RUN": "lane_h:governance_scope_receipt",
+      "OBSERVATION": "Lane H consumed frozen historical evidence only. Prospective Item 9 collection was not started or mutated. LIVE-001 / live trading remained OFF. Pull request #222 was not merged or integrated. Pull request #267 (non-stub IBP SUT) remains open and isolated.",
+      "LIMITATION": "Process observation for this increment; does not audit all repository branches.",
+      "POSSIBLE_CAUSE": "Increment charter and IMP evidence-integrity policy separate historical synthesis from prospective collection and live execution.",
+      "FOLLOW_UP_HYPOTHESIS": null,
+      "REQUIRED_DATA": null,
+      "PROPOSED_TEST": null,
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-007",
+      "SOURCE_RUN": "lane_d:run_id=ibp-smoke10-76DDD188CD080365 (frozen stub)",
+      "OBSERVATION": "Frozen Smoke10 stub run ibp-smoke10-76DDD188CD080365 still shows facts dimension FAIL 10/10 with failure_reason FACTS_MISMATCH under sut ibp-deterministic-stub-v1; non-facts dimensions remain PASS 10/10; contamination_audit overall PASS.",
+      "LIMITATION": "Expected stub behavior; run not re-executed in Lane H.",
+      "POSSIBLE_CAUSE": "Deterministic stub returns UNKNOWN while evaluator gold expects fixture facts.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+      "REQUIRED_DATA": "Governed rerun with non-stub SUT profile after I1 review.",
+      "PROPOSED_TEST": "Defer to LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1 after PR #267 review; do not execute Smoke10 in Lane H.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-008",
+      "SOURCE_RUN": "lane_i1:pull_request=267; lane_d_smoke10 contract",
+      "OBSERVATION": "Non-stub IBP SUT profile is defined on open PR #267 (benchmarks/nonstub-smoke10-sut) but Smoke10 non-stub execution status=NOT_EXECUTED with review_status=PENDING_I1_REVIEW (operator aborted review). No new ibp-smoke10 run_id was produced in Lane H.",
+      "LIMITATION": "HIGH confidence that Lane H did not fabricate benchmark scores; IBP facts dimension remains uncharacterized for non-stub SUT.",
+      "POSSIBLE_CAUSE": "I1 engineering lane and benchmark execution gated on PR review merge policy.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1",
+      "REQUIRED_DATA": "Merged or explicitly authorized SUT profile, contamination gates unchanged, new distinct run_id.",
+      "PROPOSED_TEST": "Execute ibp-smoke10-invocation-v1 with non-stub sut_profile_id; primary metric facts_PASS_rate; DID_SYSTEM_SEE_GOLD must remain PASS.",
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT"
+    },
+    {
+      "FINDING_ID": "LANE-H-FND-009",
+      "SOURCE_RUN": "lane_c_v1 vs integrate_r2_v2; opposite-signed baselines on HISTORICAL_DEVELOPMENT_VALIDATE",
+      "OBSERVATION": "On OpenD v2, baseline_1_momentum_5m_sign_v1 directional_accuracy≈0.463 and baseline_2_mean_reversion_5m_sign_v1 directional_accuracy≈0.527 (n=387 each), no longer pinned at 1.0 and 0.0 as on fixture pack v1.",
+      "LIMITATION": "BOUNDED_HISTORICAL_OBSERVATION; five sessions; not an edge claim.",
+      "POSSIBLE_CAUSE": "Realized forward-return signs on OpenD corpus are not perfectly anti-aligned with momentum vs mean-reversion labels.",
+      "FOLLOW_UP_HYPOTHESIS": "LANE-E-HYP-OPEND-MULTI-SESSION-V2",
+      "REQUIRED_DATA": "Extended session corpus and locked holdout before strategy ranking claims.",
+      "PROPOSED_TEST": "Mark LANE-E-HYP-OPEND-MULTI-SESSION-V2 observed; further discrimination tests require new experiment design.",
+      "AUTHORITY": "BOUNDED_HISTORICAL_OBSERVATION"
+    }
+  ]
+}

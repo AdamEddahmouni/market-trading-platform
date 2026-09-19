@@ -10,7 +10,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 TOOLS = ROOT / "tools" / "ibkr"
 # G11.1 bounded live verification harness (read-only; no execution surface).
-G111_LIVE_CANARY = frozenset({"canary.py"})
+G111_LIVE_CANARY = frozenset(
+    {"canary.py", "verify_historical_trades_provider.py"}
+)
 
 
 class IbkrStructuralSafetyTests(unittest.TestCase):

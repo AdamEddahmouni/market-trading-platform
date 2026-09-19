@@ -1,22 +1,21 @@
-import { ResearchObservability } from "../research-shared/ResearchObservability";
-import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
+import { PageHeader } from "../shared/PageHeader";
+import { ResearchSurface } from "../research-shared/ResearchSurface";
+import type { ResearchSectionKey } from "../research-shared/researchPresentation";
 
-export function PaperResearchPage() {
+type Props = {
+  section: ResearchSectionKey;
+};
+
+export function PaperResearchPage({ section }: Props) {
   return (
     <section className="page research-page paper-research-page">
-      <header className="paper-research-header">
-        <div>
-          <span className="paper-eyebrow">Paper · Research to simulation</span>
-          <h1>Research</h1>
-          <p>
-            Replay-bound analytics, model manifests, and deterministic simulation output. Use findings to
-            inform paper order previews — research itself does not place orders.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Paper · Research to simulation"
+        title="Research"
+        subtitle="Navigate the claim to validation, simulation, and Paper Workspace forward tests. Research informs paper review — it never places orders."
+      />
 
-      <ResearchObservability defaultTab="simulation" />
-      <PaperStrategyProfitabilityObservability />
+      <ResearchSurface mode="PAPER" section={section} />
     </section>
   );
 }

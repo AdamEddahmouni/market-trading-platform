@@ -18,17 +18,32 @@ class OpportunityDataQualityTests(unittest.TestCase):
         self.assertEqual(quality["freshness"], "UNAVAILABLE")
         self.assertEqual(quality["entitlement"], "UNAVAILABLE")
         self.assertEqual(quality["source"], "RECORDED_ARTIFACTS")
+        self.assertEqual(quality["operator_surface_flag"], "OK")
         self.assertNotIn("quote", quality)
 
     def test_live_observational_source_is_unavailable(self) -> None:
         live = project_opportunity_data_quality(source="LIVE_OBSERVATIONAL")
         self.assertEqual(live["status"], "UNAVAILABLE")
         self.assertEqual(live["reason_codes"], ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"])
+        self.assertEqual(live["freshness"], "NOT_APPLICABLE")
+        self.assertEqual(
+            live["freshness_evaluation"]["reason_code"],
+            "LIVE_AS_OF_UNAVAILABLE",
+        )
 
     def test_replay_does_not_set_fresh_from_adapter_presence(self) -> None:
         quality = project_opportunity_data_quality(source="REPLAY")
         self.assertEqual(quality["freshness"], "UNAVAILABLE")
         self.assertEqual(quality["entitlement"], "UNAVAILABLE")
+        self.assertEqual(quality["operator_surface_flag"], "OK")
+
+    def test_stale_or_degraded_sets_operator_surface_flag(self) -> None:
+        degraded = project_opportunity_data_quality(
+            source="UNKNOWN",
+            quality_decision={"action": "DEGRADE", "freshness": "STALE"},
+        )
+        self.assertEqual(degraded["status"], "DEGRADED")
+        self.assertEqual(degraded["operator_surface_flag"], "STALE_OR_DEGRADED")
 
 
 if __name__ == "__main__":

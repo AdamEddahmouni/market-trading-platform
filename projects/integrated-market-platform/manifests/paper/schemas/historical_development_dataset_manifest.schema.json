@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://imp.local/schemas/paper/historical_development_dataset_manifest.schema.json",
+  "title": "HistoricalDevelopmentDatasetManifestV1",
+  "type": "object",
+  "required": [
+    "artifact_kind",
+    "schema_version",
+    "dataset_id",
+    "dataset_version",
+    "corpus_evidence_authority",
+    "providers",
+    "universe",
+    "interval",
+    "session_policy",
+    "bar_resolution",
+    "source_artifacts",
+    "normalized_artifact_ref",
+    "row_count",
+    "duplicate_row_count",
+    "excluded_row_count",
+    "missing_intervals",
+    "dataset_fingerprint",
+    "lineage",
+    "code_sha",
+    "created_at_ns"
+  ],
+  "properties": {
+    "artifact_kind": {
+      "const": "historical_development_dataset_manifest_v1"
+    },
+    "schema_version": {
+      "const": "dual_corpus.historical-dataset-manifest/1.0.0"
+    },
+    "corpus_evidence_authority": {
+      "const": "HISTORICAL_DEVELOPMENT"
+    },
+    "dataset_id": { "type": "string", "minLength": 1 },
+    "dataset_version": { "type": "string", "minLength": 1 },
+    "providers": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "universe": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1
+    },
+    "interval": { "type": "object" },
+    "session_policy": { "type": "string" },
+    "bar_resolution": { "type": "string" },
+    "source_artifacts": { "type": "array" },
+    "normalized_artifact_ref": { "type": "string" },
+    "row_count": { "type": "integer", "minimum": 0 },
+    "duplicate_row_count": { "type": "integer", "minimum": 0 },
+    "excluded_row_count": { "type": "integer", "minimum": 0 },
+    "missing_intervals": { "type": "array" },
+    "dataset_fingerprint": { "type": "string", "minLength": 64 },
+    "lineage": { "type": "object" },
+    "code_sha": { "type": "string", "minLength": 1 },
+    "created_at_ns": { "type": "integer", "minimum": 0 }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,241 @@
+{
+  "artifact_kind": "imp_integrate_experiment_05_lane_e_v3_hypothesis_queue_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "increment_id": "IMP-INTEGRATE-AND-EXPERIMENT-05",
+  "lane": "E",
+  "queue_version": "1.0.0",
+  "ranking_policy": "priority_rank_ascending; lower rank = higher priority for follow-up experiment design (not implemented in Lane E)",
+  "implementation_status": "PROPOSED_ONLY_NOT_IMPLEMENTED",
+  "compatible_with": "market_platform_foundation.intelligence.research_experiments.ResearchHypothesisV1",
+  "prior_increment_queues": [
+    "evidence/historical-research/imp-research-validation-04-lane-e-findings/hypothesis_queue_v1.json",
+    "evidence/historical-research/imp-integrate-experiment-05-lane-h-findings/hypothesis_queue_v1.json"
+  ],
+  "lane_h_hypothesis_closure": [
+    {
+      "hypothesis_queue_id": "LANE-H-HYP-SIMULATOR-FILL-ECONOMICS-V3",
+      "closure_status": "OBSERVED_MACHINERY",
+      "closure_finding_ids": [
+        "LANE-E-FND-012",
+        "LANE-E-FND-014"
+      ],
+      "note": "v3 pack 81EFC1B1… executed on fingerprint 355FDBB… with non-zero gross/costs/net on validate; v2 E8C9ADB9… untouched; no edge or deployability claim."
+    }
+  ],
+  "hypotheses": [
+    {
+      "queue_rank": 1,
+      "hypothesis_queue_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-023",
+        "LANE-E-FND-025"
+      ],
+      "claim": "A governed IBP factual evaluation corpus can be specified over admitted historical evidence such that facts-dimension scoring is informative without matching synthetic-gold-NNN placeholders or leaking evaluator gold into SUT context.",
+      "required_features": "ibp-smoke10-invocation-v1 or successor; evaluator_only gold storage; contamination DID_SYSTEM_SEE_GOLD gate",
+      "required_dataset": "Multi-case factual gold/prompt pairs with provenance to admitted evidence classes; not derived by gold-matching current non-stub SUT outputs",
+      "train_dev_test_policy": "Benchmark design only; distinct catalog fingerprint; SMOKE10_EXECUTED=NO until corpus accepted",
+      "metrics": {
+        "primary": "facts_evaluability",
+        "secondary": [
+          "admitted_fixture_coverage_case_count",
+          "contamination_audit_overall"
+        ]
+      },
+      "failure_conditions": [
+        "Facts gold remains synthetic-gold-NNN for majority of smoke cases",
+        "DID_SYSTEM_SEE_GOLD=FAIL in design review"
+      ],
+      "leakage_risks": [
+        "Retrofitting gold to match SUT answers",
+        "Reusing stub run_id for new corpus scores"
+      ],
+      "evidence_needed_for_promotion": [
+        "Published corpus manifest with case-level provenance",
+        "Operator acceptance before any non-stub Smoke10 execution"
+      ],
+      "proposed_test": "METHODOLOGY milestone: corpus + protocol amendment; then LANE-H-HYP-IBP-NONSTUB-SMOKE10-EXEC-V1"
+    },
+    {
+      "queue_rank": 2,
+      "hypothesis_queue_id": "LANE-E-HYP-EXTENDED-OPEND-SESSION-CORPUS-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-015"
+      ],
+      "claim": "Extending the OpenD AAPL historical-development corpus beyond five sessions under a NEW dataset fingerprint yields stable qualitative patterns (fill counts, accuracy dispersion, economics sign) without retuning frozen v3 strategies.",
+      "required_features": "historical-research-bar-features/1.0.0; prediction-coupled simulator",
+      "required_dataset": {
+        "minimum_sessions": 10,
+        "instrument": "AAPL",
+        "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT"
+      },
+      "train_dev_test_policy": "NEW experiment_id and definition hash; chronological split locked; v3 81EFC1B1… receipts immutable",
+      "metrics": {
+        "primary": "directional_accuracy",
+        "secondary": [
+          "net_pnl",
+          "simulated_fills",
+          "contamination_audit_PASS"
+        ]
+      },
+      "failure_conditions": [
+        "In-place edits to v3 frozen_experiment_definition.json",
+        "CONTAMINATION_STATUS=FAIL"
+      ],
+      "leakage_risks": [
+        "Session selection conditioned on v3 validate PnL"
+      ],
+      "evidence_needed_for_promotion": [
+        "Lane B verification receipt for expanded pin",
+        "Bounded observation language only"
+      ],
+      "proposed_test": "PROVIDER/CALENDAR gated corpus expansion then NEW pack experiment"
+    },
+    {
+      "queue_rank": 3,
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4",
+      "source_finding_ids": [
+        "LANE-E-FND-016"
+      ],
+      "claim": "Pre-registered variation of simulator-research/notional-linear-bps cost model parameters produces ordered net_pnl sensitivity on identical v3 strategy definitions without changing fill counts.",
+      "required_features": "cost_model_version grid; locked baseline_pack_v3 strategies",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B"
+      },
+      "train_dev_test_policy": "Bps grid search limited to HISTORICAL_TRAIN/HISTORICAL_DEVELOPMENT_VALIDATE; NEW experiment hash",
+      "metrics": {
+        "primary": "net_pnl",
+        "secondary": [
+          "estimated_costs",
+          "gross_pnl"
+        ]
+      },
+      "failure_conditions": [
+        "Retuning v3 81EFC1B1… definition in place",
+        "Cost grid tuned on HISTORICAL_RESEARCH_TEST"
+      ],
+      "leakage_risks": [
+        "Choosing bps post-hoc from validate net_pnl"
+      ],
+      "evidence_needed_for_promotion": [
+        "Pre-registered max grid size",
+        "No production fee calibration claim"
+      ],
+      "proposed_test": "RESEARCH/ENGINEERING successor experiment v4+"
+    },
+    {
+      "queue_rank": 4,
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-017"
+      ],
+      "claim": "Documented bar-conservative fill price and MTM policy explains decoupling between directional_accuracy and gross_pnl across opposite-signed baselines on OpenD validate.",
+      "required_features": "phase7.bar-conservative/1.1.0 fill audit fields",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B"
+      },
+      "train_dev_test_policy": "Diagnostic experiment; no strategy winner selection",
+      "metrics": {
+        "primary": "gross_realized_pnl_vs_directional_accuracy_correlation",
+        "secondary": [
+          "gross_unrealized_pnl",
+          "exposure"
+        ]
+      },
+      "failure_conditions": [
+        "Claiming profitability from v3 validate net_pnl signs"
+      ],
+      "leakage_risks": [
+        "Adjusting fill prices using validate outcomes"
+      ],
+      "evidence_needed_for_promotion": [
+        "Per-fill audit artifact in NEW run manifest"
+      ],
+      "proposed_test": "ENGINEERING instrumentation follow-up"
+    },
+    {
+      "queue_rank": 5,
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-019"
+      ],
+      "claim": "Baseline pack metrics emit non-null drawdown when validate net_pnl variance is non-zero under fill-economics accounting.",
+      "required_features": "simulator-research-fill-economics metrics contract",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B"
+      },
+      "train_dev_test_policy": "Engineering change + NEW experiment hash; v3 receipts immutable",
+      "metrics": {
+        "primary": "drawdown",
+        "secondary": [
+          "net_pnl",
+          "max_exposure"
+        ]
+      },
+      "failure_conditions": [
+        "Backfilling drawdown into v3 JSON manifests"
+      ],
+      "leakage_risks": [
+        "Drawdown definition tuned on validate path"
+      ],
+      "evidence_needed_for_promotion": [
+        "Harness unit tests for drawdown aggregation"
+      ],
+      "proposed_test": "ENGINEERING metrics wiring increment"
+    },
+    {
+      "queue_rank": 6,
+      "hypothesis_queue_id": "LANE-E-HYP-SIMULATOR-TEST-SPLIT-FILL-POLICY-V1",
+      "source_finding_ids": [
+        "LANE-E-FND-020"
+      ],
+      "claim": "Explicit split policy documents whether HISTORICAL_RESEARCH_TEST runs simulator fills/PnL or label-only evaluation; v3 observed behavior (fills=0, labels populated) is either accepted or changed only in a NEW experiment.",
+      "required_features": "baseline_pack_v3 split scoping",
+      "required_dataset": {
+        "dataset_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B"
+      },
+      "train_dev_test_policy": "Policy decision OWNER_DECISION then optional NEW experiment",
+      "metrics": {
+        "primary": "simulated_fills_on_test_split",
+        "secondary": [
+          "net_pnl_on_test_split"
+        ]
+      },
+      "failure_conditions": [
+        "Silent relabel of v3 test-split metrics"
+      ],
+      "leakage_risks": [
+        "Enabling test-split PnL after observing validate losses"
+      ],
+      "evidence_needed_for_promotion": [
+        "Written split policy in experiment protocol"
+      ],
+      "proposed_test": "METHODOLOGY/OWNER_DECISION then ENGINEERING if policy changes"
+    }
+  ],
+  "next_increment_recommendations": [
+    {
+      "class": "CALENDAR",
+      "recommendation": "Schedule additional AAPL RTH session capture before extended-corpus hypothesis."
+    },
+    {
+      "class": "PROVIDER",
+      "recommendation": "Lane B verify expanded OpenD corpus pin when sessions exist; do not reuse v3 fingerprint for expansion claims."
+    },
+    {
+      "class": "ENGINEERING",
+      "recommendation": "Wire drawdown metrics and optional test-split simulator policy only via NEW experiment hashes; keep v3 436a0ed7 receipts immutable."
+    },
+    {
+      "class": "METHODOLOGY",
+      "recommendation": "Design admitted-evidence factual IBP gold corpus before non-stub Smoke10; reject synthetic-gold-NNN as facts ground truth."
+    },
+    {
+      "class": "RESEARCH",
+      "recommendation": "Pre-register cost bps sensitivity and fill-price audit experiments; no strategy winner from v3 validate net_pnl ordering."
+    },
+    {
+      "class": "OWNER_DECISION",
+      "recommendation": "Accept APPROVE_WIRING_NO_SMOKE10 disposition until factual gold exists; defer PR #267 merge and Item 9 changes."
+    }
+  ]
+}

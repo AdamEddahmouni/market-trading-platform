@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   useClosePaperSessionMutation,
   useOpenPaperSessionMutation,
   usePaperPortfolioQuery,
 } from "../../api/hooks";
+import { humanizeEnum, resolveSemanticState } from "../../state/semanticState";
+import { ErrorState } from "../imp-ui/FeedbackStates";
+import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
+import { StatePill } from "../imp-ui/StatePill";
 import { ExecutionTracePanel } from "../paper/ExecutionTracePanel";
-import { OrderTicket } from "../paper/OrderTicket";
 import { canUsePaperActions } from "../mode-session/modeAuthority";
 import { LoadingState } from "../shared/LoadingState";
 import { PageHeader } from "../shared/PageHeader";
@@ -33,18 +37,31 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   const [traceIntentId, setTraceIntentId] = useState<string | undefined>();
   const [traceOrderId, setTraceOrderId] = useState<string | undefined>();
   const [sessions, setSessions] = useState<StoredSession[]>([]);
+  const [sessionsError, setSessionsError] = useState(false);
 
-  useEffect(() => {
+  function loadSessions() {
+    setSessionsError(false);
     void fetch("/paper/sessions")
       .then((response) => response.json())
       .then((payload) => setSessions(payload.sessions ?? []))
-      .catch(() => undefined);
+      .catch(() => {
+        setSessionsError(true);
+        setSessions([]);
+      });
+  }
+
+  useEffect(() => {
+    loadSessions();
   }, [portfolioQuery.data?.session?.session_id, portfolioQuery.data?.account?.session_id]);
 
   if (portfolioQuery.isLoading) {
     return (
       <section className="page portfolio-page paper-portfolio-page">
-        <PageHeader eyebrow="Paper-only simulation" title="Paper Portfolio" />
+        <PageHeader
+          eyebrow="Paper-only simulation"
+          title="Paper Portfolio"
+          subtitle="Simulated positions, cash, and P&L — not live capital. Submit stays in Workspace."
+        />
         <LoadingState label="Loading simulation account…" />
       </section>
     );
@@ -53,17 +70,22 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   if (portfolioQuery.isError || !portfolioQuery.data) {
     return (
       <section className="page portfolio-page paper-portfolio-page">
-        <PageHeader eyebrow="Paper-only simulation" title="Paper Portfolio" />
-        <div className="capability-panel unavailable">
-          <p>Simulation account observability unavailable.</p>
-        </div>
+        <PageHeader
+          eyebrow="Paper-only simulation"
+          title="Paper Portfolio"
+          subtitle="Simulated positions, cash, and P&L — not live capital. Submit stays in Workspace."
+        />
+        <ErrorState
+          title="Simulation account observability is unavailable."
+          affects="Positions, cash, P&L, and session controls cannot be shown."
+          onRetry={() => void portfolioQuery.refetch()}
+        />
       </section>
     );
   }
 
   const data = portfolioQuery.data;
-  const { account, risk, data_health, session } = data;
-  const symbol = data.active_instrument ?? null;
+  const { account } = data;
   const actionEligible = canUsePaperActions("PAPER", paperActionsPermitted, account);
 
   return (
@@ -71,45 +93,40 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
       <PageHeader
         eyebrow="Paper-only simulation"
         title="Paper Portfolio"
-        meta={
-          <>
-            DATA: {account.data_mode.replace(/_/g, " ")} · {account.data_provider} · QUALITY {data_health.state}
-            {" · "}
-            EXEC: {account.execution_mode.replace(/_/g, " ")} · AUTH {account.execution_authority}
-            {session ? (
+        subtitle="What this simulated account holds, what the backend says it is worth, and which positions need review. Paper orders are submitted only from Workspace."
+        actions={
+          <div className="portfolio-header-actions">
+            <Link className="portfolio-row-action" to="/workspace">
+              Open Workspace
+            </Link>
+            {actionEligible ? (
               <>
-                {" · "}
-                Session {session.session_id.slice(0, 12)}… · cash starting{" "}
-                {session.starting_cash_minor ? `${session.starting_cash_minor} minor` : "UNAVAILABLE"}
+                <button
+                  type="button"
+                  onClick={() => void closeSession.mutateAsync()}
+                  disabled={closeSession.isPending}
+                >
+                  Archive session
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void openSession.mutateAsync(data.active_instrument ?? undefined)}
+                  disabled={openSession.isPending}
+                >
+                  New Paper Session
+                </button>
               </>
             ) : null}
-          </>
-        }
-        actions={
-          actionEligible ? (
-            <div className="live-actions">
-              <button
-                type="button"
-                onClick={() => void closeSession.mutateAsync()}
-                disabled={closeSession.isPending}
-              >
-                Archive session
-              </button>
-              <button
-                type="button"
-                onClick={() => void openSession.mutateAsync(symbol ?? undefined)}
-                disabled={openSession.isPending}
-              >
-                New Paper Session
-              </button>
-            </div>
-          ) : undefined
+          </div>
         }
         restriction={
           actionEligible ? undefined : (
             <aside className="panel mode-restriction-note" role="note">
               <strong>Paper authority unavailable.</strong>
-              <p>Order and session controls require INTERNAL SIMULATION and PAPER ONLY authority.</p>
+              <p>
+                Session archive/new require INTERNAL SIMULATION and PAPER ONLY authority. Order
+                submit remains in Workspace even when those session actions are available.
+              </p>
             </aside>
           )
         }
@@ -117,21 +134,9 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
 
       <div className="portfolio-layout">
         <div className="portfolio-main">
-          {actionEligible ? (
-            <OrderTicket
-              symbol={symbol}
-              executionAuthority={account.execution_authority}
-              executionMode={account.execution_mode}
-              dataMode={account.data_mode}
-              maxOrderShares={risk.limits.max_order_shares}
-              onSubmitted={(intentId) => {
-                if (intentId) setTraceIntentId(intentId);
-              }}
-            />
-          ) : null}
-
           <PaperPortfolioObservability
             data={data}
+            viewMode="PAPER"
             hideOrdersSection
             onTraceOrder={(intentId, orderId) => {
               setTraceIntentId(intentId);
@@ -149,18 +154,35 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             }}
           />
 
-          <section className="panel session-history-panel">
-            <h2>Session history</h2>
-            {sessions.length === 0 ? (
+          <section className="panel session-history-panel" aria-labelledby="portfolio-sessions-heading">
+            <div className="paper-order-history-header">
+              <h2 id="portfolio-sessions-heading">Session history</h2>
+              <button type="button" onClick={loadSessions}>
+                Refresh sessions
+              </button>
+            </div>
+            {sessionsError ? (
+              <p className="muted">Session list unavailable. Refresh to retry. The current account session above remains authoritative.</p>
+            ) : sessions.length === 0 ? (
               <p className="muted">No persisted sessions yet.</p>
             ) : (
-              <ul>
-                {sessions.map((row) => (
-                  <li key={row.session_id}>
-                    {row.status} · {row.session_id.slice(0, 12)}… · {row.data_mode} /{" "}
-                    {row.execution_mode}
-                  </li>
-                ))}
+              <ul className="portfolio-session-list">
+                {sessions.map((row) => {
+                  const status = resolveSemanticState("session", row.status);
+                  return (
+                    <li key={row.session_id}>
+                      <StatePill tone={status.tone} label={status.label} raw={row.status} size="sm" />
+                      <CopyableIdentifier value={row.session_id} />
+                      <span>
+                        {row.data_mode ? humanizeEnum(row.data_mode) : "Data mode unavailable"}
+                        {" / "}
+                        {row.execution_mode
+                          ? humanizeEnum(row.execution_mode)
+                          : "Execution mode unavailable"}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </section>

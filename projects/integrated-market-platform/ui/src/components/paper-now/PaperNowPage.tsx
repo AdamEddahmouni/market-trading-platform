@@ -6,13 +6,16 @@ import { usePreviewPaperOrderMutation } from "../../api/hooks";
 import { useOpportunitiesSummaryQuery, useOpportunityAckMutation } from "../../api/opportunityClient";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
+import { resolveSemanticState } from "../../state/semanticState";
+import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
+import { StatePill } from "../imp-ui/StatePill";
 import { PaperCandidateQueue } from "./PaperCandidateQueue";
 import { PaperExceptionsPanel } from "./PaperExceptionsPanel";
 import { PaperPreviewComposer } from "./PaperPreviewComposer";
 import { PaperRiskRibbon } from "./PaperRiskRibbon";
 import { nextPaperCandidateId } from "./paperDashboardViewModel";
 import { ImpOverviewBoard } from "../imp-product/ImpOverviewBoard";
-import { overviewKpisFromPortfolio } from "../imp-product/impOverviewMetrics";
+import { overviewDecisionKpis } from "../imp-product/impOverviewMetrics";
 import { buildPaperOrderRequest, createAttentionPaperOrderDraft, createPaperOrderDraft, createPaperPreviewAttemptKey, paperOrderDraftFingerprint, type PaperOrderDraft, type PaperOrderSide, attentionSourceContextFromItem } from "./paperOrderDraft";
 import type { NowDeskVariant } from "../now/nowDeskVariant";
 
@@ -25,12 +28,14 @@ export type PaperNowPageProps = {
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
+  /** Retries the shell-owned attention query (invalidation flows from App). */
+  onAttentionRetry?: () => void;
   desk?: NowDeskVariant;
 };
 
 type ConfirmedPreview = { fingerprint: string; value: PaperOrderPreviewResponse["preview"] };
 
-export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect, desk = "overview" }: PaperNowPageProps) {
+export function PaperNowPage({ items, attentionState, portfolio, portfolioState, paperActionsPermitted, onWhy, onExplain, onInspect, onAttentionRetry, desk = "overview" }: PaperNowPageProps) {
   const navigate = useNavigate();
   const opportunitiesQuery = useOpportunitiesSummaryQuery(true);
   const opportunityState = opportunitiesQuery.isLoading
@@ -38,6 +43,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
     : opportunitiesQuery.isError || !opportunitiesQuery.data
       ? "error"
       : "ready";
+  const opportunityItems = opportunitiesQuery.data?.items ?? [];
   const [selectedAttentionId, setSelectedAttentionId] = useState<string | null>(() => nextPaperCandidateId(items, null));
   const [side, setSide] = useState<PaperOrderSide | null>(null);
   const [quantityText, setQuantityText] = useState("");
@@ -106,9 +112,14 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
 
   const disabledReason = portfolioState === "loading" ? "Portfolio limits are loading." : portfolioState === "error" || !portfolio ? "Portfolio limits are unavailable." : !selected ? "Select an instrument-backed candidate." : !authorized ? "Paper authority is unavailable. Manage the simulation session in Portfolio." : !draft ? `Choose Buy or Sell and enter 1–${portfolio.risk.limits.max_order_shares} shares.` : undefined;
 
-  const kpiState =
-    portfolioState === "loading" ? "loading" : portfolioState === "error" ? "error" : "ready";
-  const kpiCells = overviewKpisFromPortfolio(portfolio, kpiState);
+  const kpiCells = overviewDecisionKpis({
+    opportunityState,
+    feedStatus: opportunitiesQuery.data?.feed_status,
+    unreadyReason: opportunitiesQuery.data?.unready_reason,
+    opportunityItems,
+    attentionState,
+    attentionItems: items,
+  });
 
   function openOpportunityWorkspace(item: AttentionItem) {
     openAttentionWorkspace(item);
@@ -126,11 +137,64 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         </p>
       </div>
       <dl>
-        <div><dt>Account</dt><dd>{portfolio?.account.paper_account_id ?? "Unavailable"}</dd></div>
-        <div><dt>Session</dt><dd>{portfolio?.account.session_id ?? "Unavailable"}</dd></div>
-        <div><dt>Execution</dt><dd>{portfolio?.account.execution_mode ?? "Unavailable"}</dd></div>
-        <div><dt>Authority</dt><dd>{portfolio?.account.execution_authority ?? "Unavailable"}</dd></div>
-        <div><dt>Data health</dt><dd>{portfolio?.data_health.state ?? "Unavailable"}</dd></div>
+        <div>
+          <dt>Account</dt>
+          <dd>
+            {portfolio?.account.paper_account_id ? (
+              <CopyableIdentifier value={portfolio.account.paper_account_id} />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Session</dt>
+          <dd>
+            {portfolio?.account.session_id ? (
+              <CopyableIdentifier value={portfolio.account.session_id} />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Execution</dt>
+          <dd>
+            {portfolio?.account.execution_mode
+              ? resolveSemanticState("executionAuthority", portfolio.account.execution_mode).label
+              : "Unavailable"}
+          </dd>
+        </div>
+        <div>
+          <dt>Authority</dt>
+          <dd>
+            {portfolio?.account.execution_authority ? (
+              <StatePill
+                tone={resolveSemanticState("executionAuthority", portfolio.account.execution_authority).tone}
+                label={resolveSemanticState("executionAuthority", portfolio.account.execution_authority).label}
+                raw={portfolio.account.execution_authority}
+                size="sm"
+              />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
+        <div>
+          <dt>Data health</dt>
+          <dd>
+            {portfolio?.data_health.state ? (
+              <StatePill
+                tone={resolveSemanticState("dataHealth", portfolio.data_health.state).tone}
+                label={resolveSemanticState("dataHealth", portfolio.data_health.state).label}
+                raw={portfolio.data_health.state}
+                size="sm"
+              />
+            ) : (
+              "Unavailable"
+            )}
+          </dd>
+        </div>
       </dl>
     </header>
   );
@@ -149,16 +213,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
         onExplain={onExplain}
         onInspect={onInspect}
         onOpenWorkspace={openAttentionWorkspace}
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
-        opportunityState={opportunityState}
-        feedStatus={opportunitiesQuery.data?.feed_status}
-        unreadyReason={opportunitiesQuery.data?.unready_reason}
-        nextAction={opportunitiesQuery.data?.next_action}
-        paperAccountId={portfolio?.account.paper_account_id}
-        onAck={(row, action) => {
-          opportunityAck.mutate({ rowId: row.opportunity_id || row.summary_id, action });
-        }}
-        showRankedOpportunities={false}
+        onRetry={onAttentionRetry}
       />
       {!signalsDesk ? (
         <PaperPreviewComposer
@@ -202,15 +257,18 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       ) : (
       <ImpOverviewBoard
         kpiCells={kpiCells}
-        kpiState={kpiState}
         attentionItems={items}
         attentionState={attentionState}
-        opportunityItems={opportunitiesQuery.data?.items ?? []}
+        opportunityItems={opportunityItems}
         opportunityState={opportunityState}
         feedStatus={opportunitiesQuery.data?.feed_status}
         unreadyReason={opportunitiesQuery.data?.unready_reason}
         nextAction={opportunitiesQuery.data?.next_action}
+        mode="PAPER"
         paperAccountId={portfolio?.account.paper_account_id}
+        defaultQueueFilter="ranked"
+        onOpportunityRetry={() => void opportunitiesQuery.refetch()}
+        onAttentionRetry={onAttentionRetry}
         onWhy={onWhy}
         onExplain={onExplain}
         onInspect={onInspect}

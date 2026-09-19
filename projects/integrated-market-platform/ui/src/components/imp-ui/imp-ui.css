@@ -1,0 +1,330 @@
+/*
+ * imp-ui primitive styles — the shared operator UI foundation.
+ * Tokens only (ui/src/styles/tokens.css); no hex literals here.
+ */
+
+/* ---- StatePill ---- */
+.imp-ui-state-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-1);
+  padding: 2px var(--imp-space-2);
+  border-radius: 999px;
+  border: 1px solid var(--imp-state-neutral-border);
+  background: var(--imp-state-neutral-bg);
+  color: var(--imp-state-neutral-fg);
+  font-size: var(--imp-text-xs);
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.imp-ui-state-pill--sm {
+  font-size: var(--imp-text-micro);
+  padding: 1px var(--imp-space-1);
+}
+
+.imp-ui-state-pill-icon {
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+.imp-ui-state-pill[data-tone="live"] {
+  color: var(--imp-state-live-fg);
+  background: var(--imp-state-live-bg);
+  border-color: var(--imp-state-live-border);
+}
+.imp-ui-state-pill[data-tone="paper"] {
+  color: var(--imp-state-paper-fg);
+  background: var(--imp-state-paper-bg);
+  border-color: var(--imp-state-paper-border);
+}
+.imp-ui-state-pill[data-tone="replay"] {
+  color: var(--imp-state-replay-fg);
+  background: var(--imp-state-replay-bg);
+  border-color: var(--imp-state-replay-border);
+}
+.imp-ui-state-pill[data-tone="research"] {
+  color: var(--imp-state-research-fg);
+  background: var(--imp-state-research-bg);
+  border-color: var(--imp-state-research-border);
+}
+.imp-ui-state-pill[data-tone="caution"] {
+  color: var(--imp-state-caution-fg);
+  background: var(--imp-state-caution-bg);
+  border-color: var(--imp-state-caution-border);
+}
+.imp-ui-state-pill[data-tone="critical"] {
+  color: var(--imp-state-critical-fg);
+  background: var(--imp-state-critical-bg);
+  border-color: var(--imp-state-critical-border);
+}
+
+/* ---- AttentionBanner ---- */
+.imp-ui-attention-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--imp-space-3);
+  padding: var(--imp-space-3) var(--imp-space-4);
+  border-radius: var(--imp-radius-md);
+  border: 1px solid var(--imp-state-neutral-border);
+  background: var(--imp-state-neutral-bg);
+  color: var(--text-primary);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-ui-attention-banner-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.imp-ui-attention-banner[data-tone="caution"] {
+  border-color: var(--imp-state-caution-border);
+  background: var(--imp-state-caution-bg);
+}
+.imp-ui-attention-banner[data-tone="caution"] .imp-ui-attention-banner-icon {
+  color: var(--imp-state-caution-fg);
+}
+.imp-ui-attention-banner[data-tone="critical"] {
+  border-color: var(--imp-state-critical-border);
+  background: var(--imp-state-critical-bg);
+}
+.imp-ui-attention-banner[data-tone="critical"] .imp-ui-attention-banner-icon {
+  color: var(--imp-state-critical-fg);
+}
+.imp-ui-attention-banner[data-tone="live"] {
+  border-color: var(--imp-state-live-border);
+  background: var(--imp-state-live-bg);
+}
+.imp-ui-attention-banner[data-tone="live"] .imp-ui-attention-banner-icon {
+  color: var(--imp-state-live-fg);
+}
+.imp-ui-attention-banner[data-tone="paper"] {
+  border-color: var(--imp-state-paper-border);
+  background: var(--imp-state-paper-bg);
+}
+.imp-ui-attention-banner[data-tone="paper"] .imp-ui-attention-banner-icon {
+  color: var(--imp-state-paper-fg);
+}
+.imp-ui-attention-banner[data-tone="replay"] {
+  border-color: var(--imp-state-replay-border);
+  background: var(--imp-state-replay-bg);
+}
+.imp-ui-attention-banner[data-tone="replay"] .imp-ui-attention-banner-icon {
+  color: var(--imp-state-replay-fg);
+}
+
+.imp-ui-attention-banner-body {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.imp-ui-attention-banner-what {
+  margin: 0;
+  font-weight: 600;
+}
+
+.imp-ui-attention-banner-affects {
+  margin: var(--imp-space-1) 0 0;
+  color: var(--text-secondary);
+}
+
+.imp-ui-attention-banner-action {
+  flex-shrink: 0;
+  align-self: center;
+  color: var(--accent-primary-bright);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.imp-ui-attention-banner-action:hover {
+  text-decoration: underline;
+}
+
+/* ---- FreshnessIndicator / ConfidenceIndicator ---- */
+.imp-ui-freshness,
+.imp-ui-confidence {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-1);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.imp-ui-freshness[data-tone="live"],
+.imp-ui-confidence[data-tone="live"] {
+  color: var(--imp-state-live-fg);
+}
+.imp-ui-freshness[data-tone="caution"],
+.imp-ui-confidence[data-tone="caution"] {
+  color: var(--imp-state-caution-fg);
+}
+.imp-ui-freshness[data-tone="critical"],
+.imp-ui-confidence[data-tone="critical"] {
+  color: var(--imp-state-critical-fg);
+}
+.imp-ui-freshness[data-tone="replay"] {
+  color: var(--imp-state-replay-fg);
+}
+
+/* ---- EmptyState ---- */
+.imp-ui-empty-state {
+  padding: var(--imp-space-5);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--imp-radius-lg);
+  background: var(--surface-1);
+  text-align: left;
+}
+
+.imp-ui-empty-state-title {
+  margin: 0 0 var(--imp-space-2);
+  font-size: var(--imp-text-lg);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.imp-ui-empty-state-reason {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+  max-width: 64ch;
+}
+
+.imp-ui-empty-state-action {
+  margin: var(--imp-space-3) 0 0;
+}
+
+.imp-ui-empty-state-action a {
+  color: var(--accent-primary-bright);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.imp-ui-empty-state-action a:hover {
+  text-decoration: underline;
+}
+
+/* ---- ErrorState ---- */
+.imp-ui-error-state {
+  padding: var(--imp-space-4);
+  border: 1px solid var(--imp-state-critical-border);
+  border-radius: var(--imp-radius-md);
+  background: var(--imp-state-critical-bg);
+}
+
+.imp-ui-error-state-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--imp-state-critical-fg);
+}
+
+.imp-ui-error-state-affects {
+  margin: var(--imp-space-1) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+}
+
+.imp-ui-error-state-retry {
+  margin-top: var(--imp-space-3);
+}
+
+.imp-ui-error-state-detail {
+  margin-top: var(--imp-space-3);
+  font-size: var(--imp-text-xs);
+  color: var(--text-muted);
+}
+
+.imp-ui-error-state-detail code {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+}
+
+/* ---- LinkTabs ---- */
+.imp-ui-link-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-1);
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--imp-space-4);
+}
+
+.imp-ui-link-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--imp-space-2) var(--imp-space-3);
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--imp-radius-md) var(--imp-radius-md) 0 0;
+  color: var(--text-secondary);
+  font-size: var(--imp-text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.imp-ui-link-tab:hover {
+  color: var(--text-primary);
+  background: var(--surface-2);
+}
+
+.imp-ui-link-tab:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+.imp-ui-link-tab--active {
+  color: var(--accent-primary-bright);
+  background: var(--surface-2);
+  border-color: var(--border-subtle);
+  box-shadow: inset 0 -2px 0 var(--accent-primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .imp-ui-link-tab {
+    transition: background-color 120ms ease, color 120ms ease;
+  }
+}
+
+@media (max-width: 720px) {
+  .imp-ui-link-tab {
+    min-height: 44px;
+    padding: var(--imp-space-3);
+  }
+}
+
+/* ---- CopyableIdentifier ---- */
+.imp-ui-copyable-id {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--imp-space-1);
+  min-width: 0;
+  max-width: 100%;
+  font-size: var(--imp-text-xs);
+}
+
+.imp-ui-copyable-id-value {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+}
+
+.imp-ui-copyable-id-copy {
+  padding: 0 var(--imp-space-1);
+  border: none;
+  background: transparent;
+  color: var(--accent-primary-bright);
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.imp-ui-copyable-id-copy:hover {
+  text-decoration: underline;
+}
+
+.imp-ui-copyable-id-copy:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}

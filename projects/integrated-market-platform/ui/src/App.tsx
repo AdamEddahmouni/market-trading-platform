@@ -1,6 +1,14 @@
 import { lazy, useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  Route,
+  Routes,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID, api, type AttentionItem } from "./api/client";
 import {
   queryKeys,
@@ -10,19 +18,17 @@ import {
   useContextQuery,
   useReplaySessionQuery,
 } from "./api/hooks";
-import { ContextBar } from "./components/ContextBar";
 import { ExplanationDrawer } from "./components/ExplanationDrawer";
 import { InspectorPanel } from "./components/InspectorPanel";
 import { LazyBoundary } from "./components/LazyBoundary";
-import { ModeDiscoverRoute } from "./components/ModeDiscoverRoute";
-import { ModeExploreRoute } from "./components/ModeExploreRoute";
+import { ModeRadarRoute } from "./components/ModeRadarRoute";
 import { ModeNowRoute } from "./components/ModeNowRoute";
 import { ModePortfolioRoute } from "./components/ModePortfolioRoute";
 import type { LoadState, ScrubState } from "./components/demo-now/DemoNowPage";
+import type { NowDeskVariant } from "./components/now/nowDeskVariant";
 import { AuthProvider, useOptionalAuth } from "./auth/AuthProvider";
 import { OperatorLoginGate } from "./auth/OperatorLoginGate";
 import { ApplicationBootstrap } from "./components/mode-session/ApplicationBootstrap";
-import { ModeEnvironmentBar } from "./components/mode-session/ModeEnvironmentBar";
 import { evaluateModeContext } from "./components/mode-session/modeAuthority";
 import type { Mode } from "./components/mode-session/types";
 import "./styles/tokens.css";
@@ -37,19 +43,14 @@ import "./styles/live-portfolio.css";
 import "./styles/demo-workspace.css";
 import "./styles/paper-workspace.css";
 import "./styles/live-workspace.css";
-import "./styles/demo-explore.css";
-import "./styles/paper-explore.css";
-import "./styles/live-explore.css";
-import "./styles/demo-research.css";
-import "./styles/paper-research.css";
-import "./styles/live-research.css";
-import "./styles/demo-discover.css";
-import "./styles/paper-discover.css";
-import "./styles/live-discover.css";
+import "./styles/research.css";
 import "./styles/workspace-module-mode.css";
 import "./styles/shared-ui.css";
 import "./styles/operator-control.css";
 import "./styles/imp-product.css";
+import "./styles/radar.css";
+import "./components/opportunity/opportunity.css";
+import "./components/imp-ui/imp-ui.css";
 
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
@@ -127,7 +128,7 @@ const ImpProductChrome = lazy(() =>
   })),
 );
 const OperatorControlCenterPage = lazy(() =>
-  import("./components/OperatorControlCenterPage").then((module) => ({
+  import("./components/control/OperatorControlCenterPage").then((module) => ({
     default: module.OperatorControlCenterPage,
   })),
 );
@@ -152,7 +153,59 @@ const ModeResearchRoute = lazy(() =>
     default: module.ModeResearchRoute,
   })),
 );
+const ModeLabRoute = lazy(() =>
+  import("./components/ModeLabRoute").then((module) => ({
+    default: module.ModeLabRoute,
+  })),
+);
+/* StatusBar is lazy like the rest of the product chrome (ImpProductChrome is
+ * lazy): the 203 KiB entry budget has ~2 KiB headroom, so the semantic-state
+ * adapter and imp-ui primitives load with the shell chunk, not the entry. */
+const StatusBar = lazy(() =>
+  import("./components/mode-session/StatusBar").then((module) => ({
+    default: module.StatusBar,
+  })),
+);
 const queryClient = new QueryClient();
+
+/** `/signals` merged into Command as a desk tab; old deep links land on the tab. */
+function SignalsRedirect() {
+  return <Navigate to="/?desk=signals" replace />;
+}
+
+/** `/explore` merged into Radar's Screeners tab; the `?q=` text query carries through. */
+function ExploreRedirect() {
+  const [searchParams] = useSearchParams();
+  const q = searchParams.get("q");
+  return (
+    <Navigate
+      to={q ? `/radar/screeners?q=${encodeURIComponent(q)}` : "/radar/screeners"}
+      replace
+    />
+  );
+}
+
+/** Command desk tabs: Overview and Signals are two desks of one page (`?desk=`). */
+function CommandDeskTabs({ desk }: { desk: NowDeskVariant }) {
+  return (
+    <nav className="imp-ui-link-tabs imp-command-desk-tabs" aria-label="Command desks">
+      <Link
+        to="/"
+        className={desk === "overview" ? "imp-ui-link-tab imp-ui-link-tab--active" : "imp-ui-link-tab"}
+        aria-current={desk === "overview" ? "page" : undefined}
+      >
+        Overview
+      </Link>
+      <Link
+        to="/?desk=signals"
+        className={desk === "signals" ? "imp-ui-link-tab imp-ui-link-tab--active" : "imp-ui-link-tab"}
+        aria-current={desk === "signals" ? "page" : undefined}
+      >
+        Signals
+      </Link>
+    </nav>
+  );
+}
 
 function StartupRecoveryBanner() {
   const [message, setMessage] = useState<string | null>(null);
@@ -175,6 +228,22 @@ function StartupRecoveryBanner() {
     <div className="startup-recovery-banner" role="status">
       {message}
     </div>
+  );
+}
+
+/** Command route: one page, two desks. The desk lives in `?desk=` (deep-linkable). */
+function CommandRoute({
+  nowRouteProps,
+}: {
+  nowRouteProps: Omit<React.ComponentProps<typeof ModeNowRoute>, "desk">;
+}) {
+  const [searchParams] = useSearchParams();
+  const desk: NowDeskVariant = searchParams.get("desk") === "signals" ? "signals" : "overview";
+  return (
+    <>
+      <CommandDeskTabs desk={desk} />
+      <ModeNowRoute {...nowRouteProps} desk={desk} />
+    </>
   );
 }
 
@@ -341,10 +410,10 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     onExplain: openExplain,
     onInspect: openInspect,
     onOpenWorkspace: openAttentionWorkspace,
+    onAttentionRetry: () => void client.invalidateQueries({ queryKey: queryKeys.attention }),
   };
 
-  const overviewRoute = <ModeNowRoute {...nowRouteProps} desk="overview" />;
-  const signalsRoute = <ModeNowRoute {...nowRouteProps} desk="signals" />;
+  const commandRoute = <CommandRoute nowRouteProps={nowRouteProps} />;
 
   return (
     <LazyBoundary label="Loading workstation…">
@@ -354,26 +423,18 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
       onToggleAssistant={() => setAssistantOpen((open) => !open)}
       topStack={
         <>
-          <ModeEnvironmentBar
-            mode={mode}
-            context={contextQuery.data?.as_of_context}
-            contextState={contextState}
-          />
+          <LazyBoundary>
+            <StatusBar
+              mode={mode}
+              context={contextQuery.data}
+              contextState={contextState}
+            />
+          </LazyBoundary>
           {contextQuery.data ? (
-            <>
-              <ContextBar
-                context={contextQuery.data}
-                onQualityClick={() => navigate("/diagnostics/provider")}
-              />
-              <LazyBoundary>
-                <ImpContextTrustLayer context={contextQuery.data} />
-              </LazyBoundary>
-            </>
-          ) : (
-            <div className="context-bar context-bar-unavailable" aria-hidden="true">
-              Backend context is not available.
-            </div>
-          )}
+            <LazyBoundary>
+              <ImpContextTrustLayer context={contextQuery.data} />
+            </LazyBoundary>
+          ) : null}
           <StartupRecoveryBanner />
         </>
       }
@@ -383,25 +444,40 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
         <main className="main-content" id="imp-main-content" tabIndex={-1}>
           <LazyBoundary>
             <Routes>
-            <Route path="/" element={overviewRoute} />
-            <Route path="/signals" element={signalsRoute} />
+            <Route path="/" element={commandRoute} />
+            <Route path="/signals" element={<SignalsRedirect />} />
+            <Route path="/explore" element={<ExploreRedirect />} />
+            <Route path="/discover" element={<Navigate to="/radar" replace />} />
             <Route
-              path="/explore"
-              element={<ModeExploreRoute mode={mode} onExplain={openExplainRef} />}
+              path="/radar"
+              element={
+                <ModeRadarRoute
+                  mode={mode}
+                  tab="opportunities"
+                  paperActionsPermitted={operatorPaperSubmitPermitted}
+                  onExplain={openExplain}
+                  onExplainRef={openExplainRef}
+                  onInspect={openInspect}
+                  onOpenWorkspace={openAttentionWorkspace}
+                />
+              }
             />
             <Route
-              path="/discover"
+              path="/radar/screeners"
               element={
-                <ModeDiscoverRoute
+                <ModeRadarRoute
                   mode={mode}
+                  tab="screeners"
+                  paperActionsPermitted={operatorPaperSubmitPermitted}
                   onExplain={openExplain}
+                  onExplainRef={openExplainRef}
                   onInspect={openInspect}
                   onOpenWorkspace={openAttentionWorkspace}
                 />
               }
             />
             <Route path="/workspace" element={<WorkspaceIndex />} />
-            <Route path="/lab" element={<Navigate to="/research" replace />} />
+            <Route path="/lab/*" element={<ModeLabRoute mode={mode} />} />
             <Route
               path="/workspace/:symbol"
               element={
@@ -533,7 +609,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
               element={<LiveCanaryControlPlanePage mode={mode} />}
             />
             <Route path="/settings" element={<OperatorSettingsPage mode={mode} />} />
-            <Route path="/control" element={<OperatorControlCenterPage />} />
+            <Route path="/control" element={<OperatorControlCenterPage mode={mode} />} />
             <Route path="/diagnostics/provider" element={<ProviderHealthPanel />} />
             <Route path="/assistant/history" element={<AssistantHistoryPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />

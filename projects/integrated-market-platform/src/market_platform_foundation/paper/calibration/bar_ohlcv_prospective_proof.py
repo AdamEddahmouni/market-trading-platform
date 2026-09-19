@@ -16,8 +16,10 @@ from .bar_ohlcv_experiment import BarOhlcvExperimentResult, run_bounded_bar_ohlc
 from .bar_ohlcv_sources import (
     SOURCE_MOOMOO_OPEND_KLINE_1M,
     BarLoadResult,
+    close_moomoo_opend_kline_poll_session,
     first_admissible_post_signal_bar,
     load_moomoo_opend_kline_bars,
+    open_moomoo_opend_kline_poll_session,
     pit_visible_bars,
 )
 
@@ -136,6 +138,9 @@ def resolve_runtime_git_sha(*, start: Path | None = None) -> str:
 def hash_raw_kline_rows(rows: Sequence[Mapping[str, Any]]) -> str:
     payload = json.dumps(list(rows), sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+EMPTY_RAW_KLINE_HASH = hash_raw_kline_rows(())
 
 
 def validate_prospective_signal_request(
@@ -380,17 +385,24 @@ def run_prospective_proof(
     kline_rows: tuple[Mapping[str, Any], ...] | None = None,
     runtime_git_sha: str | None = None,
     poll_attempt_index: int | None = None,
+    opend_kline_session: Any | None = None,
 ) -> dict[str, Any]:
     exp_id = experiment_id or f"item9-prospective-{uuid.uuid4().hex[:12]}"
     sha = runtime_git_sha or resolve_runtime_git_sha()
-    raw_hash = hash_raw_kline_rows(kline_rows or ())
     loaded = load_moomoo_opend_kline_bars(
         instrument_id=instrument_id,
         observation_time_ns=observation_time_ns,
         fetched_at_ns=observation_time_ns,
         kline_rows=kline_rows,
         poll_attempt_index=poll_attempt_index,
+        opend_kline_session=opend_kline_session,
     )
+    raw_source: Sequence[Mapping[str, Any]]
+    if kline_rows is not None:
+        raw_source = kline_rows
+    else:
+        raw_source = loaded.raw_rows
+    raw_hash = hash_raw_kline_rows(raw_source)
     kline_fetch = kline_fetch_diagnostics(loaded)
     if not loaded.ok:
         reason = loaded.reason_code or REASON_PROVIDER_UNAVAILABLE
@@ -477,46 +489,71 @@ def poll_prospective_proof(
         }
     last_kline_fetch: dict[str, Any] | None = None
     poll_attempt_index = 0
-    while time.monotonic() < deadline:
-        observation_ns = clock()
-        outcome = run_prospective_proof(
-            instrument_id=instrument_id,
-            collection_root=collection_root,
-            env=env,
-            signal_time_ns=signal_time_ns,
-            signal_established_at_ns=signal_established_at_ns,
-            observation_time_ns=observation_ns,
-            kline_rows=None,
-            experiment_id=experiment_id,
-            runtime_git_sha=runtime_git_sha,
-            poll_attempt_index=poll_attempt_index,
-        )
-        fetch = outcome.get("kline_fetch")
-        if isinstance(fetch, dict):
-            last_kline_fetch = fetch
-        if outcome.get("ok"):
-            outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
-            return outcome
-        reason = outcome.get("reason_code")
-        if reason not in {REASON_NO_POST_SIGNAL_BAR, "EXPERIMENT_CONTRACT_MISMATCH"}:
-            outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
-            return outcome
-        poll_attempt_index += 1
-        sleep_fn(poll_interval_s)
-    return {
-        "ok": False,
-        "reason_code": REASON_NO_POST_SIGNAL_BAR,
-        "readiness": item9_prospective_readiness(now_ns=clock()),
-        "receipt": None,
-        "kline_fetch": last_kline_fetch,
-    }
+    opend_session = None if loader is not None else open_moomoo_opend_kline_poll_session()
+    try:
+        while time.monotonic() < deadline:
+            observation_ns = clock()
+            outcome = run_prospective_proof(
+                instrument_id=instrument_id,
+                collection_root=collection_root,
+                env=env,
+                signal_time_ns=signal_time_ns,
+                signal_established_at_ns=signal_established_at_ns,
+                observation_time_ns=observation_ns,
+                kline_rows=None,
+                experiment_id=experiment_id,
+                runtime_git_sha=runtime_git_sha,
+                poll_attempt_index=poll_attempt_index,
+                opend_kline_session=opend_session,
+            )
+            fetch = outcome.get("kline_fetch")
+            if isinstance(fetch, dict):
+                last_kline_fetch = fetch
+            if outcome.get("ok"):
+                outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
+                return outcome
+            reason = outcome.get("reason_code")
+            if reason not in {REASON_NO_POST_SIGNAL_BAR, "EXPERIMENT_CONTRACT_MISMATCH"}:
+                outcome["readiness"] = item9_prospective_readiness(now_ns=observation_ns)
+                return outcome
+            poll_attempt_index += 1
+            sleep_fn(poll_interval_s)
+        return {
+            "ok": False,
+            "reason_code": REASON_NO_POST_SIGNAL_BAR,
+            "readiness": item9_prospective_readiness(now_ns=clock()),
+            "receipt": None,
+            "kline_fetch": last_kline_fetch,
+        }
+    finally:
+        close_moomoo_opend_kline_poll_session(opend_session)
+
+
+def _is_mode_b_prospective_receipt(receipt: Mapping[str, Any]) -> bool:
+    return (
+        str(receipt.get("proof_mode") or "") == PROOF_MODE_PROSPECTIVE
+        and not receipt.get("not_prospective_evidence")
+    )
 
 
 def persist_receipt(receipt: Mapping[str, Any], *, out_dir: Path) -> Path:
+    from .dual_corpus.discovery import validate_item9_prospective_receipt_output_dir
+    from .dual_corpus.evidence_authority import (
+        CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE,
+    )
+
+    gate = validate_item9_prospective_receipt_output_dir(out_dir)
+    if not gate["ok"]:
+        raise ValueError(str(gate["reason_code"]))
     out_dir.mkdir(parents=True, exist_ok=True)
     experiment_id = str(receipt.get("experiment_id") or uuid.uuid4().hex)
     path = out_dir / f"{experiment_id}.json"
-    path.write_text(json.dumps(dict(receipt), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    payload = dict(receipt)
+    if _is_mode_b_prospective_receipt(payload):
+        existing = str(payload.get("corpus_evidence_authority") or "").strip()
+        if not existing:
+            payload["corpus_evidence_authority"] = CORPUS_EVIDENCE_AUTHORITY_PROSPECTIVE_FEATURE_EVIDENCE
+    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return path
 
 
@@ -548,6 +585,7 @@ def load_latest_completed_bars_for_display(
 __all__ = [
     "BarDisplayRow",
     "DEFAULT_RECEIPT_DIR",
+    "EMPTY_RAW_KLINE_HASH",
     "NOT_PROSPECTIVE_EVIDENCE",
     "PROOF_MODE_PROSPECTIVE",
     "PROOF_MODE_RETROSPECTIVE",

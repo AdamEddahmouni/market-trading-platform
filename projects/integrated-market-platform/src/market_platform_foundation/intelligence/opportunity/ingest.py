@@ -222,10 +222,11 @@ def assemble_opportunity_review_rows(
                 summary,
                 identity_kind="NOT_OPPORTUNITY_V1",
                 evidence_class=None,
+                accepted=False,
                 eligibility_state="UNAVAILABLE",
                 lifecycle_state=OperatorLifecycleState.NORMALIZED.value,
                 data_quality=quality,
-                next_safe_action="OPEN_WORKSPACE" if summary.instrument_id else "NONE",
+                next_safe_action="STOP",
                 unavailable_fields=_unavailable(
                     "opportunity_id",
                     "strategy_family",

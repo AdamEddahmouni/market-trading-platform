@@ -855,6 +855,98 @@ def build_parser() -> argparse.ArgumentParser:
         help="Forward-test campaign slug (default: FTEP-V1-002)",
     )
     finviz_preflight.add_argument("--json", action="store_true")
+
+    item9 = groups.add_parser("item9", help="Item 9 BAR_OHLCV prospective operator helpers")
+    item9_actions = item9.add_subparsers(dest="action", required=True)
+    item9_preflight = item9_actions.add_parser(
+        "next-rth-preflight",
+        help="read-only next-RTH prospective collection preflight (no --poll)",
+    )
+    item9_preflight.add_argument("--instrument-id", default="AAPL")
+    item9_preflight.add_argument("--receipt-dir", type=Path, default=None)
+    item9_preflight.add_argument("--json", action="store_true")
+    item9_preflight.add_argument("--now-ns", type=int, default=None)
+
+    historical = groups.add_parser(
+        "historical-data",
+        help="historical RTH development corpus builder (HISTORICAL_DEVELOPMENT)",
+    )
+    historical_actions = historical.add_subparsers(dest="action", required=True)
+    hist_build = historical_actions.add_parser("build", help="build 1m US equity RTH dataset")
+    hist_build.add_argument("--provider", required=True, choices=("moomoo-opend", "fixture"))
+    hist_build.add_argument("--instrument", required=True)
+    hist_build.add_argument("--start", required=True, dest="start_date")
+    hist_build.add_argument("--end", required=True, dest="end_date")
+    hist_build.add_argument("--resolution", default="1m")
+    hist_build.add_argument("--session", default="RTH")
+    hist_build.add_argument("--fixture-path", type=Path)
+    hist_build.add_argument("--artifact-root", type=Path)
+    hist_build.add_argument("--holidays", default="")
+    hist_build.add_argument("--early-closes", default="")
+    hist_build.add_argument("--json", action="store_true")
+
+    hist_demo = historical_actions.add_parser(
+        "demo",
+        help="Lane D e2e: fixture corpus → features → risk simulation (HISTORICAL_DEVELOPMENT)",
+    )
+    hist_demo.add_argument("--provider", default="fixture", choices=("fixture",))
+    hist_demo.add_argument("--instrument", default="AAPL")
+    hist_demo.add_argument("--start", required=True, dest="start_date")
+    hist_demo.add_argument("--end", required=True, dest="end_date")
+    hist_demo.add_argument("--fixture-path", type=Path, required=True)
+    hist_demo.add_argument("--corpus-artifact-root", type=Path)
+    hist_demo.add_argument("--demo-artifact-root", type=Path)
+    hist_demo.add_argument("--json", action="store_true")
+
+    hist_harness = historical_actions.add_parser(
+        "harness",
+        help="historical research harness v1 (HISTORICAL_DEVELOPMENT)",
+    )
+    hist_harness.add_argument("--provider", default="fixture", choices=("fixture",))
+    hist_harness.add_argument("--instrument", default="AAPL")
+    hist_harness.add_argument("--start", required=True, dest="start_date")
+    hist_harness.add_argument("--end", required=True, dest="end_date")
+    hist_harness.add_argument("--fixture-path", type=Path, required=True)
+    hist_harness.add_argument("--corpus-artifact-root", type=Path)
+    hist_harness.add_argument("--harness-artifact-root", type=Path)
+    hist_harness.add_argument("--experiment-id", default="hist-research-default-experiment")
+    hist_harness.add_argument("--hypothesis-id", default="hist-research-default-hypothesis")
+    hist_harness.add_argument("--json", action="store_true")
+
+    benchmark = groups.add_parser(
+        "benchmark",
+        help="intelligence benchmark protocol integration (IBP v1 minimal)",
+    )
+    benchmark_actions = benchmark.add_subparsers(dest="action", required=True)
+    bench_intel = benchmark_actions.add_parser(
+        "intelligence",
+        help="IBP harness adapter, Smoke10 plan, readiness",
+    )
+    bench_intel_actions = bench_intel.add_subparsers(dest="bench_action", required=True)
+    bench_readiness = bench_intel_actions.add_parser("readiness", help="Smoke10 readiness")
+    bench_readiness.add_argument("--json", action="store_true")
+    bench_adapt = bench_intel_actions.add_parser(
+        "adapt",
+        help="adapt historical_research_run_manifest_v1 to IBP record",
+    )
+    bench_adapt.add_argument("--manifest", type=Path, required=True)
+    bench_adapt.add_argument("--json", action="store_true")
+    bench_smoke = bench_intel_actions.add_parser(
+        "smoke10-plan",
+        help="Smoke10 invocation contract (scores NOT executed)",
+    )
+    bench_smoke.add_argument("--manifest", type=Path)
+    bench_smoke.add_argument("--json", action="store_true")
+    bench_smoke_run = bench_intel_actions.add_parser(
+        "smoke10-run",
+        help="execute one bounded Smoke10 baseline (scores executed)",
+    )
+    bench_smoke_run.add_argument("--manifest", type=Path)
+    bench_smoke_run.add_argument("--artifact-root", type=Path)
+    bench_smoke_run.add_argument("--json", action="store_true")
+    bench_suite = bench_intel_actions.add_parser("suite-info", help="suite catalog metadata")
+    bench_suite.add_argument("--json", action="store_true")
+
     return parser
 
 
@@ -881,6 +973,148 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
     result = _run(
         root,
         label=f"providers {args.action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _item9_command(root: Path, args: argparse.Namespace) -> int:
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action != "next-rth-preflight":
+        print(f"unknown item9 action: {args.action}", file=sys.stderr)
+        return 2
+    command = [python, str(root / "tools" / "item9_next_rth_preflight.py")]
+    if args.instrument_id:
+        command.extend(["--instrument-id", str(args.instrument_id)])
+    if args.receipt_dir is not None:
+        command.extend(["--receipt-dir", str(args.receipt_dir)])
+    if args.json:
+        command.append("--json")
+    if args.now_ns is not None:
+        command.extend(["--now-ns", str(args.now_ns)])
+    result = _run(
+        root,
+        label="item9 next-rth-preflight",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _benchmark_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action != "intelligence":
+        print(f"unknown benchmark action: {args.action}", file=sys.stderr)
+        return 2
+    python = _validation_python(root)
+    env = _python_environment(root)
+    command = [python, str(root / "tools" / "benchmarks" / "intelligence_cli.py"), args.bench_action]
+    if args.bench_action in {"adapt", "smoke10-plan", "smoke10-run"} and getattr(
+        args, "manifest", None
+    ) is not None:
+        command.extend(["--manifest", str(args.manifest)])
+    if args.bench_action == "smoke10-run" and getattr(args, "artifact_root", None) is not None:
+        command.extend(["--artifact-root", str(args.artifact_root)])
+    if getattr(args, "json", False):
+        command.append("--json")
+    result = _run(
+        root,
+        label=f"benchmark intelligence {args.bench_action}",
+        command=command,
+        env=env,
+        stream_output=True,
+    )
+    return int(result["exit_code"])
+
+
+def _historical_data_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action not in {"build", "demo", "harness"}:
+        print(f"unknown historical-data action: {args.action}", file=sys.stderr)
+        return 2
+    python = _validation_python(root)
+    env = _python_environment(root)
+    if args.action == "build":
+        script = "build_cli.py"
+    elif args.action == "harness":
+        script = "harness_cli.py"
+    else:
+        script = "demo_cli.py"
+    command = [python, str(root / "tools" / "historical_data" / script)]
+    if args.action == "build":
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--resolution",
+                args.resolution,
+                "--session",
+                args.session,
+            ]
+        )
+        if args.fixture_path:
+            command.extend(["--fixture-path", str(args.fixture_path)])
+        if args.artifact_root:
+            command.extend(["--artifact-root", str(args.artifact_root)])
+        if args.holidays:
+            command.extend(["--holidays", args.holidays])
+        if args.early_closes:
+            command.extend(["--early-closes", args.early_closes])
+    elif args.action == "demo":
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--fixture-path",
+                str(args.fixture_path),
+            ]
+        )
+        if args.corpus_artifact_root:
+            command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
+        if args.demo_artifact_root:
+            command.extend(["--demo-artifact-root", str(args.demo_artifact_root)])
+    else:
+        command.extend(
+            [
+                "--provider",
+                args.provider,
+                "--instrument",
+                args.instrument,
+                "--start",
+                args.start_date,
+                "--end",
+                args.end_date,
+                "--fixture-path",
+                str(args.fixture_path),
+            ]
+        )
+        if args.corpus_artifact_root:
+            command.extend(["--corpus-artifact-root", str(args.corpus_artifact_root)])
+        if args.harness_artifact_root:
+            command.extend(["--harness-artifact-root", str(args.harness_artifact_root)])
+        if args.experiment_id:
+            command.extend(["--experiment-id", str(args.experiment_id)])
+        if args.hypothesis_id:
+            command.extend(["--hypothesis-id", str(args.hypothesis_id)])
+    if args.json:
+        command.append("--json")
+    result = _run(
+        root,
+        label=f"historical-data {args.action}",
         command=command,
         env=env,
         stream_output=True,
@@ -1128,6 +1362,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "ftep":
         return _ftep_command(root, args)
+
+    if args.group == "item9":
+        return _item9_command(root, args)
+
+    if args.group == "historical-data":
+        return _historical_data_command(root, args)
+
+    if args.group == "benchmark":
+        return _benchmark_command(root, args)
 
     if args.group == "closure":
         changed_files = _git_changed_files(root)

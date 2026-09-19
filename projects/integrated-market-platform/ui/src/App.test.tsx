@@ -57,6 +57,46 @@ const attentionMocks = vi.hoisted(() => ({
   }>,
 }));
 
+/** Honest operator diagnostics for Control — 2/3, not calibrated, Live OFF (no fabricated 3/3). */
+const operatorDiagnosticsFixture = vi.hoisted(() => ({
+  schema_version: "operator-diagnostics/1.0.0",
+  severity: "OK",
+  sections: {
+    lifecycle: { status: "READY", services: [], logs: [], update: { status: "CURRENT" } },
+    readiness: { status: "READY", checks: [], providers: [] },
+    opportunity_surface: { feed_status: "READY", quality_summary: { state: "GOOD" } },
+    runtime: {
+      git_sha: "deadbeef00000000000000000000000000000000",
+      item9_preflight: { disposition: "NOT_RTH" },
+      item9_corpus_status: {
+        availability: "AVAILABLE",
+        receipt_scope: "FROZEN_COLLECTOR_WORKTREE_READ_ONLY",
+        report: {
+          calibration_state: "NOT_CALIBRATED",
+          fitting_allowed: false,
+          sample_gate_progress: { distinct_rth_dates: "2/3" },
+        },
+      },
+      runtime_resilience: {
+        collector_process: { active_collector_detected: false, probe_status: "COMPLETED" },
+        expected_cycle: { receipt_inventory: { availability: "AVAILABLE", receipt_file_count: 0 } },
+        readiness_vs_liveness: {
+          readiness: { item9_status: "PARTIAL_NOT_CALIBRATED", calibrated: false },
+        },
+      },
+    },
+    governance: {
+      headline: "No blocking operator headline.",
+      live_execution_env: false,
+      interventions: [],
+      forbidden: ["enable_live_execution", "auto_fit_item9_calibration"],
+    },
+    cycle_recovery: { expected_cycle_failure: "NOT_OBSERVED" },
+    evidence_gaps: [],
+  },
+  human_summary: [],
+}));
+
 function portfolioPayload() {
   return {
     account: {
@@ -76,7 +116,7 @@ function portfolioPayload() {
       execution_provider: "INTERNAL",
     },
     authority_boundary: "PAPER_OBSERVABILITY",
-    positions: [{ instrument_id: "BIYA", quantity: 10, side: "LONG" }],
+    positions: [{ instrument_id: "BIYA", symbol: "BIYA", quantity: 10, side: "LONG" }],
     orders: [],
     fills: [],
     risk: {
@@ -200,6 +240,10 @@ vi.mock("./api/hooks", () => ({
     context: ["context"],
     attention: ["attention"],
     opportunitiesSummary: ["opportunities", "summary"],
+    operatorDiagnostics: ["operator", "diagnostics"],
+    operatorReadiness: ["operator", "readiness"],
+    operatorLifecycleStatus: ["operator", "lifecycle-status"],
+    operatorConfig: ["operator", "config"],
     liveCanarySnapshot: (laneId?: string, accountId?: string) =>
       ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],
@@ -239,6 +283,25 @@ vi.mock("./api/hooks", () => ({
     isLoading: false,
     error: null,
     data: { status: "READY", checks: [], providers: [] },
+  }),
+  useOperatorDiagnosticsQuery: () => ({
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    error: null,
+    dataUpdatedAt: Date.now(),
+    data: operatorDiagnosticsFixture,
+    refetch: vi.fn(),
+  }),
+  useOperatorLifecycleStatusQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: { status: "READY", services: [], logs: [] },
+  }),
+  useOperatorConfigQuery: () => ({
+    isLoading: false,
+    error: null,
+    data: { providers: [] },
   }),
   usePaperForwardTestsQuery: () => ({
     isLoading: false,
@@ -612,21 +675,26 @@ describe("App mode launcher integration", () => {
     await openNavLink(/^Portfolio —/i);
   }
 
-  async function openExplore() {
-    await openNavLink(/^Markets —/i);
+  async function openRadarScreeners() {
+    await openNavLink(/^Radar —/i);
+    fireEvent.click(await screen.findByRole("link", { name: "Screeners" }));
   }
 
   async function openResearch() {
     await openNavLink(/^Research —/i);
   }
 
-  async function openDiscover() {
-    await openNavLink(/^Opportunity Radar —/i);
+  async function openLab() {
+    await openNavLink(/^Lab —/i);
   }
 
-  async function openSqueezeFromExplore() {
-    await openExplore();
-    fireEvent.click(screen.getByRole("link", { name: "GME" }));
+  async function openRadar() {
+    await openNavLink(/^Radar —/i);
+  }
+
+  async function openSqueezeFromScreeners() {
+    await openRadarScreeners();
+    fireEvent.click(await screen.findByRole("link", { name: "GME" }));
     expect(
       await screen.findByRole("heading", { name: /GME — Short Squeeze Workspace/i }),
     ).toBeInTheDocument();
@@ -701,14 +769,24 @@ describe("App mode launcher integration", () => {
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
 
-  it("opens the Signals desk without duplicating the overview KPI board", async () => {
+  it("opens the Signals desk without duplicating the overview decision board", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openNavLink(/^Signals —/i);
+    fireEvent.click(screen.getByRole("link", { name: "Signals" }));
     expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Overview KPIs" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Decision metrics" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Primary review queue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "See the market unfold" })).not.toBeInTheDocument();
+  });
+
+  it("redirects the legacy /signals route to the Command Signals desk", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    window.history.pushState({}, "", "/signals");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/");
+    expect(window.location.search).toBe("?desk=signals");
   });
 
   it("resets the route before switching and re-entering", async () => {
@@ -721,7 +799,7 @@ describe("App mode launcher integration", () => {
 
     await enterMode("Demo");
     expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Overview" })).toHaveClass("active");
+    expect(screen.getByRole("link", { name: /^Command/ })).toHaveClass("active");
   });
 
   it("confirms a scrub before changing the cursor and refreshes existing queries", async () => {
@@ -754,7 +832,8 @@ describe("App mode launcher integration", () => {
     expect(await screen.findByRole("heading", { name: "Demo Portfolio" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByText("BIYA")).toBeInTheDocument();
+    // Portfolio content renders in main (the StatusBar scope symbol stays in chrome).
+    expect(within(screen.getByRole("main")).getByRole("heading", { name: "Positions" })).toBeInTheDocument();
   });
 
   it("opens Paper Portfolio from /portfolio", async () => {
@@ -772,37 +851,41 @@ describe("App mode launcher integration", () => {
     await enterMode("Live");
     await openPortfolio();
     expect(await screen.findByRole("heading", { name: "Live Portfolio" })).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.getByText("ord-live-1")).toBeInTheDocument();
+    expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("ord-live-1").length).toBeGreaterThan(0);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open live canary" })).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Open live canary" })[0]).toHaveAttribute(
       "href",
       "/live-canary",
     );
   });
 
-  it("opens Demo Explore from /explore", async () => {
+  it("opens Demo Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/radar/screeners");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByText("GME")).toBeInTheDocument();
+    expect(await screen.findByText("GME")).toBeInTheDocument();
   });
 
-  it("opens Paper Explore from /explore", async () => {
+  it("opens Paper Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open paper portfolio" })).toBeInTheDocument();
   });
 
-  it("opens Live Explore from /explore", async () => {
+  it("opens Live Radar screeners from /explore (redirect)", async () => {
     render(<App />);
     await enterMode("Live");
-    await openExplore();
-    expect(await screen.findByRole("heading", { name: "Explore" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/explore");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
   });
@@ -813,7 +896,101 @@ describe("App mode launcher integration", () => {
     await openResearch();
     expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByRole("tab", { name: "Analytics" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("navigates Demo Research sections as routes", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openResearch();
+    await screen.findByRole("heading", { name: "Research" });
+    const researchTabs = () => screen.getByRole("navigation", { name: "Research sections" });
+    fireEvent.click(within(researchTabs()).getByRole("link", { name: "Evidence" }));
+    expect(
+      await screen.findByRole("heading", { name: "Evidence at the current cutoff" }),
+    ).toBeInTheDocument();
+    expect(within(researchTabs()).getByRole("link", { name: "Evidence" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    fireEvent.click(within(researchTabs()).getByRole("link", { name: "Simulation" }));
+    // The simulation hook mock returns no payload — the section must degrade
+    // honestly instead of rendering an empty ledger.
+    expect(
+      await screen.findByText(/simulation record is unavailable right now/i),
+    ).toBeInTheDocument();
+  });
+
+  it("opens Demo Lab from /lab instead of redirecting to Research", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab");
+    expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
+    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText("2/3").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("IDLE").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
+    expect(screen.getByText(/does not start collection, fit calibration, enable Live, or run Full30/i))
+      .toBeInTheDocument();
+  });
+
+  it("navigates Demo Lab sections and keeps Research distinct", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openLab();
+    await screen.findByRole("heading", { name: "Lab" });
+    fireEvent.click(screen.getByRole("link", { name: "Validation" }));
+    expect(
+      await screen.findByText(/validation workflow snapshot is unavailable/i),
+    ).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab/validation");
+    fireEvent.click(screen.getByRole("link", { name: "Simulation" }));
+    expect(
+      await screen.findByText(/simulation workflow snapshot is unavailable/i),
+    ).toBeInTheDocument();
+    await openResearch();
+    expect(await screen.findByRole("heading", { name: "Research" })).toBeInTheDocument();
+  });
+
+  it("opens Paper Lab without unlocking experiment mutations", async () => {
+    render(<App />);
+    await enterMode("Paper");
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/Paper execution stays in Workspace/i);
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+  });
+
+  it("opens Live Lab as observational, not Live experiment authority", async () => {
+    render(<App />);
+    await enterMode("Live");
+    await openLab();
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(screen.getByRole("note")).toHaveTextContent(/observational/i);
+    expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+  });
+
+  it("redirects /research/vela-chart-lab to Lab Chart Lab", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    window.history.pushState({}, "", "/research/vela-chart-lab");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Lab" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/lab/chart-lab");
+    expect(
+      await screen.findByRole("heading", { name: "Chart adapter playground", level: 2 }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Vela chart adapter (Lane F)", level: 3 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start live tick sim" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Backfill +50 bars" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
   });
 
   it("opens Paper Research from /research", async () => {
@@ -833,39 +1010,44 @@ describe("App mode launcher integration", () => {
     expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
   });
 
-  it("opens Demo Discover from /discover", async () => {
+  it("opens Demo Radar from /discover (redirect)", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
+    window.history.pushState({}, "", "/discover");
+    fireEvent.popState(window);
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    expect(window.location.pathname).toBe("/radar");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/No opportunities right now/i),
+    ).toBeInTheDocument();
   });
 
-  it("opens Paper Discover from /discover", async () => {
+  it("opens Paper Radar with the mixed screener on the Screeners tab", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Refresh all screens" })).toBeInTheDocument();
-    expect(screen.getByText("AAPL")).toBeInTheDocument();
+    await openRadar();
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Screeners" }));
+    expect(await screen.findByRole("button", { name: "Refresh all screens" })).toBeInTheDocument();
+    expect(await screen.findByText("AAPL")).toBeInTheDocument();
   });
 
-  it("opens Live Discover from /discover", async () => {
+  it("opens Live Radar read-only with the canary link on Screeners", async () => {
     render(<App />);
     await enterMode("Live");
-    await openDiscover();
-    expect(await screen.findByRole("heading", { name: "Opportunity Radar" })).toBeInTheDocument();
+    await openRadar();
+    expect(await screen.findByRole("heading", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/read-only/i);
-    expect(screen.getByRole("link", { name: "Open live canary" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("link", { name: "Screeners" }));
+    expect(await screen.findByRole("link", { name: "Open live canary" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
   });
 
   it("opens Demo Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Demo");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getByText(/frozen research cohort evidence/i)).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
@@ -874,7 +1056,7 @@ describe("App mode launcher integration", () => {
   it("opens Paper Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Paper");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByText(/Preview squeeze ignition/i)).toBeInTheDocument();
     expect(screen.getByText(/Paper simulation context/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open paper portfolio" })).toBeInTheDocument();
@@ -883,7 +1065,7 @@ describe("App mode launcher integration", () => {
   it("opens Live Squeeze workspace from /workspace/GME/squeeze", async () => {
     render(<App />);
     await enterMode("Live");
-    await openSqueezeFromExplore();
+    await openSqueezeFromScreeners();
     expect(screen.getByText(/broker-observed squeeze signals/i)).toBeInTheDocument();
     expect(screen.getByTestId("workspace-mode-restriction-note")).toHaveTextContent(/read-only/i);
     expect(screen.getAllByRole("link", { name: "Open live canary" }).length).toBeGreaterThan(0);
@@ -1047,6 +1229,21 @@ describe("App mode launcher integration", () => {
     await openLiveCanary();
     expect(await screen.findByTestId("live-canary-control-plane")).toBeInTheDocument();
     expect(screen.getByText(/REAL MONEY/i)).toBeInTheDocument();
+  });
+
+  it("opens Control from navigation with operating state and authority sections", async () => {
+    render(<App />);
+    await enterMode("Demo");
+    await openNavLink(/^Control —/i);
+    expect(
+      await screen.findByRole("heading", { name: "Platform control" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Execution & authority" }),
+    ).toHaveTextContent(/order entry is disabled/i);
+    expect(
+      screen.getByRole("region", { name: "Opportunity feed readiness" }),
+    ).toBeInTheDocument();
   });
 
   it("opens provider diagnostics from navigation", async () => {

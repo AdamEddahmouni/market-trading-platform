@@ -60,8 +60,15 @@ with `orders_placed=false` and `fabricated_fills=false`. Live
 `api.alpaca.markets` is `LIVE_FORBIDDEN` before `urlopen`. Tradier `#41` remains
 in tree and fail-closed. The runner does not fabricate empirical fills, does not
 declare `CALIBRATED`, and does not flip FTEP to `EMPIRICAL_ACTIVE`. Numeric
-gates remain `UNSET/BLOCKING`. Item 9 stays PARTIAL until operator Paper keys
-exist in gitignored `.private`.
+gates remain `UNSET/BLOCKING`. Item 9 stays PARTIAL until a later governed
+calibration run satisfies [ITEM9_CALIBRATION_PROTOCOL_V1.md](ITEM9_CALIBRATION_PROTOCOL_V1.md).
+Operator Paper keys in gitignored `.private` are required only for
+execution-claim comparator pairing, not for protocol freeze or corpus
+accumulation.
+
+**Dual corpus:** Offline `HISTORICAL_DEVELOPMENT` datasets (Lane B) never compose
+Item 9 prospective calibration corpus — see
+[DUAL_CORPUS_EVIDENCE_CONTRACT.md](DUAL_CORPUS_EVIDENCE_CONTRACT.md).
 
 ## Required comparison metrics
 

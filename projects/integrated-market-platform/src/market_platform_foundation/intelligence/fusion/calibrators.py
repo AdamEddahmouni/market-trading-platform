@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from typing import Any
+
 import math
 from dataclasses import dataclass
 
@@ -35,7 +38,19 @@ class CalibrationTrainer:
       *,
       method: CalibrationMethod,
       available_time_ns: int,
+      corpus_evidence_authority: str | None = None,
+      corpus_guard_payload: Mapping[str, Any] | None = None,
   ) -> CalibrationModelArtifact | None:
+      if corpus_evidence_authority or corpus_guard_payload:
+          from ...paper.calibration.dual_corpus.consumption import (
+              assert_payload_samples_consumable_for_selection_or_training,
+          )
+
+          assert_payload_samples_consumable_for_selection_or_training(
+              payload=dict(corpus_guard_payload or {}),
+              corpus_evidence_authority=corpus_evidence_authority,
+              purpose="calibration_trainer_fit",
+          )
       support = dataset_support_summary(dataset)
       if support["sample_count"] < self.minimum_samples:
           return None

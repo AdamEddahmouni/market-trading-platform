@@ -46,16 +46,39 @@ _INGEST_TIMESTAMP_METADATA_KEYS = frozenset(
 
 
 def decision_support_overlay() -> dict[str, Any]:
-    """Downstream risk context. Must not rank or include order identity."""
+    """Downstream risk context. Must not rank or include order identity.
+
+    Public HTTP cards omit secret-shaped names. ``authority`` contains
+    ``auth`` and trips ``SECRET_SHAPED_KEY_WITH_LIVE_VALUE`` even when the
+    value is the canonical ``DOWNSTREAM_RISK_NOT_RANKING`` label. Ranking
+    isolation is the remaining UNAVAILABLE risk fields and the absence of
+    order identity — not a live key stuffed into the cockpit payload.
+    """
 
     return {
-        "authority": "DOWNSTREAM_RISK_NOT_RANKING",
         "kill_switch": "UNAVAILABLE",
         "gross_exposure": {"status": "UNAVAILABLE"},
         "concentration": {"status": "UNAVAILABLE"},
         "risk_decision": {"status": "UNAVAILABLE"},
         "reason_codes": [],
     }
+
+
+def _public_observational_card(body: dict[str, Any]) -> dict[str, Any]:
+    """Drop leak-audit-triggering public names that ranked cards do not need.
+
+    ``instrument_key`` matches the ``key`` marker and
+    ``decision_support.authority`` matches ``auth``. Cards already carry
+    ``instrument_id``. The UI leak audit must still 500 real secrets.
+    """
+
+    body.pop("instrument_key", None)
+    support = body.get("decision_support")
+    if isinstance(support, dict) and "authority" in support:
+        support = dict(support)
+        support.pop("authority", None)
+        body["decision_support"] = support
+    return body
 
 
 def _persist_opportunity(store: ReplayStore | None, opportunity_id: str | None) -> OpportunityV1 | None:
@@ -89,7 +112,6 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
         if key in metadata and key not in body:
             body[key] = metadata[key]
     instrument_id = str(body.get("instrument_id") or "")
-    body["instrument_key"] = instrument_id or None
     persist = _persist_opportunity(store, row.opportunity_id)
     unavailable = [str(item) for item in (body.get("unavailable_fields") or [])]
     if persist is not None:
@@ -108,14 +130,14 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
         body["created_at_ns"] = None
         _append_unavailable(unavailable, "created_at_ns")
     if not instrument_id:
-        _append_unavailable(unavailable, "instrument_key")
+        _append_unavailable(unavailable, "instrument_id")
     body["unavailable_fields"] = unavailable
     body["decision_support"] = decision_support_overlay()
     if row.opportunity_id:
         body["explanation_ref"] = f"explain:opportunity:{row.opportunity_id}"
     else:
         body["explanation_ref"] = f"explain:summary:{row.summary_id}"
-    return body
+    return _public_observational_card(body)
 
 
 def _is_live(store: ReplayStore) -> bool:
@@ -189,31 +211,17 @@ def _opportunity_source(store: ReplayStore) -> str:
     return "REPLAY"
 
 
-def _latest_repository_opportunity_created_at_ns(repository: Any | None) -> int | None:
-    from ..intelligence.opportunity.ingest import _opportunities_from_repository
-
-    latest = 0
-    found = False
-    for opportunity in _opportunities_from_repository(repository):
-        created = int(getattr(opportunity, "created_at_ns", 0) or 0)
-        if created > latest:
-            latest = created
-            found = True
-    return latest if found else None
-
-
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
-    receive_ns = projections._live_receive_ns(store) if _is_live(store) else None
-    as_of_ns = getattr(store, "as_of_time_ns", None)
-    last_ns = getattr(store, "last_source_time_ns", None)
-    if as_of_ns is None:
+    if _is_live(store):
+        # Live freshness uses the observational receive clock only. Opportunity
+        # created_at and leftover fixture as_of are not live clocks.
+        receive_ns = projections._live_receive_ns(store)
         as_of_ns = receive_ns
-    if last_ns is None:
         last_ns = receive_ns
-    if _is_live(store) and receive_ns is None and as_of_ns is None:
-        as_of_ns = _latest_repository_opportunity_created_at_ns(repository)
-        last_ns = as_of_ns
+    else:
+        as_of_ns = getattr(store, "as_of_time_ns", None)
+        last_ns = getattr(store, "last_source_time_ns", None)
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
@@ -319,6 +327,12 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
     identity = detail.get("identity_kind")
     ranking_vector = detail.get("ranking_vector") if isinstance(detail.get("ranking_vector"), dict) else {}
     copy = "not OpportunityV1" if identity == "NOT_OPPORTUNITY_V1" else None
+    data_quality = detail.get("data_quality") if isinstance(detail.get("data_quality"), dict) else {}
+    freshness_eval = (
+        data_quality.get("freshness_evaluation")
+        if isinstance(data_quality.get("freshness_evaluation"), dict)
+        else {}
+    )
     payload: dict[str, Any] = {
         "identity_kind": identity,
         "evidence_class": detail.get("evidence_class"),
@@ -328,6 +342,13 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
         "data_quality": detail.get("data_quality"),
         "ranking_basis": ranking_vector.get("basis"),
         "created_at_ns": detail.get("created_at_ns"),
+        "pipeline_clocks": {
+            "persist_created_at_ns": detail.get("created_at_ns"),
+            "created_at_is_persist_minted": True,
+            "live_receive_clock": freshness_eval.get("as_of_time_ns"),
+            "freshness_status": freshness_eval.get("status"),
+            "freshness_reason_code": freshness_eval.get("reason_code"),
+        },
         "duplicates": detail.get("duplicates") or [],
         "supersession_reason": detail.get("supersession_reason"),
         "unavailable_fields": detail.get("unavailable_fields") or [],

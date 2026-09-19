@@ -1,4 +1,5 @@
 import { usePaperPortfolioQuery } from "../../api/hooks";
+import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import type { Mode } from "../mode-session/types";
 
 type Props = {
@@ -19,9 +20,11 @@ export function ImpExecutionPosture({ mode }: Props) {
     <div className="imp-execution-posture" aria-label="Execution posture">
       <span className="imp-posture-mode">{modeCopy[mode]}</span>
       {mode === "PAPER" && paperAccountId ? (
-        <span className="imp-posture-account" title="Paper simulation account">
-          Acct {paperAccountId}
-        </span>
+        <CopyableIdentifier
+          value={paperAccountId}
+          prefix="Acct"
+          className="imp-posture-account"
+        />
       ) : null}
       <span className="imp-posture-lock" title="Broker execution remains disabled in this UI build">
         Live off
