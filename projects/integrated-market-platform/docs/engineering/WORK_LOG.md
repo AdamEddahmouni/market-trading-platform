@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to #298 (`2003eced`)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Pinned PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) from stale `a0b03d2a` (#294 pin) to `origin/main` **`2003eced`** after [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298). Historical log snapshots and Item 9 **2/3 IDLE**, collector `fed2d9f7`, **NOT CALIBRATED**, Live **OFF**, #222 isolated left unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — no code tests run |
+| **Related** | [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; do not merge from this lane. |
+
 ## 2026-09-19 — Lane E: absorb origin/main 1d2377ea (#293) into #298 snapshot keep-both
 
 | Field | Value |
