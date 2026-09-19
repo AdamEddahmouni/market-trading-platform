@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Absorb origin/main 2a831ac5 (#294+#306) into #293 snapshot.py keep-both
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `docs` |
+| **Summary** | Merged `origin/main` `2a831ac5` into `fix/weekend-lane-d-observability` without dropping either side of `snapshot.py`: keep #294 `_operator_safe_fs_path` / `_sanitize_mapping_paths` / POSIX Windows-absolute-before-resolve, and #293 deepcopy of `expected_cycle`, `PARTIAL_TAIL`, UNKNOWN recovery (not false OBSERVED), and STALE log freshness. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | IMP `.venv` + `PYTHONPATH=src`: `python -m unittest tests.platform.test_operator_diagnostics_snapshot` — **8 OK** |
+| **Related** | [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293); [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306) |
+| **Notes** | Isolated worktree `.worktrees/weekend-293-snapshot-resolve`; push only, do not merge the PR. |
+
+## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform`, `operations`, `tests` |
+| **Summary** | Hardened Item 9 expected-cycle / collector-log gap machinery from [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291): truncation and stale/missing log facts, snapshot copy isolation, duplicate/hung/foreign-path classification, and operator-visible diagnostic fields. Read-only; no collector or receipt mutation. |
+| **Key files** | `src/market_platform_foundation/platform/artifact_path_resolver.py`; `operations/runtime_resilience_diagnostic.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_{artifact_path_resolver,runtime_resilience_diagnostic,operator_diagnostics_snapshot}.py` |
+| **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
+| **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
+| **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to #294 (`a0b03d2a`)
 
 | Field | Value |

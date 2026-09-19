@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import time
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Callable, Mapping
 
@@ -25,6 +26,7 @@ from ..paper.calibration.item9_next_rth_preflight import (
 from ..platform.artifact_path_resolver import (
     analyze_item9_collect_log_gaps,
     analyze_item9_receipt_directory,
+    epochs_from_item9_receipt_filenames,
     read_item9_collector_log_text,
 )
 from ..providers.equity_quote_selection import opend_readiness
@@ -89,17 +91,38 @@ def build_runtime_resilience_diagnostic(
     )
     opend = opend_readiness()
 
-    log_source: dict[str, object] = {"availability": "NOT_OBSERVED"}
+    log_source: dict[str, object] = {
+        "availability": "NOT_OBSERVED",
+        "truncated": False,
+        "freshness": "NOT_OBSERVED",
+    }
     if collector_log_text is None:
-        collector_log_text, log_source = read_item9_collector_log_text(imp_root, mapping)
+        collector_log_text, log_source = read_item9_collector_log_text(
+            imp_root,
+            mapping,
+            now_ns=observed_ns,
+        )
     else:
-        log_source = {"availability": "CALLER_SUPPLIED"}
-
-    log_gaps: dict[str, object] | None = None
-    if collector_log_text:
-        log_gaps = analyze_item9_collect_log_gaps(collector_log_text)
+        log_source = {
+            "availability": "CALLER_SUPPLIED",
+            "truncated": False,
+            "freshness": "NOT_OBSERVED",
+        }
 
     receipt_inventory = analyze_item9_receipt_directory(receipt_dir)
+    inventory_epochs = epochs_from_item9_receipt_filenames(
+        list(receipt_inventory.get("receipt_files") or [])
+        if isinstance(receipt_inventory, dict)
+        else []
+    )
+
+    log_gaps: dict[str, object] | None = None
+    if collector_log_text is not None:
+        log_gaps = analyze_item9_collect_log_gaps(
+            collector_log_text,
+            truncated=bool(log_source.get("truncated")),
+            known_receipt_epochs=inventory_epochs,
+        )
 
     provider_state = "REACHABLE" if opend.loopback and opend.reachable else "UNAVAILABLE"
     if opend.loopback and not opend.reachable:
@@ -153,9 +176,9 @@ def build_runtime_resilience_diagnostic(
         },
         "expected_cycle": {
             "receipt_dir": str(receipt_dir),
-            "receipt_inventory": receipt_inventory,
-            "collector_log_gaps": log_gaps,
-            "collector_log_source": log_source,
+            "receipt_inventory": deepcopy(receipt_inventory),
+            "collector_log_gaps": deepcopy(log_gaps) if log_gaps is not None else None,
+            "collector_log_source": dict(log_source),
         },
         "readiness_vs_liveness": {
             "readiness": item9_preflight.get("readiness"),
