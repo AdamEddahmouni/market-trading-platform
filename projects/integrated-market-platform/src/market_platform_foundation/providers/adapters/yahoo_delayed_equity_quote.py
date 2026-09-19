@@ -32,9 +32,11 @@ SYMBOL_REQUIRED = "INSTRUMENT_ID_REQUIRED"
 ES_SYMBOL_BLOCKED = "ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY"
 PROVIDER_TIMEOUT = "PROVIDER_TIMEOUT"
 PROVIDER_DISCONNECTED = "PROVIDER_DISCONNECTED"
+TEMPORARY_NETWORK_FAILURE = "TEMPORARY_NETWORK_FAILURE"
 RATE_LIMIT = "RATE_LIMIT"
 PROVIDER_HTTP_ERROR = "PROVIDER_HTTP_ERROR"
 MALFORMED_RECORD = "MALFORMED_RECORD"
+EMPTY_PAYLOAD = "EMPTY_PAYLOAD"
 MISSING_TIMESTAMP = "MISSING_TIMESTAMP"
 
 # Yahoo continuous-futures suffix ("ES=F") and common ES aliases. Equity
@@ -93,6 +95,8 @@ class YahooDelayedEquityQuoteProvider:
             status, body = self._fetch(url)
         except TimeoutError:
             return self._unavailable(PROVIDER_TIMEOUT)
+        except ConnectionResetError:
+            return self._unavailable(TEMPORARY_NETWORK_FAILURE)
         except OSError:
             return self._unavailable(PROVIDER_DISCONNECTED)
 
@@ -100,6 +104,8 @@ class YahooDelayedEquityQuoteProvider:
             return self._unavailable(RATE_LIMIT)
         if status >= 400:
             return self._unavailable(PROVIDER_HTTP_ERROR)
+        if not body:
+            return self._unavailable(EMPTY_PAYLOAD)
 
         try:
             payload = json.loads(body.decode("utf-8"))
@@ -211,7 +217,11 @@ def _quote_event_from_chart(
 
 
 __all__ = [
+    "EMPTY_PAYLOAD",
     "ES_SYMBOL_BLOCKED",
+    "MALFORMED_RECORD",
+    "PROVIDER_TIMEOUT",
+    "TEMPORARY_NETWORK_FAILURE",
     "YAHOO_CAPABILITY",
     "YAHOO_PROVIDER_ID",
     "YAHOO_TIMELINESS",
