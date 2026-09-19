@@ -235,7 +235,67 @@ export type ResearchSynthesisInput = {
 export type ResearchSynthesisLine = {
   id: "validation" | "evidence" | "simulation";
   text: string;
+  href: string;
 };
+
+export type ResearchSessionMode = "DEMO" | "PAPER" | "LIVE";
+
+export type ResearchClaimNodeKey =
+  | "source"
+  | "hypothesis"
+  | "strategy"
+  | "experiment"
+  | "evidence"
+  | "contradiction"
+  | "implementation"
+  | "forward-test";
+
+export type ClaimDestinationKind = "research" | "related" | "proxy" | "gap";
+
+export type ResearchClaimNode = {
+  key: ResearchClaimNodeKey;
+  title: string;
+  role: string;
+  statusLabel: string;
+  statusTone: SemanticTone;
+  detail: string;
+  href: string | null;
+  destinationKind: ClaimDestinationKind;
+  evidenceClass: string;
+};
+
+export type ClaimHop = {
+  key: ResearchClaimNodeKey;
+  title: string;
+  href: string | null;
+  note: string;
+};
+
+const CLAIM_NODE_ORDER: ReadonlyArray<ResearchClaimNodeKey> = [
+  "source",
+  "hypothesis",
+  "strategy",
+  "experiment",
+  "evidence",
+  "contradiction",
+  "implementation",
+  "forward-test",
+];
+
+const CLAIM_TITLES: Record<ResearchClaimNodeKey, string> = {
+  source: "Source",
+  hypothesis: "Hypothesis",
+  strategy: "Strategy",
+  experiment: "Experiment",
+  evidence: "Evidence",
+  contradiction: "Contradiction",
+  implementation: "Implementation",
+  "forward-test": "Forward-test",
+};
+
+export function forwardTestWorkspaceHref(mode: ResearchSessionMode): string | null {
+  return mode === "PAPER" ? "/workspace" : null;
+}
 
 /**
  * The L1 "what does the evidence currently show" strip. Every number comes
@@ -249,6 +309,7 @@ export function buildResearchSynthesis(input: ResearchSynthesisInput): ResearchS
     const summary = input.models.interpretation_summary;
     lines.push({
       id: "validation",
+      href: "/research/validation",
       text:
         `Strategy walk-forward at the current cutoff: ${summary.signal_count} ` +
         `${summary.signal_count === 1 ? "signal" : "signals"} and ${summary.abstention_count} ` +
@@ -261,6 +322,7 @@ export function buildResearchSynthesis(input: ResearchSynthesisInput): ResearchS
     if (conflicts > 0) {
       lines.push({
         id: "validation",
+        href: "/research/validation?conflict=1",
         text:
           `${conflicts} ${conflicts === 1 ? "observation abstained" : "observations abstained"} ` +
           `because the backend reported conflicting evidence (` +
@@ -275,11 +337,16 @@ export function buildResearchSynthesis(input: ResearchSynthesisInput): ResearchS
     ).length;
     lines.push({
       id: "evidence",
+      href: "/research/evidence",
       text: `${available} of ${RESEARCH_FINDINGS.length} evidence findings have data at this cutoff.`,
     });
     const squeeze = researchPanel(input.analytics, "squeeze_outcomes");
     if (squeeze && !squeeze.available && squeeze.reason) {
-      lines.push({ id: "evidence", text: `Squeeze donor bridge unavailable: ${squeeze.reason}` });
+      lines.push({
+        id: "evidence",
+        href: "/research/evidence?panel=squeeze_outcomes",
+        text: `Squeeze donor bridge unavailable: ${squeeze.reason}`,
+      });
     }
   }
 
@@ -287,6 +354,7 @@ export function buildResearchSynthesis(input: ResearchSynthesisInput): ResearchS
     const reconciliation = presentCheckStatus(input.simulation.reconciliation?.status as string | undefined);
     lines.push({
       id: "simulation",
+      href: "/research/simulation",
       text:
         `Deterministic simulation: ${input.simulation.ledger_summary.entry_count} ledger ` +
         `${input.simulation.ledger_summary.entry_count === 1 ? "entry" : "entries"}, ` +
@@ -387,4 +455,348 @@ export function listFindingSources(
     bySource.set(label, existing);
   }
   return Array.from(bySource.entries()).map(([source, findings]) => ({ source, findings }));
+}
+
+function recordScalar(record: Record<string, unknown> | undefined, key: string): string | null {
+  if (!record) return null;
+  const value = record[key];
+  if (value == null) return null;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  return null;
+}
+
+function strategyNodeDetail(models?: ResearchModelsResponse | null): string {
+  if (!models) return "The model validation payload was not included.";
+  const family = recordScalar(models.model_summary, "model_family") ?? "UNKNOWN";
+  const alignment =
+    recordScalar(models.model_summary, "alignment_type") ??
+    recordScalar(models.strategy_spec, "alignment_type") ??
+    "UNKNOWN";
+  return `${family} · ${alignment} · ${presentPreregistration(models.preregistration_status).label}.`;
+}
+
+function sourceNodeDetail(analytics?: ResearchAnalyticsResponse | null): string {
+  if (!analytics) return "Analytics payload not included — sources UNAVAILABLE.";
+  const sources = listFindingSources(analytics)
+    .map((row) => row.source)
+    .filter((source) => source !== "Unavailable");
+  if (!sources.length) return "Panels loaded, but no provenance.source values were reported.";
+  return `Provenance sources on this payload: ${sources.join("; ")}. No source-catalog endpoint exists.`;
+}
+
+function contradictionNode(models?: ResearchModelsResponse | null): Pick<
+  ResearchClaimNode,
+  "statusLabel" | "statusTone" | "detail" | "href" | "destinationKind"
+> {
+  if (!models) {
+    return {
+      statusLabel: "Unavailable",
+      statusTone: "neutral",
+      detail:
+        "Contradiction flags are not a contract. Conflict count cannot be read until validation loads.",
+      href: "/research/validation",
+      destinationKind: "research",
+    };
+  }
+  const conflicts = countConflictingInterpretations(models);
+  if (conflicts > 0) {
+    return {
+      statusLabel: `${conflicts} contract-backed ${conflicts === 1 ? "conflict" : "conflicts"}`,
+      statusTone: "caution",
+      detail:
+        "Only ABSTAIN_CONFLICTING_EVIDENCE is a conflict signal. This is not a contradiction score.",
+      href: "/research/validation?conflict=1",
+      destinationKind: "research",
+    };
+  }
+  return {
+    statusLabel: "None reported",
+    statusTone: "neutral",
+    detail:
+      "No ABSTAIN_CONFLICTING_EVIDENCE rows in this window. Absence is not proof that evidence agrees.",
+    href: "/research/validation",
+    destinationKind: "research",
+  };
+}
+
+function forwardTestNode(mode: ResearchSessionMode): Pick<
+  ResearchClaimNode,
+  "statusLabel" | "statusTone" | "detail" | "href" | "destinationKind" | "evidenceClass"
+> {
+  if (mode === "PAPER") {
+    return {
+      statusLabel: "Not on this surface",
+      statusTone: "neutral",
+      detail:
+        "Account-bound Paper forward tests live in Workspace. This simulation is not a forward test. FTEP campaign state has no Research UI contract.",
+      href: "/workspace",
+      destinationKind: "related",
+      evidenceClass: "Prospective paper forward-test (Workspace) · not this page",
+    };
+  }
+  return {
+    statusLabel: "NOT_EXPOSED",
+    statusTone: "neutral",
+    detail:
+      "Governed FTEP campaign state is not on this surface. Paper Workspace holds account-bound forward tests; Demo/Live Research does not fetch them.",
+    href: null,
+    destinationKind: "gap",
+    evidenceClass: "NOT_EXPOSED",
+  };
+}
+
+/**
+ * Claim graph for Overview. Status is payload-derived or an explicit gap token.
+ * Does not invent hypotheses, contradiction scores, FTEP state, or live evidence.
+ */
+export function buildClaimNavigation(
+  input: ResearchSynthesisInput,
+  mode: ResearchSessionMode,
+): ResearchClaimNode[] {
+  const contradiction = contradictionNode(input.models);
+  const forwardTest = forwardTestNode(mode);
+  const availableFindings = input.analytics
+    ? RESEARCH_FINDINGS.filter((finding) => researchPanel(input.analytics, finding.key)?.available)
+        .length
+    : 0;
+
+  const nodes: Record<ResearchClaimNodeKey, ResearchClaimNode> = {
+    source: {
+      key: "source",
+      title: CLAIM_TITLES.source,
+      role: "Where the finding came from",
+      statusLabel: input.analytics ? "Disclosed per finding" : "Unavailable",
+      statusTone: input.analytics ? "research" : "neutral",
+      detail: sourceNodeDetail(input.analytics),
+      href: "/research/evidence",
+      destinationKind: "research",
+      evidenceClass: "Panel provenance.source / method only",
+    },
+    hypothesis: {
+      key: "hypothesis",
+      title: CLAIM_TITLES.hypothesis,
+      role: "What claim is being tested",
+      statusLabel: "NOT_EXPOSED",
+      statusTone: "neutral",
+      detail:
+        "No hypothesis object or lifecycle endpoint. Closest contract: per-observation interpretations on Validation.",
+      href: "/research/validation#research-interpretations-heading",
+      destinationKind: "proxy",
+      evidenceClass: "NOT_EXPOSED",
+    },
+    strategy: {
+      key: "strategy",
+      title: CLAIM_TITLES.strategy,
+      role: "Which model and gates produced the claim",
+      statusLabel: input.models ? presentPreregistration(input.models.preregistration_status).label : "Unavailable",
+      statusTone: input.models
+        ? presentPreregistration(input.models.preregistration_status).tone
+        : "neutral",
+      detail: strategyNodeDetail(input.models),
+      href: "/research/validation",
+      destinationKind: "research",
+      evidenceClass: "Walk-forward validation (replay-bound)",
+    },
+    experiment: {
+      key: "experiment",
+      title: CLAIM_TITLES.experiment,
+      role: "Deterministic simulation of the claim",
+      statusLabel: input.simulation ? "Simulation record" : "Unavailable",
+      statusTone: input.simulation ? "paper" : "neutral",
+      detail: input.simulation
+        ? `${input.simulation.ledger_summary.entry_count} ledger entries · bar-conservative simulator, not FTEP and not production readiness.`
+        : "The simulation payload was not included.",
+      href: "/research/simulation",
+      destinationKind: "research",
+      evidenceClass: "Simulated (deterministic) · not prospective forward-test",
+    },
+    evidence: {
+      key: "evidence",
+      title: CLAIM_TITLES.evidence,
+      role: "What the current cutoff actually shows",
+      statusLabel: input.analytics
+        ? `${availableFindings} of ${RESEARCH_FINDINGS.length} findings`
+        : "Unavailable",
+      statusTone: input.analytics ? "research" : "neutral",
+      detail: input.analytics
+        ? "Analytics panels are distributions at cutoff — not ranked opportunities or proof."
+        : "The analytics payload was not included.",
+      href: "/research/evidence",
+      destinationKind: "research",
+      evidenceClass: "Mixed historical / replay / walk-forward / simulated — per finding",
+    },
+    contradiction: {
+      key: "contradiction",
+      title: CLAIM_TITLES.contradiction,
+      role: "Whether evidence conflicted",
+      ...contradiction,
+      evidenceClass: "ABSTAIN_CONFLICTING_EVIDENCE only",
+    },
+    implementation: {
+      key: "implementation",
+      title: CLAIM_TITLES.implementation,
+      role: "Recorded workflow to inspect",
+      statusLabel: "Inspect in Lab",
+      statusTone: "research",
+      detail:
+        "Research interprets results. Lab inspects the recorded validation/simulation workflow. No mutations from this page.",
+      href: "/lab/validation",
+      destinationKind: "related",
+      evidenceClass: "Process surface (Lab) · not a new evidence class",
+    },
+    "forward-test": {
+      key: "forward-test",
+      title: CLAIM_TITLES["forward-test"],
+      role: "Prospective status, if any",
+      ...forwardTest,
+    },
+  };
+
+  return CLAIM_NODE_ORDER.map((key) => nodes[key]);
+}
+
+export function pickClaimNodes(
+  nodes: ReadonlyArray<ResearchClaimNode>,
+  keys: ReadonlyArray<ResearchClaimNodeKey>,
+): ResearchClaimNode[] {
+  return keys
+    .map((key) => nodes.find((node) => node.key === key))
+    .filter((node): node is ResearchClaimNode => node != null);
+}
+
+/** Static hops for section pages that fetch only their own endpoint. */
+export function claimHopsForFinding(
+  key: ResearchPanelKey,
+  mode: ResearchSessionMode,
+): ClaimHop[] {
+  const forwardTestHref = forwardTestWorkspaceHref(mode);
+  const shared: Record<ResearchClaimNodeKey, ClaimHop> = {
+    source: {
+      key: "source",
+      title: CLAIM_TITLES.source,
+      href: "/research/evidence",
+      note: "Provenance is per panel — there is no source catalog.",
+    },
+    hypothesis: {
+      key: "hypothesis",
+      title: CLAIM_TITLES.hypothesis,
+      href: "/research/validation#research-interpretations-heading",
+      note: "NOT_EXPOSED as an object; interpretations are the proxy.",
+    },
+    strategy: {
+      key: "strategy",
+      title: CLAIM_TITLES.strategy,
+      href: "/research/validation",
+      note: "Walk-forward model record.",
+    },
+    experiment: {
+      key: "experiment",
+      title: CLAIM_TITLES.experiment,
+      href: "/research/simulation",
+      note: "Deterministic simulation — not a forward test.",
+    },
+    evidence: {
+      key: "evidence",
+      title: CLAIM_TITLES.evidence,
+      href: "/research/evidence",
+      note: "Findings at the current cutoff.",
+    },
+    contradiction: {
+      key: "contradiction",
+      title: CLAIM_TITLES.contradiction,
+      href: "/research/validation?conflict=1",
+      note: "Only ABSTAIN_CONFLICTING_EVIDENCE is a conflict signal.",
+    },
+    implementation: {
+      key: "implementation",
+      title: CLAIM_TITLES.implementation,
+      href: "/lab/validation",
+      note: "Inspect the recorded workflow in Lab.",
+    },
+    "forward-test": {
+      key: "forward-test",
+      title: CLAIM_TITLES["forward-test"],
+      href: forwardTestHref,
+      note: forwardTestHref
+        ? "Paper forward tests are in Workspace, not Research."
+        : "Forward-test and FTEP status are NOT_EXPOSED on this surface.",
+    },
+  };
+
+  const keysByFinding: Record<ResearchPanelKey, ResearchClaimNodeKey[]> = {
+    strategy_outcomes: ["strategy", "contradiction", "experiment", "implementation", "forward-test"],
+    risk_decisions: ["experiment", "strategy", "forward-test"],
+    attention_tiers: ["source", "evidence"],
+    squeeze_outcomes: ["source", "hypothesis", "evidence"],
+    squeeze_historical_cohort: ["source", "hypothesis", "evidence"],
+  };
+
+  return keysByFinding[key].map((hopKey) => shared[hopKey]);
+}
+
+export function sectionClaimHops(
+  section: Exclude<ResearchSectionKey, "overview">,
+  mode: ResearchSessionMode,
+): ClaimHop[] {
+  const forwardTestHref = forwardTestWorkspaceHref(mode);
+  if (section === "evidence") {
+    return [
+      { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
+      {
+        key: "contradiction",
+        title: CLAIM_TITLES.contradiction,
+        href: "/research/validation?conflict=1",
+        note: "Conflict abstentions only.",
+      },
+      {
+        key: "experiment",
+        title: CLAIM_TITLES.experiment,
+        href: "/research/simulation",
+        note: "Simulation, not FTEP.",
+      },
+    ];
+  }
+  if (section === "validation") {
+    return [
+      { key: "evidence", title: CLAIM_TITLES.evidence, href: "/research/evidence", note: "Findings at cutoff." },
+      {
+        key: "experiment",
+        title: CLAIM_TITLES.experiment,
+        href: "/research/simulation",
+        note: "Deterministic simulation.",
+      },
+      {
+        key: "implementation",
+        title: CLAIM_TITLES.implementation,
+        href: "/lab/validation",
+        note: "Lab process surface.",
+      },
+      {
+        key: "forward-test",
+        title: CLAIM_TITLES["forward-test"],
+        href: forwardTestHref,
+        note: forwardTestHref
+          ? "Workspace holds Paper forward tests."
+          : "NOT_EXPOSED here.",
+      },
+    ];
+  }
+  return [
+    { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Model that fed this run." },
+    { key: "evidence", title: CLAIM_TITLES.evidence, href: "/research/evidence", note: "Findings at cutoff." },
+    {
+      key: "forward-test",
+      title: CLAIM_TITLES["forward-test"],
+      href: forwardTestHref,
+      note: "This run is simulated, not a prospective forward test.",
+    },
+    {
+      key: "implementation",
+      title: CLAIM_TITLES.implementation,
+      href: "/lab/simulation",
+      note: "Inspect simulation workflow in Lab.",
+    },
+  ];
 }

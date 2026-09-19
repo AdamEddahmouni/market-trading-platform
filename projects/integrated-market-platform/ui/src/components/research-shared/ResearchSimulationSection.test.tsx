@@ -60,7 +60,7 @@ vi.mock("../charts/ResearchChartPanels", () => ({
 function renderSection() {
   return render(
     <MemoryRouter>
-      <ResearchSimulationSection />
+      <ResearchSimulationSection mode="DEMO" />
     </MemoryRouter>,
   );
 }
@@ -101,7 +101,7 @@ describe("ResearchSimulationSection", () => {
   it("keeps simulation distinct from campaign results and production readiness", () => {
     renderSection();
     expect(
-      screen.getByText(/not a governed campaign result, not a calibration claim/i),
+      screen.getByText(/not a governed campaign result, not a calibration claim, not a prospective forward test/i),
     ).toBeInTheDocument();
   });
 

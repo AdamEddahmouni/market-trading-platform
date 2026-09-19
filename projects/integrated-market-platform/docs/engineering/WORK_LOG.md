@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Lane K: Research claim navigation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Research Overview is now a claim graph (source → hypothesis → strategy → experiment → evidence → contradiction → implementation → forward-test) instead of a gap-list dump. Synthesis sentences and section hops deep-link; `?conflict=1` filters the only contract-backed conflict. Hypothesis/FTEP stay NOT_EXPOSED; simulation is not labeled a forward test; Paper forward tests link to Workspace without fetching them. |
+| **Key files** | Created: `ui/src/components/research-shared/ResearchClaimGraph.tsx`. Modified: `researchPresentation.ts`(+test), `ResearchOverviewSection.tsx`(+test), `ResearchEvidenceSection.tsx`(+test), `ResearchValidationSection.tsx`(+test), `ResearchSimulationSection.tsx`(+test), `ResearchSurface.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`, `ui/src/styles/research.css`, `docs/ui-redesign-v2/research-contract-map.md`, `docs/engineering/FRONTEND_GUIDE.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npm test --` research-shared + demo/paper/live-research **62 passed / 0 failed**. Browser: Demo `/research` on worktree Vite `127.0.0.1:5298` — claim graph present; Strategy node → `/research/validation` hops; Evidence hops present. (Earlier `:5198` was a different already-bound UI.) |
+| **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md); Weekend Wave C Lane K |
+| **Notes** | Did not edit Control, Radar, Lab, `snapshot.py`, or PROGRAM_STATUS. No Item 9 collection, no Full30, no Live, no #222 merge, no collector mutation. Remaining dump-like gaps: Evidence still lists five analytics panels; Validation still shows a full interpretation table; no first-class hypothesis/source-catalog/FTEP endpoints. |
+
 ## 2026-09-18 — Lane F provider resilience (offline fixtures)
 
 | Field | Value |
