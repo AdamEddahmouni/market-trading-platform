@@ -49,6 +49,22 @@ describe("live dashboard view model", () => {
     expect(connection?.tone).toBe("caution");
   });
 
+  it("explains reconnecting and disconnected without claiming a healthy hop L1", () => {
+    const reconnecting = liveConnectionMetrics(
+      providerHealth({ lifecycle: { connection_state: "RECONNECTING" } }),
+    ).find((metric) => metric.id === "connection");
+    expect(reconnecting?.raw).toBe("RECONNECTING");
+    expect(reconnecting?.value).toMatch(/reconnecting/i);
+    expect(reconnecting?.tone).not.toBe("live");
+
+    const disconnected = liveConnectionMetrics(
+      providerHealth({ lifecycle: { connection_state: "DISCONNECTED" } }),
+    ).find((metric) => metric.id === "connection");
+    expect(disconnected?.raw).toBe("DISCONNECTED");
+    expect(disconnected?.value).toMatch(/disconnected/i);
+    expect(disconnected?.tone).toBe("critical");
+  });
+
   it("builds safety summary and caps explicit alerts", () => {
     const snapshot = canarySnapshot({
       live_blocked: true,
