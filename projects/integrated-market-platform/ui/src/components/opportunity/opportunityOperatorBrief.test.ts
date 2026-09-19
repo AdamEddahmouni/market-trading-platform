@@ -65,4 +65,37 @@ describe("opportunityOperatorBrief", () => {
     expect(refusal?.answer).toMatch(/read-only/i);
     expect(refusal?.answer).toMatch(/never grants live execution/i);
   });
+
+  it("treats STALE freshness and expired lifecycle as invalidation, not current evidence", () => {
+    const brief = buildOpportunityOperatorBrief({
+      ...fixtureOpportunityRowBase,
+      lifecycle_state: "EXPIRED",
+      data_quality: { status: "PASS", freshness: "STALE", source: "MOOMOO" },
+    });
+    const freshness = brief.find((item) => item.question === "How fresh?");
+    const happened = brief.find((item) => item.question === "What happened?");
+    const invalidate = brief.find((item) => item.question === "What would invalidate it?");
+    expect(freshness?.answer.toUpperCase()).toContain("STALE");
+    expect(happened?.answer).toMatch(/Expired/i);
+    expect(invalidate?.honesty).toBe("DERIVED");
+    expect(invalidate?.answer).toMatch(/STALE/);
+    expect(invalidate?.answer).toMatch(/expired/i);
+  });
+
+  it("refuses action when eligibility is INELIGIBLE", () => {
+    const brief = buildOpportunityOperatorBrief(
+      {
+        ...fixtureOpportunityRowBase,
+        eligibility_state: "INELIGIBLE",
+        next_safe_action: "STOP",
+      },
+      null,
+      { paperActions: true },
+    );
+    const action = brief.find((item) => item.question === "What action is available?");
+    const refusal = brief.find((item) => item.question === "Why might action be refused?");
+    expect(action?.answer).not.toMatch(/live order/i);
+    expect(refusal?.answer).toMatch(/INELIGIBLE/i);
+    expect(refusal?.answer).toMatch(/never grants live execution/i);
+  });
 });
