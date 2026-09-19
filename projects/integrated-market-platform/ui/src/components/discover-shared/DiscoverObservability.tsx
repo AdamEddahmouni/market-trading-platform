@@ -311,7 +311,7 @@ export function DiscoverObservability({
       <header className="discover-header">
         <div>
           <p className="discover-eyebrow">DISCOVERY DESK</p>
-          <h2>Mixed live screener</h2>
+          <h2>Investigation screener</h2>
           <p className="discover-subtitle">
             Finviz finds the setup. Connected market data confirms what is happening now.
             This desk does not rank opportunity contracts and cannot place Live trades.
@@ -325,7 +325,7 @@ export function DiscoverObservability({
 
       <nav className="discover-mode-switch" aria-label="Discovery mode">
         <button type="button" aria-pressed={mode === "MIXED"} onClick={() => setMode("MIXED")}>
-          Mixed Live
+          Investigation
         </button>
         <button type="button" aria-pressed={mode === "SINGLE"} onClick={() => setMode("SINGLE")}>
           Single Screen
@@ -346,7 +346,7 @@ export function DiscoverObservability({
       ) : null}
 
       {mode === "MIXED" ? (
-        <section aria-label="Mixed live discovery queue">
+        <section aria-label="Investigation screener candidates">
           <div className="discover-live-banner" aria-label="Mixed screener status">
             <span className="discover-session">
               {mixed?.market_session?.replace(/_/g, " ") ?? "SESSION —"}
