@@ -25,6 +25,11 @@ class OpportunityDataQualityTests(unittest.TestCase):
         live = project_opportunity_data_quality(source="LIVE_OBSERVATIONAL")
         self.assertEqual(live["status"], "UNAVAILABLE")
         self.assertEqual(live["reason_codes"], ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"])
+        self.assertEqual(live["freshness"], "NOT_APPLICABLE")
+        self.assertEqual(
+            live["freshness_evaluation"]["reason_code"],
+            "LIVE_AS_OF_UNAVAILABLE",
+        )
 
     def test_replay_does_not_set_fresh_from_adapter_presence(self) -> None:
         quality = project_opportunity_data_quality(source="REPLAY")

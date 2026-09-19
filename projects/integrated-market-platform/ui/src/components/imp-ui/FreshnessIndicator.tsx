@@ -33,6 +33,7 @@ const BACKEND_WORD_TONE: Record<string, SemanticTone> = {
   UNKNOWN: "neutral",
   UNAVAILABLE: "neutral",
   NOT_APPLICABLE: "neutral",
+  LIVE_AS_OF_UNAVAILABLE: "neutral",
   SNAPSHOT: "neutral",
   REPLAY: "replay",
 };
@@ -47,6 +48,7 @@ const BACKEND_WORD_LABEL: Record<string, string> = {
   UNKNOWN: "Unknown",
   UNAVAILABLE: "Unavailable",
   NOT_APPLICABLE: "Not applicable",
+  LIVE_AS_OF_UNAVAILABLE: "Live clock unavailable",
   SNAPSHOT: "Snapshot",
   REPLAY: "Replay",
 };

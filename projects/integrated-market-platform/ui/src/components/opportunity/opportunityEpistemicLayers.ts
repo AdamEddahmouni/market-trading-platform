@@ -3,6 +3,7 @@ import {
   collectOpportunityConflicts,
   collectOpportunityProviderLabels,
   collectOpportunityUnknowns,
+  readOpportunityFreshnessView,
 } from "./opportunityOperatorBrief";
 
 export type EpistemicLayerKey =
@@ -101,8 +102,9 @@ export function buildOpportunityEpistemicLayers(
     ...collectGroundedFactLines(row, evidence),
   ];
 
+  const freshness = readOpportunityFreshnessView(row, evidence);
   const derived: EpistemicLayerItem[] = [
-    { label: "Data freshness", value: display(quality.freshness) },
+    { label: "Data freshness", value: freshness.operatorAnswer },
     {
       label: "Ranking basis",
       value: display(

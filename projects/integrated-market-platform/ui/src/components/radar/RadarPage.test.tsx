@@ -10,6 +10,8 @@ const summaryMock = vi.hoisted(() => ({
     feed_status: "EMPTY" as string,
     unready_reason: undefined as string | undefined,
     next_action: undefined as string | undefined,
+    withheld_ranked_count: undefined as number | undefined,
+    book_honesty: undefined as string | undefined,
   },
   isLoading: false,
   isError: false,
@@ -254,6 +256,25 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("PAPER", "opportunities", true);
     expect(screen.getByRole("status")).toHaveTextContent(/Opportunity radar isn't ready/);
     expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute("href", "/control");
+  });
+
+  it("explains withheld live rows when the receive clock is missing", () => {
+    summaryMock.data = {
+      items: [],
+      feed_status: "UNREADY",
+      unready_reason: "LIVE_AS_OF_UNAVAILABLE",
+      next_action: "/control",
+      withheld_ranked_count: 3,
+      book_honesty: "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK",
+    };
+    renderRadar("LIVE", "opportunities", false);
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent(/live clock is unavailable/i);
+    expect(banner).toHaveTextContent(/withheld 3 ranked row/i);
+    expect(banner).toHaveTextContent(/not Item 9 calibration/i);
+    expect(banner).toHaveTextContent(/Live execution stays OFF/i);
+    expect(banner).not.toHaveTextContent(/3\/3/);
+    expect(banner).not.toHaveTextContent(/CALIBRATED/);
   });
 
   it("renders the live by-design empty state when the feed is unavailable", () => {

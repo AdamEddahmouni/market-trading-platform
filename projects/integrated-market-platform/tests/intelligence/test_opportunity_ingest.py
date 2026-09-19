@@ -107,6 +107,7 @@ class OpportunityIngestTests(unittest.TestCase):
         self.assertFalse(rows[0].accepted)
         self.assertEqual(rows[0].eligibility_state, "UNAVAILABLE")
         self.assertIsNone(rows[0].evidence_class)
+        self.assertEqual(rows[0].next_safe_action, "STOP")
 
     def test_repository_does_not_mint_second_opportunity(self) -> None:
         repo = InMemoryIntelligenceRepository()

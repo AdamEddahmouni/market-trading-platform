@@ -96,11 +96,15 @@ overview queue. Page context changes layout, never semantic meaning. Below
 1024px the Radar detail opens in an overlay sheet (`RadarDetailSheet`).
 
 Radar detail L1 includes an operator brief that answers: what happened, why IMP
-is showing it, freshness, supporting providers, conflicts, inference vs
-observation, unknowns, what would invalidate it, available action, and why
-action may be refused. Missing contract fields stay `UNKNOWN` / `UNAVAILABLE`.
-The brief never invents live execution, calibration, or Item 9 collection
-status. Queue rows expose attached providers (or `UNKNOWN`) beside freshness.
+is showing it, freshness (including `freshness_evaluation` reason codes, feed
+as-of, and honest UNKNOWN event-vs-receive lag when the same clock is reused),
+supporting providers, conflicts, inference vs observation, unknowns, what would
+invalidate it, available action, and why action may be refused. Missing live
+receive clocks stay `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE`; withheld ranked
+counts are parsed from the summary payload. Missing contract fields stay
+`UNKNOWN` / `UNAVAILABLE`. The brief never invents live execution, calibration,
+or Item 9 collection status. Queue rows expose attached providers (or `UNKNOWN`)
+beside freshness.
 
 ## Attention signals (one language)
 

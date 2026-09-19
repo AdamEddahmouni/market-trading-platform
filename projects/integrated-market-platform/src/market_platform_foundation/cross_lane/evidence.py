@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
+from typing import Any, Mapping
 
 
 class LaneId(StrEnum):
@@ -32,6 +32,19 @@ class EvidenceProvenanceClass(StrEnum):
     DERIVED = "DERIVED"
     MODEL_OUTPUT = "MODEL_OUTPUT"
     CROSS_LANE_MODEL_OUTPUT = "CROSS_LANE_MODEL_OUTPUT"
+
+
+# Operator-facing label — surfaces model inference instead of implying direct observation.
+_INFERENCE_KIND_BY_PROVENANCE: dict[EvidenceProvenanceClass, str] = {
+    EvidenceProvenanceClass.RAW: "OBSERVED",
+    EvidenceProvenanceClass.DERIVED: "DERIVED",
+    EvidenceProvenanceClass.MODEL_OUTPUT: "MODEL_INFERENCE",
+    EvidenceProvenanceClass.CROSS_LANE_MODEL_OUTPUT: "CROSS_LANE_MODEL_INFERENCE",
+}
+
+OBSERVED_AT_UNKNOWN = "UNKNOWN"
+OBSERVED_AT_EMPTY = "EMPTY"
+OBSERVED_AT_PRESENT = "PRESENT"
 
 
 class EvidenceSignal(StrEnum):
@@ -164,6 +177,20 @@ class NormalizedLaneEvidence:
     provenance_class: EvidenceProvenanceClass = EvidenceProvenanceClass.DERIVED
 
 
+def observed_at_presence(observed_at: str | None) -> str:
+    """Distinguish missing timestamps from empty strings (both are not observed)."""
+
+    if observed_at is None:
+        return OBSERVED_AT_UNKNOWN
+    if not str(observed_at).strip():
+        return OBSERVED_AT_EMPTY
+    return OBSERVED_AT_PRESENT
+
+
+def inference_kind_for_provenance(provenance_class: EvidenceProvenanceClass) -> str:
+    return _INFERENCE_KIND_BY_PROVENANCE.get(provenance_class, "UNKNOWN")
+
+
 def lane_evidence_to_dict(item: NormalizedLaneEvidence) -> dict[str, Any]:
     return {
         "lane": item.lane.value,
@@ -173,9 +200,46 @@ def lane_evidence_to_dict(item: NormalizedLaneEvidence) -> dict[str, Any]:
         "source_ref": item.source_ref,
         "detail": item.detail,
         "observed_at": item.observed_at,
+        "observed_at_presence": observed_at_presence(item.observed_at),
         "quality_flags": list(item.quality_flags),
         "provenance_class": item.provenance_class.value,
+        "inference_kind": inference_kind_for_provenance(item.provenance_class),
     }
+
+
+def lane_evidence_from_dict(payload: Mapping[str, Any]) -> NormalizedLaneEvidence:
+    """Round-trip helper for evidence bundles. Empty observed_at is normalized to None."""
+
+    observed_raw = payload.get("observed_at")
+    observed_at: str | None
+    if observed_raw is None:
+        observed_at = None
+    else:
+        text = str(observed_raw).strip()
+        observed_at = text or None
+
+    lane_raw = str(payload.get("lane") or "")
+    signal_raw = str(payload.get("signal") or "")
+    provenance_raw = str(payload.get("provenance_class") or EvidenceProvenanceClass.DERIVED.value)
+
+    flags_raw = payload.get("quality_flags") or ()
+    quality_flags: tuple[str, ...]
+    if isinstance(flags_raw, (list, tuple)):
+        quality_flags = tuple(str(flag) for flag in flags_raw if str(flag).strip())
+    else:
+        quality_flags = ()
+
+    return NormalizedLaneEvidence(
+        lane=LaneId(lane_raw),
+        signal=EvidenceSignal(signal_raw),
+        strength=str(payload.get("strength") or "LOW"),
+        available=bool(payload.get("available")),
+        source_ref=str(payload.get("source_ref") or ""),
+        detail=str(payload.get("detail") or ""),
+        observed_at=observed_at,
+        quality_flags=quality_flags,
+        provenance_class=EvidenceProvenanceClass(provenance_raw),
+    )
 
 
 _CONTEXT_OPTIONS_COUPLED_SIGNALS: tuple[tuple[EvidenceSignal, EvidenceSignal], ...] = (

@@ -5,6 +5,8 @@ import {
   collectOpportunityInvalidationLines,
   collectOpportunityProviderLabels,
   collectOpportunityUnknowns,
+  liveFeedClockHonesty,
+  readOpportunityFreshnessView,
 } from "./opportunityOperatorBrief";
 import { fixtureOpportunityRowBase } from "./opportunityDetailFixtures";
 
@@ -20,6 +22,8 @@ describe("opportunityOperatorBrief", () => {
     expect(byQuestion["What action is available?"]?.answer).toMatch(/Not a live order/i);
     expect(JSON.stringify(brief)).not.toMatch(/calibrat/i);
     expect(JSON.stringify(brief)).not.toMatch(/place a (live|real-money) /i);
+    expect(JSON.stringify(brief)).not.toMatch(/Item 9/);
+    expect(JSON.stringify(brief)).not.toMatch(/3\/3/);
   });
 
   it("lists attached providers and missing ranking inputs without inventing scores", () => {
@@ -97,5 +101,94 @@ describe("opportunityOperatorBrief", () => {
     expect(action?.answer).not.toMatch(/live order/i);
     expect(refusal?.answer).toMatch(/INELIGIBLE/i);
     expect(refusal?.answer).toMatch(/never grants live execution/i);
+  });
+
+  it("does not treat a shared receive/event clock as independent lag", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "UNAVAILABLE",
+        freshness: "FRESH",
+        source: "LIVE_OBSERVATIONAL",
+        freshness_evaluation: {
+          status: "FRESH",
+          reason_code: "FRESH",
+          source: "LIVE_OBSERVATIONAL",
+          actionable: true,
+          as_of_time_ns: 1_700_000_000_000_000_000,
+          age_ns: 0,
+        },
+      },
+    };
+    const view = readOpportunityFreshnessView(row);
+    expect(view.sameClock).toBe(true);
+    expect(view.honesty).toBe("DERIVED");
+    expect(view.operatorAnswer).toMatch(/lag UNKNOWN/i);
+    expect(collectOpportunityUnknowns(row)).toContain("event_vs_receive_lag");
+    const brief = buildOpportunityOperatorBrief(row, null, {
+      feed: { as_of_time: "2026-09-19T11:00:00Z", as_of_provenance: "live_receive", data_mode: "LIVE_OBSERVATIONAL" },
+    });
+    const freshness = brief.find((item) => item.question === "How fresh?");
+    expect(freshness?.answer).toMatch(/Feed as-of 2026-09-19T11:00:00Z/);
+    expect(freshness?.answer).not.toMatch(/created_at is live/i);
+  });
+
+  it("keeps missing live receive clocks as NOT_APPLICABLE, not FRESH", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "UNAVAILABLE",
+        freshness: "NOT_APPLICABLE",
+        source: "LIVE_OBSERVATIONAL",
+        reason_codes: ["LIVE_OBSERVATIONAL_NOT_ENGINE_QUALITY"],
+        freshness_evaluation: {
+          status: "NOT_APPLICABLE",
+          reason_code: "LIVE_AS_OF_UNAVAILABLE",
+          source: "LIVE_OBSERVATIONAL",
+          actionable: false,
+        },
+      },
+    };
+    const view = readOpportunityFreshnessView(row);
+    expect(view.status).toBe("NOT_APPLICABLE");
+    expect(view.reasonCode).toBe("LIVE_AS_OF_UNAVAILABLE");
+    expect(view.operatorAnswer).not.toMatch(/Fresh(?!ness)/);
+    const brief = buildOpportunityOperatorBrief(row, null, {
+      readOnly: true,
+      unreadyReason: "LIVE_AS_OF_UNAVAILABLE",
+      withheldRankedCount: 4,
+      bookHonesty: "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK",
+    });
+    const blob = JSON.stringify(brief);
+    expect(blob).toMatch(/LIVE_AS_OF_UNAVAILABLE|live receive clock/i);
+    expect(blob).toMatch(/4 ranked row/);
+    expect(blob).not.toMatch(/calibrat/i);
+    expect(blob).not.toMatch(/3\/3/);
+    expect(liveFeedClockHonesty({ unreadyReason: "LIVE_AS_OF_UNAVAILABLE", withheldRankedCount: 4 })).toMatch(
+      /Live execution stays OFF/i,
+    );
+    expect(liveFeedClockHonesty({ unreadyReason: "LIVE_AS_OF_UNAVAILABLE", withheldRankedCount: 4 })).toMatch(
+      /not Item 9 calibration/i,
+    );
+  });
+
+  it("does not claim live freshness for honesty-source evaluations", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      data_quality: {
+        status: "GOOD",
+        freshness: "UNAVAILABLE",
+        source: "REPLAY",
+        freshness_evaluation: {
+          status: "NOT_APPLICABLE",
+          reason_code: "HONESTY_SOURCE_NOT_LIVE_FRESHNESS",
+          source: "REPLAY",
+          actionable: false,
+        },
+      },
+    };
+    const view = readOpportunityFreshnessView(row);
+    expect(view.operatorAnswer).toMatch(/does not claim live freshness/i);
+    expect(view.queueBackendLabel).toBe("NOT_APPLICABLE");
   });
 });
