@@ -69,6 +69,18 @@ _FROZEN_COLLECTOR_PATH_MARKER = ".imp-actual-01-phase-d"
 _REDACTED_FS_PATH = "<redacted>"
 
 
+def _is_windows_host_absolute(text: str, posix: str) -> bool:
+    """Drive-letter or UNC paths must not be Path.resolve()'d on POSIX.
+
+    On POSIX, ``C:\\Users\\…`` / ``C:/Users/…`` is a relative ``C:`` segment, so
+    ``resolve()`` + ``relative_to(imp_root)`` can treat a host path as in-repo.
+    """
+
+    if looks_like_windows_absolute_path(text) or looks_like_windows_absolute_path(posix):
+        return True
+    return posix.startswith("//") and not posix.startswith("///")
+
+
 def _operator_safe_fs_path(value: object, *, imp_root: Path) -> str | None:
     """Normalize operator-facing paths; redact host-absolute locations."""
 
@@ -81,6 +93,8 @@ def _operator_safe_fs_path(value: object, *, imp_root: Path) -> str | None:
     marker_at = posix.lower().find(_FROZEN_COLLECTOR_PATH_MARKER)
     if marker_at >= 0:
         return posix[marker_at:]
+    if _is_windows_host_absolute(text, posix):
+        return _REDACTED_FS_PATH
     try:
         resolved = Path(text)
         try:
@@ -99,7 +113,7 @@ def _operator_safe_fs_path(value: object, *, imp_root: Path) -> str | None:
             return resolved.relative_to(root).as_posix()
         except ValueError:
             continue
-    if looks_like_windows_absolute_path(text) or looks_like_posix_absolute_path(posix):
+    if looks_like_posix_absolute_path(posix):
         return _REDACTED_FS_PATH
     return posix
 

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -11,7 +13,9 @@ from unittest.mock import patch
 from market_platform_foundation.platform.operator_diagnostics import build_operator_diagnostics_snapshot
 from market_platform_foundation.platform.operator_diagnostics.snapshot import (
     classify_item9_corpus_progress_truth,
+    _is_windows_host_absolute,
     _operator_safe_fs_path,
+    _public_runtime_resilience_section,
 )
 from market_platform_foundation.ui_api.store import ReplayStore
 
@@ -182,6 +186,38 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
             frozen,
             ".imp-actual-01-phase-d/projects/integrated-market-platform/artifacts/ftep-v1-002/item9-prospective-proof-receipts",
         )
+
+    def test_windows_absolute_receipt_dir_redacted_on_posix_cwd(self) -> None:
+        """CI leak: POSIX Path.resolve() of C:\\Users\\… under IMP cwd looked in-repo."""
+
+        host_receipt = r"C:\Users\adame\Desktop\secret-host\item9-prospective-proof-receipts"
+        self.assertTrue(_is_windows_host_absolute(host_receipt, host_receipt.replace("\\", "/")))
+        self.assertTrue(_is_windows_host_absolute("C:/Users/adame/Desktop/secret-host", "C:/Users/adame/Desktop/secret-host"))
+        self.assertTrue(_is_windows_host_absolute(r"\\filer\share\item9", "//filer/share/item9"))
+
+        imp_root = Path(__file__).resolve().parents[2]
+        previous = Path.cwd()
+        try:
+            os.chdir(imp_root)
+            redacted = _operator_safe_fs_path(host_receipt, imp_root=imp_root)
+        finally:
+            os.chdir(previous)
+        self.assertEqual(redacted, "<redacted>")
+        self.assertNotIn("secret-host", redacted)
+
+        resilience = dict(_SAMPLE_RESILIENCE)
+        resilience["expected_cycle"] = {
+            "receipt_dir": host_receipt,
+            "receipt_inventory": {"availability": "AVAILABLE", "receipt_dir": host_receipt},
+            "collector_log_gaps": None,
+        }
+        public = _public_runtime_resilience_section(resilience, imp_root=imp_root)
+        cycle = public["expected_cycle"]
+        self.assertEqual(cycle["receipt_dir"], "<redacted>")
+        self.assertEqual(cycle["receipt_inventory"]["receipt_dir"], "<redacted>")
+        self.assertNotIn("secret-host", json.dumps(public))
+        if sys.platform != "win32":
+            self.assertNotIn("C:", json.dumps(public))
 
     def test_corpus_section_sanitizes_report_receipt_dir(self) -> None:
         from market_platform_foundation.platform.operator_diagnostics.snapshot import (

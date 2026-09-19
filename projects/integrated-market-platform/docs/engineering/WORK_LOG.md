@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave A Lane A: redact Windows receipt_dir on POSIX
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Merged `origin/main` **`252bad4b`** (#303). `_operator_safe_fs_path` now classifies drive-letter / UNC Windows host paths **before** `Path.resolve()` / `relative_to`, so POSIX CI cannot leak `expected_cycle.receipt_dir`. Item 9 **2/3 IDLE**, **3/3 HEALTHY**, not CALIBRATED. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/snapshot.py`; `tests/platform/test_operator_diagnostics_snapshot.py` |
+| **Tests** | `python tools/imp.py test focused` — 8/8 `OperatorDiagnosticsSnapshotTests` passed |
+| **Related** | PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294); merge [#303](https://github.com/AdamEddahmouni/market-trading-platform/pull/303) |
+| **Notes** | Do not merge #294 from this lane. No collector/evidence mutation. |
+
 ## 2026-09-19 — Weekend Lane H high-value testing coverage
 
 | Field | Value |
