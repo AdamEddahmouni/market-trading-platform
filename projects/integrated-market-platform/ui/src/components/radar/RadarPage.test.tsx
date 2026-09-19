@@ -348,6 +348,28 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
   });
 
+  it("keeps STALE rows honest and refuses Live paper acks", async () => {
+    const staleRow: OpportunityReviewRow = {
+      ...rankedRow,
+      data_quality: { status: "DEGRADED", freshness: "STALE", source: "unit-test" },
+      eligibility_state: "INELIGIBLE",
+      next_safe_action: "STOP",
+      lifecycle_state: "EXPIRED",
+    };
+    summaryMock.data = { items: [staleRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("LIVE", "opportunities", false);
+    const queue = screen.getByTestId("imp-radar-queue");
+    expect(queue).toHaveTextContent(/Stale/i);
+    expect(queue).toHaveTextContent(/Expired/i);
+    expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
+    const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
+      "imp-radar-operator-brief",
+    );
+    expect(brief).toHaveTextContent(/never grants live execution/i);
+    expect(brief).toHaveTextContent(/STALE/i);
+    expect(brief).toHaveTextContent(/INELIGIBLE/i);
+  });
+
   it("keeps detail inline on wide layouts without a sheet", async () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);
