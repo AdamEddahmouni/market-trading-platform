@@ -2,7 +2,10 @@ import type { AttentionItem } from "../../api/client";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { StatePill } from "../imp-ui/StatePill";
 import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
-import { collectOpportunityProviderLabels } from "../opportunity/opportunityOperatorBrief";
+import {
+  collectOpportunityProviderLabels,
+  opportunityFreshnessQueueLabel,
+} from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   canOpenOpportunityWorkspace,
@@ -70,7 +73,7 @@ export function RadarQueueTable({
             const selected = selectedStableKey === rowKey;
             const presentation = derivePresentationState(row);
             const nextAction = opportunityNextActionState(row);
-            const freshness = row.data_quality?.freshness;
+            const freshnessLabel = opportunityFreshnessQueueLabel(row);
             const providers = collectOpportunityProviderLabels(row);
             return (
               <tr
@@ -106,9 +109,7 @@ export function RadarQueueTable({
                 </td>
                 <td>{evidenceInputsSummary(row)}</td>
                 <td>
-                  <FreshnessIndicator
-                    backendLabel={freshness == null ? null : String(freshness)}
-                  />
+                  <FreshnessIndicator backendLabel={freshnessLabel} />
                 </td>
                 <td>{providers.length ? providers.join(", ") : "UNKNOWN"}</td>
                 <td>

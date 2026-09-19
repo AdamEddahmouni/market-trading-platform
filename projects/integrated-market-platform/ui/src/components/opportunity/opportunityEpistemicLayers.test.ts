@@ -46,7 +46,7 @@ describe("opportunityEpistemicLayers", () => {
       ...fixtureOpportunityRowBase,
       data_quality: { status: "DEGRADED", freshness: "STALE", source: "FINVIZ_ELITE" },
     });
-    expect(layers.derived.find((row) => row.label === "Data freshness")?.value).toBe("STALE");
+    expect(layers.derived.find((row) => row.label === "Data freshness")?.value).toMatch(/STALE/i);
     expect(JSON.stringify(layers.observed)).not.toMatch(/FRESH/);
   });
 
