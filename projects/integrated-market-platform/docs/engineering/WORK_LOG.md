@@ -46,7 +46,31 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `src/market_platform_foundation/intelligence/opportunity/freshness.py`, `ingest.py`, `ui_api/opportunity_projections.py`, `docs/architecture/DATA_CONTRACTS.md`, tests for freshness/ingest/opportunity API |
 | **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
 | **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
-| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `b1b3f7e8` (#302) keep-both. |
+| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `61ea8110` (#304) keep-both. |
+
+## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Review fix on [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304): Monday step 4 is composed GO from the software `item9 next-rth-preflight` JSON. Do **not** require CLI `READY_TO_COLLECT` from frozen `fed2d9f7` (no `item9` group). `WRONG_RUNTIME` must not send operators to retarget CURRENT_MAIN onto `.imp-actual-01-phase-d`. `--poll` starts only from frozen `opend_bar_1m_prospective_proof.py` after RTH / SHA / collectors=0 / OpenD / Live OFF. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; this log |
+| **Tests** | Docs-only review edit; no `--poll`. Frozen collector not mutated. |
+| **Related** | [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md); PR [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304) |
+| **Notes** | Merged `origin/main` `b1b3f7e8` (#302) keep-both WORK_LOG. `121031` still forbidden. Item 9 **2/3 IDLE**. Live OFF. PR #222 unmerged. |
+
+## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Added [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md) so Monday 2026-09-21 Item 9 Mode B is mechanical: frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7`, read-only preflight, `$rcpt` corpus-status, Live OFF, `121031` backfill forbidden, 2/3 IDLE not DEGRADED, READY_TO_COLLECT vs wait. Points at PROGRAM_STATUS for mutable `origin/main`. Does **not** start `--poll`, calibrate, run Full30, enable Live, or merge #222. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; pointer in `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/README.md`; this log |
+| **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
+| **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
+| **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
 
 ## 2026-09-19 — Lane K: unique Research Evidence tab name
 
