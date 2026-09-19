@@ -248,7 +248,24 @@ _PRIMARY_UNAVAILABLE_TOKENS = frozenset(
         "MOOMOO_PROTOCOL_ERROR",
         "MOOMOO_LAST_PRICE_MISSING",
         FALLBACK_BLOCKED,
+        RECONNECTING,
+        RESTART_RECOVERY,
     }
+)
+
+_PRIMARY_AVAILABLE_TOKENS = frozenset(
+    {
+        OPEND_REACHABLE,
+        HEALTHY,
+        "OPEND_SDK_PRESENT",
+        DELAYED_DATA,
+        PARTIALLY_STALE,
+        SOURCE_DISAGREEMENT,
+    }
+)
+
+_KNOWN_INCIDENT_TOKENS = _PRIMARY_UNAVAILABLE_TOKENS | _PRIMARY_AVAILABLE_TOKENS | frozenset(
+    {"UNKNOWN"}
 )
 
 
@@ -261,9 +278,13 @@ def incident_for_reason_code(
     """Map an adapter or discovery ``reason_code`` to an operator incident (offline-safe)."""
 
     token = normalize_reason_token(reason_code) or "UNKNOWN"
-    primary_available = token not in _PRIMARY_UNAVAILABLE_TOKENS and token != "UNKNOWN"
+    novel = token not in _KNOWN_INCIDENT_TOKENS
+    status_token = "UNKNOWN" if novel else token
+    primary_available = token in _PRIMARY_AVAILABLE_TOKENS
     severity = "UNAVAILABLE"
-    if token in {DELAYED_DATA}:
+    if novel or token == "UNKNOWN":
+        severity = "UNAVAILABLE"
+    elif token in {DELAYED_DATA}:
         severity = "DELAYED"
     elif token in {PARTIALLY_STALE}:
         severity = "STALE"
@@ -272,11 +293,12 @@ def incident_for_reason_code(
     elif token in {OPEND_REACHABLE, HEALTHY, "OPEND_SDK_PRESENT"}:
         severity = "HEALTHY"
     return _incident(
-        token,
+        status_token,
         severity,
         primary_available=primary_available,
         overlay_available=overlay_available,
         promote=promote_overlay_to_l1,
+        details={"source_reason_code": token} if novel else {},
     )
 
 
