@@ -41,6 +41,7 @@ FREEZE_FIXTURE = ROOT / "tests/fixtures/intelligence_benchmark/freeze/ibp_factua
 
 EXPECTED_CASESET_HASH = "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C"
 EXPECTED_GOLDSET_HASH = "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F"
+CANONICAL_SUT_CODE_SHA = "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93"
 
 TOOL_POLICY = {
     "llm_network": "DISABLED_BY_CONSTRUCTION",
@@ -251,7 +252,7 @@ def phase_freeze() -> dict[str, Any]:
     gates = evaluate_pre_run_gates(protocol)
     frozen = freeze_factual_smoke_run_configuration(
         ROOT,
-        code_sha="936e233528cbce68d4047a6200fc579287e78033",
+        code_sha=CANONICAL_SUT_CODE_SHA,
         sut_profile_id=IBP_FACTS_SUT_PROFILE_ID,
     )
     envelope = build_freeze_envelope(frozen, gates)

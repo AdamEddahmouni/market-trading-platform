@@ -60,10 +60,10 @@ Disposition **HELD**: engineering may continue on isolated branches/worktrees; s
 
 | Lane | Branch / SHA | Status | Notes |
 |---|---|---|---|
-| Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | **HELD** | smoke `ibp-factual-smoke-766E16CAF41F3210` — facts **11/0**, unknown **11/0**; `FULL30_READY=CONDITIONAL`; **not merged** |
-| Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **APPROVE HELD** | wiring research; **not merged** |
-| Fill realism | `research/fill-price-realism-v1` | **EXECUTED** pack `6A66AE5C`; **APPROVE HELD** | **not merged** |
-| Cost sensitivity v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | **EXECUTED** pack `1DEF586A`; independent re-review **APPROVE** (reviewer `03eaa3d2`) | **HELD** — readiness follow-up; **not merged** to program-main |
+| Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | **MERGED** [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282) | smoke `ibp-factual-smoke-766E16CAF41F3210` — facts **11/11**, unknown **11/11** (historical); `FULL30_EXECUTED=NO` |
+| Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **MERGED** [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283) | research-class wiring; v3 receipts untouched |
+| Fill realism | `research/fill-price-realism-v1` @ `0732de35` | **APPROVE HELD** ([#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285) open) | **EXECUTED** pack `6A66AE5C50700426F71B3734E6FC6A43`; hash `C4FCD3AB…1149`; merge after CI green |
+| Cost sensitivity v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | **MERGED** [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284) | **EXECUTED** pack `1DEF586A`; re-review **APPROVE** @ `7b5e4be9`; hash `30FB6972…0B53` |
 
 ## Lane G invariants (docs closure)
 

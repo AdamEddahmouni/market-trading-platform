@@ -28,9 +28,9 @@
   "ITEM9_CALIBRATED": "NO",
   "LIVE_OFF": true,
   "PR222_ISOLATED": true,
-  "SUT_CODE_SHA": "936e233528cbce68d4047a6200fc579287e78033",
+  "SUT_CODE_SHA": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
   "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
-  "SUT_VERSION": "imp.ibp-facts-sut/1.0.0",
+  "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
   "TOOL_POLICY": {
     "evaluator_gold_prefix_blocked": "evaluator_only/",
     "live_promotion": "FORBIDDEN",
@@ -38,7 +38,8 @@
     "tools_available": [
       "historical_development_fixture_reader",
       "smart_router_route",
-      "grounded_evidence_infer"
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
     ]
   },
   "artifact_kind": "intelligence_benchmark_factual_smoke_freeze_v1",
@@ -58,14 +59,14 @@
       "IBP-FACTUAL-011"
     ],
     "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
-    "code_sha": "936e233528cbce68d4047a6200fc579287e78033",
+    "code_sha": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
     "context_reset_policy": "one_fresh_context_per_case_v1",
     "evaluator_only_gold_prefix": "evaluator_only/admitted_factual_gold/",
     "factual_gold_hypothesis_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
     "factual_gold_schema_version": "imp.ibp-admitted-factual-gold/1.0.0",
     "factual_smoke_contract_id": "ibp-factual-smoke-invocation-v1",
     "frozen_at_utc": "FACTUAL_SMOKE_V1_NO_WALL_CLOCK",
-    "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+    "frozen_config_fingerprint": "766E16CAF41F32109FF868C005167C3405A3846659A7F4FEE7E84F060CD080C3",
     "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
     "legacy_smoke10_run_id_preserved": "ibp-smoke10-76DDD188CD080365",
     "protocol_id": "imp-intelligence-benchmark-protocol-v1",
@@ -91,7 +92,7 @@
   },
   "protocol_version": "IBP_FACTUAL_SMOKE_V1",
   "sut_profile_documentation": {
-    "CODE_SHA": "936e233528cbce68d4047a6200fc579287e78033",
+    "CODE_SHA": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
     "CONTEXT_RULES": [
       "one_fresh_context_per_case_v1",
       "stateless_sut_runner_no_cross_case_memory",
@@ -100,7 +101,7 @@
     ],
     "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
     "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09) and GroundedEvidenceInference with historical-development replay projections (resolve_explain/resolve_inspect); no Anthropic/network LLM and no evaluator gold. IBP evaluator fact strings may still diverge from grounded citations; UNKNOWN when evidence or resolvers are absent.",
+    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
     "MODEL_ROUTING": {
       "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
       "llm_network": "DISABLED_BY_CONSTRUCTION",
@@ -111,11 +112,12 @@
     "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
     "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
     "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
-    "SUT_VERSION": "imp.ibp-facts-sut/1.0.0",
+    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
     "TOOLS_AVAILABLE": [
       "historical_development_fixture_reader",
       "smart_router_route",
-      "grounded_evidence_infer"
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
     ]
   }
 }

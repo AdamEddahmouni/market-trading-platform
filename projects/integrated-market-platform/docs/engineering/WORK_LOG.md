@@ -36,17 +36,89 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (post-engineering landings)
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/platform`, `docs/engineering` |
-| **Summary** | Docs-only closure after 2026-09-18 RTH Item 9 stop: reconciled stale **1/3** → governed **2/3** distinct **admitted** RTH dates (Sep 17 + Sep 18); **`188`/`189`** receipts; outage epoch `121031` **NONE** / not backfilled; **`ACTIVE_COLLECTORS=0`**. Bumped **CURRENT_MAIN** to `2306ff4a` ([#281](https://github.com/AdamEddahmouni/market-trading-platform/pull/281)). Documented **HELD** facts/drawdown/fill/cost lanes; **no** #222 merge, calibration, or receipt mutation. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md` |
-| **Tests** | `python tools/check_docs_links.py` — governance markdown link check |
-| **Related** | Lane 0 closeout `.imp-actual-01-phase-d/.../item9-lane0-provider-outage-closeout-20260918.json`; branch `docs/imp-post-rth-close-08-status` @ `.worktrees/lane-g-status` |
-| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`. Next increment = next natural distinct RTH + HELD engineering landings when reviewed. |
+| **Summary** | Docs-only update after **IMP-POST-RTH-CLOSE-08** Sep 18 close: Item 9 **2/3** admitted RTH dates, **188/189** receipts, outage epoch `121031` **not** backfilled, collector `fed2d9f7` stopped **16:00:11 ET**. Reconciled **CURRENT_MAIN** to `3a0281bb` after merged [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284); fill [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285) tracked separately until green. Cost v4 **APPROVE** @ `7b5e4be9`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | `python tools/check_docs_links.py` |
+| **Related** | Lane 0 closeout JSON (operator tree); branch `docs/imp-post-rth-close-08-status` |
+| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`; no receipt rewrite. |
+
+## 2026-09-18 — Cost sensitivity v4 review follow-up (Lane E readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Addressed independent review `65cedf09` REQUEST_CHANGES: added `execution_status_v1.json` (post-exec gates without rewriting pre-registration); refreshed `lane_c_readiness_v1.json`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, and Lane C tests for `EXECUTED_BOUNDED_HISTORICAL_OBSERVATION` with receipt pointers. No re-run; same `pack_run_id` `1DEF586AD729B270E20814B03606A718`. |
+| **Key files** | `execution_status_v1.json`, `lane_c_readiness_v1.json`, `test_simulator_experiment_specs_lane_c_v1.py`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1 tests.platform.test_historical_cost_sensitivity_v4_prep` — OK (8) |
+| **Related** | Review `65cedf09`; branch `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` |
+| **Notes** | `pre_registered_methodology_v1.json` remains pre-exec artifact (`executed=false`). |
+
+## 2026-09-18 — Cost sensitivity v4 execution (IMP-POST-RTH-CLOSE-08 Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research` |
+| **Summary** | Confirmed Lane C frozen `pre_registered_methodology_v1.json`; promoted v4 `frozen_experiment_definition.json` (`EXPERIMENT_HASH` `30FB6972…`); executed pre-registered 7-point `cost_slippage_bps` grid on pinned OpenD HIST-DEV-AAPL corpus with v3-locked baselines/splits. All fill/gross invariants held; `bps=5.0` replicates v3 validate economics; contamination PASS. V3 receipts untouched. |
+| **Key files** | `cost_sensitivity_v4.py`, `historical_cost_sensitivity_v4_cli.py`, `evidence/.../imp-simulator-cost-sensitivity-v4/*` |
+| **Tests** | `unittest tests.platform.test_historical_cost_sensitivity_v4_prep tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (6) |
+| **Related** | `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`; worktree `.worktrees/lane-e-cost-v4` |
+| **Notes** | `pack_run_id` `1DEF586AD729B270E20814B03606A718`; authority `HISTORICAL_DEVELOPMENT` / `BOUNDED_HISTORICAL_OBSERVATION` only. |
+
+## 2026-09-18 — Simulator experiment specs Lane C (cost / fill / drawdown review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `evidence/historical-research`, `tests/platform` |
+| **Summary** | Frozen methodology for cost v4 and fill realism; consolidated Lane C readiness in `imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` (supersedes standalone `research/simulator-experiment-specs-sep18` landing). Cost v4 **EXECUTED**; drawdown wiring merged #283; fill realism **HELD** pending execution branch. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, `IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`, `IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md`; `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` (3 tests, pass) |
+| **Related** | Lane E v3 hypothesis queue; drawdown #283; cost v4 @ `7b5e4be9` |
+| **Notes** | No v3 rerun; no PROGRAM_STATUS edit on this branch. |
+
+## 2026-09-18 — Simulator drawdown wiring v1 (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Diagnosed v3 `drawdown: null` as missing equity-curve aggregation (simulator read nonexistent `risk_result.portfolio.max_drawdown`). Wired net-MTM PnL curve → `max_drawdown` in fill economics with source `EQUITY_CURVE_NET_MTM`; documented contract; v3 evidence untouched. |
+| **Key files** | `simulator_drawdown.py`, `fill_economics.py`, `simulator.py`, `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md`, `tests/platform/test_simulator_drawdown_wiring_v1.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_drawdown_wiring_v1 tests.platform.test_simulator_fill_economics_v3` |
+| **Related** | Hypothesis `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`; finding `LANE-E-FND-019`; merged #283 @ `2b194d74` |
+| **Notes** | `ACCOUNTING_VERSION` unchanged (`3.0.1`). Promotion needs NEW experiment hash; no v3 manifest backfill. |
+
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane B+C (rebase + independent fixtures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / grounded fact SUT integration |
+| **Summary** | Rebased approved SUT stack onto current `origin/main` (`2306ff4a`, #281); landed Lane B synthetic fixtures and `test_grounded_fact_independent_fixtures_v1.py` on `feat/grounded-fact-extraction-v1` in worktree `.worktrees/lane-bc-grounded-facts` (merged #282; no smoke rerun on integration step). |
+| **Key files** | `tests/intelligence/test_grounded_fact_independent_fixtures_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_independent/*` |
+| **Tests** | `python -m unittest tests.intelligence.test_grounded_fact_extraction_v1 tests.intelligence.test_grounded_fact_independent_fixtures_v1` — 31 OK; `python tools/imp.py test focused` (2 representative selectors) — 2 OK |
+| **Related** | Lane A receipt `evidence/intelligence-benchmark/imp-post-rth-close-08-lane-a/grounded_fact_extraction_review_v1.json`; historical factual smoke `RUN_ID=ibp-factual-smoke-766E16CAF41F3210` persisted @ `f7486f42`/`90773a41` |
+| **Notes** | `PROVENANCE_HYGIENE=skipped` (preserve freeze `SUT_CODE_SHA=b43cfd53`). `GOLD_INSPECTED=NO`. Historical smoke **executed and persisted** (facts 11/11, unknown_handling 11/11); `FULL30_EXECUTED=NO`; no post-`b43cfd53` SUT change — ancestry-only integration must not rerun smoke. |
+
+## 2026-09-18 — Grounded fact extraction v1 (Lanes A+B+C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / IBP facts SUT |
+| **Summary** | Added generic admitted-evidence fact extraction (`question_class` handlers → structured facts → answer or UNKNOWN) and wired `run_ibp_facts_sut` factual protocol path; bumped facts SUT profile to `imp.ibp-facts-sut/1.1.0`. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/grounded_fact_extraction/*`, `facts_sut.py`, `sut_profiles.py`, `tests/intelligence/test_grounded_fact_extraction_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_extraction/*`, nonstub freeze fingerprint refresh |
+| **Tests** | `unittest tests.intelligence.test_grounded_fact_extraction_v1` + M4 evaluator (28 OK); `python tools/imp.py validate changed` PASSED (3656 tests) |
+| **Related** | `LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1`, `LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1`, `LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1` |
+| **Notes** | No smoke rerun on integration; historical smoke receipt retained (`ibp-factual-smoke-766E16CAF41F3210`); no evaluator gold read; no Full30; merged #282 |
 
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 

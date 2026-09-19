@@ -1,9 +1,5 @@
 {
-  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
-  "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
-  "smoke10_contract_id": "ibp-smoke10-invocation-v1",
-  "suite_id": "ibp-v1-30",
-  "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+  "case_count": 10,
   "case_ids": [
     "IBP-CASE-001",
     "IBP-CASE-002",
@@ -16,158 +12,164 @@
     "IBP-CASE-009",
     "IBP-CASE-010"
   ],
-  "case_count": 10,
+  "code_sha": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
   "context_reset_policy": "one_fresh_context_per_case_v1",
-  "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-  "sut_model_id": "grounded.evidence:deterministic.v1",
-  "evaluator_only_gold_prefix": "evaluator_only/",
-  "code_sha": "109fd650df4998d953450eda267e8edfdad6de81",
-  "invocation_contract": {
-    "contract_id": "ibp-smoke10-invocation-v1",
-    "suite_id": "ibp-v1-30",
-    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
-    "case_count": 10,
-    "case_plans": [
-      {
-        "case_id": "IBP-CASE-001",
-        "blind_mode": "A",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
-      },
-      {
-        "case_id": "IBP-CASE-002",
-        "blind_mode": "B",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-003",
-        "blind_mode": "C",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-004",
-        "blind_mode": "D",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-005",
-        "blind_mode": "E",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-006",
-        "blind_mode": "A",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-007",
-        "blind_mode": "B",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-008",
-        "blind_mode": "C",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-009",
-        "blind_mode": "D",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      },
-      {
-        "case_id": "IBP-CASE-010",
-        "blind_mode": "E",
-        "input_profile": "synthetic_intelligence_fixture_v1",
-        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json",
-        "evaluator_gold_loaded_for_sut": false,
-        "scores_executed": false,
-        "historical_harness_fixture": null
-      }
-    ],
-    "scores_executed": false,
-    "evaluator_invoked": false,
-    "historical_harness_integration": false
-  },
-  "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
-  "sut_definition": {
-    "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
-    "SUT_VERSION": "imp.ibp-facts-sut/1.0.0",
-    "CODE_SHA": "109fd650df4998d953450eda267e8edfdad6de81",
-    "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
-    "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
-    "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
-    "MODEL_ROUTING": {
-      "primary_inference": "grounded.evidence:deterministic.v1",
-      "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
-      "llm_network": "DISABLED_BY_CONSTRUCTION",
-      "router": "market_platform_foundation.intelligence.routing.SmartRouter",
-      "router_policy": "RoutingPolicyV1"
-    },
-    "TOOLS_AVAILABLE": [
-      "historical_development_fixture_reader",
-      "smart_router_route",
-      "grounded_evidence_infer"
-    ],
-    "CONTEXT_RULES": [
-      "one_fresh_context_per_case_v1",
-      "stateless_sut_runner_no_cross_case_memory",
-      "evaluator_gold_prefix_blocked:evaluator_only/",
-      "scores_after_sut_response_only"
-    ],
-    "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09) and GroundedEvidenceInference with historical-development replay projections (resolve_explain/resolve_inspect); no Anthropic/network LLM and no evaluator gold. IBP evaluator fact strings may still diverge from grounded citations; UNKNOWN when evidence or resolvers are absent."
-  },
-  "tool_policy": {
-    "tools_available": [
-      "historical_development_fixture_reader",
-      "smart_router_route",
-      "grounded_evidence_infer"
-    ],
-    "evaluator_gold_access": "DENY",
-    "network_llm_access": "DENY"
-  },
   "context_rules": [
     "one_fresh_context_per_case_v1",
     "stateless_sut_runner_no_cross_case_memory",
     "evaluator_gold_prefix_blocked:evaluator_only/",
     "scores_after_sut_response_only"
   ],
+  "evaluator_only_gold_prefix": "evaluator_only/",
+  "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
+  "frozen_config_fingerprint": "766C2B041BB6EC2AB97BB090618138BA2B42C140BD723BC05350C10FEA19B077",
+  "invocation_contract": {
+    "case_count": 10,
+    "case_plans": [
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-001",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
+        "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-002",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-003",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-004",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-005",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-006",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-007",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-008",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-009",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-010",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      }
+    ],
+    "contract_id": "ibp-smoke10-invocation-v1",
+    "evaluator_invoked": false,
+    "historical_harness_integration": false,
+    "scores_executed": false,
+    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+    "suite_id": "ibp-v1-30"
+  },
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "smoke10_contract_id": "ibp-smoke10-invocation-v1",
+  "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+  "suite_id": "ibp-v1-30",
+  "sut_definition": {
+    "CODE_SHA": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
+    "CONTEXT_RULES": [
+      "one_fresh_context_per_case_v1",
+      "stateless_sut_runner_no_cross_case_memory",
+      "evaluator_gold_prefix_blocked:evaluator_only/",
+      "scores_after_sut_response_only"
+    ],
+    "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+    "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
+    "MODEL_ROUTING": {
+      "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
+      "llm_network": "DISABLED_BY_CONSTRUCTION",
+      "primary_inference": "grounded.evidence:deterministic.v1",
+      "router": "market_platform_foundation.intelligence.routing.SmartRouter",
+      "router_policy": "RoutingPolicyV1"
+    },
+    "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
+    "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
+    "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
+    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
+    "TOOLS_AVAILABLE": [
+      "historical_development_fixture_reader",
+      "smart_router_route",
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
+    ]
+  },
+  "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
   "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-  "frozen_config_fingerprint": "4720493F6448021E5AD4DE878E31B7EB63909BE75558992B275C9F6CCE9CF2D2",
-  "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK"
+  "sut_model_id": "grounded.evidence:deterministic.v1",
+  "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+  "tool_policy": {
+    "evaluator_gold_access": "DENY",
+    "network_llm_access": "DENY",
+    "tools_available": [
+      "historical_development_fixture_reader",
+      "smart_router_route",
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
+    ]
+  }
 }
