@@ -7,21 +7,19 @@ Skill: `imp-handoff`. Session: Lane G status / roadmap reconciliation (docs-only
 - repository: `AdamEddahmouni/market-trading-platform` (IMP at `projects/integrated-market-platform/`)
 - branch: `docs/imp-post-rth-close-08-status`
 - worktree: `.worktrees/lane-g-status`
-- **CURRENT_GIT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION**: `2306ff4a0db74d6ed35d9c5d1bb82bf8b3dc7c56` (`origin/main` after [#281](https://github.com/AdamEddahmouni/market-trading-platform/pull/281))
+- **CURRENT_GIT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION**: `d06d57e7e64efa458fca411ded60d821ad7dbabc` (`origin/main` after [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285))
 - **ITEM9_FROZEN_COLLECTOR**: `fed2d9f7e183aecfcac61a7664df69aafc12ea25` (`.imp-actual-01-phase-d`; collector **stopped** `2026-09-18T16:00:11` ET; **`ACTIVE_COLLECTORS=0`**)
 - **SEP15_FROZEN_EMPIRICAL**: `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` — do not rewrite
 
 ## Objective
 
-Reconcile authoritative status after 2026-09-18 RTH Item 9 close (Lane 0) without mutating receipts, merging #222, or calibrating Item 9.
+Reconcile authoritative status after 2026-09-18 RTH Item 9 close (Lane 0) and five-package engineering integration without mutating receipts, merging #222, or calibrating Item 9.
 
 ## Completed (Lane G)
 
-- [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) v1.46: **CURRENT_MAIN** `2306ff4a`; Item 9 **`2`/`3`** admitted RTH dates; **IMP-POST-RTH-CLOSE-08** row; HELD lanes matrix
-- [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md) — Lane 0 closeout + date ledger + parallel **HELD** branches
-- [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) gate line
-- [IMP_DUAL_CORPUS_01_NOTION_SYNC.md](IMP_DUAL_CORPUS_01_NOTION_SYNC.md) Item 9 summary
-- [WORK_LOG.md](WORK_LOG.md) entry
+- [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md): **CURRENT_MAIN** `d06d57e7`; Item 9 **`2`/`3`** admitted RTH dates; **IMP-POST-RTH-CLOSE-08** landings [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285)
+- [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md) — Lane 0 closeout + date ledger + merged lane matrix
+- [WORK_LOG.md](WORK_LOG.md) five-package closure entry
 
 ## Honest gates
 
@@ -35,14 +33,14 @@ FTEP_EMPIRICAL_ACTIVE=NO
 RECEIPTS_REWRITTEN=NO
 ```
 
-## HELD engineering (not program-main)
+## Engineering landings (on `origin/main`)
 
 | Lane | Branch @ SHA | Disposition |
 |---|---|---|
-| Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | smoke `ibp-factual-smoke-766E16CAF41F3210`; **not merged** |
-| Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **APPROVE HELD** |
-| Fill | `research/fill-price-realism-v1` | pack `6A66AE5C`; **APPROVE HELD** |
-| Cost v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | pack `1DEF586A`; re-review **APPROVE** (reviewer `03eaa3d2`); **not merged** |
+| Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | **MERGED** [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282) |
+| Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **MERGED** [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283) |
+| Cost v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | **MERGED** [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284); **APPROVE** |
+| Fill | `research/fill-price-realism-v1` @ `a36ab28b` | **MERGED** [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285); pack `6A66AE5C` |
 
 ## Validated
 
@@ -57,9 +55,5 @@ RECEIPTS_REWRITTEN=NO
 ## Next work
 
 1. **CALENDAR:** next US equity cash RTH — governed Item 9 `--poll` @ frozen collector when preflight `READY_TO_COLLECT` (third distinct admitted date).
-2. **HELD lanes:** continue facts / drawdown / fill / cost v4 on isolated branches; merge only via normal review (not from status PR).
-3. **Item 7:** #222 remains **isolated** — do not merge from status docs.
-
-## Model / escalation
-
-Composer only. No Fast/Kimi/Grok High. Single agent.
+2. **PR #222:** remains open; do not merge from status work.
+3. **Lane G docs PR [#286](https://github.com/AdamEddahmouni/market-trading-platform/pull/286):** merge when CI green after push.

@@ -1,0 +1,996 @@
+{
+  "artifact_kind": "historical_fill_price_realism_run_v1",
+  "authority": "HISTORICAL_DEVELOPMENT",
+  "contamination_report": {
+    "run_id": "fill-realism-C4FCD3AB6CA6",
+    "CONTAMINATION_STATUS": "PASS",
+    "questions": {
+      "DID_TRAIN_SEE_TEST": "PASS",
+      "DID_FEATURES_SEE_FUTURE_DATA": "PASS",
+      "DID_HOLDOUT_ENTER_TRAINING": "PASS",
+      "DID_PROSPECTIVE_RECEIPTS_ENTER_HISTORICAL_RESEARCH": "PASS",
+      "DID_HISTORICAL_DATA_ENTER_PROSPECTIVE_ITEM9": "PASS"
+    },
+    "violations": [],
+    "supplemental_violations": [],
+    "run_fail_policy": "CONTAMINATION_STATUS=FAIL when any question FAIL, any violation recorded, or supplemental_violations non-empty",
+    "evidence_language": {
+      "AUTHORITY": "HISTORICAL_DEVELOPMENT",
+      "ITEM9_EFFECT": "NONE"
+    },
+    "contract_scope": "contractual_leakage_properties_only",
+    "supplemental_checks": [
+      {
+        "check_id": "DID_FILL_REFERENCE_TUNE_ON_VALIDATE",
+        "verdict": "PASS",
+        "note": "Arms frozen in experiment definition before execution."
+      }
+    ]
+  },
+  "cost_slippage_bps": 5.0,
+  "evidence_class": "BOUNDED_HISTORICAL_OBSERVATION",
+  "experiment_definition_hash": "C4FCD3AB6CA6AEE57C91A0D709EC8D77EBFA6AA774542BF9AAD9FC761C2D1149",
+  "experiment_id": "imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
+  "hypothesis_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "pack_run_id": "6A66AE5C50700426F71B3734E6FC6A43",
+  "research_code_sha": "274377894f4302066f43e37500a2673635d5a17b",
+  "results": [
+    {
+      "baseline_index": 0,
+      "strategy_id": "baseline_0_no_trade_v1",
+      "v3_run_id": "48D2248BDD4EFA0A7F1286783B004281F4E5C049C129AD91435CBAB7D760B3A4",
+      "v3_risk_simulation_root_hash": "095E13003F1FA3748FDD523D8EFD2111B78D1FB52B42042C2A7E4BBD9D5C849B",
+      "locked_fill_count": 0,
+      "v3_validate_directional_accuracy": null,
+      "v3_validate_gross_pnl": 0.0,
+      "arms": [
+        {
+          "arm_id": "REF_BASELINE_V3",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_CLOSE",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_CLOSE",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        },
+        {
+          "arm_id": "REF_FILL_ADVERSE_MTM_OPEN",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_OPEN",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_OPEN",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 0,
+          "gross_pnl": 0.0,
+          "gross_realized_pnl": 0.0,
+          "gross_unrealized_pnl": 0.0,
+          "net_pnl": 0.0,
+          "transaction_costs": 0.0,
+          "traded_notional": 0.0,
+          "directional_accuracy": null,
+          "directional_gross_pair": {
+            "directional_accuracy": null,
+            "gross_pnl": 0.0,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": []
+        }
+      ],
+      "within_baseline_arm_gross_spread": 0.0
+    },
+    {
+      "baseline_index": 1,
+      "strategy_id": "baseline_1_momentum_5m_sign_v1",
+      "v3_run_id": "4A1EF4884FB0699B2568A6D6EE67B384AD904B3EFD5903F997AE4ACD8C09E214",
+      "v3_risk_simulation_root_hash": "E38E1D10DB578A57F3A0704AE8B0A68176B338DA36B43D63097ECCB1D6EB2A36",
+      "locked_fill_count": 386,
+      "v3_validate_directional_accuracy": 0.4625322997416021,
+      "v3_validate_gross_pnl": -90.46,
+      "arms": [
+        {
+          "arm_id": "REF_BASELINE_V3",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": -90.46,
+          "gross_realized_pnl": -80.22,
+          "gross_unrealized_pnl": -10.24,
+          "net_pnl": -154.16591,
+          "transaction_costs": 63.705909999999996,
+          "traded_notional": 127411.81999999993,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -90.46,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 32835,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33027,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33038,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_CLOSE",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": -44.09,
+          "gross_realized_pnl": -34.49,
+          "gross_unrealized_pnl": -9.6,
+          "net_pnl": -107.79699500000004,
+          "transaction_costs": 63.70699500000004,
+          "traded_notional": 127413.99000000005,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -44.09,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33013,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33039,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_CLOSE",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": -40.05,
+          "gross_realized_pnl": -30.45,
+          "gross_unrealized_pnl": -9.6,
+          "net_pnl": -103.75753499999999,
+          "transaction_costs": 63.707534999999986,
+          "traded_notional": 127415.07000000014,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -40.05,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33103,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_ADVERSE_MTM_OPEN",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": -90.06,
+          "gross_realized_pnl": -80.22,
+          "gross_unrealized_pnl": -9.84,
+          "net_pnl": -153.76591,
+          "transaction_costs": 63.705909999999996,
+          "traded_notional": 127411.81999999993,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -90.06,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 32835,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33027,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33038,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_OPEN",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": -43.69,
+          "gross_realized_pnl": -34.49,
+          "gross_unrealized_pnl": -9.2,
+          "net_pnl": -107.39699500000003,
+          "transaction_costs": 63.70699500000004,
+          "traded_notional": 127413.99000000005,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -43.69,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33013,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33039,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_OPEN",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": -39.65,
+          "gross_realized_pnl": -30.45,
+          "gross_unrealized_pnl": -9.2,
+          "net_pnl": -103.35753499999998,
+          "transaction_costs": 63.707534999999986,
+          "traded_notional": 127415.07000000014,
+          "directional_accuracy": 0.4625322997416021,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.4625322997416021,
+            "gross_pnl": -39.65,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33103,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        }
+      ],
+      "within_baseline_arm_gross_spread": 50.809999999999995
+    },
+    {
+      "baseline_index": 2,
+      "strategy_id": "baseline_2_mean_reversion_5m_sign_v1",
+      "v3_run_id": "282580D0A94FDA4BA6878E2FBA9CC109B3E608C556B1613E5F7FFF79F392EDAE",
+      "v3_risk_simulation_root_hash": "2CECA9B037B336CB65DB7026E721979A7DA2EE262483F171A7BE630A86D67075",
+      "locked_fill_count": 386,
+      "v3_validate_directional_accuracy": 0.5271317829457365,
+      "v3_validate_gross_pnl": -5.07,
+      "arms": [
+        {
+          "arm_id": "REF_BASELINE_V3",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": -5.07,
+          "gross_realized_pnl": -14.06,
+          "gross_unrealized_pnl": 8.99,
+          "net_pnl": -68.77823499999997,
+          "transaction_costs": 63.70823499999996,
+          "traded_notional": 127416.46999999991,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": -5.07,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33113,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33150,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33127,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_CLOSE",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": 44.09,
+          "gross_realized_pnl": 34.49,
+          "gross_unrealized_pnl": 9.6,
+          "net_pnl": -19.61699500000004,
+          "transaction_costs": 63.70699500000004,
+          "traded_notional": 127413.99000000005,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": 44.09,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33013,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33039,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_CLOSE",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 386,
+          "gross_pnl": 40.05,
+          "gross_realized_pnl": 30.45,
+          "gross_unrealized_pnl": 9.6,
+          "net_pnl": -23.65753499999999,
+          "transaction_costs": 63.707534999999986,
+          "traded_notional": 127415.07000000014,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": 40.05,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33103,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_ADVERSE_MTM_OPEN",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": -5.470000000000001,
+          "gross_realized_pnl": -14.06,
+          "gross_unrealized_pnl": 8.59,
+          "net_pnl": -69.17823499999996,
+          "transaction_costs": 63.70823499999996,
+          "traded_notional": 127416.46999999991,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": -5.470000000000001,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33113,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33150,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33127,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_OPEN",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": 43.69,
+          "gross_realized_pnl": 34.49,
+          "gross_unrealized_pnl": 9.2,
+          "net_pnl": -20.016995000000044,
+          "transaction_costs": 63.70699500000004,
+          "traded_notional": 127413.99000000005,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": 43.69,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33013,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33039,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_OPEN",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 386,
+          "gross_pnl": 39.65,
+          "gross_realized_pnl": 30.45,
+          "gross_unrealized_pnl": 9.2,
+          "net_pnl": -24.057534999999987,
+          "transaction_costs": 63.707534999999986,
+          "traded_notional": 127415.07000000014,
+          "directional_accuracy": 0.5271317829457365,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.5271317829457365,
+            "gross_pnl": 39.65,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479120000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33103,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789479240000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        }
+      ],
+      "within_baseline_arm_gross_spread": 49.56
+    },
+    {
+      "baseline_index": 3,
+      "strategy_id": "baseline_3_volume_momentum_5m_v1",
+      "v3_run_id": "81482B369310A5886F72DCE15A76A4C7E11BB078A76BE1830E899A0C7133D07E",
+      "v3_risk_simulation_root_hash": "05EF577489F3233B82E5A98D95887E219D3081D80F49638CACE6332E652FFF76",
+      "locked_fill_count": 147,
+      "v3_validate_directional_accuracy": 0.47297297297297297,
+      "v3_validate_gross_pnl": -13.37,
+      "arms": [
+        {
+          "arm_id": "REF_BASELINE_V3",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 147,
+          "gross_pnl": -13.37,
+          "gross_realized_pnl": -23.84,
+          "gross_unrealized_pnl": 10.47,
+          "net_pnl": -37.64044499999999,
+          "transaction_costs": 24.270444999999995,
+          "traded_notional": 48540.890000000014,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": -13.37,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33027,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33087,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33040,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_CLOSE",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 147,
+          "gross_pnl": 3.6400000000000006,
+          "gross_realized_pnl": -9.76,
+          "gross_unrealized_pnl": 13.4,
+          "net_pnl": -20.62953,
+          "transaction_costs": 24.26953,
+          "traded_notional": 48539.059999999976,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": 3.6400000000000006,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33068,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33052,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_CLOSE",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_CLOSE",
+          "fill_count": 147,
+          "gross_pnl": 4.52,
+          "gross_realized_pnl": -8.24,
+          "gross_unrealized_pnl": 12.76,
+          "net_pnl": -19.74846000000001,
+          "transaction_costs": 24.268460000000008,
+          "traded_notional": 48536.92,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": 4.52,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33054,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_CLOSE"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_ADVERSE_MTM_OPEN",
+          "fill_price_reference": "BAR_ADVERSE_TOUCH",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 147,
+          "gross_pnl": -14.32,
+          "gross_realized_pnl": -23.84,
+          "gross_unrealized_pnl": 9.52,
+          "net_pnl": -38.590444999999995,
+          "transaction_costs": 24.270444999999995,
+          "traded_notional": 48540.890000000014,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": -14.32,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33027,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33087,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33040,
+              "fill_price_reference": "BAR_ADVERSE_TOUCH",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_OPEN_MTM_OPEN",
+          "fill_price_reference": "BAR_OPEN",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 147,
+          "gross_pnl": 2.6899999999999995,
+          "gross_realized_pnl": -9.76,
+          "gross_unrealized_pnl": 12.45,
+          "net_pnl": -21.57953,
+          "transaction_costs": 24.26953,
+          "traded_notional": 48539.059999999976,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": 2.6899999999999995,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33099,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33068,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33052,
+              "fill_price_reference": "BAR_OPEN",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        },
+        {
+          "arm_id": "REF_FILL_CLOSE_MTM_OPEN",
+          "fill_price_reference": "BAR_CLOSE",
+          "mtm_reference": "MTM_LAST_BAR_OPEN",
+          "fill_count": 147,
+          "gross_pnl": 3.5700000000000003,
+          "gross_realized_pnl": -8.24,
+          "gross_unrealized_pnl": 11.81,
+          "net_pnl": -20.698460000000008,
+          "transaction_costs": 24.268460000000008,
+          "traded_notional": 48536.92,
+          "directional_accuracy": 0.47297297297297297,
+          "directional_gross_pair": {
+            "directional_accuracy": 0.47297297297297297,
+            "gross_pnl": 3.5700000000000003,
+            "note": "Per-baseline scalar pair; cross-baseline correlation computed in pack summary."
+          },
+          "fill_audit_sample": [
+            {
+              "fill_time": 1789479180000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33042,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480080000000000,
+              "direction": "long",
+              "fill_quantity": 1,
+              "fill_price_minor": 33054,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            },
+            {
+              "fill_time": 1789480140000000000,
+              "direction": "short",
+              "fill_quantity": 1,
+              "fill_price_minor": 33059,
+              "fill_price_reference": "BAR_CLOSE",
+              "mtm_reference": "MTM_LAST_BAR_OPEN"
+            }
+          ]
+        }
+      ],
+      "within_baseline_arm_gross_spread": 18.84
+    }
+  ],
+  "spec_bundle_sha256": "bcf758df3cf7a2047f1c7caaae1e4b9f5df4542710edcd1d2bc582cb12ccbb34",
+  "timestamp_ns": 1789769200827922100,
+  "v3_pack_manifest_path": "evidence\\historical-research\\imp-integrate-experiment-05-r3-opend-fill-economics-v3\\baseline_pack_run_manifest.json"
+}

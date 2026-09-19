@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "historical_fill_price_realism_independent_review_v1",
+  "experiment_id": "imp-integrate-experiment-06-r1-opend-fill-price-realism-v1",
+  "hypothesis_id": "LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1",
+  "increment_id": "IMP-POST-RTH-CLOSE-08",
+  "lane": "F",
+  "review_timestamp_ns": 1789791600000000000,
+  "reviewer": {
+    "model": "Composer",
+    "role": "Lane F fill-price realism (bounded adversarial checklist; not orchestrator)"
+  },
+  "checklist": [
+    {
+      "item_id": "SEP_COST",
+      "question": "Are cost bps grids explicitly forbidden and locked at v3 5.0?",
+      "result": "PASS",
+      "evidence": "frozen_experiment_definition.run_parameters.cost_variation_forbidden=true; experiment_protocol_v1.lane_separation"
+    },
+    {
+      "item_id": "NO_ITEM9_SEMANTICS",
+      "question": "Does the spec forbid changing BarConservativeSimulator / Item 9?",
+      "result": "PASS",
+      "evidence": "simulator_semantics_change_forbidden; protocol forbidden_actions"
+    },
+    {
+      "item_id": "V3_IMMUTABLE",
+      "question": "Is v3 evidence read-only with locked fill schedule source?",
+      "result": "PASS",
+      "evidence": "fill_schedule_source.pack_run_manifest_path; governance.prior_frozen_experiment_immutable"
+    },
+    {
+      "item_id": "PREDECLARED_ARMS",
+      "question": "Are fill/MTM arms fixed before execution with no post-hoc tuning?",
+      "result": "PASS",
+      "evidence": "fill_price_realism_arms[6]; contamination check DID_FILL_REFERENCE_TUNE_ON_VALIDATE"
+    },
+    {
+      "item_id": "NO_PROFIT_CROWNING",
+      "question": "Does the protocol forbid strategy winner selection?",
+      "result": "PASS",
+      "evidence": "forbidden_actions includes net_pnl winner selection; methodology forbidden questions"
+    },
+    {
+      "item_id": "EVIDENCE_CLASS",
+      "question": "Is authority HISTORICAL_DEVELOPMENT only?",
+      "result": "PASS",
+      "evidence": "governance.authority; protocol.authority"
+    },
+    {
+      "item_id": "HARNESS_READY",
+      "question": "Is repricing harness implemented on this SHA?",
+      "result": "PASS",
+      "evidence": "fill_price_realism_harness.py + fill_price_realism_v1_cli.py landed on research/fill-price-realism-v1"
+    }
+  ],
+  "verdict": "APPROVE_FOR_FROZEN_EXECUTION",
+  "verdict_notes": "Spec and frozen definition approved for bounded execution once counterfactual repricing harness lands on this branch. Harness absence blocks EXECUTED=YES tonight.",
+  "methodology_path": "docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md",
+  "frozen_definition_path": "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/frozen_experiment_definition.json",
+  "experiment_definition_hash": "C4FCD3AB6CA6AEE57C91A0D709EC8D77EBFA6AA774542BF9AAD9FC761C2D1149"
+}

@@ -54,15 +54,15 @@ Closeout artifact (operator tree, not tracked in git):
 
 On a **future** US equity cash RTH session: preflight → governed Mode B `--poll` from `.imp-actual-01-phase-d` @ `fed2d9f7` when `READY_TO_COLLECT` → read-only `corpus-status`. Target: a **third** distinct admitted RTH date. **No** automatic calibration fitting.
 
-## Parallel lanes — HELD (not program-main unless merged)
+## Parallel lanes — engineering landings (merged to `origin/main`)
 
-Disposition **HELD**: engineering may continue on isolated branches/worktrees; status docs do not treat these as `origin/main` until an independent merge.
+All five **IMP-POST-RTH-CLOSE-08** engineering lanes landed via [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285); frozen experiment receipts were not rewritten on merge.
 
 | Lane | Branch / SHA | Status | Notes |
 |---|---|---|---|
 | Facts | `feat/grounded-fact-extraction-v1` @ `90773a41` | **MERGED** [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282) | smoke `ibp-factual-smoke-766E16CAF41F3210` — facts **11/11**, unknown **11/11** (historical); `FULL30_EXECUTED=NO` |
 | Drawdown | `research/simulator-drawdown-wiring-v1` @ `2b194d74` | **MERGED** [#283](https://github.com/AdamEddahmouni/market-trading-platform/pull/283) | research-class wiring; v3 receipts untouched |
-| Fill realism | `research/fill-price-realism-v1` @ `0732de35` | **APPROVE HELD** ([#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285) open) | **EXECUTED** pack `6A66AE5C50700426F71B3734E6FC6A43`; hash `C4FCD3AB…1149`; merge after CI green |
+| Fill realism | `research/fill-price-realism-v1` @ `a36ab28b` | **MERGED** [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285) | **EXECUTED** pack `6A66AE5C50700426F71B3734E6FC6A43`; hash `C4FCD3AB…1149`; CI portability fix only (foreign v3 manifest paths → skip/unavailable) |
 | Cost sensitivity v4 | `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` | **MERGED** [#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284) | **EXECUTED** pack `1DEF586A`; re-review **APPROVE** @ `7b5e4be9`; hash `30FB6972…0B53` |
 
 ## Lane G invariants (docs closure)

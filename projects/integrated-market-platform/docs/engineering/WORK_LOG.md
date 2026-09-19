@@ -36,17 +36,41 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (post-engineering landings)
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane G status reconcile (five-package closure)
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/platform`, `docs/engineering` |
-| **Summary** | Docs-only update after **IMP-POST-RTH-CLOSE-08** Sep 18 close: Item 9 **2/3** admitted RTH dates, **188/189** receipts, outage epoch `121031` **not** backfilled, collector `fed2d9f7` stopped **16:00:11 ET**. Reconciled **CURRENT_MAIN** to `3a0281bb` after merged [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#284](https://github.com/AdamEddahmouni/market-trading-platform/pull/284); fill [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285) tracked separately until green. Cost v4 **APPROVE** @ `7b5e4be9`. |
-| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Summary** | Docs-only closure after **IMP-POST-RTH-CLOSE-08** Sep 18 close and sequential engineering landings [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285). Item 9 **2/3** admitted RTH dates, **188/189** receipts, outage epoch `121031` **not** backfilled, collector `fed2d9f7` stopped **16:00:11 ET**. **CURRENT_MAIN** `d06d57e7` (fill merge includes CI portability hardening @ `a36ab28b`; frozen v3 manifest paths untouched). Cost v4 **APPROVE** @ `7b5e4be9`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/AGENT_HANDOFF.md` |
 | **Tests** | `python tools/check_docs_links.py` |
-| **Related** | Lane 0 closeout JSON (operator tree); branch `docs/imp-post-rth-close-08-status` |
-| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`; no receipt rewrite. |
+| **Related** | Lane 0 closeout JSON (operator tree); branch `docs/imp-post-rth-close-08-status`; merge [#286](https://github.com/AdamEddahmouni/market-trading-platform/pull/286) |
+| **Notes** | `ITEM9_CALIBRATED=NO`; `PR222_MERGED=NO`; `LIVE_EXECUTION=OFF`; no receipt rewrite; no fill experiment rerun. |
+
+## 2026-09-18 — Fill-price realism v1 harness + bounded run (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical_research_harness`, `tools/research`, `evidence/historical-research` |
+| **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `6A66AE5C50700426F71B3734E6FC6A43` under experiment 06 evidence (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`). Costs locked at 5 bps; v3 receipts untouched; validate gross sign unchanged on corpus. |
+| **Key files** | `fill_price_realism_harness.py`; `fill_price_realism_v1_cli.py`; `tests/platform/test_fill_price_realism_v1.py`; `evidence/.../fill_price_realism_run_record.json` |
+| **Tests** | `python -m unittest tests.platform.test_fill_price_realism_v1` — OK (3 passed, 1 skipped) |
+| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…1149`; merged #285 @ `a36ab28b` |
+| **Notes** | `research_code_sha` recorded in run receipt at commit time; no experiment rerun on integration. |
+
+## 2026-09-18 — Fill-price realism v1 spec freeze (IMP-POST-RTH-CLOSE-08 Lane F)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/research/methodology/fill`, `evidence/historical-research` |
+| **Summary** | Froze bounded fill-price realism experiment separate from Lane E cost sensitivity: six predeclared OHLC fill/MTM arms, locked v3 fill schedule + `cost_slippage_bps=5.0`, no Item 9 simulator semantic change. Independent review `APPROVE_FOR_FROZEN_EXECUTION`; historical execution recorded in harness entry (`6A66AE5C…`). |
+| **Key files** | `docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md`; `evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/*` |
+| **Tests** | `python` canonical hash verify for `EXPERIMENT_HASH` `C4FCD3AB…`; harness tests in follow-up entry |
+| **Related** | `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1`; v3 hash `81EFC1B1…`; worktree `.worktrees/lane-f-fill-realism` |
+| **Notes** | `SPEC_BUNDLE_SHA256=bcf758df…`; numbers frozen — integration updates status text only. |
 
 ## 2026-09-18 — Cost sensitivity v4 review follow-up (Lane E readiness)
 
@@ -57,7 +81,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Addressed independent review `65cedf09` REQUEST_CHANGES: added `execution_status_v1.json` (post-exec gates without rewriting pre-registration); refreshed `lane_c_readiness_v1.json`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, and Lane C tests for `EXECUTED_BOUNDED_HISTORICAL_OBSERVATION` with receipt pointers. No re-run; same `pack_run_id` `1DEF586AD729B270E20814B03606A718`. |
 | **Key files** | `execution_status_v1.json`, `lane_c_readiness_v1.json`, `test_simulator_experiment_specs_lane_c_v1.py`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md` |
 | **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1 tests.platform.test_historical_cost_sensitivity_v4_prep` — OK (8) |
-| **Related** | Review `65cedf09`; branch `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` |
+| **Related** | Review `65cedf09`; merged #284 @ `7b5e4be9` |
 | **Notes** | `pre_registered_methodology_v1.json` remains pre-exec artifact (`executed=false`). |
 
 ## 2026-09-18 — Cost sensitivity v4 execution (IMP-POST-RTH-CLOSE-08 Lane E)
@@ -69,7 +93,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Confirmed Lane C frozen `pre_registered_methodology_v1.json`; promoted v4 `frozen_experiment_definition.json` (`EXPERIMENT_HASH` `30FB6972…`); executed pre-registered 7-point `cost_slippage_bps` grid on pinned OpenD HIST-DEV-AAPL corpus with v3-locked baselines/splits. All fill/gross invariants held; `bps=5.0` replicates v3 validate economics; contamination PASS. V3 receipts untouched. |
 | **Key files** | `cost_sensitivity_v4.py`, `historical_cost_sensitivity_v4_cli.py`, `evidence/.../imp-simulator-cost-sensitivity-v4/*` |
 | **Tests** | `unittest tests.platform.test_historical_cost_sensitivity_v4_prep tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (6) |
-| **Related** | `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`; worktree `.worktrees/lane-e-cost-v4` |
+| **Related** | `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`; merged #284 |
 | **Notes** | `pack_run_id` `1DEF586AD729B270E20814B03606A718`; authority `HISTORICAL_DEVELOPMENT` / `BOUNDED_HISTORICAL_OBSERVATION` only. |
 
 ## 2026-09-18 — Simulator experiment specs Lane C (cost / fill / drawdown review)
@@ -78,10 +102,10 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/engineering`, `evidence/historical-research`, `tests/platform` |
-| **Summary** | Frozen methodology for cost v4 and fill realism; consolidated Lane C readiness in `imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` (supersedes standalone `research/simulator-experiment-specs-sep18` landing). Cost v4 **EXECUTED**; drawdown wiring merged #283; fill realism **HELD** pending execution branch. |
+| **Summary** | Frozen methodology for cost v4 and fill realism; consolidated Lane C readiness in `imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` (supersedes standalone `research/simulator-experiment-specs-sep18` landing). Cost v4 **EXECUTED** (#284); drawdown **merged** (#283); fill realism **EXECUTED** on branch pending merge. |
 | **Key files** | `docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, `IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`, `IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md`; `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
 | **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` (3 tests, pass) |
-| **Related** | Lane E v3 hypothesis queue; drawdown #283; cost v4 @ `7b5e4be9` |
+| **Related** | Lane E v3 hypothesis queue; drawdown #283; cost #284; fill realism branch |
 | **Notes** | No v3 rerun; no PROGRAM_STATUS edit on this branch. |
 
 ## 2026-09-18 — Simulator drawdown wiring v1 (Lane E)
