@@ -36,18 +36,6 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `tests` |
-| **Summary** | Isolated process-environment leaks so unit tests no longer leave `IMP_FINVIZ_CAPTURE_DIR`, `IMP_PERSIST_STATE`, or `IMP_PAPER_EXECUTION` set for later cases, and stopped pointing Finviz capture roots into the tree. |
-| **Key files** | `tests/platform/test_discovery_p33.py`; `tests/finviz/test_finviz_provider.py`; `tests/intelligence/test_ftep_campaign_status.py`; `tests/intelligence/test_build01_22_lifecycle.py`; `tests/intelligence/test_build01_23_lifecycle.py`; `tests/intelligence/test_build01_24_lifecycle.py`; `tests/intelligence/test_paper_execution_qualification.py`; `tests/intelligence/test_paper_execution_governance.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/trading_correctness/test_preview_binding.py`; `tests/validation/test_process_env_isolation.py` |
-| **Tests** | `python -m unittest` on changed modules **101 passed**; `python tools/imp.py validate changed` **3336 passed**, 31 skipped, 0 fail |
-| **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
-| **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
-
 ## 2026-09-19 — Weekend Lane H high-value testing coverage
 
 | Field | Value |
@@ -60,17 +48,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
 
-## 2026-09-19 — Lane J Lab honesty refinement
+## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
-| **Area** | `ui/lab`, `docs/ui-redesign-v2` |
-| **Summary** | Made Lab a clearer inspectable research/validation workbench: experiment/run IDs stay UNKNOWN, strategy identity and dataset provenance are first-class, recorded parameters and evidence lineage are visible, methodological warnings and a test-vs-forward-test map are explicit, and cost/fill assumptions no longer treat `fill_audit.status` as fill realism. No Lab mutations, no evidence-class upgrades. |
-| **Key files** | Created: `ui/src/components/lab-shared/LabFactGrid.tsx`. Modified: `ui/src/components/lab-shared/{labPresentation.ts,LabOverviewSection.tsx,LabValidationSection.tsx,LabSimulationSection.tsx,lab.css}`, `ui/src/components/research-shared/simulationHarnessMetrics.ts`, matching tests, `docs/ui-redesign-v2/lab-contract-map.md`. |
-| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
-| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
-| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
+| **Area** | `tests` |
+| **Summary** | Isolated process-environment leaks so unit tests no longer leave `IMP_FINVIZ_CAPTURE_DIR`, `IMP_PERSIST_STATE`, or `IMP_PAPER_EXECUTION` set for later cases, and stopped pointing Finviz capture roots into the tree. |
+| **Key files** | `tests/platform/test_discovery_p33.py`; `tests/finviz/test_finviz_provider.py`; `tests/intelligence/test_ftep_campaign_status.py`; `tests/intelligence/test_build01_22_lifecycle.py`; `tests/intelligence/test_build01_23_lifecycle.py`; `tests/intelligence/test_build01_24_lifecycle.py`; `tests/intelligence/test_paper_execution_qualification.py`; `tests/intelligence/test_paper_execution_governance.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/trading_correctness/test_preview_binding.py`; `tests/validation/test_process_env_isolation.py` |
+| **Tests** | `python -m unittest` on changed modules **101 passed**; `python tools/imp.py validate changed` **3336 passed**, 31 skipped, 0 fail |
+| **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
+| **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
 
 ## 2026-09-18 — Weekend Wave A Lane D: expected-cycle / log-gap observability hardening
 
@@ -83,6 +71,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `PYTHONPATH=src` + IMP `.venv`: `python -m unittest tests.platform.test_artifact_path_resolver tests.platform.test_runtime_resilience_diagnostic tests.platform.test_operator_diagnostics_snapshot` — **26 OK** (1 skipped) |
 | **Related** | [#291](https://github.com/AdamEddahmouni/market-trading-platform/pull/291); Weekend Wave A Lane D |
 | **Notes** | Did not touch `PROGRAM_STATUS` / `$rcpt` docs (Lane A) or Operator Control UI (Lane B). Receipt-dir redaction left to Lane A. Truncated tails report `PARTIAL_TAIL` / `UNKNOWN` recovery rather than claiming a full cycle. |
+
+## 2026-09-19 — Lane J Lab honesty refinement
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab`, `docs/ui-redesign-v2` |
+| **Summary** | Made Lab a clearer inspectable research/validation workbench: experiment/run IDs stay UNKNOWN, strategy identity and dataset provenance are first-class, recorded parameters and evidence lineage are visible, methodological warnings and a test-vs-forward-test map are explicit, and cost/fill assumptions no longer treat `fill_audit.status` as fill realism. No Lab mutations, no evidence-class upgrades. |
+| **Key files** | Created: `ui/src/components/lab-shared/LabFactGrid.tsx`. Modified: `ui/src/components/lab-shared/{labPresentation.ts,LabOverviewSection.tsx,LabValidationSection.tsx,LabSimulationSection.tsx,lab.css}`, `ui/src/components/research-shared/simulationHarnessMetrics.ts`, matching tests, `docs/ui-redesign-v2/lab-contract-map.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
 
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
