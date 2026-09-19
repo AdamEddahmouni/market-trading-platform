@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Added [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md) so Monday 2026-09-21 Item 9 Mode B is mechanical: frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7`, read-only preflight, `$rcpt` corpus-status, Live OFF, `121031` backfill forbidden, 2/3 IDLE not DEGRADED, READY_TO_COLLECT vs wait. Points at PROGRAM_STATUS for mutable `origin/main`. Does **not** start `--poll`, calibrate, run Full30, enable Live, or merge #222. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; pointer in `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/README.md`; this log |
+| **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
+| **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
+| **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
+
 ## 2026-09-18 — Weekend Lane C UI regression fixes
 
 | Field | Value |

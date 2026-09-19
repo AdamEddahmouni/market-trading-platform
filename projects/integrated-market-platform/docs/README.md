@@ -121,6 +121,7 @@ it in the authoritative doc — do not silently choose.
 | Configuration / env vars | [CONFIGURATION.md](engineering/CONFIGURATION.md) |
 | State path / worktree `.local` convention | [STATE_PATH_OPERATOR_CONVENTION.md](engineering/STATE_PATH_OPERATOR_CONVENTION.md) |
 | Provider readiness | [PROVIDER_READINESS.md](engineering/PROVIDER_READINESS.md) |
+| Monday 2026-09-21 Item 9 preflight (no collection) | [MONDAY_ITEM9_PREFLIGHT.md](engineering/MONDAY_ITEM9_PREFLIGHT.md) |
 | Operator probe runbook (FTEP-V1) | [OPERATOR_PROBE_RUNBOOK.md](engineering/OPERATOR_PROBE_RUNBOOK.md) |
 | Performance & bundle budget | [PERFORMANCE.md](engineering/PERFORMANCE.md) |
 | Accessibility | [ACCESSIBILITY.md](engineering/ACCESSIBILITY.md) |
