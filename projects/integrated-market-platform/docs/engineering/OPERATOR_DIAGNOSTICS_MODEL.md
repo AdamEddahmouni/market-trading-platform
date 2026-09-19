@@ -73,6 +73,8 @@ Observed diagnostic gaps during the Sep 18 engineering window (treat `121031` as
 
 This model elevates those failures into `severity`, `human_summary`, and `operator_questions` without mutating receipts or restarting collectors.
 
+`sections.runtime.item9_corpus_status.progress_truth` is calendar/methodology state: **`2/3` → `IDLE`** (not platform `DEGRADED`); **`3/3` → `HEALTHY`** for the distinct-RTH-date floor only (still **not** `CALIBRATED`). Operator-facing `receipt_dir` and host-absolute filesystem paths are redacted or normalized to repo-relative / `.imp-actual-01-phase-d/…` form.
+
 ## Lane boundaries
 
 | Lane | Owns | Lane C does not edit |
