@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Control optionally consumes operator_truth for Item 9 IDLE
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Control now reads optional `diagnostics.operator_truth` (or `sections.operator_truth`) for Item 9 IDLE vs DEGRADED when the field is present, matching the `operatorTruth.ts` shape from #298 without requiring that PR. Missing field keeps local mapping. Item 9 `2/3` stays IDLE (never DEGRADED). Live OFF stays POLICY. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` unchanged. |
+| **Key files** | `ui/src/components/control/consumeOperatorTruth.ts`, `operatorDiagnosticsPresentation.ts`, `OperatorControlCenterPage.test.tsx`; `ui/src/api/schemas.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `cd ui && npm test --` consumeOperatorTruth / operatorDiagnosticsPresentation / OperatorControlCenterPage / schemas.test **45 passed**; `npm run typecheck` pass |
+| **Related** | [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) merged Control UX; [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) still open for backend `operator_truth` |
+| **Notes** | Isolated worktree `ui/weekend-operator-truth-consume` from `origin/main` `58e56ca9`. Does not import `ui/src/api/operatorTruth.ts`. Does not remap live-execution from backend BLOCKED. No merge. |
+
 ## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
 
 | Field | Value |

@@ -71,6 +71,18 @@ export const OperatorLifecycleStatusSchema = z.object({
   update: UpdateStatusSchema.optional(),
 });
 
+/**
+ * Optional backend-owned operator truth (`operator-truth/1.0.0` when Lane E / #298 lands).
+ * Kept loose so Control can consume `by_id` without requiring that module.
+ */
+export const OperatorTruthSectionSchema = z
+  .object({
+    schema_version: z.string().optional(),
+    by_id: z.record(z.string(), z.string()).optional(),
+    rows: z.array(z.unknown()).optional(),
+  })
+  .passthrough();
+
 /** Composed operator health snapshot (`GET /operator/diagnostics`). */
 export const OperatorDiagnosticsSchema = z.object({
   schema_version: z.string(),
@@ -78,6 +90,7 @@ export const OperatorDiagnosticsSchema = z.object({
   severity: z.string(),
   secrets_included: z.literal(false).optional(),
   operator_questions: z.record(z.string(), z.unknown()).optional(),
+  operator_truth: OperatorTruthSectionSchema.optional(),
   sections: z.record(z.string(), z.unknown()),
   human_summary: z.array(z.string()).optional(),
   sources_composed: z.array(z.string()).optional(),
@@ -134,6 +147,7 @@ export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
 export type OperatorLifecycleStatus = z.infer<typeof OperatorLifecycleStatusSchema>;
 export type OperatorDiagnostics = z.infer<typeof OperatorDiagnosticsSchema>;
+export type OperatorTruthSection = z.infer<typeof OperatorTruthSectionSchema>;
 
 export const AttentionReasonSchema = z.object({
   code: z.string(),

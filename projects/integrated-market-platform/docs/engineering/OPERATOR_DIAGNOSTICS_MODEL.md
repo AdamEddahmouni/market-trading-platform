@@ -87,6 +87,7 @@ This model elevates those failures into `severity`, `human_summary`, and `operat
 2. Lane C wires probe into `build_operator_diagnostics_snapshot` (keep default `NOT_RUN` in tests).
 3. Lane B adds `expected_cycle_failure` / `recovery_observed` tokens to lifecycle or heartbeat receipts.
 4. Lane E consumes `GET /operator/diagnostics` on Control (optional `OperatorDiagnosticsSchema` in `schemas.ts`).
+5. Control consumes optional `operator_truth` (or `sections.operator_truth`) for Item 9 IDLE vs DEGRADED when present; otherwise it keeps local mapping. Live OFF remains Control POLICY — not remapped from backend `live-execution`. Partial Item 9 corpus (2/3) stays IDLE, not DEGRADED. `NOT CALIBRATED` / `CALIBRATION FORBIDDEN` stay presentation tokens.
 
 ## Evidence integrity
 
