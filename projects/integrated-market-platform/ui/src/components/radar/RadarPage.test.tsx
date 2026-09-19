@@ -275,6 +275,17 @@ describe("RadarPage opportunities tab", () => {
     expect(banner).toHaveTextContent(/Live execution stays OFF/i);
     expect(banner).not.toHaveTextContent(/3\/3/);
     expect(banner).not.toHaveTextContent(/CALIBRATED/);
+    const brief = screen.getByTestId("imp-radar-operator-brief");
+    expect(brief).toHaveTextContent("How fresh?");
+    expect(brief).toHaveTextContent(/NOT_APPLICABLE/);
+    expect(brief).toHaveTextContent("How many ranked rows were withheld?");
+    expect(brief).toHaveTextContent(/withheld 3 ranked row/);
+    expect(brief).toHaveTextContent("What would invalidate it?");
+    expect(brief).toHaveTextContent(/missing live receive clock/i);
+    expect(brief).toHaveTextContent("Why might action be refused?");
+    expect(brief).toHaveTextContent(/never grants live execution/i);
+    expect(brief).not.toHaveTextContent(/3\/3/);
+    expect(brief).not.toHaveTextContent(/CALIBRATED/);
   });
 
   it("renders the live by-design empty state when the feed is unavailable", () => {

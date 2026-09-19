@@ -5,7 +5,10 @@ import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import type { Mode } from "../mode-session/types";
 import { humanizeUnreadyReason } from "./opportunityPresentation";
-import { liveFeedClockHonesty } from "./opportunityOperatorBrief";
+import {
+  buildLiveWithheldOperatorBrief,
+  liveFeedClockHonesty,
+} from "./opportunityOperatorBrief";
 import { matchKnownDataIncident } from "../operator-shared/knownDataIncidents";
 import { PrecisionFailureBanner } from "../imp-ui/PrecisionFailureBanner";
 
@@ -22,6 +25,8 @@ export type OpportunityFeedStateProps = {
   emptyReason?: string;
   /** Ranked rows withheld for missing live receive clock (optional honesty). */
   withheldRankedCount?: number;
+  /** Backend book honesty token when ranked live rows are withheld. */
+  bookHonesty?: string;
   /** Rendered only when the queue is ready with items. */
   children: ReactNode;
 };
@@ -47,6 +52,7 @@ export function OpportunityFeedState({
   onRetry,
   emptyReason = "An empty queue is valid: nothing has been minted for the current coverage.",
   withheldRankedCount,
+  bookHonesty,
   children,
 }: OpportunityFeedStateProps) {
   if (state === "loading") {
@@ -81,21 +87,48 @@ export function OpportunityFeedState({
       params: { reason: reason ?? "" },
     });
     const clockHonesty = liveFeedClockHonesty({ unreadyReason, withheldRankedCount });
+    const withheldBrief = buildLiveWithheldOperatorBrief({
+      unreadyReason,
+      withheldRankedCount,
+      bookHonesty,
+    });
     return (
-      <AttentionBanner
-        tone={unready.tone}
-        affects={unready.affects}
-        action={{ label: "Open Control", href: controlHref(nextAction) }}
-      >
-        {unready.sentence ?? unready.label}
-        {clockHonesty}
-        {unreadyReason ? (
-          <span className="imp-radar-muted" title="Raw reason code">
-            {" "}
-            ({unreadyReason})
-          </span>
+      <div className="imp-opportunity-feed-unready">
+        <AttentionBanner
+          tone={unready.tone}
+          affects={unready.affects}
+          action={{ label: "Open Control", href: controlHref(nextAction) }}
+        >
+          {unready.sentence ?? unready.label}
+          {clockHonesty}
+          {unreadyReason ? (
+            <span className="imp-radar-muted" title="Raw reason code">
+              {" "}
+              ({unreadyReason})
+            </span>
+          ) : null}
+        </AttentionBanner>
+        {withheldBrief ? (
+          <section
+            className="imp-radar-operator-brief"
+            aria-label="Operator questions"
+            data-testid="imp-radar-operator-brief"
+          >
+            <h4 className="imp-radar-subhead">Operator questions</h4>
+            <dl className="imp-radar-brief-grid">
+              {withheldBrief.map((item) => (
+                <div key={item.question} className="imp-radar-brief-row" data-honesty={item.honesty}>
+                  <dt>{item.question}</dt>
+                  <dd>
+                    {item.answer}
+                    <span className="imp-radar-brief-honesty">{item.honesty}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
         ) : null}
-      </AttentionBanner>
+      </div>
     );
   }
 

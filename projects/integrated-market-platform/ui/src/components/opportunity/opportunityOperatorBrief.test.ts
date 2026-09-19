@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildLiveWithheldOperatorBrief,
   buildOpportunityOperatorBrief,
   collectOpportunityConflicts,
   collectOpportunityInvalidationLines,
@@ -170,6 +171,34 @@ describe("opportunityOperatorBrief", () => {
     expect(liveFeedClockHonesty({ unreadyReason: "LIVE_AS_OF_UNAVAILABLE", withheldRankedCount: 4 })).toMatch(
       /not Item 9 calibration/i,
     );
+  });
+
+  it("answers withheld-live operator questions without a ranked row", () => {
+    expect(buildLiveWithheldOperatorBrief({ unreadyReason: "PROVIDER_WARMUP" })).toBeNull();
+    const brief = buildLiveWithheldOperatorBrief({
+      unreadyReason: "LIVE_AS_OF_UNAVAILABLE",
+      withheldRankedCount: 3,
+      bookHonesty: "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK",
+    });
+    expect(brief).not.toBeNull();
+    const byQuestion = Object.fromEntries((brief ?? []).map((row) => [row.question, row]));
+    expect(byQuestion["How fresh?"]?.answer).toMatch(/NOT_APPLICABLE/);
+    expect(byQuestion["How fresh?"]?.answer).not.toMatch(/Fresh(?!ness)/);
+    expect(byQuestion["How many ranked rows were withheld?"]?.answer).toMatch(/withheld 3 ranked row/);
+    expect(byQuestion["How many ranked rows were withheld?"]?.honesty).toBe("OBSERVED");
+    expect(byQuestion["What would invalidate it?"]?.answer).toMatch(/missing live receive clock/i);
+    expect(byQuestion["What would invalidate it?"]?.answer).not.toMatch(/calibrat/i);
+    expect(byQuestion["Why might action be refused?"]?.answer).toMatch(/Live execution stays OFF/i);
+    expect(byQuestion["Why might action be refused?"]?.answer).toMatch(/never grants live execution/i);
+    expect(JSON.stringify(brief)).not.toMatch(/3\/3/);
+    expect(JSON.stringify(brief)).not.toMatch(/place a (live|real-money) /i);
+
+    const unknownCount = buildLiveWithheldOperatorBrief({
+      unreadyReason: "LIVE_AS_OF_UNAVAILABLE",
+    });
+    const withheld = unknownCount?.find((row) => row.question === "How many ranked rows were withheld?");
+    expect(withheld?.honesty).toBe("UNKNOWN");
+    expect(withheld?.answer).toMatch(/not attached as a positive count/i);
   });
 
   it("labels agent contradiction as inferred conflict, not an observation", () => {

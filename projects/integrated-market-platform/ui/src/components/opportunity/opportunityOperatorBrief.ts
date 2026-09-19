@@ -163,6 +163,59 @@ export function liveFeedClockHonesty(options: {
   return `${withheld} created_at is not that clock. This is not Item 9 calibration. Live execution stays OFF.`;
 }
 
+/**
+ * Operator questions for a withheld live book. Ranked rows are not rendered, so
+ * the per-row brief never appears — this is the only honest surface.
+ */
+export function buildLiveWithheldOperatorBrief(options: {
+  unreadyReason?: string;
+  withheldRankedCount?: number;
+  bookHonesty?: string;
+}): OperatorBriefRow[] | null {
+  if (options.unreadyReason !== "LIVE_AS_OF_UNAVAILABLE") return null;
+  const withheldCount =
+    typeof options.withheldRankedCount === "number" ? options.withheldRankedCount : null;
+  const bookHonesty = options.bookHonesty?.trim();
+  const withheldParts: string[] = [];
+  if (withheldCount != null && withheldCount > 0) {
+    withheldParts.push(
+      `IMP withheld ${withheldCount} ranked row(s) because no live receive clock is attached.`,
+    );
+  } else {
+    withheldParts.push(
+      "Ranked live rows stay withheld until a live receive clock is attached. withheld_ranked_count is not attached as a positive count.",
+    );
+  }
+  withheldParts.push("created_at is not that clock.");
+  if (bookHonesty) withheldParts.push(`Book honesty ${humanizeEnum(bookHonesty)}.`);
+
+  return [
+    {
+      question: "How fresh?",
+      answer:
+        "NOT_APPLICABLE — live receive clock unavailable. created_at is not a live clock. Do not read this as FRESH live data.",
+      honesty: "OBSERVED",
+    },
+    {
+      question: "How many ranked rows were withheld?",
+      answer: withheldParts.join(" "),
+      honesty: withheldCount != null && withheldCount > 0 ? "OBSERVED" : "UNKNOWN",
+    },
+    {
+      question: "What would invalidate it?",
+      answer:
+        "A missing live receive clock already withholds ranked presentation. Treating persist-minted created_at as current would be invalid. Restoring a live receive clock is required before ranked rows can be shown; it would not grant execution.",
+      honesty: "DERIVED",
+    },
+    {
+      question: "Why might action be refused?",
+      answer:
+        "Ranked live rows are withheld, not executable. Radar never grants live execution. Live execution stays OFF. Visibility is not actionability.",
+      honesty: "DERIVED",
+    },
+  ];
+}
+
 export function opportunityFreshnessQueueLabel(
   row: OpportunityReviewRow,
   evidence?: OpportunityEvidenceResponse | null,
@@ -366,6 +419,15 @@ export function buildOpportunityOperatorBrief(
   }
   if (bookHonesty) whyParts.push(humanizeEnum(bookHonesty));
   const why = whyParts.length ? whyParts.join(". ") : "UNKNOWN — no promotion reason attached";
+  const whyHonesty: OperatorBriefHonesty =
+    isPresent(row.evidence_promotion_reason) ||
+    isPresent(evidence?.evidence_promotion_reason) ||
+    Boolean(row.ranking_vector?.basis) ||
+    unreadyReason === "LIVE_AS_OF_UNAVAILABLE" ||
+    (typeof withheldRankedCount === "number" && withheldRankedCount > 0) ||
+    Boolean(bookHonesty)
+      ? "DERIVED"
+      : "UNKNOWN";
   const next = resolveSemanticState(
     "research",
     isOpportunityIneligible(row) ? "STOP" : row.next_safe_action,
@@ -406,12 +468,7 @@ export function buildOpportunityOperatorBrief(
     {
       question: "Why is IMP showing this?",
       answer: `${why}. ${evidenceInputsSentence(row)}.`,
-      honesty:
-        isPresent(row.evidence_promotion_reason) ||
-        isPresent(evidence?.evidence_promotion_reason) ||
-        Boolean(row.ranking_vector?.basis)
-          ? "DERIVED"
-          : "UNKNOWN",
+      honesty: whyHonesty,
     },
     {
       question: "How fresh?",
