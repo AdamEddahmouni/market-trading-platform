@@ -133,6 +133,10 @@ Advanced disclosure for parity). Rules:
 - Every state renders through `resolveSemanticState` (`platform` domain covers
   lifecycle/readiness/check/update values); unknown or failed endpoints render
   honestly (neutral "Unavailable" + per-section retry), never as healthy.
+- Provider `transport_state: UNAVAILABLE` is Control transport reachability
+  (enabled but unreachable), not the shared `providerHealth` channel copy
+  ("not in your current data subscription"). Entitlements stay on
+  `ENTITLEMENT_MISSING`. Presentation: `presentProviderTransport`.
 - Sections degrade independently — one failing endpoint never collapses the page.
 - Sections carry stable anchors (`controlPresentation.CONTROL_SECTIONS`);
   Command/StatusBar degraded-state links deep-link to `/control#control-feed` /

@@ -314,6 +314,11 @@ describe("OperatorControlCenterPage", () => {
     expect(screen.getByText("Primary live market data (OpenD)")).toBeInTheDocument();
     expect(screen.getByText(/Live quotes stop updating/)).toBeInTheDocument();
     expect(screen.getByText(/Next: Start OpenD/)).toBeInTheDocument();
+    expect(screen.getByText("Transport unavailable")).toBeInTheDocument();
+    expect(
+      screen.getByText(/configured to run, but its transport cannot be reached/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/current data subscription/i)).not.toBeInTheDocument();
     // The disabled provider is not presented as urgent work.
     expect(screen.queryByText("Finviz discovery needs attention")).not.toBeInTheDocument();
   });
