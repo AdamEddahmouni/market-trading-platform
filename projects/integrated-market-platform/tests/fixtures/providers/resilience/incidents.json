@@ -1,0 +1,61 @@
+{
+  "artifact_kind": "imp_provider_resilience_fixtures",
+  "evidence_class": "SOFTWARE",
+  "live_execution": "OFF",
+  "item9_mode": "IDLE",
+  "item9_calibration": "NOT_CALIBRATED",
+  "scenarios": [
+    {
+      "id": "opend_unavailable",
+      "scenario": "opend_unavailable",
+      "promote_overlay_to_l1": false
+    },
+    {
+      "id": "delayed_data",
+      "scenario": "delayed_data",
+      "primary_available": false,
+      "overlay_available": true
+    },
+    {
+      "id": "partially_stale",
+      "scenario": "partially_stale"
+    },
+    {
+      "id": "source_disagreement",
+      "scenario": "source_disagreement",
+      "primary_last_price": 187.63,
+      "overlay_last_price": 191.2,
+      "tolerance": 0.01
+    },
+    {
+      "id": "reconnect",
+      "scenario": "reconnect"
+    },
+    {
+      "id": "timeout",
+      "scenario": "timeout"
+    },
+    {
+      "id": "empty_payload",
+      "scenario": "empty_payload"
+    },
+    {
+      "id": "malformed_response",
+      "scenario": "malformed_response"
+    },
+    {
+      "id": "temporary_network_failure",
+      "scenario": "temporary_network_failure"
+    },
+    {
+      "id": "restart_recovery",
+      "scenario": "restart_recovery"
+    },
+    {
+      "id": "fallback_blocked",
+      "scenario": "fallback_blocked",
+      "promote_overlay_to_l1": true,
+      "overlay_available": true
+    }
+  ]
+}
