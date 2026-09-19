@@ -128,18 +128,21 @@ class ExperimentCardCodingTests(unittest.TestCase):
 
     def test_card_json_is_canonical_lf(self) -> None:
         card = build_card()
-        path = Path(tempfile.mkdtemp()) / "card.json"
-        from market_platform_foundation.canonical import write_canonical_json
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "card.json"
+            from market_platform_foundation.canonical import write_canonical_json
 
-        write_canonical_json(path, card.to_dict())
-        raw = path.read_bytes()
-        self.assertNotIn(b"\r\n", raw)
-        self.assertEqual(json.loads(raw), card.to_dict())
+            write_canonical_json(path, card.to_dict())
+            raw = path.read_bytes()
+            self.assertNotIn(b"\r\n", raw)
+            self.assertEqual(json.loads(raw), card.to_dict())
 
 
 class ExperimentCardRegistryTests(unittest.TestCase):
     def _registry(self) -> ExperimentCardRegistry:
-        return ExperimentCardRegistry(Path(tempfile.mkdtemp()))
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(tmp.cleanup)
+        return ExperimentCardRegistry(Path(tmp.name))
 
     def test_register_load_round_trip(self) -> None:
         reg = self._registry()

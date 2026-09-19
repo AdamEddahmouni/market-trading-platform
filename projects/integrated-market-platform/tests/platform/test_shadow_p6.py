@@ -73,9 +73,10 @@ def _prediction(run_id: str, *, probability: float, instrument: str = "BIYA", se
     )
 
 
-def _open_store(name: str) -> tuple[ShadowStore, Path]:
-    tmp = tempfile.mkdtemp(prefix="shadow-p6-")
-    path = Path(tmp) / name
+def _open_store(case: unittest.TestCase, name: str) -> tuple[ShadowStore, Path]:
+    tmp = tempfile.TemporaryDirectory(prefix="shadow-p6-", ignore_cleanup_errors=True)
+    case.addCleanup(tmp.cleanup)
+    path = Path(tmp.name) / name
     return ShadowStore(path), path
 
 
@@ -123,7 +124,7 @@ class ImmutabilityTests(unittest.TestCase):
             verify_prediction(tampered)
 
     def test_store_rejects_tampered_row_on_read(self) -> None:
-        store, _ = _open_store("state.db")
+        store, _ = _open_store(self, "state.db")
         try:
             manifest, inserted = shadow_runs.open_shadow_run(
                 store, **_manifest_kwargs()
@@ -160,7 +161,7 @@ class ImmutabilityTests(unittest.TestCase):
 
 class InsertOnceTests(unittest.TestCase):
     def test_duplicate_prediction_is_noop_returning_existing(self) -> None:
-        store, _ = _open_store("state.db")
+        store, _ = _open_store(self, "state.db")
         try:
             manifest, _ = shadow_runs.open_shadow_run(store, **_manifest_kwargs())
             args = dict(
@@ -182,7 +183,7 @@ class InsertOnceTests(unittest.TestCase):
             store.close()
 
     def test_manifest_insert_once(self) -> None:
-        store, _ = _open_store("state.db")
+        store, _ = _open_store(self, "state.db")
         try:
             args = _manifest_kwargs()
             m1, i1 = shadow_runs.open_shadow_run(store, **args)
@@ -198,7 +199,7 @@ class InsertOnceTests(unittest.TestCase):
 class CausalityEnforcementTests(unittest.TestCase):
     def setUp(self) -> None:
         self.record = _prediction("run-c", probability=0.7)
-        self.store, _ = _open_store("causality.db")
+        self.store, _ = _open_store(self, "causality.db")
         self.addCleanup(self.store.close)
 
     def test_label_time_not_after_decision_refused(self) -> None:
@@ -447,7 +448,7 @@ class RegimeSegmentationTests(unittest.TestCase):
 class OverlaySeparationTests(unittest.TestCase):
     def test_overlay_lives_in_disjoint_namespace(self) -> None:
         record = _prediction("run-o", probability=0.9)
-        store, _ = _open_store("overlay.db")
+        store, _ = _open_store(self, "overlay.db")
         try:
             label = attach_label(
                 store,
@@ -495,45 +496,45 @@ class OverlaySeparationTests(unittest.TestCase):
 
 class RestartSafetyTests(unittest.TestCase):
     def test_reopen_store_continue_appending(self) -> None:
-        tmp = tempfile.mkdtemp(prefix="shadow-p6-restart-")
-        db_path = Path(tmp) / "restart.db"
-        store = ShadowStore(db_path)
-        manifest, _ = shadow_runs.open_shadow_run(store, **_manifest_kwargs())
-        record, _ = shadow_runs.record_prediction(
-            store,
-            manifest,
-            instrument_id="BIYA",
-            decision_time_ns=DECISION_NS,
-            horizon_ns=HORIZON_NS,
-            predicted_probability=0.65,
-            regime_tag="TREND",
-            pit_snapshot_ref="snap-r",
-            created_at_ns=DECISION_NS - 500,
-        )
-        store.close()
-
-        reopened = ShadowStore(db_path)
-        try:
-            self.assertEqual(reopened.counts()["predictions"], 1)
-            stored = reopened.get_prediction(record.prediction_id)
-            assert stored is not None
-            self.assertEqual(stored.predicted_probability, 0.65)
-            # Continue the run after restart: labeling works across reopen.
-            label, inserted = attach_label(
-                reopened,
-                stored,
-                observed_positive=True,
-                label_time_ns=LABEL_TIME_NS,
-                available_time_ns=AVAILABLE_NS,
+        with tempfile.TemporaryDirectory(prefix="shadow-p6-restart-", ignore_cleanup_errors=True) as tmp:
+            db_path = Path(tmp) / "restart.db"
+            store = ShadowStore(db_path)
+            manifest, _ = shadow_runs.open_shadow_run(store, **_manifest_kwargs())
+            record, _ = shadow_runs.record_prediction(
+                store,
+                manifest,
+                instrument_id="BIYA",
+                decision_time_ns=DECISION_NS,
+                horizon_ns=HORIZON_NS,
+                predicted_probability=0.65,
+                regime_tag="TREND",
+                pit_snapshot_ref="snap-r",
+                created_at_ns=DECISION_NS - 500,
             )
-            self.assertTrue(inserted)
-            self.assertEqual(reopened.counts()["labels"], 1)
-            # Manifest survives restart intact (hash verified on read).
-            reread = reopened.get_manifest(manifest.run_id)
-            assert reread is not None
-            self.assertEqual(reread.run_id, manifest.run_id)
-        finally:
-            reopened.close()
+            store.close()
+
+            reopened = ShadowStore(db_path)
+            try:
+                self.assertEqual(reopened.counts()["predictions"], 1)
+                stored = reopened.get_prediction(record.prediction_id)
+                assert stored is not None
+                self.assertEqual(stored.predicted_probability, 0.65)
+                # Continue the run after restart: labeling works across reopen.
+                label, inserted = attach_label(
+                    reopened,
+                    stored,
+                    observed_positive=True,
+                    label_time_ns=LABEL_TIME_NS,
+                    available_time_ns=AVAILABLE_NS,
+                )
+                self.assertTrue(inserted)
+                self.assertEqual(reopened.counts()["labels"], 1)
+                # Manifest survives restart intact (hash verified on read).
+                reread = reopened.get_manifest(manifest.run_id)
+                assert reread is not None
+                self.assertEqual(reread.run_id, manifest.run_id)
+            finally:
+                reopened.close()
 
 
 class DeterminismTests(unittest.TestCase):
@@ -600,14 +601,14 @@ class DeterminismTests(unittest.TestCase):
     def test_two_identical_runs_produce_identical_bytes(self) -> None:
         reports = []
         for index in range(2):
-            _, db_path = _open_store(f"det{index}.db")
+            _, db_path = _open_store(self, f"det{index}.db")
             reports.append(canonical_bytes(self._run_fixture_run(db_path)))
         self.assertEqual(reports[0], reports[1])
 
     def test_different_inputs_change_report_id(self) -> None:
         ids = set()
         for probability in (0.3, 0.4):
-            store, _ = _open_store(f"d{probability}.db")
+            store, _ = _open_store(self, f"d{probability}.db")
             try:
                 manifest, _ = shadow_runs.open_shadow_run(
                     store, **_manifest_kwargs()
