@@ -139,7 +139,7 @@ export function ImpProductChrome({ mode, onSwitchMode, onToggleAssistant, childr
       <button
         type="button"
         className="imp-sidebar-backdrop"
-        aria-hidden={!mobileNavActive}
+        aria-hidden="true"
         tabIndex={-1}
         onClick={() => closeNav(true)}
       />
