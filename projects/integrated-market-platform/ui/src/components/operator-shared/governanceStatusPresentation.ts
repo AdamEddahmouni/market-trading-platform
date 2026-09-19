@@ -10,6 +10,8 @@ import {
 
   formatItem9CorpusProgress,
 
+  mapItem9CorpusProgressTruth,
+
 } from "../control/operatorDiagnosticsPresentation";
 
 
@@ -156,7 +158,13 @@ export function buildGovernanceFacts(input: {
 
       value: corpus.distinctRthDates,
 
-      tone: corpus.distinctRthDates === "NOT_OBSERVED" ? "neutral" : "caution",
+      tone:
+        mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates) ===
+        "IDLE"
+          ? "neutral"
+          : corpus.distinctRthDates === "NOT_OBSERVED"
+            ? "neutral"
+            : "caution",
 
       detail: corpus.receiptScopeNote,
 

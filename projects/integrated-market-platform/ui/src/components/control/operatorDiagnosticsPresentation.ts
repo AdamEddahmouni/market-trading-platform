@@ -98,6 +98,55 @@ export function mapItem9DispositionTruth(disposition: string | undefined): Opera
   return "UNKNOWN";
 }
 
+export function parseItem9SampleGateFraction(
+  distinctRthDates: string,
+): { admitted: number; required: number } | null {
+  const trimmed = distinctRthDates.trim();
+  const match = /^(\d+)\s*\/\s*(\d+)$/.exec(trimmed);
+  if (!match) return null;
+  const admitted = Number(match[1]);
+  const required = Number(match[2]);
+  if (!Number.isFinite(admitted) || !Number.isFinite(required) || required <= 0) return null;
+  return { admitted, required };
+}
+
+/**
+ * Item 9 n/m progress is calendar/methodology state — not platform degradation.
+ * Partial admission (e.g. 2/3) is IDLE; missing corpus is NOT_OBSERVED / UNAVAILABLE.
+ */
+export function mapItem9CorpusProgressTruth(
+  corpusSection: Record<string, unknown> | undefined,
+  distinctRthDates: string,
+): OperatorTruthClass {
+  const availability = String(corpusSection?.availability ?? "NOT_OBSERVED").toUpperCase();
+  if (availability !== "AVAILABLE") {
+    return availability === "UNAVAILABLE" ? "UNAVAILABLE" : "NOT_OBSERVED";
+  }
+
+  const token = distinctRthDates.trim().toUpperCase();
+  if (token === "NOT_OBSERVED" || token === "UNKNOWN" || token === "UNAVAILABLE") {
+    return token === "UNAVAILABLE" ? "UNAVAILABLE" : "NOT_OBSERVED";
+  }
+
+  const fraction = parseItem9SampleGateFraction(distinctRthDates);
+  if (!fraction) return "UNKNOWN";
+
+  if (fraction.admitted === 0) return "NOT_OBSERVED";
+  if (fraction.admitted < fraction.required) return "IDLE";
+  if (fraction.admitted === fraction.required) return "HEALTHY";
+  return "UNKNOWN";
+}
+
+export function item9CorpusProgressIsCalendarIncomplete(
+  diagnostics: OperatorDiagnostics | null | undefined,
+): boolean {
+  const runtime = diagnosticsRuntimeSection(diagnostics);
+  const corpus = formatItem9CorpusProgress(runtime?.item9_corpus_status);
+  return (
+    mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates) === "IDLE"
+  );
+}
+
 export function formatItem9CorpusProgress(
   corpusSection: Record<string, unknown> | undefined,
 ): {
@@ -192,6 +241,10 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
     JSON.stringify(cycle?.missing_receipt_epochs ?? []) + (cycle?.gap_note ?? ""),
   );
 
+  const corpusTruth = mapItem9CorpusProgressTruth(runtime?.item9_corpus_status, corpus.distinctRthDates);
+  const corpusTone: SemanticTone =
+    corpusTruth === "HEALTHY" ? "live" : corpusTruth === "IDLE" ? "neutral" : "caution";
+
   return [
     {
       id: "imp-lifecycle",
@@ -224,9 +277,9 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
     {
       id: "item9-corpus",
       label: "Distinct admitted RTH dates",
-      truth: corpus.distinctRthDates.includes("/") ? "DEGRADED" : "NOT_OBSERVED",
+      truth: corpusTruth,
       detail: `${corpus.distinctRthDates} · ${corpus.calibrationLabel} · ${corpus.calibrationForbidden}. ${corpus.receiptScopeNote}`,
-      tone: "caution",
+      tone: corpusTone,
     },
     {
       id: "collector",

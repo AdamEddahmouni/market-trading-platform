@@ -3,6 +3,7 @@ import {
   buildOperatorTruthRows,
   formatItem9CorpusProgress,
   humanDiagnosticsHeadline,
+  mapItem9CorpusProgressTruth,
 } from "./operatorDiagnosticsPresentation";
 import type { OperatorDiagnostics } from "../../api/schemas";
 
@@ -61,5 +62,22 @@ describe("operatorDiagnosticsPresentation", () => {
     const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
     expect(rows.find((row) => row.id === "item9-preflight")?.truth).toBe("BLOCKED");
     expect(rows.find((row) => row.id === "live-execution")?.detail).toMatch(/Live OFF/);
+  });
+
+  it("maps partial Item 9 corpus progress (2/3) to IDLE, not DEGRADED", () => {
+    const runtime = SAMPLE_DIAGNOSTICS.sections.runtime as Record<string, unknown>;
+    const corpusSection = runtime.item9_corpus_status as Record<string, unknown>;
+    expect(mapItem9CorpusProgressTruth(corpusSection, "2/3")).toBe("IDLE");
+    const rows = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS);
+    const corpusRow = rows.find((row) => row.id === "item9-corpus");
+    expect(corpusRow?.truth).toBe("IDLE");
+    expect(corpusRow?.detail).toMatch(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/);
+    expect(corpusRow?.truth).not.toBe("DEGRADED");
+  });
+
+  it("maps 0/3 corpus progress to NOT_OBSERVED when receipts are missing", () => {
+    const runtime = SAMPLE_DIAGNOSTICS.sections.runtime as Record<string, unknown>;
+    const corpusSection = runtime.item9_corpus_status as Record<string, unknown>;
+    expect(mapItem9CorpusProgressTruth(corpusSection, "0/3")).toBe("NOT_OBSERVED");
   });
 });

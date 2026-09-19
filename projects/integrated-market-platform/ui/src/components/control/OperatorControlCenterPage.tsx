@@ -34,6 +34,9 @@ import {
   diagnosticsLifecycle,
   diagnosticsOpportunitySurface,
   diagnosticsReadiness,
+  diagnosticsRuntimeSection,
+  formatItem9CorpusProgress,
+  item9CorpusProgressIsCalendarIncomplete,
 } from "./operatorDiagnosticsPresentation";
 
 type Props = {
@@ -284,10 +287,20 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </div>
         </dl>
         {allSettled && attentionItems.length === 0 ? (
-          <p className="control-all-clear" role="status">
-            No blocking issues detected across readiness, authority, providers, and the opportunity
-            feed.
-          </p>
+          <>
+            <p className="control-all-clear" role="status">
+              No blocking issues detected across readiness, authority, providers, and the opportunity
+              feed.
+            </p>
+            {item9CorpusProgressIsCalendarIncomplete(diagnostics) ? (
+              <p className="control-muted" role="note">
+                Item 9 prospective sample gate is calendar-incomplete (
+                {formatItem9CorpusProgress(diagnosticsRuntimeSection(diagnostics)?.item9_corpus_status)
+                  .distinctRthDates}
+                ) — methodology blocked, not a platform failure. See System status.
+              </p>
+            ) : null}
+          </>
         ) : null}
         <div className="control-hero-actions" role="group" aria-label="Platform actions">
           <button

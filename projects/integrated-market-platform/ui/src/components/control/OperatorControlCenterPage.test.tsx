@@ -255,6 +255,7 @@ describe("OperatorControlCenterPage", () => {
       await screen.findByRole("heading", { name: "Platform control" }),
     ).toBeInTheDocument();
     expect(await screen.findByText(/No blocking issues detected/)).toBeInTheDocument();
+    expect(await screen.findByText(/calendar-incomplete \(2\/3\)/)).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Needs your attention" })).not.toBeInTheDocument();
     // Distinct real states, not a composite score.
     expect(screen.getByText("Setup readiness")).toBeInTheDocument();
@@ -497,5 +498,22 @@ describe("OperatorControlCenterPage", () => {
     ).toHaveAttribute("href", "/diagnostics/provider");
     expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", "/settings");
     expect(screen.getByRole("link", { name: "Open Radar" })).toHaveAttribute("href", "/radar");
+  });
+
+  it("shows Item 9 2/3 as calendar IDLE in system status with Live OFF and calibration forbidden", async () => {
+    stubFetch();
+    renderControl("DEMO");
+
+    const systemStatus = document.getElementById(CONTROL_SECTIONS.systemStatus);
+    expect(systemStatus).toBeTruthy();
+    await waitFor(() =>
+      expect(systemStatus).toHaveTextContent(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/),
+    );
+    expect(systemStatus).toHaveTextContent(/Live OFF/);
+    const corpusRow = within(systemStatus as HTMLElement)
+      .getByText("Distinct admitted RTH dates")
+      .closest("li");
+    expect(corpusRow).toHaveAttribute("data-truth", "IDLE");
+    expect(corpusRow).not.toHaveAttribute("data-truth", "DEGRADED");
   });
 });
