@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — NavShell sidebar flex after dead horizontal CSS removal
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell` |
+| **Summary** | `#126` layout-prop and top-bar `.nav-shell` deletions were already on main via `7855bd84`. Restored `display: flex` on `.nav-shell-sidebar` so leftover flex properties apply after that deletion, and locked sidebar-only chrome in Vitest. Did not merge `#126` or touch Radar files. |
+| **Key files** | `ui/src/styles/imp-product.css`; `ui/src/components/NavShell.test.tsx`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm run typecheck` pass; `node scripts/run-vitest.mjs src/components/NavShell.test.tsx` — 6 passed |
+| **Related** | Stale PR `#126` (left open, not merged); `7855bd84` hygiene reimplementation |
+| **Notes** | Discover remains investigation-only. No Radar overlap (`RadarQueueTable`, `RadarOpportunitiesPanel`, `opportunityOperatorBrief`, `radar.css` untouched). |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `d27fb164` after #349
 
 | Field | Value |
