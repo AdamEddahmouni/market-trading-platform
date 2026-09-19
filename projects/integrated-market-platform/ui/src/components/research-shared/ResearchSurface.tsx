@@ -21,9 +21,9 @@ export function ResearchSurface({ mode, section }: Props) {
     <>
       <LinkTabs label="Research sections" items={[...RESEARCH_SECTION_TABS]} />
       {section === "overview" ? <ResearchOverviewSection mode={mode} /> : null}
-      {section === "evidence" ? <ResearchEvidenceSection /> : null}
+      {section === "evidence" ? <ResearchEvidenceSection mode={mode} /> : null}
       {section === "validation" ? <ResearchValidationSection mode={mode} /> : null}
-      {section === "simulation" ? <ResearchSimulationSection /> : null}
+      {section === "simulation" ? <ResearchSimulationSection mode={mode} /> : null}
     </>
   );
 }

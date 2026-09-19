@@ -12,7 +12,7 @@ export function DemoResearchPage({ section }: Props) {
       <PageHeader
         eyebrow="Demo · Historical research"
         title="Research"
-        subtitle="What the replayed evidence shows, how it was produced, and how much to trust it. Research never grants trade authority."
+        subtitle="Navigate a claim from source through strategy, evidence, conflict, and implementation. Research never grants trade authority."
         meta={<span className="demo-state-badge">Read-only research</span>}
       />
 
