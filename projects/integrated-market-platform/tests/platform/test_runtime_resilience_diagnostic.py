@@ -54,6 +54,54 @@ class RuntimeResilienceDiagnosticTests(unittest.TestCase):
         self.assertIsInstance(cycle["collector_log_gaps"], dict)
         self.assertEqual(cycle["collector_log_gaps"]["started_epoch_count"], 1)
         self.assertEqual(cycle["collector_log_source"]["availability"], "AVAILABLE")
+        self.assertEqual(cycle["collector_log_source"]["truncated"], False)
+        self.assertEqual(cycle["collector_log_gaps"]["missing_receipt_epochs"][0]["epoch"], "121031")
+
+    def test_missing_log_keeps_gap_analysis_unobserved(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            imp_root = Path(tmp)
+            (imp_root / "phase0-dependency-lock.json").write_text("{}", encoding="utf-8")
+            report = build_runtime_resilience_diagnostic(
+                imp_root,
+                env={},
+                active_collector_probe=lambda: (False, []),
+            )
+        source = report["expected_cycle"]["collector_log_source"]
+        self.assertEqual(source["availability"], "NOT_OBSERVED")
+        self.assertIsNone(report["expected_cycle"]["collector_log_gaps"])
+
+    def test_empty_log_analyzes_zero_epochs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            imp_root = Path(tmp)
+            (imp_root / "phase0-dependency-lock.json").write_text("{}", encoding="utf-8")
+            report = build_runtime_resilience_diagnostic(
+                imp_root,
+                collector_log_text="",
+                active_collector_probe=lambda: (False, []),
+            )
+        gaps = report["expected_cycle"]["collector_log_gaps"]
+        self.assertEqual(gaps["started_epoch_count"], 0)
+        self.assertEqual(gaps["missing_receipt_epochs"], [])
+
+    def test_expected_cycle_copies_are_isolated(self) -> None:
+        log_body = "START item9-prospective-20260918-epoch-fed2d9f7-aapl-121031\n"
+        with tempfile.TemporaryDirectory() as tmp:
+            imp_root = Path(tmp)
+            (imp_root / "phase0-dependency-lock.json").write_text("{}", encoding="utf-8")
+            report = build_runtime_resilience_diagnostic(
+                imp_root,
+                collector_log_text=log_body,
+                active_collector_probe=lambda: (False, []),
+            )
+            report["expected_cycle"]["collector_log_gaps"]["hung_epochs_without_end"].append("mutated")
+            report["expected_cycle"]["collector_log_source"]["availability"] = "MUTATED"
+            again = build_runtime_resilience_diagnostic(
+                imp_root,
+                collector_log_text=log_body,
+                active_collector_probe=lambda: (False, []),
+            )
+        self.assertNotIn("mutated", again["expected_cycle"]["collector_log_gaps"]["hung_epochs_without_end"])
+        self.assertEqual(again["expected_cycle"]["collector_log_source"]["availability"], "CALLER_SUPPLIED")
 
 
 if __name__ == "__main__":

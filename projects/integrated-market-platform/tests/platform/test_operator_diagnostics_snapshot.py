@@ -47,7 +47,26 @@ _SAMPLE_RESILIENCE = {
     },
     "expected_cycle": {
         "receipt_inventory": {"availability": "AVAILABLE", "receipt_file_count": 0},
-        "collector_log_gaps": None,
+        "collector_log_gaps": {
+            "started_epoch_count": 1,
+            "ended_epoch_count": 1,
+            "hung_epochs_without_end": [],
+            "missing_receipt_epochs": [
+                {
+                    "epoch": "121031",
+                    "experiment_id": "item9-prospective-20260918-epoch-fed2d9f7-aapl-121031",
+                    "failure_class": "PROVIDER_UNAVAILABLE_OR_PARTIAL_RECEIPT",
+                    "receipt_status": "NOT_OBSERVED",
+                }
+            ],
+            "truncated": True,
+            "analysis_completeness": "PARTIAL_TAIL",
+        },
+        "collector_log_source": {
+            "availability": "AVAILABLE",
+            "truncated": True,
+            "freshness": "STALE",
+        },
     },
     "readiness_vs_liveness": {"readiness": {}, "liveness": {}},
 }
@@ -84,6 +103,19 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
         self.assertEqual(resilience_section["collector_process"]["active_collector_match_count"], 1)
         summaries = resilience_section["collector_process"]["active_collector_match_summaries"]
         self.assertEqual(summaries, ["item9_prospective_poll_process"])
+        q10 = questions["q10_expected_cycle_fail"]
+        self.assertEqual(q10["answer"], "OBSERVED")
+        self.assertEqual(q10["collector_log_truncated"], True)
+        self.assertEqual(q10["collector_log_freshness"], "STALE")
+        self.assertEqual(q10["analysis_completeness"], "PARTIAL_TAIL")
+        self.assertEqual(q10["missing_receipt_epochs"][0]["epoch"], "121031")
+        cycle = payload["sections"]["cycle_recovery"]
+        self.assertEqual(cycle["recovery_observed"], "UNKNOWN")
+        q10["missing_receipt_epochs"][0]["epoch"] = "mutated"
+        self.assertEqual(
+            mock_resilience.return_value["expected_cycle"]["collector_log_gaps"]["missing_receipt_epochs"][0]["epoch"],
+            "121031",
+        )
         serialized = json.dumps(payload).lower()
         self.assertNotIn("abc123", serialized)
         config_section = payload["sections"]["configuration"]["summary"]
