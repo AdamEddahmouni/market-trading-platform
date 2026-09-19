@@ -48,6 +48,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
 
+## 2026-09-18 — Radar operator brief (Weekend Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Radar opportunity detail now answers the operator discovery questions from attached fields only (what happened, why shown, freshness, providers, conflicts, inference vs observation, unknowns, invalidation, available action, refusal). Empty conflict/provider/invalidation sets stay `UNKNOWN` instead of “none reported.” Queue rows expose attached providers. No fake live actionability; Demo remains read-only. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `opportunityOperatorBrief.test.ts`; `opportunityEpistemicLayers.ts`; `opportunityDetailModel.ts`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `RadarQueueTable.tsx`; `RadarPage.test.tsx`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` opportunity brief/epistemic/detail/presentation + `RadarPage.test.tsx`: 43 passed; `npm run typecheck`: pass. Demo Radar on worktree Vite `:5199` against API `:8766`: operator brief present; providers `REPLAY`; conflicts `UNKNOWN`; `live.quotes` UNSUPPORTED. |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md); design-principles opportunity 9-field rule |
+| **Notes** | Item 9 collection/calibration and Operator Control were not touched. Invalidation criteria remain UNKNOWN unless eligibility, expiry, staleness, supersession, or missing ranking inputs are attached. Branch started at `origin/main` `b16e0bbe`; do not merge. |
+
+## 2026-09-18 — Weekend Lane C UI regression fixes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/workspace`, `ui/nav`, `ui/diagnostics` |
+| **Summary** | Fixed non-Control product defects found in origin/main browser QA: mobile nav backdrop leaked as an unnamed button, provider diagnostics treated loading/error as Live-disabled, Workspace overview assumed Demo replay when `/context` failed, and empty-instrument copy still pointed at retired Explore/Discover routes. Added a tested route error-boundary primitive; it is not wrapped around `LazyBoundary` because that stalls lazy `ImpProductChrome` load. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/live/ProviderHealthPanel.tsx`, `ui/src/components/WorkspaceIndex.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `ui/src/components/RouteErrorBoundary.tsx` |
+| **Tests** | `npx vitest run` ImpProductChrome, InstrumentSelectionEmpty, RouteErrorBoundary, WorkspaceIndex, ProviderHealthPanel, LazyBoundary — **15 passed** (ProviderHealthPanel 4/4 including pre-existing CONNECTED case); `npm run typecheck` — **pass**. Full `App.test.tsx` not re-run (no `App.tsx` change). |
+| **Related** | `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/ACCESSIBILITY.md` |
+| **Notes** | Control inspected only (Lane B). Item 9 2/3 / not calibrated / Live OFF not hidden. Error-boundary wiring around Suspense remains deferred. |
+
 ## 2026-09-18 — Lane F provider resilience (offline fixtures)
 
 | Field | Value |
