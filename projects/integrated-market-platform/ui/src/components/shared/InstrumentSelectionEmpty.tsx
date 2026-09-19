@@ -19,21 +19,21 @@ function copyForMode(mode: Mode, laneLabel?: string): { title: string; descripti
   if (mode === "LIVE") {
     return {
       title: "Select an instrument",
-      description: `Live observational mode does not default to a replay fixture. Search and subscribe from Explore to open the ${lane}workspace.`,
-      exploreLabel: "Go to Explore",
+      description: `Live observational mode does not default to a replay fixture. Search Radar screeners and subscribe to open the ${lane}workspace.`,
+      exploreLabel: "Open Radar screeners",
     };
   }
   if (mode === "PAPER") {
     return {
       title: "Select an instrument",
-      description: `Open a symbol from Paper Command, Discover, or Explore to review ${lane}evidence in Workspace.`,
-      exploreLabel: "Browse Explore",
+      description: `Open a symbol from Paper Command or Radar to review ${lane}evidence in Workspace.`,
+      exploreLabel: "Browse Radar",
     };
   }
   return {
     title: "Select an instrument",
-    description: `Demo replay uses admitted fixtures. Open Explore or Workspace overview to choose a symbol for ${lane}inspection.`,
-    exploreLabel: "Go to Explore",
+    description: `Demo replay uses admitted fixtures. Open Radar or Workspace overview to choose a symbol for ${lane}inspection.`,
+    exploreLabel: "Open Radar",
   };
 }
 
@@ -48,7 +48,7 @@ export function InstrumentSelectionEmpty({ mode, laneLabel }: Props) {
         title={copy.title}
         description={copy.description}
         action={
-          <Link className="button-link" to="/explore">
+          <Link className="button-link" to="/radar/screeners">
             {copy.exploreLabel}
           </Link>
         }
@@ -56,7 +56,7 @@ export function InstrumentSelectionEmpty({ mode, laneLabel }: Props) {
       <p className="muted instrument-selection-hint">
         <Link to="/workspace">Workspace overview</Link>
         {" · "}
-        <Link to="/discover">Discover</Link>
+        <Link to="/radar">Radar</Link>
       </p>
     </section>
   );

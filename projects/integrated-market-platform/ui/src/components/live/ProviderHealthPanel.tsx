@@ -1,5 +1,7 @@
 import { useProviderHealthQuery } from "../../api/hooks";
+import { ErrorState } from "../imp-ui/FeedbackStates";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
+import { LoadingState } from "../shared/LoadingState";
 
 function channelState(entitled: boolean, verified: boolean): string {
   if (!entitled) return "UNAVAILABLE";
@@ -9,6 +11,23 @@ function channelState(entitled: boolean, verified: boolean): string {
 export function ProviderHealthPanel() {
   const healthQuery = useProviderHealthQuery();
   const health = healthQuery.data;
+  if (healthQuery.isLoading) {
+    return <LoadingState label="Loading provider diagnostics…" />;
+  }
+  if (healthQuery.isError) {
+    return (
+      <section className="provider-health-panel page">
+        <h1>Provider diagnostics</h1>
+        <ErrorState
+          title="Provider diagnostics could not be loaded."
+          affects="Connection, entitlement, and lag figures are unavailable until this request succeeds."
+          onRetry={() => {
+            void healthQuery.refetch();
+          }}
+        />
+      </section>
+    );
+  }
   if (!health?.available) {
     return (
       <section className="provider-health-panel capability-panel unavailable page">

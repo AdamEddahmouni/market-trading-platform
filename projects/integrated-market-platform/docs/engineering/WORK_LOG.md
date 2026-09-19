@@ -60,6 +60,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `docs/engineering/ACCESSIBILITY.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
 | **Notes** | Full `App.test.tsx` showed intermittent lazy-load flakes when run as a heavy suite; Control-focused Vitest is the claimed gate. |
 
+## 2026-09-18 — Weekend Lane C UI regression fixes
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/workspace`, `ui/nav`, `ui/diagnostics` |
+| **Summary** | Fixed non-Control product defects found in origin/main browser QA: mobile nav backdrop leaked as an unnamed button, provider diagnostics treated loading/error as Live-disabled, Workspace overview assumed Demo replay when `/context` failed, and empty-instrument copy still pointed at retired Explore/Discover routes. Added a tested route error-boundary primitive; it is not wrapped around `LazyBoundary` because that stalls lazy `ImpProductChrome` load. |
+| **Key files** | `ui/src/components/imp-product/ImpProductChrome.tsx`, `ui/src/components/live/ProviderHealthPanel.tsx`, `ui/src/components/WorkspaceIndex.tsx`, `ui/src/components/shared/InstrumentSelectionEmpty.tsx`, `ui/src/components/RouteErrorBoundary.tsx` |
+| **Tests** | `npx vitest run` ImpProductChrome, InstrumentSelectionEmpty, RouteErrorBoundary, WorkspaceIndex, ProviderHealthPanel, LazyBoundary — **15 passed** (ProviderHealthPanel 4/4 including pre-existing CONNECTED case); `npm run typecheck` — **pass**. Full `App.test.tsx` not re-run (no `App.tsx` change). |
+| **Related** | `docs/engineering/FRONTEND_GUIDE.md`, `docs/engineering/ACCESSIBILITY.md` |
+| **Notes** | Control inspected only (Lane B). Item 9 2/3 / not calibrated / Live OFF not hidden. Error-boundary wiring around Suspense remains deferred. |
+
 ## 2026-09-18 — Lane F provider resilience (offline fixtures)
 
 | Field | Value |
