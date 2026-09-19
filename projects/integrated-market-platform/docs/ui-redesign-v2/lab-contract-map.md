@@ -175,9 +175,9 @@ Do not create tabs for nonexistent objects.
 
 | Route | Section | Fetches | Role |
 |---|---|---|---|
-| `/lab` | Overview | models + simulation (summaries only) | What can be done, what is read-only, current result state, gaps, Research handoff |
+| `/lab` | Overview | models + simulation (summaries) + read-only `GET /operator/diagnostics` | What can be done, what is read-only, current result state, Item 9/Live honesty, gaps, Research handoff |
 | `/lab/validation` | Validation workbench | models only | Process: target, methodology, recorded config, result summary, Research link |
-| `/lab/simulation` | Simulation workbench | simulation only | Process: assumptions, ledger generation, reconciliation, Research link |
+| `/lab/simulation` | Simulation workbench | simulation + shared operator diagnostics | Process: assumptions, ledger, reconciliation, Item 9/Live honesty, Research link |
 | `/lab/chart-lab` | Chart Lab | none | Existing synthetic playground, re-homed |
 
 Methodology is a **disclosure on Validation (and Simulation audit)**, not an
@@ -208,6 +208,9 @@ absent from `NavShell` (only a redirect existed).
 - Missing recorded fields stay `UNKNOWN`. Fetch failures stay `UNAVAILABLE`.
 - Experiment ID, run ID, benchmark comparison, FTEP, and hypothesis objects
   are `UNKNOWN` / unsupported — never synthesized.
+- Item 9 corpus progress (e.g. 2/3), `IDLE` vs `DEGRADED`, Live OFF, and
+  `NOT CALIBRATED` come from `GET /operator/diagnostics` (same `queryKeys.operatorDiagnostics`
+  as Control). Lab does not mint 2/3, calibrate, or treat Full30 as a Lab action.
 - `fill_audit.status` is an audit check, not fill-price realism, cost, or
   slippage. Those remain `UNKNOWN`/`UNAVAILABLE` until dedicated fields exist.
 
@@ -232,6 +235,7 @@ as read-only workflow inspection + honest “not runnable” + Research handoff.
 ## Implementation constraints
 
 - Reuse `queryKeys.researchModels` / `queryKeys.researchSimulation`.
+- Reuse `queryKeys.operatorDiagnostics` for Item 9 / Live honesty; do not add a second diagnostics key.
 - Lazy-load the Lab route chunk; do not raise the 200 KiB gzip entry budget.
 - Import Lab CSS from the lazy Lab surface, not `App.tsx` static imports.
 - Keep `@luxalgo/vela` off App and Lab overview static imports (Chart Lab

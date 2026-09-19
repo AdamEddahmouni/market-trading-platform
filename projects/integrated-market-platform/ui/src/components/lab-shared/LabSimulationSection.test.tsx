@@ -46,6 +46,27 @@ const simulationState = {
 
 vi.mock("../../api/hooks", () => ({
   useResearchSimulationQuery: () => simulationState,
+  useOperatorDiagnosticsQuery: () => ({
+    isLoading: false,
+    isError: false,
+    data: {
+      schema_version: "operator-diagnostics/1.0.0",
+      severity: "OK",
+      sections: {
+        runtime: {
+          item9_corpus_status: {
+            availability: "AVAILABLE",
+            report: {
+              calibration_state: "NOT_CALIBRATED",
+              fitting_allowed: false,
+              sample_gate_progress: { distinct_rth_dates: "2/3" },
+            },
+          },
+        },
+        governance: { live_execution_env: false },
+      },
+    },
+  }),
 }));
 
 describe("LabSimulationSection", () => {
@@ -105,6 +126,8 @@ describe("LabSimulationSection", () => {
     expect(screen.queryByText("1757500400000000000")).not.toBeInTheDocument();
     expect(screen.getByText(/Cost and fill assumptions/i)).toBeInTheDocument();
     expect(screen.getByText("How this snapshot was produced")).toBeInTheDocument();
+    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
     expect(screen.getAllByText("UNKNOWN").length).toBeGreaterThan(0);
   });
 

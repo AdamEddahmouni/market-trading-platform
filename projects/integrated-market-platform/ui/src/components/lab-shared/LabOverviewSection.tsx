@@ -3,6 +3,7 @@ import { useResearchModelsQuery, useResearchSimulationQuery } from "../../api/ho
 import { StatePill } from "../imp-ui/StatePill";
 import { ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
+import { LabCalibrationHonesty } from "./LabCalibrationHonesty";
 import { LabFactGrid } from "./LabFactGrid";
 import {
   buildLabWorkflowCards,
@@ -138,6 +139,8 @@ export function LabOverviewSection() {
           })}
         />
       </section>
+
+      <LabCalibrationHonesty />
 
       <section className="lab-panel" aria-labelledby="lab-evidence-class-heading">
         <div className="lab-panel-heading">

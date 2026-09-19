@@ -45,9 +45,32 @@ const simulationState = {
   refetch: vi.fn(),
 };
 
+const diagnosticsState = {
+  isLoading: false,
+  isError: false,
+  data: {
+    schema_version: "operator-diagnostics/1.0.0",
+    severity: "OK",
+    sections: {
+      runtime: {
+        item9_corpus_status: {
+          availability: "AVAILABLE",
+          report: {
+            calibration_state: "NOT_CALIBRATED",
+            fitting_allowed: false,
+            sample_gate_progress: { distinct_rth_dates: "2/3" },
+          },
+        },
+      },
+      governance: { live_execution_env: false },
+    },
+  } as Record<string, unknown> | undefined,
+};
+
 vi.mock("../../api/hooks", () => ({
   useResearchModelsQuery: () => modelsState,
   useResearchSimulationQuery: () => simulationState,
+  useOperatorDiagnosticsQuery: () => diagnosticsState,
 }));
 
 describe("LabOverviewSection", () => {
@@ -85,6 +108,13 @@ describe("LabOverviewSection", () => {
     expect(screen.getAllByText("Not yet available").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Do not treat the deterministic simulation snapshot as a forward test/i))
       .toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getAllByText("2/3").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("IDLE").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
+    expect(screen.getByText("Not a Lab workflow")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
   });
 
   it("bridges completed results into Research", () => {

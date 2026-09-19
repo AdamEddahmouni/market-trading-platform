@@ -4,6 +4,7 @@ import {
   costFillAssumptionFacts,
   datasetProvenanceFacts,
   experimentStatusFacts,
+  labAuthorityHonestyFacts,
   labHasRunnableBackendWorkflow,
   strategyIdentityFacts,
 } from "./labPresentation";
@@ -92,5 +93,41 @@ describe("labPresentation", () => {
     const costs = costFillAssumptionFacts(simulation as never);
     expect(costs.find((row) => row.label === "Slippage assumption")?.value).toBe("UNKNOWN");
     expect(costs.find((row) => row.label === "Fill-price realism metric")?.value).toBe("UNKNOWN");
+  });
+
+  it("maps Item 9 2/3 diagnostics to IDLE, Live OFF, and NOT CALIBRATED without inventing Full30", () => {
+    const facts = labAuthorityHonestyFacts({
+      diagnostics: {
+        schema_version: "operator-diagnostics/1.0.0",
+        severity: "OK",
+        sections: {
+          runtime: {
+            item9_corpus_status: {
+              availability: "AVAILABLE",
+              receipt_scope: "FROZEN_COLLECTOR_WORKTREE_READ_ONLY",
+              report: {
+                calibration_state: "NOT_CALIBRATED",
+                fitting_allowed: false,
+                sample_gate_progress: { distinct_rth_dates: "2/3" },
+              },
+            },
+          },
+          governance: { live_execution_env: false },
+        },
+      },
+    });
+    expect(facts.find((row) => row.label === "Item 9 distinct admitted RTH dates")?.value).toBe("2/3");
+    expect(facts.find((row) => row.label === "Item 9 date-gate truth class")?.value).toBe("IDLE");
+    expect(facts.find((row) => row.label === "Item 9 calibration")?.value).toBe("NOT CALIBRATED");
+    expect(facts.find((row) => row.label === "Live real-money execution")?.value).toBe("Live OFF");
+    expect(facts.find((row) => row.label === "Full30 / IBP campaign")?.value).toBe("Not a Lab workflow");
+  });
+
+  it("keeps Item 9 gates UNAVAILABLE when diagnostics fail rather than defaulting to 2/3", () => {
+    const facts = labAuthorityHonestyFacts({ diagnosticsError: true });
+    expect(facts.find((row) => row.label === "Item 9 distinct admitted RTH dates")?.value).toBe(
+      "UNAVAILABLE",
+    );
+    expect(facts.find((row) => row.label === "Item 9 date-gate truth class")?.value).not.toBe("IDLE");
   });
 });
