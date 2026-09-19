@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302); [research-contract-map.md](../ui-redesign-v2/research-contract-map.md) |
 | **Notes** | Isolated `.worktrees/weekend-lane-k-research-lineage` from `origin/main` `be0e7e1a` (post-#315 absorb). Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED**. No Full30, #222, `snapshot.py`, Radar, Lab, provider, or PROGRAM_STATUS edits. Do not merge from this lane. |
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `eee44352` after #310 weekend wave
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`eee44352`** (merge [#318](https://github.com/AdamEddahmouni/market-trading-platform/pull/318); post–[#310](https://github.com/AdamEddahmouni/market-trading-platform/pull/310) weekend stack [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298), [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307)–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312), [#315](https://github.com/AdamEddahmouni/market-trading-platform/pull/315), [#316](https://github.com/AdamEddahmouni/market-trading-platform/pull/316)). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | Supersedes open [#314](https://github.com/AdamEddahmouni/market-trading-platform/pull/314); [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) prior pin |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-310` from `origin/main` @ fetch time. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
 ## 2026-09-19 — Weekend Wave C Lane L: opportunity/evidence pipeline provenance
 
 | Field | Value |
