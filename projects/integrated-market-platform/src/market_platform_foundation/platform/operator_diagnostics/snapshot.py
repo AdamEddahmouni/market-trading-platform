@@ -271,7 +271,7 @@ def _cycle_recovery_view(
     ]
     expected_cycle_failure = "NOT_OBSERVED"
     recovery_observed = "NOT_OBSERVED"
-    gap_note = "Collector log text not supplied; epoch gap analysis unavailable."
+    gap_note = "Collector log not configured or unreadable; epoch gap analysis unavailable."
     missing_epochs: list[dict[str, str]] = []
 
     if resilience is not None:

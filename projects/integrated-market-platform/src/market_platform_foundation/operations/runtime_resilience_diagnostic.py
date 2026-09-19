@@ -25,6 +25,7 @@ from ..paper.calibration.item9_next_rth_preflight import (
 from ..platform.artifact_path_resolver import (
     analyze_item9_collect_log_gaps,
     analyze_item9_receipt_directory,
+    read_item9_collector_log_text,
 )
 from ..providers.equity_quote_selection import opend_readiness
 
@@ -87,6 +88,12 @@ def build_runtime_resilience_diagnostic(
     )
     opend = opend_readiness()
 
+    log_source: dict[str, object] = {"availability": "NOT_OBSERVED"}
+    if collector_log_text is None:
+        collector_log_text, log_source = read_item9_collector_log_text(imp_root, mapping)
+    else:
+        log_source = {"availability": "CALLER_SUPPLIED"}
+
     log_gaps: dict[str, object] | None = None
     if collector_log_text:
         log_gaps = analyze_item9_collect_log_gaps(collector_log_text)
@@ -140,6 +147,7 @@ def build_runtime_resilience_diagnostic(
             "receipt_dir": str(receipt_dir),
             "receipt_inventory": receipt_inventory,
             "collector_log_gaps": log_gaps,
+            "collector_log_source": log_source,
         },
         "readiness_vs_liveness": {
             "readiness": item9_preflight.get("readiness"),

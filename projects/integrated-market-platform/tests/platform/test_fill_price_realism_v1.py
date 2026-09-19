@@ -140,10 +140,26 @@ class FillPriceRealismIntegrationTests(unittest.TestCase):
             / "frozen_experiment_definition.json"
         )
         frozen = json.loads(frozen_path.read_text(encoding="utf-8"))
-        result = run_frozen_fill_price_realism_v1(repository_root=ROOT, frozen_definition=frozen)
+        evidence_receipt = (
+            ROOT
+            / "evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1"
+            / "fill_price_realism_evidence_receipt.json"
+        )
+        evidence_run = evidence_receipt.parent / "fill_price_realism_run_record.json"
+        receipt_mtime = evidence_receipt.stat().st_mtime_ns if evidence_receipt.is_file() else None
+        run_mtime = evidence_run.stat().st_mtime_ns if evidence_run.is_file() else None
+        result = run_frozen_fill_price_realism_v1(
+            repository_root=ROOT,
+            frozen_definition=frozen,
+            persist_canonical_evidence=False,
+        )
         if result.reason_code == "V3_FILL_SCHEDULE_RUN_DIR_UNAVAILABLE":
             self.skipTest("v3 local run dirs unavailable")
         self.assertTrue(result.ok, msg=result.reason_code)
+        if receipt_mtime is not None:
+            self.assertEqual(evidence_receipt.stat().st_mtime_ns, receipt_mtime)
+        if run_mtime is not None:
+            self.assertEqual(evidence_run.stat().st_mtime_ns, run_mtime)
         self.assertTrue(result.pack_run_id)
         baseline_rows = result.body.get("results") or []
         self.assertEqual(len(baseline_rows), 4)

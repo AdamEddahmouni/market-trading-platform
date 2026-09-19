@@ -10,9 +10,14 @@ from __future__ import annotations
 
 import re
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
+
+ITEM9_COLLECTOR_LOG_ENV = "IMP_ITEM9_COLLECTOR_LOG_PATH"
+DEFAULT_ITEM9_COLLECTOR_LOG_REL = "artifacts/ftep-v1-002/item9-prospective-collector.log"
+_MAX_COLLECTOR_LOG_BYTES = 512_000
 
 _START_ITEM9_EPOCH = re.compile(
     r"START\s+(item9-prospective-\d{8}-epoch-[0-9a-f]+-aapl-(\d{6}))",
@@ -197,6 +202,73 @@ def resolve_v3_baseline_run_dir(
     return None
 
 
+def resolve_item9_collector_log_path(
+    imp_root: Path,
+    env: Mapping[str, str],
+) -> StoredPathResolution:
+    """Resolve operator-captured Item 9 collector log (read-only; does not create paths)."""
+
+    imp_root = imp_root.resolve()
+    override = (env.get(ITEM9_COLLECTOR_LOG_ENV) or "").strip()
+    if override:
+        return resolve_stored_file_path(override, repository_root=imp_root)
+
+    default = imp_root / DEFAULT_ITEM9_COLLECTOR_LOG_REL
+    if _path_is_readable_file(default):
+        return StoredPathResolution(
+            DEFAULT_ITEM9_COLLECTOR_LOG_REL,
+            StoredPathAvailability.AVAILABLE,
+            default,
+            None,
+        )
+    return StoredPathResolution(
+        DEFAULT_ITEM9_COLLECTOR_LOG_REL,
+        StoredPathAvailability.NOT_OBSERVED,
+        None,
+        "COLLECTOR_LOG_NOT_CONFIGURED",
+    )
+
+
+def read_item9_collector_log_text(
+    imp_root: Path,
+    env: Mapping[str, str],
+    *,
+    max_bytes: int = _MAX_COLLECTOR_LOG_BYTES,
+) -> tuple[str | None, dict[str, object]]:
+    """Read collector log text for expected-cycle gap analysis when configured."""
+
+    resolution = resolve_item9_collector_log_path(imp_root, env)
+    meta: dict[str, object] = {
+        "log_path": resolution.raw,
+        "availability": resolution.availability.value,
+        "reason_code": resolution.reason_code,
+    }
+    if resolution.resolved_path is None:
+        return None, meta
+
+    path = resolution.resolved_path
+    try:
+        size = path.stat().st_size
+    except OSError as exc:
+        meta["reason_code"] = f"STAT_ERROR:{exc.__class__.__name__}"
+        return None, meta
+
+    meta["byte_size"] = size
+    try:
+        if size <= max_bytes:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        else:
+            with path.open("rb") as handle:
+                handle.seek(max(0, size - max_bytes))
+                text = handle.read().decode("utf-8", errors="replace")
+            meta["truncated"] = True
+            meta["max_bytes"] = max_bytes
+    except OSError as exc:
+        meta["reason_code"] = f"READ_ERROR:{exc.__class__.__name__}"
+        return None, meta
+    return text, meta
+
+
 def analyze_item9_collect_log_gaps(log_text: str) -> dict[str, object]:
     """Compare START/END epochs in collector logs against receipt filenames (read-only)."""
 
@@ -264,6 +336,8 @@ def analyze_item9_receipt_directory(receipt_dir: Path) -> dict[str, object]:
 
 
 __all__ = [
+    "DEFAULT_ITEM9_COLLECTOR_LOG_REL",
+    "ITEM9_COLLECTOR_LOG_ENV",
     "StoredPathAvailability",
     "StoredPathResolution",
     "analyze_item9_collect_log_gaps",
@@ -273,6 +347,8 @@ __all__ = [
     "looks_like_windows_absolute_path",
     "monorepo_root_from_imp",
     "portable_stored_path",
+    "read_item9_collector_log_text",
+    "resolve_item9_collector_log_path",
     "resolve_stored_file_parent",
     "resolve_stored_file_path",
     "resolve_v3_baseline_run_dir",
