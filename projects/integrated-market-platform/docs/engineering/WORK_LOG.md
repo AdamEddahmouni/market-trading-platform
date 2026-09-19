@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2ce1d9d1` after #347
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Absorbed `origin/main` **`2ce1d9d1`** (merge [#347](https://github.com/AdamEddahmouni/market-trading-platform/pull/347) Radar leftover Demo discovery-desk copy) into [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to that software tip. Prior absorb of **`1aff8906`** ([#346](https://github.com/AdamEddahmouni/market-trading-platform/pull/346)) was already on this branch — did **not** double-merge that sibling. Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222/#314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) prior pin (`1aff8906`); [#347](https://github.com/AdamEddahmouni/market-trading-platform/pull/347); [#346](https://github.com/AdamEddahmouni/market-trading-platform/pull/346) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-344`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. WORK_LOG keep-both (no conflict; #347 did not edit WORK_LOG). |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `1aff8906` after #346
 
 | Field | Value |
