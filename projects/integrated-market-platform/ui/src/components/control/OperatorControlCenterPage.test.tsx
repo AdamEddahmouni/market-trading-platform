@@ -117,6 +117,8 @@ function buildDiagnostics(overrides: {
         feed_status: (feed as { feed_status?: string }).feed_status,
         unready_reason: (feed as { unready_reason?: string }).unready_reason,
         quality_summary: (feed as { quality_summary?: { state?: string } }).quality_summary,
+        withheld_ranked_count: (feed as { withheld_ranked_count?: number }).withheld_ranked_count,
+        book_honesty: (feed as { book_honesty?: string }).book_honesty,
       },
       runtime: {
         git_sha: "deadbeef00000000000000000000000000000000",
@@ -398,6 +400,33 @@ describe("OperatorControlCenterPage", () => {
       expect(feedSection).toHaveTextContent(/Live mode has no opportunity engine/),
     );
     expect(feedSection).not.toHaveTextContent(/cannot be trusted right now/);
+  });
+
+  it("explains live-clock withheld UNREADY without treating it as a radar repair", async () => {
+    stubFetch({
+      context: LIVE_CONTEXT,
+      feed: {
+        ...FEED_READY,
+        feed_status: "UNREADY",
+        unready_reason: "LIVE_AS_OF_UNAVAILABLE",
+        withheld_ranked_count: 3,
+        book_honesty: "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK",
+        items: [],
+      },
+    });
+    renderControl("LIVE");
+
+    const feedSection = await screen.findByRole("region", {
+      name: "Opportunity feed readiness",
+    });
+    await waitFor(() => expect(feedSection).toHaveTextContent(/live clock is unavailable/i));
+    expect(feedSection).toHaveTextContent(/withheld 3 ranked row/i);
+    expect(feedSection).toHaveTextContent(/not Item 9 calibration/i);
+    expect(feedSection).toHaveTextContent(/Live execution stays OFF/i);
+    expect(feedSection).not.toHaveTextContent(/ranked opportunity queue may be incomplete/i);
+    expect(feedSection).not.toHaveTextContent(/3\/3/);
+    expect(feedSection).not.toHaveTextContent(/CALIBRATED/);
+    expect(screen.getByText(/No blocking issues detected/i)).toBeInTheDocument();
   });
 
   it("fails closed when operator diagnostics are unavailable", async () => {

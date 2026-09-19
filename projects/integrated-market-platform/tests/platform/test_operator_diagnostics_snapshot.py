@@ -15,6 +15,7 @@ from market_platform_foundation.platform.operator_diagnostics.snapshot import (
     classify_item9_corpus_progress_truth,
     _is_windows_host_absolute,
     _operator_safe_fs_path,
+    _opportunity_surface_section,
     _public_runtime_resilience_section,
 )
 from market_platform_foundation.ui_api.store import ReplayStore
@@ -123,6 +124,28 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
             self.assertNotIn("value", row)
         frozen_root = payload["sections"]["runtime"]["item9_preflight"]["runtime"]["frozen_collector_imp_root"]
         self.assertEqual(frozen_root, ".imp-actual-01-phase-d")
+
+    def test_opportunity_surface_passes_through_withheld_live_clock_fields(self) -> None:
+        withheld = _opportunity_surface_section(
+            {
+                "feed_status": "UNREADY",
+                "unready_reason": "LIVE_AS_OF_UNAVAILABLE",
+                "quality_summary": {"state": "PASS"},
+                "withheld_ranked_count": 3,
+                "book_honesty": "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK",
+                "items": [],
+            }
+        )
+        self.assertEqual(withheld["feed_status"], "UNREADY")
+        self.assertEqual(withheld["unready_reason"], "LIVE_AS_OF_UNAVAILABLE")
+        self.assertEqual(withheld["withheld_ranked_count"], 3)
+        self.assertEqual(withheld["book_honesty"], "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK")
+        self.assertNotIn("items", withheld)
+
+        ready = _opportunity_surface_section({"feed_status": "READY", "items": []})
+        self.assertEqual(ready["feed_status"], "READY")
+        self.assertNotIn("withheld_ranked_count", ready)
+        self.assertNotIn("book_honesty", ready)
 
     def test_item9_corpus_2_of_3_is_idle_not_degraded(self) -> None:
         section = {

@@ -520,6 +520,24 @@ def _cycle_recovery_view(
     }
 
 
+def _opportunity_surface_section(opportunity_summary: Mapping[str, Any]) -> dict[str, Any]:
+    """Compose Control's opportunity-surface view from GET /opportunities/summary.
+
+    Pass through withheld-live honesty fields when the summary attached them.
+    Do not invent a zero withhold count.
+    """
+    surface: dict[str, Any] = {
+        "feed_status": opportunity_summary.get("feed_status"),
+        "unready_reason": opportunity_summary.get("unready_reason"),
+        "quality_summary": opportunity_summary.get("quality_summary"),
+    }
+    if "withheld_ranked_count" in opportunity_summary:
+        surface["withheld_ranked_count"] = opportunity_summary.get("withheld_ranked_count")
+    if "book_honesty" in opportunity_summary:
+        surface["book_honesty"] = opportunity_summary.get("book_honesty")
+    return surface
+
+
 def _evidence_gaps(opportunity_summary: Mapping[str, Any], item9: Mapping[str, Any]) -> list[dict[str, str]]:
     gaps: list[dict[str, str]] = []
     feed = str(opportunity_summary.get("feed_status") or "UNKNOWN")
@@ -843,11 +861,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
                 "reason": provider_health.get("reason"),
                 "provider_summary": provider_health.get("provider_summary"),
             },
-            "opportunity_surface": {
-                "feed_status": opportunity_summary.get("feed_status"),
-                "unready_reason": opportunity_summary.get("unready_reason"),
-                "quality_summary": opportunity_summary.get("quality_summary"),
-            },
+            "opportunity_surface": _opportunity_surface_section(opportunity_summary),
             "session_evidence": session,
             "cycle_recovery": cycle,
             "evidence_gaps": evidence_gaps,

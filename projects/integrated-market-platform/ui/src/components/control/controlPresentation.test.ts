@@ -6,9 +6,10 @@ import {
   buildAttentionItems,
   controlSectionHref,
   partitionProviders,
-  presentProviderRole,
-  presentProviderTransport,
-  providerNeedsAction,
+    presentProviderRole,
+    presentProviderTransport,
+    providerNeedsAction,
+    isLiveClockWithheldFeed,
 } from "./controlPresentation";
 
 function provider(overrides: Partial<ProviderReadiness>): ProviderReadiness {
@@ -214,7 +215,24 @@ describe("buildAttentionItems", () => {
     expect(live.find((entry) => entry.id === "feed-unavailable")).toBeUndefined();
   });
 
-  it("humanizes the UNREADY reason in the attention detail", () => {
+  it("does not treat live-clock withheld UNREADY as a radar repair item", () => {
+    expect(
+      isLiveClockWithheldFeed({
+        feedStatus: "UNREADY",
+        feedUnreadyReason: "LIVE_AS_OF_UNAVAILABLE",
+      }),
+    ).toBe(true);
+    const items = buildAttentionItems({
+      ...base,
+      mode: "LIVE",
+      feedStatus: "UNREADY",
+      feedUnreadyReason: "LIVE_AS_OF_UNAVAILABLE",
+      humanizedUnreadyReason: "the live clock is unavailable",
+    });
+    expect(items.find((entry) => entry.id === "feed-unready")).toBeUndefined();
+  });
+
+  it("still treats ordinary UNREADY as caution attention", () => {
     const items = buildAttentionItems({
       ...base,
       feedStatus: "UNREADY",
