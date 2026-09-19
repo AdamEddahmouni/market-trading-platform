@@ -256,6 +256,15 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.queryByText(/mixed live/i)).not.toBeInTheDocument();
   });
 
+  it("does not call Live Radar a discovery-surface monitor", () => {
+    renderRadar("LIVE");
+    expect(
+      screen.getByText(/Read-only monitor over investigation surfaces/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/discovery surfaces/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Live is read-only here/i)).toBeInTheDocument();
+  });
+
   it("renders the feed UNREADY state as a human banner with an action", () => {
     summaryMock.data = {
       items: [],

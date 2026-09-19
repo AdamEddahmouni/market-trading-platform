@@ -48,7 +48,7 @@ const MODE_COPY: Record<
   LIVE: {
     eyebrow: "Live observation",
     subtitle:
-      "Read-only monitor over discovery surfaces. Live mode has no opportunity engine and no execution authority.",
+      "Read-only monitor over investigation surfaces. Live mode has no opportunity engine and no execution authority.",
     restriction: {
       title: "Live is read-only here.",
       body: "Refresh and promote controls are hidden. Workspace links navigate without changing live analysis subscriptions.",
