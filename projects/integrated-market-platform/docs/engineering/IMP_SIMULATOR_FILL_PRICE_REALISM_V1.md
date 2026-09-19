@@ -4,7 +4,17 @@
 **Source finding:** `LANE-E-FND-017`  
 **Authority:** `HISTORICAL_DEVELOPMENT` diagnostic only — not Paper/Item 9 fill calibration.
 
-## Status (Lane C — Sep 18)
+## Doc routing (do not duplicate)
+
+| Role | Authoritative path |
+|------|-------------------|
+| Lane C pre-exec methodology (frozen) | `evidence/historical-research/imp-simulator-fill-price-realism-v1/methodology_v1.json` |
+| Lane C readiness snapshot (Sep 18) | `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
+| Post-freeze experiment + execution (#285) | [IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md](IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md), [FILL_PRICE_REALISM_V1.md](../research/methodology/fill/FILL_PRICE_REALISM_V1.md) |
+
+This document remains the **simulator binding and problem statement** reference; execution receipts live under experiment 06 evidence.
+
+## Status (Lane C snapshot — Sep 18, frozen)
 
 | Gate | Value |
 |------|-------|
@@ -12,11 +22,26 @@
 | `IMPLEMENTATION_READY` | **NO** (per-fill audit fields + alternate fill policies not implemented) |
 | `EXECUTED` | **NO** |
 
+## Status (post close — merged [#285](https://github.com/AdamEddahmouni/market-trading-platform/pull/285))
+
+| Gate | Value |
+|------|-------|
+| `SPEC_READY` | **YES** (frozen methodology + experiment 06 protocol) |
+| `IMPLEMENTATION_READY` | **YES** (`fill_price_realism_harness.py`, CLI, tests) |
+| `EXECUTED` | **YES** (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`) |
+
+| Field | Value |
+|-------|-------|
+| `experiment_id` | `imp-integrate-experiment-06-r1-opend-fill-price-realism-v1` |
+| `experiment_definition_hash` | `C4FCD3AB6CA6AEE57C91A0D709EC8D77EBFA6AA774542BF9AAD9FC761C2D1149` |
+| `pack_run_id` | `6A66AE5C50700426F71B3734E6FC6A43` |
+| Run record | `evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/fill_price_realism_run_record.json` |
+
 ## Problem statement (bounded)
 
 On the frozen OpenD v3 validate split, `directional_accuracy` (forward-return label alignment) can rank baselines differently from `gross_pnl` / `net_pnl` because simulated economics use **bar-conservative execution prices** and open exposure, not label midpoints.
 
-This spec documents the **current** fill and mark policies and **lawful historical-research alternatives** for a future bounded experiment. It does **not** change `phase7.bar-conservative/1.1.0` internals used by v3 receipts or Item 9.
+This spec documents the **current** fill and mark policies and **lawful historical-research alternatives** exercised in experiment 06 (separate hash). It does **not** change `phase7.bar-conservative/1.1.0` internals used by v3 receipts or Item 9.
 
 ## Frozen dataset and baselines
 
@@ -90,12 +115,18 @@ Per simulated fill, emit audit record:
 
 **No-tuning:** do not pick fill policy post-hoc from validate PnL ordering.
 
-## Experiment identity (not executed)
+## Experiment identity
 
-| Field | Proposed value |
-|-------|----------------|
-| `experiment_id` | `imp-simulator-fill-price-realism-v1-lane-e` |
+### Lane C pre-registration (not executed — frozen JSON)
+
+| Field | Value |
+|-------|-------|
+| `experiment_id` (label) | `imp-simulator-fill-price-realism-v1-lane-e` |
 | Artifact | `evidence/historical-research/imp-simulator-fill-price-realism-v1/methodology_v1.json` |
+
+### Executed bounded run (experiment 06 — authoritative)
+
+See **Status (post close)** above and `IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md`.
 
 ## Related
 

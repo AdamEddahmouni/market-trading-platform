@@ -28,6 +28,7 @@ from market_platform_foundation.ui_api.opportunity_projections import (
     build_opportunities_summary_payload,
 )
 from market_platform_foundation.ui_api.operator_opportunity_state import reset_operator_acks
+from market_platform_foundation.news.timestamps import epoch_ns_from_iso
 from market_platform_foundation.ui_api.server import UiApiHandler
 from market_platform_foundation.ui_api.store import ReplayStore
 
@@ -53,6 +54,7 @@ _GROK_ENV_KEYS = (
 
 _PUBLISHED = "2026-09-15T14:05:00Z"
 _RETRIEVED = "2026-09-15T14:05:08Z"
+_SERVER = "2026-09-15T14:05:10Z"
 
 
 def _clear_live_and_grok_env() -> None:
@@ -112,10 +114,23 @@ class RankedSummaryLeakAuditTests(unittest.TestCase):
             return_value=None,
         )
         self._auth_patch = patch.object(UiApiHandler, "_authorize_request", return_value=True)
+        self._server_ns = int(epoch_ns_from_iso(_SERVER))
+        self._ingest_clock_patch = patch(
+            "market_platform_foundation.ui_api.news_ingest.monotonic_wall_ns",
+            return_value=self._server_ns,
+        )
+        self._admit_clock_patch = patch(
+            "market_platform_foundation.news.observational_admit.monotonic_wall_ns",
+            return_value=self._server_ns,
+        )
         self._runtime_patch.start()
         self._auth_patch.start()
+        self._ingest_clock_patch.start()
+        self._admit_clock_patch.start()
 
     def tearDown(self) -> None:
+        self._admit_clock_patch.stop()
+        self._ingest_clock_patch.stop()
         self._auth_patch.stop()
         self._runtime_patch.stop()
         self.httpd.shutdown()
