@@ -376,19 +376,36 @@ describe("claimFollowAccessibleName", () => {
 describe("claim hops", () => {
   it("keeps finding hops static so Evidence does not extra-fetch", () => {
     const hops = claimHopsForFinding("strategy_outcomes", "DEMO");
-    expect(hops.map((hop) => hop.key)).toEqual([
-      "strategy",
-      "contradiction",
-      "experiment",
-      "implementation",
-      "forward-test",
-    ]);
+    expect(hops.map((hop) => hop.key)).toEqual(claimPathKeys("strategy_outcomes"));
+    expect(hops.find((hop) => hop.key === "source")?.href).toBe(
+      "/research/evidence?panel=strategy_outcomes&claim=strategy_outcomes",
+    );
+    expect(hops.find((hop) => hop.key === "evidence")?.href).toBe(
+      "/research/evidence?panel=strategy_outcomes&claim=strategy_outcomes",
+    );
     expect(hops.find((hop) => hop.key === "forward-test")?.href).toBeNull();
     expect(hops.find((hop) => hop.key === "strategy")?.href).toBe(
       "/research/validation?claim=strategy_outcomes",
     );
     expect(hops.find((hop) => hop.key === "contradiction")?.href).toBe(
       "/research/validation?conflict=1&claim=strategy_outcomes",
+    );
+  });
+
+  it("keeps source and evidence on squeeze and attention paths", () => {
+    expect(claimPathKeys("squeeze_outcomes")).toEqual(["source", "hypothesis", "evidence"]);
+    expect(claimHopsForFinding("squeeze_outcomes", "DEMO").map((hop) => hop.key)).toEqual([
+      "source",
+      "hypothesis",
+      "evidence",
+    ]);
+    expect(claimPathKeys("attention_tiers")).toEqual(["source", "evidence"]);
+    expect(claimHopsForFinding("attention_tiers", "DEMO").map((hop) => hop.key)).toEqual([
+      "source",
+      "evidence",
+    ]);
+    expect(claimHopsForFinding("attention_tiers", "DEMO").find((hop) => hop.key === "source")?.href).toBe(
+      "/research/evidence?panel=attention_tiers&claim=attention_tiers",
     );
   });
 
