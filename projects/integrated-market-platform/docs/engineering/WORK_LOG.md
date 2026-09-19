@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [#292](https://github.com/AdamEddahmouni/market-trading-platform/pull/292); PR [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-a-status-nits`; do not merge from this lane. |
 
+## 2026-09-18 — Lane F provider resilience (offline fixtures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers`, `operations`, `ui_api/errors` |
+| **Summary** | Added backend-owned provider incident tokens and operator messages for OpenD down, delayed data, partial staleness, source disagreement, reconnect, timeout, empty/malformed payloads, temporary network failure, restart recovery, and Yahoo-as-hop-L1 fallback blocked. OpenD/Yahoo adapters fail closed on empty/timeout/reset without substituting overlay as primary L1. Item 9 remains IDLE / NOT_CALIBRATED; Live stays OFF. |
+| **Key files** | Created: `src/market_platform_foundation/providers/resilience.py`, `tests/providers/test_provider_resilience.py`, `tests/fixtures/providers/resilience/incidents.json`. Modified: `providers/adapters/moomoo_opend_equity_quote.py`, `providers/adapters/yahoo_delayed_equity_quote.py`, `operations/runtime_resilience_diagnostic.py`, `ui_api/errors.py`, `docs/engineering/PROVIDER_READINESS.md`, `tests/providers/test_moomoo_opend_primary_l1.py`, `tests/ui1/test_error_taxonomy.py`. |
+| **Tests** | `python tools/imp.py test focused` (10 Lane F selectors) **passed 10/0/0**; `python -m unittest` provider/yahoo/error-taxonomy/diagnostic modules **68 OK**. |
+| **Related** | [PROVIDER_READINESS.md](PROVIDER_READINESS.md); runtime resilience diagnostic (Lane B composition consumed by diagnostics snapshot, this lane did not edit `snapshot.py`). |
+| **Notes** | Leftover **CALENDAR**: Item 9 `2/3` IDLE not DEGRADED, `NOT_CALIBRATED`. **PROVIDER**: OpenD still unavailable on this workstation; Yahoo overlay remains DELAYED-only. No Item 9 collection, no collector mutation, no #222 merge. |
+
 ## 2026-09-18 — Weekend Wave A Lane A: post-#292 status nits
 
 | Field | Value |
