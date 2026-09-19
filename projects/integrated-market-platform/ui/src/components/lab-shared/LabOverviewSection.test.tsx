@@ -81,6 +81,25 @@ describe("LabOverviewSection", () => {
     simulationState.isLoading = false;
     simulationState.isError = false;
     simulationState.data = simulationFixture;
+    diagnosticsState.isLoading = false;
+    diagnosticsState.isError = false;
+    diagnosticsState.data = {
+      schema_version: "operator-diagnostics/1.0.0",
+      severity: "OK",
+      sections: {
+        runtime: {
+          item9_corpus_status: {
+            availability: "AVAILABLE",
+            report: {
+              calibration_state: "NOT_CALIBRATED",
+              fitting_allowed: false,
+              sample_gate_progress: { distinct_rth_dates: "2/3" },
+            },
+          },
+        },
+        governance: { live_execution_env: false },
+      },
+    };
     vi.clearAllMocks();
   });
 
@@ -110,9 +129,9 @@ describe("LabOverviewSection", () => {
       .toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
     expect(screen.getAllByText("2/3").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("IDLE").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Item 9 date-gate: IDLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 calibration: NOT CALIBRATED")).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: Live OFF")).toBeInTheDocument();
     expect(screen.getByText("Not a Lab workflow")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
   });
@@ -155,5 +174,25 @@ describe("LabOverviewSection", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(/cannot load the current experimental snapshots/i);
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 date-gate: IDLE")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps Item 9 UNAVAILABLE when diagnostics fail instead of inventing 2/3", () => {
+    diagnosticsState.isError = true;
+    diagnosticsState.data = undefined;
+    render(
+      <MemoryRouter>
+        <LabOverviewSection />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 date-gate: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 calibration: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.queryByText("2/3")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Item 9 date-gate: IDLE")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /calibrat|full30|^run$/i })).not.toBeInTheDocument();
   });
 });

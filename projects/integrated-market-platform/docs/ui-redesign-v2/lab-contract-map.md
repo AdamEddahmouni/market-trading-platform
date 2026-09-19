@@ -211,6 +211,10 @@ absent from `NavShell` (only a redirect existed).
 - Item 9 corpus progress (e.g. 2/3), `IDLE` vs `DEGRADED`, Live OFF, and
   `NOT CALIBRATED` come from `GET /operator/diagnostics` (same `queryKeys.operatorDiagnostics`
   as Control). Lab does not mint 2/3, calibrate, or treat Full30 as a Lab action.
+  Overview dual-failure and Simulation snapshot errors still mount the honesty
+  panel (diagnostics is a separate query). Failed diagnostics stay `UNAVAILABLE`.
+  Summary pills expose accessible names (`Item 9 date-gate: IDLE`,
+  `Item 9 calibration: NOT CALIBRATED`, `Live real-money execution: Live OFF`).
 - `fill_audit.status` is an audit check, not fill-price realism, cost, or
   slippage. Those remain `UNKNOWN`/`UNAVAILABLE` until dedicated fields exist.
 

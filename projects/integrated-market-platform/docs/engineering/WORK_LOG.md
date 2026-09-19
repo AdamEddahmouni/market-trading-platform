@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lab honesty stays visible on snapshot errors
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Keep Item 9 / Live honesty mounted when Lab Overview dual-fails or Simulation snapshot errors; give summary pills accessible names; render diagnostics `isError` as `UNAVAILABLE` instead of a minted 2/3. |
+| **Key files** | `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/imp-ui/StatePill.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm test -- src/components/lab-shared src/components/imp-ui/StatePill.tsx src/App.test.tsx` — **99 passed**; `npm run typecheck` — pass |
+| **Related** | Follow-up to merged #313 REQUEST_CHANGES (stale HEAD `8c08dec0`); `lab-contract-map.md` |
+| **Notes** | Isolated `ui/weekend-lab-honesty-error-a11y` from `origin/main` `2d1b508c`, then absorbed `7b91bce4`. Did not merge #222. Frozen collector `fed2d9f7` untouched. |
+
 ## 2026-09-19 — Weekend Lane C Control+Radar QA
 
 | Field | Value |

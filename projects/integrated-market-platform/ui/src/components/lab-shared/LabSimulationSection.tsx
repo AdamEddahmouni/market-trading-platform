@@ -33,14 +33,17 @@ export function LabSimulationSection() {
 
   if (simulationQuery.isError || !simulationQuery.data) {
     return (
-      <ErrorState
-        title="The simulation workflow snapshot is unavailable."
-        affects="Assumptions, ledger, and reconciliation cannot be inspected until /research/simulation responds."
-        rawDetail={
-          simulationQuery.error instanceof Error ? simulationQuery.error.message : undefined
-        }
-        onRetry={() => void simulationQuery.refetch()}
-      />
+      <>
+        <ErrorState
+          title="The simulation workflow snapshot is unavailable."
+          affects="Assumptions, ledger, and reconciliation cannot be inspected until /research/simulation responds."
+          rawDetail={
+            simulationQuery.error instanceof Error ? simulationQuery.error.message : undefined
+          }
+          onRetry={() => void simulationQuery.refetch()}
+        />
+        <LabCalibrationHonesty />
+      </>
     );
   }
 

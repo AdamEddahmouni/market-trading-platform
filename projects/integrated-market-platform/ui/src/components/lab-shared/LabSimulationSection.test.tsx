@@ -44,12 +44,42 @@ const simulationState = {
   refetch: vi.fn(),
 };
 
+const diagnosticsState = {
+  isLoading: false,
+  isError: false,
+  data: {
+    schema_version: "operator-diagnostics/1.0.0",
+    severity: "OK",
+    sections: {
+      runtime: {
+        item9_corpus_status: {
+          availability: "AVAILABLE",
+          report: {
+            calibration_state: "NOT_CALIBRATED",
+            fitting_allowed: false,
+            sample_gate_progress: { distinct_rth_dates: "2/3" },
+          },
+        },
+      },
+      governance: { live_execution_env: false },
+    },
+  } as Record<string, unknown> | undefined,
+};
+
 vi.mock("../../api/hooks", () => ({
   useResearchSimulationQuery: () => simulationState,
-  useOperatorDiagnosticsQuery: () => ({
-    isLoading: false,
-    isError: false,
-    data: {
+  useOperatorDiagnosticsQuery: () => diagnosticsState,
+}));
+
+describe("LabSimulationSection", () => {
+  beforeEach(() => {
+    simulationState.isLoading = false;
+    simulationState.isError = false;
+    simulationState.error = null;
+    simulationState.data = simulationFixture;
+    diagnosticsState.isLoading = false;
+    diagnosticsState.isError = false;
+    diagnosticsState.data = {
       schema_version: "operator-diagnostics/1.0.0",
       severity: "OK",
       sections: {
@@ -65,16 +95,7 @@ vi.mock("../../api/hooks", () => ({
         },
         governance: { live_execution_env: false },
       },
-    },
-  }),
-}));
-
-describe("LabSimulationSection", () => {
-  beforeEach(() => {
-    simulationState.isLoading = false;
-    simulationState.isError = false;
-    simulationState.error = null;
-    simulationState.data = simulationFixture;
+    };
     vi.clearAllMocks();
   });
 
@@ -95,6 +116,8 @@ describe("LabSimulationSection", () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole("alert")).toHaveTextContent(/simulation workflow snapshot is unavailable/i);
+    expect(screen.getByRole("heading", { name: "Item 9, Live, and what Lab is not" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Item 9 date-gate: IDLE")).toBeInTheDocument();
   });
 
   it("keeps simulation distinct from FTEP and production readiness", () => {
@@ -126,8 +149,8 @@ describe("LabSimulationSection", () => {
     expect(screen.queryByText("1757500400000000000")).not.toBeInTheDocument();
     expect(screen.getByText(/Cost and fill assumptions/i)).toBeInTheDocument();
     expect(screen.getByText("How this snapshot was produced")).toBeInTheDocument();
-    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText("Item 9 calibration: NOT CALIBRATED")).toBeInTheDocument();
+    expect(screen.getByLabelText("Live real-money execution: Live OFF")).toBeInTheDocument();
     expect(screen.getAllByText("UNKNOWN").length).toBeGreaterThan(0);
   });
 

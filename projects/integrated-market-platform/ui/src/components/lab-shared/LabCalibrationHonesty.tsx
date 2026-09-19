@@ -34,12 +34,36 @@ export function LabCalibrationHonesty() {
         </p>
       ) : null}
       <div className="lab-trust-row">
-        {dateGate ? <StatePill tone="neutral" label={dateGate} raw={dateGate} /> : null}
-        {calibration ? (
-          <StatePill tone="caution" label={calibration} raw={calibration} />
+        {dateGate ? (
+          <StatePill
+            tone="neutral"
+            label={dateGate}
+            raw={dateGate}
+            accessibleName={`Item 9 date-gate: ${dateGate}`}
+          />
         ) : null}
-        {live ? <StatePill tone="neutral" label={live} raw={live} /> : null}
-        <StatePill tone="neutral" label="Lab inspect-only" raw="inspectable" />
+        {calibration ? (
+          <StatePill
+            tone="caution"
+            label={calibration}
+            raw={calibration}
+            accessibleName={`Item 9 calibration: ${calibration}`}
+          />
+        ) : null}
+        {live ? (
+          <StatePill
+            tone="neutral"
+            label={live}
+            raw={live}
+            accessibleName={`Live real-money execution: ${live}`}
+          />
+        ) : null}
+        <StatePill
+          tone="neutral"
+          label="Lab inspect-only"
+          raw="inspectable"
+          accessibleName="Lab inspect-only"
+        />
       </div>
       <LabWarningList warnings={labAuthorityHonestyWarnings({ diagnostics, diagnosticsError })} />
       <LabFactGrid facts={facts} />

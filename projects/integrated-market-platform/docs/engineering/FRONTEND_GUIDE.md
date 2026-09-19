@@ -170,7 +170,9 @@ Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-
 | `/lab/simulation` | Simulation workbench | `/research/simulation` + shared operator diagnostics (calibration honesty) |
 | `/lab/chart-lab` | Chart Lab | none (local synthetic) |
 
-Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Hypotheses,
+Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Item 9 / Live
+honesty stays mounted when Overview dual-loads fail or Simulation snapshot errors;
+diagnostics failures stay `UNAVAILABLE` (never a minted 2/3). Hypotheses,
 domains, source catalogs, supporting/contradictory flags, and FTEP campaign
 state have **no UI contract**. They appear as claim-graph nodes with honest gap
 labels, not as fabricated objects. Overview `?claim=<panel_key>` scopes the
