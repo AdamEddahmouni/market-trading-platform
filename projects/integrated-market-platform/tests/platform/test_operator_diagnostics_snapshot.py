@@ -61,7 +61,9 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
         }
         mock_resilience.return_value = dict(_SAMPLE_RESILIENCE)
         payload = build_operator_diagnostics_snapshot(self.store)
-        self.assertEqual(payload["schema_version"], "operator-diagnostics/1.0.0")
+        self.assertEqual(payload["schema_version"], "operator-diagnostics/1.1.0")
+        self.assertNotIn("generated_at_monotonic", payload)
+        self.assertIn("operator_truth", payload)
         self.assertFalse(payload["secrets_included"])
         questions = payload["operator_questions"]
         self.assertIn("q01_imp_running", questions)

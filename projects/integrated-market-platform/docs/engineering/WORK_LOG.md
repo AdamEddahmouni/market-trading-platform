@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Operator API contract: backend-owned truth tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `platform/operator_diagnostics`, `ui/src/api` |
+| **Summary** | Added `operator_truth` on `GET /operator/diagnostics` (schema 1.1.0) so Control/Command consume backend facts instead of remapping status. Item 9 2/3 corpus progress is `IDLE` not `DEGRADED`. Stripped monotonic clock and `receipt_dir`. Added `data_quality.operator_surface_flag` for Command stale/degraded KPIs. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/{operator_truth.py,snapshot.py}`; `ui/src/api/{schemas.ts,operatorTruth.ts,opportunityClient.ts,hooks.ts}`; `ui/src/components/imp-product/impOverviewMetrics.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
+| **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
+
 ## 2026-09-18 — Control system status consumes GET /operator/diagnostics
 
 | Field | Value |

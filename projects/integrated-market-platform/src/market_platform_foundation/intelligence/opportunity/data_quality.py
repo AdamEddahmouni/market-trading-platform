@@ -83,6 +83,11 @@ def project_opportunity_data_quality(
             entitlement = evaluation.entitlement
         if fail_closed_for_actionable(evaluation) and status == "UNAVAILABLE":
             reason_codes = [evaluation.reason_code]
+    surface_flag = "OK"
+    freshness_token = str(freshness or "").upper()
+    status_token = str(status or "").upper()
+    if freshness_token == "STALE" or status_token in {"DEGRADED", "INVALID"}:
+        surface_flag = "STALE_OR_DEGRADED"
     return {
         "status": status,
         "freshness": freshness,
@@ -90,5 +95,6 @@ def project_opportunity_data_quality(
         "connection": connection,
         "source": source,
         "reason_codes": reason_codes,
+        "operator_surface_flag": surface_flag,
         "freshness_evaluation": evaluation.to_dict(),
     }
