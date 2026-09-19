@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `1aff8906` after #346
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Absorbed `origin/main` **`1aff8906`** (merge [#346](https://github.com/AdamEddahmouni/market-trading-platform/pull/346) INVESTIGATION DESK eyebrow) into [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to that software tip. Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222/#314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#345](https://github.com/AdamEddahmouni/market-trading-platform/pull/345) prior pin (`a8edab8c`); [#346](https://github.com/AdamEddahmouni/market-trading-platform/pull/346); [#344](https://github.com/AdamEddahmouni/market-trading-platform/pull/344) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-344`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. WORK_LOG keep-both (no conflict; #346 did not edit WORK_LOG). |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `a8edab8c` after #344
 
 | Field | Value |
