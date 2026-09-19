@@ -19,12 +19,14 @@ import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { PageHeader } from "../shared/PageHeader";
 import { evaluateModeContext } from "../mode-session/modeAuthority";
 import type { Mode } from "../mode-session/types";
+import { liveFeedClockHonesty } from "../opportunity/opportunityOperatorBrief";
 import { humanizeUnreadyReason } from "../opportunity/opportunityPresentation";
 import {
   CONTROL_SECTIONS,
   CONTROL_SECTION_NAV,
   authoritySummary,
   buildAttentionItems,
+  isLiveClockWithheldFeed,
   partitionProviders,
   presentProviderRole,
   presentProviderTransport,
@@ -691,6 +693,8 @@ export function OperatorControlCenterPage({ mode }: Props) {
             feedStatus={feedStatus}
             unreadyReason={opportunitySurface.unready_reason ?? undefined}
             humanizedReason={humanizedReason}
+            withheldRankedCount={opportunitySurface.withheld_ranked_count}
+            bookHonesty={opportunitySurface.book_honesty}
             nextAction={undefined}
             itemCount={undefined}
             qualityState={opportunitySurface.quality_summary?.state}
@@ -940,6 +944,8 @@ function FeedReadiness({
   feedStatus,
   unreadyReason,
   humanizedReason,
+  withheldRankedCount,
+  bookHonesty,
   nextAction,
   itemCount,
   qualityState,
@@ -948,6 +954,8 @@ function FeedReadiness({
   feedStatus?: string;
   unreadyReason?: string;
   humanizedReason: string | null;
+  withheldRankedCount?: number;
+  bookHonesty?: string;
   nextAction?: string;
   itemCount?: number;
   qualityState?: string;
@@ -977,25 +985,48 @@ function FeedReadiness({
       ) : null}
 
       {feedStatus === "UNREADY" ? (
-        <div className="control-feed-detail" data-tone="caution">
-          <p>
-            <strong>Why:</strong> {humanizedReason ?? "The feed has not reported a reason."}
-          </p>
-          <p>
-            <strong>Impact:</strong> The ranked opportunity queue may be incomplete — treat Radar
-            results with caution until the feed reports ready.
-          </p>
-          {nextActionText ? (
+        isLiveClockWithheldFeed({ feedStatus, feedUnreadyReason: unreadyReason }) ? (
+          <div className="control-feed-detail" data-tone="neutral">
             <p>
-              <strong>Next:</strong> {nextActionText}
+              <strong>Why:</strong> {humanizedReason ?? "The live clock is unavailable."}
             </p>
-          ) : null}
-          {unreadyReason ? (
-            <p className="control-muted">
-              Raw reason code: <code>{unreadyReason}</code>
+            <p>
+              <strong>Impact:</strong>{" "}
+              {liveFeedClockHonesty({ unreadyReason, withheldRankedCount }) ??
+                "Ranked live rows stay withheld until a live receive clock is attached. This is not Item 9 calibration. Live execution stays OFF."}
             </p>
-          ) : null}
-        </div>
+            {bookHonesty ? (
+              <p className="control-muted">
+                Book honesty: <code>{bookHonesty}</code>
+              </p>
+            ) : null}
+            {unreadyReason ? (
+              <p className="control-muted">
+                Raw reason code: <code>{unreadyReason}</code>
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <div className="control-feed-detail" data-tone="caution">
+            <p>
+              <strong>Why:</strong> {humanizedReason ?? "The feed has not reported a reason."}
+            </p>
+            <p>
+              <strong>Impact:</strong> The ranked opportunity queue may be incomplete — treat Radar
+              results with caution until the feed reports ready.
+            </p>
+            {nextActionText ? (
+              <p>
+                <strong>Next:</strong> {nextActionText}
+              </p>
+            ) : null}
+            {unreadyReason ? (
+              <p className="control-muted">
+                Raw reason code: <code>{unreadyReason}</code>
+              </p>
+            ) : null}
+          </div>
+        )
       ) : null}
 
       {feedStatus === "UNAVAILABLE" ? (

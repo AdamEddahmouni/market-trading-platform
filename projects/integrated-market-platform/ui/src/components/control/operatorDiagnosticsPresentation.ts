@@ -131,6 +131,8 @@ export function diagnosticsOpportunitySurface(diagnostics: OperatorDiagnostics |
     feed_status?: string;
     unready_reason?: string | null;
     quality_summary?: { state?: string };
+    withheld_ranked_count?: number;
+    book_honesty?: string;
   }>(diagnostics, "opportunity_surface");
 }
 
