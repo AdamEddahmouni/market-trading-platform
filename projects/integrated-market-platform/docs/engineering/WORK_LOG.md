@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests` |
+| **Summary** | Isolated process-environment leaks so unit tests no longer leave `IMP_FINVIZ_CAPTURE_DIR`, `IMP_PERSIST_STATE`, or `IMP_PAPER_EXECUTION` set for later cases, and stopped pointing Finviz capture roots into the tree. |
+| **Key files** | `tests/platform/test_discovery_p33.py`; `tests/finviz/test_finviz_provider.py`; `tests/intelligence/test_ftep_campaign_status.py`; `tests/intelligence/test_build01_22_lifecycle.py`; `tests/intelligence/test_build01_23_lifecycle.py`; `tests/intelligence/test_build01_24_lifecycle.py`; `tests/intelligence/test_paper_execution_qualification.py`; `tests/intelligence/test_paper_execution_governance.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/trading_correctness/test_preview_binding.py`; `tests/validation/test_process_env_isolation.py` |
+| **Tests** | `python -m unittest` on changed modules **101 passed**; `python tools/imp.py validate changed` **3336 passed**, 31 skipped, 0 fail |
+| **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
+| **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
+
 ## 2026-09-19 — Weekend Lane H high-value testing coverage
 
 | Field | Value |
