@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `1847c766` after #331
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`1847c766`** (merge [#331](https://github.com/AdamEddahmouni/market-trading-platform/pull/331) Lab validation honesty; ancestry includes [#332](https://github.com/AdamEddahmouni/market-trading-platform/pull/332) provider failure-handling coverage plus [#330](https://github.com/AdamEddahmouni/market-trading-platform/pull/330)–[#328](https://github.com/AdamEddahmouni/market-trading-platform/pull/328) weekend UI/tests). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#327](https://github.com/AdamEddahmouni/market-trading-platform/pull/327) prior pin (`84275b20`); [#321](https://github.com/AdamEddahmouni/market-trading-platform/pull/321); [#319](https://github.com/AdamEddahmouni/market-trading-platform/pull/319) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-331` from `origin/main` @ `1847c766`. **ITEM9_FROZEN_COLLECTOR** untouched. |
+
 ## 2026-09-19 — Research claim-to-implementation hops (finding-scoped Lab)
 
 | Field | Value |
