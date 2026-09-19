@@ -31,7 +31,6 @@ import {
 import { buildGovernanceFacts } from "../operator-shared/governanceStatusPresentation";
 import { OperatorSystemStatusSection } from "./OperatorSystemStatusSection";
 import {
-  diagnosticsGovernance,
   diagnosticsLifecycle,
   diagnosticsOpportunitySurface,
   diagnosticsReadiness,
@@ -68,7 +67,6 @@ export function OperatorControlCenterPage({ mode }: Props) {
   const readiness = diagnosticsReadiness(diagnostics);
   const lifecycle = diagnosticsLifecycle(diagnostics) as OperatorLifecycleStatus | undefined;
   const opportunitySurface = diagnosticsOpportunitySurface(diagnostics);
-  const diagnosticsGovernanceBlock = diagnosticsGovernance(diagnostics);
 
   const [message, setMessage] = useState<string | null>(null);
   const [busyProvider, setBusyProvider] = useState<string | null>(null);
@@ -125,7 +123,6 @@ export function OperatorControlCenterPage({ mode }: Props) {
     paperSessionOpen,
     humanizedUnreadyReason: humanizedReason,
     diagnosticsError: diagnosticsQuery.isError,
-    diagnosticsInterventions: diagnosticsGovernanceBlock?.interventions ?? [],
   });
 
   const allSettled = !diagnosticsQuery.isLoading && contextState !== "loading";

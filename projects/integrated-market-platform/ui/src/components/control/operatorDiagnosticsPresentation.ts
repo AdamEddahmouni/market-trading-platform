@@ -100,13 +100,27 @@ export function mapItem9DispositionTruth(disposition: string | undefined): Opera
 
 export function formatItem9CorpusProgress(
   corpusSection: Record<string, unknown> | undefined,
-): { distinctRthDates: string; calibrationLabel: string; calibrationForbidden: string } {
+): {
+  distinctRthDates: string;
+  calibrationLabel: string;
+  calibrationForbidden: string;
+  receiptScopeNote: string;
+} {
   const availability = String(corpusSection?.availability ?? "NOT_OBSERVED").toUpperCase();
+  const scope = String(corpusSection?.receipt_scope ?? "UNKNOWN");
+  const scopeNote =
+    scope === "FROZEN_COLLECTOR_WORKTREE_READ_ONLY"
+      ? "Read-only corpus gate from frozen collector receipts (.imp-actual-01-phase-d)."
+      : scope === "RUNTIME_IMP_ROOT_READ_ONLY"
+        ? "Read-only corpus gate from this API checkout receipt dir (may differ from frozen collector)."
+        : "Corpus receipt scope not observed.";
+
   if (availability !== "AVAILABLE") {
     return {
       distinctRthDates: "NOT_OBSERVED",
       calibrationLabel: "NOT CALIBRATED",
       calibrationForbidden: "CALIBRATION FORBIDDEN",
+      receiptScopeNote: scopeNote,
     };
   }
   const report = corpusSection?.report as Record<string, unknown> | undefined;
@@ -118,6 +132,7 @@ export function formatItem9CorpusProgress(
     distinctRthDates: distinct,
     calibrationLabel: calibrationState.toUpperCase(),
     calibrationForbidden: fittingAllowed ? "CALIBRATION NOT PERMITTED BY UI" : "CALIBRATION FORBIDDEN",
+    receiptScopeNote: scopeNote,
   };
 }
 
@@ -210,7 +225,7 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
       id: "item9-corpus",
       label: "Distinct admitted RTH dates",
       truth: corpus.distinctRthDates.includes("/") ? "DEGRADED" : "NOT_OBSERVED",
-      detail: `${corpus.distinctRthDates} · ${corpus.calibrationLabel} · ${corpus.calibrationForbidden}`,
+      detail: `${corpus.distinctRthDates} · ${corpus.calibrationLabel} · ${corpus.calibrationForbidden}. ${corpus.receiptScopeNote}`,
       tone: "caution",
     },
     {

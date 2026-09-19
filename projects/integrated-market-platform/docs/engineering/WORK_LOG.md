@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
 | **Notes** | Browser-verified Control on worktree Vite `:5181` + API `:8767`; Radar/Lab spot-check blocked by session gate on cold navigation. Opportunity row count not in diagnostics snapshot (shown explicitly). |
 
+## 2026-09-18 — Canonical status Item 9 prep (Lane A + G docs)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Reconciled canonical program status and operator runbooks to `origin/main` @ **`50a1477f`** ([#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287)–[#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289)); pinned Item 9 **`2/3`** admitted RTH dates from read-only `corpus-status` on frozen collector receipts; documented **`GET /operator/diagnostics`**, governed receipt path, and fail-closed **`READY_TO_COLLECT`** preflight gates. **No** collection, calibration, or collector mutation. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/IMP_POST_RTH_CLOSE_08_LANE_G.md`; `docs/engineering/IMP_DUAL_CORPUS_01_NOTION_SYNC.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md` |
+| **Tests** | `python tools/item9_corpus_status.py corpus-status` (frozen collector receipt dir → `2/3`); `python tools/imp.py item9 next-rth-preflight --json` (off-hours `WRONG_RUNTIME`, no active collector); `python tools/check_docs_links.py` (pending in PR) |
+| **Related** | [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); branch `docs/canonical-status-item9-prep` |
+| **Notes** | Primary desktop checkout remains detached @ `44b8673e` — untouched. UI redesign isolated on `ui/operator-redesign-lab`. |
+
 ## 2026-09-18 — Lane D simulator experiment specs reconciliation (branch absorption)
 
 | Field | Value |

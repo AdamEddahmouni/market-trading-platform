@@ -4,15 +4,15 @@
 
 | Field | Value |
 | --- | --- |
-| **CURRENT_MAIN** (`origin/main` mutable tip) | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` (IMP-EVIDENCE-HARDENING-02 software [#248](https://github.com/AdamEddahmouni/market-trading-platform/pull/248)–[#252](https://github.com/AdamEddahmouni/market-trading-platform/pull/252); tip [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)) |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `a1b556f89c8e68e84fe7246c6e726359f3a0ebf8` — last software merge [#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251) Item 9 `next-rth-preflight`. Docs-only merges do **not** advance this field. |
+| **CURRENT_MAIN** (`origin/main` mutable tip) | `50a1477fca73fab8fe784b2f1514498bd01d6381` — IMP-POST-RTH-CLOSE-08 [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289); **`GET /operator/diagnostics`** on UI API |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `50a1477fca73fab8fe784b2f1514498bd01d6381` — matches **CURRENT_MAIN** after [#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289). Docs-only merges do **not** advance this field unless they carry software. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` — governed `.imp-actual-01-phase-d/`; do not retarget prospective collection to **CURRENT_MAIN** |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` — historical pin; do not rewrite |
-| Last verified | 2026-09-17 |
+| Last verified | 2026-09-18 |
 
 ## Program truths (do not soften)
 
-- **Item 9:** `ITEM9_CALIBRATED` = **NO**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **2** / **3** (admitted **2026-09-17** + **2026-09-18**; Sep 14–16 **NOT_ADMITTED** — RTH activity ≠ admission). Floors: **20** observations, **3** distinct US cash RTH dates, **5** evaluation rows. Sep 17 `PATH_PROOF_ONLY` immutable; Sep 18 outage epoch `121031` receipt **NONE** (not backfilled).
+- **Item 9:** `ITEM9_CALIBRATED` = **NO**; `ITEM9_CALIBRATION_RUN` = **FORBIDDEN**; `ITEM9_RESULT` = **`INSUFFICIENT_CALIBRATION_EVIDENCE`**; `ITEM9_DISTINCT_RTH_DATES` = **2** / **3** (admitted **2026-09-17** + **2026-09-18**; Sep 14–16 **NOT_ADMITTED** — RTH activity ≠ admission). Floors: **20** observations, **3** distinct US cash RTH dates, **5** evaluation rows. Sep 17 `PATH_PROOF_ONLY` immutable; Sep 18 outage epoch `121031` receipt **NONE** (not backfilled).
 - **Item 7:** `ITEM7_STATE` = **`ITEM7_PENDING_NATURAL_EVIDENCE`**; `ITEM7_PRODUCTION_FORECAST_ARTIFACT_READY` = **NO**; governed rows **0**.
 - **FTEP:** `FTEP_EMPIRICAL_ACTIVE` = **NO**; empirical locks **0**.
 - **Live:** `LIVE_EXECUTION` = **OFF**.

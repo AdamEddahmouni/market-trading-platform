@@ -52,7 +52,17 @@ Closeout artifact (operator tree, not tracked in git):
 
 ### Next lawful Item 9 increment
 
-On a **future** US equity cash RTH session: preflight → governed Mode B `--poll` from `.imp-actual-01-phase-d` @ `fed2d9f7` when `READY_TO_COLLECT` → read-only `corpus-status`. Target: a **third** distinct admitted RTH date. **No** automatic calibration fitting.
+On a **future** US equity cash RTH session: preflight from **`.imp-actual-01-phase-d` @ `fed2d9f7`** when **`READY_TO_COLLECT`** → governed Mode B `--poll` → read-only `corpus-status` on the **frozen collector receipt dir**. Target: a **third distinct admitted** RTH date (not 2026-09-17/18). **`ITEM9_CALIBRATION_RUN=FORBIDDEN`** — no automatic calibration fitting.
+
+## Follow-on operator stack (merged after Lane 0 close)
+
+| PR | Purpose | Merge SHA |
+|---|---|---|
+| [#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287) | Runtime/provider resilience (Lane B) | `b854c32d` |
+| [#288](https://github.com/AdamEddahmouni/market-trading-platform/pull/288) | Simulator experiment spec routing (docs) | `8ad2f154` |
+| [#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289) | **`GET /operator/diagnostics`** snapshot API | `50a1477f` |
+
+UI redesign work remains on isolated branch **`ui/operator-redesign-lab`** — not merged to program-main.
 
 ## Parallel lanes — engineering landings (merged to `origin/main`)
 
@@ -70,6 +80,7 @@ All five **IMP-POST-RTH-CLOSE-08** engineering lanes landed via [#282](https://g
 ```text
 ITEM9_DISTINCT_RTH_DATES=2/3
 ITEM9_CALIBRATED=NO
+ITEM9_CALIBRATION_RUN=FORBIDDEN
 ITEM9_GATE_STATE=INSUFFICIENT_CALIBRATION_EVIDENCE
 PR222_MERGED=NO
 LIVE_EXECUTION=OFF

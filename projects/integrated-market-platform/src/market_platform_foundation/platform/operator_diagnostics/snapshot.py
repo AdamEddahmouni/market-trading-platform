@@ -113,12 +113,26 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
 
     from ...paper.calibration.bar_ohlcv_prospective_proof import DEFAULT_RECEIPT_DIR
     from ...paper.calibration.item9_calibration_protocol import build_item9_corpus_status_report
+    from ...paper.calibration.item9_next_rth_preflight import resolve_frozen_collector_imp_root
 
-    receipt_dir = imp_root / DEFAULT_RECEIPT_DIR
-    if not receipt_dir.is_dir():
+    local_dir = imp_root / DEFAULT_RECEIPT_DIR
+    frozen_imp = resolve_frozen_collector_imp_root(imp_root)
+    frozen_dir = (frozen_imp / DEFAULT_RECEIPT_DIR) if frozen_imp is not None else None
+
+    receipt_dir: Path | None = None
+    receipt_scope = "NOT_OBSERVED"
+    if frozen_dir is not None and frozen_dir.is_dir():
+        receipt_dir = frozen_dir
+        receipt_scope = "FROZEN_COLLECTOR_WORKTREE_READ_ONLY"
+    elif local_dir.is_dir():
+        receipt_dir = local_dir
+        receipt_scope = "RUNTIME_IMP_ROOT_READ_ONLY"
+
+    if receipt_dir is None:
         return {
             "availability": "NOT_OBSERVED",
             "reason_code": "RECEIPT_DIR_MISSING",
+            "receipt_scope": receipt_scope,
             "does_not_infer_calibrated": True,
         }
     try:
@@ -127,10 +141,13 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
         return {
             "availability": "UNAVAILABLE",
             "reason_code": "CORPUS_STATUS_READ_FAILED",
+            "receipt_scope": receipt_scope,
             "does_not_infer_calibrated": True,
         }
     return {
         "availability": "AVAILABLE",
+        "receipt_scope": receipt_scope,
+        "receipt_dir": str(receipt_dir),
         "report": report,
         "does_not_infer_calibrated": True,
     }

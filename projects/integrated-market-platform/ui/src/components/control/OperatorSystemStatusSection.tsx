@@ -42,6 +42,7 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
   const receiptInventory = (expectedCycle.receipt_inventory ?? {}) as Record<string, unknown>;
   const truthRows = buildOperatorTruthRows(diagnostics);
   const severityTone = mapSeverityTone(diagnostics.severity);
+  const corpusScope = String(runtime?.item9_corpus_status?.receipt_scope ?? "");
 
   return (
     <div className="control-system-status">
@@ -57,6 +58,13 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
         </p>
       ) : null}
 
+      {corpusScope === "FROZEN_COLLECTOR_WORKTREE_READ_ONLY" ? (
+        <p className="control-muted" role="note">
+          Item 9 corpus sample gate uses governed frozen-collector receipts (read-only scan — not this UI
+          worktree’s empty receipt dir).
+        </p>
+      ) : null}
+
       <ul className="control-truth-list" aria-label="Operator truth hierarchy">
         {truthRows.map((row) => (
           <li key={row.id} className="control-truth-row" data-truth={row.truth}>
@@ -64,7 +72,10 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
               <span className="control-truth-class">{row.truth}</span>
               <strong>{row.label}</strong>
             </div>
-            <StatePill tone={row.tone} label={row.detail} raw={row.truth} size="sm" />
+            <div className="control-truth-value">
+              <StatePill tone={row.tone} label={row.truth} raw={row.truth} size="sm" />
+              <p className="control-truth-detail">{row.detail}</p>
+            </div>
           </li>
         ))}
       </ul>

@@ -72,6 +72,22 @@
   color: var(--text-secondary);
 }
 
+.control-truth-value {
+  flex: 1;
+  min-width: 12rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-1);
+  align-items: flex-start;
+}
+
+.control-truth-detail {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
 .control-interventions ul,
 .control-forbidden-list {
   margin: var(--imp-space-2) 0 0;
