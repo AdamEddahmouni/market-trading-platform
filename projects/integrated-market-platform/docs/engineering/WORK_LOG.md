@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api/opportunity_projections` |
+| **Summary** | Live ranked-row freshness no longer treats `OpportunityV1.created_at` or leftover fixture `as_of` as a receive clock. Missing live receive is `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE` (not `FRESH`). Attention ingest rows stay `accepted=false` when eligibility is `UNAVAILABLE`. Operator feed still withholds unclocked live rows. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/freshness.py`, `ingest.py`, `ui_api/opportunity_projections.py`, `docs/architecture/DATA_CONTRACTS.md`, tests for freshness/ingest/opportunity API |
+| **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
+| **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
+| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Rebased onto `origin/main` after #297. |
+
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
 | Field | Value |

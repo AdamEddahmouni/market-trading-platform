@@ -140,6 +140,16 @@ def evaluate_opportunity_freshness(
             as_of_time_ns=as_of_time_ns,
         )
 
+    if src == "LIVE_OBSERVATIONAL" and as_of_time_ns is None:
+        # Missing live receive clock is not MISSING_AS_OF/UNKNOWN fail-close and
+        # is never FRESH. Opportunity created_at is not a live clock.
+        return _result(
+            status=FRESHNESS_NOT_APPLICABLE,
+            reason_code="LIVE_AS_OF_UNAVAILABLE",
+            source=src,
+            policy=policy,
+        )
+
     session = str(session_state or "").upper()
     if session in SESSION_NON_OPEN:
         return _result(
