@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import time
+from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
@@ -160,17 +161,18 @@ def _public_runtime_resilience_section(resilience: Mapping[str, Any]) -> dict[st
     collector["active_collector_match_summaries"] = _sanitize_collector_match_lines(matches)
     runtime_identity = dict(resilience.get("runtime_identity") or {})
     runtime_identity.pop("frozen_collector_authority_sha", None)
+    expected_cycle = deepcopy(resilience.get("expected_cycle") or {})
     return {
         "artifact_kind": resilience.get("artifact_kind"),
         "schema_version": resilience.get("schema_version"),
         "observed_at_ns": resilience.get("observed_at_ns"),
         "evidence_class": resilience.get("evidence_class"),
         "runtime_identity": runtime_identity,
-        "provider_connectivity": resilience.get("provider_connectivity"),
+        "provider_connectivity": deepcopy(resilience.get("provider_connectivity") or {}),
         "collector_process": collector,
-        "item9_next_rth_preflight": resilience.get("item9_next_rth_preflight"),
-        "expected_cycle": resilience.get("expected_cycle"),
-        "readiness_vs_liveness": resilience.get("readiness_vs_liveness"),
+        "item9_next_rth_preflight": deepcopy(resilience.get("item9_next_rth_preflight") or {}),
+        "expected_cycle": expected_cycle,
+        "readiness_vs_liveness": deepcopy(resilience.get("readiness_vs_liveness") or {}),
         "does_not_start_collector": True,
     }
 
@@ -320,21 +322,41 @@ def _cycle_recovery_view(
     recovery_observed = "NOT_OBSERVED"
     gap_note = "Collector log not configured or unreadable; epoch gap analysis unavailable."
     missing_epochs: list[dict[str, str]] = []
+    hung_epochs: list[str] = []
+    log_availability = "NOT_OBSERVED"
+    log_freshness = "NOT_OBSERVED"
+    log_truncated = False
+    analysis_completeness = "NOT_OBSERVED"
 
     if resilience is not None:
         expected_cycle = (
             resilience.get("expected_cycle") if isinstance(resilience.get("expected_cycle"), dict) else {}
         )
+        log_source = (
+            expected_cycle.get("collector_log_source")
+            if isinstance(expected_cycle.get("collector_log_source"), dict)
+            else {}
+        )
+        if log_source:
+            log_availability = str(log_source.get("availability") or log_availability)
+            log_freshness = str(log_source.get("freshness") or log_freshness)
+            log_truncated = bool(log_source.get("truncated"))
         log_gaps = expected_cycle.get("collector_log_gaps")
         if isinstance(log_gaps, dict):
+            analysis_completeness = str(log_gaps.get("analysis_completeness") or "FULL")
             missing_epochs = [
-                row for row in (log_gaps.get("missing_receipt_epochs") or []) if isinstance(row, dict)
+                dict(row) for row in (log_gaps.get("missing_receipt_epochs") or []) if isinstance(row, dict)
             ]
-            if missing_epochs or log_gaps.get("hung_epochs_without_end"):
+            hung_epochs = [str(epoch) for epoch in (log_gaps.get("hung_epochs_without_end") or [])]
+            if missing_epochs or hung_epochs:
                 expected_cycle_failure = "OBSERVED"
-            if log_gaps.get("ended_epoch_count", 0) and not log_gaps.get("hung_epochs_without_end"):
+            if log_truncated or analysis_completeness == "PARTIAL_TAIL":
+                recovery_observed = "UNKNOWN"
+            elif log_gaps.get("ended_epoch_count", 0) and not hung_epochs:
                 recovery_observed = "OBSERVED"
-            gap_note = "Derived from runtime_resilience expected_cycle.collector_log_gaps when log text is provided."
+            gap_note = (
+                "Derived from runtime_resilience expected_cycle.collector_log_gaps when log text is provided."
+            )
         inventory = expected_cycle.get("receipt_inventory")
         if isinstance(inventory, dict) and inventory.get("reason_code") == "RECEIPT_DIR_MISSING":
             expected_cycle_failure = "OBSERVED"
@@ -343,6 +365,11 @@ def _cycle_recovery_view(
         "expected_cycle_failure": expected_cycle_failure,
         "recovery_observed": recovery_observed,
         "missing_receipt_epochs": missing_epochs,
+        "hung_epochs_without_end": hung_epochs,
+        "collector_log_availability": log_availability,
+        "collector_log_freshness": log_freshness,
+        "collector_log_truncated": log_truncated,
+        "analysis_completeness": analysis_completeness,
         "lifecycle_degraded_services": unhealthy,
         "item9_disposition": item9.get("disposition"),
         "gap_note": gap_note,
@@ -462,6 +489,11 @@ def _operator_questions(
         "q10_expected_cycle_fail": {
             "answer": cycle.get("expected_cycle_failure"),
             "missing_receipt_epochs": cycle.get("missing_receipt_epochs"),
+            "hung_epochs_without_end": cycle.get("hung_epochs_without_end"),
+            "collector_log_availability": cycle.get("collector_log_availability"),
+            "collector_log_freshness": cycle.get("collector_log_freshness"),
+            "collector_log_truncated": cycle.get("collector_log_truncated"),
+            "analysis_completeness": cycle.get("analysis_completeness"),
             "detail": cycle.get("gap_note"),
             "source": "runtime_resilience.expected_cycle",
         },
