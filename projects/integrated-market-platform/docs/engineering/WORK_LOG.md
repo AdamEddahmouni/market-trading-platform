@@ -83,7 +83,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
 | **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
 | **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `61ea8110` (#304) keep-both. |
-<<<<<<< HEAD
 
 ## 2026-09-19 — Weekend Wave A Lane A: redact Windows receipt_dir on POSIX
 
