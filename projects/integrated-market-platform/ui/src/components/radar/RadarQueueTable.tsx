@@ -1,11 +1,7 @@
 import type { AttentionItem } from "../../api/client";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { StatePill } from "../imp-ui/StatePill";
-import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
-import {
-  collectOpportunityProviderLabels,
-  opportunityFreshnessQueueLabel,
-} from "../opportunity/opportunityOperatorBrief";
+import { buildOpportunityQueueScan } from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   canOpenOpportunityWorkspace,
@@ -13,7 +9,6 @@ import {
   evidenceInputsSummary,
   OPPORTUNITY_STATE_LABEL,
   OPPORTUNITY_STATE_TONE,
-  opportunityNextActionState,
   opportunityRankLabel,
   opportunitySymbol,
   stableOpportunityKey,
@@ -23,6 +18,7 @@ type Props = {
   items: OpportunityReviewRow[];
   selectedStableKey?: string | null;
   readOnly?: boolean;
+  paperActions?: boolean;
   onSelectRow?: (row: OpportunityReviewRow) => void;
   onExplain?: (item: AttentionItem) => void;
   onInspect?: (item: AttentionItem) => void;
@@ -30,15 +26,16 @@ type Props = {
 };
 
 /**
- * The ranked opportunity queue. Each row answers without opening details:
- * instrument, what/why-now, state, evidence strength, freshness, attached
- * providers (or UNKNOWN), and next safe action. Rows are keyboard selectable
- * (Enter/Space) with aria-selected.
+ * Ranked queue scan. Each row answers operator questions without opening
+ * details: what happened vs inferred, freshness, providers, conflicts,
+ * unknowns, invalidation, and why action may be refused. next_safe_action is
+ * a research-gate token inside refusal — not a trade CTA column.
  */
 export function RadarQueueTable({
   items,
   selectedStableKey = null,
   readOnly = false,
+  paperActions = false,
   onSelectRow,
   onExplain,
   onInspect,
@@ -48,18 +45,17 @@ export function RadarQueueTable({
     <div className="imp-radar-queue-wrap" data-testid="imp-radar-queue">
       <table className="imp-radar-queue-table">
         <caption className="imp-visually-hidden">
-          Ranked opportunity queue. Select a row to inspect the opportunity.
+          Ranked opportunity queue. Provenance scan answers what happened versus
+          inferred, freshness, providers, conflicts, unknowns, invalidation, and
+          refusal. Select a row for the full operator brief.
         </caption>
         <thead>
           <tr>
             <th scope="col">Rank</th>
             <th scope="col">Symbol</th>
-            <th scope="col">What / why now</th>
             <th scope="col">State</th>
             <th scope="col">Evidence</th>
-            <th scope="col">Freshness</th>
-            <th scope="col">Providers</th>
-            <th scope="col">Next action</th>
+            <th scope="col">Provenance scan</th>
             <th scope="col">
               <span className="imp-visually-hidden">Row actions</span>
             </th>
@@ -72,9 +68,7 @@ export function RadarQueueTable({
             const rowKey = stableOpportunityKey(row);
             const selected = selectedStableKey === rowKey;
             const presentation = derivePresentationState(row);
-            const nextAction = opportunityNextActionState(row);
-            const freshnessLabel = opportunityFreshnessQueueLabel(row);
-            const providers = collectOpportunityProviderLabels(row);
+            const scan = buildOpportunityQueueScan(row, null, { readOnly, paperActions });
             return (
               <tr
                 key={row.summary_id}
@@ -98,7 +92,6 @@ export function RadarQueueTable({
                 <td>
                   <code>{opportunitySymbol(row)}</code>
                 </td>
-                <td className="imp-radar-queue-headline">{row.headline}</td>
                 <td>
                   <StatePill
                     tone={OPPORTUNITY_STATE_TONE[presentation]}
@@ -109,16 +102,25 @@ export function RadarQueueTable({
                 </td>
                 <td>{evidenceInputsSummary(row)}</td>
                 <td>
-                  <FreshnessIndicator backendLabel={freshnessLabel} />
-                </td>
-                <td>{providers.length ? providers.join(", ") : "UNKNOWN"}</td>
-                <td>
-                  <StatePill
-                    tone={nextAction.tone}
-                    label={nextAction.label}
-                    raw={nextAction.raw}
-                    size="sm"
-                  />
+                  <dl
+                    className="imp-radar-queue-scan"
+                    data-testid="imp-radar-queue-scan"
+                    aria-label={`Provenance scan for ${opportunitySymbol(row)}`}
+                  >
+                    {scan.map((item) => (
+                      <div
+                        key={item.question}
+                        className="imp-radar-queue-scan-row"
+                        data-honesty={item.honesty}
+                      >
+                        <dt>{item.question}</dt>
+                        <dd>
+                          {item.answer}
+                          <span className="imp-radar-brief-honesty">{item.honesty}</span>
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 </td>
                 <td className="imp-radar-queue-actions">
                   {onExplain ? (

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Radar queue provenance scan (Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Ranked Radar rows now answer operator questions in a provenance scan without opening detail: observed instrument/lifecycle vs inferred headline, freshness honesty, providers, conflicts, unknowns, invalidation, and why action may be refused. Removed the queue “Next action” CTA; `next_safe_action` is a research-gate token. `LIVE_AS_OF_UNAVAILABLE` stays withheld-clock honesty, not a repair. Item 9 2/3 IDLE / NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF unchanged. Discover remains investigation-only. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/components/radar/RadarOpportunitiesPanel.tsx`; `ui/src/components/radar/RadarPage.test.tsx`; `ui/src/components/opportunity/opportunityOperatorBrief.test.ts`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run src/components/radar/RadarPage.test.tsx src/components/opportunity/opportunityOperatorBrief.test.ts` — 43 passed; `npm run typecheck` — pass. Browser QA not run (no Radar backend in this worktree). |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) opportunity presentation; prior Lane I briefs #300/#310/#336 |
+| **Notes** | Isolated worktree `.worktrees/weekend-radar-provenance-product` on `ui/weekend-radar-provenance-product` from `origin/main` **`19d4d317`** (actual tip after #350; #349 was `d27fb164`). Did not edit PROGRAM_STATUS, Discover leftover copy, or Lane H lifecycle tests. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `d27fb164` after #349
 
 | Field | Value |

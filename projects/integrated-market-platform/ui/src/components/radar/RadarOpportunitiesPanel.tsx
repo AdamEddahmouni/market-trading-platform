@@ -129,6 +129,7 @@ export function RadarOpportunitiesPanel({
           items={items}
           selectedStableKey={selectedRow ? stableOpportunityKey(selectedRow) : null}
           readOnly={readOnly}
+          paperActions={paperActions}
           onSelectRow={handleSelectRow}
           onExplain={onExplain}
           onInspect={onInspect}
