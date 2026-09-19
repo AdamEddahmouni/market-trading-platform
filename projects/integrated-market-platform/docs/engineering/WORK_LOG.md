@@ -48,6 +48,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | PR #298 review; Weekend Wave B Lane E |
 | **Notes** | Did not coerce 2/3 to OK/HEALTHY. Did not edit Control UI or `snapshot.py` severity mapping. |
 
+## 2026-09-18 — Operator API contract: backend-owned truth tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api`, `platform/operator_diagnostics`, `ui/src/api` |
+| **Summary** | Added `operator_truth` on `GET /operator/diagnostics` (schema 1.1.0) so Control/Command consume backend facts instead of remapping status. Item 9 2/3 corpus progress is `IDLE` not `DEGRADED`. Stripped monotonic clock and `receipt_dir`. Added `data_quality.operator_surface_flag` for Command stale/degraded KPIs. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/{operator_truth.py,snapshot.py}`; `ui/src/api/{schemas.ts,operatorTruth.ts,opportunityClient.ts,hooks.ts}`; `ui/src/components/imp-product/impOverviewMetrics.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
+| **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
+
+## 2026-09-19 — Weekend Lane L opportunity pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api/opportunity_projections` |
+| **Summary** | Live ranked-row freshness no longer treats `OpportunityV1.created_at` or leftover fixture `as_of` as a receive clock. Missing live receive is `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE` (not `FRESH`). Attention ingest rows stay `accepted=false` when eligibility is `UNAVAILABLE`. Operator feed still withholds unclocked live rows. |
+| **Key files** | `src/market_platform_foundation/intelligence/opportunity/freshness.py`, `ingest.py`, `ui_api/opportunity_projections.py`, `docs/architecture/DATA_CONTRACTS.md`, tests for freshness/ingest/opportunity API |
+| **Tests** | `python -m unittest` 6 pipeline modules **74 passed**; `python tools/imp.py validate changed` **3792 passed, 42 skipped, 0 failures** |
+| **Related** | [DATA_CONTRACTS.md](../architecture/DATA_CONTRACTS.md) |
+| **Notes** | **CALENDAR:** Item 9 `2/3` `NOT_CALIBRATED` — no collection this lane. **ENGINEERING:** remaining pipeline gaps (attention `OPEN_WORKSPACE` vs `UNAVAILABLE` eligibility; event vs receive lag not on Radar cards; live receive used as both as_of and last_source when a clock exists). No Item 9, Live, Full30, #222, collector, Radar UI, Control, or `snapshot.py` edits. Merged `origin/main` `61ea8110` (#304) keep-both. |
+
 ## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
 
 | Field | Value |
@@ -131,18 +155,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
 | **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
-
-## 2026-09-18 — Operator API contract: backend-owned truth tokens
-
-| Field | Value |
-|-------|-------|
-| **Status** | `complete` |
-| **Area** | `ui_api`, `platform/operator_diagnostics`, `ui/src/api` |
-| **Summary** | Added `operator_truth` on `GET /operator/diagnostics` (schema 1.1.0) so Control/Command consume backend facts instead of remapping status. Item 9 2/3 corpus progress is `IDLE` not `DEGRADED`. Stripped monotonic clock and `receipt_dir`. Added `data_quality.operator_surface_flag` for Command stale/degraded KPIs. |
-| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/{operator_truth.py,snapshot.py}`; `ui/src/api/{schemas.ts,operatorTruth.ts,opportunityClient.ts,hooks.ts}`; `ui/src/components/imp-product/impOverviewMetrics.ts`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
-| **Tests** | `python tools/imp.py test focused` 3 passed; `$env:PYTHONPATH="src"; python -m unittest tests.platform.test_operator_truth_contract tests.platform.test_operator_diagnostics_snapshot tests.intelligence.test_opportunity_data_quality` 12 passed; `cd ui && npm test -- schemas/operatorTruth/impOverviewMetrics` 18 passed; `npm run typecheck` pass |
-| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
-| **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
 
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
