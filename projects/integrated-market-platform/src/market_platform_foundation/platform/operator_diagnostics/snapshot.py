@@ -6,6 +6,7 @@ heartbeat probes, or collector process identity (Lane B). UI rendering is Lane E
 
 from __future__ import annotations
 
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -13,11 +14,10 @@ from typing import Any, Mapping
 
 from ...local_state.paths import state_dir
 from ...operating_modes import live_execution_env_enabled, paper_execution_env_enabled
-from ...paper.calibration.bar_ohlcv_prospective_proof import resolve_runtime_git_sha
+from ...operations.runtime_resilience_diagnostic import build_runtime_resilience_diagnostic
 from ...paper.calibration.item9_next_rth_preflight import (
     FROZEN_COLLECTOR_AUTHORITY_SHA,
     FROZEN_COLLECTOR_WORKTREE_REL,
-    run_item9_next_rth_preflight,
 )
 from ...ui_api import projections
 from ...ui_api.live_projections import build_provider_health_payload
@@ -54,6 +54,78 @@ _READ_ONLY_OPERATOR_ACTIONS = (
 
 def _imp_root() -> Path:
     return Path(__file__).resolve().parents[4]
+
+
+_SECRET_TOKEN_RE = re.compile(
+    r"(?i)(api[_-]?key|secret|token|password|authorization)\s*[=:]\s*\S+"
+)
+
+
+def _sanitize_collector_match_lines(lines: list[str]) -> list[str]:
+    """Do not echo raw process cmdlines to operators (paths/credentials)."""
+
+    summaries: list[str] = []
+    for raw in lines[:3]:
+        line = _SECRET_TOKEN_RE.sub(r"\1=<redacted>", raw)
+        if len(line) > 160:
+            line = line[:80] + "…<truncated>…" + line[-40:]
+        if "opend_bar_1m_prospective_proof.py" in line and "prospective" in line:
+            summaries.append("item9_prospective_poll_process")
+        else:
+            summaries.append("collector_process_match")
+    return summaries
+
+
+def _item9_view_from_resilience(resilience: Mapping[str, Any]) -> dict[str, Any]:
+    runtime_identity = (
+        resilience.get("runtime_identity") if isinstance(resilience.get("runtime_identity"), dict) else {}
+    )
+    collector_process = (
+        resilience.get("collector_process") if isinstance(resilience.get("collector_process"), dict) else {}
+    )
+    item9_summary = (
+        resilience.get("item9_next_rth_preflight")
+        if isinstance(resilience.get("item9_next_rth_preflight"), dict)
+        else {}
+    )
+    matches = list(collector_process.get("active_collector_matches") or [])
+    return {
+        "disposition": item9_summary.get("disposition"),
+        "blockers": item9_summary.get("blockers"),
+        "reason_codes": item9_summary.get("reason_codes"),
+        "runtime": {
+            "runtime_matches_frozen_authority": runtime_identity.get("runtime_matches_frozen_authority"),
+            "frozen_collector_git_sha": runtime_identity.get("frozen_collector_worktree_sha"),
+            "frozen_collector_available": bool(runtime_identity.get("frozen_collector_imp_root")),
+            "frozen_collector_imp_root": runtime_identity.get("frozen_collector_imp_root"),
+        },
+        "active_collector": {
+            "detected": collector_process.get("active_collector_detected"),
+            "process_probe_status": collector_process.get("probe_status"),
+            "matching_command_lines": matches,
+        },
+        "does_not_start_collector": True,
+    }
+
+
+def _public_runtime_resilience_section(resilience: Mapping[str, Any]) -> dict[str, Any]:
+    collector = dict(resilience.get("collector_process") or {})
+    matches = list(collector.pop("active_collector_matches", []) or [])
+    collector["active_collector_match_count"] = len(matches)
+    collector["active_collector_match_summaries"] = _sanitize_collector_match_lines(matches)
+    return {
+        "artifact_kind": resilience.get("artifact_kind"),
+        "schema_version": resilience.get("schema_version"),
+        "observed_at_ns": resilience.get("observed_at_ns"),
+        "evidence_class": resilience.get("evidence_class"),
+        "runtime_identity": resilience.get("runtime_identity"),
+        "provider_connectivity": resilience.get("provider_connectivity"),
+        "collector_process": collector,
+        "item9_next_rth_preflight": resilience.get("item9_next_rth_preflight"),
+        "expected_cycle": resilience.get("expected_cycle"),
+        "readiness_vs_liveness": resilience.get("readiness_vs_liveness"),
+        "does_not_start_collector": True,
+    }
 
 
 def _classify_session_evidence(store: ReplayStore, item9: Mapping[str, Any]) -> dict[str, Any]:
@@ -183,8 +255,12 @@ def _freshness_view(
     }
 
 
-def _cycle_recovery_view(item9: Mapping[str, Any], lifecycle: Mapping[str, Any]) -> dict[str, Any]:
-    """Expected cycle failures are not centrally journaled yet — explicit honesty."""
+def _cycle_recovery_view(
+    item9: Mapping[str, Any],
+    lifecycle: Mapping[str, Any],
+    *,
+    resilience: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     services = lifecycle.get("services") if isinstance(lifecycle.get("services"), list) else []
     unhealthy = [
         str(row.get("name"))
@@ -193,15 +269,36 @@ def _cycle_recovery_view(item9: Mapping[str, Any], lifecycle: Mapping[str, Any])
         and isinstance(row.get("health"), dict)
         and str(row["health"].get("status")) not in {"HEALTHY", "OK", "RUNNING"}
     ]
+    expected_cycle_failure = "NOT_OBSERVED"
+    recovery_observed = "NOT_OBSERVED"
+    gap_note = "Collector log text not supplied; epoch gap analysis unavailable."
+    missing_epochs: list[dict[str, str]] = []
+
+    if resilience is not None:
+        expected_cycle = (
+            resilience.get("expected_cycle") if isinstance(resilience.get("expected_cycle"), dict) else {}
+        )
+        log_gaps = expected_cycle.get("collector_log_gaps")
+        if isinstance(log_gaps, dict):
+            missing_epochs = [
+                row for row in (log_gaps.get("missing_receipt_epochs") or []) if isinstance(row, dict)
+            ]
+            if missing_epochs or log_gaps.get("hung_epochs_without_end"):
+                expected_cycle_failure = "OBSERVED"
+            if log_gaps.get("ended_epoch_count", 0) and not log_gaps.get("hung_epochs_without_end"):
+                recovery_observed = "OBSERVED"
+            gap_note = "Derived from runtime_resilience expected_cycle.collector_log_gaps when log text is provided."
+        inventory = expected_cycle.get("receipt_inventory")
+        if isinstance(inventory, dict) and inventory.get("reason_code") == "RECEIPT_DIR_MISSING":
+            expected_cycle_failure = "OBSERVED"
+
     return {
-        "expected_cycle_failure": "NOT_OBSERVED",
-        "recovery_observed": "NOT_OBSERVED",
+        "expected_cycle_failure": expected_cycle_failure,
+        "recovery_observed": recovery_observed,
+        "missing_receipt_epochs": missing_epochs,
         "lifecycle_degraded_services": unhealthy,
         "item9_disposition": item9.get("disposition"),
-        "gap_note": (
-            "No durable expected-cycle ledger is exposed yet. "
-            "Use lifecycle service health + item9 disposition until Lane B adds cycle receipts."
-        ),
+        "gap_note": gap_note,
     }
 
 
@@ -218,13 +315,13 @@ def _evidence_gaps(opportunity_summary: Mapping[str, Any], item9: Mapping[str, A
         )
     elif feed == "EMPTY":
         gaps.append({"domain": "opportunity_feed", "token": "NOT_EXPECTED", "detail": "empty_ranked_set"})
-    path_gate = item9.get("output_path_gate")
-    if isinstance(path_gate, dict) and not path_gate.get("ok"):
+    blockers = item9.get("blockers") if isinstance(item9.get("blockers"), list) else []
+    if "OUTPUT_PATH_INVALID" in blockers:
         gaps.append(
             {
                 "domain": "item9_receipt_path",
                 "token": "INVALID",
-                "detail": str(path_gate.get("reason_code") or "output_path_gate_failed"),
+                "detail": "item9_preflight_output_path_invalid",
             }
         )
     if str(item9.get("disposition")) == "WRONG_RUNTIME":
@@ -269,7 +366,7 @@ def _operator_questions(
             "answer": runtime_sha,
             "frozen_collector_pin": _PIN_ITEM9_FROZEN_COLLECTOR_SHA[:8],
             "matches_frozen_authority": runtime.get("runtime_matches_frozen_authority"),
-            "source": "resolve_runtime_git_sha + item9 preflight",
+            "source": "runtime_resilience.runtime_identity",
         },
         "q03_configuration_loaded": {
             "answer": config_summary,
@@ -304,7 +401,7 @@ def _operator_questions(
         "q08_collector_active": {
             "answer": bool(collector.get("detected")),
             "process_probe_status": collector.get("process_probe_status"),
-            "source": "item9 preflight (probe optional; default NOT_RUN in API)",
+            "source": "runtime_resilience.collector_process",
         },
         "q09_collector_identity": {
             "answer": {
@@ -317,13 +414,14 @@ def _operator_questions(
         },
         "q10_expected_cycle_fail": {
             "answer": cycle.get("expected_cycle_failure"),
+            "missing_receipt_epochs": cycle.get("missing_receipt_epochs"),
             "detail": cycle.get("gap_note"),
-            "source": "NOT_OBSERVED (gap)",
+            "source": "runtime_resilience.expected_cycle",
         },
         "q11_recovery_observed": {
             "answer": cycle.get("recovery_observed"),
             "lifecycle_degraded_services": cycle.get("lifecycle_degraded_services"),
-            "source": "NOT_OBSERVED (gap)",
+            "source": "runtime_resilience.expected_cycle + lifecycle",
         },
         "q12_evidence_gaps": {
             "answer": evidence_gaps,
@@ -388,24 +486,30 @@ def _governance_block(
 def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     """Build a leak-safe, machine-readable operator diagnostic snapshot."""
     imp_root = _imp_root()
-    runtime_sha = resolve_runtime_git_sha(start=imp_root)
 
     from tools.platform.control_service import build_control_status
     from tools.state_path_diagnostic import collect_state_path_report
+
+    resilience = build_runtime_resilience_diagnostic(imp_root)
+    runtime_identity = (
+        resilience.get("runtime_identity") if isinstance(resilience.get("runtime_identity"), dict) else {}
+    )
+    runtime_sha = str(runtime_identity.get("runtime_git_sha") or "")
+    item9 = _item9_view_from_resilience(resilience)
+    resilience_public = _public_runtime_resilience_section(resilience)
 
     lifecycle = build_control_status(imp_root)
     readiness = build_operator_readiness_payload(store)
     config = build_operator_config_payload()
     config_summary = _config_summary(config)
     state_path = collect_state_path_report(imp_root)
-    item9 = run_item9_next_rth_preflight(imp_root, active_collector_probe=None)
     provider_health = build_provider_health_payload(store)
     opportunity_summary = build_opportunities_summary_payload(store)
 
     readiness_providers = readiness.get("providers") if isinstance(readiness.get("providers"), list) else []
     session = _classify_session_evidence(store, item9)
     freshness = _freshness_view(readiness_providers, provider_health, opportunity_summary)
-    cycle = _cycle_recovery_view(item9, lifecycle)
+    cycle = _cycle_recovery_view(item9, lifecycle, resilience=resilience)
     evidence_gaps = _evidence_gaps(opportunity_summary, item9)
 
     interventions: list[str] = []
@@ -468,14 +572,13 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
                 "imp_project_root": str(imp_root),
                 "git_sha": runtime_sha,
                 "frozen_collector_worktree_rel": str(FROZEN_COLLECTOR_WORKTREE_REL),
+                "runtime_resilience": resilience_public,
                 "item9_preflight": {
                     "disposition": item9.get("disposition"),
                     "blockers": item9.get("blockers"),
                     "reason_codes": item9.get("reason_codes"),
-                    "calendar": item9.get("calendar"),
                     "runtime": item9.get("runtime"),
-                    "active_collector": item9.get("active_collector"),
-                    "does_not_start_collector": item9.get("does_not_start_collector"),
+                    "does_not_start_collector": True,
                 },
             },
             "configuration": {
@@ -516,7 +619,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "GET /provider/health",
             "GET /opportunities/summary",
             "tools/state_path_diagnostic.collect_state_path_report",
-            "item9_next_rth_preflight.run_item9_next_rth_preflight (read-only, no process probe)",
+            "operations.runtime_resilience_diagnostic.build_runtime_resilience_diagnostic",
         ],
         "generated_at_monotonic": time.monotonic(),
     }
