@@ -88,15 +88,12 @@ class EdgeStatsEvidenceArtifactTests(unittest.TestCase):
         self.assertEqual(first["seed"], 20260914)
 
     def test_source_hash_mismatch_fails_closed(self) -> None:
-        with tempfile.NamedTemporaryFile("w", suffix=".jsonl", delete=False) as handle:
-            handle.write('{"event_type":"BAR"}\n')
-            temp_path = Path(handle.name)
-        try:
+        with tempfile.TemporaryDirectory() as tmp:
+            temp_path = Path(tmp) / "bad_bars.jsonl"
+            temp_path.write_text('{"event_type":"BAR"}\n', encoding="utf-8")
             with self.assertRaises(ValueError) as ctx:
                 verify_and_load_biya_bars(bar_source=temp_path)
             self.assertIn("ADMITTED_SOURCE_VERIFICATION_FAILED", str(ctx.exception))
-        finally:
-            temp_path.unlink(missing_ok=True)
 
     def test_time_split_marks_insufficient_data_when_thin(self) -> None:
         artifact = run_edge_stats_pipeline(generated_at=GOLDEN_GENERATED_AT)
