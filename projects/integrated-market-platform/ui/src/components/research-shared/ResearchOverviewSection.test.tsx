@@ -167,15 +167,23 @@ describe("ResearchOverviewSection", () => {
     expect(screen.queryByRole("link", { name: "Squeeze screener outcomes" })).not.toBeInTheDocument();
   });
 
-  it("states honestly which operator concepts have no contract", () => {
-    renderSection();
-    expect(screen.getByRole("heading", { name: "Navigate this claim" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "Claim navigation" })).toBeInTheDocument();
-    expect(screen.getByText("Hypothesis")).toBeInTheDocument();
+  it("scopes the claim graph to the selected finding without inventing objects", () => {
+    render(
+      <MemoryRouter initialEntries={["/research?claim=squeeze_outcomes"]}>
+        <ResearchOverviewSection mode="DEMO" />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/Following Squeeze screener outcomes/i)).toBeInTheDocument();
+    const picker = screen.getByRole("navigation", { name: "Finding to follow" });
+    expect(
+      picker.querySelector('[aria-current="page"]')?.getAttribute("aria-label"),
+    ).toBe("Follow finding Squeeze screener outcomes");
+    expect(screen.getByRole("link", { name: "Follow source" })).toHaveAttribute(
+      "href",
+      "/research/evidence?panel=squeeze_outcomes&claim=squeeze_outcomes",
+    );
+    expect(screen.getAllByText(/Not on this finding's path/).length).toBeGreaterThan(0);
     expect(screen.getAllByText("NOT_EXPOSED").length).toBeGreaterThan(0);
-    expect(screen.getByText("Contradiction")).toBeInTheDocument();
-    expect(screen.getByText("Forward-test")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "What stays off this graph" })).toBeInTheDocument();
   });
 
   it("keeps the replay session id in the methodology disclosure", () => {

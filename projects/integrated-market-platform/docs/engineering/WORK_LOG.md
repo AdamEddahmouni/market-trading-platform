@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave C Lane K: research claim lineage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Increment after [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302): Overview `?claim=` scopes the eight-node claim graph to one analytics finding. Source/evidence deep-link to that panel; off-path nodes stay visible as gaps; hops carry `claim` on Research routes only. Hypothesis and FTEP remain `NOT_EXPOSED`; simulation is not a forward test. |
+| **Key files** | `ui/src/components/research-shared/researchPresentation.ts`; `ResearchClaimGraph.tsx`; `ResearchOverviewSection.tsx`; Evidence/Validation/Simulation sections; `ui/src/styles/research.css`; `docs/ui-redesign-v2/research-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` research-shared + demo/paper/live-research **67 passed**; `npm run typecheck` **pass** |
+| **Related** | [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302); [research-contract-map.md](../ui-redesign-v2/research-contract-map.md) |
+| **Notes** | Isolated `.worktrees/weekend-lane-k-research-lineage` from `origin/main` `be0e7e1a` (post-#315 absorb). Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED**. No Full30, #222, `snapshot.py`, Radar, Lab, provider, or PROGRAM_STATUS edits. Do not merge from this lane. |
+
 ## 2026-09-19 — Weekend Wave B Lane F: provider reason-code operator projections
 
 | Field | Value |

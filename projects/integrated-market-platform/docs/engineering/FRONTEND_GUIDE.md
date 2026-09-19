@@ -151,7 +151,7 @@ Routable sections (one fetch family per section; Overview synthesizes all three)
 
 | Route | Section | Endpoints |
 |-------|---------|-----------|
-| `/research` | Overview | analytics + models + simulation (claim graph) |
+| `/research` | Overview | analytics + models + simulation (claim graph scoped by `?claim=`) |
 | `/research/evidence` | Evidence | `/research/analytics` (`?panel=` deep-link) |
 | `/research/validation` | Validation | `/research/models` (`?conflict=1` filters ABSTAIN_CONFLICTING_EVIDENCE) |
 | `/research/simulation` | Simulation | `/research/simulation` |
@@ -169,12 +169,15 @@ Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-
 Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Hypotheses,
 domains, source catalogs, supporting/contradictory flags, and FTEP campaign
 state have **no UI contract**. They appear as claim-graph nodes with honest gap
-labels, not as fabricated objects. The only conflict signal
-is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations (`?conflict=1`).
-Paper forward tests stay on Workspace; Research does not fetch them. Radar Screeners
-deep-link to `/research/evidence?panel=squeeze_outcomes`; Opportunity L3 links
-to `/research/evidence` without fabricating per-opportunity relations. Presentation:
-`researchPresentation.ts` + `research` domain in `semanticState.ts`.
+labels, not as fabricated objects. Overview `?claim=<panel_key>` scopes the
+eight-node thread to one analytics finding (source/evidence deep-link to that
+panel; off-path nodes stay visible and unlabeled as action). The only conflict
+signal is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations
+(`?conflict=1`). Paper forward tests stay on Workspace; Research does not fetch
+them. Radar Screeners deep-link to `/research/evidence?panel=squeeze_outcomes`;
+Opportunity L3 links to `/research/evidence` without fabricating per-opportunity
+relations. Presentation: `researchPresentation.ts` + `research` domain in
+`semanticState.ts`.
 
 ## Testing patterns
 
