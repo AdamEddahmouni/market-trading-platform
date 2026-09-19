@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2f6aeeef` after #333
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | After absorbing `origin/main` (merge [#333](https://github.com/AdamEddahmouni/market-trading-platform/pull/333)) into [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334), retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`2f6aeeef`** so the pin is not stale on `edd79432`. Ancestry includes [#335](https://github.com/AdamEddahmouni/market-trading-platform/pull/335). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334); [#333](https://github.com/AdamEddahmouni/market-trading-platform/pull/333); prior pin entry `edd79432` after #335 |
+| **Notes** | Isolated sparse worktree `.worktrees/pr334-absorb`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `edd79432` after #335
 
 | Field | Value |
