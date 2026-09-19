@@ -171,7 +171,8 @@
   box-shadow: inset 3px 0 0 var(--imp-state-caution-fg);
 }
 
-.control-truth-row[data-kind="policy"][data-truth="BLOCKED"] {
+.control-truth-row[data-kind="policy"][data-truth="BLOCKED"],
+.control-truth-row[data-kind="policy"][data-truth="POLICY"] {
   box-shadow: inset 3px 0 0 var(--imp-state-neutral-fg);
   background: var(--surface-0);
 }

@@ -522,6 +522,15 @@ describe("OperatorControlCenterPage", () => {
     expect(corpusRow).toHaveAttribute("data-truth", "IDLE");
     expect(corpusRow).toHaveAttribute("data-kind", "waiting");
     expect(corpusRow).not.toHaveAttribute("data-truth", "DEGRADED");
+    expect(corpusRow).toHaveTextContent(/still needs more distinct regular-trading-hours dates/);
+    const liveRow = within(systemStatus as HTMLElement)
+      .getByText("Live real-money execution")
+      .closest("li");
+    expect(liveRow).toHaveAttribute("data-truth", "POLICY");
+    expect(liveRow).toHaveAttribute("data-kind", "policy");
+    expect(liveRow).not.toHaveAttribute("data-truth", "BLOCKED");
+    expect(liveRow).toHaveTextContent(/Intentional safety lock/);
+    expect(liveRow).not.toHaveTextContent(/gate is cleared/);
     expect(systemStatus).toHaveTextContent(/Waiting on the trading calendar/);
     expect(systemStatus).toHaveTextContent(/NOT CALIBRATED/);
     expect(systemStatus).toHaveTextContent(/CALIBRATION FORBIDDEN/);

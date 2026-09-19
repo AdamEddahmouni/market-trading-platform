@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Review fix on #297: Live OFF uses truth class **POLICY** (not **BLOCKED**); BLOCKED stays for real gates such as WRONG_RUNTIME. Item 9 corpus meaning now branches — 2/3 still “needs more dates”, 3/3 says the date gate is complete and does not claim more dates are required. |
+| **Key files** | `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `OperatorSystemStatusSection.tsx`; `operatorDiagnosticsPresentation.test.ts`; `ui/src/styles/operator-control.css` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **50 passed** |
+| **Related** | PR [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) |
+| **Notes** | Merged `origin/main` @ `1f33bf9e` (#295) first. No collector / Item 9 mutation. |
+
 ## 2026-09-18 — Lane B Operator Control UX (trader-readable status)
 
 | Field | Value |

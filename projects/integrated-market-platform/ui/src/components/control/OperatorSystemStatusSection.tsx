@@ -81,7 +81,8 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
 
       <p className="control-sr-only" id="control-truth-legend">
         Each row shows a canonical truth class, a trader explanation, and the raw tokens. IDLE means
-        waiting. DEGRADED means impaired. Color is not the only indicator.
+        waiting. POLICY means an intentional safety lock. DEGRADED means impaired. BLOCKED is reserved
+        for real gates. Color is not the only indicator.
       </p>
 
       <ul
@@ -105,7 +106,7 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
               <StatePill tone={row.tone} label={row.truth} raw={row.truth} size="sm" />
               <p className="control-truth-meaning">{row.meaning}</p>
               <p className="control-truth-detail">{row.detail}</p>
-              <p className="control-truth-class-hint">{explainTruthClass(row.truth)}</p>
+              <p className="control-truth-class-hint">{explainTruthClass(row.truth, row.kind)}</p>
             </div>
           </li>
         ))}

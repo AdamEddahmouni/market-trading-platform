@@ -7,6 +7,7 @@ export type OperatorTruthClass =
   | "HEALTHY"
   | "DEGRADED"
   | "BLOCKED"
+  | "POLICY"
   | "IDLE"
   | "UNKNOWN"
   | "UNAVAILABLE"
@@ -31,7 +32,10 @@ export type OperatorSituation = {
   explanation: string;
 };
 
-export function explainTruthClass(truth: OperatorTruthClass): string {
+export function explainTruthClass(truth: OperatorTruthClass, kind?: OperatorRowKind): string {
+  if (kind === "policy" || truth === "POLICY") {
+    return "Intentional safety lock — not a crash and not a repair item.";
+  }
   switch (truth) {
     case "HEALTHY":
       return "Working as expected.";
@@ -40,7 +44,7 @@ export function explainTruthClass(truth: OperatorTruthClass): string {
     case "DEGRADED":
       return "Impaired — something that should be working is not.";
     case "BLOCKED":
-      return "Stopped or locked — this path cannot proceed until a gate is cleared.";
+      return "Stopped by a real gate — this path cannot proceed until that gate is cleared.";
     case "UNAVAILABLE":
       return "This fact could not be read from the platform snapshot. Treat as unknown, not healthy.";
     case "NOT_OBSERVED":
@@ -60,6 +64,8 @@ export function truthTone(truth: OperatorTruthClass): SemanticTone {
       return "caution";
     case "BLOCKED":
       return "critical";
+    case "POLICY":
+      return "neutral";
     case "IDLE":
     case "NOT_OBSERVED":
     case "UNKNOWN":
@@ -74,8 +80,9 @@ export function classifyOperatorRow(row: {
   detail: string;
 }): OperatorRowKind {
   if (row.id === "live-execution") {
-    return /Live OFF/i.test(row.detail) ? "policy" : "fault";
+    return /Live OFF/i.test(row.detail) || row.truth === "POLICY" ? "policy" : "fault";
   }
+  if (row.truth === "POLICY") return "policy";
   if (row.truth === "IDLE") return "waiting";
   if (row.truth === "HEALTHY") return "ok";
   if (row.truth === "DEGRADED" || row.truth === "BLOCKED" || row.truth === "UNAVAILABLE") {
@@ -249,6 +256,23 @@ export function formatItem9CorpusProgress(
   };
 }
 
+export function item9CorpusMeaning(
+  corpus: ReturnType<typeof formatItem9CorpusProgress>,
+  corpusTruth: OperatorTruthClass,
+): string {
+  const tokens = `Canonical tokens: Item 9 ${corpus.distinctRthDates}, ${corpus.calibrationLabel}, ${corpus.calibrationForbidden}.`;
+  if (corpusTruth === "HEALTHY") {
+    return `The distinct regular-trading-hours date gate is complete (${corpus.distinctRthDates}). ${tokens} That does not by itself make the strategy CALIBRATED.`;
+  }
+  if (corpusTruth === "IDLE") {
+    return `Paper fill calibration still needs more distinct regular-trading-hours dates. ${tokens} Incomplete dates are IDLE, not DEGRADED.`;
+  }
+  if (corpusTruth === "NOT_OBSERVED" || corpusTruth === "UNAVAILABLE") {
+    return `Item 9 date progress is ${corpus.distinctRthDates}. ${tokens} Missing corpus is not a passing 3/3.`;
+  }
+  return `${tokens} Treat this progress as unverified, not healthy.`;
+}
+
 export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null | undefined): OperatorTruthRow[] {
   if (!diagnostics) return [];
 
@@ -298,7 +322,7 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
       ? "IDLE"
       : "NOT_OBSERVED";
 
-  const liveTruth: OperatorTruthClass = governance?.live_execution_env ? "DEGRADED" : "BLOCKED";
+  const liveTruth: OperatorTruthClass = governance?.live_execution_env ? "DEGRADED" : "POLICY";
 
   const cycleFailure = String(cycle?.expected_cycle_failure ?? "NOT_OBSERVED").toUpperCase();
   const cycleTruth: OperatorTruthClass =
@@ -364,7 +388,7 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
       label: "Distinct admitted RTH dates",
       truth: corpusTruth,
       detail: `${corpus.distinctRthDates} · ${corpus.calibrationLabel} · ${corpus.calibrationForbidden}. ${corpus.receiptScopeNote}`,
-      meaning: `Paper fill calibration still needs more distinct regular-trading-hours dates. Canonical tokens: Item 9 ${corpus.distinctRthDates}, ${corpus.calibrationLabel}, ${corpus.calibrationForbidden}. Incomplete dates are IDLE, not DEGRADED.`,
+      meaning: item9CorpusMeaning(corpus, corpusTruth),
       kind: "unknown",
       tone: truthTone(corpusTruth),
     },

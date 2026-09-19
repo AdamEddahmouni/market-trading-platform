@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   buildOperatorSituation,
   buildOperatorTruthRows,
+  explainTruthClass,
   formatItem9CorpusProgress,
   humanDiagnosticsHeadline,
+  item9CorpusMeaning,
   mapItem9CorpusProgressTruth,
 } from "./operatorDiagnosticsPresentation";
 import type { OperatorDiagnostics } from "../../api/schemas";
@@ -74,6 +76,7 @@ describe("operatorDiagnosticsPresentation", () => {
     expect(corpusRow?.truth).toBe("IDLE");
     expect(corpusRow?.kind).toBe("waiting");
     expect(corpusRow?.detail).toMatch(/2\/3 · NOT CALIBRATED · CALIBRATION FORBIDDEN/);
+    expect(corpusRow?.meaning).toMatch(/still needs more distinct regular-trading-hours dates/);
     expect(corpusRow?.meaning).toMatch(/IDLE, not DEGRADED/);
     expect(corpusRow?.truth).not.toBe("DEGRADED");
   });
@@ -83,7 +86,36 @@ describe("operatorDiagnosticsPresentation", () => {
     const live = rows.find((row) => row.id === "live-execution");
     expect(live?.detail).toMatch(/Live OFF/);
     expect(live?.kind).toBe("policy");
+    expect(live?.truth).toBe("POLICY");
+    expect(live?.truth).not.toBe("BLOCKED");
     expect(live?.truth).not.toBe("DEGRADED");
+    expect(explainTruthClass(live!.truth, live!.kind)).toMatch(/Intentional safety lock/);
+    expect(explainTruthClass(live!.truth, live!.kind)).not.toMatch(/gate is cleared/);
+  });
+
+  it("reserves BLOCKED for real Item 9 gates such as WRONG_RUNTIME", () => {
+    const preflight = buildOperatorTruthRows(SAMPLE_DIAGNOSTICS).find((row) => row.id === "item9-preflight");
+    expect(preflight?.truth).toBe("BLOCKED");
+    expect(explainTruthClass(preflight!.truth, preflight!.kind)).toMatch(/real gate/);
+  });
+
+  it("does not say Item 9 still needs dates when the 3/3 gate is complete", () => {
+    const complete = formatItem9CorpusProgress({
+      availability: "AVAILABLE",
+      report: {
+        calibration_state: "NOT_CALIBRATED",
+        fitting_allowed: false,
+        sample_gate_progress: { distinct_rth_dates: "3/3" },
+      },
+    });
+    expect(complete.distinctRthDates).toBe("3/3");
+    expect(complete.calibrationLabel).toBe("NOT CALIBRATED");
+    expect(complete.calibrationForbidden).toBe("CALIBRATION FORBIDDEN");
+    const meaning = item9CorpusMeaning(complete, "HEALTHY");
+    expect(meaning).toMatch(/date gate is complete \(3\/3\)/);
+    expect(meaning).not.toMatch(/still needs more/);
+    expect(meaning).toMatch(/NOT CALIBRATED/);
+    expect(meaning).toMatch(/CALIBRATION FORBIDDEN/);
   });
 
   it("treats calendar-incomplete Item 9 as waiting even when another row is blocked", () => {
