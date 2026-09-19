@@ -151,3 +151,13 @@ Every new provider needs an explicit adapter boundary, secret redaction,
 rate-limit policy, licensing review, point-in-time availability semantics,
 fixture coverage, and an opt-in live probe. Production order execution
 remains blocked regardless of provider choice.
+
+## Offline resilience tokens (software)
+
+Backend-owned status tokens for operator explanation live in
+`providers/resilience.py`. Fixtures under `tests/fixtures/providers/resilience/`
+cover OpenD unavailable, delayed data, partial staleness, source disagreement,
+reconnect, timeout, empty payload, malformed response, temporary network
+failure, restart recovery, and Yahoo-as-hop-L1 fallback blocked. These tests
+are SOFTWARE-class; they do not collect Item 9, calibrate, or enable Live.
+OpenD down does not promote Yahoo delayed overlay into hop L1.
