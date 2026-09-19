@@ -323,7 +323,7 @@ export function DiscoverObservability({
         </div>
       </header>
 
-      <nav className="discover-mode-switch" aria-label="Discovery mode">
+      <nav className="discover-mode-switch" aria-label="Investigation mode">
         <button type="button" aria-pressed={mode === "MIXED"} onClick={() => setMode("MIXED")}>
           Investigation
         </button>
@@ -378,7 +378,7 @@ export function DiscoverObservability({
                     : ""}
                 </span>
               ))}
-              {!mixed ? <span className="provider-state">Connecting discovery sources…</span> : null}
+              {!mixed ? <span className="provider-state">Connecting investigation sources…</span> : null}
             </div>
             {allowMutations ? (
               <button
@@ -386,7 +386,7 @@ export function DiscoverObservability({
                 onClick={() => void refreshMixed()}
                 disabled={loading || mixed?.refresh_in_progress}
               >
-                {loading || mixed?.refresh_in_progress ? "Refreshing discovery…" : "Refresh all screens"}
+                {loading || mixed?.refresh_in_progress ? "Refreshing screens…" : "Refresh all screens"}
               </button>
             ) : null}
           </div>
@@ -394,7 +394,7 @@ export function DiscoverObservability({
           {degradedScreens.length > 0 ? (
             <details className="discover-screen-outcomes">
               <summary>
-                {degradedScreens.length} discovery screen(s) degraded or using saved captures
+                {degradedScreens.length} investigation screen(s) degraded or using saved captures
               </summary>
               <ul>
                 {degradedScreens.map((row) => (

@@ -94,8 +94,13 @@ describe("DiscoverObservability investigation boundary", () => {
     expect(screen.getByText("INVESTIGATION DESK")).toBeInTheDocument();
     expect(screen.queryByText("DISCOVERY DESK")).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Investigation screener" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Investigation mode" })).toBeInTheDocument();
+    expect(screen.queryByRole("navigation", { name: "Discovery mode" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Investigation" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("region", { name: "Investigation screener candidates" })).toBeInTheDocument();
+    expect(screen.queryByText(/discovery screen/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Connecting discovery/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Refreshing discovery/i)).not.toBeInTheDocument();
     expect(screen.getByText("EXEC NONE · INVESTIGATE only")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Refresh all screens" })).not.toBeInTheDocument();
     expect(await screen.findByText("AAPL")).toBeInTheDocument();
@@ -164,5 +169,26 @@ describe("DiscoverObservability investigation boundary", () => {
       /not an empty ranked opportunity queue and not a signal to trade/i,
     );
     expect(screen.queryByRole("link", { name: /trade|buy|sell|submit/i })).not.toBeInTheDocument();
+  });
+
+  it("labels degraded screens as investigation, not leftover discovery copy", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((url: string | URL | Request) => {
+        const path = typeof url === "string" ? url : url.toString();
+        if (path.includes("/discover/mixed") && !path.includes("release") && !path.includes("refresh")) {
+          return jsonResponse({
+            ...mixedPayload,
+            screen_outcomes: [{ screen_id: "UNUSUAL_VOLUME", status: "DEGRADED", reason: "SAVED_CAPTURE" }],
+          });
+        }
+        return jsonResponse({ released_symbols: 0 });
+      }),
+    );
+    renderDiscover(false);
+    expect(
+      await screen.findByText("1 investigation screen(s) degraded or using saved captures"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/discovery screen/i)).not.toBeInTheDocument();
   });
 });
