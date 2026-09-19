@@ -207,6 +207,10 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertEqual(payload.get("withheld_ranked_count"), 1)
         self.assertEqual(payload["items"], [])
         self.assertEqual(len(ranked), 1)
+        evaluation = (ranked[0].data_quality or {}).get("freshness_evaluation") or {}
+        self.assertNotEqual(evaluation.get("status"), "FRESH")
+        self.assertEqual(evaluation.get("reason_code"), "LIVE_AS_OF_UNAVAILABLE")
+        self.assertIsNone(evaluation.get("as_of_time_ns"))
         self.assertEqual(payload["as_of_context"]["as_of_time"], "UNAVAILABLE")
         self.assertNotIn("2026-07-21", str(payload["as_of_context"]["as_of_time"]))
         self.assertNotIn("2026-07-21", self.store.as_of_time())
