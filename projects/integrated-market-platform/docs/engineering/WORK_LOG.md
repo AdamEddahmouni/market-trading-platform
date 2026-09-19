@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `a2914ad2` after #338
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | After absorbing `origin/main` (merge [#338](https://github.com/AdamEddahmouni/market-trading-platform/pull/338)) into [#339](https://github.com/AdamEddahmouni/market-trading-platform/pull/339), retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`a2914ad2`** so the pin is not stale on `b911f000`. Ancestry includes [#337](https://github.com/AdamEddahmouni/market-trading-platform/pull/337). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**. Did **not** merge #222 or #314. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#339](https://github.com/AdamEddahmouni/market-trading-platform/pull/339); [#338](https://github.com/AdamEddahmouni/market-trading-platform/pull/338); prior pin entry `b911f000` after #337 |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-337`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. Prior CI CLEAR on #339 HEAD `70b3bf30` is stale after this absorb; do not merge #339 without a new CLEAR on the new HEAD. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `b911f000` after #337
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`b911f000`** (merge [#337](https://github.com/AdamEddahmouni/market-trading-platform/pull/337) weekend observability; ancestry includes [#336](https://github.com/AdamEddahmouni/market-trading-platform/pull/336) Radar withheld-live honesty plus [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334) docs pin on `2f6aeeef`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. Did **not** merge #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#334](https://github.com/AdamEddahmouni/market-trading-platform/pull/334) prior pin (`2f6aeeef`); [#337](https://github.com/AdamEddahmouni/market-trading-platform/pull/337); [#336](https://github.com/AdamEddahmouni/market-trading-platform/pull/336) |
+| **Notes** | Isolated worktree `.worktrees/weekend-pin-current-main-337` from `origin/main` @ `b911f000`. **ITEM9_FROZEN_COLLECTOR** untouched. Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `2f6aeeef` after #333
 
 | Field | Value |
