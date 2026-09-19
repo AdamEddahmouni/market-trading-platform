@@ -24,8 +24,9 @@ Governed Mode B `--poll` runs **only** from this checkout. Software worktrees (i
 
 | Token | Meaning |
 |-------|---------|
-| **WAIT** | Off-hours, OpenD down, Live not OFF, duplicate `--poll`, wrong SHA, already-admitted session date, stale OpenD session, or any refusal below |
-| **READY_TO_COLLECT** | Preflight JSON from the **frozen** checkout during **Monday RTH**, all gates green. Operator still starts `--poll` **manually**. This docs PR never starts it |
+| **WAIT** | Off-hours, OpenD down, Live not OFF, duplicate `--poll`, frozen SHA missing/wrong, already-admitted session date, stale OpenD session, or any refusal below |
+| **CLI `READY_TO_COLLECT`** | Software-CLI disposition only. It requires the **running** `imp.py` SHA to be `fed2d9f7`. That **cannot** happen without retargeting `.imp-actual-01-phase-d` or running a newer CLI as if it lived on the frozen pin. **Do not require this token Monday.** |
+| **Composed GO** | Operator start condition: RTH + frozen SHA intact + `ACTIVE_COLLECTORS=0` + OpenD reachable + Live OFF + session date **2026-09-21**. Software CLI may still print **`WRONG_RUNTIME`**. Operator then starts `--poll` **manually** from the frozen checkout. This docs PR never starts it |
 
 Expected now (weekend / software checkout): `calendar.rth_active=false`, `session_date_et=2026-09-19` (Saturday). Software CLI disposition **`WRONG_RUNTIME`** (exit 1). Frozen `imp.py` has no `item9` group — do not retarget the collector to obtain it. **Neither authorizes `--poll`.**
 
@@ -50,9 +51,16 @@ python tools\item9_next_rth_preflight.py next-rth-preflight --json
 
 Never pass `--poll`. Never invoke `opend_bar_1m_prospective_proof.py prospective` from this docs PR. Preflight **does not** write receipts (`does_not_start_collector=true`).
 
-Because the CLI runtime SHA is **CURRENT_MAIN**, disposition is **`WRONG_RUNTIME`** (`current_runtime_sha_not_frozen_authority`) even when `.imp-actual-01-phase-d` @ `fed2d9f7` is present. That is **honest WAIT** for starting `--poll` from a software worktree. It does **not** mean the frozen pin is missing — check `runtime.frozen_collector_git_sha` and `runtime.frozen_collector_available`.
+Because the CLI runtime SHA is **CURRENT_MAIN**, disposition is **`WRONG_RUNTIME`** (`current_runtime_sha_not_frozen_authority`) even when `.imp-actual-01-phase-d` @ `fed2d9f7` is present. That is **honest** and **expected**. It does **not** mean the frozen pin is missing — check `runtime.frozen_collector_git_sha` and `runtime.frozen_collector_available`.
 
-**READY_TO_COLLECT vs wait (operator composition):** treat collection as allowed only when **all** of the following are true. The software CLI may still print `WRONG_RUNTIME`; do not “fix” that by retargeting the collector.
+**Do not “fix” `WRONG_RUNTIME` by:**
+
+- `git checkout` / reset of **CURRENT_MAIN** onto `.imp-actual-01-phase-d`
+- copying newer `imp.py` / `item9` tools into the frozen tree
+- running `item9 next-rth-preflight` with cwd frozen in the hope the CLI appears
+- treating `WRONG_RUNTIME` as an instruction to retarget the collector
+
+**Composed GO vs wait:** treat collection as allowed only when **all** of the following are true. The software CLI **may stay `WRONG_RUNTIME`**. Do **not** wait for CLI `READY_TO_COLLECT`.
 
 | Gate | Weekend 2026-09-19/20 | Monday RTH 2026-09-21 |
 |------|------------------------|------------------------|
@@ -61,9 +69,9 @@ Because the CLI runtime SHA is **CURRENT_MAIN**, disposition is **`WRONG_RUNTIME
 | `active_collector.detected` | false (`ACTIVE_COLLECTORS=0`) | still 0 before start |
 | OpenD `loopback`+`reachable` | may be true; still **WAIT** (not RTH) | required |
 | Live OFF | required | required |
-| Software CLI disposition | `WRONG_RUNTIME` or `NOT_RTH` → **WAIT** | still `WRONG_RUNTIME` from main; start `--poll` only from frozen checkout after the composed gates pass |
+| Software CLI disposition | `WRONG_RUNTIME` expected; use other fields | still `WRONG_RUNTIME` from main — **not** a reason to retarget; start `--poll` from frozen only after composed GO |
 
-Mode B start (Monday only, **not this PR**): from **frozen** IMP root, `opend_bar_1m_prospective_proof.py prospective --poll` (that script **does** exist at `fed2d9f7`).
+Mode B start (Monday only, **not this PR**): from **frozen** IMP root, `opend_bar_1m_prospective_proof.py prospective --poll` (that script **does** exist at `fed2d9f7`). See [Monday mechanical sequence](#monday-mechanical-sequence-operator-not-this-pr).
 
 Inspect:
 
@@ -145,8 +153,8 @@ Do **not** start `--poll` when any of these hold:
 
 | Disposition / condition | Action |
 |-------------------------|--------|
-| `NOT_RTH` | **WAIT** — off-hours / weekend / before 09:30 ET |
-| `WRONG_RUNTIME` | **WAIT** — leave frozen worktree at `fed2d9f7`; run preflight there, never retarget |
+| `NOT_RTH` / `calendar.rth_active=false` | **WAIT** — off-hours / weekend / before 09:30 ET |
+| CLI `WRONG_RUNTIME` from **CURRENT_MAIN** | **Expected.** Leave frozen worktree at `fed2d9f7`. Compose other gates. **Do not** run preflight on frozen. **Do not** retarget `.imp-actual-01-phase-d` to CURRENT_MAIN |
 | `PROVIDER_UNAVAILABLE` | See [OpenD unavailable](#opend-unavailable) |
 | `ACTIVE_COLLECTOR_EXISTS` | **Refuse duplicate**; inspect; do not restart frozen collector |
 | `OUTPUT_PATH_INVALID` | Fix governed receipt dir under frozen IMP root; do not write elsewhere |
@@ -154,7 +162,7 @@ Do **not** start `--poll` when any of these hold:
 | `121031` backfill / gap fill | **Forbidden** |
 | Calibration / Full30 / Live / merge #222 | **Forbidden** this lane |
 
-`READY_TO_COLLECT` without a human operator start is still **no collection**.
+CLI `READY_TO_COLLECT` is **not** a Monday start requirement. Composed GO without a human `--poll` is still **no collection**.
 
 ## Duplicate-date protection
 
@@ -192,7 +200,7 @@ If `PROVIDER_UNAVAILABLE` / `opend_unreachable` / `opend_not_loopback`:
 
 If OpenD TCP looks up but session is leftover (overnight login, Sep 18 quote context, `MOOMOO_PROTOCOL_ERROR` / empty kline, Control “healthy” while preflight is not):
 
-1. Treat as **not READY_TO_COLLECT** until a **fresh** authenticated loopback session exists **on Monday RTH**.
+1. Treat as **WAIT** (not composed GO) until a **fresh** authenticated loopback session exists **on Monday RTH**.
 2. Do **not** restart the **frozen collector git worktree**.
 3. Do **not** relabel a failed observation as success.
 4. Empty or pre-signal bars stay fail-closed (`PROSPECTIVE_NO_POST_SIGNAL_BAR` is honest).
@@ -211,15 +219,27 @@ First recovery after the gap remains `item9-prospective-20260918-epoch-fed2d9f7-
 
 ## Monday mechanical sequence (operator; not this PR)
 
-Only when **WAIT** is cleared:
+Step 4 is **composed GO** from the **software** CLI JSON plus the frozen SHA check. It does **not** require CLI `READY_TO_COLLECT` and must **not** be run as `item9 next-rth-preflight` inside `.imp-actual-01-phase-d`.
 
-1. Frozen SHA check.
-2. `ACTIVE_COLLECTORS=0`.
+1. Frozen SHA: `git -C .imp-actual-01-phase-d rev-parse HEAD` = `fed2d9f7e183aecfcac61a7664df69aafc12ea25`.
+2. `ACTIVE_COLLECTORS=0` (`active_collector.detected=false` on the **software** preflight).
 3. Live OFF.
-4. Preflight from frozen IMP root → **`READY_TO_COLLECT`**.
-5. Session date **2026-09-21**.
-6. Manual Mode B `--poll` from frozen checkout (see [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md)).
+4. Software preflight (CURRENT_MAIN / this docs branch IMP root): `python tools/imp.py item9 next-rth-preflight --json`. Compose GO when `calendar.rth_active=true`, `session_date_et=2026-09-21`, `runtime.frozen_collector_available=true`, `runtime.frozen_collector_git_sha` matches `fed2d9f7…`, OpenD `loopback`+`reachable`, collectors still 0. **`disposition` may remain `WRONG_RUNTIME`.** Do not retarget the frozen worktree to clear it.
+5. Confirm session date **2026-09-21** (not 17/18, not `121031`).
+6. Start Mode B `--poll` **only** from the frozen IMP root (script exists at `fed2d9f7`; `imp.py item9` does not):
+
+```powershell
+git -C .imp-actual-01-phase-d rev-parse HEAD
+# must print fed2d9f7e183aecfcac61a7664df69aafc12ea25 — abort if not
+cd .imp-actual-01-phase-d\projects\integrated-market-platform
+python tools\moomoo\opend_bar_1m_prospective_proof.py prospective `
+  --instrument-id AAPL --poll `
+  --receipt-out artifacts/ftep-v1-002/item9-prospective-proof-receipts
+```
+
+See [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md). Use CPython 3.11; do not `git checkout` a newer SHA in this directory.
+
 7. After receipt: corpus-status on **`$rcpt`**.
 8. Post-close verification.
 
-This repository change **stops at step 4 documentation**. No Item 9 collection, no calibration, no Full30, no Live, no #222 merge.
+This repository change **documents** the sequence and **does not start `--poll`**. No Item 9 collection, no calibration, no Full30, no Live, no #222 merge.

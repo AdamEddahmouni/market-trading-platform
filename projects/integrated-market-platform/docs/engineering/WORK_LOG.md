@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Monday Item 9 preflight: composed GO (review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` |
+| **Summary** | Review fix on [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304): Monday step 4 is composed GO from the software `item9 next-rth-preflight` JSON. Do **not** require CLI `READY_TO_COLLECT` from frozen `fed2d9f7` (no `item9` group). `WRONG_RUNTIME` must not send operators to retarget CURRENT_MAIN onto `.imp-actual-01-phase-d`. `--poll` starts only from frozen `opend_bar_1m_prospective_proof.py` after RTH / SHA / collectors=0 / OpenD / Live OFF. |
+| **Key files** | `docs/engineering/MONDAY_ITEM9_PREFLIGHT.md`; this log |
+| **Tests** | Docs-only review edit; no `--poll`. Frozen collector not mutated. |
+| **Related** | [MONDAY_ITEM9_PREFLIGHT.md](MONDAY_ITEM9_PREFLIGHT.md); PR [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304) |
+| **Notes** | Merged `origin/main` `829316ff` (#299) keep-both WORK_LOG. Do not merge #304. `121031` still forbidden. Item 9 **2/3 IDLE**. |
+
 ## 2026-09-19 — Monday Item 9 preflight runbook (no collection)
 
 | Field | Value |
@@ -47,6 +59,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `python tools/imp.py env` (healthy; linked venv); `python tools/check_docs_links.py` (251 files OK); `python tools/imp.py test focused` Item9NextRthPreflightTests **8/8**; read-only `item9 next-rth-preflight --json` from this software worktree (`WRONG_RUNTIME`, `rth_active=false`, `active_collector.detected=false`, `does_not_start_collector=true`); corpus-status on frozen `$rcpt` **2/3** `NOT_CALIBRATED`. No `--poll`. |
 | **Related** | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md); [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md); PR #294 owns PROGRAM_STATUS CURRENT_MAIN churn |
 | **Notes** | Frozen collector worktree not mutated. `ACTIVE_COLLECTORS` inspect-only. |
+
+## 2026-09-18 — Weekend Wave B Lane G: unit-test env isolation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests` |
+| **Summary** | Isolated process-environment leaks so unit tests no longer leave `IMP_FINVIZ_CAPTURE_DIR`, `IMP_PERSIST_STATE`, or `IMP_PAPER_EXECUTION` set for later cases, and stopped pointing Finviz capture roots into the tree. |
+| **Key files** | `tests/platform/test_discovery_p33.py`; `tests/finviz/test_finviz_provider.py`; `tests/intelligence/test_ftep_campaign_status.py`; `tests/intelligence/test_build01_22_lifecycle.py`; `tests/intelligence/test_build01_23_lifecycle.py`; `tests/intelligence/test_build01_24_lifecycle.py`; `tests/intelligence/test_paper_execution_qualification.py`; `tests/intelligence/test_paper_execution_governance.py`; `tests/intelligence/test_paper_forward_bridge.py`; `tests/trading_correctness/test_preview_binding.py`; `tests/validation/test_process_env_isolation.py` |
+| **Tests** | `python -m unittest` on changed modules **101 passed**; `python tools/imp.py validate changed` **3336 passed**, 31 skipped, 0 fail |
+| **Related** | Weekend Wave B Lane G; prior OpenD hermeticity 2026-09-17 |
+| **Notes** | Deferred: Lane A snapshot path redaction; Lane D expected-cycle/log paths; tracked `reports/` host paths; `persist_discovery_capture` absolute `artifact_path`; leftover `IMP_PAPER_EXECUTION` leaks outside this increment. No evidence mutation. |
 
 ## 2026-09-19 — Weekend Lane H high-value testing coverage
 
