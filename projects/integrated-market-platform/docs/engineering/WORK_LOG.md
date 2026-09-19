@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave C Lane L: opportunity/evidence pipeline provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `cross_lane`, `intelligence/opportunity`, `ui_api` |
+| **Summary** | Labeled cross-lane evidence serialization (`inference_kind`, `observed_at_presence`, `lane_evidence_from_dict`), clarified LIVE `data_quality.freshness` as `NOT_APPLICABLE` without receive clock, stopped attention ingest from advertising `OPEN_WORKSPACE` when `UNAVAILABLE`, and exposed `pipeline_clocks` on opportunity evidence bundles (persist `created_at` vs live receive). |
+| **Key files** | `cross_lane/evidence.py`; `intelligence/opportunity/{data_quality,ingest}.py`; `ui_api/opportunity_projections.py`; tests under `tests/cross_lane`, `tests/intelligence`, `tests/ui1` |
+| **Tests** | `python tools/imp.py validate changed` — **4367 passed**, 42 skipped, 0 failures |
+| **Related** | [#305](https://github.com/AdamEddahmouni/market-trading-platform/pull/305) live clock honesty |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-l-pipeline-provenance` @ `origin/main` `6a40a3a2`. Item 9 **2/3 IDLE**, Live **OFF**. No Radar/Lab/Research/#222/PROGRAM_STATUS edits. |
+
 ## 2026-09-19 — Radar operator brief freshness provenance (Lane I)
 
 | Field | Value |

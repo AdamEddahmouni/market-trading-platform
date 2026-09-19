@@ -326,6 +326,9 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertIn("evidence_promotion_reason", evidence)
         self.assertIn("family_admission_status", evidence)
         self.assertIn("data_quality", evidence)
+        clocks = evidence.get("pipeline_clocks") or {}
+        self.assertTrue(clocks.get("created_at_is_persist_minted"))
+        self.assertEqual(clocks.get("persist_created_at_ns"), opportunity.created_at_ns)
         self.assertNotIn("rank_score", evidence)
         self.assertNotIn("order_id", evidence)
         self.assertNotIn("MONITORED", str(evidence.get("evidence_class")))
