@@ -904,12 +904,16 @@ describe("App mode launcher integration", () => {
     await enterMode("Demo");
     await openResearch();
     await screen.findByRole("heading", { name: "Research" });
-    fireEvent.click(screen.getByRole("link", { name: "Evidence" }));
+    const researchTabs = () => screen.getByRole("navigation", { name: "Research sections" });
+    fireEvent.click(within(researchTabs()).getByRole("link", { name: "Evidence" }));
     expect(
       await screen.findByRole("heading", { name: "Evidence at the current cutoff" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Evidence" })).toHaveAttribute("aria-current", "page");
-    fireEvent.click(screen.getByRole("link", { name: "Simulation" }));
+    expect(within(researchTabs()).getByRole("link", { name: "Evidence" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    fireEvent.click(within(researchTabs()).getByRole("link", { name: "Simulation" }));
     // The simulation hook mock returns no payload — the section must degrade
     // honestly instead of rendering an empty ledger.
     expect(

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -48,12 +48,12 @@ describe("DemoResearchPage", () => {
 
   it("renders routable research section tabs", () => {
     renderPage();
-    const tabs = screen.getByTestId("imp-ui-link-tabs");
+    const tabs = screen.getByRole("navigation", { name: "Research sections" });
     expect(tabs).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Evidence" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Validation" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Simulation" })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+    expect(within(tabs).getByRole("link", { name: "Evidence" })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Validation" })).toBeInTheDocument();
+    expect(within(tabs).getByRole("link", { name: "Simulation" })).toBeInTheDocument();
   });
 
   it("leads the overview with the evidence synthesis", () => {

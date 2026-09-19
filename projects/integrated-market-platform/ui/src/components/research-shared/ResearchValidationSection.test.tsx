@@ -50,9 +50,9 @@ vi.mock("../../api/hooks", () => ({
   usePaperStrategyProfitabilityQuery: () => ({ isLoading: false, isError: true, data: undefined }),
 }));
 
-function renderSection(mode: "DEMO" | "PAPER" | "LIVE" = "DEMO") {
+function renderSection(mode: "DEMO" | "PAPER" | "LIVE" = "DEMO", path = "/research/validation") {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[path]}>
       <ResearchValidationSection mode={mode} />
     </MemoryRouter>,
   );
@@ -114,6 +114,16 @@ describe("ResearchValidationSection", () => {
     renderSection();
     expect(screen.getByText(/No interpretations fall inside the current replay window/i))
       .toBeInTheDocument();
+  });
+
+  it("filters to contract-backed conflicts when ?conflict=1", () => {
+    renderSection("DEMO", "/research/validation?conflict=1");
+    expect(screen.getByText("Conflicting evidence")).toBeInTheDocument();
+    expect(screen.queryByText("Signal")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Show the full interpretation record" })).toHaveAttribute(
+      "href",
+      "/research/validation",
+    );
   });
 
   it("renders the Paper strategy context only in Paper mode", () => {
