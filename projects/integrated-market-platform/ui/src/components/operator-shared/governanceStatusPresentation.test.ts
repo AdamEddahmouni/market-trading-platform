@@ -13,7 +13,33 @@ describe("governanceStatusPresentation", () => {
       },
     });
     const item9 = facts.find((row) => row.id === "item9-calibration");
-    expect(item9?.value).toMatch(/not on API/i);
+    expect(item9?.value).toMatch(/NOT CALIBRATED/i);
     expect(item9?.value).not.toMatch(/3\/3/);
+  });
+
+  it("reads Item 9 corpus gate from diagnostics when provided", () => {
+    const facts = buildGovernanceFacts({
+      diagnostics: {
+        schema_version: "operator-diagnostics/1.0.0",
+        severity: "DEGRADED",
+        sections: {
+          runtime: {
+            git_sha: "abc",
+            item9_corpus_status: {
+              availability: "AVAILABLE",
+              report: {
+                calibration_state: "NOT_CALIBRATED",
+                fitting_allowed: false,
+                sample_gate_progress: { distinct_rth_dates: "2/3" },
+              },
+            },
+            runtime_resilience: { collector_process: { active_collector_detected: false } },
+          },
+          governance: { live_execution_env: false },
+        },
+      },
+    });
+    expect(facts.find((row) => row.id === "item9-rth-dates")?.value).toBe("2/3");
+    expect(facts.find((row) => row.id === "live-execution")?.value).toBe("Live OFF");
   });
 });

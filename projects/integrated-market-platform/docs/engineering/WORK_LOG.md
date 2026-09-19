@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Control system status consumes GET /operator/diagnostics
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control`, `platform/operator_diagnostics` |
+| **Summary** | Wired Control to a single `GET /operator/diagnostics` query for lifecycle, readiness, feed surface, governance, and Item 9 corpus gate presentation; added System status truth hierarchy UI and fixed diagnostics payload secret-leak audit blockers. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`, `OperatorSystemStatusSection.tsx`, `operatorDiagnosticsPresentation.ts`, `ui/src/api/{schemas,endpoints,hooks}.ts`, `platform/operator_diagnostics/snapshot.py`, `operator-shared/governanceStatusPresentation.ts` |
+| **Tests** | `ui`: vitest control/governance suites 44 passed; `python -m unittest tests.platform.test_operator_diagnostics_snapshot` 2 passed |
+| **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Browser-verified Control on worktree Vite `:5181` + API `:8767`; Radar/Lab spot-check blocked by session gate on cold navigation. Opportunity row count not in diagnostics snapshot (shown explicitly). |
+
 ## 2026-09-18 — Lane D simulator experiment specs reconciliation (branch absorption)
 
 | Field | Value |

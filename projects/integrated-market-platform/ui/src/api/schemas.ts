@@ -71,6 +71,18 @@ export const OperatorLifecycleStatusSchema = z.object({
   update: UpdateStatusSchema.optional(),
 });
 
+/** Composed operator health snapshot (`GET /operator/diagnostics`). */
+export const OperatorDiagnosticsSchema = z.object({
+  schema_version: z.string(),
+  as_of_utc: z.string().optional(),
+  severity: z.string(),
+  secrets_included: z.literal(false).optional(),
+  operator_questions: z.record(z.string(), z.unknown()).optional(),
+  sections: z.record(z.string(), z.unknown()),
+  human_summary: z.array(z.string()).optional(),
+  sources_composed: z.array(z.string()).optional(),
+});
+
 export const OperatorConfigSchema = z.object({
   schema_version: z.string().optional(),
   providers: z.array(
@@ -120,6 +132,7 @@ export const CapabilityStateSchema = z.object({
 
 export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
+export type OperatorDiagnostics = z.infer<typeof OperatorDiagnosticsSchema>;
 
 export const AttentionReasonSchema = z.object({
   code: z.string(),

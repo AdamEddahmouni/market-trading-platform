@@ -16,6 +16,7 @@ import { humanizeEnum, type SemanticTone } from "../../state/semanticState";
 /** Stable section anchors — hash deep-links from Command/StatusBar land here. */
 export const CONTROL_SECTIONS = {
   overview: "control-overview",
+  systemStatus: "control-system-status",
   governance: "control-governance",
   authority: "control-authority",
   attention: "control-attention",
@@ -189,6 +190,8 @@ export type ControlAttentionInput = {
   paperSessionOpen?: boolean;
   /** Humanized UNREADY reason (from opportunityPresentation). */
   humanizedUnreadyReason?: string | null;
+  diagnosticsError?: boolean;
+  diagnosticsInterventions?: string[];
 };
 
 const TONE_RANK: Record<SemanticTone, number> = {
@@ -208,6 +211,25 @@ const TONE_RANK: Record<SemanticTone, number> = {
  */
 export function buildAttentionItems(input: ControlAttentionInput): ControlAttentionItem[] {
   const items: ControlAttentionItem[] = [];
+
+  if (input.diagnosticsError) {
+    items.push({
+      id: "diagnostics-unavailable",
+      tone: "caution",
+      title: "Operator diagnostics could not be loaded",
+      detail: "Platform truth hierarchy is unknown until GET /operator/diagnostics responds.",
+      action: { label: "Review system status", href: controlSectionHref("systemStatus") },
+    });
+  }
+
+  for (const intervention of input.diagnosticsInterventions ?? []) {
+    items.push({
+      id: `diagnostics-intervention-${intervention.slice(0, 24)}`,
+      tone: "caution",
+      title: intervention,
+      action: { label: "Review system status", href: controlSectionHref("systemStatus") },
+    });
+  }
 
   if (input.contextState === "error") {
     items.push({

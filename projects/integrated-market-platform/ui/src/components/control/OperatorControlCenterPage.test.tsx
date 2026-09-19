@@ -95,6 +95,56 @@ const DEGRADED_READINESS = {
 
 const LIFECYCLE_READY = { status: "READY", services: [], logs: [], update: { status: "CURRENT" } };
 
+function buildDiagnostics(overrides: {
+  readiness?: unknown;
+  lifecycle?: unknown;
+  feed?: unknown;
+  diagnosticsOk?: boolean;
+}) {
+  const readiness = overrides.readiness ?? READY_READINESS;
+  const lifecycle = overrides.lifecycle ?? LIFECYCLE_READY;
+  const feed = overrides.feed ?? FEED_READY;
+  return {
+    schema_version: "operator-diagnostics/1.0.0",
+    severity: "OK",
+    sections: {
+      lifecycle,
+      readiness,
+      opportunity_surface: {
+        feed_status: (feed as { feed_status?: string }).feed_status,
+        unready_reason: (feed as { unready_reason?: string }).unready_reason,
+        quality_summary: (feed as { quality_summary?: { state?: string } }).quality_summary,
+      },
+      runtime: {
+        git_sha: "deadbeef00000000000000000000000000000000",
+        item9_preflight: { disposition: "NOT_RTH" },
+        item9_corpus_status: {
+          availability: "AVAILABLE",
+          report: {
+            calibration_state: "NOT_CALIBRATED",
+            fitting_allowed: false,
+            sample_gate_progress: { distinct_rth_dates: "2/3" },
+          },
+        },
+        runtime_resilience: {
+          collector_process: { active_collector_detected: false, probe_status: "COMPLETED" },
+          expected_cycle: { receipt_inventory: { availability: "AVAILABLE" } },
+          readiness_vs_liveness: { readiness: { item9_status: "PARTIAL_NOT_CALIBRATED" } },
+        },
+      },
+      governance: {
+        headline: "No blocking operator headline.",
+        live_execution_env: false,
+        interventions: [],
+        forbidden: ["enable_live_execution"],
+      },
+      cycle_recovery: { expected_cycle_failure: "NOT_OBSERVED" },
+      evidence_gaps: [],
+    },
+    human_summary: [],
+  };
+}
+
 const FEED_READY = {
   as_of_context: DEMO_CONTEXT.as_of_context,
   quality_summary: { state: "GOOD" },
@@ -141,41 +191,36 @@ const PAPER_PORTFOLIO = {
 
 type StubOverrides = {
   readiness?: unknown;
-  readinessOk?: boolean;
+  diagnosticsOk?: boolean;
   lifecycle?: unknown;
-  lifecycleOk?: boolean;
   config?: unknown;
   context?: unknown;
   contextOk?: boolean;
   feed?: unknown;
-  feedOk?: boolean;
   portfolio?: unknown;
 };
 
 function stubFetch(overrides: StubOverrides = {}) {
   const {
     readiness = READY_READINESS,
-    readinessOk = true,
+    diagnosticsOk = true,
     lifecycle = LIFECYCLE_READY,
-    lifecycleOk = true,
     config = { providers: [] },
     context = DEMO_CONTEXT,
     contextOk = true,
     feed = FEED_READY,
-    feedOk = true,
     portfolio = PAPER_PORTFOLIO,
   } = overrides;
+  const diagnostics = buildDiagnostics({ readiness, lifecycle, feed });
   vi.stubGlobal(
     "fetch",
     vi.fn((input: RequestInfo | URL) => {
       const path = String(input);
-      if (path.includes("/operator/readiness")) return response(readiness, readinessOk);
-      if (path.includes("/operator/lifecycle/status")) return response(lifecycle, lifecycleOk);
+      if (path.includes("/operator/diagnostics")) return response(diagnostics, diagnosticsOk);
       if (path.includes("/operator/lifecycle/actions")) {
         return response({ operation_id: "op-1", status: "QUEUED" });
       }
       if (path.includes("/operator/config")) return response(config);
-      if (path.includes("/opportunities/summary")) return response(feed, feedOk);
       if (path.includes("/paper/portfolio")) return response(portfolio);
       if (path.includes("/context")) return response(context, contextOk);
       return response({});
@@ -270,10 +315,10 @@ describe("OperatorControlCenterPage", () => {
         expect(init?.method).toBe("POST");
         return response({ operation_id: "op-1", status: "QUEUED" });
       }
-      if (path.includes("/operator/readiness")) return response(DEGRADED_READINESS);
-      if (path.includes("/operator/lifecycle/status")) return response(LIFECYCLE_READY);
+      if (path.includes("/operator/diagnostics")) {
+        return response(buildDiagnostics({ readiness: DEGRADED_READINESS }));
+      }
       if (path.includes("/operator/config")) return response({ providers: [] });
-      if (path.includes("/opportunities/summary")) return response(FEED_READY);
       if (path.includes("/context")) return response(DEMO_CONTEXT);
       return response({});
     });
@@ -338,16 +383,12 @@ describe("OperatorControlCenterPage", () => {
     expect(feedSection).not.toHaveTextContent(/cannot be trusted right now/);
   });
 
-  it("degrades sections independently on partial endpoint failure", async () => {
-    stubFetch({ readinessOk: false });
+  it("fails closed when operator diagnostics are unavailable", async () => {
+    stubFetch({ diagnosticsOk: false });
     renderControl("DEMO");
 
-    // Providers section fails closed with retry…
     expect(await screen.findByText(/Provider readiness is unavailable/)).toBeInTheDocument();
-    // …while lifecycle and feed still render their real state.
-    expect(screen.getByText("Platform runtime")).toBeInTheDocument();
-    expect(await screen.findByText("Radar ready")).toBeInTheDocument();
-    // Readiness fact is honestly unavailable, not green.
+    expect(await screen.findByText(/Operator diagnostics are unavailable/)).toBeInTheDocument();
     const hero = document.getElementById(CONTROL_SECTIONS.overview);
     expect(hero).toHaveTextContent("Unavailable");
   });
