@@ -29,6 +29,17 @@ export function controlSectionHref(section: keyof typeof CONTROL_SECTIONS): stri
   return `/control#${CONTROL_SECTIONS[section]}`;
 }
 
+/** In-page landmarks for keyboard users — labels match visible headings. */
+export const CONTROL_SECTION_NAV: ReadonlyArray<{ id: string; label: string }> = [
+  { id: CONTROL_SECTIONS.overview, label: "Operating state" },
+  { id: CONTROL_SECTIONS.systemStatus, label: "System status" },
+  { id: CONTROL_SECTIONS.governance, label: "Program gates" },
+  { id: CONTROL_SECTIONS.authority, label: "Execution & authority" },
+  { id: CONTROL_SECTIONS.providers, label: "Providers" },
+  { id: CONTROL_SECTIONS.feed, label: "Opportunity feed" },
+  { id: CONTROL_SECTIONS.technical, label: "Technical detail" },
+];
+
 /* -------------------------------------------------------------------------- */
 /* Provider roles → capability / impact language                              */
 /* -------------------------------------------------------------------------- */
@@ -216,7 +227,8 @@ export function buildAttentionItems(input: ControlAttentionInput): ControlAttent
       id: "diagnostics-unavailable",
       tone: "caution",
       title: "Operator diagnostics could not be loaded",
-      detail: "Platform truth hierarchy is unknown until GET /operator/diagnostics responds.",
+      detail:
+        "This is a load failure, not a calendar wait. Platform truth hierarchy is unknown until GET /operator/diagnostics responds.",
       action: { label: "Review system status", href: controlSectionHref("systemStatus") },
     });
   }
