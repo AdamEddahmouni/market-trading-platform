@@ -199,8 +199,13 @@ def resolve_v3_baseline_run_dir(
 ) -> Path | None:
     if manifest_path:
         candidate = Path(manifest_path)
-        if candidate.is_file():
-            return candidate.parent
+        try:
+            # Frozen receipts may record a developer-local manifest path; ignore when
+            # not usable on this host (e.g. Windows paths on Linux CI).
+            if candidate.is_file():
+                return candidate.parent
+        except OSError:
+            pass
     local = (
         repository_root
         / "artifacts"
