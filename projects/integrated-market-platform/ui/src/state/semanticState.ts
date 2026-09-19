@@ -245,6 +245,8 @@ const PROVIDER_HEALTH_TABLE: Record<string, Entry> = {
   },
   HEALTHY: { tone: "live", label: "Working" },
   UNAVAILABLE: {
+    // Channel/subscription vocabulary (discover/live lanes). Control provider
+    // `transport_state: UNAVAILABLE` is presented by `presentProviderTransport`.
     tone: "neutral",
     label: "Not available with your current data subscription",
     affects: "This lane or feature is disabled.",
