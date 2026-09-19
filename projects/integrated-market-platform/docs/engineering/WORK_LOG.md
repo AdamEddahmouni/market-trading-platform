@@ -36,6 +36,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Cost sensitivity v4 review follow-up (Lane E readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research`, `docs/engineering`, `tests/platform` |
+| **Summary** | Addressed independent review `65cedf09` REQUEST_CHANGES: added `execution_status_v1.json` (post-exec gates without rewriting pre-registration); refreshed `lane_c_readiness_v1.json`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, and Lane C tests for `EXECUTED_BOUNDED_HISTORICAL_OBSERVATION` with receipt pointers. No re-run; same `pack_run_id` `1DEF586AD729B270E20814B03606A718`. |
+| **Key files** | `execution_status_v1.json`, `lane_c_readiness_v1.json`, `test_simulator_experiment_specs_lane_c_v1.py`, `IMP_SIMULATOR_COST_SENSITIVITY_V4.md` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1 tests.platform.test_historical_cost_sensitivity_v4_prep` — OK (8) |
+| **Related** | Review `65cedf09`; branch `benchmark/lane-e-cost-sensitivity-v4` @ `7b5e4be9` |
+| **Notes** | `pre_registered_methodology_v1.json` remains pre-exec artifact (`executed=false`). |
+
+## 2026-09-18 — Cost sensitivity v4 execution (IMP-POST-RTH-CLOSE-08 Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `historical-research` |
+| **Summary** | Confirmed Lane C frozen `pre_registered_methodology_v1.json`; promoted v4 `frozen_experiment_definition.json` (`EXPERIMENT_HASH` `30FB6972…`); executed pre-registered 7-point `cost_slippage_bps` grid on pinned OpenD HIST-DEV-AAPL corpus with v3-locked baselines/splits. All fill/gross invariants held; `bps=5.0` replicates v3 validate economics; contamination PASS. V3 receipts untouched. |
+| **Key files** | `cost_sensitivity_v4.py`, `historical_cost_sensitivity_v4_cli.py`, `evidence/.../imp-simulator-cost-sensitivity-v4/*` |
+| **Tests** | `unittest tests.platform.test_historical_cost_sensitivity_v4_prep tests.platform.test_simulator_experiment_specs_lane_c_v1` — OK (6) |
+| **Related** | `IMP_SIMULATOR_COST_SENSITIVITY_V4.md`; worktree `.worktrees/lane-e-cost-v4` |
+| **Notes** | `pack_run_id` `1DEF586AD729B270E20814B03606A718`; authority `HISTORICAL_DEVELOPMENT` / `BOUNDED_HISTORICAL_OBSERVATION` only. |
+
+## 2026-09-18 — Simulator experiment specs Lane C (cost / fill / drawdown review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering`, `evidence/historical-research`, `tests/platform` |
+| **Summary** | Frozen methodology for cost v4 and fill realism; consolidated Lane C readiness in `imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` (supersedes standalone `research/simulator-experiment-specs-sep18` landing). Cost v4 **EXECUTED**; drawdown wiring merged #283; fill realism **HELD** pending execution branch. |
+| **Key files** | `docs/engineering/IMP_SIMULATOR_COST_SENSITIVITY_V4.md`, `IMP_SIMULATOR_FILL_PRICE_REALISM_V1.md`, `IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md`; `evidence/historical-research/imp-simulator-experiment-specs-sep18/lane_c_readiness_v1.json` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_experiment_specs_lane_c_v1` (3 tests, pass) |
+| **Related** | Lane E v3 hypothesis queue; drawdown #283; cost v4 @ `7b5e4be9` |
+| **Notes** | No v3 rerun; no PROGRAM_STATUS edit on this branch. |
+
 ## 2026-09-18 — Simulator drawdown wiring v1 (Lane E)
 
 | Field | Value |
@@ -45,7 +81,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Diagnosed v3 `drawdown: null` as missing equity-curve aggregation (simulator read nonexistent `risk_result.portfolio.max_drawdown`). Wired net-MTM PnL curve → `max_drawdown` in fill economics with source `EQUITY_CURVE_NET_MTM`; documented contract; v3 evidence untouched. |
 | **Key files** | `simulator_drawdown.py`, `fill_economics.py`, `simulator.py`, `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md`, `tests/platform/test_simulator_drawdown_wiring_v1.py` |
 | **Tests** | `python -m unittest tests.platform.test_simulator_drawdown_wiring_v1 tests.platform.test_simulator_fill_economics_v3` |
-| **Related** | Hypothesis `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`; finding `LANE-E-FND-019`; branch `research/simulator-drawdown-wiring-v1` @ `2b194d74` |
+| **Related** | Hypothesis `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`; finding `LANE-E-FND-019`; merged #283 @ `2b194d74` |
 | **Notes** | `ACCOUNTING_VERSION` unchanged (`3.0.1`). Promotion needs NEW experiment hash; no v3 manifest backfill. |
 
 ## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane B+C (rebase + independent fixtures)
