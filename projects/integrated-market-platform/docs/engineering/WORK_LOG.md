@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`3609d508`** after [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) (post–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312) `61335412`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; absorbed `origin/main` with WORK_LOG keep-both. |
+
 ## 2026-09-19 — Weekend Wave B Lane G: unit-test artifact hermeticity
 
 | Field | Value |
