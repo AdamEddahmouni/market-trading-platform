@@ -130,7 +130,12 @@ export function buildOpportunityDetailSections(
   if (supersession !== "UNAVAILABLE") contradictions.push({ label: "Supersession", value: supersession });
   const duplicateReason = displayValue(row.duplicate_reason);
   if (duplicateReason !== "UNAVAILABLE") contradictions.push({ label: "Duplicate", value: duplicateReason });
-  if (!contradictions.length) contradictions.push({ label: "Conflicts", value: "None reported" });
+  if (!contradictions.length) {
+    contradictions.push({
+      label: "Conflicts",
+      value: "UNKNOWN — no conflict or supersession fields attached",
+    });
+  }
 
   const historicalLines: string[] = [];
   const researchBlock = researchArtifactEvidenceFromEvidence(evidence);
