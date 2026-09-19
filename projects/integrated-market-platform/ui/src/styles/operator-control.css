@@ -69,7 +69,8 @@
 .control-page button:focus-visible,
 .control-page a:focus-visible,
 .control-page summary:focus-visible,
-.control-page input:focus-visible {
+.control-page input:focus-visible,
+.control-panel:focus-visible {
   outline: 3px solid var(--border-focus);
   outline-offset: 3px;
 }
@@ -794,5 +795,31 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+@media (forced-colors: active) {
+  .control-panel,
+  .control-fact,
+  .control-provider-row,
+  .control-attention-item,
+  .control-truth-row,
+  .control-situation,
+  .control-page button,
+  .control-page input,
+  .control-page summary {
+    border: 2px solid CanvasText;
+  }
+
+  .control-page button:focus-visible,
+  .control-page a:focus-visible,
+  .control-page summary:focus-visible,
+  .control-page input:focus-visible,
+  .control-panel:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .control-panel[data-highlighted="true"] {
+    outline: 3px solid Highlight;
   }
 }

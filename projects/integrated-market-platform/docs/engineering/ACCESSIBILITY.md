@@ -9,6 +9,7 @@
 - Visible focus indicators (theme tokens)
 - Labels for form inputs (`htmlFor` / `aria-label`)
 - Status messages use appropriate live regions where dynamic
+- Control (`/control`): skip link first; hash deep-links move keyboard focus; loading uses `role="status"` / `aria-busy`; failures use `ErrorState` (`role="alert"`); empty/unavailable providers and feed stay distinct from calendar IDLE waits
 - Tables: `th` scope, captions where helpful
 - Modals/dialogs: focus trap and escape dismiss where implemented
 - Color not sole indicator of state (use text/icons/badges)

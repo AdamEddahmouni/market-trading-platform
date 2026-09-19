@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Mode } from "../mode-session/types";
 import { OperatorControlCenterPage } from "./OperatorControlCenterPage";
 import { CONTROL_SECTIONS } from "./controlPresentation";
+import operatorControlCss from "../../styles/operator-control.css?raw";
 
 function response(payload: unknown, ok = true) {
   return Promise.resolve({ ok, json: async () => payload });
@@ -410,9 +411,12 @@ describe("OperatorControlCenterPage", () => {
     expect(screen.getAllByText("Checking…").length).toBeGreaterThan(0);
     expect(screen.getByText(/Checking providers/)).toBeInTheDocument();
     expect(screen.getByText(/Checking the opportunity feed/)).toBeInTheDocument();
+    const providers = document.getElementById(CONTROL_SECTIONS.providers);
+    expect(providers).toHaveAttribute("aria-busy", "true");
+    expect(screen.getByRole("link", { name: "Skip to system status" })).toBeInTheDocument();
   });
 
-  it("marks and scrolls to the feed section for Command deep-links", async () => {
+  it("moves keyboard focus to a Command deep-link section", async () => {
     stubFetch({
       feed: { ...FEED_READY, feed_status: "UNREADY", unready_reason: "PROVIDER_WARMUP", items: [] },
     });
@@ -422,6 +426,12 @@ describe("OperatorControlCenterPage", () => {
       name: "Opportunity feed readiness",
     });
     expect(feedSection).toHaveAttribute("data-highlighted", "true");
+    expect(feedSection).toHaveAttribute("tabindex", "-1");
+    await waitFor(() => expect(feedSection).toHaveFocus());
+    expect(screen.getByRole("link", { name: "Opportunity feed" })).toHaveAttribute(
+      "aria-current",
+      "location",
+    );
     await waitFor(() => expect(feedSection).toHaveTextContent(/Provider warmup/));
   });
 
@@ -435,6 +445,7 @@ describe("OperatorControlCenterPage", () => {
     await waitFor(() => expect(apply).toBeEnabled());
     fireEvent.click(apply);
     const confirm = await screen.findByRole("button", { name: "Confirm apply and restart" });
+    await waitFor(() => expect(confirm).toHaveFocus());
     fireEvent.click(confirm);
     await waitFor(() =>
       expect(screen.getByText(/apply update queued/i)).toBeInTheDocument(),
@@ -574,5 +585,16 @@ describe("OperatorControlCenterPage", () => {
     expect(liveRow).toHaveAttribute("data-truth", "POLICY");
     expect(liveRow).toHaveTextContent(/Live OFF/);
     expect(liveRow).not.toHaveAttribute("data-truth", "BLOCKED");
+  });
+});
+
+describe("Operator Control visual accessibility contract", () => {
+  it("keeps targets, focus, reduced-motion, and forced-color rules explicit", () => {
+    expect(operatorControlCss).toContain("min-height: 44px");
+    expect(operatorControlCss).toContain(":focus-visible");
+    expect(operatorControlCss).toContain("@media (max-width: 1024px)");
+    expect(operatorControlCss).toContain("@media (max-width: 720px)");
+    expect(operatorControlCss).toContain("@media (prefers-reduced-motion: reduce)");
+    expect(operatorControlCss).toContain("@media (forced-colors: active)");
   });
 });
