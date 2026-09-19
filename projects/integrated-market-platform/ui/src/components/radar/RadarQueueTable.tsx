@@ -2,6 +2,7 @@ import type { AttentionItem } from "../../api/client";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { StatePill } from "../imp-ui/StatePill";
 import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
+import { collectOpportunityProviderLabels } from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   canOpenOpportunityWorkspace,
@@ -27,8 +28,9 @@ type Props = {
 
 /**
  * The ranked opportunity queue. Each row answers without opening details:
- * instrument, what/why-now, state, evidence strength, freshness, and next
- * safe action. Rows are keyboard selectable (Enter/Space) with aria-selected.
+ * instrument, what/why-now, state, evidence strength, freshness, attached
+ * providers (or UNKNOWN), and next safe action. Rows are keyboard selectable
+ * (Enter/Space) with aria-selected.
  */
 export function RadarQueueTable({
   items,
@@ -53,6 +55,7 @@ export function RadarQueueTable({
             <th scope="col">State</th>
             <th scope="col">Evidence</th>
             <th scope="col">Freshness</th>
+            <th scope="col">Providers</th>
             <th scope="col">Next action</th>
             <th scope="col">
               <span className="imp-visually-hidden">Row actions</span>
@@ -68,6 +71,7 @@ export function RadarQueueTable({
             const presentation = derivePresentationState(row);
             const nextAction = opportunityNextActionState(row);
             const freshness = row.data_quality?.freshness;
+            const providers = collectOpportunityProviderLabels(row);
             return (
               <tr
                 key={row.summary_id}
@@ -106,6 +110,7 @@ export function RadarQueueTable({
                     backendLabel={freshness == null ? null : String(freshness)}
                   />
                 </td>
+                <td>{providers.length ? providers.join(", ") : "UNKNOWN"}</td>
                 <td>
                   <StatePill
                     tone={nextAction.tone}

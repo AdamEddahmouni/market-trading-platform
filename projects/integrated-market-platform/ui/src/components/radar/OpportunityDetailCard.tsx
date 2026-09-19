@@ -18,6 +18,7 @@ import {
   hasNonFactualResearchOutput,
   type EpistemicLayerKey,
 } from "../opportunity/opportunityEpistemicLayers";
+import { buildOpportunityOperatorBrief } from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   evidenceInputsSentence,
@@ -45,7 +46,7 @@ function MetaGrid({ items }: { items: Array<{ label: string; value: string }> })
   return (
     <dl className="imp-radar-meta-grid">
       {items.map((item) => (
-        <div key={item.label} className="imp-radar-meta-row">
+        <div key={`${item.label}:${item.value}`} className="imp-radar-meta-row">
           <dt>{item.label}</dt>
           <dd>{item.value}</dd>
         </div>
@@ -96,6 +97,7 @@ export function OpportunityDetailCard({
 }: OpportunityDetailCardProps) {
   const attention = attentionItemFromOpportunity(row);
   const model = buildOpportunityDetailSections(row, { evidence, paperActions, readOnly });
+  const operatorBrief = buildOpportunityOperatorBrief(row, evidence, { paperActions, readOnly });
   const epistemic = buildOpportunityEpistemicLayers(row, evidence);
   const epistemicLayerOrder: EpistemicLayerKey[] = [
     "observed",
@@ -169,6 +171,25 @@ export function OpportunityDetailCard({
           </div>
         </dl>
       </header>
+
+      <section
+        className="imp-radar-operator-brief"
+        aria-label="Operator questions"
+        data-testid="imp-radar-operator-brief"
+      >
+        <h4 className="imp-radar-subhead">Operator questions</h4>
+        <dl className="imp-radar-brief-grid">
+          {operatorBrief.map((item) => (
+            <div key={item.question} className="imp-radar-brief-row" data-honesty={item.honesty}>
+              <dt>{item.question}</dt>
+              <dd>
+                {item.answer}
+                <span className="imp-radar-brief-honesty">{item.honesty}</span>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       {hasNonFactualResearchOutput(epistemic) ? (
         <AttentionBanner tone="caution">

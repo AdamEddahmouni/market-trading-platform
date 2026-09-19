@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-18 — Radar operator brief (Weekend Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Radar opportunity detail now answers the operator discovery questions from attached fields only (what happened, why shown, freshness, providers, conflicts, inference vs observation, unknowns, invalidation, available action, refusal). Empty conflict/provider/invalidation sets stay `UNKNOWN` instead of “none reported.” Queue rows expose attached providers. No fake live actionability; Demo remains read-only. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `opportunityOperatorBrief.test.ts`; `opportunityEpistemicLayers.ts`; `opportunityDetailModel.ts`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `RadarQueueTable.tsx`; `RadarPage.test.tsx`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` opportunity brief/epistemic/detail/presentation + `RadarPage.test.tsx`: 43 passed; `npm run typecheck`: pass. Demo Radar on worktree Vite `:5199` against API `:8766`: operator brief present; providers `REPLAY`; conflicts `UNKNOWN`; `live.quotes` UNSUPPORTED. |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md); design-principles opportunity 9-field rule |
+| **Notes** | Item 9 collection/calibration and Operator Control were not touched. Invalidation criteria remain UNKNOWN unless eligibility, expiry, staleness, supersession, or missing ranking inputs are attached. Branch started at `origin/main` `b16e0bbe`; do not merge. |
+
 ## 2026-09-18 — Weekend Lane C UI regression fixes
 
 | Field | Value |
