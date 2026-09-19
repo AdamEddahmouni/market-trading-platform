@@ -63,6 +63,9 @@ describe("opportunityPresentation", () => {
     expect(
       derivePresentationState(row({ metadata: { agent_enrichment: { status: "PENDING" } } })),
     ).toBe("VERIFYING");
+    expect(
+      derivePresentationState(row({ metadata: { agent_enrichment: { status: "CONTRADICTED" } } })),
+    ).toBe("CONTRADICTED");
   });
 
   it("summarizes evidence as input coverage, never a score", () => {

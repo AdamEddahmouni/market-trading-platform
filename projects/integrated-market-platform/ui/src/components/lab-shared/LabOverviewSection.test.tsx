@@ -80,6 +80,8 @@ describe("LabOverviewSection", () => {
     expect(screen.getByRole("heading", { name: "Model validation" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Deterministic simulation" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "FTEP campaign" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Benchmark comparison" })).toBeInTheDocument();
+    expect(screen.getByText("Test versus forward-test")).toBeInTheDocument();
     expect(screen.getAllByText("Not yet available").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Do not treat the deterministic simulation snapshot as a forward test/i))
       .toBeInTheDocument();

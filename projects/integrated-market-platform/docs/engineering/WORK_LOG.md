@@ -48,6 +48,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; Weekend Wave B Lane E |
 | **Notes** | Did not edit Control presentation (`ui/src/components/control/*`) or `PROGRAM_STATUS.md`. Lane B should switch to `operatorTruth.ts`. |
 
+## 2026-09-19 — Weekend Lane H high-value testing coverage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/platform`, `tests/ui1`, `ui/radar`, `ui/opportunity` |
+| **Summary** | Added fail-closed tests at high-value boundaries on landed #295/#296/#300 contracts: Item 9 sample-gate 2/3 insufficient vs 3/3 met without calibration, Live OFF / LIVE_FORBIDDEN, UNKNOWN provider incidents, restart generations, diagnostic redaction, session AUTH_REQUIRED/INVALID, Radar STALE/INELIGIBLE/EXPIRED refusal. No product-code rewrite; did not edit snapshot.py, Control, Lab, Research, or merge #222. |
+| **Key files** | Created: `tests/platform/test_weekend_lane_h_high_value_boundaries.py`. Modified: `tests/ui1/test_error_taxonomy.py`; `ui/src/components/opportunity/opportunityEpistemicLayers.test.ts`; `opportunityOperatorBrief.test.ts`; `opportunityPresentation.test.ts`; `ui/src/components/radar/RadarPage.test.tsx`. |
+| **Tests** | `python tools/imp.py test focused` 8 selectors **passed 8/0/0**; `.venv python -m unittest` weekend-lane-h + error-taxonomy **25 OK**; vitest opportunity+Radar **43 passed**; `npm run typecheck` **pass**; `python tools/imp.py test affected --workers 2` **PASSED changed: 936 tests, 4 skipped, 0 failures, 0 errors**. |
+| **Related** | Landed #295 provider resilience, #296 UI regression, #300 Radar operator brief. |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-h-coverage` on `test/weekend-lane-h-coverage`. Merged `origin/main` `d8a02448` (#301) keep-both. Do not merge #303. Item 9 collection and Live remain off. |
+
+## 2026-09-19 — Lane J Lab honesty refinement
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab`, `docs/ui-redesign-v2` |
+| **Summary** | Made Lab a clearer inspectable research/validation workbench: experiment/run IDs stay UNKNOWN, strategy identity and dataset provenance are first-class, recorded parameters and evidence lineage are visible, methodological warnings and a test-vs-forward-test map are explicit, and cost/fill assumptions no longer treat `fill_audit.status` as fill realism. No Lab mutations, no evidence-class upgrades. |
+| **Key files** | Created: `ui/src/components/lab-shared/LabFactGrid.tsx`. Modified: `ui/src/components/lab-shared/{labPresentation.ts,LabOverviewSection.tsx,LabValidationSection.tsx,LabSimulationSection.tsx,lab.css}`, `ui/src/components/research-shared/simulationHarnessMetrics.ts`, matching tests, `docs/ui-redesign-v2/lab-contract-map.md`. |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/components/lab-shared src/components/research-shared/simulationHarnessMetrics.test.ts` **24 passed / 0 failed**. Browser: Demo `/lab`, `/lab/validation`, `/lab/simulation` on Vite `:5200`. |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md) |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab` on `ui/weekend-lane-j-lab` from `origin/main` `1f33bf9e` (#295). Remaining honesty gaps: no experiment/run/benchmark/FTEP contracts; many provenance/cost fields stay UNKNOWN until the projection carries them; Lab cannot re-run or change cutoff. No Item 9, Full30, Live, Control, Radar, or `snapshot.py` edits. |
+
 ## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
 
 | Field | Value |

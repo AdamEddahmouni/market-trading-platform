@@ -68,6 +68,10 @@ class ErrorTaxonomyTests(unittest.TestCase):
             "CONTROL_ROUTE_NOT_FOUND": CanonicalErrorCategory.VALIDATION_ERROR,
             "CONTROL_JSON_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
             "CONTROL_ACTION_INVALID": CanonicalErrorCategory.VALIDATION_ERROR,
+            "AUTH_INVALID": CanonicalErrorCategory.AUTH_ERROR,
+            "CAPABILITY_DENIED": CanonicalErrorCategory.AUTH_ERROR,
+            "STALE_PREVIEW": CanonicalErrorCategory.STALE_DATA,
+            "PARTIALLY_STALE": CanonicalErrorCategory.STALE_DATA,
         }
         for code, category in samples.items():
             with self.subTest(reason_code=code):
