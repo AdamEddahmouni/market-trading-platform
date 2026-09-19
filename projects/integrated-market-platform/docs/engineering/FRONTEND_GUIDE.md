@@ -89,10 +89,18 @@ Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `t
 Radar, Command, and Paper surfaces share `ui/src/components/opportunity/`:
 `opportunityPresentation.ts` (presentation state, evidence/freshness/next-action
 derivation, eligibility predicates), `opportunityDetailModel.ts` (L1–L4 detail
-sections), `OpportunityCard`/`OpportunityQueue`/`OpportunityFeedState` (compact
+sections), `opportunityOperatorBrief.ts` (Radar operator questions from attached
+fields only), `OpportunityCard`/`OpportunityQueue`/`OpportunityFeedState` (compact
 queue + feed states), used by Radar (dense table + detail) and the Command
 overview queue. Page context changes layout, never semantic meaning. Below
 1024px the Radar detail opens in an overlay sheet (`RadarDetailSheet`).
+
+Radar detail L1 includes an operator brief that answers: what happened, why IMP
+is showing it, freshness, supporting providers, conflicts, inference vs
+observation, unknowns, what would invalidate it, available action, and why
+action may be refused. Missing contract fields stay `UNKNOWN` / `UNAVAILABLE`.
+The brief never invents live execution, calibration, or Item 9 collection
+status. Queue rows expose attached providers (or `UNKNOWN`) beside freshness.
 
 ## Attention signals (one language)
 
