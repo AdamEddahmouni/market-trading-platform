@@ -33,7 +33,6 @@ _MALFORMED_ALIASES = frozenset(
     {
         MALFORMED_RESPONSE,
         "MALFORMED_RECORD",
-        "MOOMOO_PROTOCOL_ERROR",
         "MALFORMED_HISTORICAL_TRADES_PAYLOAD",
         "MALFORMED_HISTORICAL_TRADE_ROW",
     }
@@ -112,6 +111,18 @@ OPERATOR_MESSAGES: dict[str, str] = {
     "MOOMOO_LAST_PRICE_MISSING": (
         "Moomoo OpenD returned a row without an honest last_price. Bid/ask/close are "
         "not substituted."
+    ),
+    "MISSING_TIMESTAMP": (
+        "The provider row has no usable event timestamp. The quote is rejected; "
+        "receive time is not substituted as event time."
+    ),
+    "MOOMOO_TRANSPORT_NOT_IMPLEMENTED": (
+        "The OpenD quote transport is not available in this environment. Primary L1 "
+        "quotes fail closed; Yahoo overlay is not hop L1."
+    ),
+    "RATE_LIMIT": (
+        "The delayed overlay was rate-limited. No quote is invented and overlay is "
+        "not promoted to hop L1."
     ),
 }
 
@@ -247,6 +258,9 @@ _PRIMARY_UNAVAILABLE_TOKENS = frozenset(
         "MOOMOO_AUTH_FAILURE",
         "MOOMOO_PROTOCOL_ERROR",
         "MOOMOO_LAST_PRICE_MISSING",
+        "MISSING_TIMESTAMP",
+        "MOOMOO_TRANSPORT_NOT_IMPLEMENTED",
+        "RATE_LIMIT",
         FALLBACK_BLOCKED,
         RECONNECTING,
         RESTART_RECOVERY,
@@ -399,18 +413,29 @@ def classify_source_disagreement(incident: Mapping[str, Any]) -> ProviderInciden
     tolerance = _as_float(incident.get("tolerance"))
     if tolerance is None:
         tolerance = 0.01
-    disagree = (
-        primary is not None
-        and overlay is not None
-        and abs(primary - overlay) > tolerance
-    )
+    if primary is None or overlay is None:
+        return _incident(
+            PARTIALLY_STALE,
+            "STALE",
+            primary_available=primary is not None,
+            overlay_available=overlay is not None,
+            details={
+                "merged": False,
+                "disagreement": False,
+                "incomplete_comparison": True,
+                "fabricated_fields": False,
+                "primary_last_price": primary,
+                "overlay_last_price": overlay,
+            },
+        )
+    disagree = abs(primary - overlay) > tolerance
     if not disagree:
         return _incident(
             HEALTHY,
             "HEALTHY",
             primary_available=True,
             overlay_available=True,
-            details={"merged": False, "disagreement": False},
+            details={"merged": False, "disagreement": False, "incomplete_comparison": False},
         )
     return _incident(
         SOURCE_DISAGREEMENT,

@@ -85,4 +85,26 @@ describe("ProviderHealthPanel", () => {
     expect(screen.getByRole("heading", { name: "Provider diagnostics" })).toBeInTheDocument();
     expect(screen.getByText("IMP_LIVE_OBSERVATIONAL not enabled")).toBeInTheDocument();
   });
+
+  it("surfaces reconnecting state, generation, last error, and reconnect count", () => {
+    healthMock.data = {
+      available: true,
+      lifecycle: {
+        connection_state: "RECONNECTING",
+        provider_role: "MARKET_DATA",
+        execution_use: "DISPLAY_ONLY",
+        reconnect_count: 4,
+        provider_generation_id: 9,
+        last_error: "OPEND_UNAVAILABLE",
+      },
+      quota: { active_count: 0, max_quota: 100 },
+      provider_summary: { provider: "MOOMOO" },
+    };
+    renderPanel();
+    expect(screen.getByText(/MOOMOO · RECONNECTING/)).toBeInTheDocument();
+    expect(screen.getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("9")).toBeInTheDocument();
+    expect(screen.getByText("OPEND_UNAVAILABLE")).toBeInTheDocument();
+    expect(screen.queryByText(/live observational mode disabled/i)).not.toBeInTheDocument();
+  });
 });
