@@ -7,11 +7,14 @@
  * operator language. No run IDs, progress, or mutations are invented.
  * Contract authority: docs/ui-redesign-v2/lab-contract-map.md.
  */
-import type { ResearchModelsResponse, ResearchSimulationResponse } from "../../api/schemas";
+import type { AsOfContext, ResearchModelsResponse, ResearchSimulationResponse } from "../../api/schemas";
 import type { SemanticTone } from "../../state/semanticState";
 import { presentCheckStatus, presentPreregistration } from "../research-shared/researchPresentation";
 
 export type LabSectionKey = "overview" | "validation" | "simulation" | "chart-lab";
+
+export const LAB_UNKNOWN = "UNKNOWN";
+export const LAB_UNAVAILABLE = "UNAVAILABLE";
 
 export const LAB_SECTION_TABS: ReadonlyArray<{ to: string; label: string; end?: boolean }> = [
   { to: "/lab", label: "Overview", end: true },
@@ -23,7 +26,7 @@ export const LAB_SECTION_TABS: ReadonlyArray<{ to: string; label: string; end?: 
 export type WorkflowAvailability = "inspectable" | "local-tooling" | "unsupported";
 
 export type LabWorkflowCard = {
-  id: "validation" | "simulation" | "chart-lab" | "ftep" | "hypothesis";
+  id: "validation" | "simulation" | "chart-lab" | "ftep" | "hypothesis" | "benchmark";
   title: string;
   purpose: string;
   tests: string;
@@ -41,6 +44,19 @@ export type LabWorkflowCard = {
   limitation: string;
 };
 
+export type LabFact = {
+  label: string;
+  value: string;
+  copyable?: boolean;
+  note?: string;
+};
+
+export type LabEvidenceClassRow = {
+  workflow: string;
+  evidenceClass: string;
+  notThis: string;
+};
+
 export function recordField(
   record: Record<string, unknown> | undefined,
   key: string,
@@ -54,15 +70,19 @@ export function recordField(
   return null;
 }
 
+export function recordedOrUnknown(value: string | null | undefined): string {
+  if (value == null || value === "") return LAB_UNKNOWN;
+  return value;
+}
+
 export function modelFamily(models?: ResearchModelsResponse | null): string {
-  return recordField(models?.model_summary, "model_family") ?? "Unavailable";
+  return recordedOrUnknown(recordField(models?.model_summary, "model_family"));
 }
 
 export function modelAlignment(models?: ResearchModelsResponse | null): string {
-  return (
+  return recordedOrUnknown(
     recordField(models?.model_summary, "alignment_type") ??
-    recordField(models?.strategy_spec, "alignment_type") ??
-    "Unavailable"
+      recordField(models?.strategy_spec, "alignment_type"),
   );
 }
 
@@ -81,7 +101,7 @@ export function datasetFingerprint(models?: ResearchModelsResponse | null): stri
 }
 
 export function validationResultSummary(models?: ResearchModelsResponse | null): string {
-  if (!models) return "Validation result is unavailable.";
+  if (!models) return "Validation result is UNAVAILABLE.";
   const summary = models.interpretation_summary;
   return (
     `${summary.signal_count} ${summary.signal_count === 1 ? "signal" : "signals"} / ` +
@@ -93,7 +113,7 @@ export function validationResultSummary(models?: ResearchModelsResponse | null):
 }
 
 export function simulationResultSummary(simulation?: ResearchSimulationResponse | null): string {
-  if (!simulation) return "Simulation result is unavailable.";
+  if (!simulation) return "Simulation result is UNAVAILABLE.";
   const ledger = simulation.ledger_summary;
   const reconciliation = presentCheckStatus(simulation.reconciliation?.status as string | undefined);
   return (
@@ -103,6 +123,336 @@ export function simulationResultSummary(simulation?: ResearchSimulationResponse 
     `${simulation.fills.length} ${simulation.fills.length === 1 ? "fill" : "fills"} · ` +
     `reconciliation ${reconciliation.label.toLowerCase()}.`
   );
+}
+
+function asOfFacts(asOf?: AsOfContext): LabFact[] {
+  return [
+    { label: "As-of time", value: recordedOrUnknown(asOf?.as_of_time) },
+    { label: "As-of provenance", value: recordedOrUnknown(asOf?.as_of_provenance) },
+    {
+      label: "Replay session",
+      value: recordedOrUnknown(asOf?.replay_session_id),
+      copyable: Boolean(asOf?.replay_session_id),
+    },
+    { label: "Context mode", value: recordedOrUnknown(asOf?.mode) },
+    { label: "Data mode", value: recordedOrUnknown(asOf?.data_mode) },
+    { label: "Data provider", value: recordedOrUnknown(asOf?.data_provider) },
+    {
+      label: "Execution authority (context)",
+      value: recordedOrUnknown(asOf?.execution_authority),
+      note: "as_of_context only. Lab does not grant Paper or Live execution.",
+    },
+  ];
+}
+
+export function experimentStatusFacts(input: {
+  models?: ResearchModelsResponse | null;
+  modelsError?: boolean;
+  simulation?: ResearchSimulationResponse | null;
+  simulationError?: boolean;
+}): LabFact[] {
+  const validationStatus = input.modelsError
+    ? LAB_UNAVAILABLE
+    : input.models
+      ? "Snapshot at cutoff"
+      : "No snapshot loaded";
+  const simulationStatus = input.simulationError
+    ? LAB_UNAVAILABLE
+    : input.simulation
+      ? "Snapshot at cutoff"
+      : "No snapshot loaded";
+  return [
+    {
+      label: "Experiment ID",
+      value: LAB_UNKNOWN,
+      note: "No experiment resource exists on the UI API. Lab will not mint one.",
+    },
+    {
+      label: "Run ID / queue / progress",
+      value: LAB_UNKNOWN,
+      note: "GET projections are a single current snapshot, not a run ledger.",
+    },
+    { label: "Validation experiment status", value: validationStatus },
+    { label: "Simulation experiment status", value: simulationStatus },
+    {
+      label: "Benchmark comparison",
+      value: LAB_UNKNOWN,
+      note: "Not present on GET /research/models or GET /research/simulation.",
+    },
+  ];
+}
+
+export function strategyIdentityFacts(models?: ResearchModelsResponse | null): LabFact[] {
+  const hash = strategyIdentityHash(models);
+  return [
+    { label: "Model family", value: modelFamily(models) },
+    { label: "Alignment", value: modelAlignment(models) },
+    {
+      label: "Strategy identity hash",
+      value: recordedOrUnknown(hash),
+      copyable: Boolean(hash),
+    },
+    {
+      label: "Walk-forward folds",
+      value: models ? String(models.walk_forward_fold_count) : LAB_UNKNOWN,
+    },
+    {
+      label: "Preregistration",
+      value: recordedOrUnknown(models?.preregistration_status),
+    },
+  ];
+}
+
+export function datasetProvenanceFacts(models?: ResearchModelsResponse | null): LabFact[] {
+  const manifest = models?.dataset_manifest;
+  const summary = models?.model_summary;
+  const fingerprint = datasetFingerprint(models);
+  return [
+    {
+      label: "Dataset fingerprint",
+      value: recordedOrUnknown(fingerprint),
+      copyable: Boolean(fingerprint),
+    },
+    {
+      label: "Horizon (ns)",
+      value: recordedOrUnknown(
+        recordField(manifest, "horizon_ns") ?? recordField(summary, "target_horizon_ns"),
+      ),
+    },
+    {
+      label: "Instrument",
+      value: recordedOrUnknown(
+        recordField(manifest, "instrument_id") ?? recordField(manifest, "symbol"),
+      ),
+    },
+    {
+      label: "Source / provider",
+      value: recordedOrUnknown(
+        recordField(manifest, "source") ?? recordField(manifest, "provider_id"),
+      ),
+    },
+    {
+      label: "Corpus / dataset ID",
+      value: recordedOrUnknown(
+        recordField(manifest, "corpus_id") ?? recordField(manifest, "dataset_id"),
+      ),
+    },
+  ];
+}
+
+const HIDDEN_PARAMETER_KEYS = new Set(["strategy_identity_hash", "dataset_fingerprint"]);
+
+export function recordedParameterFacts(models?: ResearchModelsResponse | null): LabFact[] {
+  const spec = models?.strategy_spec ?? {};
+  const facts: LabFact[] = [];
+  for (const [key, value] of Object.entries(spec)) {
+    if (HIDDEN_PARAMETER_KEYS.has(key)) continue;
+    if (value == null || value === "") {
+      facts.push({ label: key, value: LAB_UNKNOWN });
+      continue;
+    }
+    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      facts.push({ label: key, value: String(value) });
+    }
+  }
+  if (facts.length === 0) {
+    facts.push({
+      label: "Recorded parameters",
+      value: LAB_UNKNOWN,
+      note: "No scalar strategy_spec fields are on this snapshot. Lab has no parameter editor.",
+    });
+  }
+  return facts;
+}
+
+export function evidenceLineageFacts(payload?: {
+  epistemic_class?: string;
+  authority_boundary: string;
+  as_of_context?: AsOfContext;
+  disclaimer?: string;
+}): LabFact[] {
+  if (!payload) {
+    return [{ label: "Evidence lineage", value: LAB_UNAVAILABLE }];
+  }
+  return [
+    { label: "Epistemic class", value: recordedOrUnknown(payload.epistemic_class) },
+    { label: "Authority boundary", value: recordedOrUnknown(payload.authority_boundary) },
+    ...asOfFacts(payload.as_of_context),
+  ];
+}
+
+export function capabilityStateFacts(
+  states?: ReadonlyArray<{ capability_id: string; state: string; reason?: string }>,
+): LabFact[] {
+  if (!states || states.length === 0) {
+    return [
+      {
+        label: "Capability states",
+        value: LAB_UNKNOWN,
+        note: "None were projected on this payload.",
+      },
+    ];
+  }
+  return states.map((row) => ({
+    label: row.capability_id,
+    value: row.state,
+    note: row.reason,
+  }));
+}
+
+export function reproducibilityFacts(input: {
+  models?: ResearchModelsResponse | null;
+  simulation?: ResearchSimulationResponse | null;
+}): LabFact[] {
+  const asOf = input.models?.as_of_context ?? input.simulation?.as_of_context;
+  const hash = strategyIdentityHash(input.models);
+  const fingerprint = datasetFingerprint(input.models);
+  return [
+    ...asOfFacts(asOf),
+    {
+      label: "Strategy identity hash",
+      value: recordedOrUnknown(hash),
+      copyable: Boolean(hash),
+    },
+    {
+      label: "Dataset fingerprint",
+      value: recordedOrUnknown(fingerprint),
+      copyable: Boolean(fingerprint),
+    },
+    {
+      label: "Risk policy",
+      value: recordedOrUnknown(input.simulation?.risk_policy_id ?? null),
+      copyable: Boolean(input.simulation?.risk_policy_id),
+    },
+    {
+      label: "Re-run from Lab",
+      value: "Not supported",
+      note: "Refreshing re-reads the same projection. There is no POST that reproduces a different cutoff.",
+    },
+  ];
+}
+
+export function costFillAssumptionFacts(simulation?: ResearchSimulationResponse | null): LabFact[] {
+  if (!simulation) {
+    return [{ label: "Cost / fill assumptions", value: LAB_UNAVAILABLE }];
+  }
+  const fillAudit = simulation.fill_audit;
+  const ledger = simulation.ledger_summary as Record<string, unknown>;
+  const cost =
+    recordField(fillAudit, "cost_sensitivity_status") ??
+    recordField(fillAudit, "cost_sensitivity_v4_status");
+  const realism =
+    recordField(fillAudit, "fill_price_realism_status") ??
+    recordField(fillAudit, "fill_realism_status") ??
+    recordField(fillAudit, "fill_price_realism");
+  return [
+    {
+      label: "Fill model",
+      value: simulation.disclaimer?.toLowerCase().includes("bar-conservative")
+        ? "Bar-conservative (disclaimer)"
+        : LAB_UNKNOWN,
+      note: "Taken from the projection disclaimer. Not a calibrated live fill model.",
+    },
+    {
+      label: "Fill-price realism metric",
+      value: recordedOrUnknown(realism),
+      note: "fill_audit.status is an audit check, not this metric.",
+    },
+    {
+      label: "Slippage assumption",
+      value: recordedOrUnknown(
+        recordField(fillAudit, "slippage") ?? recordField(ledger, "slippage"),
+      ),
+    },
+    {
+      label: "Commission / fees",
+      value: recordedOrUnknown(
+        recordField(fillAudit, "commission") ??
+          recordField(fillAudit, "fees") ??
+          recordField(ledger, "commission"),
+      ),
+    },
+    {
+      label: "Cost sensitivity",
+      value: recordedOrUnknown(cost),
+    },
+    {
+      label: "Fill audit status",
+      value: recordedOrUnknown(recordField(fillAudit, "status")),
+      note: "Pass/fail of the fill audit — not proof of market-realistic fills.",
+    },
+  ];
+}
+
+export function labEvidenceClassRows(): LabEvidenceClassRow[] {
+  return [
+    {
+      workflow: "Model validation",
+      evidenceClass: "RESEARCH_PROJECTION (retrospective walk-forward)",
+      notThis: "Not FTEP, not Paper, not Live, not production readiness.",
+    },
+    {
+      workflow: "Deterministic simulation",
+      evidenceClass: "SIMULATION_PROJECTION (bar-conservative replay)",
+      notThis: "Not a forward test, not Paper fills, not Live orders.",
+    },
+    {
+      workflow: "Chart Lab",
+      evidenceClass: LAB_UNKNOWN,
+      notThis: "Local adapter tooling. Not an experiment result.",
+    },
+    {
+      workflow: "FTEP / prospective forward test",
+      evidenceClass: LAB_UNKNOWN,
+      notThis: "No Lab campaign contract. Do not relabel simulation.",
+    },
+    {
+      workflow: "Benchmark comparison",
+      evidenceClass: LAB_UNKNOWN,
+      notThis: "No benchmark payload on the current Lab GETs.",
+    },
+  ];
+}
+
+export function validationMethodWarnings(models?: ResearchModelsResponse | null): string[] {
+  const warnings = [
+    "This is retrospective walk-forward on an admitted fixture. It is not a prospective forward test (FTEP).",
+    "This workflow cannot be started, cancelled, or retried from Lab. There is no live run state — only the current projection at cutoff.",
+    "A passing walk-forward does not make this an active production strategy or grant execution authority.",
+    "Benchmark comparison is UNKNOWN — it is not on this contract.",
+  ];
+  const status = models?.preregistration_status;
+  if (status === "ABSENT") {
+    warnings.push("Preregistration is ABSENT.");
+  }
+  if (status === "FAIL") {
+    warnings.push("Preregistration is FAIL.");
+  }
+  if (models && models.interpretations.length === 0) {
+    warnings.push("No interpretation rows fall inside the current replay window.");
+  }
+  if (models?.as_of_context?.mode === "LIVE") {
+    warnings.push(
+      "as_of_context.mode is LIVE data context, not Live experiment authority.",
+    );
+  }
+  return warnings;
+}
+
+export function simulationMethodWarnings(simulation?: ResearchSimulationResponse | null): string[] {
+  const warnings = [
+    "Simulation is not forward-test evidence and not production readiness. This is a deterministic bar-conservative snapshot, not a governed FTEP campaign, and it never places Paper or Live orders.",
+    "There is no run-history list — only the current result. Lab cannot start or retry a simulation.",
+    "Ledger amounts stay in minor units. Currency is UNKNOWN unless a contract field appears.",
+    "Cost, slippage, and fill-realism metrics stay UNKNOWN unless projected on fill_audit.",
+    "Do not treat simulated fills as broker fills or as a governed forward test.",
+  ];
+  if (simulation?.as_of_context?.mode === "LIVE") {
+    warnings.push(
+      "as_of_context.mode is LIVE data context, not Live experiment authority.",
+    );
+  }
+  return warnings;
 }
 
 export function buildLabWorkflowCards(input: {
@@ -120,36 +470,36 @@ export function buildLabWorkflowCards(input: {
 
   const validationStatus = input.modelsError
     ? {
-        statusLabel: "Unavailable",
+        statusLabel: LAB_UNAVAILABLE,
         statusTone: "caution" as const,
         statusDetail: "The research models endpoint did not return a usable payload.",
       }
     : models
       ? {
-          statusLabel: "Current result available",
+          statusLabel: "Snapshot at cutoff",
           statusTone: "research" as const,
           statusDetail: `${preregistration.label}. ${validationResultSummary(models)}`,
         }
       : {
-          statusLabel: "No result yet",
+          statusLabel: "No snapshot loaded",
           statusTone: "neutral" as const,
           statusDetail: "No validation snapshot is loaded for this cutoff.",
         };
 
   const simulationStatus = input.simulationError
     ? {
-        statusLabel: "Unavailable",
+        statusLabel: LAB_UNAVAILABLE,
         statusTone: "caution" as const,
         statusDetail: "The research simulation endpoint did not return a usable payload.",
       }
     : simulation
       ? {
-          statusLabel: "Current snapshot available",
+          statusLabel: "Snapshot at cutoff",
           statusTone: "paper" as const,
           statusDetail: `${reconciliation.label} reconciliation. ${simulationResultSummary(simulation)}`,
         }
       : {
-          statusLabel: "No result yet",
+          statusLabel: "No snapshot loaded",
           statusTone: "neutral" as const,
           statusDetail: "No simulation snapshot is loaded for this cutoff.",
         };
@@ -217,7 +567,7 @@ export function buildLabWorkflowCards(input: {
       availabilityLabel: "Not yet available",
       runnable: false,
       runnableDetail: "No Lab/operator FTEP management contract exists on the UI API.",
-      statusLabel: "Planned / absent",
+      statusLabel: LAB_UNKNOWN,
       statusTone: "neutral",
       statusDetail:
         "Paper `/paper/forward-tests` is account-bound Workspace context, not a Lab campaign manager.",
@@ -229,6 +579,25 @@ export function buildLabWorkflowCards(input: {
         "Do not treat the deterministic simulation snapshot as a forward test.",
     },
     {
+      id: "benchmark",
+      title: "Benchmark comparison",
+      purpose: "Compare the admitted strategy against a declared benchmark.",
+      tests: "Would show relative performance only if a benchmark payload existed.",
+      availability: "unsupported",
+      availabilityLabel: "Not yet available",
+      runnable: false,
+      runnableDetail: "No benchmark comparison contract is on the Lab UI API.",
+      statusLabel: LAB_UNKNOWN,
+      statusTone: "neutral",
+      statusDetail:
+        "Walk-forward counts and simulated P&L are not a benchmark. Lab will not invent a ranking.",
+      inputs: "No Lab inputs.",
+      evidence: "None on this surface.",
+      researchHref: "/research",
+      labHref: null,
+      limitation: "Do not infer a benchmark from validation counts or simulated ledger P&L.",
+    },
+    {
       id: "hypothesis",
       title: "Hypothesis objects",
       purpose: "Track a proposed claim through a lifecycle.",
@@ -237,7 +606,7 @@ export function buildLabWorkflowCards(input: {
       availabilityLabel: "Not yet available",
       runnable: false,
       runnableDetail: "No hypothesis resource exists on the UI API.",
-      statusLabel: "Planned / absent",
+      statusLabel: LAB_UNKNOWN,
       statusTone: "neutral",
       statusDetail: "Closest truth is per-observation interpretation outcomes on validation.",
       inputs: "No Lab inputs.",
