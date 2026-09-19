@@ -55,6 +55,9 @@ export const OpportunitiesSummaryResponseSchema = z.object({
   next_action: z.string().optional(),
   items: z.array(OpportunityReviewRowSchema),
   next_cursor: z.string().nullable().optional(),
+  /** Present when live ranked rows exist but the receive clock is missing. */
+  withheld_ranked_count: z.number().int().nonnegative().optional(),
+  book_honesty: z.string().optional(),
 });
 
 export type OpportunityReviewRow = z.infer<typeof OpportunityReviewRowSchema>;

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Radar operator brief freshness provenance (Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Radar now reads attached `freshness_evaluation` and summary `withheld_ranked_count` so operator questions about freshness, providers, withheld live rows, and refused action stay source-backed. Same-clock event/receive lag stays UNKNOWN. Missing live receive clocks stay `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE`, not FRESH. No fake live actionability. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `ui/src/components/opportunity/OpportunityFeedState.tsx`; `ui/src/components/radar/{RadarOpportunitiesPanel,OpportunityDetailCard,RadarQueueTable}.tsx`; `ui/src/api/opportunityClient.ts`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run` 4 files **43 passed**; `npm run typecheck` **pass**. Browser not run (no local Radar session). |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) Opportunity presentation; Lane L pipeline note that event vs receive lag was not on Radar cards |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-i-radar-provenance` from `origin/main` **65becd61** (#309). Did not touch #222, `snapshot.py`, Control operator_truth, G14/hermeticity tests, or operator diagnostics snapshot. Item 9 **2/3 IDLE**, Live **OFF**, **NOT CALIBRATED** unchanged. Do not merge from this lane. |
+
 ## 2026-09-19 — Absorb origin/main 2a831ac5 (#294+#306) into #293 snapshot.py keep-both
 
 | Field | Value |

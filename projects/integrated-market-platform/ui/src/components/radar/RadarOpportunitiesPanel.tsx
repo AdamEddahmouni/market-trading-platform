@@ -118,6 +118,7 @@ export function RadarOpportunitiesPanel({
       nextAction={query.data?.next_action}
       mode={mode}
       itemCount={items.length}
+      withheldRankedCount={query.data?.withheld_ranked_count}
       onRetry={() => void query.refetch()}
       emptyReason="An empty queue is valid: nothing has been minted for the current coverage. The mixed live screener on the Screeners tab shows what discovery is seeing."
     >
@@ -143,6 +144,10 @@ export function RadarOpportunitiesPanel({
             paperAccountId={paperAccountId}
             paperActions={paperActions}
             readOnly={readOnly}
+            feed={query.data?.as_of_context ?? null}
+            withheldRankedCount={query.data?.withheld_ranked_count}
+            bookHonesty={query.data?.book_honesty}
+            unreadyReason={query.data?.unready_reason}
             onExplain={onExplain}
             onInspect={onInspect}
             onOpenWorkspace={onOpenWorkspace}
@@ -164,6 +169,10 @@ export function RadarOpportunitiesPanel({
             paperAccountId={paperAccountId}
             paperActions={paperActions}
             readOnly={readOnly}
+            feed={query.data?.as_of_context ?? null}
+            withheldRankedCount={query.data?.withheld_ranked_count}
+            bookHonesty={query.data?.book_honesty}
+            unreadyReason={query.data?.unready_reason}
             onExplain={onExplain}
             onInspect={onInspect}
             onOpenWorkspace={onOpenWorkspace}
