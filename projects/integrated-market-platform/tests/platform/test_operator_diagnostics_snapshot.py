@@ -90,7 +90,9 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
         }
         mock_resilience.return_value = dict(_SAMPLE_RESILIENCE)
         payload = build_operator_diagnostics_snapshot(self.store)
-        self.assertEqual(payload["schema_version"], "operator-diagnostics/1.0.0")
+        self.assertEqual(payload["schema_version"], "operator-diagnostics/1.1.0")
+        self.assertNotIn("generated_at_monotonic", payload)
+        self.assertIn("operator_truth", payload)
         self.assertFalse(payload["secrets_included"])
         questions = payload["operator_questions"]
         self.assertIn("q01_imp_running", questions)
@@ -182,7 +184,7 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
             mock_corpus.return_value = {
                 "availability": "AVAILABLE",
                 "receipt_scope": "FROZEN_COLLECTOR_WORKTREE_READ_ONLY",
-                "receipt_dir": "<redacted>",
+                "sample_gate_progress": {"distinct_rth_dates": "2/3"},
                 "report": {
                     **report,
                     "receipt_dir": "<redacted>",
@@ -194,7 +196,7 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
         corpus = payload["sections"]["runtime"]["item9_corpus_status"]
         self.assertEqual(corpus["progress_truth"], "IDLE")
         self.assertNotEqual(corpus["progress_truth"], "DEGRADED")
-        self.assertEqual(corpus["receipt_dir"], "<redacted>")
+        self.assertNotIn("receipt_dir", corpus)
         self.assertEqual(corpus["report"]["receipt_dir"], "<redacted>")
         serialized = json.dumps(payload)
         self.assertNotIn("secret-host", serialized)
@@ -283,7 +285,7 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
             ):
                 section = _item9_corpus_status_section(imp_root)
         self.assertEqual(section["progress_truth"], "HEALTHY")
-        self.assertEqual(section["receipt_dir"].replace("\\", "/").startswith(".imp-actual-01-phase-d/"), True)
+        self.assertNotIn("receipt_dir", section)
         self.assertEqual(section["report"]["receipt_dir"], "<redacted>")
         self.assertNotIn("secret-host", json.dumps(section))
 

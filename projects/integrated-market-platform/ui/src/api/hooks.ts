@@ -79,6 +79,7 @@ export function useOperatorReadinessQuery(enabled = true) {
   });
 }
 
+/** Prefer this over separate readiness/lifecycle GETs — backend owns composed truth. */
 export function useOperatorDiagnosticsQuery(enabled = true) {
   return useQuery({
     queryKey: queryKeys.operatorDiagnostics,
