@@ -6,6 +6,13 @@ import sys
 import unittest
 from pathlib import Path
 
+_FOREIGN_MANIFEST = (
+    r"C:\Users\adame\Desktop\market-trading-platform\.worktrees\opend-fill-economics-v3"
+    r"\projects\integrated-market-platform\artifacts\historical-research-harness"
+    r"\baseline-pack-v3\runs\48D2248BDD4EFA0A7F1286783B004281F4E5C049C129AD91435CBAB7D760B3A4"
+    r"\run_manifest.json"
+)
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
@@ -92,6 +99,19 @@ class FillPriceRealismUnitTests(unittest.TestCase):
         if resolved is None:
             self.skipTest("v3 run artifacts not present on this host")
         self.assertTrue((resolved / "predictions.json").is_file())
+
+    def test_resolve_v3_foreign_windows_manifest_path_no_oserror(self) -> None:
+        missing_run_id = "0" * 64
+        try:
+            resolved = resolve_v3_baseline_run_dir(
+                ROOT,
+                run_id=missing_run_id,
+                manifest_path=_FOREIGN_MANIFEST,
+            )
+        except OSError as exc:
+            self.fail(f"resolve_v3_baseline_run_dir must not raise OSError: {exc}")
+        if sys.platform != "win32":
+            self.assertIsNone(resolved)
 
 
 class FillPriceRealismIntegrationTests(unittest.TestCase):

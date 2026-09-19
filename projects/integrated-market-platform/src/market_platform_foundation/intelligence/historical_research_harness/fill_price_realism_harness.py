@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -191,6 +192,26 @@ def reprice_locked_fills(
     return economics
 
 
+def _looks_like_windows_absolute_path(path_str: str) -> bool:
+    if len(path_str) >= 2 and path_str[0].isalpha() and path_str[1] == ":":
+        return True
+    return path_str.startswith("\\\\")
+
+
+def _path_is_readable_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except OSError:
+        return False
+
+
+def _path_is_readable_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except OSError:
+        return False
+
+
 def resolve_v3_baseline_run_dir(
     repository_root: Path,
     *,
@@ -198,14 +219,12 @@ def resolve_v3_baseline_run_dir(
     manifest_path: str | None,
 ) -> Path | None:
     if manifest_path:
-        candidate = Path(manifest_path)
-        try:
-            # Frozen receipts may record a developer-local manifest path; ignore when
-            # not usable on this host (e.g. Windows paths on Linux CI).
-            if candidate.is_file():
+        manifest_raw = str(manifest_path).strip()
+        foreign_windows = sys.platform != "win32" and _looks_like_windows_absolute_path(manifest_raw)
+        if manifest_raw and not foreign_windows:
+            candidate = Path(manifest_path)
+            if _path_is_readable_file(candidate):
                 return candidate.parent
-        except OSError:
-            pass
     local = (
         repository_root
         / "artifacts"
@@ -214,7 +233,7 @@ def resolve_v3_baseline_run_dir(
         / "runs"
         / run_id
     )
-    if local.is_dir():
+    if _path_is_readable_dir(local):
         return local
     monorepo_root = repository_root
     for _ in range(8):
@@ -233,7 +252,7 @@ def resolve_v3_baseline_run_dir(
         / "runs"
         / run_id
     )
-    if sibling.is_dir():
+    if _path_is_readable_dir(sibling):
         return sibling
     return None
 
