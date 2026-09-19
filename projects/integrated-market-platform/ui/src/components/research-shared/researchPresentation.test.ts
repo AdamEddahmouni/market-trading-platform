@@ -18,8 +18,13 @@ import {
   RESEARCH_FINDINGS,
   claimFollowAccessibleName,
   buildClaimNavigation,
+  buildClaimLineage,
   claimHopsForFinding,
+  claimPathKeys,
+  parseClaimFindingParam,
+  resolveFollowedFinding,
   sectionClaimHops,
+  withResearchClaimQuery,
   researchPanel,
 } from "./researchPresentation";
 
@@ -301,6 +306,66 @@ describe("buildClaimNavigation", () => {
   });
 });
 
+describe("claim lineage", () => {
+  it("ignores unknown claim query values instead of minting objects", () => {
+    expect(parseClaimFindingParam("not-a-panel")).toBeNull();
+    expect(resolveFollowedFinding("not-a-panel", analyticsFixture)).toBe("strategy_outcomes");
+  });
+
+  it("defaults to the first available finding when strategy outcomes are empty", () => {
+    const noStrategy = {
+      ...analyticsFixture,
+      panels: {
+        ...analyticsFixture.panels,
+        strategy_outcomes: { ...analyticsFixture.panels.strategy_outcomes, available: false },
+      },
+    } as unknown as ResearchAnalyticsResponse;
+    expect(resolveFollowedFinding(null, noStrategy)).toBe("risk_decisions");
+  });
+
+  it("scopes source and evidence to the followed finding and marks off-path nodes", () => {
+    const lineage = buildClaimLineage(
+      {
+        analytics: analyticsFixture,
+        models: modelsFixture,
+        simulation: simulationFixture,
+      },
+      "DEMO",
+      "squeeze_outcomes",
+    );
+    expect(lineage.findingTitle).toBe("Squeeze screener outcomes");
+    expect(lineage.reading).toMatch(/source short-squeeze-project/i);
+    expect(claimPathKeys("squeeze_outcomes")).toEqual(["source", "hypothesis", "evidence"]);
+    const source = lineage.nodes.find((node) => node.key === "source");
+    expect(source?.relation).toBe("on-path");
+    expect(source?.href).toBe("/research/evidence?panel=squeeze_outcomes&claim=squeeze_outcomes");
+    expect(source?.detail).toMatch(/short-squeeze-project/);
+    const strategy = lineage.nodes.find((node) => node.key === "strategy");
+    expect(strategy?.relation).toBe("off-path");
+    expect(strategy?.detail).toMatch(/Not on this finding's path/);
+    expect(strategy?.href).toBe("/research/validation?claim=squeeze_outcomes");
+    const hypothesis = lineage.nodes.find((node) => node.key === "hypothesis");
+    expect(hypothesis?.relation).toBe("on-path");
+    expect(hypothesis?.statusLabel).toBe("NOT_EXPOSED");
+    const forward = lineage.nodes.find((node) => node.key === "forward-test");
+    expect(forward?.href).toBeNull();
+    expect(withResearchClaimQuery("/workspace", "strategy_outcomes")).toBe("/workspace");
+  });
+
+  it("does not treat the simulation as a forward test when following strategy outcomes", () => {
+    const lineage = buildClaimLineage(
+      { analytics: analyticsFixture, simulation: simulationFixture },
+      "PAPER",
+      "strategy_outcomes",
+    );
+    const experiment = lineage.nodes.find((node) => node.key === "experiment");
+    expect(experiment?.relation).toBe("on-path");
+    expect(experiment?.evidenceClass).toMatch(/not prospective forward-test/i);
+    const forward = lineage.nodes.find((node) => node.key === "forward-test");
+    expect(forward?.href).toBe("/workspace");
+  });
+});
+
 describe("claimFollowAccessibleName", () => {
   it("prefixes Follow so section tabs stay uniquely named", () => {
     expect(claimFollowAccessibleName("Evidence")).toBe("Follow evidence");
@@ -319,6 +384,12 @@ describe("claim hops", () => {
       "forward-test",
     ]);
     expect(hops.find((hop) => hop.key === "forward-test")?.href).toBeNull();
+    expect(hops.find((hop) => hop.key === "strategy")?.href).toBe(
+      "/research/validation?claim=strategy_outcomes",
+    );
+    expect(hops.find((hop) => hop.key === "contradiction")?.href).toBe(
+      "/research/validation?conflict=1&claim=strategy_outcomes",
+    );
   });
 
   it("routes simulation hops away from treating the run as a forward test", () => {
