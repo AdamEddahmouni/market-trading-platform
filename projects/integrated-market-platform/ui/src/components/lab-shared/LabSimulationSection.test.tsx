@@ -103,7 +103,9 @@ describe("LabSimulationSection", () => {
     expect(screen.getByText("Approved")).toBeInTheDocument();
     expect(screen.queryByText("intent-abc123def456")).not.toBeInTheDocument();
     expect(screen.queryByText("1757500400000000000")).not.toBeInTheDocument();
-    expect(screen.getByText("Methodology and technical detail")).toBeInTheDocument();
+    expect(screen.getByText(/Cost and fill assumptions/i)).toBeInTheDocument();
+    expect(screen.getByText("How this snapshot was produced")).toBeInTheDocument();
+    expect(screen.getAllByText("UNKNOWN").length).toBeGreaterThan(0);
   });
 
   it("is honest when the snapshot has no fills or decisions", () => {
