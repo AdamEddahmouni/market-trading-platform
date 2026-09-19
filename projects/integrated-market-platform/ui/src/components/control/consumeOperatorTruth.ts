@@ -1,8 +1,6 @@
 import type { OperatorDiagnostics } from "../../api/schemas";
 import { operatorTruthById as readOperatorTruthById } from "../../api/operatorTruth";
 
-export { operatorTruthById, operatorTruthSection } from "../../api/operatorTruth";
-
 const ITEM9_TRUTH_IDS = new Set(["item9-corpus", "item9-preflight"]);
 
 /**
