@@ -7,8 +7,20 @@
  * operator language. No run IDs, progress, or mutations are invented.
  * Contract authority: docs/ui-redesign-v2/lab-contract-map.md.
  */
-import type { AsOfContext, ResearchModelsResponse, ResearchSimulationResponse } from "../../api/schemas";
+import type {
+  AsOfContext,
+  OperatorDiagnostics,
+  ResearchModelsResponse,
+  ResearchSimulationResponse,
+} from "../../api/schemas";
 import type { SemanticTone } from "../../state/semanticState";
+import { preferItem9OperatorTruth } from "../control/consumeOperatorTruth";
+import {
+  diagnosticsGovernance,
+  diagnosticsRuntimeSection,
+  formatItem9CorpusProgress,
+  mapItem9CorpusProgressTruth,
+} from "../control/operatorDiagnosticsPresentation";
 import { presentCheckStatus, presentPreregistration } from "../research-shared/researchPresentation";
 
 export type LabSectionKey = "overview" | "validation" | "simulation" | "chart-lab";
@@ -179,6 +191,97 @@ export function experimentStatusFacts(input: {
       value: LAB_UNKNOWN,
       note: "Not present on GET /research/models or GET /research/simulation.",
     },
+  ];
+}
+
+export function labAuthorityHonestyFacts(input: {
+  diagnostics?: OperatorDiagnostics | null;
+  diagnosticsError?: boolean;
+}): LabFact[] {
+  const full30: LabFact = {
+    label: "Full30 / IBP campaign",
+    value: "Not a Lab workflow",
+    note: "Lab does not execute Full30, calibration fitting, or Live orders.",
+  };
+
+  if (input.diagnosticsError) {
+    return [
+      { label: "Item 9 distinct admitted RTH dates", value: LAB_UNAVAILABLE },
+      { label: "Item 9 date-gate truth class", value: LAB_UNAVAILABLE },
+      { label: "Item 9 calibration", value: LAB_UNAVAILABLE },
+      { label: "Live real-money execution", value: LAB_UNAVAILABLE },
+      full30,
+    ];
+  }
+
+  if (!input.diagnostics) {
+    return [
+      {
+        label: "Item 9 distinct admitted RTH dates",
+        value: LAB_UNKNOWN,
+        note: "GET /operator/diagnostics is not loaded on this snapshot.",
+      },
+      { label: "Item 9 date-gate truth class", value: LAB_UNKNOWN },
+      { label: "Item 9 calibration", value: LAB_UNKNOWN },
+      { label: "Live real-money execution", value: LAB_UNKNOWN },
+      full30,
+    ];
+  }
+
+  const runtime = diagnosticsRuntimeSection(input.diagnostics);
+  const governance = diagnosticsGovernance(input.diagnostics);
+  const corpus = formatItem9CorpusProgress(runtime?.item9_corpus_status);
+  const localTruth = mapItem9CorpusProgressTruth(
+    runtime?.item9_corpus_status,
+    corpus.distinctRthDates,
+  );
+  const corpusTruth = preferItem9OperatorTruth(input.diagnostics, "item9-corpus", localTruth);
+  const liveLabel = !governance
+    ? LAB_UNKNOWN
+    : governance.live_execution_env
+      ? "Live execution env flag is on — still governed."
+      : "Live OFF";
+
+  return [
+    {
+      label: "Item 9 distinct admitted RTH dates",
+      value: recordedOrUnknown(corpus.distinctRthDates),
+      note: corpus.receiptScopeNote,
+    },
+    {
+      label: "Item 9 date-gate truth class",
+      value: corpusTruth,
+      note:
+        corpusTruth === "IDLE"
+          ? "Incomplete admitted dates are IDLE, not DEGRADED, and not a Lab defect to fix."
+          : "Canonical operator_truth / local Item 9 mapping. Lab does not upgrade this class.",
+    },
+    {
+      label: "Item 9 calibration",
+      value: recordedOrUnknown(corpus.calibrationLabel),
+      note: `${corpus.calibrationForbidden}. Walk-forward and simulation snapshots are not calibration.`,
+    },
+    {
+      label: "Live real-money execution",
+      value: liveLabel,
+      note: "Observational Live data mode is not Live experiment authority and does not place broker orders.",
+    },
+    full30,
+  ];
+}
+
+export function labAuthorityHonestyWarnings(input: {
+  diagnostics?: OperatorDiagnostics | null;
+  diagnosticsError?: boolean;
+}): string[] {
+  const facts = labAuthorityHonestyFacts(input);
+  const dates = facts.find((row) => row.label === "Item 9 distinct admitted RTH dates")?.value;
+  const calibration = facts.find((row) => row.label === "Item 9 calibration")?.value;
+  return [
+    "Lab is controlled research/validation inspection. It does not grant trade authority or production readiness.",
+    `Item 9 fill-calibration corpus is ${dates ?? LAB_UNKNOWN} and ${calibration ?? LAB_UNKNOWN}. Simulated fills on this page are not calibrated Paper fills.`,
+    "Incomplete Item 9 dates stay IDLE — not DEGRADED and not a reason to invent a Run or Calibrate control.",
+    "Full30 is not a Lab action. Do not treat the absence of a run button as a campaign result.",
   ];
 }
 

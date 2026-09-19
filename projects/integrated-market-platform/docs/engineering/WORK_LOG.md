@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | `OPERATOR_DIAGNOSTICS_MODEL.md`; existing `test_operator_diagnostics_snapshot.py`, `test_operator_truth_contract.py` |
 | **Notes** | Isolated worktree `feat/weekend-lane-h-lifecycle-tests` from `origin/main` @ `d547f96e`. Did not touch `snapshot.py` implementation or Item 9 collector state. |
 
+## 2026-09-19 — Lab: Item 9 / Live honesty on research workbench (Lane J)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/lab` |
+| **Summary** | Lab Overview and Simulation now inspect `GET /operator/diagnostics` so Item 9 **2/3** stays **IDLE**, **Live OFF**, and **NOT CALIBRATED** are visible on the research workbench. Full30 is labeled not a Lab workflow; no calibrate/collect/run mutations. |
+| **Key files** | `ui/src/components/lab-shared/labPresentation.ts`; `ui/src/components/lab-shared/LabCalibrationHonesty.tsx`; `ui/src/components/lab-shared/LabOverviewSection.tsx`; `ui/src/components/lab-shared/LabSimulationSection.tsx`; `docs/ui-redesign-v2/lab-contract-map.md`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `cd ui && npm test -- src/components/lab-shared src/App.test.tsx` — **98 passed**; `npm run typecheck` — pass |
+| **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md); shared `queryKeys.operatorDiagnostics` / `preferItem9OperatorTruth` |
+| **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab-lineage` from `61335412` (#312). Did not merge. Did not touch #222, `snapshot.py`, #308 G14, #310 Radar, #311 PROGRAM_STATUS. No Full30. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `eee44352` after #310 weekend wave
 
 | Field | Value |
