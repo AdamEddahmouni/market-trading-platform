@@ -43,7 +43,7 @@ const MODE_COPY: Record<
   PAPER: {
     eyebrow: "Paper trading",
     subtitle:
-      "Ranked opportunities, the mixed live screener, and donor research screens. Promote candidates into workspace lanes for paper simulation review.",
+      "Ranked opportunities, the investigation screener, and donor research screens. Promote candidates into workspace lanes for paper simulation review.",
   },
   LIVE: {
     eyebrow: "Live observation",
@@ -59,7 +59,7 @@ const MODE_COPY: Record<
 /**
  * Radar — the canonical discovery queue (find → rank → investigate).
  * Opportunities tab: ranked OE queue + selected opportunity detail.
- * Screeners tab: mixed live screener + donor research bridges.
+ * Screeners tab: investigation screener + donor research bridges.
  * Mode honesty: Demo read-only, Paper full discovery mutations, Live
  * read-only monitor. No surface implies real-money action.
  */
