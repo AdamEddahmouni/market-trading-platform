@@ -46,7 +46,31 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | Created: `ui/src/components/research-shared/ResearchClaimGraph.tsx`. Modified: `researchPresentation.ts`(+test), `ResearchOverviewSection.tsx`(+test), `ResearchEvidenceSection.tsx`(+test), `ResearchValidationSection.tsx`(+test), `ResearchSimulationSection.tsx`(+test), `ResearchSurface.tsx`, `{Demo,Paper,Live}ResearchPage.tsx`, `ui/src/styles/research.css`, `docs/ui-redesign-v2/research-contract-map.md`, `docs/engineering/FRONTEND_GUIDE.md`. |
 | **Tests** | `npm run typecheck` **pass**; `npm test --` research-shared + demo/paper/live-research **62 passed / 0 failed**. Browser: Demo `/research` on worktree Vite `127.0.0.1:5298` — claim graph present; Strategy node → `/research/validation` hops; Evidence hops present. (Earlier `:5198` was a different already-bound UI.) |
 | **Related** | [research-contract-map.md](../ui-redesign-v2/research-contract-map.md); Weekend Wave C Lane K |
-| **Notes** | Did not edit Control, Radar, Lab, `snapshot.py`, or PROGRAM_STATUS. No Item 9 collection, no Full30, no Live, no #222 merge, no collector mutation. Remaining dump-like gaps: Evidence still lists five analytics panels; Validation still shows a full interpretation table; no first-class hypothesis/source-catalog/FTEP endpoints. Merged `origin/main` `49869a3d` (#300); #301 Lab not on main — Lab files not taken. |
+| **Notes** | Did not edit Control, Radar, Lab, `snapshot.py`, or PROGRAM_STATUS. No Item 9 collection, no Full30, no Live, no #222 merge, no collector mutation. Remaining dump-like gaps: Evidence still lists five analytics panels; Validation still shows a full interpretation table; no first-class hypothesis/source-catalog/FTEP endpoints. Merged `origin/main` `11b6b695` (#297 Control UX); #301 Lab not on main — Lab files not taken. |
+
+## 2026-09-19 — Lane B review: Live OFF POLICY + Item 9 meaning branch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Review fix on #297: Live OFF uses truth class **POLICY** (not **BLOCKED**); BLOCKED stays for real gates such as WRONG_RUNTIME. Item 9 corpus meaning now branches — 2/3 still “needs more dates”, 3/3 says the date gate is complete and does not claim more dates are required. |
+| **Key files** | `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `OperatorSystemStatusSection.tsx`; `operatorDiagnosticsPresentation.test.ts`; `ui/src/styles/operator-control.css` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **50 passed** |
+| **Related** | PR [#297](https://github.com/AdamEddahmouni/market-trading-platform/pull/297) |
+| **Notes** | Merged `origin/main` @ `1f33bf9e` (#295) first. No collector / Item 9 mutation. |
+
+## 2026-09-18 — Lane B Operator Control UX (trader-readable status)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Refined Control so a trader can tell waiting vs failure: Item 9 incomplete dates stay **IDLE** (not **DEGRADED**), Live OFF is a policy lock, and diagnostics load errors are labeled as load failures. Canonical tokens remain visible. Did not add a UI route at `/operator/diagnostics` because Vite proxies that path to the API. |
+| **Key files** | `ui/src/components/control/OperatorControlCenterPage.tsx`; `ui/src/components/control/OperatorSystemStatusSection.tsx`; `ui/src/components/control/operatorDiagnosticsPresentation.ts`; `ui/src/styles/operator-control.css`; `ui/src/components/control/*.test.ts(x)` |
+| **Tests** | `npx tsc --noEmit -p tsconfig.typecheck.json` pass; `node scripts/run-vitest.mjs src/components/control` **49 passed**. Browser: Vite `:5194` Demo Control — load-failure copy, **Live OFF**, **NOT CALIBRATED**, **CALIBRATION FORBIDDEN**; Item 9 **2/3 IDLE** covered by Vitest (API snapshot unavailable in that session). Did not click Restart / collectors. |
+| **Related** | `docs/engineering/ACCESSIBILITY.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Notes** | Full `App.test.tsx` showed intermittent lazy-load flakes when run as a heavy suite; Control-focused Vitest is the claimed gate. |
 
 ## 2026-09-18 — Radar operator brief (Weekend Lane I)
 
