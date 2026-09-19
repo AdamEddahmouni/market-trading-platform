@@ -15,7 +15,14 @@ from market_platform_foundation.local_state.paths import REPO_ROOT
 
 class FtepCampaignStatusTests(unittest.TestCase):
     def setUp(self) -> None:
+        self._prior_persist = os.environ.get("IMP_PERSIST_STATE")
         os.environ["IMP_PERSIST_STATE"] = "1"
+
+    def tearDown(self) -> None:
+        if self._prior_persist is None:
+            os.environ.pop("IMP_PERSIST_STATE", None)
+        else:
+            os.environ["IMP_PERSIST_STATE"] = self._prior_persist
 
     def test_ftep_v1_002_status_snapshot(self) -> None:
         durable_zero = {

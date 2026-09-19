@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import unittest
+from unittest.mock import patch
 
 from market_platform_foundation.intelligence.adaptation import (
     AdaptationAction,
@@ -37,7 +38,7 @@ from tests.intelligence.promotion_fixtures import DEFAULT_SCOPE, validated_candi
 
 class Build0124LifecycleTests(unittest.TestCase):
     def setUp(self) -> None:
-        os.environ["IMP_PAPER_EXECUTION"] = "1"
+        self.enterContext(patch.dict(os.environ, {"IMP_PAPER_EXECUTION": "1"}))
 
     def test_full_governed_loop_ends_at_research_reentry(self) -> None:
         repo, manifest, candidate, artifact_bytes, report, plan = validated_candidate_bundle()
