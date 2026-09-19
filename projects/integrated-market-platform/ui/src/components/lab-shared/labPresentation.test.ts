@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { buildLabWorkflowCards, labHasRunnableBackendWorkflow } from "./labPresentation";
+import {
+  buildLabWorkflowCards,
+  costFillAssumptionFacts,
+  datasetProvenanceFacts,
+  experimentStatusFacts,
+  labHasRunnableBackendWorkflow,
+  strategyIdentityFacts,
+} from "./labPresentation";
 
 const models = {
   authority_boundary: "READ_ONLY_RESEARCH",
@@ -46,20 +53,44 @@ describe("labPresentation", () => {
     expect(sim?.researchHref).toBe("/research/simulation");
   });
 
-  it("keeps FTEP and hypotheses as explicit unsupported gaps", () => {
+  it("keeps FTEP, hypotheses, and benchmark comparison as explicit UNKNOWN gaps", () => {
     const cards = buildLabWorkflowCards({});
     const ftep = cards.find((card) => card.id === "ftep");
     const hypothesis = cards.find((card) => card.id === "hypothesis");
+    const benchmark = cards.find((card) => card.id === "benchmark");
     expect(ftep?.availability).toBe("unsupported");
     expect(ftep?.availabilityLabel).toBe("Not yet available");
+    expect(ftep?.statusLabel).toBe("UNKNOWN");
     expect(ftep?.statusDetail).toMatch(/forward-tests/);
     expect(hypothesis?.availability).toBe("unsupported");
+    expect(benchmark?.availability).toBe("unsupported");
+    expect(benchmark?.statusLabel).toBe("UNKNOWN");
+    expect(benchmark?.limitation).toMatch(/Do not infer a benchmark/i);
   });
 
   it("does not invent a run ledger when payloads are missing", () => {
     const cards = buildLabWorkflowCards({ modelsError: true, simulationError: true });
-    expect(cards.find((card) => card.id === "validation")?.statusLabel).toBe("Unavailable");
-    expect(cards.find((card) => card.id === "simulation")?.statusLabel).toBe("Unavailable");
+    expect(cards.find((card) => card.id === "validation")?.statusLabel).toBe("UNAVAILABLE");
+    expect(cards.find((card) => card.id === "simulation")?.statusLabel).toBe("UNAVAILABLE");
     expect(cards.some((card) => /queued|running|progress/i.test(card.statusLabel))).toBe(false);
+  });
+
+  it("keeps experiment IDs, benchmarks, and missing provenance as UNKNOWN", () => {
+    const status = experimentStatusFacts({ models, simulation });
+    expect(status.find((row) => row.label === "Experiment ID")?.value).toBe("UNKNOWN");
+    expect(status.find((row) => row.label === "Benchmark comparison")?.value).toBe("UNKNOWN");
+    expect(status.find((row) => row.label === "Validation experiment status")?.value).toBe(
+      "Snapshot at cutoff",
+    );
+
+    const identity = strategyIdentityFacts(models as never);
+    expect(identity.find((row) => row.label === "Strategy identity hash")?.value).toBe("UNKNOWN");
+
+    const provenance = datasetProvenanceFacts(models as never);
+    expect(provenance.find((row) => row.label === "Instrument")?.value).toBe("UNKNOWN");
+
+    const costs = costFillAssumptionFacts(simulation as never);
+    expect(costs.find((row) => row.label === "Slippage assumption")?.value).toBe("UNKNOWN");
+    expect(costs.find((row) => row.label === "Fill-price realism metric")?.value).toBe("UNKNOWN");
   });
 });
