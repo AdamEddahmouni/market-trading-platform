@@ -58,6 +58,8 @@ export const OperatorReadinessSchema = z.object({
   checks: z.array(PreflightCheckSchema),
   providers: z.array(ProviderReadinessSchema),
   secrets_included: z.literal(false).optional(),
+  root: z.string().optional(),
+  as_of_context: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const OperatorLifecycleStatusSchema = z.object({
@@ -1675,12 +1677,14 @@ export const ResearchSimulationResponseSchema = z.object({
   disclaimer: z.string().optional(),
   epistemic_class: z.string().optional(),
   risk_policy_id: z.string().nullable().optional(),
-  ledger_summary: z.object({
-    cash_minor: z.number().nullable().optional(),
-    position_shares: z.number().nullable().optional(),
-    realized_pnl_minor: z.number().nullable().optional(),
-    entry_count: z.number(),
-  }),
+  ledger_summary: z
+    .object({
+      cash_minor: z.number().nullable().optional(),
+      position_shares: z.number().nullable().optional(),
+      realized_pnl_minor: z.number().nullable().optional(),
+      entry_count: z.number(),
+    })
+    .passthrough(),
   risk_decisions: z.array(z.record(z.unknown())),
   fills: z.array(z.record(z.unknown())),
   orders: z.array(z.record(z.unknown())),

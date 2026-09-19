@@ -13,6 +13,12 @@ import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { buildOpportunityDetailSections } from "../opportunity/opportunityDetailModel";
 import {
+  buildOpportunityEpistemicLayers,
+  epistemicLayerTitle,
+  hasNonFactualResearchOutput,
+  type EpistemicLayerKey,
+} from "../opportunity/opportunityEpistemicLayers";
+import {
   attentionItemFromOpportunity,
   evidenceInputsSentence,
   hasProvisionalOrder,
@@ -90,6 +96,15 @@ export function OpportunityDetailCard({
 }: OpportunityDetailCardProps) {
   const attention = attentionItemFromOpportunity(row);
   const model = buildOpportunityDetailSections(row, { evidence, paperActions, readOnly });
+  const epistemic = buildOpportunityEpistemicLayers(row, evidence);
+  const epistemicLayerOrder: EpistemicLayerKey[] = [
+    "observed",
+    "derived",
+    "model_research",
+    "hypothesis",
+    "unknown",
+    "contradiction",
+  ];
   const rank = opportunityRankLabel(row);
   const provisionalOrder = hasProvisionalOrder(row);
   const quality = row.data_quality ?? {};
@@ -155,6 +170,12 @@ export function OpportunityDetailCard({
         </dl>
       </header>
 
+      {hasNonFactualResearchOutput(epistemic) ? (
+        <AttentionBanner tone="caution">
+          Model and research outputs below are not grounded market facts. Treat agent enrichment and
+          research artifacts as interpretive unless a grounded-fact disposition is present.
+        </AttentionBanner>
+      ) : null}
       {provisionalOrder ? (
         <AttentionBanner tone="caution">
           Provisional order — not FTEP-tuned or campaign-calibrated.
@@ -210,8 +231,8 @@ export function OpportunityDetailCard({
         </p>
       </div>
 
-      {/* L2 — evidence & verification */}
-      <Disclosure title="Evidence & verification" id={`${model.stableKey}-evidence`}>
+      {/* L2 — epistemic layers */}
+      <Disclosure title="Evidence layers" id={`${model.stableKey}-evidence`} defaultOpen>
         {evidencePhase === "loading" ? (
           <p className="imp-radar-muted" role="status">
             Loading evidence projection…
@@ -222,11 +243,25 @@ export function OpportunityDetailCard({
             Evidence projection unavailable.
           </p>
         ) : null}
-        <MetaGrid items={model.deterministicEvidence} />
-        <h4 className="imp-radar-subhead">Verification</h4>
-        <MetaGrid items={model.verification} />
-        <h4 className="imp-radar-subhead">Contradictions</h4>
-        <MetaGrid items={model.contradictions} />
+        {epistemicLayerOrder.map((layerKey) => {
+          const items = epistemic[layerKey];
+          if (layerKey === "model_research" && !items.length) return null;
+          if (layerKey === "hypothesis" && !items.length) return null;
+          return (
+            <section key={layerKey} className="imp-radar-epistemic-layer" data-layer={layerKey}>
+              <h4 className="imp-radar-subhead">{epistemicLayerTitle(layerKey)}</h4>
+              <MetaGrid
+                items={items.map((item) => ({
+                  label: item.label,
+                  value: item.value,
+                }))}
+              />
+              {layerKey === "model_research" ? (
+                <p className="imp-radar-muted">Simulation, replay, and model outputs — not live facts.</p>
+              ) : null}
+            </section>
+          );
+        })}
       </Disclosure>
 
       {/* L2 — risk & liquidity */}

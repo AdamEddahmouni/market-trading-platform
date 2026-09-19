@@ -16,6 +16,7 @@ import { humanizeEnum, type SemanticTone } from "../../state/semanticState";
 /** Stable section anchors — hash deep-links from Command/StatusBar land here. */
 export const CONTROL_SECTIONS = {
   overview: "control-overview",
+  governance: "control-governance",
   authority: "control-authority",
   attention: "control-attention",
   providers: "control-providers",

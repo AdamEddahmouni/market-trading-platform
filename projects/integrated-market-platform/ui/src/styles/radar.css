@@ -92,6 +92,21 @@
   margin-right: var(--imp-space-1);
 }
 
+.imp-radar-epistemic-layer {
+  margin-block: var(--imp-space-3);
+}
+
+.imp-radar-epistemic-layer[data-layer="model_research"] {
+  padding: var(--imp-space-3);
+  border-radius: var(--imp-radius-md);
+  border: 1px dashed var(--border-subtle);
+  background: var(--surface-2);
+}
+
+.imp-precision-failure-detail {
+  margin: var(--imp-space-2) 0 0;
+}
+
 /* ---- Detail card ---- */
 .imp-radar-detail-card {
   border: 1px solid var(--border-subtle);

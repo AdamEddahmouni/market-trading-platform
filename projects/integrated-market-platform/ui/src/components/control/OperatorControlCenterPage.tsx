@@ -30,6 +30,7 @@ import {
   presentProviderRole,
   providerNeedsAction,
 } from "./controlPresentation";
+import { buildGovernanceFacts } from "../operator-shared/governanceStatusPresentation";
 
 type Props = {
   mode: Mode;
@@ -93,6 +94,11 @@ export function OperatorControlCenterPage({ mode }: Props) {
   const feed = feedQuery.data;
   const feedStatus = feed?.feed_status;
   const humanizedReason = humanizeUnreadyReason(feed?.unready_reason);
+  const governanceFacts = buildGovernanceFacts({
+    asOf,
+    capabilityStates: contextQuery.data?.capability_states,
+    readinessRoot: readiness?.root ?? null,
+  });
   const paperSessionOpen =
     mode === "PAPER" && paperPortfolioQuery.data
       ? Boolean(paperPortfolioQuery.data.session)
@@ -336,6 +342,36 @@ export function OperatorControlCenterPage({ mode }: Props) {
           Lifecycle controls manage this local workstation only — they do not change trading
           authority. Live execution remains locked.
         </p>
+      </section>
+
+      {/* Governance & empirical honesty (read-only) */}
+      <section
+        className="control-panel"
+        id={CONTROL_SECTIONS.governance}
+        aria-labelledby="control-governance-heading"
+        data-highlighted={hash === CONTROL_SECTIONS.governance ? "true" : undefined}
+      >
+        <div className="control-panel-heading">
+          <div>
+            <div className="control-panel-kicker">Governance</div>
+            <h2 id="control-governance-heading">Program gates & runtime truth</h2>
+          </div>
+        </div>
+        <p className="control-muted">
+          Calibration, collector, and runtime SHA come from backend contracts only. Missing fields stay
+          explicit — the UI never fabricates Item 9 3/3 or backfills observational gaps.
+        </p>
+        <dl className="control-fact-grid">
+          {governanceFacts.map((fact) => (
+            <div key={fact.id} className="control-fact">
+              <dt>{fact.label}</dt>
+              <dd>
+                <StatePill tone={fact.tone} label={fact.value} raw={fact.raw ?? fact.value} />
+                {fact.detail ? <p className="control-muted">{fact.detail}</p> : null}
+              </dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* B. Execution / authority */}

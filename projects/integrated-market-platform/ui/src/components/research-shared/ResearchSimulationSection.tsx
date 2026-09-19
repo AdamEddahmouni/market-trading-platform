@@ -9,6 +9,7 @@ import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { CountBarChartPanel } from "../charts/ResearchChartPanels";
 import { formatResearchTime, presentCheckStatus } from "./researchPresentation";
+import { SimulationHarnessMetricsPanel } from "./SimulationHarnessMetricsPanel";
 
 function countSeries(rows: Record<string, unknown>[], key: string) {
   const counts = new Map<string, number>();
@@ -116,6 +117,11 @@ export function ResearchSimulationSection() {
           process surface; this page stays the interpretation of the snapshot.
         </p>
       </section>
+
+      <SimulationHarnessMetricsPanel
+        payload={payload}
+        headingId="research-simulation-harness-heading"
+      />
 
       <section className="research-panel" aria-labelledby="research-simulation-decisions-heading">
         <div className="research-panel-heading">

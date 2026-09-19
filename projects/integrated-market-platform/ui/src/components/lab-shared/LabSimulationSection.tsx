@@ -9,6 +9,7 @@ import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { formatResearchTime, presentCheckStatus } from "../research-shared/researchPresentation";
 import { simulationResultSummary } from "./labPresentation";
+import { SimulationHarnessMetricsPanel } from "../research-shared/SimulationHarnessMetricsPanel";
 
 /**
  * Lab Simulation workbench — configuration, current snapshot, and honest
@@ -77,6 +78,8 @@ export function LabSimulationSection() {
           <Link to="/research/simulation">View interpretation in Research</Link>
         </div>
       </section>
+
+      <SimulationHarnessMetricsPanel payload={payload} headingId="lab-simulation-harness-heading" />
 
       <section className="lab-panel" aria-labelledby="lab-simulation-config-heading">
         <div className="lab-stage">

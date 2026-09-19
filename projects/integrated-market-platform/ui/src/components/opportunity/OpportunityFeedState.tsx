@@ -5,6 +5,8 @@ import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import type { Mode } from "../mode-session/types";
 import { humanizeUnreadyReason } from "./opportunityPresentation";
+import { matchKnownDataIncident } from "../operator-shared/knownDataIncidents";
+import { PrecisionFailureBanner } from "../imp-ui/PrecisionFailureBanner";
 
 export type OpportunityFeedStateProps = {
   state: "loading" | "ready" | "error";
@@ -58,6 +60,18 @@ export function OpportunityFeedState({
   }
 
   if (feedStatus === "UNREADY") {
+    const incident = matchKnownDataIncident(unreadyReason);
+    if (incident) {
+      return (
+        <PrecisionFailureBanner incident={incident}>
+          {unreadyReason ? (
+            <span className="imp-radar-muted" title="Raw reason code">
+              Code: {unreadyReason}
+            </span>
+          ) : null}
+        </PrecisionFailureBanner>
+      );
+    }
     const reason = humanizeUnreadyReason(unreadyReason);
     const unready = resolveSemanticState("research", "UNREADY", {
       params: { reason: reason ?? "" },
