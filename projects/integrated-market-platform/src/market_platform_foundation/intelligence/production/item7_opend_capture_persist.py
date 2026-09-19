@@ -40,6 +40,10 @@ from .item7_opend_capture_writer import (
     REFUSAL_IMP_STATE_DIR_MISSING,
     canonical_item7_opend_capture_path,
 )
+from .item7_natural_settlement import (
+    Item7NaturalSettlementResult,
+    exercise_item7_natural_settlement,
+)
 from .item7_p0_anchor import materialize_item7_lawful_capture_ledger
 
 ET = ZoneInfo("America/New_York")
@@ -69,6 +73,7 @@ class Item7CaptureAutoPersistResult:
     ledger_registered: int = 0
     refusal_reason: str | None = None
     materialization: dict[str, Any] | None = None
+    natural_settlement: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -78,6 +83,7 @@ class Item7CaptureAutoPersistResult:
             "intelligence_jsonl_path": self.intelligence_jsonl_path,
             "ledger_registered": self.ledger_registered,
             "materialization": self.materialization,
+            "natural_settlement": self.natural_settlement,
             "refusal_reason": self.refusal_reason,
         }
 
@@ -137,6 +143,16 @@ def _append_jsonl_record(path: Path, record_type: str, payload: dict[str, Any]) 
     line = json.dumps({"record_type": record_type, "payload": payload}, sort_keys=True, separators=(",", ":"))
     with path.open("a", encoding="utf-8", newline="\n") as handle:
         handle.write(line + "\n")
+
+
+def _outcome_ids(repository: IntelligenceRepository) -> set[str]:
+    stores = getattr(repository, "_stores", None)
+    if not isinstance(stores, dict):
+        return set()
+    bucket = stores.get("outcomes")
+    if not isinstance(bucket, dict):
+        return set()
+    return {str(key) for key in bucket}
 
 
 def _ledger_ids(repository: IntelligenceRepository) -> set[str]:
@@ -275,6 +291,7 @@ def persist_lawful_opend_capture_append(
     bind_expected_mode: str | None = None,
     register_ledger: bool = True,
     persistence_root: Path | None = None,
+    natural_settle: bool = True,
 ) -> Item7CaptureAutoPersistResult:
     """Materialize lawful capture into governed persistence (fail-closed)."""
 
@@ -312,6 +329,7 @@ def persist_lawful_opend_capture_append(
     repository, _load_report = load_governed_intelligence_repository(persistence_root=root)
     event_ids_before = _event_ids(repository)
     ledger_ids_before = _ledger_ids(repository)
+    outcome_ids_before = _outcome_ids(repository)
 
     resolved_as_of, resolved_session = derive_materialize_clocks_from_envelope(
         envelope,
@@ -344,6 +362,16 @@ def persist_lawful_opend_capture_append(
         ledger_ids_before=ledger_ids_before,
     )
 
+    settlement_summary: Item7NaturalSettlementResult | None = None
+    if natural_settle:
+        settlement_summary = exercise_item7_natural_settlement(
+            repository,
+            now_ns=resolved_as_of,
+            persist_outcomes=True,
+            intelligence_jsonl_path=jsonl_path,
+            outcome_ids_before=outcome_ids_before,
+        )
+
     return Item7CaptureAutoPersistResult(
         disposition=DISPOSITION_PERSISTED,
         intelligence_jsonl_path=str(jsonl_path),
@@ -355,6 +383,9 @@ def persist_lawful_opend_capture_append(
             "refusal_reasons": dict(materialized.refusal_reasons),
             "funnel": materialized.funnel.to_dict(),
         },
+        natural_settlement=(
+            settlement_summary.to_dict() if settlement_summary is not None else None
+        ),
     )
 
 
@@ -372,6 +403,7 @@ def maybe_auto_persist_capture_append(
     bind_expected_account_id: str | None = None,
     bind_expected_mode: str | None = None,
     register_ledger: bool = True,
+    natural_settle: bool = True,
 ) -> Item7CaptureAutoPersistResult | None:
     if not auto_persist or dry_run or append_disposition != DISPOSITION_APPENDED:
         return None
@@ -390,6 +422,7 @@ def maybe_auto_persist_capture_append(
         bind_expected_account_id=bind_expected_account_id,
         bind_expected_mode=bind_expected_mode,
         register_ledger=register_ledger,
+        natural_settle=natural_settle,
     )
 
 
