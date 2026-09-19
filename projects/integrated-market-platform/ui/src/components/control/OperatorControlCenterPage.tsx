@@ -27,6 +27,7 @@ import {
   buildAttentionItems,
   partitionProviders,
   presentProviderRole,
+  presentProviderTransport,
   providerNeedsAction,
 } from "./controlPresentation";
 import { buildGovernanceFacts } from "../operator-shared/governanceStatusPresentation";
@@ -886,7 +887,7 @@ function ProviderRow({
   busy: boolean;
   onRefresh: () => void;
 }) {
-  const transport = resolveSemanticState("providerHealth", provider.transport_state);
+  const transport = presentProviderTransport(provider);
   const credential = resolveSemanticState("providerHealth", provider.credential_state);
   const gate = resolveSemanticState("providerHealth", provider.gate_state);
   const role = presentProviderRole(provider.role);
@@ -904,6 +905,9 @@ function ProviderRow({
           />
         </div>
         {role ? <p className="control-provider-capability">{role.capability}</p> : null}
+        {transport.sentence ? (
+          <p className="control-provider-transport-meaning">{transport.sentence}</p>
+        ) : null}
         {needsAction && role?.impact ? (
           <p className="control-provider-impact">{role.impact}</p>
         ) : null}

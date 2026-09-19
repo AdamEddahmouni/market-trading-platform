@@ -7,6 +7,7 @@ import {
   controlSectionHref,
   partitionProviders,
   presentProviderRole,
+  presentProviderTransport,
   providerNeedsAction,
 } from "./controlPresentation";
 
@@ -42,6 +43,44 @@ describe("presentProviderRole", () => {
 
   it("returns null when the role is absent", () => {
     expect(presentProviderRole(undefined)).toBeNull();
+  });
+});
+
+describe("presentProviderTransport", () => {
+  it("does not treat enabled-gate UNAVAILABLE as a subscription gap", () => {
+    const state = presentProviderTransport(
+      provider({ gate_state: "ENABLED", transport_state: "UNAVAILABLE" }),
+    );
+    expect(state.label).toBe("Transport unavailable");
+    expect(state.tone).toBe("caution");
+    expect(state.raw).toBe("UNAVAILABLE");
+    expect(state.sentence).toMatch(/not a data-subscription gap/i);
+    expect(state.label).not.toMatch(/subscription/i);
+  });
+
+  it("keeps configured-gate UNAVAILABLE as a transport fact", () => {
+    const state = presentProviderTransport(
+      provider({ gate_state: "CONFIGURED", transport_state: "UNAVAILABLE" }),
+    );
+    expect(state.label).toBe("Transport unavailable");
+  });
+
+  it("does not treat off-by-configuration UNAVAILABLE as a live transport failure", () => {
+    const state = presentProviderTransport(
+      provider({ gate_state: "DISABLED", transport_state: "UNAVAILABLE" }),
+    );
+    expect(state.label).toBe("Unavailable");
+    expect(state.tone).toBe("neutral");
+    expect(state.sentence).toMatch(/off by configuration/i);
+    expect(state.sentence).not.toMatch(/subscription/i);
+  });
+
+  it("leaves other transport tokens on the shared adapter", () => {
+    const reachable = presentProviderTransport(
+      provider({ gate_state: "ENABLED", transport_state: "REACHABLE" }),
+    );
+    expect(reachable.label).toBe("Reachable");
+    expect(reachable.tone).toBe("live");
   });
 });
 

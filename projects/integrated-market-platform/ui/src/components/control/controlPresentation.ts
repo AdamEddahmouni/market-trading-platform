@@ -11,7 +11,12 @@
 import type { OperatorReadiness, ProviderReadiness } from "../../api/schemas";
 import type { ModeContextEvaluation } from "../mode-session/modeAuthority";
 import type { Mode } from "../mode-session/types";
-import { humanizeEnum, type SemanticTone } from "../../state/semanticState";
+import {
+  humanizeEnum,
+  resolveSemanticState,
+  type SemanticState,
+  type SemanticTone,
+} from "../../state/semanticState";
 
 /** Stable section anchors — hash deep-links from Command/StatusBar land here. */
 export const CONTROL_SECTIONS = {
@@ -124,6 +129,36 @@ export function presentProviderRole(role: string | undefined): ProviderRolePrese
   const known = PROVIDER_ROLE_PRESENTATION[role];
   if (known) return known;
   return { capability: humanizeEnum(role), impact: "" };
+}
+
+/**
+ * Control provider rows emit backend `transport_state`. The shared
+ * `providerHealth` adapter maps the token `UNAVAILABLE` to channel/subscription
+ * copy ("not in your current data subscription"). That is the wrong vocabulary
+ * for operator readiness: an enabled-but-unreachable transport is a connectivity
+ * fact, not an entitlement gap. Entitlements stay on `ENTITLEMENT_MISSING`.
+ */
+export function presentProviderTransport(provider: ProviderReadiness): SemanticState {
+  if (provider.transport_state === "UNAVAILABLE") {
+    if (providerIsActive(provider)) {
+      return {
+        tone: "caution",
+        label: "Transport unavailable",
+        sentence:
+          "This provider is configured to run, but its transport cannot be reached. That is not a data-subscription gap.",
+        affects: "Coverage from this provider is unknown until the transport responds.",
+        raw: "UNAVAILABLE",
+      };
+    }
+    return {
+      tone: "neutral",
+      label: "Unavailable",
+      sentence:
+        "This provider is off by configuration. Unavailable here is not a live transport failure.",
+      raw: "UNAVAILABLE",
+    };
+  }
+  return resolveSemanticState("providerHealth", provider.transport_state);
 }
 
 /* -------------------------------------------------------------------------- */
