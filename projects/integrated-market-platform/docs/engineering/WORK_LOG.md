@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `fa5b6415` after #311
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_GIT_MAIN** to `origin/main` **`fa5b6415`** (merge [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311)); **CURRENT_SOFTWARE_IMPLEMENTATION** stays **`3609d508`** ([#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) last software-bearing). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | Follow-up to [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) (merged with pre-merge tip pin) |
+| **Notes** | Isolated worktree `.worktrees/weekend-310-313`; branch `docs/weekend-current-main-pin`. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
 
 | Field | Value |
