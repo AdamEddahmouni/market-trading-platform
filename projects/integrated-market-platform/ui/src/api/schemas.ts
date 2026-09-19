@@ -33,7 +33,9 @@ export const OperationStatusSchema = z.object({
   action: z.string().optional(),
   provider: z.string().optional(),
   status: z.string(),
+  /** Unix epoch seconds (wall clock). Prefer `created_at_clock_kind` when present. */
   created_at: z.number().optional(),
+  created_at_clock_kind: z.literal("unix_seconds").optional(),
   detail: z.string().optional(),
   secrets_included: z.literal(false).optional(),
 });
@@ -47,6 +49,7 @@ export const ProviderReadinessSchema = z.object({
   gate_state: z.string(),
   transport_state: z.string(),
   freshness: z.string().optional(),
+  /** ISO-8601 timestamp or null when the provider has never reported a sample. */
   last_updated: z.string().nullable().optional(),
   required_credentials: z.array(z.string()).optional(),
   next_action: z.string(),
@@ -71,22 +74,42 @@ export const OperatorLifecycleStatusSchema = z.object({
   update: UpdateStatusSchema.optional(),
 });
 
-/**
- * Optional backend-owned operator truth (`operator-truth/1.0.0` when Lane E / #298 lands).
- * Kept loose so Control can consume `by_id` without requiring that module.
- */
-export const OperatorTruthSectionSchema = z
-  .object({
-    schema_version: z.string().optional(),
-    by_id: z.record(z.string(), z.string()).optional(),
-    rows: z.array(z.unknown()).optional(),
-  })
-  .passthrough();
-
 /** Composed operator health snapshot (`GET /operator/diagnostics`). */
+export const OperatorTruthClassSchema = z.enum([
+  "HEALTHY",
+  "DEGRADED",
+  "BLOCKED",
+  "IDLE",
+  "UNKNOWN",
+  "UNAVAILABLE",
+  "NOT_OBSERVED",
+]);
+
+export const OperatorTruthRowSchema = z.object({
+  id: z.string(),
+  truth: OperatorTruthClassSchema,
+  detail: z.string(),
+  source_field: z.string().optional(),
+});
+
+export const OperatorTruthSectionSchema = z.object({
+  schema_version: z.string(),
+  clock: z
+    .object({
+      as_of_utc: z.string(),
+      kind: z.literal("wall_utc"),
+      note: z.string().optional(),
+    })
+    .optional(),
+  rows: z.array(OperatorTruthRowSchema),
+  by_id: z.record(z.string(), OperatorTruthClassSchema),
+});
+
 export const OperatorDiagnosticsSchema = z.object({
   schema_version: z.string(),
+  /** ISO-8601 UTC wall clock. Not a monotonic probe clock. */
   as_of_utc: z.string().optional(),
+  as_of_clock_kind: z.literal("wall_utc").optional(),
   severity: z.string(),
   secrets_included: z.literal(false).optional(),
   operator_questions: z.record(z.string(), z.unknown()).optional(),
@@ -147,6 +170,7 @@ export type CapabilityState = z.infer<typeof CapabilityStateSchema>;
 export type OperatorReadiness = z.infer<typeof OperatorReadinessSchema>;
 export type OperatorLifecycleStatus = z.infer<typeof OperatorLifecycleStatusSchema>;
 export type OperatorDiagnostics = z.infer<typeof OperatorDiagnosticsSchema>;
+export type OperatorTruthClass = z.infer<typeof OperatorTruthClassSchema>;
 export type OperatorTruthSection = z.infer<typeof OperatorTruthSectionSchema>;
 
 export const AttentionReasonSchema = z.object({

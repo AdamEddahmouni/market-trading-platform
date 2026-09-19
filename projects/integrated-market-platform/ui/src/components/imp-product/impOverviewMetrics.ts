@@ -105,6 +105,9 @@ function degradedCell(input: OverviewKpiInput): OverviewKpiCell {
   const flagged = input.opportunityItems.filter((row) => {
     const quality = row.data_quality;
     if (!quality) return false;
+    const flag = String(quality.operator_surface_flag ?? "").toUpperCase();
+    if (flag === "STALE_OR_DEGRADED") return true;
+    if (flag === "OK") return false;
     const status = String(quality.status ?? "").toUpperCase();
     const freshness = String(quality.freshness ?? "").toUpperCase();
     return freshness === "STALE" || status === "DEGRADED" || status === "INVALID";

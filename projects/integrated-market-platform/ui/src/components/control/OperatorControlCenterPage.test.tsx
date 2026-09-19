@@ -544,6 +544,11 @@ describe("OperatorControlCenterPage", () => {
     stubFetch({
       operatorTruth: {
         schema_version: "operator-truth/1.0.0",
+        rows: [
+          { id: "item9-corpus", truth: "IDLE", detail: "2/3" },
+          { id: "item9-preflight", truth: "IDLE", detail: "preflight" },
+          { id: "live-execution", truth: "BLOCKED", detail: "LIVE-001" },
+        ],
         by_id: {
           "item9-corpus": "IDLE",
           "item9-preflight": "IDLE",

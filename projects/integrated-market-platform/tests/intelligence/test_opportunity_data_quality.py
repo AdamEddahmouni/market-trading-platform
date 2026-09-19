@@ -18,6 +18,7 @@ class OpportunityDataQualityTests(unittest.TestCase):
         self.assertEqual(quality["freshness"], "UNAVAILABLE")
         self.assertEqual(quality["entitlement"], "UNAVAILABLE")
         self.assertEqual(quality["source"], "RECORDED_ARTIFACTS")
+        self.assertEqual(quality["operator_surface_flag"], "OK")
         self.assertNotIn("quote", quality)
 
     def test_live_observational_source_is_unavailable(self) -> None:
@@ -29,6 +30,15 @@ class OpportunityDataQualityTests(unittest.TestCase):
         quality = project_opportunity_data_quality(source="REPLAY")
         self.assertEqual(quality["freshness"], "UNAVAILABLE")
         self.assertEqual(quality["entitlement"], "UNAVAILABLE")
+        self.assertEqual(quality["operator_surface_flag"], "OK")
+
+    def test_stale_or_degraded_sets_operator_surface_flag(self) -> None:
+        degraded = project_opportunity_data_quality(
+            source="UNKNOWN",
+            quality_decision={"action": "DEGRADE", "freshness": "STALE"},
+        )
+        self.assertEqual(degraded["status"], "DEGRADED")
+        self.assertEqual(degraded["operator_surface_flag"], "STALE_OR_DEGRADED")
 
 
 if __name__ == "__main__":

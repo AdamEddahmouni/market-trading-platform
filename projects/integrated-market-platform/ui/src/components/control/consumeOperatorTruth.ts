@@ -1,27 +1,7 @@
-import type { OperatorDiagnostics, OperatorTruthSection } from "../../api/schemas";
+import type { OperatorDiagnostics } from "../../api/schemas";
+import { operatorTruthById as readOperatorTruthById } from "../../api/operatorTruth";
 
-/**
- * Optional reader matching `ui/src/api/operatorTruth.ts` (#298) when that field exists.
- * Control does not import that module so this lane can land before Lane E merges.
- */
-export function operatorTruthSection(
-  diagnostics: OperatorDiagnostics | null | undefined,
-): OperatorTruthSection | undefined {
-  if (diagnostics?.operator_truth?.by_id) return diagnostics.operator_truth;
-  const nested = diagnostics?.sections?.operator_truth;
-  if (nested && typeof nested === "object" && nested !== null && "by_id" in nested) {
-    return nested as OperatorTruthSection;
-  }
-  return undefined;
-}
-
-export function operatorTruthById(
-  diagnostics: OperatorDiagnostics | null | undefined,
-  id: string,
-): string | undefined {
-  const token = operatorTruthSection(diagnostics)?.by_id?.[id];
-  return typeof token === "string" && token.trim() ? token.toUpperCase() : undefined;
-}
+export { operatorTruthById, operatorTruthSection } from "../../api/operatorTruth";
 
 const ITEM9_TRUTH_IDS = new Set(["item9-corpus", "item9-preflight"]);
 
@@ -36,7 +16,7 @@ export function preferItem9OperatorTruth<T extends string>(
   local: T,
 ): T {
   if (!ITEM9_TRUTH_IDS.has(id)) return local;
-  const backend = operatorTruthById(diagnostics, id);
+  const backend = readOperatorTruthById(diagnostics, id);
   if (!backend) return local;
   if (local === "IDLE") return local;
   if (
