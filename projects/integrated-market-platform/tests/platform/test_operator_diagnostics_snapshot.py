@@ -253,6 +253,48 @@ class OperatorDiagnosticsSnapshotTests(unittest.TestCase):
         if sys.platform != "win32":
             self.assertNotIn("C:", json.dumps(public))
 
+    def test_collector_log_path_redacted_keeps_relative_default(self) -> None:
+        """Host-absolute collector log_path must not leak; repo-relative paths stay visible."""
+
+        host_log = r"C:\Users\adame\Desktop\secret-host\item9-prospective-collector.log"
+        relative_log = "artifacts/ftep-v1-002/item9-prospective-collector.log"
+        imp_root = Path(__file__).resolve().parents[2]
+
+        resilience = dict(_SAMPLE_RESILIENCE)
+        cycle = dict(_SAMPLE_RESILIENCE["expected_cycle"])
+        cycle["collector_log_source"] = {
+            "log_path": host_log,
+            "availability": "AVAILABLE",
+            "truncated": True,
+            "freshness": "STALE",
+            "reason_code": None,
+        }
+        resilience["expected_cycle"] = cycle
+        public = _public_runtime_resilience_section(resilience, imp_root=imp_root)
+        source = public["expected_cycle"]["collector_log_source"]
+        self.assertEqual(source["log_path"], "<redacted>")
+        self.assertEqual(source["freshness"], "STALE")
+        self.assertEqual(source["truncated"], True)
+        self.assertNotIn("secret-host", json.dumps(public))
+        source["log_path"] = "mutated"
+        self.assertEqual(cycle["collector_log_source"]["log_path"], host_log)
+
+        relative_cycle = dict(cycle)
+        relative_cycle["collector_log_source"] = {
+            "log_path": relative_log,
+            "availability": "NOT_OBSERVED",
+            "truncated": False,
+            "freshness": "NOT_OBSERVED",
+            "reason_code": "COLLECTOR_LOG_NOT_CONFIGURED",
+        }
+        relative_resilience = dict(_SAMPLE_RESILIENCE)
+        relative_resilience["expected_cycle"] = relative_cycle
+        relative_public = _public_runtime_resilience_section(relative_resilience, imp_root=imp_root)
+        self.assertEqual(
+            relative_public["expected_cycle"]["collector_log_source"]["log_path"],
+            relative_log,
+        )
+
     def test_corpus_section_sanitizes_report_receipt_dir(self) -> None:
         from market_platform_foundation.platform.operator_diagnostics.snapshot import (
             _item9_corpus_status_section,
