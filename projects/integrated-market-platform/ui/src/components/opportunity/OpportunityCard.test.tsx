@@ -152,9 +152,11 @@ describe("OpportunityQueue", () => {
     renderCard(
       <OpportunityQueue items={[]} state="ready" feedStatus="UNAVAILABLE" mode="LIVE" {...actions()} />,
     );
-    expect(screen.getByTestId("imp-ui-empty-state")).toHaveTextContent(
-      /Live mode has no opportunity engine/i,
-    );
+    const empty = screen.getByTestId("imp-ui-empty-state");
+    expect(empty).toHaveAttribute("aria-label", "Live has no opportunity engine");
+    expect(empty).toHaveTextContent(/by design, not a feed fault/i);
+    expect(empty).toHaveTextContent(/Live execution stays OFF/i);
+    expect(empty).not.toHaveTextContent(/Opportunity feed unavailable/i);
   });
 
   it("treats a non-live UNAVAILABLE feed as a fault with a Control action", () => {
@@ -170,6 +172,7 @@ describe("OpportunityQueue", () => {
     );
     const empty = screen.getByTestId("imp-ui-empty-state");
     expect(empty).toHaveTextContent(/Opportunity feed unavailable/i);
+    expect(empty).not.toHaveTextContent(/Live has no opportunity engine/i);
     expect(empty).not.toHaveTextContent(/Live mode has no opportunity engine/i);
     expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute("href", "/control");
   });
