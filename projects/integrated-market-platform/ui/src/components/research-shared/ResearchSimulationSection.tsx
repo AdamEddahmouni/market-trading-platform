@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useResearchSimulationQuery } from "../../api/hooks";
 import { resolveSemanticState } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
@@ -9,7 +9,7 @@ import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { CountBarChartPanel } from "../charts/ResearchChartPanels";
 import type { Mode } from "../mode-session/types";
-import { formatResearchTime, presentCheckStatus, sectionClaimHops } from "./researchPresentation";
+import { formatResearchTime, parseClaimFindingParam, presentCheckStatus, sectionClaimHops } from "./researchPresentation";
 import { ResearchClaimHops } from "./ResearchClaimGraph";
 import { SimulationHarnessMetricsPanel } from "./SimulationHarnessMetricsPanel";
 
@@ -34,6 +34,7 @@ type Props = {
  */
 export function ResearchSimulationSection({ mode }: Props) {
   const simulationQuery = useResearchSimulationQuery();
+  const [searchParams] = useSearchParams();
 
   if (simulationQuery.isLoading) {
     return <LoadingState label="Loading simulation record…" />;
@@ -122,7 +123,14 @@ export function ResearchSimulationSection({ mode }: Props) {
           <Link to="/lab/simulation">Inspect this simulation workflow in Lab</Link> — Lab is the
           process surface; this page stays the interpretation of the snapshot.
         </p>
-        <ResearchClaimHops hops={sectionClaimHops("simulation", mode)} label="From this experiment" />
+        <ResearchClaimHops
+          hops={sectionClaimHops(
+            "simulation",
+            mode,
+            parseClaimFindingParam(searchParams.get("claim")) ?? undefined,
+          )}
+          label="From this experiment"
+        />
       </section>
 
       <SimulationHarnessMetricsPanel

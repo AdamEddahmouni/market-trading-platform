@@ -158,16 +158,19 @@ fetch — the old eager triple-fetch tab widget is removed):
 
 | Route | Section | Fetches | Answers |
 |---|---|---|---|
-| `/research` | Overview | analytics + models + simulation | Claim graph: source, hypothesis, strategy, experiment, evidence, contradiction, implementation, forward-test. Synthesis sentences deep-link. |
+| `/research` | Overview | analytics + models + simulation | Claim graph scoped to one analytics finding via `?claim=<panel_key>`: source, hypothesis, strategy, experiment, evidence, contradiction, implementation, forward-test. Off-path nodes stay visible. Synthesis sentences deep-link. |
 | `/research/evidence` | Evidence | analytics only | Findings + follow-this-claim hops. `?panel=<key>` deep-links + highlights one finding. |
 | `/research/validation` | Validation | models only (+ Paper strategy-profitability in Paper mode) | Strategy/model validation. `?conflict=1` shows only `ABSTAIN_CONFLICTING_EVIDENCE` rows. |
 | `/research/simulation` | Simulation | simulation only | Deterministic simulation experiment — not FTEP, not a prospective forward test. |
 | `/research/vela-chart-lab` | (redirect) | none | Compatibility alias → `/lab/chart-lab` |
 
-The Overview claim graph is the operator path through a claim. Hypothesis and
+The Overview claim graph is the operator path through a **selected finding**.
+`?claim=` must be a real analytics panel key; unknown values are ignored.
+Source and evidence deep-link to that panel's provenance. Hypothesis and
 FTEP remain **not first-class**; those nodes stay `NOT_EXPOSED` / Not on this
 surface and proxy to Validation interpretations or Paper Workspace. Research
-does not fetch `/paper/forward-tests`.
+does not fetch `/paper/forward-tests`. Choosing a finding is navigation, not
+actionability.
 
 `/lab` is a real Lab workbench (UIR-01H). Nav includes Lab. Chart Lab lives at
 `/lab/chart-lab`.

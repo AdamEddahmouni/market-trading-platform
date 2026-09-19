@@ -254,6 +254,35 @@
   border-color: var(--imp-state-research-border);
 }
 
+.research-claim-graph-item[data-relation="off-path"] {
+  opacity: 0.58;
+}
+
+.research-claim-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  margin: var(--imp-space-3) 0 0;
+}
+
+.research-claim-picker a {
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--imp-space-1) var(--imp-space-2);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.research-claim-picker a[aria-current="page"] {
+  color: var(--text-primary);
+  border-color: var(--imp-state-research-border);
+  font-weight: 600;
+}
+
 .research-claim-graph-link {
   display: grid;
   gap: var(--imp-space-1);

@@ -271,6 +271,19 @@ export type ClaimHop = {
   note: string;
 };
 
+export type ClaimPathRelation = "on-path" | "off-path";
+
+export type ResearchClaimLineageNode = ResearchClaimNode & {
+  relation: ClaimPathRelation;
+};
+
+export type ResearchClaimLineage = {
+  findingKey: ResearchPanelKey;
+  findingTitle: string;
+  reading: string;
+  nodes: ResearchClaimLineageNode[];
+};
+
 const CLAIM_NODE_ORDER: ReadonlyArray<ResearchClaimNodeKey> = [
   "source",
   "hypothesis",
@@ -293,8 +306,68 @@ const CLAIM_TITLES: Record<ResearchClaimNodeKey, string> = {
   "forward-test": "Forward-test",
 };
 
+/**
+ * Hops that belong to one analytics finding. Source and evidence are always
+ * on the path because they *are* the finding; other nodes stay finding-specific.
+ * Hypothesis is only on donor-squeeze paths as a NOT_EXPOSED proxy — not a
+ * fabricated object.
+ */
+const CLAIM_PATH_BY_FINDING: Record<ResearchPanelKey, ReadonlyArray<ResearchClaimNodeKey>> = {
+  strategy_outcomes: ["strategy", "contradiction", "experiment", "implementation", "forward-test"],
+  risk_decisions: ["experiment", "strategy", "forward-test"],
+  attention_tiers: [],
+  squeeze_outcomes: ["hypothesis"],
+  squeeze_historical_cohort: ["hypothesis"],
+};
+
 export function forwardTestWorkspaceHref(mode: ResearchSessionMode): string | null {
   return mode === "PAPER" ? "/workspace" : null;
+}
+
+export function parseClaimFindingParam(value: string | null | undefined): ResearchPanelKey | null {
+  if (!value) return null;
+  return RESEARCH_FINDINGS.some((finding) => finding.key === value)
+    ? (value as ResearchPanelKey)
+    : null;
+}
+
+/** Unknown `?claim=` values are ignored — they are not a new research object. */
+export function resolveFollowedFinding(
+  requested: string | null | undefined,
+  analytics?: ResearchAnalyticsResponse | null,
+): ResearchPanelKey {
+  const parsed = parseClaimFindingParam(requested);
+  if (parsed) return parsed;
+  if (researchPanel(analytics, "strategy_outcomes")?.available) return "strategy_outcomes";
+  const firstAvailable = RESEARCH_FINDINGS.find(
+    (finding) => researchPanel(analytics, finding.key)?.available,
+  );
+  return firstAvailable?.key ?? "strategy_outcomes";
+}
+
+export function claimPathKeys(findingKey: ResearchPanelKey): ResearchClaimNodeKey[] {
+  const extra = new Set<ResearchClaimNodeKey>(["source", "evidence", ...CLAIM_PATH_BY_FINDING[findingKey]]);
+  return CLAIM_NODE_ORDER.filter((key) => extra.has(key));
+}
+
+/** Carry the followed finding on Research routes only. Lab/Workspace stay unscoped. */
+export function withResearchClaimQuery(
+  href: string | null,
+  findingKey: ResearchPanelKey,
+): string | null {
+  if (!href) return null;
+  if (!href.startsWith("/research")) return href;
+  const hashIndex = href.indexOf("#");
+  const hash = hashIndex >= 0 ? href.slice(hashIndex) : "";
+  const withoutHash = hashIndex >= 0 ? href.slice(0, hashIndex) : href;
+  const queryIndex = withoutHash.indexOf("?");
+  const path = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+  const params = new URLSearchParams(queryIndex >= 0 ? withoutHash.slice(queryIndex + 1) : "");
+  params.set("claim", findingKey);
+  if (path === "/research/evidence" && !params.has("panel")) {
+    params.set("panel", findingKey);
+  }
+  return `${path}?${params.toString()}${hash}`;
 }
 
 /** Distinct hop accessible name so section tabs stay uniquely queryable. */
@@ -662,6 +735,77 @@ export function buildClaimNavigation(
   return CLAIM_NODE_ORDER.map((key) => nodes[key]);
 }
 
+export function buildClaimLineageReading(
+  findingKey: ResearchPanelKey,
+  input: ResearchSynthesisInput,
+): string {
+  const finding = researchFinding(findingKey);
+  const panel = researchPanel(input.analytics, findingKey);
+  const availability = presentFindingAvailability(panel);
+  const source = panel?.provenance?.source ? String(panel.provenance.source) : "UNAVAILABLE";
+  return (
+    `Following ${finding.title}: ${availability.label.toLowerCase()} · source ${source}. ` +
+    `${finding.claim} Off-path nodes stay visible as gaps or other findings — they are not this claim.`
+  );
+}
+
+/**
+ * Finding-scoped view of the eight-node graph. Reuses `buildClaimNavigation`;
+ * does not invent a second graph or extra fetches.
+ */
+export function buildClaimLineage(
+  input: ResearchSynthesisInput,
+  mode: ResearchSessionMode,
+  findingKey: ResearchPanelKey,
+): ResearchClaimLineage {
+  const onPath = new Set(claimPathKeys(findingKey));
+  const finding = researchFinding(findingKey);
+  const panel = researchPanel(input.analytics, findingKey);
+  const availability = presentFindingAvailability(panel);
+  const source = panel?.provenance?.source ? String(panel.provenance.source) : "UNAVAILABLE";
+  const method = panel?.provenance?.method ? String(panel.provenance.method) : "UNAVAILABLE";
+
+  const nodes = buildClaimNavigation(input, mode).map((node) => {
+    let next: ResearchClaimLineageNode = {
+      ...node,
+      relation: onPath.has(node.key) ? "on-path" : "off-path",
+      href: withResearchClaimQuery(node.href, findingKey),
+    };
+    if (node.key === "source") {
+      next = {
+        ...next,
+        href: withResearchClaimQuery(`/research/evidence?panel=${findingKey}`, findingKey),
+        detail: onPath.has("source")
+          ? `This finding discloses provenance.source ${source} and method ${method}. No source-catalog endpoint exists.`
+          : next.detail,
+      };
+    }
+    if (node.key === "evidence") {
+      next = {
+        ...next,
+        href: withResearchClaimQuery(`/research/evidence?panel=${findingKey}`, findingKey),
+        statusLabel: input.analytics ? availability.label : "Unavailable",
+        statusTone: availability.tone,
+        detail: `${finding.title}: ${availability.detail}`,
+      };
+    }
+    if (next.relation === "off-path") {
+      next = {
+        ...next,
+        detail: `${next.detail} Not on this finding's path.`,
+      };
+    }
+    return next;
+  });
+
+  return {
+    findingKey,
+    findingTitle: finding.title,
+    reading: buildClaimLineageReading(findingKey, input),
+    nodes,
+  };
+}
+
 export function pickClaimNodes(
   nodes: ReadonlyArray<ResearchClaimNode>,
   keys: ReadonlyArray<ResearchClaimNodeKey>,
@@ -730,78 +874,108 @@ export function claimHopsForFinding(
     },
   };
 
-  const keysByFinding: Record<ResearchPanelKey, ResearchClaimNodeKey[]> = {
-    strategy_outcomes: ["strategy", "contradiction", "experiment", "implementation", "forward-test"],
-    risk_decisions: ["experiment", "strategy", "forward-test"],
-    attention_tiers: ["source", "evidence"],
-    squeeze_outcomes: ["source", "hypothesis", "evidence"],
-    squeeze_historical_cohort: ["source", "hypothesis", "evidence"],
-  };
+  const scoped = (hop: ClaimHop): ClaimHop => ({
+    ...hop,
+    href: withResearchClaimQuery(hop.href, key),
+  });
+  const extraKeys = CLAIM_PATH_BY_FINDING[key];
+  if (!extraKeys.length) {
+    return [
+      scoped({
+        key: "source",
+        title: CLAIM_TITLES.source,
+        href: `/research?claim=${key}`,
+        note: "This finding's path is source → evidence. Provenance is on this panel; there is no catalog.",
+      }),
+    ];
+  }
+  return extraKeys.map((hopKey) => scoped(shared[hopKey]));
+}
 
-  return keysByFinding[key].map((hopKey) => shared[hopKey]);
+function scopeSectionHops(hops: ClaimHop[], findingKey?: ResearchPanelKey): ClaimHop[] {
+  if (!findingKey) return hops;
+  return hops.map((hop) => ({ ...hop, href: withResearchClaimQuery(hop.href, findingKey) }));
 }
 
 export function sectionClaimHops(
   section: Exclude<ResearchSectionKey, "overview">,
   mode: ResearchSessionMode,
+  findingKey?: ResearchPanelKey,
 ): ClaimHop[] {
   const forwardTestHref = forwardTestWorkspaceHref(mode);
   if (section === "evidence") {
-    return [
-      { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
-      {
-        key: "contradiction",
-        title: CLAIM_TITLES.contradiction,
-        href: "/research/validation?conflict=1",
-        note: "Conflict abstentions only.",
-      },
-      {
-        key: "experiment",
-        title: CLAIM_TITLES.experiment,
-        href: "/research/simulation",
-        note: "Simulation, not FTEP.",
-      },
-    ];
+    return scopeSectionHops(
+      [
+        { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
+        {
+          key: "contradiction",
+          title: CLAIM_TITLES.contradiction,
+          href: "/research/validation?conflict=1",
+          note: "Conflict abstentions only.",
+        },
+        {
+          key: "experiment",
+          title: CLAIM_TITLES.experiment,
+          href: "/research/simulation",
+          note: "Simulation, not FTEP.",
+        },
+      ],
+      findingKey,
+    );
   }
   if (section === "validation") {
-    return [
-      { key: "evidence", title: CLAIM_TITLES.evidence, href: "/research/evidence", note: "Findings at cutoff." },
+    return scopeSectionHops(
+      [
+        {
+          key: "evidence",
+          title: CLAIM_TITLES.evidence,
+          href: findingKey ? `/research/evidence?panel=${findingKey}` : "/research/evidence",
+          note: "Findings at cutoff.",
+        },
+        {
+          key: "experiment",
+          title: CLAIM_TITLES.experiment,
+          href: "/research/simulation",
+          note: "Deterministic simulation.",
+        },
+        {
+          key: "implementation",
+          title: CLAIM_TITLES.implementation,
+          href: "/lab/validation",
+          note: "Lab process surface.",
+        },
+        {
+          key: "forward-test",
+          title: CLAIM_TITLES["forward-test"],
+          href: forwardTestHref,
+          note: forwardTestHref ? "Workspace holds Paper forward tests." : "NOT_EXPOSED here.",
+        },
+      ],
+      findingKey,
+    );
+  }
+  return scopeSectionHops(
+    [
+      { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Model that fed this run." },
       {
-        key: "experiment",
-        title: CLAIM_TITLES.experiment,
-        href: "/research/simulation",
-        note: "Deterministic simulation.",
-      },
-      {
-        key: "implementation",
-        title: CLAIM_TITLES.implementation,
-        href: "/lab/validation",
-        note: "Lab process surface.",
+        key: "evidence",
+        title: CLAIM_TITLES.evidence,
+        href: findingKey ? `/research/evidence?panel=${findingKey}` : "/research/evidence",
+        note: "Findings at cutoff.",
       },
       {
         key: "forward-test",
         title: CLAIM_TITLES["forward-test"],
         href: forwardTestHref,
-        note: forwardTestHref
-          ? "Workspace holds Paper forward tests."
-          : "NOT_EXPOSED here.",
+        note: "This run is simulated, not a prospective forward test.",
       },
-    ];
-  }
-  return [
-    { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Model that fed this run." },
-    { key: "evidence", title: CLAIM_TITLES.evidence, href: "/research/evidence", note: "Findings at cutoff." },
-    {
-      key: "forward-test",
-      title: CLAIM_TITLES["forward-test"],
-      href: forwardTestHref,
-      note: "This run is simulated, not a prospective forward test.",
-    },
-    {
-      key: "implementation",
-      title: CLAIM_TITLES.implementation,
-      href: "/lab/simulation",
-      note: "Inspect simulation workflow in Lab.",
-    },
-  ];
+      {
+        key: "implementation",
+        title: CLAIM_TITLES.implementation,
+        href: "/lab/simulation",
+        note: "Inspect simulation workflow in Lab.",
+      },
+    ],
+    findingKey,
+  );
 }
