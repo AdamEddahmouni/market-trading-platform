@@ -42,11 +42,11 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `historical_research_harness`, `tools/research`, `evidence/historical-research` |
-| **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `59C04BC53904D3C9BA9C77F7382D7AF0` under experiment 06 evidence. Costs locked at 5 bps; v3 receipts untouched. |
+| **Summary** | Landed read-only v3 fill-schedule replay + six-arm OHLC repricing harness; contamination auditor PASS; bounded run `pack_run_id` `6A66AE5C50700426F71B3734E6FC6A43` under experiment 06 evidence (`EXECUTED_BOUNDED_HISTORICAL_OBSERVATION`). Costs locked at 5 bps; v3 receipts untouched; validate gross sign unchanged on corpus. |
 | **Key files** | `fill_price_realism_harness.py`; `fill_price_realism_v1_cli.py`; `tests/platform/test_fill_price_realism_v1.py`; `evidence/.../fill_price_realism_run_record.json` |
 | **Tests** | `python -m unittest tests.platform.test_fill_price_realism_v1` — OK (3 passed, 1 skipped) |
-| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…`; branch `research/fill-price-realism-v1` |
-| **Notes** | `research_code_sha` recorded in run receipt at commit time; no merge to main. |
+| **Related** | Frozen spec `SPEC_FROZEN=YES`; `EXPERIMENT_HASH` `C4FCD3AB…1149`; branch `research/fill-price-realism-v1` @ `0732de35` |
+| **Notes** | `research_code_sha` recorded in run receipt at commit time; no experiment rerun on integration. |
 
 ## 2026-09-18 — Fill-price realism v1 spec freeze (IMP-POST-RTH-CLOSE-08 Lane F)
 
@@ -54,11 +54,47 @@ For large features, also add or update a completion note under `docs/superpowers
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/research/methodology/fill`, `evidence/historical-research` |
-| **Summary** | Froze bounded fill-price realism experiment separate from Lane E cost sensitivity: six predeclared OHLC fill/MTM arms, locked v3 fill schedule + `cost_slippage_bps=5.0`, no Item 9 simulator semantic change. Independent review `APPROVE_FOR_FROZEN_EXECUTION`; execution deferred pending repricing harness. |
+| **Summary** | Froze bounded fill-price realism experiment separate from Lane E cost sensitivity: six predeclared OHLC fill/MTM arms, locked v3 fill schedule + `cost_slippage_bps=5.0`, no Item 9 simulator semantic change. Independent review `APPROVE_FOR_FROZEN_EXECUTION`; historical execution recorded in harness entry (`6A66AE5C…`). |
 | **Key files** | `docs/research/methodology/fill/FILL_PRICE_REALISM_V1.md`; `docs/engineering/IMP_INTEGRATE_EXPERIMENT_06_LANE_F_FILL_PRICE_REALISM_V1.md`; `evidence/historical-research/imp-integrate-experiment-06-r1-opend-fill-price-realism-v1/*` |
-| **Tests** | `python` canonical hash verify for `EXPERIMENT_HASH` `C4FCD3AB…`; no harness run |
-| **Related** | `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1`; v3 hash `81EFC1B1…`; worktree `.worktrees/lane-f-fill-realism` @ `research/fill-price-realism-v1` |
-| **Notes** | `SPEC_BUNDLE_SHA256=bcf758df…`; harness landed in follow-up entry. |
+| **Tests** | `python` canonical hash verify for `EXPERIMENT_HASH` `C4FCD3AB…`; harness tests in follow-up entry |
+| **Related** | `LANE-E-HYP-SIMULATOR-FILL-PRICE-REALISM-V1`; v3 hash `81EFC1B1…`; worktree `.worktrees/lane-f-fill-realism` |
+| **Notes** | `SPEC_BUNDLE_SHA256=bcf758df…`; numbers frozen — integration updates status text only. |
+
+## 2026-09-18 — Simulator drawdown wiring v1 (Lane E)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/historical_research_harness` |
+| **Summary** | Diagnosed v3 `drawdown: null` as missing equity-curve aggregation (simulator read nonexistent `risk_result.portfolio.max_drawdown`). Wired net-MTM PnL curve → `max_drawdown` in fill economics with source `EQUITY_CURVE_NET_MTM`; documented contract; v3 evidence untouched. |
+| **Key files** | `simulator_drawdown.py`, `fill_economics.py`, `simulator.py`, `docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md`, `tests/platform/test_simulator_drawdown_wiring_v1.py` |
+| **Tests** | `python -m unittest tests.platform.test_simulator_drawdown_wiring_v1 tests.platform.test_simulator_fill_economics_v3` |
+| **Related** | Hypothesis `LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1`; finding `LANE-E-FND-019`; merged #283 @ `2b194d74` |
+| **Notes** | `ACCOUNTING_VERSION` unchanged (`3.0.1`). Promotion needs NEW experiment hash; no v3 manifest backfill. |
+
+## 2026-09-18 — IMP-POST-RTH-CLOSE-08 Lane B+C (rebase + independent fixtures)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / grounded fact SUT integration |
+| **Summary** | Rebased approved SUT stack onto current `origin/main` (`2306ff4a`, #281); landed Lane B synthetic fixtures and `test_grounded_fact_independent_fixtures_v1.py` on `feat/grounded-fact-extraction-v1` in worktree `.worktrees/lane-bc-grounded-facts` (merged #282; no smoke rerun on integration step). |
+| **Key files** | `tests/intelligence/test_grounded_fact_independent_fixtures_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_independent/*` |
+| **Tests** | `python -m unittest tests.intelligence.test_grounded_fact_extraction_v1 tests.intelligence.test_grounded_fact_independent_fixtures_v1` — 31 OK; `python tools/imp.py test focused` (2 representative selectors) — 2 OK |
+| **Related** | Lane A receipt `evidence/intelligence-benchmark/imp-post-rth-close-08-lane-a/grounded_fact_extraction_review_v1.json`; historical factual smoke `RUN_ID=ibp-factual-smoke-766E16CAF41F3210` persisted @ `f7486f42`/`90773a41` |
+| **Notes** | `PROVENANCE_HYGIENE=skipped` (preserve freeze `SUT_CODE_SHA=b43cfd53`). `GOLD_INSPECTED=NO`. Historical smoke **executed and persisted** (facts 11/11, unknown_handling 11/11); `FULL30_EXECUTED=NO`; no post-`b43cfd53` SUT change — ancestry-only integration must not rerun smoke. |
+
+## 2026-09-18 — Grounded fact extraction v1 (Lanes A+B+C)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence` / IBP facts SUT |
+| **Summary** | Added generic admitted-evidence fact extraction (`question_class` handlers → structured facts → answer or UNKNOWN) and wired `run_ibp_facts_sut` factual protocol path; bumped facts SUT profile to `imp.ibp-facts-sut/1.1.0`. |
+| **Key files** | `src/market_platform_foundation/intelligence/benchmark_protocol/grounded_fact_extraction/*`, `facts_sut.py`, `sut_profiles.py`, `tests/intelligence/test_grounded_fact_extraction_v1.py`, `tests/fixtures/intelligence_benchmark/grounded_fact_extraction/*`, nonstub freeze fingerprint refresh |
+| **Tests** | `unittest tests.intelligence.test_grounded_fact_extraction_v1` + M4 evaluator (28 OK); `python tools/imp.py validate changed` PASSED (3656 tests) |
+| **Related** | `LANE-M5-HYP-GROUNDED-FACT-EXTRACTION-V1`, `LANE-M5-HYP-ANSWERABLE-EVIDENCE-UNKNOWN-V1`, `LANE-M5-HYP-STRUCTURED-FACT-NORMALIZATION-V1` |
+| **Notes** | No smoke rerun on integration; historical smoke receipt retained (`ibp-factual-smoke-766E16CAF41F3210`); no evaluator gold read; no Full30; merged #282 |
 
 ## 2026-09-18 — IBP factual gold v1 Lane M5 findings (IMP-IBP-FACTUAL-GOLD-V1 closeout)
 
