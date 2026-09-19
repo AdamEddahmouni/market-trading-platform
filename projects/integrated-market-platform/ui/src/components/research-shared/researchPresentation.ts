@@ -297,6 +297,11 @@ export function forwardTestWorkspaceHref(mode: ResearchSessionMode): string | nu
   return mode === "PAPER" ? "/workspace" : null;
 }
 
+/** Distinct hop accessible name so section tabs stay uniquely queryable. */
+export function claimFollowAccessibleName(title: string): string {
+  return `Follow ${title.toLowerCase()}`;
+}
+
 /**
  * The L1 "what does the evidence currently show" strip. Every number comes
  * straight from a contract field; when a source is missing the line says so

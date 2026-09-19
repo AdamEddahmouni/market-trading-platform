@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Lane K: unique Research Evidence tab name
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/research` |
+| **Summary** | Claim-graph and hop links now use accessible names `Follow <node>` so the Research section tab `Evidence` stays uniquely queryable. Visible hop copy is unchanged. App.test queries the Evidence tab inside `Research sections`. |
+| **Key files** | `ui/src/components/research-shared/ResearchClaimGraph.tsx`, `researchPresentation.ts`(+test), `ResearchEvidenceSection.test.tsx`, `App.test.tsx`, `DemoResearchPage.test.tsx` |
+| **Tests** | `npm run typecheck` **pass**; `npx vitest run src/App.test.tsx` **74 passed** (includes `navigates Demo Research sections as routes`); research-shared + DemoResearchPage **58 passed**. |
+| **Related** | [PR #302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302) validate-ui hold |
+| **Notes** | Hypothesis/FTEP remain NOT_EXPOSED; simulation is not a forward test. Did not merge #302. |
+
 ## 2026-09-19 — Weekend Lane K: Research claim navigation
 
 | Field | Value |

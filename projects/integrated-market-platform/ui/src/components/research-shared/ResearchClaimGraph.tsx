@@ -1,6 +1,11 @@
 import { Link } from "react-router-dom";
 import { StatePill } from "../imp-ui/StatePill";
-import type { ClaimHop, ResearchClaimNode, ResearchClaimNodeKey } from "./researchPresentation";
+import {
+  claimFollowAccessibleName,
+  type ClaimHop,
+  type ResearchClaimNode,
+  type ResearchClaimNodeKey,
+} from "./researchPresentation";
 
 type GraphProps = {
   nodes: ReadonlyArray<ResearchClaimNode>;
@@ -35,7 +40,11 @@ export function ResearchClaimGraph({ nodes, activeKey }: GraphProps) {
               data-active={activeKey === node.key ? "true" : undefined}
             >
               {node.href ? (
-                <Link to={node.href} className="research-claim-graph-link">
+                <Link
+                  to={node.href}
+                  className="research-claim-graph-link"
+                  aria-label={claimFollowAccessibleName(node.title)}
+                >
                   {body}
                 </Link>
               ) : (
@@ -62,7 +71,13 @@ export function ResearchClaimHops({ hops, label = "Follow this claim" }: HopProp
       <ul>
         {hops.map((hop) => (
           <li key={hop.key}>
-            {hop.href ? <Link to={hop.href}>{hop.title}</Link> : <span>{hop.title}</span>}
+            {hop.href ? (
+              <Link to={hop.href} aria-label={claimFollowAccessibleName(hop.title)}>
+                {hop.title}
+              </Link>
+            ) : (
+              <span>{hop.title}</span>
+            )}
             <span className="research-muted"> — {hop.note}</span>
           </li>
         ))}

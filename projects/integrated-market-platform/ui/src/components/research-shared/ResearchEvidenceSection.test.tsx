@@ -171,8 +171,8 @@ describe("ResearchEvidenceSection", () => {
   it("offers claim hops from a finding without extra fetches", () => {
     renderSection();
     expect(screen.getByRole("navigation", { name: "From this evidence" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Strategy" }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole("link", { name: "Contradiction" })[0]).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Follow strategy" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("link", { name: "Follow contradiction" })[0]).toHaveAttribute(
       "href",
       "/research/validation?conflict=1",
     );

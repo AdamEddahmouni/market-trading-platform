@@ -16,6 +16,7 @@ import {
   presentFindingAvailability,
   presentPreregistration,
   RESEARCH_FINDINGS,
+  claimFollowAccessibleName,
   buildClaimNavigation,
   claimHopsForFinding,
   sectionClaimHops,
@@ -297,6 +298,13 @@ describe("buildClaimNavigation", () => {
     const contradiction = nodes.find((node) => node.key === "contradiction");
     expect(contradiction?.href).toBe("/research/validation?conflict=1");
     expect(contradiction?.statusLabel).toMatch(/1 contract-backed conflict/);
+  });
+});
+
+describe("claimFollowAccessibleName", () => {
+  it("prefixes Follow so section tabs stay uniquely named", () => {
+    expect(claimFollowAccessibleName("Evidence")).toBe("Follow evidence");
+    expect(claimFollowAccessibleName("Strategy")).toBe("Follow strategy");
   });
 });
 
