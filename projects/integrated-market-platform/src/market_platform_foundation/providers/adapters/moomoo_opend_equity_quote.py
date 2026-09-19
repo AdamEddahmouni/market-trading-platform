@@ -36,6 +36,9 @@ MOOMOO_AUTH_FAILURE = "MOOMOO_AUTH_FAILURE"
 MOOMOO_PROTOCOL_ERROR = "MOOMOO_PROTOCOL_ERROR"
 MOOMOO_LAST_PRICE_MISSING = "MOOMOO_LAST_PRICE_MISSING"
 MOOMOO_TRANSPORT_NOT_IMPLEMENTED = "MOOMOO_TRANSPORT_NOT_IMPLEMENTED"
+EMPTY_PAYLOAD = "EMPTY_PAYLOAD"
+PROVIDER_TIMEOUT = "PROVIDER_TIMEOUT"
+TEMPORARY_NETWORK_FAILURE = "TEMPORARY_NETWORK_FAILURE"
 SYMBOL_REQUIRED = "INSTRUMENT_ID_REQUIRED"
 MISSING_TIMESTAMP = "MISSING_TIMESTAMP"
 
@@ -171,6 +174,10 @@ class VendorSdkOpenDQuoteTransport:
             return OpenDSnapshotResult(reason_code=MOOMOO_TRANSPORT_NOT_IMPLEMENTED)
         try:
             payload = fetcher(symbol, host=host, port=port)
+        except TimeoutError:
+            return OpenDSnapshotResult(reason_code=PROVIDER_TIMEOUT)
+        except ConnectionResetError:
+            return OpenDSnapshotResult(reason_code=TEMPORARY_NETWORK_FAILURE)
         except Exception:  # noqa: BLE001
             return OpenDSnapshotResult(reason_code=MOOMOO_PROTOCOL_ERROR)
         if not isinstance(payload, dict):
@@ -179,8 +186,12 @@ class VendorSdkOpenDQuoteTransport:
         row = payload.get("row")
         if reason:
             return OpenDSnapshotResult(reason_code=str(reason))
+        if row is None:
+            return OpenDSnapshotResult(reason_code=EMPTY_PAYLOAD)
         if not isinstance(row, Mapping):
             return OpenDSnapshotResult(reason_code=MOOMOO_PROTOCOL_ERROR)
+        if not row:
+            return OpenDSnapshotResult(reason_code=EMPTY_PAYLOAD)
         return OpenDSnapshotResult(row=row)
 
 
@@ -204,11 +215,16 @@ class MoomooOpenDEquityQuoteProvider:
         if not opend_reachable(host=host, port=port):
             return self._unavailable(OPEND_UNAVAILABLE)
 
-        snapshot = self._transport.fetch_snapshot(symbol=wanted, host=host, port=port)
+        try:
+            snapshot = self._transport.fetch_snapshot(symbol=wanted, host=host, port=port)
+        except TimeoutError:
+            return self._unavailable(PROVIDER_TIMEOUT)
+        except ConnectionResetError:
+            return self._unavailable(TEMPORARY_NETWORK_FAILURE)
         if snapshot.reason_code:
             return self._unavailable(snapshot.reason_code)
-        if snapshot.row is None:
-            return self._unavailable(MOOMOO_PROTOCOL_ERROR)
+        if snapshot.row is None or not snapshot.row:
+            return self._unavailable(EMPTY_PAYLOAD)
 
         event, reason_code = _quote_event_from_vendor_row(
             snapshot.row, symbol=wanted, received_ns=monotonic_wall_ns()
@@ -318,6 +334,7 @@ def _quote_event_from_vendor_row(
 
 
 __all__ = [
+    "EMPTY_PAYLOAD",
     "MISSING_TIMESTAMP",
     "MOOMOO_AUTH_FAILURE",
     "MOOMOO_LAST_PRICE_MISSING",
@@ -328,6 +345,8 @@ __all__ = [
     "MoomooOpenDEquityQuoteProvider",
     "OPEND_NON_LOOPBACK_BLOCKED",
     "OPEND_UNAVAILABLE",
+    "PROVIDER_TIMEOUT",
+    "TEMPORARY_NETWORK_FAILURE",
     "OpenDQuoteTransport",
     "OpenDSnapshotResult",
     "SYMBOL_REQUIRED",

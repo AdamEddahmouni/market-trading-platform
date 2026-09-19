@@ -30,6 +30,7 @@ from ..platform.artifact_path_resolver import (
     read_item9_collector_log_text,
 )
 from ..providers.equity_quote_selection import opend_readiness
+from ..providers.resilience import classify_opend_connectivity
 
 _ARTIFACT_KIND = "imp_runtime_resilience_diagnostic"
 _SCHEMA_VERSION = "1.0.0"
@@ -130,6 +131,7 @@ def build_runtime_resilience_diagnostic(
         provider_failure_class = "PROVIDER_NOT_LOOPBACK"
     else:
         provider_failure_class = "NONE"
+    provider_incident = classify_opend_connectivity(opend)
 
     return {
         "artifact_kind": _ARTIFACT_KIND,
@@ -149,6 +151,12 @@ def build_runtime_resilience_diagnostic(
             "provider_id": "moomoo.opend",
             "state": provider_state,
             "failure_class": provider_failure_class,
+            "status_token": provider_incident.status_token,
+            "operator_message": provider_incident.operator_message,
+            "fallback": provider_incident.fallback.to_dict(),
+            "live_execution": provider_incident.live_execution,
+            "item9_calibration": "NOT_CALIBRATED",
+            "item9_mode": "IDLE",
             "host": opend.host,
             "port": opend.port,
             "loopback": opend.loopback,
