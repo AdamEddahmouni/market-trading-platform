@@ -8,8 +8,8 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` | **Software landing** on `main` through IMP-INTEGRATE-AND-EXPERIMENT-05 [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271)–[#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274). `git rev-parse origin/main` may advance on **docs-only** merges (Lane F status reconcile [#275](https://github.com/AdamEddahmouni/market-trading-platform/pull/275)) without moving this pin until the next **software-bearing** merge. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `e0ab919f6bfe0d681f035d7e00c4f609d596f74b` | Matches **CURRENT_MAIN** after [#272](https://github.com/AdamEddahmouni/market-trading-platform/pull/272) non-stub IBP facts SUT (**supersedes** closed [#267](https://github.com/AdamEddahmouni/market-trading-platform/pull/267)), simulator accounting [#271](https://github.com/AdamEddahmouni/market-trading-platform/pull/271), OpenD v3 evidence [#273](https://github.com/AdamEddahmouni/market-trading-platform/pull/273), Lane E findings [#274](https://github.com/AdamEddahmouni/market-trading-platform/pull/274). **Not** empirical evidence. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `50a1477fca73fab8fe784b2f1514498bd01d6381` | **Software landing** on `main` through IMP-POST-RTH-CLOSE-08 [#282](https://github.com/AdamEddahmouni/market-trading-platform/pull/282)–[#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `50a1477fca73fab8fe784b2f1514498bd01d6381` | Matches **CURRENT_MAIN** after [#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289) operator diagnostics + [#287](https://github.com/AdamEddahmouni/market-trading-platform/pull/287) runtime resilience. **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
@@ -27,7 +27,20 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `e0ab919f…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `50a1477f…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+
+**Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
+
+`{repo}/.imp-actual-01-phase-d/projects/integrated-market-platform/artifacts/ftep-v1-002/item9-prospective-proof-receipts/`
+
+Post-session read-only status (from any 3.11 `.venv` with `PYTHONPATH=src`):
+
+```powershell
+$rcpt = Join-Path (git rev-parse --show-toplevel) ".imp-actual-01-phase-d\projects\integrated-market-platform\artifacts\ftep-v1-002\item9-prospective-proof-receipts"
+python tools\item9_corpus_status.py corpus-status --receipt-dir $rcpt
+```
+
+Expect **`sample_gate_progress.distinct_rth_dates` = `2/3`** until a **third distinct admitted** US cash RTH date is earned. **`ITEM9_CALIBRATION_RUN` = FORBIDDEN** — no automatic fitting.
 
 ## Workstation bootstrap (once per day)
 
@@ -41,7 +54,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `e0ab919f`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `50a1477f`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -49,6 +62,7 @@ Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never
 | Control center | `http://127.0.0.1:5173/control` | Lifecycle, masked provider config |
 | UI Diagnostics | `http://127.0.0.1:5173/diagnostics/provider` | SPA route — **not** `:8766` |
 | UI API | `http://127.0.0.1:8766` | `tools\ui1\run_ui_api.py --serve --port 8766` |
+| Operator diagnostics snapshot | `GET http://127.0.0.1:8766/operator/diagnostics` | Read-only aggregate ([#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289)); **does not** start collectors |
 | Launcher supervisor | `http://127.0.0.1:8767` | Loopback-only; Windows launcher |
 | OE ranked feed API | `GET /opportunities/summary` | Ranked opportunity rows (replay/store projection) |
 | EventV1 ingress | `build_production_observation_ingress_router` | Software on `main`; **not** universal on every normalize path; empirical capture **RTH-only** |
@@ -62,6 +76,7 @@ Start/stop: `START_PLATFORM.cmd` / `STOP_PLATFORM.cmd` or [DEVELOPER_RUNBOOK.md]
 curl -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8766/provider/health
 curl -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8766/context
 curl -s -o NUL -w "%{http_code}`n" "http://127.0.0.1:8766/opportunities/summary"
+curl -s -o NUL -w "%{http_code}`n" "http://127.0.0.1:8766/operator/diagnostics"
 ```
 
 Control service (when launcher running): `http://127.0.0.1:8767/control/status` (loopback).
@@ -88,6 +103,22 @@ python tools\item7_corpus_collector.py status --persistence-root $env:IMP_STATE_
 
 Item 9 next-RTH preflight details: [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md).
 
+### Item 9 `READY_TO_COLLECT` gate (fail closed — no collection in this doc)
+
+Run only from **`.imp-actual-01-phase-d`** @ **`fed2d9f7`** during **US equity cash RTH** (≥ 09:30 ET). A running `--poll` process alone is **not** sufficient.
+
+| Gate | Required |
+|------|----------|
+| Calendar | `calendar.rth_active=true`; session date is a **new** distinct US cash RTH date (**not** already admitted **2026-09-17** or **2026-09-18**) |
+| Runtime | `runtime.runtime_matches_frozen_authority=true`; `current_git_sha` = **`fed2d9f7`** |
+| Collector | Exactly **one** governed checkout `.imp-actual-01-phase-d`; **`ACTIVE_COLLECTORS=0`** before start |
+| Receipt dir | Writable governed path under frozen collector IMP root (see above) |
+| Provider | OpenD loopback reachable; required evidence fresh enough for Mode B |
+| Policy | **`ITEM9_CALIBRATION_RUN=FORBIDDEN`**; Live **OFF**; outage epoch **`121031`** **not** backfilled |
+| Disposition | Preflight JSON **`disposition=READY_TO_COLLECT`** — operator still starts `--poll` manually |
+
+Off-hours or software-worktree preflight may show **`WRONG_RUNTIME`** or **`NOT_RTH`** — expected; **do not** collect.
+
 ### Temporary gates (shell only — never commit)
 
 ```powershell
@@ -104,7 +135,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | Item 9 preflight | `python tools\imp.py item9 next-rth-preflight --json` | Read-only; `READY_TO_COLLECT` still requires manual `--poll` start |
 | Finviz prospective | `python tools\ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | Not via `rth_empirical_ops` live ingress |
 | **Item 9 collection** | Mode B `--poll` from **`.imp-actual-01-phase-d`** @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` (`opend_bar_1m_prospective_proof.py prospective --poll …`) | Contract `item9.bar-ohlcv-prospective-proof/1.1.0`; `orders_placed=false`, `calibrated=false` |
-| **Item 9 corpus** | `python tools\item9_corpus_status.py corpus-status --receipt-dir artifacts/ftep-v1-002/item9-prospective-proof-receipts` | After receipt; no automatic fitting |
+| **Item 9 corpus** | `python tools\item9_corpus_status.py corpus-status --receipt-dir` → frozen collector path above | After receipt; no automatic fitting; **`ITEM9_CALIBRATION_RUN=FORBIDDEN`** |
 | **Item 7** | `item7_corpus_collector.py status|diagnose|collect …`; optional `item7_opend_capture_append.py` | Governed rows **0** until earned; auto-persist **SOFTWARE/CONTROLLED** only |
 | Ops bundle | `python tools\rth_empirical_ops.py --json run-observational` | Optional `--write-run-artifact`; dry-run (`live_ingress=False`) |
 | Close | `python tools\rth_empirical_ops.py --json summarize` | |
@@ -113,7 +144,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Artifact | Path |
 |----------|------|
-| Item 9 prospective proof | `{IMP root}/artifacts/ftep-v1-002/item9-prospective-proof-receipts/` (or `--receipt-out`) |
+| Item 9 prospective proof | `{repo}/.imp-actual-01-phase-d/projects/integrated-market-platform/artifacts/ftep-v1-002/item9-prospective-proof-receipts/` (governed; not an empty software-worktree copy) |
 | RTH ops run bundle | `$env:IMP_STATE_DIR/rth-empirical-ops/runs/RTHOPS-*.json` with `--write-run-artifact` |
 | Finviz / FTEP / Item 7 | JSON stdout; operator copies under governed `.local` policy |
 | Hot-path latency evidence | Gate `PROSPECTIVE_HOT_PATH_LATENCY_CAPTURED` — software wired (#166/#154); **no** live RTH receipt until earned |
@@ -154,7 +185,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — docs-only tip may differ from software landing `e0ab919f` |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`50a1477f`** through [#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289) |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
