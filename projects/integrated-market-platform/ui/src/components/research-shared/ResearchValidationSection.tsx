@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useResearchModelsQuery } from "../../api/hooks";
 import { resolveSemanticState } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
@@ -9,11 +9,13 @@ import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
 import type { Mode } from "../mode-session/types";
+import { ResearchClaimHops } from "./ResearchClaimGraph";
 import {
   formatResearchTime,
   interpretationHasConflict,
   presentAbstentionReason,
   presentPreregistration,
+  sectionClaimHops,
 } from "./researchPresentation";
 
 type Props = {
@@ -28,6 +30,8 @@ type Props = {
  */
 export function ResearchValidationSection({ mode }: Props) {
   const modelsQuery = useResearchModelsQuery();
+  const [searchParams] = useSearchParams();
+  const conflictOnly = searchParams.get("conflict") === "1";
 
   if (modelsQuery.isLoading) {
     return <LoadingState label="Loading strategy validation…" />;
@@ -52,6 +56,9 @@ export function ResearchValidationSection({ mode }: Props) {
   const boundary = resolveSemanticState("research", payload.authority_boundary);
   const identityHash = summary.strategy_identity_hash ?? spec.strategy_identity_hash;
   const datasetFingerprint = summary.dataset_fingerprint ?? manifest.dataset_fingerprint;
+  const visibleInterpretations = conflictOnly
+    ? payload.interpretations.filter((row) => interpretationHasConflict(row))
+    : payload.interpretations;
 
   return (
     <>
@@ -113,6 +120,7 @@ export function ResearchValidationSection({ mode }: Props) {
           <Link to="/lab/validation">Inspect this validation workflow in Lab</Link> — Lab is the
           process surface; this page stays the interpretation of the result.
         </p>
+        <ResearchClaimHops hops={sectionClaimHops("validation", mode)} label="From this strategy" />
       </section>
 
       <section className="research-panel" aria-labelledby="research-interpretations-heading">
@@ -129,6 +137,21 @@ export function ResearchValidationSection({ mode }: Props) {
           </p>
         ) : (
           <div className="research-table-wrap">
+            {conflictOnly ? (
+              <p className="research-muted" role="status">
+                Showing only observations with ABSTAIN_CONFLICTING_EVIDENCE.{" "}
+                <Link to="/research/validation">Show the full interpretation record</Link>.
+              </p>
+            ) : (
+              <p className="research-muted">
+                <Link to="/research/validation?conflict=1">Show contract-backed conflicts only</Link>.
+              </p>
+            )}
+            {visibleInterpretations.length === 0 ? (
+              <p className="research-muted" role="status">
+                No ABSTAIN_CONFLICTING_EVIDENCE rows in this window.
+              </p>
+            ) : (
             <table className="data-table">
               <caption className="chart-data-caption">
                 Per-observation strategy interpretations at the current cutoff
@@ -142,7 +165,7 @@ export function ResearchValidationSection({ mode }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {payload.interpretations.map((row, index) => {
+                {visibleInterpretations.map((row, index) => {
                   const outcome = resolveSemanticState(
                     "research",
                     row.outcome == null ? undefined : String(row.outcome),
@@ -183,6 +206,7 @@ export function ResearchValidationSection({ mode }: Props) {
                 })}
               </tbody>
             </table>
+            )}
           </div>
         )}
       </section>

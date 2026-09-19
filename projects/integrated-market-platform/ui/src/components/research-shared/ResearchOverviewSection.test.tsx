@@ -153,6 +153,13 @@ describe("ResearchOverviewSection", () => {
       .toBeInTheDocument();
   });
 
+  it("navigates synthesis sentences to the owning section", () => {
+    renderSection();
+    expect(
+      screen.getByRole("link", { name: /12 signals and 3 abstentions across 15 observations/i }),
+    ).toHaveAttribute("href", "/research/validation");
+  });
+
   it("does not treat still-loading sources as unavailable coverage", () => {
     modelsState.isLoading = true;
     renderSection();
@@ -162,12 +169,13 @@ describe("ResearchOverviewSection", () => {
 
   it("states honestly which operator concepts have no contract", () => {
     renderSection();
-    expect(
-      screen.getByRole("heading", { name: "What this surface cannot tell you yet" }),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/Hypothesis tracking/i)).toBeInTheDocument();
-    expect(screen.getByText(/Supporting vs contradictory flags/i)).toBeInTheDocument();
-    expect(screen.getByText(/Experiment campaigns \(FTEP\)/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Navigate this claim" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Claim navigation" })).toBeInTheDocument();
+    expect(screen.getByText("Hypothesis")).toBeInTheDocument();
+    expect(screen.getAllByText("NOT_EXPOSED").length).toBeGreaterThan(0);
+    expect(screen.getByText("Contradiction")).toBeInTheDocument();
+    expect(screen.getByText("Forward-test")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "What stays off this graph" })).toBeInTheDocument();
   });
 
   it("keeps the replay session id in the methodology disclosure", () => {
@@ -176,9 +184,11 @@ describe("ResearchOverviewSection", () => {
     expect(screen.queryByText("session-abc123def456")).not.toBeInTheDocument();
   });
 
-  it("links Paper mode to strategy outcomes and Live mode to the canary", () => {
+  it("links Paper mode to Workspace forward tests and Live mode to the canary", () => {
     const { unmount } = renderSection("PAPER");
     expect(screen.getByRole("link", { name: "Strategy outcomes in Paper" })).toBeInTheDocument();
+    const claimNav = screen.getByRole("navigation", { name: "Claim navigation" });
+    expect(claimNav.querySelector('a[href="/workspace"]')).not.toBeNull();
     unmount();
     renderSection("LIVE");
     expect(screen.getByText(/stays replay-bound in Live mode/i)).toBeInTheDocument();

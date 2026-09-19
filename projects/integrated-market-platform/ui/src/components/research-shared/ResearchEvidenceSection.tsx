@@ -9,10 +9,14 @@ import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
 import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { CountBarChartPanel, SignalTimelineChartPanel } from "../charts/ResearchChartPanels";
+import type { Mode } from "../mode-session/types";
+import { ResearchClaimHops } from "./ResearchClaimGraph";
 import {
   RESEARCH_FINDINGS,
+  claimHopsForFinding,
   presentFindingAvailability,
   researchPanel,
+  sectionClaimHops,
   type ResearchFindingDescriptor,
 } from "./researchPresentation";
 
@@ -25,7 +29,11 @@ import {
  */
 type AvailabilityFilter = "all" | "available" | "empty" | "unavailable";
 
-export function ResearchEvidenceSection() {
+type Props = {
+  mode: Mode;
+};
+
+export function ResearchEvidenceSection({ mode }: Props) {
   const analyticsQuery = useResearchAnalyticsQuery();
   const [searchParams] = useSearchParams();
   const panelParam = searchParams.get("panel");
@@ -89,6 +97,7 @@ export function ResearchEvidenceSection() {
         outcomes, or authorize any action. The contracts do not mark evidence as supporting or
         contradictory, so no such claim is made here.
       </p>
+      <ResearchClaimHops hops={sectionClaimHops("evidence", mode)} label="From this evidence" />
       <div className="research-local-filter">
         <label htmlFor="research-finding-filter">Show findings</label>
         <select
@@ -120,6 +129,7 @@ export function ResearchEvidenceSection() {
             finding={finding}
             analytics={analytics}
             highlighted={highlighted === finding.anchor}
+            mode={mode}
           />
         ))
       )}
@@ -131,10 +141,12 @@ function FindingArticle({
   finding,
   analytics,
   highlighted,
+  mode,
 }: {
   finding: ResearchFindingDescriptor;
   analytics: ResearchAnalyticsResponse;
   highlighted: boolean;
+  mode: Mode;
 }) {
   const panel = researchPanel(analytics, finding.key);
   const availability = presentFindingAvailability(panel);
@@ -187,6 +199,8 @@ function FindingArticle({
           <FindingIntro finding={finding} tone={availability.tone} stateLabel={availability.label} />
         </CountBarChartPanel>
       )}
+
+      <ResearchClaimHops hops={claimHopsForFinding(finding.key, mode)} />
 
       <details className="research-methodology">
         <summary>Methodology</summary>

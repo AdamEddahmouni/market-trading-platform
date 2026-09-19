@@ -229,6 +229,95 @@
   gap: var(--imp-space-2);
 }
 
+.research-claim-graph-list {
+  list-style: none;
+  margin: var(--imp-space-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--imp-space-3);
+}
+
+.research-claim-graph-item {
+  min-width: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-0);
+}
+
+.research-claim-graph-item[data-kind="gap"],
+.research-claim-graph-item[data-kind="proxy"] {
+  border-style: dashed;
+}
+
+.research-claim-graph-item[data-active="true"] {
+  border-color: var(--imp-state-research-border);
+}
+
+.research-claim-graph-link {
+  display: grid;
+  gap: var(--imp-space-1);
+  padding: var(--imp-space-3);
+  color: inherit;
+  text-decoration: none;
+  min-height: 100%;
+}
+
+.research-claim-graph-link:hover,
+.research-claim-graph-link:focus-visible {
+  outline: 2px solid var(--imp-state-research-border);
+  outline-offset: 1px;
+}
+
+.research-claim-graph-link--static {
+  cursor: default;
+}
+
+.research-claim-graph-link--static:hover,
+.research-claim-graph-link--static:focus-visible {
+  outline: none;
+}
+
+.research-claim-graph-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--imp-space-2);
+}
+
+.research-claim-graph-title {
+  font-size: var(--imp-text-md);
+  font-weight: 600;
+}
+
+.research-claim-graph-role {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+}
+
+.research-claim-hops {
+  margin: var(--imp-space-3) 0;
+}
+
+.research-claim-hops ul {
+  list-style: none;
+  margin: var(--imp-space-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--imp-space-2);
+}
+
+.research-synthesis-lines a {
+  color: inherit;
+}
+
+.research-synthesis-lines a:hover,
+.research-synthesis-lines a:focus-visible {
+  text-decoration: underline;
+}
+
 /* Mode accents on the restriction note (carried over from the mode skins) */
 
 .demo-research-page .mode-restriction-note {
@@ -244,7 +333,8 @@
     padding: var(--imp-space-3) var(--imp-space-4);
   }
 
-  .research-fact-grid {
+  .research-fact-grid,
+  .research-claim-graph-list {
     grid-template-columns: 1fr;
   }
 
