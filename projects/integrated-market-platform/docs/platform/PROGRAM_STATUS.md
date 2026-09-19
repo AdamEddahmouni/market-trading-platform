@@ -7,10 +7,10 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Mutable current program state and material limitations |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.48` |
+| Version | `1.50` |
 | Last Verified | `2026-09-19` |
-| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | `a0b03d2ab26e5a8fa545ee6849b271a87c3db25b` — merge [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) Item 9 **2**/3 **IDLE** diagnostics; ancestry includes [#305](https://github.com/AdamEddahmouni/market-trading-platform/pull/305), [#304](https://github.com/AdamEddahmouni/market-trading-platform/pull/304), [#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302), [#299](https://github.com/AdamEddahmouni/market-trading-platform/pull/299)–[#303](https://github.com/AdamEddahmouni/market-trading-platform/pull/303), and [#295](https://github.com/AdamEddahmouni/market-trading-platform/pull/295) @ `1f33bf9e`. Item 9 **`NOT_CALIBRATED`** **2**/3 admitted RTH dates unchanged. **Not** `ITEM9_FROZEN_COLLECTOR`. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `a0b03d2ab26e5a8fa545ee6849b271a87c3db25b` — matches **CURRENT_MAIN** after [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294). **Not** empirical evidence. |
+| **CURRENT_MAIN** (`origin/main` mutable tip; alias **CURRENT_GIT_MAIN**) | `3609d5086f18fa3eed76d0b3e0aa663b422d1f7b` — merge [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) Weekend Lane G unit-test artifact hermeticity; ancestry includes [#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312) @ `61335412`, [#307](https://github.com/AdamEddahmouni/market-trading-platform/pull/307), [#298](https://github.com/AdamEddahmouni/market-trading-platform/pull/298) **operator_truth** contracts, [#309](https://github.com/AdamEddahmouni/market-trading-platform/pull/309), [#306](https://github.com/AdamEddahmouni/market-trading-platform/pull/306), [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294), [#293](https://github.com/AdamEddahmouni/market-trading-platform/pull/293), and [#305](https://github.com/AdamEddahmouni/market-trading-platform/pull/305)–[#302](https://github.com/AdamEddahmouni/market-trading-platform/pull/302). Item 9 **`NOT_CALIBRATED`** **2**/3 admitted RTH dates unchanged. **Not** `ITEM9_FROZEN_COLLECTOR`. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `3609d5086f18fa3eed76d0b3e0aa663b422d1f7b` — matches **CURRENT_MAIN** after [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308). **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** / frozen collector SHA | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` — IMP-ACTUAL-01 [#236](https://github.com/AdamEddahmouni/market-trading-platform/pull/236) OpenD persistent Mode B poll; governed checkout `.imp-actual-01-phase-d` @ this SHA. **Sep 17 Mode B observation epoch is frozen here**; do **not** retarget prospective collection onto **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** / frozen Sep 15 RTH empirical SHA | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` — Sep 15 observational **historical pin** (`HISTORICAL_TRUTH`); **not** **CURRENT_MAIN**; **not** **ITEM9_FROZEN_COLLECTOR**; do not rewrite findings |
 | Empirical observation SHAs (receipt `runtime_git_sha`) | Distinct from the current git tip. Sep 17 AAPL Mode B `item9-prospective-20260917-rth-aapl` ran on `aae13fd1…` (`PATH_PROOF_ONLY` / empty raw hash — **not** corpus-admissible; immutable). Sep 17 phase-d and `epoch-fed2d9f7-aapl-*` receipts ran on frozen collector `fed2d9f7…` (non-empty raw hash; corpus-admissible candidates; **not** `CALIBRATED`). Do not rewrite receipts. |
@@ -153,7 +153,7 @@ mandatory. Automatic broker failover remains disabled.
 
 **Only during US equity cash RTH (≥ 09:30 ET).** Do **not** run governed prospective Item 9 collection off-hours.
 
-1. `git fetch origin main`; confirm **CURRENT_GIT_MAIN** matches [header](#imp-program-status) (`a0b03d2a` through [#294](https://github.com/AdamEddahmouni/market-trading-platform/pull/294) until a newer **software-bearing** merge). **CURRENT_SOFTWARE_IMPLEMENTATION** matches **`a0b03d2a`** on current `main`.
+1. `git fetch origin main`; confirm **CURRENT_GIT_MAIN** matches [header](#imp-program-status) (`3609d508` through [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) until a newer **software-bearing** merge). **CURRENT_SOFTWARE_IMPLEMENTATION** matches **`3609d508`** on current `main`.
 2. Preflight (read-only): `python tools/imp.py item9 next-rth-preflight --json` — off-hours **`NOT_RTH`** and on **CURRENT_GIT_MAIN** (non-collector checkout) **`WRONG_RUNTIME`** are honest software outcomes, not empirical failure.
 3. When disposition is `READY_TO_COLLECT`, run governed Mode B `--poll` from frozen collector checkout **`.imp-actual-01-phase-d`** @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` (see [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](../engineering/ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); do not retarget collector to **CURRENT_MAIN**).
 4. After receipt (read-only; **frozen collector receipts**, not the software checkout copy). From IMP project root, `$rcpt` is the governed store under `.imp-actual-01-phase-d`:
@@ -206,7 +206,7 @@ V3_AUTHORITY=HISTORICAL_DEVELOPMENT
 SMOKE10_NONSTUB=NOT_EXECUTED
 FULL30_EXECUTED=NO
 IMP05_V3_SOFTWARE_LANDING_SHA=e0ab919f6bfe0d681f035d7e00c4f609d596f74b
-CURRENT_SOFTWARE_IMPLEMENTATION_SHA=a0b03d2ab26e5a8fa545ee6849b271a87c3db25b
+CURRENT_SOFTWARE_IMPLEMENTATION_SHA=3609d5086f18fa3eed76d0b3e0aa663b422d1f7b
 ```
 
 (`ITEM9_DISTINCT_RTH_DATES` **2**/3 reflects **IMP-POST-RTH-CLOSE-08** Lane 0 admitted corpus (Sep 17 + Sep 18); still **`NOT_CALIBRATED`**. `.imp-actual-01-phase-d` @ **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` — collector stopped **2026-09-18T16:00:11 ET**; outage gap **not** backfilled. Frozen Sep 15 / V1 / V2 / stub Smoke10 `76DDD188…` receipts **not** rewritten.)

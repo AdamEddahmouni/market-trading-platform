@@ -48,6 +48,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [lab-contract-map.md](../ui-redesign-v2/lab-contract-map.md); shared `queryKeys.operatorDiagnostics` / `preferItem9OperatorTruth` |
 | **Notes** | Isolated worktree `.worktrees/weekend-lane-j-lab-lineage` from `61335412` (#312). Did not merge. Did not touch #222, `snapshot.py`, #308 G14, #310 Radar, #311 PROGRAM_STATUS. No Full30. |
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `3609d508` after #308
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (and next-action / closeout software SHA) to `origin/main` **`3609d508`** after [#308](https://github.com/AdamEddahmouni/market-trading-platform/pull/308) (post–[#312](https://github.com/AdamEddahmouni/market-trading-platform/pull/312) `61335412`). Item 9 **2/3 IDLE**, collector **`fed2d9f7`**, **NOT CALIBRATED**, Live **OFF**, #222 isolated unchanged. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | Docs SHA pin only — CI on push |
+| **Related** | [#311](https://github.com/AdamEddahmouni/market-trading-platform/pull/311) |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-298`; absorbed `origin/main` with WORK_LOG keep-both. |
+
+## 2026-09-19 — Weekend Wave B Lane G: unit-test artifact hermeticity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests`, `validation` |
+| **Summary** | Stopped G14 performance unittest from writing `artifacts/g14-runtime-performance.json` relative to process cwd; anchored dual-corpus path fixtures to IMP package root; cleaned state-path diagnostic temp dirs via `TemporaryDirectory`; added regression guard that G14 performance measurement does not touch tracked artifact paths. |
+| **Key files** | `tests/cross_lane/test_g14_product_convergence.py`; `tests/platform/test_dual_corpus_contamination.py`; `tests/platform/test_state_path_diagnostic.py`; `tests/validation/test_unit_test_repo_artifact_hermeticity.py` |
+| **Tests** | `python -m unittest tests.validation.test_unit_test_repo_artifact_hermeticity tests.platform.test_state_path_diagnostic tests.platform.test_dual_corpus_contamination tests.cross_lane.test_g14_product_convergence` |
+| **Related** | [#299](https://github.com/AdamEddahmouni/market-trading-platform/pull/299) process-env isolation |
+| **Notes** | Item 9 2/3 IDLE frozen invariants unchanged; no `snapshot.py`, collector `fed2d9f7`, or evidence mutation. |
+
 ## 2026-09-19 — PR #307 merge origin/main 2003eced post-#298 (WORK_LOG keep-both)
 
 | Field | Value |
