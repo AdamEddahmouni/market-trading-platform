@@ -33,6 +33,8 @@ describe("simulationHarnessMetrics", () => {
       fill_audit: { status: "PASS" },
     });
     expect(metrics.find((row) => row.id === "drawdown")?.value).toBe("UNAVAILABLE");
-    expect(metrics.find((row) => row.id === "fill-realism")?.value).toBe("PASS");
+    expect(metrics.find((row) => row.id === "fill-realism")?.value).toBe("UNAVAILABLE");
+    expect(metrics.find((row) => row.id === "fill-audit-status")?.value).toBe("PASS");
+    expect(metrics.find((row) => row.id === "slippage")?.value).toBe("UNAVAILABLE");
   });
 });

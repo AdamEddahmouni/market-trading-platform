@@ -289,6 +289,7 @@ describe("RadarPage opportunities tab", () => {
     expect(queue).toHaveTextContent("Fresh");
     expect(queue).toHaveTextContent("Open workspace");
     expect(queue).toHaveTextContent("Detected");
+    expect(queue).toHaveTextContent("unit-test");
   });
 
   it("selects a row and shows the progressive detail card", async () => {
@@ -297,6 +298,19 @@ describe("RadarPage opportunities tab", () => {
     const card = await screen.findByTestId("imp-radar-detail-card");
     expect(card).toHaveTextContent("BIYA momentum ignition watch");
     expect(card).toHaveTextContent("2 of 3 ranking inputs present");
+    const brief = within(card).getByTestId("imp-radar-operator-brief");
+    expect(brief).toHaveTextContent("What happened?");
+    expect(brief).toHaveTextContent("Why is IMP showing this?");
+    expect(brief).toHaveTextContent("How fresh?");
+    expect(brief).toHaveTextContent("Which providers support it?");
+    expect(brief).toHaveTextContent("Which facts conflict?");
+    expect(brief).toHaveTextContent("Inference vs observation?");
+    expect(brief).toHaveTextContent("What is unknown?");
+    expect(brief).toHaveTextContent("What would invalidate it?");
+    expect(brief).toHaveTextContent("What action is available?");
+    expect(brief).toHaveTextContent("Why might action be refused?");
+    expect(brief).toHaveTextContent("UNKNOWN — no conflict or supersession fields attached");
+    expect(brief).toHaveTextContent("never grants live execution");
     // L2 epistemic layers (Evidence layers) open by default; deeper sections stay collapsed
     expect(within(card).getByText("Evidence layers")).toBeInTheDocument();
     expect(card).toHaveTextContent("Observed facts");
@@ -332,6 +346,28 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("DEMO");
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
+  });
+
+  it("keeps STALE rows honest and refuses Live paper acks", async () => {
+    const staleRow: OpportunityReviewRow = {
+      ...rankedRow,
+      data_quality: { status: "DEGRADED", freshness: "STALE", source: "unit-test" },
+      eligibility_state: "INELIGIBLE",
+      next_safe_action: "STOP",
+      lifecycle_state: "EXPIRED",
+    };
+    summaryMock.data = { items: [staleRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("LIVE", "opportunities", false);
+    const queue = screen.getByTestId("imp-radar-queue");
+    expect(queue).toHaveTextContent(/Stale/i);
+    expect(queue).toHaveTextContent(/Expired/i);
+    expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
+    const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
+      "imp-radar-operator-brief",
+    );
+    expect(brief).toHaveTextContent(/never grants live execution/i);
+    expect(brief).toHaveTextContent(/STALE/i);
+    expect(brief).toHaveTextContent(/INELIGIBLE/i);
   });
 
   it("keeps detail inline on wide layouts without a sheet", async () => {

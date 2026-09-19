@@ -13,7 +13,7 @@ import {
 import { resolveSemanticState, SEMANTIC_TONE_ICON } from "../../state/semanticState";
 import { StatePill } from "../imp-ui/StatePill";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
-import { ErrorState } from "../imp-ui/FeedbackStates";
+import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
 import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { PageHeader } from "../shared/PageHeader";
@@ -22,6 +22,7 @@ import type { Mode } from "../mode-session/types";
 import { humanizeUnreadyReason } from "../opportunity/opportunityPresentation";
 import {
   CONTROL_SECTIONS,
+  CONTROL_SECTION_NAV,
   authoritySummary,
   buildAttentionItems,
   partitionProviders,
@@ -180,17 +181,29 @@ export function OperatorControlCenterPage({ mode }: Props) {
       <PageHeader
         eyebrow="Control"
         title="Platform control"
-        subtitle="Operating state, execution authority, data providers, and the opportunity feed — what is wrong, what it affects, and what you can safely do next."
+        subtitle="Can this workstation operate safely right now? Status is translated into trader language; canonical tokens stay visible. Calendar waits are IDLE, not DEGRADED."
         actions={
           <button
             type="button"
             onClick={refreshAll}
             disabled={diagnosticsQuery.isFetching}
+            aria-busy={diagnosticsQuery.isFetching}
           >
             {diagnosticsQuery.isFetching ? "Checking…" : "Check again"}
           </button>
         }
       />
+
+      <a className="control-skip-link" href={`#${CONTROL_SECTIONS.systemStatus}`}>
+        Skip to system status
+      </a>
+      <nav className="control-page-nav" aria-label="Control sections">
+        {CONTROL_SECTION_NAV.map((item) => (
+          <a key={item.id} href={`#${item.id}`}>
+            {item.label}
+          </a>
+        ))}
+      </nav>
 
       {message ? (
         <p className="control-message" role="status">
@@ -229,6 +242,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                   raw={readiness?.status}
                 />
               )}
+              <p className="control-fact-hint">Workstation setup. Missing dates are not a failed setup.</p>
             </dd>
           </div>
           <div className="control-fact">
@@ -245,6 +259,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                   raw={lifecycle?.status}
                 />
               )}
+              <p className="control-fact-hint">Local services running or stopped — not trading skill.</p>
             </dd>
           </div>
           <div className="control-fact">
@@ -261,6 +276,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                   raw={evaluation.status}
                 />
               )}
+              <p className="control-fact-hint">UI mode cannot override backend authority.</p>
             </dd>
           </div>
           <div className="control-fact">
@@ -283,6 +299,7 @@ export function OperatorControlCenterPage({ mode }: Props) {
                   );
                 })()
               )}
+              <p className="control-fact-hint">Quotes and research coverage — never live execution.</p>
             </dd>
           </div>
         </dl>
@@ -297,7 +314,8 @@ export function OperatorControlCenterPage({ mode }: Props) {
                 Item 9 prospective sample gate is calendar-incomplete (
                 {formatItem9CorpusProgress(diagnosticsRuntimeSection(diagnostics)?.item9_corpus_status)
                   .distinctRthDates}
-                ) — methodology blocked, not a platform failure. See System status.
+                ) — IDLE, not DEGRADED. Methodology waits for more regular-trading-hours dates; the
+                workstation is not failing. See System status.
               </p>
             ) : null}
           </>
@@ -370,9 +388,13 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </div>
         </div>
         <p className="control-muted">
-          Composed from <code>GET /operator/diagnostics</code> — lifecycle, readiness, Item 9
-          preflight, runtime resilience, and governance policy. Truth classes stay separate; missing
-          evidence is not upgraded to healthy.
+          One composed snapshot of whether the platform can operate: services, setup, Item 9 sample
+          gate, and safety locks. Truth classes stay separate; missing evidence is not upgraded to
+          healthy. Calendar waits stay IDLE.
+        </p>
+        <p className="control-muted">
+          Technical source: <code>GET /operator/diagnostics</code> (API snapshot). The workstation
+          page for this truth is Control system status.
         </p>
         <OperatorSystemStatusSection
           diagnostics={diagnostics}
@@ -577,13 +599,14 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </Link>
         </div>
         {diagnosticsQuery.isLoading ? (
-          <p className="control-checking" role="status">
-            Checking providers…
+          <p className="control-checking" role="status" aria-live="polite" aria-busy="true">
+            Checking providers… this is a load wait, not an off-by-configuration provider.
           </p>
         ) : diagnosticsQuery.isError ? (
           <ErrorState
             title="Provider readiness is unavailable."
-            affects="Provider states are unknown until the local platform responds."
+            affects="This is a load failure. Provider states are unknown until the local platform responds."
+            rawDetail="GET /operator/diagnostics sections.readiness.providers"
             onRetry={() => void diagnosticsQuery.refetch()}
           />
         ) : (
@@ -612,13 +635,14 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </Link>
         </div>
         {diagnosticsQuery.isLoading ? (
-          <p className="control-checking" role="status">
-            Checking the opportunity feed…
+          <p className="control-checking" role="status" aria-live="polite" aria-busy="true">
+            Checking the opportunity feed… this is a load wait, not an empty queue.
           </p>
         ) : diagnosticsQuery.isError ? (
           <ErrorState
             title="Opportunity feed status could not be loaded."
-            affects="Feed readiness is unknown; the ranked queue may be incomplete."
+            affects="This is a load failure. Feed readiness is unknown; the ranked queue may be incomplete."
+            rawDetail="GET /operator/diagnostics sections.opportunity_surface"
             onRetry={() => void diagnosticsQuery.refetch()}
           />
         ) : opportunitySurface ? (
@@ -631,7 +655,12 @@ export function OperatorControlCenterPage({ mode }: Props) {
             itemCount={undefined}
             qualityState={opportunitySurface.quality_summary?.state}
           />
-        ) : null}
+        ) : (
+          <EmptyState
+            title="Opportunity feed status was not included"
+            reason="The snapshot responded but did not include an opportunity-surface section. That is NOT_OBSERVED, not a ready queue."
+          />
+        )}
       </section>
 
       {/* F. Deeper technical status */}
@@ -765,7 +794,12 @@ function ProviderGroups({
 }) {
   const groups = partitionProviders(providers);
   if (!providers.length) {
-    return <p className="control-muted">No provider readiness rows are available yet.</p>;
+    return (
+      <EmptyState
+        title="No provider rows yet"
+        reason="The snapshot has no provider readiness rows. That is empty, not a failed provider. Off-by-configuration providers appear under the disclosure when present."
+      />
+    );
   }
   return (
     <>

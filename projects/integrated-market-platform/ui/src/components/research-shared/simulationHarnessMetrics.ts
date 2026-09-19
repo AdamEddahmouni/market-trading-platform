@@ -61,20 +61,49 @@ export function extractSimulationHarnessMetrics(
   });
 
   const fillRealism =
-    readMetric(fillAudit, ["fill_price_realism_status", "fill_realism_status", "status"]) ??
+    readMetric(fillAudit, ["fill_price_realism_status", "fill_realism_status"]) ??
     readMetric(fillAudit, ["fill_price_realism"]);
   metrics.push({
     id: "fill-realism",
-    label: "Fill-price realism audit",
-    value: fillRealism ?? displayFillAuditStatus(fillAudit),
+    label: "Fill-price realism metric",
+    value: fillRealism ?? "UNAVAILABLE",
     evidenceClass: fillRealism ? "simulation" : "unavailable",
-    detail: "Bar-conservative fill audit for the current replay snapshot.",
+    detail: fillRealism
+      ? "Bar-conservative fill-realism field from the current replay snapshot."
+      : "Not projected. fill_audit.status is an audit check, not fill-price realism.",
+  });
+
+  const fillAuditStatus = readMetric(fillAudit, ["status"]);
+  metrics.push({
+    id: "fill-audit-status",
+    label: "Fill audit status",
+    value: fillAuditStatus ?? "UNAVAILABLE",
+    evidenceClass: fillAuditStatus ? "simulation" : "unavailable",
+    detail: "Pass/fail of the fill audit — not a market-realism score.",
+  });
+
+  const slippage = readMetric(fillAudit, ["slippage"]) ?? readMetric(ledger, ["slippage"]);
+  metrics.push({
+    id: "slippage",
+    label: "Slippage assumption",
+    value: slippage ?? "UNAVAILABLE",
+    evidenceClass: slippage ? "simulation" : "unavailable",
+    detail: slippage
+      ? "Simulator field — not a live brokerage slippage guarantee."
+      : "Not projected on /research/simulation.",
+  });
+
+  const commission =
+    readMetric(fillAudit, ["commission", "fees"]) ?? readMetric(ledger, ["commission", "fees"]);
+  metrics.push({
+    id: "commission",
+    label: "Commission / fees",
+    value: commission ?? "UNAVAILABLE",
+    evidenceClass: commission ? "simulation" : "unavailable",
+    detail: commission
+      ? "Simulator field — not a live brokerage cost schedule."
+      : "Not projected on /research/simulation.",
   });
 
   return metrics;
-}
-
-function displayFillAuditStatus(fillAudit: Record<string, unknown>): string {
-  const status = fillAudit.status;
-  return status == null || status === "" ? "UNAVAILABLE" : String(status);
 }

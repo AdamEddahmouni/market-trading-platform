@@ -85,6 +85,10 @@ describe("LabValidationSection", () => {
     expect(screen.getByRole("heading", { name: "Walk-forward model validation" })).toBeInTheDocument();
     expect(screen.getByText("Read-only")).toBeInTheDocument();
     expect(screen.getByText("naive_last_value.v1")).toBeInTheDocument();
+    expect(screen.getByText("Dataset provenance")).toBeInTheDocument();
+    expect(screen.getByText("Recorded parameters")).toBeInTheDocument();
+    expect(screen.getByText("How this snapshot was produced")).toBeInTheDocument();
+    expect(screen.getAllByText("UNKNOWN").length).toBeGreaterThan(0);
     expect(screen.getByText(/cannot be started, cancelled, or retried/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "View interpretation in Research" })).toHaveAttribute(
       "href",
@@ -94,7 +98,7 @@ describe("LabValidationSection", () => {
     expect(screen.getByText("Research-only — not tradeable")).toBeInTheDocument();
   });
 
-  it("keeps hashes in methodology and does not leak epoch ns", () => {
+  it("keeps hashes copyable without leaking epoch ns", () => {
     render(
       <MemoryRouter>
         <LabValidationSection />

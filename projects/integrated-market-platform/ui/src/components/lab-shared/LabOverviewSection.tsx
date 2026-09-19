@@ -3,8 +3,11 @@ import { useResearchModelsQuery, useResearchSimulationQuery } from "../../api/ho
 import { StatePill } from "../imp-ui/StatePill";
 import { ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
+import { LabFactGrid } from "./LabFactGrid";
 import {
   buildLabWorkflowCards,
+  experimentStatusFacts,
+  labEvidenceClassRows,
   labHasRunnableBackendWorkflow,
   type LabWorkflowCard,
 } from "./labPresentation";
@@ -117,6 +120,59 @@ export function LabOverviewSection() {
             ? "A backend mutation can start a Lab workflow from this interface."
             : "No Lab backend mutation exists. Validation and simulation are inspectable snapshots. Chart Lab is local adapter tooling and is not evidence."}
         </p>
+      </section>
+
+      <section className="lab-panel" aria-labelledby="lab-experiment-status-heading">
+        <div className="lab-panel-heading">
+          <div>
+            <div className="lab-panel-kicker">Experiment status</div>
+            <h2 id="lab-experiment-status-heading">What is loaded versus what is UNKNOWN</h2>
+          </div>
+        </div>
+        <LabFactGrid
+          facts={experimentStatusFacts({
+            models: modelsQuery.data,
+            modelsError: modelsQuery.isError && !modelsQuery.data,
+            simulation: simulationQuery.data,
+            simulationError: simulationQuery.isError && !simulationQuery.data,
+          })}
+        />
+      </section>
+
+      <section className="lab-panel" aria-labelledby="lab-evidence-class-heading">
+        <div className="lab-panel-heading">
+          <div>
+            <div className="lab-panel-kicker">Evidence classes</div>
+            <h2 id="lab-evidence-class-heading">Test versus forward-test</h2>
+          </div>
+        </div>
+        <p className="lab-muted">
+          Retrospective walk-forward and deterministic simulation stay in their own classes. Lab
+          does not upgrade them to FTEP, Paper, or Live.
+        </p>
+        <div className="lab-table-wrap">
+          <table className="data-table lab-compare-table">
+            <caption className="chart-data-caption">
+              Evidence-class map for Lab workflows. UNKNOWN means the contract does not carry it.
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Workflow</th>
+                <th scope="col">Evidence class</th>
+                <th scope="col">Must not be read as</th>
+              </tr>
+            </thead>
+            <tbody>
+              {labEvidenceClassRows().map((row) => (
+                <tr key={row.workflow}>
+                  <td>{row.workflow}</td>
+                  <td>{row.evidenceClass}</td>
+                  <td>{row.notThis}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section className="lab-panel" aria-labelledby="lab-workflows-heading">
