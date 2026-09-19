@@ -8,7 +8,9 @@ import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { CountBarChartPanel } from "../charts/ResearchChartPanels";
-import { formatResearchTime, presentCheckStatus } from "./researchPresentation";
+import type { Mode } from "../mode-session/types";
+import { formatResearchTime, presentCheckStatus, sectionClaimHops } from "./researchPresentation";
+import { ResearchClaimHops } from "./ResearchClaimGraph";
 import { SimulationHarnessMetricsPanel } from "./SimulationHarnessMetricsPanel";
 
 function countSeries(rows: Record<string, unknown>[], key: string) {
@@ -20,13 +22,17 @@ function countSeries(rows: Record<string, unknown>[], key: string) {
   return Array.from(counts.entries()).map(([label, count]) => ({ label, count }));
 }
 
+type Props = {
+  mode: Mode;
+};
+
 /**
  * Research Simulation — the deterministic simulation experiment record:
  * ledger headline, risk decisions, fills, and reconciliation. This is a
  * research run (bar-conservative simulator): it is not a governed FTEP
  * campaign result and not production readiness, and it never places orders.
  */
-export function ResearchSimulationSection() {
+export function ResearchSimulationSection({ mode }: Props) {
   const simulationQuery = useResearchSimulationQuery();
 
   if (simulationQuery.isLoading) {
@@ -110,12 +116,13 @@ export function ResearchSimulationSection() {
           Deterministic bar-conservative simulation over the replay window. Amounts are in minor
           units because the contract carries no currency field. This run is evidence about the
           simulator and risk policy — it is not a governed campaign result, not a calibration
-          claim, and it never places orders.
+          claim, not a prospective forward test, and it never places orders.
         </p>
         <p className="research-muted">
           <Link to="/lab/simulation">Inspect this simulation workflow in Lab</Link> — Lab is the
           process surface; this page stays the interpretation of the snapshot.
         </p>
+        <ResearchClaimHops hops={sectionClaimHops("simulation", mode)} label="From this experiment" />
       </section>
 
       <SimulationHarnessMetricsPanel

@@ -13,7 +13,7 @@ export function LiveResearchPage({ section }: Props) {
       <PageHeader
         eyebrow="Live · Read-only observational"
         title="Research"
-        subtitle="Research projections remain replay-bound even in Live mode. No trade authority — monitor outputs alongside live canary safety signals."
+        subtitle="Research projections remain replay-bound even in Live mode. Follow the claim graph; forward-test and FTEP status stay NOT_EXPOSED here. No trade authority."
         actions={<Link to="/live-canary">Open live canary</Link>}
       />
 

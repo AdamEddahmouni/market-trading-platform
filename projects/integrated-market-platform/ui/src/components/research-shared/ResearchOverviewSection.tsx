@@ -11,7 +11,9 @@ import { ErrorState } from "../imp-ui/FeedbackStates";
 import { LoadingState } from "../shared/LoadingState";
 import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import type { Mode } from "../mode-session/types";
+import { ResearchClaimGraph } from "./ResearchClaimGraph";
 import {
+  buildClaimNavigation,
   buildEvidenceAvailability,
   buildResearchSynthesis,
   listFindingSources,
@@ -44,6 +46,7 @@ export function ResearchOverviewSection({ mode }: Props) {
   };
   const synthesis = buildResearchSynthesis(input);
   const availability = buildEvidenceAvailability(input);
+  const claimGraph = buildClaimNavigation(input, mode);
 
   const epistemicClass =
     analyticsQuery.data?.epistemic_class ??
@@ -85,7 +88,9 @@ export function ResearchOverviewSection({ mode }: Props) {
             {synthesis.length ? (
               <ul className="research-synthesis-lines">
                 {synthesis.map((line, index) => (
-                  <li key={`${line.id}-${index}`}>{line.text}</li>
+                  <li key={`${line.id}-${index}`}>
+                    <Link to={line.href}>{line.text}</Link>
+                  </li>
                 ))}
               </ul>
             ) : (
@@ -108,11 +113,30 @@ export function ResearchOverviewSection({ mode }: Props) {
         )}
       </section>
 
+      <section className="research-panel" aria-labelledby="research-claim-graph-heading">
+        <div className="research-panel-heading">
+          <div>
+            <div className="research-panel-kicker">Claim thread</div>
+            <h2 id="research-claim-graph-heading">Navigate this claim</h2>
+          </div>
+        </div>
+        <p className="research-muted">
+          Follow one research claim from source through strategy, evidence, conflict, and
+          implementation. Nodes without a UI contract stay labeled NOT_EXPOSED or Not on this
+          surface — they are not filled in from program docs.
+        </p>
+        {loading ? (
+          <LoadingState label="Loading claim navigation…" />
+        ) : (
+          <ResearchClaimGraph nodes={claimGraph} />
+        )}
+      </section>
+
       <section className="research-panel" aria-labelledby="research-availability-heading">
         <div className="research-panel-heading">
           <div>
-            <div className="research-panel-kicker">Coverage</div>
-            <h2 id="research-availability-heading">Where the evidence stands</h2>
+            <div className="research-panel-kicker">Finding coverage</div>
+            <h2 id="research-availability-heading">Evidence panels at this cutoff</h2>
           </div>
         </div>
         {loading ? (
@@ -170,38 +194,17 @@ export function ResearchOverviewSection({ mode }: Props) {
         <div className="research-panel-heading">
           <div>
             <div className="research-panel-kicker">Honest limits</div>
-            <h2 id="research-gaps-heading">What this surface cannot tell you yet</h2>
+            <h2 id="research-gaps-heading">What stays off this graph</h2>
           </div>
         </div>
-        <ul className="research-gap-list">
-          <li>
-            <strong>Hypothesis tracking.</strong> The current contracts do not expose hypotheses as
-            first-class objects with lifecycle states. The closest truth is the per-observation
-            interpretation record in the{" "}
-            <Link to="/research/validation">Validation section</Link>.
-          </li>
-          <li>
-            <strong>Supporting vs contradictory flags.</strong> No contract marks evidence as
-            supporting or contradictory, so nothing here is presented as contradiction or proof.
-            The only conflict signal the backend emits is the{" "}
-            <code>ABSTAIN_CONFLICTING_EVIDENCE</code> abstention reason on strategy
-            interpretations.
-          </li>
-          <li>
-            <strong>Research domains and source catalog.</strong> No domain taxonomy or source
-            registry endpoint exists; each finding discloses its own source and method instead.
-          </li>
-          <li>
-            <strong>Experiment campaigns (FTEP).</strong> Governed forward-test campaign state is
-            not exposed to this surface. The{" "}
-            <Link to="/lab">Lab workbench</Link> documents that gap; the deterministic simulation
-            in the <Link to="/research/simulation">Simulation section</Link> is a research run — it
-            is not a governed campaign result and not production readiness.
-          </li>
-        </ul>
+        <p className="research-muted">
+          Hypothesis objects, supporting/contradictory flags, a source catalog, and FTEP campaign
+          state have no Research UI contract. They appear as Hypothesis, Contradiction, Source, and
+          Forward-test nodes above — not as a document dump and not as fabricated objects.
+        </p>
       </section>
 
-      <details className="research-panel research-methodology">
+      <details className="research-panel research-methodology" id="research-sources">
         <summary>Sources on this payload</summary>
         <p className="research-muted">
           There is no research source catalog. Each finding discloses the source and method

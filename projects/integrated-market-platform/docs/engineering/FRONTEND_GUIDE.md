@@ -140,18 +140,20 @@ Advanced disclosure for parity). Rules:
 
 ## Research (interpretation-first evidence)
 
-`/research` (`ui/src/components/research-shared/`) answers what the evidence currently
-shows, how validated it is, and how it relates to Radar/Paper — never prediction,
-ranked opportunity, or execution. Contract map:
+`/research` (`ui/src/components/research-shared/`) is a claim-navigation
+workspace: Overview leads with a graph from source → hypothesis → strategy →
+experiment → evidence → contradiction → implementation → forward-test. Missing
+contracts stay `NOT_EXPOSED` / Not on this surface. Never prediction, ranked
+opportunity, or execution. Contract map:
 [docs/ui-redesign-v2/research-contract-map.md](../ui-redesign-v2/research-contract-map.md).
 
 Routable sections (one fetch family per section; Overview synthesizes all three):
 
 | Route | Section | Endpoints |
 |-------|---------|-----------|
-| `/research` | Overview | analytics + models + simulation |
+| `/research` | Overview | analytics + models + simulation (claim graph) |
 | `/research/evidence` | Evidence | `/research/analytics` (`?panel=` deep-link) |
-| `/research/validation` | Validation | `/research/models` (+ Paper strategy-profitability in Paper) |
+| `/research/validation` | Validation | `/research/models` (`?conflict=1` filters ABSTAIN_CONFLICTING_EVIDENCE) |
 | `/research/simulation` | Simulation | `/research/simulation` |
 | `/research/vela-chart-lab` | (redirect) | → `/lab/chart-lab` |
 
@@ -166,8 +168,10 @@ Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-
 
 Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Hypotheses,
 domains, source catalogs, supporting/contradictory flags, and FTEP campaign
-state have **no UI contract** and are disclosed as gaps. The only conflict signal
-is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations. Radar Screeners
+state have **no UI contract**. They appear as claim-graph nodes with honest gap
+labels, not as fabricated objects. The only conflict signal
+is `ABSTAIN_CONFLICTING_EVIDENCE` on walk-forward interpretations (`?conflict=1`).
+Paper forward tests stay on Workspace; Research does not fetch them. Radar Screeners
 deep-link to `/research/evidence?panel=squeeze_outcomes`; Opportunity L3 links
 to `/research/evidence` without fabricating per-opportunity relations. Presentation:
 `researchPresentation.ts` + `research` domain in `semanticState.ts`.
