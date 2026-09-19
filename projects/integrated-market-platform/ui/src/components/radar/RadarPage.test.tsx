@@ -280,9 +280,12 @@ describe("RadarPage opportunities tab", () => {
   it("renders the live by-design empty state when the feed is unavailable", () => {
     summaryMock.data = { items: [], feed_status: "UNAVAILABLE", unready_reason: undefined, next_action: undefined };
     renderRadar("LIVE");
-    expect(screen.getByTestId("imp-ui-empty-state")).toHaveTextContent(
-      /Live mode has no opportunity engine/i,
-    );
+    const empty = screen.getByTestId("imp-ui-empty-state");
+    expect(empty).toHaveAttribute("aria-label", "Live has no opportunity engine");
+    expect(empty).toHaveTextContent(/by design, not a feed fault/i);
+    expect(empty).toHaveTextContent(/Live execution stays OFF/i);
+    expect(empty).not.toHaveTextContent(/Opportunity feed unavailable/i);
+    expect(empty).not.toHaveTextContent(/cannot be trusted/i);
   });
 
   it("treats a non-live UNAVAILABLE feed as a fault with a Control action", () => {
@@ -290,6 +293,7 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("PAPER", "opportunities", true);
     const empty = screen.getByTestId("imp-ui-empty-state");
     expect(empty).toHaveTextContent(/Opportunity feed unavailable/i);
+    expect(empty).not.toHaveTextContent(/Live has no opportunity engine/i);
     expect(empty).not.toHaveTextContent(/Live mode has no opportunity engine/i);
     expect(screen.getByRole("link", { name: "Open Control" })).toHaveAttribute("href", "/control");
   });
@@ -311,6 +315,9 @@ describe("RadarPage opportunities tab", () => {
     expect(queue).toHaveTextContent("Open workspace");
     expect(queue).toHaveTextContent("Detected");
     expect(queue).toHaveTextContent("unit-test");
+    expect(screen.getByRole("button", { name: "Explain BIYA" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Inspect BIYA" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open workspace for BIYA" })).toBeInTheDocument();
   });
 
   it("selects a row and shows the progressive detail card", async () => {
