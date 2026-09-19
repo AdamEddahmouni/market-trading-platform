@@ -1,0 +1,21 @@
+{
+  "computed_normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "corpus_pin_path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/corpus_pin",
+  "expected_normalized_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "experiment_id": "imp-simulator-cost-sensitivity-v4-lane-e",
+  "hypothesis_id": "LANE-E-HYP-SIMULATOR-COST-SENSITIVITY-V4",
+  "lane_b_receipt_fingerprint": "355FDBB852B94B964B62331839B58C3A336D1B52DB2F17FA05D30BA31389885B",
+  "manifest_dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+  "ok": true,
+  "reason_code": null,
+  "row_count": 1950,
+  "session_dates": [
+    "2026-09-10",
+    "2026-09-11",
+    "2026-09-14",
+    "2026-09-15",
+    "2026-09-16"
+  ],
+  "verification_method": "recompute_normalized_corpus_fingerprint(bars, lineage.historical_provenance)",
+  "verified_at_promotion": true
+}
