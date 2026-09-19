@@ -9,6 +9,7 @@ import { LoadingState } from "../shared/LoadingState";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { formatResearchTime, presentCheckStatus } from "../research-shared/researchPresentation";
 import { SimulationHarnessMetricsPanel } from "../research-shared/SimulationHarnessMetricsPanel";
+import { LabCalibrationHonesty } from "./LabCalibrationHonesty";
 import { LabFactGrid, LabWarningList } from "./LabFactGrid";
 import {
   capabilityStateFacts,
@@ -82,6 +83,8 @@ export function LabSimulationSection() {
           <Link to="/research/simulation">View interpretation in Research</Link>
         </div>
       </section>
+
+      <LabCalibrationHonesty />
 
       <SimulationHarnessMetricsPanel payload={payload} headingId="lab-simulation-harness-heading" />
 

@@ -161,9 +161,9 @@ Lab workbench (`/lab`, see [lab-contract-map.md](../ui-redesign-v2/lab-contract-
 
 | Route | Section | Endpoints |
 |-------|---------|-----------|
-| `/lab` | Overview | models + simulation (workflow status) |
+| `/lab` | Overview | models + simulation (workflow status) + `GET /operator/diagnostics` (Item 9 / Live honesty only) |
 | `/lab/validation` | Validation workbench | `/research/models` |
-| `/lab/simulation` | Simulation workbench | `/research/simulation` |
+| `/lab/simulation` | Simulation workbench | `/research/simulation` + shared operator diagnostics (calibration honesty) |
 | `/lab/chart-lab` | Chart Lab | none (local synthetic) |
 
 Research keeps interpretation; Lab inspects process. **NO LAB MUTATIONS.** Hypotheses,
