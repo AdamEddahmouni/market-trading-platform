@@ -57,6 +57,46 @@ const attentionMocks = vi.hoisted(() => ({
   }>,
 }));
 
+/** Honest operator diagnostics for Control — 2/3, not calibrated, Live OFF (no fabricated 3/3). */
+const operatorDiagnosticsFixture = vi.hoisted(() => ({
+  schema_version: "operator-diagnostics/1.0.0",
+  severity: "OK",
+  sections: {
+    lifecycle: { status: "READY", services: [], logs: [], update: { status: "CURRENT" } },
+    readiness: { status: "READY", checks: [], providers: [] },
+    opportunity_surface: { feed_status: "READY", quality_summary: { state: "GOOD" } },
+    runtime: {
+      git_sha: "deadbeef00000000000000000000000000000000",
+      item9_preflight: { disposition: "NOT_RTH" },
+      item9_corpus_status: {
+        availability: "AVAILABLE",
+        receipt_scope: "FROZEN_COLLECTOR_WORKTREE_READ_ONLY",
+        report: {
+          calibration_state: "NOT_CALIBRATED",
+          fitting_allowed: false,
+          sample_gate_progress: { distinct_rth_dates: "2/3" },
+        },
+      },
+      runtime_resilience: {
+        collector_process: { active_collector_detected: false, probe_status: "COMPLETED" },
+        expected_cycle: { receipt_inventory: { availability: "AVAILABLE", receipt_file_count: 0 } },
+        readiness_vs_liveness: {
+          readiness: { item9_status: "PARTIAL_NOT_CALIBRATED", calibrated: false },
+        },
+      },
+    },
+    governance: {
+      headline: "No blocking operator headline.",
+      live_execution_env: false,
+      interventions: [],
+      forbidden: ["enable_live_execution", "auto_fit_item9_calibration"],
+    },
+    cycle_recovery: { expected_cycle_failure: "NOT_OBSERVED" },
+    evidence_gaps: [],
+  },
+  human_summary: [],
+}));
+
 function portfolioPayload() {
   return {
     account: {
@@ -200,6 +240,10 @@ vi.mock("./api/hooks", () => ({
     context: ["context"],
     attention: ["attention"],
     opportunitiesSummary: ["opportunities", "summary"],
+    operatorDiagnostics: ["operator", "diagnostics"],
+    operatorReadiness: ["operator", "readiness"],
+    operatorLifecycleStatus: ["operator", "lifecycle-status"],
+    operatorConfig: ["operator", "config"],
     liveCanarySnapshot: (laneId?: string, accountId?: string) =>
       ["live", "canary-snapshot", laneId ?? "account", accountId ?? "fp-canary-local"],
     assistantMessages: (conversationId: string | null) => ["assistant", conversationId],
@@ -239,6 +283,15 @@ vi.mock("./api/hooks", () => ({
     isLoading: false,
     error: null,
     data: { status: "READY", checks: [], providers: [] },
+  }),
+  useOperatorDiagnosticsQuery: () => ({
+    isLoading: false,
+    isError: false,
+    isFetching: false,
+    error: null,
+    dataUpdatedAt: Date.now(),
+    data: operatorDiagnosticsFixture,
+    refetch: vi.fn(),
   }),
   useOperatorLifecycleStatusQuery: () => ({
     isLoading: false,
