@@ -232,6 +232,27 @@ class ReasonCodeProjectionTests(unittest.TestCase):
         blocked = incident_for_reason_code("OPEND_NON_LOOPBACK_BLOCKED")
         self.assertIn("loopback", blocked.operator_message.lower())
 
+    def test_incident_for_reason_code_novel_tokens_fail_closed(self) -> None:
+        novel = incident_for_reason_code("VENDOR_FUTURE_REASON_XYZ")
+        self.assertEqual(novel.status_token, "UNKNOWN")
+        self.assertEqual(novel.severity, "UNAVAILABLE")
+        self.assertFalse(novel.fallback.overlay_as_hop_l1)
+        self.assertEqual(novel.fallback.boundary_token, OVERLAY_ALLOWED)
+        self.assertEqual(novel.details["source_reason_code"], "VENDOR_FUTURE_REASON_XYZ")
+        empty = incident_for_reason_code(None)
+        self.assertEqual(empty.status_token, "UNKNOWN")
+        self.assertEqual(empty.severity, "UNAVAILABLE")
+
+    def test_incident_for_reason_code_known_primary_available_only(self) -> None:
+        configured = incident_for_reason_code("OPEND_SDK_PRESENT")
+        self.assertEqual(configured.status_token, "OPEND_SDK_PRESENT")
+        self.assertEqual(configured.severity, "HEALTHY")
+        self.assertEqual(configured.fallback.boundary_token, OVERLAY_ALLOWED)
+        reconnecting = incident_for_reason_code(RECONNECTING)
+        self.assertEqual(reconnecting.status_token, RECONNECTING)
+        self.assertEqual(reconnecting.severity, "RECOVERING")
+        self.assertEqual(reconnecting.fallback.boundary_token, OVERLAY_ALLOWED)
+
     def test_build_provider_error_payload_is_additive(self) -> None:
         payload = build_provider_error_payload(OPEND_UNAVAILABLE)
         self.assertEqual(payload["reason_code"], OPEND_UNAVAILABLE)
