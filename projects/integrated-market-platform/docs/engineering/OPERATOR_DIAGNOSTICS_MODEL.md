@@ -1,6 +1,6 @@
 # Operator diagnostics model (Lane C)
 
-**Status:** Proposed + partial implementation (`GET /operator/diagnostics` on branch `feat/operator-diagnostics`).
+**Status:** **MERGED** on `origin/main` @ `50a1477f` ([#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289)). Read-only HTTP surface; does not start collectors or calibrate Item 9.
 
 **Related:** [STATE_PATH_OPERATOR_CONVENTION.md](STATE_PATH_OPERATOR_CONVENTION.md), [PROVIDER_READINESS.md](PROVIDER_READINESS.md), [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md), Control UI (`docs/ui-redesign-v2/pages/control.md`).
 
