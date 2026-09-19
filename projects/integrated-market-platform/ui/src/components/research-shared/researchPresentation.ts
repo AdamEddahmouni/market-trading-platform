@@ -955,12 +955,29 @@ function scopeSectionHops(hops: ClaimHop[], findingKey?: ResearchPanelKey): Clai
   return hops.map((hop) => ({ ...hop, href: withResearchClaimQuery(hop.href, findingKey) }));
 }
 
+/**
+ * Finding-scoped Lab hops only when that finding has a recorded workbench.
+ * Unscoped Validation/Simulation pages keep the hop for the page's own process.
+ */
+function sectionImplementationHop(
+  section: Exclude<ResearchSectionKey, "overview">,
+  findingKey?: ResearchPanelKey,
+): ClaimHop | null {
+  if (findingKey) {
+    return labImplementationHref(findingKey) ? implementationClaimHop(findingKey) : null;
+  }
+  if (section === "validation") return implementationClaimHop("strategy_outcomes");
+  if (section === "simulation") return implementationClaimHop("risk_decisions");
+  return null;
+}
+
 export function sectionClaimHops(
   section: Exclude<ResearchSectionKey, "overview">,
   mode: ResearchSessionMode,
   findingKey?: ResearchPanelKey,
 ): ClaimHop[] {
   const forwardTestHref = forwardTestWorkspaceHref(mode);
+  const implementation = sectionImplementationHop(section, findingKey);
   if (section === "evidence") {
     const hops: ClaimHop[] = [
       { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Validation record." },
@@ -977,40 +994,11 @@ export function sectionClaimHops(
         note: "Simulation, not FTEP.",
       },
     ];
-    if (findingKey && labImplementationHref(findingKey)) {
-      hops.push(implementationClaimHop(findingKey));
-    }
+    if (implementation) hops.push(implementation);
     return scopeSectionHops(hops, findingKey);
   }
   if (section === "validation") {
-    return scopeSectionHops(
-      [
-        {
-          key: "evidence",
-          title: CLAIM_TITLES.evidence,
-          href: findingKey ? `/research/evidence?panel=${findingKey}` : "/research/evidence",
-          note: "Findings at cutoff.",
-        },
-        {
-          key: "experiment",
-          title: CLAIM_TITLES.experiment,
-          href: "/research/simulation",
-          note: "Deterministic simulation.",
-        },
-        implementationClaimHop("strategy_outcomes"),
-        {
-          key: "forward-test",
-          title: CLAIM_TITLES["forward-test"],
-          href: forwardTestHref,
-          note: forwardTestHref ? "Workspace holds Paper forward tests." : "NOT_EXPOSED here.",
-        },
-      ],
-      findingKey,
-    );
-  }
-  return scopeSectionHops(
-    [
-      { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Model that fed this run." },
+    const hops: ClaimHop[] = [
       {
         key: "evidence",
         title: CLAIM_TITLES.evidence,
@@ -1018,13 +1006,36 @@ export function sectionClaimHops(
         note: "Findings at cutoff.",
       },
       {
-        key: "forward-test",
-        title: CLAIM_TITLES["forward-test"],
-        href: forwardTestHref,
-        note: "This run is simulated, not a prospective forward test.",
+        key: "experiment",
+        title: CLAIM_TITLES.experiment,
+        href: "/research/simulation",
+        note: "Deterministic simulation.",
       },
-        implementationClaimHop("risk_decisions"),
-    ],
-    findingKey,
-  );
+    ];
+    if (implementation) hops.push(implementation);
+    hops.push({
+      key: "forward-test",
+      title: CLAIM_TITLES["forward-test"],
+      href: forwardTestHref,
+      note: forwardTestHref ? "Workspace holds Paper forward tests." : "NOT_EXPOSED here.",
+    });
+    return scopeSectionHops(hops, findingKey);
+  }
+  const hops: ClaimHop[] = [
+    { key: "strategy", title: CLAIM_TITLES.strategy, href: "/research/validation", note: "Model that fed this run." },
+    {
+      key: "evidence",
+      title: CLAIM_TITLES.evidence,
+      href: findingKey ? `/research/evidence?panel=${findingKey}` : "/research/evidence",
+      note: "Findings at cutoff.",
+    },
+    {
+      key: "forward-test",
+      title: CLAIM_TITLES["forward-test"],
+      href: forwardTestHref,
+      note: "This run is simulated, not a prospective forward test.",
+    },
+  ];
+  if (implementation) hops.push(implementation);
+  return scopeSectionHops(hops, findingKey);
 }
