@@ -34,10 +34,10 @@
     "LANE-E-HYP-SIMULATOR-DRAWDOWN-WIRING-V1": {
       "SPEC_READY": true,
       "IMPLEMENTATION_READY": true,
-      "IMPLEMENTATION_LOCATION": ".worktrees/simulator-drawdown-wiring-v1 (uncommitted, branch research/simulator-drawdown-wiring-v1)",
+      "IMPLEMENTATION_LOCATION": "origin/main via #283 (research/simulator-drawdown-wiring-v1 @ 2b194d74)",
       "EXECUTED": false,
       "review_doc": "docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1_REVIEW.md",
-      "implementation_doc_external": "IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md on drawdown worktree only"
+      "implementation_doc": "docs/engineering/IMP_SIMULATOR_DRAWDOWN_WIRING_V1.md"
     }
   }
 }

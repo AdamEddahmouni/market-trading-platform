@@ -6,7 +6,7 @@
   "LIVE_OFF": true,
   "MERGE_PERFORMED": "NO",
   "PR222_ISOLATED": true,
-  "RUN_ID": "ibp-factual-smoke-28EA7748057E312D",
+  "RUN_ID": "ibp-factual-smoke-766E16CAF41F3210",
   "SCORES_EXECUTED": "YES",
   "artifact_kind": "intelligence_benchmark_factual_smoke_evidence_receipt_v1",
   "comparison_note_vs_legacy_smoke10": "Structural comparison only: legacy ibp-smoke10-76DDD188CD080365 used synthetic evaluator gold and deterministic UNKNOWN stub SUT; IBP_FACTUAL_SMOKE_V1 uses admitted-evidence factual gold and imp_historical_routing_grounded_facts_v1. Not an apples-to-apples intelligence delta.",
@@ -24,7 +24,7 @@
   "evidence_label": "HISTORICAL_DEVELOPMENT_FACTUAL_SMOKE_V1_BASELINE",
   "factual_smoke_run_record_path": "evidence/intelligence-benchmark/imp-ibp-factual-gold-v1-lane-m5/factual_smoke_run_record.json",
   "freeze_envelope_path": "tests/fixtures/intelligence_benchmark/freeze/ibp_factual_smoke_v1_freeze.json",
-  "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+  "frozen_config_fingerprint": "766E16CAF41F32109FF868C005167C3405A3846659A7F4FEE7E84F060CD080C3",
   "frozen_evidence_unchanged": true,
   "lane_id": "IMP-IBP-FACTUAL-GOLD-V1-M5",
   "pre_run_gates": {
@@ -48,7 +48,7 @@
         "PASS": 11
       },
       "facts": {
-        "FAIL": 11
+        "PASS": 11
       },
       "final_state": {
         "PASS": 11
@@ -66,19 +66,13 @@
         "PASS": 11
       },
       "unknown_handling": {
-        "FAIL": 7,
-        "PASS": 4
+        "PASS": 11
       }
     },
     "by_fact_verdict": {
-      "FACT_MISMATCH": 5,
-      "UNNECESSARY_UNKNOWN": 7
+      "CORRECT_UNKNOWN": 2,
+      "SUPPORTED_FACT": 11
     },
-    "by_failure_type": {
-      "FACTS_DIMENSION_FAIL": 11,
-      "FACT_MISSING": 5,
-      "UNNECESSARY_ASSERTION": 1,
-      "UNNECESSARY_UNKNOWN": 6
-    }
+    "by_failure_type": {}
   }
 }

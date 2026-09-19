@@ -1,6 +1,6 @@
 {
   "artifact_kind": "intelligence_benchmark_factual_smoke_run_v1",
-  "artifact_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ibp-factual-gold-m5\\projects\\integrated-market-platform\\evidence\\intelligence-benchmark\\imp-ibp-factual-gold-v1-lane-m5\\ibp-factual-smoke-28EA7748057E312D.json",
+  "artifact_path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\lane-bc-grounded-facts\\projects\\integrated-market-platform\\evidence\\intelligence-benchmark\\imp-ibp-factual-gold-v1-lane-m5\\ibp-factual-smoke-766E16CAF41F3210.json",
   "case_count": 11,
   "case_ids": [
     "IBP-FACTUAL-001",
@@ -18,10 +18,10 @@
   "case_results": [
     {
       "case_id": "IBP-FACTUAL-001",
-      "context_reset_token": "77D2F12192017186B53E2D49B67D98280E7CE7236C9926CB14708A182EA485D4",
+      "context_reset_token": "BD0FF5C9899B0A59897C93C039D0F57C6FD7757392937E781940DFD7DB8E25DC",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
@@ -43,31 +43,30 @@
       "fact_verdicts": [
         {
           "field": "instrument_code",
-          "verdict": "FACT_MISMATCH"
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "FACT_MISSING:instrument_code",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
         ],
-        "answer": "Workspace is in REPLAY mode synchronized to a bar cursor \u2014 Replay-only research UI on admitted fixture \u2014 UI-001 exposes deterministic replay over Phase 8 pipeline outputs",
+        "answer": "instrument_code: us.aapl",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-001",
         "catastrophic": false,
-        "context_reset_token": "77D2F12192017186B53E2D49B67D98280E7CE7236C9926CB14708A182EA485D4",
+        "context_reset_token": "BD0FF5C9899B0A59897C93C039D0F57C6FD7757392937E781940DFD7DB8E25DC",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
         "inference_abstention_reason": null,
-        "inference_model_id": "deterministic.v1",
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -77,18 +76,28 @@
         "routing": "HISTORICAL_FACTUAL",
         "routing_decision_id": "ROUTE-B73724D6DEE8751EB95183A8088E99432F1B93E1654C6516282EB7B127CEC80B",
         "routing_template": "HISTORICAL_FACTUAL",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "instrument_code",
+            "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+            "source_path": "session:2026-09-15;row:0;field:code",
+            "support_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0",
+            "value": "US.AAPL"
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-002",
-      "context_reset_token": "BB95813A71D753BF4D57048E3A4F6863EF3D785998F51546DF917C227A5C8E08",
+      "context_reset_token": "E40B14D62C1DB399C069DE7B06E6EC47852B154E217ABD2E03C297BA7BAF1714",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
@@ -110,36 +119,34 @@
       "fact_verdicts": [
         {
           "field": "session_key_count",
-          "verdict": "FACT_MISMATCH"
+          "verdict": "SUPPORTED_FACT"
         },
         {
           "field": "session_dates",
-          "verdict": "FACT_MISMATCH"
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "FACT_MISSING:session_key_count",
-        "FACT_MISSING:session_dates",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json"
         ],
-        "answer": "Workspace is in REPLAY mode synchronized to a bar cursor \u2014 Replay-only research UI on admitted fixture \u2014 UI-001 exposes deterministic replay over Phase 8 pipeline outputs",
+        "answer": "session_key_count: 3; session_dates: [2026-09-11, 2026-09-12, 2026-09-15]",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-002",
         "catastrophic": false,
-        "context_reset_token": "BB95813A71D753BF4D57048E3A4F6863EF3D785998F51546DF917C227A5C8E08",
+        "context_reset_token": "E40B14D62C1DB399C069DE7B06E6EC47852B154E217ABD2E03C297BA7BAF1714",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
         "inference_abstention_reason": null,
-        "inference_model_id": "deterministic.v1",
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -149,18 +156,40 @@
         "routing": "HISTORICAL_FACTUAL",
         "routing_decision_id": "ROUTE-0A7E5DAFCC521A79ADA3EAACFF090BE8335358C61F0B0844016841370D92EEDB",
         "routing_template": "HISTORICAL_FACTUAL",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "session_key_count",
+            "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json",
+            "source_path": "root:session_keys",
+            "support_hash": "sha256:0369113535c49549b8db0840d9a8ec006c6c24bfc5aa1bfc8d1d8e5c5230a4aa",
+            "value": 3
+          },
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "session_dates",
+            "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-11_2026-09-15_rth_multi_session.json",
+            "source_path": "root:session_keys",
+            "support_hash": "sha256:0369113535c49549b8db0840d9a8ec006c6c24bfc5aa1bfc8d1d8e5c5230a4aa",
+            "value": [
+              "2026-09-11",
+              "2026-09-12",
+              "2026-09-15"
+            ]
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-003",
-      "context_reset_token": "02FE86F99B7115DD771F9B3D3B7FF2D375899A6F5EB9364BACE683856BA9FF53",
+      "context_reset_token": "806D5325A7F63AB045A94F41D22E0BB9B230325A28EC69830F8DEF797FC8B337",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
@@ -182,31 +211,30 @@
       "fact_verdicts": [
         {
           "field": "raw_row_count",
-          "verdict": "FACT_MISMATCH"
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "FACT_MISSING:raw_row_count",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
         ],
-        "answer": "Workspace is in REPLAY mode synchronized to a bar cursor \u2014 Replay-only research UI on admitted fixture \u2014 UI-001 exposes deterministic replay over Phase 8 pipeline outputs",
+        "answer": "raw_row_count: 5",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-003",
         "catastrophic": false,
-        "context_reset_token": "02FE86F99B7115DD771F9B3D3B7FF2D375899A6F5EB9364BACE683856BA9FF53",
+        "context_reset_token": "806D5325A7F63AB045A94F41D22E0BB9B230325A28EC69830F8DEF797FC8B337",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
         "inference_abstention_reason": null,
-        "inference_model_id": "deterministic.v1",
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -216,18 +244,28 @@
         "routing": "HISTORICAL_FACTUAL",
         "routing_decision_id": "ROUTE-00AD66161EA39FB771B19A68BCB1AE729661D4ECD9DE5843F2066EED57DC9CB3",
         "routing_template": "HISTORICAL_FACTUAL",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "raw_row_count",
+            "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+            "source_path": "session:2026-09-15",
+            "support_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0",
+            "value": 5
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-004",
-      "context_reset_token": "79275078E2019FBEBD3EDC1C425B82E9B64380E546C92FA6E518830440EF4E9D",
+      "context_reset_token": "170A79D6B0ACA18AB0EF7C9335389FB443C5868A41103D717D5115AFCBC9AAE9",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
@@ -249,31 +287,30 @@
       "fact_verdicts": [
         {
           "field": "malformed_time_key_rows",
-          "verdict": "FACT_MISMATCH"
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "FACT_MISSING:malformed_time_key_rows",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
         ],
-        "answer": "Workspace is in REPLAY mode synchronized to a bar cursor \u2014 Replay-only research UI on admitted fixture \u2014 UI-001 exposes deterministic replay over Phase 8 pipeline outputs",
+        "answer": "malformed_time_key_rows: 1",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-004",
         "catastrophic": false,
-        "context_reset_token": "79275078E2019FBEBD3EDC1C425B82E9B64380E546C92FA6E518830440EF4E9D",
+        "context_reset_token": "170A79D6B0ACA18AB0EF7C9335389FB443C5868A41103D717D5115AFCBC9AAE9",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
         "inference_abstention_reason": null,
-        "inference_model_id": "deterministic.v1",
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -283,24 +320,34 @@
         "routing": "QUALITY_INTERPRETATION",
         "routing_decision_id": "ROUTE-EE05148B6EEEA4FEA225D1697738925CDA405272A534A31A4368B7521AA4B114",
         "routing_template": "QUALITY_INTERPRETATION",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "malformed_time_key_rows",
+            "source_artifact": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+            "source_path": "session:2026-09-15;filter:time_key=not-a-timestamp",
+            "support_hash": "sha256:b1655fcffed5577c05b5a7323c3efb29c7ed17f34d57c516a43d790f03a39dd0",
+            "value": 1
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-005",
-      "context_reset_token": "B783099D976D4FBC40C9F4F765E1C1D019A76E8A9B8D0BC8BD6B2A7224AB56DA",
+      "context_reset_token": "5D150430ADB3AD0E5096A73971C36C521A46485148A43B141FF0CA218E4C7DEE",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -315,32 +362,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "dataset_id",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "dataset_id: hist-dev-aapl",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-005",
         "catastrophic": false,
-        "context_reset_token": "B783099D976D4FBC40C9F4F765E1C1D019A76E8A9B8D0BC8BD6B2A7224AB56DA",
+        "context_reset_token": "5D150430ADB3AD0E5096A73971C36C521A46485148A43B141FF0CA218E4C7DEE",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -350,24 +396,34 @@
         "routing": "RESEARCH_MANIFEST",
         "routing_decision_id": "ROUTE-4FDCB13077C2A7CD6ACE946B4ADB07CFE29F63299473E7E3BAF89C6D2838EB6B",
         "routing_template": "RESEARCH_MANIFEST",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "dataset_id",
+            "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+            "source_path": "dataset:dataset_id",
+            "support_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865",
+            "value": "HIST-DEV-AAPL"
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-006",
-      "context_reset_token": "18B73B7BD240485F3F5341CB112E7C72E747C193C4F2B01C89096EEB9DDDB82C",
+      "context_reset_token": "51B6EAFE10EF1A3D1C0B9D9F3DEFD866F4245A497194C8BAB69FE7B4B41E2BC0",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -382,32 +438,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "baseline_strategy_count",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "baseline_strategy_count: 4",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-006",
         "catastrophic": false,
-        "context_reset_token": "18B73B7BD240485F3F5341CB112E7C72E747C193C4F2B01C89096EEB9DDDB82C",
+        "context_reset_token": "51B6EAFE10EF1A3D1C0B9D9F3DEFD866F4245A497194C8BAB69FE7B4B41E2BC0",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -417,24 +472,34 @@
         "routing": "RESEARCH_MANIFEST",
         "routing_decision_id": "ROUTE-7C99195282BF73097C5B82A77ABD6A246CB4C62B04D989F0E049E221A0C5BDC2",
         "routing_template": "RESEARCH_MANIFEST",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "baseline_strategy_count",
+            "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+            "source_path": "baseline_strategies",
+            "support_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865",
+            "value": 4
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-007",
-      "context_reset_token": "15262A0D590B8D088BC46FB8A9328CA726430DD8290593C7885EE419D0C13363",
+      "context_reset_token": "FA7475521DBEE60B2B0B28F0DD2800F028F22D17857814297126EB653318C6E1",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -449,32 +514,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "corpus_evidence_authority",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "corpus_evidence_authority: historical_development",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-007",
         "catastrophic": false,
-        "context_reset_token": "15262A0D590B8D088BC46FB8A9328CA726430DD8290593C7885EE419D0C13363",
+        "context_reset_token": "FA7475521DBEE60B2B0B28F0DD2800F028F22D17857814297126EB653318C6E1",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -484,24 +548,34 @@
         "routing": "AUTHORITY_ROUTING",
         "routing_decision_id": "ROUTE-F400617820C3967443FE2EA0F5E92E16B34D1EDD6874B9D1E839D5113620FFC8",
         "routing_template": "AUTHORITY_ROUTING",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "corpus_evidence_authority",
+            "source_artifact": "evidence/historical-research/imp-research-validation-04-lane-c-baseline-pack-v1/frozen_experiment_definition.json",
+            "source_path": "corpus_evidence_authority",
+            "support_hash": "sha256:a391139f0e6cc7a558b12fcef201e2f26d0c09b11d97c58fbc48c427c3fff865",
+            "value": "HISTORICAL_DEVELOPMENT"
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-008",
-      "context_reset_token": "5CF21F0B6AD86C1D02E5C89505D44941D97F03DD650AE25491EB58C32468E095",
+      "context_reset_token": "4D014F59E42F4416D8A5FB3DA560907F67652C815755690B181691E403B27DBD",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -516,32 +590,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "validation_dataset_id",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/research/wave1_non_empirical_export.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "validation_dataset_id: valds-w1-fixture",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-008",
         "catastrophic": false,
-        "context_reset_token": "5CF21F0B6AD86C1D02E5C89505D44941D97F03DD650AE25491EB58C32468E095",
+        "context_reset_token": "4D014F59E42F4416D8A5FB3DA560907F67652C815755690B181691E403B27DBD",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -551,24 +624,34 @@
         "routing": "RESEARCH_MANIFEST",
         "routing_decision_id": "ROUTE-686C3B13D460C551E86B656277C0E6A772EFCC8494C7339BA4B20C63F03543FF",
         "routing_template": "RESEARCH_MANIFEST",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "validation_dataset_id",
+            "source_artifact": "tests/fixtures/research/wave1_non_empirical_export.json",
+            "source_path": "validation_dataset_manifest:validation_dataset_id",
+            "support_hash": "sha256:e962350f8dab2c41d85399c74fa4b0ab873fff1024c8bd36c565e524a19cd2f0",
+            "value": "VALDS-W1-FIXTURE"
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-009",
-      "context_reset_token": "BEF1BF36C5405C1B60702552C471F70032CB024E98CFADF693645D6F81DDDAEF",
+      "context_reset_token": "10CD06A8DA22D0732FEDBC116C479811EA878A4A9E2C2C45CFA2B19BD13D5C6D",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -583,32 +666,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "feature_row_count",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/research/matlab_golden_result_v1.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "feature_row_count: 40",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-009",
         "catastrophic": false,
-        "context_reset_token": "BEF1BF36C5405C1B60702552C471F70032CB024E98CFADF693645D6F81DDDAEF",
+        "context_reset_token": "10CD06A8DA22D0732FEDBC116C479811EA878A4A9E2C2C45CFA2B19BD13D5C6D",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -618,24 +700,34 @@
         "routing": "RESEARCH_RECEIPT",
         "routing_decision_id": "ROUTE-E12258F34F62468C766F1E3EA7FB9B7FB1F52C9B7A313D8BC3B66DB70E382B90",
         "routing_template": "RESEARCH_RECEIPT",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "feature_row_count",
+            "source_artifact": "tests/fixtures/research/matlab_golden_result_v1.json",
+            "source_path": "diagnostics:feature_row_count",
+            "support_hash": "sha256:8d77cbe085e26206cb5afc285457fc4fb9bcff9f21526efc318be8b150be32d1",
+            "value": 40
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-010",
-      "context_reset_token": "F8567D0113686F37ADA325781ED47DF4FCCDD14B40405A1C9ED389B144D8AD56",
+      "context_reset_token": "1DCACE30F817C3740D9219770B65845B01D4EFDAD50F257A918750AACC6B8209",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -650,32 +742,31 @@
       },
       "fact_verdicts": [
         {
-          "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "field": "moomoo_rows",
+          "verdict": "SUPPORTED_FACT"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_UNKNOWN",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "evidence/market_data/lane_b/real-historical-provider-verification.json"
         ],
-        "answer": "UNKNOWN",
+        "answer": "moomoo_rows: 1950",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-010",
         "catastrophic": false,
-        "context_reset_token": "F8567D0113686F37ADA325781ED47DF4FCCDD14B40405A1C9ED389B144D8AD56",
+        "context_reset_token": "1DCACE30F817C3740D9219770B65845B01D4EFDAD50F257A918750AACC6B8209",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "SUPPORTED_ANSWER",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -685,24 +776,34 @@
         "routing": "PROVENANCE_RECEIPT",
         "routing_decision_id": "ROUTE-C54C65A90F48B65F434F2885BEDE5F38634D191A83AEF9FF9FF0CCE4FF1289B6",
         "routing_template": "PROVENANCE_RECEIPT",
+        "structured_facts": [
+          {
+            "confidence": "ADMITTED_ARTIFACT",
+            "field": "moomoo_rows",
+            "source_artifact": "evidence/market_data/lane_b/real-historical-provider-verification.json",
+            "source_path": "moomoo:ROWS",
+            "support_hash": "sha256:573c72d081b4e8c4c8b14c1b48012d97dd53432da093b2138713921074151a0d",
+            "value": 1950
+          }
+        ],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     },
     {
       "case_id": "IBP-FACTUAL-011",
-      "context_reset_token": "FB34D0EA7509CC0402469A5EB37CF49B59D58DA47F981A0F2EF2CE7FCECCA61F",
+      "context_reset_token": "A4C28073A2A9B409F4082F41D5FAAEDB87471CC17AB76867A70F4540894A2CF0",
       "dimension_scores": {
         "catastrophic": "PASS",
-        "facts": "FAIL",
+        "facts": "PASS",
         "final_state": "PASS",
         "freshness": "PASS",
         "operator_close": "PASS",
         "provenance": "PASS",
         "routing": "PASS",
-        "unknown_handling": "FAIL"
+        "unknown_handling": "PASS"
       },
       "evaluator_gold_loaded_for_sut": false,
       "evidence_set": {
@@ -718,31 +819,34 @@
       "fact_verdicts": [
         {
           "field": "_unknown",
-          "verdict": "UNNECESSARY_UNKNOWN"
+          "verdict": "CORRECT_UNKNOWN"
+        },
+        {
+          "field": "answerability",
+          "verdict": "CORRECT_UNKNOWN"
         }
       ],
-      "failure_reasons": [
-        "UNNECESSARY_ASSERTION",
-        "FACTS_DIMENSION_FAIL"
-      ],
+      "failure_reasons": [],
       "prior_case_ids_visible_to_sut": false,
       "scores_executed": true,
       "sut_response": {
         "admitted_evidence_artifacts_loaded": [
           "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
         ],
-        "answer": "Workspace is in REPLAY mode synchronized to a bar cursor \u2014 Replay-only research UI on admitted fixture \u2014 UI-001 exposes deterministic replay over Phase 8 pipeline outputs",
+        "answer": "UNKNOWN",
         "authority": "ADMITTED_EVIDENCE_FIXED",
         "blind_mode": "A",
         "case_id": "IBP-FACTUAL-011",
         "catastrophic": false,
-        "context_reset_token": "FB34D0EA7509CC0402469A5EB37CF49B59D58DA47F981A0F2EF2CE7FCECCA61F",
+        "context_reset_token": "A4C28073A2A9B409F4082F41D5FAAEDB87471CC17AB76867A70F4540894A2CF0",
         "evidence_data_mode": "FIXTURE_REPLAY",
         "expert_domain": "MICROSTRUCTURE",
+        "factual_answer_disposition": "CORRECT_UNKNOWN",
         "final_state": "CLOSED",
         "freshness": "ADMITTED_EVIDENCE_FIXED",
-        "inference_abstention_reason": null,
-        "inference_model_id": "deterministic.v1",
+        "grounded_fact_extraction_version": "imp.grounded-fact-extraction/1.0.0",
+        "inference_abstention_reason": "NOT_IN_ADMITTED_EVIDENCE",
+        "inference_model_id": "deterministic.v1+imp.grounded-fact-extraction/1.0.0",
         "inference_provider_id": "grounded.evidence",
         "live_promotion_allowed": false,
         "operator_close": "OK",
@@ -752,9 +856,10 @@
         "routing": "UNKNOWN_ABSTAIN",
         "routing_decision_id": "ROUTE-5BEAEB5D1F783A2D63586825EB465FC9A7C3DD81CF39CC6FDD3219CEF8BA9EA8",
         "routing_template": "UNKNOWN_ABSTAIN",
+        "structured_facts": [],
         "sut_model_id": "grounded.evidence:deterministic.v1",
         "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-        "sut_version": "imp.ibp-facts-sut/1.0.0"
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
       },
       "sut_response_includes_gold": false
     }
@@ -775,14 +880,14 @@
       "IBP-FACTUAL-011"
     ],
     "caseset_hash": "B3459E4F9D658687B12A6F8ABA4C81F15EEF51FFC05126A8B76698329C920A5C",
-    "code_sha": "936e233528cbce68d4047a6200fc579287e78033",
+    "code_sha": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
     "context_reset_policy": "one_fresh_context_per_case_v1",
     "evaluator_only_gold_prefix": "evaluator_only/admitted_factual_gold/",
     "factual_gold_hypothesis_id": "LANE-E-HYP-IBP-ADMITTED-FACTUAL-GOLD-V1",
     "factual_gold_schema_version": "imp.ibp-admitted-factual-gold/1.0.0",
     "factual_smoke_contract_id": "ibp-factual-smoke-invocation-v1",
     "frozen_at_utc": "FACTUAL_SMOKE_V1_NO_WALL_CLOCK",
-    "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+    "frozen_config_fingerprint": "766E16CAF41F32109FF868C005167C3405A3846659A7F4FEE7E84F060CD080C3",
     "goldset_hash": "9F5B9638470D92C5AA071F9190710CF0244839B414E538995883C7394A7A308F",
     "legacy_smoke10_run_id_preserved": "ibp-smoke10-76DDD188CD080365",
     "protocol_id": "imp-intelligence-benchmark-protocol-v1",
@@ -804,11 +909,11 @@
   },
   "evaluator_invoked": true,
   "factual_smoke_contract_id": "ibp-factual-smoke-invocation-v1",
-  "frozen_config_fingerprint": "28EA7748057E312DF0B8615FFC5CC25A87C7C6F9A72668E5A00A799BFC38AFDE",
+  "frozen_config_fingerprint": "766E16CAF41F32109FF868C005167C3405A3846659A7F4FEE7E84F060CD080C3",
   "legacy_smoke10_run_id": "ibp-smoke10-76DDD188CD080365",
   "protocol_id": "imp-intelligence-benchmark-protocol-v1",
   "protocol_version": "IBP_FACTUAL_SMOKE_V1",
-  "run_id": "ibp-factual-smoke-28EA7748057E312D",
+  "run_id": "ibp-factual-smoke-766E16CAF41F3210",
   "schema_version": "imp.intelligence-benchmark-factual-smoke-run/1.0.0",
   "scores_executed": true,
   "smoke10_executed": false

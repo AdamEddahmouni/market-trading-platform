@@ -23,6 +23,10 @@ from ..routing import RoutingPolicyV1, SmartRouter
 from .contamination import assert_no_evaluator_gold_in_system_bundle
 from .admitted_factual_gold.admitted_evidence_context import build_admitted_evidence_context
 from .admitted_factual_gold.types import IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
+from .grounded_fact_extraction import (
+    GROUNDED_FACT_EXTRACTION_VERSION,
+    answer_admitted_factual_question,
+)
 from .historical_evidence_context import build_historical_fixture_evidence_context
 from .sut_profiles import (
     IBP_FACTS_SUT_MODEL_ID,
@@ -197,12 +201,35 @@ def run_ibp_facts_sut(
         if grounded_context is not None:
             evidence_context = {**grounded_context, **evidence_context}
 
-    inference = GroundedEvidenceInference()
-    outcome = inference.infer(
-        _facts_prompt(case_id, blind_mode, question_text=question_text),
-        evidence_context=evidence_context,
-    )
-    answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
+    structured_facts: list[dict[str, Any]] = []
+    factual_disposition: str | None = None
+    inference_provider_id = IBP_FACTS_SUT_MODEL_ID.split(":")[0]
+    inference_model_id = IBP_FACTS_SUT_MODEL_ID.split(":")[-1]
+    abstention_reason: str | None = None
+
+    if factual_protocol and isinstance(question, dict):
+        factual_outcome = answer_admitted_factual_question(
+            question=question,
+            temporal_cutoff=blind_input.get("temporal_cutoff"),
+            evidence_set=blind_input.get("evidence_set") or {},
+            repository_root=repository_root,
+            answer_normalization=blind_input.get("answer_normalization"),
+        )
+        factual_disposition = factual_outcome.disposition.value
+        structured_facts = [dict(row) for row in factual_outcome.structured_facts]
+        answer = factual_outcome.answer
+        abstention_reason = factual_outcome.abstention_reason
+        inference_model_id = f"deterministic.v1+{GROUNDED_FACT_EXTRACTION_VERSION}"
+    else:
+        inference = GroundedEvidenceInference()
+        outcome = inference.infer(
+            _facts_prompt(case_id, blind_mode, question_text=question_text),
+            evidence_context=evidence_context,
+        )
+        inference_provider_id = outcome.provider_id
+        inference_model_id = outcome.model_id
+        abstention_reason = outcome.abstention_reason
+        answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
     operator_close = "OK"
     if factual_protocol:
         freshness = "ADMITTED_EVIDENCE_FIXED" if admitted_loaded else "FIXTURE"
@@ -229,9 +256,9 @@ def run_ibp_facts_sut(
         "freshness": freshness,
         "authority": authority,
         "provenance_complete": provenance_complete,
-        "inference_provider_id": outcome.provider_id,
-        "inference_model_id": outcome.model_id,
-        "inference_abstention_reason": outcome.abstention_reason,
+        "inference_provider_id": inference_provider_id,
+        "inference_model_id": inference_model_id,
+        "inference_abstention_reason": abstention_reason,
         "final_state": "CLOSED",
         "operator_close": operator_close,
         "catastrophic": False,
@@ -242,6 +269,10 @@ def run_ibp_facts_sut(
     if factual_protocol:
         response["admitted_evidence_artifacts_loaded"] = admitted_loaded
         response["protocol_version"] = IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
+        response["structured_facts"] = structured_facts
+        response["grounded_fact_extraction_version"] = GROUNDED_FACT_EXTRACTION_VERSION
+        if factual_disposition is not None:
+            response["factual_answer_disposition"] = factual_disposition
     else:
         fixture_summary = evidence_context.get("historical_fixture")
         response["historical_fixture_loaded"] = fixture_summary is not None
