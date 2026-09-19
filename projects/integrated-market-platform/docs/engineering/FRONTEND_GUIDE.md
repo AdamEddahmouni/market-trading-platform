@@ -20,6 +20,8 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 | Lab | `/lab` | Experimental workbench: Overview, Validation, Simulation, Chart Lab. Inspectable/read-only on current contracts; `/research/vela-chart-lab` redirects to `/lab/chart-lab` |
 | Control | `/control` | Operator control center (was labeled "Risk") |
 
+Radar Screeners still host `DiscoverObservability` (the leftover Discover desk). It is **investigation-only**: candidates are not opportunity contracts or trade signals. Demo/Live pass `allowMutations={false}` — GET poll only; refresh, `promote-to-live-analysis`, and `POST /discover/mixed/release` stay off. Paper may mutate those housekeeping endpoints; that is not Live execution (`LIVE-001` remains blocked). Empty screener snapshots use `EmptyState` and do not invent a ranked-queue fault or a trade CTA.
+
 Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Paper positions; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ## Mode route pattern

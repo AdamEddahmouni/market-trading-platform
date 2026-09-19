@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Weekend Wave C: Discover nested screener investigation honesty
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/discover-shared` |
+| **Summary** | `/discover` remains a Radar redirect; leftover `DiscoverObservability` now states investigation-only copy, keeps Demo/Live mutations off (no refresh, `promote-to-live-analysis`, or `POST /discover/mixed/release`), and uses `EmptyState` for empty snapshots without a trade CTA. Did not touch open #222 / #322 Radar / #323 Lab / #324 Control files. Item 9 2/3 IDLE. |
+| **Key files** | `ui/src/components/discover-shared/DiscoverObservability.tsx`; `ui/src/components/discover-shared/DiscoverObservability.test.tsx`; `docs/engineering/FRONTEND_GUIDE.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `cd ui && npm test -- DiscoverObservability.test.tsx RadarPage.test.tsx` — 29/29 passed; `python tools/imp.py lint` (UI typecheck); `python tools/imp.py validate changed` — 80 tests, 0 failures |
+| **Related** | Stale draft [#128](https://github.com/AdamEddahmouni/market-trading-platform/pull/128) targeted removed `DiscoverPageSections`; this branch is current-main nested-screener honesty |
+| **Notes** | Isolated worktree `.worktrees/weekend-discover-honesty` from `origin/main` `7b91bce4`. Live OFF. Did not merge. |
+
 ## 2026-09-19 — Lab honesty stays visible on snapshot errors
 
 | Field | Value |
