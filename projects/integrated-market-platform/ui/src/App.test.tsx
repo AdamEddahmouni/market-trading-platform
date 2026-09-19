@@ -931,6 +931,12 @@ describe("App mode launcher integration", () => {
     expect(screen.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByRole("navigation", { name: "Lab sections" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /run/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText("2/3").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("IDLE").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("NOT CALIBRATED").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Live OFF").length).toBeGreaterThan(0);
+    expect(screen.getByText(/does not start collection, fit calibration, enable Live, or run Full30/i))
+      .toBeInTheDocument();
   });
 
   it("navigates Demo Lab sections and keeps Research distinct", async () => {
