@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9df351d8` after #358
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Absorbed `origin/main` **`9df351d8`** (merge [#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) UNAVAILABLE eligibility workspace/ack gate) into [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to that software tip. Pin is the **#358 merge commit**, not unique HEAD `9bc9dd62`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, weekend **no** collection, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. Did **not** merge #357 or #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#350](https://github.com/AdamEddahmouni/market-trading-platform/pull/350) pin convention; [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) retarget after [#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) on `main` @ `9df351d8` |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-356` on `docs/weekend-current-main-pin-356`. Absorbed `origin/main` with merge (no rebase/force). Prior MERGE-CLEAR on `9d4a957d` is **STALE** — #357 needs independent re-review. Primary desktop `44b8673e` untouched. |
+
+## 2026-09-19 — Pin CURRENT_MAIN to origin/main `d2af14e4` after #353–#356
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to `origin/main` **`d2af14e4`** — merge [#356](https://github.com/AdamEddahmouni/market-trading-platform/pull/356) Weekend Control Item 9/Live honesty; ancestry [#355](https://github.com/AdamEddahmouni/market-trading-platform/pull/355) Radar decision support, [#354](https://github.com/AdamEddahmouni/market-trading-platform/pull/354) provider resilience, [#353](https://github.com/AdamEddahmouni/market-trading-platform/pull/353) NavShell sidebar flex. Reconciled IMP-05 Lane Docs heading so **IMP05 v3 landing** `e0ab919f` is not mistaken for **CURRENT_SOFTWARE** tip. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, weekend **no** collection, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#350](https://github.com/AdamEddahmouni/market-trading-platform/pull/350) pin convention; software stack #353–#356 on `main` @ `d2af14e4` |
+| **Notes** | Isolated worktree `.worktrees/weekend-current-main-pin-356` on `docs/weekend-current-main-pin-356` from `origin/main` @ `d2af14e4`. Pin software SHA `d2af14e4` — not this docs PR commit (avoid self-pin loop). Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — Absorb origin/main into #353 NavShell sidebar flex
 
 | Field | Value |
