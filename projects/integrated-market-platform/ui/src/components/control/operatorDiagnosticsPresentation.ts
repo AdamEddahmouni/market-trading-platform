@@ -23,6 +23,8 @@ export type OperatorTruthRow = {
   detail: string;
   /** Plain-language meaning for a trader who does not know IMP internals. */
   meaning: string;
+  /** What the operator should do next without mutating Live / calibration. */
+  nextSafeAction: string;
   kind: OperatorRowKind;
   tone: SemanticTone;
 };
@@ -31,6 +33,7 @@ export type OperatorSituation = {
   kind: "waiting" | "impaired" | "healthy" | "unavailable";
   title: string;
   explanation: string;
+  nextSafeAction: string;
 };
 
 export function explainTruthClass(truth: OperatorTruthClass, kind?: OperatorRowKind): string {
@@ -86,7 +89,7 @@ export function classifyOperatorRow(row: {
   if (row.truth === "POLICY") return "policy";
   if (row.truth === "IDLE") return "waiting";
   if (row.truth === "HEALTHY") return "ok";
-  if (row.truth === "DEGRADED" || row.truth === "BLOCKED" || row.truth === "UNAVAILABLE") {
+  if (row.truth === "DEGRADED" || row.truth === "BLOCKED") {
     return "fault";
   }
   return "unknown";
@@ -220,6 +223,33 @@ export function item9CorpusProgressIsCalendarIncomplete(
   return preferItem9OperatorTruth(diagnostics, "item9-corpus", local) === "IDLE";
 }
 
+export function nextSafeActionForRow(id: string, truth: OperatorTruthClass): string {
+  if (id === "item9-corpus") {
+    if (truth === "IDLE") {
+      return "Wait for more distinct regular-trading-hours dates. Do not calibrate, do not treat IDLE as a workstation repair, and do not enable Live.";
+    }
+    if (truth === "HEALTHY") {
+      return "Date-gate coverage is complete. Still NOT CALIBRATED; calibration remains forbidden. Do not enable Live or run Full30.";
+    }
+    if (truth === "UNAVAILABLE" || truth === "NOT_OBSERVED" || truth === "UNKNOWN") {
+      return `Retry GET /operator/diagnostics. Keep Item 9 as ${truth}; do not mint 2/3, calibrate, or enable Live.`;
+    }
+    return "Do not calibrate, enable Live, or run Full30.";
+  }
+  if (id === "item9-preflight" && truth === "IDLE") {
+    return "Wait for the next US cash session. Do not start collection from this UI.";
+  }
+  if (id === "live-execution") {
+    return truth === "POLICY" || truth === "BLOCKED"
+      ? "Leave Live OFF. Observational data is not a go-live."
+      : "Live execution remains governed. This is not authorization to place broker orders.";
+  }
+  if (id === "full30") {
+    return "Do not run Full30 from Control. Absence of a run control is not a campaign result.";
+  }
+  return "Do not enable Live, fit calibration, or run Full30.";
+}
+
 export function formatItem9CorpusProgress(
   corpusSection: Record<string, unknown> | undefined,
 ): {
@@ -239,7 +269,7 @@ export function formatItem9CorpusProgress(
 
   if (availability !== "AVAILABLE") {
     return {
-      distinctRthDates: "NOT_OBSERVED",
+      distinctRthDates: availability === "UNAVAILABLE" ? "UNAVAILABLE" : "NOT_OBSERVED",
       calibrationLabel: "NOT CALIBRATED",
       calibrationForbidden: "CALIBRATION FORBIDDEN",
       receiptScopeNote: scopeNote,
@@ -270,7 +300,7 @@ export function item9CorpusMeaning(
     return `Paper fill calibration still needs more distinct regular-trading-hours dates. ${tokens} Incomplete dates are IDLE, not DEGRADED.`;
   }
   if (corpusTruth === "NOT_OBSERVED" || corpusTruth === "UNAVAILABLE") {
-    return `Item 9 date progress is ${corpus.distinctRthDates}. ${tokens} Missing corpus is not a passing 3/3.`;
+    return `Item 9 date progress is ${corpus.distinctRthDates}. ${tokens} Missing corpus is ${corpusTruth}, not a minted 2/3 and not a passing 3/3.`;
   }
   return `${tokens} Treat this progress as unverified, not healthy.`;
 }
@@ -351,7 +381,7 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
   const preflightToken = String(item9Preflight.disposition ?? "UNKNOWN");
   const liveOff = !governance?.live_execution_env;
 
-  const rows: OperatorTruthRow[] = [
+  const rows: Array<Omit<OperatorTruthRow, "nextSafeAction">> = [
     {
       id: "imp-lifecycle",
       label: "IMP platform lifecycle",
@@ -464,27 +494,91 @@ export function buildOperatorTruthRows(diagnostics: OperatorDiagnostics | null |
       : []),
   ];
 
-  return rows.map((row) => ({
-    ...row,
-    kind: classifyOperatorRow(row),
-  }));
+  return rows.map((row) => {
+    const kind = classifyOperatorRow(row);
+    return {
+      ...row,
+      kind,
+      nextSafeAction: nextSafeActionForRow(row.id, row.truth),
+    };
+  });
+}
+
+export function buildUnavailableHonestyRows(kind: "error" | "empty"): OperatorTruthRow[] {
+  const missing: OperatorTruthClass = kind === "error" ? "UNAVAILABLE" : "UNKNOWN";
+  const loadMeaning =
+    kind === "error"
+      ? "GET /operator/diagnostics failed. This is a load failure, not a calendar wait."
+      : "The diagnostics snapshot was not included. This is UNKNOWN, not a load crash and not a calendar wait.";
+  const rows: Array<Omit<OperatorTruthRow, "kind" | "nextSafeAction">> = [
+    {
+      id: "item9-corpus",
+      label: "Distinct admitted RTH dates",
+      truth: missing,
+      detail: `${missing} · NOT CALIBRATED · CALIBRATION FORBIDDEN. ${loadMeaning}`,
+      meaning: `Item 9 date progress is ${missing}, not 2/3. Canonical tokens: Item 9 ${missing}, NOT CALIBRATED, CALIBRATION FORBIDDEN.`,
+      tone: truthTone(missing),
+    },
+    {
+      id: "live-execution",
+      label: "Live real-money execution",
+      truth: "POLICY",
+      detail: "Live OFF",
+      meaning:
+        "Intentional safety lock. Canonical token: Live OFF. A missing diagnostics snapshot does not authorize Live.",
+      tone: "neutral",
+    },
+    {
+      id: "full30",
+      label: "Full30 / IBP campaign",
+      truth: "POLICY",
+      detail: "Full30 OFF",
+      meaning: "Full30 is not a Control action. Absence of a run control is not a campaign result.",
+      tone: "neutral",
+    },
+  ];
+  return rows.map((row) => {
+    const classified = classifyOperatorRow({ id: row.id, truth: row.truth, detail: row.detail });
+    return {
+      ...row,
+      kind: classified,
+      nextSafeAction: nextSafeActionForRow(row.id, row.truth),
+    };
+  });
+}
+
+export function buildUnavailableOperatorSituation(kind: "error" | "empty"): OperatorSituation {
+  if (kind === "error") {
+    return {
+      kind: "unavailable",
+      title: "Diagnostics snapshot unavailable",
+      explanation:
+        "GET /operator/diagnostics failed. Item 9 dates stay UNAVAILABLE, not a minted 2/3. Live OFF. Full30 OFF. This is a load failure, not a calendar wait.",
+      nextSafeAction:
+        "Retry GET /operator/diagnostics. Do not mint 2/3, calibrate, start collection, enable Live, or run Full30.",
+    };
+  }
+  return {
+    kind: "unavailable",
+    title: "Diagnostics snapshot not included",
+    explanation:
+      "The snapshot was not included. Item 9 dates stay UNKNOWN, not 2/3. Live OFF. Full30 OFF. This is UNKNOWN, not a load crash and not a calendar wait.",
+    nextSafeAction:
+      "Wait for or retry GET /operator/diagnostics. Do not mint 2/3, calibrate, enable Live, or run Full30.",
+  };
 }
 
 export function buildOperatorSituation(
   diagnostics: OperatorDiagnostics | null | undefined,
 ): OperatorSituation {
   if (!diagnostics) {
-    return {
-      kind: "unavailable",
-      title: "Platform snapshot unavailable",
-      explanation:
-        "Control cannot explain operating state until the operator diagnostics snapshot responds. This is a load failure, not a calendar wait.",
-    };
+    return buildUnavailableOperatorSituation("empty");
   }
 
   const rows = buildOperatorTruthRows(diagnostics);
   const corpus = rows.find((row) => row.id === "item9-corpus");
   const live = rows.find((row) => row.id === "live-execution");
+  const liveOff = live?.detail === "Live OFF";
   const hasFault = rows.some((row) => row.kind === "fault");
 
   if (hasFault) {
@@ -492,7 +586,10 @@ export function buildOperatorSituation(
     return {
       kind: "impaired",
       title: "Something needs attention",
-      explanation: `${firstFault?.meaning ?? "A platform fact is impaired."} Item 9 calendar progress stays separate from this fault: ${corpus?.detail ?? "NOT_OBSERVED"}. ${live?.detail === "Live OFF" ? "Live OFF." : ""}`.trim(),
+      explanation: `${firstFault?.meaning ?? "A platform fact is impaired."} Item 9 calendar progress stays separate from this fault: ${corpus?.detail ?? "NOT_OBSERVED"}. ${liveOff ? "Live OFF." : ""}`.trim(),
+      nextSafeAction:
+        firstFault?.nextSafeAction ??
+        "Do not enable Live, fit calibration, or run Full30. Repair the named gate, not the calendar wait.",
     };
   }
 
@@ -500,20 +597,38 @@ export function buildOperatorSituation(
     return {
       kind: "waiting",
       title: "Waiting on the trading calendar",
-      explanation: `Item 9 is ${corpus.detail} That wait is IDLE, not DEGRADED. ${live?.detail === "Live OFF" ? "Live OFF." : ""} You do not need to “fix” the workstation for the missing dates.`.replace(
+      explanation: `Item 9 is ${corpus.detail} That wait is IDLE, not DEGRADED. ${liveOff ? "Live OFF." : ""} You do not need to “fix” the workstation for the missing dates.`.replace(
         /\s+/g,
         " ",
       ),
+      nextSafeAction:
+        corpus.nextSafeAction ??
+        nextSafeActionForRow("item9-corpus", "IDLE"),
+    };
+  }
+
+  if (corpus?.truth === "HEALTHY") {
+    return {
+      kind: "healthy",
+      title: "Date coverage is complete — still not calibrated",
+      explanation: `Item 9 date gate is complete (${corpus.detail}). HEALTHY coverage does not mean CALIBRATED. ${liveOff ? "Live OFF." : ""} Calibration remains forbidden.`.replace(
+        /\s+/g,
+        " ",
+      ),
+      nextSafeAction:
+        corpus.nextSafeAction ??
+        nextSafeActionForRow("item9-corpus", "HEALTHY"),
     };
   }
 
   return {
     kind: "healthy",
     title: "No blocking platform faults",
-    explanation: `Readiness and lifecycle are not raising a repair item. ${live?.detail === "Live OFF" ? "Live OFF remains the safety lock." : ""} Canonical Item 9 tokens stay on this page.`.replace(
+    explanation: `Readiness and lifecycle are not raising a repair item. ${liveOff ? "Live OFF remains the safety lock." : ""} Canonical Item 9 tokens stay on this page.`.replace(
       /\s+/g,
       " ",
     ),
+    nextSafeAction: "Do not enable Live, fit calibration, or run Full30.",
   };
 }
 

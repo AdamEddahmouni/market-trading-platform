@@ -1,15 +1,18 @@
 import type { OperatorDiagnostics } from "../../api/schemas";
 import { StatePill } from "../imp-ui/StatePill";
-import { ErrorState } from "../imp-ui/FeedbackStates";
+import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import {
   buildOperatorSituation,
   buildOperatorTruthRows,
+  buildUnavailableHonestyRows,
+  buildUnavailableOperatorSituation,
   diagnosticsGovernance,
   diagnosticsRuntimeSection,
   explainTruthClass,
   humanDiagnosticsHeadline,
   mapSeverityTone,
+  type OperatorTruthRow,
 } from "./operatorDiagnosticsPresentation";
 
 type Props = {
@@ -27,14 +30,34 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
       </p>
     );
   }
-  if (isError || !diagnostics) {
+  if (isError) {
+    const honestyRows = buildUnavailableHonestyRows("error");
+    const situation = buildUnavailableOperatorSituation("error");
     return (
-      <ErrorState
-        title="Operator diagnostics are unavailable."
-        affects="This is a load failure, not a calendar wait. System status, Item 9 gates, and runtime SHA cannot be verified until GET /operator/diagnostics responds."
-        rawDetail="GET /operator/diagnostics"
-        onRetry={onRetry}
-      />
+      <div className="control-system-status">
+        <ErrorState
+          title="Operator diagnostics are unavailable."
+          affects="This is a load failure, not a calendar wait. Item 9 dates stay UNAVAILABLE, not a minted 2/3. Live OFF. Full30 OFF."
+          rawDetail="GET /operator/diagnostics"
+          onRetry={onRetry}
+        />
+        <HonestySituation situation={situation} />
+        <HonestyTruthList rows={honestyRows} />
+      </div>
+    );
+  }
+  if (!diagnostics) {
+    const honestyRows = buildUnavailableHonestyRows("empty");
+    const situation = buildUnavailableOperatorSituation("empty");
+    return (
+      <div className="control-system-status">
+        <EmptyState
+          title="Operator diagnostics snapshot was not included"
+          reason="This is UNKNOWN, not a load crash and not an Item 9 calendar wait. Item 9 dates are not 2/3 until a snapshot says so. Live OFF. Full30 OFF."
+        />
+        <HonestySituation situation={situation} />
+        <HonestyTruthList rows={honestyRows} />
+      </div>
     );
   }
 
@@ -50,15 +73,7 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
 
   return (
     <div className="control-system-status">
-      <div
-        className="control-situation"
-        data-kind={situation.kind}
-        role="status"
-        aria-live="polite"
-      >
-        <p className="control-situation-title">{situation.title}</p>
-        <p className="control-situation-body">{situation.explanation}</p>
-      </div>
+      <HonestySituation situation={situation} />
 
       <div className="control-system-status-headline">
         <StatePill tone={severityTone} label={diagnostics.severity} raw={diagnostics.severity} />
@@ -79,38 +94,7 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
         </p>
       ) : null}
 
-      <p className="control-sr-only" id="control-truth-legend">
-        Each row shows a canonical truth class, a trader explanation, and the raw tokens. IDLE means
-        waiting. POLICY means an intentional safety lock. DEGRADED means impaired. BLOCKED is reserved
-        for real gates. Color is not the only indicator.
-      </p>
-
-      <ul
-        className="control-truth-list"
-        aria-label="Operator truth hierarchy"
-        aria-describedby="control-truth-legend"
-      >
-        {truthRows.map((row) => (
-          <li
-            key={row.id}
-            className="control-truth-row"
-            data-truth={row.truth}
-            data-kind={row.kind}
-          >
-            <div className="control-truth-label">
-              <span className="control-truth-class">{row.truth}</span>
-              <strong>{row.label}</strong>
-              <span className="control-truth-kind">{kindLabel(row.kind)}</span>
-            </div>
-            <div className="control-truth-value">
-              <StatePill tone={row.tone} label={row.truth} raw={row.truth} size="sm" />
-              <p className="control-truth-meaning">{row.meaning}</p>
-              <p className="control-truth-detail">{row.detail}</p>
-              <p className="control-truth-class-hint">{explainTruthClass(row.truth, row.kind)}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <HonestyTruthList rows={truthRows} />
 
       <details className="control-details">
         <summary>Runtime resilience (#287 / #289)</summary>
@@ -179,6 +163,61 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
         </details>
       ) : null}
     </div>
+  );
+}
+
+function HonestySituation({
+  situation,
+}: {
+  situation: ReturnType<typeof buildOperatorSituation>;
+}) {
+  return (
+    <div className="control-situation" data-kind={situation.kind} role="status" aria-live="polite">
+      <p className="control-situation-title">{situation.title}</p>
+      <p className="control-situation-body">{situation.explanation}</p>
+      <p className="control-situation-body">Next safe action: {situation.nextSafeAction}</p>
+    </div>
+  );
+}
+
+function HonestyTruthList({ rows }: { rows: OperatorTruthRow[] }) {
+  return (
+    <>
+      <p className="control-sr-only" id="control-truth-legend">
+        Each row shows a canonical truth class, a trader explanation, and the raw tokens. IDLE means
+        waiting. POLICY means an intentional safety lock. DEGRADED means impaired. BLOCKED is reserved
+        for real gates. UNAVAILABLE is a missing snapshot, not a minted 2/3. Color is not the only
+        indicator.
+      </p>
+
+      <ul
+        className="control-truth-list"
+        aria-label="Operator truth hierarchy"
+        aria-describedby="control-truth-legend"
+      >
+        {rows.map((row) => (
+          <li
+            key={row.id}
+            className="control-truth-row"
+            data-truth={row.truth}
+            data-kind={row.kind}
+          >
+            <div className="control-truth-label">
+              <span className="control-truth-class">{row.truth}</span>
+              <strong>{row.label}</strong>
+              <span className="control-truth-kind">{kindLabel(row.kind)}</span>
+            </div>
+            <div className="control-truth-value">
+              <StatePill tone={row.tone} label={row.truth} raw={row.truth} size="sm" />
+              <p className="control-truth-meaning">{row.meaning}</p>
+              <p className="control-truth-detail">{row.detail}</p>
+              <p className="control-truth-class-hint">{explainTruthClass(row.truth, row.kind)}</p>
+              <p className="control-truth-class-hint">Next safe action: {row.nextSafeAction}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
 

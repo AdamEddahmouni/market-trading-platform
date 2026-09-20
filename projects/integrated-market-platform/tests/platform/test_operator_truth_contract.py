@@ -12,7 +12,9 @@ from market_platform_foundation.platform.operator_diagnostics import (
 )
 from market_platform_foundation.platform.operator_diagnostics.operator_truth import (
     build_operator_truth_section,
+    item9_corpus_progress_detail,
     map_lifecycle_truth,
+    next_safe_action_for_operator_row,
 )
 from market_platform_foundation.ui_api.store import ReplayStore
 
@@ -74,6 +76,47 @@ class OperatorTruthContractTests(unittest.TestCase):
         self.assertNotEqual(section["by_id"]["item9-corpus"], "DEGRADED")
         self.assertEqual(section["by_id"]["live-execution"], "BLOCKED")
         self.assertEqual(section["clock"]["kind"], "wall_utc")
+        corpus_row = next(row for row in section["rows"] if row["id"] == "item9-corpus")
+        self.assertEqual(corpus_row["detail"], "2/3")
+        self.assertIn("Do not calibrate", corpus_row["next_safe_action"])
+        self.assertIn("do not enable Live", corpus_row["next_safe_action"])
+
+
+class Item9UnavailableHonestyTests(unittest.TestCase):
+    def test_unavailable_corpus_detail_is_unavailable_not_two_of_three(self) -> None:
+        corpus = {"availability": "UNAVAILABLE"}
+        self.assertEqual(map_item9_corpus_progress_truth(corpus), "UNAVAILABLE")
+        self.assertEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "UNAVAILABLE")
+        self.assertNotEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "2/3")
+        self.assertNotEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "NOT_OBSERVED")
+        section = build_operator_truth_section(
+            as_of_utc="2026-09-19T00:00:00+00:00",
+            lifecycle_status="UNKNOWN",
+            readiness_status=None,
+            runtime_git_sha=None,
+            item9_disposition="UNKNOWN",
+            item9_corpus_status=corpus,
+            collector_detected=False,
+            collector_probe_status=None,
+            live_execution_env=False,
+            expected_cycle_failure="NOT_OBSERVED",
+            cycle_gap_note=None,
+            evidence_gaps=[],
+        )
+        corpus_row = next(row for row in section["rows"] if row["id"] == "item9-corpus")
+        self.assertEqual(section["by_id"]["item9-corpus"], "UNAVAILABLE")
+        self.assertEqual(corpus_row["detail"], "UNAVAILABLE")
+        self.assertNotIn("2/3", corpus_row["detail"])
+        self.assertNotEqual(corpus_row["truth"], "IDLE")
+        self.assertNotEqual(corpus_row["truth"], "DEGRADED")
+        self.assertIn("do not mint 2/3", corpus_row["next_safe_action"])
+        live_row = next(row for row in section["rows"] if row["id"] == "live-execution")
+        self.assertEqual(live_row["detail"], "Live OFF")
+        self.assertIn("Leave Live OFF", live_row["next_safe_action"])
+        healthy_action = next_safe_action_for_operator_row("item9-corpus", "HEALTHY")
+        self.assertIn("NOT CALIBRATED", healthy_action)
+        self.assertIn("Do not enable Live", healthy_action)
+        self.assertNotIn("2/3", healthy_action)
 
 
 class OperatorDiagnosticsSnapshotTruthTests(unittest.TestCase):

@@ -82,6 +82,12 @@ from market_platform_foundation.ui_api.request_auth import (  # noqa: E402
     authorization_http_status,
     extract_session_token,
 )
+from market_platform_foundation.platform.operator_diagnostics.operator_truth import (  # noqa: E402
+    build_operator_truth_section,
+    item9_corpus_progress_detail,
+    map_item9_corpus_progress_truth,
+    next_safe_action_for_operator_row,
+)
 
 DAY_NS = 86_400 * 1_000_000_000
 # Lawful RTH fixture timestamp (same geometry as Item 9 protocol tests).
@@ -315,6 +321,37 @@ class TaxonomyUnknownAndStaleTests(unittest.TestCase):
         result = authenticate_session_token("", config=cfg, store=SessionStore())
         self.assertIsInstance(result, AuthorizationFailure)
         self.assertEqual(result.code, AuthorizationErrorCode.AUTH_REQUIRED)
+
+
+class OperatorTruthUnavailableDoesNotMintItem9Tests(unittest.TestCase):
+    def test_unavailable_diagnostics_keep_item9_unavailable_not_two_of_three(self) -> None:
+        corpus = {"availability": "UNAVAILABLE"}
+        self.assertEqual(map_item9_corpus_progress_truth(corpus), "UNAVAILABLE")
+        self.assertEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "UNAVAILABLE")
+        self.assertNotEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "2/3")
+        section = build_operator_truth_section(
+            as_of_utc="2026-09-19T00:00:00+00:00",
+            lifecycle_status="UNKNOWN",
+            readiness_status=None,
+            runtime_git_sha=None,
+            item9_disposition="UNKNOWN",
+            item9_corpus_status=corpus,
+            collector_detected=False,
+            collector_probe_status=None,
+            live_execution_env=False,
+            expected_cycle_failure="NOT_OBSERVED",
+            cycle_gap_note=None,
+            evidence_gaps=[],
+        )
+        self.assertEqual(section["by_id"]["item9-corpus"], "UNAVAILABLE")
+        self.assertNotEqual(section["by_id"]["item9-corpus"], "IDLE")
+        self.assertNotEqual(section["by_id"]["item9-corpus"], "DEGRADED")
+        corpus_row = next(row for row in section["rows"] if row["id"] == "item9-corpus")
+        self.assertNotIn("2/3", corpus_row["detail"])
+        self.assertEqual(section["by_id"]["live-execution"], "BLOCKED")
+        action = next_safe_action_for_operator_row("item9-corpus", "UNAVAILABLE")
+        self.assertIn("do not mint 2/3", action)
+        self.assertIn("enable Live", action)
 
 
 if __name__ == "__main__":

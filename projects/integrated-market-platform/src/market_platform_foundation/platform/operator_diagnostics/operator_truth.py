@@ -105,6 +105,52 @@ def map_item9_corpus_progress_truth(
     return "UNKNOWN"
 
 
+def item9_corpus_progress_detail(
+    corpus_section: Mapping[str, Any] | None,
+    corpus_truth: str,
+) -> str:
+    """Keep UNAVAILABLE/NOT_OBSERVED/UNKNOWN as themselves — never mint 2/3."""
+
+    dates = _distinct_rth_dates_from_corpus(
+        corpus_section if isinstance(corpus_section, Mapping) else {}
+    )
+    token = str(dates).strip()
+    if parse_item9_sample_gate_fraction(token) is not None:
+        return token
+    if corpus_truth in {"UNAVAILABLE", "NOT_OBSERVED", "UNKNOWN"}:
+        return corpus_truth
+    return token or corpus_truth
+
+
+def next_safe_action_for_operator_row(row_id: str, truth: str) -> str:
+    """Operator next-safe-action copy. Never calibrate, collect, or enable Live."""
+
+    if row_id == "item9-corpus":
+        if truth == "IDLE":
+            return (
+                "Wait for more distinct regular-trading-hours dates. "
+                "Do not calibrate, do not treat IDLE as a workstation repair, and do not enable Live."
+            )
+        if truth == "HEALTHY":
+            return (
+                "Date-gate coverage is complete. Still NOT CALIBRATED; calibration remains forbidden. "
+                "Do not enable Live or run Full30."
+            )
+        if truth in {"UNAVAILABLE", "NOT_OBSERVED", "UNKNOWN"}:
+            return (
+                f"Retry GET /operator/diagnostics. Keep Item 9 as {truth}; "
+                "do not mint 2/3, calibrate, or enable Live."
+            )
+        return "Do not calibrate, enable Live, or run Full30."
+    if row_id == "item9-preflight" and truth == "IDLE":
+        return "Wait for the next US cash session. Do not start collection from this UI."
+    if row_id == "live-execution":
+        if truth in {"BLOCKED", "POLICY"}:
+            return "Leave Live OFF. Observational data is not a go-live."
+        return "Live execution remains governed. This is not authorization to place broker orders."
+    return "Do not enable Live, fit calibration, or run Full30."
+
+
 def _distinct_rth_dates_from_corpus(section: Mapping[str, Any]) -> str:
     progress = section.get("sample_gate_progress")
     if isinstance(progress, Mapping) and progress.get("distinct_rth_dates"):
@@ -158,9 +204,7 @@ def build_operator_truth_section(
     evidence_gaps: list[Any] | None,
 ) -> dict[str, Any]:
     corpus_truth = map_item9_corpus_progress_truth(item9_corpus_status)
-    corpus_dates = _distinct_rth_dates_from_corpus(
-        item9_corpus_status if isinstance(item9_corpus_status, Mapping) else {}
-    )
+    corpus_dates = item9_corpus_progress_detail(item9_corpus_status, corpus_truth)
     rows = [
         {
             "id": "imp-lifecycle",
@@ -185,12 +229,17 @@ def build_operator_truth_section(
             "truth": map_item9_disposition_truth(item9_disposition),
             "detail": str(item9_disposition or "UNKNOWN"),
             "source_field": "sections.runtime.item9_preflight.disposition",
+            "next_safe_action": next_safe_action_for_operator_row(
+                "item9-preflight",
+                map_item9_disposition_truth(item9_disposition),
+            ),
         },
         {
             "id": "item9-corpus",
             "truth": corpus_truth,
             "detail": corpus_dates,
             "source_field": "sections.runtime.item9_corpus_status.sample_gate_progress.distinct_rth_dates",
+            "next_safe_action": next_safe_action_for_operator_row("item9-corpus", corpus_truth),
         },
         {
             "id": "collector",
@@ -210,6 +259,10 @@ def build_operator_truth_section(
             "truth": map_live_execution_truth(live_execution_env),
             "detail": "Live execution env flag is on — still governed." if live_execution_env else "Live OFF",
             "source_field": "sections.governance.live_execution_env",
+            "next_safe_action": next_safe_action_for_operator_row(
+                "live-execution",
+                map_live_execution_truth(live_execution_env),
+            ),
         },
         {
             "id": "expected-cycle",
@@ -247,6 +300,7 @@ def build_operator_truth_section(
 __all__ = [
     "OPERATOR_TRUTH_CLASSES",
     "build_operator_truth_section",
+    "item9_corpus_progress_detail",
     "map_collector_truth",
     "map_cycle_failure_truth",
     "map_evidence_gaps_truth",
@@ -255,5 +309,6 @@ __all__ = [
     "map_lifecycle_truth",
     "map_live_execution_truth",
     "map_readiness_truth",
+    "next_safe_action_for_operator_row",
     "parse_item9_sample_gate_fraction",
 ]

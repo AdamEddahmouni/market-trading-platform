@@ -6,6 +6,7 @@ const ITEM9_TRUTH_IDS = new Set(["item9-corpus", "item9-preflight"]);
 /**
  * Item 9 IDLE vs DEGRADED: prefer backend `operator_truth` when present.
  * Calendar-incomplete local IDLE (e.g. 2/3) is never upgraded to DEGRADED.
+ * Missing-evidence backend tokens (UNAVAILABLE / NOT_OBSERVED) beat local guesses.
  * Real gates (BLOCKED) and Live execution stay on Control's local mapping.
  */
 export function preferItem9OperatorTruth<T extends string>(
@@ -17,6 +18,13 @@ export function preferItem9OperatorTruth<T extends string>(
   const backend = readOperatorTruthById(diagnostics, id);
   if (!backend) return local;
   if (local === "IDLE") return local;
+  if (local === "BLOCKED") return local;
+  if (
+    (backend === "UNAVAILABLE" || backend === "NOT_OBSERVED") &&
+    (local === "DEGRADED" || local === "UNKNOWN" || local === "NOT_OBSERVED" || local === "UNAVAILABLE")
+  ) {
+    return backend as T;
+  }
   if (
     (backend === "IDLE" || backend === "DEGRADED") &&
     (local === "DEGRADED" || local === "UNKNOWN")

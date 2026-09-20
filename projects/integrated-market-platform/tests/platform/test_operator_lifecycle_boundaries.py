@@ -49,6 +49,8 @@ from market_platform_foundation.platform.operator_diagnostics.operator_truth imp
     map_live_execution_truth,
     map_readiness_truth,
     parse_item9_sample_gate_fraction,
+    item9_corpus_progress_detail,
+    next_safe_action_for_operator_row,
 )
 from market_platform_foundation.platform.operator_diagnostics.snapshot import (
     _FORBIDDEN_OPERATOR_ACTIONS,
@@ -348,6 +350,21 @@ class AdditionalTruthRefusalTests(unittest.TestCase):
         self.assertEqual(section["by_id"]["expected-cycle"], "UNKNOWN")
         self.assertEqual(section["by_id"]["evidence-gaps"], "NOT_OBSERVED")
         self.assertNotEqual(section["by_id"]["item9-corpus"], "DEGRADED")
+        corpus_row = next(row for row in section["rows"] if row["id"] == "item9-corpus")
+        self.assertEqual(corpus_row["detail"], "3/3")
+        self.assertIn("NOT CALIBRATED", corpus_row["next_safe_action"])
+        self.assertIn("Do not enable Live", corpus_row["next_safe_action"])
+
+
+class Item9UnavailableDetailHonestyTests(unittest.TestCase):
+    def test_unavailable_corpus_is_not_collapsed_to_not_observed_or_two_of_three(self) -> None:
+        corpus = {"availability": "UNAVAILABLE"}
+        self.assertEqual(map_item9_corpus_progress_truth(corpus), "UNAVAILABLE")
+        self.assertEqual(item9_corpus_progress_detail(corpus, "UNAVAILABLE"), "UNAVAILABLE")
+        self.assertEqual(next_safe_action_for_operator_row("item9-corpus", "UNAVAILABLE"), (
+            "Retry GET /operator/diagnostics. Keep Item 9 as UNAVAILABLE; "
+            "do not mint 2/3, calibrate, or enable Live."
+        ))
 
 
 class StaleFreshRecoveryBoundaryTests(unittest.TestCase):
