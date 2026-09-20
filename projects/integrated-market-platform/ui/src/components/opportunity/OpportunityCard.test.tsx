@@ -12,7 +12,7 @@ function row(overrides: Partial<OpportunityReviewRow> = {}): OpportunityReviewRo
     headline: "AAPL attention adapter",
     instrument_id: "AAPL",
     identity_kind: "NOT_OPPORTUNITY_V1",
-    eligibility_state: "UNAVAILABLE",
+    eligibility_state: "ELIGIBLE",
     lifecycle_state: "NORMALIZED",
     next_safe_action: "OPEN_WORKSPACE",
     rank_order: 1,
@@ -104,6 +104,21 @@ describe("OpportunityCard", () => {
     renderCard(
       <OpportunityCard
         row={row({ next_safe_action: "STOP", eligibility_state: "INELIGIBLE" })}
+        paperAccountId="paper-acct"
+        {...actions()}
+      />,
+    );
+    const card = screen.getByTestId("imp-opportunity-card");
+    expect(card).toHaveTextContent("Stop — do not act on this opportunity");
+    expect(card).toHaveTextContent("Eligibility gate failed");
+    expect(screen.queryByRole("button", { name: "Open workspace" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
+  });
+
+  it("stops workspace preview and acks when eligibility is UNAVAILABLE", () => {
+    renderCard(
+      <OpportunityCard
+        row={row({ eligibility_state: "UNAVAILABLE", next_safe_action: "OPEN_WORKSPACE" })}
         paperAccountId="paper-acct"
         {...actions()}
       />,
