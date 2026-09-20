@@ -124,6 +124,10 @@ OPERATOR_MESSAGES: dict[str, str] = {
         "The delayed overlay was rate-limited. No quote is invented and overlay is "
         "not promoted to hop L1."
     ),
+    "PROVIDER_HTTP_ERROR": (
+        "The provider HTTP response indicated an error. No quote is invented and "
+        "overlay is not promoted to hop L1."
+    ),
 }
 
 _ITEM9_UNTOUCHED = {
@@ -261,6 +265,7 @@ _PRIMARY_UNAVAILABLE_TOKENS = frozenset(
         "MISSING_TIMESTAMP",
         "MOOMOO_TRANSPORT_NOT_IMPLEMENTED",
         "RATE_LIMIT",
+        "PROVIDER_HTTP_ERROR",
         FALLBACK_BLOCKED,
         RECONNECTING,
         RESTART_RECOVERY,
@@ -387,21 +392,12 @@ def classify_provider_incident(incident: Mapping[str, Any]) -> ProviderIncident:
         )
 
     if reason:
-        severity = "UNAVAILABLE"
-        if reason in {DELAYED_DATA}:
-            severity = "DELAYED"
-        elif reason in {PARTIALLY_STALE}:
-            severity = "STALE"
-        elif reason in {RECONNECTING, RESTART_RECOVERY}:
-            severity = "RECOVERING"
-        elif reason in {OPEND_REACHABLE, HEALTHY}:
-            severity = "HEALTHY"
-        return _incident(
+        overlay_flag = incident.get("overlay_available")
+        overlay_ok = True if overlay_flag is None else bool(overlay_flag)
+        return incident_for_reason_code(
             reason,
-            severity,
-            primary_available=primary_available,
-            overlay_available=overlay_available,
-            promote=promote,
+            promote_overlay_to_l1=promote,
+            overlay_available=overlay_ok,
         )
 
     return _incident("UNKNOWN", "UNAVAILABLE", primary_available=False)

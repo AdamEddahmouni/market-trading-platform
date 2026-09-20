@@ -83,6 +83,14 @@ describe("presentProviderTransport", () => {
     expect(reachable.label).toBe("Reachable");
     expect(reachable.tone).toBe("live");
   });
+
+  it("keeps entitlement gaps on the shared adapter vocabulary", () => {
+    const state = presentProviderTransport(
+      provider({ gate_state: "ENABLED", transport_state: "ENTITLEMENT_MISSING" }),
+    );
+    expect(state.label).not.toBe("Transport unavailable");
+    expect(state.label).toMatch(/subscription/i);
+  });
 });
 
 describe("providerNeedsAction", () => {
