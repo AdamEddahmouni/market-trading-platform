@@ -50,4 +50,16 @@ describe("consumeOperatorTruth", () => {
     expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "IDLE")).toBe("IDLE");
     expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "IDLE")).not.toBe("DEGRADED");
   });
+
+  it("prefers backend UNAVAILABLE over local guesses instead of minting 2/3 IDLE", () => {
+    const diagnostics: OperatorDiagnostics = {
+      ...BASE,
+      operator_truth: { by_id: { "item9-corpus": "UNAVAILABLE" } },
+    };
+    expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "UNKNOWN")).toBe("UNAVAILABLE");
+    expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "DEGRADED")).toBe("UNAVAILABLE");
+    expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "NOT_OBSERVED")).toBe("UNAVAILABLE");
+    expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "UNKNOWN")).not.toBe("IDLE");
+    expect(preferItem9OperatorTruth(diagnostics, "item9-corpus", "IDLE")).toBe("IDLE");
+  });
 });

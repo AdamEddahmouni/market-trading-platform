@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildOperatorSituation,
   buildOperatorTruthRows,
+  buildUnavailableHonestyRows,
+  buildUnavailableOperatorSituation,
   explainTruthClass,
   formatItem9CorpusProgress,
   humanDiagnosticsHeadline,
@@ -174,5 +176,71 @@ describe("operatorDiagnosticsPresentation", () => {
     expect(live?.truth).toBe("POLICY");
     expect(live?.detail).toMatch(/Live OFF/);
     expect(live?.kind).toBe("policy");
+  });
+
+  it("keeps UNAVAILABLE corpus dates as UNAVAILABLE, not NOT_OBSERVED or 2/3", () => {
+    const corpus = formatItem9CorpusProgress({ availability: "UNAVAILABLE" });
+    expect(corpus.distinctRthDates).toBe("UNAVAILABLE");
+    expect(corpus.distinctRthDates).not.toBe("2/3");
+    expect(mapItem9CorpusProgressTruth({ availability: "UNAVAILABLE" }, corpus.distinctRthDates)).toBe(
+      "UNAVAILABLE",
+    );
+    expect(item9CorpusMeaning(corpus, "UNAVAILABLE")).toMatch(/not a minted 2\/3/);
+    expect(item9CorpusMeaning(corpus, "UNAVAILABLE")).not.toMatch(/still needs more/);
+  });
+
+  it("does not treat complete 3/3 coverage as calibrated or a go-live", () => {
+    const complete: OperatorDiagnostics = {
+      ...SAMPLE_DIAGNOSTICS,
+      severity: "OK",
+      sections: {
+        ...SAMPLE_DIAGNOSTICS.sections,
+        governance: {
+          ...(SAMPLE_DIAGNOSTICS.sections.governance as Record<string, unknown>),
+          headline: "No blocking operator headline.",
+        },
+        runtime: {
+          ...(SAMPLE_DIAGNOSTICS.sections.runtime as Record<string, unknown>),
+          item9_preflight: { disposition: "NOT_RTH" },
+          item9_corpus_status: {
+            availability: "AVAILABLE",
+            report: {
+              calibration_state: "NOT_CALIBRATED",
+              fitting_allowed: false,
+              sample_gate_progress: { distinct_rth_dates: "3/3" },
+            },
+          },
+        },
+      },
+    };
+    const rows = buildOperatorTruthRows(complete);
+    expect(rows.find((row) => row.id === "item9-corpus")?.truth).toBe("HEALTHY");
+    expect(rows.find((row) => row.id === "item9-corpus")?.nextSafeAction).toMatch(/NOT CALIBRATED/);
+    expect(rows.find((row) => row.id === "item9-corpus")?.nextSafeAction).toMatch(/Do not enable Live/);
+    const situation = buildOperatorSituation(complete);
+    expect(situation.kind).toBe("healthy");
+    expect(situation.title).toMatch(/not calibrated/i);
+    expect(situation.explanation).toMatch(/does not mean CALIBRATED/);
+    expect(situation.explanation).toMatch(/Live OFF/);
+    expect(situation.nextSafeAction).toMatch(/calibration remains forbidden/i);
+    expect(situation.nextSafeAction).not.toMatch(/Calibrate/);
+  });
+
+  it("keeps Item 9 / Live honesty when diagnostics are missing without minting 2/3", () => {
+    const errorRows = buildUnavailableHonestyRows("error");
+    const emptyRows = buildUnavailableHonestyRows("empty");
+    expect(errorRows.find((row) => row.id === "item9-corpus")?.truth).toBe("UNAVAILABLE");
+    expect(errorRows.find((row) => row.id === "item9-corpus")?.detail).not.toMatch(/2\/3/);
+    expect(errorRows.find((row) => row.id === "live-execution")?.detail).toMatch(/Live OFF/);
+    expect(errorRows.find((row) => row.id === "full30")?.detail).toMatch(/Full30 OFF/);
+    expect(errorRows.find((row) => row.id === "item9-corpus")?.kind).not.toBe("fault");
+    expect(emptyRows.find((row) => row.id === "item9-corpus")?.truth).toBe("UNKNOWN");
+    expect(emptyRows.find((row) => row.id === "item9-corpus")?.detail).not.toMatch(/2\/3/);
+    const errorSituation = buildUnavailableOperatorSituation("error");
+    expect(errorSituation.explanation).toMatch(/UNAVAILABLE, not a minted 2\/3/);
+    expect(errorSituation.nextSafeAction).toMatch(/Retry GET \/operator\/diagnostics/);
+    expect(errorSituation.nextSafeAction).toMatch(/Do not mint 2\/3/);
+    expect(errorSituation.nextSafeAction).toMatch(/enable Live/);
+    expect(buildUnavailableOperatorSituation("empty").explanation).toMatch(/UNKNOWN, not 2\/3/);
   });
 });

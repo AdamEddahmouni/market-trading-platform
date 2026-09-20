@@ -437,6 +437,19 @@ describe("OperatorControlCenterPage", () => {
     expect(await screen.findByText(/Operator diagnostics are unavailable/)).toBeInTheDocument();
     const hero = document.getElementById(CONTROL_SECTIONS.overview);
     expect(hero).toHaveTextContent("Unavailable");
+    const systemStatus = document.getElementById(CONTROL_SECTIONS.systemStatus);
+    expect(systemStatus).toBeTruthy();
+    expect(systemStatus).toHaveTextContent(/UNAVAILABLE/);
+    expect(systemStatus).toHaveTextContent(/Live OFF/);
+    expect(systemStatus).toHaveTextContent(/Full30 OFF/);
+    expect(systemStatus).toHaveTextContent(/NOT CALIBRATED/);
+    const corpusRow = within(systemStatus as HTMLElement)
+      .getByText("Distinct admitted RTH dates")
+      .closest("li");
+    expect(corpusRow).toHaveAttribute("data-truth", "UNAVAILABLE");
+    expect(corpusRow).not.toHaveAttribute("data-truth", "IDLE");
+    expect(corpusRow).not.toHaveAttribute("data-kind", "fault");
+    expect(corpusRow).toHaveTextContent(/not 2\/3/);
   });
 
   it("renders loading state before any endpoint resolves", () => {
@@ -583,6 +596,8 @@ describe("OperatorControlCenterPage", () => {
     expect(systemStatus).toHaveTextContent(/Waiting on the trading calendar/);
     expect(systemStatus).toHaveTextContent(/NOT CALIBRATED/);
     expect(systemStatus).toHaveTextContent(/CALIBRATION FORBIDDEN/);
+    expect(systemStatus).toHaveTextContent(/Next safe action:/);
+    expect(systemStatus).toHaveTextContent(/Do not calibrate/);
   });
 
   it("consumes operator_truth Item 9 IDLE when present and keeps Live OFF as POLICY", async () => {
