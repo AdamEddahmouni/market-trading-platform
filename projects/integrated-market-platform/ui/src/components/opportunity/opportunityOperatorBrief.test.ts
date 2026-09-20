@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildLiveWithheldOperatorBrief,
+  buildOpportunityEvidenceNavigation,
   buildOpportunityOperatorBrief,
   buildOpportunityQueueScan,
   collectOpportunityConflicts,
@@ -231,6 +232,52 @@ describe("opportunityOperatorBrief", () => {
     expect(inference?.honesty).toBe("INFERRED");
     expect(inference?.answer).toMatch(/CONTRADICTED/);
     expect(collectOpportunityConflicts(row)).toEqual(["Agent enrichment status CONTRADICTED"]);
+  });
+
+  it("surfaces evidence navigation without inventing live feeds", () => {
+    const nav = buildOpportunityEvidenceNavigation(fixtureOpportunityRowBase, {
+      items: [{ kind: "forecast", id: "fc-1" }],
+      lineage_refs: [{ provider: "REPLAY" }],
+    });
+    expect(nav.question).toBe("Where is the evidence?");
+    expect(nav.answer).toMatch(/explain:opportunity:opp-progressive-1/);
+    expect(nav.answer).toMatch(/1 evidence item/);
+    expect(nav.answer).toMatch(/Research evidence/);
+    expect(nav.answer).not.toMatch(/place a (live|real-money) /i);
+    const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowBase, {
+      items: [{ kind: "forecast", id: "fc-1" }],
+    });
+    expect(brief.some((row) => row.question === "Where is the evidence?")).toBe(true);
+  });
+
+  it("refuses action when eligibility is UNAVAILABLE without upgrading attention", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      eligibility_state: "UNAVAILABLE",
+      next_safe_action: "OPEN_WORKSPACE",
+    };
+    const scan = buildOpportunityQueueScan(row, null, { paperActions: true });
+    const refusal = scan.find((item) => item.question === "Why might action be refused?");
+    expect(refusal?.answer).toMatch(/UNAVAILABLE/);
+    expect(collectOpportunityInvalidationLines(row).join(" ")).toMatch(/UNAVAILABLE/);
+  });
+
+  it("merges pipeline_clocks from evidence when row freshness_evaluation is missing", () => {
+    const row = {
+      ...fixtureOpportunityRowBase,
+      data_quality: { status: "UNAVAILABLE", source: "LIVE_OBSERVATIONAL" },
+    };
+    const evidence = {
+      pipeline_clocks: {
+        created_at_is_persist_minted: true,
+        live_receive_clock: null,
+        freshness_status: "NOT_APPLICABLE",
+        freshness_reason_code: "LIVE_AS_OF_UNAVAILABLE",
+      },
+    };
+    const view = readOpportunityFreshnessView(row, evidence);
+    expect(view.reasonCode).toBe("LIVE_AS_OF_UNAVAILABLE");
+    expect(view.operatorAnswer).toMatch(/persist-minted created_at/i);
   });
 
   it("scans observed vs inferred on the queue without a next-action CTA", () => {
