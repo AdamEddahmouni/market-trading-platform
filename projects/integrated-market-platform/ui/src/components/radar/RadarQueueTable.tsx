@@ -1,7 +1,13 @@
 import type { AttentionItem } from "../../api/client";
-import type { OpportunityReviewRow } from "../../api/opportunityClient";
+import type {
+  OpportunityEvidenceResponse,
+  OpportunityReviewRow,
+} from "../../api/opportunityClient";
 import { StatePill } from "../imp-ui/StatePill";
-import { buildOpportunityQueueScan } from "../opportunity/opportunityOperatorBrief";
+import {
+  buildOpportunityQueueScan,
+  type OperatorBriefFeedContext,
+} from "../opportunity/opportunityOperatorBrief";
 import {
   attentionItemFromOpportunity,
   canOpenOpportunityWorkspace,
@@ -17,6 +23,9 @@ import {
 type Props = {
   items: OpportunityReviewRow[];
   selectedStableKey?: string | null;
+  /** Evidence projection for the selected row only — enriches that row's scan. */
+  selectedEvidence?: OpportunityEvidenceResponse | null;
+  feed?: OperatorBriefFeedContext | null;
   readOnly?: boolean;
   paperActions?: boolean;
   onSelectRow?: (row: OpportunityReviewRow) => void;
@@ -34,6 +43,8 @@ type Props = {
 export function RadarQueueTable({
   items,
   selectedStableKey = null,
+  selectedEvidence = null,
+  feed = null,
   readOnly = false,
   paperActions = false,
   onSelectRow,
@@ -46,8 +57,8 @@ export function RadarQueueTable({
       <table className="imp-radar-queue-table">
         <caption className="imp-visually-hidden">
           Ranked opportunity queue. Provenance scan answers what happened versus
-          inferred, freshness, providers, conflicts, unknowns, invalidation, and
-          refusal. Select a row for the full operator brief.
+          inferred, freshness, evidence navigation, providers, conflicts, unknowns,
+          invalidation, and refusal. Select a row for the full operator brief.
         </caption>
         <thead>
           <tr>
@@ -68,7 +79,12 @@ export function RadarQueueTable({
             const rowKey = stableOpportunityKey(row);
             const selected = selectedStableKey === rowKey;
             const presentation = derivePresentationState(row);
-            const scan = buildOpportunityQueueScan(row, null, { readOnly, paperActions });
+            const rowEvidence = selected && selectedEvidence ? selectedEvidence : null;
+            const scan = buildOpportunityQueueScan(row, rowEvidence, {
+              readOnly,
+              paperActions,
+              feed,
+            });
             return (
               <tr
                 key={row.summary_id}

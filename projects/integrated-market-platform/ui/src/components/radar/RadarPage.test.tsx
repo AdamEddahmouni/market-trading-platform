@@ -345,6 +345,7 @@ describe("RadarPage opportunities tab", () => {
     expect(scan).toHaveTextContent("What happened?");
     expect(scan).toHaveTextContent("Inference vs observation?");
     expect(scan).toHaveTextContent("How fresh?");
+    expect(scan).toHaveTextContent("Where is the evidence?");
     expect(scan).toHaveTextContent("Which providers support it?");
     expect(scan).toHaveTextContent("Which facts conflict?");
     expect(scan).toHaveTextContent("What is unknown?");
@@ -373,6 +374,7 @@ describe("RadarPage opportunities tab", () => {
     expect(brief).toHaveTextContent("What happened?");
     expect(brief).toHaveTextContent("Why is IMP showing this?");
     expect(brief).toHaveTextContent("How fresh?");
+    expect(brief).toHaveTextContent("Where is the evidence?");
     expect(brief).toHaveTextContent("Which providers support it?");
     expect(brief).toHaveTextContent("Which facts conflict?");
     expect(brief).toHaveTextContent("Inference vs observation?");
