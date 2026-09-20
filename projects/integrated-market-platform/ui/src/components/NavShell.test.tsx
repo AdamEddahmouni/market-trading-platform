@@ -53,4 +53,12 @@ describe("NavShell", () => {
     renderNav("PAPER");
     expect(screen.queryByText("GATED")).not.toBeInTheDocument();
   });
+
+  it("renders sidebar-only primary nav chrome", () => {
+    renderNav();
+    const nav = screen.getByRole("navigation", { name: "Primary" });
+    expect(nav).toHaveClass("nav-shell-sidebar");
+    expect(nav.className.split(/\s+/)).not.toContain("nav-shell-horizontal");
+    expect(nav.getAttribute("class")).not.toMatch(/horizontal/);
+  });
 });
