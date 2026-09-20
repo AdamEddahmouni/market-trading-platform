@@ -8,7 +8,7 @@ React 18, TypeScript, Vite, React Router 6, TanStack Query 5, Zod, Lightweight C
 
 ## Primary nav (shipped)
 
-`NavShell` labels after UIR-01. Keep labels and `App.tsx` routes in lockstep; do not invent paths.
+`NavShell` labels after UIR-01. Keep labels and `App.tsx` routes in lockstep; do not invent paths. Chrome is sidebar-only (`.nav-shell-sidebar`); there is no horizontal `layout` prop or top-bar `.nav-shell` rule.
 
 | Label | Route | Meaning |
 |-------|-------|---------|
