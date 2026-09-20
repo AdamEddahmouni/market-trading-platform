@@ -576,6 +576,38 @@ class AdapterGapMockTests(unittest.TestCase):
         ).fetch_quote("AAPL")
         self.assertEqual(chart_error.reason_code, "PROVIDER_HTTP_ERROR")
         self.assertEqual(chart_error.events, ())
+        http_incident = incident_for_reason_code(chart_error.reason_code)
+        self.assertEqual(http_incident.status_token, "PROVIDER_HTTP_ERROR")
+        self.assertNotEqual(http_incident.status_token, "UNKNOWN")
+        self.assertEqual(http_incident.severity, "UNAVAILABLE")
+        self.assertFalse(http_incident.fallback.overlay_as_hop_l1)
+        http_payload = build_provider_error_payload(chart_error.reason_code)
+        self.assertEqual(http_payload["provider_status_token"], "PROVIDER_HTTP_ERROR")
+        self.assertEqual(http_payload["reason_code"], "PROVIDER_HTTP_ERROR")
+        self.assertEqual(
+            canonical_error_category(chart_error.reason_code),
+            CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
+        )
+        self.assertNotEqual(
+            canonical_error_category(chart_error.reason_code),
+            CanonicalErrorCategory.INTERNAL_ERROR,
+        )
+
+    def test_classify_provider_incident_ignores_primary_available_override(self) -> None:
+        """Fixture flags must not mark primary L1 available on failure tokens."""
+        incident = classify_provider_incident(
+            {"reason_code": OPEND_UNAVAILABLE, "primary_available": True}
+        )
+        self.assertEqual(incident.status_token, OPEND_UNAVAILABLE)
+        self.assertFalse(incident.fallback.overlay_as_hop_l1)
+        self.assertEqual(incident.fallback.boundary_token, OVERLAY_ALLOWED)
+
+    def test_classify_provider_incident_novel_reason_matches_incident_for_reason_code(self) -> None:
+        novel = classify_provider_incident({"reason_code": "VENDOR_FUTURE_REASON_XYZ"})
+        projected = incident_for_reason_code("VENDOR_FUTURE_REASON_XYZ")
+        self.assertEqual(novel.status_token, projected.status_token)
+        self.assertEqual(novel.status_token, "UNKNOWN")
+        self.assertEqual(novel.details.get("source_reason_code"), "VENDOR_FUTURE_REASON_XYZ")
 
 
 if __name__ == "__main__":
