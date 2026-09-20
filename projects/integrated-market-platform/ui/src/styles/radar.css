@@ -79,6 +79,27 @@
   max-width: 36ch;
 }
 
+.imp-radar-queue-scan {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(16ch, 1fr));
+  gap: var(--imp-space-2) var(--imp-space-3);
+  margin: 0;
+  min-width: 36ch;
+}
+
+.imp-radar-queue-scan-row dt {
+  font-size: var(--imp-text-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.imp-radar-queue-scan-row dd {
+  margin: 2px 0 0;
+  font-size: var(--imp-text-xs);
+  color: var(--text-primary);
+}
+
 .imp-radar-queue-table code {
   font-family: var(--font-mono);
   font-size: var(--imp-text-xs);
@@ -326,6 +347,10 @@
 /* ---- Responsive: stack queue + detail below the overlay-nav breakpoint ---- */
 @media (max-width: 1024px) {
   .imp-radar-opportunities {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .imp-radar-queue-scan {
     grid-template-columns: minmax(0, 1fr);
   }
 }

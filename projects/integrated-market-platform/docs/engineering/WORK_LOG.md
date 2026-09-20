@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-19 — Absorb origin/main into #353 NavShell sidebar flex
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell` |
+| **Summary** | Merged `origin/main` **`6a10873b`** (merge [#351](https://github.com/AdamEddahmouni/market-trading-platform/pull/351) Radar provenance scan) into `#353` `ui/weekend-navshell-horizontal-cleanup`. Kept both `FRONTEND_GUIDE.md` truths (NavShell sidebar-only chrome + Radar provenance scan) and both same-day `WORK_LOG` entries. Unique remaining change is `.nav-shell-sidebar { display: flex }` plus NavShell test/docs. Did **not** merge #353 / #222 / #126. |
+| **Key files** | `ui/src/styles/imp-product.css`; `ui/src/components/NavShell.test.tsx`; `docs/engineering/FRONTEND_GUIDE.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `node scripts/run-vitest.mjs src/components/NavShell.test.tsx` — 6 passed; `npm run typecheck` — pass. `python tools/imp.py env` / `check_docs_links.py` not run (sparse checkout lacks `tools/`). |
+| **Related** | [#353](https://github.com/AdamEddahmouni/market-trading-platform/pull/353); [#351](https://github.com/AdamEddahmouni/market-trading-platform/pull/351) |
+| **Notes** | Isolated worktree `.worktrees/weekend-navshell-horizontal-cleanup`. Item 9 2/3 IDLE / collector `fed2d9f7` / NOT CALIBRATED / Live OFF untouched. Primary desktop `44b8673e` untouched. |
+
 ## 2026-09-19 — NavShell sidebar flex after dead horizontal CSS removal
 
 | Field | Value |
@@ -47,6 +59,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `cd ui && npm run typecheck` pass; `node scripts/run-vitest.mjs src/components/NavShell.test.tsx` — 6 passed |
 | **Related** | Stale PR `#126` (left open, not merged); `7855bd84` hygiene reimplementation |
 | **Notes** | Discover remains investigation-only. No Radar overlap (`RadarQueueTable`, `RadarOpportunitiesPanel`, `opportunityOperatorBrief`, `radar.css` untouched). |
+
+## 2026-09-19 — Radar queue provenance scan (Lane I)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Ranked Radar rows now answer operator questions in a provenance scan without opening detail: observed instrument/lifecycle vs inferred headline, freshness honesty, providers, conflicts, unknowns, invalidation, and why action may be refused. Removed the queue “Next action” CTA; `next_safe_action` is a research-gate token. `LIVE_AS_OF_UNAVAILABLE` stays withheld-clock honesty, not a repair. Item 9 2/3 IDLE / NOT CALIBRATED / CALIBRATION FORBIDDEN / Live OFF unchanged. Discover remains investigation-only. |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/components/radar/RadarOpportunitiesPanel.tsx`; `ui/src/components/radar/RadarPage.test.tsx`; `ui/src/components/opportunity/opportunityOperatorBrief.test.ts`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npx vitest run src/components/radar/RadarPage.test.tsx src/components/opportunity/opportunityOperatorBrief.test.ts` — 43 passed; `npm run typecheck` — pass. Browser QA not run (no Radar backend in this worktree). |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) opportunity presentation; prior Lane I briefs #300/#310/#336 |
+| **Notes** | Isolated worktree `.worktrees/weekend-radar-provenance-product` on `ui/weekend-radar-provenance-product` from `origin/main` **`19d4d317`** (actual tip after #350; #349 was `d27fb164`). Did not edit PROGRAM_STATUS, Discover leftover copy, or Lane H lifecycle tests. |
 
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `d27fb164` after #349
 

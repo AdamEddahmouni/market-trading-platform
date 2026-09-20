@@ -373,6 +373,121 @@ function inferenceVersusObservation(
   };
 }
 
+function queueHappenedLine(row: OpportunityReviewRow): OperatorBriefRow {
+  const instrument = row.instrument_id?.trim();
+  const lifecycle = isPresent(row.lifecycle_state)
+    ? humanizeEnum(String(row.lifecycle_state))
+    : null;
+  const parts: string[] = [];
+  if (instrument) parts.push(instrument);
+  if (lifecycle) parts.push(lifecycle);
+  if (isPresent(row.eligibility_state)) {
+    parts.push(`eligibility ${humanizeEnum(String(row.eligibility_state))}`);
+  }
+  return {
+    question: "What happened?",
+    answer: parts.length
+      ? parts.join(" · ")
+      : "UNKNOWN — no instrument or lifecycle attached",
+    honesty: instrument ? "OBSERVED" : "UNKNOWN",
+  };
+}
+
+function queueInferredLine(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+): OperatorBriefRow {
+  const inference = inferenceVersusObservation(row, evidence);
+  const headline = row.headline?.trim() || "UNKNOWN headline";
+  return {
+    question: "Inference vs observation?",
+    answer: `${headline} — IMP ranking/headline language, not a provider observation. ${inference.answer}`,
+    honesty: inference.honesty === "OBSERVED" ? "DERIVED" : inference.honesty,
+  };
+}
+
+function queueRefusalLine(
+  row: OpportunityReviewRow,
+  options: { readOnly?: boolean; paperActions?: boolean } = {},
+): OperatorBriefRow {
+  const { readOnly = false, paperActions = false } = options;
+  const nextRaw = row.next_safe_action?.trim() || "UNAVAILABLE";
+  const refusal: string[] = [];
+  if (readOnly) refusal.push("This Radar mode is read-only.");
+  if (!paperActions) refusal.push("Paper ack actions are not permitted on this session.");
+  if (isOpportunityIneligible(row)) {
+    refusal.push(
+      `Eligibility or next_safe_action is STOP/INELIGIBLE (${row.eligibility_state ?? "UNAVAILABLE"} / ${nextRaw}).`,
+    );
+  }
+  if (!row.instrument_id?.trim()) {
+    refusal.push("No instrument_id — workspace preview cannot be offered.");
+  }
+  const freshness = readOpportunityFreshnessView(row);
+  if (freshness.reasonCode === "LIVE_AS_OF_UNAVAILABLE") {
+    refusal.push(
+      "LIVE_AS_OF_UNAVAILABLE is withheld-clock honesty, not a repair. Ranked live presentation is not executable.",
+    );
+  }
+  refusal.push(
+    `Backend next_safe_action ${nextRaw} is a research gate, not a live order. Radar never grants live execution. Visibility is not actionability.`,
+  );
+  return {
+    question: "Why might action be refused?",
+    answer: refusal.join(" "),
+    honesty: "DERIVED",
+  };
+}
+
+/**
+ * Queue scan: the same operator questions as the detail brief, compact enough
+ * to answer without opening a row. Headline stays inferred/derived. There is
+ * no "next action" CTA — next_safe_action is a refusal/gate token only.
+ */
+export function buildOpportunityQueueScan(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+  options: { readOnly?: boolean; paperActions?: boolean } = {},
+): OperatorBriefRow[] {
+  const providers = collectOpportunityProviderLabels(row, evidence);
+  const unknowns = collectOpportunityUnknowns(row, evidence);
+  const conflicts = collectOpportunityConflicts(row, evidence);
+  const invalidation = collectOpportunityInvalidationLines(row, evidence);
+  const freshness = readOpportunityFreshnessView(row, evidence);
+  return [
+    queueHappenedLine(row),
+    queueInferredLine(row, evidence),
+    {
+      question: "How fresh?",
+      answer: freshness.operatorAnswer,
+      honesty: freshness.honesty,
+    },
+    {
+      question: "Which providers support it?",
+      answer: providers.length ? providers.join(", ") : NO_PROVIDER,
+      honesty: providers.length ? "OBSERVED" : "UNKNOWN",
+    },
+    {
+      question: "Which facts conflict?",
+      answer: conflicts.length ? conflicts.join(" · ") : NO_CONFLICT,
+      honesty: conflicts.length ? "OBSERVED" : "UNKNOWN",
+    },
+    {
+      question: "What is unknown?",
+      answer: unknowns.length
+        ? unknowns.join(", ")
+        : "UNKNOWN — no unavailable_fields or missing ranking inputs attached",
+      honesty: unknowns.length ? "OBSERVED" : "UNKNOWN",
+    },
+    {
+      question: "What would invalidate it?",
+      answer: invalidation.length ? invalidation.join(" ") : NO_INVALIDATION,
+      honesty: invalidation.length ? "DERIVED" : "UNKNOWN",
+    },
+    queueRefusalLine(row, options),
+  ];
+}
+
 export type OperatorBriefFeedContext = {
   as_of_time?: string;
   as_of_provenance?: string;

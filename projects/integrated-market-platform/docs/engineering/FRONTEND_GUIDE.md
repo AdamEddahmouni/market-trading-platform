@@ -105,8 +105,16 @@ invalidate it, available action, and why action may be refused. Missing live
 receive clocks stay `NOT_APPLICABLE` / `LIVE_AS_OF_UNAVAILABLE`; withheld ranked
 counts are parsed from the summary payload. Missing contract fields stay
 `UNKNOWN` / `UNAVAILABLE`. The brief never invents live execution, calibration,
-or Item 9 collection status. Queue rows expose attached providers (or `UNKNOWN`)
-beside freshness.
+or Item 9 collection status.
+
+The ranked Radar queue is provenance-first. Each row’s **Provenance scan**
+answers the same investigation questions without opening detail: observed
+instrument/lifecycle vs inferred headline, freshness honesty, supporting
+providers (or `UNKNOWN`), conflicts, unknowns, invalidation, and why action may
+be refused. `next_safe_action` is a research-gate token inside refusal, not a
+trade CTA column. `LIVE_AS_OF_UNAVAILABLE` is withheld-clock honesty, not a
+repair. Item 9 2/3 IDLE, NOT CALIBRATED, CALIBRATION FORBIDDEN, and Live OFF
+remain policy facts elsewhere — Radar does not restyle them as engine BLOCKED.
 
 ## Attention signals (one language)
 

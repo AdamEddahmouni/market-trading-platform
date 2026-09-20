@@ -335,16 +335,29 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
-  it("renders ranked rows with state, evidence, freshness, and next action", () => {
+  it("renders ranked rows with a provenance scan instead of a next-action CTA", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);
     const queue = screen.getByTestId("imp-radar-queue");
-    expect(queue).toHaveTextContent("BIYA momentum ignition watch");
+    const scan = within(queue).getByTestId("imp-radar-queue-scan");
     expect(queue).toHaveTextContent("2/3 inputs");
-    expect(queue).toHaveTextContent("Fresh");
-    expect(queue).toHaveTextContent("Open workspace");
     expect(queue).toHaveTextContent("Detected");
-    expect(queue).toHaveTextContent("unit-test");
+    expect(scan).toHaveTextContent("What happened?");
+    expect(scan).toHaveTextContent("Inference vs observation?");
+    expect(scan).toHaveTextContent("How fresh?");
+    expect(scan).toHaveTextContent("Which providers support it?");
+    expect(scan).toHaveTextContent("Which facts conflict?");
+    expect(scan).toHaveTextContent("What is unknown?");
+    expect(scan).toHaveTextContent("What would invalidate it?");
+    expect(scan).toHaveTextContent("Why might action be refused?");
+    expect(scan).toHaveTextContent("BIYA momentum ignition watch");
+    expect(scan).toHaveTextContent("not a provider observation");
+    expect(scan).toHaveTextContent("unit-test");
+    expect(scan).toHaveTextContent("ranking.liquidity MISSING");
+    expect(scan).toHaveTextContent("research gate");
+    expect(scan).toHaveTextContent("never grants live execution");
+    expect(scan).not.toHaveTextContent("What action is available?");
+    expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Explain BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Inspect BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open workspace for BIYA" })).toBeInTheDocument();
@@ -422,8 +435,12 @@ describe("RadarPage opportunities tab", () => {
     summaryMock.data = { items: [staleRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("LIVE", "opportunities", false);
     const queue = screen.getByTestId("imp-radar-queue");
-    expect(queue).toHaveTextContent(/Stale/i);
     expect(queue).toHaveTextContent(/Expired/i);
+    const scan = within(queue).getByTestId("imp-radar-queue-scan");
+    expect(scan).toHaveTextContent(/STALE/i);
+    expect(scan).toHaveTextContent(/never grants live execution/i);
+    expect(scan).toHaveTextContent(/INELIGIBLE/i);
+    expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
     const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
       "imp-radar-operator-brief",
@@ -445,6 +462,10 @@ describe("RadarPage opportunities tab", () => {
       next_action: undefined,
     };
     renderRadar("PAPER", "opportunities", true);
+    const scan = within(screen.getByTestId("imp-radar-queue")).getByTestId("imp-radar-queue-scan");
+    expect(scan).toHaveTextContent(/CONTRADICTED/);
+    expect(scan).toHaveTextContent(/not a provider observation/i);
+    expect(scan).toHaveTextContent(/Which facts conflict/);
     const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
       "imp-radar-operator-brief",
     );
@@ -459,7 +480,7 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("PAPER", "opportunities", true);
     expect(await screen.findByTestId("imp-radar-detail-card")).toBeInTheDocument();
     const queue = screen.getByTestId("imp-radar-queue");
-    fireEvent.click(within(queue).getByText("BIYA momentum ignition watch"));
+    fireEvent.click(queue.querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
@@ -495,7 +516,7 @@ describe("RadarPage mobile detail sheet", () => {
     expect(screen.queryByTestId("imp-radar-detail-card")).not.toBeInTheDocument();
     expect(screen.getByTestId("imp-radar-queue")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    fireEvent.click(screen.getByTestId("imp-radar-queue").querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     const sheet = await screen.findByRole("dialog");
     expect(sheet).toHaveAttribute("aria-label", "Opportunity detail");
     expect(sheet).toHaveTextContent("BIYA momentum ignition watch");
@@ -509,17 +530,17 @@ describe("RadarPage mobile detail sheet", () => {
 
   it("closes on Escape and reopens on the next selection", async () => {
     renderRadar("PAPER", "opportunities", true);
-    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    fireEvent.click(screen.getByTestId("imp-radar-queue").querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    fireEvent.click(screen.getByTestId("imp-radar-queue").querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
   it("keeps paper ack gating identical inside the sheet", async () => {
     renderRadar("PAPER", "opportunities", true);
-    fireEvent.click(screen.getByText("BIYA momentum ignition watch"));
+    fireEvent.click(screen.getByTestId("imp-radar-queue").querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     const sheet = await screen.findByRole("dialog");
     fireEvent.click(within(sheet).getByRole("button", { name: "Watch" }));
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
