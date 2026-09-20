@@ -75,10 +75,11 @@ describe("opportunityPresentation", () => {
     expect(evidenceInputsSentence(row({ ranking_vector: null }))).toBe("Ranking inputs unavailable");
   });
 
-  it("treats STOP and INELIGIBLE as do-not-act on every surface", () => {
+  it("treats STOP, INELIGIBLE, and UNAVAILABLE as do-not-act on every surface", () => {
     const stopped = row({ next_safe_action: "STOP" });
     const ineligible = row({ eligibility_state: "INELIGIBLE" });
-    for (const gated of [stopped, ineligible]) {
+    const unavailable = row({ eligibility_state: "UNAVAILABLE", next_safe_action: "OPEN_WORKSPACE" });
+    for (const gated of [stopped, ineligible, unavailable]) {
       expect(isOpportunityIneligible(gated)).toBe(true);
       expect(canOpenOpportunityWorkspace(gated)).toBe(false);
       expect(canAckOpportunity(gated)).toBe(false);
