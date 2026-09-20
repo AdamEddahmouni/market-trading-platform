@@ -128,6 +128,8 @@ export function RadarOpportunitiesPanel({
         <RadarQueueTable
           items={items}
           selectedStableKey={selectedRow ? stableOpportunityKey(selectedRow) : null}
+          selectedEvidence={evidenceQuery.data ?? null}
+          feed={query.data?.as_of_context ?? null}
           readOnly={readOnly}
           paperActions={paperActions}
           onSelectRow={handleSelectRow}

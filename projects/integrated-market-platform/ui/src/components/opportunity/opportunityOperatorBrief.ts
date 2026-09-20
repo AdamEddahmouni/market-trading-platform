@@ -10,6 +10,7 @@ import { humanizeEnum, resolveSemanticState } from "../../state/semanticState";
 import {
   canOpenOpportunityWorkspace,
   evidenceInputsSentence,
+  explanationRefForRow,
   isOpportunityIneligible,
 } from "./opportunityPresentation";
 
@@ -66,6 +67,18 @@ function qualityRecord(
   return asRecord(row.data_quality) ?? asRecord(evidence?.data_quality) ?? {};
 }
 
+function pipelineClockRecord(
+  evidence?: OpportunityEvidenceResponse | null,
+): Record<string, unknown> | undefined {
+  const envelope = evidence as Record<string, unknown> | undefined;
+  return asRecord(envelope?.pipeline_clocks);
+}
+
+function eligibilityBlocksAction(row: OpportunityReviewRow): boolean {
+  const state = String(row.eligibility_state ?? "").toUpperCase();
+  return isOpportunityIneligible(row) || state === "UNAVAILABLE";
+}
+
 export type OpportunityFreshnessView = {
   status: string | null;
   reasonCode: string | null;
@@ -89,10 +102,16 @@ export function readOpportunityFreshnessView(
   evidence?: OpportunityEvidenceResponse | null,
 ): OpportunityFreshnessView {
   const quality = qualityRecord(row, evidence);
+  const pipeline = pipelineClockRecord(evidence);
   const evaluation = asRecord(quality.freshness_evaluation);
-  const statusRaw = evaluation?.status ?? quality.freshness;
+  const statusRaw =
+    evaluation?.status ?? pipeline?.freshness_status ?? quality.freshness;
   const status = isPresent(statusRaw) ? String(statusRaw) : null;
-  const reasonCode = isPresent(evaluation?.reason_code) ? String(evaluation?.reason_code) : null;
+  let reasonCode = isPresent(evaluation?.reason_code)
+    ? String(evaluation?.reason_code)
+    : isPresent(pipeline?.freshness_reason_code)
+      ? String(pipeline?.freshness_reason_code)
+      : null;
   const source = isPresent(evaluation?.source)
     ? String(evaluation?.source)
     : isPresent(quality.source)
@@ -105,8 +124,14 @@ export function readOpportunityFreshnessView(
 
   const parts: string[] = [];
   if (status) parts.push(humanizeEnum(status));
+  const persistMinted = pipeline?.created_at_is_persist_minted === true;
+  const liveReceiveMissing =
+    pipeline?.live_receive_clock === null || pipeline?.live_receive_clock === undefined;
   if (reasonCode === "LIVE_AS_OF_UNAVAILABLE") {
     parts.push("live receive clock unavailable — created_at is not a live clock");
+    if (persistMinted && liveReceiveMissing) {
+      parts.push("persist-minted created_at is withheld from freshness clocks");
+    }
   } else if (reasonCode === "HONESTY_SOURCE_NOT_LIVE_FRESHNESS") {
     parts.push("replay/fixture source does not claim live freshness");
   } else if (reasonCode === "MISSING_AS_OF") {
@@ -297,10 +322,19 @@ export function collectOpportunityInvalidationLines(
   evidence?: OpportunityEvidenceResponse | null,
 ): string[] {
   const lines: string[] = [];
-  if (isOpportunityIneligible(row)) {
+  if (eligibilityBlocksAction(row)) {
     lines.push(
       `Eligibility already refused action (${row.eligibility_state ?? "UNAVAILABLE"} / ${row.next_safe_action ?? "UNAVAILABLE"}).`,
     );
+  }
+  const decisionSupport = asRecord(row.decision_support);
+  const killSwitch = decisionSupport?.kill_switch;
+  if (isPresent(killSwitch) && String(killSwitch).toUpperCase() !== "UNAVAILABLE") {
+    lines.push(`Decision-support kill switch ${String(killSwitch)} is attached.`);
+  }
+  const reasonCodes = decisionSupport?.reason_codes;
+  if (Array.isArray(reasonCodes) && reasonCodes.length) {
+    lines.push(`Decision-support reason codes: ${reasonCodes.map(String).join(", ")}.`);
   }
   const lifecycle = String(row.lifecycle_state ?? "").toUpperCase();
   if (lifecycle.includes("EXPIRED")) {
@@ -327,6 +361,53 @@ export function collectOpportunityInvalidationLines(
     lines.push(`A supersession reason is attached (${String(supersession)}).`);
   }
   return lines;
+}
+
+/**
+ * Operator-facing evidence navigation from attached refs only — no invented URLs
+ * or live feeds.
+ */
+export function buildOpportunityEvidenceNavigation(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+): OperatorBriefRow {
+  const parts: string[] = [];
+  const explainRef = explanationRefForRow(row);
+  parts.push(`Explain channel ${explainRef}`);
+  parts.push("Inspect opens the evidence projection for this row");
+  const itemCount = Array.isArray(evidence?.items) ? evidence.items.length : 0;
+  const lineageCount = Array.isArray(evidence?.lineage_refs)
+    ? evidence.lineage_refs.length
+    : Array.isArray(row.lineage_refs)
+      ? row.lineage_refs.length
+      : 0;
+  if (itemCount > 0) {
+    parts.push(`${itemCount} evidence item(s) on the projection`);
+  } else {
+    parts.push("evidence items UNKNOWN until the projection loads");
+  }
+  if (lineageCount > 0) {
+    parts.push(`${lineageCount} lineage ref(s) attached`);
+  }
+  const research = evidence?.research_artifact_evidence;
+  if (research?.readiness) {
+    parts.push(`research artifact readiness ${humanizeEnum(String(research.readiness))}`);
+  }
+  const attachments = research?.attachments?.length ?? 0;
+  if (attachments > 0) {
+    parts.push(
+      `${attachments} research attachment(s) — open Research evidence for interpretation-first review`,
+    );
+  } else {
+    parts.push("Research evidence (/research/evidence) holds interpretation-first attachments");
+  }
+  const honesty: OperatorBriefHonesty =
+    itemCount > 0 || lineageCount > 0 || attachments > 0 ? "OBSERVED" : "DERIVED";
+  return {
+    question: "Where is the evidence?",
+    answer: parts.join(" · "),
+    honesty,
+  };
 }
 
 function inferenceVersusObservation(
@@ -415,9 +496,9 @@ function queueRefusalLine(
   const refusal: string[] = [];
   if (readOnly) refusal.push("This Radar mode is read-only.");
   if (!paperActions) refusal.push("Paper ack actions are not permitted on this session.");
-  if (isOpportunityIneligible(row)) {
+  if (eligibilityBlocksAction(row)) {
     refusal.push(
-      `Eligibility or next_safe_action is STOP/INELIGIBLE (${row.eligibility_state ?? "UNAVAILABLE"} / ${nextRaw}).`,
+      `Eligibility or next_safe_action blocks action (${row.eligibility_state ?? "UNAVAILABLE"} / ${nextRaw}).`,
     );
   }
   if (!row.instrument_id?.trim()) {
@@ -444,11 +525,18 @@ function queueRefusalLine(
  * to answer without opening a row. Headline stays inferred/derived. There is
  * no "next action" CTA — next_safe_action is a refusal/gate token only.
  */
+export type OpportunityQueueScanOptions = {
+  readOnly?: boolean;
+  paperActions?: boolean;
+  feed?: OperatorBriefFeedContext | null;
+};
+
 export function buildOpportunityQueueScan(
   row: OpportunityReviewRow,
   evidence?: OpportunityEvidenceResponse | null,
-  options: { readOnly?: boolean; paperActions?: boolean } = {},
+  options: OpportunityQueueScanOptions = {},
 ): OperatorBriefRow[] {
+  const { feed = null } = options;
   const providers = collectOpportunityProviderLabels(row, evidence);
   const unknowns = collectOpportunityUnknowns(row, evidence);
   const conflicts = collectOpportunityConflicts(row, evidence);
@@ -459,9 +547,16 @@ export function buildOpportunityQueueScan(
     queueInferredLine(row, evidence),
     {
       question: "How fresh?",
-      answer: freshness.operatorAnswer,
+      answer: [
+        freshness.operatorAnswer,
+        feed?.as_of_time ? `Feed as-of ${feed.as_of_time}` : null,
+        feed?.as_of_provenance ? `provenance ${feed.as_of_provenance}` : null,
+      ]
+        .filter(Boolean)
+        .join(" · "),
       honesty: freshness.honesty,
     },
+    buildOpportunityEvidenceNavigation(row, evidence),
     {
       question: "Which providers support it?",
       answer: providers.length ? providers.join(", ") : NO_PROVIDER,
@@ -551,7 +646,9 @@ export function buildOpportunityOperatorBrief(
   const refusal: string[] = [];
   if (readOnly) refusal.push("This mode is read-only on Radar (no discovery mutations).");
   if (!paperActions) refusal.push("Paper ack actions are not permitted on this session.");
-  if (isOpportunityIneligible(row)) refusal.push("Eligibility or next-safe-action is STOP/INELIGIBLE.");
+  if (eligibilityBlocksAction(row)) {
+    refusal.push("Eligibility or next-safe-action is STOP/INELIGIBLE/UNAVAILABLE.");
+  }
   if (!row.instrument_id?.trim()) refusal.push("No instrument_id — workspace preview cannot be offered.");
   if (!canOpen && row.next_safe_action && row.next_safe_action !== "OPEN_WORKSPACE") {
     refusal.push(`Backend next safe action is ${next.label}, not workspace preview.`);
@@ -607,6 +704,7 @@ export function buildOpportunityOperatorBrief(
       answer: conflicts.length ? conflicts.join(" · ") : NO_CONFLICT,
       honesty: conflicts.length ? "OBSERVED" : "UNKNOWN",
     },
+    buildOpportunityEvidenceNavigation(row, evidence),
     inferenceVersusObservation(row, evidence),
     {
       question: "What is unknown?",
