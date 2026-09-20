@@ -133,9 +133,13 @@ export function evidenceInputsSentence(row: OpportunityReviewRow): string {
   return `${present} of ${dimensions.length} ranking inputs present`;
 }
 
-/** Eligibility gate: STOP / INELIGIBLE means do not act, regardless of page. */
+/** Eligibility gate: STOP / INELIGIBLE / UNAVAILABLE means do not act, regardless of page. */
 export function isOpportunityIneligible(row: OpportunityReviewRow): boolean {
-  return row.eligibility_state === "INELIGIBLE" || row.next_safe_action === "STOP";
+  return (
+    row.eligibility_state === "INELIGIBLE" ||
+    row.eligibility_state === "UNAVAILABLE" ||
+    row.next_safe_action === "STOP"
+  );
 }
 
 /** Workspace preview is offered only for instrument-backed, eligible rows. */
