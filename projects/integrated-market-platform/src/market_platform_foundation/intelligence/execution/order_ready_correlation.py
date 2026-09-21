@@ -44,8 +44,11 @@ def assert_order_ready_opportunity_correlation(
 ) -> None:
     """Fail closed when durable OrderReady cannot explain its opportunity thread."""
     snapshot = order_ready_correlation_snapshot(order_ready)
-    if snapshot["opportunity_id"] != str(opportunity_id):
+    observed_opportunity_id = snapshot["opportunity_id"]
+    if not observed_opportunity_id:
         raise ValueError("ORDER_READY_OPPORTUNITY_LINEAGE_MISSING")
+    if observed_opportunity_id != str(opportunity_id):
+        raise ValueError("ORDER_READY_OPPORTUNITY_LINEAGE_MISMATCH")
     if snapshot["correlation_id"] != str(correlation_id):
         raise ValueError("ORDER_READY_CORRELATION_MISMATCH")
     if not snapshot["risk_decision_id"] or not snapshot["trade_proposal_id"]:

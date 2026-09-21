@@ -27,8 +27,8 @@ class OrderReadyTraceContractTests(unittest.TestCase):
         self.assertIn(("RiskDecisionV1", "OrderReadyV1", "risk_decision_id"), LINEAGE_EDGES)
         self.assertIn(("OpportunityV1", "OrderReadyV1", "lineage_refs"), LINEAGE_EDGES)
 
-    def test_helper_requires_opportunity_lineage_ref(self) -> None:
-        ready = OrderReadyV1(
+    def _paper_order_ready(self, *, lineage_refs: tuple[ContractReference, ...]) -> OrderReadyV1:
+        return OrderReadyV1(
             order_ready_id="OR-trace-contract-1",
             schema_version="1",
             allocation_decision_id="alloc-1",
@@ -46,10 +46,25 @@ class OrderReadyTraceContractTests(unittest.TestCase):
             execution_mode="INTERNAL_SIMULATION",
             idempotency_key="idem-1",
             correlation_id="corr-1",
-            lineage_refs=(),
+            lineage_refs=lineage_refs,
         )
+
+    def test_helper_requires_opportunity_lineage_ref(self) -> None:
+        ready = self._paper_order_ready(lineage_refs=())
         self.assertIsNone(opportunity_id_from_order_ready(ready))
         with self.assertRaisesRegex(ValueError, "ORDER_READY_OPPORTUNITY_LINEAGE_MISSING"):
+            assert_order_ready_opportunity_correlation(
+                ready,
+                opportunity_id="opp-1",
+                correlation_id="corr-1",
+            )
+
+    def test_helper_rejects_wrong_opportunity_lineage_ref(self) -> None:
+        ready = self._paper_order_ready(
+            lineage_refs=(ContractReference(kind="opportunity", id="opp-other"),),
+        )
+        self.assertEqual(opportunity_id_from_order_ready(ready), "opp-other")
+        with self.assertRaisesRegex(ValueError, "ORDER_READY_OPPORTUNITY_LINEAGE_MISMATCH"):
             assert_order_ready_opportunity_correlation(
                 ready,
                 opportunity_id="opp-1",

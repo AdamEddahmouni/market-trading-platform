@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` |
+| **Summary** | Hardened `assert_order_ready_opportunity_correlation` so missing/empty opportunity lineage stays `ORDER_READY_OPPORTUNITY_LINEAGE_MISSING` while a present but non-matching opportunity id raises `ORDER_READY_OPPORTUNITY_LINEAGE_MISMATCH`. Added focused negative tests for both. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py`; `tests/rt01/test_order_ready_trace_contract.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 5 passed |
+| **Related** | PR #365; prior OrderReady opportunity→risk correlation contract entry |
+| **Notes** | No OrderReadyV1 redesign; empty lineage still allowed on the type. No Live/OpenD/Item 9/collector changes. |
+
 ## 2026-09-21 — OrderReady opportunity→risk correlation contract
 
 | Field | Value |
