@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `d1c50455` after #361
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | After the morning landing queue, retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to `origin/main` **`d1c50455`** (merge [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) leftover catalyst overlay honesty). Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table so it does **not** regress to `348d2838`. Closed the operator flowchart leftover-catalyst honesty lane in [MASTER_ARCHITECTURE.md](../platform/MASTER_ARCHITECTURE.md) now that [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) landed. Ancestry includes [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) flowchart map and [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) docs pin. Item 9 **2/3**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, Live **OFF**, #222 **HOLD**. **Not** a collector retarget. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/platform/MASTER_ARCHITECTURE.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) software tip `d1c50455`; [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362); [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-d1c50455` on `docs/current-main-pin-d1c50455`. Pin **CURRENT_MAIN** to the #361 merge commit `d1c50455`, not this docs PR commit (avoid self-pin loop). Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
 ## 2026-09-21 — Absorb origin/main `0c37b925` (#362) into #361
 
 | Field | Value |

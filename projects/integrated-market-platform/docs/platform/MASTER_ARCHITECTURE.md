@@ -7,7 +7,7 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.6` |
+| Version | `1.7` |
 | Last Verified | `2026-09-21` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
@@ -88,12 +88,12 @@ defects.
 | Market + information sources | Control diagnostics; Lab hops; Path A / FTEP CLIs | Provenance and provider health are implemented. Live market wires remain gated/`LIVE_PROVIDER_UNVERIFIED` in several lanes. **docs/UI comprehension** if a surface looks like a universal live tape. |
 | Ingestion / normalization / processing | Observation ingress router; EventV1/PIT admission; G6–G11 observational runtime | Foundations exist. There is still **no production ingest bus** for every normalize path (intentional implementation detail / later OF work). |
 | Research + strategy analysis | Research, Lab, admitted fixtures, historical-research harness | Multi-strategy capable. Campaign assumptions (Item 9 / AAPL / ES) must stay campaign-scoped. **docs** if research copy implies a single-strategy product. |
-| Candidate opportunities | Radar Screeners / Discover mixed (`INVESTIGATE`, `execution_authority=NONE`) | Candidates are investigation-only. They are **not** Opportunity Engine mint. Weekend copy already labels this; leftover donor catalyst overlay on Research screens is a separate honesty lane. **UI comprehension**. |
+| Candidate opportunities | Radar Screeners / Discover mixed (`INVESTIGATE`, `execution_authority=NONE`) | Candidates are investigation-only. They are **not** Opportunity Engine mint. Weekend copy already labels this. Leftover donor catalyst overlay on Research screens no longer presents as an internship demo or live feed ([#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361)); historical `internship-project-main` remains provenance-only. Remaining **UI comprehension**: investigation-only vs OE mint. |
 | Opportunity Engine | Radar queue / NOW / `GET /opportunities*`; Path A `OpportunityEngine.assess` | Demo/Paper review loop is implemented. Live GET stays empty `UNAVAILABLE`. STALE/UNKNOWN cannot stay ELIGIBLE. Path A MATCHED ≠ empirical PRODUCTION hop. **intentional implementation detail** plus remaining **real gap**: no production ingest bus, no FTEP-tuned ranking numerics. |
 | Operator decision | Radar watch/dismiss/review ack; Workspace Paper draft | Observational lifecycle is allowed in Live without broker execution. Workspace is the Paper submit boundary. **UNAVAILABLE** eligibility must not open workspace/ack ([#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358)). |
 | Execution | Workspace Paper submit; internal simulator; Alpaca Paper comparator | Guarded Paper/mock paths implemented. Production live broker transport is **ABSENT**. Live is OFF for governance/readiness, not because execution is outside product scope. No AI-independent live orders. **real implementation gap** for live broker transport. |
 | Monitoring / lifecycle | Radar, Portfolio, Control, execution traces, trade review | Paper lifecycle reconstructable. Live observational monitoring exists. Unified opportunity→risk→order_ready tracing remains **PARTIAL** (technical debt / RT-01 follow-on). |
-| Evidence / outcomes | Research evidence, OF-01 ledger, FTEP/Item 9 receipts, prediction settlement | Evidence classes stay distinct. Prospective Item 9 collection is frozen at collector `fed2d9f7`, not current software. **docs** if operator SHA tables lag `origin/main`. |
+| Evidence / outcomes | Research evidence, OF-01 ledger, FTEP/Item 9 receipts, prediction settlement | Evidence classes stay distinct. Prospective Item 9 collection is frozen at collector `fed2d9f7`, not current software. Operator SHA tables should match fetched `origin/main` (this pin: **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** `d1c50455` after [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361)). **docs** if later merges leave those tables lagging. |
 | Controlled improvement | Lab, historical-research harness, findings queues | No automated promotion of `CANDIDATE` → `VERIFIED` and no production auto-learning loop. **real implementation gap** (controlled, not autonomous). |
 
 Primary IA (Command, Radar, Workspace, Portfolio, Research, Lab, Control) is
