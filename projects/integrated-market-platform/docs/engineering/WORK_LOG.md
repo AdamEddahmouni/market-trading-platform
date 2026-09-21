@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Opportunity decision provenance / thesis / invalidation contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api`, `docs/architecture` |
+| **Summary** | Added the smallest operator decision-provenance contract on the Discover→OE path: structured origin, strategy identity, thesis + invalidation criteria, opportunity-bound evidence IDs with OBSERVED/DERIVED/INFERRED honesty, freshness window, and deterministic still/no-longer actionability + state-change audit. StrategyMatch bridge attaches it; evidence HTTP projects it. Discover route stays INVESTIGATE-only and does not mint OpportunityV1. |
+| **Key files** | `intelligence/opportunity/decision_provenance.py`; `intelligence/opportunity/bridge.py`; `intelligence/opportunity/__init__.py`; `ui_api/opportunity_projections.py`; `tests/intelligence/test_opportunity_decision_provenance.py`; `docs/architecture/OPPORTUNITY_CONTRACT.md` |
+| **Tests** | `python tools/imp.py test focused` (6 decision-provenance selectors) — pass; related governance/engine/universal — 41 pass; `python tools/imp.py validate changed` — **3924 passed**, 42 skipped, 0 failures |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); builds on #365 RT-01 lineage honesty and #366 UI epistemic honesty |
+| **Notes** | Isolated worktree `.worktrees/opportunity-provenance` on `feat/opportunity-provenance-invalidation` from `origin/main` `80d290ff` tip after rebase. Did not edit live_execution_safety, LiveObservationalRuntime, EventV1 ingress, ObservationIngressRouter, cboe_options, paperOrderDraft tests, or PROGRAM_STATUS. Live remains OFF. Did not wire UI brief to new fields (follow-up). |
+
 ## 2026-09-21 — Cboe options observational opportunity evidence attach
 
 | Field | Value |
