@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `348d2838` after #359
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) read-only storage audit) into [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to that software tip. Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table so it does **not** regress to `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. Did **not** merge #360 or #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) software tip; [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) pin absorb |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5`. Pin **CURRENT_MAIN** to the #359 merge commit `348d2838`, not this docs PR commit (avoid self-pin loop). Kept both 2026-09-20 #359 WORK_LOG entries. Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
 ## 2026-09-20 — Cross-platform Cursor slug parsing for storage audit
 
 | Field | Value |
