@@ -92,6 +92,8 @@ Platform use: internal research / platform development unless governance explici
 
 `cboe_options.opportunity_evidence` + `cboe_options.opportunity_attachment` bind PIT-visible open interest, volume, derived put/call activity mix, and optional underlying contract snapshots onto an **already-admitted US equity** opportunity as `EVIDENCE_NOT_PREDICTION` context.
 
+HTTP evidence projection (`ui_api/cboe_options_evidence.py` via `build_opportunity_evidence_payload`) surfaces that overlay when a `CboeOptionsStore` is present on the replay/runtime store and attachment admits; otherwise the evidence payload is unchanged. Ranked summary cards do not carry the overlay.
+
 - Does **not** mutate opportunity-core thesis/invalidation schema.
 - Does **not** authorize Live options trading or invent an options strategy.
 - Product-class aggregates remain product-class scope; single-name rows come only from exchange symbol snapshots when present.
