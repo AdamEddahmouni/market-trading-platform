@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Absorb origin/main `21d481b5` (#360) into #361
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `docs` |
+| **Summary** | Merged `origin/main` **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) CURRENT_MAIN pin) into [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) after #360 landed. Kept the catalyst-honesty WORK_LOG entry, the #360 pin entry, and both 2026-09-20 #359 entries. Did **not** absorb onto [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362). Did **not** merge #361 / #362 / #222. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.donor_bridge.test_catalyst_bridge tests.integration.test_catalyst_lane_acceptance_tool` — **7 ran**, 2 passed, 5 skipped, 0 failed; `node scripts/run-vitest.mjs src/exploreCatalyst.test.ts src/components/explore-shared/ExploreObservability.test.tsx` — **3 passed** |
+| **Related** | [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) merge `21d481b5`; unique HEAD `a1d8f3aa`; [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) |
+| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` on `ui/explore-catalyst-honesty`. Merge-from-main (no rebase/force). Live remains OFF for governance/readiness, not out-of-scope. Item 9 Day 3 RTH **OPEN** / collector **`fed2d9f7`** / #222 **HOLD**. |
+
 ## 2026-09-21 — Radar catalyst overlay leftover-internship copy honesty
 
 | Field | Value |
@@ -46,7 +58,19 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `ui/src/components/explore-shared/ExploreObservability.tsx`; `ui/src/components/explore-shared/ExploreObservability.test.tsx`; `ui/src/exploreCatalyst.test.ts`; `src/market_platform_foundation/donor_bridge/projections.py`; `src/market_platform_foundation/donor_bridge/internship_client.py`; `tests/donor_bridge/test_catalyst_bridge.py`; `tests/integration/test_catalyst_lane_acceptance_tool.py`; `tools/integration/catalyst_lane_acceptance.py`; `docs/integration/CATALYST_LANE.md` |
 | **Tests** | `python -m unittest tests.donor_bridge.test_catalyst_bridge tests.integration.test_catalyst_lane_acceptance_tool`; focused vitest `exploreCatalyst.test.ts` + `ExploreObservability.test.tsx` |
 | **Related** | Radar Research screens still host this overlay; not Opportunity Engine |
-| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359)) without rebasing onto [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360). Kept both 2026-09-20 #359 WORK_LOG entries. Does not touch collector or Item 9 receipts. |
+| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** then **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360)), **not** onto [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362). Kept both 2026-09-20 #359 WORK_LOG entries and the #360 pin entry. Does not touch collector or Item 9 receipts. |
+
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `348d2838` after #359
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) read-only storage audit) into [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to that software tip. Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table so it does **not** regress to `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. Did **not** merge #360 or #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) software tip; [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) pin absorb |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5`. Pin **CURRENT_MAIN** to the #359 merge commit `348d2838`, not this docs PR commit (avoid self-pin loop). Kept both 2026-09-20 #359 WORK_LOG entries. Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
 
 ## 2026-09-20 — Cross-platform Cursor slug parsing for storage audit
 
