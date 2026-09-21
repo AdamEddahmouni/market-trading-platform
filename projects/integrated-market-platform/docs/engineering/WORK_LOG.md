@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Item 7 natural settlement persist gate (rework #222)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/item7` |
+| **Summary** | Current-main rework of PR #222 natural settlement after lawful capture auto-persist. Hot path still exercises BUILD 15 settlement and reports `due_unlabelable` when mature without a terminal TRADE, but **only persists `SETTLED` outcomes** — never `put_outcome` / governed JSONL for UNLABELABLE — so a later in-window terminal can still settle. Does not claim EMPIRICAL/CALIBRATED; Live remains OFF. |
+| **Key files** | `src/.../production/item7_natural_settlement.py` (created); `src/.../production/item7_opend_capture_persist.py`; `tests/intelligence/test_item7_natural_settlement.py` (created); `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` — 6/6 `Item7NaturalSettlementTests` passed (incl. maturity UNLABELABLE-without-persist then later SETTLED regression); `.venv python -m unittest tests.intelligence.test_item7_opend_capture_persist` — OK |
+| **Related** | Reworks [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) (keep #222 open until this PR is reviewed); Path A scope edge residual unchanged |
+| **Notes** | Isolated worktree `.worktrees/item7-settlement-rework` on `fix/item7-natural-settlement-persist-gate`. Did not push to `item7/natural-settlement`. Did not edit live_execution_safety/, cboe_options/, EventV1 ingress, Radar UI, or PROGRAM_STATUS.md. |
+
 ## 2026-09-21 — Opportunity decision provenance / thesis / invalidation contract
 
 | Field | Value |
