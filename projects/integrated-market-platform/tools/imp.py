@@ -379,6 +379,33 @@ def _manifest_readable(root: Path) -> bool:
     return True
 
 
+def _load_storage_audit_module():
+    try:
+        from tools import storage_audit as storage_module
+    except ModuleNotFoundError:  # pragma: no cover - direct script execution.
+        import storage_audit as storage_module  # type: ignore[no-redef]
+    return storage_module
+
+
+def _storage_command(root: Path, args: argparse.Namespace) -> int:
+    if args.action != "audit":
+        print(f"unknown storage action: {args.action}", file=sys.stderr)
+        return 2
+    storage_module = _load_storage_audit_module()
+    argv = []
+    if getattr(args, "json", False):
+        argv.append("--json")
+    if getattr(args, "top", None) is not None:
+        argv.extend(["--top", str(args.top)])
+    if getattr(args, "include_cursor", False):
+        argv.append("--include-cursor")
+    if getattr(args, "root", None) is not None:
+        argv.extend(["--root", str(args.root)])
+    if getattr(args, "quiet", False):
+        argv.append("--quiet")
+    return int(storage_module.run_cli(argv, repository_root=root))
+
+
 def _load_environment_module():
     try:
         from tools import environment as environment_module
@@ -568,6 +595,30 @@ def build_parser() -> argparse.ArgumentParser:
         help="compare effective vs canonical IMP durable state directories",
     )
     state_path.add_argument("--json", dest="json_path", type=Path)
+
+    storage = groups.add_parser(
+        "storage",
+        help="read-only repository storage observability (never deletes)",
+    )
+    storage_actions = storage.add_subparsers(dest="action", required=True)
+    storage_audit = storage_actions.add_parser(
+        "audit",
+        help="non-destructive storage audit; output is advisory and is not deletion authority",
+    )
+    storage_audit.add_argument("--json", action="store_true", help="Machine-readable JSON")
+    storage_audit.add_argument("--top", type=int, default=25, help="Largest-path rank count")
+    storage_audit.add_argument(
+        "--include-cursor",
+        action="store_true",
+        help="Inspect this repository's project-scoped Cursor storage (sizes only)",
+    )
+    storage_audit.add_argument(
+        "--root",
+        type=Path,
+        default=None,
+        help="Override scan/git root (tests and explicit local roots)",
+    )
+    storage_audit.add_argument("--quiet", action="store_true", help="Suppress progress on stderr")
 
     ci = groups.add_parser("ci", help="classify expensive CI slices without running product code")
     ci_actions = ci.add_subparsers(dest="action", required=True)
@@ -1268,6 +1319,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             command.extend(["--json", str(args.json_path)])
         result = _run(root, label="state-path", command=command, env=_python_environment(root))
         return int(result["exit_code"])
+
+    if args.group == "storage":
+        return _storage_command(root, args)
 
     if args.group == "ci":
         return _ci_jobs_command(root, args)

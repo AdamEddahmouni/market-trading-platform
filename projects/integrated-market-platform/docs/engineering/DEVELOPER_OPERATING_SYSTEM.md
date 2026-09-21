@@ -16,6 +16,7 @@ evidence are consistent:
 | Command | Purpose | Default cost |
 |---|---|---|
 | `python tools/imp.py env` | Safe runtime, Git, worktree, interpreter, timezone, and gate-presence diagnostics | tiny |
+| `python tools/imp.py storage audit` | Read-only repository storage/worktree/disk inventory; **not deletion authority** | cheap |
 | `python tools/imp.py env bootstrap --link-venv` | Explicitly link a shared canonical `.venv` into a linked worktree | tiny |
 | `python tools/imp.py env install-opend` | Install optional vendor OpenD SDK (`moomoo-api`) into the IMP interpreter | tiny |
 | `python tools/imp.py ci jobs` | Classify which expensive GitHub CI slices current changes need (no tests) | tiny |

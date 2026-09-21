@@ -36,19 +36,44 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-21 — Pin CURRENT_MAIN to origin/main `a6e4f9a5` after #357
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `348d2838` after #359
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `docs/platform`, `docs/engineering` |
-| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_GIT_MAIN** to actual `origin/main` tip `a6e4f9a5` (merge [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) docs pin). Kept **CURRENT_SOFTWARE_IMPLEMENTATION** at `9df351d8` ([#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) last software-bearing merge). Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table which had been stale at `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. |
+| **Summary** | Absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) read-only storage audit) into [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to that software tip. Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table so it does **not** regress to `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. Did **not** merge #360 or #222. |
 | **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
 | **Tests** | `python tools/check_docs_links.py` (docs-only) |
-| **Related** | [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) pin convention; [#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) software tip |
-| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5` from `origin/main` @ `a6e4f9a5`. Pin **CURRENT_MAIN** to the #357 merge commit, not this docs PR commit (avoid self-pin loop). Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) software tip; [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) pin absorb |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5`. Pin **CURRENT_MAIN** to the #359 merge commit `348d2838`, not this docs PR commit (avoid self-pin loop). Kept both 2026-09-20 #359 WORK_LOG entries. Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
+## 2026-09-20 — Cross-platform Cursor slug parsing for storage audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools` / developer-operating-system |
+| **Summary** | Repaired PR #359 Linux CI: `cursor_project_slug()` now parses Windows-form and POSIX-form roots from the path syntax being represented (`PureWindowsPath` / `PurePosixPath`), not host `Path` semantics. UNC/ambiguous forms fail closed. Conservative reclaimable estimates exclude caches inside venv/node_modules/protected trees; docs no longer claim `OPEN_PR` hints. |
+| **Key files** | `tools/storage_audit.py`; `tests/validation/test_storage_audit.py`; `docs/engineering/sops/STORAGE_AUDIT.md` |
+| **Tests** | `python -m unittest tests.validation.test_storage_audit tests.validation.test_imp_cli` — **39 passed**; `python tools/imp.py test focused` (6 selectors) — **passed**; `python tools/imp.py lint` — pass; `python tools/imp.py validate changed --paths-file <PR #359 paths>` — **860 passed**, 1 skipped, 0 failures, 0 errors; `core_checkpoint_required=true` (FULL not run). Real Cursor slug discovery on this host: `c-Users-adame-Desktop-market-trading-platform` scoped to `~/.cursor/projects/` only. Skipped a repeated ~12 min full-tree `storage audit` walk; scanner safety is covered by unit tests plus the prior live run on 82145d5b. |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359); [sops/STORAGE_AUDIT.md](sops/STORAGE_AUDIT.md) |
+| **Notes** | Did not implement storage clean, deletion, git gc, worktree prune, or Cursor/evidence mutation. Did not merge #359. Item 9 / Live / Full30 / collector `fed2d9f7` / epoch 121031 / #222 untouched. |
+
+## 2026-09-20 — Read-only IMP storage audit command
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools` / developer-operating-system |
+| **Summary** | Added `python tools/imp.py storage audit`, a project-supported **read-only** disk/worktree observability command so operators can see Git object, worktree, dependency, cache, artifact/evidence, review/temp, and optional Cursor project growth **without deleting anything**. Output is advisory and is **not deletion authority**. No `storage clean` was implemented. |
+| **Key files** | `tools/storage_audit.py` (created); `tools/imp.py`; `tests/validation/test_storage_audit.py` (created); `tests/validation/test_imp_cli.py`; `tools/validation_manifest.json`; `artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`; `docs/engineering/sops/STORAGE_AUDIT.md`; `docs/engineering/drafts/STORAGE_CLEAN_FUTURE_DESIGN.md`; `docs/engineering/DEVELOPER_OPERATING_SYSTEM.md`; `docs/engineering/DEVELOPER_RUNBOOK.md`; `docs/engineering/sops/GIT_WORKTREE.md`; `docs/README.md` |
+| **Tests** | `python -m unittest tests.validation.test_storage_audit tests.validation.test_imp_cli` — **31 passed**; plus closure tests **36 passed** with `test_repository_closure`; `python tools/imp.py lint` — pass; `python tools/check_docs_links.py` — 253 files OK; `python tools/imp.py validate changed` — **852 passed**, 1 skipped, 0 failures, 0 errors. Real `storage audit --json --include-cursor` against the monorepo: exit 0, 146 worktrees, no deletions. |
+| **Related** | [sops/STORAGE_AUDIT.md](sops/STORAGE_AUDIT.md); future cleanup design [drafts/STORAGE_CLEAN_FUTURE_DESIGN.md](drafts/STORAGE_CLEAN_FUTURE_DESIGN.md) |
+| **Notes** | Did not implement deletion. Did not touch Item 9 evidence, Live, Full30, frozen collector `fed2d9f7`, epoch 121031, or PR #222. Conservative reclaimable total is caches only. |
 
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9df351d8` after #358
+
 
 | Field | Value |
 |-------|-------|
