@@ -88,6 +88,15 @@ Platform use: internal research / platform development unless governance explici
 
 `OptionsAggregateContext` coexists with `OptionChainSnapshot` and related O1–O11 artifacts. Aggregate statistics feed **options market context** only — not IV surfaces, dealer gamma, or execution quotes.
 
+### Opportunity evidence attachment (observational)
+
+`cboe_options.opportunity_evidence` + `cboe_options.opportunity_attachment` bind PIT-visible open interest, volume, derived put/call activity mix, and optional underlying contract snapshots onto an **already-admitted US equity** opportunity as `EVIDENCE_NOT_PREDICTION` context.
+
+- Does **not** mutate opportunity-core thesis/invalidation schema.
+- Does **not** authorize Live options trading or invent an options strategy.
+- Product-class aggregates remain product-class scope; single-name rows come only from exchange symbol snapshots when present.
+- AAPL/NVDA appear only as fixtures — underlying resolution is generic.
+
 Live gate: `IMP_CBOE_OPTIONS_LIVE=1`
 
 Probe: `python tools/cboe_options/probe.py`
