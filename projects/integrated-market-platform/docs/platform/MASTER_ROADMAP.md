@@ -7,8 +7,8 @@
 | Primary Truth Class | `APPROVED_FUTURE_DESIGN` |
 | Canonical Subject | Post-core milestone ownership and dependency graph |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.4` |
-| Last Verified | `2026-09-07` |
+| Version | `1.5` |
+| Last Verified | `2026-09-21` |
 | Supersedes | [Revision 3 roadmap projection](../roadmap/REVISION_3_ROADMAP.md) as whole-program master only |
 | Superseded By | None |
 
@@ -57,7 +57,10 @@ Current capability truth per domain. `VERIFIED`, `PARTIAL`, `FIXTURE_ONLY`,
 `RESEARCH_ONLY`, `MISSING`, `BLOCKED`, and `PLANNED` are truthful states, not
 completion claims. A `PARTIAL` state with a product surface marked
 `RESEARCH_ONLY` means the domain is fixture/replay-verified but has no live
-runtime wire and a research-only user surface. The canonical completion plan is
+runtime wire and a research-only user surface. A `PARTIAL` state with product
+surface `MISSING` means identity/runtime kernels exist without a domain
+operator workflow — identity is not a live market wire and not Live
+actionability. The canonical completion plan is
 not this table: it lives in the reconciliation program's
 [master backlog](../audits/imp-reconciliation/12-master-backlog.md) and
 [recovery roadmap](../audits/imp-reconciliation/13-recovery-roadmap.md),
@@ -67,13 +70,13 @@ which this table references rather than duplicates.
 |---|---|---|
 | Equities | `PARTIAL` | Equity portfolio/Paper verified; live market-data wire gated/unverified |
 | Short Squeeze | `PARTIAL` | Models + fixtures verified for replay; live FINRA/NASDAQ/NYSE/CBOE gated; product surface `RESEARCH_ONLY` |
-| CVD / Level 2 | `PARTIAL` | CVD formulas + fixtures verified for replay; IBKR L1/L2 runtime integration `MISSING` (reconciliation BL-0301/BL-0302) |
-| Options | `PARTIAL` | Contracts/formulas/fixtures verified (incl. Q-series, Breeden-Litzenberger); live CBOE gated; product surface `RESEARCH_ONLY` |
-| Futures | `PARTIAL` | Contracts/roll/formulas verified; live gated; product surface `RESEARCH_ONLY` |
-| Bonds / Fixed Income | `MISSING` | No domain implementation |
-| Crypto | `MISSING` | Planned under the cross-asset identity foundation (reconciliation G1) |
-| Gold | `MISSING` | No domain implementation |
-| Silver | `MISSING` | No domain implementation |
+| CVD / Level 2 | `PARTIAL` | CVD formulas + fixtures verified; G6–G11 IBKR observational L1/L2/TRADES runtime implemented; last canary mixed entitlements (L1 delayed verified, L2/TRADES `NOT_ENTITLED`); `LIVE_PROVIDER_UNVERIFIED` for a production campaign |
+| Options | `PARTIAL` | G13/G14 Paper product surface; contracts/formulas/fixtures verified; live CBOE gated; Live execution `NOT_ENABLED` |
+| Futures | `PARTIAL` | G13/G14 Paper product surface with margin facts; family/continuous non-executable; live gated; Live execution `NOT_ENABLED` |
+| Bonds / Fixed Income | `PARTIAL` | XA-02 FRED rates vertical + G1 typed bond identity + G2 valuation; product surface `MISSING` |
+| Crypto | `PARTIAL` | G1 pair identity + G2 valuation + G12 runtime semantics; product surface `MISSING`; live providers unverified |
+| Gold | `PARTIAL` | G1 explicit identity; product surface `MISSING` |
+| Silver | `PARTIAL` | G1 explicit identity; product surface `MISSING` |
 | Broader Commodities | `PARTIAL` | Energy (EIA/weather/CFTC) + macro groundwork verified; domain product surface `MISSING` |
 | Whale / Large Participant | `PARTIAL` | Read-only envelopes/lanes; no live ingestion; product surface `RESEARCH_ONLY` |
 | Industry | `MISSING` | No domain implementation |
