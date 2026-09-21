@@ -11,6 +11,19 @@ from .contracts import (
     market_statistic_to_dict,
     reference_file_to_dict,
 )
+from .opportunity_attachment import (
+    CboeOptionsOpportunityAttachment,
+    attach_cboe_options_observational_context,
+    attachment_to_dict,
+)
+from .opportunity_evidence import (
+    ATTACHMENT_KIND,
+    AUTHORITY_CLASS_EVIDENCE_NOT_PREDICTION,
+    CboeOptionsObservationalContext,
+    build_cboe_options_observational_context,
+    observational_context_to_dict,
+    underlying_symbol_from_instrument_id,
+)
 from .daily import DailyStatisticsCapture, parse_daily_statistics_html
 from .derived import (
     DerivedIntradayInterval,
@@ -38,6 +51,10 @@ from .symbol_data import SymbolDataCapture, parse_symbol_data_csv
 from .transport import CboeOptionsTransport
 
 __all__ = [
+    "ATTACHMENT_KIND",
+    "AUTHORITY_CLASS_EVIDENCE_NOT_PREDICTION",
+    "CboeOptionsObservationalContext",
+    "CboeOptionsOpportunityAttachment",
     "CboeOptionsQualityFlag",
     "CboeOptionsStore",
     "CboeOptionsTransport",
@@ -56,6 +73,9 @@ __all__ = [
     "STATISTIC_REGISTRY",
     "SymbolDataCapture",
     "aggregate_context_to_dict",
+    "attach_cboe_options_observational_context",
+    "attachment_to_dict",
+    "build_cboe_options_observational_context",
     "build_options_aggregate_context",
     "capability_report",
     "characterize_historical_volume_download",
@@ -65,6 +85,7 @@ __all__ = [
     "derive_put_call_features",
     "live_enabled",
     "market_statistic_to_dict",
+    "observational_context_to_dict",
     "parse_daily_statistics_html",
     "parse_intraday_statistics_html",
     "parse_market_volume_csv",
@@ -81,4 +102,5 @@ __all__ = [
     "statistic_as_of",
     "statistics_as_of",
     "transport_from_env",
+    "underlying_symbol_from_instrument_id",
 ]
