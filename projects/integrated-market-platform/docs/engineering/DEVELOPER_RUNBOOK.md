@@ -58,6 +58,10 @@ python3 tools/imp.py env bootstrap --link-venv   # linked worktree only
 
 JSON reports gate **presence** only, never values. Telemetry (optional): `.local/developer-workflow/telemetry.jsonl`.
 
+### Storage observability (read-only)
+
+`python tools/imp.py storage audit` inventories disk, Git objects, worktrees, linked vs physical `.venv`/`node_modules`, caches, protected artifacts/evidence, and review/temp trees. Default is **read-only**. Output is advisory and is **not deletion authority**. JSON: `--json`. Optional Cursor project sizes: `--include-cursor`. SOP: [sops/STORAGE_AUDIT.md](sops/STORAGE_AUDIT.md).
+
 ---
 
 ## Start and stop (API + UI)

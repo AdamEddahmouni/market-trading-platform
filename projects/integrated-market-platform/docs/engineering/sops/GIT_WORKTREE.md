@@ -79,6 +79,10 @@ python tools/imp.py state-path
 
 Empty worktree `.local/` is not proof that FTEP sessions do not exist.
 
+## Storage observability
+
+Use [STORAGE_AUDIT.md](STORAGE_AUDIT.md) (`python tools/imp.py storage audit`) to inventory worktree and disk growth. The audit is read-only; its output is **not deletion authority**.
+
 ## Hard rules
 
 - One implementing agent per worktree.
