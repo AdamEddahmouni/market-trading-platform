@@ -10,8 +10,8 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `b55fab51eeef393420e19deb174401b33ee4f380` | Mutable `origin/main` tip after [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) Live order safety (Live **OFF**; includes [#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366)). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `b55fab51eeef393420e19deb174401b33ee4f380` | Last **software-bearing** merge [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) (includes [#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366)). Matches **CURRENT_MAIN**. **Not** empirical evidence. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `aca0a60f9b010f4ce956f843b91db9c0e4f8a12d` | Mutable `origin/main` tip after [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) Item 7 settlement persist gate (Live **OFF**; ancestry includes [#372](https://github.com/AdamEddahmouni/market-trading-platform/pull/372)/[#369](https://github.com/AdamEddahmouni/market-trading-platform/pull/369)/[#368](https://github.com/AdamEddahmouni/market-trading-platform/pull/368)/[#371](https://github.com/AdamEddahmouni/market-trading-platform/pull/371)/[#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364)). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `aca0a60f9b010f4ce956f843b91db9c0e4f8a12d` | Tip software merge [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370). Matches **CURRENT_MAIN**. **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
@@ -29,7 +29,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `b55fab51…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `aca0a60f…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 **Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
 
@@ -56,7 +56,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `b55fab51`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `aca0a60f`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -187,7 +187,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`b55fab51`** through [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`aca0a60f`** through [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
@@ -201,4 +201,4 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 2. Morning: bootstrap venv/state path; start platform; confirm `:8766` / `:5173`.
 3. T−15: run full preflight block including `item9 next-rth-preflight`; set temporary Finviz/catalyst gates; confirm OpenD loopback.
 4. ≥ 09:30 only: when preflight allows, run Finviz watch → governed Item 9 `--poll` (frozen collector) → `corpus-status` → Item 7 status → ops dry-run; summarize.
-5. Confirm empirical gates remain unflipped unless governed JSON receipts exist; Live stays OFF; do not merge [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222).
+5. Confirm empirical gates remain unflipped unless governed JSON receipts exist; Live stays OFF. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) is **CLOSED** (not merged); [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) superseded it.

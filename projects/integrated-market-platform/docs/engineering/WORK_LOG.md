@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Docs pin CURRENT_MAIN to origin/main aca0a60f (#370)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / `program-status` |
+| **Summary** | Docs-only tip pin after `git fetch origin main`: **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** → `aca0a60f9b010f4ce956f843b91db9c0e4f8a12d` (merge [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370); parents `ddeadbf1` / `db583ae3`). Noted recently landed merges [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364)/[#367](https://github.com/AdamEddahmouni/market-trading-platform/pull/367)/[#368](https://github.com/AdamEddahmouni/market-trading-platform/pull/368)/[#369](https://github.com/AdamEddahmouni/market-trading-platform/pull/369)/[#371](https://github.com/AdamEddahmouni/market-trading-platform/pull/371)/[#372](https://github.com/AdamEddahmouni/market-trading-platform/pull/372) with observed merge SHAs. Item 9 remains **3**/3 **`SAMPLE_GATE_MET`**, **`PARTIAL_NOT_CALIBRATED`**, **`calibrated=false`**, **`fitting_allowed=false`**, calibration **FORBIDDEN**. Live remains **OFF**. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) **CLOSED** / not merged ([#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) superseded). |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` (stale tip SHA only); `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only; no product/tests run |
+| **Related** | Prior pin [#367](https://github.com/AdamEddahmouni/market-trading-platform/pull/367) / tip `b55fab51` |
+| **Notes** | No product code, collectors, receipts, Live, or calibration changes. Did not merge this PR. Did not touch item7/pr370 worktrees. |
+
 ## 2026-09-21 — Item 7 natural settlement persist gate (rework #222)
 
 | Field | Value |
