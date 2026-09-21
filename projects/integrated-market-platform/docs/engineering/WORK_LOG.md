@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Radar honesty harden: eligibility + headline evidence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/opportunity` |
+| **Summary** | Stopped presenting platform `eligibility_state` as an OBSERVED "What happened?" fact (queue + detail briefs); kept it visible as DERIVED eligibility evaluation. Removed Headline from `deterministicEvidence` so it is not treated as deterministic market evidence (headline remains on title / derived epistemic layer). |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts` (+test); `opportunityDetailModel.ts` (+test); `opportunityEpistemicLayers.ts` (+test) |
+| **Tests** | `npx vitest run --environment node` on `opportunityOperatorBrief.test.ts`, `opportunityDetailModel.test.ts`, `opportunityEpistemicLayers.test.ts`, `opportunityPresentation.test.ts` — **44 passed** |
+| **Related** | PR #366 harden on `ui/operator-comprehension`; does not merge Live or touch Item 9 |
+| **Notes** | Actionability/authority semantics unchanged (presentation + detail readiness tests). Independent review still required — do not self-approve. |
+
+## 2026-09-21 — Radar operator honesty: headline not OBSERVED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/opportunity` |
+| **Summary** | Stopped labeling IMP headline language as an observed fact on Radar detail: moved "Surfaced headline" into derived epistemic layers, aligned the operator brief "What happened?" row with queue-scan honesty, renamed residual "Market behavior" to "Headline", and surfaced attached `expires_at`/`expiry` in invalidation lines when present. |
+| **Key files** | `ui/src/components/opportunity/opportunityEpistemicLayers.ts` (+test); `opportunityOperatorBrief.ts` (+test); `opportunityDetailModel.ts` |
+| **Tests** | `npx vitest run --environment node` on `opportunityEpistemicLayers.test.ts`, `opportunityOperatorBrief.test.ts`, `opportunityDetailModel.test.ts` — **32 passed** |
+| **Related** | Operator comprehension lane (post-RTH optional); does not merge Live or touch Item 9 |
+| **Notes** | Remaining high-harm gaps (Radar risk UNAVAILABLE stubs; Discover→Opportunity provenance bridge; opportunity↔Paper evidence link) need backend/data or larger feature work — not in this PR |
+
 ## 2026-09-21 — Pin CURRENT_MAIN to origin/main `d1c50455` after #361
 
 | Field | Value |

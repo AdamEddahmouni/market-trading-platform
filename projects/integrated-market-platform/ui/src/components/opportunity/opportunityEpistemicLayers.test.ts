@@ -41,6 +41,26 @@ describe("opportunityEpistemicLayers", () => {
     expect(layers.unknown.some((row) => /UNKNOWN|MISSING/.test(row.value))).toBe(true);
   });
 
+  it("keeps the surfaced headline in derived signals, not observed facts", () => {
+    const layers = buildOpportunityEpistemicLayers(fixtureOpportunityRowBase);
+    expect(layers.observed.some((row) => /headline/i.test(row.label))).toBe(false);
+    expect(layers.derived.find((row) => row.label === "Surfaced headline")?.value).toBe(
+      fixtureOpportunityRowBase.headline,
+    );
+  });
+
+  it("keeps eligibility evaluation in derived signals, not observed facts", () => {
+    const layers = buildOpportunityEpistemicLayers({
+      ...fixtureOpportunityRowBase,
+      eligibility_state: "INELIGIBLE",
+    });
+    expect(layers.observed.some((row) => /eligibility/i.test(row.label))).toBe(false);
+    expect(JSON.stringify(layers.observed)).not.toMatch(/INELIGIBLE/);
+    expect(layers.derived.find((row) => row.label === "Eligibility evaluation")?.value).toBe(
+      "INELIGIBLE",
+    );
+  });
+
   it("keeps STALE freshness in the derived layer instead of promoting it to FRESH", () => {
     const layers = buildOpportunityEpistemicLayers({
       ...fixtureOpportunityRowBase,
