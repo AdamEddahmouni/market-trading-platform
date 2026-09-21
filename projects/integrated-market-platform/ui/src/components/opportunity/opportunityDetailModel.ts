@@ -93,10 +93,11 @@ export function buildOpportunityDetailSections(
   const ineligible = isOpportunityIneligible(row);
   const canOpen = canOpenOpportunityWorkspace(row);
 
+  // Headline stays out of deterministicEvidence — it is IMP summary language
+  // (detail title / derived epistemic layer), not deterministic market evidence.
   const deterministicEvidence: Array<{ label: string; value: string }> = [
     { label: "Source", value: displayValue(quality.source) },
     { label: "Catalyst / promotion", value: displayValue(evidence?.evidence_promotion_reason ?? row.evidence_promotion_reason) },
-    { label: "Market behavior", value: displayValue(row.headline) },
     {
       label: "Identity",
       value:

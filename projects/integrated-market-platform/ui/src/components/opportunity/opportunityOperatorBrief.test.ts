@@ -84,9 +84,47 @@ describe("opportunityOperatorBrief", () => {
     const invalidate = brief.find((item) => item.question === "What would invalidate it?");
     expect(freshness?.answer.toUpperCase()).toContain("STALE");
     expect(happened?.answer).toMatch(/Expired/i);
+    expect(happened?.answer).not.toMatch(fixtureOpportunityRowBase.headline);
+    expect(happened?.honesty).toBe("OBSERVED");
     expect(invalidate?.honesty).toBe("DERIVED");
     expect(invalidate?.answer).toMatch(/STALE/);
     expect(invalidate?.answer).toMatch(/expired/i);
+  });
+
+  it("does not label IMP headline language as an OBSERVED what-happened fact", () => {
+    const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowBase);
+    const happened = brief.find((item) => item.question === "What happened?");
+    const inference = brief.find((item) => item.question === "Inference vs observation?");
+    expect(happened?.honesty).toBe("OBSERVED");
+    expect(happened?.answer).not.toContain(fixtureOpportunityRowBase.headline);
+    expect(inference?.answer).toMatch(/derived by IMP|Evidence class/i);
+  });
+
+  it("does not classify platform eligibility_state as a raw OBSERVED what-happened fact", () => {
+    const brief = buildOpportunityOperatorBrief({
+      ...fixtureOpportunityRowBase,
+      eligibility_state: "INELIGIBLE",
+      next_safe_action: "STOP",
+    });
+    const happened = brief.find((item) => item.question === "What happened?");
+    const eligibility = brief.find((item) => item.question === "Eligibility evaluation?");
+    expect(happened?.honesty).toBe("OBSERVED");
+    expect(happened?.answer).not.toMatch(/eligibility/i);
+    expect(happened?.answer).not.toMatch(/INELIGIBLE/i);
+    expect(eligibility?.honesty).toBe("DERIVED");
+    expect(eligibility?.answer).toMatch(/ineligible/i);
+    expect(eligibility?.answer).toMatch(/evaluation\/gate state|not a raw market observation/i);
+  });
+
+  it("surfaces attached expiry as invalidation without inventing thesis criteria", () => {
+    const brief = buildOpportunityOperatorBrief({
+      ...fixtureOpportunityRowBase,
+      expires_at: "2026-09-21T20:00:00Z",
+    });
+    const invalidate = brief.find((item) => item.question === "What would invalidate it?");
+    expect(invalidate?.honesty).toBe("DERIVED");
+    expect(invalidate?.answer).toMatch(/2026-09-21T20:00:00Z/);
+    expect(invalidate?.answer).toMatch(/time-bounded/i);
   });
 
   it("refuses action when eligibility is INELIGIBLE", () => {
@@ -287,7 +325,10 @@ describe("opportunityOperatorBrief", () => {
     const byQuestion = Object.fromEntries(scan.map((row) => [row.question, row]));
     expect(byQuestion["What happened?"]?.answer).toMatch(/^BIYA/);
     expect(byQuestion["What happened?"]?.answer).not.toMatch(/continuation candidate/i);
+    expect(byQuestion["What happened?"]?.answer).not.toMatch(/eligibility/i);
     expect(byQuestion["What happened?"]?.honesty).toBe("OBSERVED");
+    expect(byQuestion["Eligibility evaluation?"]?.honesty).toBe("DERIVED");
+    expect(byQuestion["Eligibility evaluation?"]?.answer).toMatch(/Eligible/i);
     expect(byQuestion["Inference vs observation?"]?.answer).toMatch(/continuation candidate/i);
     expect(byQuestion["Inference vs observation?"]?.answer).toMatch(/not a provider observation/i);
     expect(byQuestion["Inference vs observation?"]?.honesty).toBe("DERIVED");
