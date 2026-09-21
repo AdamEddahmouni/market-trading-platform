@@ -463,18 +463,27 @@ function queueHappenedLine(row: OpportunityReviewRow): OperatorBriefRow {
   const lifecycle = isPresent(row.lifecycle_state)
     ? humanizeEnum(String(row.lifecycle_state))
     : null;
+  // Instrument + lifecycle only — eligibility is platform evaluation state
+  // (see eligibilityEvaluationLine), not a raw observed market fact.
   const parts: string[] = [];
   if (instrument) parts.push(instrument);
   if (lifecycle) parts.push(lifecycle);
-  if (isPresent(row.eligibility_state)) {
-    parts.push(`eligibility ${humanizeEnum(String(row.eligibility_state))}`);
-  }
   return {
     question: "What happened?",
     answer: parts.length
       ? parts.join(" · ")
       : "UNKNOWN — no instrument or lifecycle attached",
     honesty: instrument ? "OBSERVED" : "UNKNOWN",
+  };
+}
+
+/** Platform eligibility / evaluation state — DERIVED, never OBSERVED. */
+function eligibilityEvaluationLine(row: OpportunityReviewRow): OperatorBriefRow | null {
+  if (!isPresent(row.eligibility_state)) return null;
+  return {
+    question: "Eligibility evaluation?",
+    answer: `Platform eligibility ${humanizeEnum(String(row.eligibility_state))} — evaluation/gate state, not a raw market observation.`,
+    honesty: "DERIVED",
   };
 }
 
@@ -546,9 +555,11 @@ export function buildOpportunityQueueScan(
   const conflicts = collectOpportunityConflicts(row, evidence);
   const invalidation = collectOpportunityInvalidationLines(row, evidence);
   const freshness = readOpportunityFreshnessView(row, evidence);
+  const eligibility = eligibilityEvaluationLine(row);
   return [
     queueHappenedLine(row),
     queueInferredLine(row, evidence),
+    ...(eligibility ? [eligibility] : []),
     {
       question: "How fresh?",
       answer: [
@@ -673,15 +684,13 @@ export function buildOpportunityOperatorBrief(
     actionAnswer = `${next.label}. No workspace promote from this row.`;
   }
 
-  // Instrument + lifecycle only — headline is IMP-derived and answered under
-  // "Inference vs observation?" (matches queueHappenedLine honesty).
+  // Instrument + lifecycle only — headline is IMP-derived ("Inference vs
+  // observation?"); eligibility is platform evaluation (eligibilityEvaluationLine).
   const happenedParts: string[] = [instrument];
   if (isPresent(row.lifecycle_state)) {
     happenedParts.push(humanizeEnum(String(row.lifecycle_state)));
   }
-  if (isPresent(row.eligibility_state)) {
-    happenedParts.push(`eligibility ${humanizeEnum(String(row.eligibility_state))}`);
-  }
+  const eligibility = eligibilityEvaluationLine(row);
 
   return [
     {
@@ -694,6 +703,7 @@ export function buildOpportunityOperatorBrief(
       answer: `${why}. ${evidenceInputsSentence(row)}.`,
       honesty: whyHonesty,
     },
+    ...(eligibility ? [eligibility] : []),
     {
       question: "How fresh?",
       answer: [

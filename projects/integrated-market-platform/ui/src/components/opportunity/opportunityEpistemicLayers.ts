@@ -105,6 +105,8 @@ export function buildOpportunityEpistemicLayers(
   const derived: EpistemicLayerItem[] = [
     // Headline is IMP summary language — never an observed market fact.
     { label: "Surfaced headline", value: display(row.headline) },
+    // Eligibility is platform evaluation/gate state — not a raw observation.
+    { label: "Eligibility evaluation", value: display(row.eligibility_state) },
     { label: "Data freshness", value: freshness.operatorAnswer },
     {
       label: "Ranking basis",
