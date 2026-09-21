@@ -179,7 +179,12 @@ def check_champion_lineage() -> InvariantResultV1:
 
 
 def check_opportunity_lineage() -> InvariantResultV1:
+    from market_platform_foundation.intelligence.contracts.common import ContractReference
     from market_platform_foundation.intelligence.execution import PreTradeRiskEngine
+    from market_platform_foundation.intelligence.execution.order_ready_correlation import (
+        opportunity_id_from_order_ready,
+    )
+    from market_platform_foundation.intelligence.execution.types import OrderReadyStatus, OrderReadyV1
     from tests.intelligence.execution_fixtures import default_execution_policy, flat_portfolio, sample_opportunity, sample_quote
     from tests.intelligence.outcome_fixtures import T
 
@@ -197,7 +202,32 @@ def check_opportunity_lineage() -> InvariantResultV1:
     )
     if proposal.opportunity_ref.id != opp.opportunity_id:
         return _fail("opportunity_lineage", "trade proposal missing opportunity ref")
-    return _pass("opportunity_lineage", "TradeProposalV1 requires OpportunityV1 ref")
+    order_ready = OrderReadyV1(
+        order_ready_id="OR-opportunity-lineage-check",
+        schema_version=INTELLIGENCE_SCHEMA_VERSION,
+        allocation_decision_id="alloc-opportunity-lineage",
+        trade_proposal_id=proposal.proposal_id,
+        risk_decision_id="risk-opportunity-lineage",
+        account_id="acct-paper",
+        mode="PAPER",
+        decision_time_ns=proposal_time,
+        instrument_id="inst-biya",
+        symbol="BIYA",
+        approved_quantity=1,
+        approved_notional_minor=100,
+        status=OrderReadyStatus.READY,
+        execution_authority="PAPER_ONLY",
+        execution_mode="INTERNAL_SIMULATION",
+        idempotency_key="idem-opportunity-lineage",
+        correlation_id="corr-opportunity-lineage",
+        lineage_refs=(ContractReference(kind="opportunity", id=opp.opportunity_id),),
+    )
+    if opportunity_id_from_order_ready(order_ready) != opp.opportunity_id:
+        return _fail("opportunity_lineage", "order ready missing opportunity lineage")
+    return _pass(
+        "opportunity_lineage",
+        "TradeProposalV1 and OrderReadyV1 require OpportunityV1 lineage",
+    )
 
 
 def check_risk_authorization() -> InvariantResultV1:

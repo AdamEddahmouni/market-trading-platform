@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — OrderReady opportunity→risk correlation contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` / `system_acceptance` |
+| **Summary** | Closed the inventory/docs gap for durable opportunity→risk→order_ready correlation: registered `OrderReadyV1` and lineage edges, added read-only extractors that fail closed when opportunity lineage is missing, and locked the strategy Paper path with a focused trace-contract test. No Live, broker, OpenD, or Item 9 changes. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py` (created); `execution/__init__.py`; `system_acceptance/inventory.py`; `system_acceptance/invariants.py`; `tests/rt01/test_order_ready_trace_contract.py` (created); `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `docs/architecture/DATA_CONTRACTS.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 4 passed |
+| **Related** | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [DATA_CONTRACTS](../architecture/DATA_CONTRACTS.md); RT-01 Paper tracing |
+| **Notes** | Runtime already stamped opportunity into `OrderReadyV1.lineage_refs`; this increment makes the contract discoverable and test-enforced. Manual Paper drafts and Live remain intentionally separate. Collector/OpenD/Live untouched. |
+
 ## 2026-09-21 — Pin CURRENT_MAIN to origin/main `d1c50455` after #361
 
 | Field | Value |
