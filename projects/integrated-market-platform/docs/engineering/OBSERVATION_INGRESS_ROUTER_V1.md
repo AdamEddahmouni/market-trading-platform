@@ -47,12 +47,37 @@ ObservationIngressRouter (this document)
 BUILD 05/06/09 pipelines (existing)
 ```
 
+### Live observational bridge (opt-in)
+
+Continuous live quotes/snapshots/bars that pass `LiveAdmissionEngine` can enter the
+same production path without a second bus:
+
+```text
+admitted live capture / envelope
+        │
+        ▼
+canonicalize capability aliases (OpenD L1→QUOTE, …)
+        │
+        ▼
+BUILD 03 normalizer (`moomoo.capture` or `envelope`)
+  NormalizationContext(ingestion_mode=LIVE_OBSERVED)
+        │
+        ▼
+dispatch_normalization_result → ObservationIngressRouter
+```
+
+Implementation: `live_observation_dispatch.py` plus optional
+`LiveObservationalRuntime.attach_observation_ingress(router)`. Live gates stay
+off by default; attaching a router does **not** authorize broker execution.
+Unsupported capabilities without an admitted envelope fail closed (no EventV1).
+
 ## Non-goals (V1)
 
 - No Kafka/NATS/Redis or external broker
 - No new canonical envelope type
 - No automatic wiring into FTEP / OpenD capture ledger (Lane A)
 - No live Grok/LLM calls on the dispatch hot path
+- No enabling Live execution or order submit from ingress consumers
 
 ## Contracts (implementation)
 
