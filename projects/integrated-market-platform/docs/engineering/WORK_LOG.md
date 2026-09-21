@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Operator flowchart surface map + domain capability honesty
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Added an operator workflow surface map to [MASTER_ARCHITECTURE.md](../platform/MASTER_ARCHITECTURE.md) so the explanatory market→ingest→research→candidates→OE→decision→execution→monitoring→evidence→improvement flowchart maps onto current UI/API without rewriting working code. Updated [MASTER_ROADMAP.md](../platform/MASTER_ROADMAP.md) domain table so Bonds/Crypto/Gold/Silver are `PARTIAL` identity/runtime kernels (not `MISSING` / "no domain implementation") after G1–G14, without inventing product surfaces or Live actionability. |
+| **Key files** | `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](../architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md); G1–G14 PROGRAM_STATUS rows |
+| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` from `origin/main` @ `a6e4f9a5`. Does not retarget collector, merge #222, or enable Live. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9df351d8` after #358
 
 | Field | Value |
