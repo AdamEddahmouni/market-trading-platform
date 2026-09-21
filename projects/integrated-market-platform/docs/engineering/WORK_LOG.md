@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Absorb origin/main `21d481b5` (#360) into #362
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Merged `origin/main` **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) CURRENT_MAIN pin) into [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) after #360 landed. Kept the operator flowchart WORK_LOG entry, the #360 pin entry, and both 2026-09-20 #359 entries. Did **not** merge #362 / #361 / #222. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) merge `21d481b5`; unique HEAD `a1d8f3aa`; [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) |
+| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` on `docs/operator-flowchart-alignment`. Merge-from-main (no rebase/force). Item 9 Day 3 RTH **OPEN** / collector **`fed2d9f7`** / Live **OFF** / #222 **HOLD**. Bonds/Crypto/Gold/Silver remain `PARTIAL` kernels with product `MISSING`. |
+
 ## 2026-09-21 — Operator flowchart surface map + domain capability honesty
 
 | Field | Value |
@@ -46,7 +58,19 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md`; `docs/engineering/WORK_LOG.md` |
 | **Tests** | `python tools/check_docs_links.py` (docs-only) |
 | **Related** | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](../architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md); G1–G14 PROGRAM_STATUS rows |
-| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359)), **not** onto [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360). Kept both 2026-09-20 #359 WORK_LOG entries. Does not retarget collector, merge #222, or enable Live. |
+| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** then **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360)). Kept both 2026-09-20 #359 WORK_LOG entries and the #360 pin entry. Does not retarget collector, merge #222, or enable Live. |
+
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `348d2838` after #359
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Absorbed `origin/main` **`348d2838`** (merge [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) read-only storage audit) into [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) and retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** (next-action and Lane F closeout `CURRENT_SOFTWARE_IMPLEMENTATION_SHA`) to that software tip. Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table so it does **not** regress to `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, `ITEM9_CALIBRATION_RUN` **FORBIDDEN**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. Did **not** merge #360 or #222. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359) software tip; [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) pin absorb |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5`. Pin **CURRENT_MAIN** to the #359 merge commit `348d2838`, not this docs PR commit (avoid self-pin loop). Kept both 2026-09-20 #359 WORK_LOG entries. Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
 
 ## 2026-09-20 — Cross-platform Cursor slug parsing for storage audit
 
