@@ -7,13 +7,15 @@ describe("ExploreCatalystResponseSchema", () => {
       available: false,
       source: "internship-project-main",
       bridge_mode: "READ_ONLY",
-      reason: "Internship demo state not found.",
+      reason: "UNAVAILABLE — leftover donor public-catalyst demo state is not seeded.",
       rows: [],
       row_count: 0,
       decision_summary: [],
     });
     expect(parsed.available).toBe(false);
     expect(parsed.rows).toEqual([]);
+    expect(parsed.reason).toContain("UNAVAILABLE");
+    expect(parsed.reason).not.toMatch(/internship demo/i);
   });
 
   it("parses available catalyst explore rows", () => {

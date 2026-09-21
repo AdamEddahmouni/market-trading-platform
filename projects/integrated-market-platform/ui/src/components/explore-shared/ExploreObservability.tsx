@@ -291,14 +291,17 @@ export function ExploreObservability({ onExplain, showLivePanel = false, filterQ
           <>
             <p className="explore-disclaimer">
               {catalystQuery.data?.disclaimer ??
-                "Read-only internship demo state for public catalyst signals."}
+                "Read-only leftover donor overlay for public catalyst signals. Not Opportunity Engine and not Live actionability."}
             </p>
             {!catalystQuery.data?.available ? (
               <div className="capability-panel unavailable">
-                <p>{catalystQuery.data?.reason ?? "Internship demo state unavailable."}</p>
+                <p>
+                  {catalystQuery.data?.reason ??
+                    "UNAVAILABLE — leftover donor catalyst demo state is not seeded."}
+                </p>
                 <p className="workspace-hint">
-                  Seed demo state: run <code>python scripts/seed_demo_state.py</code> in{" "}
-                  <code>news_momentum_agent/</code>.
+                  Canonical catalyst replay uses the admitted BOXL fixture. This leftover donor
+                  overlay is optional; missing state is UNAVAILABLE, not a failed live feed.
                 </p>
               </div>
             ) : (
@@ -313,8 +316,8 @@ export function ExploreObservability({ onExplain, showLivePanel = false, filterQ
                       title="Catalyst decision distribution"
                       series={catalystQuery.data.decision_summary}
                       provenance={{
-                        source: catalystQuery.data.source ?? "internship-project-main",
-                        method: "donor catalyst aggregation",
+                        source: catalystQuery.data.source ?? "UNAVAILABLE",
+                        method: "leftover donor catalyst aggregation (not Opportunity Engine)",
                       }}
                       ariaLabel="Catalyst decision distribution chart"
                     />
@@ -356,7 +359,7 @@ export function ExploreObservability({ onExplain, showLivePanel = false, filterQ
                     </tbody>
                   </table>
                 ) : (
-                  <p>No catalyst rows in demo state.</p>
+                  <p>No catalyst rows in leftover donor demo state.</p>
                 )}
                 <p>
                   <Link

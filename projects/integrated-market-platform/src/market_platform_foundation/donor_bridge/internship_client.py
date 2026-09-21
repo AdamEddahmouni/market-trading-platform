@@ -1,4 +1,9 @@
-"""Read-only filesystem client for internship agent demo state."""
+"""Read-only filesystem client for leftover donor public-catalyst demo state.
+
+The default path still points at the historical `internship-project-main`
+donor tree. That directory name is provenance, not a claim that IMP is an
+internship demo or that Live execution is out of product scope.
+"""
 
 from __future__ import annotations
 

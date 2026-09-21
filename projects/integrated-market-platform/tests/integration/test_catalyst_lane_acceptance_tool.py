@@ -27,7 +27,7 @@ class CatalystLaneAcceptanceToolTests(unittest.TestCase):
     def test_live_projection_when_state_seeded(self) -> None:
         state_dir = internship_client.default_state_dir()
         if not internship_client.is_available(state_dir=state_dir):
-            self.skipTest("internship demo state not seeded")
+            self.skipTest("leftover donor catalyst demo state not seeded")
         result = run_acceptance(imp_url="http://127.0.0.1:59998", state_dir=state_dir)
         passed_ids = {check.check_id for check in result.checks if check.passed}
         self.assertIn("projection_explore_rows", passed_ids)

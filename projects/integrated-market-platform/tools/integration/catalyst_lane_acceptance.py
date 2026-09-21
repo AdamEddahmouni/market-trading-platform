@@ -334,7 +334,7 @@ def run_acceptance(
             "state_required",
             False,
             "",
-            f"Internship demo state is required but not seeded. {SEED_INSTRUCTION}",
+            f"Leftover donor catalyst demo state is required but not seeded. {SEED_INSTRUCTION}",
         )
     if require_imp and not imp_live:
         _check(
