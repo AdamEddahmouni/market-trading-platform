@@ -130,6 +130,19 @@ every control would otherwise pass, the bundle sets `allows_network_submit=False
 (`BUILD28_LIVE_SUBMIT_FORBIDDEN`). These close contract gaps that Paper already
 exercises but the Live gate must refuse while Live remains OFF.
 
+## Position reconciliation contract (Live OFF)
+
+`position_reconciliation.py` compares an explicit IMP position-truth snapshot to
+a broker position observation. Result states include `MATCH`,
+`QUANTITY_MISMATCH`, `PARTIAL_FILL_OPEN`, `STALE`, `MISSING_BROKER_SNAPSHOT`,
+and `UNKNOWN_EXTERNAL_POSITION`. Missing or stale broker snapshots are never a
+match. Unknown external positions are unresolved mismatches and are not adopted
+into IMP truth. Duplicate snapshot ids are idempotent. Startup remains
+fail-closed until reconciliation matches and an operator acknowledgement is
+recorded; acknowledgement is an audit fact only and never sets
+`allows_network_submit=True`. `attempt_network_submit` always raises
+`LiveSubmitForbiddenError`.
+
 ## BUILD 29 Boundary
 
 A future BUILD 29 may design a **Limited Live Execution Authorization Program** only if explicitly requested and supported by BUILD 26–28 evidence. BUILD 28 grants no such authority.
@@ -140,6 +153,7 @@ A future BUILD 29 may design a **Limited Live Execution Authorization Program** 
 src/market_platform_foundation/intelligence/live_execution_safety/
 tests/intelligence/test_live_execution_safety.py
 tests/intelligence/test_live_order_safety_machine.py
+tests/intelligence/test_live_position_reconciliation.py
 artifacts/live-execution-safety/
 tools/live_execution_safety/generate_build28_manifests.py
 ```
@@ -148,7 +162,7 @@ tools/live_execution_safety/generate_build28_manifests.py
 
 ```powershell
 $env:PYTHONPATH='src'
-.venv\Scripts\python.exe -m unittest tests.intelligence.test_live_execution_safety tests.intelligence.test_live_order_safety_machine -v
+.venv\Scripts\python.exe -m unittest tests.intelligence.test_live_execution_safety tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_position_reconciliation -v
 .venv\Scripts\python.exe tools/live_execution_safety/generate_build28_manifests.py
 .venv\Scripts\python.exe tools/validate.py changed
 ```

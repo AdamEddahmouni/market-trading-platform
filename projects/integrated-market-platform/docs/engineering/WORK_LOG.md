@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Live position reconciliation contract (Live remains OFF)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety` |
+| **Summary** | Added a fail-closed Live position-reconciliation contract comparing broker position observations to explicit IMP position truth. Covers match, quantity mismatch, partial-fill still open, stale/missing snapshot refusal, idempotent snapshot replay, unknown external positions (not adopted), and startup mismatch requiring reconciliation + operator acknowledgement before any later modeled live action. Operator ack is audit-only; `allows_network_submit` stays false; `attempt_network_submit` remains forbidden. Builds on #364 merge `b55fab51`; does not redo order lifecycle. |
+| **Key files** | `src/.../live_execution_safety/position_reconciliation.py` (created); `src/.../live_execution_safety/__init__.py`; `tests/intelligence/test_live_position_reconciliation.py` (created); `docs/engineering/LIVE_EXECUTION_SAFETY_GATE_V1.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_live_position_reconciliation tests.intelligence.test_live_order_safety_machine -v` — 25 passed (10 new + 15 #364 regression) |
+| **Related** | [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364); `LIVE_EXECUTION_SAFETY_GATE_V1.md` |
+| **Notes** | Isolated worktree `.worktrees/live-position-reconciliation` on `feat/live-position-reconciliation-contract` from current `origin/main` `80d290ff`. No broker rewrite, no network submit, no merge. Did not touch cboe_options / EventV1 / Radar / Item 7 / paper order tests / PROGRAM_STATUS. |
+
 ## 2026-09-21 — Item 9 post–Sep 21 docs status pin (3/3 SAMPLE_GATE_MET)
 
 | Field | Value |
