@@ -23,7 +23,9 @@ The audit is a **read-only** inventory of this repository's disk footprint:
 | Largest consumers | Top directories and files (default 25; `--top N`) |
 | Warnings | Conservative health warnings, not a storage score |
 
-A classification **hint** (ACTIVE, OPEN_PR, MERGED_OR_ANCESTOR, UPSTREAM_GONE, DIRTY, DETACHED, UNIQUE_COMMITS_POSSIBLE, REVIEW_REQUIRED) is **not** permission to delete that worktree.
+Section totals **may overlap**. Project physical size includes `.worktrees`, caches, dependencies, and protected evidence when those trees sit inside the scan root. **Do not arithmetically sum** project / worktree / cache / dependency / evidence figures.
+
+A classification **hint** (ACTIVE, MERGED_OR_ANCESTOR, UPSTREAM_GONE, DIRTY, DETACHED, UNIQUE_COMMITS_POSSIBLE, REVIEW_REQUIRED) is **not** permission to delete that worktree. The audit does **not** emit `OPEN_PR`; pull-request lookup is skipped (`associated_pr` stays unset, `pr_lookup=skipped_no_network`).
 
 ## What this does NOT do
 
@@ -58,7 +60,7 @@ python tools/imp.py storage audit --include-cursor
 
 `--json` prints a machine-readable document (`schema_version`, `repo`, `git`, `worktrees`, `dependencies`, `caches`, `artifacts`, `temporary`, `cursor`, `largest_paths`, `warnings`, `summary`). Progress stays on stderr so JSON stdout stays parseable.
 
-`--include-cursor` inspects **only** this repository's Cursor project directory (derived from the scan root, or `IMP_CURSOR_PROJECT_DIR` when that path is inside `~/.cursor/projects/`). It reports sizes and path classes. It does not print transcript contents, does not inspect sibling projects, and does not delete Cursor data. If the path cannot be located safely, the report says `UNAVAILABLE` / `UNSUPPORTED` rather than guessing.
+`--include-cursor` inspects **only** this repository's Cursor project directory (derived from the primary working tree via a cross-platform path-syntax slug, or `IMP_CURSOR_PROJECT_DIR` when that path is inside `~/.cursor/projects/`). Windows-form roots are parsed as Windows paths even on POSIX hosts; POSIX-form roots are parsed as POSIX paths even on Windows. UNC and other ambiguous forms fail closed (`UNSUPPORTED` / `UNAVAILABLE`) rather than guessing a sibling Cursor project. It reports sizes and path classes. It does not print transcript contents, does not inspect sibling projects, and does not delete Cursor data.
 
 `--root` is for tests and explicit local roots. Do not point it at unrelated machines paths.
 
@@ -84,7 +86,7 @@ Gone upstream, merged/ancestor HEAD, age, and size **do not** make a worktree re
 
 ## Conservative reclaimable estimate
 
-`summary.estimated_reviewable_reclaimable_bytes` counts **known regenerable caches only** (`CONSERVATIVE_CACHES_ONLY`). It excludes worktrees, dirty trees, gone-upstream trees, unique-commit uncertainty, protected evidence, review/temp directories, virtualenvs, and `node_modules`.
+`summary.estimated_reviewable_reclaimable_bytes` counts **known regenerable caches only** (`CONSERVATIVE_CACHES_ONLY`). It excludes worktrees, dirty trees, gone-upstream trees, unique-commit uncertainty, protected evidence, review/temp directories, virtualenvs, `node_modules`, and caches that live **inside** `.venv` / `venv` / `node_modules` or protected-evidence trees (those caches may still be observed/sized).
 
 Caches may still be in use. The number is an operator hint, not a cleanup plan.
 

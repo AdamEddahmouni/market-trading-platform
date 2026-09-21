@@ -16,12 +16,16 @@ from tools.storage_audit import (
     ADVISORY_NOTICE,
     ReadOnlyGit,
     SCHEMA_VERSION,
+    cache_counts_toward_reclaimable,
     classify_link_kind,
+    classify_path_syntax,
     classify_worktree_hints,
     cursor_project_slug,
     discover_cursor_project_dir,
     git_argv_is_allowed,
+    location_compare_key,
     parse_worktree_porcelain,
+    path_is_within_root,
     render_text_report,
     run_audit,
     run_cli,
@@ -99,7 +103,9 @@ class GitAllowlistTests(unittest.TestCase):
         self.assertTrue(git_argv_is_allowed(("worktree", "list", "--porcelain")))
         self.assertTrue(git_argv_is_allowed(("count-objects", "-v")))
         self.assertTrue(git_argv_is_allowed(("-C", "/tmp/repo", "status", "--porcelain=v1")))
-        self.assertTrue(git_argv_is_allowed(("merge-base", "--is-ancestor", "HEAD", "origin/main")))
+        self.assertTrue(git_argv_is_allowed(("rev-parse", "HEAD")))
+        self.assertTrue(git_argv_is_allowed(("rev-list", "--left-right", "--count", "origin/main...HEAD")))
+        self.assertTrue(git_argv_is_allowed(("show-ref", "--verify", "--quiet", "refs/remotes/origin/main")))
 
     def test_blocks_destructive_git_commands(self) -> None:
         self.assertFalse(git_argv_is_allowed(("gc",)))
@@ -109,6 +115,12 @@ class GitAllowlistTests(unittest.TestCase):
         self.assertFalse(git_argv_is_allowed(("worktree", "prune")))
         self.assertFalse(git_argv_is_allowed(("worktree", "remove", "x")))
         self.assertFalse(git_argv_is_allowed(("reflog", "expire", "--all")))
+        self.assertFalse(git_argv_is_allowed(("diff", "HEAD")))
+        self.assertFalse(git_argv_is_allowed(("ls-files",)))
+        self.assertFalse(git_argv_is_allowed(("cat-file", "-p", "HEAD")))
+        self.assertFalse(git_argv_is_allowed(("symbolic-ref", "HEAD")))
+        self.assertFalse(git_argv_is_allowed(("for-each-ref",)))
+        self.assertFalse(git_argv_is_allowed(("name-rev", "HEAD")))
         runner = ReadOnlyGit()
         with tempfile.TemporaryDirectory() as temporary:
             with self.assertRaises(RuntimeError):
@@ -179,6 +191,11 @@ class StorageAuditRepoTests(unittest.TestCase):
         text = render_text_report(report)
         self.assertIn("IMP STORAGE AUDIT", text)
         self.assertIn(ADVISORY_NOTICE, text)
+        self.assertIn("do not arithmetically sum", text.lower())
+        self.assertTrue(report["summary"]["totals_overlap"])
+        self.assertIsNone(report["worktrees"]["items"][0].get("associated_pr"))
+        self.assertEqual(report["worktrees"]["items"][0].get("pr_lookup"), "skipped_no_network")
+        self.assertNotIn("OPEN_PR", report["worktrees"]["items"][0].get("hints") or [])
 
     def test_gone_upstream_handling(self) -> None:
         _run_git(self.root, "remote", "add", "origin", str(self.root))
@@ -239,7 +256,37 @@ class StorageAuditRepoTests(unittest.TestCase):
         self.assertIn("pytest", categories)
         self.assertGreater(report["caches"]["total_bytes"], 0)
         self.assertEqual(report["summary"]["estimated_reviewable_reclaimable_bytes"], report["caches"]["total_bytes"])
+        self.assertEqual(report["summary"]["estimated_reviewable_reclaimable_bytes"], report["caches"]["reclaimable_bytes"])
         self.assertEqual(report["summary"]["reclaimable_basis"], "CONSERVATIVE_CACHES_ONLY")
+
+    def test_caches_inside_venv_node_modules_and_protected_trees_are_not_reclaimable(self) -> None:
+        root_cache = self.root / "__pycache__"
+        root_cache.mkdir()
+        (root_cache / "mod.cpython-311.pyc").write_bytes(b"root-cache-0123456789")
+        venv = self.root / ".venv"
+        (venv / "Lib" / "__pycache__").mkdir(parents=True)
+        (venv / "pyvenv.cfg").write_text("home = python\n", encoding="utf-8")
+        (venv / "Lib" / "__pycache__" / "site.cpython-311.pyc").write_bytes(b"venv-cache-0123456789")
+        node_modules = self.root / "node_modules" / "pkg" / "dist"
+        node_modules.mkdir(parents=True)
+        (node_modules / "bundle.js").write_bytes(b"n" * 64)
+        protected = self.root / "artifacts" / "ftep-v1-002" / "__pycache__"
+        protected.mkdir(parents=True)
+        (protected / "receipt.cpython-311.pyc").write_bytes(b"protected-cache-bytes")
+        report, _ = self._audit()
+        self.assertGreater(report["caches"]["total_bytes"], report["caches"]["reclaimable_bytes"])
+        self.assertEqual(
+            report["summary"]["estimated_reviewable_reclaimable_bytes"],
+            report["caches"]["reclaimable_bytes"],
+        )
+        self.assertLess(
+            report["summary"]["estimated_reviewable_reclaimable_bytes"],
+            report["caches"]["total_bytes"],
+        )
+        self.assertFalse(cache_counts_toward_reclaimable(".venv/Lib/__pycache__"))
+        self.assertFalse(cache_counts_toward_reclaimable("node_modules/pkg/dist"))
+        self.assertFalse(cache_counts_toward_reclaimable("artifacts/ftep-v1-002/__pycache__"))
+        self.assertTrue(cache_counts_toward_reclaimable("__pycache__"))
 
     def test_protected_artifact_classification(self) -> None:
         artifacts = self.root / "artifacts" / "ftep-v1-002"
@@ -341,13 +388,113 @@ class StorageAuditRepoTests(unittest.TestCase):
         path.mkdir()
         self.assertEqual(classify_link_kind(path), "PHYSICAL")
 
+    def test_include_cursor_reports_sizes_not_transcript_contents(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            cursor_dir = Path(temporary) / "cursor-project"
+            transcripts = cursor_dir / "agent-transcripts"
+            transcripts.mkdir(parents=True)
+            secret = "TRANSCRIPT_SECRET_SHOULD_NOT_APPEAR"
+            (transcripts / "t.jsonl").write_text(secret + "\n", encoding="utf-8")
+            with patch("tools.storage_audit.discover_cursor_project_dir", return_value=(cursor_dir, "OK")):
+                report, _ = self._audit(include_cursor=True)
+            self.assertEqual(report["cursor"]["status"], "OK")
+            self.assertEqual(report["cursor"]["path"], str(cursor_dir))
+            dumped = json.dumps(report)
+            self.assertNotIn(secret, dumped)
+            self.assertGreater(report["cursor"]["total_bytes"], 0)
+            text = render_text_report(report)
+            self.assertNotIn(secret, text)
+            self.assertIn("Transcript contents are not printed", report["cursor"]["note"])
+        with patch("tools.storage_audit.discover_cursor_project_dir", return_value=(None, "UNAVAILABLE")):
+            report, _ = self._audit(include_cursor=True)
+        self.assertEqual(report["cursor"]["status"], "UNAVAILABLE")
+        self.assertTrue(report["cursor"]["included"])
+        self.assertIsNone(report["cursor"]["path"])
+
 
 class CursorDiscoveryTests(unittest.TestCase):
-    def test_slug_derives_from_path_without_hardcoded_user(self) -> None:
-        slug = cursor_project_slug(Path(r"C:\Users\someone\Desktop\market-trading-platform"))
+    def test_windows_form_path_parses_as_windows_syntax_on_any_host(self) -> None:
+        slug = cursor_project_slug(Path(r"C:\Users\alice\Desktop\market-trading-platform"))
+        self.assertEqual(slug, "c-Users-alice-Desktop-market-trading-platform")
         self.assertTrue(slug.startswith("c-"))
-        self.assertIn("someone", slug)
+        self.assertEqual(classify_path_syntax(r"C:\Users\alice\Desktop\market-trading-platform"), "windows-drive")
+        slash_form = cursor_project_slug("D:/work/bob/repos/market-trading-platform")
+        self.assertEqual(slash_form, "d-work-bob-repos-market-trading-platform")
         self.assertNotIn("adame", slug)
+        self.assertNotIn("adame", slash_form)
+
+    def test_posix_form_path_parses_as_posix_syntax_without_c_prefix(self) -> None:
+        slug = cursor_project_slug("/home/carol/market-trading-platform")
+        self.assertEqual(slug, "home-carol-market-trading-platform")
+        self.assertFalse(slug.startswith("c-"))
+        self.assertEqual(classify_path_syntax("/home/carol/market-trading-platform"), "posix")
+        self.assertEqual(
+            cursor_project_slug("/var/lib/dave/projects/market-trading-platform"),
+            "var-lib-dave-projects-market-trading-platform",
+        )
+
+    def test_local_windows_project_path_matches_cursor_directory_shape(self) -> None:
+        if os.name == "nt":
+            desktop_repo = Path.home() / "Desktop" / "market-trading-platform"
+            slug = cursor_project_slug(desktop_repo)
+            user_name = Path.home().name
+            self.assertTrue(slug.startswith("c-"))
+            self.assertIn(user_name, slug)
+            self.assertIn("Desktop", slug)
+            self.assertIn("market-trading-platform", slug)
+            self.assertNotIn("\\", slug)
+            self.assertNotIn("/", slug)
+            path, status = discover_cursor_project_dir(desktop_repo)
+            if path is not None:
+                self.assertEqual(status, "OK")
+                self.assertEqual(path.name, slug)
+                self.assertEqual(path.parent, Path.home() / ".cursor" / "projects")
+            return
+        slug = cursor_project_slug(r"C:\Users\erin\Desktop\market-trading-platform")
+        self.assertEqual(slug, "c-Users-erin-Desktop-market-trading-platform")
+
+    def test_slug_does_not_hardcode_username_across_synthetic_users(self) -> None:
+        windows_cases = {
+            r"C:\Users\alice\Desktop\market-trading-platform": "c-Users-alice-Desktop-market-trading-platform",
+            r"C:\Users\bob\code\market-trading-platform": "c-Users-bob-code-market-trading-platform",
+            r"E:\Users\carol\src\market-trading-platform": "e-Users-carol-src-market-trading-platform",
+        }
+        posix_cases = {
+            "/home/alice/market-trading-platform": "home-alice-market-trading-platform",
+            "/home/bob/work/market-trading-platform": "home-bob-work-market-trading-platform",
+            "/Users/carol/Projects/market-trading-platform": "Users-carol-Projects-market-trading-platform",
+        }
+        for raw, expected in {**windows_cases, **posix_cases}.items():
+            slug = cursor_project_slug(raw)
+            self.assertEqual(slug, expected, raw)
+            self.assertNotIn("adame", slug)
+        slugs = {cursor_project_slug(raw) for raw in windows_cases}
+        self.assertEqual(len(slugs), len(windows_cases))
+
+    def test_ambiguous_and_unsupported_forms_fail_closed(self) -> None:
+        unsupported = [
+            r"\\server\share\market-trading-platform",
+            r"\\?\UNC\server\share\market-trading-platform",
+            "//server/share/market-trading-platform",
+            "relative/project",
+            "market-trading-platform",
+            "C:nocolonslash",
+            "",
+        ]
+        for raw in unsupported:
+            self.assertEqual(cursor_project_slug(raw), "", raw)
+            self.assertEqual(classify_path_syntax(raw) if raw else "unsupported", "unsupported")
+            path, status = discover_cursor_project_dir(Path(raw) if raw else Path("."))
+            if raw in {"relative/project", "market-trading-platform", ""}:
+                # Relative native paths may resolve on the host; only non-native
+                # ambiguous forms must stay UNSUPPORTED without resolving.
+                continue
+            self.assertIsNone(path, raw)
+            self.assertEqual(status, "UNSUPPORTED", raw)
+        self.assertEqual(
+            cursor_project_slug(r"\\?\C:\Users\alice\Desktop\market-trading-platform"),
+            "c-Users-alice-Desktop-market-trading-platform",
+        )
 
     def test_override_outside_cursor_projects_is_unsupported(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -362,6 +509,50 @@ class CursorDiscoveryTests(unittest.TestCase):
                     os.environ["IMP_CURSOR_PROJECT_DIR"] = previous
         self.assertIsNone(path)
         self.assertEqual(status, "UNSUPPORTED_UNSAFE_PATH")
+
+    def test_discovery_does_not_scan_sibling_cursor_projects(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            home = Path(temporary)
+            projects = home / ".cursor" / "projects"
+            ours = projects / "c-Users-alice-Desktop-market-trading-platform"
+            sibling = projects / "c-Users-alice-Desktop-other-repo"
+            ours.mkdir(parents=True)
+            sibling.mkdir()
+            (ours / "agent-transcripts").mkdir()
+            (ours / "agent-transcripts" / "secret.jsonl").write_text("do-not-read\n", encoding="utf-8")
+            (sibling / "agent-transcripts").mkdir()
+            (sibling / "agent-transcripts" / "other.jsonl").write_text("sibling\n", encoding="utf-8")
+            with patch.object(Path, "home", return_value=home):
+                found, status = discover_cursor_project_dir(
+                    Path(r"C:\Users\alice\Desktop\market-trading-platform")
+                )
+                missing, missing_status = discover_cursor_project_dir(
+                    Path(r"C:\Users\alice\Desktop\does-not-exist")
+                )
+            self.assertEqual(status, "OK")
+            self.assertEqual(found, ours)
+            self.assertNotEqual(found, sibling)
+            self.assertIsNone(missing)
+            self.assertEqual(missing_status, "UNAVAILABLE")
+
+
+class PathBoundaryTests(unittest.TestCase):
+    def test_extended_length_prefix_matches_drive_path_without_escaping_siblings(self) -> None:
+        inside = location_compare_key(r"\\?\C:\Users\alice\repo\.venv")
+        root = location_compare_key(r"C:\Users\alice\repo")
+        sibling = location_compare_key(r"C:\Users\alice\repo-escape")
+        self.assertTrue(inside.lower().startswith(root.lower() + "\\") or inside.lower() == root.lower())
+        self.assertFalse(sibling.lower().startswith(root.lower() + "\\"))
+        self.assertNotEqual(sibling.lower(), root.lower())
+        with tempfile.TemporaryDirectory() as temporary:
+            scan = Path(temporary) / "repo"
+            scan.mkdir()
+            nested = scan / "canonical-venv"
+            nested.mkdir()
+            self.assertTrue(path_is_within_root(nested, scan))
+            outside = Path(temporary) / "repo-escape"
+            outside.mkdir()
+            self.assertFalse(path_is_within_root(outside, scan))
 
 
 if __name__ == "__main__":

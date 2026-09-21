@@ -22,7 +22,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from heapq import heappush, heapreplace, nlargest
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Callable, Sequence
 
 
@@ -49,12 +49,6 @@ ALLOWED_GIT_VERBS = frozenset(
         "rev-list",
         "merge-base",
         "show-ref",
-        "symbolic-ref",
-        "for-each-ref",
-        "name-rev",
-        "diff",
-        "ls-files",
-        "cat-file",
     }
 )
 ALLOWED_WORKTREE_SUBCOMMANDS = frozenset({"list"})
@@ -194,6 +188,106 @@ def format_bytes(value: int) -> str:
 
 def _posix(path: Path | str) -> str:
     return str(path).replace("\\", "/")
+
+
+def _strip_win_extended_prefix(text: str) -> str:
+    if text.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + text[8:]
+    if text.startswith("\\\\?\\"):
+        return text[4:]
+    if text.startswith("//?/UNC/") or text.startswith("//?/UNC\\"):
+        return "//" + text[8:]
+    if text.startswith("//?/"):
+        return text[4:]
+    return text
+
+
+def classify_path_syntax(text: str) -> str:
+    """Classify a path by the syntax it represents, not by the host OS.
+
+    Returns ``windows-drive``, ``posix``, or ``unsupported``.
+    """
+    raw = _strip_win_extended_prefix(text)
+    if not raw:
+        return "unsupported"
+    if raw.startswith("\\\\") or raw.startswith("//"):
+        return "unsupported"
+    if len(raw) >= 2 and raw[1] == ":" and raw[0].isalpha() and (len(raw) == 2 or raw[2] in "\\/"):
+        return "windows-drive"
+    if raw.startswith("/"):
+        return "posix"
+    return "unsupported"
+
+
+def _represented_path_text(repo_root: Path | str) -> str:
+    raw = os.fspath(repo_root)
+    kind = classify_path_syntax(raw)
+    native = (os.name == "nt" and kind == "windows-drive") or (os.name != "nt" and kind == "posix")
+    if native:
+        try:
+            return os.fspath(Path(raw).resolve())
+        except OSError:
+            return raw
+    return raw
+
+
+def _slug_from_parts(parts: Sequence[str], *, drive_letter: str | None) -> str:
+    remainder = [part for part in parts if part not in {"", "/", "\\"}]
+    if any(part in {".", ".."} for part in remainder):
+        return ""
+    if drive_letter is not None:
+        if len(drive_letter) != 1 or not drive_letter.isalpha() or not remainder:
+            return ""
+        slug = "-".join((drive_letter.lower(), *remainder))
+    else:
+        if not remainder:
+            return ""
+        slug = "-".join(remainder)
+    if not slug or "/" in slug or "\\" in slug:
+        return ""
+    return slug
+
+
+def location_compare_key(path: Path | str) -> str:
+    """Canonical compare key so ``\\\\?\\C:\\`` and ``C:\\`` are the same location."""
+    text = _strip_win_extended_prefix(os.fspath(path))
+    kind = classify_path_syntax(text)
+    if kind == "windows-drive":
+        parsed = PureWindowsPath(text)
+        drive = parsed.drive.lower().rstrip("\\/")
+        rest = [part.lower() for part in parsed.parts[1:] if part not in {"", "/", "\\"}]
+        return drive + "\\" + "\\".join(rest)
+    if kind == "posix":
+        parsed = PurePosixPath(text)
+        key = parsed.as_posix()
+        if key != "/":
+            key = key.rstrip("/")
+        return key
+    return "\x00" + text
+
+
+def path_is_within_root(candidate: Path, root: Path) -> bool:
+    try:
+        candidate.resolve().relative_to(root.resolve())
+        return True
+    except (OSError, ValueError):
+        pass
+    try:
+        child_text = os.fspath(candidate.resolve())
+        root_text = os.fspath(root.resolve())
+    except OSError:
+        child_text = os.fspath(candidate)
+        root_text = os.fspath(root)
+    child = location_compare_key(child_text)
+    base = location_compare_key(root_text)
+    if child.startswith("\x00") or base.startswith("\x00"):
+        return False
+    if child == base:
+        return True
+    sep = "\\" if classify_path_syntax(_strip_win_extended_prefix(root_text)) == "windows-drive" else "/"
+    if base.endswith(sep):
+        return child.startswith(base)
+    return child.startswith(base + sep)
 
 
 def git_command_verb(args: Sequence[str]) -> tuple[str, tuple[str, ...]]:
@@ -385,6 +479,22 @@ def _rel_inside_protected_parent(relpath: str) -> bool:
     return is_protected_relpath(parent)
 
 
+DEPENDENCY_TREE_NAMES = frozenset({".venv", "venv", "node_modules"})
+
+
+def _rel_inside_dependency_tree(relpath: str) -> bool:
+    return any(part in DEPENDENCY_TREE_NAMES for part in _rel_parts(relpath))
+
+
+def cache_counts_toward_reclaimable(relpath: str) -> bool:
+    """Caches inside venvs, node_modules, or protected evidence are observed, not reclaimable."""
+    if is_protected_relpath(relpath) or _rel_inside_protected_parent(relpath):
+        return False
+    if _rel_inside_dependency_tree(relpath):
+        return False
+    return True
+
+
 def _largest_path_class(relpath: str, is_dir: bool) -> str:
     if is_protected_relpath(relpath):
         return "PROTECTED_OR_REVIEW_REQUIRED"
@@ -440,21 +550,29 @@ def classify_worktree_hints(
     return ordered
 
 
-def cursor_project_slug(repo_root: Path) -> str:
-    resolved = repo_root.resolve()
-    parts = resolved.parts
-    if not parts:
-        return ""
-    drive = parts[0]
-    if len(drive) >= 2 and drive[1] == ":":
-        slug_drive = drive[0].lower()
-        remainder = parts[1:]
-        return "-".join((slug_drive, *remainder))
-    if drive.endswith("\\") or drive.endswith("/"):
-        letter = drive[0].lower()
-        remainder = parts[1:]
-        return "-".join((letter, *remainder))
-    return "-".join(parts)
+def cursor_project_slug(repo_root: Path | str) -> str:
+    """Derive Cursor's project directory slug from the path being represented.
+
+    Windows-form input is parsed with ``PureWindowsPath`` even on POSIX hosts.
+    POSIX-form input is parsed with ``PurePosixPath`` even on Windows hosts.
+    Ambiguous forms (UNC, relative, mixed) return an empty slug so discovery
+    fails closed instead of guessing a Cursor directory.
+    """
+    text = _represented_path_text(repo_root)
+    kind = classify_path_syntax(text)
+    if kind == "windows-drive":
+        parsed = PureWindowsPath(_strip_win_extended_prefix(text))
+        parts = parsed.parts
+        if not parts:
+            return ""
+        drive = parts[0].rstrip("\\/")
+        if len(drive) < 2 or drive[1] != ":" or not drive[0].isalpha():
+            return ""
+        return _slug_from_parts(parts[1:], drive_letter=drive[0])
+    if kind == "posix":
+        parsed = PurePosixPath(text)
+        return _slug_from_parts(parsed.parts, drive_letter=None)
+    return ""
 
 
 def discover_cursor_project_dir(repo_root: Path) -> tuple[Path | None, str]:
@@ -471,9 +589,13 @@ def discover_cursor_project_dir(repo_root: Path) -> tuple[Path | None, str]:
             return resolved, "OK"
         return None, "UNAVAILABLE"
     slug = cursor_project_slug(repo_root)
-    if not slug:
+    if not slug or slug in {".", ".."} or "/" in slug or "\\" in slug:
         return None, "UNSUPPORTED"
     candidate = home_projects / slug
+    try:
+        candidate.relative_to(home_projects)
+    except ValueError:
+        return None, "UNSUPPORTED"
     try:
         if candidate.is_dir():
             return candidate, "OK"
@@ -500,6 +622,7 @@ class ScanAccumulator:
     dependencies: list[dict[str, Any]] = field(default_factory=list)
     worktree_bytes: dict[str, int] = field(default_factory=dict)
     escaped_links: list[str] = field(default_factory=list)
+    reclaimable_cache_bytes: int = 0
 
     def add_cache(self, category: str, relpath: str, size: int) -> None:
         row = self.caches.setdefault(category, {"category": category, "bytes": 0, "count": 0, "examples": []})
@@ -508,6 +631,8 @@ class ScanAccumulator:
         examples = row["examples"]
         if len(examples) < 8:
             examples.append(relpath)
+        if cache_counts_toward_reclaimable(relpath):
+            self.reclaimable_cache_bytes += size
 
     def consider_file(self, size: int, relpath: str) -> None:
         item = (size, relpath)
@@ -964,9 +1089,10 @@ class StorageAuditor:
         if target:
             try:
                 resolved = (Path(entry.path).parent / target).resolve()
-                resolved.relative_to(scan_root.resolve())
-            except (OSError, ValueError):
+                escaped = not path_is_within_root(resolved, scan_root)
+            except OSError:
                 escaped = True
+            if escaped:
                 acc.escaped_links.append(relative)
         record = {
             "path": relative,
@@ -1038,10 +1164,10 @@ class StorageAuditor:
             path = Path(row["path"])
             try:
                 resolved = path.resolve()
-                resolved.relative_to(root_resolved)
+            except OSError:
+                resolved = path
+            if path_is_within_root(resolved, root_resolved):
                 continue
-            except (OSError, ValueError):
-                pass
             if not path.is_dir():
                 continue
             self._emit(f"scanning external worktree {_posix(path)}", force=True)
@@ -1056,6 +1182,7 @@ class StorageAuditor:
             )
             acc.worktree_bytes[str(path)] = nested.physical_bytes
             acc.caches = _merge_cache_maps(acc.caches, nested.caches)
+            acc.reclaimable_cache_bytes += nested.reclaimable_cache_bytes
             acc.dependencies.extend(nested.dependencies)
             acc.temporary.extend(nested.temporary)
             acc.unreadable.extend(nested.unreadable)
@@ -1183,7 +1310,12 @@ class StorageAuditor:
     def _caches_payload(self, acc: ScanAccumulator) -> dict[str, Any]:
         categories = sorted(acc.caches.values(), key=lambda row: int(row.get("bytes") or 0), reverse=True)
         total = sum(int(row.get("bytes") or 0) for row in categories)
-        return {"total_bytes": total, "categories": categories}
+        return {
+            "total_bytes": total,
+            "reclaimable_bytes": int(acc.reclaimable_cache_bytes),
+            "categories": categories,
+            "note": "Caches inside .venv/venv/node_modules or protected evidence are observed but excluded from conservative reclaimable estimates.",
+        }
 
     def _artifacts_payload(self, acc: ScanAccumulator) -> dict[str, Any]:
         return {
@@ -1410,6 +1542,7 @@ class StorageAuditor:
         cursor: dict[str, Any],
     ) -> dict[str, Any]:
         cache_bytes = int(caches.get("total_bytes") or 0)
+        reclaimable = int(caches.get("reclaimable_bytes") if caches.get("reclaimable_bytes") is not None else cache_bytes)
         return {
             "total_project_physical_bytes": int(repo.get("physical_bytes") or 0),
             "git_physical_bytes": int(git_info.get("physical_bytes") or 0),
@@ -1427,7 +1560,7 @@ class StorageAuditor:
             "review_temp_total_bytes": int(temporary.get("total_bytes") or 0),
             "protected_artifact_evidence_bytes": int(artifacts.get("total_bytes") or 0),
             "cursor_project_total_bytes": int(cursor.get("total_bytes") or 0) if cursor.get("status") == "OK" else None,
-            "estimated_reviewable_reclaimable_bytes": cache_bytes,
+            "estimated_reviewable_reclaimable_bytes": reclaimable,
             "reclaimable_basis": "CONSERVATIVE_CACHES_ONLY",
             "reclaimable_exclusions": [
                 "worktrees",
@@ -1439,7 +1572,13 @@ class StorageAuditor:
                 "review/temp directories",
                 "physical venvs",
                 "node_modules",
+                "caches inside venv/node_modules/protected trees",
             ],
+            "totals_overlap": True,
+            "totals_overlap_note": (
+                "Project, .worktrees, caches, dependencies, and protected evidence "
+                "may overlap; do not arithmetically sum section totals."
+            ),
             "advisory_notice": ADVISORY_NOTICE,
         }
 
@@ -1568,6 +1707,7 @@ def render_text_report(report: dict[str, Any]) -> str:
             f"  worktrees: {summary.get('worktree_count')} / {format_bytes(int(summary.get('total_worktree_physical_bytes') or 0))}",
             f"  caches: {format_bytes(int(summary.get('cache_total_bytes') or 0))}",
             f"  conservative reclaimable (caches only): {format_bytes(int(summary.get('estimated_reviewable_reclaimable_bytes') or 0))}",
+            "  Section totals may overlap (project / .worktrees / caches / dependencies / protected evidence); do not arithmetically sum them.",
             f"  {ADVISORY_NOTICE}",
         ]
     )

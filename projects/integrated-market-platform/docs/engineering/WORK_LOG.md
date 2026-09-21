@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-20 — Cross-platform Cursor slug parsing for storage audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools` / developer-operating-system |
+| **Summary** | Repaired PR #359 Linux CI: `cursor_project_slug()` now parses Windows-form and POSIX-form roots from the path syntax being represented (`PureWindowsPath` / `PurePosixPath`), not host `Path` semantics. UNC/ambiguous forms fail closed. Conservative reclaimable estimates exclude caches inside venv/node_modules/protected trees; docs no longer claim `OPEN_PR` hints. |
+| **Key files** | `tools/storage_audit.py`; `tests/validation/test_storage_audit.py`; `docs/engineering/sops/STORAGE_AUDIT.md` |
+| **Tests** | `python -m unittest tests.validation.test_storage_audit tests.validation.test_imp_cli` — **39 passed**; `python tools/imp.py test focused` (6 selectors) — **passed**; `python tools/imp.py lint` — pass; `python tools/imp.py validate changed --paths-file <PR #359 paths>` — **860 passed**, 1 skipped, 0 failures, 0 errors; `core_checkpoint_required=true` (FULL not run). Real Cursor slug discovery on this host: `c-Users-adame-Desktop-market-trading-platform` scoped to `~/.cursor/projects/` only. Skipped a repeated ~12 min full-tree `storage audit` walk; scanner safety is covered by unit tests plus the prior live run on 82145d5b. |
+| **Related** | [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359); [sops/STORAGE_AUDIT.md](sops/STORAGE_AUDIT.md) |
+| **Notes** | Did not implement storage clean, deletion, git gc, worktree prune, or Cursor/evidence mutation. Did not merge #359. Item 9 / Live / Full30 / collector `fed2d9f7` / epoch 121031 / #222 untouched. |
+
 ## 2026-09-20 — Read-only IMP storage audit command
 
 | Field | Value |
