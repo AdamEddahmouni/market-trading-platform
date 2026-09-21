@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Pin CURRENT_MAIN to origin/main `a6e4f9a5` after #357
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform`, `docs/engineering` |
+| **Summary** | Retargeted PROGRAM_STATUS **CURRENT_MAIN** / **CURRENT_GIT_MAIN** to actual `origin/main` tip `a6e4f9a5` (merge [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) docs pin). Kept **CURRENT_SOFTWARE_IMPLEMENTATION** at `9df351d8` ([#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) last software-bearing merge). Reconciled [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) authority table which had been stale at `50a1477f`. Item 9 **2/3 IDLE**, **NOT_CALIBRATED**, collector **`fed2d9f7`** unchanged, epoch `121031` **not** backfilled, Live **OFF**, Full30 **NOT_RUN**, #222 **HOLD**. **Not** a collector retarget. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#357](https://github.com/AdamEddahmouni/market-trading-platform/pull/357) pin convention; [#358](https://github.com/AdamEddahmouni/market-trading-platform/pull/358) software tip |
+| **Notes** | Isolated worktree `.worktrees/docs-current-main-pin-a6e4f9a5` on `docs/current-main-pin-a6e4f9a5` from `origin/main` @ `a6e4f9a5`. Pin **CURRENT_MAIN** to the #357 merge commit, not this docs PR commit (avoid self-pin loop). Primary desktop `44b8673e` and frozen collector `.imp-actual-01-phase-d` @ `fed2d9f7` untouched. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9df351d8` after #358
 
 | Field | Value |
