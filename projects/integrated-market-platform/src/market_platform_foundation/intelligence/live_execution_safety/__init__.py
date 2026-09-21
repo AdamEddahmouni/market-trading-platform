@@ -44,6 +44,14 @@ from .preflight_controls import (
     evaluate_operator_confirmation,
     evaluate_price_freshness,
 )
+from .position_reconciliation import (
+    BrokerPositionObservationV1,
+    ImpPositionTruthV1,
+    LivePositionReconciliationGate,
+    PositionReconciliationOperatorAckV1,
+    PositionReconciliationResultV1,
+    PositionReconciliationState,
+)
 from .reconciliation import blocks_new_submission, build_reconciliation_snapshot
 from .report import build_broker_dry_run_report, build_live_execution_safety_report
 from .runner import BUILD28_KNOWN_LIMITATIONS, LiveExecutionSafetyRunResult, run_live_execution_safety_certification
@@ -121,13 +129,19 @@ __all__ = [
     "LiveExecutionSafetySpecV1",
     "LiveGateDecisionKind",
     "LiveGateReasonCode",
+    "BrokerPositionObservationV1",
+    "ImpPositionTruthV1",
     "LiveOrderSafetyMachine",
+    "LivePositionReconciliationGate",
     "LivePreflightControlId",
     "LivePreflightDisposition",
     "LivePreflightFindingV1",
     "LivePreflightReportV1",
     "LiveSafetyDisposition",
     "LiveSubmitForbiddenError",
+    "PositionReconciliationOperatorAckV1",
+    "PositionReconciliationResultV1",
+    "PositionReconciliationState",
     "REQUIRED_SCENARIOS",
     "ReconciliationHealthState",
     "ScenarioResultV1",
