@@ -84,9 +84,31 @@ describe("opportunityOperatorBrief", () => {
     const invalidate = brief.find((item) => item.question === "What would invalidate it?");
     expect(freshness?.answer.toUpperCase()).toContain("STALE");
     expect(happened?.answer).toMatch(/Expired/i);
+    expect(happened?.answer).not.toMatch(fixtureOpportunityRowBase.headline);
+    expect(happened?.honesty).toBe("OBSERVED");
     expect(invalidate?.honesty).toBe("DERIVED");
     expect(invalidate?.answer).toMatch(/STALE/);
     expect(invalidate?.answer).toMatch(/expired/i);
+  });
+
+  it("does not label IMP headline language as an OBSERVED what-happened fact", () => {
+    const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowBase);
+    const happened = brief.find((item) => item.question === "What happened?");
+    const inference = brief.find((item) => item.question === "Inference vs observation?");
+    expect(happened?.honesty).toBe("OBSERVED");
+    expect(happened?.answer).not.toContain(fixtureOpportunityRowBase.headline);
+    expect(inference?.answer).toMatch(/derived by IMP|Evidence class/i);
+  });
+
+  it("surfaces attached expiry as invalidation without inventing thesis criteria", () => {
+    const brief = buildOpportunityOperatorBrief({
+      ...fixtureOpportunityRowBase,
+      expires_at: "2026-09-21T20:00:00Z",
+    });
+    const invalidate = brief.find((item) => item.question === "What would invalidate it?");
+    expect(invalidate?.honesty).toBe("DERIVED");
+    expect(invalidate?.answer).toMatch(/2026-09-21T20:00:00Z/);
+    expect(invalidate?.answer).toMatch(/time-bounded/i);
   });
 
   it("refuses action when eligibility is INELIGIBLE", () => {

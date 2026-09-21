@@ -360,6 +360,10 @@ export function collectOpportunityInvalidationLines(
   if (isPresent(supersession)) {
     lines.push(`A supersession reason is attached (${String(supersession)}).`);
   }
+  const expiry = row.expires_at ?? row.expiry;
+  if (isPresent(expiry)) {
+    lines.push(`Attached expiry ${String(expiry)} — treat the opportunity as time-bounded.`);
+  }
   return lines;
 }
 
@@ -669,13 +673,21 @@ export function buildOpportunityOperatorBrief(
     actionAnswer = `${next.label}. No workspace promote from this row.`;
   }
 
+  // Instrument + lifecycle only — headline is IMP-derived and answered under
+  // "Inference vs observation?" (matches queueHappenedLine honesty).
+  const happenedParts: string[] = [instrument];
+  if (isPresent(row.lifecycle_state)) {
+    happenedParts.push(humanizeEnum(String(row.lifecycle_state)));
+  }
+  if (isPresent(row.eligibility_state)) {
+    happenedParts.push(`eligibility ${humanizeEnum(String(row.eligibility_state))}`);
+  }
+
   return [
     {
       question: "What happened?",
-      answer: `${instrument}: ${row.headline}${
-        row.lifecycle_state ? ` · ${humanizeEnum(String(row.lifecycle_state))}` : ""
-      }`,
-      honesty: "OBSERVED",
+      answer: happenedParts.join(" · "),
+      honesty: row.instrument_id?.trim() ? "OBSERVED" : "UNKNOWN",
     },
     {
       question: "Why is IMP showing this?",

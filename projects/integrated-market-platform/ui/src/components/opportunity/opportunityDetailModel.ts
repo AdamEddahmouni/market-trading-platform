@@ -96,7 +96,8 @@ export function buildOpportunityDetailSections(
   const deterministicEvidence: Array<{ label: string; value: string }> = [
     { label: "Source", value: displayValue(quality.source) },
     { label: "Catalyst / promotion", value: displayValue(evidence?.evidence_promotion_reason ?? row.evidence_promotion_reason) },
-    { label: "Market behavior", value: displayValue(row.headline) },
+    // Headline is operator-facing summary text — not an observed market fact.
+    { label: "Headline", value: displayValue(row.headline) },
     {
       label: "Identity",
       value:
