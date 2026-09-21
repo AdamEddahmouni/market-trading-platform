@@ -1050,8 +1050,9 @@ def build_squeeze_scanner_attention_items(
 
 
 _CATALYST_UNAVAILABLE_REASON = (
-    "Internship demo state not found. "
-    "Run: python scripts/seed_demo_state.py in news_momentum_agent/"
+    "UNAVAILABLE — leftover donor public-catalyst demo state is not seeded. "
+    "This overlay is not a live market feed and is not Opportunity Engine. "
+    "Canonical replay uses the admitted BOXL catalyst fixture."
 )
 
 
@@ -1394,8 +1395,8 @@ def build_catalyst_attention_items(
                 "instrument_id": symbol,
                 "priority_rank": 20 + index,
                 "reasons": [
-                    {"code": "CATALYST_BRIDGE", "label": "Internship demo state (read-only)"},
-                    {"code": str(row.get("decision", "UNKNOWN")), "label": "Donor paper decision"},
+                    {"code": "CATALYST_BRIDGE", "label": "Leftover donor catalyst demo (read-only)"},
+                    {"code": str(row.get("decision", "UNKNOWN")), "label": "Historical donor paper decision"},
                 ],
                 "tier": 2,
             }

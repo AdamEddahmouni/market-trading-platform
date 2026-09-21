@@ -1,4 +1,4 @@
-"""Tests for internship catalyst read-only bridge."""
+"""Tests for leftover donor public-catalyst read-only bridge."""
 
 from __future__ import annotations
 
@@ -25,11 +25,15 @@ class CatalystBridgeTests(unittest.TestCase):
             payload = build_explore_catalyst_payload(state_dir=Path(tmp))
             self.assertFalse(payload["available"])
             self.assertEqual(payload["rows"], [])
+            reason = str(payload["reason"])
+            self.assertIn("UNAVAILABLE", reason)
+            self.assertNotIn("Internship", reason)
+            self.assertNotIn("internship demo", reason.lower())
 
     def test_available_with_seeded_demo_state(self) -> None:
         state_dir = internship_client.default_state_dir()
         if not internship_client.is_available(state_dir=state_dir):
-            self.skipTest("internship demo state not seeded")
+            self.skipTest("leftover donor catalyst demo state not seeded")
         payload = build_explore_catalyst_payload(state_dir=state_dir)
         self.assertTrue(payload["available"])
         self.assertGreater(payload["row_count"], 0)
@@ -39,7 +43,7 @@ class CatalystBridgeTests(unittest.TestCase):
     def test_workspace_symbol_detail(self) -> None:
         state_dir = internship_client.default_state_dir()
         if not internship_client.is_available(state_dir=state_dir):
-            self.skipTest("internship demo state not seeded")
+            self.skipTest("leftover donor catalyst demo state not seeded")
         payload = build_workspace_catalyst_payload("BOXL", state_dir=state_dir)
         self.assertTrue(payload["available"])
         self.assertIsNotNone(payload["trade_signal"])
@@ -48,14 +52,14 @@ class CatalystBridgeTests(unittest.TestCase):
     def test_workspace_unknown_symbol(self) -> None:
         state_dir = internship_client.default_state_dir()
         if not internship_client.is_available(state_dir=state_dir):
-            self.skipTest("internship demo state not seeded")
+            self.skipTest("leftover donor catalyst demo state not seeded")
         payload = build_workspace_catalyst_payload("ZZZZ", state_dir=state_dir)
         self.assertFalse(payload["available"])
 
     def test_attention_items(self) -> None:
         state_dir = internship_client.default_state_dir()
         if not internship_client.is_available(state_dir=state_dir):
-            self.skipTest("internship demo state not seeded")
+            self.skipTest("leftover donor catalyst demo state not seeded")
         items = build_catalyst_attention_items(state_dir=state_dir, limit=3)
         self.assertGreaterEqual(len(items), 1)
         self.assertTrue(

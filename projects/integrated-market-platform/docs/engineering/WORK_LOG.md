@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Radar catalyst overlay leftover-internship copy honesty
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `donor_bridge`, `docs/integration` |
+| **Summary** | Stopped presenting the leftover donor public-catalyst overlay as an "internship demo" or as a live feed. Operator fallbacks now say `UNAVAILABLE`, canonical replay remains the admitted BOXL fixture, and the historical `internship-project-main` source id stays provenance-only. Live remains OFF for governance/readiness, not because catalyst research is outside product scope. |
+| **Key files** | `ui/src/components/explore-shared/ExploreObservability.tsx`; `ui/src/components/explore-shared/ExploreObservability.test.tsx`; `ui/src/exploreCatalyst.test.ts`; `src/market_platform_foundation/donor_bridge/projections.py`; `src/market_platform_foundation/donor_bridge/internship_client.py`; `tests/donor_bridge/test_catalyst_bridge.py`; `tests/integration/test_catalyst_lane_acceptance_tool.py`; `tools/integration/catalyst_lane_acceptance.py`; `docs/integration/CATALYST_LANE.md` |
+| **Tests** | `python -m unittest tests.donor_bridge.test_catalyst_bridge tests.integration.test_catalyst_lane_acceptance_tool`; focused vitest `exploreCatalyst.test.ts` + `ExploreObservability.test.tsx` |
+| **Related** | Radar Research screens still host this overlay; not Opportunity Engine |
+| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` from `origin/main` @ `a6e4f9a5`. Does not touch collector, #359, or Item 9 receipts. |
+
 ## 2026-09-19 — Pin CURRENT_MAIN to origin/main `9df351d8` after #358
 
 | Field | Value |

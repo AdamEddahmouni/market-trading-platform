@@ -1,19 +1,25 @@
 # Catalyst Read-Only Integration Lane
 
-**Status:** `COMPLETE` — read-only donor bridge over internship demo state.
+**Status:** `COMPLETE` — leftover donor overlay plus admitted BOXL fixture path.
 
-This lane connects the governed IMP UI to the internship news-momentum agent's
-seeded `state/*.json` files. No demo bytes are admitted into canonical replay;
-the bridge is filesystem read-only only.
+This lane connects the governed IMP UI to optional leftover donor
+`state/*.json` files (historical directory name `internship-project-main` is
+provenance, not a claim that IMP is an internship demo). No demo bytes are
+admitted into canonical replay; the overlay is filesystem read-only only.
+Canonical replay uses the admitted BOXL catalyst fixture. Live execution
+remains OFF because of governance/readiness, not because catalyst research is
+outside product scope.
 
 ## Prerequisites
 
-- Internship demo state seeded:
+- Optional leftover donor overlay (not required for canonical replay):
   ```powershell
   cd internship-project-main\internship-project-main\news_momentum_agent
   python scripts/seed_demo_state.py
   ```
 - `state/demo.lock` must exist (blocks live `main.py` scheduler)
+
+Missing overlay state is `UNAVAILABLE`, not a failed live market feed.
 
 ## Quick start
 
@@ -31,7 +37,7 @@ Invoke-RestMethod http://127.0.0.1:8766/explore/catalyst | Select-Object availab
 Invoke-RestMethod http://127.0.0.1:8766/workspace/BOXL/catalyst | Select-Object available, symbol
 ```
 
-### Optional — Internship Streamlit dashboard
+### Optional — leftover donor Streamlit dashboard
 
 ```powershell
 .\tools\run_donor_demos.ps1 -Start internship
@@ -59,7 +65,7 @@ python -m unittest tests.donor_bridge.test_catalyst_bridge
 
 - Demo state is **not admitted** into canonical replay (see `docs/DONOR_FIXTURE_MAP.md`).
 - `donor_patterns/catalyst_lane.py` provides stdlib gate/evidence helpers for projections.
-- Live scheduler, broker adapters, and paper execution remain unauthorized in IMP.
+- The leftover donor overlay's live scheduler, broker adapters, and paper execution stay unauthorized. IMP Live remains OFF for governance/readiness, not because this lane is outside product scope.
 
 ## Phase 15 — fixture-first canonical path
 
@@ -72,7 +78,7 @@ Phase 15 admits `ADMITTED-CATALYST-BOXL-001` into canonical replay:
 | Provider adapter | `src/market_platform_foundation/providers/adapters/fixture_catalyst.py` |
 | Whale family | `public_catalyst` (entitled on BOXL only) |
 
-The UI API serves `/workspace/BOXL/catalyst` from the fixture provider when entitled. The donor bridge above remains an optional overlay when internship demo state is seeded; fixture path is canonical for replay/PIT.
+The UI API serves `/workspace/BOXL/catalyst` from the fixture provider when entitled. The donor bridge above remains an optional overlay when leftover donor demo state is seeded; fixture path is canonical for replay/PIT.
 
 Verification:
 
@@ -84,7 +90,7 @@ python tools/phase15/run_phase15_pipeline.py --output-dir evidence/phase15/build
 
 ## Lane acceptance (end-to-end evidence)
 
-After seeding internship demo state and with IMP UI API (`:8766`) running:
+After seeding leftover donor demo state (optional overlay) and with IMP UI API (`:8766`) running:
 
 ```powershell
 cd integrated-market-platform
