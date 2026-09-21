@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Harden Live order safety: disconnect test honesty + zero fill-delta guards
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety` |
+| **Summary** | PR #364 follow-up harden only. Renamed disconnect test to match repository behavior (UNKNOWN + `reconcile_required`; `attempt_network_submit` still refused; disconnect does **not** freeze in-process `advance` unlike restart). Claimed PARTIALLY_FILLED/FILLED transitions now enforce quantity consistency when `filled_delta=0`; validate prospective filled qty before mutating. Live remains OFF; network submit still impossible. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py`; `tests/intelligence/test_live_order_safety_machine.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 34 passed |
+| **Related** | [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364); prior entry Live safety order lifecycle |
+| **Notes** | Isolated worktree `.worktrees/live-safety-harden` on `feat/live-safety-contract`. Did not redesign `LivePreflightReportV1`. Did not touch Item 9 / OpenD / collector / evidence. Did not merge or self-approve. Independent review still required. |
+
+## 2026-09-21 — Live safety order lifecycle + preflight contracts (Live remains OFF)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety`, `docs/engineering` |
+| **Summary** | Advanced Live readiness at the architecture/contract level without enabling Live or opening a broker session. Added a non-submitting `LiveOrderSafetyMachine` (ack / partial fill / cancel / reject / disconnect / restart-resume) and fail-closed preflight controls for price freshness, max size, buying power, market state, malformed orders, and operator confirmation. Bundle always sets `allows_network_submit=False`. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py` (created); `src/.../live_execution_safety/preflight_controls.py` (created); `src/.../live_execution_safety/__init__.py`; `tests/intelligence/test_live_order_safety_machine.py` (created); `docs/engineering/LIVE_EXECUTION_SAFETY_GATE_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 33 passed |
+| **Related** | [LIVE_EXECUTION_SAFETY_GATE_V1.md](LIVE_EXECUTION_SAFETY_GATE_V1.md); BUILD 28 zero-submit gate |
+| **Notes** | Did not touch Item 9 collector, OpenD, Live OFF flags, or shared runtime config. Did not rebuild already-complete kill switch / gate / dry-run controls. |
+
 ## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
 
 | Field | Value |

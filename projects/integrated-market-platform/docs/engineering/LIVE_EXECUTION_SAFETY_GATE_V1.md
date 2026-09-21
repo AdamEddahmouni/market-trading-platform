@@ -115,6 +115,21 @@ Broker preview/what-if: **not safely callable** — local dry-run only.
 
 `ZeroSubmitGuard` raises `LiveSubmitForbiddenError` on any real `place_order` / `cancel_order` / `replace_order` call.
 
+## Live order safety state machine (cannot submit)
+
+`LiveOrderSafetyMachine` (`order_lifecycle.py`) models acknowledgement, partial
+fill, cancel, rejection, disconnect→`UNKNOWN`, and restart-restore with
+operator resume. Invalid transitions fail closed. `attempt_network_submit`
+always raises `LiveSubmitForbiddenError`. Replace remains uncertified.
+
+## Gap-closing preflight controls (Live OFF)
+
+`preflight_controls.py` evaluates price freshness, maximum order size, buying
+power, market state, malformed-order shape, and operator confirmation. Even when
+every control would otherwise pass, the bundle sets `allows_network_submit=False`
+(`BUILD28_LIVE_SUBMIT_FORBIDDEN`). These close contract gaps that Paper already
+exercises but the Live gate must refuse while Live remains OFF.
+
 ## BUILD 29 Boundary
 
 A future BUILD 29 may design a **Limited Live Execution Authorization Program** only if explicitly requested and supported by BUILD 26–28 evidence. BUILD 28 grants no such authority.
@@ -124,6 +139,7 @@ A future BUILD 29 may design a **Limited Live Execution Authorization Program** 
 ```text
 src/market_platform_foundation/intelligence/live_execution_safety/
 tests/intelligence/test_live_execution_safety.py
+tests/intelligence/test_live_order_safety_machine.py
 artifacts/live-execution-safety/
 tools/live_execution_safety/generate_build28_manifests.py
 ```
@@ -132,7 +148,7 @@ tools/live_execution_safety/generate_build28_manifests.py
 
 ```powershell
 $env:PYTHONPATH='src'
-.venv\Scripts\python.exe -m unittest tests.intelligence.test_live_execution_safety -v
+.venv\Scripts\python.exe -m unittest tests.intelligence.test_live_execution_safety tests.intelligence.test_live_order_safety_machine -v
 .venv\Scripts\python.exe tools/live_execution_safety/generate_build28_manifests.py
 .venv\Scripts\python.exe tools/validate.py changed
 ```
