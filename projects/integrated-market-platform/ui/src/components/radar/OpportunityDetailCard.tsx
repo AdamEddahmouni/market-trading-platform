@@ -12,6 +12,7 @@ import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { JsonDetailPanel } from "../shared/JsonDetailPanel";
 import { buildOpportunityDetailSections } from "../opportunity/opportunityDetailModel";
+import { buildDecisionProvenancePresentation } from "../opportunity/decisionProvenancePresentation";
 import {
   buildOpportunityEpistemicLayers,
   epistemicLayerTitle,
@@ -118,6 +119,7 @@ export function OpportunityDetailCard({
     unreadyReason,
   });
   const epistemic = buildOpportunityEpistemicLayers(row, evidence);
+  const decisionProvenance = buildDecisionProvenancePresentation(evidence, row);
   const epistemicLayerOrder: EpistemicLayerKey[] = [
     "observed",
     "derived",
@@ -207,6 +209,51 @@ export function OpportunityDetailCard({
           ))}
         </dl>
       </section>
+
+      {decisionProvenance.present ? (
+        <section
+          className="imp-radar-decision-provenance"
+          aria-label="Decision provenance"
+          data-testid="imp-radar-decision-provenance"
+        >
+          <h4 className="imp-radar-subhead">Decision provenance</h4>
+          <p className="imp-radar-muted">
+            Admitted-opportunity audit trail. Thesis language is derived or asserted — never an observed
+            market fact.
+          </p>
+          <dl className="imp-radar-brief-grid">
+            {decisionProvenance.fields.map((item) => (
+              <div
+                key={`${item.label}:${item.value}`}
+                className="imp-radar-brief-row"
+                data-honesty={item.honesty}
+              >
+                <dt>{item.label}</dt>
+                <dd>
+                  {item.value}
+                  <span className="imp-radar-brief-honesty">{item.honesty}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <div
+            className="imp-radar-ai-assisted-notes"
+            data-testid="imp-radar-ai-assisted-notes"
+            data-authority="non-authoritative"
+          >
+            <h5 className="imp-radar-subhead">AI-assisted notes (non-authoritative)</h5>
+            <p className="imp-radar-muted">
+              Visually separated from deterministic provenance. AI notes never authorize state changes
+              or Live execution.
+            </p>
+            <ul className="imp-radar-lines">
+              {decisionProvenance.aiAssistedNotes.map((note) => (
+                <li key={`${note.label}:${note.value}`}>{note.value}</li>
+              ))}
+            </ul>
+          </div>
+        </section>
+      ) : null}
 
       {hasNonFactualResearchOutput(epistemic) ? (
         <AttentionBanner tone="caution">
