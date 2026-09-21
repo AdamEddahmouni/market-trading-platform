@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Cboe options observational opportunity evidence attach
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `cboe_options` / evidence |
+| **Summary** | Smallest governed attachment of observational Cboe options context (open interest, volume, derived put/call activity mix, optional underlying contract snapshots) onto an already-admitted US equity opportunity. Evidence/context only — does not mutate opportunity-core schema, authorize Live options trading, or invent a strategy. Underlying resolution is generic (AAPL/NVDA fixtures only). |
+| **Key files** | `src/market_platform_foundation/cboe_options/opportunity_evidence.py`; `opportunity_attachment.py`; `__init__.py`; `tests/cboe_options/test_cboe_opportunity_evidence.py`; `docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md` |
+| **Tests** | `python tools/imp.py test focused` (11 selectors) — **11 passed** / 0 fail / 0 err |
+| **Related** | [CBOE_PUBLIC_OPTIONS_STATISTICS.md](../providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md) |
+| **Notes** | Product-class aggregates remain product-scope; single-name only from symbol snapshots. No Radar UI / opportunity-core / live_execution_safety / LiveObservationalRuntime changes. |
+
 ## 2026-09-21 — Live position reconciliation contract (Live remains OFF)
 
 | Field | Value |
