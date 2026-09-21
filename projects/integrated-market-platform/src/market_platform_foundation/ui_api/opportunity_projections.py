@@ -19,6 +19,8 @@ from ..rt01.execution_decision_trace.runtime import (
 )
 from .operator_opportunity_state import dismissed_ids, list_operator_acks, record_operator_ack
 from .agent_enrichment_ingest import overlay_agent_enrichment_on_detail
+from .cboe_options_evidence import EVIDENCE_KEY as CBOE_OPTIONS_EVIDENCE_KEY
+from .cboe_options_evidence import overlay_cboe_options_evidence_on_detail
 from .research_artifact_evidence import overlay_research_artifact_evidence_on_detail
 from .trade_review_projections import overlay_trade_reviews_on_detail
 from .store import ReplayStore
@@ -312,6 +314,11 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
                 body["lifecycle_state"] = matching[-1]["action"]
             body = overlay_agent_enrichment_on_detail(store, body)
             body = overlay_research_artifact_evidence_on_detail(store, body)
+            body = overlay_cboe_options_evidence_on_detail(
+                store,
+                body,
+                persist=_persist_opportunity(store, row.opportunity_id),
+            )
             record_opportunity_surface_trace(
                 store,
                 row,
@@ -382,6 +389,8 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
             payload["actionability_audit"] = actionability
     if detail.get("research_artifact_evidence") is not None:
         payload["research_artifact_evidence"] = detail["research_artifact_evidence"]
+    if detail.get(CBOE_OPTIONS_EVIDENCE_KEY) is not None:
+        payload[CBOE_OPTIONS_EVIDENCE_KEY] = detail[CBOE_OPTIONS_EVIDENCE_KEY]
     return payload
 
 
