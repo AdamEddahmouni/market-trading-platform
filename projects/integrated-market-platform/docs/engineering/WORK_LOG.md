@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Harden Live order safety: disconnect test honesty + zero fill-delta guards
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety` |
+| **Summary** | PR #364 follow-up harden only. Renamed disconnect test to match repository behavior (UNKNOWN + `reconcile_required`; `attempt_network_submit` still refused; disconnect does **not** freeze in-process `advance` unlike restart). Claimed PARTIALLY_FILLED/FILLED transitions now enforce quantity consistency when `filled_delta=0`; validate prospective filled qty before mutating. Live remains OFF; network submit still impossible. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py`; `tests/intelligence/test_live_order_safety_machine.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 34 passed |
+| **Related** | [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364); prior entry Live safety order lifecycle |
+| **Notes** | Isolated worktree `.worktrees/live-safety-harden` on `feat/live-safety-contract`. Did not redesign `LivePreflightReportV1`. Did not touch Item 9 / OpenD / collector / evidence. Did not merge or self-approve. Independent review still required. |
+
 ## 2026-09-21 — Live safety order lifecycle + preflight contracts (Live remains OFF)
 
 | Field | Value |

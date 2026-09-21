@@ -175,16 +175,29 @@ class LiveOrderSafetyMachine:
         validate_live_order_transition(prior_state=self.state, next_state=next_state)
         if filled_delta < 0:
             raise ValueError("LIVE_ORDER_FILL_DELTA_INVALID")
-        if filled_delta:
+        # Claimed fill/partial transitions must enforce quantity consistency even
+        # when filled_delta is 0 (truthy-only guards previously skipped that edge).
+        claimed_fill_or_partial = next_state in {
+            BrokerOrderStateKind.PARTIALLY_FILLED,
+            BrokerOrderStateKind.FILLED,
+        }
+        if filled_delta or claimed_fill_or_partial:
             if self.order_quantity <= 0:
                 raise ValueError("LIVE_ORDER_QUANTITY_UNKNOWN")
-            self.filled_quantity += filled_delta
-            if self.filled_quantity > self.order_quantity:
+            prospective_filled = self.filled_quantity + filled_delta
+            if prospective_filled > self.order_quantity:
                 raise ValueError("LIVE_ORDER_OVERFILL")
-            if next_state == BrokerOrderStateKind.PARTIALLY_FILLED and self.filled_quantity >= self.order_quantity:
+            if (
+                next_state == BrokerOrderStateKind.PARTIALLY_FILLED
+                and prospective_filled >= self.order_quantity
+            ):
                 raise ValueError("LIVE_ORDER_PARTIAL_MUST_BE_STRICT")
-            if next_state == BrokerOrderStateKind.FILLED and self.filled_quantity != self.order_quantity:
+            if (
+                next_state == BrokerOrderStateKind.FILLED
+                and prospective_filled != self.order_quantity
+            ):
                 raise ValueError("LIVE_ORDER_FILL_QUANTITY_MISMATCH")
+            self.filled_quantity = prospective_filled
         prior = self.state
         self.state = next_state
         if next_state in LIVE_ORDER_RECONCILE_REQUIRED_STATES:

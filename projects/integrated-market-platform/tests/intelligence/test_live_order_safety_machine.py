@@ -66,7 +66,12 @@ class LiveOrderLifecycleTests(unittest.TestCase):
             machine.advance(BrokerOrderStateKind.CANCEL_PENDING, event="late_cancel")
         self.assertIn("LIVE_ORDER_TRANSITION_FROM_TERMINAL", str(ctx.exception))
 
-    def test_disconnect_marks_unknown_and_blocks_blind_path(self) -> None:
+    def test_disconnect_marks_unknown_reconcile_required_submit_still_refused(self) -> None:
+        """Disconnect marks UNKNOWN + reconcile_required; submit stays forbidden.
+
+        Unlike restart_blocked, disconnect does not freeze in-process ``advance``
+        by itself — valid reconcile recoveries from UNKNOWN remain allowed.
+        """
         machine = LiveOrderSafetyMachine(client_order_id="coid-4", order_quantity=3)
         machine.advance(BrokerOrderStateKind.DRY_RUN_VALIDATED, event="dry_run")
         machine.advance(BrokerOrderStateKind.SUBMISSION_PENDING, event="local_intent")
@@ -75,6 +80,63 @@ class LiveOrderLifecycleTests(unittest.TestCase):
         machine.record_disconnect()
         self.assertEqual(machine.state, BrokerOrderStateKind.UNKNOWN)
         self.assertTrue(machine.reconcile_required)
+        self.assertFalse(machine.restart_blocked)
+        # Disconnect does not freeze lifecycle advance the way restart does.
+        machine.advance(BrokerOrderStateKind.OPEN, event="reconciled_open")
+        self.assertEqual(machine.state, BrokerOrderStateKind.OPEN)
+        self.assertFalse(machine.reconcile_required)
+        with self.assertRaises(LiveSubmitForbiddenError):
+            machine.attempt_network_submit()
+
+    def test_fill_delta_quantity_guards(self) -> None:
+        machine = LiveOrderSafetyMachine(client_order_id="coid-fill", order_quantity=10)
+        machine.advance(BrokerOrderStateKind.DRY_RUN_VALIDATED, event="dry_run")
+        machine.advance(BrokerOrderStateKind.SUBMISSION_PENDING, event="local_intent")
+        machine.advance(BrokerOrderStateKind.ACKNOWLEDGED, event="ack")
+        machine.advance(BrokerOrderStateKind.OPEN, event="open")
+
+        # Valid partial / fill deltas.
+        machine.advance(
+            BrokerOrderStateKind.PARTIALLY_FILLED,
+            event="partial",
+            filled_delta=4,
+        )
+        self.assertEqual(machine.filled_quantity, 4)
+
+        # Zero-delta claimed partial: still enforce consistency (4 < 10 OK).
+        machine.advance(
+            BrokerOrderStateKind.PARTIALLY_FILLED,
+            event="partial_zero_delta",
+            filled_delta=0,
+        )
+        self.assertEqual(machine.filled_quantity, 4)
+
+        # Overfill via positive delta.
+        with self.assertRaises(ValueError) as overfill_ctx:
+            machine.advance(
+                BrokerOrderStateKind.PARTIALLY_FILLED,
+                event="overfill",
+                filled_delta=7,
+            )
+        self.assertIn("LIVE_ORDER_OVERFILL", str(overfill_ctx.exception))
+        self.assertEqual(machine.filled_quantity, 4)
+        self.assertEqual(machine.state, BrokerOrderStateKind.PARTIALLY_FILLED)
+
+        # Terminal FILLED quantity consistency (including zero-delta mismatch).
+        with self.assertRaises(ValueError) as mismatch_ctx:
+            machine.advance(
+                BrokerOrderStateKind.FILLED,
+                event="fill_zero_delta_mismatch",
+                filled_delta=0,
+            )
+        self.assertIn("LIVE_ORDER_FILL_QUANTITY_MISMATCH", str(mismatch_ctx.exception))
+        machine.advance(
+            BrokerOrderStateKind.FILLED,
+            event="fill_complete",
+            filled_delta=6,
+        )
+        self.assertEqual(machine.state, BrokerOrderStateKind.FILLED)
+        self.assertEqual(machine.filled_quantity, 10)
 
     def test_restart_restore_blocks_until_operator_resume(self) -> None:
         machine = LiveOrderSafetyMachine(client_order_id="coid-5")
