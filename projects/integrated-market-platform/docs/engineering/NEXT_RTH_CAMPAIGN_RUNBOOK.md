@@ -10,8 +10,8 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `d1c5045553fcded05c72e54cf9eaccd5528c9ab3` | Mutable `origin/main` tip after [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) leftover catalyst overlay honesty. Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `d1c5045553fcded05c72e54cf9eaccd5528c9ab3` | Last **software-bearing** merge [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) (includes [#359](https://github.com/AdamEddahmouni/market-trading-platform/pull/359)–[#353](https://github.com/AdamEddahmouni/market-trading-platform/pull/353)). Matches **CURRENT_MAIN**. **Not** empirical evidence. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `b55fab51eeef393420e19deb174401b33ee4f380` | Mutable `origin/main` tip after [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) Live order safety (Live **OFF**; includes [#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366)). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `b55fab51eeef393420e19deb174401b33ee4f380` | Last **software-bearing** merge [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) (includes [#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366)). Matches **CURRENT_MAIN**. **Not** empirical evidence. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
@@ -29,7 +29,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `d1c50455…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `b55fab51…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 **Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
 
@@ -42,7 +42,7 @@ $rcpt = Join-Path (git rev-parse --show-toplevel) ".imp-actual-01-phase-d\projec
 python tools\item9_corpus_status.py corpus-status --receipt-dir $rcpt
 ```
 
-Expect **`sample_gate_progress.distinct_rth_dates` = `2/3`** until a **third distinct admitted** US cash RTH date is earned. **`ITEM9_CALIBRATION_RUN` = FORBIDDEN** — no automatic fitting.
+Expect **`sample_gate.status=SAMPLE_GATE_MET`** and **`sample_gate_progress.distinct_rth_dates` = `3/3`** after 2026-09-21 (admitted **2026-09-17**, **2026-09-18**, **2026-09-21**). Still **`item9_status=PARTIAL_NOT_CALIBRATED`**, **`calibrated=false`**, **`fitting_allowed=false`**. **`ITEM9_CALIBRATION_RUN` = FORBIDDEN** — no automatic fitting. Do **not** backfill the Sep 21 **≈10:43–13:09 ET** **`NOT_OBSERVED`** gap.
 
 ## Workstation bootstrap (once per day)
 
@@ -56,7 +56,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `d1c50455`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `b55fab51`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -111,7 +111,7 @@ Run only from **`.imp-actual-01-phase-d`** @ **`fed2d9f7`** during **US equity c
 
 | Gate | Required |
 |------|----------|
-| Calendar | `calendar.rth_active=true`; session date is a **new** distinct US cash RTH date (**not** already admitted **2026-09-17** or **2026-09-18**) |
+| Calendar | `calendar.rth_active=true`; session date is a **new** distinct US cash RTH date only when collecting beyond the already-admitted set (**2026-09-17**, **2026-09-18**, **2026-09-21**) |
 | Runtime | `runtime.runtime_matches_frozen_authority=true`; `current_git_sha` = **`fed2d9f7`** |
 | Collector | Exactly **one** governed checkout `.imp-actual-01-phase-d`; **`ACTIVE_COLLECTORS=0`** before start |
 | Receipt dir | Writable governed path under frozen collector IMP root (see above) |
@@ -187,13 +187,13 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`d1c50455`** through [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`b55fab51`** through [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364) |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
 | `item9 next-rth-preflight` | Operator | Off-hours `NOT_RTH` expected |
 | Campaign / Live OFF | **Policy** | FTEP not `EMPIRICAL_ACTIVE`; Moomoo/IBKR **`PROVIDER_UNVERIFIED`** unless operator earns live receipts |
-| Item 9 / Item 7 gates | **Unearned** | `ITEM9_CALIBRATED`=NO; `ITEM9_DISTINCT_RTH_DATES`=**2**/3 (admitted **2026-09-17** + **2026-09-18** per [IMP_POST_RTH_CLOSE_08_LANE_G.md](IMP_POST_RTH_CLOSE_08_LANE_G.md)); Item 7 governed rows **0** |
+| Item 9 / Item 7 gates | **Unearned beyond sample gate** | `ITEM9_CALIBRATED`=NO; `SAMPLE_GATE_MET`; `PARTIAL_NOT_CALIBRATED`; `ITEM9_DISTINCT_RTH_DATES`=**3**/3 (admitted **2026-09-17** + **2026-09-18** + **2026-09-21**); `fitting_allowed=false`; calibration **FORBIDDEN**; Item 7 governed rows **0** |
 
 ## Recommended next RTH operator actions
 
