@@ -68,8 +68,12 @@ StrategyDefinition
 The canonical internal strategy Paper path now persists an immutable
 `OrderReadyV1` record between `RiskDecisionV1` and Paper submission. Its
 decision-thread `correlation_id` is carried from the strategy match through
-allocation, proposal, risk, order, and fill records. A read-only unified
-business trace reconstructs these records by `allocation_decision_id` through
+allocation, proposal, risk, order, and fill records. Durable `OrderReadyV1`
+records must also retain an `opportunity` entry in `lineage_refs` so the
+execution-preparation boundary can explain the opportunity without inventing
+authority; `opportunity_id_from_order_ready` / `order_ready_correlation_snapshot`
+are read-only extractors for that contract. A read-only unified business
+trace reconstructs these records by `allocation_decision_id` through
 `GET /paper/trace?allocation_decision_id=...`; the existing intent/order/fill
 anchors remain supported for manual Paper orders.
 

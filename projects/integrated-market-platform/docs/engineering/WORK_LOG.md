@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` |
+| **Summary** | Hardened `assert_order_ready_opportunity_correlation` so missing/empty opportunity lineage stays `ORDER_READY_OPPORTUNITY_LINEAGE_MISSING` while a present but non-matching opportunity id raises `ORDER_READY_OPPORTUNITY_LINEAGE_MISMATCH`. Added focused negative tests for both. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py`; `tests/rt01/test_order_ready_trace_contract.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 5 passed |
+| **Related** | PR #365; prior OrderReady opportunity→risk correlation contract entry |
+| **Notes** | No OrderReadyV1 redesign; empty lineage still allowed on the type. No Live/OpenD/Item 9/collector changes. |
+
 ## 2026-09-21 — Radar honesty harden: eligibility + headline evidence
 
 | Field | Value |
@@ -47,6 +59,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `npx vitest run --environment node` on `opportunityOperatorBrief.test.ts`, `opportunityDetailModel.test.ts`, `opportunityEpistemicLayers.test.ts`, `opportunityPresentation.test.ts` — **44 passed** |
 | **Related** | PR #366 harden on `ui/operator-comprehension`; does not merge Live or touch Item 9 |
 | **Notes** | Actionability/authority semantics unchanged (presentation + detail readiness tests). Independent review still required — do not self-approve. |
+
+## 2026-09-21 — OrderReady opportunity→risk correlation contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` / `system_acceptance` |
+| **Summary** | Closed the inventory/docs gap for durable opportunity→risk→order_ready correlation: registered `OrderReadyV1` and lineage edges, added read-only extractors that fail closed when opportunity lineage is missing, and locked the strategy Paper path with a focused trace-contract test. No Live, broker, OpenD, or Item 9 changes. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py` (created); `execution/__init__.py`; `system_acceptance/inventory.py`; `system_acceptance/invariants.py`; `tests/rt01/test_order_ready_trace_contract.py` (created); `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `docs/architecture/DATA_CONTRACTS.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 4 passed |
+| **Related** | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [DATA_CONTRACTS](../architecture/DATA_CONTRACTS.md); RT-01 Paper tracing |
+| **Notes** | Runtime already stamped opportunity into `OrderReadyV1.lineage_refs`; this increment makes the contract discoverable and test-enforced. Manual Paper drafts and Live remain intentionally separate. Collector/OpenD/Live untouched. |
 
 ## 2026-09-21 — Radar operator honesty: headline not OBSERVED
 

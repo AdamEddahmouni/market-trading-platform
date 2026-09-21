@@ -40,6 +40,7 @@
 | Attention IDs | Backend-assigned attention item identity |
 | Opportunity review IDs | `summary_id` plus optional governed `opportunity_id`; HTTP `GET /opportunities/summary` — not an order id |
 | Opportunity evidence | `GET /opportunities/{id}/evidence` projects review-row `evidence_class` / promotion reason / family admission / data quality plus persist `created_at_ns`; `items` remains lineage refs. Not an ingest timestamp stamp. |
+| OrderReady opportunity lineage | Strategy `OrderReadyV1.lineage_refs` must include `kind=opportunity`; extract with `opportunity_id_from_order_ready` — never invent when absent |
 
 Do not overload `correlation_id` with display labels or reuse for unrelated caches.
 

@@ -16,6 +16,12 @@ from .identity import (
     execution_policy_identity_payload,
 )
 from .policy import build_execution_policy
+from .order_ready_correlation import (
+    assert_order_ready_opportunity_correlation,
+    correlation_snapshot_from_mapping,
+    opportunity_id_from_order_ready,
+    order_ready_correlation_snapshot,
+)
 from .serialization import (
     execution_policy_v1_from_dict,
     execution_policy_v1_to_dict,
@@ -71,12 +77,16 @@ __all__ = [
     "RiskDecisionV1",
     "RiskReasonCode",
     "SizingPolicyKind",
+    "assert_order_ready_opportunity_correlation",
     "build_execution_policy",
     "build_portfolio_snapshot",
     "compute_exposure",
+    "correlation_snapshot_from_mapping",
     "derive_execution_policy_id",
     "derive_paper_order_idempotency_key",
     "derive_portfolio_snapshot_id",
+    "opportunity_id_from_order_ready",
+    "order_ready_correlation_snapshot",
     "derive_risk_decision_id",
     "derive_trade_proposal_id",
     "execution_policy_identity_payload",
