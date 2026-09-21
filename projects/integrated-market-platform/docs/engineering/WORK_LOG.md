@@ -48,6 +48,42 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [OBSERVATION_INGRESS_ROUTER_V1.md](OBSERVATION_INGRESS_ROUTER_V1.md); existing `dispatch_normalization_result` / production wire |
 | **Notes** | Does not enable Live; does not auto-attach production router; bars without admitted envelope fail closed; IBKR record normalizer still interface-only; refused `live_execution_safety/`, Item 7 settlement, `PROGRAM_STATUS.md` |
 
+## 2026-09-21 — Item 9 post–Sep 21 docs status pin (3/3 SAMPLE_GATE_MET)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / `item9` |
+| **Summary** | Docs-only closeout after 2026-09-21 RTH: pinned **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** to fetched `origin/main` `b55fab51eeef393420e19deb174401b33ee4f380` (supersedes morning tip `d1c50455` and intermediate tip `3d5c9c0f`). Read-only `corpus-status` on frozen-collector receipts confirmed **`SAMPLE_GATE_MET`**, **`item9_status=PARTIAL_NOT_CALIBRATED`**, **`calibrated=false`**, **`fitting_allowed=false`**, distinct RTH dates **3**/3 (**2026-09-17**, **2026-09-18**, **2026-09-21**). Calibration remains **FORBIDDEN**. **3**/3 is **not** calibrated, **not** Paper-validated, **not** Full30, **not** Live-ready. Sep 21 **≈10:43–13:09 ET** gap stays **`NOT_OBSERVED`** (not backfilled). Sep 17 `PATH_PROOF_ONLY` receipt remains non-admissible. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/item9_corpus_status.py corpus-status --receipt-dir` → `.imp-actual-01-phase-d/.../item9-prospective-proof-receipts` (read-only; CPython 3.13) — tokens above confirmed; `classify` on `item9-prospective-20260917-rth-aapl.json` → `PATH_PROOF_ONLY` |
+| **Related** | Frozen collector `fed2d9f7`; prior morning pin [#363](https://github.com/AdamEddahmouni/market-trading-platform/pull/363); software tip [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364)/[#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366) |
+| **Notes** | No product code, tests, receipts, collectors, or schedulers changed. Collector not rerun. Live remains OFF. Did not edit `live_execution_safety` / CBOE / event ingress / opportunity code. |
+
+## 2026-09-21 — Harden Live order safety: disconnect test honesty + zero fill-delta guards
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety` |
+| **Summary** | PR #364 follow-up harden only. Renamed disconnect test to match repository behavior (UNKNOWN + `reconcile_required`; `attempt_network_submit` still refused; disconnect does **not** freeze in-process `advance` unlike restart). Claimed PARTIALLY_FILLED/FILLED transitions now enforce quantity consistency when `filled_delta=0`; validate prospective filled qty before mutating. Live remains OFF; network submit still impossible. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py`; `tests/intelligence/test_live_order_safety_machine.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 34 passed |
+| **Related** | [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364); prior entry Live safety order lifecycle |
+| **Notes** | Isolated worktree `.worktrees/live-safety-harden` on `feat/live-safety-contract`. Did not redesign `LivePreflightReportV1`. Did not touch Item 9 / OpenD / collector / evidence. Did not merge or self-approve. Independent review still required. |
+
+## 2026-09-21 — Live safety order lifecycle + preflight contracts (Live remains OFF)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety`, `docs/engineering` |
+| **Summary** | Advanced Live readiness at the architecture/contract level without enabling Live or opening a broker session. Added a non-submitting `LiveOrderSafetyMachine` (ack / partial fill / cancel / reject / disconnect / restart-resume) and fail-closed preflight controls for price freshness, max size, buying power, market state, malformed orders, and operator confirmation. Bundle always sets `allows_network_submit=False`. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py` (created); `src/.../live_execution_safety/preflight_controls.py` (created); `src/.../live_execution_safety/__init__.py`; `tests/intelligence/test_live_order_safety_machine.py` (created); `docs/engineering/LIVE_EXECUTION_SAFETY_GATE_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 33 passed |
+| **Related** | [LIVE_EXECUTION_SAFETY_GATE_V1.md](LIVE_EXECUTION_SAFETY_GATE_V1.md); BUILD 28 zero-submit gate |
+| **Notes** | Did not touch Item 9 collector, OpenD, Live OFF flags, or shared runtime config. Did not rebuild already-complete kill switch / gate / dry-run controls. |
+
 ## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
 
 | Field | Value |
