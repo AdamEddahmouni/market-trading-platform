@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Absorb origin/main `0c37b925` (#362) into #361
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `docs` |
+| **Summary** | After [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) merged, merged `origin/main` **`0c37b925`** into [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361). Kept the catalyst-honesty entry, both #360/#362 absorb entries, the flowchart entry, the #360 pin, and both 2026-09-20 #359 entries. Did **not** merge #361 / #222. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | Reused prior focused tests from the `21d481b5` absorb: Python **7 ran** (2 passed, 5 skipped); vitest **3 passed**. Conflict was WORK_LOG-only. |
+| **Related** | [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) merge `0c37b925`; unique HEAD `3f0a9945`; [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) |
+| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty`. Merge-from-main (no rebase/force). First absorb was onto post-#360 `21d481b5` as ordered; this second absorb is only because #362 landed during that window. Live remains OFF for governance/readiness, not out-of-scope. Collector **`fed2d9f7`** / #222 **HOLD**. |
+
 ## 2026-09-21 — Absorb origin/main `21d481b5` (#360) into #361
 
 | Field | Value |
@@ -48,6 +60,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) merge `21d481b5`; unique HEAD `a1d8f3aa`; [#361](https://github.com/AdamEddahmouni/market-trading-platform/pull/361) |
 | **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` on `ui/explore-catalyst-honesty`. Merge-from-main (no rebase/force). Live remains OFF for governance/readiness, not out-of-scope. Item 9 Day 3 RTH **OPEN** / collector **`fed2d9f7`** / #222 **HOLD**. |
 
+## 2026-09-21 — Absorb origin/main `21d481b5` (#360) into #362
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Merged `origin/main` **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) CURRENT_MAIN pin) into [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) after #360 landed. Kept the operator flowchart WORK_LOG entry, the #360 pin entry, and both 2026-09-20 #359 entries. Did **not** merge #362 / #361 / #222. |
+| **Key files** | `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360) merge `21d481b5`; unique HEAD `a1d8f3aa`; [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) |
+| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` on `docs/operator-flowchart-alignment`. Merge-from-main (no rebase/force). Item 9 Day 3 RTH **OPEN** / collector **`fed2d9f7`** / Live **OFF** / #222 **HOLD**. Bonds/Crypto/Gold/Silver remain `PARTIAL` kernels with product `MISSING`. |
+
 ## 2026-09-21 — Radar catalyst overlay leftover-internship copy honesty
 
 | Field | Value |
@@ -58,7 +82,19 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `ui/src/components/explore-shared/ExploreObservability.tsx`; `ui/src/components/explore-shared/ExploreObservability.test.tsx`; `ui/src/exploreCatalyst.test.ts`; `src/market_platform_foundation/donor_bridge/projections.py`; `src/market_platform_foundation/donor_bridge/internship_client.py`; `tests/donor_bridge/test_catalyst_bridge.py`; `tests/integration/test_catalyst_lane_acceptance_tool.py`; `tools/integration/catalyst_lane_acceptance.py`; `docs/integration/CATALYST_LANE.md` |
 | **Tests** | `python -m unittest tests.donor_bridge.test_catalyst_bridge tests.integration.test_catalyst_lane_acceptance_tool`; focused vitest `exploreCatalyst.test.ts` + `ExploreObservability.test.tsx` |
 | **Related** | Radar Research screens still host this overlay; not Opportunity Engine |
-| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** then **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360)), **not** onto [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362). Kept both 2026-09-20 #359 WORK_LOG entries and the #360 pin entry. Does not touch collector or Item 9 receipts. |
+| **Notes** | Isolated worktree `.worktrees/ui-explore-catalyst-honesty` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`**, then **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360)), then **`0c37b925`** after [#362](https://github.com/AdamEddahmouni/market-trading-platform/pull/362) merged. Kept both 2026-09-20 #359 WORK_LOG entries, the #360 pin entry, and the #362 flowchart entry. Does not touch collector or Item 9 receipts. |
+
+## 2026-09-21 — Operator flowchart surface map + domain capability honesty
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` |
+| **Summary** | Added an operator workflow surface map to [MASTER_ARCHITECTURE.md](../platform/MASTER_ARCHITECTURE.md) so the explanatory market→ingest→research→candidates→OE→decision→execution→monitoring→evidence→improvement flowchart maps onto current UI/API without rewriting working code. Updated [MASTER_ROADMAP.md](../platform/MASTER_ROADMAP.md) domain table so Bonds/Crypto/Gold/Silver are `PARTIAL` identity/runtime kernels (not `MISSING` / "no domain implementation") after G1–G14, without inventing product surfaces or Live actionability. |
+| **Key files** | `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/check_docs_links.py` (docs-only) |
+| **Related** | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](../architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md); G1–G14 PROGRAM_STATUS rows |
+| **Notes** | Isolated worktree `.worktrees/docs-operator-flowchart-alignment` from `origin/main` @ `a6e4f9a5`; absorbed `origin/main` **`348d2838`** then **`21d481b5`** (merge [#360](https://github.com/AdamEddahmouni/market-trading-platform/pull/360)). Kept both 2026-09-20 #359 WORK_LOG entries and the #360 pin entry. Does not retarget collector, merge #222, or enable Live. |
 
 ## 2026-09-21 — Pin CURRENT_MAIN to origin/main `348d2838` after #359
 
