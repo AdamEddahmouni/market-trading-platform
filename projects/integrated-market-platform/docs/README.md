@@ -138,6 +138,7 @@ it in the authoritative doc — do not silently choose.
 | SOP | Path |
 |-----|------|
 | Git worktrees / isolated implementation | [sops/GIT_WORKTREE.md](engineering/sops/GIT_WORKTREE.md) |
+| Storage audit (read-only disk/worktree inventory) | [sops/STORAGE_AUDIT.md](engineering/sops/STORAGE_AUDIT.md) |
 | Branch reconciliation onto current main | [sops/BRANCH_RECONCILIATION.md](engineering/sops/BRANCH_RECONCILIATION.md) |
 | API / schema change | [sops/API_SCHEMA_CHANGE.md](engineering/sops/API_SCHEMA_CHANGE.md) |
 | Frontend feature | [sops/FRONTEND_FEATURE.md](engineering/sops/FRONTEND_FEATURE.md) |
