@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Item 9 post–Sep 21 docs status pin (3/3 SAMPLE_GATE_MET)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / `item9` |
+| **Summary** | Docs-only closeout after 2026-09-21 RTH: pinned **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** to fetched `origin/main` `b55fab51eeef393420e19deb174401b33ee4f380` (supersedes morning tip `d1c50455` and intermediate tip `3d5c9c0f`). Read-only `corpus-status` on frozen-collector receipts confirmed **`SAMPLE_GATE_MET`**, **`item9_status=PARTIAL_NOT_CALIBRATED`**, **`calibrated=false`**, **`fitting_allowed=false`**, distinct RTH dates **3**/3 (**2026-09-17**, **2026-09-18**, **2026-09-21**). Calibration remains **FORBIDDEN**. **3**/3 is **not** calibrated, **not** Paper-validated, **not** Full30, **not** Live-ready. Sep 21 **≈10:43–13:09 ET** gap stays **`NOT_OBSERVED`** (not backfilled). Sep 17 `PATH_PROOF_ONLY` receipt remains non-admissible. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/item9_corpus_status.py corpus-status --receipt-dir` → `.imp-actual-01-phase-d/.../item9-prospective-proof-receipts` (read-only; CPython 3.13) — tokens above confirmed; `classify` on `item9-prospective-20260917-rth-aapl.json` → `PATH_PROOF_ONLY` |
+| **Related** | Frozen collector `fed2d9f7`; prior morning pin [#363](https://github.com/AdamEddahmouni/market-trading-platform/pull/363); software tip [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364)/[#365](https://github.com/AdamEddahmouni/market-trading-platform/pull/365)/[#366](https://github.com/AdamEddahmouni/market-trading-platform/pull/366) |
+| **Notes** | No product code, tests, receipts, collectors, or schedulers changed. Collector not rerun. Live remains OFF. Did not edit `live_execution_safety` / CBOE / event ingress / opportunity code. |
+
 ## 2026-09-21 — Harden Live order safety: disconnect test honesty + zero fill-delta guards
 
 | Field | Value |
