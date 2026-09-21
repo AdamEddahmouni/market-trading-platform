@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Live safety order lifecycle + preflight contracts (Live remains OFF)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/live_execution_safety`, `docs/engineering` |
+| **Summary** | Advanced Live readiness at the architecture/contract level without enabling Live or opening a broker session. Added a non-submitting `LiveOrderSafetyMachine` (ack / partial fill / cancel / reject / disconnect / restart-resume) and fail-closed preflight controls for price freshness, max size, buying power, market state, malformed orders, and operator confirmation. Bundle always sets `allows_network_submit=False`. |
+| **Key files** | `src/.../live_execution_safety/order_lifecycle.py` (created); `src/.../live_execution_safety/preflight_controls.py` (created); `src/.../live_execution_safety/__init__.py`; `tests/intelligence/test_live_order_safety_machine.py` (created); `docs/engineering/LIVE_EXECUTION_SAFETY_GATE_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_live_order_safety_machine tests.intelligence.test_live_execution_safety -v` — 33 passed |
+| **Related** | [LIVE_EXECUTION_SAFETY_GATE_V1.md](LIVE_EXECUTION_SAFETY_GATE_V1.md); BUILD 28 zero-submit gate |
+| **Notes** | Did not touch Item 9 collector, OpenD, Live OFF flags, or shared runtime config. Did not rebuild already-complete kill switch / gate / dry-run controls. |
+
 ## 2026-09-21 — Pin CURRENT_MAIN to origin/main `d1c50455` after #361
 
 | Field | Value |
