@@ -72,9 +72,27 @@ class LiveObservationalRuntime:
     feed: Any | None = field(default=None, repr=False)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
     shadow_recorder: Any | None = field(default=None, repr=False)
+    observation_ingress_router: Any | None = field(default=None, repr=False)
+    ingress_metrics: dict[str, int] = field(
+        default_factory=lambda: {
+            "dispatched": 0,
+            "duplicates": 0,
+            "failed": 0,
+            "skipped_not_admitted": 0,
+            "normalization_empty": 0,
+        }
+    )
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
     _fresh_event_count: int = 0
+
+    def attach_observation_ingress(self, router: Any | None) -> None:
+        """Attach production ``ObservationIngressRouter`` for admitted live → EventV1.
+
+        Opt-in only. Does not enable Live gates, broker execution, or order submit.
+        When unset, admitted observations update observational state only.
+        """
+        self.observation_ingress_router = router
 
     def configure(
         self,
@@ -348,6 +366,14 @@ class LiveObservationalRuntime:
                             record.get("provider_generation") or self.lifecycle.provider_generation_id or 0
                         ),
                     )
+                    self._dispatch_admitted_to_observation_ingress(
+                        record,
+                        envelope=envelope if isinstance(envelope, dict) else None,
+                    )
+                elif self.observation_ingress_router is not None:
+                    self.ingress_metrics["skipped_not_admitted"] += 1
+            elif self.observation_ingress_router is not None:
+                self.ingress_metrics["skipped_not_admitted"] += 1
             if self.recorder is not None and result.get("envelope"):
                 self.recorder.append(record, result)
             if self.shadow_recorder is not None:
@@ -361,6 +387,37 @@ class LiveObservationalRuntime:
             complete_provider_receive(record, output_ref=envelope_id or "no_envelope")
             complete_process_span(record, output_ref=envelope_id or "no_envelope")
             return result
+
+    def _dispatch_admitted_to_observation_ingress(
+        self,
+        record: dict[str, Any],
+        *,
+        envelope: dict[str, Any] | None,
+    ) -> None:
+        router = self.observation_ingress_router
+        if router is None:
+            return
+        from ..intelligence.observation_ingress.errors import IngressDispatchError
+        from ..intelligence.observation_ingress.live_observation_dispatch import (
+            dispatch_admitted_live_observation,
+        )
+
+        try:
+            receipt = dispatch_admitted_live_observation(
+                router,
+                record,
+                envelope=envelope,
+            )
+        except IngressDispatchError:
+            self.ingress_metrics["failed"] += 1
+            return
+        if receipt is None:
+            self.ingress_metrics["normalization_empty"] += 1
+            return
+        if receipt.duplicate:
+            self.ingress_metrics["duplicates"] += 1
+            return
+        self.ingress_metrics["dispatched"] += 1
 
     def feed_fixture_path(self, path: Path) -> int:
         count = 0

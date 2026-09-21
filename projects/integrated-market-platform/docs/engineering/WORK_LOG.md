@@ -48,6 +48,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Reworks [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) (keep #222 open until this PR is reviewed); Path A scope edge residual unchanged |
 | **Notes** | Isolated worktree `.worktrees/item7-settlement-rework` on `fix/item7-natural-settlement-persist-gate`. Did not push to `item7/natural-settlement`. Did not edit live_execution_safety/, cboe_options/, EventV1 ingress, Radar UI, or PROGRAM_STATUS.md. |
 
+## 2026-09-21 — Opportunity decision provenance / thesis / invalidation contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/opportunity`, `ui_api`, `docs/architecture` |
+| **Summary** | Added the smallest operator decision-provenance contract on the Discover→OE path: structured origin, strategy identity, thesis + invalidation criteria, opportunity-bound evidence IDs with OBSERVED/DERIVED/INFERRED honesty, freshness window, and deterministic still/no-longer actionability + state-change audit. StrategyMatch bridge attaches it; evidence HTTP projects it. Discover route stays INVESTIGATE-only and does not mint OpportunityV1. |
+| **Key files** | `intelligence/opportunity/decision_provenance.py`; `intelligence/opportunity/bridge.py`; `intelligence/opportunity/__init__.py`; `ui_api/opportunity_projections.py`; `tests/intelligence/test_opportunity_decision_provenance.py`; `docs/architecture/OPPORTUNITY_CONTRACT.md` |
+| **Tests** | `python tools/imp.py test focused` (6 decision-provenance selectors) — pass; related governance/engine/universal — 41 pass; `python tools/imp.py validate changed` — **3924 passed**, 42 skipped, 0 failures |
+| **Related** | [OPPORTUNITY_CONTRACT.md](../architecture/OPPORTUNITY_CONTRACT.md); builds on #365 RT-01 lineage honesty and #366 UI epistemic honesty |
+| **Notes** | Isolated worktree `.worktrees/opportunity-provenance` on `feat/opportunity-provenance-invalidation` from `origin/main` `80d290ff` tip after rebase. Did not edit live_execution_safety, LiveObservationalRuntime, EventV1 ingress, ObservationIngressRouter, cboe_options, paperOrderDraft tests, or PROGRAM_STATUS. Live remains OFF. Did not wire UI brief to new fields (follow-up). |
+
+## 2026-09-21 — Cboe options observational opportunity evidence attach
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `cboe_options` / evidence |
+| **Summary** | Smallest governed attachment of observational Cboe options context (open interest, volume, derived put/call activity mix, optional underlying contract snapshots) onto an already-admitted US equity opportunity. Evidence/context only — does not mutate opportunity-core schema, authorize Live options trading, or invent a strategy. Underlying resolution is generic (AAPL/NVDA fixtures only). |
+| **Key files** | `src/market_platform_foundation/cboe_options/opportunity_evidence.py`; `opportunity_attachment.py`; `__init__.py`; `tests/cboe_options/test_cboe_opportunity_evidence.py`; `docs/providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md` |
+| **Tests** | `python tools/imp.py test focused` (11 selectors) — **11 passed** / 0 fail / 0 err |
+| **Related** | [CBOE_PUBLIC_OPTIONS_STATISTICS.md](../providers/CBOE_PUBLIC_OPTIONS_STATISTICS.md) |
+| **Notes** | Product-class aggregates remain product-scope; single-name only from symbol snapshots. No Radar UI / opportunity-core / live_execution_safety / LiveObservationalRuntime changes. |
+
 ## 2026-09-21 — Live position reconciliation contract (Live remains OFF)
 
 | Field | Value |
@@ -59,6 +83,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `PYTHONPATH=src python -m unittest tests.intelligence.test_live_position_reconciliation tests.intelligence.test_live_order_safety_machine -v` — 25 passed (10 new + 15 #364 regression) |
 | **Related** | [#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364); `LIVE_EXECUTION_SAFETY_GATE_V1.md` |
 | **Notes** | Isolated worktree `.worktrees/live-position-reconciliation` on `feat/live-position-reconciliation-contract` from current `origin/main` `80d290ff`. No broker rewrite, no network submit, no merge. Did not touch cboe_options / EventV1 / Radar / Item 7 / paper order tests / PROGRAM_STATUS. |
+
+## 2026-09-21 — Live observation → EventV1 production ingress bridge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/observation_ingress`, `market_data/live_runtime` |
+| **Summary** | Added the smallest opt-in bridge from admitted live snapshots/bars/quotes through existing BUILD 03 normalizers (`moomoo.capture` / `envelope`) with `NormalizationContext(LIVE_OBSERVED)` into `ObservationIngressRouter`. `LiveObservationalRuntime.attach_observation_ingress` wires production fan-out only when a router is attached; Live gates stay off and no broker consumers are registered. |
+| **Key files** | `src/.../observation_ingress/live_observation_dispatch.py` (new); `observation_ingress/__init__.py`; `market_data/live_runtime.py`; `tests/intelligence/test_live_observation_eventv1_bridge.py` (new); `docs/engineering/OBSERVATION_INGRESS_ROUTER_V1.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_live_observation_eventv1_bridge` — 11/11 OK; `python tools/imp.py test focused` (5 selectors) — passed; `python tools/imp.py validate changed` — 4114 passed, 31 skipped, 0 failures |
+| **Related** | [OBSERVATION_INGRESS_ROUTER_V1.md](OBSERVATION_INGRESS_ROUTER_V1.md); existing `dispatch_normalization_result` / production wire |
+| **Notes** | Does not enable Live; does not auto-attach production router; bars without admitted envelope fail closed; IBKR record normalizer still interface-only; refused `live_execution_safety/`, Item 7 settlement, `PROGRAM_STATUS.md` |
 
 ## 2026-09-21 — Item 9 post–Sep 21 docs status pin (3/3 SAMPLE_GATE_MET)
 

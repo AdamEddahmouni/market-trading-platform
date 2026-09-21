@@ -16,6 +16,12 @@ from .congressional_disclosure_dispatch import (
     dispatch_congressional_disclosure_row,
     normalize_congressional_disclosure_row_for_ingress,
 )
+from .live_observation_dispatch import (
+    canonicalize_live_observation_record,
+    dispatch_admitted_live_observation,
+    normalize_admitted_live_observation,
+    resolve_live_observation_source_key,
+)
 from .production_wire import (
     build_production_observation_ingress_router,
     resolve_production_ingress_router,
@@ -49,12 +55,16 @@ __all__ = [
     "build_production_observation_ingress_router",
     "resolve_production_ingress_router",
     "detector_stub_consumer",
+    "canonicalize_live_observation_record",
+    "dispatch_admitted_live_observation",
     "dispatch_congressional_disclosure_row",
     "dispatch_normalization_result",
     "dispatch_sec_insider_row",
     "enrichment_trigger_consumer",
+    "normalize_admitted_live_observation",
     "normalize_congressional_disclosure_row_for_ingress",
     "normalize_sec_insider_row_for_ingress",
     "oe_evidence_consumer",
+    "resolve_live_observation_source_key",
     "store_consumer",
 ]
