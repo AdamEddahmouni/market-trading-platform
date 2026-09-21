@@ -19,6 +19,10 @@ from ..contracts.forecast import ForecastV1
 from ..contracts.strategy_match import StrategyMatch, StrategyMatchDisposition
 from ..promotion.types import ChampionAssignmentV1
 from ..persistence.repository import IntelligenceRepository
+from .decision_provenance import (
+    attach_decision_provenance,
+    build_decision_provenance_from_strategy_match,
+)
 from .engine import OpportunityEngine
 from .types import (
     OpportunityAssessmentResult,
@@ -191,6 +195,14 @@ def bridge_strategy_match_to_opportunity(
             lineage_refs=_append_ref(opportunity.lineage_refs, match_ref),
             metadata={**opportunity.metadata, "strategy_match_ref": match.match_id},
         )
+        # Attach operator decision provenance after strategy_match lineage is bound.
+        provenance = build_decision_provenance_from_strategy_match(
+            match=match,
+            opportunity=opportunity,
+            assessment=assessment,
+            as_of_ns=opportunity_decision_time_ns,
+        )
+        opportunity = attach_decision_provenance(opportunity, provenance)
     if economic_assessment is not None:
         sidecar_ref = ContractReference(
             kind="universal_economic_assessment",

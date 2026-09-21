@@ -90,6 +90,28 @@ Every material score, estimate or qualitative label should be traceable to eithe
 
 The Opportunity Engine may combine these facts, but it must preserve enough lineage to explain why the candidate exists and why it was ranked/filtered.
 
+### Decision provenance (operator audit contract)
+
+Admitted opportunities carry a versioned `decision_provenance` record
+(`opportunity/decision_provenance/1.0.0`) under OpportunityV1 metadata and on
+`GET /opportunities/{id}/evidence`. It answers:
+
+| Operator question | Field |
+|---|---|
+| Where did this originate? | `origin_kind` + `origin_refs` |
+| Which strategy generated it? | `strategy_id` / `strategy_family` / `strategy_version` |
+| What thesis is asserted? | `thesis.statement` + `thesis.mechanism` (honesty never `OBSERVED`) |
+| What would invalidate it? | `thesis.invalidation_criteria` |
+| Which observations support it? | `evidence_bindings[]` with `honesty` (`OBSERVED`/`DERIVED`/`INFERRED`/`UNKNOWN`) |
+| What freshness window applies? | `freshness_window` |
+| Why still / no longer actionable? | `actionability` + `state_changes[]` |
+
+Discover/Radar candidates use `route_discovery_candidate_to_oe` for a deterministic
+provenance route that does **not** mint OpportunityV1 and remains
+`DISCOVER_INVESTIGATE_ONLY`. AI-assisted notes stay on `ai_assisted_notes` and
+never authorize state changes. `lineage_status` distinguishes `MISSING` from
+`MISMATCH` (compatible with RT-01 order_ready lineage honesty).
+
 ## Operator presentation
 
 The operator-facing representation should prioritize:

@@ -5,6 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from ..intelligence.contracts.opportunity import OpportunityV1
+from ..intelligence.opportunity.decision_provenance import (
+    DECISION_PROVENANCE_METADATA_KEY,
+    decision_provenance_to_dict,
+    extract_decision_provenance,
+)
 from ..intelligence.opportunity.ingest import assemble_opportunity_review_rows
 from ..intelligence.opportunity.ranking import comparison_vectors_from_repository, rank_review_rows
 from . import projections
@@ -38,6 +43,7 @@ _REVIEW_METADATA_PROJECTION = (
     "family_admission_kind",
     "supersession_reason",
     "duplicate_reason",
+    DECISION_PROVENANCE_METADATA_KEY,
 )
 
 _INGEST_TIMESTAMP_METADATA_KEYS = frozenset(
@@ -126,6 +132,9 @@ def _serialize_review_row(row: Any, store: ReplayStore | None = None) -> dict[st
             unavailable = [item for item in unavailable if item != "expected_net_edge"]
         else:
             _append_unavailable(unavailable, "expected_net_edge")
+        persist_provenance = extract_decision_provenance(persist)
+        if persist_provenance is not None and DECISION_PROVENANCE_METADATA_KEY not in body:
+            body[DECISION_PROVENANCE_METADATA_KEY] = decision_provenance_to_dict(persist_provenance)
     else:
         body["created_at_ns"] = None
         _append_unavailable(unavailable, "created_at_ns")
@@ -356,6 +365,21 @@ def build_opportunity_evidence_payload(store: ReplayStore, row_id: str) -> dict[
         "items": lineage,
         "copy": copy,
     }
+    decision_provenance = detail.get(DECISION_PROVENANCE_METADATA_KEY)
+    if decision_provenance is None:
+        decision_provenance = (detail.get("metadata") or {}).get(DECISION_PROVENANCE_METADATA_KEY)
+    if isinstance(decision_provenance, dict):
+        payload[DECISION_PROVENANCE_METADATA_KEY] = decision_provenance
+        thesis = decision_provenance.get("thesis") if isinstance(decision_provenance.get("thesis"), dict) else {}
+        invalidation = list(thesis.get("invalidation_criteria") or [])
+        bindings = decision_provenance.get("evidence_bindings") or []
+        if invalidation:
+            payload["invalidation_criteria"] = invalidation
+        if bindings:
+            payload["evidence_bindings"] = bindings
+        actionability = decision_provenance.get("actionability")
+        if isinstance(actionability, dict):
+            payload["actionability_audit"] = actionability
     if detail.get("research_artifact_evidence") is not None:
         payload["research_artifact_evidence"] = detail["research_artifact_evidence"]
     return payload
