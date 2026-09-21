@@ -98,12 +98,15 @@ export function buildOpportunityEpistemicLayers(
       value: providers.length ? providers.join(", ") : "UNKNOWN — no provider or source identifiers attached",
     },
     { label: "Primary source status", value: display(quality.status) },
-    { label: "Surfaced headline", value: display(row.headline) },
     ...collectGroundedFactLines(row, evidence),
   ];
 
   const freshness = readOpportunityFreshnessView(row, evidence);
   const derived: EpistemicLayerItem[] = [
+    // Headline is IMP summary language — never an observed market fact.
+    { label: "Surfaced headline", value: display(row.headline) },
+    // Eligibility is platform evaluation/gate state — not a raw observation.
+    { label: "Eligibility evaluation", value: display(row.eligibility_state) },
     { label: "Data freshness", value: freshness.operatorAnswer },
     {
       label: "Ranking basis",

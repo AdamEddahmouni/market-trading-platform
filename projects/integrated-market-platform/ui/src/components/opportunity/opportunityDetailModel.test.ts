@@ -71,4 +71,16 @@ describe(OPPORTUNITY_DETAIL_MODEL_READY, () => {
     expect(blocked.actionReadiness.nextSafeAction).toBe("STOP");
     expect(blocked.presentationState).not.toBe("EXPIRED");
   });
+
+  it("does not classify the IMP headline as deterministic market evidence", () => {
+    const sections = buildOpportunityDetailSections(fixtureOpportunityRowBase, {
+      evidence: fixtureOpportunityEvidenceRefresh,
+    });
+    expect(sections.deterministicEvidence.some((row) => /headline/i.test(row.label))).toBe(false);
+    expect(sections.deterministicEvidence.map((row) => row.value).join(" ")).not.toContain(
+      fixtureOpportunityRowBase.headline,
+    );
+    // Headline remains the operator-facing surface why when no promotion reason.
+    expect(sections.surfacedWhy).toBeTruthy();
+  });
 });

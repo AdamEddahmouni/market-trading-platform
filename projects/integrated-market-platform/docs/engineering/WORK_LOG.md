@@ -60,6 +60,54 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [LIVE_EXECUTION_SAFETY_GATE_V1.md](LIVE_EXECUTION_SAFETY_GATE_V1.md); BUILD 28 zero-submit gate |
 | **Notes** | Did not touch Item 9 collector, OpenD, Live OFF flags, or shared runtime config. Did not rebuild already-complete kill switch / gate / dry-run controls. |
 
+## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` |
+| **Summary** | Hardened `assert_order_ready_opportunity_correlation` so missing/empty opportunity lineage stays `ORDER_READY_OPPORTUNITY_LINEAGE_MISSING` while a present but non-matching opportunity id raises `ORDER_READY_OPPORTUNITY_LINEAGE_MISMATCH`. Added focused negative tests for both. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py`; `tests/rt01/test_order_ready_trace_contract.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 5 passed |
+| **Related** | PR #365; prior OrderReady opportunity→risk correlation contract entry |
+| **Notes** | No OrderReadyV1 redesign; empty lineage still allowed on the type. No Live/OpenD/Item 9/collector changes. |
+
+## 2026-09-21 — Radar honesty harden: eligibility + headline evidence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/opportunity` |
+| **Summary** | Stopped presenting platform `eligibility_state` as an OBSERVED "What happened?" fact (queue + detail briefs); kept it visible as DERIVED eligibility evaluation. Removed Headline from `deterministicEvidence` so it is not treated as deterministic market evidence (headline remains on title / derived epistemic layer). |
+| **Key files** | `ui/src/components/opportunity/opportunityOperatorBrief.ts` (+test); `opportunityDetailModel.ts` (+test); `opportunityEpistemicLayers.ts` (+test) |
+| **Tests** | `npx vitest run --environment node` on `opportunityOperatorBrief.test.ts`, `opportunityDetailModel.test.ts`, `opportunityEpistemicLayers.test.ts`, `opportunityPresentation.test.ts` — **44 passed** |
+| **Related** | PR #366 harden on `ui/operator-comprehension`; does not merge Live or touch Item 9 |
+| **Notes** | Actionability/authority semantics unchanged (presentation + detail readiness tests). Independent review still required — do not self-approve. |
+
+## 2026-09-21 — OrderReady opportunity→risk correlation contract
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `rt01` / `execution` / `system_acceptance` |
+| **Summary** | Closed the inventory/docs gap for durable opportunity→risk→order_ready correlation: registered `OrderReadyV1` and lineage edges, added read-only extractors that fail closed when opportunity lineage is missing, and locked the strategy Paper path with a focused trace-contract test. No Live, broker, OpenD, or Item 9 changes. |
+| **Key files** | `src/market_platform_foundation/intelligence/execution/order_ready_correlation.py` (created); `execution/__init__.py`; `system_acceptance/inventory.py`; `system_acceptance/invariants.py`; `tests/rt01/test_order_ready_trace_contract.py` (created); `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `docs/architecture/DATA_CONTRACTS.md` |
+| **Tests** | `python -m unittest tests.rt01.test_order_ready_trace_contract tests.intelligence.test_system_acceptance.InvariantCheckerTests.test_all_required_invariants_checked` — 4 passed |
+| **Related** | [Paper decision lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md); [DATA_CONTRACTS](../architecture/DATA_CONTRACTS.md); RT-01 Paper tracing |
+| **Notes** | Runtime already stamped opportunity into `OrderReadyV1.lineage_refs`; this increment makes the contract discoverable and test-enforced. Manual Paper drafts and Live remain intentionally separate. Collector/OpenD/Live untouched. |
+
+## 2026-09-21 — Radar operator honesty: headline not OBSERVED
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/opportunity` |
+| **Summary** | Stopped labeling IMP headline language as an observed fact on Radar detail: moved "Surfaced headline" into derived epistemic layers, aligned the operator brief "What happened?" row with queue-scan honesty, renamed residual "Market behavior" to "Headline", and surfaced attached `expires_at`/`expiry` in invalidation lines when present. |
+| **Key files** | `ui/src/components/opportunity/opportunityEpistemicLayers.ts` (+test); `opportunityOperatorBrief.ts` (+test); `opportunityDetailModel.ts` |
+| **Tests** | `npx vitest run --environment node` on `opportunityEpistemicLayers.test.ts`, `opportunityOperatorBrief.test.ts`, `opportunityDetailModel.test.ts` — **32 passed** |
+| **Related** | Operator comprehension lane (post-RTH optional); does not merge Live or touch Item 9 |
+| **Notes** | Remaining high-harm gaps (Radar risk UNAVAILABLE stubs; Discover→Opportunity provenance bridge; opportunity↔Paper evidence link) need backend/data or larger feature work — not in this PR |
+
 ## 2026-09-21 — Pin CURRENT_MAIN to origin/main `d1c50455` after #361
 
 | Field | Value |
