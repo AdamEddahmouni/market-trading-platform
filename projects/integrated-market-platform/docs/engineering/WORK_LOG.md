@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Live observation → EventV1 production ingress bridge
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/observation_ingress`, `market_data/live_runtime` |
+| **Summary** | Added the smallest opt-in bridge from admitted live snapshots/bars/quotes through existing BUILD 03 normalizers (`moomoo.capture` / `envelope`) with `NormalizationContext(LIVE_OBSERVED)` into `ObservationIngressRouter`. `LiveObservationalRuntime.attach_observation_ingress` wires production fan-out only when a router is attached; Live gates stay off and no broker consumers are registered. |
+| **Key files** | `src/.../observation_ingress/live_observation_dispatch.py` (new); `observation_ingress/__init__.py`; `market_data/live_runtime.py`; `tests/intelligence/test_live_observation_eventv1_bridge.py` (new); `docs/engineering/OBSERVATION_INGRESS_ROUTER_V1.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_live_observation_eventv1_bridge` — 11/11 OK; `python tools/imp.py test focused` (5 selectors) — passed; `python tools/imp.py validate changed` — 4114 passed, 31 skipped, 0 failures |
+| **Related** | [OBSERVATION_INGRESS_ROUTER_V1.md](OBSERVATION_INGRESS_ROUTER_V1.md); existing `dispatch_normalization_result` / production wire |
+| **Notes** | Does not enable Live; does not auto-attach production router; bars without admitted envelope fail closed; IBKR record normalizer still interface-only; refused `live_execution_safety/`, Item 7 settlement, `PROGRAM_STATUS.md` |
+
 ## 2026-09-21 — Split OrderReady opportunity lineage missing vs mismatch
 
 | Field | Value |
