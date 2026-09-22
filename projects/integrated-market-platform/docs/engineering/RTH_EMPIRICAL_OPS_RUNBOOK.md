@@ -3,8 +3,9 @@
 Software-only coordination layer. Does **not** replace underlying CLIs, declare
 `EMPIRICAL_ACTIVE`, create empirical locks, or place Paper/Live orders.
 
-**Operator one-pager (Tuesday 2026-09-15):**
+**Operator one-pager (Tuesday 2026-09-15, historical):**
 [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md).
+**Next lawful RTH preopen:** [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md#next-lawful-rth-preopen-checklist).
 
 ## Environment (operator workstation)
 

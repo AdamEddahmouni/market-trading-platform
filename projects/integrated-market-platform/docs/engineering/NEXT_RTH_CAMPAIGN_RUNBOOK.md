@@ -10,11 +10,11 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `1cd63fe98411c339e80537af7d6170b4ebdf71b8` | Mutable `origin/main` tip after [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) Item 9 calibration readiness (Live **OFF**; parents `39652e6b` / `b7ad6b40`; ancestry includes [#375](https://github.com/AdamEddahmouni/market-trading-platform/pull/375)/[#374](https://github.com/AdamEddahmouni/market-trading-platform/pull/374)/[#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370)/[#372](https://github.com/AdamEddahmouni/market-trading-platform/pull/372)/[#369](https://github.com/AdamEddahmouni/market-trading-platform/pull/369)/[#368](https://github.com/AdamEddahmouni/market-trading-platform/pull/368)/[#371](https://github.com/AdamEddahmouni/market-trading-platform/pull/371)/[#364](https://github.com/AdamEddahmouni/market-trading-platform/pull/364)). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `1cd63fe98411c339e80537af7d6170b4ebdf71b8` | Tip software merge [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376). Matches **CURRENT_MAIN**. **Not** empirical evidence. Calibration **not** executed. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` | Mutable `origin/main` tip after [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) durable serving opportunity book (schema v9; Live **OFF**; parents `b6e8e2b9` / `a2fea490`; ancestry includes [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379) progress-aware liveness). **Historical** pin `1cd63fe9` after [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) is **not** the current tip. Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` | Tip software merge [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) (ancestry [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)/[#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376)). Matches **CURRENT_MAIN**. **Not** empirical evidence. Calibration **not** executed. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
-| **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; in-memory OE; acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
+| **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; **historical** serving composition was in-memory OE. Current serving book is local_state SQLite schema v9 ([#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)); persist-off is `INTENTIONAL_EPHEMERAL`. Acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
 
 Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (Item 9 pins and Lane F OpenD v3 closeout: [IMP program status header](../platform/PROGRAM_STATUS.md#imp-program-status) and [Lane F closure](../platform/PROGRAM_STATUS.md#imp-opend-fill-economics-v3--lane-f-statusdocs-closure)). Do **not** retarget **ITEM9_FROZEN_COLLECTOR** when reconciling operator docs.
 
@@ -29,7 +29,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `1cd63fe9…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `5b74876d…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 **Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
 
@@ -56,7 +56,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `1cd63fe9`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `5b74876d`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -66,16 +66,19 @@ Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never
 | UI API | `http://127.0.0.1:8766` | `tools\ui1\run_ui_api.py --serve --port 8766` |
 | Operator diagnostics snapshot | `GET http://127.0.0.1:8766/operator/diagnostics` | Read-only aggregate ([#289](https://github.com/AdamEddahmouni/market-trading-platform/pull/289)); **does not** start collectors |
 | Launcher supervisor | `http://127.0.0.1:8767` | Loopback-only; Windows launcher |
-| OE ranked feed API | `GET /opportunities/summary` | Ranked opportunity rows (replay/store projection) |
-| EventV1 ingress | `build_production_observation_ingress_router` | Software on `main`; **not** universal on every normalize path; empirical capture **RTH-only** |
+| OE ranked feed API | `GET /opportunities/summary` | Ranked opportunity rows from serving book (local_state schema v9 when persist on) |
+| EventV1 ingress | `POST /intelligence/ingest/news` via `build_production_observation_ingress_router` | Composed hop: news → EventV1/PIT → observational catalyst detector → OpportunityV1. **Not** BUILD 09 `EventDetectorEngine` (`NEWS_EVENT` `INACTIVE_INPUT_UNAVAILABLE`). **Not** `OpportunityEngine.assess`. Empirical capture **RTH-only**. |
 | Grok / async enrichment | Durable worker **OFF by default** (#189) | **Not** `GROK_AUTOMATION_PRODUCTION_ACTIVE`; opt-in only |
 
 Start/stop: `START_PLATFORM.cmd` / `STOP_PLATFORM.cmd` or [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
 ### Read-only health probes (no orders)
 
+A bound port or HTTP 200 is **not** HEALTHY ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)). Inspect `service_liveness` on `/provider/health` and `readiness_vs_liveness` on `/operator/diagnostics`.
+
 ```powershell
 curl -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8766/provider/health
+curl -s http://127.0.0.1:8766/provider/health
 curl -s -o NUL -w "%{http_code}`n" http://127.0.0.1:8766/context
 curl -s -o NUL -w "%{http_code}`n" "http://127.0.0.1:8766/opportunities/summary"
 curl -s -o NUL -w "%{http_code}`n" "http://127.0.0.1:8766/operator/diagnostics"
@@ -151,7 +154,7 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | Finviz / FTEP / Item 7 | JSON stdout; operator copies under governed `.local` policy |
 | Hot-path latency evidence | Gate `PROSPECTIVE_HOT_PATH_LATENCY_CAPTURED` — software wired (#166/#154); **no** live RTH receipt until earned |
 | API / UI logs (launcher) | `.local/platform-backend.log`, `.local/platform-ui.log`, `.local/platform-control.log` |
-| Persistence (FTEP-V1-002) | SQLite under `IMP_STATE_DIR` when `IMP_PERSIST_STATE=1` |
+| Persistence (FTEP-V1-002 + serving book) | SQLite `imp-state.sqlite3` under `IMP_STATE_DIR` when `IMP_PERSIST_STATE=1` (**schema v9**). Persist-off: `INTENTIONAL_EPHEMERAL`. |
 
 ## FTEP / campaign mode
 
@@ -183,11 +186,44 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 | [#208](https://github.com/AdamEddahmouni/market-trading-platform/pull/208) | SOFTWARE fullstack acceptance | `6e9e88b` |
 | [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) | Finviz ingress reliability / receipts | **OPEN** head `ca3c53a9` — `<pending merge on main>` |
 
+## Next lawful RTH preopen checklist
+
+**Evidence class:** SOFTWARE coordination. **Live OFF.** Success is the lawful information/decision chain (git pin → providers → EventV1/PIT news hop → ranked book → non-execution WATCH/DISMISS traces/reviews → evidence path), **not** a trade. Zero qualifying events is a valid market result (`EMPTY` / `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`). Do **not** backfill missed live-interval market data. Dated 2026-09-15 command tables remain historical: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md).
+
+Run from IMP root `projects/integrated-market-platform/` on the **runtime** checkout (not a dirty detached workspace). Until a later pin, expected software SHA is `5b74876d5f4c48aa1b03ff987e6390469bb08c1c`.
+
+| # | Check | Command / path | Pass token |
+|---|-------|----------------|------------|
+| 1 | Git SHA | `git fetch origin main`; `git rev-parse origin/main`; `git rev-parse HEAD` | Exact `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` until a later **CURRENT_MAIN** pin. **Not** **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. |
+| 2 | Clean runtime tree | `git status --short --branch` on the runtime checkout | No unrelated dirty/untracked product files. Do not clean another lane's tree. |
+| 3 | Clock / timezone | `python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('America/New_York')).isoformat())"` | America/New_York wall clock; session kind from `market_sessions` (`PREMARKET`/`REGULAR`/`AFTER_HOURS`/`CLOSED`). |
+| 4 | Provider processes and connectivity | `python tools/provider_readiness.py --probe-local --json`; OpenD loopback `127.0.0.1:11111`; optional `python tools/moomoo/probe.py` | Loopback ports probed only; no external orders. Unreachable OpenD stays fail-closed. |
+| 5 | Entitlements | `python tools/provider_readiness.py --json`; `python tools/imp.py providers campaign-readiness FTEP-V1-002 --json` | Capability/entitlement rows present; missing entitlement is `UNAVAILABLE` / `ENTITLEMENT_MISSING`, not HEALTHY. |
+| 6 | Secrets presence (no values) | `python tools/imp.py env`; `python tools/provider_readiness.py --json` | Presence/absence only. Payload `secrets_included=false`. Never print `FINVIZ_API_KEY` / `APCA_*` / token files. |
+| 7 | API / UI / liveness | `GET http://127.0.0.1:8766/provider/health`, `/context`, `/operator/diagnostics`; UI `http://127.0.0.1:5173/` | Inspect `service_liveness` and `readiness_vs_liveness`. Bound port ≠ HEALTHY. `TRANSPORT_UP_APPLICATION_NOT_PROGRESSED` is UNREADY. |
+| 8 | Persistence path | `python tools/imp.py state-path`; `$report = python tools/state_path_diagnostic.py \| ConvertFrom-Json`; persist-on: `$env:IMP_STATE_DIR=$report.canonical_state_dir`; `$env:IMP_PERSIST_STATE='1'`; DB `$env:IMP_STATE_DIR\imp-state.sqlite3` | Persist on → local_state SQLite **schema v9** (`SELECT schema_version FROM schema_meta`). Persist off → `INTENTIONAL_EPHEMERAL`. Empty worktree `.local` is not proof of no FTEP sessions. |
+| 9 | Opportunity book health | `GET /opportunities/summary` | `EMPTY` / `UNREADY` / `READY` / `UNAVAILABLE` as honest feed tokens. Persist-on book survives API restart (schema v9). Zero rows is valid. |
+| 10 | EventV1 / PIT hop | Serving hop: production news ingress `POST /intelligence/ingest/news` → EventV1/PIT → observational catalyst detector → OpportunityV1. RTH watch: `python tools/ftep_watch_catalysts.py FTEP-V1-002 --live-ingress --json` | Composed news hop only. **Explicit:** BUILD 09 `EventDetectorEngine` remains unwired (`NEWS_EVENT` `INACTIVE_INPUT_UNAVAILABLE`). `OpportunityEngine.assess` remains unwired (needs ForecastV1). Do not describe them as composed. |
+| 11 | Ranked API | `GET /opportunities/summary` and `GET /opportunities/{id}` | Ranked projection from serving repository. Fixture/replay cards stay on `DEMO_REPLAY` shelf. |
+| 12 | DecisionTrace / TradeReview | Persist-on tables `execution_decision_traces` and `trade_reviews` on `imp-state.sqlite3`; HTTP `GET /intelligence/trade-reviews?opportunity_id=` | WATCH/DISMISS may persist `ExecutionDecisionTraceV1` + `TradeReviewV1` in **non-execution** modes. Not a fill. Persist-off stays ephemeral. |
+| 13 | Live safety | `GET /operator/diagnostics` `live-execution`; Live remains **OFF** | `allows_network_submit` remains **false**. `attempt_network_submit` forbidden. Do not set live broker gates. |
+| 14 | Paper safety | Do not start Paper EXECUTION from this checklist. Missing Alpaca keys → `COMPARATOR_NOT_CONFIGURED` | Not Paper-validated. Not `CALIBRATED`. Dry-run / SIGNAL_ONLY ≠ Paper submit. |
+| 15 | Evidence output path | Finviz/FTEP JSON stdout; optional copies under governed `.local`; Item 9 receipts only under frozen collector `$rcpt` | Do not write receipts onto **CURRENT_MAIN** artifacts copy. Do not rewrite frozen empirical `7aade60`. |
+| 16 | Campaign / run id | Campaign **FTEP-V1-002**; sessions **BASELINE** `fts-6DB7771FD9B3A991`, **AI_ENHANCED** `fts-D93189A042A1BEF2`; ops bundle `operator_run_id=RTHOPS-*` | `python tools/imp.py ftep integrity-check FTEP-V1-002 --json` PASS against canonical `IMP_STATE_DIR`. FTEP **not** `EMPIRICAL_ACTIVE`. |
+| 17 | Logging | `.local/platform-backend.log`, `.local/platform-ui.log`, `.local/platform-control.log` | Logs exist and rotate under operator policy. No secret values in log paste. |
+| 18 | Disk space | `python tools/imp.py storage audit` | Read-only inventory. Output is **not** deletion authority. Act only if warnings block the session. |
+| 19 | Recovery | `STOP_PLATFORM.cmd`; `tools/ui1/restart_ui_api.ps1` after env changes; clear `IMP_FINVIZ_LIVE` / `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS` | Do **not** delete governed SQLite or receipts. Integrity FAIL → fix `IMP_STATE_DIR` before live ingress. |
+| 20 | No market-data backfill | If the live interval is missed | Leave `NOT_OBSERVED` / `UNAVAILABLE`. Do not backfill Item 9 gaps, Sep 18 epoch `121031`, or missed news rows. |
+
+Item 9 Mode B `--poll` stays frozen-collector-only. This preopen does **not** authorize calibration fitting, Paper validation claims, Full30, or Live.
+
 ## Pre-RTH verification checklist (off-session)
+
+The table above is the **next lawful** preopen. Off-session minimum:
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`1cd63fe9`** through [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** / **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) — tip **`5b74876d`** through [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
 | Python 3.11 + `.venv` | Operator | `python tools\imp.py env bootstrap --link-venv` |
 | OpenD loopback | Operator | Required for Item 9 collection |
@@ -197,8 +233,8 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 ## Recommended next RTH operator actions
 
-1. Night before: `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** and **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (do not conflate git tip with collector pin).
-2. Morning: bootstrap venv/state path; start platform; confirm `:8766` / `:5173`.
+1. Night before: `git fetch origin main`; confirm **CURRENT_SOFTWARE_IMPLEMENTATION** `5b74876d` and **ITEM9_FROZEN_COLLECTOR** `fed2d9f7` in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (do not conflate git tip with collector pin).
+2. Morning: run [next lawful RTH preopen checklist](#next-lawful-rth-preopen-checklist); bootstrap venv/state path; start platform; confirm liveness (`service_liveness` — bound port is not HEALTHY).
 3. T−15: run full preflight block including `item9 next-rth-preflight`; set temporary Finviz/catalyst gates; confirm OpenD loopback.
-4. ≥ 09:30 only: when preflight allows, run Finviz watch → governed Item 9 `--poll` (frozen collector) → `corpus-status` → Item 7 status → ops dry-run; summarize.
-5. Confirm empirical gates remain unflipped unless governed JSON receipts exist; Live stays OFF. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) is **CLOSED** (not merged); [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) superseded it.
+4. ≥ 09:30 only: when preflight allows, run Finviz watch → ranked `/opportunities/summary` (zero rows valid) → governed Item 9 `--poll` (frozen collector) → `corpus-status` → Item 7 status → ops dry-run; summarize. Success is the information/decision chain, not a trade.
+5. Confirm empirical gates remain unflipped unless governed JSON receipts exist; Live stays OFF. Do not backfill a missed live interval. [#222](https://github.com/AdamEddahmouni/market-trading-platform/pull/222) is **CLOSED** (not merged); [#370](https://github.com/AdamEddahmouni/market-trading-platform/pull/370) superseded it.
