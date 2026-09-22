@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Process-restart durability acceptance (real OS bounce)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/acceptance` / durability |
+| **Summary** | Added a controlled SOFTWARE_CONTROLLED_EVIDENCE / FIXTURE acceptance that spawns a real UI API harness process, drives production `/intelligence/ingest/news` → EventV1 → PIT → observational OpportunityV1 mint → ranked readback → WATCH/DISMISS → ack/trace/review, then terminates and restarts a fresh process against the same temp `IMP_STATE_DIR` to prove durable readback and no identity fork. Not in-process singleton reset. Live off; `allows_network_submit` remains false. Campaign ports/PIDs untouched. |
+| **Key files** | Created: `tests/acceptance/harness_process_restart_ui_api.py`; `tests/acceptance/test_process_restart_durability_acceptance.py`. Modified: `docs/engineering/WORK_LOG.md`. No production `src/` serving changes. |
+| **Tests** | `python -m unittest tests.acceptance.test_process_restart_durability_acceptance` → **2 passed**. Related: software fullstack **6 passed**; canonical durable loop **8 passed** (`PYTHONPATH=src`); watch/dismiss learning loop **5 passed**; trade review durable **6 passed**. |
+| **Related** | Prior in-process watch/dismiss learning loop; software fullstack acceptance; canonical opportunity durable loop |
+| **Notes** | Worktree `.worktrees/restart-e2e-20260922` on `feat/process-restart-durability-e2e` from base `24a59220`. Process bounce via `subprocess.Popen` + Windows `taskkill /T /F` of the spawned harness only. Ephemeral ports outside `{8766,5173,11111}`. Re-ingest after restart may fail-closed on immutable receive-clock conflict; book counts stay stable (no duplicate mint). Did not push/PR. Did not touch `.worktrees/rth-obs-20260922` or campaign PIDs 102752/99624/125168. |
+
 ## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
 
 | Field | Value |
