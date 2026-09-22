@@ -67,7 +67,9 @@ class NewsPipeline:
         results: list[PipelineEventResult] = []
         observable: list[NewsArticleEvent] = []
         for event in events:
-            if event.quality_flags:
+            # Only publication-time flags feed the timestamp metric — linkage
+            # PROVIDER_LINKAGE_* warnings must not pollute it.
+            if any(str(flag).startswith("PUBLICATION_") for flag in event.quality_flags):
                 tracker.record_timestamp_quality_issue()
             obs = _observability_decision(event, as_of_ns)
             if not obs.accepted:

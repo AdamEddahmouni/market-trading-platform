@@ -64,6 +64,14 @@ These flags mean **uncorroborated / suspicious association evidence**. They do
 change LIVE_OBSERVED vs HISTORICAL_RECONSTRUCTED gates. Missing URL is a quality
 signal only. Empty/unassessable text keeps confidence `UNKNOWN`.
 
+Company-name corroboration is derived from **headline/summary surface forms**
+(CamelCase compounds and Title Case words letter-aligned to the provider
+symbol). Ordinary English tokens are never treated as rival tickers.
+`PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT` requires an inconsistent CamelCase
+company-like span; prefer an absent flag over a false alternate-entity
+escalation. Optional raw `company_name` fields are supplemental only —
+Finviz production rows need not supply them.
+
 ## Observability / availability rule
 
 For IMP observation replay at decision time `T`:

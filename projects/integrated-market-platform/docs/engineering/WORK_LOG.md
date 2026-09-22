@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Provider linkage quality: stop false alternate-entity escalations
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Fixed false ALTERNATE_ENTITY/LOW_CONTEXTUAL escalations from English tokens. Corroboration now uses headline company-like spans (letter-aligned to ticker) without relying on Finviz-absent company_names. Removed English-as-ticker rival detection; MULTIPLE only on mixed corroboration; linkage flags no longer inflate timestamp_quality_issues; dropped dead association_confidence/reasons. |
+| **Key files** | `news/provider_linkage_quality.py`; `news/pipeline.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` — 12/12 passed (provider linkage suite). `python tools/imp.py validate changed` — news 83 passed; mandatory suites passed; intelligence 2 errors in unrelated FTEP cockpit UI-API wire HTTP tests (not linkage). |
+| **Related** | Review CHANGES_REQUIRED on `fc48a9d2` |
+| **Notes** | Same worktree `.worktrees/provider-linkage-quality`. No push/PR/campaign touch. Independent re-review still required. |
+
 ## 2026-09-22 — Provider linkage quality warnings (no ticker rewrite)
 
 | Field | Value |

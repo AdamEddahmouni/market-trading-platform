@@ -2,7 +2,7 @@
 
 Semantics
 ---------
-Flags and confidence tokens are **operator-visible suspicion / evidence-quality
+Flags and linkage ``confidence`` are **operator-visible suspicion / evidence-quality
 signals**. They do **not**:
 
 - declare provider metadata false as fact
@@ -11,6 +11,11 @@ signals**. They do **not**:
 - change LIVE_OBSERVED vs HISTORICAL_RECONSTRUCTED gates
 
 Unknown assessment stays ``UNKNOWN``. Missing URL is a quality signal only.
+
+Company-name corroboration uses **headline/summary surface forms** (no issuer
+directory). Ordinary English words are never treated as rival tickers.
+``PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT`` is reserved for prominent
+company-like spans that are **not** letter-consistent with the provider symbol.
 """
 
 from __future__ import annotations
@@ -108,12 +113,17 @@ _STOP_TITLE_TOKENS = frozenset(
         "us",
         "nyse",
         "nasdaq",
+        "fed",
+        "new",
+        "lineup",
     }
 )
 
+# CamelCase compounds (MillerKnoll), Title Case words (Apple), and ALL-CAPS
+# issuer tokens (NVIDIA) — never treat ordinary lowercase English as tickers.
 _CAMEL_ENTITY = re.compile(r"\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b")
-_TITLE_WORD = re.compile(r"\b([A-Z][a-z]{2,})\b")
-_TICKER_TOKEN = re.compile(r"\b([A-Z]{1,5}(?:\.[A-Z]{1,2})?)\b")
+_TITLE_WORD = re.compile(r"\b([A-Z][a-z]{3,})\b")
+_ALLCAPS_WORD = re.compile(r"\b([A-Z]{4,})\b")
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,8 +132,6 @@ class ProviderLinkageQualityAssessment:
 
     linkages: tuple[InstrumentLinkage, ...]
     quality_flags: tuple[str, ...]
-    reasons: tuple[str, ...]
-    association_confidence: str
 
 
 def _normalize_haystack(text: str) -> str:
@@ -134,83 +142,99 @@ def _symbol_token(symbol: str) -> str:
     return str(symbol or "").strip().upper()
 
 
+def _letters_only(text: str) -> str:
+    return "".join(ch for ch in str(text or "").upper() if "A" <= ch <= "Z")
+
+
 def _ticker_lexically_present(symbol: str, haystack_upper: str) -> bool:
     token = _symbol_token(symbol)
     if not token or not haystack_upper:
         return False
-    # Word-boundary match; allow optional leading $ and exchange prefix (US.NVDA).
     bare = token.split(".")[-1]
     pattern = rf"(?<![A-Z0-9])\$?(?:[A-Z]{{1,5}}\.)?{re.escape(bare)}(?![A-Z0-9])"
     return re.search(pattern, haystack_upper) is not None
 
 
-def _company_name_present(name: str, haystack_upper: str) -> bool:
-    cleaned = " ".join(str(name or "").upper().split())
-    if len(cleaned) < 3 or not haystack_upper:
+def _ordered_subsequence(needle: str, haystack: str) -> bool:
+    if not needle or not haystack:
         return False
-    return cleaned in haystack_upper
+    index = 0
+    for ch in haystack:
+        if index < len(needle) and ch == needle[index]:
+            index += 1
+    return index == len(needle)
 
 
-def _extract_company_names(raw_company_names: Iterable[str] | None) -> tuple[str, ...]:
-    names: list[str] = []
-    for value in raw_company_names or ():
-        text = str(value or "").strip()
-        if text:
-            names.append(text)
-    return tuple(names)
+def _ticker_consistent_with_name(symbol: str, name: str) -> bool:
+    """Heuristic issuer support: ticker letters align with a company-like name.
 
-
-def _alternate_entity_prominent(*, headline: str, provider_symbols: set[str]) -> bool:
-    """Heuristic: headline prominently names a non-ticker entity while lacking provider tickers.
-
-    Does **not** assert identity of that entity. CamelCase or multi-word Title Case
-    spans are treated as company-like surface forms only.
+    No issuer directory. Ordered subsequence preferred; unique-letter containment
+    is a fallback for forms like AAPL/APPLE. This is corroboration, not identity.
     """
+
+    ticker = _letters_only(_symbol_token(symbol).split(".")[-1])
+    company = _letters_only(name)
+    if len(ticker) < 2 or len(company) < 4:
+        return False
+    if _ordered_subsequence(ticker, company):
+        return True
+    # Unique-letter containment (AAPL ⊆ APPLE) — ticker must be meaningful length.
+    if len(ticker) >= 3 and set(ticker) <= set(company):
+        return True
+    return False
+
+
+def _extract_company_like_spans(headline: str) -> tuple[str, ...]:
+    """Surface company-like spans from headline text alone."""
 
     text = str(headline or "").strip()
     if not text:
-        return False
-    provider_bare = {s.split(".")[-1] for s in provider_symbols if s}
-
+        return ()
+    spans: list[str] = []
     for match in _CAMEL_ENTITY.finditer(text):
         entity = match.group(1)
-        if entity.upper() in provider_bare:
-            continue
         if entity.lower() in _STOP_TITLE_TOKENS:
             continue
-        return True
-
-    title_words = [m.group(1) for m in _TITLE_WORD.finditer(text)]
-    kept: list[str] = []
-    for word in title_words:
+        spans.append(entity)
+    for match in _TITLE_WORD.finditer(text):
+        word = match.group(1)
         if word.lower() in _STOP_TITLE_TOKENS:
             continue
-        if word.upper() in provider_bare:
+        spans.append(word)
+    for match in _ALLCAPS_WORD.finditer(text):
+        word = match.group(1)
+        if word.lower() in _STOP_TITLE_TOKENS:
             continue
-        kept.append(word)
-    # Multi-word Title Case span (e.g. "Miller Knoll") is stronger than a lone word.
-    if len(kept) >= 2:
-        return True
-    return False
+        # Skip pure ticker-length tokens here; lexical ticker match covers those.
+        if len(word) <= 5:
+            continue
+        spans.append(word)
+    # Multi-word Title Case pairs (e.g. "Miller Knoll") as one span.
+    title_words = [
+        m.group(1)
+        for m in _TITLE_WORD.finditer(text)
+        if m.group(1).lower() not in _STOP_TITLE_TOKENS
+    ]
+    for left, right in zip(title_words, title_words[1:]):
+        spans.append(f"{left} {right}")
+    return tuple(dict.fromkeys(spans))
 
 
-def _headline_mentions_other_tickers(*, headline: str, provider_symbols: set[str]) -> bool:
-    text = str(headline or "").upper()
+def _inconsistent_camel_entities(*, headline: str, symbol: str) -> tuple[str, ...]:
+    """CamelCase compounds that are not letter-consistent with the provider symbol."""
+
+    text = str(headline or "").strip()
     if not text:
-        return False
-    provider_bare = {s.split(".")[-1] for s in provider_symbols if s}
-    for match in _TICKER_TOKEN.finditer(text):
-        token = match.group(1)
-        bare = token.split(".")[-1]
-        if bare in provider_bare:
+        return ()
+    inconsistent: list[str] = []
+    for match in _CAMEL_ENTITY.finditer(text):
+        entity = match.group(1)
+        if entity.lower() in _STOP_TITLE_TOKENS:
             continue
-        # Ignore ultra-common short English tokens that look like tickers.
-        if bare in {"A", "I", "AM", "PM", "CEO", "CFO", "CTO", "USA", "USD", "ETF"}:
+        if _ticker_consistent_with_name(symbol, entity):
             continue
-        if len(bare) < 2:
-            continue
-        return True
-    return False
+        inconsistent.append(entity)
+    return tuple(inconsistent)
 
 
 def assess_provider_linkage_quality(
@@ -225,6 +249,9 @@ def assess_provider_linkage_quality(
 
     Returns a new linkage tuple that may only change ``confidence``. Provider
     ``provider_symbol``, ``instrument_id``, and ``linkage_method`` are preserved.
+
+    Corroboration prefers ticker-token presence, then company-like spans extracted
+    from the headline/summary (optional raw ``company_names`` are supplemental only).
     """
 
     links = tuple(linkages)
@@ -235,25 +262,24 @@ def assess_provider_linkage_quality(
         and _symbol_token(link.provider_symbol or link.instrument_id)
     ]
     flags: list[str] = []
-    reasons: list[str] = []
 
     url_text = str(url or "").strip()
     if not url_text:
         flags.append(FLAG_SOURCE_URL_MISSING)
-        reasons.append("source_url_missing:no_independent_verify_path")
 
-    names = _extract_company_names(company_names)
     haystack = _normalize_haystack(f"{headline} {summary}")
     has_assessable_text = bool(haystack)
+    headline_spans = _extract_company_like_spans(headline)
+    summary_spans = _extract_company_like_spans(summary)
+    supplemental = tuple(
+        str(name).strip() for name in (company_names or ()) if str(name or "").strip()
+    )
+    company_spans = tuple(dict.fromkeys((*headline_spans, *summary_spans, *supplemental)))
 
     if not provider_links:
-        # No provider-symbol linkage to score — leave linkages untouched.
-        confidence = CONFIDENCE_UNKNOWN if not has_assessable_text else CONFIDENCE_EXPLICIT
         return ProviderLinkageQualityAssessment(
             linkages=links,
             quality_flags=tuple(dict.fromkeys(flags)),
-            reasons=tuple(reasons),
-            association_confidence=confidence,
         )
 
     provider_symbols = {
@@ -261,7 +287,6 @@ def assess_provider_linkage_quality(
     }
 
     if not has_assessable_text:
-        # Cannot corroborate or contradict — unknown stays unknown.
         adjusted = tuple(
             InstrumentLinkage(
                 instrument_id=link.instrument_id,
@@ -274,53 +299,40 @@ def assess_provider_linkage_quality(
             )
             for link in links
         )
-        reasons.append("association_confidence:UNKNOWN:no_assessable_text")
         return ProviderLinkageQualityAssessment(
             linkages=adjusted,
             quality_flags=tuple(dict.fromkeys(flags)),
-            reasons=tuple(reasons),
-            association_confidence=CONFIDENCE_UNKNOWN,
         )
 
     corroboration: dict[str, bool] = {}
+    alternate_for_symbol: dict[str, bool] = {}
     for symbol in provider_symbols:
         lexical = _ticker_lexically_present(symbol, haystack)
-        name_hit = any(_company_name_present(name, haystack) for name in names)
+        name_hit = any(_ticker_consistent_with_name(symbol, span) for span in company_spans)
         corroboration[symbol] = lexical or name_hit
+        # Alternate-entity only from CamelCase compounds inconsistent with this symbol.
+        # Do not escalate from ordinary Title Case / English tokens (false Apple/Fed cases).
+        alternate_for_symbol[symbol] = bool(
+            _inconsistent_camel_entities(headline=headline, symbol=symbol)
+        ) and not corroboration[symbol]
 
     any_corroborated = any(corroboration.values())
     any_uncorroborated = any(not ok for ok in corroboration.values())
+    any_alternate = any(alternate_for_symbol.values())
 
     if any_uncorroborated:
         flags.append(FLAG_TICKER_NOT_IN_TEXT)
-        missing = sorted(sym for sym, ok in corroboration.items() if not ok)
-        reasons.append(f"ticker_not_in_text:{','.join(missing)}")
 
-    alternate = _alternate_entity_prominent(headline=headline, provider_symbols=provider_symbols)
-    other_ticker = _headline_mentions_other_tickers(
-        headline=headline, provider_symbols=provider_symbols
-    )
-    if (alternate or other_ticker) and any_uncorroborated:
+    if any_alternate:
         flags.append(FLAG_ALTERNATE_ENTITY_PROMINENT)
-        if alternate:
-            reasons.append("alternate_entity_prominent:company_like_span")
-        if other_ticker:
-            reasons.append("alternate_entity_prominent:other_ticker_token")
 
-    if len(provider_symbols) > 1 and (
-        (any_corroborated and any_uncorroborated) or not any_corroborated
-    ):
+    # Mixed corroboration across multiple provider symbols — not "all weak".
+    if len(provider_symbols) > 1 and any_corroborated and any_uncorroborated:
         flags.append(FLAG_MULTIPLE_CONTRADICTORY)
-        reasons.append(
-            "multiple_provider_symbols:"
-            + ",".join(sorted(provider_symbols))
-            + ":corroboration_conflict_or_none"
-        )
 
-    if FLAG_TICKER_NOT_IN_TEXT in flags or FLAG_ALTERNATE_ENTITY_PROMINENT in flags:
-        if FLAG_SOURCE_URL_MISSING in flags or FLAG_ALTERNATE_ENTITY_PROMINENT in flags:
-            flags.append(FLAG_LOW_CONTEXTUAL_CONFIDENCE)
-            reasons.append("low_contextual_confidence:uncorroborated_provider_linkage")
+    # Strong suspicion only: alternate entity (optionally compounded by missing URL).
+    if FLAG_ALTERNATE_ENTITY_PROMINENT in flags:
+        flags.append(FLAG_LOW_CONTEXTUAL_CONFIDENCE)
 
     adjusted_links: list[InstrumentLinkage] = []
     for link in links:
@@ -343,23 +355,14 @@ def assess_provider_linkage_quality(
             )
         )
 
-    if any_corroborated and not any_uncorroborated:
-        association = CONFIDENCE_EXPLICIT
-    elif any_uncorroborated:
-        association = CONFIDENCE_PROVIDER_UNCORROBORATED
-    else:
-        association = CONFIDENCE_UNKNOWN
-
     return ProviderLinkageQualityAssessment(
         linkages=tuple(adjusted_links),
         quality_flags=tuple(dict.fromkeys(flags)),
-        reasons=tuple(reasons),
-        association_confidence=association,
     )
 
 
 def company_names_from_raw(item: dict[str, Any]) -> tuple[str, ...]:
-    """Pull optional company/issuer labels from raw provider payloads when present."""
+    """Optional raw company/issuer labels — supplemental; Finviz may omit these."""
 
     names: list[str] = []
     for key in ("company_name", "company", "issuer_name", "issuer"):
