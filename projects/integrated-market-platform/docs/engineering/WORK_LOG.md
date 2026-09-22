@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Harden observational liveness classifier (PR #379 nits)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Hardened `classify_observational_market_data_liveness` for non-blocking PR #379 nits: zero-subscription idle stays `NOT_APPLICABLE` even if `receiving=True`; subscribed cycles fail closed to `UNAVAILABLE`/`FRESHNESS_UNAVAILABLE` when freshness is missing; entitled=False → `UNREADY`/`NOT_ENTITLED`; market-data `process_id` documented as diagnostic-only (platform `identity_owned` still gates). Duplicate OpenD probe left deferred (call sites outside ownership). |
+| **Key files** | `platform/operator_diagnostics/service_liveness.py`; `tests/platform/test_runtime_service_liveness.py` |
+| **Tests** | `python tools/imp.py test focused` (17 selectors) — **17 passed**; `python tools/imp.py validate changed --paths-file` — **1852 passed**, 5 skipped, 0 fail/err |
+| **Related** | PR #379 `ba8de6df` APPROVE_WITH_NITS |
+| **Notes** | Did not edit live_runtime / live_projections / campaign runtime. Frozen RTH campaign worktree untouched. |
+
 ## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
 
 | Field | Value |
