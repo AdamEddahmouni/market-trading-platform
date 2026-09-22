@@ -253,6 +253,7 @@ schemas bind to it without opening a fittable `1.1.0`:
 | Readiness snapshot | `item9.validation-readiness-snapshot/1.0.0` · `python tools/imp.py item9 readiness-snapshot` |
 | Calibration preflight | `CALIBRATION_PREFLIGHT_READY` / `BLOCKED` · `python tools/imp.py item9 calibration-preflight` |
 | Methodology freeze | `item9.calibration-methodology-freeze/1.0.0` · `manifests/paper/item9_calibration_methodology_freeze_v1.json` |
+| Authorization packet (NOT a grant) | `item9.calibration-authorization-packet/1.0.0` · `manifests/paper/item9_calibration_authorization_packet_v1.json` — live filled packets stay under `.local/`; `fitting_allowed=false` |
 | NOT_OBSERVED gaps | `manifests/paper/item9_not_observed_intervals_v1.json` (Sep 21 ≈10:43–13:09 ET; Sep 18 epoch `121031`) |
 | Paper acceptance | [ITEM9_PAPER_VALIDATION_ACCEPTANCE_V1.md](ITEM9_PAPER_VALIDATION_ACCEPTANCE_V1.md) |
 

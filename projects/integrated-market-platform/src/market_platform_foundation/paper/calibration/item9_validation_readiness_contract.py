@@ -21,6 +21,7 @@ PAPER_ACCEPTANCE_SCHEMA_ID: Final = "item9.paper-validation-acceptance/1.0.0"
 PROSPECTIVE_PAPER_RUN_PACKAGE_SCHEMA_ID: Final = "item9.prospective-paper-run-package/1.0.0"
 CALIBRATION_ARTIFACT_SCHEMA_ID: Final = "item9.calibration-artifact/1.0.0"
 AUTHORIZATION_ARTIFACT_SCHEMA_ID: Final = "item9.calibration-authorization/1.0.0"
+AUTHORIZATION_PACKET_SCHEMA_ID: Final = "item9.calibration-authorization-packet/1.0.0"
 
 BOUND_PROTOCOL_VERSION: Final = PROTOCOL_VERSION  # item9.calibration-protocol/1.0.0
 
@@ -249,6 +250,8 @@ def contract_freeze_record() -> dict[str, object]:
         "readiness_snapshot_schema_id": READINESS_SNAPSHOT_SCHEMA_ID,
         "methodology_freeze_schema_id": METHODOLOGY_FREEZE_SCHEMA_ID,
         "paper_acceptance_schema_id": PAPER_ACCEPTANCE_SCHEMA_ID,
+        "authorization_packet_schema_id": AUTHORIZATION_PACKET_SCHEMA_ID,
+        "authorization_grant_schema_id": AUTHORIZATION_ARTIFACT_SCHEMA_ID,
         "fitting_allowed": FITTING_ALLOWED_DEFAULT,
         "calibrated": CALIBRATED_DEFAULT,
         "item9_calibration_run": ITEM9_CALIBRATION_RUN_FORBIDDEN,
@@ -273,6 +276,7 @@ __all__ = [
     "AUTHORIZATION_ABSENT",
     "AUTHORIZATION_ARTIFACT_SCHEMA_ID",
     "AUTHORIZATION_INVALID",
+    "AUTHORIZATION_PACKET_SCHEMA_ID",
     "AUTHORIZATION_PRESENT",
     "AUTHORIZATION_STATES",
     "BOUND_PROTOCOL_VERSION",
