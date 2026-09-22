@@ -2059,6 +2059,36 @@
       ]
     },
     {
+      "id": "latency_instrumentation_v1",
+      "path": "tests/observability/latency_instrumentation_v1",
+      "classification": "offline",
+      "tiers": [
+        "full",
+        "changed"
+      ],
+      "domains": [
+        "core"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/observability/**",
+        "src/market_platform_foundation/news/observational_admit.py",
+        "src/market_platform_foundation/news/observational_opportunity.py",
+        "src/market_platform_foundation/intelligence/observation_ingress/consumers.py",
+        "src/market_platform_foundation/ui_api/news_ingest.py",
+        "src/market_platform_foundation/ui_api/opportunity_projections.py"
+      ],
+      "test_globs": [
+        "tests/observability/latency_instrumentation_v1/test_*.py"
+      ],
+      "neighbors": [
+        "hot_path_telemetry",
+        "news",
+        "ui1"
+      ]
+    },
+    {
       "id": "hot_path_telemetry_artifact",
       "path": "tests/artifact",
       "classification": "offline",

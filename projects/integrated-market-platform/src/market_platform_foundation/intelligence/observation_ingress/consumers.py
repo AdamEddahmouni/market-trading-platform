@@ -123,8 +123,17 @@ def observational_news_detector_consumer(
                 detail="NEWS_ARTICLE_NO_REPOSITORY",
             )
         from ...news.observational_opportunity import persist_observational_news_opportunity
+        from ...observability.latency_instrumentation_v1.context import current_latency_collector
+        from ...observability.latency_instrumentation_v1.types import LatencyStageId
 
+        collector = current_latency_collector()
+        if collector is not None:
+            collector.mark_stage(event.event_id, LatencyStageId.DETECTOR_STARTED)
         minted = persist_observational_news_opportunity(event, repository)
+        if collector is not None:
+            collector.mark_stage(event.event_id, LatencyStageId.DETECTOR_COMPLETED)
+            if minted is not None:
+                collector.attach_opportunity_id(event.event_id, minted.opportunity_id)
         detail = "NEWS_ARTICLE_OPPORTUNITY_MINTED" if minted is not None else "NEWS_ARTICLE_ADMITTED"
         return IngressConsumerOutcome(
             consumer_id=consumer_id,

@@ -98,6 +98,13 @@ def persist_observational_news_opportunity(
     if not callable(putter):
         return None
     putter(opportunity)
+    from ..observability.latency_instrumentation_v1.context import current_latency_collector
+    from ..observability.latency_instrumentation_v1.types import LatencyStageId
+
+    collector = current_latency_collector()
+    if collector is not None:
+        collector.mark_stage(event.event_id, LatencyStageId.OPPORTUNITY_PERSISTED)
+        collector.attach_opportunity_id(event.event_id, opportunity.opportunity_id)
     return opportunity
 
 

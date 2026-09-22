@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Restack latency instrumentation onto accepted Finviz/linkage backend
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | observability / news / ui_api |
+| **Summary** | Restacked optional latency instrumentation v1 onto accepted integrate tip 7ccbac1a (Finviz identity/window/fail-closed + linkage/rejection ancestors). Cherry-picked cae03c8c then resolved conflicts so Finviz mode selection and identity fail-closed win; latency collector binds beside that logic. Old SHA cae03c8c is **not** the approval target; prior APPROVE_WITH_NITS does not survive this restack. |
+| **Key files** | Created: `observability/latency_instrumentation_v1/` (+ COVERAGE.md); `tests/observability/latency_instrumentation_v1/`. Modified: `news/observational_admit.py`, `news/observational_opportunity.py`, `intelligence/observation_ingress/consumers.py`, `ui_api/news_ingest.py`, `ui_api/opportunity_projections.py`, validation manifest/closure JSON. |
+| **Tests** | Latency + Finviz identity/window + ingest-mode + provider-linkage suites (see commit / review packet). |
+| **Related** | Source cae03c8c on feat/latency-instrumentation-v1; base 7ccbac1a; branch feat/latency-restack-20260922 |
+| **Notes** | Worktree `.worktrees/latency-restack-20260922`. Did not merge into integrate/post-close-20260922. No push. Campaign / detached 80d290ff / finviz-admit worktree untouched. |
+
 ## 2026-09-22 — Integration merge: provider-linkage quality onto post-close tip
 
 | Field | Value |
