@@ -65,9 +65,49 @@ def resolve_imp_collection_root(repository_root: Path) -> Path:
     return repository_root
 
 
+def _observation_window_from_ingress(
+    ingress: ProspectiveCatalystIngressResult | Mapping[str, Any],
+) -> tuple[str | None, int | None]:
+    """Pull caller-supplied window from ingress mapping/stats when present."""
+
+    if isinstance(ingress, ProspectiveCatalystIngressResult):
+        mapping: Mapping[str, Any] = {"stats": ingress.stats}
+        stats = ingress.stats if isinstance(ingress.stats, dict) else {}
+    else:
+        mapping = ingress
+        stats = mapping.get("stats") if isinstance(mapping.get("stats"), dict) else {}
+    raw_iso = mapping.get("observation_window_start")
+    if raw_iso is None and isinstance(stats, dict):
+        raw_iso = stats.get("observation_window_start")
+    raw_ns = mapping.get("observation_window_start_ns")
+    if raw_ns is None and isinstance(stats, dict):
+        raw_ns = stats.get("observation_window_start_ns")
+    iso = str(raw_iso).strip() if raw_iso is not None and str(raw_iso).strip() else None
+    ns: int | None = None
+    if raw_ns is not None and str(raw_ns).strip() != "":
+        try:
+            value = int(raw_ns)
+        except (TypeError, ValueError):
+            value = -1
+        if value >= 0:
+            ns = value
+    return iso, ns
+
+
 def build_news_ingest_body_from_prospective_ingress(
     ingress: ProspectiveCatalystIngressResult | Mapping[str, Any],
+    *,
+    observation_window_start: str | None = None,
+    observation_window_start_ns: int | None = None,
 ) -> dict[str, Any]:
+    """Build POST /intelligence/ingest/news body from #207 prospective rows.
+
+    Observation window is caller-supplied only (explicit args, or fields already
+    present on the ingress mapping/stats). Missing window is omitted so the
+    ingest path stays ``HISTORICAL_RECONSTRUCTED``. Never invents 09:30 or other
+    clock defaults.
+    """
+
     if isinstance(ingress, ProspectiveCatalystIngressResult):
         rows = ingress.rows
     else:
@@ -94,6 +134,21 @@ def build_news_ingest_body_from_prospective_ingress(
     }
     if default_retrieved:
         body["retrieved_time"] = default_retrieved
+    ingress_iso, ingress_ns = _observation_window_from_ingress(ingress)
+    window_iso = (
+        str(observation_window_start).strip()
+        if observation_window_start is not None and str(observation_window_start).strip()
+        else ingress_iso
+    )
+    window_ns = (
+        int(observation_window_start_ns)
+        if observation_window_start_ns is not None
+        else ingress_ns
+    )
+    if window_ns is not None and window_ns >= 0:
+        body["observation_window_start_ns"] = int(window_ns)
+    if window_iso:
+        body["observation_window_start"] = window_iso
     return body
 
 
@@ -102,6 +157,8 @@ def post_prospective_ingress_to_running_ui_api(
     *,
     base_url: str | None = None,
     timeout_s: float = 30.0,
+    observation_window_start: str | None = None,
+    observation_window_start_ns: int | None = None,
 ) -> dict[str, Any]:
     """POST #207 rows to the running UI API; fail closed when the API is unreachable."""
 
@@ -135,7 +192,11 @@ def post_prospective_ingress_to_running_ui_api(
             "transport": "HTTP",
             "post_skipped": True,
         }
-    body = build_news_ingest_body_from_prospective_ingress(ingress)
+    body = build_news_ingest_body_from_prospective_ingress(
+        ingress,
+        observation_window_start=observation_window_start,
+        observation_window_start_ns=observation_window_start_ns,
+    )
     payload = json.dumps(body).encode("utf-8")
     url = f"{base}{NEWS_INGEST_ROUTE}"
     req = urllib_request.Request(

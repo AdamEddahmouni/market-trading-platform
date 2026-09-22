@@ -195,7 +195,13 @@ def admit_finviz_export_item_for_observation(
 ) -> NewsObservationalAdmitOutcome:
     """Runtime convergence entry: normalized Finviz export row → EventV1 admit."""
 
-    article = normalize_finviz_export_item(item, retrieved_time=retrieved_time)
+    try:
+        article = normalize_finviz_export_item(item, retrieved_time=retrieved_time)
+    except ValueError as exc:
+        reason = str(exc) or "NEWS_IDENTITY_INPUTS_REQUIRED"
+        if reason != "NEWS_IDENTITY_INPUTS_REQUIRED":
+            reason = "NEWS_IDENTITY_INPUTS_REQUIRED"
+        return NewsObservationalAdmitOutcome(accepted=False, reason_code=reason, detail=str(exc))
     return admit_news_article_for_observation(
         article,
         router=router,

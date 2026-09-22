@@ -81,9 +81,12 @@ def normalize_raw_item(
         or item.get("provider_news_id")
         or item.get("id")
         or ""
-    )
+    ).strip()
     headline = str(item.get("headline") or item.get("title") or "")
     url = str(item.get("url") or "")
+    # Fail closed: never mint an event id from empty identity material.
+    if not provider_native_id and not str(url).strip() and not str(headline).strip():
+        raise ValueError("NEWS_IDENTITY_INPUTS_REQUIRED")
     all_flags = tuple(quality_flags)
     event_id = _build_event_id(
         provider_id=provider_id,

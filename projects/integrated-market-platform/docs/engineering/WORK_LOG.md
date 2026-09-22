@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Finviz admit identity + observation window
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/finviz` / `ui_api/cockpit_admit` |
+| **Summary** | Stable Finviz `provider_news_id` (canonical URL / salt-free hash; fail closed if missing). Prospective body builder plumbs caller/evidence `observation_window_start(_ns)` so LIVE_OBSERVED stamp can fire. |
+| **Key files** | `finviz/news.py`; `ui_api/cockpit_admit.py`; `ftep_catalyst_watch.py`; `tests/news/test_finviz_admit_identity_and_window.py` |
+| **Tests** | Focused **43 passed**. `validate changed` → **4373** passed, **43** skipped, 0 fail/err. |
+| **Related** | Base `9a14c958` stamp rule preserved |
+| **Notes** | Worktree `.worktrees/finviz-admit-identity-20260922`. No push/PR/deploy; campaign runtime untouched. |
+
 ## 2026-09-22 — Finviz news ingest mode stamp (live vs historical)
 
 | Field | Value |

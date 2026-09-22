@@ -97,6 +97,52 @@ def load_governed_session_ids_from_evidence(
     return [], last_path
 
 
+def load_governed_session_observation_window_start_ns(
+    repository_root: Path,
+    campaign_slug: str,
+) -> int | None:
+    """Earliest governed-session-start ``recorded_at_ns`` (campaign arm/observation start).
+
+    Read-only. Missing or malformed evidence → ``None`` (ingest stays historical).
+    Does not invent RTH open (09:30) or any other clock default.
+    """
+
+    earliest: int | None = None
+    for root in _evidence_search_roots(repository_root):
+        path = governed_session_start_evidence_path(root, campaign_slug)
+        if not path.is_file():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(record, dict):
+                continue
+            sessions = record.get("sessions_created") or []
+            if not isinstance(sessions, list) or not sessions:
+                continue
+            raw = record.get("recorded_at_ns")
+            if raw is None or str(raw).strip() == "":
+                continue
+            try:
+                value = int(raw)
+            except (TypeError, ValueError):
+                continue
+            if value < 0:
+                continue
+            if earliest is None or value < earliest:
+                earliest = value
+    return earliest
+
+
 def campaign_attention_fixture_path(repository_root: Path, campaign_slug: str) -> Path:
     return (
         repository_root
@@ -380,11 +426,16 @@ def collect_ftep_catalyst_watch(
     if used_live_ingress and prospective_ingress_result is not None:
         from ...ui_api.cockpit_admit import post_prospective_ingress_to_running_ui_api
 
+        observation_window_start_ns = load_governed_session_observation_window_start_ns(
+            repository_root,
+            campaign_slug,
+        )
         if prospective_ingress_result.rows:
             cockpit_http_post = True
             cockpit_admit_hop = "HTTP_UI_API"
             observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
                 prospective_ingress_result,
+                observation_window_start_ns=observation_window_start_ns,
             )
             if observational_cockpit_admit.get("ok"):
                 ingress_outcome = "COCKPIT_ADMIT_HTTP_OK"
@@ -398,6 +449,7 @@ def collect_ftep_catalyst_watch(
         else:
             observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
                 prospective_ingress_result,
+                observation_window_start_ns=observation_window_start_ns,
             )
 
     disposition = "PASS" if not blockers else "BLOCKED"
@@ -444,5 +496,6 @@ __all__ = [
     "collect_ftep_catalyst_watch",
     "governed_session_start_evidence_path",
     "load_governed_session_ids_from_evidence",
+    "load_governed_session_observation_window_start_ns",
     "operator_primary_imp_root_for_evidence",
 ]
