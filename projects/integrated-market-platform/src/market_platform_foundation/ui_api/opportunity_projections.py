@@ -257,46 +257,79 @@ def build_opportunities_summary_payload(
     limit: int | None = None,
     hot_path_collector: HotPathClockCollector | None = None,
 ) -> dict[str, Any]:
-    ranked_all = build_ranked_rows(store)
-    ranked = ranked_all
-    withheld_ranked_count = 0
-    if _is_live(store) and _live_as_of_unavailable(store):
-        withheld_ranked_count = len(ranked_all)
-        ranked = ()
-    page_size = limit or store.page_size
-    start = 0
-    if cursor:
-        for index, row in enumerate(ranked):
-            if row.summary_id == cursor or row.opportunity_id == cursor:
-                start = index + 1
-                break
-    page = ranked[start : start + page_size]
-    next_cursor = page[-1].summary_id if len(page) == page_size and start + page_size < len(ranked) else None
-    status, unready_reason = _feed_status(
-        store,
-        len(ranked),
-        repository_ranked_count=len(ranked_all),
+    from ..observability.latency_instrumentation_v1.clocks import capture_stage_stamp
+    from ..observability.latency_instrumentation_v1.context import (
+        bind_latency_collector,
+        resolve_latency_collector,
     )
-    items: list[dict[str, Any]] = []
-    for row in page:
-        serialized = _serialize_review_row(row, store)
-        items.append(serialized)
-        if hot_path_collector is not None and row.opportunity_id and monotonic_process_ns is not None:
-            hot_path_collector.note_operator_surfaced(str(row.opportunity_id), monotonic_process_ns())
-    payload: dict[str, Any] = {
-        "as_of_context": projections.build_as_of_context(store),
-        "quality_summary": projections.build_quality_summary(store),
-        "feed_status": status,
-        "items": items,
-        "next_cursor": next_cursor,
-    }
-    if status == "UNREADY":
-        payload["unready_reason"] = unready_reason
-        payload["next_action"] = "/control"
-    if withheld_ranked_count:
-        payload["withheld_ranked_count"] = withheld_ranked_count
-        payload["book_honesty"] = "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK"
-    return payload
+    from ..observability.latency_instrumentation_v1.types import LatencyStageId
+
+    latency_collector = resolve_latency_collector(store)
+    with bind_latency_collector(latency_collector):
+        ranked_all = build_ranked_rows(store)
+        rank_stamp = capture_stage_stamp() if latency_collector is not None else None
+        ranked = ranked_all
+        withheld_ranked_count = 0
+        if _is_live(store) and _live_as_of_unavailable(store):
+            withheld_ranked_count = len(ranked_all)
+            ranked = ()
+        page_size = limit or store.page_size
+        start = 0
+        if cursor:
+            for index, row in enumerate(ranked):
+                if row.summary_id == cursor or row.opportunity_id == cursor:
+                    start = index + 1
+                    break
+        page = ranked[start : start + page_size]
+        next_cursor = page[-1].summary_id if len(page) == page_size and start + page_size < len(ranked) else None
+        status, unready_reason = _feed_status(
+            store,
+            len(ranked),
+            repository_ranked_count=len(ranked_all),
+        )
+        items: list[dict[str, Any]] = []
+        for row in page:
+            serialized = _serialize_review_row(row, store)
+            items.append(serialized)
+            if hot_path_collector is not None and row.opportunity_id and monotonic_process_ns is not None:
+                hot_path_collector.note_operator_surfaced(str(row.opportunity_id), monotonic_process_ns())
+        payload: dict[str, Any] = {
+            "as_of_context": projections.build_as_of_context(store),
+            "quality_summary": projections.build_quality_summary(store),
+            "feed_status": status,
+            "items": items,
+            "next_cursor": next_cursor,
+        }
+        if status == "UNREADY":
+            payload["unready_reason"] = unready_reason
+            payload["next_action"] = "/control"
+        if withheld_ranked_count:
+            payload["withheld_ranked_count"] = withheld_ranked_count
+            payload["book_honesty"] = "RANKED_ROWS_WITHHELD_NO_LIVE_CLOCK"
+        if latency_collector is not None and rank_stamp is not None:
+            api_stamp = capture_stage_stamp()
+            opportunity_ids = tuple(
+                str(row.opportunity_id)
+                for row in ranked_all
+                if getattr(row, "opportunity_id", None)
+            )
+            correlated = latency_collector.mark_stages_for_opportunity_ids(
+                opportunity_ids,
+                LatencyStageId.RANK_GENERATED,
+                stamp=rank_stamp,
+            )
+            latency_collector.mark_stages_for_opportunity_ids(
+                opportunity_ids,
+                LatencyStageId.API_PAYLOAD_GENERATED,
+                stamp=api_stamp,
+            )
+            latency_collector.note_summary_request(
+                correlated_event_ids=correlated,
+                rank_stamp=rank_stamp,
+                api_payload_stamp=api_stamp,
+                ranked_opportunity_ids=opportunity_ids,
+            )
+        return payload
 
 
 def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[str, Any]:

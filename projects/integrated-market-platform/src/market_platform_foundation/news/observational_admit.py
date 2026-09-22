@@ -20,6 +20,7 @@ from ..intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress impor
 from ..intelligence.contracts.event import EventV1
 from ..intelligence.observation_ingress.router import ObservationIngressRouter
 from ..intelligence.observation_ingress.types import IngressDispatchReceiptV1
+from ..observability.latency_instrumentation_v1.types import StageStamp
 from .contracts import NewsArticleEvent, PipelineConfig, PublicationTimeQuality
 from .event_v1 import news_article_to_event_v1
 from .event_v1_ingress import admit_news_article_event
@@ -60,6 +61,7 @@ def admit_news_article_for_observation(
     pipeline_config: PipelineConfig | None = None,
     source_label: str = "finviz_elite_news",
     ingestion_mode: IngestionMode = IngestionMode.LIVE_OBSERVED,
+    _normalization_stamp: StageStamp | None = None,
 ) -> NewsObservationalAdmitOutcome:
     when = int(server_received_time_ns if server_received_time_ns is not None else monotonic_wall_ns())
     pit_reason = validate_news_pit_clocks(article, server_received_time_ns=when)
@@ -78,20 +80,44 @@ def admit_news_article_for_observation(
             detail = str(last.detail or "")
         return NewsObservationalAdmitOutcome(accepted=False, reason_code=reason, detail=detail or None)
 
+    from ..observability.latency_instrumentation_v1.clocks import capture_stage_stamp
+    from ..observability.latency_instrumentation_v1.context import (
+        bind_latency_collector,
+        resolve_latency_collector,
+    )
+    from ..observability.latency_instrumentation_v1.types import LatencyStageId
+
+    collector = resolve_latency_collector(store)
+    pit_stamp = capture_stage_stamp() if collector is not None else None
     event = news_article_to_event_v1(
         article,
         server_received_time_ns=when,
         ingestion_mode=ingestion_mode,
     )
-    event, receipt = admit_news_article_event(
-        article,
-        router=router,
-        store=store,
-        dispatch_time_ns=when,
-        source_label=source_label,
-        prebuilt_event=event,
-        ingestion_mode=ingestion_mode,
-    )
+    if collector is not None:
+        if _normalization_stamp is not None:
+            collector.mark_stage(
+                event.event_id,
+                LatencyStageId.NORMALIZATION_COMPLETED,
+                stamp=_normalization_stamp,
+            )
+        collector.mark_stage(event.event_id, LatencyStageId.PIT_COMPLETED, stamp=pit_stamp)
+        collector.note_eligibility(
+            event.event_id,
+            source_publication_ns=event.event_time_ns,
+            provider_retrieved_ns=event.available_time_ns,
+            imp_server_received_ns=event.received_time_ns,
+        )
+    with bind_latency_collector(collector):
+        event, receipt = admit_news_article_event(
+            article,
+            router=router,
+            store=store,
+            dispatch_time_ns=when,
+            source_label=source_label,
+            prebuilt_event=event,
+            ingestion_mode=ingestion_mode,
+        )
     return NewsObservationalAdmitOutcome(accepted=True, event=event, receipt=receipt)
 
 
@@ -195,6 +221,9 @@ def admit_finviz_export_item_for_observation(
 ) -> NewsObservationalAdmitOutcome:
     """Runtime convergence entry: normalized Finviz export row → EventV1 admit."""
 
+    from ..observability.latency_instrumentation_v1.clocks import capture_stage_stamp
+    from ..observability.latency_instrumentation_v1.context import resolve_latency_collector
+
     try:
         article = normalize_finviz_export_item(item, retrieved_time=retrieved_time)
     except ValueError as exc:
@@ -202,6 +231,8 @@ def admit_finviz_export_item_for_observation(
         if reason != "NEWS_IDENTITY_INPUTS_REQUIRED":
             reason = "NEWS_IDENTITY_INPUTS_REQUIRED"
         return NewsObservationalAdmitOutcome(accepted=False, reason_code=reason, detail=str(exc))
+    collector = resolve_latency_collector(store)
+    normalization_stamp = capture_stage_stamp() if collector is not None else None
     return admit_news_article_for_observation(
         article,
         router=router,
@@ -210,6 +241,7 @@ def admit_finviz_export_item_for_observation(
         pipeline_config=pipeline_config,
         source_label=source_label,
         ingestion_mode=ingestion_mode,
+        _normalization_stamp=normalization_stamp,
     )
 
 

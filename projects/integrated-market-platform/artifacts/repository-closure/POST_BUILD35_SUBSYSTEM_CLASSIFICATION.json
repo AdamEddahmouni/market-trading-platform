@@ -292,13 +292,15 @@
       "scope": [
         "src/market_platform_foundation/hot_path_telemetry",
         "src/market_platform_foundation/rt01",
-        "tools/rt01"
+        "tools/rt01",
+        "src/market_platform_foundation/observability"
       ],
       "responsibility": "End-to-end causal tracing and measured latency baselines for executable runtime paths. Observability only; does not grant authority or replace OF-01 history.",
       "evidence": [
         "tools/validation_manifest.json registers the rt01 offline suite against src/market_platform_foundation/rt01.",
         "tools/validation_manifest.json registers hot_path_telemetry and hot_path_telemetry_artifact suites for fixture replay latency baselines.",
-        "docs/operations/rt-01, tests/rt01, and artifacts/imp-rebase/RT01 record the accepted RT-01 contract."
+        "docs/operations/rt-01, tests/rt01, and artifacts/imp-rebase/RT01 record the accepted RT-01 contract.",
+        "src/market_platform_foundation/observability/latency_instrumentation_v1 is the news-to-opportunity software-processing latency sidecar (FIXTURE/SOFTWARE_CONTROLLED)."
       ],
       "disposition": "KEEP"
     },
@@ -674,10 +676,12 @@
     {
       "id": "nested-stock-data-dashboard",
       "classification": "DUPLICATE",
-      "scope": ["pipelines/stock_data/src/operator_console"],
-      "responsibility": "Pipeline-local Rich CLI console (renamed from src/ui). Not a competing web workstation — consolidation complete.",
+      "scope": [
+        "pipelines/stock_data/src/operator_console"
+      ],
+      "responsibility": "Pipeline-local Rich CLI console (renamed from src/ui). Not a competing web workstation \u2014 consolidation complete.",
       "evidence": [
-        "Renamed pipelines/stock_data/src/ui → operator_console (2026-09-01) to eliminate false duplicate-UI classification.",
+        "Renamed pipelines/stock_data/src/ui \u2192 operator_console (2026-09-01) to eliminate false duplicate-UI classification.",
         "pipelines/stock_data/src/operator_console/README.md documents CLI-only scope vs canonical ui/ workstation.",
         "pipelines/stock_data/tests/test_monorepo_boundary.py prohibits coupling collector into platform core."
       ],
