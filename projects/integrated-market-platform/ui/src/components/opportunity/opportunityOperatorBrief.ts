@@ -616,6 +616,61 @@ export function buildOpportunityQueueScan(
   ];
 }
 
+/**
+ * Opportunity-first queue L1: curated subset of the full queue scan so the
+ * table stays scannable. Full 9-field honesty remains in the detail brief
+ * (`buildOpportunityOperatorBrief`) and in `buildOpportunityQueueScan` for
+ * tests / progressive disclosure. Never invents fields — answers come from
+ * the same backend-derived scan builders.
+ */
+export type OpportunityQueuePrimary = {
+  whyNow: OperatorBriefRow;
+  freshness: OperatorBriefRow;
+  evidence: OperatorBriefRow;
+  providers: OperatorBriefRow;
+  conflict: OperatorBriefRow;
+  refusal: OperatorBriefRow;
+  rankingBasis: string;
+  hasContradiction: boolean;
+};
+
+export function buildOpportunityQueuePrimary(
+  row: OpportunityReviewRow,
+  evidence?: OpportunityEvidenceResponse | null,
+  options: OpportunityQueueScanOptions = {},
+): OpportunityQueuePrimary {
+  const scan = buildOpportunityQueueScan(row, evidence, options);
+  const byQuestion = Object.fromEntries(scan.map((item) => [item.question, item]));
+  const conflicts = collectOpportunityConflicts(row, evidence);
+  const rankingBasis = row.ranking_vector?.basis
+    ? humanizeEnum(String(row.ranking_vector.basis))
+    : "UNKNOWN — ranking basis unavailable";
+  const refusal = byQuestion["Why might action be refused?"] ?? queueRefusalLine(row, options);
+  const compactRefusalParts: string[] = [];
+  if (options.readOnly) compactRefusalParts.push("Read-only mode");
+  if (!options.paperActions) compactRefusalParts.push("Paper acks unavailable");
+  if (eligibilityBlocksAction(row)) {
+    compactRefusalParts.push(
+      `Blocked (${row.eligibility_state ?? "UNAVAILABLE"} / ${row.next_safe_action ?? "UNAVAILABLE"})`,
+    );
+  }
+  compactRefusalParts.push("Never grants live execution");
+  return {
+    whyNow: byQuestion["Inference vs observation?"] ?? queueInferredLine(row, evidence),
+    freshness: byQuestion["How fresh?"]!,
+    evidence: byQuestion["Where is the evidence?"] ?? buildOpportunityEvidenceNavigation(row, evidence),
+    providers: byQuestion["Which providers support it?"]!,
+    conflict: byQuestion["Which facts conflict?"]!,
+    refusal: {
+      ...refusal,
+      // Queue L1 shows a compact refusal; full answer stays on the detail brief.
+      answer: compactRefusalParts.join(" · "),
+    },
+    rankingBasis,
+    hasContradiction: conflicts.length > 0,
+  };
+}
+
 export type OperatorBriefFeedContext = {
   as_of_time?: string;
   as_of_provenance?: string;
