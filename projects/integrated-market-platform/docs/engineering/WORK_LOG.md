@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Provider linkage quality warnings (no ticker rewrite)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Added heuristic provider-symbol linkage quality assessment that preserves `PROVIDER_SYMBOL` tickers and records operator-visible `quality_flags` + linkage `confidence` when headline/text does not corroborate, URL is missing, alternate entity spans appear, or multiple linkages conflict. Suspicion is not treated as deterministic falsehood; events are not dropped. |
+| **Key files** | `news/provider_linkage_quality.py` (new); `news/normalize.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (6 linkage + 1 finviz normalize) → **7 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **PASSED**: 2271 tests, 27 skipped, 0 failures, 0 errors. |
+| **Related** | Segment B base `8e92bb37`; motivation: provider-tagged NVDA on unrelated headline must stay preserved with warning |
+| **Notes** | Worktree `.worktrees/provider-linkage-quality` on `feat/provider-linkage-quality`. No push/PR. Campaign / Segment B / `.local/rth-campaign-*` untouched. Independent exact-SHA review still required. |
+
 ## 2026-09-22 — Observation window requires explicit current-segment arg
 
 | Field | Value |
