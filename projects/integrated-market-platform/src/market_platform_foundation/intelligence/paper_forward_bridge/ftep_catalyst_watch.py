@@ -101,13 +101,16 @@ def load_governed_session_observation_window_start_ns(
     repository_root: Path,
     campaign_slug: str,
 ) -> int | None:
-    """Earliest governed-session-start ``recorded_at_ns`` (campaign arm/observation start).
+    """Current observation-segment start: latest governed-session-start ``recorded_at_ns``.
 
-    Read-only. Missing or malformed evidence → ``None`` (ingest stays historical).
-    Does not invent RTH open (09:30) or any other clock default.
+    Append-only history may contain older arms; only the newest record with a
+    non-empty ``sessions_created`` is this segment's window. Missing or
+    malformed evidence → ``None`` (ingest stays historical). Does not invent
+    RTH open (09:30), and does not fall back to an older campaign's
+    ``recorded_at_ns`` when no current segment start exists.
     """
 
-    earliest: int | None = None
+    latest: int | None = None
     for root in _evidence_search_roots(repository_root):
         path = governed_session_start_evidence_path(root, campaign_slug)
         if not path.is_file():
@@ -138,9 +141,9 @@ def load_governed_session_observation_window_start_ns(
                 continue
             if value < 0:
                 continue
-            if earliest is None or value < earliest:
-                earliest = value
-    return earliest
+            if latest is None or value > latest:
+                latest = value
+    return latest
 
 
 def campaign_attention_fixture_path(repository_root: Path, campaign_slug: str) -> Path:

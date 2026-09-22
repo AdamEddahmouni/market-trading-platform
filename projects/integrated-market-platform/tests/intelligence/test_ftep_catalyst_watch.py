@@ -16,8 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 from market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch import (  # noqa: E402
     collect_ftep_catalyst_watch,
     load_governed_session_ids_from_evidence,
+    load_governed_session_observation_window_start_ns,
 )
 from market_platform_foundation.local_state.paths import REPO_ROOT
+
+# SOFTWARE_CONTROLLED clocks — not market evidence.
+_OLD_SEGMENT_NS = 1_700_000_000_000_000_000
+_CURRENT_SEGMENT_NS = 1_750_000_000_000_000_000
 
 
 class FtepCatalystWatchTests(unittest.TestCase):
@@ -129,6 +134,116 @@ class FtepCatalystWatchTests(unittest.TestCase):
         self.assertEqual(ids, ["fts-WORKTREE"])
         self.assertIsNotNone(path)
         self.assertIn("wt", str(path).replace("\\", "/"))
+
+    def test_observation_window_uses_current_segment_not_earliest_history(self) -> None:
+        """Multi-line + dual-root evidence must not select an older arm as the live window."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            worktree = tmp_path / "wt" / "projects" / "integrated-market-platform"
+            primary = tmp_path / "main" / "projects" / "integrated-market-platform"
+            worktree.mkdir(parents=True)
+            primary.mkdir(parents=True)
+            (primary / "phase0-dependency-lock.json").write_text("{}", encoding="utf-8")
+
+            primary_evid = primary / "artifacts" / "ftep-v1-002"
+            primary_evid.mkdir(parents=True)
+            (primary_evid / "governed-session-start-evidence.jsonl").write_text(
+                json.dumps(
+                    {
+                        "artifact_kind": "ftep_governed_session_start_evidence",
+                        "recorded_at_ns": _OLD_SEGMENT_NS,
+                        "sessions_created": [{"session_id": "fts-OLD-PRIMARY"}],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            worktree_evid = worktree / "artifacts" / "ftep-v1-002"
+            worktree_evid.mkdir(parents=True)
+            (worktree_evid / "governed-session-start-evidence.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "recorded_at_ns": _OLD_SEGMENT_NS + 1,
+                                "sessions_created": [{"session_id": "fts-OLD-WT"}],
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "recorded_at_ns": _CURRENT_SEGMENT_NS,
+                                "sessions_created": [{"session_id": "fts-CURRENT"}],
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+
+            with patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.main_working_tree",
+                return_value=tmp_path / "main",
+            ):
+                window_ns = load_governed_session_observation_window_start_ns(
+                    worktree,
+                    "FTEP-V1-002",
+                )
+
+        self.assertEqual(window_ns, _CURRENT_SEGMENT_NS)
+        self.assertNotEqual(window_ns, _OLD_SEGMENT_NS)
+        self.assertNotEqual(window_ns, _OLD_SEGMENT_NS + 1)
+
+    def test_observation_window_fail_closed_without_current_segment_start(self) -> None:
+        """No successful current-segment start → None (ingest stays historical)."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            root = tmp_path / "projects" / "integrated-market-platform"
+            root.mkdir(parents=True)
+            evid_dir = root / "artifacts" / "ftep-v1-002"
+            evid_dir.mkdir(parents=True)
+            (evid_dir / "governed-session-start-evidence.jsonl").write_text(
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "recorded_at_ns": _OLD_SEGMENT_NS,
+                                "sessions_created": [],
+                            }
+                        ),
+                        "{not-json",
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "sessions_created": [{"session_id": "fts-missing-clock"}],
+                            }
+                        ),
+                    ]
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.operator_primary_imp_root_for_evidence",
+                return_value=None,
+            ):
+                window_ns = load_governed_session_observation_window_start_ns(
+                    root,
+                    "FTEP-V1-002",
+                )
+                missing = load_governed_session_observation_window_start_ns(
+                    tmp_path / "absent-root",
+                    "FTEP-V1-002",
+                )
+
+        self.assertIsNone(window_ns)
+        self.assertIsNone(missing)
 
 
 if __name__ == "__main__":
