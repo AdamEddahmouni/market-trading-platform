@@ -36,13 +36,25 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Integration merge: liveness hardening onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/liveness-hardening-20260922 (2a0ea41f) onto integrate/post-close-20260922 tip 23778cea. WORK_LOG conflict only: kept both sides append-only (prior durability/Finviz entries + liveness hardening entry). No code/test conflicts. Code auto-merged: service_liveness.py + test_runtime_service_liveness.py. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_runtime_service_liveness.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 23778cea, 2a0ea41f |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land OpenD single-probe be474479. |
+
 ## 2026-09-22 — Integration merge: process-restart durability onto post-close tip
 
 | Field | Value |
 |-------|-------|
 | **Status** | complete |
 | **Area** | integration / docs |
-| **Summary** | Merged reviewed eat/process-restart-durability-e2e (444f401b) onto integrate/post-close-20260922 tip 8e92bb37. WORK_LOG conflict only: kept both sides append-only (durability entry + Finviz/observation-window entries). No code/test conflicts. Evidence class remains SOFTWARE_CONTROLLED_EVIDENCE (second OS process durability), not market proof. |
+| **Summary** | Merged reviewed feat/process-restart-durability-e2e (444f401b) onto integrate/post-close-20260922 tip 8e92bb37. WORK_LOG conflict only: kept both sides append-only (durability entry + Finviz/observation-window entries). No code/test conflicts. Evidence class remains SOFTWARE_CONTROLLED_EVIDENCE (second OS process durability), not market proof. |
 | **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
 | **Tests** | Focused acceptance to be run after merge commit |
 | **Related** | Ancestors 8e92bb37, 444f401b |
@@ -107,6 +119,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Focused mode-stamp selectors: **12 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **2986** passed, **38** skipped, 0 fail/err. |
 | **Related** | Campaign audit STAMP_CORRECT_HISTORICAL for META pre-arm item; base SHA `24a59220` |
 | **Notes** | Isolated worktree `.worktrees/finviz-ingest-mode-20260922` on `fix/finviz-ingest-mode-stamp`. Did **not** push/PR/deploy. Did **not** touch campaign sqlite, ports 8766/5173/11111, or sibling worktrees. `news_event_build09` remains INACTIVE. |
+
+## 2026-09-22 — Harden observational liveness classifier (PR #379 nits)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Hardened `classify_observational_market_data_liveness` for non-blocking PR #379 nits: zero-subscription idle stays `NOT_APPLICABLE` even if `receiving=True`; subscribed cycles fail closed to `UNAVAILABLE`/`FRESHNESS_UNAVAILABLE` when freshness is missing; entitled=False → `UNREADY`/`NOT_ENTITLED`; market-data `process_id` documented as diagnostic-only (platform `identity_owned` still gates). Duplicate OpenD probe left deferred (call sites outside ownership). |
+| **Key files** | `platform/operator_diagnostics/service_liveness.py`; `tests/platform/test_runtime_service_liveness.py` |
+| **Tests** | `python tools/imp.py test focused` (17 selectors) — **17 passed**; `python tools/imp.py validate changed --paths-file` — **1852 passed**, 5 skipped, 0 fail/err |
+| **Related** | PR #379 `ba8de6df` APPROVE_WITH_NITS |
+| **Notes** | Did not edit live_runtime / live_projections / campaign runtime. Frozen RTH campaign worktree untouched. |
 
 ## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
 
