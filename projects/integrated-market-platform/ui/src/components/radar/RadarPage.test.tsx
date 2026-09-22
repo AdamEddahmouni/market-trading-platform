@@ -12,6 +12,17 @@ const summaryMock = vi.hoisted(() => ({
     next_action: undefined as string | undefined,
     withheld_ranked_count: undefined as number | undefined,
     book_honesty: undefined as string | undefined,
+    as_of_context: undefined as
+      | {
+          mode: string;
+          data_mode?: string;
+          as_of_time: string;
+          timezone: string;
+          data_provider?: string;
+          as_of_provenance?: string;
+        }
+      | undefined,
+    quality_summary: undefined as { state: string } | undefined,
   },
   isLoading: false,
   isError: false,
@@ -335,33 +346,82 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
 
-  it("renders ranked rows with a provenance scan instead of a next-action CTA", () => {
+  it("renders ranked rows with an opportunity-first L1 scan instead of a next-action CTA", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);
     const queue = screen.getByTestId("imp-radar-queue");
     const scan = within(queue).getByTestId("imp-radar-queue-scan");
+    expect(screen.getByTestId("imp-radar-feed-truth")).toBeInTheDocument();
     expect(queue).toHaveTextContent("2/3 inputs");
     expect(queue).toHaveTextContent("Detected");
-    expect(scan).toHaveTextContent("What happened?");
+    expect(queue).toHaveTextContent("Ranked on Comparator lexicographic");
     expect(scan).toHaveTextContent("Inference vs observation?");
-    expect(scan).toHaveTextContent("How fresh?");
-    expect(scan).toHaveTextContent("Where is the evidence?");
-    expect(scan).toHaveTextContent("Which providers support it?");
-    expect(scan).toHaveTextContent("Which facts conflict?");
-    expect(scan).toHaveTextContent("What is unknown?");
-    expect(scan).toHaveTextContent("What would invalidate it?");
-    expect(scan).toHaveTextContent("Why might action be refused?");
     expect(scan).toHaveTextContent("BIYA momentum ignition watch");
     expect(scan).toHaveTextContent("not a provider observation");
-    expect(scan).toHaveTextContent("unit-test");
-    expect(scan).toHaveTextContent("ranking.liquidity MISSING");
-    expect(scan).toHaveTextContent("research gate");
-    expect(scan).toHaveTextContent("never grants live execution");
+    expect(queue).toHaveTextContent("unit-test");
+    expect(queue).toHaveTextContent(/Never grants live execution/i);
+    // Missing conflict fields stay UNKNOWN — never a verified empty set.
+    expect(queue).toHaveTextContent(/UNKNOWN — no conflict or supersession fields attached/i);
+    expect(queue).not.toHaveTextContent(/No attached conflicts/i);
+    const conflictBlock = Array.from(queue.querySelectorAll("[data-honesty]")).find((el) =>
+      /no conflict or supersession fields attached/i.test(el.textContent ?? ""),
+    );
+    expect(conflictBlock).toBeDefined();
+    expect(conflictBlock).toHaveAttribute("data-honesty", "UNKNOWN");
+    expect(
+      within(conflictBlock as HTMLElement).getByText("UNKNOWN", {
+        selector: ".imp-radar-brief-honesty",
+      }),
+    ).toBeInTheDocument();
     expect(scan).not.toHaveTextContent("What action is available?");
     expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Watch BIYA" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Dismiss BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Explain BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Inspect BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open workspace for BIYA" })).toBeInTheDocument();
+    const brief = within(screen.getByTestId("imp-radar-detail-card")).getByTestId(
+      "imp-radar-operator-brief",
+    );
+    expect(brief).toHaveTextContent("Why might action be refused?");
+    expect(brief).toHaveTextContent("never grants live execution");
+    expect(brief).toHaveTextContent("What is unknown?");
+    expect(brief).toHaveTextContent("ranking.liquidity MISSING");
+  });
+
+  it("posts watch/dismiss from the queue through the existing ack API", () => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(screen.getByRole("button", { name: "Watch BIYA" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss BIYA" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+  });
+
+  it("moves selection with keyboard and watches via w when paper-gated", async () => {
+    const second: OpportunityReviewRow = {
+      ...rankedRow,
+      summary_id: "sum-2",
+      opportunity_id: "opp-2",
+      instrument_id: "GME",
+      headline: "GME squeeze continuation",
+      rank_order: 2,
+    };
+    summaryMock.data = {
+      items: [rankedRow, second],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const firstCard = await screen.findByTestId("imp-radar-detail-card");
+    expect(firstCard).toHaveTextContent("BIYA momentum ignition watch");
+    fireEvent.keyDown(window, { key: "j" });
+    await waitFor(() => {
+      expect(screen.getByTestId("imp-radar-detail-card")).toHaveTextContent("GME squeeze continuation");
+    });
+    fireEvent.keyDown(window, { key: "w" });
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-2", action: "watch" });
   });
 
   it("selects a row and shows the progressive detail card", async () => {
@@ -403,13 +463,14 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("PAPER", "opportunities", true);
     const card = screen.getByTestId("imp-radar-detail-card");
     expect(card).toHaveTextContent("paper-acct-1");
-    fireEvent.click(screen.getByRole("button", { name: "Watch" }));
+    fireEvent.click(within(card).getByRole("button", { name: "Watch" }));
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
   });
 
   it("hides acks without paper authority and says so", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", false);
+    expect(screen.queryByRole("button", { name: "Watch BIYA" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
     expect(screen.getByText(/Paper actions unavailable in this mode/i)).toBeInTheDocument();
   });
@@ -438,11 +499,11 @@ describe("RadarPage opportunities tab", () => {
     renderRadar("LIVE", "opportunities", false);
     const queue = screen.getByTestId("imp-radar-queue");
     expect(queue).toHaveTextContent(/Expired/i);
-    const scan = within(queue).getByTestId("imp-radar-queue-scan");
-    expect(scan).toHaveTextContent(/STALE/i);
-    expect(scan).toHaveTextContent(/never grants live execution/i);
-    expect(scan).toHaveTextContent(/INELIGIBLE/i);
+    expect(queue).toHaveTextContent(/STALE/i);
+    expect(queue).toHaveTextContent(/never grants live execution/i);
+    expect(queue).toHaveTextContent(/INELIGIBLE/i);
     expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Watch BIYA" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
     const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
       "imp-radar-operator-brief",
@@ -467,7 +528,8 @@ describe("RadarPage opportunities tab", () => {
     const scan = within(screen.getByTestId("imp-radar-queue")).getByTestId("imp-radar-queue-scan");
     expect(scan).toHaveTextContent(/CONTRADICTED/);
     expect(scan).toHaveTextContent(/not a provider observation/i);
-    expect(scan).toHaveTextContent(/Which facts conflict/);
+    expect(screen.getByTestId("imp-radar-queue")).toHaveTextContent(/Conflict:/i);
+    expect(screen.getByTestId("imp-radar-queue")).toHaveTextContent(/CONTRADICTED/);
     const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
       "imp-radar-operator-brief",
     );
@@ -546,6 +608,69 @@ describe("RadarPage mobile detail sheet", () => {
     const sheet = await screen.findByRole("dialog");
     fireEvent.click(within(sheet).getByRole("button", { name: "Watch" }));
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+  });
+});
+
+describe("RadarPage feed truth strip", () => {
+  beforeEach(() => {
+    summaryMock.isLoading = false;
+    summaryMock.isError = false;
+    ackMutate.mockClear();
+    mediaState.narrow = false;
+  });
+
+  it("labels replay context as non-current", () => {
+    summaryMock.data = {
+      items: [rankedRow],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+      as_of_context: {
+        mode: "REPLAY",
+        data_mode: "FIXTURE_REPLAY",
+        as_of_time: "2026-08-24T15:00:00Z",
+        timezone: "America/New_York",
+        data_provider: "unit-fixture",
+        as_of_provenance: "fixture",
+      },
+    };
+    renderRadar("DEMO", "opportunities", false);
+    const strip = screen.getByTestId("imp-radar-feed-truth");
+    expect(strip).toHaveAttribute("data-non-current", "true");
+    expect(strip).toHaveTextContent(/Replay — not live market time/i);
+    expect(strip).toHaveTextContent(/must not be read as current/i);
+    expect(strip).not.toHaveTextContent(/Current observational feed/i);
+    // READY must not use the live tone under FIXTURE_REPLAY / non-current class.
+    const readyPill = within(strip)
+      .getAllByTestId("imp-ui-state-pill")
+      .find((pill) => /Ready/i.test(pill.textContent ?? ""));
+    expect(readyPill).toBeDefined();
+    expect(readyPill).not.toHaveAttribute("data-tone", "live");
+    expect(readyPill).toHaveAttribute("data-tone", "replay");
+  });
+
+  it("keeps READY as live tone only for current observational feeds", () => {
+    summaryMock.data = {
+      items: [rankedRow],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+      as_of_context: {
+        mode: "LIVE",
+        data_mode: "LIVE_OBSERVATIONAL",
+        as_of_time: "2026-08-24T15:00:00Z",
+        timezone: "America/New_York",
+        data_provider: "live-unit",
+        as_of_provenance: "live_receive",
+      },
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const strip = screen.getByTestId("imp-radar-feed-truth");
+    expect(strip).toHaveAttribute("data-non-current", "false");
+    const readyPill = within(strip)
+      .getAllByTestId("imp-ui-state-pill")
+      .find((pill) => /Ready/i.test(pill.textContent ?? ""));
+    expect(readyPill).toHaveAttribute("data-tone", "live");
   });
 });
 
