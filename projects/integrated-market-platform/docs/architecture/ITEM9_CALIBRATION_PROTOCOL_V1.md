@@ -265,3 +265,19 @@ Invariants for the readiness path:
 - Strategy IDs on historical Mode B bar receipts are `NOT_APPLICABLE`
 - `EVALUATION_ONLY` is a lifecycle role on an admissible row, not a second exclusion
 - Missing Paper lineage links stay `NOT_OBSERVED`; do not invent floors or promote `PATH_PROOF_ONLY`
+
+### Post-merge measured proof on `1cd63fe9` (2026-09-22)
+
+Read-only on merge [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) /
+`1cd63fe98411c339e80537af7d6170b4ebdf71b8` against the frozen collector receipt
+dir (receipts **not** mutated):
+
+- Counts: **432** admissible / **1** `PATH_PROOF_ONLY` / **87** eval / **3** RTH dates
+- `preflight_verdict=CALIBRATION_PREFLIGHT_READY`
+- Measured `readiness_state=ITEM9_CALIBRATION_READY_AWAITING_AUTHORIZATION` (software token; **not** independent certification)
+- `fitting_allowed=false`; `item9_calibration_run=FORBIDDEN`; `calibrated=false`
+- ABSENT-auth execute harness → `verdict=CALIBRATION_EXECUTION_REFUSED` /
+  `reason=AUTHORIZATION_REQUIRED_BEFORE_CORPUS_READ` / `corpus_read_attempted=false`
+
+Calibration was **not** executed. Fitting remains unauthorized. Paper is **not**
+validated. Full30 is **not** complete. Live is **not** authorized.

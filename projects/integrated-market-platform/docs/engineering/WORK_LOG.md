@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Item 9 post-merge proof + docs pin CURRENT_MAIN to 1cd63fe9 (#376)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / `program-status` / `paper/calibration` (read-only proof) |
+| **Summary** | After [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) merged at `1cd63fe98411c339e80537af7d6170b4ebdf71b8` (parents `39652e6b` / `b7ad6b40`), ran clean-main post-merge proof: `python tools/imp.py item9 calibration-preflight` → **`CALIBRATION_PREFLIGHT_READY`**, measured `readiness_state=ITEM9_CALIBRATION_READY_AWAITING_AUTHORIZATION`, **432**/1/`PATH_PROOF_ONLY`/**87** eval / **3** RTH dates, corpus fingerprint `e4d100fd…`, evaluation fingerprint `8f97b6ed…`, `fitting_allowed=false`, `ITEM9_CALIBRATION_RUN=FORBIDDEN`. ABSENT-auth execute → **`CALIBRATION_EXECUTION_REFUSED`** (no corpus read; methodology freeze hash unchanged). Focused Item 9 tests **32/32**. Docs-only tip pin: **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** → `1cd63fe9`. Measured readiness_state is **not** independent certification. Calibration **not** executed; Paper **not** validated; Full30 **not** complete; Live **not** authorized. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/architecture/ITEM9_CALIBRATION_PROTOCOL_V1.md` |
+| **Tests** | Proof worktree `.worktrees/item9-postmerge-main` @ `1cd63fe9`: preflight exit **0**; refusal harness exit **2** with `CALIBRATION_EXECUTION_REFUSED`; `python tools/imp.py test focused` Item 9 readiness/adversarial/lineage **32/32 passed** |
+| **Related** | [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376); prior readiness entry 2026-09-21 |
+| **Notes** | Did **not** merge this docs PR. Did **not** fit thresholds, start Paper, run Full30, or enable Live. Did **not** mutate frozen collector receipts. Pin is the #376 merge commit `1cd63fe9`, not this docs PR commit (avoid self-pin loop). |
+
 ## 2026-09-21 — Item 9 calibration readiness package (awaiting authorization)
 
 | Field | Value |
