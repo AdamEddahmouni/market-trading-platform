@@ -42,6 +42,44 @@ export const fixtureOpportunityEvidenceRefresh: OpportunityEvidenceResponse = {
   items: [{ kind: "forecast", id: "fc-replay-1" }],
 };
 
+/** Admitted opportunity evidence carrying decision provenance (schema 1.0.0). */
+export const fixtureOpportunityDecisionProvenanceEvidence: OpportunityEvidenceResponse = {
+  ...fixtureOpportunityEvidenceRefresh,
+  invalidation_criteria: ["TREND_BREAK", "SPREAD_TOO_WIDE"],
+  actionability_audit: {
+    status: "ACTIONABLE",
+    still_actionable_reasons: ["LIFECYCLE_ELIGIBLE", "FRESHNESS_FRESH"],
+    no_longer_actionable_reasons: [],
+    lineage_status: "PRESENT",
+  },
+  decision_provenance: {
+    schema_version: "opportunity/decision_provenance/1.0.0",
+    origin_kind: "STRATEGY_MATCH",
+    strategy_id: "momentum-5m",
+    strategy_family: "momentum",
+    thesis: {
+      statement: "Momentum continuation after unusual volume",
+      honesty: "DERIVED",
+      mechanism: "trend_continuation",
+      invalidation_criteria: ["SPREAD_TOO_WIDE", "TREND_BREAK"],
+    },
+    freshness_window: {
+      policy_name: "strategy_match_default",
+      status: "FRESH",
+      valid_until_ns: 1_700_000_300_000_000_000,
+      information_cutoff_ns: 1_700_000_000_000_000_000,
+    },
+    actionability: {
+      status: "ACTIONABLE",
+      still_actionable_reasons: ["LIFECYCLE_ELIGIBLE", "FRESHNESS_FRESH"],
+      no_longer_actionable_reasons: [],
+      lineage_status: "PRESENT",
+    },
+    ai_assisted_notes: ["Model paraphrase of volume spike — not authority"],
+    lineage_status: "PRESENT",
+  },
+};
+
 export const fixtureOpportunityEvidenceVerified: OpportunityEvidenceResponse = {
   ...fixtureOpportunityEvidenceRefresh,
   evidence_class: "VERIFIED",

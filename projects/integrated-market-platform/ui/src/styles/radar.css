@@ -244,6 +244,25 @@
   color: var(--text-muted);
 }
 
+.imp-radar-decision-provenance {
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-md);
+  background: var(--surface-2);
+}
+
+.imp-radar-ai-assisted-notes {
+  margin-top: var(--imp-space-3);
+  padding: var(--imp-space-3);
+  border-radius: var(--imp-radius-md);
+  border: 1px dashed var(--border-subtle);
+  background: var(--surface-1);
+}
+
+.imp-radar-ai-assisted-notes .imp-radar-subhead {
+  color: var(--text-secondary);
+}
+
 /* ---- Disclosures (L2/L3/L4) ---- */
 .imp-radar-disclosure {
   border: 1px solid var(--border-subtle);

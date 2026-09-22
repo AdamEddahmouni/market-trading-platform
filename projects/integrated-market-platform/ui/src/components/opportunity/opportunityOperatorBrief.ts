@@ -322,6 +322,24 @@ export function collectOpportunityInvalidationLines(
   evidence?: OpportunityEvidenceResponse | null,
 ): string[] {
   const lines: string[] = [];
+  const evidenceRecord = evidence as
+    | {
+        decision_provenance?: { thesis?: { invalidation_criteria?: unknown } };
+        invalidation_criteria?: unknown;
+      }
+    | null
+    | undefined;
+  const provenanceCriteria = evidenceRecord?.decision_provenance?.thesis?.invalidation_criteria;
+  const flatCriteria = evidenceRecord?.invalidation_criteria;
+  const criteriaSource = Array.isArray(provenanceCriteria)
+    ? provenanceCriteria
+    : Array.isArray(flatCriteria)
+      ? flatCriteria
+      : [];
+  for (const item of criteriaSource) {
+    const text = String(item ?? "").trim();
+    if (text) lines.push(`Decision provenance criterion: ${text}.`);
+  }
   if (eligibilityBlocksAction(row)) {
     lines.push(
       `Eligibility already refused action (${row.eligibility_state ?? "UNAVAILABLE"} / ${row.next_safe_action ?? "UNAVAILABLE"}).`,
