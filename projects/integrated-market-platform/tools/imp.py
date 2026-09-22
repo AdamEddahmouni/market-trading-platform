@@ -917,6 +917,22 @@ def build_parser() -> argparse.ArgumentParser:
     item9_preflight.add_argument("--receipt-dir", type=Path, default=None)
     item9_preflight.add_argument("--json", action="store_true")
     item9_preflight.add_argument("--now-ns", type=int, default=None)
+    item9_readiness = item9_actions.add_parser(
+        "readiness-snapshot",
+        help="read-only validation readiness snapshot (no fitting; no receipt writes)",
+    )
+    item9_readiness.add_argument("--receipt-dir", type=Path, default=None)
+    item9_readiness.add_argument("--repo-root", type=Path, default=None)
+    item9_readiness.add_argument("--prefer-local-default", action="store_true")
+    item9_readiness.add_argument("--output", type=Path, default=None)
+    item9_cal_preflight = item9_actions.add_parser(
+        "calibration-preflight",
+        help="read-only calibration preflight READY/BLOCKED (never fits; ABSENT auth ok)",
+    )
+    item9_cal_preflight.add_argument("--receipt-dir", type=Path, default=None)
+    item9_cal_preflight.add_argument("--repo-root", type=Path, default=None)
+    item9_cal_preflight.add_argument("--prefer-local-default", action="store_true")
+    item9_cal_preflight.add_argument("--output", type=Path, default=None)
 
     historical = groups.add_parser(
         "historical-data",
@@ -1034,21 +1050,45 @@ def _providers_command(root: Path, args: argparse.Namespace) -> int:
 def _item9_command(root: Path, args: argparse.Namespace) -> int:
     python = _validation_python(root)
     env = _python_environment(root)
-    if args.action != "next-rth-preflight":
+    if args.action == "next-rth-preflight":
+        command = [python, str(root / "tools" / "item9_next_rth_preflight.py")]
+        if args.instrument_id:
+            command.extend(["--instrument-id", str(args.instrument_id)])
+        if args.receipt_dir is not None:
+            command.extend(["--receipt-dir", str(args.receipt_dir)])
+        if args.json:
+            command.append("--json")
+        if args.now_ns is not None:
+            command.extend(["--now-ns", str(args.now_ns)])
+        label = "item9 next-rth-preflight"
+    elif args.action == "readiness-snapshot":
+        command = [python, str(root / "tools" / "item9_readiness_snapshot.py")]
+        if args.receipt_dir is not None:
+            command.extend(["--receipt-dir", str(args.receipt_dir)])
+        if getattr(args, "repo_root", None) is not None:
+            command.extend(["--repo-root", str(args.repo_root)])
+        if getattr(args, "prefer_local_default", False):
+            command.append("--prefer-local-default")
+        if getattr(args, "output", None) is not None:
+            command.extend(["--output", str(args.output)])
+        label = "item9 readiness-snapshot"
+    elif args.action == "calibration-preflight":
+        command = [python, str(root / "tools" / "item9_calibration_preflight.py")]
+        if args.receipt_dir is not None:
+            command.extend(["--receipt-dir", str(args.receipt_dir)])
+        if getattr(args, "repo_root", None) is not None:
+            command.extend(["--repo-root", str(args.repo_root)])
+        if getattr(args, "prefer_local_default", False):
+            command.append("--prefer-local-default")
+        if getattr(args, "output", None) is not None:
+            command.extend(["--output", str(args.output)])
+        label = "item9 calibration-preflight"
+    else:
         print(f"unknown item9 action: {args.action}", file=sys.stderr)
         return 2
-    command = [python, str(root / "tools" / "item9_next_rth_preflight.py")]
-    if args.instrument_id:
-        command.extend(["--instrument-id", str(args.instrument_id)])
-    if args.receipt_dir is not None:
-        command.extend(["--receipt-dir", str(args.receipt_dir)])
-    if args.json:
-        command.append("--json")
-    if args.now_ns is not None:
-        command.extend(["--now-ns", str(args.now_ns)])
     result = _run(
         root,
-        label="item9 next-rth-preflight",
+        label=label,
         command=command,
         env=env,
         stream_output=True,
