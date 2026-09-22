@@ -22,6 +22,7 @@ from .item9_validation_readiness_contract import (
     AUTHORIZATION_ABSENT,
     AUTHORIZATION_ARTIFACT_SCHEMA_ID,
     AUTHORIZATION_INVALID,
+    AUTHORIZATION_PACKET_SCHEMA_ID,
     AUTHORIZATION_PRESENT,
     BOUND_PROTOCOL_VERSION,
     CALIBRATED_DEFAULT,
@@ -144,7 +145,17 @@ def inspect_authorization_artifact(path: Path | None) -> dict[str, Any]:
         }
     schema = str(payload.get("schema_id") or payload.get("schema_version") or "")
     grant = str(payload.get("grant") or payload.get("authorization_grant") or "").upper()
-    if schema and AUTHORIZATION_ARTIFACT_SCHEMA_ID.split("/")[0] not in schema:
+    if schema == AUTHORIZATION_PACKET_SCHEMA_ID or str(
+        payload.get("packet_role") or ""
+    ).upper() == "NOT_AN_AUTHORIZATION_GRANT":
+        return {
+            "authorization_state": AUTHORIZATION_INVALID,
+            "path": str(path),
+            "valid": False,
+            "reason": "AUTHORIZATION_PACKET_IS_NOT_A_GRANT",
+            "observed_schema": schema or None,
+        }
+    if schema and schema != AUTHORIZATION_ARTIFACT_SCHEMA_ID:
         return {
             "authorization_state": AUTHORIZATION_INVALID,
             "path": str(path),

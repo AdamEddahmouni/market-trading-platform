@@ -1,0 +1,40 @@
+{
+  "schema_id": "item9.calibration-authorization-packet/1.0.0",
+  "packet_role": "NOT_AN_AUTHORIZATION_GRANT",
+  "does_not_authorize_calibration": true,
+  "does_not_authorize_fitting": true,
+  "does_not_authorize_paper_start": true,
+  "does_not_authorize_live": true,
+  "reader_warning": "This template records the shape of a readiness packet for a future human authorization decision. It is NOT a grant. It MUST NOT be passed as item9.calibration-authorization/1.0.0. Live filled packets stay under .local/ and must keep fitting_allowed=false.",
+  "bound_protocol_version": "item9.calibration-protocol/1.0.0",
+  "fitting_allowed": false,
+  "calibrated": false,
+  "item9_calibration_run": "FORBIDDEN",
+  "authorization_state": "ABSENT",
+  "grant": "DENIED_PACKET_IS_NOT_A_GRANT",
+  "related_schemas": {
+    "authorization_grant": "item9.calibration-authorization/1.0.0",
+    "calibration_artifact": "item9.calibration-artifact/1.0.0",
+    "methodology_freeze": "item9.calibration-methodology-freeze/1.0.0",
+    "readiness_snapshot": "item9.validation-readiness-snapshot/1.0.0",
+    "paper_acceptance": "item9.paper-validation-acceptance/1.0.0"
+  },
+  "required_live_fields": [
+    "git.current_main_sha",
+    "git.software_sha",
+    "fingerprints.corpus_fingerprint",
+    "fingerprints.evaluation_fingerprint",
+    "fingerprints.protocol_fingerprint",
+    "readiness.preflight_verdict",
+    "readiness.readiness_state",
+    "negative_path_proof",
+    "future_post_authorization_command"
+  ],
+  "not_observed_policy": "If the implementation does not already compute a fingerprint or version, record NOT_OBSERVED rather than hashing ad hoc.",
+  "live_packet_location_policy": "OPERATOR_LOCAL_ONLY — do not commit live fingerprints as authority",
+  "notes": [
+    "ABSENT authorization does not block CALIBRATION_PREFLIGHT_READY.",
+    "ABSENT authorization blocks corpus-read-for-write execute.",
+    "A packet is never an authorization grant."
+  ]
+}
