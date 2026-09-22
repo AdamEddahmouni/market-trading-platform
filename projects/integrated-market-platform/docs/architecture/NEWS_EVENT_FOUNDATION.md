@@ -64,6 +64,23 @@ These flags mean **uncorroborated / suspicious association evidence**. They do
 change LIVE_OBSERVED vs HISTORICAL_RECONSTRUCTED gates. Missing URL is a quality
 signal only. Empty/unassessable text keeps confidence `UNKNOWN`.
 
+Operator HTTP cards (`/opportunities/summary`, `/opportunities/{id}`) expose
+`provider_linkage_warnings: string[]` — **operator phrases**, not raw flag
+dumps. Translation is owned by
+`intelligence/opportunity/provider_linkage_warnings.py` (UI renders the field
+verbatim and must not invent a second map). Phrase map:
+
+| Flag | Operator phrase |
+| --- | --- |
+| `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT` | uncorroborated |
+| `PROVIDER_LINKAGE_LOW_CONTEXTUAL_CONFIDENCE` | low confidence |
+| `PROVIDER_LINKAGE_MULTIPLE_CONTRADICTORY` | source mismatch |
+| `PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT` | contextual concern |
+| `PROVIDER_LINKAGE_SOURCE_URL_MISSING` | source URL missing |
+
+Never emit or display "wrong ticker". Linkage warnings stay out of
+`data_quality` freshness.
+
 Company-name corroboration is derived from **headline/summary surface forms**
 (CamelCase compounds and Title Case words letter-aligned to the provider
 symbol). Ordinary English tokens are never treated as rival tickers.

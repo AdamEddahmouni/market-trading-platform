@@ -389,6 +389,43 @@ describe("RadarPage opportunities tab", () => {
     expect(brief).toHaveTextContent("ranking.liquidity MISSING");
   });
 
+  it("renders backend provider_linkage_warnings and invents nothing when empty", () => {
+    const warned: OpportunityReviewRow = {
+      ...rankedRow,
+      instrument_id: "NVDA",
+      headline: "MillerKnoll announces new lineup",
+      provider_linkage_warnings: ["uncorroborated", "contextual concern"],
+    };
+    summaryMock.data = {
+      items: [warned],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const detail = screen.getByTestId("imp-radar-detail-card");
+    expect(within(detail).getByTestId("imp-radar-provider-linkage-warnings")).toHaveTextContent(
+      "uncorroborated, contextual concern",
+    );
+    const brief = within(detail).getByTestId("imp-radar-operator-brief");
+    expect(brief).toHaveTextContent("Provider linkage?");
+    expect(brief).toHaveTextContent("uncorroborated, contextual concern");
+    expect(detail).not.toHaveTextContent(/wrong ticker/i);
+    expect(detail).toHaveTextContent("NVDA");
+  });
+
+  it("omits provider linkage UI when the backend array is empty", () => {
+    summaryMock.data = {
+      items: [rankedRow],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    expect(screen.queryByTestId("imp-radar-provider-linkage-warnings")).not.toBeInTheDocument();
+    expect(screen.getByTestId("imp-radar-operator-brief")).not.toHaveTextContent("Provider linkage?");
+  });
+
   it("posts watch/dismiss from the queue through the existing ack API", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);

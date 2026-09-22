@@ -40,6 +40,27 @@ function pushNamed(target: Set<string>, value: unknown): void {
   if (typeof value === "string" && value.trim()) target.add(value.trim());
 }
 
+/**
+ * Backend-owned operator phrases for provider-linkage suspicion.
+ * Pass through as supplied — do not remap flags or infer "wrong ticker".
+ */
+export function readProviderLinkageWarnings(
+  row: OpportunityReviewRow,
+): string[] {
+  const raw = (row as Record<string, unknown>).provider_linkage_warnings;
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of raw) {
+    if (typeof item !== "string") continue;
+    const phrase = item.trim();
+    if (!phrase || seen.has(phrase)) continue;
+    seen.add(phrase);
+    out.push(phrase);
+  }
+  return out;
+}
+
 function collectNamesFromUnknown(target: Set<string>, value: unknown): void {
   if (!isPresent(value)) return;
   if (typeof value === "string") {
@@ -53,6 +74,16 @@ function collectNamesFromUnknown(target: Set<string>, value: unknown): void {
   const rec = asRecord(value);
   if (!rec) return;
   pushNamed(target, rec.provider ?? rec.provider_id ?? rec.source ?? rec.name);
+}
+
+function providerLinkageWarningLine(row: OpportunityReviewRow): OperatorBriefRow | null {
+  const warnings = readProviderLinkageWarnings(row);
+  if (!warnings.length) return null;
+  return {
+    question: "Provider linkage?",
+    answer: warnings.join(", "),
+    honesty: "OBSERVED",
+  };
 }
 
 function asIntNs(value: unknown): number | null {
@@ -574,10 +605,12 @@ export function buildOpportunityQueueScan(
   const invalidation = collectOpportunityInvalidationLines(row, evidence);
   const freshness = readOpportunityFreshnessView(row, evidence);
   const eligibility = eligibilityEvaluationLine(row);
+  const linkage = providerLinkageWarningLine(row);
   return [
     queueHappenedLine(row),
     queueInferredLine(row, evidence),
     ...(eligibility ? [eligibility] : []),
+    ...(linkage ? [linkage] : []),
     {
       question: "How fresh?",
       answer: [
@@ -764,6 +797,7 @@ export function buildOpportunityOperatorBrief(
     happenedParts.push(humanizeEnum(String(row.lifecycle_state)));
   }
   const eligibility = eligibilityEvaluationLine(row);
+  const linkage = providerLinkageWarningLine(row);
 
   return [
     {
@@ -777,6 +811,7 @@ export function buildOpportunityOperatorBrief(
       honesty: whyHonesty,
     },
     ...(eligibility ? [eligibility] : []),
+    ...(linkage ? [linkage] : []),
     {
       question: "How fresh?",
       answer: [

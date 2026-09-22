@@ -48,6 +48,11 @@ export const OpportunityReviewRowSchema = z
       .nullable()
       .optional(),
     data_quality: OpportunityDataQualitySchema.nullable().optional(),
+    /**
+     * Backend-translated provider-linkage warning phrases from quality.flags.
+     * Render as supplied — do not map flags or infer ticker contradictions here.
+     */
+    provider_linkage_warnings: z.array(z.string()).optional(),
     decision_support: z
       .object({
         authority: z.string().optional(),
