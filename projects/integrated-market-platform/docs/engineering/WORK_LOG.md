@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / `program-status` |
+| **Summary** | Docs-only tip pin after `git fetch origin main`: **CURRENT_MAIN** / **CURRENT_SOFTWARE_IMPLEMENTATION** → `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` (merge [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380); ancestry [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379) `b6e8e2b9`). Historical pin `1cd63fe9` ([#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376)) retained as historical. Expanded the existing next-RTH preopen checklist; corrected serving-book memory-only and bound-port-is-health sentences. Item 9 remains **`PARTIAL_NOT_CALIBRATED`**, `calibrated=false`, floors UNSET/BLOCKING, fitting **FORBIDDEN**. Live remains **OFF**. `allows_network_submit` remains false. BUILD 09 / `OpportunityEngine.assess` remain unwired. Did not restate #379/#380 as new code. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/TUESDAY_RTH_OPERATOR_CHECKLIST.md`; `docs/engineering/RTH_EMPIRICAL_OPS_RUNBOOK.md`; `docs/architecture/DATA_CONTRACTS.md`; `docs/engineering/INTELLIGENCE_PERSISTENCE_ARCHITECTURE_V1.md`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/DEVELOPER_RUNBOOK.md`; `docs/platform/MASTER_ARCHITECTURE.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Docs-only. `python projects/integrated-market-platform/tools/check_docs_links.py` → **OK: checked links in 254 governance markdown files**. No product `src/` or `tests/` changes; `validate changed` **not** run. |
+| **Related** | [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379); [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380); prior pin [#377](https://github.com/AdamEddahmouni/market-trading-platform/pull/377) / tip `1cd63fe9` |
+| **Notes** | Isolated worktree `.worktrees/pin-main-5b74876d` on `docs/pin-main-and-rth-checklist`. Pin **CURRENT_MAIN** to the #380 merge commit `5b74876d`, not this docs PR commit. Did **not** merge this PR. Did **not** edit Item 9 protocol, numeric floors, src/, tests/, or Notion. |
+
 ## 2026-09-22 — Canonical opportunity loop durable readback (software-controlled)
 
 | Field | Value |

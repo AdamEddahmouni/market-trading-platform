@@ -103,11 +103,14 @@ After env changes on Windows: `powershell -File tools/ui1/restart_ui_api.ps1`.
 | IBKR TWS socket | `127.0.0.1:4001` | Observational transport; not execution authority |
 | IBKR Client Portal | `https://127.0.0.1:5000/v1/api` | Second transport; not TWS |
 
-Read-only API probes (no orders). `/diagnostics/provider` is the UI page on `:5173`, not `:8766`.
+Read-only API probes (no orders). `/diagnostics/provider` is the UI page on `:5173`, not `:8766`. A bound port or HTTP 200 is **not** HEALTHY ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)); inspect `service_liveness` / `readiness_vs_liveness`.
 
 ```bash
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/provider/health
+curl -s http://127.0.0.1:8766/provider/health
 curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/context
+curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8766/operator/diagnostics
+curl -s -o /dev/null -w '%{http_code}\n' "http://127.0.0.1:8766/opportunities/summary"
 ```
 
 ### Primary UI surfaces (shipped)
@@ -138,7 +141,7 @@ Source: `ui/src/components/NavShell.tsx` and `ui/src/App.tsx`. Patterns: [FRONTE
 | `.local/platform-control.log` | Launcher supervisor |
 | `.local/platform-launcher.json` | Lifecycle state (gitignored) |
 
-Forward-test **durable** state (when enabled): local SQLite under `IMP_STATE_DIR` / `local_state` (schema v6). See [CONFIGURATION.md](CONFIGURATION.md) (`IMP_PERSIST_STATE`, `IMP_STATE_DIR`) and [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md). With persistence **off**, forward-test bridge repositories are process-local (`INTENTIONAL_EPHEMERAL`) — that is a runtime mode, not “SQLite unimplemented.” Intelligence unit tests default to `InMemoryIntelligenceRepository`; Mongo remains optional (`IMP_TEST_MONGODB_URI`).
+Forward-test **durable** state (when enabled): local SQLite under `IMP_STATE_DIR` / `local_state` (**schema v9**; PD-09 forward-test tables from v6 remain on the same store and do not reopen PD-09). Serving EventV1 / OpportunityV1 ranked book uses the same database when persist is on ([#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)). See [CONFIGURATION.md](CONFIGURATION.md) (`IMP_PERSIST_STATE`, `IMP_STATE_DIR`) and [PAPER_FORWARD_TESTING_BRIDGE.md](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md). With persistence **off**, repositories are process-local (`INTENTIONAL_EPHEMERAL`) — that is a runtime mode, not “SQLite unimplemented.” Intelligence unit tests default to `InMemoryIntelligenceRepository`; Mongo remains optional (`IMP_TEST_MONGODB_URI`) and is **not** the serving composition.
 
 ---
 

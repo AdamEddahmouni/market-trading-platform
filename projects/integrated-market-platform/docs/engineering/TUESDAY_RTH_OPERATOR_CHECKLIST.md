@@ -1,4 +1,8 @@
-# Tuesday RTH operator checklist — 2026-09-15 (US equity 09:30–16:00 ET)
+# Tuesday RTH operator checklist — 2026-09-15 (historical)
+
+**Status:** Historical 2026-09-15 one-pager. **Not** the next lawful preopen.
+
+**Next lawful RTH preopen (current `main`):** [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md#next-lawful-rth-preopen-checklist). Canonical SHA: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) **CURRENT_MAIN** `5b74876d` until a later pin.
 
 **Evidence class:** SOFTWARE only. No Paper/Live orders. No empirical locks.  
 **Canonical CLI contracts:** verified against argparse on `origin/main` (Lane A Phase 5.5B).

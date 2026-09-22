@@ -43,10 +43,13 @@ records to MongoDB asynchronously or after processing.
 Mongo is **not** the serving IntelligenceRepository for the UI API opportunity
 loop. When `IMP_PERSIST_STATE=1` or `IMP_STATE_DIR` is set, EventV1 and
 OpportunityV1 used by `GET /opportunities/summary` persist on the same
-local_state SQLite database as operator acks, trade reviews, and execution
+local_state SQLite database (**schema v9**, tables `intelligence_events` /
+`intelligence_opportunities`) as operator acks, trade reviews, and execution
 decision traces (`LocalStateIntelligenceRepository`). Persist-off remains
 process-local `INTENTIONAL_EPHEMERAL` memory. This is not a second Opportunity
 schema and not a Mongo replacement for BUILD 04.5 operational collections.
+BUILD 09 EventDetectorEngine (`NEWS_EVENT` `INACTIVE_INPUT_UNAVAILABLE`) and
+`OpportunityEngine.assess` are not on this serving hop.
 
 ## Storage tiers
 
