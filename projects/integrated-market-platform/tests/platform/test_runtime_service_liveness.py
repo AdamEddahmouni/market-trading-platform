@@ -286,6 +286,73 @@ class RuntimeServiceLivenessTests(unittest.TestCase):
         self.assertEqual(view["expected_cycle"], "NOT_APPLICABLE")
         self.assertFalse(view["healthy"])
 
+    def test_provider_health_reuses_single_opend_liveness_observation(self) -> None:
+        """build_provider_health must not re-probe OpenD after health_payload.
+
+        health_payload already embeds service_liveness from one
+        observational_liveness_view() call. Re-invoking the view in the UI
+        projection would double TCP probe without sharing an observation and
+        without a TTL cache — forbidden for this surface.
+        """
+        from unittest.mock import MagicMock, patch
+
+        from market_platform_foundation.ui_api.live_projections import build_provider_health_payload
+
+        view_calls: list[str] = []
+
+        def observational_liveness_view() -> dict:
+            view_calls.append("view")
+            return {
+                "status": "NOT_APPLICABLE",
+                "healthy": False,
+                "reason": "NO_ACTIVE_SUBSCRIPTION_CYCLE",
+                "marker": "single_observation",
+            }
+
+        def health_payload() -> dict:
+            return {
+                "lifecycle": {
+                    "connection_state": "CONNECTED",
+                    "sdk_version": None,
+                    "opend_version": None,
+                    "provider_generation_id": None,
+                    "execution_use": "DISPLAY_ONLY",
+                    "reconnect_count": 0,
+                },
+                "service_liveness": observational_liveness_view(),
+            }
+
+        runtime = MagicMock()
+        runtime.health_payload = health_payload
+        runtime.observational_liveness_view = observational_liveness_view
+        runtime.capability_registry = MagicMock(dimensions=MagicMock(entitled=True))
+        runtime.state = MagicMock(
+            quote_for=lambda _: None,
+            trades_for=lambda _: [],
+            book_for=lambda _: None,
+        )
+        runtime.feed_metrics = {}
+
+        with patch.dict(
+            "os.environ",
+            {"IMP_LIVE_OBSERVATIONAL": "1", "IMP_MOOMOO_LIVE": "1"},
+        ), patch(
+            "market_platform_foundation.ui_api.live_projections._runtime_or_none",
+            return_value=runtime,
+        ), patch(
+            "market_platform_foundation.ui_api.discovery_projections.build_finviz_diagnostics_payload",
+            return_value={"available": False},
+        ), patch(
+            "market_platform_foundation.ui_api.paper_projections._live_focus_instrument_id",
+            return_value=None,
+        ):
+            store = MagicMock(data_mode="LIVE_OBSERVATIONAL", instrument_id="AAPL")
+            payload = build_provider_health_payload(store)
+
+        self.assertEqual(view_calls, ["view"])
+        self.assertEqual(payload["service_liveness"]["marker"], "single_observation")
+        self.assertEqual(payload["service_liveness"]["status"], "NOT_APPLICABLE")
+
     def test_compose_readiness_vs_liveness_restart_stable(self) -> None:
         resilience = {
             "readiness_vs_liveness": {

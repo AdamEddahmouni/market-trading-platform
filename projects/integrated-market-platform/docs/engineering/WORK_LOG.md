@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Integration merge: OpenD single-probe onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/opend-single-probe (be474479) onto integrate/post-close-20260922 tip 55a306e4. WORK_LOG conflict only: kept both sides append-only (prior integration/durability/Finviz entries + OpenD single-probe entry). No code/test conflicts. Code auto-merged: live_projections.py + test_runtime_service_liveness.py; OPERATOR_DIAGNOSTICS_MODEL.md auto-merged. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_runtime_service_liveness.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 23778cea, 2a0ea41f, 55a306e4, be474479 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Liveness 2a0ea41f already on tip; OpenD delta reuses one service_liveness observation (no cache, no TTL). Did not land diagnostics eb2c3b72. |
+
 ## 2026-09-22 — Integration merge: liveness hardening onto post-close tip
 
 | Field | Value |
@@ -59,6 +71,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Focused acceptance to be run after merge commit |
 | **Related** | Ancestors 8e92bb37, 444f401b |
 | **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. |
+
+## 2026-09-22 — Single OpenD probe for provider-health liveness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api` / `platform/operator_diagnostics` |
+| **Summary** | Removed the duplicate OpenD reachability probe left as a nit on liveness hardening: `build_provider_health_payload` now reuses the authoritative `service_liveness` observation already embedded by `LiveObservationalRuntime.health_payload()`. No TTL cache; staleness tokens unchanged. |
+| **Key files** | `ui_api/live_projections.py`; `tests/platform/test_runtime_service_liveness.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (18 selectors incl. single-observation regression + healthy/provider-down/stale/port-bound/idle/unknown-freshness) — **18 passed**; `python tools/imp.py validate changed` — **1736 passed**, 15 skipped, 0 fail/err |
+| **Related** | Parent `fix/liveness-hardening-20260922` @ `2a0ea41f` (APPROVE_WITH_NITS); PR #379 |
+| **Notes** | Isolated worktree `.worktrees/opend-single-probe` on `fix/opend-single-probe` from `2a0ea41f`. Did not push/merge. Did not touch Segment B runtime, `.local/rth-campaign-*`, or Live submit authority. New exact-SHA review required. |
 
 ## 2026-09-22 — Process-restart durability acceptance (real OS bounce)
 
