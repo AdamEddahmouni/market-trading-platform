@@ -74,9 +74,10 @@ export function resolveFeedTruthClass(feed?: OperatorBriefFeedContext | null): T
   };
 }
 
-function feedStatusTone(status?: string): SemanticTone {
+function feedStatusTone(status?: string, nonCurrent = false): SemanticTone {
   const upper = String(status ?? "").toUpperCase();
-  if (upper === "READY") return "live";
+  // READY is not "live" when the feed class is replay/simulation/unavailable.
+  if (upper === "READY") return nonCurrent ? "replay" : "live";
   if (upper === "UNREADY" || upper === "DEGRADED") return "caution";
   if (upper === "UNAVAILABLE" || upper === "ERROR") return "critical";
   if (upper === "EMPTY") return "neutral";
@@ -107,7 +108,7 @@ export function RadarFeedTruthStrip({
     >
       <div className="imp-radar-feed-truth-pills">
         <StatePill
-          tone={feedStatusTone(feedStatus)}
+          tone={feedStatusTone(feedStatus, truth.nonCurrent)}
           label={statusLabel}
           raw={feedStatus ?? "UNKNOWN"}
           size="sm"

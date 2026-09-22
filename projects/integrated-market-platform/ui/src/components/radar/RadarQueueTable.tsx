@@ -174,9 +174,17 @@ export function RadarQueueTable({
                   {primary.hasContradiction ? (
                     <p className="imp-radar-queue-conflict" data-honesty={primary.conflict.honesty}>
                       Conflict: {truncate(primary.conflict.answer, 80)}
+                      <span className="imp-radar-brief-honesty">{primary.conflict.honesty}</span>
                     </p>
                   ) : (
-                    <p className="imp-radar-muted">No attached conflicts</p>
+                    <p
+                      className="imp-radar-muted"
+                      data-honesty={primary.conflict.honesty}
+                      title={primary.conflict.answer}
+                    >
+                      {truncate(primary.conflict.answer, 96)}
+                      <span className="imp-radar-brief-honesty">{primary.conflict.honesty}</span>
+                    </p>
                   )}
                 </td>
                 <td className="imp-radar-queue-blockers">

@@ -360,6 +360,19 @@ describe("RadarPage opportunities tab", () => {
     expect(scan).toHaveTextContent("not a provider observation");
     expect(queue).toHaveTextContent("unit-test");
     expect(queue).toHaveTextContent(/Never grants live execution/i);
+    // Missing conflict fields stay UNKNOWN — never a verified empty set.
+    expect(queue).toHaveTextContent(/UNKNOWN — no conflict or supersession fields attached/i);
+    expect(queue).not.toHaveTextContent(/No attached conflicts/i);
+    const conflictBlock = Array.from(queue.querySelectorAll("[data-honesty]")).find((el) =>
+      /no conflict or supersession fields attached/i.test(el.textContent ?? ""),
+    );
+    expect(conflictBlock).toBeDefined();
+    expect(conflictBlock).toHaveAttribute("data-honesty", "UNKNOWN");
+    expect(
+      within(conflictBlock as HTMLElement).getByText("UNKNOWN", {
+        selector: ".imp-radar-brief-honesty",
+      }),
+    ).toBeInTheDocument();
     expect(scan).not.toHaveTextContent("What action is available?");
     expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Watch BIYA" })).toBeInTheDocument();
@@ -627,6 +640,37 @@ describe("RadarPage feed truth strip", () => {
     expect(strip).toHaveTextContent(/Replay — not live market time/i);
     expect(strip).toHaveTextContent(/must not be read as current/i);
     expect(strip).not.toHaveTextContent(/Current observational feed/i);
+    // READY must not use the live tone under FIXTURE_REPLAY / non-current class.
+    const readyPill = within(strip)
+      .getAllByTestId("imp-ui-state-pill")
+      .find((pill) => /Ready/i.test(pill.textContent ?? ""));
+    expect(readyPill).toBeDefined();
+    expect(readyPill).not.toHaveAttribute("data-tone", "live");
+    expect(readyPill).toHaveAttribute("data-tone", "replay");
+  });
+
+  it("keeps READY as live tone only for current observational feeds", () => {
+    summaryMock.data = {
+      items: [rankedRow],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+      as_of_context: {
+        mode: "LIVE",
+        data_mode: "LIVE_OBSERVATIONAL",
+        as_of_time: "2026-08-24T15:00:00Z",
+        timezone: "America/New_York",
+        data_provider: "live-unit",
+        as_of_provenance: "live_receive",
+      },
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const strip = screen.getByTestId("imp-radar-feed-truth");
+    expect(strip).toHaveAttribute("data-non-current", "false");
+    const readyPill = within(strip)
+      .getAllByTestId("imp-ui-state-pill")
+      .find((pill) => /Ready/i.test(pill.textContent ?? ""));
+    expect(readyPill).toHaveAttribute("data-tone", "live");
   });
 });
 
