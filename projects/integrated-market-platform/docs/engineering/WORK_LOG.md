@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Single OpenD probe for provider-health liveness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api` / `platform/operator_diagnostics` |
+| **Summary** | Removed the duplicate OpenD reachability probe left as a nit on liveness hardening: `build_provider_health_payload` now reuses the authoritative `service_liveness` observation already embedded by `LiveObservationalRuntime.health_payload()`. No TTL cache; staleness tokens unchanged. |
+| **Key files** | `ui_api/live_projections.py`; `tests/platform/test_runtime_service_liveness.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (18 selectors incl. single-observation regression + healthy/provider-down/stale/port-bound/idle/unknown-freshness) — **18 passed**; `python tools/imp.py validate changed` — **1736 passed**, 15 skipped, 0 fail/err |
+| **Related** | Parent `fix/liveness-hardening-20260922` @ `2a0ea41f` (APPROVE_WITH_NITS); PR #379 |
+| **Notes** | Isolated worktree `.worktrees/opend-single-probe` on `fix/opend-single-probe` from `2a0ea41f`. Did not push/merge. Did not touch Segment B runtime, `.local/rth-campaign-*`, or Live submit authority. New exact-SHA review required. |
+
 ## 2026-09-22 — Harden observational liveness classifier (PR #379 nits)
 
 | Field | Value |

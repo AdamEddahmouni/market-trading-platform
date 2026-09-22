@@ -8,7 +8,7 @@
 
 Answer sixteen operator questions without raw logs or secret material. The model **composes** existing endpoints and read-only libraries; it does not upgrade evidence classes or start collectors.
 
-**Liveness ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)):** a bound port is **not** HEALTHY. Inspect `GET /provider/health` (`service_liveness`) and this snapshot's `readiness_vs_liveness`. Existing tokens only (`HEALTHY` / `UNREADY` / `UNAVAILABLE` / `NOT_APPLICABLE`; `STALLED` unused). Transport-up without application progress is `UNREADY` (`TRANSPORT_UP_APPLICATION_NOT_PROGRESSED`). HTTP 200 on a listening port is not sufficient.
+**Liveness ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)):** a bound port is **not** HEALTHY. Inspect `GET /provider/health` (`service_liveness`) and this snapshot's `readiness_vs_liveness`. Existing tokens only (`HEALTHY` / `UNREADY` / `UNAVAILABLE` / `NOT_APPLICABLE`; `STALLED` unused). Transport-up without application progress is `UNREADY` (`TRANSPORT_UP_APPLICATION_NOT_PROGRESSED`). HTTP 200 on a listening port is not sufficient. Provider-health composition reuses the single `service_liveness` observation already embedded in `LiveObservationalRuntime.health_payload()` — do not re-probe OpenD in the UI projection, and do not introduce a TTL cache that would hide staleness.
 
 ## Canonical API
 
