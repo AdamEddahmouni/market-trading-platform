@@ -578,6 +578,8 @@
         "tools/item7_corpus_evidence_validator.py",
         "tools/item9_corpus_status.py",
         "tools/item9_next_rth_preflight.py",
+        "tools/item9_calibration_preflight.py",
+        "tools/item9_readiness_snapshot.py",
         "tools/item9.py",
         "tools/opportunity_summaries.py",
         "tools/path_a_prospective_run.py",

@@ -1,0 +1,41 @@
+{
+  "schema_id": "item9.calibration-methodology-freeze/1.0.0",
+  "bound_protocol_version": "item9.calibration-protocol/1.0.0",
+  "protocol_freeze_pr": "#234",
+  "protocol_freeze_commit_hint": "f47b449a",
+  "chosen_from_this_corpus": false,
+  "search_complexity_max": 0,
+  "fitting_allowed": false,
+  "calibrated": false,
+  "item9_calibration_run": "FORBIDDEN",
+  "permitted_feature": {
+    "description": "first completed post-signal 1m bar",
+    "rule": "available_time > signal_time_ns",
+    "timing_basis": "available_time_at_bar_end"
+  },
+  "prohibited_features": [
+    "Path A labels composed from bars",
+    "future bars",
+    "empty-hash path proof as corpus-admissible feature"
+  ],
+  "target_and_horizon": {
+    "path_a_label_event_kind": "TRADE",
+    "horizon": "BUILD 15 TRADE 5m",
+    "bars_are_not_the_label": true
+  },
+  "search_space": [],
+  "candidate_thresholds": "UNSET/BLOCKING",
+  "costs_slippage_fill_comparator": "NOT_OBSERVABLE",
+  "missing_labels": "unlabelable",
+  "seed_and_ordering": "chronological sort already in chronological_split (no shuffle)",
+  "acceptance": {
+    "metric_dimensions": "existing calibration metric dimensions",
+    "numeric_pass": false,
+    "numeric_floors": "UNSET/BLOCKING"
+  },
+  "fixed_parameters_source": "item9_calibration_protocol.protocol_freeze_record()",
+  "notes": [
+    "This freeze records the existing protocol v1 freeze; it does not retune from corpus findings.",
+    "Do not open a parameter grid or invent numeric pass floors."
+  ]
+}

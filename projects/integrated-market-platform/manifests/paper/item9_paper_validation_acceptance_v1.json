@@ -1,0 +1,39 @@
+{
+  "schema_id": "item9.paper-validation-acceptance/1.0.0",
+  "bound_protocol_version": "item9.calibration-protocol/1.0.0",
+  "auto_promote": false,
+  "current_state": "NOT_STARTED",
+  "lifecycle_states": [
+    "CALIBRATED",
+    "PAPER_VALIDATION_READY",
+    "PAPER_EMPIRICAL_ACTIVE",
+    "PAPER_VALIDATION_COMPLETE",
+    "PAPER_VALIDATED"
+  ],
+  "states_independent": true,
+  "claims_forbidden_until_complete": [
+    "PAPER_VALIDATED",
+    "FULL30_COMPLETE",
+    "LIVE_READY"
+  ],
+  "minimum_requirements": {
+    "forward_opportunities": "UNSET/BLOCKING",
+    "fills": "UNSET/BLOCKING",
+    "sessions": "UNSET/BLOCKING",
+    "strategy_coverage": "UNSET/BLOCKING",
+    "missing_evidence_ceiling": "UNSET/BLOCKING",
+    "cost_model": "REQUIRED_WHEN_BOTH_SIDES_REPORT",
+    "fill_model": "REQUIRED_WHEN_BOTH_SIDES_REPORT",
+    "settlement_completeness": "REQUIRED",
+    "drawdown_reporting": "REQUIRED",
+    "return_reporting": "REQUIRED",
+    "hit_rate_reporting": "REQUIRED",
+    "calibration_vs_forward_degradation_reporting": "REQUIRED",
+    "rejection_conditions": "REQUIRED",
+    "catastrophe_stop_conditions": "REQUIRED"
+  },
+  "numeric_floors_policy": "Do not invent a passing N; unset floors stay UNSET/BLOCKING.",
+  "item9_status_remains": "PARTIAL_NOT_CALIBRATED_until_calibration_artifact",
+  "live_execution": "OFF",
+  "fitting_allowed": false
+}

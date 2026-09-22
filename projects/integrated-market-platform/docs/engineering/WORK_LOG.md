@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-21 — Item 9 calibration readiness package (awaiting authorization)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration` / `docs` / `tools` |
+| **Summary** | Landed fail-closed Item 9 validation-readiness companions bound to frozen `item9.calibration-protocol/1.0.0` without opening a fittable revision: shared disposition/preflight/authorization vocabulary, read-only readiness snapshot + forensic audit + dual-corpus contamination/consumption map + NOT_OBSERVED gap register, calibration preflight (`ABSENT` auth does not block READY; TOCTOU fingerprint bind), methodology freeze manifest, executor that refuses before corpus read, Paper acceptance doc/manifests + prospective run-package template + lineage reconstruction test, and adversarial fixtures. Live read-only preflight on frozen collector receipts: **432** admissible / **1** `PATH_PROOF_ONLY` / **87** eval / **3** RTH dates → `CALIBRATION_PREFLIGHT_READY` with `readiness_state=ITEM9_CALIBRATION_READY_AWAITING_AUTHORIZATION`; `calibrated=false`; `fitting_allowed=false`; `ITEM9_CALIBRATION_RUN=FORBIDDEN`; dual-corpus **PASS**. No fitting, no authorization artifact, no receipt rewrite, Live OFF. |
+| **Key files** | Created: `src/.../item9_validation_readiness_contract.py`, `item9_readiness_snapshot.py`, `item9_calibration_preflight.py`, `item9_calibration_execute.py`, `item9_paper_lineage.py`; `tools/item9_readiness_snapshot.py`, `tools/item9_calibration_preflight.py`; manifests under `manifests/paper/item9_*`; `docs/architecture/ITEM9_PAPER_VALIDATION_ACCEPTANCE_V1.md`; tests `test_item9_validation_readiness.py`, `test_item9_calibration_preflight_adversarial.py`, `test_item9_paper_lineage.py`. Modified: `tools/item9.py`, `tools/imp.py`, `ITEM9_CALIBRATION_PROTOCOL_V1.md`, `docs/README.md`, `PROGRAM_STATUS.md`, `POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json`, `WORK_LOG.md`. |
+| **Tests** | `python tools/imp.py test focused` on new Item 9 modules **32/32 passed**. `python tools/imp.py validate changed` → **4671** passed, 32 skipped, 0 fail/err (`core_checkpoint_required=true`; `validate full` **not** run this sprint). Read-only `corpus-status` + `calibration-preflight` against `.imp-actual-01-phase-d/.../item9-prospective-proof-receipts`: `SAMPLE_GATE_MET` / `CALIBRATION_PREFLIGHT_READY` / awaiting authorization. |
+| **Related** | Plan `item_9_readiness_568ea8b1`; protocol [#234](https://github.com/AdamEddahmouni/market-trading-platform/pull/234); branch `ops/item9-calibration-readiness` |
+| **Notes** | Did **not** create authorization artifact or invoke calibration execute on real corpus. Did **not** claim CALIBRATED / PAPER_VALIDATED / FULL30 / LIVE_READY. Did **not** backfill Sep 21 or Sep 18 gaps. Search complexity remains 0. Fitting remains **FORBIDDEN**. |
+
 ## 2026-09-21 — Docs pin CURRENT_MAIN to origin/main aca0a60f (#370)
 
 | Field | Value |

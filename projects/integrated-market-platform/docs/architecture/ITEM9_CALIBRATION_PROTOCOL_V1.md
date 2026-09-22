@@ -241,3 +241,27 @@ Promotion sequence:
 
 Item 7 remains independent (`ITEM7_PENDING_NATURAL_EVIDENCE` / PARTIAL). This
 protocol does not settle Path A, mint TRADE, or merge PR #222.
+
+## 17. Validation readiness companions (software; not calibration)
+
+Protocol version remains **`item9.calibration-protocol/1.0.0`**. Companion
+schemas bind to it without opening a fittable `1.1.0`:
+
+| Companion | Schema / CLI |
+|---|---|
+| Shared vocabulary | `item9_validation_readiness_contract.py` |
+| Readiness snapshot | `item9.validation-readiness-snapshot/1.0.0` · `python tools/imp.py item9 readiness-snapshot` |
+| Calibration preflight | `CALIBRATION_PREFLIGHT_READY` / `BLOCKED` · `python tools/imp.py item9 calibration-preflight` |
+| Methodology freeze | `item9.calibration-methodology-freeze/1.0.0` · `manifests/paper/item9_calibration_methodology_freeze_v1.json` |
+| NOT_OBSERVED gaps | `manifests/paper/item9_not_observed_intervals_v1.json` (Sep 21 ≈10:43–13:09 ET; Sep 18 epoch `121031`) |
+| Paper acceptance | [ITEM9_PAPER_VALIDATION_ACCEPTANCE_V1.md](ITEM9_PAPER_VALIDATION_ACCEPTANCE_V1.md) |
+
+Invariants for the readiness path:
+
+- `fitting_allowed=false`; `ITEM9_CALIBRATION_RUN=FORBIDDEN`; Live **OFF**
+- Search complexity remains **0** (protocol freeze recorded; not retuned from corpus)
+- `AUTHORIZATION_ABSENT` does **not** block `CALIBRATION_PREFLIGHT_READY`; it blocks execution
+- Ready verdict may set `readiness_state=ITEM9_CALIBRATION_READY_AWAITING_AUTHORIZATION` without changing `item9_status=PARTIAL_NOT_CALIBRATED` or `calibrated`
+- Strategy IDs on historical Mode B bar receipts are `NOT_APPLICABLE`
+- `EVALUATION_ONLY` is a lifecycle role on an admissible row, not a second exclusion
+- Missing Paper lineage links stay `NOT_OBSERVED`; do not invent floors or promote `PATH_PROOF_ONLY`
