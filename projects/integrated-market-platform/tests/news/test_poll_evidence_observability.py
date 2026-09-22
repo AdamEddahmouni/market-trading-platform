@@ -22,6 +22,7 @@ from market_platform_foundation.news.poll_evidence import (
     build_poll_evidence_envelope,
     build_poll_rejection_summary,
     digest_fetched_item,
+    redact_headline,
     retain_poll_evidence_manifest,
     scrub_secrets,
 )
@@ -330,6 +331,82 @@ class PollEvidenceRetentionTests(unittest.TestCase):
                 max_polls_retained=10,
             )
             self.assertIsNone(retain_poll_evidence_manifest(envelope, policy=policy))
+
+            # Nested state/ under any rth-campaign-* date must also be refused.
+            nested = Path(tmp) / "rth-campaign-20260921-A" / "state"
+            nested.mkdir(parents=True)
+            nested_policy = CampaignEvidenceRetentionPolicy(
+                enabled=True,
+                evidence_root=nested,
+                max_items_per_poll=10,
+                max_polls_retained=10,
+            )
+            self.assertIsNone(retain_poll_evidence_manifest(envelope, policy=nested_policy))
+            self.assertEqual(list(nested.iterdir()), [])
+
+            # Explicit non-campaign evidence root still retains.
+            good = Path(tmp) / "poll-evidence-explicit"
+            good_policy = CampaignEvidenceRetentionPolicy(
+                enabled=True,
+                evidence_root=good,
+                max_items_per_poll=10,
+                max_polls_retained=10,
+            )
+            retained = retain_poll_evidence_manifest(envelope, policy=good_policy)
+            self.assertIsNotNone(retained)
+            assert retained is not None
+            self.assertTrue(retained.is_file())
+
+    def test_headline_redacts_secret_query_params(self) -> None:
+        # Bare secret= in headlines must not survive retention redaction.
+        redacted = redact_headline(
+            "ACME update secret=leaked-secret-value and access_token=tok123",
+            max_chars=200,
+        )
+        self.assertNotIn("leaked-secret-value", redacted)
+        self.assertNotIn("tok123", redacted)
+        self.assertIn("secret=<REDACTED>", redacted)
+        self.assertIn("access_token=<REDACTED>", redacted)
+
+        event = _event(
+            event_id="e-secret",
+            headline="Probe row secret=leaked-secret-value auth=still-secret",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "poll-evidence-root"
+            policy = CampaignEvidenceRetentionPolicy(
+                enabled=True,
+                evidence_root=root,
+                max_items_per_poll=10,
+                max_polls_retained=10,
+                max_headline_chars=200,
+            )
+            envelope = build_poll_evidence_envelope(
+                poll_id="poll-secret",
+                as_of_ns=1,
+                fetched_items=[
+                    {
+                        "provider_native_id": event.provider_native_id,
+                        "url": event.url,
+                        "headline": event.headline,
+                        "tickers": ["ACME"],
+                        "published_time": event.published_time,
+                    }
+                ],
+                events=[event],
+                results=[_accept(event)],
+                universe=frozenset({"ACME"}),
+                policy=policy,
+            )
+            self.assertEqual(len(envelope.items), 1)
+            self.assertNotIn("leaked-secret-value", envelope.items[0].headline_redacted)
+            self.assertNotIn("still-secret", envelope.items[0].headline_redacted)
+            path = retain_poll_evidence_manifest(envelope, policy=policy)
+            self.assertIsNotNone(path)
+            assert path is not None
+            blob = path.read_text(encoding="utf-8")
+            self.assertNotIn("leaked-secret-value", blob)
+            self.assertNotIn("still-secret", blob)
 
 
 class ModeSelectionUnchangedTests(unittest.TestCase):

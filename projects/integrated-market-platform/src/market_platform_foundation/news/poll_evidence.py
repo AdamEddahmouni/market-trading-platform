@@ -49,9 +49,15 @@ _SUMMARY_SCHEMA = "imp.poll_rejection_summary/1.0.0"
 _SECRET_KEY_RE = re.compile(
     r"(?i)(auth|api[_-]?key|token|password|passwd|secret|session|authorization|cookie)"
 )
-_SENSITIVE_VALUE_RE = re.compile(
-    r"(?i)([?&](?:auth|token|api[_-]?key|password)=)[^&\s\"']+"
+# Query-secret-like key=value pairs in headlines/strings (not only ?/& delimited).
+_SENSITIVE_PARAM = (
+    r"auth|authorization|token|access[_-]?token|api[_-]?key|"
+    r"password|passwd|secret|session|key|credential|cookie"
 )
+_SENSITIVE_VALUE_RE = re.compile(
+    rf"(?i)((?:[?&]|^|(?<=\W))(?:{_SENSITIVE_PARAM})=)[^&\s\"']+"
+)
+_RTH_CAMPAIGN_DIR_PREFIX = "rth-campaign-"
 
 # Extension point owned by another lane. Leave unset / no-op here.
 PROVIDER_LINKAGE_QUALITY_HOOK: Callable[..., Any] | None = None
@@ -125,6 +131,18 @@ def scrub_secrets(value: Any, *, secret: str | None = None) -> Any:
             text = text.replace(secret, "<REDACTED>")
         return text
     return value
+
+
+def _path_contains_rth_campaign_dir(path: Path) -> bool:
+    """True when any path component is an ``rth-campaign-*`` directory.
+
+    Refuses nested campaign trees (including ``.../rth-campaign-<date>/state``)
+    for any date — not only a hard-coded campaign id.
+    """
+
+    return any(
+        str(part).lower().startswith(_RTH_CAMPAIGN_DIR_PREFIX) for part in Path(path).parts
+    )
 
 
 def redact_headline(headline: str, *, max_chars: int = _DEFAULT_HEADLINE_CHARS) -> str:
@@ -663,9 +681,8 @@ def retain_poll_evidence_manifest(
     if retention.max_items_per_poll <= 0 or retention.max_polls_retained <= 0:
         return None
     root = Path(retention.evidence_root)
-    # Refuse known live campaign evidence trees even if misconfigured.
-    root_name = root.name.lower()
-    if root_name.startswith("rth-campaign-") or "rth-campaign-20260922" in str(root).lower():
+    # Refuse any path under an rth-campaign-* directory (any date / nesting).
+    if _path_contains_rth_campaign_dir(root):
         return None
     target_dir = root / "poll-evidence-manifests"
     try:
