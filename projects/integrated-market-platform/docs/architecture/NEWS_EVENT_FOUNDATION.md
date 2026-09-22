@@ -39,9 +39,38 @@ IMP already had read-only `news/aggregator.py` (Finviz + NewsAPI + Finnhub) with
 | `published_time_quality` | `KNOWN`, `INFERRED_LOW_CONFIDENCE`, or `UNKNOWN` |
 | `retrieved_time` | When IMP observed/received the item |
 | `instrument_linkages` | Canonical instrument associations (multi-asset) |
-| `quality_flags` | Timestamp/provenance issues |
+| `quality_flags` | Timestamp/provenance issues **and** provider-linkage evidence-quality warnings |
 
 **Invariant:** `published_time` and `retrieved_time` are never conflated. Missing publication time is `UNKNOWN`, not silently replaced by retrieval time.
+
+### Provider linkage quality (heuristic suspicion, not rewrite)
+
+Module: `news/provider_linkage_quality.py`, hooked from `news/normalize.py`.
+
+When a provider supplies `PROVIDER_SYMBOL` linkages, IMP **preserves** those
+tickers (`provider_symbol`, `instrument_id`, `linkage_method`) and may only:
+
+- adjust `InstrumentLinkage.confidence` (`EXPLICIT` /
+  `PROVIDER_UNCORROBORATED` / `UNKNOWN`)
+- append operator-visible `quality_flags` such as
+  `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT`,
+  `PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT`,
+  `PROVIDER_LINKAGE_SOURCE_URL_MISSING`,
+  `PROVIDER_LINKAGE_MULTIPLE_CONTRADICTORY`,
+  `PROVIDER_LINKAGE_LOW_CONTEXTUAL_CONFIDENCE`
+
+These flags mean **uncorroborated / suspicious association evidence**. They do
+**not** declare the provider false, invent a better ticker, drop the event, or
+change LIVE_OBSERVED vs HISTORICAL_RECONSTRUCTED gates. Missing URL is a quality
+signal only. Empty/unassessable text keeps confidence `UNKNOWN`.
+
+Company-name corroboration is derived from **headline/summary surface forms**
+(CamelCase compounds and Title Case words letter-aligned to the provider
+symbol). Ordinary English tokens are never treated as rival tickers.
+`PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT` requires an inconsistent CamelCase
+company-like span; prefer an absent flag over a false alternate-entity
+escalation. Optional raw `company_name` fields are supplemental only —
+Finviz production rows need not supply them.
 
 ## Observability / availability rule
 

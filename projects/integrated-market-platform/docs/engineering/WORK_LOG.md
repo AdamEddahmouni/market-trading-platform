@@ -36,6 +36,43 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Integration merge: provider-linkage quality onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed feat/provider-linkage-quality tip 6eff74be65545dfa47408311ff24234466874e70 onto integrate/post-close-20260922 tip b83c12a2. WORK_LOG conflict only: kept both sides append-only (prior integration/rejection-observability/diagnostics/OpenD/durability/Finviz entries + provider-linkage quality entries). NEWS_EVENT_FOUNDATION.md auto-merged with no markers. No code/test conflicts. Code auto-merged: provider_linkage_quality.py (add), normalize.py, pipeline.py, test_provider_linkage_quality.py (add). Predecessor fc48a9d2 is an ancestor of the tip but was not the landing target. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only); docs/architecture/NEWS_EVENT_FOUNDATION.md (auto-merge) |
+| **Tests** | Focused `tests/news/test_provider_linkage_quality.py` + news package suite + two FTEP cockpit wire tests after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, eb2c3b72, c1321974, b83c12a2, 6eff74be |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land latency or UI. Did not touch detached 80d290ff, campaign state, or .worktrees/finviz-admit-identity-20260922. |
+
+
+## 2026-09-22 — Provider linkage quality: stop false alternate-entity escalations
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Fixed false ALTERNATE_ENTITY/LOW_CONTEXTUAL escalations from English tokens. Corroboration now uses headline company-like spans (letter-aligned to ticker) without relying on Finviz-absent company_names. Removed English-as-ticker rival detection; MULTIPLE only on mixed corroboration; linkage flags no longer inflate timestamp_quality_issues; dropped dead association_confidence/reasons. |
+| **Key files** | `news/provider_linkage_quality.py`; `news/pipeline.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` — 12/12 passed (provider linkage suite). `python tools/imp.py validate changed` — news 83 passed; mandatory suites passed; intelligence 2 errors in unrelated FTEP cockpit UI-API wire HTTP tests (not linkage). |
+| **Related** | Review CHANGES_REQUIRED on `fc48a9d2` |
+| **Notes** | Same worktree `.worktrees/provider-linkage-quality`. No push/PR/campaign touch. Independent re-review still required. |
+
+## 2026-09-22 — Provider linkage quality warnings (no ticker rewrite)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Added heuristic provider-symbol linkage quality assessment that preserves `PROVIDER_SYMBOL` tickers and records operator-visible `quality_flags` + linkage `confidence` when headline/text does not corroborate, URL is missing, alternate entity spans appear, or multiple linkages conflict. Suspicion is not treated as deterministic falsehood; events are not dropped. |
+| **Key files** | `news/provider_linkage_quality.py` (new); `news/normalize.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (6 linkage + 1 finviz normalize) → **7 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **PASSED**: 2271 tests, 27 skipped, 0 failures, 0 errors. |
+| **Related** | Segment B base `8e92bb37`; motivation: provider-tagged NVDA on unrelated headline must stay preserved with warning |
+| **Notes** | Worktree `.worktrees/provider-linkage-quality` on `feat/provider-linkage-quality`. No push/PR. Campaign / Segment B / `.local/rth-campaign-*` untouched. Independent exact-SHA review still required. |
+
 ## 2026-09-22 — Integration merge: ingest rejection observability onto post-close tip
 
 | Field | Value |
