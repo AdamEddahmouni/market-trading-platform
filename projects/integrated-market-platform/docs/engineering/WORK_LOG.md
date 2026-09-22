@@ -36,17 +36,29 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-22 — Observation window = current segment start (not min history)
+## 2026-09-22 — Observation window requires explicit current-segment arg
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `backend/ftep` / `evidence-integrity` |
-| **Summary** | `load_governed_session_observation_window_start_ns` now selects the **latest** successful governed-session-start `recorded_at_ns` (this observation segment), not `min(history)` across evidence roots. Missing current-segment start → `None` (fail closed → HISTORICAL_RECONSTRUCTED). Append-only evidence untouched; stamp rule and Finviz id stability unchanged. |
-| **Key files** | `ftep_catalyst_watch.py`; `tests/intelligence/test_ftep_catalyst_watch.py`; `docs/engineering/WORK_LOG.md` |
-| **Tests** | Focused loader + prospective admit + stamp: **31 passed**, 0 failed (`test_ftep_catalyst_watch`, `test_finviz_admit_identity_and_window`, `test_news_ingest_mode_stamp`). |
-| **Related** | Review CHANGES_REQUIRED on `25ce8e26`; ancestor `9a14c958` |
-| **Notes** | Worktree `.worktrees/finviz-admit-identity-20260922`. No push/PR/deploy; campaign runtime / poller / frozen RTH campaign untouched. |
+| **Summary** | `load_governed_session_observation_window_start_ns` no longer mines append-only history by min/max. Admit caller must supply `current_segment_start_ns` and/or `current_segment_session_id` for THIS arm; absent → `None` (HISTORICAL_RECONSTRUCTED). Older successful `sessions_created` lines and stray later primary lines without the current id are never selected. |
+| **Key files** | `ftep_catalyst_watch.py`; `tools/ftep_watch_catalysts.py`; `tests/intelligence/test_ftep_catalyst_watch.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src` + main IMP `.venv` 3.11: `python -m unittest tests.intelligence.test_ftep_catalyst_watch tests.news.test_finviz_admit_identity_and_window tests.news.test_news_ingest_mode_stamp -v` → **32 passed**, 0 failed. |
+| **Related** | Review CHANGES_REQUIRED on `482c8852` / `25ce8e26`; ancestor `9a14c958` |
+| **Notes** | Worktree `.worktrees/finviz-admit-identity-20260922`. No push/PR/deploy; campaign runtime / poller / frozen RTH campaign untouched. Stamp rule + Finviz identity unchanged; `news_event_build09` stays INACTIVE. |
+
+## 2026-09-22 — Observation window = current segment start (not min history)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `superseded` |
+| **Area** | `backend/ftep` / `evidence-integrity` |
+| **Summary** | REJECTED approach: selecting **latest** `recorded_at_ns` across roots still inferred "this segment" from append-only history. Replaced by explicit current-segment arg (see entry above). |
+| **Key files** | (historical) `ftep_catalyst_watch.py`; `tests/intelligence/test_ftep_catalyst_watch.py` |
+| **Tests** | n/a — superseded |
+| **Related** | `482c8852` |
+| **Notes** | Kept for provenance; do not reintroduce max/min history mining. |
 
 ## 2026-09-22 — Finviz admit identity + observation window
 

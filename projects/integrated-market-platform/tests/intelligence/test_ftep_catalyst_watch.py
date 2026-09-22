@@ -23,6 +23,7 @@ from market_platform_foundation.local_state.paths import REPO_ROOT
 # SOFTWARE_CONTROLLED clocks — not market evidence.
 _OLD_SEGMENT_NS = 1_700_000_000_000_000_000
 _CURRENT_SEGMENT_NS = 1_750_000_000_000_000_000
+_STRAY_LATER_NS = 1_760_000_000_000_000_000
 
 
 class FtepCatalystWatchTests(unittest.TestCase):
@@ -135,8 +136,44 @@ class FtepCatalystWatchTests(unittest.TestCase):
         self.assertIsNotNone(path)
         self.assertIn("wt", str(path).replace("\\", "/"))
 
-    def test_observation_window_uses_current_segment_not_earliest_history(self) -> None:
-        """Multi-line + dual-root evidence must not select an older arm as the live window."""
+    def test_observation_window_none_when_only_older_history_and_no_current_segment_arg(
+        self,
+    ) -> None:
+        """Older successful sessions_created alone must not become THIS arm's window."""
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            root = tmp_path / "projects" / "integrated-market-platform"
+            root.mkdir(parents=True)
+            evid_dir = root / "artifacts" / "ftep-v1-002"
+            evid_dir.mkdir(parents=True)
+            (evid_dir / "governed-session-start-evidence.jsonl").write_text(
+                json.dumps(
+                    {
+                        "artifact_kind": "ftep_governed_session_start_evidence",
+                        "recorded_at_ns": _OLD_SEGMENT_NS,
+                        "sessions_created": [{"session_id": "fts-OLD-ONLY"}],
+                    }
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            with patch(
+                "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.operator_primary_imp_root_for_evidence",
+                return_value=None,
+            ):
+                # Caller did not pass this arm's id/start → fail closed.
+                window_ns = load_governed_session_observation_window_start_ns(
+                    root,
+                    "FTEP-V1-002",
+                )
+
+        self.assertIsNone(window_ns)
+
+    def test_observation_window_uses_explicit_current_segment_not_history_extrema(
+        self,
+    ) -> None:
+        """Explicit current start wins; older + stray-later (other id) must not."""
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
@@ -149,12 +186,23 @@ class FtepCatalystWatchTests(unittest.TestCase):
             primary_evid = primary / "artifacts" / "ftep-v1-002"
             primary_evid.mkdir(parents=True)
             (primary_evid / "governed-session-start-evidence.jsonl").write_text(
-                json.dumps(
-                    {
-                        "artifact_kind": "ftep_governed_session_start_evidence",
-                        "recorded_at_ns": _OLD_SEGMENT_NS,
-                        "sessions_created": [{"session_id": "fts-OLD-PRIMARY"}],
-                    }
+                "\n".join(
+                    [
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "recorded_at_ns": _OLD_SEGMENT_NS,
+                                "sessions_created": [{"session_id": "fts-OLD-PRIMARY"}],
+                            }
+                        ),
+                        json.dumps(
+                            {
+                                "artifact_kind": "ftep_governed_session_start_evidence",
+                                "recorded_at_ns": _STRAY_LATER_NS,
+                                "sessions_created": [{"session_id": "fts-STRAY-LATER"}],
+                            }
+                        ),
+                    ]
                 )
                 + "\n",
                 encoding="utf-8",
@@ -189,61 +237,71 @@ class FtepCatalystWatchTests(unittest.TestCase):
                 "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.main_working_tree",
                 return_value=tmp_path / "main",
             ):
-                window_ns = load_governed_session_observation_window_start_ns(
+                by_start = load_governed_session_observation_window_start_ns(
                     worktree,
                     "FTEP-V1-002",
+                    current_segment_start_ns=_CURRENT_SEGMENT_NS,
+                )
+                by_id = load_governed_session_observation_window_start_ns(
+                    worktree,
+                    "FTEP-V1-002",
+                    current_segment_session_id="fts-CURRENT",
                 )
 
-        self.assertEqual(window_ns, _CURRENT_SEGMENT_NS)
-        self.assertNotEqual(window_ns, _OLD_SEGMENT_NS)
-        self.assertNotEqual(window_ns, _OLD_SEGMENT_NS + 1)
+        self.assertEqual(by_start, _CURRENT_SEGMENT_NS)
+        self.assertEqual(by_id, _CURRENT_SEGMENT_NS)
+        self.assertNotEqual(by_start, _OLD_SEGMENT_NS)
+        self.assertNotEqual(by_start, _STRAY_LATER_NS)
+        self.assertNotEqual(by_id, _STRAY_LATER_NS)
 
-    def test_observation_window_fail_closed_without_current_segment_start(self) -> None:
-        """No successful current-segment start → None (ingest stays historical)."""
+    def test_observation_window_none_without_current_segment_even_if_other_roots_have_history(
+        self,
+    ) -> None:
+        """Missing current-segment arg → None despite successful history on other roots."""
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            root = tmp_path / "projects" / "integrated-market-platform"
-            root.mkdir(parents=True)
-            evid_dir = root / "artifacts" / "ftep-v1-002"
-            evid_dir.mkdir(parents=True)
-            (evid_dir / "governed-session-start-evidence.jsonl").write_text(
-                "\n".join(
-                    [
-                        json.dumps(
-                            {
-                                "artifact_kind": "ftep_governed_session_start_evidence",
-                                "recorded_at_ns": _OLD_SEGMENT_NS,
-                                "sessions_created": [],
-                            }
-                        ),
-                        "{not-json",
-                        json.dumps(
-                            {
-                                "artifact_kind": "ftep_governed_session_start_evidence",
-                                "sessions_created": [{"session_id": "fts-missing-clock"}],
-                            }
-                        ),
-                    ]
+            worktree = tmp_path / "wt" / "projects" / "integrated-market-platform"
+            primary = tmp_path / "main" / "projects" / "integrated-market-platform"
+            worktree.mkdir(parents=True)
+            primary.mkdir(parents=True)
+            (primary / "phase0-dependency-lock.json").write_text("{}", encoding="utf-8")
+
+            primary_evid = primary / "artifacts" / "ftep-v1-002"
+            primary_evid.mkdir(parents=True)
+            (primary_evid / "governed-session-start-evidence.jsonl").write_text(
+                json.dumps(
+                    {
+                        "artifact_kind": "ftep_governed_session_start_evidence",
+                        "recorded_at_ns": _OLD_SEGMENT_NS,
+                        "sessions_created": [{"session_id": "fts-OTHER-ROOT"}],
+                    }
                 )
                 + "\n",
                 encoding="utf-8",
             )
+
             with patch(
-                "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.operator_primary_imp_root_for_evidence",
-                return_value=None,
+                "market_platform_foundation.intelligence.paper_forward_bridge.ftep_catalyst_watch.main_working_tree",
+                return_value=tmp_path / "main",
             ):
                 window_ns = load_governed_session_observation_window_start_ns(
-                    root,
+                    worktree,
                     "FTEP-V1-002",
                 )
-                missing = load_governed_session_observation_window_start_ns(
+                missing_root = load_governed_session_observation_window_start_ns(
                     tmp_path / "absent-root",
                     "FTEP-V1-002",
                 )
+                unknown_id = load_governed_session_observation_window_start_ns(
+                    worktree,
+                    "FTEP-V1-002",
+                    current_segment_session_id="fts-THIS-ARM-ABSENT",
+                )
 
         self.assertIsNone(window_ns)
-        self.assertIsNone(missing)
+        self.assertIsNone(missing_root)
+        self.assertIsNone(unknown_id)
 
 
 if __name__ == "__main__":
