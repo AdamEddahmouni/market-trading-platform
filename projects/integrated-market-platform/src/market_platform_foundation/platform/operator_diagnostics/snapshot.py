@@ -30,6 +30,7 @@ from ..artifact_path_resolver import (
     looks_like_windows_absolute_path,
 )
 from .operator_truth import build_operator_truth_section
+from .service_liveness import compose_readiness_vs_liveness
 
 _SCHEMA_VERSION = "operator-diagnostics/1.1.0"
 
@@ -297,7 +298,13 @@ def _item9_corpus_status_section(imp_root: Path) -> dict[str, Any]:
     return section
 
 
-def _public_runtime_resilience_section(resilience: Mapping[str, Any], *, imp_root: Path) -> dict[str, Any]:
+def _public_runtime_resilience_section(
+    resilience: Mapping[str, Any],
+    *,
+    imp_root: Path,
+    lifecycle: Mapping[str, Any] | None = None,
+    provider_health: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     collector = dict(resilience.get("collector_process") or {})
     matches = list(collector.pop("active_collector_matches", []) or [])
     collector["active_collector_match_count"] = len(matches)
@@ -316,7 +323,11 @@ def _public_runtime_resilience_section(resilience: Mapping[str, Any], *, imp_roo
         "collector_process": collector,
         "item9_next_rth_preflight": deepcopy(resilience.get("item9_next_rth_preflight") or {}),
         "expected_cycle": _sanitize_mapping_paths(expected_cycle, imp_root=imp_root),
-        "readiness_vs_liveness": deepcopy(resilience.get("readiness_vs_liveness") or {}),
+        "readiness_vs_liveness": compose_readiness_vs_liveness(
+            resilience=resilience,
+            lifecycle=lifecycle,
+            provider_health=provider_health,
+        ),
         "does_not_start_collector": True,
     }
 
@@ -737,14 +748,18 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     )
     runtime_sha = str(runtime_identity.get("runtime_git_sha") or "")
     item9 = _item9_view_from_resilience(resilience, imp_root=imp_root)
-    resilience_public = _public_runtime_resilience_section(resilience, imp_root=imp_root)
-
     lifecycle = build_control_status(imp_root)
     readiness = build_operator_readiness_payload(store)
     config = build_operator_config_payload()
     config_summary = _config_summary(config)
     state_path = collect_state_path_report(imp_root)
     provider_health = build_provider_health_payload(store)
+    resilience_public = _public_runtime_resilience_section(
+        resilience,
+        imp_root=imp_root,
+        lifecycle=lifecycle,
+        provider_health=provider_health,
+    )
     opportunity_summary = build_opportunities_summary_payload(store)
 
     readiness_providers = readiness.get("providers") if isinstance(readiness.get("providers"), list) else []
@@ -860,6 +875,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
                 "available": provider_health.get("available"),
                 "reason": provider_health.get("reason"),
                 "provider_summary": provider_health.get("provider_summary"),
+                "service_liveness": provider_health.get("service_liveness"),
             },
             "opportunity_surface": _opportunity_surface_section(opportunity_summary),
             "session_evidence": session,

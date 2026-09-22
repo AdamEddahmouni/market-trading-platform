@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import threading
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -25,6 +26,7 @@ from .live_config import (
     observational_provider_preference,
     probe_report_path,
     probe_staleness_seconds,
+    quote_stale_threshold_ms,
     shadow_recording_enabled,
     subscription_quota,
 )
@@ -671,6 +673,38 @@ class LiveObservationalRuntime:
             "freshness_ms": freshness,
         }
 
+    def observational_liveness_view(self) -> dict[str, Any]:
+        from ..platform.operator_diagnostics.service_liveness import classify_observational_market_data_liveness
+
+        subscribed_symbols = {
+            str(row.get("instrument_id") or "").upper()
+            for row in (self.lifecycle.active_subscriptions or [])
+            if isinstance(row, dict) and row.get("instrument_id")
+        }
+        freshness_values: list[int] = []
+        for symbol in subscribed_symbols:
+            fresh = self.state.freshness_ms(symbol)
+            if fresh is not None:
+                freshness_values.append(int(fresh))
+        max_freshness = max(freshness_values) if freshness_values else None
+        dimensions = self.capability_registry.dimensions
+        return classify_observational_market_data_liveness(
+            live_enabled=live_observational_enabled(),
+            moomoo_configured=moomoo_live_enabled(),
+            provider_id=self.lifecycle.provider_id,
+            provider_role=self.lifecycle.provider_role,
+            process_id=os.getpid(),
+            connection_state=self.lifecycle.connection_state.value,
+            opend_loopback_reachable=opend_reachable(host=moomoo_host(), port=moomoo_port()),
+            probe_stale=self.capability_registry.is_stale,
+            receiving=bool(dimensions.receiving),
+            entitled=bool(dimensions.entitled),
+            active_subscription_count=len(self.subscriptions.active_keys),
+            last_successful_event_ns=self.lifecycle.last_successful_event_ns,
+            max_subscribed_freshness_ms=max_freshness,
+            quote_stale_threshold_ms=quote_stale_threshold_ms(),
+        )
+
     def health_payload(self) -> dict[str, Any]:
         gate = evaluate_internal_simulation_gates(
             runtime=self,
@@ -684,6 +718,7 @@ class LiveObservationalRuntime:
             "metrics": self.state.metrics_report(),
             "quota": self.subscriptions.quota_report(),
             "scope_symbols": list(self.scope_symbols),
+            "service_liveness": self.observational_liveness_view(),
         }
         if self.shadow_recorder is not None:
             report["shadow"] = self.shadow_recorder.health()

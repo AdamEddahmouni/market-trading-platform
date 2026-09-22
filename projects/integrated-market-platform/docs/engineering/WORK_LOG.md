@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Progress-aware runtime service liveness (heartbeat lane)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform/operator_diagnostics`, `market_data/live_runtime` |
+| **Summary** | Added progress-aware liveness for loopback platform services and live observational market data so a bound port or transport reachability alone cannot read as HEALTHY. Exposed via `GET /provider/health` (`service_liveness`) and enriched `readiness_vs_liveness` in operator diagnostics. |
+| **Key files** | `platform/operator_diagnostics/service_liveness.py` (new); `market_data/live_runtime.py`; `ui_api/live_projections.py`; `platform/operator_diagnostics/snapshot.py`; `tests/platform/test_runtime_service_liveness.py` |
+| **Tests** | `python -m unittest tests.platform.test_runtime_service_liveness` (10 passed); `python tools/imp.py validate changed` (2420 passed, 16 skipped) |
+| **Related** | `tools/platform/service_health.py` (port vs HTTP probes); `quote_stale_threshold_ms()` / `probe_staleness_seconds()` cycle semantics |
+| **Notes** | No new health tokens; `STALLED` not used. Did not edit server.py, Item 9, or Live submit paths. |
+
 ## 2026-09-22 — Item 9 post-merge proof + docs pin CURRENT_MAIN to 1cd63fe9 (#376)
 
 | Field | Value |
