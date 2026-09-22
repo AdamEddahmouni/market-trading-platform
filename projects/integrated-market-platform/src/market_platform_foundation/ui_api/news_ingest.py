@@ -1,8 +1,9 @@
-"""UiApiHandler request-path for already-fetched Finviz/news → EventV1 admission.
+"""UiApiHandler request-path for Finviz/news → EventV1 admission.
 
-Second hop of already-fetched JSON: FTEP ``--live-ingress`` POSTs #207 rows here after
-Finviz fetch; ingestion is labeled ``HISTORICAL_RECONSTRUCTED`` (not ``LIVE_OBSERVED``)
-because the CLI carried provider JSON — server still stamps ``received_time_ns`` and rejects
+Second hop after Finviz fetch: FTEP ``--live-ingress`` POSTs #207 rows here.
+Ingestion mode is selected per item (``LIVE_OBSERVED`` only under live gates with
+trustworthy publication at/after the caller-supplied observation window; otherwise
+``HISTORICAL_RECONSTRUCTED``). Server still stamps ``received_time_ns`` and rejects
 forged ``server_received_time_ns`` in the body. Does not auto-fetch providers.
 """
 
@@ -11,10 +12,15 @@ from __future__ import annotations
 from typing import Any
 
 from ..clock import monotonic_wall_ns
-from ..intelligence.normalization.models import IngestionMode
 from ..news.observational_admit import admit_finviz_export_item_for_observation
 from ..news.observational_opportunity import observational_news_opportunity_id
+from ..news.timestamps import classify_publication_time, epoch_ns_from_iso
 from .live_intelligence import bind_ui_api_intelligence
+from .news_ingest_mode import (
+    news_ingest_live_gates_active,
+    parse_observation_window_start_ns,
+    select_news_ingest_ingestion_mode,
+)
 from .store import ReplayStore
 
 NEWS_INGEST_MAX_BODY_BYTES = 65_536
@@ -44,6 +50,8 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
     if body.get("server_received_time_ns") is not None:
         raise ValueError("NEWS_INGEST_FORGED_SERVER_RECEIVE_TIME")
     server_received_time_ns = int(monotonic_wall_ns())
+    observation_window_start_ns = parse_observation_window_start_ns(body)
+    live_gates_active = news_ingest_live_gates_active()
     admitted: list[dict[str, Any]] = []
     opportunity_ids: list[str] = []
     skipped: list[dict[str, str]] = []
@@ -56,13 +64,24 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
         if not item_retrieved:
             skipped.append({"reason": "NEWS_RETRIEVED_TIME_REQUIRED"})
             continue
+        raw_published = str(item.get("published_time") or item.get("publishedAt") or "")
+        published_iso, published_quality, _flags = classify_publication_time(
+            raw_published,
+            retrieved_time=item_retrieved,
+        )
+        ingestion_mode = select_news_ingest_ingestion_mode(
+            published_time_ns=epoch_ns_from_iso(published_iso),
+            published_time_quality=published_quality,
+            observation_window_start_ns=observation_window_start_ns,
+            live_gates_active=live_gates_active,
+        )
         outcome = admit_finviz_export_item_for_observation(
             item,
             retrieved_time=item_retrieved,
             router=router,
             store=store,
             server_received_time_ns=server_received_time_ns,
-            ingestion_mode=IngestionMode.HISTORICAL_RECONSTRUCTED,
+            ingestion_mode=ingestion_mode,
         )
         if not outcome.accepted or outcome.event is None:
             skipped.append(
@@ -105,6 +124,7 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
                 "available_time_ns": event.available_time_ns,
                 "received_time_ns": event.received_time_ns,
                 "provider_time_ns": event.provider_time_ns,
+                "ingestion_mode": ingestion_mode.value,
             }
         )
     return {

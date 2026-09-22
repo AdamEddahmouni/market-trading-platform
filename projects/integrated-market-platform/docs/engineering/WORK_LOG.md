@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Finviz news ingest mode stamp (live vs historical)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/ui_api/news_ingest` / `evidence-integrity` |
+| **Summary** | `POST /intelligence/ingest/news` no longer hardcodes `HISTORICAL_RECONSTRUCTED` for every Finviz admit. Mode is selected fail-closed: `LIVE_OBSERVED` only when live gates (`IMP_LIVE_OBSERVATIONAL` + `IMP_FINVIZ_LIVE` + `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS`) are on, a caller-supplied observation window is present, and publication quality is `KNOWN` at/after that window; otherwise `HISTORICAL_RECONSTRUCTED`. Does not retcon stored campaign rows; not deployed into RTH-OBS-NEWS-20260922-A. |
+| **Key files** | Created: `src/.../ui_api/news_ingest_mode.py`; `tests/news/test_news_ingest_mode_stamp.py`. Modified: `src/.../ui_api/news_ingest.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Focused mode-stamp selectors: **12 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **2986** passed, **38** skipped, 0 fail/err. |
+| **Related** | Campaign audit STAMP_CORRECT_HISTORICAL for META pre-arm item; base SHA `24a59220` |
+| **Notes** | Isolated worktree `.worktrees/finviz-ingest-mode-20260922` on `fix/finviz-ingest-mode-stamp`. Did **not** push/PR/deploy. Did **not** touch campaign sqlite, ports 8766/5173/11111, or sibling worktrees. `news_event_build09` remains INACTIVE. |
+
 ## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
 
 | Field | Value |
