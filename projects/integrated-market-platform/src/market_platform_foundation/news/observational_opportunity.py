@@ -1,4 +1,9 @@
-"""Observational NEWS_ARTICLE → OpportunityV1. Not Live authority; not BUILD 09 NEWS_EVENT."""
+"""Observational NEWS_ARTICLE → OpportunityV1. Not Live authority; not BUILD 09 NEWS_EVENT.
+
+``OpportunityEngine.assess`` remains Path A (ForecastV1 + champion). News mint
+does not invent a forecast or DetectionFrame; catalyst qualification is the
+deterministic detector already on the production ingress consumer.
+"""
 
 from __future__ import annotations
 

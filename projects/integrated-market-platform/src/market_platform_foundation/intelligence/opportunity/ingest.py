@@ -111,6 +111,11 @@ def _without_storage_keys(document: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _opportunities_from_repository(repository: Any) -> tuple[OpportunityV1, ...]:
+    lister = getattr(repository, "list_opportunities", None)
+    if callable(lister):
+        listed = lister()
+        if listed is not None:
+            return tuple(listed)
     stores = getattr(repository, "_stores", None)
     if not isinstance(stores, dict):
         return ()
