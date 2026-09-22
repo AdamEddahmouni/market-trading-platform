@@ -19,6 +19,7 @@ from .freshness import (
     fail_closed_for_actionable,
 )
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
+from .provider_linkage_warnings import project_provider_linkage_warnings
 from .read_model import OpportunitySummary, ftep_attention_candidate_to_summary
 from .evidence_promotion import EVIDENCE_CLASS_CANDIDATE
 from .types import AssessmentAction
@@ -94,6 +95,9 @@ def _summary_from_opportunity(
         eligibility_state=lifecycle.value,
         lifecycle_state=lifecycle.value,
         data_quality=quality,
+        provider_linkage_warnings=project_provider_linkage_warnings(
+            opportunity.quality.flags
+        ),
         lineage_refs=tuple(
             {"kind": getattr(ref.kind, "value", ref.kind), "id": ref.id}
             for ref in opportunity.lineage_refs

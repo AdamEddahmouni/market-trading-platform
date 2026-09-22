@@ -14,6 +14,25 @@ import {
 import { fixtureOpportunityRowBase } from "./opportunityDetailFixtures";
 
 describe("opportunityOperatorBrief", () => {
+  it("renders backend provider_linkage_warnings phrases and does not invent wrong ticker", () => {
+    const warned = {
+      ...fixtureOpportunityRowBase,
+      instrument_id: "NVDA",
+      headline: "MillerKnoll announces new lineup",
+      provider_linkage_warnings: ["uncorroborated", "contextual concern", "low confidence"],
+    };
+    const brief = buildOpportunityOperatorBrief(warned);
+    const byQuestion = Object.fromEntries(brief.map((row) => [row.question, row]));
+    expect(byQuestion["Provider linkage?"]?.answer).toBe(
+      "uncorroborated, contextual concern, low confidence",
+    );
+    expect(byQuestion["Provider linkage?"]?.honesty).toBe("OBSERVED");
+    expect(JSON.stringify(brief).toLowerCase()).not.toContain("wrong ticker");
+
+    const clean = buildOpportunityOperatorBrief(fixtureOpportunityRowBase);
+    expect(clean.some((row) => row.question === "Provider linkage?")).toBe(false);
+  });
+
   it("keeps missing providers, conflicts, and invalidation as UNKNOWN", () => {
     const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowBase, null, {
       paperActions: true,
