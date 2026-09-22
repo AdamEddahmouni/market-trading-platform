@@ -36,6 +36,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Integration merge: ingest rejection observability onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed feat/ingest-rejection-observability tip c132197497df384065c986ce22c45cfa5e5a5433 onto integrate/post-close-20260922 tip 6a63d4df. WORK_LOG conflict only: kept both sides append-only (prior integration/diagnostics/OpenD/durability/Finviz entries + opt-in retention + rejection-observability entries). NEWS_EVENT_FOUNDATION.md auto-merged with no markers. No code/test conflicts. Code auto-merged: poll_evidence.py (add), ftep_prospective_catalyst_ingress.py, test_poll_evidence_observability.py (add), test_ftep_prospective_catalyst_ingress.py. Predecessor 8762a576 is an ancestor of the tip but was not the landing target. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only); docs/architecture/NEWS_EVENT_FOUNDATION.md (auto-merge) |
+| **Tests** | Focused news poll-evidence + Finviz admit/window + ingest mode stamp + prospective catalyst ingress after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, eb2c3b72, 6a63d4df, c1321974 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land provider linkage 6eff74be / fc48a9d2. Did not touch detached 80d290ff, campaign state, or .worktrees/finviz-admit-identity-20260922. |
+
+
 ## 2026-09-22 — Integration merge: diagnostics secret-leak metadata onto post-close tip
 
 | Field | Value |
@@ -59,6 +72,31 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `unittest` SecretAuditTest + OperatorEndpointLeakAudit + RankedSummaryLeakAudit **26 passed**; focused `imp.py test focused` (3 selectors) **passed**; `imp.py test affected` / `validate changed` **1850 passed, 5 skipped, 0 fail/err** (twice). |
 | **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); prior BE-01 readiness/config leak fix |
 | **Notes** | Base `origin/main` `24a59220446e2f9c18b4590af133b6b02ffee439`. Worktree `.worktrees/diagnostics-secret-leak` on `fix/diagnostics-secret-leak-metadata`. No push/PR. Independent exact-SHA review required. Campaign contamination risk: **none**. |
+
+
+## 2026-09-22 — Opt-in bounded Finviz poll-evidence retention
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge` |
+| **Summary** | Wired the shared poll-evidence envelope into Finviz prospective ingress: stable item digests + dispositions in `stats.poll_evidence`, optional manifest retention via `IMP_CAMPAIGN_POLL_EVIDENCE_*`. Forensic reconstruction without raw payload hoarding; refuses `rth-campaign-*` roots; default off. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `src/market_platform_foundation/news/poll_evidence.py` |
+| **Tests** | Focused retention + ingress opt-in/refuse-campaign tests |
+| **Related** | Prior rejection-observability commit on this branch; [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md) |
+| **Notes** | Does not fabricate Segment B evidence. Does not write `.local/rth-campaign-20260922-A/B`. Independent exact-SHA review still required. |
+
+## 2026-09-22 — Bounded Finviz poll rejection observability
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge`, `docs` |
+| **Summary** | Empty Finviz ticks now retain a privacy-safe `stats.rejection_summary` (counts + reason buckets only). Maps existing NewsPipeline / universe decisions; undetermined reasons are `UNKNOWN`; hop-2 stages stay `UNAVAILABLE` on hop 1. Qualification criteria and fail-closed ingest mode selection are unchanged. |
+| **Key files** | `src/market_platform_foundation/news/poll_evidence.py` (created); `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/news/test_poll_evidence_observability.py` (created); `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md` |
+| **Tests** | Focused poll-evidence + ingress rejection summary + fail-closed mode helpers (see commit message / session report) |
+| **Related** | [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md); follow-up commit wires opt-in digest retention |
+| **Notes** | Does not write Segment A/B campaign trees. Provider-linkage contradiction heuristics deferred (`PROVIDER_LINKAGE_QUALITY_HOOK` only). Independent exact-SHA review still required. |
 
 ## 2026-09-22 — Integration merge: OpenD single-probe onto post-close tip
 
