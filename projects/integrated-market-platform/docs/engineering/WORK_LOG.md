@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Opt-in bounded Finviz poll-evidence retention
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge` |
+| **Summary** | Wired the shared poll-evidence envelope into Finviz prospective ingress: stable item digests + dispositions in `stats.poll_evidence`, optional manifest retention via `IMP_CAMPAIGN_POLL_EVIDENCE_*`. Forensic reconstruction without raw payload hoarding; refuses `rth-campaign-*` roots; default off. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `src/market_platform_foundation/news/poll_evidence.py` |
+| **Tests** | Focused retention + ingress opt-in/refuse-campaign tests |
+| **Related** | Prior rejection-observability commit on this branch; [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md) |
+| **Notes** | Does not fabricate Segment B evidence. Does not write `.local/rth-campaign-20260922-A/B`. Independent exact-SHA review still required. |
+
 ## 2026-09-22 — Bounded Finviz poll rejection observability
 
 | Field | Value |

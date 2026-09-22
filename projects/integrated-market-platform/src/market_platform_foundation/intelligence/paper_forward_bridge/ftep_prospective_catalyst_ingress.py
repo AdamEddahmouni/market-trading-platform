@@ -12,7 +12,12 @@ from ...news.config import default_pipeline_config
 from ...news.contracts import PipelineConfig
 from ...news.normalize import normalize_finviz_export_item
 from ...news.pipeline import NewsPipeline
-from ...news.poll_evidence import build_poll_rejection_summary
+from ...news.poll_evidence import (
+    CampaignEvidenceRetentionPolicy,
+    build_poll_evidence_envelope,
+    build_poll_rejection_summary,
+    retain_poll_evidence_manifest,
+)
 from ...news.sources import SourceTrustCatalog
 from ...providers.adapters.finviz_elite_context import (
     configured_token,
@@ -574,6 +579,21 @@ def collect_finviz_prospective_attention_rows(
         results=results,
         universe=universe,
     )
+    retention_policy = CampaignEvidenceRetentionPolicy.from_env(env)
+    poll_evidence = build_poll_evidence_envelope(
+        poll_id=f"finviz-prospective-{as_of}",
+        as_of_ns=as_of,
+        fetched_items=items,
+        events=events,
+        results=results,
+        universe=universe,
+        policy=retention_policy,
+        include_items=True,
+    )
+    retained_manifest = retain_poll_evidence_manifest(
+        poll_evidence,
+        policy=retention_policy,
+    )
     stats = {
         "as_of_ns": as_of,
         "ingested_events": ingested,
@@ -582,6 +602,22 @@ def collect_finviz_prospective_attention_rows(
         "manifest_universe_size": len(universe),
         "pipeline_config": pipeline_config.to_dict(),
         "rejection_summary": rejection_summary.to_dict(),
+        # Digests + policy only — never raw Finviz item payloads.
+        "poll_evidence": {
+            "schema_version": poll_evidence.schema_version,
+            "poll_id": poll_evidence.poll_id,
+            "as_of_ns": poll_evidence.as_of_ns,
+            "provider_id": poll_evidence.provider_id,
+            "source_id": poll_evidence.source_id,
+            "item_count": len(poll_evidence.items),
+            "item_digests": [row.item_digest for row in poll_evidence.items],
+            "raw_payloads_retained": False,
+            "retention_enabled": bool(retention_policy.enabled),
+            "retention_policy": dict(poll_evidence.retention_policy),
+            "retained_manifest": (
+                str(retained_manifest) if retained_manifest is not None else None
+            ),
+        },
     }
     classification = CLASS_SUCCESS if rows else CLASS_SUCCESS_EMPTY
     return ProspectiveCatalystIngressResult(
