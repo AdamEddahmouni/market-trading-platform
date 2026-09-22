@@ -379,6 +379,48 @@ class SecretAuditTest(unittest.TestCase):
                 context="mixed_payload",
             )
 
+    def test_assert_no_secrets_allows_public_policy_token_metadata(self) -> None:
+        assert_no_secrets_in_payload(
+            {
+                "execution_authority": "PAPER_ONLY",
+                "allows_network_submit": False,
+                "token_status": "NOT_REQUIRED",
+                "status_token": "OPEND_UNAVAILABLE",
+                "provider_status_token": "HEALTHY",
+                "fallback": {"boundary_token": "FALLBACK_BLOCKED"},
+                "backend_authority": "live_canary.authorization.prepare_canary_authorization_preview",
+            },
+            context="diagnostics_policy_metadata",
+        )
+
+    def test_assert_no_secrets_blocks_secret_value_under_policy_token_name(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"status_token": "sk-synthetic-test-only-secret-material"},
+                context="status_token_secret",
+            )
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"boundary_token": "Bearer synthetic-test-only-secret"},
+                context="boundary_token_secret",
+            )
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {"backend_authority": "sk-synthetic-test-only-secret-material"},
+                context="backend_authority_secret",
+            )
+
+    def test_assert_no_secrets_still_blocks_real_secret_bearing_keys(self) -> None:
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(
+                {
+                    "status_token": "HEALTHY",
+                    "api_key": "sk-synthetic-test-only-secret-material",
+                    "session_token": "sess-synthetic-test-only-secret",
+                },
+                context="mixed_real_secret",
+            )
+
 
 class ReadinessTest(unittest.TestCase):
     def test_ready_when_all_gates_pass(self) -> None:

@@ -71,7 +71,7 @@ Observed diagnostic gaps during the Sep 18 engineering window (treat `121031` as
 2. **State path split** — Linked worktrees with empty `.local` while canonical FTEP SQLite lived on the primary checkout (`WORKTREE_STATE_MISMATCH` from `imp.py state-path`).
 3. **Process probe asymmetry** — `imp.py item9 next-rth-preflight` runs duplicate `--poll` detection; HTTP diagnostics intentionally pass `active_collector_probe=None` until Lane B injects a shared probe adapter.
 4. **Feed vs platform health** — `/opportunities/summary` `UNREADY` / `LIVE_AS_OF_UNAVAILABLE` did not surface as a first-class platform severity alongside lifecycle `HEALTHY`.
-5. **Secret-leak audit fragility** — Historical `UI_SECRET_LEAK_BLOCKED` on readiness/config blocked the very surfaces operators need (fixed on main for enum-shaped metadata).
+5. **Secret-leak audit fragility** — Historical `UI_SECRET_LEAK_BLOCKED` on readiness/config blocked the very surfaces operators need (fixed on main for enum-shaped `credential_state` / config field-descriptor metadata). Provider resilience **policy tokens** (`status_token`, `boundary_token`, `provider_status_token`) are likewise public uppercase enums — name+value-shape allowed; live secret-bearing values under those names or under `api_key` / `session_token` / bearer-shaped keys remain blocked.
 
 This model elevates those failures into `severity`, `human_summary`, and `operator_questions` without mutating receipts or restarting collectors.
 

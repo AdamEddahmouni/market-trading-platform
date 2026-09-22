@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Integration merge: diagnostics secret-leak metadata onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/diagnostics-secret-leak-metadata (eb2c3b72) onto integrate/post-close-20260922 tip a655bab8. WORK_LOG conflict only: kept both sides append-only (prior integration/OpenD/durability/Finviz entries + diagnostics secret-leak entry). No code/test conflicts. Code auto-merged: leak_audit.py + test_operator_endpoint_leak_audit.py + test_security_foundations_p5.py; OPERATOR_DIAGNOSTICS_MODEL.md auto-merged. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_operator_endpoint_leak_audit.py` + `tests/platform/test_security_foundations_p5.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, a655bab8, eb2c3b72 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land rejection observability c1321974 / 8762a576. Campaign observation UI_SECRET_LEAK_BLOCKED on 8e92bb37 left intact as evidence. |
+
+## 2026-09-22 — Diagnostics secret-leak false positives on policy tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform/security`, `operator_diagnostics` |
+| **Summary** | Fixed `UI_SECRET_LEAK_BLOCKED` 500s on `GET /operator/diagnostics` caused by name-based secret matching on public resilience policy fields (`status_token`, `boundary_token`, nested `fallback.boundary_token`). Auditor remains name-triggered via `is_secret_key` markers (`token`/`auth`/`key`) but now allows those fields only when values match uppercase policy-enum shape (same class as `credential_state`). Also allows dotted `backend_authority` module paths. Live secret-bearing values under those names, and under `api_key` / `session_token` / bearer-shaped keys, stay blocked. Segment B campaign untouched. |
+| **Key files** | `src/market_platform_foundation/platform/security/leak_audit.py`; `tests/platform/test_security_foundations_p5.py`; `tests/platform/test_operator_endpoint_leak_audit.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `unittest` SecretAuditTest + OperatorEndpointLeakAudit + RankedSummaryLeakAudit **26 passed**; focused `imp.py test focused` (3 selectors) **passed**; `imp.py test affected` / `validate changed` **1850 passed, 5 skipped, 0 fail/err** (twice). |
+| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); prior BE-01 readiness/config leak fix |
+| **Notes** | Base `origin/main` `24a59220446e2f9c18b4590af133b6b02ffee439`. Worktree `.worktrees/diagnostics-secret-leak` on `fix/diagnostics-secret-leak-metadata`. No push/PR. Independent exact-SHA review required. Campaign contamination risk: **none**. |
+
 ## 2026-09-22 — Integration merge: OpenD single-probe onto post-close tip
 
 | Field | Value |
