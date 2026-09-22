@@ -66,6 +66,26 @@ Order:
 
 Each stage emits `FilterDecision` with `reason_code`, `stage`, and matched catalyst IDs.
 
+### Poll rejection observability
+
+Prospective Finviz ingress attaches a privacy-safe `stats.rejection_summary` per
+poll/tick (`news/poll_evidence.py`). It records **counts and reason buckets
+only** — never raw provider payloads. Undetermined reasons use `UNKNOWN`.
+Stages that are not part of the current hop (for example EventV1 persist /
+Opportunity mint on hop 1) are marked `UNAVAILABLE` rather than invented.
+
+Existing hop-1 semantics are preserved:
+
+- `ingested_events` — fetched/normalized rows before qualification gates
+- `accepted_pipeline_events` — survived NewsPipeline acceptance, catalyst/filter,
+  symbol presence, and configured universe membership
+- A zero-opportunity tick remains valid; diagnostics do not loosen gates
+
+Bounded campaign poll-evidence retention (digests + dispositions, opt-in via
+`IMP_CAMPAIGN_POLL_EVIDENCE_*`) is documented under Configuration below.
+Provider-linkage contradiction heuristics are owned by another lane; this
+module only exposes the no-op `PROVIDER_LINKAGE_QUALITY_HOOK` extension point.
+
 ## Source trust catalog
 
 `SourceTrustCatalog` distinguishes:
@@ -120,7 +140,17 @@ IMP_NEWS_RECENCY_MAX_AGE_SECONDS=259200   # optional, default 72h
 IMP_NEWS_RECENCY_FUTURE_TOLERANCE_SECONDS=300
 IMP_NEWSAPI_LIVE=1
 IMP_FINNHUB_LIVE=1
+
+# Opt-in bounded poll evidence (digests/dispositions only; never raw payloads)
+IMP_CAMPAIGN_POLL_EVIDENCE_RETENTION=1
+IMP_CAMPAIGN_POLL_EVIDENCE_DIR=/path/to/non-campaign/evidence-root
+IMP_CAMPAIGN_POLL_EVIDENCE_MAX_ITEMS=128
+IMP_CAMPAIGN_POLL_EVIDENCE_MAX_POLLS=48
+IMP_CAMPAIGN_POLL_EVIDENCE_HEADLINE_CHARS=80
 ```
+
+Retention refuses known `rth-campaign-*` roots even if misconfigured. Missing
+retention config is a no-op (`enabled=false`).
 
 Verify: `verify_news_config()` from `market_platform_foundation.news.config`.
 

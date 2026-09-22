@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Bounded Finviz poll rejection observability
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge`, `docs` |
+| **Summary** | Empty Finviz ticks now retain a privacy-safe `stats.rejection_summary` (counts + reason buckets only). Maps existing NewsPipeline / universe decisions; undetermined reasons are `UNKNOWN`; hop-2 stages stay `UNAVAILABLE` on hop 1. Qualification criteria and fail-closed ingest mode selection are unchanged. |
+| **Key files** | `src/market_platform_foundation/news/poll_evidence.py` (created); `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/news/test_poll_evidence_observability.py` (created); `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md` |
+| **Tests** | Focused poll-evidence + ingress rejection summary + fail-closed mode helpers (see commit message / session report) |
+| **Related** | [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md); follow-up commit wires opt-in digest retention |
+| **Notes** | Does not write Segment A/B campaign trees. Provider-linkage contradiction heuristics deferred (`PROVIDER_LINKAGE_QUALITY_HOOK` only). Independent exact-SHA review still required. |
+
 ## 2026-09-22 — Observation window requires explicit current-segment arg
 
 | Field | Value |

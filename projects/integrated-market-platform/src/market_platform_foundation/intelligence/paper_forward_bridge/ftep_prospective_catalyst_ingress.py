@@ -12,6 +12,7 @@ from ...news.config import default_pipeline_config
 from ...news.contracts import PipelineConfig
 from ...news.normalize import normalize_finviz_export_item
 from ...news.pipeline import NewsPipeline
+from ...news.poll_evidence import build_poll_rejection_summary
 from ...news.sources import SourceTrustCatalog
 from ...providers.adapters.finviz_elite_context import (
     configured_token,
@@ -566,6 +567,13 @@ def collect_finviz_prospective_attention_rows(
         accepted += 1
         rows.append(row)
 
+    # Bounded diagnostic only — does not change qualification criteria.
+    rejection_summary = build_poll_rejection_summary(
+        fetched_count=len(items),
+        events=events,
+        results=results,
+        universe=universe,
+    )
     stats = {
         "as_of_ns": as_of,
         "ingested_events": ingested,
@@ -573,6 +581,7 @@ def collect_finviz_prospective_attention_rows(
         "universe_filtered": universe_filtered,
         "manifest_universe_size": len(universe),
         "pipeline_config": pipeline_config.to_dict(),
+        "rejection_summary": rejection_summary.to_dict(),
     }
     classification = CLASS_SUCCESS if rows else CLASS_SUCCESS_EMPTY
     return ProspectiveCatalystIngressResult(
