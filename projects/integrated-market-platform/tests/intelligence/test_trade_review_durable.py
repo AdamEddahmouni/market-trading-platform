@@ -59,11 +59,11 @@ class TradeReviewDurableTests(unittest.TestCase):
     def test_acceptance_label(self) -> None:
         self.assertEqual(TRADE_REVIEW_DURABLE_LOOP_READY, "TRADE_REVIEW_DURABLE_LOOP_READY")
 
-    def test_schema_version_eight_includes_trade_reviews(self) -> None:
+    def test_schema_version_includes_trade_reviews(self) -> None:
         local = open_local_state(force=True)
         assert local is not None
         self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
-        self.assertEqual(SCHEMA_VERSION, 8)
+        self.assertEqual(SCHEMA_VERSION, 9)
         tables = {
             str(row[0])
             for row in local.connection.execute(

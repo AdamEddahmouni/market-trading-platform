@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
@@ -377,5 +377,26 @@ ENRICHMENT_OUTBOX_V7: tuple[str, ...] = (
     """
     CREATE INDEX IF NOT EXISTS idx_enrichment_outbox_opportunity
     ON enrichment_outbox(opportunity_id, created_at_ns)
+    """,
+)
+
+INTELLIGENCE_BOOK_V9: tuple[str, ...] = (
+    """
+    CREATE TABLE IF NOT EXISTS intelligence_events (
+        event_id TEXT PRIMARY KEY,
+        event_json TEXT NOT NULL,
+        persist_time_ns INTEGER NOT NULL
+    )
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS intelligence_opportunities (
+        opportunity_id TEXT PRIMARY KEY,
+        opportunity_json TEXT NOT NULL,
+        persist_time_ns INTEGER NOT NULL
+    )
+    """,
+    """
+    CREATE INDEX IF NOT EXISTS idx_intelligence_opportunities_persist
+    ON intelligence_opportunities(persist_time_ns)
     """,
 )

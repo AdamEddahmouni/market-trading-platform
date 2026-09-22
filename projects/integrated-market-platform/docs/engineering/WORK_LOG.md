@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Canonical opportunity loop durable readback (software-controlled)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/opportunity` / `ui_api` / `local_state` |
+| **Summary** | Proved one controlled software path through existing production ingress (`ObservationIngressRouter` / news ingest) → EventV1 → catalyst detector → OpportunityV1, with ranked book readback after process restart. Serving persistence reuses local_state SQLite (same family as operator acks); Mongo is not the serving composition. BUILD 09 NEWS_EVENT and `OpportunityEngine.assess` left unwired (assess requires ForecastV1/champion; no invented DetectionFrame). Live network submit remains false. Classification: software-controlled / FIXTURE — not prospective, calibration, Paper, or Live proof. |
+| **Key files** | Created: `src/.../persistence/local_state_book.py`; `tests/ui1/test_canonical_opportunity_durable_loop.py`. Modified: `local_state/schema.py` (v9), `migrations.py`, `ui_api/live_intelligence.py`, `opportunity/ingest.py`, `persistence/memory.py`, `rt01/.../runtime.py` (`WATCH`/`DISMISS` trace persist fail-closed), `MODE_AUTHORITY.md`, `INTELLIGENCE_PERSISTENCE_ARCHITECTURE_V1.md`. |
+| **Tests** | Focused durable-loop + news ingest/PIT + trade-review/schema + trace runtime: **37 passed**, 0 failed. v2→v9 migration **1 passed**. `python tools/imp.py validate changed` → **3224** passed, **38** skipped, 0 fail/err. |
+| **Related** | [MODE_AUTHORITY.md](../architecture/MODE_AUTHORITY.md); [INTELLIGENCE_PERSISTENCE_ARCHITECTURE_V1.md](INTELLIGENCE_PERSISTENCE_ARCHITECTURE_V1.md) |
+| **Notes** | Isolated worktree `.worktrees/oe-canonical-loop` on `feat/oe-canonical-durable-loop` from `78207ca8`. Did not push/PR. Did not touch Item 9 protocol/evidence. Did not edit liveness-owned files. Did not authorize Live or Paper submit. |
+
 ## 2026-09-22 — Progress-aware runtime service liveness (heartbeat lane)
 
 | Field | Value |

@@ -121,12 +121,18 @@ def _config_version_refs(store: Any) -> tuple[str, ...]:
     return (f"risk-policy/{revision}",)
 
 
-def _persist_draft(draft: ExecutionDecisionTraceDraft) -> ExecutionDecisionTraceV1 | None:
+def _persist_draft(
+    draft: ExecutionDecisionTraceDraft,
+    *,
+    fail_closed: bool = False,
+) -> ExecutionDecisionTraceV1 | None:
     try:
         record = materialize_execution_decision_trace(draft)
         execution_decision_trace_repository().put_execution_decision_trace(record)
         return record
     except Exception:
+        if fail_closed:
+            raise
         return None
 
 
@@ -203,7 +209,7 @@ def record_operator_lifecycle_trace(
         config_version_refs=_config_version_refs(store),
         immutable_inputs=immutable_inputs,
     )
-    return _persist_draft(draft)
+    return _persist_draft(draft, fail_closed=True)
 
 
 def _opportunity_id_from_body(body: Mapping[str, Any]) -> str | None:

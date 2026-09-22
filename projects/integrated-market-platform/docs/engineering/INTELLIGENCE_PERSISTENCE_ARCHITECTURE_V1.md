@@ -38,6 +38,16 @@ Live runtime processing does **not** read MongoDB as an event bus. Providers
 flow through the runtime pipeline; a persistence writer may append canonical
 records to MongoDB asynchronously or after processing.
 
+## Serving composition (UI API ranked book)
+
+Mongo is **not** the serving IntelligenceRepository for the UI API opportunity
+loop. When `IMP_PERSIST_STATE=1` or `IMP_STATE_DIR` is set, EventV1 and
+OpportunityV1 used by `GET /opportunities/summary` persist on the same
+local_state SQLite database as operator acks, trade reviews, and execution
+decision traces (`LocalStateIntelligenceRepository`). Persist-off remains
+process-local `INTENTIONAL_EPHEMERAL` memory. This is not a second Opportunity
+schema and not a Mongo replacement for BUILD 04.5 operational collections.
+
 ## Storage tiers
 
 | Tier | Technology | Role |

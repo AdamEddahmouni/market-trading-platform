@@ -303,6 +303,13 @@ class InMemoryIntelligenceRepository:
     def get_opportunity(self, opportunity_id: str) -> OpportunityV1 | None:
         return self._get(OpportunityV1, "opportunities", opportunity_id)
 
+    def list_opportunities(self) -> tuple[OpportunityV1, ...]:
+        with self._lock:
+            rows = [
+                self._decode(OpportunityV1, body) for body in self._stores["opportunities"].values()
+            ]
+        return tuple(sorted(rows, key=lambda row: (row.created_at_ns, row.opportunity_id)))
+
     def put_allocation_decision(self, decision) -> RepositoryPutResult:
         from ..opportunity.allocation_persistence import allocation_decision_v1_to_dict
 
