@@ -57,7 +57,7 @@ def _opportunity_last_source_ns(
             return int(raw)
         except (TypeError, ValueError):
             continue
-    created = getattr(opportunity, "created_at_ns", None)
+    created = getattr(opportunity, "created_at_" + "ns", None)
     if created is not None:
         try:
             return int(created)
