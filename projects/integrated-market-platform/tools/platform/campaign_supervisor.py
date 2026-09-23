@@ -270,6 +270,53 @@ def cmd_status(args: argparse.Namespace) -> int:
     return 2
 
 
+def cmd_readiness(args: argparse.Namespace) -> int:
+    """Read observation start-gate contract (same model as Operator Control)."""
+
+    readiness_mod = _load_campaign_observation_readiness()
+    state_dir = _state_dir(args.state_dir)
+    intent_explicit = {
+        "campaign_id": args.campaign_id,
+        "intended_date_et": args.intended_date_et,
+        "frozen": args.frozen,
+        "runtime_sha": args.runtime_sha,
+        "observation_window_id": args.observation_window_id,
+    }
+    # Drop unset CLI fields so env/intent-file can still supply them.
+    intent_explicit = {k: v for k, v in intent_explicit.items() if v is not None and str(v).strip() != ""}
+    payload = readiness_mod.compose_campaign_observation_readiness_for_state(
+        state_dir,
+        intent_explicit=intent_explicit or None,
+        ingress_enabled=None,
+    )
+    print(json.dumps(payload, indent=2, sort_keys=True))
+    if payload.get("has_blocking_alert"):
+        return 2
+    if payload.get("phase") in {"ACTIVE_STALLED", "BLOCKED_AUTHORITY", "BLOCKED_RUNTIME", "BLOCKED_STATE_DIR"}:
+        return 2
+    return 0
+
+
+def _load_campaign_observation_readiness():
+    module_path = (
+        SRC
+        / "market_platform_foundation"
+        / "platform"
+        / "operator_diagnostics"
+        / "campaign_observation_readiness.py"
+    )
+    spec = importlib.util.spec_from_file_location(
+        "imp_campaign_observation_readiness_standalone",
+        module_path,
+    )
+    if spec is None or spec.loader is None:
+        raise ImportError(f"unable to load campaign_observation_readiness from {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
 def cmd_shutdown(args: argparse.Namespace) -> int:
     state_dir = _state_dir(args.state_dir)
     ownership = read_ownership(state_dir)
@@ -459,7 +506,10 @@ def build_parser() -> argparse.ArgumentParser:
     mech = sub.add_parser("mechanism", help="Describe detachment mechanism")
     mech.set_defaults(func=cmd_mechanism)
 
-    arm = sub.add_parser("arm", help="Write durable campaign ownership")
+    arm = sub.add_parser(
+        "arm",
+        help="ARM OBSERVATION: write durable campaign ownership (execution stays BLOCKED; never GO LIVE)",
+    )
     arm.add_argument("--state-dir")
     arm.add_argument("--campaign-id", required=True)
     arm.add_argument("--observation-window-id", required=True)
@@ -493,6 +543,18 @@ def build_parser() -> argparse.ArgumentParser:
     status = sub.add_parser("status", help="Evaluate durable campaign progress")
     status.add_argument("--state-dir")
     status.set_defaults(func=cmd_status)
+
+    readiness = sub.add_parser(
+        "readiness",
+        help="Observation start-gate read model (fail-visible NOT_ARMED / API / UI / heartbeat)",
+    )
+    readiness.add_argument("--state-dir")
+    readiness.add_argument("--campaign-id")
+    readiness.add_argument("--intended-date-et", help="YYYY-MM-DD America/New_York")
+    readiness.add_argument("--frozen", choices=["yes", "no"])
+    readiness.add_argument("--runtime-sha")
+    readiness.add_argument("--observation-window-id")
+    readiness.set_defaults(func=cmd_readiness)
 
     shutdown = sub.add_parser("shutdown", help="Deliberate clean or RTH-close shutdown")
     shutdown.add_argument("--state-dir")
