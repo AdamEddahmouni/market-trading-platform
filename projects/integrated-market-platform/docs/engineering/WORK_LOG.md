@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Next-RTH runtime freeze FROZEN_NOT_ARMED (bf405f46)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / campaign freeze |
+| **Summary** | Declared observational campaign `RTH-OBS-NEWS-20260923` / FTEP-V1-002 **`FROZEN_NOT_ARMED`** on runtime commit `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` (tree `c3b5a08b94e93e4ead3c9802092ecdebea1c3434`). Docs tip may advance; runtime SHA is not retargeted to docs. Not armed. Not EMPIRICAL_ACTIVE. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Read-only audit at bf405f4: supervisor mechanism; Item 9 readiness `SOFTWARE_READY_RTH_REQUIRED` / `PARTIAL_NOT_CALIBRATED`; live authority `BLOCKED`; RTH15-10 freeze certificate `RTH15_10_COMPLETE=YES` + 7 protocol-control unit tests OK; disposable Windows job-kill harness → PROCEED_FREEZE |
+| **Related** | PR #386 merge `fd19258d` (docs tip); durability branch `diagnostic/win-job-kill-durability-20260922` (unmerged harness) |
+| **Notes** | Gate 11 remains PARTIAL (children die with job under default flags; ambient breakaway not terminal-independent). Sep 22 gap root UNPROVEN. Invalidation: no silent SHA move under same campaign identity. |
+
 ## 2026-09-22 — Next RTH candidate SHA after #384 (docs only)
 
 | Field | Value |
