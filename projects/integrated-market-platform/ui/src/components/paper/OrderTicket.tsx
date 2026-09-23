@@ -20,6 +20,10 @@ import {
   type PaperOrderDraft,
 } from "../paper-now/paperOrderDraft";
 import {
+  buildPaperOrderAcknowledgement,
+  type PaperOrderAcknowledgement,
+} from "../paper-workspace/paperOrderAcknowledgement";
+import {
   derivePreviewPresentationState,
   type PaperPreviewPresentationState,
 } from "../paper-workspace/paperPreviewPresentation";
@@ -32,7 +36,7 @@ type OrderTicketProps = {
   maxOrderShares: number;
   initialDraft?: PaperOrderDraft;
   contextLanes?: Array<{ lane: string; relevance: string; summary: string }>;
-  onSubmitted?: (intentId?: string) => void;
+  onSubmitted?: (acknowledgement: PaperOrderAcknowledgement) => void;
   onPreviewStateChange?: (state: PaperPreviewPresentationState) => void;
   showLaneBanner?: boolean;
 };
@@ -186,7 +190,7 @@ export function OrderTicket({
         ...confirmedRequest,
         preview_id: preview.preview_id,
       });
-      onSubmitted?.(response.submission.intent_id);
+      onSubmitted?.(buildPaperOrderAcknowledgement(response.submission, initialDraft));
       setPreview(null);
       setConfirmedRequest(null);
       setPreviewOrigin(null);
