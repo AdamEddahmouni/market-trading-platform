@@ -268,10 +268,209 @@ class Item7OpendCapturePersistTests(unittest.TestCase):
             ]
             record_types = {str(row.get("record_type")) for row in rows}
             self.assertIn("event", record_types)
+            self.assertIn("forecast", record_types)
             self.assertIn("prediction_ledger_entry", record_types)
+            self.assertGreaterEqual(persist.forecasts_persisted, 1)
             blob = json.dumps(persist.to_dict())
             self.assertNotIn("ITEM7_COMPLETE", blob)
             self.assertNotIn("GOVERNED_ROW_CAPTURED", blob)
+
+    def test_bound_forecast_persisted_enables_corpus_join_after_reload(self) -> None:
+        """Regression: contributor-dir bind must durable-forecast into governed JSONL.
+
+        Without appending the bound PRODUCTION forecast, corpus discovery reloads
+        outcome+snapshot+signals but hits FORECAST_NOT_FOUND.
+        """
+
+        from market_platform_foundation.intelligence.contracts.signal import (  # noqa: PLC0415
+            signal_v1_to_dict,
+        )
+        from market_platform_foundation.intelligence.production.corpus_collector import (  # noqa: PLC0415
+            collect_candidates_from_repository,
+        )
+        from market_platform_foundation.intelligence.production.corpus_join_diagnostics import (  # noqa: PLC0415
+            diagnose_corpus_join_edges,
+        )
+        from market_platform_foundation.intelligence.production.identity import (  # noqa: PLC0415
+            PATH_A_HORIZON_NS,
+        )
+
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self._readiness.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        five_sec = 5 * 1_000_000_000
+        one_min = 60 * 1_000_000_000
+        maturity_as_of = T + PATH_A_HORIZON_NS + one_min
+        target_time = T + PATH_A_HORIZON_NS
+        terminal = _trade_tick_line(
+            sequence=12,
+            clocks={
+                "event_time_ns": target_time,
+                "provider_time_ns": target_time,
+                "available_time_ns": target_time,
+                "received_time_ns": target_time + five_sec,
+                "ingested_time_ns": target_time + five_sec,
+            },
+            raw_payload={
+                "code": "US.AAPL",
+                "price": 191.5,
+                "sequence": 12,
+                "ticker_direction": "BUY",
+                "time": "2026-09-12 16:04:00.000",
+                "turnover": 1915.0,
+                "type": "NORMAL",
+                "volume": 10,
+            },
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            os.environ["IMP_STATE_DIR"] = str(root)
+            contrib = root / "path-a" / "contributors"
+            contrib.mkdir(parents=True, exist_ok=True)
+            persist_path_a_production_contributor(
+                emitted.forecast,
+                destination=contrib,
+                mode="paper",
+            )
+            capture = root / "captures" / CANONICAL_CAPTURE_FILENAME
+            capture.parent.mkdir(parents=True, exist_ok=True)
+            _write_jsonl(
+                capture,
+                [
+                    _snapshot_bbo_envelope(sequence=1),
+                    _trade_tick_line(),
+                    terminal,
+                ],
+            )
+            jsonl = root / GOVERNED_INTELLIGENCE_JSONL
+            seed_lines = [
+                json.dumps(
+                    {"record_type": "snapshot", "payload": snapshot_v1_to_dict(_emit_snapshot())},
+                    sort_keys=True,
+                )
+            ]
+            for signal in _emit_signals():
+                seed_lines.append(
+                    json.dumps(
+                        {"record_type": "signal", "payload": signal_v1_to_dict(signal)},
+                        sort_keys=True,
+                    )
+                )
+            jsonl.write_text("\n".join(seed_lines) + "\n", encoding="utf-8")
+            persist = persist_lawful_opend_capture_append(
+                _snapshot_bbo_envelope(sequence=1),
+                capture_path=capture,
+                as_of_ns=maturity_as_of,
+                session_start_ns=SESSION_START,
+                contributor_path=contrib,
+                persistence_root=root,
+            )
+            self.assertEqual(persist.disposition, DISPOSITION_PERSISTED)
+            assert persist.natural_settlement is not None
+            self.assertEqual(persist.natural_settlement["settled"], 1)
+            record_types = {
+                str(json.loads(line).get("record_type"))
+                for line in jsonl.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            }
+            self.assertIn("outcome", record_types)
+            # Bound forecast must be recoverable after reload: either appended to
+            # governed JSONL or rediscovered from path-a/contributors.
+            loaded, report = load_governed_intelligence_repository(persistence_root=root)
+            self.assertGreaterEqual(report.forecasts, 1)
+            if persist.forecasts_persisted >= 1:
+                self.assertIn("forecast", record_types)
+            else:
+                contrib_sources = [
+                    source
+                    for source in report.sources
+                    if source.kind == "forecast_dir"
+                    and "contributors" in str(source.path).replace("\\", "/")
+                ]
+                self.assertTrue(contrib_sources)
+                self.assertGreaterEqual(sum(source.records_loaded for source in contrib_sources), 1)
+            diag = diagnose_corpus_join_edges(
+                loaded,
+                training_cutoff_ns=maturity_as_of + one_min,
+            )
+            self.assertEqual(diag.missing_edges.get("FORECAST_NOT_FOUND", 0), 0)
+            self.assertGreaterEqual(diag.joinable_governed_rows, 1)
+            rows = collect_candidates_from_repository(
+                loaded,
+                training_cutoff_ns=maturity_as_of + one_min,
+            )
+            self.assertGreaterEqual(len(rows), 1)
+            blob = json.dumps(persist.to_dict())
+            self.assertNotIn("ITEM7_COMPLETE", blob)
+            self.assertNotIn("GOVERNED_PATH_A_TRAINING_CORPUS_READY", blob)
+
+    def test_external_contributor_bind_appends_forecast_to_governed_jsonl(self) -> None:
+        """When contributor JSON lives outside IMP_STATE_DIR, bind must durable it."""
+
+        emitted = emit_production_forecast(
+            snapshot=_emit_snapshot(),
+            signals=_emit_signals(),
+            model=self._readiness.model,
+            target=PATH_A_TARGET,
+            horizon=PATH_A_HORIZON,
+            mode="paper",
+            as_of_time_ns=T,
+        )
+        assert emitted.forecast is not None
+        persist_path_a_production_contributor(
+            emitted.forecast,
+            destination=self.contributors,
+            mode="paper",
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            os.environ["IMP_STATE_DIR"] = str(root)
+            capture = root / "captures" / CANONICAL_CAPTURE_FILENAME
+            capture.parent.mkdir(parents=True, exist_ok=True)
+            _write_jsonl(
+                capture,
+                [
+                    _snapshot_bbo_envelope(sequence=1),
+                    _trade_tick_line(),
+                ],
+            )
+            jsonl = root / GOVERNED_INTELLIGENCE_JSONL
+            jsonl.write_text(
+                json.dumps(
+                    {"record_type": "snapshot", "payload": snapshot_v1_to_dict(_emit_snapshot())},
+                    sort_keys=True,
+                )
+                + "\n",
+                encoding="utf-8",
+            )
+            persist = persist_lawful_opend_capture_append(
+                _snapshot_bbo_envelope(sequence=1),
+                capture_path=capture,
+                as_of_ns=AS_OF,
+                session_start_ns=SESSION_START,
+                contributor_path=self.contributors,
+                persistence_root=root,
+            )
+            self.assertEqual(persist.disposition, DISPOSITION_PERSISTED)
+            self.assertGreaterEqual(persist.ledger_registered, 1)
+            self.assertGreaterEqual(persist.forecasts_persisted, 1)
+            record_types = {
+                str(json.loads(line).get("record_type"))
+                for line in jsonl.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            }
+            self.assertIn("forecast", record_types)
+            loaded, report = load_governed_intelligence_repository(persistence_root=root)
+            self.assertEqual(report.forecasts, 1)
+            stores = getattr(loaded, "_stores", {})
+            self.assertEqual(len(stores.get("forecasts") or {}), 1)
 
     def test_persist_refuses_non_lawful_envelope(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
