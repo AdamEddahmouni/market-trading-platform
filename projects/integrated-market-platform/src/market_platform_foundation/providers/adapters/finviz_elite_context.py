@@ -143,13 +143,13 @@ class FinvizEliteContextProvider:
         if not wanted:
             return self._unavailable("INSTRUMENT_ID_REQUIRED")
         if _is_es_or_futures(wanted):
-            return self._unavailable("FINVIZ_NOT_ES_OR_FUTURES")
+            return self._unavailable("FINVIZ_NOT_ES_OR_FUTURES", instrument_id=wanted)
         token = self._resolved_token()
         if not token:
-            return self._unavailable("NOT_CONFIGURED")
+            return self._unavailable("NOT_CONFIGURED", instrument_id=wanted)
         screener, news_client = self._resolve_clients(token)
         if screener is None and news_client is None:
-            return self._unavailable("LIVE_DISABLED")
+            return self._unavailable("LIVE_DISABLED", instrument_id=wanted)
         received_ns = monotonic_wall_ns()
         screen_payload = self._fetch_screen(screener, wanted)
         news_payload = self._fetch_news(news_client, wanted)
@@ -176,6 +176,7 @@ class FinvizEliteContextProvider:
             events=(redact_payload(event),),
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=wanted,
         )
 
     def _resolve_clients(self, token: str) -> tuple[Any | None, Any | None]:
@@ -221,12 +222,20 @@ class FinvizEliteContextProvider:
         }
         return redact_payload(news)
 
-    def _unavailable(self, reason_code: str) -> ProviderResult:
+    def _unavailable(
+        self,
+        reason_code: str,
+        *,
+        instrument_id: str = "",
+        details: dict[str, Any] | None = None,
+    ) -> ProviderResult:
         return ProviderResult(
             status="unavailable",
             reason_code=reason_code,
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=str(instrument_id or "").strip().upper(),
+            details=dict(details or {}),
         )
 
 

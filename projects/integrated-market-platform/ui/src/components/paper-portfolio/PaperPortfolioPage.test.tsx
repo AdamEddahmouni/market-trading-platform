@@ -154,4 +154,16 @@ describe("PaperPortfolioPage", () => {
     expect(screen.getAllByRole("link", { name: "Open Workspace" }).length).toBeGreaterThan(0);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
   });
+
+  it("points Fills at Order history instead of a vague activity section", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    renderPage(true);
+
+    expect(screen.queryByText(/activity section below/i)).not.toBeInTheDocument();
+    const handoff = screen.getByRole("link", { name: "Order history" });
+    expect(handoff).toHaveAttribute("href", "#portfolio-order-history");
+    expect(document.getElementById("portfolio-order-history")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Fills" })).toBeInTheDocument();
+  });
 });

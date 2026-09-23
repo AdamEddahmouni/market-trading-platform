@@ -49,6 +49,14 @@ DEFAULT_FORECAST_DIR_RELATIVE = (
     "forecasts/path-a",
 )
 
+# Mirror Item 7 bind discovery (`item7_opend_capture_persist._DEFAULT_CONTRIBUTOR_RELATIVE`)
+# so corpus reload can see the same PRODUCTION contributor dirs used for ledger bind.
+DEFAULT_CONTRIBUTOR_DIR_RELATIVE = (
+    "path-a/contributors",
+    "path-a/production/contributors",
+    "contributors",
+)
+
 
 @dataclass(frozen=True, slots=True)
 class GovernedPersistenceSource:
@@ -121,10 +129,17 @@ def discover_governed_persistence_paths(root: Path) -> GovernedPersistenceLoadOp
         if candidate.is_file():
             jsonl_paths.append(candidate.resolve())
     forecast_dirs: list[Path] = []
-    for relative in DEFAULT_FORECAST_DIR_RELATIVE:
+    seen_dirs: set[str] = set()
+    for relative in (*DEFAULT_FORECAST_DIR_RELATIVE, *DEFAULT_CONTRIBUTOR_DIR_RELATIVE):
         candidate = root / relative
-        if candidate.is_dir():
-            forecast_dirs.append(candidate.resolve())
+        if not candidate.is_dir():
+            continue
+        resolved = candidate.resolve()
+        key = str(resolved)
+        if key in seen_dirs:
+            continue
+        seen_dirs.add(key)
+        forecast_dirs.append(resolved)
     return GovernedPersistenceLoadOptions(
         persistence_root=root.resolve(),
         intelligence_jsonl_paths=tuple(jsonl_paths),
@@ -305,6 +320,9 @@ def load_governed_intelligence_repository(
 
 
 __all__ = [
+    "DEFAULT_CONTRIBUTOR_DIR_RELATIVE",
+    "DEFAULT_FORECAST_DIR_RELATIVE",
+    "DEFAULT_INTELLIGENCE_JSONL_RELATIVE",
     "GovernedPersistenceLoadOptions",
     "GovernedPersistenceLoadReport",
     "GovernedPersistenceSource",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
@@ -12,13 +12,20 @@ EXECUTION_DISABLED = "EXECUTION_NOT_ENABLED"
 
 @dataclass(frozen=True)
 class ProviderResult:
-    """Normalized provider response with explicit availability semantics."""
+    """Normalized provider response with explicit availability semantics.
+
+    Failure receipts must retain ``instrument_id`` / ``details`` when known so
+    operators can link a reason_code to the requested symbol without inventing
+    market evidence. Empty ``instrument_id`` means the caller supplied none.
+    """
 
     status: str
     events: tuple[dict[str, Any], ...] = ()
     reason_code: str | None = None
     provider_id: str = ""
     capability: str = ""
+    instrument_id: str = ""
+    details: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

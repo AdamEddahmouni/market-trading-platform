@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..admitted_factual_gold.fact_normalization import normalize_scalar
+from .answerability import AnswerabilityClass, classify_answerability
+from .claim_linkage import facts_include_negative, facts_preserve_provenance
 from .evidence_projection import load_projected_artifacts, primary_artifact
 from .question_handlers import QUESTION_CLASS_HANDLERS
 from .temporal_cutoff import historical_payload_violates_cutoff
@@ -46,10 +48,7 @@ def _format_answer(
 
 
 def _facts_have_provenance(facts: list[dict[str, Any]]) -> bool:
-    for row in facts:
-        if not row.get("source_artifact") or not row.get("source_path") or not row.get("support_hash"):
-            return False
-    return True
+    return facts_preserve_provenance(facts)
 
 
 def _detect_conflicts(facts: list[dict[str, Any]]) -> bool:
@@ -93,6 +92,13 @@ def answer_admitted_factual_question(
         )
 
     facts = handler(artifact, question_text)
+    answerability = classify_answerability(
+        blind_mode=None,
+        evidence_present=True,
+        conflicting=_detect_conflicts(facts) if facts else False,
+        negative_fact_present=facts_include_negative(facts) if facts else False,
+        question_class=question_class,
+    )
 
     if not facts:
         if question_class == "ABSTENTION":
@@ -109,14 +115,15 @@ def answer_admitted_factual_question(
                 structured_facts=(),
                 abstention_reason="METRIC_NOT_IN_ADMITTED_ARTIFACT",
             )
+        # Absent field in otherwise loadable artifact ≠ negative observation.
         return GroundedFactualOutcome(
-            disposition=FactualAnswerDisposition.EVIDENCE_NOT_PROJECTABLE,
+            disposition=FactualAnswerDisposition.ABSENT_EVIDENCE,
             answer="UNKNOWN",
             structured_facts=(),
-            abstention_reason="NO_SUPPORTED_FACT_CANDIDATES",
+            abstention_reason="ABSENT_FIELD_IN_ADMITTED_EVIDENCE",
         )
 
-    if _detect_conflicts(facts):
+    if answerability == AnswerabilityClass.CONTRADICTING_EVIDENCE or _detect_conflicts(facts):
         return GroundedFactualOutcome(
             disposition=FactualAnswerDisposition.CONFLICTING_EVIDENCE,
             answer="UNKNOWN",
@@ -132,8 +139,13 @@ def answer_admitted_factual_question(
             abstention_reason="INSUFFICIENT_PROVENANCE",
         )
 
+    disposition = (
+        FactualAnswerDisposition.NEGATIVE_EVIDENCE
+        if answerability == AnswerabilityClass.NEGATIVE_EVIDENCE
+        else FactualAnswerDisposition.SUPPORTED_ANSWER
+    )
     return GroundedFactualOutcome(
-        disposition=FactualAnswerDisposition.SUPPORTED_ANSWER,
+        disposition=disposition,
         answer=_format_answer(facts, normalization=normalization),
         structured_facts=tuple(facts),
         abstention_reason=None,

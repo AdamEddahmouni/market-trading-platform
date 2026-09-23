@@ -2,8 +2,9 @@
 
 After a successful ``item7_opend_capture_writer`` append, materializes the operator
 capture JSONL through the existing #212→#213→#214→ledger path (fail-closed). Appends
-new events and ledger rows to ``intelligence_records.jsonl`` under ``IMP_STATE_DIR``.
-Does not force settlement, mint forecasts, or claim empirical corpus readiness.
+new events, bound PRODUCTION forecasts, and ledger rows to
+``intelligence_records.jsonl`` under ``IMP_STATE_DIR``. Does not force settlement,
+mint forecasts, or claim empirical corpus readiness.
 """
 
 from __future__ import annotations
@@ -24,6 +25,7 @@ from ...market_data.moomoo_snapshot_bbo import (
 from ...market_data.timestamps import clocks_from_capture
 from ...shadow.session import session_bounds_ns
 from ..contracts.event import EventV1, event_v1_to_dict
+from ..contracts.forecast import ForecastV1, forecast_v1_to_dict
 from ..contracts.prediction_ledger import (
     PredictionLedgerEntryV1,
     prediction_ledger_entry_v1_to_dict,
@@ -70,6 +72,7 @@ class Item7CaptureAutoPersistResult:
     disposition: str
     intelligence_jsonl_path: str | None = None
     events_persisted: int = 0
+    forecasts_persisted: int = 0
     ledger_registered: int = 0
     refusal_reason: str | None = None
     materialization: dict[str, Any] | None = None
@@ -80,6 +83,7 @@ class Item7CaptureAutoPersistResult:
             "artifact_kind": PERSIST_ARTIFACT_KIND,
             "disposition": self.disposition,
             "events_persisted": self.events_persisted,
+            "forecasts_persisted": self.forecasts_persisted,
             "intelligence_jsonl_path": self.intelligence_jsonl_path,
             "ledger_registered": self.ledger_registered,
             "materialization": self.materialization,
@@ -175,6 +179,16 @@ def _event_ids(repository: IntelligenceRepository) -> set[str]:
     return {str(key) for key in bucket}
 
 
+def _forecast_ids(repository: IntelligenceRepository) -> set[str]:
+    stores = getattr(repository, "_stores", None)
+    if not isinstance(stores, dict):
+        return set()
+    bucket = stores.get("forecasts")
+    if not isinstance(bucket, dict):
+        return set()
+    return {str(key) for key in bucket}
+
+
 def _events_by_id(repository: IntelligenceRepository) -> dict[str, EventV1]:
     stores = getattr(repository, "_stores", None)
     decode = getattr(repository, "_decode", None)
@@ -188,6 +202,22 @@ def _events_by_id(repository: IntelligenceRepository) -> dict[str, EventV1]:
         event = decode(EventV1, body)
         if event is not None:
             rows[str(event.event_id)] = event
+    return rows
+
+
+def _forecasts_by_id(repository: IntelligenceRepository) -> dict[str, ForecastV1]:
+    stores = getattr(repository, "_stores", None)
+    decode = getattr(repository, "_decode", None)
+    if not isinstance(stores, dict) or decode is None:
+        return {}
+    bucket = stores.get("forecasts")
+    if not isinstance(bucket, dict):
+        return {}
+    rows: dict[str, ForecastV1] = {}
+    for body in bucket.values():
+        forecast = decode(ForecastV1, body)
+        if forecast is not None:
+            rows[str(forecast.forecast_id)] = forecast
     return rows
 
 
@@ -227,13 +257,22 @@ def append_materialized_records_to_governed_jsonl(
     intelligence_jsonl_path: Path,
     event_ids_before: set[str],
     ledger_ids_before: set[str],
-) -> tuple[int, int]:
-    """Append newly materialized events and ledger rows (idempotent on disk)."""
+    forecast_ids_before: set[str] | None = None,
+) -> tuple[int, int, int]:
+    """Append newly materialized events, bound forecasts, and ledger rows.
+
+    Bound PRODUCTION contributors are loaded from operator contributor dirs for
+    ledger registration; without appending them here, corpus discovery after
+    reload hits ``FORECAST_NOT_FOUND`` on settled outcomes. Idempotent on disk.
+    """
 
     events_appended = 0
+    forecasts_appended = 0
     ledger_appended = 0
+    before_forecasts = forecast_ids_before if forecast_ids_before is not None else set()
     if intelligence_jsonl_path.is_file():
         existing_event_ids: set[str] = set()
+        existing_forecast_ids: set[str] = set()
         existing_ledger_ids: set[str] = set()
         for line in intelligence_jsonl_path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
@@ -252,12 +291,17 @@ def append_materialized_records_to_governed_jsonl(
                 event_id = str(payload.get("event_id") or "")
                 if event_id:
                     existing_event_ids.add(event_id)
+            elif record_type == "forecast":
+                forecast_id = str(payload.get("forecast_id") or "")
+                if forecast_id:
+                    existing_forecast_ids.add(forecast_id)
             elif record_type == "prediction_ledger_entry":
                 ledger_id = str(payload.get("ledger_entry_id") or "")
                 if ledger_id:
                     existing_ledger_ids.add(ledger_id)
     else:
         existing_event_ids = set()
+        existing_forecast_ids = set()
         existing_ledger_ids = set()
 
     for event_id, event in _events_by_id(repository).items():
@@ -265,6 +309,12 @@ def append_materialized_records_to_governed_jsonl(
             continue
         _append_jsonl_record(intelligence_jsonl_path, "event", event_v1_to_dict(event))
         events_appended += 1
+
+    for forecast_id, forecast in _forecasts_by_id(repository).items():
+        if forecast_id in before_forecasts or forecast_id in existing_forecast_ids:
+            continue
+        _append_jsonl_record(intelligence_jsonl_path, "forecast", forecast_v1_to_dict(forecast))
+        forecasts_appended += 1
 
     for ledger_id, entry in _ledger_entries_by_id(repository).items():
         if ledger_id in ledger_ids_before or ledger_id in existing_ledger_ids:
@@ -276,7 +326,7 @@ def append_materialized_records_to_governed_jsonl(
         )
         ledger_appended += 1
 
-    return events_appended, ledger_appended
+    return events_appended, forecasts_appended, ledger_appended
 
 
 def persist_lawful_opend_capture_append(
@@ -333,6 +383,7 @@ def persist_lawful_opend_capture_append(
 
     repository, _load_report = load_governed_intelligence_repository(persistence_root=root)
     event_ids_before = _event_ids(repository)
+    forecast_ids_before = _forecast_ids(repository)
     ledger_ids_before = _ledger_ids(repository)
     outcome_ids_before = _outcome_ids(repository)
 
@@ -360,11 +411,12 @@ def persist_lawful_opend_capture_append(
         use_production_ingress=False,
     )
 
-    events_appended, ledger_appended = append_materialized_records_to_governed_jsonl(
+    events_appended, forecasts_appended, ledger_appended = append_materialized_records_to_governed_jsonl(
         repository,
         intelligence_jsonl_path=jsonl_path,
         event_ids_before=event_ids_before,
         ledger_ids_before=ledger_ids_before,
+        forecast_ids_before=forecast_ids_before,
     )
 
     settlement_summary: Item7NaturalSettlementResult | None = None
@@ -381,9 +433,11 @@ def persist_lawful_opend_capture_append(
         disposition=DISPOSITION_PERSISTED,
         intelligence_jsonl_path=str(jsonl_path),
         events_persisted=events_appended,
+        forecasts_persisted=forecasts_appended,
         ledger_registered=ledger_appended,
         materialization={
             "events_persisted": materialized.events_persisted,
+            "forecasts_persisted": forecasts_appended,
             "ledger_registered": materialized.ledger_registered,
             "refusal_reasons": dict(materialized.refusal_reasons),
             "funnel": materialized.funnel.to_dict(),
