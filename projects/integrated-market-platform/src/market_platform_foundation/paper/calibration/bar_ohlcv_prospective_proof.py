@@ -397,11 +397,14 @@ def run_prospective_proof(
         poll_attempt_index=poll_attempt_index,
         opend_kline_session=opend_kline_session,
     )
-    raw_source: Sequence[Mapping[str, Any]]
+    # Reuse the rows already fetched for gate + hash. A second live OpenD pull
+    # would risk provenance mismatch (hash/diag from fetch #1, bar from #2) and
+    # can fail closed after a lawful post-signal bar was already observed.
+    raw_source: tuple[Mapping[str, Any], ...]
     if kline_rows is not None:
-        raw_source = kline_rows
+        raw_source = tuple(kline_rows)
     else:
-        raw_source = loaded.raw_rows
+        raw_source = tuple(loaded.raw_rows)
     raw_hash = hash_raw_kline_rows(raw_source)
     kline_fetch = kline_fetch_diagnostics(loaded)
     if not loaded.ok:
@@ -440,8 +443,15 @@ def run_prospective_proof(
         source="moomoo-opend",
         collection_root=collection_root,
         env=env,
-        kline_rows=kline_rows,
+        kline_rows=raw_source,
     )
+    if result.first_post_signal_bar is None:
+        return {
+            "ok": False,
+            "reason_code": result.classification or REASON_NO_POST_SIGNAL_BAR,
+            "receipt": None,
+            "kline_fetch": kline_fetch,
+        }
     receipt = build_evidence_receipt(
         experiment_id=exp_id,
         proof_mode=PROOF_MODE_PROSPECTIVE,

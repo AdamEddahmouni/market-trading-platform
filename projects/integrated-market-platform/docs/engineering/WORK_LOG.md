@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Item 9 live prospective proof single-fetch (RTH15-04 readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 / RTH15-04 software readiness |
+| **Summary** | Mode B `run_prospective_proof` reused the already-fetched kline page for the bounded dry-run instead of a second live OpenD pull. That removes a provenance mismatch risk (hash/diag from fetch #1 vs bar from #2) and a fail-after-success race that could block a lawful post-signal receipt. Item 9 remains `PARTIAL_NOT_CALIBRATED`; no fitting, floors, or Full30. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py` (modified); `tests/providers/test_opend_history_kline_1m.py` (modified) |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof` → **48 OK** (includes new `test_live_prospective_success_fetches_opend_exactly_once`) |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](./ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); RTH15-04 readiness audit on `research/item9-readiness-20260922` @ `origin/main` `aa15ebd7` |
+| **Notes** | Local commit only — no push/PR/merge. Market closed; no fake bars; `orders_placed=false`; `execution_authority` untouched/BLOCKED. Remaining empirical need: one genuine prospective post-signal K_1M receipt under lawful RTH with PIT preserved. |
+
 ## 2026-09-22 — Segment B close + post-close integration status docs
 
 | Field | Value |
