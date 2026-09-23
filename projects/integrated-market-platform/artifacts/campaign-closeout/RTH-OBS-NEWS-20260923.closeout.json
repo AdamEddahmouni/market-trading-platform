@@ -1,0 +1,215 @@
+{
+  "allows_network_submit": false,
+  "arm_timestamp_et": "2026-09-23 13:03:32.789458 -04:00",
+  "arm_timestamp_ns": 1790183012789457920,
+  "arm_timestamp_utc": "2026-09-23T17:03:32.789458Z",
+  "artifact_kind": "imp_rth_campaign_closeout",
+  "backfill_performed": false,
+  "campaign_id": "RTH-OBS-NEWS-20260923",
+  "campaign_ran": true,
+  "campaign_slug": "FTEP-V1-002",
+  "close_class": "LATE_GOVERNED_CLOSE",
+  "controlled_replay": "SOFTWARE_CONTROLLED/FIXTURE_REPLAY",
+  "evidence_class": "DERIVED_CLOSEOUT",
+  "evidence_directory": "projects/integrated-market-platform/.local/rth-campaign-20260923",
+  "evidence_file_count": 572,
+  "evidence_tree_hash_algorithm": "sha256 of newline-joined lines '{sha256}  {relative-posix-path}' for every file under the campaign directory, sorted by relative path casefold",
+  "evidence_tree_sha256": "ec9723f66da5db6e340c2955052e1cd17f75f982a5b0e522fea257c54ae036e0",
+  "execution_authority": "BLOCKED",
+  "ftep_empirical_active": false,
+  "full_rth_coverage": false,
+  "full_source_to_operator_chain": false,
+  "governed_shutdown_et": "2026-09-23 17:40:52.396 -04:00",
+  "governed_shutdown_status": "RTH_CLOSE_SHUTDOWN",
+  "human_closeout": "docs/engineering/RTH_OBS_NEWS_20260923_CLOSEOUT.md",
+  "intervals": [
+    {
+      "class": "NOT_OBSERVED",
+      "end_et": "2026-09-23 13:03:32.789 -04:00",
+      "note": "pre-arm; no backfill",
+      "seconds": 12812.789458,
+      "start_et": "2026-09-23 09:30:00.000 -04:00"
+    },
+    {
+      "class": "OBSERVED_FAILURE",
+      "end_et": "2026-09-23 13:03:38 -04:00",
+      "note": "supervisor os.kill KeyboardInterrupt; PROCESS_DEAD",
+      "start_et": "2026-09-23 13:03:32.789 -04:00"
+    },
+    {
+      "class": "OBSERVED_FAILURE",
+      "end_et": "2026-09-23 13:06:33 -04:00",
+      "note": "NVDA fetch success; cockpit admit connection refused",
+      "start_et": "2026-09-23 13:05:37 -04:00"
+    },
+    {
+      "class": "OBSERVED_DEGRADED",
+      "end_et": "2026-09-23 13:13:58 -04:00",
+      "note": "one NVDA admit; supervision still PROCESS_DEAD",
+      "start_et": "2026-09-23 13:13:50 -04:00"
+    },
+    {
+      "class": "NOT_OBSERVED",
+      "end_et": "2026-09-23 14:42:50 -04:00",
+      "note": "no ingress receipt",
+      "start_et": "2026-09-23 13:13:59 -04:00"
+    },
+    {
+      "class": "OBSERVED_DEGRADED",
+      "end_et": "2026-09-23 14:47:59 -04:00",
+      "note": "SUCCESS_EMPTY polls; heartbeat stuck",
+      "start_et": "2026-09-23 14:42:50 -04:00"
+    },
+    {
+      "class": "NOT_OBSERVED",
+      "end_et": "2026-09-23 14:53:18 -04:00",
+      "note": "jsonl gap; durable failure receipt at 14:49:23",
+      "start_et": "2026-09-23 14:47:59 -04:00"
+    },
+    {
+      "class": "OBSERVED_DEGRADED",
+      "end_et": "2026-09-23 15:42:00 -04:00",
+      "note": "SUCCESS_EMPTY resumed; heartbeat still stuck at 13:13:45 ET",
+      "start_et": "2026-09-23 14:53:18 -04:00"
+    },
+    {
+      "class": "OBSERVED_FAILURE",
+      "end_et": "2026-09-23 15:59:43 -04:00",
+      "note": "41 URLError provider failures",
+      "start_et": "2026-09-23 15:42:35 -04:00"
+    },
+    {
+      "class": "UNKNOWN",
+      "end_et": "2026-09-23 16:00:17 -04:00",
+      "note": "then POLLER_STOP_RTH_CLOSE",
+      "start_et": "2026-09-23 15:59:43 -04:00"
+    }
+  ],
+  "item7": {
+    "discovery": "item7_corpus_collector.py status read-only on current main; forecasts=0 snapshots=0 outcomes=0",
+    "governed_corpus": "NOT_ESTABLISHED",
+    "sep23_empirical_rows": 0
+  },
+  "item9": {
+    "calibrated": false,
+    "calibration_run": "FORBIDDEN",
+    "do_not_promote": true,
+    "full30": "NOT_RUN",
+    "sep23_receipt_files": 0,
+    "status": "PARTIAL_NOT_CALIBRATED"
+  },
+  "live_execution": "OFF",
+  "mutates_frozen_evidence": false,
+  "next_rth": {
+    "requires_new_campaign_id": true,
+    "requires_runtime_containing_pr_403": true,
+    "resume_frozen_runtime": false
+  },
+  "pipeline_counts": {
+    "detection_v1": 0,
+    "event_v1": 1,
+    "forecast_v1": 0,
+    "item7_governed_rows": 0,
+    "item9_sep23_receipts": 0,
+    "observational_opportunity": 1,
+    "operator_watch_or_dismiss": 0,
+    "opportunity_engine_assess": 0,
+    "paper_events_for_admitted_opportunity": 0,
+    "surface_decision_trace": 1,
+    "trade_review_for_admitted_opportunity": 0
+  },
+  "process": {
+    "armed_status_snapshots": "PROCESS_DEAD",
+    "heartbeat_last_successful_poll_utc_stuck": "2026-09-23T17:13:45.962684Z",
+    "outages_jsonl": "ABSENT",
+    "register_child_clobbers_supervisor_pid_on_frozen_runtime": true,
+    "required_roles": [
+      "supervisor",
+      "poller",
+      "api"
+    ],
+    "ui_5173": "NOT_STARTED"
+  },
+  "provider": {
+    "admitted_event_id": "91EABF7A3AF6C83ACFE3BAFA626846AE",
+    "admitted_opportunity_id": "newsopp-91EABF7A3AF6C83ACFE3BAFA626846AE",
+    "cockpit_admit_ok": 1,
+    "distinct_ingress_receipts": 127,
+    "event_ingestion_mode": "HISTORICAL_RECONSTRUCTED",
+    "instrument_with_qualifying_row": "NVDA",
+    "jsonl_max_multiplicity": 2,
+    "jsonl_poll_lines": 219,
+    "jsonl_unique_poll_index": 119,
+    "provider_id": "finviz",
+    "provider_urlerror_failures": 41,
+    "publication_et": "2026-09-23 09:02:00 -04:00",
+    "qualifying_fetch_admit_blocked": 2,
+    "retrieval_et": "2026-09-23 13:13:50 -04:00",
+    "success_empty": 83,
+    "watch_mode": "PROSPECTIVE_FINVIZ_INGRESS"
+  },
+  "root_causes": [
+    {
+      "class": "PROVEN_ROOT_CAUSE",
+      "id": "supervisor_os_kill_abort"
+    },
+    {
+      "class": "PROVEN_CONTRIBUTOR",
+      "id": "register_child_supervisor_pid_overwrite"
+    },
+    {
+      "class": "PROVEN_CONTRIBUTOR",
+      "id": "poller_absent_at_arm_snapshot"
+    },
+    {
+      "class": "PROVEN_ROOT_CAUSE",
+      "id": "api_connection_refused_1305"
+    },
+    {
+      "class": "SYMPTOM_ONLY",
+      "id": "urlerror_1542_1559"
+    },
+    {
+      "class": "LIKELY_BUT_NOT_PROVEN",
+      "id": "get_process_alive_while_dead"
+    },
+    {
+      "class": "UNKNOWN",
+      "id": "late_arm_mechanism"
+    }
+  ],
+  "rth_end_et": "2026-09-23 16:00:00 -04:00",
+  "rth_start_et": "2026-09-23 09:30:00 -04:00",
+  "runtime_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+  "runtime_tree_sha": "c3b5a08b94e93e4ead3c9802092ecdebea1c3434",
+  "schema_version": "campaign-closeout/1.0.0",
+  "segment_id": "A",
+  "segment_status": "CLOSED",
+  "session_date": "2026-09-23",
+  "smoke10_historical": {
+    "id": "ibp-smoke10-8C23029DD46FDA78",
+    "rerun": false,
+    "result": "FAIL 10/10"
+  },
+  "subsequent_software": [
+    {
+      "merge": "8232b15581622af6821d50db335af1ef21525832",
+      "pr": 403,
+      "repairs_sep23": false
+    },
+    {
+      "merge": "4fcec08b65e596f630ebf7e209924d7a7bb50751",
+      "pr": 402,
+      "repairs_sep23": false
+    }
+  ],
+  "terminal_classification": "PARTIAL_LATE_ARM",
+  "timezone": "America/New_York",
+  "unresolved_unknowns": [
+    "mechanism of late arm",
+    "upstream cause of URLError",
+    "Get-Process liveness at the 14:49 receipt",
+    "which opportunity ids the ranked feed count of 2 referred to",
+    "which ingestion-mode branch stamped HISTORICAL_RECONSTRUCTED"
+  ]
+}

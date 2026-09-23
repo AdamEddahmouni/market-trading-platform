@@ -77,7 +77,9 @@ observation roles: `supervisor`, `poller`, `api`. Optional operator display: `ui
 **Durability invariants (2026-09-23):**
 
 - `register-child` / `recover` must **not** clobber `ownership.supervisor_pid`
-  with a one-shot shell PID (that produced false `PROCESS_DEAD` on RTH-OBS-NEWS-20260923).
+  with a one-shot shell PID. Frozen Sep 23 `cmd_register_child` did that assignment;
+  the empirical closeout separates that contributor from the `os.kill` supervisor abort:
+  [RTH_OBS_NEWS_20260923_CLOSEOUT.md](RTH_OBS_NEWS_20260923_CLOSEOUT.md).
 - Status/heartbeat evaluation injects launcher-grade `service_health.process_alive`
   (Windows `OpenProcess`); src fallback avoids unreliable `os.kill(pid, 0)`.
 - Missing required roles (e.g. unregistered poller) are `PROCESS_DEAD`.
