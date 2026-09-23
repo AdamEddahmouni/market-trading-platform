@@ -56,6 +56,17 @@ and clears scored dimensions — no partial credit.
 ## Smoke10 (RTH15-11)
 
 Smoke10 may run only when `RTH15_10_COMPLETE=YES` and contamination controls pass.
+
+A **deterministic-stub / harness** run under `synthetic_intelligence_fixture_v1_baseline_v1`
+is a `SOFTWARE_CONTROLLED` control only. It is **not** real-system RTH15-11 Smoke10,
+not intelligence-capability proof, and does not complete RTH15-11. Facts FAIL on the
+stub is expected. Real-system RTH15-11 remains `NOT_EXECUTED` until a non-stub SUT
+run is separately authorized and pinned with a reproducible `code_sha`.
+
+Pinned stub control (reproducible from protocol commit `c1e0f9fb`):
+`evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/`
+(`ibp-smoke10-31AF43EDCC94D346`, fingerprint `31AF43ED…`).
+
 Historical Lane D receipt `ibp-smoke10-76DDD188CD080365` remains immutable historical
 software evidence and is not overwritten by new runs.
 

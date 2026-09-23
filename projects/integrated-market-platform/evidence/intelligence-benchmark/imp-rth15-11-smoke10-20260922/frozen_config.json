@@ -12,13 +12,13 @@
     "IBP-CASE-009",
     "IBP-CASE-010"
   ],
-  "code_sha": "aa15ebd714d621c3e4d4e57f093e9a450d03ce79",
+  "code_sha": "c1e0f9fb08ead8f7764df17e07f8d01a5556a720",
   "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
   "context_reset_policy": "one_fresh_context_per_case_v1",
   "evaluator_only_gold_prefix": "evaluator_only/",
   "evidence_class": "SOFTWARE_CONTROLLED",
   "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
-  "frozen_config_fingerprint": "896D92294A1240B59F0DD03E9EC485440E0F6A3E4433E997F633EF158F8940F9",
+  "frozen_config_fingerprint": "31AF43EDCC94D346B51571ED8F073DACE4170E0FD27DDF8B854C55AAFA427257",
   "invocation_contract": {
     "case_count": 10,
     "case_plans": [
