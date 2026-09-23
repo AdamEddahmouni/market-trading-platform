@@ -275,6 +275,7 @@ class SecretAuditTest(unittest.TestCase):
             {
                 "submission": {"idempotency_key": "e5-0", "order_id": "ord-1"},
                 "data_health": {"execution_authority": "AUTHORIZED"},
+                "arm_observation": {"execution_authority_after_arm": "BLOCKED"},
             },
             context="paper_order_response",
         )

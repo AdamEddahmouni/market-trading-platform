@@ -95,6 +95,7 @@ class CampaignObservationReadinessTests(unittest.TestCase):
         self.assertIn("INGRESS_NOT_ENABLED", payload["blockers"])
         self.assertEqual(payload["execution_authority"], "BLOCKED")
         self.assertEqual(payload["arm_observation"]["label"], "ARM OBSERVATION")
+        self.assertEqual(payload["arm_observation"]["execution_authority_after_arm"], "BLOCKED")
         self.assertFalse(payload["arm_observation"]["grants_execution_authority"])
         self.assertFalse(payload["arm_observation"]["ui_mutation_wired"])
         self.assertTrue(payload["arm_observation"]["wires_existing_cli_arm"])
