@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Item 7 bound-forecast durability for corpus discovery
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence/item7` |
+| **Summary** | Fixed a software gap where Item 7 ledger bind loaded PRODUCTION contributors from `path-a/contributors` but neither durable-wrote the bound forecast into governed `intelligence_records.jsonl` nor rediscovered that contributor dir on corpus reload, so settled outcomes failed join with `FORECAST_NOT_FOUND`. Software readiness only; no empirical corpus row created; `ITEM7_GOVERNED_CORPUS` remains NOT ESTABLISHED. |
+| **Key files** | `src/.../production/item7_opend_capture_persist.py`; `src/.../production/corpus_persistence.py`; `tests/intelligence/test_item7_opend_capture_persist.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `.venv python -m unittest tests.intelligence.test_item7_opend_capture_persist tests.intelligence.test_item7_natural_settlement tests.intelligence.test_item7_corpus_collector` — 59/59 OK |
+| **Related** | `docs/platform/ITEM7_PATH_A_CORPUS_COLLECTION.md`; worktree `.worktrees/item7-software-preflight-20260923` / `fix/item7-software-preflight`; integrated onto `origin/main` as `fix/item7-governed-corpus-persistence` |
+| **Notes** | First software blocker after lawful BBO→settle with a pre-existing PRODUCTION contributor was forecast durability/discovery asymmetry. Market evidence alone still cannot mint PRODUCTION_RAW probabilities (chicken-egg / evidence). Integration lane: software readiness only; zero empirical rows created. |
+
 ## 2026-09-23 — Controlled Replay Paper preview acceptance
 
 | Field | Value |
