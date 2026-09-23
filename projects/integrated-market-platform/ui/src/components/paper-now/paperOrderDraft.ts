@@ -509,6 +509,22 @@ export function isOpportunityPaperOrderDraft(draft: PaperOrderDraft | undefined)
   return parsePaperDraftProvenance(draft).type === "OPPORTUNITY";
 }
 
+/**
+ * Handoff drafts seed BUY × 1 MARKET as a technical placeholder only.
+ * Contracts require BUY|SELL and quantity ≥ 1 — there is no unset/neutral side.
+ * Submit must not enable on auto-preview PASS until the operator confirms
+ * those editable defaults are intentional.
+ */
+export function requiresPlaceholderSubmitConfirmation(draft: PaperOrderDraft | undefined): boolean {
+  if (!draft?.sourceAttentionId?.trim()) return false;
+  const type = parsePaperDraftProvenance(draft).type;
+  return type === "LANE" || type === "ATTENTION" || type === "OPPORTUNITY" || type === "UNKNOWN";
+}
+
+export function formatPaperPlaceholderOrderLabel(side: PaperOrderSide, quantity: number, orderType = "MARKET"): string {
+  return `${side} × ${quantity} ${orderType}`;
+}
+
 export const LANE_MODULE_IDS: readonly WorkspaceLaneModuleId[] = WORKSPACE_LANE_MODULE_IDS;
 
 export type LaneModuleId = WorkspaceLaneModuleId;
@@ -532,10 +548,10 @@ export function parseLaneProvenance(
 }
 
 export const LANE_DRAFT_PLACEHOLDER_NOTE =
-  "Placeholder draft uses BUY × 1 MARKET — confirm side and quantity before submit.";
+  "Placeholder draft uses BUY × 1 MARKET — not a recommendation. After server preview, confirm the editable side and quantity before submit.";
 
 export const ATTENTION_DRAFT_PLACEHOLDER_NOTE =
-  "Placeholder draft from Paper Command — not an execution recommendation. Confirm side and quantity before submit.";
+  "Placeholder draft from Paper Command — not an execution recommendation. After server preview, confirm the editable side and quantity before submit.";
 
 export const OPPORTUNITY_DRAFT_PLACEHOLDER_NOTE =
-  "Placeholder from watched Radar opportunity — not an execution recommendation. Confirm side and quantity, then run server Paper preview before any submit.";
+  "Placeholder from watched Radar opportunity — not an execution recommendation. Server preview remains authority; after it returns, confirm the editable side and quantity before submit.";

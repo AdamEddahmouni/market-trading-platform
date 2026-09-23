@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Paper preview → submit placeholder confirmation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-workspace` |
+| **Summary** | First real gap after server-authoritative Paper preview: handoff drafts auto-preview PASS with BUY × 1 and Submit enabled immediately — accidental click-through. Added explicit operator confirmation of editable placeholder side/qty before Submit, surfaced previewed order label, and clarified BUY × 1 as technical placeholder (contracts have no unset side; no sizing model invented). |
+| **Key files** | `ui/src/components/paper/OrderTicket.tsx`, `ui/src/components/paper-workspace/paperPreviewPresentation.ts`, `ui/src/components/paper-workspace/PaperPreviewStatus.tsx`, `ui/src/components/paper-workspace/PaperHandoffPanel.tsx`, `ui/src/components/paper-now/paperOrderDraft.ts`, related Vitest |
+| **Tests** | `ui` vitest focused 6 files / 64 passed; `npm run typecheck` passed. Browser verification not run (ports reserved for observation campaign). |
+| **Related** | PR #392 Radar → Watch → Paper preview; PR #395 replay acceptance |
+| **Notes** | Did not submit Paper orders, enable Live, or touch campaign evidence / forbidden worktrees. Deferred: post-submit order-status → position → TradeReview navigation (next handoff after this gate). |
+
 ## 2026-09-23 — Campaign observation readiness / start gate
 
 | Field | Value |
@@ -47,6 +59,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `unittest tests.platform.test_campaign_observation_readiness` → **5 passed**; `npm test -- operatorDiagnosticsPresentation.test.ts` → **15 passed**; `npm run typecheck` → pass; supervision acceptance suite also run |
 | **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); branch `feat/campaign-observation-readiness` from `origin/main` `a340a778` |
 | **Notes** | Frozen Sep 23 runtime / evidence / `.local` not modified. Live execution not enabled. UI arm is display+CLI only to avoid a second arm path. |
+
 
 ## 2026-09-23 — Controlled Replay golden-path extra acceptance (post-#392)
 

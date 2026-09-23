@@ -144,7 +144,7 @@ export function buildPaperHandoffModel(
   } else if (kind === "opportunity") {
     placeholderWarning = OPPORTUNITY_DRAFT_PLACEHOLDER_NOTE;
     const opportunityLabel = provenance.opportunityId ?? provenance.sourceId ?? "opportunity";
-    handoffSummary = `Opened from watched Radar opportunity ${opportunityLabel}. ${placeholder.side} × ${placeholder.quantity} ${placeholder.orderType} is a starting placeholder, not a recommendation. Run server Paper preview against current portfolio and risk state; submit remains operator-controlled.`;
+    handoffSummary = `Opened from watched Radar opportunity ${opportunityLabel}. ${placeholder.side} × ${placeholder.quantity} ${placeholder.orderType} is a starting placeholder, not a recommendation. Run server Paper preview against current portfolio and risk state; confirm the editable side and quantity before submit.`;
   }
 
   const sourceTitle =

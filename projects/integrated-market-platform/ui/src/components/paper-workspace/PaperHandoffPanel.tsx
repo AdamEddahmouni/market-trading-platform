@@ -119,8 +119,9 @@ export function PaperHandoffPanel({ handoff, evidenceAsOf }: Props) {
       <dl className="paper-cockpit-meta">
         <div>
           <dt>Placeholder</dt>
-          <dd>
-            {handoff.placeholder.side} × {handoff.placeholder.quantity} {handoff.placeholder.orderType}
+          <dd data-testid="paper-handoff-placeholder">
+            {handoff.placeholder.side} × {handoff.placeholder.quantity} {handoff.placeholder.orderType}{" "}
+            (placeholder — not a recommendation)
           </dd>
         </div>
         {handoff.provenanceId ? (

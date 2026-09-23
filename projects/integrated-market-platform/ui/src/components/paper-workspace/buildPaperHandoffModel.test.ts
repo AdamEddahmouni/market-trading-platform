@@ -92,7 +92,7 @@ describe("buildPaperHandoffModel", () => {
     expect(model.opportunityId).toBe("opp-1");
     expect(model.placeholderWarning).toMatch(/not an execution recommendation/i);
     expect(model.handoffSummary).toMatch(/watched Radar opportunity opp-1/i);
-    expect(model.handoffSummary).toMatch(/operator-controlled/i);
+    expect(model.handoffSummary).toMatch(/confirm the editable side and quantity before submit/i);
   });
 
   it("marks malformed drafts when symbol mismatches route", () => {

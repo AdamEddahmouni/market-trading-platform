@@ -41,6 +41,50 @@ describe("derivePreviewPresentationState", () => {
     expect(state.status).toBe("ACCEPTED");
     expect(state.canSubmit).toBe(true);
     expect(state.title).toMatch(/Revalidated/i);
+    expect(state.previewedOrderLabel).toBe("BUY × 1 MARKET");
+  });
+
+  it("keeps canSubmit false until placeholder confirmation on handoff drafts", () => {
+    const pending = derivePreviewPresentationState({
+      ...base,
+      preview: { risk_status: "PASS", decision: "ALLOW" },
+      confirmedRequest: {
+        side: "BUY",
+        quantity: 1,
+        order_type: "MARKET",
+        instrument_id: "BIYA",
+        symbol: "BIYA",
+        client_order_id: "x",
+        idempotency_key: "x",
+      },
+      confirmedRequestIsCurrent: true,
+      previewOrigin: "workspace",
+      requiresPlaceholderConfirmation: true,
+      operatorConfirmedPlaceholder: false,
+    });
+    expect(pending.canSubmit).toBe(false);
+    expect(pending.requiresPlaceholderConfirmation).toBe(true);
+    expect(pending.message).toMatch(/Confirm the placeholder side and quantity/i);
+
+    const confirmed = derivePreviewPresentationState({
+      ...base,
+      preview: { risk_status: "PASS", decision: "ALLOW" },
+      confirmedRequest: {
+        side: "BUY",
+        quantity: 1,
+        order_type: "MARKET",
+        instrument_id: "BIYA",
+        symbol: "BIYA",
+        client_order_id: "x",
+        idempotency_key: "x",
+      },
+      confirmedRequestIsCurrent: true,
+      previewOrigin: "workspace",
+      requiresPlaceholderConfirmation: true,
+      operatorConfirmedPlaceholder: true,
+    });
+    expect(confirmed.canSubmit).toBe(true);
+    expect(confirmed.requiresPlaceholderConfirmation).toBe(false);
   });
 
   it("maps rejected preview", () => {
