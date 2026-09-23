@@ -231,6 +231,7 @@
         "tools/check_docs_links.py",
         "tools/repository_closure.py",
         "tools/imp.py",
+        "tools/controlled_replay",
         "tools/storage_audit.py",
         "tools/ci_job_selector.py",
         "tools/environment.py",
@@ -240,10 +241,11 @@
         "tools/validation_manifest.py",
         "tools/validation_worker.py"
       ],
-      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, selector-safety trials, and repository closure enforcement.",
+      "responsibility": "Canonical developer command routing plus manifest-driven offline validation selection, execution, reporting, selector-safety trials, repository closure enforcement, and CONTROLLED REPLAY operator golden-path launcher.",
       "evidence": [
         "AGENTS.md routes developer work through tools/imp.py while preserving tools/validate.py as the Python validator.",
-        "README.md and docs/engineering/DEVELOPER_OPERATING_SYSTEM.md state that manifest-driven validation replaced ad-hoc full-suite execution."
+        "README.md and docs/engineering/DEVELOPER_OPERATING_SYSTEM.md state that manifest-driven validation replaced ad-hoc full-suite execution.",
+        "docs/engineering/LOCAL_DEVELOPMENT.md documents python tools/imp.py controlled-replay as the off-hours operator golden path."
       ],
       "disposition": "KEEP"
     },
