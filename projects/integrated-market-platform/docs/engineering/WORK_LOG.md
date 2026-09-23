@@ -48,6 +48,31 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Frozen historical Smoke10 `ibp-smoke10-8C23029DD46FDA78` (immutable; not rerun); source lane `39f5b750` |
 | **Notes** | No gold edits. No Smoke10 case-ID special-casing. No scored benchmark rerun. Integration worktree `.worktrees/integrate-grounded-intel-20260923`. |
 
+## 2026-09-23 — Provider failure receipt symbol linkage + alias provenance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `providers` / `ui_api` (failure forensics) |
+| **Summary** | Quote/context provider failures now retain requested `instrument_id` and structured `details` (e.g. HTTP status, chart_error). Alias collapse (e.g. `PROVIDER_DISCONNECTED` → `TEMPORARY_NETWORK_FAILURE`) preserves `source_reason_code` on incidents and projected receipts. First proven canonical convergence gap remains Path B `NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE` (Finviz/news → `NEWS_ARTICLE` EventV1 does not activate BUILD 09 NEWS_EVENT detections). |
+| **Key files** | `src/.../providers/contracts.py`; `src/.../providers/resilience.py`; `src/.../ui_api/errors.py`; `src/.../providers/adapters/{yahoo_delayed_equity_quote,moomoo_opend_equity_quote,finviz_elite_context}.py`; `tests/providers/test_provider_resilience.py` |
+| **Tests** | `imp.py test focused` 6 selectors **passed**; `unittest tests.providers.test_provider_resilience` **32 OK**; Path B inactive focused 6 **passed**; `imp.py test affected --workers 2` **PASSED** 935 tests / 11 skipped / 0 failures / 0 errors |
+| **Related** | Source `694055c7` / `fix/provider-failure-forensics`; integrate onto `origin/main` `173144c4`; `docs/engineering/EVENT_DETECTOR_SMART_ROUTER_V1.md` NEWS_EVENT inactive |
+| **Notes** | Software/fixture forensics only — not market evidence. Empirical/frozen RTH runtime untouched. NEWS_ARTICLE → NEWS_EVENT convergence is a separate lane (noted, not fixed here). |
+
+## 2026-09-23 — Paper Portfolio Fills → Order history handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/portfolio` |
+| **Summary** | Integrated operator friction fix onto current main: Paper Portfolio Fills panel pointed to a vague "activity section" that collided with its own `portfolio-activity` id. It now names Order history, links to `#portfolio-order-history`, and keeps snapshot fills distinct from full order lifecycle without changing semantic states. |
+| **Key files** | `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx` (modified); `ui/src/components/paper-portfolio/paperPortfolioPresentation.ts` (modified); `ui/src/components/paper-portfolio/PaperOrderHistory.tsx` (modified); `ui/src/components/paper-portfolio/PaperOrderHistoryTable.tsx` (modified); `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` (modified) |
+| **Tests** | `ui`: `npm test -- src/components/paper-portfolio/PaperPortfolioPage.test.tsx` → 6 passed; `npm run typecheck` → pass |
+| **Related** | Source `ui/operator-journey-friction` @ `42ab55ea`; worktree `.worktrees/integrate-portfolio-ux-20260923` on `ui/portfolio-order-history-link` from `origin/main` `f27f5613` |
+| **Notes** | Integration-only reapply of copy/UX handoff. Radar cards / Watch / Dismiss / Preview untouched. No trading behavior change. |
+
+
 ## 2026-09-23 — Controlled Replay Paper preview acceptance
 
 | Field | Value |

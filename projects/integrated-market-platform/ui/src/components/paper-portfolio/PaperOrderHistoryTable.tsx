@@ -11,6 +11,8 @@ type Props = {
   title: string;
   rows: PaperOrderHistoryRow[];
   emptyMessage: string;
+  /** Stable section id for in-page handoffs (e.g. Fills → Order history). */
+  sectionId?: string;
   onViewTrace?: (intentId?: string, orderId?: string) => void;
   showFilters?: boolean;
   filters?: PaperOrderHistoryFilters;
@@ -28,6 +30,7 @@ export function PaperOrderHistoryTable({
   title,
   rows,
   emptyMessage,
+  sectionId,
   onViewTrace,
   showFilters = false,
   filters = DEFAULT_PAPER_ORDER_HISTORY_FILTERS,
@@ -41,7 +44,7 @@ export function PaperOrderHistoryTable({
   );
 
   return (
-    <section className="panel paper-order-history-panel">
+    <section className="panel paper-order-history-panel" id={sectionId}>
       <div className="paper-order-history-header">
         <h2>{title}</h2>
         {showFilters && onFiltersChange ? (
