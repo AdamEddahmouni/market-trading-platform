@@ -373,7 +373,11 @@ export function PaperPortfolioObservability({
       >
         <h2 id="portfolio-activity-heading">Fills</h2>
         {hideOrdersSection ? (
-          <p className="muted">Operational order history is listed in the activity section below.</p>
+          <p className="muted">
+            Snapshot fills only. Full order lifecycle is under{" "}
+            <a href={`#${PORTFOLIO_SECTIONS.orderHistory}`}>Order history</a> below — not in this
+            Fills panel.
+          </p>
         ) : null}
         {fills.length === 0 ? (
           <EmptyState

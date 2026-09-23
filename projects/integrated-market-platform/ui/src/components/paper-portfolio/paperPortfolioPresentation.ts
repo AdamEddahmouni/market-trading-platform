@@ -19,6 +19,8 @@ export const PORTFOLIO_SECTIONS = {
   positions: "portfolio-positions",
   exposure: "portfolio-exposure",
   activity: "portfolio-activity",
+  /** Full order lifecycle panel below snapshot fills (Paper Portfolio only). */
+  orderHistory: "portfolio-order-history",
 } as const;
 
 export type SignedAmountPresentation = {
