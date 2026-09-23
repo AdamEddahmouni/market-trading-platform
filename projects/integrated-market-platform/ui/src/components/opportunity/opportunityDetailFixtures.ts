@@ -150,3 +150,34 @@ export function fixtureRowAfterEvidenceRefresh(): OpportunityReviewRow {
     },
   };
 }
+
+/**
+ * TEST-ONLY: eligible Paper row whose freshness is STALE.
+ * Must remain STALE in presentation — never coerce to FRESH.
+ * Eligibility stays ELIGIBLE so Watch/Dismiss gating is orthogonal to freshness.
+ */
+export const fixtureOpportunityRowStaleEligible: OpportunityReviewRow = {
+  ...fixtureOpportunityRowBase,
+  summary_id: "sum-stale-eligible-1",
+  opportunity_id: "opp-stale-eligible-1",
+  headline: "STALE eligible linkage fixture",
+  data_quality: {
+    status: "DEGRADED",
+    freshness: "STALE",
+    source: "TEST_ONLY_FIXTURE",
+    reason_codes: ["STALE_AFTER_THRESHOLD"],
+  },
+};
+
+/**
+ * TEST-ONLY: non-empty backend provider_linkage_warnings (operator phrases).
+ * UI must render these verbatim and must not invent "wrong ticker".
+ */
+export const fixtureOpportunityRowProviderLinkageWarned: OpportunityReviewRow = {
+  ...fixtureOpportunityRowBase,
+  summary_id: "sum-linkage-warned-1",
+  opportunity_id: "opp-linkage-warned-1",
+  instrument_id: "NVDA",
+  headline: "MillerKnoll announces new lineup",
+  provider_linkage_warnings: ["uncorroborated", "contextual concern", "low confidence"],
+};

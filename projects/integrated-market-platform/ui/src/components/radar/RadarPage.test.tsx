@@ -435,7 +435,7 @@ describe("RadarPage opportunities tab", () => {
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
   });
 
-  it("moves selection with keyboard and watches via w when paper-gated", async () => {
+  it("moves selection with keyboard and watches/dismisses via w/d when paper-gated", async () => {
     const second: OpportunityReviewRow = {
       ...rankedRow,
       summary_id: "sum-2",
@@ -459,6 +459,8 @@ describe("RadarPage opportunities tab", () => {
     });
     fireEvent.keyDown(window, { key: "w" });
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-2", action: "watch" });
+    fireEvent.keyDown(window, { key: "d" });
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-2", action: "dismiss" });
   });
 
   it("selects a row and shows the progressive detail card", async () => {
@@ -502,6 +504,8 @@ describe("RadarPage opportunities tab", () => {
     expect(card).toHaveTextContent("paper-acct-1");
     fireEvent.click(within(card).getByRole("button", { name: "Watch" }));
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    fireEvent.click(within(card).getByRole("button", { name: "Dismiss" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
   });
 
   it("hides acks without paper authority and says so", () => {
@@ -548,6 +552,44 @@ describe("RadarPage opportunities tab", () => {
     expect(brief).toHaveTextContent(/never grants live execution/i);
     expect(brief).toHaveTextContent(/STALE/i);
     expect(brief).toHaveTextContent(/INELIGIBLE/i);
+  });
+
+  it("surfaces STALE on an eligible Paper row without upgrading to FRESH", async () => {
+    const staleEligible: OpportunityReviewRow = {
+      ...rankedRow,
+      data_quality: {
+        status: "DEGRADED",
+        freshness: "STALE",
+        source: "TEST_ONLY_FIXTURE",
+        reason_codes: ["STALE_AFTER_THRESHOLD"],
+      },
+      // Drop ranking freshness PRESENT/FRESH so the queue cannot look upgraded.
+      ranking_vector: {
+        basis: "COMPARATOR_LEXICOGRAPHIC",
+        dimensions: [{ name: "attention_score", status: "PRESENT", value: 74.5 }],
+        rank_order: 1,
+      },
+    };
+    summaryMock.data = {
+      items: [staleEligible],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    const queue = screen.getByTestId("imp-radar-queue");
+    expect(queue).toHaveTextContent(/STALE/i);
+    const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
+      "imp-radar-operator-brief",
+    );
+    const howFresh = within(brief)
+      .getByText("How fresh?")
+      .closest(".imp-radar-brief-row");
+    expect(howFresh).toHaveTextContent(/STALE/i);
+    expect(howFresh).not.toHaveTextContent(/\bFRESH\b/);
+    // Freshness and eligibility stay orthogonal: eligible Paper still offers Watch.
+    fireEvent.click(screen.getByRole("button", { name: "Watch BIYA" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
   });
 
   it("surfaces contradicted agent enrichment as inference, not observation", async () => {
@@ -645,6 +687,8 @@ describe("RadarPage mobile detail sheet", () => {
     const sheet = await screen.findByRole("dialog");
     fireEvent.click(within(sheet).getByRole("button", { name: "Watch" }));
     expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Dismiss" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
   });
 });
 
