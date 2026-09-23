@@ -1,0 +1,971 @@
+{
+  "artifact_kind": "intelligence_benchmark_smoke10_run_v1",
+  "case_count": 10,
+  "case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ],
+  "case_results": [
+    {
+      "blind_mode": "A",
+      "case_id": "IBP-CASE-001",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "8EF9761ED461479A572F8BBF6C61FBD095847337D7A1368BF0AC91499662A13D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "FAIL"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH",
+        "UNKNOWN_NOT_USED"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "Aggregate data quality for active scope \u2014 Quality state GOOD \u2014 Admitted equity intraday fixture; bar-only capability",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-001",
+        "catastrophic": false,
+        "context_reset_token": "8EF9761ED461479A572F8BBF6C61FBD095847337D7A1368BF0AC91499662A13D",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "MICROSTRUCTURE",
+        "final_state": "CLOSED",
+        "freshness": "HISTORICAL_DEVELOPMENT",
+        "historical_fixture_loaded": true,
+        "inference_abstention_reason": null,
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "A",
+        "routing_decision_id": "ROUTE-89770F981B22C70C046F32E79184D47430A2A4E243CD2C64FBE48CD6508DB7A1",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "B",
+      "case_id": "IBP-CASE-002",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "2B36210DEA3DBA7FDA74F9541B6B8FDB7B8CFBC958139153E2034B92614446A8",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-002",
+        "catastrophic": false,
+        "context_reset_token": "2B36210DEA3DBA7FDA74F9541B6B8FDB7B8CFBC958139153E2034B92614446A8",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "DERIVATIVES",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "B",
+        "routing_decision_id": "ROUTE-F2BCBAAF0C359D3649266AC26937E3374B708A3C9112E88F8D26E75280E66936",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "C",
+      "case_id": "IBP-CASE-003",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "30168FBDBE800B7EF4B4B402A3E678EF77DA48953D7D150FA02284C956CD2F7C",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-003",
+        "catastrophic": false,
+        "context_reset_token": "30168FBDBE800B7EF4B4B402A3E678EF77DA48953D7D150FA02284C956CD2F7C",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "POSITIONING_BORROW",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "C",
+        "routing_decision_id": "ROUTE-C802C643B0CBC0E839D50A9839DF6C5135427E9BFF288F04563484D9110DD44D",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "D",
+      "case_id": "IBP-CASE-004",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "457DF5D9F43EC75D9E90DF74A204643F703AD10FD44217896128C5A742662CAA",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-004",
+        "catastrophic": false,
+        "context_reset_token": "457DF5D9F43EC75D9E90DF74A204643F703AD10FD44217896128C5A742662CAA",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "NARRATIVE_SENTIMENT",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "D",
+        "routing_decision_id": "ROUTE-C1F23D92012A0311D485BD70BD7AB74CDFB95EE11C365C859777689D8FAFA918",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "E",
+      "case_id": "IBP-CASE-005",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "AE8118CDB8CF6A18887DE6ABBCC50894B91E581C651277C5E7854841C007811D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-005",
+        "catastrophic": false,
+        "context_reset_token": "AE8118CDB8CF6A18887DE6ABBCC50894B91E581C651277C5E7854841C007811D",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "REGIME_CROSS_ASSET",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "E",
+        "routing_decision_id": "ROUTE-59997BE53326D78B0E786E55B2DA9002B124A1F19EB8E55C2AA4C2EB912319F8",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "A",
+      "case_id": "IBP-CASE-006",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "CF2F74E7FB7CDBD198715E817BCAC2DFE2575177416D0465FB97472911FC314D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-006",
+        "catastrophic": false,
+        "context_reset_token": "CF2F74E7FB7CDBD198715E817BCAC2DFE2575177416D0465FB97472911FC314D",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "MICROSTRUCTURE",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "A",
+        "routing_decision_id": "ROUTE-4AD2D67AF39FB5D9A277374CAA8A0997C490E795D7B8EC3281E573D50933E53C",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "B",
+      "case_id": "IBP-CASE-007",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "0855C362D0A791413D4B47D0AAA3E870282B3E4A3F8BAEF4F1DC2F6BD568AE3E",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-007",
+        "catastrophic": false,
+        "context_reset_token": "0855C362D0A791413D4B47D0AAA3E870282B3E4A3F8BAEF4F1DC2F6BD568AE3E",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "DERIVATIVES",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "B",
+        "routing_decision_id": "ROUTE-177ADBBDEAA33BA024BFFA492686605BF2A5463ACA287F38F10DDB0DB1FA4B0E",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "C",
+      "case_id": "IBP-CASE-008",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "0A844909845A99AB098EDE613CEA09E779D6A2227BE02855AD9803CBE9B7916B",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-008",
+        "catastrophic": false,
+        "context_reset_token": "0A844909845A99AB098EDE613CEA09E779D6A2227BE02855AD9803CBE9B7916B",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "POSITIONING_BORROW",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "C",
+        "routing_decision_id": "ROUTE-B5EEA1AC6C2F95D541432284F6F5B9276D27054F7AF95C55DF7EB85DF4717226",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "D",
+      "case_id": "IBP-CASE-009",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "42DD1D59A898A3B919C1F2194BFE81032ECB63593D8B11E61AC509823B007D63",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-009",
+        "catastrophic": false,
+        "context_reset_token": "42DD1D59A898A3B919C1F2194BFE81032ECB63593D8B11E61AC509823B007D63",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "NARRATIVE_SENTIMENT",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "D",
+        "routing_decision_id": "ROUTE-3261C4FDDFCCB9ECA8E7F55A04F7F9510C0C76FECB1B77EC5F00B333F6072A4B",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    },
+    {
+      "blind_mode": "E",
+      "case_id": "IBP-CASE-010",
+      "case_validity": "VALID",
+      "catastrophic_triggers": [],
+      "context_reset_token": "54F9DD99B1B86AC3C66DA091528613E2E96D3B52217FC548B089CB822FE56706",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "evaluator_gold_loaded_for_sut": false,
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "partial_credit_applied": false,
+      "prior_case_ids_visible_to_sut": false,
+      "scores_executed": true,
+      "sut_model_id": "grounded.evidence:deterministic.v1",
+      "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+      "sut_response": {
+        "answer": "UNKNOWN",
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-010",
+        "catastrophic": false,
+        "context_reset_token": "54F9DD99B1B86AC3C66DA091528613E2E96D3B52217FC548B089CB822FE56706",
+        "evidence_data_mode": "FIXTURE_REPLAY",
+        "expert_domain": "REGIME_CROSS_ASSET",
+        "final_state": "CLOSED",
+        "freshness": "FIXTURE",
+        "historical_fixture_loaded": false,
+        "inference_abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "inference_model_id": "deterministic.v1",
+        "inference_provider_id": "grounded.evidence",
+        "live_promotion_allowed": false,
+        "operator_close": "OK",
+        "provenance_complete": true,
+        "route_action": "ROUTE",
+        "routing": "E",
+        "routing_decision_id": "ROUTE-A5B631623EF10CCA4DB22B01FC44CF80056BC5CE61B9F135571CC156F1777AEF",
+        "routing_template": null,
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "sut_response_includes_gold": false
+    }
+  ],
+  "code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+  "config": {
+    "case_count": 10,
+    "case_ids": [
+      "IBP-CASE-001",
+      "IBP-CASE-002",
+      "IBP-CASE-003",
+      "IBP-CASE-004",
+      "IBP-CASE-005",
+      "IBP-CASE-006",
+      "IBP-CASE-007",
+      "IBP-CASE-008",
+      "IBP-CASE-009",
+      "IBP-CASE-010"
+    ],
+    "code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+    "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
+    "context_reset_policy": "one_fresh_context_per_case_v1",
+    "context_rules": [
+      "one_fresh_context_per_case_v1",
+      "stateless_sut_runner_no_cross_case_memory",
+      "evaluator_gold_prefix_blocked:evaluator_only/",
+      "scores_after_sut_response_only"
+    ],
+    "evaluator_only_gold_prefix": "evaluator_only/",
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
+    "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+    "invocation_contract": {
+      "case_count": 10,
+      "case_plans": [
+        {
+          "blind_mode": "A",
+          "case_id": "IBP-CASE-001",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
+          "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "B",
+          "case_id": "IBP-CASE-002",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "C",
+          "case_id": "IBP-CASE-003",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "D",
+          "case_id": "IBP-CASE-004",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "E",
+          "case_id": "IBP-CASE-005",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "A",
+          "case_id": "IBP-CASE-006",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "B",
+          "case_id": "IBP-CASE-007",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "C",
+          "case_id": "IBP-CASE-008",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "D",
+          "case_id": "IBP-CASE-009",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        },
+        {
+          "blind_mode": "E",
+          "case_id": "IBP-CASE-010",
+          "evaluator_gold_loaded_for_sut": false,
+          "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json",
+          "historical_harness_fixture": null,
+          "input_profile": "synthetic_intelligence_fixture_v1",
+          "scores_executed": false
+        }
+      ],
+      "contract_id": "ibp-smoke10-invocation-v1",
+      "evaluator_invoked": false,
+      "historical_harness_integration": false,
+      "scores_executed": false,
+      "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "suite_id": "ibp-v1-30"
+    },
+    "lookahead_policy": "FORBIDDEN",
+    "protocol_freeze_certificate": {
+      "RTH15_10_COMPLETE": "YES",
+      "artifact_kind": "ibp_protocol_v1_freeze_certificate",
+      "blind_mode_definitions": {
+        "A": {
+          "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+          "capability_surface": [
+            "QUOTES",
+            "TRADES"
+          ],
+          "mode": "A",
+          "name": "order_flow_reversal_quotes_trades",
+          "semantic_event_type": "ORDER_FLOW_REVERSAL"
+        },
+        "B": {
+          "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+          "capability_surface": [
+            "OPTIONS_CHAIN"
+          ],
+          "mode": "B",
+          "name": "unusual_options_activity",
+          "semantic_event_type": "UNUSUAL_OPTIONS_ACTIVITY"
+        },
+        "C": {
+          "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+          "capability_surface": [
+            "SHORT_INTEREST"
+          ],
+          "mode": "C",
+          "name": "borrow_change_short_interest",
+          "semantic_event_type": "BORROW_CHANGE"
+        },
+        "D": {
+          "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+          "capability_surface": [
+            "NEWS"
+          ],
+          "mode": "D",
+          "name": "news_event",
+          "semantic_event_type": "NEWS_EVENT"
+        },
+        "E": {
+          "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+          "capability_surface": [
+            "MACRO",
+            "QUOTES"
+          ],
+          "mode": "E",
+          "name": "regime_shift_macro_quotes",
+          "semantic_event_type": "REGIME_SHIFT"
+        }
+      },
+      "catastrophic_criteria": {
+        "CROSS_CASE_CONTEXT_LEAK": {
+          "description": "Prior case context was visible across cases",
+          "failure_reason": "CATASTROPHIC_CONTEXT_LEAK",
+          "id": "CROSS_CASE_CONTEXT_LEAK"
+        },
+        "EXPLICIT_SUT_CATASTROPHIC_FLAG": {
+          "description": "SUT response set catastrophic=true",
+          "failure_reason": "CATASTROPHIC_FLAG",
+          "id": "EXPLICIT_SUT_CATASTROPHIC_FLAG"
+        },
+        "GOLD_EXPOSED_TO_SUT": {
+          "description": "Evaluator-only gold reached the system under test",
+          "failure_reason": "CATASTROPHIC_GOLD_EXPOSURE",
+          "id": "GOLD_EXPOSED_TO_SUT"
+        },
+        "LIVE_OR_ITEM9_AUTHORITY_CLAIM": {
+          "description": "SUT claimed live execution or Item 9 calibration authority",
+          "failure_reason": "CATASTROPHIC_AUTHORITY_CLAIM",
+          "id": "LIVE_OR_ITEM9_AUTHORITY_CLAIM"
+        },
+        "LOOKAHEAD_IN_SUT_INPUT": {
+          "description": "Blind SUT input contained future/outcome/gold lookahead keys",
+          "failure_reason": "CATASTROPHIC_LOOKAHEAD",
+          "id": "LOOKAHEAD_IN_SUT_INPUT"
+        }
+      },
+      "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
+      "context_reset_policy": "one_fresh_context_per_case_v1",
+      "evidence_class": "SOFTWARE_CONTROLLED",
+      "full_suite_case_count": 30,
+      "lookahead_policy": "FORBIDDEN",
+      "not_market_ftep_or_calibration_evidence": true,
+      "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+      "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+      "rth15_10_properties": {
+        "blind_system_under_test_inputs": "PRESENT",
+        "catastrophic_criteria": "PRESENT",
+        "context_reset": "PRESENT",
+        "evaluator_only_gold": "PRESENT",
+        "failure_reasons": "PRESENT",
+        "invalidate_contaminated_cases": "PRESENT",
+        "machine_readable_frozen_case_definition": "PRESENT",
+        "modes_a_through_e": "PRESENT",
+        "no_lookahead": "PRESENT",
+        "no_vanity_aggregate_score": "PRESENT",
+        "per_case_booleans": "PRESENT",
+        "reproducible_runner": "PRESENT",
+        "smoke10_composition": "PRESENT"
+      },
+      "schema_version": "imp.intelligence-benchmark-protocol-freeze/1.0.0",
+      "smoke10_case_count": 10,
+      "smoke10_case_ids": [
+        "IBP-CASE-001",
+        "IBP-CASE-002",
+        "IBP-CASE-003",
+        "IBP-CASE-004",
+        "IBP-CASE-005",
+        "IBP-CASE-006",
+        "IBP-CASE-007",
+        "IBP-CASE-008",
+        "IBP-CASE-009",
+        "IBP-CASE-010"
+      ],
+      "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "suite_id": "ibp-v1-30",
+      "vanity_aggregate_score_policy": "FORBIDDEN"
+    },
+    "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+    "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+    "smoke10_contract_id": "ibp-smoke10-invocation-v1",
+    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+    "suite_id": "ibp-v1-30",
+    "sut_definition": {
+      "CODE_SHA": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "CONTEXT_RULES": [
+        "one_fresh_context_per_case_v1",
+        "stateless_sut_runner_no_cross_case_memory",
+        "evaluator_gold_prefix_blocked:evaluator_only/",
+        "scores_after_sut_response_only"
+      ],
+      "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+      "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+      "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
+      "MODEL_ROUTING": {
+        "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
+        "llm_network": "DISABLED_BY_CONSTRUCTION",
+        "primary_inference": "grounded.evidence:deterministic.v1",
+        "router": "market_platform_foundation.intelligence.routing.SmartRouter",
+        "router_policy": "RoutingPolicyV1"
+      },
+      "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
+      "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
+      "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
+      "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
+      "TOOLS_AVAILABLE": [
+        "historical_development_fixture_reader",
+        "smart_router_route",
+        "grounded_evidence_infer",
+        "grounded_fact_extraction_v1"
+      ]
+    },
+    "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+    "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+    "sut_model_id": "grounded.evidence:deterministic.v1",
+    "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+    "tool_policy": {
+      "evaluator_gold_access": "DENY",
+      "network_llm_access": "DENY",
+      "tools_available": [
+        "historical_development_fixture_reader",
+        "smart_router_route",
+        "grounded_evidence_infer",
+        "grounded_fact_extraction_v1"
+      ]
+    },
+    "vanity_aggregate_score_policy": "FORBIDDEN"
+  },
+  "config_change_detected": false,
+  "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
+  "contamination_audit": {
+    "checks": {
+      "DID_CASE_CONTEXT_LEAK": "PASS",
+      "DID_CONFIG_CHANGE_MID_RUN": "PASS",
+      "DID_ITEM9_UPGRADE": "NOT_APPLICABLE",
+      "DID_PROSPECTIVE_RECEIPTS_ENTER": "NOT_APPLICABLE",
+      "DID_SYSTEM_SEE_GOLD": "PASS"
+    },
+    "overall": "PASS",
+    "reasons": {}
+  },
+  "evaluator_invoked": true,
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+  "full30_executed": false,
+  "governance": {
+    "authority": "HISTORICAL_DEVELOPMENT",
+    "ftep_effect": "NONE",
+    "item7_effect": "NONE",
+    "item9_effect": "NONE",
+    "live_authority": "NONE"
+  },
+  "invalidated_case_ids": [],
+  "lookahead_policy": "FORBIDDEN",
+  "partial_credit_applied": false,
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "protocol_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "run_fingerprint": "00F92621BDBCCF276BE7B5C2762FA6BF09AEEC3B4256CA4F20505DEE30A89107",
+  "run_id": "ibp-smoke10-8C23029DD46FDA78",
+  "schema_version": "imp.intelligence-benchmark-smoke10-run/1.0.0",
+  "scores_executed": true,
+  "smoke10_contract_id": "ibp-smoke10-invocation-v1",
+  "summaries": {
+    "by_dimension": {
+      "catastrophic": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "facts": {
+        "FAIL": 10,
+        "INVALID": 0,
+        "PASS": 0
+      },
+      "final_state": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "freshness": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "operator_close": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "provenance": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "routing": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "unknown_handling": {
+        "FAIL": 1,
+        "INVALID": 0,
+        "PASS": 9
+      }
+    },
+    "by_failure_type": {
+      "FACTS_MISMATCH": 10,
+      "UNKNOWN_NOT_USED": 1
+    },
+    "by_mode": {
+      "A": {
+        "cases": 2,
+        "dimension_failures": 3,
+        "invalid_cases": 0
+      },
+      "B": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "C": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "D": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "E": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      }
+    },
+    "by_system": {
+      "imp_historical_routing_grounded_facts_v1": {
+        "cases": 10,
+        "dimension_failures": 11,
+        "invalid_cases": 0
+      }
+    },
+    "invalidated_case_ids": [],
+    "vanity_aggregate_score": "FORBIDDEN"
+  },
+  "sut_model_id": "grounded.evidence:deterministic.v1",
+  "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+  "upstream_historical_manifest": null,
+  "vanity_aggregate_score_policy": "FORBIDDEN"
+}
