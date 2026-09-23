@@ -1,0 +1,299 @@
+{
+  "case_count": 10,
+  "case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ],
+  "code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+  "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
+  "context_reset_policy": "one_fresh_context_per_case_v1",
+  "context_rules": [
+    "one_fresh_context_per_case_v1",
+    "stateless_sut_runner_no_cross_case_memory",
+    "evaluator_gold_prefix_blocked:evaluator_only/",
+    "scores_after_sut_response_only"
+  ],
+  "evaluator_only_gold_prefix": "evaluator_only/",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
+  "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+  "invocation_contract": {
+    "case_count": 10,
+    "case_plans": [
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-001",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-001.json",
+        "historical_harness_fixture": "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json",
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-002",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-002.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-003",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-003.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-004",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-004.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-005",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-005.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "A",
+        "case_id": "IBP-CASE-006",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-006.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "B",
+        "case_id": "IBP-CASE-007",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-007.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "C",
+        "case_id": "IBP-CASE-008",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-008.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "D",
+        "case_id": "IBP-CASE-009",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-009.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      },
+      {
+        "blind_mode": "E",
+        "case_id": "IBP-CASE-010",
+        "evaluator_gold_loaded_for_sut": false,
+        "evaluator_gold_ref": "evaluator_only/gold/IBP-CASE-010.json",
+        "historical_harness_fixture": null,
+        "input_profile": "synthetic_intelligence_fixture_v1",
+        "scores_executed": false
+      }
+    ],
+    "contract_id": "ibp-smoke10-invocation-v1",
+    "evaluator_invoked": false,
+    "historical_harness_integration": false,
+    "scores_executed": false,
+    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+    "suite_id": "ibp-v1-30"
+  },
+  "lookahead_policy": "FORBIDDEN",
+  "protocol_freeze_certificate": {
+    "RTH15_10_COMPLETE": "YES",
+    "artifact_kind": "ibp_protocol_v1_freeze_certificate",
+    "blind_mode_definitions": {
+      "A": {
+        "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+        "capability_surface": [
+          "QUOTES",
+          "TRADES"
+        ],
+        "mode": "A",
+        "name": "order_flow_reversal_quotes_trades",
+        "semantic_event_type": "ORDER_FLOW_REVERSAL"
+      },
+      "B": {
+        "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+        "capability_surface": [
+          "OPTIONS_CHAIN"
+        ],
+        "mode": "B",
+        "name": "unusual_options_activity",
+        "semantic_event_type": "UNUSUAL_OPTIONS_ACTIVITY"
+      },
+      "C": {
+        "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+        "capability_surface": [
+          "SHORT_INTEREST"
+        ],
+        "mode": "C",
+        "name": "borrow_change_short_interest",
+        "semantic_event_type": "BORROW_CHANGE"
+      },
+      "D": {
+        "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+        "capability_surface": [
+          "NEWS"
+        ],
+        "mode": "D",
+        "name": "news_event",
+        "semantic_event_type": "NEWS_EVENT"
+      },
+      "E": {
+        "blindness": "SUT sees case inputs only; no evaluator gold; no future outcomes",
+        "capability_surface": [
+          "MACRO",
+          "QUOTES"
+        ],
+        "mode": "E",
+        "name": "regime_shift_macro_quotes",
+        "semantic_event_type": "REGIME_SHIFT"
+      }
+    },
+    "catastrophic_criteria": {
+      "CROSS_CASE_CONTEXT_LEAK": {
+        "description": "Prior case context was visible across cases",
+        "failure_reason": "CATASTROPHIC_CONTEXT_LEAK",
+        "id": "CROSS_CASE_CONTEXT_LEAK"
+      },
+      "EXPLICIT_SUT_CATASTROPHIC_FLAG": {
+        "description": "SUT response set catastrophic=true",
+        "failure_reason": "CATASTROPHIC_FLAG",
+        "id": "EXPLICIT_SUT_CATASTROPHIC_FLAG"
+      },
+      "GOLD_EXPOSED_TO_SUT": {
+        "description": "Evaluator-only gold reached the system under test",
+        "failure_reason": "CATASTROPHIC_GOLD_EXPOSURE",
+        "id": "GOLD_EXPOSED_TO_SUT"
+      },
+      "LIVE_OR_ITEM9_AUTHORITY_CLAIM": {
+        "description": "SUT claimed live execution or Item 9 calibration authority",
+        "failure_reason": "CATASTROPHIC_AUTHORITY_CLAIM",
+        "id": "LIVE_OR_ITEM9_AUTHORITY_CLAIM"
+      },
+      "LOOKAHEAD_IN_SUT_INPUT": {
+        "description": "Blind SUT input contained future/outcome/gold lookahead keys",
+        "failure_reason": "CATASTROPHIC_LOOKAHEAD",
+        "id": "LOOKAHEAD_IN_SUT_INPUT"
+      }
+    },
+    "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
+    "context_reset_policy": "one_fresh_context_per_case_v1",
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "full_suite_case_count": 30,
+    "lookahead_policy": "FORBIDDEN",
+    "not_market_ftep_or_calibration_evidence": true,
+    "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+    "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+    "rth15_10_properties": {
+      "blind_system_under_test_inputs": "PRESENT",
+      "catastrophic_criteria": "PRESENT",
+      "context_reset": "PRESENT",
+      "evaluator_only_gold": "PRESENT",
+      "failure_reasons": "PRESENT",
+      "invalidate_contaminated_cases": "PRESENT",
+      "machine_readable_frozen_case_definition": "PRESENT",
+      "modes_a_through_e": "PRESENT",
+      "no_lookahead": "PRESENT",
+      "no_vanity_aggregate_score": "PRESENT",
+      "per_case_booleans": "PRESENT",
+      "reproducible_runner": "PRESENT",
+      "smoke10_composition": "PRESENT"
+    },
+    "schema_version": "imp.intelligence-benchmark-protocol-freeze/1.0.0",
+    "smoke10_case_count": 10,
+    "smoke10_case_ids": [
+      "IBP-CASE-001",
+      "IBP-CASE-002",
+      "IBP-CASE-003",
+      "IBP-CASE-004",
+      "IBP-CASE-005",
+      "IBP-CASE-006",
+      "IBP-CASE-007",
+      "IBP-CASE-008",
+      "IBP-CASE-009",
+      "IBP-CASE-010"
+    ],
+    "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+    "suite_id": "ibp-v1-30",
+    "vanity_aggregate_score_policy": "FORBIDDEN"
+  },
+  "protocol_id": "imp-intelligence-benchmark-protocol-v1",
+  "protocol_schema_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "smoke10_contract_id": "ibp-smoke10-invocation-v1",
+  "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+  "suite_id": "ibp-v1-30",
+  "sut_definition": {
+    "CODE_SHA": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+    "CONTEXT_RULES": [
+      "one_fresh_context_per_case_v1",
+      "stateless_sut_runner_no_cross_case_memory",
+      "evaluator_gold_prefix_blocked:evaluator_only/",
+      "scores_after_sut_response_only"
+    ],
+    "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+    "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
+    "MODEL_ROUTING": {
+      "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
+      "llm_network": "DISABLED_BY_CONSTRUCTION",
+      "primary_inference": "grounded.evidence:deterministic.v1",
+      "router": "market_platform_foundation.intelligence.routing.SmartRouter",
+      "router_policy": "RoutingPolicyV1"
+    },
+    "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
+    "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
+    "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
+    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
+    "TOOLS_AVAILABLE": [
+      "historical_development_fixture_reader",
+      "smart_router_route",
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
+    ]
+  },
+  "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+  "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+  "sut_model_id": "grounded.evidence:deterministic.v1",
+  "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+  "tool_policy": {
+    "evaluator_gold_access": "DENY",
+    "network_llm_access": "DENY",
+    "tools_available": [
+      "historical_development_fixture_reader",
+      "smart_router_route",
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
+    ]
+  },
+  "vanity_aggregate_score_policy": "FORBIDDEN"
+}
