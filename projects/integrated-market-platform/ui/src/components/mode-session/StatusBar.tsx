@@ -63,7 +63,7 @@ export function StatusBar({ mode, context, contextState }: Props) {
   const controlledReplay =
     Boolean(context?.controlled_replay) ||
     Boolean(asOf?.controlled_replay) ||
-    Boolean(asOf?.not_live_market_data);
+    String(asOf?.evidence_class ?? "").toUpperCase() === "CONTROLLED_REPLAY";
 
   return (
     <div className="imp-status-bar-stack">

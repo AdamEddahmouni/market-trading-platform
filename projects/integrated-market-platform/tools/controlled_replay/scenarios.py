@@ -230,6 +230,34 @@ def load_scenarios(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
 
     base = api_base.rstrip("/")
     try:
+        ctx_status, ctx = _http_json("GET", f"{base}/context")
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "stage": "context_gate_transport",
+            "status": None,
+            "payload": {"error": type(exc).__name__, "detail": str(exc)},
+        }
+    if ctx_status != 200:
+        return {"ok": False, "stage": "context_gate", "status": ctx_status, "payload": ctx}
+    as_of = ctx.get("as_of_context") if isinstance(ctx.get("as_of_context"), dict) else {}
+    controlled = bool(ctx.get("controlled_replay")) or bool(as_of.get("controlled_replay"))
+    evidence = str(as_of.get("evidence_class") or "").upper()
+    data_mode = str(as_of.get("data_mode") or "").upper()
+    if data_mode == "LIVE_OBSERVATIONAL" or (not controlled and evidence != "CONTROLLED_REPLAY"):
+        return {
+            "ok": False,
+            "stage": "context_gate",
+            "status": ctx_status,
+            "payload": {
+                "reason": "NOT_CONTROLLED_REPLAY",
+                "data_mode": data_mode,
+                "controlled_replay": controlled,
+                "evidence_class": evidence or None,
+            },
+        }
+
+    try:
         status, ingest = _http_json(
             "POST",
             f"{base}{NEWS_INGEST_ROUTE}",
@@ -251,6 +279,14 @@ def load_scenarios(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
         f"{base}{CLOCK_ROUTE}",
         body={"as_of_time": T_FRESH_RETRIEVED},
     )
+    if clock_status != 200:
+        return {
+            "ok": False,
+            "stage": "clock_advance",
+            "status": clock_status,
+            "payload": clock_payload,
+            "ingest": ingest,
+        }
 
     opportunity_ids = list(ingest.get("opportunity_ids") or [])
     enrichment_results: list[dict[str, Any]] = []
@@ -269,6 +305,15 @@ def load_scenarios(*, api_base: str = DEFAULT_API_BASE) -> dict[str, Any]:
         for body in build_enrichment_bodies(conflict_host):
             estatus, epayload = _http_json("POST", f"{base}{ENRICHMENT_INGEST_ROUTE}", body=body)
             enrichment_results.append({"status": estatus, "payload": epayload})
+        if any(int(row.get("status") or 0) != 200 for row in enrichment_results):
+            return {
+                "ok": False,
+                "stage": "enrichment",
+                "status": None,
+                "payload": enrichment_results,
+                "ingest": ingest,
+                "clock_advance": {"status": clock_status, "payload": clock_payload},
+            }
 
     return {
         "ok": True,

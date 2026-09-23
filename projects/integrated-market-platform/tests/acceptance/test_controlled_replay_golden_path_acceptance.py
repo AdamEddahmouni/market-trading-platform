@@ -123,6 +123,32 @@ class ControlledReplayGoldenPathAcceptanceTests(unittest.TestCase):
         self.assertEqual(env["IMP_PAPER_EXECUTION"], "0")
         self.assertIn("controlled-replay", env["IMP_STATE_DIR"].replace("\\", "/"))
 
+    def test_context_gate_refuses_live_observational(self) -> None:
+        from tools.controlled_replay.cli import verify_controlled_replay_context
+
+        class _Resp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self):
+                return json.dumps(
+                    {
+                        "as_of_context": {
+                            "data_mode": "LIVE_OBSERVATIONAL",
+                            "controlled_replay": False,
+                            "execution_authority": "BLOCKED",
+                        }
+                    }
+                ).encode("utf-8")
+
+        with patch("urllib.request.urlopen", return_value=_Resp()):
+            gate = verify_controlled_replay_context(api_base="http://127.0.0.1:8766")
+        self.assertFalse(gate["ok"])
+        self.assertEqual(gate["reason"], "LIVE_OBSERVATIONAL_REFUSED")
+
     def test_reset_refuses_canonical_local_and_clears_namespace(self) -> None:
         # Exercise namespaced wipe on an isolated temp path (never the live
         # launcher-held .local/controlled-replay while an API may lock SQLite).
