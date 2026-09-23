@@ -128,6 +128,18 @@ OPERATOR_MESSAGES: dict[str, str] = {
         "The provider HTTP response indicated an error. No quote is invented and "
         "overlay is not promoted to hop L1."
     ),
+    "INSTRUMENT_ID_REQUIRED": (
+        "No instrument id was supplied to the provider call. The request is rejected "
+        "fail-closed; no symbol is invented."
+    ),
+    "ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY": (
+        "ES/futures-style symbols are blocked on the delayed equity overlay. This is "
+        "not an equity quote and does not satisfy a futures entitlement."
+    ),
+    "FINVIZ_NOT_ES_OR_FUTURES": (
+        "Finviz Elite context refuses ES/futures-style symbols. Equity overlay only; "
+        "no futures context is synthesized."
+    ),
 }
 
 _ITEM9_UNTOUCHED = {
@@ -266,6 +278,9 @@ _PRIMARY_UNAVAILABLE_TOKENS = frozenset(
         "MOOMOO_TRANSPORT_NOT_IMPLEMENTED",
         "RATE_LIMIT",
         "PROVIDER_HTTP_ERROR",
+        "INSTRUMENT_ID_REQUIRED",
+        "ES_FUTURES_NOT_SUPPORTED_BY_DELAYED_EQUITY_OVERLAY",
+        "FINVIZ_NOT_ES_OR_FUTURES",
         FALLBACK_BLOCKED,
         RECONNECTING,
         RESTART_RECOVERY,
@@ -296,6 +311,7 @@ def incident_for_reason_code(
 ) -> ProviderIncident:
     """Map an adapter or discovery ``reason_code`` to an operator incident (offline-safe)."""
 
+    raw = str(reason_code or "").strip().upper()
     token = normalize_reason_token(reason_code) or "UNKNOWN"
     novel = token not in _KNOWN_INCIDENT_TOKENS
     status_token = "UNKNOWN" if novel else token
@@ -311,13 +327,73 @@ def incident_for_reason_code(
         severity = "RECOVERING"
     elif token in {OPEND_REACHABLE, HEALTHY, "OPEND_SDK_PRESENT"}:
         severity = "HEALTHY"
+    # Preserve the adapter's original token when aliases collapse (e.g.
+    # PROVIDER_DISCONNECTED → TEMPORARY_NETWORK_FAILURE) or when novel.
+    details: dict[str, Any] = {}
+    source = raw if raw else token
+    if novel or (source and source != status_token):
+        details["source_reason_code"] = source
     return _incident(
         status_token,
         severity,
         primary_available=primary_available,
         overlay_available=overlay_available,
         promote=promote_overlay_to_l1,
-        details={"source_reason_code": token} if novel else {},
+        details=details,
+    )
+
+
+def project_provider_failure_receipt(
+    *,
+    reason_code: str | None,
+    provider_id: str = "",
+    capability: str = "",
+    instrument_id: str = "",
+    details: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build a software-only failure receipt for diagnostics (no market evidence)."""
+
+    incident = incident_for_reason_code(reason_code)
+    receipt: dict[str, Any] = {
+        "status": "unavailable",
+        "reason_code": str(reason_code or "") or None,
+        "provider_status_token": incident.status_token,
+        "operator_message": incident.operator_message,
+        "provider_id": str(provider_id or ""),
+        "capability": str(capability or ""),
+        "severity": incident.severity,
+        "evidence_class": "SOFTWARE",
+        "fallback_boundary": incident.fallback.boundary_token,
+        "overlay_as_hop_l1": incident.fallback.overlay_as_hop_l1,
+        "live_execution": incident.live_execution,
+        "item9_mode": "IDLE",
+        "item9_calibration": "NOT_CALIBRATED",
+    }
+    wanted = str(instrument_id or "").strip().upper()
+    if wanted:
+        receipt["instrument_id"] = wanted
+    merged: dict[str, Any] = dict(incident.details)
+    if details:
+        for key, value in dict(details).items():
+            if value is None:
+                continue
+            merged[str(key)] = value
+    if merged:
+        receipt["failure_details"] = merged
+        if "source_reason_code" in merged:
+            receipt["source_reason_code"] = merged["source_reason_code"]
+    return receipt
+
+
+def failure_receipt_from_provider_result(result: Any) -> dict[str, Any]:
+    """Project a ``ProviderResult`` failure into a diagnostic receipt."""
+
+    return project_provider_failure_receipt(
+        reason_code=getattr(result, "reason_code", None),
+        provider_id=str(getattr(result, "provider_id", "") or ""),
+        capability=str(getattr(result, "capability", "") or ""),
+        instrument_id=str(getattr(result, "instrument_id", "") or ""),
+        details=getattr(result, "details", None) or None,
     )
 
 
@@ -541,4 +617,6 @@ __all__ = [
     "note_process_restart",
     "note_reconnect",
     "operator_message_for",
+    "project_provider_failure_receipt",
+    "failure_receipt_from_provider_result",
 ]

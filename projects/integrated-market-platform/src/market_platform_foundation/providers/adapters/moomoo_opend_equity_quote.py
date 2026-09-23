@@ -211,39 +211,50 @@ class MoomooOpenDEquityQuoteProvider:
             return self._unavailable(SYMBOL_REQUIRED)
         host, port = opend_endpoint()
         if not opend_is_loopback(host):
-            return self._unavailable(OPEND_NON_LOOPBACK_BLOCKED)
+            return self._unavailable(OPEND_NON_LOOPBACK_BLOCKED, instrument_id=wanted)
         if not opend_reachable(host=host, port=port):
-            return self._unavailable(OPEND_UNAVAILABLE)
+            return self._unavailable(OPEND_UNAVAILABLE, instrument_id=wanted)
 
         try:
             snapshot = self._transport.fetch_snapshot(symbol=wanted, host=host, port=port)
         except TimeoutError:
-            return self._unavailable(PROVIDER_TIMEOUT)
+            return self._unavailable(PROVIDER_TIMEOUT, instrument_id=wanted)
         except ConnectionResetError:
-            return self._unavailable(TEMPORARY_NETWORK_FAILURE)
+            return self._unavailable(TEMPORARY_NETWORK_FAILURE, instrument_id=wanted)
         if snapshot.reason_code:
-            return self._unavailable(snapshot.reason_code)
+            return self._unavailable(snapshot.reason_code, instrument_id=wanted)
         if snapshot.row is None or not snapshot.row:
-            return self._unavailable(EMPTY_PAYLOAD)
+            return self._unavailable(EMPTY_PAYLOAD, instrument_id=wanted)
 
         event, reason_code = _quote_event_from_vendor_row(
             snapshot.row, symbol=wanted, received_ns=monotonic_wall_ns()
         )
         if event is None:
-            return self._unavailable(reason_code or MOOMOO_PROTOCOL_ERROR)
+            return self._unavailable(
+                reason_code or MOOMOO_PROTOCOL_ERROR, instrument_id=wanted
+            )
         return ProviderResult(
             status="available",
             events=(event,),
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=wanted,
         )
 
-    def _unavailable(self, reason_code: str) -> ProviderResult:
+    def _unavailable(
+        self,
+        reason_code: str,
+        *,
+        instrument_id: str = "",
+        details: dict[str, Any] | None = None,
+    ) -> ProviderResult:
         return ProviderResult(
             status="unavailable",
             reason_code=reason_code,
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=str(instrument_id or "").strip().upper(),
+            details=dict(details or {}),
         )
 
 
