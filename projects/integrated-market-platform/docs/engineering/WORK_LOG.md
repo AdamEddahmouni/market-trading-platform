@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Next RTH readiness plan after #385 (docs only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` next-RTH runbook |
+| **Summary** | Updated canonical [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) from `origin/main` `007d8d9e` ([#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385)): candidate runtime pinned **`frozen=no`**; arm requires durable campaign-supervision state; §26 freeze-gate checklist filled PASS/FAIL/PARTIAL; arm/close/recovery/no-backfill and operator rules written. Did **not** arm, collect market evidence, freeze, push, or open a PR. Sep 22 `NOT_OBSERVED` gap and Segment B zero opportunities unchanged. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `NOT_RUN` (documentation only; market closed) |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); merge [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385) |
+| **Notes** | Worktree `.worktrees/next-rth-readiness-20260922` / branch `docs/next-rth-readiness-20260922`. Job/terminal detachment remains UNPROVEN (gate 11 PARTIAL). Benchmark #384 not required. Item 9 / Item 7 remain unmet empirical targets, not software arm blockers. |
+
 ## 2026-09-22 — RTH15-09 truthfulness nits (no-breakaway claims)
 
 | Field | Value |
