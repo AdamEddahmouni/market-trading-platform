@@ -11,7 +11,12 @@ import {
   type PaperPersistedSourceContext,
 } from "../paper/paperDecisionSourceSnapshot";
 
-export type PaperDecisionSourceCategory = "PAPER_COMMAND" | "WORKSPACE_LANE" | "MANUAL" | "UNKNOWN";
+export type PaperDecisionSourceCategory =
+  | "PAPER_COMMAND"
+  | "WORKSPACE_LANE"
+  | "WATCHED_OPPORTUNITY"
+  | "MANUAL"
+  | "UNKNOWN";
 
 export type PaperOperationalProvenance = PaperDraftProvenance & {
   correlationId: string | null;
@@ -43,6 +48,7 @@ export function isTerminalPaperOrderState(state: string | undefined | null): boo
 function sourceCategoryFromType(type: PaperDraftProvenanceType): PaperDecisionSourceCategory {
   if (type === "LANE") return "WORKSPACE_LANE";
   if (type === "ATTENTION") return "PAPER_COMMAND";
+  if (type === "OPPORTUNITY") return "WATCHED_OPPORTUNITY";
   if (type === "UNKNOWN") return "UNKNOWN";
   return "MANUAL";
 }
@@ -53,6 +59,7 @@ function badgeLabelFromProvenance(provenance: PaperDraftProvenance): string {
     return laneModuleLabel(laneId).replace(/\s+/g, " ").toUpperCase();
   }
   if (provenance.type === "ATTENTION") return "PAPER COMMAND";
+  if (provenance.type === "OPPORTUNITY") return "RADAR WATCHED";
   if (provenance.type === "UNKNOWN") return "UNKNOWN";
   return "MANUAL";
 }
@@ -66,6 +73,9 @@ function sourceDetailFromProvenance(
   }
   if (provenance.type === "LANE" && provenance.laneId) {
     return provenance.laneId;
+  }
+  if (provenance.type === "OPPORTUNITY" && provenance.opportunityId) {
+    return provenance.opportunityId;
   }
   if (provenance.type === "UNKNOWN" && correlationId) {
     return correlationId;
@@ -150,6 +160,18 @@ export function parsePersistedPaperDecisionProvenance(
     return buildOperationalProvenance(draftProvenance, correlation, clientOrder, decisionSourceSnapshot);
   }
 
+  if (correlation.startsWith("opportunity:")) {
+    const draftProvenance = parsePaperDraftProvenance({
+      version: 1,
+      instrumentId: symbol?.trim().toUpperCase() || "ORDER",
+      side: "BUY",
+      quantity: 1,
+      orderType: "MARKET",
+      sourceAttentionId: correlation,
+    });
+    return buildOperationalProvenance(draftProvenance, correlation, clientOrder, decisionSourceSnapshot);
+  }
+
   if (isLikelyAttentionCorrelation(correlation)) {
     const draftProvenance = parsePaperDraftProvenance({
       version: 1,
@@ -182,6 +204,7 @@ export function parsePersistedPaperDecisionProvenance(
     sourceId: correlation,
     laneId: null,
     attentionId: null,
+    opportunityId: null,
     sourceLabel: "Unknown source",
     sourceTimestamp: null,
     sourceReasonSummary: null,
@@ -227,7 +250,7 @@ function buildOperationalProvenance(
     badgeLabel: badgeLabelFromProvenance(provenance),
     sourceDetail,
     provenanceLabel,
-    isDecisionProvenance: provenance.type === "LANE" || provenance.type === "ATTENTION",
+    isDecisionProvenance: provenance.type === "LANE" || provenance.type === "ATTENTION" || provenance.type === "OPPORTUNITY",
     persistedSourceContext,
     tableSourceSummary: paperSourceContextTableSummary(persistedSourceContext, sourceDetail),
   };
@@ -241,6 +264,8 @@ export function paperDecisionSourceFilterLabel(category: PaperDecisionSourceCate
       return "Paper Command";
     case "WORKSPACE_LANE":
       return "Workspace lane";
+    case "WATCHED_OPPORTUNITY":
+      return "Radar watched opportunity";
     case "MANUAL":
       return "Manual";
     case "UNKNOWN":

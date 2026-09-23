@@ -42,6 +42,7 @@ type Props = {
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  onPreviewInPaper?: (row: OpportunityReviewRow) => void;
 };
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -70,6 +71,7 @@ export function RadarOpportunitiesPanel({
   onExplain,
   onInspect,
   onOpenWorkspace,
+  onPreviewInPaper,
 }: Props) {
   const queryClient = useQueryClient();
   const query = useOpportunitiesSummaryQuery(true);
@@ -319,6 +321,7 @@ export function RadarOpportunitiesPanel({
       onExplain={onExplain}
       onInspect={onInspect}
       onOpenWorkspace={onOpenWorkspace}
+      onPreviewInPaper={onPreviewInPaper}
       onAck={acksEnabled ? (row, action) => void handleAck(row, action) : undefined}
     />
   ) : null;

@@ -2039,7 +2039,7 @@ export type PaperOrderRequest = {
   idempotency_key?: string;
   correlation_id?: string;
   decision_source_snapshot?: {
-    source_type: "paper_command_attention" | "workspace_lane";
+    source_type: "paper_command_attention" | "workspace_lane" | "watched_opportunity";
     source_id: string;
     source_module?: string;
     headline?: string;

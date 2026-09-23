@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Radar watched opportunity → Paper preview handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` / `ui/paper-workspace` / `paper/decision_source` |
+| **Summary** | Smallest honest continuation: watched + eligible Radar opportunities can open the existing Paper workspace preview cockpit with canonical `opportunity:{id}` provenance. No second Paper stack, no auto-submit, no invented trade intent (placeholder BUY×1 only). Controlled-replay learning acks are not Paper preview authority. |
+| **Key files** | `src/.../paper/decision_source.py`; `ui/.../paperOrderDraft.ts`; `ui/.../paperDecisionSourceSnapshot.ts`; `ui/.../buildPaperHandoffModel.ts`; `ui/.../PaperHandoffPanel.tsx`; `ui/.../opportunityPresentation.ts`; `ui/.../opportunityDetailModel.ts`; `ui/.../radar/{OpportunityDetailCard,RadarPage,RadarOpportunitiesPanel}.{tsx}`; `ui/.../paper-portfolio/{paperDecisionProvenance.ts,PaperOrderHistoryTable.tsx}`; `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; focused tests |
+| **Tests** | `unittest tests.platform.test_paper_decision_source_snapshot` 11 ok; `imp.py test focused …watched_opportunity…` passed; vitest 6 files / 105 passed; `imp.py test affected` **PASSED** 4726 tests / 32 skipped / 0 failures / 0 errors (first affected run had a flaky intelligence error; clean re-run passed) |
+| **Related** | Operator golden path deferred Paper preview; durable decision closure PR #391 |
+| **Notes** | Empirical runtime / frozen campaign SHAs untouched. Live trading not enabled. |
+
 ## 2026-09-23 — Radar durable decision closure after Watch/Dismiss
 
 | Field | Value |

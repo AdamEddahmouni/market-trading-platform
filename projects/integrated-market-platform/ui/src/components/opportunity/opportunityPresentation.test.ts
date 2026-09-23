@@ -5,6 +5,7 @@ import {
   attentionOpportunityLinks,
   canAckOpportunity,
   canOpenOpportunityWorkspace,
+  canPreviewOpportunityInPaper,
   derivePresentationState,
   evidenceInputsSentence,
   evidenceInputsSummary,
@@ -93,6 +94,31 @@ describe("opportunityPresentation", () => {
     expect(canOpenOpportunityWorkspace(row({ instrument_id: null }))).toBe(false);
     expect(canOpenOpportunityWorkspace(row({ next_safe_action: "NONE" }))).toBe(false);
     expect(opportunityNextActionState(row()).label).toBe("Open workspace");
+  });
+
+  it("offers Preview in Paper only for watched eligible instrument-backed rows", () => {
+    expect(canPreviewOpportunityInPaper(row({ lifecycle_state: "WATCHED" }))).toBe(true);
+    expect(canPreviewOpportunityInPaper(row({ lifecycle_state: "ACTIVE" }))).toBe(false);
+    expect(canPreviewOpportunityInPaper(row({ lifecycle_state: "WATCHED", instrument_id: null }))).toBe(
+      false,
+    );
+    expect(
+      canPreviewOpportunityInPaper(
+        row({ lifecycle_state: "WATCHED", eligibility_state: "INELIGIBLE" }),
+      ),
+    ).toBe(false);
+    expect(
+      canPreviewOpportunityInPaper(row({ lifecycle_state: "WATCHED", next_safe_action: "STOP" })),
+    ).toBe(false);
+    // Freshness STALE stays orthogonal to eligibility — still eligible watched rows may preview.
+    expect(
+      canPreviewOpportunityInPaper(
+        row({
+          lifecycle_state: "WATCHED",
+          data_quality: { status: "PASS", freshness: "STALE", source: "unit-test" },
+        }),
+      ),
+    ).toBe(true);
   });
 
   it("flags provisional ranking order from the ranking basis", () => {

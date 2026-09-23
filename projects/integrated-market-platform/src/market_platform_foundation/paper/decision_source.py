@@ -8,6 +8,7 @@ SOURCE_TYPES: tuple[str, ...] = (
     "paper_command_attention",
     "workspace_lane",
     "forward_test_decision",
+    "watched_opportunity",
 )
 
 MAX_HEADLINE_LENGTH = 240
@@ -137,6 +138,11 @@ def validate_snapshot_against_correlation(
         return snapshot
     if source_type == "forward_test_decision":
         expected = f"forward_test:{source_id}"
+        if correlation != expected:
+            raise ValueError("DECISION_SOURCE_SNAPSHOT_CORRELATION_MISMATCH")
+        return snapshot
+    if source_type == "watched_opportunity":
+        expected = f"opportunity:{source_id}"
         if correlation != expected:
             raise ValueError("DECISION_SOURCE_SNAPSHOT_CORRELATION_MISMATCH")
         return snapshot

@@ -2,6 +2,7 @@ import type { OpportunityEvidenceResponse, OpportunityReviewRow } from "../../ap
 import {
   canAckOpportunity,
   canOpenOpportunityWorkspace,
+  canPreviewOpportunityInPaper,
   derivePresentationState,
   isOpportunityIneligible,
   stableOpportunityKey,
@@ -35,6 +36,7 @@ export type OpportunityDetailSections = {
     canWatch: boolean;
     canDismiss: boolean;
     canPreviewWorkspace: boolean;
+    canPreviewInPaper: boolean;
     canRevalidate: boolean;
     paperActions: boolean;
     nextSafeAction: string;
@@ -196,6 +198,7 @@ export function buildOpportunityDetailSections(
 
   const presentationState = derivePresentationState(row, evidence);
   const canAck = Boolean(paperActions && !readOnly && canAckOpportunity(row));
+  const canPreviewInPaper = Boolean(paperActions && !readOnly && canPreviewOpportunityInPaper(row));
 
   return {
     presentationState,
@@ -217,6 +220,7 @@ export function buildOpportunityDetailSections(
       canWatch: canAck,
       canDismiss: canAck,
       canPreviewWorkspace: canOpen,
+      canPreviewInPaper,
       canRevalidate: canOpen,
       paperActions,
       nextSafeAction: ineligible ? "STOP" : displayValue(row.next_safe_action),

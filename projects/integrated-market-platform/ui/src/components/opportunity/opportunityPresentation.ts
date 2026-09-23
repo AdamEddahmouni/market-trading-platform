@@ -149,6 +149,18 @@ export function canOpenOpportunityWorkspace(row: OpportunityReviewRow): boolean 
   );
 }
 
+/**
+ * Paper preview continuation from Radar: watched + eligible + instrument-backed.
+ * Does not bypass eligibility; STALE freshness alone does not block when still ELIGIBLE.
+ * Controlled-replay learning acks are not Paper preview authority — callers must also
+ * gate on real Paper actions.
+ */
+export function canPreviewOpportunityInPaper(row: OpportunityReviewRow): boolean {
+  const lifecycle = String(row.lifecycle_state ?? "").toUpperCase();
+  if (lifecycle !== "WATCHED") return false;
+  return canOpenOpportunityWorkspace(row);
+}
+
 /** Ack (watch/review/dismiss) is never offered for stopped/ineligible rows. */
 export function canAckOpportunity(row: OpportunityReviewRow): boolean {
   return !isOpportunityIneligible(row);

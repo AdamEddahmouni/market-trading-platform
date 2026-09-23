@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart LR
-  A[Paper Command / Lane] --> B[Draft + provenance]
+  A[Paper Command / Lane / Watched Radar opportunity] --> B[Draft + provenance]
   B --> C[sourceContext + source_time]
   C --> D[Workspace cockpit]
   D --> E[Preview]

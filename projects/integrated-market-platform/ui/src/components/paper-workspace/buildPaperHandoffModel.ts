@@ -2,6 +2,7 @@ import type { WorkspaceModuleId } from "../WorkspaceModuleNav";
 import {
   ATTENTION_DRAFT_PLACEHOLDER_NOTE,
   LANE_DRAFT_PLACEHOLDER_NOTE,
+  OPPORTUNITY_DRAFT_PLACEHOLDER_NOTE,
   parseLaneProvenance,
   parsePaperDraftProvenance,
   parsePaperOrderDraft,
@@ -11,7 +12,7 @@ import {
 import { formatPaperSourceTimeLabel } from "../paper/paperSourceTimestamp";
 import { laneModuleTitle } from "../workspace-module-shared/buildLaneModeContent";
 
-export type PaperHandoffKind = "lane" | "attention" | "manual" | "unknown";
+export type PaperHandoffKind = "lane" | "attention" | "opportunity" | "manual" | "unknown";
 
 export type PaperHandoffModel = {
   kind: PaperHandoffKind;
@@ -20,8 +21,10 @@ export type PaperHandoffModel = {
   sourceTitle: string;
   provenanceId: string | null;
   attentionId: string | null;
+  opportunityId: string | null;
   isLaneOriginated: boolean;
   isAttentionOriginated: boolean;
+  isOpportunityOriginated: boolean;
   isMalformed: boolean;
   isUnknownLane: boolean;
   hasHandoff: boolean;
@@ -44,6 +47,7 @@ export type PaperHandoffModel = {
 function handoffKindFromProvenance(type: PaperDraftProvenanceType): PaperHandoffKind {
   if (type === "LANE") return "lane";
   if (type === "ATTENTION") return "attention";
+  if (type === "OPPORTUNITY") return "opportunity";
   if (type === "MANUAL") return "manual";
   return "unknown";
 }
@@ -57,6 +61,8 @@ export function buildPaperHandoffModel(
     "Current workspace evidence loads independently from the handoff. Review before preview.";
   const sourceContextNote =
     "Source context reflects what Paper Command surfaced — not current portfolio or risk state.";
+  const opportunityContextNote =
+    "Source context is the watched Radar opportunity at handoff — not current portfolio or risk state.";
 
   const empty: PaperHandoffModel = {
     kind: "manual",
@@ -65,8 +71,10 @@ export function buildPaperHandoffModel(
     sourceTitle: "",
     provenanceId: null,
     attentionId: null,
+    opportunityId: null,
     isLaneOriginated: false,
     isAttentionOriginated: false,
+    isOpportunityOriginated: false,
     isMalformed: false,
     isUnknownLane: false,
     hasHandoff: false,
@@ -113,7 +121,9 @@ export function buildPaperHandoffModel(
       ? "Attention surfaced"
       : kind === "lane" && sourceTimeLabel
         ? "Lane handoff created"
-        : null;
+        : kind === "opportunity" && sourceTimeLabel
+          ? "Opportunity watched"
+          : null;
 
   let handoffSummary = empty.handoffSummary;
   let placeholderWarning = LANE_DRAFT_PLACEHOLDER_NOTE;
@@ -131,6 +141,10 @@ export function buildPaperHandoffModel(
     placeholderWarning = ATTENTION_DRAFT_PLACEHOLDER_NOTE;
     const attentionLabel = provenance.attentionId ?? provenance.sourceId ?? "attention";
     handoffSummary = `Opened from Paper Command attention ${attentionLabel}. The draft is a starting point, not an execution recommendation. Current workspace evidence and Paper portfolio/risk state may differ from the source context.`;
+  } else if (kind === "opportunity") {
+    placeholderWarning = OPPORTUNITY_DRAFT_PLACEHOLDER_NOTE;
+    const opportunityLabel = provenance.opportunityId ?? provenance.sourceId ?? "opportunity";
+    handoffSummary = `Opened from watched Radar opportunity ${opportunityLabel}. ${placeholder.side} × ${placeholder.quantity} ${placeholder.orderType} is a starting placeholder, not a recommendation. Run server Paper preview against current portfolio and risk state; submit remains operator-controlled.`;
   }
 
   const sourceTitle =
@@ -138,9 +152,11 @@ export function buildPaperHandoffModel(
       ? laneModuleTitle(sourceLane)
       : kind === "attention"
         ? "Paper Command"
-        : kind === "unknown"
-          ? "Unknown provenance"
-          : "";
+        : kind === "opportunity"
+          ? "Radar watched opportunity"
+          : kind === "unknown"
+            ? "Unknown provenance"
+            : "";
 
   return {
     kind,
@@ -149,18 +165,25 @@ export function buildPaperHandoffModel(
     sourceTitle,
     provenanceId: provenance.sourceId,
     attentionId: provenance.attentionId,
+    opportunityId: provenance.opportunityId,
     isLaneOriginated: kind === "lane",
     isAttentionOriginated: kind === "attention",
+    isOpportunityOriginated: kind === "opportunity",
     isMalformed,
     isUnknownLane,
-    hasHandoff: kind === "lane" || kind === "attention" || kind === "unknown",
+    hasHandoff: kind === "lane" || kind === "attention" || kind === "opportunity" || kind === "unknown",
     placeholder,
     placeholderWarning,
     handoffSummary,
     sourceContextSummary,
     sourceTier,
     sourceReasons,
-    sourceContextNote: kind === "attention" ? sourceContextNote : "Source context is carried from the handoff only when available.",
+    sourceContextNote:
+      kind === "attention"
+        ? sourceContextNote
+        : kind === "opportunity"
+          ? opportunityContextNote
+          : "Source context is carried from the handoff only when available.",
     sourceTime,
     sourceTimeLabel,
     sourceTimeFieldLabel,
