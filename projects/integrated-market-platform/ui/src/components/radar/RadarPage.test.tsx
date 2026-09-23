@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
@@ -28,7 +29,28 @@ const summaryMock = vi.hoisted(() => ({
   isError: false,
 }));
 
-const ackMutate = vi.hoisted(() => vi.fn());
+const ackMutateAsync = vi.hoisted(() =>
+  vi.fn(async (vars: { rowId: string; action: string }) => ({
+    summary_id: vars.rowId.startsWith("opp-") ? `sum-${vars.rowId.slice(4)}` : vars.rowId,
+    opportunity_id: vars.rowId,
+    action: vars.action === "watch" ? "WATCHED" : vars.action === "dismiss" ? "DISMISSED" : "REVIEWED",
+    trade_review_id: `tr-${vars.rowId}`,
+    decision_trace_mode: "CONTROLLED_REPLAY",
+    created_at_ns: 1,
+  })),
+);
+
+const tradeReviewsFetch = vi.hoisted(() =>
+  vi.fn(async (opportunityId: string) => ({
+    opportunity_id: opportunityId,
+    items: [] as Array<{ review_id: string; review_mode: string; decision: string; notes?: string }>,
+  })),
+);
+
+const tradeReviewStore = vi.hoisted(() => ({
+  items: [] as Array<{ review_id: string; review_mode: string; decision: string; notes?: string }>,
+  listeners: new Set<() => void>(),
+}));
 
 const contextMock = vi.hoisted(() => ({
   data: {
@@ -72,7 +94,11 @@ vi.mock("../../api/opportunityClient", () => ({
     isLoading: false,
     isError: false,
   }),
-  useOpportunityAckMutation: () => ({ mutate: ackMutate, isPending: false }),
+  useOpportunityAckMutation: () => ({
+    mutate: vi.fn(),
+    mutateAsync: ackMutateAsync,
+    isPending: false,
+  }),
 }));
 
 vi.mock("../../api/hooks", async () => {
@@ -97,7 +123,36 @@ vi.mock("../../api/hooks", async () => {
 });
 
 vi.mock("../../api/tradeReviewClient", () => ({
-  useTradeReviewsQuery: () => ({ data: { items: [] }, isLoading: false, isError: false }),
+  getTradeReviewsForOpportunity: async (opportunityId: string) => {
+    const result = await tradeReviewsFetch(opportunityId);
+    tradeReviewStore.items = result.items ?? [];
+    tradeReviewStore.listeners.forEach((listener) => listener());
+    return result;
+  },
+  useTradeReviewsQuery: (opportunityId: string | null | undefined, enabled = true) => {
+    // Local require keeps the mock free of top-level React import cycles.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const React = require("react") as typeof import("react");
+    const [, setTick] = React.useState(0);
+    React.useEffect(() => {
+      if (!enabled || !opportunityId) return undefined;
+      const listener = () => setTick((value: number) => value + 1);
+      tradeReviewStore.listeners.add(listener);
+      void tradeReviewsFetch(String(opportunityId)).then((result) => {
+        tradeReviewStore.items = result.items ?? [];
+        listener();
+      });
+      return () => {
+        tradeReviewStore.listeners.delete(listener);
+      };
+    }, [enabled, opportunityId]);
+    return {
+      data: { opportunity_id: String(opportunityId ?? ""), items: tradeReviewStore.items },
+      isLoading: false,
+      isError: false,
+      isFetching: false,
+    };
+  },
 }));
 
 const rankedRow: OpportunityReviewRow = {
@@ -213,41 +268,46 @@ function renderRadar(
   initialPath?: string,
 ) {
   const path = initialPath ?? (tab === "screeners" ? "/radar/screeners" : "/radar");
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route
-          path="/radar"
-          element={
-            <RadarPage
-              mode={mode}
-              tab="opportunities"
-              paperActionsPermitted={paperActionsPermitted}
-              onExplain={vi.fn()}
-              onExplainRef={vi.fn()}
-              onInspect={vi.fn()}
-              onOpenWorkspace={vi.fn()}
-            />
-          }
-        />
-        <Route
-          path="/radar/screeners"
-          element={
-            <RadarPage
-              mode={mode}
-              tab="screeners"
-              paperActionsPermitted={paperActionsPermitted}
-              onExplain={vi.fn()}
-              onExplainRef={vi.fn()}
-              onInspect={vi.fn()}
-              onOpenWorkspace={vi.fn()}
-            />
-          }
-        />
-        <Route path="/workspace/:instrumentId" element={<div>Workspace opened</div>} />
-        <Route path="/control" element={<div>Control</div>} />
-      </Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route
+            path="/radar"
+            element={
+              <RadarPage
+                mode={mode}
+                tab="opportunities"
+                paperActionsPermitted={paperActionsPermitted}
+                onExplain={vi.fn()}
+                onExplainRef={vi.fn()}
+                onInspect={vi.fn()}
+                onOpenWorkspace={vi.fn()}
+              />
+            }
+          />
+          <Route
+            path="/radar/screeners"
+            element={
+              <RadarPage
+                mode={mode}
+                tab="screeners"
+                paperActionsPermitted={paperActionsPermitted}
+                onExplain={vi.fn()}
+                onExplainRef={vi.fn()}
+                onInspect={vi.fn()}
+                onOpenWorkspace={vi.fn()}
+              />
+            }
+          />
+          <Route path="/workspace/:instrumentId" element={<div>Workspace opened</div>} />
+          <Route path="/control" element={<div>Control</div>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
@@ -256,8 +316,32 @@ describe("RadarPage opportunities tab", () => {
     summaryMock.data = { items: [], feed_status: "EMPTY", unready_reason: undefined, next_action: undefined };
     summaryMock.isLoading = false;
     summaryMock.isError = false;
-    ackMutate.mockClear();
+    ackMutateAsync.mockReset();
+    ackMutateAsync.mockImplementation(async (vars: { rowId: string; action: string }) => ({
+      summary_id: vars.rowId.startsWith("opp-") ? `sum-${vars.rowId.slice(4)}` : vars.rowId,
+      opportunity_id: vars.rowId,
+      action: vars.action === "watch" ? "WATCHED" : vars.action === "dismiss" ? "DISMISSED" : "REVIEWED",
+      trade_review_id: `tr-${vars.rowId}`,
+      decision_trace_mode: "CONTROLLED_REPLAY",
+      created_at_ns: 1,
+    }));
+    tradeReviewsFetch.mockReset();
+    tradeReviewsFetch.mockImplementation(async (opportunityId: string) => ({
+      opportunity_id: opportunityId,
+      items: [
+        {
+          review_id: `tr-${opportunityId}`,
+          review_mode: "WATCHED_OPPORTUNITY",
+          decision: "WATCH",
+          notes: "durable",
+        },
+      ],
+    }));
+    tradeReviewStore.items = [];
+    tradeReviewStore.listeners.clear();
     mediaState.narrow = false;
+    contextMock.data.as_of_context.controlled_replay = false;
+    contextMock.data.as_of_context.evidence_class = undefined;
   });
 
   it("renders the page header and tabs", () => {
@@ -445,13 +529,18 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getByTestId("imp-radar-operator-brief")).not.toHaveTextContent("Provider linkage?");
   });
 
-  it("posts watch/dismiss from the queue through the existing ack API", () => {
+  it("posts watch/dismiss from the queue through the existing ack API", async () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);
     fireEvent.click(screen.getByRole("button", { name: "Watch BIYA" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
+    await waitFor(() => expect(screen.getByRole("button", { name: "Watch BIYA" })).not.toBeDisabled());
     fireEvent.click(screen.getByRole("button", { name: "Dismiss BIYA" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" }),
+    );
   });
 
   it("moves selection with keyboard and watches/dismisses via w/d when paper-gated", async () => {
@@ -477,9 +566,14 @@ describe("RadarPage opportunities tab", () => {
       expect(screen.getByTestId("imp-radar-detail-card")).toHaveTextContent("GME squeeze continuation");
     });
     fireEvent.keyDown(window, { key: "w" });
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-2", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-2", action: "watch" }),
+    );
+    await waitFor(() => expect(tradeReviewsFetch).toHaveBeenCalled());
     fireEvent.keyDown(window, { key: "d" });
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-2", action: "dismiss" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-2", action: "dismiss" }),
+    );
   });
 
   it("selects a row and shows the progressive detail card", async () => {
@@ -516,15 +610,20 @@ describe("RadarPage opportunities tab", () => {
     );
   });
 
-  it("offers watch/dismiss/review acks only with paper authority", () => {
+  it("offers watch/dismiss/review acks only with paper authority", async () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", true);
     const card = screen.getByTestId("imp-radar-detail-card");
     expect(card).toHaveTextContent("paper-acct-1");
     fireEvent.click(within(card).getByRole("button", { name: "Watch" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
+    await waitFor(() => expect(within(card).getByRole("button", { name: "Watch" })).not.toBeDisabled());
     fireEvent.click(within(card).getByRole("button", { name: "Dismiss" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" }),
+    );
   });
 
   it("hides acks without paper authority and says so", () => {
@@ -547,7 +646,7 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
   });
 
-  it("enables Watch/Dismiss on DEMO when backend marks controlled_replay", () => {
+  it("enables Watch/Dismiss on DEMO when backend marks controlled_replay", async () => {
     contextMock.data.as_of_context.controlled_replay = true;
     contextMock.data.as_of_context.evidence_class = "CONTROLLED_REPLAY";
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
@@ -556,9 +655,14 @@ describe("RadarPage opportunities tab", () => {
     const card = screen.getByTestId("imp-radar-detail-card");
     expect(card).toHaveTextContent("controlled-replay-operator");
     fireEvent.click(within(card).getByRole("button", { name: "Watch" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
+    await waitFor(() => expect(within(card).getByRole("button", { name: "Watch" })).not.toBeDisabled());
     fireEvent.click(within(card).getByRole("button", { name: "Dismiss" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" }),
+    );
     contextMock.data.as_of_context.controlled_replay = false;
     contextMock.data.as_of_context.evidence_class = undefined;
   });
@@ -624,7 +728,9 @@ describe("RadarPage opportunities tab", () => {
     expect(howFresh).not.toHaveTextContent(/\bFRESH\b/);
     // Freshness and eligibility stay orthogonal: eligible Paper still offers Watch.
     fireEvent.click(screen.getByRole("button", { name: "Watch BIYA" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
   });
 
   it("surfaces contradicted agent enrichment as inference, not observation", async () => {
@@ -684,7 +790,7 @@ describe("RadarPage mobile detail sheet", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     summaryMock.isLoading = false;
     summaryMock.isError = false;
-    ackMutate.mockClear();
+    ackMutateAsync.mockClear();
     mediaState.narrow = true;
   });
 
@@ -721,9 +827,167 @@ describe("RadarPage mobile detail sheet", () => {
     fireEvent.click(screen.getByTestId("imp-radar-queue").querySelector('[data-stable-key="opp-1"]') as HTMLElement);
     const sheet = await screen.findByRole("dialog");
     fireEvent.click(within(sheet).getByRole("button", { name: "Watch" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Watch" })).not.toBeDisabled());
     fireEvent.click(within(sheet).getByRole("button", { name: "Dismiss" }));
-    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" }),
+    );
+  });
+});
+
+describe("RadarPage durable decision closure", () => {
+  beforeEach(() => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    summaryMock.isLoading = false;
+    summaryMock.isError = false;
+    ackMutateAsync.mockReset();
+    ackMutateAsync.mockImplementation(async (vars: { rowId: string; action: string }) => ({
+      summary_id: vars.rowId.startsWith("opp-") ? `sum-${vars.rowId.slice(4)}` : vars.rowId,
+      opportunity_id: vars.rowId,
+      action: vars.action === "watch" ? "WATCHED" : vars.action === "dismiss" ? "DISMISSED" : "REVIEWED",
+      trade_review_id: `tr-${vars.rowId}`,
+      decision_trace_mode: "CONTROLLED_REPLAY",
+      created_at_ns: 1,
+    }));
+    tradeReviewsFetch.mockReset();
+    // Default: no durable review yet — Watch/Dismiss materialization is tested explicitly.
+    tradeReviewsFetch.mockImplementation(async (opportunityId: string) => ({
+      opportunity_id: opportunityId,
+      items: [],
+    }));
+    tradeReviewStore.items = [];
+    tradeReviewStore.listeners.clear();
+    mediaState.narrow = false;
+    contextMock.data.as_of_context.controlled_replay = false;
+    contextMock.data.as_of_context.evidence_class = undefined;
+  });
+
+  it("after Watch success, reconciles authoritative trade review without manual refresh", async () => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    tradeReviewsFetch.mockImplementation(async (opportunityId: string) => {
+      if (ackMutateAsync.mock.calls.length === 0) {
+        return { opportunity_id: opportunityId, items: [] };
+      }
+      return {
+        opportunity_id: opportunityId,
+        items: [
+          {
+            review_id: "tr-opp-1",
+            review_mode: "WATCHED_OPPORTUNITY",
+            decision: "WATCH",
+            notes: "durable",
+          },
+        ],
+      };
+    });
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(screen.getByText("Historical & research context"));
+    await waitFor(() => expect(screen.getByText(/No durable trade review yet/i)).toBeInTheDocument());
+    fireEvent.click(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Watch" }));
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" }),
+    );
+    await waitFor(() => expect(tradeReviewsFetch).toHaveBeenCalled());
+    await waitFor(() => {
+      expect(screen.getByTestId("trade-review-learning-panel")).toHaveTextContent("WATCHED_OPPORTUNITY");
+      expect(screen.queryByText(/No durable trade review yet/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it("after Dismiss success, shows decision closure when opportunity leaves the active queue", async () => {
+    const second: OpportunityReviewRow = {
+      ...rankedRow,
+      summary_id: "sum-2",
+      opportunity_id: "opp-2",
+      instrument_id: "GME",
+      headline: "GME squeeze continuation",
+      rank_order: 2,
+    };
+    summaryMock.data = {
+      items: [rankedRow, second],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    tradeReviewsFetch.mockResolvedValue({
+      opportunity_id: "opp-1",
+      items: [
+        {
+          review_id: "tr-opp-1",
+          review_mode: "REJECTED_OPPORTUNITY",
+          decision: "DISMISS",
+        },
+      ],
+    });
+    // When the ack mutation succeeds, drop the dismissed row from the ranked summary
+    // so selection fallthrough + no-ghost behavior is exercised.
+    ackMutateAsync.mockImplementation(async (vars: { rowId: string; action: string }) => {
+      const result = {
+        summary_id: vars.rowId.startsWith("opp-") ? `sum-${vars.rowId.slice(4)}` : vars.rowId,
+        opportunity_id: vars.rowId,
+        action: vars.action === "watch" ? "WATCHED" : vars.action === "dismiss" ? "DISMISSED" : "REVIEWED",
+        trade_review_id: `tr-${vars.rowId}`,
+        decision_trace_mode: "CONTROLLED_REPLAY",
+        created_at_ns: 1,
+      };
+      if (vars.action === "dismiss") {
+        summaryMock.data = {
+          items: [second],
+          feed_status: "READY",
+          unready_reason: undefined,
+          next_action: undefined,
+        };
+      }
+      return result;
+    });
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Dismiss" }));
+    await waitFor(() =>
+      expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" }),
+    );
+    await waitFor(() => {
+      const banner = screen.getByTestId("decision-closure-banner");
+      expect(banner).toHaveTextContent(/Dismiss accepted/i);
+      expect(banner).toHaveTextContent(/left active queue/i);
+      expect(banner).toHaveTextContent("opp-1");
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId("imp-radar-detail-card")).toHaveTextContent("GME squeeze continuation");
+      expect(screen.getByTestId("imp-radar-detail-card")).not.toHaveTextContent(
+        "BIYA momentum ignition watch",
+      );
+    });
+  });
+
+  it("on mutation failure, does not show durable review success", async () => {
+    ackMutateAsync.mockRejectedValueOnce(new Error("ACK_FAILED"));
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    const callsBefore = tradeReviewsFetch.mock.calls.length;
+    fireEvent.click(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Watch" }));
+    await waitFor(() => {
+      expect(screen.getAllByText(/Operator action failed/i).length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByTestId("decision-closure-banner")).not.toBeInTheDocument();
+    // Failed mutation must not trigger post-ack reconciliation fetches.
+    expect(tradeReviewsFetch.mock.calls.length).toBe(callsBefore);
+  });
+
+  it("when action accepted but review fetch misses expected id, reports reconciliation failure", async () => {
+    tradeReviewsFetch.mockResolvedValue({
+      opportunity_id: "opp-1",
+      items: [],
+    });
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Watch" }));
+    await waitFor(() => {
+      expect(screen.getAllByText(/durable review retrieval failed/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("button", { name: /Retry review retrieval/i }).length).toBeGreaterThan(0);
+    });
   });
 });
 
@@ -731,7 +995,7 @@ describe("RadarPage feed truth strip", () => {
   beforeEach(() => {
     summaryMock.isLoading = false;
     summaryMock.isError = false;
-    ackMutate.mockClear();
+    ackMutateAsync.mockClear();
     mediaState.narrow = false;
   });
 

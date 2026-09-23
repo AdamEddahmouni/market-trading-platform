@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { AttentionItem } from "../../api/client";
 import type {
   OpportunityAckAction,
@@ -9,14 +10,23 @@ import {
   useOpportunityEvidenceQuery,
   useOpportunitiesSummaryQuery,
 } from "../../api/opportunityClient";
+import { queryKeys } from "../../api/hooks";
+import {
+  getTradeReviewsForOpportunity,
+} from "../../api/tradeReviewClient";
 import { BP_MD } from "../../lib/breakpoints";
 import { useMediaQuery } from "../../lib/useMediaQuery";
+import type { TradeReviewAckPhase } from "../imp-product/TradeReviewLearningPanel";
 import { OpportunityFeedState } from "../opportunity/OpportunityFeedState";
 import {
   canAckOpportunity,
   stableOpportunityKey,
 } from "../opportunity/opportunityPresentation";
 import type { Mode } from "../mode-session/types";
+import {
+  DecisionClosureBanner,
+  type DecisionClosureRecord,
+} from "./DecisionClosureBanner";
 import { OpportunityDetailCard } from "./OpportunityDetailCard";
 import { RadarDetailSheet } from "./RadarDetailSheet";
 import { RadarFeedTruthStrip } from "./RadarFeedTruthStrip";
@@ -46,6 +56,10 @@ function isEditableTarget(target: EventTarget | null): boolean {
  * opportunity detail. Keyboard: ↑/↓ or j/k move selection (preserving
  * context), w/d post watch/dismiss via the existing ack API when paper-gated,
  * Escape closes the narrow detail sheet.
+ *
+ * After Watch/Dismiss succeeds, deliberately reconciles opportunities summary
+ * and trade-review queries so durable DecisionTrace/TradeReview appears without
+ * manual refresh. Does not fabricate review rows in the client.
  */
 export function RadarOpportunitiesPanel({
   mode,
@@ -57,6 +71,7 @@ export function RadarOpportunitiesPanel({
   onInspect,
   onOpenWorkspace,
 }: Props) {
+  const queryClient = useQueryClient();
   const query = useOpportunitiesSummaryQuery(true);
   const ackMutation = useOpportunityAckMutation();
   const state = query.isLoading ? "loading" : query.isError || !query.data ? "error" : "ready";
@@ -65,6 +80,10 @@ export function RadarOpportunitiesPanel({
   const sheetLayout = useMediaQuery(`(max-width: ${BP_MD}px)`);
   const [selectedKey, setSelectedKey] = useState<string | null>(initialSelectedKey);
   const [sheetOpen, setSheetOpen] = useState(() => Boolean(initialSelectedKey) && sheetLayout);
+  const [ackPhase, setAckPhase] = useState<TradeReviewAckPhase>("idle");
+  const [closure, setClosure] = useState<DecisionClosureRecord | null>(null);
+  const [activeAckKey, setActiveAckKey] = useState<string | null>(null);
+  const ackInFlightRef = useRef(false);
   const queueRegionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -87,6 +106,16 @@ export function RadarOpportunitiesPanel({
       setSelectedKey(stableOpportunityKey(items[0]));
     }
   }, [items, selectedRow]);
+
+  // When Dismiss removes the selected row, fall through without keeping a ghost
+  // in the active queue; selection resolves to items[0] via selectedRow memo.
+  useEffect(() => {
+    if (!selectedKey || !items.length) return;
+    const stillPresent = items.some((row) => stableOpportunityKey(row) === selectedKey);
+    if (!stillPresent && selectedRow) {
+      setSelectedKey(stableOpportunityKey(selectedRow));
+    }
+  }, [items, selectedKey, selectedRow]);
 
   const evidenceQuery = useOpportunityEvidenceQuery(
     selectedRow ? selectedRow.summary_id : null,
@@ -112,14 +141,89 @@ export function RadarOpportunitiesPanel({
     if (!sheetLayout) setSheetOpen(false);
   }, [sheetLayout]);
 
-  const handleAck = useCallback(
-    (row: OpportunityReviewRow, action: OpportunityAckAction) => {
-      ackMutation.mutate({ rowId: row.opportunity_id || row.summary_id, action });
+  const reconcileTradeReviews = useCallback(
+    async (opportunityId: string, expectedReviewId?: string) => {
+      const result = await queryClient.fetchQuery({
+        queryKey: queryKeys.tradeReviews(opportunityId),
+        queryFn: () => getTradeReviewsForOpportunity(opportunityId),
+      });
+      const found = (result.items ?? []).some(
+        (item) => !expectedReviewId || item.review_id === expectedReviewId,
+      );
+      if (expectedReviewId && !found) {
+        setAckPhase("reconciliation_failed");
+        return false;
+      }
+      setAckPhase("completed");
+      return true;
     },
-    [ackMutation],
+    [queryClient],
   );
 
+  const handleAck = useCallback(
+    async (row: OpportunityReviewRow, action: OpportunityAckAction) => {
+      if (ackInFlightRef.current) {
+        return;
+      }
+      ackInFlightRef.current = true;
+      const rowId = row.opportunity_id || row.summary_id;
+      const key = stableOpportunityKey(row);
+      setActiveAckKey(key);
+      setAckPhase("submitting");
+      setClosure(null);
+      let data;
+      try {
+        data = await ackMutation.mutateAsync({ rowId, action });
+      } catch {
+        setAckPhase("failed");
+        setClosure(null);
+        ackInFlightRef.current = false;
+        return;
+      }
+      setAckPhase("synchronizing");
+      const opportunityId = String(data.opportunity_id || row.opportunity_id || row.summary_id);
+      const leftActiveQueue = action === "dismiss";
+      const nextClosure: DecisionClosureRecord = {
+        opportunityId,
+        summaryId: data.summary_id || row.summary_id,
+        instrumentId: row.instrument_id ?? null,
+        headline: row.headline,
+        action,
+        tradeReviewId: data.trade_review_id,
+        decisionTraceMode: data.decision_trace_mode,
+        leftActiveQueue,
+      };
+      setClosure(nextClosure);
+      try {
+        await reconcileTradeReviews(opportunityId, data.trade_review_id);
+      } catch {
+        setAckPhase("reconciliation_failed");
+      } finally {
+        ackInFlightRef.current = false;
+      }
+    },
+    [ackMutation, reconcileTradeReviews],
+  );
+
+  const handleRetryReconcile = useCallback(() => {
+    if (!closure) return;
+    setAckPhase("synchronizing");
+    void reconcileTradeReviews(closure.opportunityId, closure.tradeReviewId);
+  }, [closure, reconcileTradeReviews]);
+
   const acksEnabled = Boolean(paperActions && !readOnly && paperAccountId);
+  const selectedAckPhase =
+    selectedRow && activeAckKey === stableOpportunityKey(selectedRow) ? ackPhase : "idle";
+  const selectedExpectedReviewId =
+    selectedRow &&
+    closure &&
+    (closure.opportunityId === (selectedRow.opportunity_id || selectedRow.summary_id) ||
+      closure.summaryId === selectedRow.summary_id)
+      ? closure.tradeReviewId ?? null
+      : null;
+  // Show dismiss closure banner whenever last action left the active queue so
+  // durable decision evidence remains inspectable without keeping a ghost row.
+  const showPostDismissBanner = Boolean(closure?.leftActiveQueue);
 
   const moveSelection = useCallback(
     (delta: number) => {
@@ -161,20 +265,37 @@ export function RadarOpportunitiesPanel({
         moveSelection(-1);
         return;
       }
-      if (!selectedRow || !acksEnabled || !canAckOpportunity(selectedRow)) return;
+      if (
+        !selectedRow ||
+        !acksEnabled ||
+        !canAckOpportunity(selectedRow) ||
+        ackPhase === "submitting" ||
+        ackPhase === "synchronizing"
+      ) {
+        return;
+      }
       if (event.key === "w" || event.key === "W") {
         event.preventDefault();
-        handleAck(selectedRow, "watch");
+        void handleAck(selectedRow, "watch");
         return;
       }
       if (event.key === "d" || event.key === "D") {
         event.preventDefault();
-        handleAck(selectedRow, "dismiss");
+        void handleAck(selectedRow, "dismiss");
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [acksEnabled, handleAck, items.length, moveSelection, selectedRow, sheetLayout, sheetOpen]);
+  }, [
+    acksEnabled,
+    ackPhase,
+    handleAck,
+    items.length,
+    moveSelection,
+    selectedRow,
+    sheetLayout,
+    sheetOpen,
+  ]);
 
   const detailCard = selectedRow ? (
     <OpportunityDetailCard
@@ -188,10 +309,17 @@ export function RadarOpportunitiesPanel({
       withheldRankedCount={query.data?.withheld_ranked_count}
       bookHonesty={query.data?.book_honesty}
       unreadyReason={query.data?.unready_reason}
+      ackPhase={selectedAckPhase}
+      expectedReviewId={selectedExpectedReviewId}
+      onRetryReconcile={
+        selectedAckPhase === "reconciliation_failed" || selectedExpectedReviewId
+          ? handleRetryReconcile
+          : undefined
+      }
       onExplain={onExplain}
       onInspect={onInspect}
       onOpenWorkspace={onOpenWorkspace}
-      onAck={acksEnabled ? handleAck : undefined}
+      onAck={acksEnabled ? (row, action) => void handleAck(row, action) : undefined}
     />
   ) : null;
 
@@ -229,12 +357,23 @@ export function RadarOpportunitiesPanel({
               onExplain={onExplain}
               onInspect={onInspect}
               onOpenWorkspace={onOpenWorkspace}
-              onAck={acksEnabled ? handleAck : undefined}
+              onAck={acksEnabled ? (row, action) => void handleAck(row, action) : undefined}
+              acksBusy={ackPhase === "submitting" || ackPhase === "synchronizing"}
             />
           </section>
         </div>
         {!sheetLayout ? (
           <section className="imp-radar-detail-section" aria-label="Selected opportunity">
+            {showPostDismissBanner && closure ? (
+              <DecisionClosureBanner
+                closure={closure}
+                phase={ackPhase}
+                onRetryReconcile={
+                  ackPhase === "reconciliation_failed" ? handleRetryReconcile : undefined
+                }
+                onDismissBanner={() => setClosure(null)}
+              />
+            ) : null}
             {detailCard ?? (
               <p className="imp-radar-muted">Select a ranked row to open the opportunity detail.</p>
             )}
@@ -243,6 +382,16 @@ export function RadarOpportunitiesPanel({
       </div>
       {sheetLayout ? (
         <RadarDetailSheet open={sheetOpen && Boolean(selectedRow)} onClose={() => setSheetOpen(false)}>
+          {showPostDismissBanner && closure ? (
+            <DecisionClosureBanner
+              closure={closure}
+              phase={ackPhase}
+              onRetryReconcile={
+                ackPhase === "reconciliation_failed" ? handleRetryReconcile : undefined
+              }
+              onDismissBanner={() => setClosure(null)}
+            />
+          ) : null}
           {detailCard}
         </RadarDetailSheet>
       ) : null}

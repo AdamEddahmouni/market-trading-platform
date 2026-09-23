@@ -39,6 +39,8 @@ type Props = {
   onInspect?: (item: AttentionItem) => void;
   onOpenWorkspace?: (item: AttentionItem) => void;
   onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
+  /** True while an operator ack is submitting or synchronizing. */
+  acksBusy?: boolean;
 };
 
 function truncate(text: string, max = 72): string {
@@ -66,6 +68,7 @@ export function RadarQueueTable({
   onInspect,
   onOpenWorkspace,
   onAck,
+  acksBusy = false,
 }: Props) {
   const acksEnabled = Boolean(onAck && paperActions && !readOnly && paperAccountId);
 
@@ -198,6 +201,7 @@ export function RadarQueueTable({
                         type="button"
                         className="imp-radar-ack-watch"
                         aria-label={`Watch ${opportunitySymbol(row)}`}
+                        disabled={acksBusy}
                         onClick={(event) => {
                           event.stopPropagation();
                           onAck?.(row, "watch");
@@ -209,6 +213,7 @@ export function RadarQueueTable({
                         type="button"
                         className="imp-radar-ack-dismiss"
                         aria-label={`Dismiss ${opportunitySymbol(row)}`}
+                        disabled={acksBusy}
                         onClick={(event) => {
                           event.stopPropagation();
                           onAck?.(row, "dismiss");

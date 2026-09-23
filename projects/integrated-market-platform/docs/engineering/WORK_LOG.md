@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Radar durable decision closure after Watch/Dismiss
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` / `backend` (small projection overlay) |
+| **Summary** | After Watch/Dismiss succeeds, Radar deliberately invalidates opportunities + trade-review queries and fetches authoritative TradeReview so DecisionTrace/TradeReview appear without manual refresh. Dismiss keeps inspectable DecisionClosureBanner when the row leaves the active queue; in-flight ack gating prevents double submit. |
+| **Key files** | `ui/src/api/opportunityClient.ts`; `ui/src/api/hooks.ts`; `ui/src/api/tradeReviewClient.ts`; `ui/src/components/radar/{RadarOpportunitiesPanel,RadarQueueTable,DecisionClosureBanner,OpportunityDetailCard,RadarPage.test}.{tsx,ts}`; `ui/src/components/imp-product/TradeReviewLearningPanel.tsx`; `src/.../ui_api/opportunity_projections.py`; `tools/controlled_replay/cli.py` (context path strip); tests under `ui/src/api/opportunityAckReconcile.test.ts`, `tests/.../test_opportunity_api.py` |
+| **Tests** | `vitest` RadarPage + opportunityAckReconcile + queryKeys: 48 passed; Controlled Replay browser: Watch AMD → TREV visible without refresh; Dismiss AAPL → queue shrinks + REJECTED banner |
+| **Related** | Branch `product/radar-durable-decision-closure-20260923`; frozen RTH `bf405f46` / RTH-OBS-NEWS-20260923 untouched |
+| **Notes** | Defect was missing trade-reviews cache reconciliation after ack (backend already persisted sync). execution_authority remains BLOCKED. Item 9 not calibrated. |
+
 ## 2026-09-23 — CONTROLLED REPLAY operator golden path
 
 | Field | Value |

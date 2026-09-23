@@ -376,12 +376,13 @@ def build_opportunity_detail_payload(store: ReplayStore, row_id: str) -> dict[st
     dismissed = [ack for ack in acks if row_id in {ack["summary_id"], ack.get("opportunity_id")}]
     if dismissed:
         last = dismissed[-1]
-        return {
+        body = {
             "summary_id": last["summary_id"],
             "opportunity_id": last.get("opportunity_id"),
             "lifecycle_state": last["action"],
             "feed_status": "DISMISSED",
         }
+        return overlay_trade_reviews_on_detail(store, body)
     raise KeyError(row_id)
 
 

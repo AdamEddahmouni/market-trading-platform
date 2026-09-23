@@ -87,6 +87,10 @@ def verify_controlled_replay_context(*, api_base: str = API_URL) -> dict[str, An
     """
 
     base = api_base.rstrip("/")
+    # local_launcher.API_URL is the readiness probe (.../context). Accept either
+    # a base origin or that probe URL without double-appending /context.
+    if base.endswith("/context"):
+        base = base[: -len("/context")]
     try:
         request = urllib.request.Request(
             f"{base}/context",
