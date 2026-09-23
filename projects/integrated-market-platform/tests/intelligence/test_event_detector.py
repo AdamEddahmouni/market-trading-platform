@@ -196,7 +196,7 @@ class EventDetectorTests(unittest.TestCase):
     def test_support_matrix_is_explicit(self) -> None:
         support = {row.semantic_event_type: row for row in self.engine.support_matrix()}
         self.assertEqual(support[SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY].status, DetectorSupportStatus.INACTIVE_INPUT_UNAVAILABLE)
-        self.assertEqual(support[SemanticEventType.NEWS_EVENT].status, DetectorSupportStatus.INACTIVE_INPUT_UNAVAILABLE)
+        self.assertEqual(support[SemanticEventType.NEWS_EVENT].status, DetectorSupportStatus.IMPLEMENTED)
         self.assertEqual(support[SemanticEventType.REGIME_SHIFT].status, DetectorSupportStatus.IMPLEMENTED_WITH_EXTERNAL_CONTEXT)
 
     def test_identity_state_determinism_isolation_and_reset(self) -> None:
