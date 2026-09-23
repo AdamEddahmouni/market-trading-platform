@@ -36,18 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
-## 2026-09-22 — Regenerate nonstub Smoke10 freeze fixture for protocol controls
+## 2026-09-22 - Fix WORK_LOG UTF-8 encoding for docs CI
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | docs |
+| **Summary** | Re-saved WORK_LOG.md as UTF-8 after a Windows-1252 em dash (0x97) broke validate-docs and the changed-mode documentation cheap check. No protocol, evidence, or freeze changes. |
+| **Key files** | docs/engineering/WORK_LOG.md |
+| **Tests** | python tools/check_docs_links.py -> OK |
+| **Related** | PR #384 |
+| **Notes** | validate-python-changed FAILED status was the docs cheap-check UTF-8 error; perf=INCOMPATIBLE_BASELINE remains OBSERVE_ONLY telemetry and was not the exit cause. Stub Smoke10 pin unchanged. |
+
+## 2026-09-22 - Regenerate nonstub Smoke10 freeze fixture for protocol controls
 
 | Field | Value |
 |-------|-------|
 | **Status** | `complete` |
 | **Area** | `intelligence/benchmark_protocol` |
-| **Summary** | CI on PR #384 failed because `freeze_smoke10_run_configuration` now hashes RTH15-10 protocol-control fields. Regenerated `ibp_smoke10_nonstub_sut_freeze_v1.json` so pinned fingerprint matches the generator (`DE1AADFA…`). Stub evidence pin under `imp-rth15-11-smoke10-20260922` unchanged. |
+| **Summary** | CI on PR #384 failed because `freeze_smoke10_run_configuration` now hashes RTH15-10 protocol-control fields. Regenerated `ibp_smoke10_nonstub_sut_freeze_v1.json` so pinned fingerprint matches the generator (`DE1AADFA...`). Stub evidence pin under `imp-rth15-11-smoke10-20260922` unchanged. |
 | **Key files** | `tests/fixtures/intelligence_benchmark/freeze/ibp_smoke10_nonstub_sut_freeze_v1.json` |
-| **Tests** | nonstub freeze match + protocol/smoke10/harness suites — 23 OK |
+| **Tests** | nonstub freeze match + protocol/smoke10/harness suites - 23 OK |
 | **Related** | PR #384 |
 | **Notes** | Delta was stable protocol fields only (lookahead/contamination/vanity/evidence_class/freeze certificate), not wall-clock or gold. |
-## 2026-09-22 â€” Correct stub Smoke10 pin provenance (post-review)
+## 2026-09-22 - Correct stub Smoke10 pin provenance (post-review)
 
 | Field | Value |
 |-------|-------|
