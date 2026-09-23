@@ -1305,7 +1305,7 @@ describe("App mode launcher integration", () => {
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByText(/Paper-only simulation/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /Handoff from Short Squeeze/i })).toBeInTheDocument();
-    expect(screen.getByText(/placeholder, not a recommendation/i)).toBeInTheDocument();
+    expect(screen.getByText(/starting placeholder, not a recommendation/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Decision snapshot" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Preview status" })).toBeInTheDocument();
   });

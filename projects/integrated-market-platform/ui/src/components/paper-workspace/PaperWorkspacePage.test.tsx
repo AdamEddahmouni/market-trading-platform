@@ -147,7 +147,10 @@ describe("PaperWorkspacePage", () => {
     });
 
     expect(screen.getByRole("heading", { name: /Handoff from Short Squeeze/i })).toBeInTheDocument();
-    expect(screen.getByText(/placeholder, not a recommendation/i)).toBeInTheDocument();
+    expect(screen.getByText(/starting placeholder, not a recommendation/i)).toBeInTheDocument();
+    expect(screen.getByTestId("paper-placeholder-edit-note")).toHaveTextContent(
+      /technical placeholder, not a recommendation/i,
+    );
     expect(screen.getByText(/Origin:/i)).toBeInTheDocument();
   });
 
