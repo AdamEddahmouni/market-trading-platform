@@ -435,20 +435,41 @@ class CampaignSupervisionAcceptanceTests(unittest.TestCase):
             any(f.reason_code == "BUILD28_LIVE_SUBMIT_FORBIDDEN" for f in report.findings)
         )
 
-    def test_00_shell_exit_supervisor_survives_breakaway_spawn(self) -> None:
-        """MOST IMPORTANT: launching coordinator exits; supervisor must survive."""
+    def test_00_shell_exit_supervisor_survives_parent_process_exit(self) -> None:
+        """Parent-process exit only (no breakaway).
+
+        Proves: supervisor spawned with CREATE_NEW_PROCESS_GROUP |
+        CREATE_NO_WINDOW (allow_breakaway=False) stays alive and heartbeats
+        after a Python Popen parent calls SystemExit(0).
+
+        Does **not** prove: CREATE_BREAKAWAY_FROM_JOB, Windows job-kill, or
+        terminal-independent durability. Sep 22 root cause remains UNKNOWN.
+        """
 
         marker = self.state_dir / "campaign-supervision" / "supervisor.alive"
         marker.parent.mkdir(parents=True, exist_ok=True)
         ownership = _ownership(self.state_dir, supervisor_pid=0, children=[], required_roles=["supervisor"])
         write_ownership(ownership)
 
-        # Prefer breakaway; if this host's job object stalls CreateProcess, use
-        # the no-breakaway durable fallback (still not Start-Process Hidden).
         flags = windows_detached_creationflags(allow_breakaway=False)
         breakaway_flags = windows_detached_creationflags(allow_breakaway=True)
         supervisor_log = marker.parent / f"supervisor-{os.getpid()}-{int(time.time())}.log"
         spawned_path = marker.parent / "spawned_pid.txt"
+        mech = mechanism_description(allow_breakaway=False)
+        selected = mech["selected_mechanism"]
+        mechanism_payload = {
+            "selected_mechanism": selected,
+            "start_process_hidden_assumed_durable": False,
+            "shell_exit_test_flags": int(flags),
+            "breakaway_flags_available_but_unused": int(breakaway_flags),
+            "shell_exit_test_used_breakaway": False,
+            "proven": "parent_process_exit_survival_without_breakaway",
+            "unproven": "job_or_terminal_kill_survival_and_breakaway",
+        }
+        (marker.parent / "mechanism.json").write_text(
+            json.dumps(mechanism_payload, sort_keys=True),
+            encoding="utf-8",
+        )
         coordinator = f"""
 import os, subprocess, sys
 from pathlib import Path
@@ -469,16 +490,6 @@ with log.open('ab') as handle:
         creationflags=flags, close_fds=True,
     )
 Path({str(spawned_path)!r}).write_text(str(proc.pid), encoding='utf-8')
-Path({str(marker.parent / 'mechanism.json')!r}).write_text(
-    '{{"selected_mechanism":"IMP_OWNED_SUPERVISOR_WITH_CREATE_BREAKAWAY_FROM_JOB",'
-    '"start_process_hidden_assumed_durable":false,'
-    f'"shell_exit_test_flags":{int(flags)},'
-    f'"breakaway_flags_available":{int(breakaway_flags)},'
-    '"shell_exit_test_used_breakaway":false,'
-    '"limitation":"CREATE_BREAKAWAY_FROM_JOB can stall under some parent jobs; '
-    'shell-exit proof uses CREATE_NEW_PROCESS_GROUP|CREATE_NO_WINDOW fallback"}}',
-    encoding='utf-8',
-)
 raise SystemExit(0)
 """
         coord_path = self.state_dir / "coordinator.py"
@@ -499,7 +510,7 @@ raise SystemExit(0)
             self.assertTrue(spawned_path.is_file(), "supervisor pid file missing after coordinator launch")
             spawned_pid = int(spawned_path.read_text(encoding="utf-8").strip())
             self.addCleanup(self._kill_pid_tree, spawned_pid)
-            # Coordinator must exit (shell/process-lifecycle failure surface).
+            # Coordinator must exit (parent-process exit surface only).
             try:
                 launched.wait(timeout=10)
             except subprocess.TimeoutExpired:
@@ -511,8 +522,8 @@ raise SystemExit(0)
             self.assertTrue(
                 process_alive(spawned_pid),
                 msg=(
-                    "Supervisor did not survive coordinator exit. "
-                    f"mechanism={mechanism_description()} flags={flags}"
+                    "Supervisor did not survive parent process exit. "
+                    f"mechanism={mechanism_description(allow_breakaway=False)} flags={flags}"
                 ),
             )
             alive_deadline = time.time() + 10
@@ -528,12 +539,15 @@ raise SystemExit(0)
             view = load_campaign_supervision_view(self.state_dir, process_alive_fn=process_alive)
             self.assertEqual(view["ownership"]["runtime_sha"], "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
             self.assertIn(view["status"], {"HEALTHY", "STARTING"})
-            mech = mechanism_description()
-            self.assertFalse(mech["start_process_hidden_assumed_durable"])
+            reported = mechanism_description(allow_breakaway=False)
+            self.assertFalse(reported["start_process_hidden_assumed_durable"])
+            self.assertFalse(reported["job_or_terminal_kill_survival_proven"])
+            self.assertTrue(reported["parent_process_exit_survival_proven_without_breakaway"])
             self.assertEqual(
-                mech["selected_mechanism"],
-                "IMP_OWNED_SUPERVISOR_WITH_CREATE_BREAKAWAY_FROM_JOB",
+                reported["selected_mechanism"],
+                "IMP_OWNED_SUPERVISOR_CREATE_NEW_PROCESS_GROUP_NO_WINDOW",
             )
+            self.assertNotIn("BREAKAWAY", str(reported["selected_mechanism"]))
         finally:
             if launched.poll() is None:
                 launched.kill()

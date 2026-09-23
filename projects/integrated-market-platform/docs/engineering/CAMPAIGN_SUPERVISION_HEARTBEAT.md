@@ -31,20 +31,29 @@ The **IMP campaign supervisor** owns an armed campaign. Ownership is durable und
 
 `ARMED_RUNNING` is an **arm** token, not proof of liveness.
 
-## How processes launch / terminal independence
+## How processes launch / parent-exit survival
 
-**Selected mechanism (tested):** IMP-owned supervisor. Spawn prefers Windows
-`CREATE_BREAKAWAY_FROM_JOB` + `CREATE_NEW_PROCESS_GROUP` + `CREATE_NO_WINDOW`
-and falls back without breakaway on `OSError`. Software-controlled shell-exit
-proof on this host used the no-breakaway fallback because breakaway can stall
-under some parent job objects — still **not** `Start-Process -WindowStyle Hidden`.
-`DETACHED_PROCESS` was tested and omitted (aborted child Python processes).
-POSIX: `start_new_session`. Helper:
-[`tools/platform/detached_process.py`](../../tools/platform/detached_process.py).
-Platform launcher spawn reuses these flags.
+**Default / tested spawn flags (Windows):** `CREATE_NEW_PROCESS_GROUP |
+CREATE_NO_WINDOW`. Platform launcher and campaign supervisor use these by
+default. Helper: [`tools/platform/detached_process.py`](../../tools/platform/detached_process.py).
 
-**Not assumed durable:** `Start-Process -WindowStyle Hidden`. That path is
-explicitly **not** labeled terminal-independent.
+**Proven (software-controlled):** a supervisor spawned with those default flags
+stays alive and heartbeats after a Python `Popen` parent calls `SystemExit(0)`
+(parent-process exit). Evidence class: `SOFTWARE_CONTROLLED_EVIDENCE`.
+
+**UNPROVEN on this host:**
+
+- Windows job-kill / terminal-independent durability
+- `CREATE_BREAKAWAY_FROM_JOB` survival (opt-in only; may hang or be denied under
+  some parent job objects)
+- `Start-Process -WindowStyle Hidden` as a durable path (explicitly rejected)
+- `DETACHED_PROCESS` (tested; aborted child Python processes — not used)
+
+**Product guarantee:** fail-visible detection when the supervisor/heartbeat is
+dead or stale (`ARMED_RUNNING` alone is never HEALTHY) — **not** a proven
+detached OS service or terminal-independent host.
+
+POSIX uses `start_new_session` (not claimed as full terminal-detach proof).
 
 CLI:
 

@@ -506,7 +506,10 @@ def build_parser() -> argparse.ArgumentParser:
     recover.add_argument("--force", action="store_true")
     recover.set_defaults(func=cmd_recover)
 
-    spawn = sub.add_parser("spawn-detached", help="Spawn argv with breakaway flags")
+    spawn = sub.add_parser(
+        "spawn-detached",
+        help="Spawn argv with default CREATE_NEW_PROCESS_GROUP|CREATE_NO_WINDOW flags",
+    )
     spawn.add_argument("--state-dir")
     spawn.add_argument("spawn_argv", nargs=argparse.REMAINDER)
     spawn.set_defaults(func=cmd_spawn_detached)

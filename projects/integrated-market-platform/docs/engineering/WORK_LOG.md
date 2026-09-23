@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — RTH15-09 truthfulness nits (no-breakaway claims)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform`, campaign supervision docs/tests |
+| **Summary** | Corrected overclaims after independent review: default spawn is CREATE_NEW_PROCESS_GROUP\|CREATE_NO_WINDOW; breakaway is opt-in/UNPROVEN; shell-exit test renamed to parent-process exit only; mechanism_description reports the selected default; docs state job/terminal-kill durability UNPROVEN; product guarantee is fail-visible detection. |
+| **Key files** | `detached_process.py`; `local_launcher.py`; `campaign_supervisor.py`; `CAMPAIGN_SUPERVISION_HEARTBEAT.md`; `OPERATOR_DIAGNOSTICS_MODEL.md`; `test_campaign_supervision_heartbeat_acceptance.py` |
+| **Tests** | acceptance except shell-exit; renamed parent-exit test alone; `test_runtime_service_liveness` |
+| **Related** | parent commit `03718e52` |
+| **Notes** | No amend of `03718e52`. Sep 22 root cause still UNKNOWN. Not empirically complete. |
+
 ## 2026-09-22 — RTH15-09 campaign supervision heartbeat (software)
 
 | Field | Value |

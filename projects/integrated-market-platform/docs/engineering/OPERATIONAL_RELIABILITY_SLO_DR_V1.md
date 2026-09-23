@@ -38,7 +38,9 @@ Armed observational campaigns additionally persist ownership + heartbeat under
 `{IMP_STATE_DIR}/campaign-supervision/` (see
 [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md)). That
 layer fails closed on stale/`ARMED_RUNNING` without progress and does **not**
-imply market-data freshness or Live authority.
+imply market-data freshness or Live authority. Product guarantee is fail-visible
+detection when the supervisor/heartbeat is dead or stale — Windows job-kill /
+terminal-independent durability remains **UNPROVEN** on this host.
 
 ## SLO Framework
 

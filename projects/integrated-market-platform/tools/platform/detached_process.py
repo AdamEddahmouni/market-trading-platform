@@ -1,9 +1,10 @@
-"""Terminal-independent process spawn for IMP campaign supervision.
+"""IMP-owned process spawn helper for campaign supervision.
 
-Selected mechanism (tested on Windows): ``CREATE_BREAKAWAY_FROM_JOB`` combined
-with ``CREATE_NEW_PROCESS_GROUP`` and ``CREATE_NO_WINDOW`` /
-``DETACHED_PROCESS``. This is an IMP-owned supervisor spawn helper — not a
-claim that ``Start-Process -WindowStyle Hidden`` is durable.
+Default Windows flags (tested): ``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``.
+``CREATE_BREAKAWAY_FROM_JOB`` is an explicit opt-in and remains **unproven** for
+job/terminal-kill survival on this host. ``DETACHED_PROCESS`` is **not** used
+(aborted child Python processes in testing). This helper does **not** claim that
+``Start-Process -WindowStyle Hidden`` is durable.
 """
 
 from __future__ import annotations
@@ -14,14 +15,17 @@ import sys
 from pathlib import Path
 from typing import Mapping, Sequence
 
+# Canonical selected-mechanism token for the default/tested path.
+SELECTED_MECHANISM_DEFAULT = "IMP_OWNED_SUPERVISOR_CREATE_NEW_PROCESS_GROUP_NO_WINDOW"
+SELECTED_MECHANISM_BREAKAWAY_OPT_IN = "IMP_OWNED_SUPERVISOR_CREATE_BREAKAWAY_FROM_JOB_OPT_IN_UNPROVEN"
 
-def windows_detached_creationflags(*, allow_breakaway: bool = True) -> int:
-    """Flags for terminal-independent child spawn on Windows.
 
-    Default durable set: ``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``.
-    ``CREATE_BREAKAWAY_FROM_JOB`` is included when ``allow_breakaway`` is true
-    (and the attribute exists). Some parent job hosts hang or deny breakaway;
-    callers may retry with ``allow_breakaway=False``.
+def windows_detached_creationflags(*, allow_breakaway: bool = False) -> int:
+    """Windows creation flags for campaign/supervisor child spawn.
+
+    Default (tested): ``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``.
+    ``CREATE_BREAKAWAY_FROM_JOB`` only when ``allow_breakaway=True`` (opt-in;
+    unproven for job/terminal-kill survival; some parent jobs hang or deny it).
     """
 
     if os.name != "nt":
@@ -40,14 +44,16 @@ def spawn_detached(
     cwd: Path | str,
     env: Mapping[str, str] | None = None,
     log_path: Path | str | None = None,
+    allow_breakaway: bool = False,
 ) -> int:
-    """Spawn a process intended to survive the launching shell/coordinator exit.
+    """Spawn a child with the default tested flags (no breakaway unless opted in).
 
     Returns the child PID. Does not wait. Stdin is discarded. Stdout/stderr go
     to ``log_path`` when provided, else DEVNULL.
 
-    Tries breakaway flags first; on ``OSError`` retries without
-    ``CREATE_BREAKAWAY_FROM_JOB``.
+    Default path uses ``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``. Pass
+    ``allow_breakaway=True`` only as an explicit opt-in; job/terminal-kill
+    survival with breakaway is **UNPROVEN** on this host.
     """
 
     command = [str(part) for part in argv]
@@ -63,82 +69,81 @@ def spawn_detached(
     environment["PYTHONPATH"] = os.pathsep.join(deduped)
     environment.setdefault("PYTHONUNBUFFERED", "1")
 
-    def _popen(creationflags: int) -> subprocess.Popen[bytes]:
-        popen_kwargs: dict[str, object] = {
-            "cwd": str(cwd),
-            "env": environment,
-            "stdin": subprocess.DEVNULL,
-            "close_fds": True,
-        }
-        if os.name == "nt" and creationflags:
-            popen_kwargs["creationflags"] = creationflags
-        else:
-            popen_kwargs["start_new_session"] = True
-        if log_path is not None:
-            path = Path(log_path)
-            path.parent.mkdir(parents=True, exist_ok=True)
-            # Keep the handle open for the child lifetime on Windows.
-            handle = path.open("ab")
-            process = subprocess.Popen(
-                command,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                **popen_kwargs,
-            )
-            # Intentionally leak the handle reference onto the Popen object so
-            # GC does not close it while the child still writes.
-            process._imp_log_handle = handle  # type: ignore[attr-defined]
-            return process
-        return subprocess.Popen(
+    creationflags = windows_detached_creationflags(allow_breakaway=allow_breakaway)
+    popen_kwargs: dict[str, object] = {
+        "cwd": str(cwd),
+        "env": environment,
+        "stdin": subprocess.DEVNULL,
+        "close_fds": True,
+    }
+    if os.name == "nt" and creationflags:
+        popen_kwargs["creationflags"] = creationflags
+    else:
+        popen_kwargs["start_new_session"] = True
+
+    if log_path is not None:
+        path = Path(log_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("ab")
+        process = subprocess.Popen(
             command,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
             **popen_kwargs,
         )
-
-    if os.name == "nt":
-        try:
-            process = _popen(windows_detached_creationflags(allow_breakaway=True))
-            environment_note = "breakaway"
-        except OSError:
-            process = _popen(windows_detached_creationflags(allow_breakaway=False))
-            environment_note = "no_breakaway_fallback"
-    else:
-        process = _popen(0)
-        environment_note = "posix_start_new_session"
-    # Stash for tests/diagnostics via a side file when log_path parent exists.
-    if log_path is not None:
-        note = Path(log_path).parent / "detach-flags-used.txt"
+        process._imp_log_handle = handle  # type: ignore[attr-defined]
+        note = path.parent / "detach-flags-used.txt"
         try:
             note.write_text(
-                f"{environment_note}:{windows_detached_creationflags(allow_breakaway=(environment_note=='breakaway'))}\n",
+                f"{'breakaway_opt_in' if allow_breakaway else 'no_breakaway_default'}:{creationflags}\n",
                 encoding="utf-8",
             )
         except OSError:
             pass
+        return int(process.pid)
+
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        **popen_kwargs,
+    )
     return int(process.pid)
 
 
-def mechanism_description() -> dict[str, object]:
+def mechanism_description(*, allow_breakaway: bool = False) -> dict[str, object]:
+    """Describe the mechanism actually selected for the given flag choice."""
+
+    selected = (
+        SELECTED_MECHANISM_BREAKAWAY_OPT_IN
+        if allow_breakaway
+        else SELECTED_MECHANISM_DEFAULT
+    )
     return {
-        "selected_mechanism": "IMP_OWNED_SUPERVISOR_WITH_CREATE_BREAKAWAY_FROM_JOB",
+        "selected_mechanism": selected,
+        "allow_breakaway": bool(allow_breakaway),
         "platform": sys.platform,
-        "creationflags_with_breakaway": windows_detached_creationflags(allow_breakaway=True),
-        "creationflags_without_breakaway": windows_detached_creationflags(allow_breakaway=False),
+        "creationflags": windows_detached_creationflags(allow_breakaway=allow_breakaway),
+        "creationflags_with_breakaway_opt_in": windows_detached_creationflags(allow_breakaway=True),
+        "creationflags_default": windows_detached_creationflags(allow_breakaway=False),
         "start_process_hidden_assumed_durable": False,
+        "job_or_terminal_kill_survival_proven": False,
+        "parent_process_exit_survival_proven_without_breakaway": True,
         "notes": (
-            "Start-Process -WindowStyle Hidden is not treated as terminal-independent. "
-            "Selected mechanism is an IMP-owned supervisor. Spawn tries "
-            "CREATE_BREAKAWAY_FROM_JOB + CREATE_NEW_PROCESS_GROUP + CREATE_NO_WINDOW, "
-            "and falls back without breakaway on OSError. DETACHED_PROCESS is omitted "
-            "(aborted child Python processes in testing). Some parent job hosts may "
-            "deny or stall breakaway; software-controlled shell-exit proof uses the "
-            "fallback flags when needed and documents the limitation."
+            "Default/tested mechanism is CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW "
+            f"({SELECTED_MECHANISM_DEFAULT}). CREATE_BREAKAWAY_FROM_JOB is an explicit "
+            "opt-in and remains UNPROVEN for Windows job-kill / terminal-independent "
+            "durability on this host. DETACHED_PROCESS is not used. "
+            "Start-Process -WindowStyle Hidden is not treated as durable. "
+            "Product guarantee is fail-visible detection when supervisor/heartbeat is "
+            "dead or stale — not a proven detached OS service."
         ),
     }
 
 
 __all__ = [
+    "SELECTED_MECHANISM_BREAKAWAY_OPT_IN",
+    "SELECTED_MECHANISM_DEFAULT",
     "mechanism_description",
     "spawn_detached",
     "windows_detached_creationflags",
