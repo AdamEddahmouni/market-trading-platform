@@ -158,7 +158,7 @@ class GroundedFactIndependentDispositionTests(unittest.TestCase):
         self.assertEqual(outcome.answer, "UNKNOWN")
         self.assertEqual(outcome.disposition, FactualAnswerDisposition.EVIDENCE_NOT_PROJECTABLE)
 
-    def test_missing_requested_field_not_projectable(self) -> None:
+    def test_missing_requested_field_absent_evidence(self) -> None:
         outcome = answer_admitted_factual_question(
             question={"text": "What is the launch_code in manifest?", "question_class": "GOVERNED_MANIFEST"},
             temporal_cutoff=_CUTOFF,
@@ -166,7 +166,8 @@ class GroundedFactIndependentDispositionTests(unittest.TestCase):
             repository_root=ROOT,
         )
         self.assertEqual(outcome.answer, "UNKNOWN")
-        self.assertEqual(outcome.disposition, FactualAnswerDisposition.EVIDENCE_NOT_PROJECTABLE)
+        self.assertEqual(outcome.disposition, FactualAnswerDisposition.ABSENT_EVIDENCE)
+        self.assertEqual(outcome.abstention_reason, "ABSENT_FIELD_IN_ADMITTED_EVIDENCE")
 
     def test_conflicting_evidence_disposition(self) -> None:
         facts = [

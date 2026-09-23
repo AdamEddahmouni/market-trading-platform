@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Grounded intelligence Smoke10 repair integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` / grounded fact extraction |
+| **Summary** | Integrated source `fix/grounded-intelligence-smoke10` @ `39f5b750` onto `origin/main` as `fix/grounded-intelligence-repair`: governed answerability classes, explicit absent/capability-absent/negative/contradiction handling, evidence→claim linkage, polarity, and harness-fixture fact extraction — without evaluator gold or Smoke10 case-ID special-casing. |
+| **Key files** | `grounded_fact_extraction/{answerability,claim_linkage,harness_probe}.py`; `facts_sut.py`; `pipeline.py`; `question_handlers.py`; `types.py`; `tests/intelligence/test_grounded_intelligence_smoke10_repairs_v1.py`; `lane_gi_polarity_bars.json` |
+| **Tests** | `PYTHONPATH=src .\.venv\Scripts\python.exe -m unittest tests.intelligence.test_grounded_intelligence_smoke10_repairs_v1 tests.intelligence.test_grounded_fact_independent_fixtures_v1 tests.intelligence.test_grounded_fact_extraction_v1 tests.intelligence.test_intelligence_benchmark_nonstub_sut_protocol` → **57 passed**, 0 failed |
+| **Related** | Frozen historical Smoke10 `ibp-smoke10-8C23029DD46FDA78` (immutable; not rerun); source lane `39f5b750` |
+| **Notes** | No gold edits. No Smoke10 case-ID special-casing. No scored benchmark rerun. Integration worktree `.worktrees/integrate-grounded-intel-20260923`. |
+
 ## 2026-09-23 — Provider failure receipt symbol linkage + alias provenance
 
 | Field | Value |
@@ -59,6 +71,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm test -- src/components/paper-portfolio/PaperPortfolioPage.test.tsx` → 6 passed; `npm run typecheck` → pass |
 | **Related** | Source `ui/operator-journey-friction` @ `42ab55ea`; worktree `.worktrees/integrate-portfolio-ux-20260923` on `ui/portfolio-order-history-link` from `origin/main` `f27f5613` |
 | **Notes** | Integration-only reapply of copy/UX handoff. Radar cards / Watch / Dismiss / Preview untouched. No trading behavior change. |
+
 
 ## 2026-09-23 — Controlled Replay Paper preview acceptance
 

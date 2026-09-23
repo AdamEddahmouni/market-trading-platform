@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from .claim_linkage import link_claim_to_evidence
 from .evidence_projection import ProjectedArtifact
 
 _SESSION_DATE_RE = re.compile(r"\b(\d{4}-\d{2}-\d{2})\b")
@@ -20,14 +21,13 @@ def _fact_row(
     source_path: str,
     confidence: str = "ADMITTED_ARTIFACT",
 ) -> dict[str, Any]:
-    return {
-        "field": field,
-        "value": value,
-        "source_artifact": artifact.artifact_ref,
-        "source_path": source_path,
-        "support_hash": artifact.support_hash,
-        "confidence": confidence,
-    }
+    return link_claim_to_evidence(
+        field=field,
+        value=value,
+        artifact=artifact,
+        source_path=source_path,
+        confidence=confidence,
+    )
 
 
 def _historical_session_map(payload: Any) -> dict[str, list[dict[str, Any]]] | None:
