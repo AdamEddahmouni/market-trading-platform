@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | Source `c39ba7ec` / `feat/controlled-replay-acceptance`; PR #392 Paper preview lane remains separate |
 | **Notes** | Evidence class SOFTWARE_CONTROLLED / FIXTURE_REPLAY only. No Live authority; no empirical RTH mutation. |
 
+## 2026-09-23 — NEWS_ARTICLE EventV1 → NEWS_EVENT DetectionV1 convergence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/intelligence` |
+| **Summary** | Activated BUILD 09 Path B `NEWS_EVENT` from canonical `NEWS_ARTICLE` EventV1 via a provider-agnostic news-event normalizer + deterministic detector. Tempting non-canonical news types and UOA stay fail-closed. `OpportunityEngine.assess` remains ForecastV1-gated (not invented). Evidence class: SOFTWARE_CONTROLLED / FIXTURE_REPLAY only. |
+| **Key files** | `intelligence/opportunity/news_event/*` (new); `intelligence/routing/detector_engine.py`; `tests/intelligence/test_news_article_to_news_event.py` (new); `tests/intelligence/test_path_b_inactive_detectors.py`; `tests/intelligence/test_event_detector.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/architecture/adr/0010-news-catalyst-deterministic-foundation.md` |
+| **Tests** | `unittest` news convergence + path_b + event_detector: pass; `python tools/imp.py test affected --workers 2`: 3382 passed, 31 skipped, 0 failures, 0 errors |
+| **Related** | [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md); ADR-0010 |
+| **Notes** | Does not modify frozen bf405f46 runtime or campaign evidence. Does not call OpportunityEngine.assess / Radar durable mint (ForecastV1 blocker documented). |
+
 ## 2026-09-23 — Grounded intelligence Smoke10 repair integration
 
 | Field | Value |

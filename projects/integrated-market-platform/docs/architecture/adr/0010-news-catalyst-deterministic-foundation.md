@@ -29,7 +29,7 @@ No AI inference, broker calls, or Live execution changes.
 - Paper strategy signal generation
 - Production persistence / append-only event log for inference records
 - Live wire provider integrations (PR Newswire, Benzinga, etc.)
-- BUILD 09 `NEWS_EVENT` detector wiring into intelligence routing
+- `OpportunityEngine.assess` wiring from NEWS_EVENT DetectionV1 (requires ForecastV1 + champion; BUILD 09 detector itself is implemented)
 
 ## References
 

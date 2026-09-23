@@ -159,7 +159,9 @@ Implement `normalize_raw_item()` output or `FixtureNewsProvider` pattern. Live N
 | Layer | Status |
 |-------|--------|
 | `NewsIntelligenceService` | Read-only filtered query — **implemented** |
+| BUILD 09 `NEWS_EVENT` DetectionV1 | **Implemented** — canonical `NEWS_ARTICLE` EventV1 → news-event normalizer → `EventDetectorEngine` (provider-agnostic; tempting non-`NEWS_ARTICLE` types stay fail-closed) |
 | AI analysis (Claude, etc.) | **Implemented** — see [NEWS_AI_INTELLIGENCE.md](NEWS_AI_INTELLIGENCE.md) |
+| `OpportunityEngine.assess` from NEWS_EVENT | **Not implemented** — ForecastV1 + champion still required; observational OpportunityV1 mint remains a separate ingress path |
 | Paper strategy signals | **Not implemented** |
 | Broker execution | **Not implemented** — unchanged |
 

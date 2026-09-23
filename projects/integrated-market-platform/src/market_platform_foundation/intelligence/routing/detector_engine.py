@@ -33,7 +33,6 @@ from .policy import DetectionPolicyV1
 
 INACTIVE_SEMANTIC_TYPES = frozenset(
     {
-        SemanticEventType.NEWS_EVENT,
         SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY,
     }
 )
@@ -143,16 +142,19 @@ class EventDetectorEngine:
     def __init__(self, policy: DetectionPolicyV1 | None = None) -> None:
         self.policy = policy or DetectionPolicyV1()
         self._states: OrderedDict[str, _ScopeState] = OrderedDict()
+        self._seen_news_event_ids: OrderedDict[str, None] = OrderedDict()
         self._last_decision_time_ns: int | None = None
 
     def reset(self) -> None:
         self._states.clear()
+        self._seen_news_event_ids.clear()
         self._last_decision_time_ns = None
 
     def state_snapshot(self) -> DetectorStateSnapshot:
         return DetectorStateSnapshot(
             scope_count=len(self._states),
             scope_keys=tuple(self._states.keys()),
+            seen_news_event_count=len(self._seen_news_event_ids),
         )
 
     def support_matrix(self) -> tuple[DetectorSupport, ...]:
@@ -184,10 +186,10 @@ class EventDetectorEngine:
             ),
             DetectorSupport(
                 SemanticEventType.NEWS_EVENT,
-                "canonical NEWS EventV1 normalization",
-                DetectorSupportStatus.INACTIVE_INPUT_UNAVAILABLE,
-                "inactive",
-                "no canonical news normalizer or NEWS snapshot lane exists",
+                "canonical NEWS_ARTICLE EventV1 → news-event normalizer",
+                DetectorSupportStatus.IMPLEMENTED,
+                "deterministic catalyst NEWS_EVENT detector",
+                "OpportunityEngine.assess remains ForecastV1-gated; tempting non-NEWS_ARTICLE types stay fail-closed",
             ),
             DetectorSupport(
                 SemanticEventType.REGIME_SHIFT,
@@ -228,6 +230,7 @@ class EventDetectorEngine:
         self._detect_short_interest(frame, state, detections, diagnostics)
         self._detect_regime(frame, state, detections)
         self._detect_sec_insider(frame, detections, diagnostics)
+        self._detect_news_event(frame, detections, diagnostics)
         self._fail_closed_inactive_detectors(frame, detections, diagnostics)
         ordered = tuple(
             sorted(
@@ -564,19 +567,67 @@ class EventDetectorEngine:
                 )
             )
 
+    def _detect_news_event(
+        self,
+        frame: DetectionFrame,
+        detections: list[DetectionV1],
+        diagnostics: list[str],
+    ) -> None:
+        from ..opportunity.news_event import (
+            accepts_canonical_news_article_event,
+            build_news_event_detection,
+            validate_news_event_inputs,
+        )
+
+        news_events = [row for row in frame.events if accepts_canonical_news_article_event(row)]
+        if not news_events:
+            return
+        for event in sorted(news_events, key=lambda row: (row.available_time_ns, row.event_id)):
+            if event.event_id in self._seen_news_event_ids:
+                diagnostics.append("NEWS_EVENT:DUPLICATE_ARTICLE")
+                continue
+            validated = validate_news_event_inputs(
+                event=event,
+                snapshot=frame.snapshot,
+                allow_degraded_inputs=self.policy.allow_degraded_inputs,
+            )
+            if not validated.ok or validated.facts is None:
+                code = validated.reason_codes[0] if validated.reason_codes else "VALIDATION_FAILED"
+                diagnostics.append(f"NEWS_EVENT:{code}")
+                # Still record identity for deterministic dedupe of rejects that
+                # are structurally the same article (missing catalyst, etc.).
+                if code in {"NO_CATALYST_MATCH", "MISSING_SYMBOL", "UNSUPPORTED_INSTRUMENT", "STALE_PIT_INVALID"}:
+                    self._remember_news_event_id(event.event_id)
+                continue
+            detections.append(
+                build_news_event_detection(
+                    event=event,
+                    snapshot=frame.snapshot,
+                    facts=validated.facts,
+                )
+            )
+            self._remember_news_event_id(event.event_id)
+
+    def _remember_news_event_id(self, event_id: str) -> None:
+        if event_id in self._seen_news_event_ids:
+            self._seen_news_event_ids.move_to_end(event_id)
+            return
+        self._seen_news_event_ids[event_id] = None
+        while len(self._seen_news_event_ids) > self.policy.max_seen_news_events:
+            self._seen_news_event_ids.popitem(last=False)
+
     def _fail_closed_inactive_detectors(
         self,
         frame: DetectionFrame,
         detections: list[DetectionV1],
         diagnostics: list[str],
     ) -> None:
-        """NEWS_EVENT and UOA stay inactive. Tempting inputs do not activate them.
+        """UOA stays inactive. Tempting non-canonical news types do not activate NEWS_EVENT.
 
-        Path A is untouched. This records honesty diagnostics and never emits
-        those semantic detections, including when NEWS/FILING events or
-        option-like signals are present on the frame.
+        Path A is untouched. Canonical NEWS_ARTICLE is handled by
+        ``_detect_news_event``; FILING/NEWS*/option-like inputs never mint
+        inactive semantic detections.
         """
-        diagnostics.append("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE")
         diagnostics.append("UNUSUAL_OPTIONS_ACTIVITY:INACTIVE_INPUT_UNAVAILABLE")
         event_types = {str(row.event_type).upper().replace(" ", "_") for row in frame.events}
         if event_types & _FILING_TEMPTING_EVENT_TYPES:

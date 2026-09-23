@@ -1,4 +1,4 @@
-"""Path B inactive NEWS_EVENT / UOA detectors fail closed. Path A is unused."""
+"""Path B: NEWS_EVENT activates from canonical NEWS_ARTICLE; UOA stays inactive."""
 
 from __future__ import annotations
 
@@ -27,34 +27,48 @@ from tests.intelligence.routing_fixtures import (
 )
 
 
-class PathBInactiveDetectorHonestyTests(unittest.TestCase):
+class PathBNewsEventActivationTests(unittest.TestCase):
     def setUp(self) -> None:
         self.engine = EventDetectorEngine()
 
-    def _news_frame(self, event_type: str = "NEWS"):
-        snap = snapshot("news-1", decision_time_ns=T + 1, event_ids=("news-1",))
+    def _news_frame(self, event_type: str = "NEWS", *, event_id: str = "news-1", payload: dict | None = None):
+        snap = snapshot(event_id, decision_time_ns=T + 1, event_ids=(event_id,))
+        body = {"headline": "widget sold"} if payload is None else payload
         return DetectionFrame(
             snapshot=snap,
-            events=(event(snap, "news-1", event_type, {"headline": "widget sold"}),),
+            events=(event(snap, event_id, event_type, body),),
             quality_decision=quality_decision(decision_time_ns=snap.decision_time_ns),
         )
 
-    def test_support_matrix_keeps_news_and_uoa_inactive(self) -> None:
+    def _article_payload(self, *, headline: str = "Company reports earnings beat") -> dict:
+        return {
+            "headline": headline,
+            "summary": "Quarterly results released",
+            "source_id": "fixture-wire",
+            "instrument_linkages": [
+                {
+                    "instrument_id": "US:XYZ",
+                    "provider_symbol": "XYZ",
+                    "asset_class": "EQUITY",
+                    "linkage_method": "PROVIDER_SYMBOL",
+                    "confidence": "EXPLICIT",
+                }
+            ],
+        }
+
+    def test_support_matrix_news_implemented_uoa_inactive(self) -> None:
         support = {row.semantic_event_type: row for row in self.engine.support_matrix()}
-        self.assertEqual(support[SemanticEventType.NEWS_EVENT].status, DetectorSupportStatus.INACTIVE_INPUT_UNAVAILABLE)
+        self.assertEqual(support[SemanticEventType.NEWS_EVENT].status, DetectorSupportStatus.IMPLEMENTED)
         self.assertEqual(
             support[SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY].status,
             DetectorSupportStatus.INACTIVE_INPUT_UNAVAILABLE,
         )
-        self.assertEqual(
-            INACTIVE_SEMANTIC_TYPES,
-            {SemanticEventType.NEWS_EVENT, SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY},
-        )
+        self.assertEqual(INACTIVE_SEMANTIC_TYPES, {SemanticEventType.UNUSUAL_OPTIONS_ACTIVITY})
 
-    def test_news_event_input_does_not_emit_news_detection(self) -> None:
+    def test_tempting_news_event_input_does_not_emit_news_detection(self) -> None:
         result = self.engine.detect(self._news_frame("NEWS"))
         self.assertEqual(result.detections, ())
-        self.assertIn("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
+        self.assertNotIn("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
         self.assertIn("NEWS_EVENT:NEWS_LANE_NOT_CANONICAL", result.diagnostics)
         self.assertEqual(self.engine.state_snapshot().seen_news_event_count, 0)
 
@@ -89,7 +103,7 @@ class PathBInactiveDetectorHonestyTests(unittest.TestCase):
         self.assertIn("UNUSUAL_OPTIONS_ACTIVITY:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
         self.assertIn("UNUSUAL_OPTIONS_ACTIVITY:OPTION_CHAIN_NOT_CANONICAL", result.diagnostics)
 
-    def test_implemented_path_b_detectors_still_emit_with_inactive_honesty(self) -> None:
+    def test_implemented_path_b_detectors_still_emit_with_uoa_honesty(self) -> None:
         first_snap = snapshot("si-1", decision_time_ns=T + 1, event_ids=("si-1",))
         first = event(first_snap, "si-1", "SHORT_INTEREST", {"current_short_position_quantity": 100.0})
         self.engine.detect(
@@ -110,7 +124,7 @@ class PathBInactiveDetectorHonestyTests(unittest.TestCase):
         )
         self.assertEqual(len(result.detections), 1)
         self.assertEqual(result.detections[0].semantic_event_type, SemanticEventType.BORROW_CHANGE)
-        self.assertIn("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
+        self.assertNotIn("NEWS_EVENT:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
         self.assertIn("UNUSUAL_OPTIONS_ACTIVITY:INACTIVE_INPUT_UNAVAILABLE", result.diagnostics)
         self.assertNotIn(SemanticEventType.NEWS_EVENT, {row.semantic_event_type for row in result.detections})
         self.assertNotIn(
