@@ -263,6 +263,67 @@ def append_outage_record(state_directory: str | Path, record: Mapping[str, Any])
     return path
 
 
+def outage_process_signature(record: Mapping[str, Any]) -> tuple[Any, ...]:
+    """Identity of an open outage. Used to avoid duplicate ledger rows."""
+
+    process = record.get("process_state")
+    process_map = process if isinstance(process, Mapping) else {}
+    dead = process_map.get("dead_roles")
+    dead_roles = tuple(str(item) for item in dead) if isinstance(dead, list) else ()
+    return (
+        str(record.get("campaign_id") or ""),
+        str(record.get("segment_id") or ""),
+        str(process_map.get("status") or ""),
+        dead_roles,
+        str(record.get("root_cause") or ""),
+    )
+
+
+def record_open_outage_if_changed(
+    state_directory: str | Path,
+    *,
+    ownership: CampaignOwnership,
+    progress: Mapping[str, Any],
+    detected_at_utc: str,
+    interval_start_utc: str | None,
+) -> Path | None:
+    """Append one open outage when armed progress is failing and the signature changed.
+
+    ``status`` can observe a dead supervisor that can no longer write its own
+    ledger row. Repeating that check does not duplicate the open interval.
+    A later change in status or dead roles appends a new row. Prior rows are
+    not rewritten and nothing is backfilled.
+    """
+
+    if not progress.get("outage"):
+        return None
+    record = build_outage_interval(
+        ownership=ownership,
+        progress=progress,
+        detected_at_utc=detected_at_utc,
+        interval_start_utc=interval_start_utc,
+    )
+    existing = read_outage_records(state_directory)
+    if existing:
+        last = existing[-1]
+        still_open = last.get("interval_end_utc") in (None, "")
+        if still_open and outage_process_signature(last) == outage_process_signature(record):
+            return None
+    return append_outage_record(state_directory, record)
+
+
+def outage_ledger_appendable(state_directory: str | Path) -> bool:
+    """True when ``campaign-supervision/outages.jsonl`` can be appended."""
+
+    path = outages_path(state_directory)
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("a", encoding="utf-8"):
+            return True
+    except OSError:
+        return False
+
+
 def read_outage_records(state_directory: str | Path) -> list[dict[str, Any]]:
     path = outages_path(state_directory)
     if not path.is_file():
@@ -647,6 +708,9 @@ __all__ = [
     "SCHEMA_VERSION",
     "append_outage_record",
     "build_outage_interval",
+    "outage_ledger_appendable",
+    "outage_process_signature",
+    "record_open_outage_if_changed",
     "campaign_supervision_dir",
     "evaluate_campaign_progress",
     "heartbeat_path",

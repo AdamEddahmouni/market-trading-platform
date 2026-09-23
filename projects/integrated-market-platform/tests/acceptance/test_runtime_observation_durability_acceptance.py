@@ -25,6 +25,7 @@ sys.path.insert(0, str(ROOT))
 
 from market_platform_foundation.platform.operator_diagnostics.campaign_observation_readiness import (  # noqa: E402
     build_campaign_observation_readiness,
+    compose_campaign_observation_readiness_for_state,
 )
 from market_platform_foundation.platform.operator_diagnostics.campaign_supervision import (  # noqa: E402
     CampaignOwnership,
@@ -456,6 +457,183 @@ class RuntimeObservationDurabilityAcceptanceTests(unittest.TestCase):
         self.assertEqual(final["progress"]["status"], "NOT_APPLICABLE")
         self.assertEqual(final["progress"]["reason"], "CLEAN_SHUTDOWN")
         self.assertFalse(final["progress"].get("outage"))
+
+    def test_status_persists_one_open_outage_when_required_role_is_dead(self) -> None:
+        ownership = CampaignOwnership(
+            campaign_id="SW-DURABILITY-OUTAGE-LEDGER",
+            runtime_sha="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            supervisor_pid=os.getpid(),
+            supervisor_identity="imp-campaign-supervisor",
+            child_processes=[ProcessIdentity(role="api", pid=os.getpid(), create_time_utc=_utc())],
+            arm_timestamp_utc=_utc(-10),
+            observation_window_id="OBS-SW",
+            expected_poll_cadence_seconds=30.0,
+            expected_next_cycle_utc=_utc(30),
+            state_directory=str(self.state_dir),
+            arm_status="ARMED_RUNNING",
+            required_roles=["supervisor", "poller", "api"],
+        )
+        write_ownership(ownership)
+        write_heartbeat(
+            self.state_dir,
+            {
+                "last_heartbeat_utc": _utc(),
+                "application_ready": True,
+                "stale_after_seconds": 90,
+                "synthetic_poll_generated": False,
+            },
+        )
+        first = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(first.returncode, 2, msg=first.stdout + first.stderr)
+        view = json.loads(first.stdout)
+        self.assertEqual(view["status"], "PROCESS_DEAD")
+        self.assertEqual(view["outage_ledger"], "APPENDED")
+        ledger = self.state_dir / "campaign-supervision" / "outages.jsonl"
+        self.assertTrue(ledger.is_file())
+        rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["classification"], "NOT_OBSERVED")
+        self.assertIn("poller", rows[0]["process_state"]["dead_roles"])
+        self.assertFalse(rows[0]["backfill_applied"])
+        second = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(json.loads(second.stdout)["outage_ledger"], "OPEN_UNCHANGED")
+        rows_again = [line for line in ledger.read_text(encoding="utf-8").splitlines() if line.strip()]
+        self.assertEqual(len(rows_again), 1)
+
+    def test_poll_loop_distinguishes_empty_failure_and_software_cycle(self) -> None:
+        arm = _run_supervisor(
+            "arm",
+            "--state-dir",
+            str(self.state_dir),
+            "--campaign-id",
+            "SW-DURABILITY-POLL-CLASS",
+            "--observation-window-id",
+            "OBS-SW-POLL",
+            "--skip-environment-preflight",
+            "--poll-cadence-seconds",
+            "30",
+        )
+        self.assertEqual(arm.returncode, 0, msg=arm.stdout + arm.stderr)
+        empty = self.state_dir / "empty-poll.json"
+        empty.write_text(
+            json.dumps(
+                {
+                    "ingress_classification": "SUCCESS_EMPTY",
+                    "ingress_outcome": "FINVIZ_LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS",
+                    "disposition": "PASS",
+                }
+            ),
+            encoding="utf-8",
+        )
+        failure = self.state_dir / "failed-poll.json"
+        failure.write_text(
+            json.dumps(
+                {
+                    "ingress_classification": "PROVIDER_FAILURE",
+                    "ingress_outcome": "LIVE_INGRESS_FAILED",
+                    "disposition": "BLOCKED",
+                }
+            ),
+            encoding="utf-8",
+        )
+        admitted_block = self.state_dir / "admit-block.json"
+        admitted_block.write_text(
+            json.dumps(
+                {
+                    "ingress_classification": "SUCCESS",
+                    "ingress_outcome": "BLOCKED",
+                    "blockers": ["UI_API_COCKPIT_ADMIT_UNREACHABLE"],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        def _once(receipt: Path | None) -> dict:
+            argv = [
+                "poll-loop",
+                "--state-dir",
+                str(self.state_dir),
+                "--iterations",
+                "1",
+                "--poll-cadence-seconds",
+                "30",
+            ]
+            if receipt is not None:
+                argv.extend(["--ingress-json", str(receipt)])
+            result = _run_supervisor(*argv)
+            self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+            heartbeat = json.loads(
+                (self.state_dir / "campaign-supervision" / "heartbeat.json").read_text(encoding="utf-8")
+            )
+            return heartbeat
+
+        empty_hb = _once(empty)
+        self.assertEqual(empty_hb["last_poll_classification"], "SUCCESS_EMPTY")
+        self.assertEqual(empty_hb["poll_evidence_class"], "SOFTWARE_CONTROLLED")
+        self.assertTrue(empty_hb["last_successful_poll_utc"])
+        kept = empty_hb["last_successful_poll_utc"]
+
+        failed_hb = _once(failure)
+        self.assertEqual(failed_hb["last_poll_classification"], "PROVIDER_FAILURE")
+        self.assertEqual(failed_hb["last_successful_poll_utc"], kept)
+
+        missing_hb = _once(self.state_dir / "does-not-exist.json")
+        self.assertEqual(missing_hb["last_poll_classification"], "POLL_PROCESS_FAILURE")
+        self.assertEqual(missing_hb["last_successful_poll_utc"], kept)
+
+        admit_hb = _once(admitted_block)
+        self.assertEqual(admit_hb["last_poll_classification"], "ADMISSION_FAILURE")
+        self.assertEqual(admit_hb["last_successful_poll_utc"], kept)
+
+        software_hb = _once(None)
+        self.assertEqual(software_hb["last_poll_classification"], "SOFTWARE_CONTROLLED_CYCLE")
+        self.assertEqual(software_hb["poll_evidence_class"], "SOFTWARE_CONTROLLED")
+        self.assertNotEqual(software_hb["last_successful_poll_utc"], kept)
+        attempts = (
+            self.state_dir / "campaign-supervision" / "poll-attempts.jsonl"
+        ).read_text(encoding="utf-8")
+        self.assertIn("SUCCESS_EMPTY", attempts)
+        self.assertIn("PROVIDER_FAILURE", attempts)
+        self.assertIn("POLL_PROCESS_FAILURE", attempts)
+        self.assertIn("ADMISSION_FAILURE", attempts)
+        self.assertIn("SOFTWARE_CONTROLLED_CYCLE", attempts)
+        self.assertNotIn("EMPIRICALLY_PROVEN", attempts)
+        self.assertNotIn("RTH_PROVEN", attempts)
+
+    def test_preflight_fails_when_outage_ledger_is_not_a_directory(self) -> None:
+        state = self.state_dir / "preflight-state"
+        state.mkdir()
+        (state / "campaign-supervision").write_text("not-a-directory\n", encoding="utf-8")
+        report = evaluate_campaign_environment_preflight(
+            root=ROOT,
+            state_dir=state,
+            require_ui_deps=False,
+            campaign_id="SW-DURABILITY-LEDGER",
+            observation_window_id="OBS-SW",
+            check_opend=False,
+        )
+        self.assertFalse(report.ready_to_arm)
+        self.assertIn("outage_ledger", report.blockers)
+
+    def test_readiness_blocks_when_outage_ledger_unavailable(self) -> None:
+        from zoneinfo import ZoneInfo
+
+        blocked = self.state_dir / "readiness-state"
+        blocked.mkdir()
+        (blocked / "campaign-supervision").write_text("not-a-directory\n", encoding="utf-8")
+        payload = compose_campaign_observation_readiness_for_state(
+            blocked,
+            intent_explicit={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": "yes",
+            },
+            now_et=datetime(2026, 9, 24, 8, 0, tzinfo=ZoneInfo("America/New_York")),
+            ingress_enabled=True,
+        )
+        self.assertIn("OUTAGE_LEDGER_UNAVAILABLE", payload["blockers"])
+        self.assertEqual(payload["phase"], "BLOCKED_STATE_DIR")
+        self.assertNotEqual(payload["phase"], "READY_TO_ARM")
 
 
 if __name__ == "__main__":
