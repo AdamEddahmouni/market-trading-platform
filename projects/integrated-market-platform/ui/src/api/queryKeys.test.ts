@@ -34,6 +34,11 @@ describe("queryKeys account isolation", () => {
     expect(queryKeys.opportunitiesSummary).not.toEqual(queryKeys.attention);
   });
 
+  it("scopes trade review queries by opportunity id", () => {
+    expect(queryKeys.tradeReviews("opp-1")).toEqual(["trade-reviews", "opp-1"]);
+    expect(queryKeys.tradeReviews("opp-1")).not.toEqual(queryKeys.tradeReviews("opp-2"));
+  });
+
   it("aligns G14 product keys with canonical compact helpers", () => {
     expect(queryKeys.optionsProduct("AAPL", "PAPER")).toEqual(["op", "AAPL", "PAPER", "u", "fixture"]);
     expect(queryKeys.futuresProduct("ES202512", "PAPER")).toEqual(["fp", "ES202512", "PAPER", "u", "fixture"]);

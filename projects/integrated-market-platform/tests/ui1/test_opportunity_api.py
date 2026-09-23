@@ -238,6 +238,10 @@ class OpportunityApiTests(unittest.TestCase):
         self.assertNotIn(row_id, ids)
         detail = build_opportunity_detail_payload(self.store, row_id)
         self.assertEqual(detail["lifecycle_state"], "DISMISSED")
+        self.assertEqual(detail.get("feed_status"), "DISMISSED")
+        self.assertIn("trade_reviews", detail)
+        self.assertTrue(detail["trade_reviews"], "dismissed detail must keep durable trade reviews inspectable")
+        self.assertIn("trade_review_id", ack)
         evidence = build_opportunity_evidence_payload(self.store, row_id)
         self.assertIsInstance(evidence["items"], list)
 

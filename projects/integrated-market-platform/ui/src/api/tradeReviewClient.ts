@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 import { fetchJson } from "./fetchJson";
+import { queryKeys } from "./hooks";
 
 const TradeReviewItemSchema = z
   .object({
@@ -22,6 +23,7 @@ const TradeReviewsResponseSchema = z.object({
 });
 
 export type TradeReviewItem = z.infer<typeof TradeReviewItemSchema>;
+export type TradeReviewsResponse = z.infer<typeof TradeReviewsResponseSchema>;
 
 export function getTradeReviewsForOpportunity(opportunityId: string) {
   const query = new URLSearchParams({ opportunity_id: opportunityId });
@@ -30,7 +32,7 @@ export function getTradeReviewsForOpportunity(opportunityId: string) {
 
 export function useTradeReviewsQuery(opportunityId: string | null | undefined, enabled = true) {
   return useQuery({
-    queryKey: ["trade-reviews", opportunityId],
+    queryKey: queryKeys.tradeReviews(String(opportunityId ?? "")),
     queryFn: () => getTradeReviewsForOpportunity(String(opportunityId)),
     enabled: Boolean(opportunityId) && enabled,
   });

@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
 import { queryKeys } from "./hooks";
@@ -97,13 +97,40 @@ const OpportunityAckSchema = z
   .object({
     summary_id: z.string(),
     action: z.string(),
+    opportunity_id: z.string().nullable().optional(),
+    paper_account_id: z.string().optional(),
+    created_at_ns: z.number().optional(),
+    /** Present when Watch/Dismiss materialized a durable TradeReview in the same request. */
+    trade_review_id: z.string().optional(),
+    decision_trace_mode: z.string().optional(),
   })
   .passthrough();
 
 export type OpportunityAckAction = "watch" | "dismiss" | "review";
+export type OpportunityAckResponse = z.infer<typeof OpportunityAckSchema>;
 
 export function postOpportunityAck(rowId: string, action: OpportunityAckAction) {
   return postJson(`/opportunities/${rowId}/${action}`, {}, OpportunityAckSchema);
+}
+
+/**
+ * After a successful operator ack, deliberately reconcile authoritative backend
+ * state: ranked queue (lifecycle / dismiss filtering) and durable trade reviews.
+ * Does not fabricate review rows in the client.
+ */
+export async function reconcileOpportunityAckQueries(
+  client: QueryClient,
+  data: OpportunityAckResponse,
+  rowId: string,
+): Promise<void> {
+  const ids = new Set<string>();
+  ids.add(rowId);
+  if (data.summary_id) ids.add(data.summary_id);
+  if (data.opportunity_id) ids.add(data.opportunity_id);
+  await client.invalidateQueries({ queryKey: queryKeys.opportunitiesSummary });
+  await Promise.all(
+    [...ids].map((id) => client.invalidateQueries({ queryKey: queryKeys.tradeReviews(id) })),
+  );
 }
 
 export function useOpportunityAckMutation() {
@@ -111,8 +138,8 @@ export function useOpportunityAckMutation() {
   return useMutation({
     mutationFn: ({ rowId, action }: { rowId: string; action: OpportunityAckAction }) =>
       postOpportunityAck(rowId, action),
-    onSuccess: () => {
-      void client.invalidateQueries({ queryKey: queryKeys.opportunitiesSummary });
+    onSuccess: async (data, variables) => {
+      await reconcileOpportunityAckQueries(client, data, variables.rowId);
     },
   });
 }

@@ -33,7 +33,7 @@ import {
   OPPORTUNITY_STATE_TONE,
   opportunityRankLabel,
 } from "../opportunity/opportunityPresentation";
-import { TradeReviewLearningPanel } from "../imp-product/TradeReviewLearningPanel";
+import { TradeReviewLearningPanel, type TradeReviewAckPhase } from "../imp-product/TradeReviewLearningPanel";
 
 export type OpportunityDetailCardProps = {
   row: OpportunityReviewRow;
@@ -46,6 +46,9 @@ export type OpportunityDetailCardProps = {
   withheldRankedCount?: number;
   bookHonesty?: string;
   unreadyReason?: string;
+  ackPhase?: TradeReviewAckPhase;
+  expectedReviewId?: string | null;
+  onRetryReconcile?: () => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
@@ -104,6 +107,9 @@ export function OpportunityDetailCard({
   withheldRankedCount,
   bookHonesty,
   unreadyReason,
+  ackPhase = "idle",
+  expectedReviewId = null,
+  onRetryReconcile,
   onExplain,
   onInspect,
   onOpenWorkspace,
@@ -303,14 +309,26 @@ export function OpportunityDetailCard({
           </button>
           {paperAccountId && onAck && model.actionReadiness.canWatch ? (
             <>
-              <button type="button" onClick={() => onAck(row, "watch")}>
-                Watch
+              <button
+                type="button"
+                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
+                onClick={() => onAck(row, "watch")}
+              >
+                {ackPhase === "submitting" ? "Submitting…" : "Watch"}
               </button>
-              <button type="button" onClick={() => onAck(row, "review")}>
+              <button
+                type="button"
+                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
+                onClick={() => onAck(row, "review")}
+              >
                 Mark reviewed
               </button>
-              <button type="button" onClick={() => onAck(row, "dismiss")}>
-                Dismiss
+              <button
+                type="button"
+                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
+                onClick={() => onAck(row, "dismiss")}
+              >
+                {ackPhase === "submitting" ? "Submitting…" : "Dismiss"}
               </button>
             </>
           ) : null}
@@ -319,6 +337,36 @@ export function OpportunityDetailCard({
             <span className="imp-radar-muted">Paper actions unavailable in this mode.</span>
           ) : null}
         </div>
+        {ackPhase === "submitting" ? (
+          <p className="imp-radar-muted" role="status">
+            Submitting…
+          </p>
+        ) : null}
+        {ackPhase === "synchronizing" ? (
+          <p className="imp-radar-muted" role="status">
+            Action accepted — synchronizing durable DecisionTrace / TradeReview…
+          </p>
+        ) : null}
+        {ackPhase === "failed" ? (
+          <p className="imp-radar-unavailable" role="alert">
+            Operator action failed. Previous durable review state was not changed by this attempt.
+          </p>
+        ) : null}
+        {ackPhase === "reconciliation_failed" ? (
+          <p className="imp-radar-unavailable" role="alert">
+            Action was accepted
+            {expectedReviewId ? ` (review ${expectedReviewId})` : ""}, but durable review retrieval
+            failed.
+            {onRetryReconcile ? (
+              <>
+                {" "}
+                <button type="button" onClick={onRetryReconcile}>
+                  Retry review retrieval
+                </button>
+              </>
+            ) : null}
+          </p>
+        ) : null}
         <p className="imp-radar-muted imp-radar-visibility-note">
           Visibility is not actionability. Presentation state does not grant execution authority.
         </p>
@@ -383,7 +431,12 @@ export function OpportunityDetailCard({
           <Link to="/research/evidence">Open Research evidence</Link> — interpretation-first view of
           the research behind attachments like these.
         </p>
-        <TradeReviewLearningPanel row={row} />
+        <TradeReviewLearningPanel
+          row={row}
+          ackPhase={ackPhase}
+          expectedReviewId={expectedReviewId}
+          onRetryReconcile={onRetryReconcile}
+        />
       </Disclosure>
 
       {/* L4 — technical detail */}
