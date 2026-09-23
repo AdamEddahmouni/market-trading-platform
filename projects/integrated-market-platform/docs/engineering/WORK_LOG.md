@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — CONTROLLED REPLAY operator golden path
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `product` / `tools` / `ui` / `backend` |
+| **Summary** | Operator-usable CONTROLLED REPLAY outside RTH: `python tools/imp.py controlled-replay start` launches real API+UI with FIXTURE_REPLAY posture, loads ~5 deterministic scenarios through real news ingest → OE → Radar, enables Watch/Dismiss learning acks without Live authority, and isolates resettable state under `.local/controlled-replay/`. |
+| **Key files** | `tools/controlled_replay/*`; `tools/imp.py`; `tools/platform/local_launcher.py`; `src/.../ui_api/{controlled_replay,live_intelligence,opportunity_projections,projections,server}.py`; `src/.../intelligence/opportunity/ingest.py`; `ui/src/components/{radar/RadarPage,mode-session/StatusBar}.{tsx,test.tsx}`; `tests/acceptance/test_controlled_replay_golden_path_acceptance.py`; `docs/engineering/LOCAL_DEVELOPMENT.md` |
+| **Tests** | Acceptance: 2 ok + 1 skipped (sqlite lock while launcher running); RadarPage vitest 35 passed; live browser: banner + 4 scenarios + Watch/Dismiss HTTP 200 + MSFT dismissed from queue + TradeReview durable readback |
+| **Related** | PR #389 freshness orthogonality; frozen RTH runtime `bf405f46` untouched |
+| **Notes** | Not EMPIRICAL_ACTIVE / not Item 9 calibrated / execution_authority BLOCKED. Paper preview deferred. Evidence projection secret-leak redaction can hide research attachments (pre-existing). |
+
 ## 2026-09-22 — Next-RTH runtime freeze FROZEN_NOT_ARMED (bf405f46)
 
 | Field | Value |

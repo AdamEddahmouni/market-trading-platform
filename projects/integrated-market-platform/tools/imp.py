@@ -934,6 +934,36 @@ def build_parser() -> argparse.ArgumentParser:
     item9_cal_preflight.add_argument("--prefer-local-default", action="store_true")
     item9_cal_preflight.add_argument("--output", type=Path, default=None)
 
+    controlled = groups.add_parser(
+        "controlled-replay",
+        help=(
+            "CONTROLLED REPLAY operator golden path (FIXTURE_REPLAY, not Live): "
+            "start/stop/load/reset namespaced demo state"
+        ),
+    )
+    controlled_actions = controlled.add_subparsers(dest="action", required=True)
+    cr_start = controlled_actions.add_parser(
+        "start",
+        help="Start API+UI in controlled-replay mode and load scenario pack",
+    )
+    cr_start.add_argument("--open", action="store_true", dest="open_browser")
+    cr_start.add_argument("--skip-load", action="store_true")
+    cr_start.add_argument("--json", action="store_true")
+    controlled_actions.add_parser("stop", help="Stop controlled-replay stack")
+    controlled_actions.add_parser("status", help="Show controlled-replay readiness")
+    cr_reset = controlled_actions.add_parser(
+        "reset",
+        help="Reset only .local/controlled-replay/ (never empirical evidence)",
+    )
+    cr_reset.add_argument("--json", action="store_true")
+    cr_load = controlled_actions.add_parser(
+        "load",
+        help="POST scenario pack into a running controlled-replay API",
+    )
+    cr_load.add_argument("--json", action="store_true")
+    cr_scenarios = controlled_actions.add_parser("scenarios", help="List scenarios")
+    cr_scenarios.add_argument("--json", action="store_true")
+
     historical = groups.add_parser(
         "historical-data",
         help="historical RTH development corpus builder (HISTORICAL_DEVELOPMENT)",
@@ -1459,6 +1489,21 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.group == "item9":
         return _item9_command(root, args)
+
+    if args.group == "controlled-replay":
+        root_str = str(root)
+        if root_str not in sys.path:
+            sys.path.insert(0, root_str)
+        from tools.controlled_replay.cli import run_controlled_replay
+
+        argv = [str(args.action)]
+        if getattr(args, "open_browser", False):
+            argv.append("--open")
+        if getattr(args, "skip_load", False):
+            argv.append("--skip-load")
+        if getattr(args, "json", False):
+            argv.append("--json")
+        return run_controlled_replay(root, argv)
 
     if args.group == "historical-data":
         return _historical_data_command(root, args)

@@ -157,6 +157,12 @@ def _is_live(store: ReplayStore) -> bool:
     return projections.is_live_observational(store)
 
 
+def _is_controlled_replay(store: ReplayStore) -> bool:
+    return bool(getattr(store, "controlled_replay", False)) or str(
+        getattr(store, "opportunity_source", "")
+    ).upper() == "CONTROLLED_REPLAY"
+
+
 def _paper_mutations_allowed(store: ReplayStore) -> bool:
     return store.execution_mode == "INTERNAL_SIMULATION" and not _is_live(store)
 
@@ -164,7 +170,9 @@ def _paper_mutations_allowed(store: ReplayStore) -> bool:
 def _attention_rows(store: ReplayStore) -> tuple[dict[str, Any], ...]:
     # Live ranked reads must not ingest fixture/replay attention. Deleting the
     # read gate without this quarantine would rank July BIYA/MC9/ES cards.
-    if _is_live(store):
+    # Controlled replay uses the same quarantine so the golden path shows only
+    # controlled-ingest opportunities.
+    if _is_live(store) or _is_controlled_replay(store):
         return ()
     page = projections.build_attention_page(store, limit=50)
     items = page.get("items") or []
@@ -222,6 +230,14 @@ def _opportunity_source(store: ReplayStore) -> str:
     return "REPLAY"
 
 
+def _controlled_replay_as_of_ns(store: ReplayStore) -> tuple[int | None, int | None]:
+    """Controlled-replay clocks: use store as_of; last_source falls back per row."""
+
+    as_of_ns = getattr(store, "as_of_time_ns", None)
+    last_ns = getattr(store, "last_source_time_ns", None)
+    return as_of_ns, last_ns
+
+
 def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
     repository = getattr(store, "strategy_repository", None)
     if _is_live(store):
@@ -231,8 +247,7 @@ def build_ranked_rows(store: ReplayStore) -> tuple[Any, ...]:
         as_of_ns = receive_ns
         last_ns = receive_ns
     else:
-        as_of_ns = getattr(store, "as_of_time_ns", None)
-        last_ns = getattr(store, "last_source_time_ns", None)
+        as_of_ns, last_ns = _controlled_replay_as_of_ns(store)
     assembled = assemble_opportunity_review_rows(
         attention_rows=_attention_rows(store),
         repository=repository,
@@ -515,6 +530,8 @@ def apply_opportunity_ack(
 ) -> dict[str, Any]:
     if _is_live(store):
         return _apply_live_observational_opportunity_ack(store, row_id=row_id, action=action)
+    if _is_controlled_replay(store):
+        return _apply_controlled_replay_opportunity_ack(store, row_id=row_id, action=action)
     if not _paper_mutations_allowed(store):
         raise PermissionError("DEMO_MUTATIONS_PROHIBITED")
     ranked = list(build_ranked_rows(store))
@@ -556,4 +573,62 @@ def apply_opportunity_ack(
     if review is not None:
         ack = dict(ack)
         ack["trade_review_id"] = review.review_id
+    return ack
+
+
+def _apply_controlled_replay_opportunity_ack(
+    store: ReplayStore,
+    *,
+    row_id: str,
+    action: str,
+) -> dict[str, Any]:
+    """Operator Watch/Dismiss on CONTROLLED_REPLAY — never broker submit, never Live."""
+
+    ranked = list(build_ranked_rows(store))
+    target = None
+    for row in ranked:
+        if row.summary_id == row_id or row.opportunity_id == row_id:
+            target = row
+            break
+    if target is None:
+        raise KeyError(row_id)
+    created_at_ns = int(getattr(store, "as_of_time_ns", None) or 0)
+    if created_at_ns <= 0:
+        as_of = projections.build_as_of_context(store)
+        created_at_ns = int(as_of.get("as_of_time_ns") or 0)
+    account_id = "controlled-replay-operator"
+    ack = record_operator_ack(
+        summary_id=target.summary_id,
+        opportunity_id=target.opportunity_id,
+        paper_account_id=account_id,
+        action=action,
+        created_at_ns=created_at_ns,
+    )
+    record_operator_lifecycle_trace(
+        store,
+        target,
+        action=action,
+        decision_time_ns=created_at_ns,
+    )
+    row_dict = target.to_dict() if hasattr(target, "to_dict") else {}
+    metadata = dict(row_dict.get("metadata") or {}) if isinstance(row_dict.get("metadata"), dict) else {}
+    lineage = row_dict.get("lineage_refs") or metadata.get("lineage_refs") or ()
+    review = materialize_trade_review_for_operator_ack(
+        action=action,
+        opportunity_id=target.opportunity_id or target.summary_id,
+        strategy_id=row_dict.get("strategy_family") or metadata.get("strategy_family"),
+        decision_time_ns=created_at_ns,
+        created_at_ns=created_at_ns,
+        evidence_snapshot_refs=_refs_from_lineage(tuple(lineage) if isinstance(lineage, (list, tuple)) else ()),
+        metadata={
+            "operator_ack": ack,
+            "live_broker_execution": False,
+            "controlled_replay": True,
+            "evidence_class": "CONTROLLED_REPLAY",
+        },
+    )
+    if review is not None:
+        ack = dict(ack)
+        ack["trade_review_id"] = review.review_id
+        ack["decision_trace_mode"] = "CONTROLLED_REPLAY"
     return ack

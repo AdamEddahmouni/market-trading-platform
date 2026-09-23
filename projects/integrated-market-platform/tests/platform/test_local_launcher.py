@@ -120,6 +120,21 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertNotIn("IMP_LIVE_EXECUTION", env)
         self.assertNotIn("IMP_BROKER_LIVE_EXECUTION", env)
 
+    def test_controlled_replay_profile_strips_live_and_isolates_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            env = build_backend_environment(
+                {"IMP_LIVE_OBSERVATIONAL": "1", "IMP_MOOMOO_LIVE": "1"},
+                profile="controlled-replay",
+                root=root,
+            )
+            self.assertEqual(env["IMP_CONTROLLED_REPLAY"], "1")
+            self.assertNotIn("IMP_LIVE_OBSERVATIONAL", env)
+            self.assertNotIn("IMP_MOOMOO_LIVE", env)
+            self.assertEqual(env["IMP_PAPER_EXECUTION"], "0")
+            self.assertIn("controlled-replay", env["IMP_STATE_DIR"].replace("\\", "/"))
+            self.assertNotIn("IMP_LIVE_EXECUTION", env)
+
     def test_start_is_idempotent_when_owned_services_are_healthy(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = make_root(Path(tmp))

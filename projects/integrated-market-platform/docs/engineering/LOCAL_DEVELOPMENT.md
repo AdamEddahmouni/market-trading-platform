@@ -69,6 +69,33 @@ value-masked provider configuration, asynchronous refresh requests, and
 guarded application update checks. Update apply is blocked when the worktree
 is dirty and only permits fast-forward pulls.
 
+### CONTROLLED REPLAY (operator golden path, outside RTH)
+
+Opt-in demo that walks the **real** product path with deterministic inputs.
+Not Live market data. Not Live execution authority. Does not prove empirical
+RTH, Item 9 calibration, or production profitability.
+
+```powershell
+# From projects/integrated-market-platform
+python tools/imp.py controlled-replay start --open
+```
+
+What it does:
+
+- Starts API `:8766` + UI `:5173` with `FIXTURE_REPLAY` posture (no Live provider gates)
+- Isolates durable state under `.local/controlled-replay/`
+- Loads ~5 controlled scenarios through `POST /intelligence/ingest/news` (real OE path)
+- Opens Radar at `http://127.0.0.1:5173/radar` with a **CONTROLLED REPLAY · NOT LIVE MARKET DATA** banner
+
+Reset demo state only (never empirical / RTH / FTEP evidence):
+
+```powershell
+python tools/imp.py controlled-replay reset
+python tools/imp.py controlled-replay stop
+```
+
+Scenarios: `clean`, `stale` (STALE stays STALE), `linkage_warning`, `contradicted_enrichment`, `zero_qualifying`.
+
 ### With paper + live observational
 
 Set env vars per [CONFIGURATION.md](CONFIGURATION.md), then restart API:

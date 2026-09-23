@@ -107,4 +107,24 @@ describe("StatusBar", () => {
     expect(region).toHaveTextContent("Live market data — read-only, execution locked.");
     expect(region).toHaveTextContent("Live market data · MOOMOO");
   });
+
+  it("shows CONTROLLED REPLAY banner when backend marks controlled_replay", () => {
+    renderBar(
+      {},
+      {
+        ...baseContext,
+        controlled_replay: true,
+        not_live_market_data: true,
+        as_of_context: {
+          ...baseContext.as_of_context,
+          controlled_replay: true,
+          evidence_class: "CONTROLLED_REPLAY",
+          not_live_market_data: true,
+        },
+      },
+    );
+    expect(screen.getByText(/CONTROLLED REPLAY/)).toBeInTheDocument();
+    expect(screen.getByText(/NOT LIVE MARKET DATA/)).toBeInTheDocument();
+    expect(screen.getByTestId("imp-status-bar")).toHaveAttribute("data-controlled-replay", "true");
+  });
 });

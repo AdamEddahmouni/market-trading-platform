@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
+import os
+
 from ..intelligence.observation_ingress.production_wire import (
     build_production_observation_ingress_router,
 )
 from ..intelligence.persistence.local_state_book import open_local_state_intelligence_repository
 from ..local_state.paths import persistence_enabled
 from .store import ReplayStore
+
+_CONTROLLED_REPLAY_FLAG = "IMP_CONTROLLED_REPLAY"
+_CONTROLLED_REPLAY_SOURCE = "CONTROLLED_REPLAY"
+
+
+def _controlled_replay_enabled() -> bool:
+    return str(os.environ.get(_CONTROLLED_REPLAY_FLAG) or "").strip().lower() in {"1", "true", "yes"}
 
 
 def _is_live_observational(store: ReplayStore) -> bool:
@@ -32,6 +41,19 @@ def _apply_durable_book_cursor(store: ReplayStore) -> None:
         store.last_source_time_ns = book_ns
 
 
+def _apply_controlled_replay_posture(store: ReplayStore) -> None:
+    """Lock FIXTURE_REPLAY + CONTROLLED_REPLAY OE source; never Live authority."""
+
+    if not _controlled_replay_enabled():
+        return
+    store.data_mode = "FIXTURE_REPLAY"
+    store.mode = "REPLAY"
+    store.opportunity_source = _CONTROLLED_REPLAY_SOURCE
+    store.execution_mode = "NONE"
+    store.execution_authority = "BLOCKED"
+    store.controlled_replay = True
+
+
 def bind_ui_api_intelligence(store: ReplayStore) -> ReplayStore:
     """Wire canonical persistence and ingress used by news observational admit paths.
 
@@ -43,6 +65,7 @@ def bind_ui_api_intelligence(store: ReplayStore) -> ReplayStore:
     the receive clock (or ``UNAVAILABLE``) — never this cursor.
     """
 
+    _apply_controlled_replay_posture(store)
     if store.strategy_repository is None:
         store.strategy_repository = open_local_state_intelligence_repository()
     _apply_durable_book_cursor(store)

@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import type { AttentionItem } from "../../api/client";
-import { usePaperPortfolioQuery } from "../../api/hooks";
+import { useContextQuery, usePaperPortfolioQuery } from "../../api/hooks";
 import { PageHeader } from "../shared/PageHeader";
 import { LinkTabs } from "../imp-ui/LinkTabs";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
@@ -26,6 +26,8 @@ const RADAR_TABS = [
   { to: "/radar", label: "Opportunities", end: true },
   { to: "/radar/screeners", label: "Screeners" },
 ];
+
+const CONTROLLED_REPLAY_ACCOUNT_ID = "controlled-replay-operator";
 
 const MODE_COPY: Record<
   Mode,
@@ -56,12 +58,23 @@ const MODE_COPY: Record<
   },
 };
 
+const CONTROLLED_REPLAY_COPY = {
+  eyebrow: "Controlled replay",
+  subtitle:
+    "Deterministic CONTROLLED_REPLAY scenarios through the real ingest → OE → Radar path. Watch and Dismiss persist learning records; never Live market data or Live trading authority.",
+  restriction: {
+    title: "CONTROLLED REPLAY · NOT LIVE MARKET DATA",
+    body: "Watch/Dismiss exercise DecisionTrace and TradeReview only. No broker order submission. Reset with: python tools/imp.py controlled-replay reset",
+  },
+};
+
 /**
  * Radar — the canonical discovery queue (find → rank → investigate).
  * Opportunities tab: ranked OE queue + selected opportunity detail.
  * Screeners tab: investigation screener + donor research bridges.
  * Mode honesty: Demo read-only, Paper full discovery mutations, Live
- * read-only monitor. No surface implies real-money action.
+ * read-only monitor. Controlled replay (backend flag) enables Watch/Dismiss
+ * learning acks without Paper or Live authority. No surface implies real-money action.
  */
 export function RadarPage({
   mode,
@@ -72,22 +85,37 @@ export function RadarPage({
   onInspect,
   onOpenWorkspace,
 }: RadarPageProps) {
-  const copy = MODE_COPY[mode];
+  const contextQuery = useContextQuery();
+  const asOf = contextQuery.data?.as_of_context as
+    | { controlled_replay?: boolean; evidence_class?: string }
+    | undefined;
+  const controlledReplay =
+    Boolean(asOf?.controlled_replay) ||
+    String(asOf?.evidence_class ?? "").toUpperCase() === "CONTROLLED_REPLAY";
+  const copy = controlledReplay ? CONTROLLED_REPLAY_COPY : MODE_COPY[mode];
   const paper = mode === "PAPER";
   const live = mode === "LIVE";
-  const paperActions = paper && paperActionsPermitted;
-  const portfolioQuery = usePaperPortfolioQuery("PAPER", paperActions);
-  const paperAccountId = paperActions
-    ? portfolioQuery.data?.account.paper_account_id
-    : undefined;
+  const paperActions = (paper && paperActionsPermitted) || controlledReplay;
+  const portfolioQuery = usePaperPortfolioQuery("PAPER", paper && paperActionsPermitted);
+  const paperAccountId = controlledReplay
+    ? CONTROLLED_REPLAY_ACCOUNT_ID
+    : paper && paperActionsPermitted
+      ? portfolioQuery.data?.account.paper_account_id
+      : undefined;
   const [searchParams] = useSearchParams();
   const filterQuery = tab === "screeners" ? (searchParams.get("q") ?? undefined) : undefined;
   // Deep link from the Command signal→opportunity bridge: `/radar?selected=<id>`
   // preselects the ranked row (and opens the detail sheet on narrow layouts).
   const selectedParam = tab === "opportunities" ? searchParams.get("selected") : null;
+  // Controlled replay allows Watch/Dismiss; other Demo/Live surfaces stay read-only.
+  const readOnly = controlledReplay ? false : !paper;
 
   return (
-    <section className="page imp-radar-page" data-mode={mode}>
+    <section
+      className="page imp-radar-page"
+      data-mode={mode}
+      data-controlled-replay={controlledReplay ? "1" : "0"}
+    >
       <PageHeader
         eyebrow={copy.eyebrow}
         title="Radar"
@@ -113,7 +141,7 @@ export function RadarPage({
       {tab === "opportunities" ? (
         <RadarOpportunitiesPanel
           mode={mode}
-          readOnly={!paper}
+          readOnly={readOnly}
           paperAccountId={paperAccountId}
           paperActions={paperActions}
           initialSelectedKey={selectedParam}
@@ -137,10 +165,7 @@ export function RadarPage({
               <DiscoverObservability />
             )}
           </section>
-          <section
-            className="imp-radar-screener-section"
-            aria-label="Research screens"
-          >
+          <section className="imp-radar-screener-section" aria-label="Research screens">
             <header className="imp-radar-section-header">
               <h2>Research screens</h2>
               <p className="imp-radar-section-lead">

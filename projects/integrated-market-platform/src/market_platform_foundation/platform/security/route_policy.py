@@ -121,6 +121,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.write")
         if path == "/replay/scrub":
             return RoutePolicy(capability="state.write")
+        if path == "/controlled-replay/advance-clock":
+            return RoutePolicy(capability="state.write")
         if path == "/canary/command":
             return RoutePolicy(capability=None, account_scope=AccountScopeKind.CANARY_COMMAND)
         if path.startswith("/assistant/conversations"):
