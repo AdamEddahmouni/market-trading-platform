@@ -30,6 +30,20 @@ const summaryMock = vi.hoisted(() => ({
 
 const ackMutate = vi.hoisted(() => vi.fn());
 
+const contextMock = vi.hoisted(() => ({
+  data: {
+    as_of_context: {
+      mode: "REPLAY",
+      data_mode: "FIXTURE_REPLAY",
+      as_of_time: "2026-09-22T14:05:08Z",
+      timezone: "America/New_York",
+      controlled_replay: false,
+      evidence_class: undefined as string | undefined,
+      execution_authority: "BLOCKED",
+    },
+  },
+}));
+
 const mediaState = vi.hoisted(() => ({ narrow: false }));
 
 vi.stubGlobal(
@@ -65,6 +79,11 @@ vi.mock("../../api/hooks", async () => {
   const actual = await vi.importActual<typeof import("../../api/hooks")>("../../api/hooks");
   return {
     ...actual,
+    useContextQuery: () => ({
+      isLoading: false,
+      isError: false,
+      data: contextMock.data,
+    }),
     usePaperPortfolioQuery: () => ({
       isLoading: false,
       isError: false,
@@ -526,6 +545,22 @@ describe("RadarPage opportunities tab", () => {
     expect(screen.getByText(/investigation screeners on recorded data/i)).toBeInTheDocument();
     expect(screen.queryByText(/discovery screeners/i)).not.toBeInTheDocument();
     expect(screen.getAllByText(/Read-only in this mode/i).length).toBeGreaterThan(0);
+  });
+
+  it("enables Watch/Dismiss on DEMO when backend marks controlled_replay", () => {
+    contextMock.data.as_of_context.controlled_replay = true;
+    contextMock.data.as_of_context.evidence_class = "CONTROLLED_REPLAY";
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("DEMO", "opportunities", false);
+    expect(screen.getByText(/CONTROLLED REPLAY · NOT LIVE MARKET DATA/i)).toBeInTheDocument();
+    const card = screen.getByTestId("imp-radar-detail-card");
+    expect(card).toHaveTextContent("controlled-replay-operator");
+    fireEvent.click(within(card).getByRole("button", { name: "Watch" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "watch" });
+    fireEvent.click(within(card).getByRole("button", { name: "Dismiss" }));
+    expect(ackMutate).toHaveBeenCalledWith({ rowId: "opp-1", action: "dismiss" });
+    contextMock.data.as_of_context.controlled_replay = false;
+    contextMock.data.as_of_context.evidence_class = undefined;
   });
 
   it("keeps STALE rows honest and refuses Live paper acks", async () => {

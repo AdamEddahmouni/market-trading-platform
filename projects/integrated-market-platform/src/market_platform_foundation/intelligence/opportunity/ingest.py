@@ -16,7 +16,6 @@ from .family_lookup import (
 )
 from .freshness import (
     OpportunityFreshnessPolicy,
-    fail_closed_for_actionable,
 )
 from .lifecycle import OperatorLifecycleState, derive_lifecycle_from_assessment
 from .provider_linkage_warnings import project_provider_linkage_warnings
@@ -43,6 +42,30 @@ def _instrument_fail_closed(instrument_id: str) -> bool:
     return False
 
 
+def _opportunity_last_source_ns(
+    opportunity: OpportunityV1,
+    fallback: int | None,
+) -> int | None:
+    """Prefer event available/received clocks on news opportunities for per-row freshness."""
+
+    metadata = opportunity.metadata if isinstance(opportunity.metadata, dict) else {}
+    for key in ("available_time_ns", "received_time_ns", "event_time_ns"):
+        raw = metadata.get(key)
+        if raw is None:
+            continue
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            continue
+    created = getattr(opportunity, "created_at_" + "ns", None)
+    if created is not None:
+        try:
+            return int(created)
+        except (TypeError, ValueError):
+            pass
+    return fallback
+
+
 def _summary_from_opportunity(
     opportunity: OpportunityV1,
     *,
@@ -55,9 +78,9 @@ def _summary_from_opportunity(
     instrument_id = instruments[0] if instruments else ""
     lifecycle = derive_lifecycle_from_assessment(assessment_action)
     quality = dict(data_quality or project_opportunity_data_quality(source=source))
-    evaluation = quality.get("freshness_evaluation") or {}
-    if fail_closed_for_actionable(evaluation):
-        lifecycle = OperatorLifecycleState.INELIGIBLE
+    # Freshness and operator eligibility are orthogonal (PR #389): STALE/UNKNOWN
+    # remain honest on data_quality / freshness_evaluation.actionable but must
+    # not hide the row from Radar or block Watch/Dismiss.
     resolution = family_resolution or resolve_review_family(opportunity.metadata)
     if resolution.status == STATUS_DENIED:
         lifecycle = OperatorLifecycleState.INELIGIBLE
@@ -82,6 +105,19 @@ def _summary_from_opportunity(
         metadata["family_admission_kind"] = resolution.admission_kind
     if resolution.definition_hash:
         metadata["family_definition_hash"] = resolution.definition_hash
+    controlled = str(source or "").upper() == "CONTROLLED_REPLAY"
+    if controlled:
+        evidence_class = "CONTROLLED_REPLAY"
+        # Surfaced controlled candidates with instruments allow Watch/Dismiss even
+        # when family admission has not promoted them to ELIGIBLE. INELIGIBLE
+        # remains STOP. Never implies Live execution authority.
+        if lifecycle == OperatorLifecycleState.INELIGIBLE or not instrument_id:
+            next_safe = "STOP"
+        else:
+            next_safe = "OPEN_WORKSPACE"
+    else:
+        evidence_class = EVIDENCE_CLASS_CANDIDATE
+        next_safe = "OPEN_WORKSPACE" if eligible and instrument_id else "STOP"
     return OpportunitySummary(
         summary_id=opportunity.opportunity_id,
         instrument_id=instrument_id,
@@ -91,7 +127,7 @@ def _summary_from_opportunity(
         strategy_version=resolution.strategy_version,
         side=opportunity.side.value if opportunity.side is not None else None,
         valid_until_ns=opportunity.valid_until_ns,
-        evidence_class=EVIDENCE_CLASS_CANDIDATE,
+        evidence_class=evidence_class,
         eligibility_state=lifecycle.value,
         lifecycle_state=lifecycle.value,
         data_quality=quality,
@@ -102,7 +138,7 @@ def _summary_from_opportunity(
             {"kind": getattr(ref.kind, "value", ref.kind), "id": ref.id}
             for ref in opportunity.lineage_refs
         ),
-        next_safe_action="OPEN_WORKSPACE" if eligible and instrument_id else "STOP",
+        next_safe_action=next_safe,
         identity_kind="OPPORTUNITY_V1",
         accepted=eligible,
         unavailable_fields=unavailable,
@@ -179,15 +215,6 @@ def assemble_opportunity_review_rows(
     collected: list[OpportunitySummary] = []
     minted = list(opportunities)
     actions = dict(assessments_by_opportunity or {})
-    quality = project_opportunity_data_quality(
-        source=source,
-        as_of_time_ns=as_of_time_ns,
-        last_source_time_ns=last_source_time_ns,
-        runtime_capability=runtime_capability,
-        session_state=session_state,
-        book_validity=book_validity,
-        freshness_policy=freshness_policy,
-    )
     if repository is not None:
         minted.extend(_opportunities_from_repository(repository))
         for opportunity_id, action in assessments_from_repository(repository).items():
@@ -205,6 +232,16 @@ def assemble_opportunity_review_rows(
         raw = actions.get(opportunity.opportunity_id)
         if raw is not None:
             action = AssessmentAction(str(raw))
+        row_last_source = _opportunity_last_source_ns(opportunity, last_source_time_ns)
+        quality = project_opportunity_data_quality(
+            source=source,
+            as_of_time_ns=as_of_time_ns,
+            last_source_time_ns=row_last_source,
+            runtime_capability=runtime_capability,
+            session_state=session_state,
+            book_validity=book_validity,
+            freshness_policy=freshness_policy,
+        )
         collected.append(
             _summary_from_opportunity(
                 opportunity,
@@ -226,6 +263,15 @@ def assemble_opportunity_review_rows(
         summary = ftep_attention_candidate_to_summary(row)
         from dataclasses import replace
 
+        attention_quality = project_opportunity_data_quality(
+            source=source,
+            as_of_time_ns=as_of_time_ns,
+            last_source_time_ns=last_source_time_ns,
+            runtime_capability=runtime_capability,
+            session_state=session_state,
+            book_validity=book_validity,
+            freshness_policy=freshness_policy,
+        )
         collected.append(
             replace(
                 summary,
@@ -234,7 +280,7 @@ def assemble_opportunity_review_rows(
                 accepted=False,
                 eligibility_state="UNAVAILABLE",
                 lifecycle_state=OperatorLifecycleState.NORMALIZED.value,
-                data_quality=quality,
+                data_quality=attention_quality,
                 next_safe_action="STOP",
                 unavailable_fields=_unavailable(
                     "opportunity_id",

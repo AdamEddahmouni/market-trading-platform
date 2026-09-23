@@ -215,7 +215,18 @@ def backend_python_has_runtime(python: Path) -> bool:
     return result.returncode == 0
 
 
-def build_backend_environment(environ: Mapping[str, str]) -> dict[str, str]:
+def build_backend_environment(
+    environ: Mapping[str, str],
+    *,
+    profile: str = "default",
+    root: Path | None = None,
+) -> dict[str, str]:
+    profile_name = str(profile or "default").strip().lower().replace("-", "_")
+    if profile_name in {"controlled_replay", "controlledreplay", "replay"}:
+        from tools.controlled_replay.env import build_controlled_replay_environment
+
+        return build_controlled_replay_environment(environ, root=root or ROOT)
+
     result = {str(key): str(value) for key, value in environ.items()}
     defaults = {
         "IMP_LIVE_OBSERVATIONAL": "1",
@@ -248,10 +259,12 @@ class PlatformController:
         readiness_attempts: int = 30,
         readiness_interval_seconds: float = 0.5,
         python_runtime_probe: Callable[[Path], bool] | None = None,
+        profile: str = "default",
     ) -> None:
         self.root = root.resolve()
         self.system = system or WindowsSystem()
         self.environ = dict(os.environ if environ is None else environ)
+        self.profile = str(profile or "default")
         self.readiness_attempts = max(1, int(readiness_attempts))
         self.readiness_interval_seconds = max(0.0, float(readiness_interval_seconds))
         self.state_path = self.root / STATE_RELATIVE_PATH
@@ -361,7 +374,7 @@ class PlatformController:
 
         backend_log = self.root / ".local/platform-backend.log"
         ui_log = self.root / ".local/platform-ui.log"
-        environment = build_backend_environment(self.environ)
+        environment = build_backend_environment(self.environ, profile=self.profile, root=self.root)
         services: list[ServiceRecord] = []
         try:
             backend_pid = self.system.spawn(
@@ -599,9 +612,21 @@ def build_parser() -> argparse.ArgumentParser:
     subcommands = parser.add_subparsers(dest="command", required=True)
     start = subcommands.add_parser("start", help="Start API, UI, and local control service")
     start.add_argument("--open", action="store_true", dest="open_browser", help="Open Mixed Live after readiness")
+    start.add_argument(
+        "--profile",
+        default="default",
+        choices=("default", "controlled-replay", "controlled_replay"),
+        help="Launch profile (controlled-replay = FIXTURE_REPLAY, no Live gates)",
+    )
     subcommands.add_parser("stop", help="Stop launcher-owned API, UI, and control process trees")
     restart = subcommands.add_parser("restart", help="Stop and start API, UI, and control (state persisted when enabled)")
     restart.add_argument("--open", action="store_true", dest="open_browser", help="Open Mixed Live after readiness")
+    restart.add_argument(
+        "--profile",
+        default="default",
+        choices=("default", "controlled-replay", "controlled_replay"),
+        help="Launch profile",
+    )
     subcommands.add_parser("status", help="Show process ownership and local readiness")
     subcommands.add_parser("open", help="Open Mixed Live if the UI is ready")
     subcommands.add_parser("finviz-status", help="Show sanitized Finviz credential status")
@@ -614,7 +639,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
-    controller = PlatformController()
+    profile = str(getattr(args, "profile", "default") or "default")
+    controller = PlatformController(profile=profile)
     result: int
     if args.command == "start":
         result = controller.start(open_browser=bool(args.open_browser))

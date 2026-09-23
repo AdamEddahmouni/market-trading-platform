@@ -260,7 +260,7 @@ class OpportunityFreshnessHonestyAndGateTests(unittest.TestCase):
         self.assertEqual(result.status, FRESHNESS_FRESH)
         self.assertEqual(result.age_ns, 1_000)
 
-    def test_stale_fail_closes_eligibility_and_ranking(self) -> None:
+    def test_stale_freshness_keeps_eligibility_orthogonal(self) -> None:
         rows = assemble_opportunity_review_rows(
             opportunities=(_opportunity(),),
             assessments_by_opportunity={"opp-fresh": AssessmentAction.EMIT},
@@ -268,20 +268,32 @@ class OpportunityFreshnessHonestyAndGateTests(unittest.TestCase):
             as_of_time_ns=T0 + DEFAULT_STALE_AFTER_NS + 1,
             last_source_time_ns=T0,
         )
-        self.assertEqual(rows[0].lifecycle_state, "INELIGIBLE")
-        self.assertFalse(rows[0].accepted)
+        self.assertEqual(rows[0].lifecycle_state, "ELIGIBLE")
+        self.assertTrue(rows[0].accepted)
         self.assertEqual(rows[0].data_quality["freshness_evaluation"]["status"], FRESHNESS_STALE)
-        self.assertEqual(rank_review_rows(rows), ())
+        self.assertFalse(rows[0].data_quality["freshness_evaluation"]["actionable"])
+        ranked = rank_review_rows(rows)
+        self.assertEqual(len(ranked), 1)
+        self.assertEqual(ranked[0].data_quality["freshness_evaluation"]["status"], FRESHNESS_STALE)
 
-    def test_unknown_fail_closes_eligibility(self) -> None:
+    def test_unknown_freshness_keeps_eligibility_orthogonal(self) -> None:
         rows = assemble_opportunity_review_rows(
             opportunities=(_opportunity("opp-unknown"),),
             assessments_by_opportunity={"opp-unknown": AssessmentAction.EMIT},
             source="OBSERVATIONAL",
             as_of_time_ns=T0,
+            last_source_time_ns=None,
         )
-        self.assertEqual(rows[0].lifecycle_state, "INELIGIBLE")
-        self.assertEqual(rows[0].data_quality["freshness_evaluation"]["reason_code"], "NO_EVENT")
+        # Per-row last_source falls back to opportunity.created_at_ns when present.
+        evaluation = rows[0].data_quality["freshness_evaluation"]
+        self.assertEqual(rows[0].lifecycle_state, "ELIGIBLE")
+        self.assertIn(evaluation["status"], {FRESHNESS_UNKNOWN, FRESHNESS_FRESH, FRESHNESS_STALE})
+        if evaluation["status"] != FRESHNESS_FRESH:
+            self.assertFalse(evaluation["actionable"])
+        # Explicit NO_EVENT path still orthogonal when clocks omit last_source entirely.
+        bare = project_opportunity_data_quality(source="OBSERVATIONAL", as_of_time_ns=T0)
+        self.assertEqual(bare["freshness_evaluation"]["reason_code"], "NO_EVENT")
+        self.assertFalse(bare["freshness_evaluation"]["actionable"])
 
     def test_replay_emit_stays_eligible(self) -> None:
         rows = assemble_opportunity_review_rows(

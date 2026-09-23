@@ -60,6 +60,10 @@ export function StatusBar({ mode, context, contextState }: Props) {
   const showMismatch = contextState === "ready" && evaluation.status === "mismatch";
   const showUnavailable =
     contextState === "error" || (contextState !== "loading" && evaluation.status === "unavailable");
+  const controlledReplay =
+    Boolean(context?.controlled_replay) ||
+    Boolean(asOf?.controlled_replay) ||
+    String(asOf?.evidence_class ?? "").toUpperCase() === "CONTROLLED_REPLAY";
 
   return (
     <div className="imp-status-bar-stack">
@@ -68,6 +72,7 @@ export function StatusBar({ mode, context, contextState }: Props) {
         aria-label="Session environment"
         data-mode={mode}
         data-testid="imp-status-bar"
+        data-controlled-replay={controlledReplay ? "true" : "false"}
       >
         <span className="imp-status-bar-mode" data-testid="imp-status-bar-mode">
           <StatePill tone={modeState.tone} label={modeState.label} raw={mode} />
@@ -148,6 +153,14 @@ export function StatusBar({ mode, context, contextState }: Props) {
           </dl>
         </details>
       </section>
+      {controlledReplay ? (
+        <AttentionBanner
+          tone="caution"
+          affects="Decisions and evidence here are CONTROLLED_REPLAY — not live market data and not Live trading authority."
+        >
+          CONTROLLED REPLAY · NOT LIVE MARKET DATA
+        </AttentionBanner>
+      ) : null}
       {contextState === "loading" ? (
         <p className="imp-status-bar-note" role="status">
           Verifying backend context…

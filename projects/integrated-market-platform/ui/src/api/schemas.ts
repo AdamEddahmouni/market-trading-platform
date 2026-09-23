@@ -157,6 +157,9 @@ export const AsOfContextSchema = z.object({
   as_of_provenance: z.string().optional(),
   replay_session_id: z.string().optional(),
   timezone: z.string(),
+  controlled_replay: z.boolean().optional(),
+  evidence_class: z.string().optional(),
+  not_live_market_data: z.boolean().optional(),
 });
 
 export const CapabilityStateSchema = z.object({
@@ -203,6 +206,9 @@ export const ContextResponseSchema = z.object({
   scope_symbols: z.array(z.string()).optional(),
   active_instrument: z.string().nullable().optional(),
   active_instrument_source: z.string().optional(),
+  controlled_replay: z.boolean().optional(),
+  evidence_class: z.string().optional(),
+  not_live_market_data: z.boolean().optional(),
 });
 
 export const SymbolSearchResponseSchema = z.object({

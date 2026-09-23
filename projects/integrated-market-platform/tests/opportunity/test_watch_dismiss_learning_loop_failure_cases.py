@@ -146,7 +146,9 @@ class WatchDismissLearningLoopFailureCaseTests(unittest.TestCase):
     def test_evidence_class_remains_fixture_software(self) -> None:
         self.assertEqual(_EVIDENCE_CLASS, "FIXTURE_SOFTWARE_PLUMBING")
 
-    def test_stale_opportunity_is_not_ranked_and_ack_fails_closed(self) -> None:
+    def test_stale_opportunity_remains_ranked_with_honest_freshness(self) -> None:
+        """PR #389 orthogonality: STALE stays visible; freshness is not upgraded."""
+
         self.repo.put_opportunity(
             _fixture_opportunity(
                 opportunity_id=_STALE_OPP,
@@ -158,15 +160,20 @@ class WatchDismissLearningLoopFailureCaseTests(unittest.TestCase):
         self.store.last_source_time_ns = _FIXTURE_AS_OF_NS
         self.store.as_of_time_ns = _FIXTURE_AS_OF_NS + DEFAULT_STALE_AFTER_NS + 1
         payload = build_opportunities_summary_payload(self.store)
-        self.assertNotIn(_STALE_OPP, self._summary_ids())
-        for item in payload.get("items") or []:
-            quality = item.get("data_quality") or {}
-            evaluation = quality.get("freshness_evaluation") or {}
-            if evaluation.get("status") == FRESHNESS_STALE:
-                self.assertNotEqual(item.get("opportunity_id"), _STALE_OPP)
-        with self.assertRaises(KeyError):
-            apply_opportunity_ack(self.store, row_id=_STALE_OPP, action="WATCHED")
-        self._assert_no_watch_mutation(_STALE_OPP)
+        self.assertIn(_STALE_OPP, self._summary_ids())
+        stale_row = next(
+            item
+            for item in (payload.get("items") or [])
+            if item.get("opportunity_id") == _STALE_OPP or item.get("summary_id") == _STALE_OPP
+        )
+        quality = stale_row.get("data_quality") or {}
+        evaluation = quality.get("freshness_evaluation") or {}
+        freshness = str(evaluation.get("status") or quality.get("freshness") or "").upper()
+        self.assertEqual(freshness, FRESHNESS_STALE)
+        self.assertNotEqual(freshness, "FRESH")
+        # Learning Watch remains available on a surfaced STALE row (not Live execution).
+        ack = apply_opportunity_ack(self.store, row_id=_STALE_OPP, action="WATCHED")
+        self.assertEqual(ack.get("action"), "WATCHED")
 
     def test_missing_evidence_does_not_fabricate_and_unknown_row_fails(self) -> None:
         bare = OpportunityV1(

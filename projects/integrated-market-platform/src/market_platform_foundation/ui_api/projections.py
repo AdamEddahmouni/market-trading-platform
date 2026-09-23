@@ -67,6 +67,13 @@ def display_as_of_time(store: ReplayStore) -> str:
         if receive_ns is None:
             return LIVE_AS_OF_UNAVAILABLE
         return _iso_from_epoch_ns(receive_ns)
+    controlled = bool(getattr(store, "controlled_replay", False)) or str(
+        getattr(store, "opportunity_source", "")
+    ).upper() == "CONTROLLED_REPLAY"
+    if controlled:
+        as_of_ns = getattr(store, "as_of_time_ns", None)
+        if as_of_ns is not None:
+            return _iso_from_epoch_ns(int(as_of_ns))
     return store.fixture_cursor_as_of_time()
 
 
@@ -106,6 +113,16 @@ def build_as_of_context(store: ReplayStore) -> dict[str, object]:
     )
     if data_mode == "LIVE_OBSERVATIONAL":
         ctx["as_of_provenance"] = as_of_provenance
+    if bool(getattr(store, "controlled_replay", False)) or str(
+        getattr(store, "opportunity_source", "")
+    ).upper() == "CONTROLLED_REPLAY":
+        ctx["controlled_replay"] = True
+        ctx["evidence_class"] = "CONTROLLED_REPLAY"
+        ctx["not_live_market_data"] = True
+        # Controlled replay is never Live execution.
+        ctx["execution_authority"] = "BLOCKED"
+        if execution_mode == "LIVE":
+            ctx["execution_mode"] = "NONE"
     return ctx
 
 
@@ -378,23 +395,31 @@ def build_context_payload(store: ReplayStore) -> dict[str, object]:
 
     active_instrument, active_source = resolve_active_operator_instrument(store)
     overrides = build_live_context_overrides(store)
+    as_of = build_as_of_context(store)
+    controlled = bool(as_of.get("controlled_replay"))
     if overrides is not None:
-        return {
+        payload: dict[str, object] = {
             "active_instrument": active_instrument,
             "active_instrument_source": active_source,
-            "as_of_context": build_as_of_context(store),
+            "as_of_context": as_of,
             "capability_states": build_capabilities(store),
             "quality_summary": overrides["quality_summary"],
             "scope_symbols": overrides["scope_symbols"],
         }
-    return {
-        "active_instrument": active_instrument,
-        "active_instrument_source": active_source,
-        "as_of_context": build_as_of_context(store),
-        "capability_states": build_capabilities(store),
-        "quality_summary": build_quality_summary(store),
-        "scope_symbols": [store.instrument_id],
-    }
+    else:
+        payload = {
+            "active_instrument": active_instrument,
+            "active_instrument_source": active_source,
+            "as_of_context": as_of,
+            "capability_states": build_capabilities(store),
+            "quality_summary": build_quality_summary(store),
+            "scope_symbols": [store.instrument_id],
+        }
+    if controlled:
+        payload["controlled_replay"] = True
+        payload["evidence_class"] = "CONTROLLED_REPLAY"
+        payload["not_live_market_data"] = True
+    return payload
 
 
 def _strategy_signal_items(store: ReplayStore) -> list[dict[str, object]]:

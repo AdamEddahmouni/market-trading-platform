@@ -16,6 +16,7 @@ from ..platform.security.access_control import AuthorizationFailure, authenticat
 from ..platform.security.leak_audit import assert_no_secrets_in_payload
 from . import broker_projections
 from . import canary_projections
+from . import controlled_replay as controlled_replay_api
 from . import live_projections
 from . import operator_projections
 from . import agent_enrichment_ingest
@@ -1135,6 +1136,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("OPPORTUNITY_NOT_FOUND", "Unknown opportunity", status=HTTPStatus.NOT_FOUND)
             except ValueError as exc:
                 self._send_error_json("OPERATOR_ACK_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/controlled-replay/advance-clock":
+            try:
+                self._send_json(controlled_replay_api.handle_advance_clock(self.store, body))
+            except PermissionError as exc:
+                self._send_error_json(str(exc), str(exc), status=HTTPStatus.FORBIDDEN)
+            except ValueError as exc:
+                self._send_error_json(str(exc), str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/operator/lifecycle/actions":
             from tools.platform.control_service import _spawn_action, normalize_action
