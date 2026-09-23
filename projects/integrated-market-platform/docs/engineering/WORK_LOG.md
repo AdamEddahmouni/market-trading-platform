@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Next-RTH runtime freeze FROZEN_NOT_ARMED (bf405f46)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / campaign freeze |
+| **Summary** | Declared observational campaign `RTH-OBS-NEWS-20260923` / FTEP-V1-002 **`FROZEN_NOT_ARMED`** on runtime commit `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` (tree `c3b5a08b94e93e4ead3c9802092ecdebea1c3434`). Docs tip may advance; runtime SHA is not retargeted to docs. Not armed. Not EMPIRICAL_ACTIVE. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Read-only audit at bf405f4: supervisor mechanism; Item 9 readiness `SOFTWARE_READY_RTH_REQUIRED` / `PARTIAL_NOT_CALIBRATED`; live authority `BLOCKED`; RTH15-10 freeze certificate `RTH15_10_COMPLETE=YES` + 7 protocol-control unit tests OK; disposable Windows job-kill harness → PROCEED_FREEZE |
+| **Related** | PR #386 merge `fd19258d` (docs tip); durability branch `diagnostic/win-job-kill-durability-20260922` (unmerged harness) |
+| **Notes** | Gate 11 remains PARTIAL (children die with job under default flags; ambient breakaway not terminal-independent). Sep 22 gap root UNPROVEN. Invalidation: no silent SHA move under same campaign identity. |
+
 ## 2026-09-22 - UI positive coverage for STALE / linkage / Watch / Dismiss
 
 | Field | Value |
@@ -47,6 +59,30 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `cd ui && npm test -- RadarPage.test.tsx OpportunityCard.test.tsx opportunityOperatorBrief.test.ts` → 3 files, 71 passed |
 | **Related** | Isolated worktree `.worktrees/ui-e2e-positive-gaps`, branch `ui/e2e-positive-gaps-20260922` (local only; not merged/pushed) |
 | **Notes** | Playwright e2e remains live-stack and non-deterministic for these states; component/integration tests are the accepted positive evidence. Browser tools not used (no fixture-driven Radar route). |
+
+## 2026-09-22 — Next RTH candidate SHA after #384 (docs only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` next-RTH runbook |
+| **Summary** | Merged `origin/main` `bf405f46` ([#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384)) into docs branch; retargeted [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) **CANDIDATE_RUNTIME** to that tip with **`frozen=no`**. Did **not** arm, freeze, push, or open a PR. Benchmark / stub Smoke10 remains non-blocker; real-system RTH15-11 Smoke10 stays **NOT_EXECUTED**. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `NOT_RUN` (documentation + merge only) |
+| **Related** | Reviewed runbook ancestor `a9e619fb`; prior candidate `007d8d9e`; merge [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384) |
+| **Notes** | Honesty constraints unchanged: `execution_authority=BLOCKED`; parent-exit survival only for `CREATE_NEW_PROCESS_GROUP \| CREATE_NO_WINDOW` (`SOFTWARE_CONTROLLED`); job-kill/terminal/breakaway **UNPROVEN**; Sep 22 gap **NOT_OBSERVED**/UNKNOWN; zero opportunities valid; Item 9 **PARTIAL_NOT_CALIBRATED**; Item 7 BBO still missing; no backfill. |
+
+## 2026-09-22 — Next RTH readiness plan after #385 (docs only)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/engineering` next-RTH runbook |
+| **Summary** | Updated canonical [NEXT_RTH_CAMPAIGN_RUNBOOK.md](NEXT_RTH_CAMPAIGN_RUNBOOK.md) from `origin/main` `007d8d9e` ([#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385)): candidate runtime pinned **`frozen=no`**; arm requires durable campaign-supervision state; §26 freeze-gate checklist filled PASS/FAIL/PARTIAL; arm/close/recovery/no-backfill and operator rules written. Did **not** arm, collect market evidence, freeze, push, or open a PR. Sep 22 `NOT_OBSERVED` gap and Segment B zero opportunities unchanged. |
+| **Key files** | `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `NOT_RUN` (documentation only; market closed) |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); merge [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385) |
+| **Notes** | Worktree `.worktrees/next-rth-readiness-20260922` / branch `docs/next-rth-readiness-20260922`. Job/terminal detachment remains UNPROVEN (gate 11 PARTIAL). Benchmark #384 not required. Item 9 / Item 7 remain unmet empirical targets, not software arm blockers. |
 
 ## 2026-09-22 - Fix WORK_LOG UTF-8 encoding for docs CI
 
@@ -71,6 +107,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | nonstub freeze match + protocol/smoke10/harness suites - 23 OK |
 | **Related** | PR #384 |
 | **Notes** | Delta was stable protocol fields only (lookahead/contamination/vanity/evidence_class/freeze certificate), not wall-clock or gold. |
+
 ## 2026-09-22 - Correct stub Smoke10 pin provenance (post-review)
 
 | Field | Value |
