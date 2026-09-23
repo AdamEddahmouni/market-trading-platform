@@ -34,6 +34,12 @@ Critical components emit heartbeats with:
 
 Never-observed execution-critical components are not healthy and block live readiness.
 
+Armed observational campaigns additionally persist ownership + heartbeat under
+`{IMP_STATE_DIR}/campaign-supervision/` (see
+[CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md)). That
+layer fails closed on stale/`ARMED_RUNNING` without progress and does **not**
+imply market-data freshness or Live authority.
+
 ## SLO Framework
 
 `OperationalSLOPolicyV1` defines conservative qualification objectives:

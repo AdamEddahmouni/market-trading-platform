@@ -110,7 +110,9 @@ class WindowsSystem:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         creation_flags = 0
         if os.name == "nt":
-            creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            from tools.platform.detached_process import windows_detached_creationflags
+
+            creation_flags = windows_detached_creationflags()
         with log_path.open("ab") as log_handle:
             process = subprocess.Popen(
                 list(argv),

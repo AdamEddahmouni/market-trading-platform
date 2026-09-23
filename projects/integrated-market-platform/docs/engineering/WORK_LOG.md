@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — RTH15-09 campaign supervision heartbeat (software)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `tools/platform`, campaign reliability |
+| **Summary** | Minimal IMP-owned campaign supervisor: durable ownership + heartbeat under `{IMP_STATE_DIR}/campaign-supervision/`, fail-closed stale `ARMED_RUNNING`, additive `NOT_OBSERVED` outages, recovery preserving original arm/segment/runtime SHA. Terminal-independent spawn via `CREATE_NEW_PROCESS_GROUP`/`CREATE_NO_WINDOW` with optional `CREATE_BREAKAWAY_FROM_JOB` (fallback documented). Does not rewrite Sep 22 evidence; root cause remains UNKNOWN. Execution stays BLOCKED. |
+| **Key files** | `platform/operator_diagnostics/campaign_supervision.py` (new); `tools/platform/detached_process.py` (new); `tools/platform/campaign_supervisor.py` (new); `service_liveness.py`; `snapshot.py`; `local_launcher.py`; `tests/acceptance/test_campaign_supervision_heartbeat_acceptance.py`; `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | Campaign acceptance 23/23 (shell-exit alone + 22 classification); phase0 prohibited-route ok; runtime service liveness 18/18. Affected earlier: platform ok; phase0 ctypes fixed. Evidence class SOFTWARE_CONTROLLED_EVIDENCE. |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [OPERATIONAL_RELIABILITY_SLO_DR_V1.md](OPERATIONAL_RELIABILITY_SLO_DR_V1.md) |
+| **Notes** | Do not mark RTH15-09 empirically complete. Shell-exit proof used no-breakaway fallback under this host's job object; Start-Process Hidden not labeled durable. Coordinator integrates later (no PR/push from this lane). |
+
 ## 2026-09-22 — Segment B close + post-close integration status docs
 
 | Field | Value |
