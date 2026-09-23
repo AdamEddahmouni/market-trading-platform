@@ -7,7 +7,7 @@ emit ``error_category`` from the twelve WS05 categories.
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Mapping
 
 
 class CanonicalErrorCategory(str, Enum):
@@ -198,24 +198,45 @@ def build_error_response_payload(reason_code: str, message: str) -> dict[str, An
 def build_provider_error_payload(
     reason_code: str,
     message: str | None = None,
+    *,
+    instrument_id: str | None = None,
+    details: Mapping[str, Any] | None = None,
+    provider_id: str | None = None,
+    capability: str | None = None,
 ) -> dict[str, Any]:
     """Error envelope plus backend-owned provider resilience operator explanation."""
 
-    from ..providers.resilience import incident_for_reason_code
+    from ..providers.resilience import project_provider_failure_receipt
 
-    incident = incident_for_reason_code(reason_code)
-    operator_explanation = incident.operator_message
+    receipt = project_provider_failure_receipt(
+        reason_code=reason_code,
+        provider_id=str(provider_id or ""),
+        capability=str(capability or ""),
+        instrument_id=str(instrument_id or ""),
+        details=details,
+    )
+    operator_explanation = str(receipt["operator_message"])
     payload = build_error_response_payload(
         reason_code,
         message if message is not None else operator_explanation,
     )
     payload["operator_explanation"] = operator_explanation
-    payload["provider_status_token"] = incident.status_token
-    payload["fallback_boundary"] = incident.fallback.boundary_token
-    payload["overlay_as_hop_l1"] = incident.fallback.overlay_as_hop_l1
-    payload["live_execution"] = incident.live_execution
+    payload["provider_status_token"] = receipt["provider_status_token"]
+    payload["fallback_boundary"] = receipt["fallback_boundary"]
+    payload["overlay_as_hop_l1"] = receipt["overlay_as_hop_l1"]
+    payload["live_execution"] = receipt["live_execution"]
     payload["item9_mode"] = "IDLE"
     payload["item9_calibration"] = "NOT_CALIBRATED"
+    if receipt.get("instrument_id"):
+        payload["instrument_id"] = receipt["instrument_id"]
+    if receipt.get("source_reason_code"):
+        payload["source_reason_code"] = receipt["source_reason_code"]
+    if receipt.get("failure_details"):
+        payload["failure_details"] = receipt["failure_details"]
+    if provider_id:
+        payload["provider_id"] = str(provider_id)
+    if capability:
+        payload["capability"] = str(capability)
     return payload
 
 

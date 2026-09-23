@@ -63,12 +63,14 @@ from market_platform_foundation.providers.resilience import (  # noqa: E402
     classify_opend_connectivity,
     classify_provider_incident,
     classify_source_disagreement,
+    failure_receipt_from_provider_result,
     fallback_for_primary,
     incident_for_reason_code,
     normalize_reason_token,
     note_disconnect,
     note_process_restart,
     note_reconnect,
+    project_provider_failure_receipt,
 )
 from market_platform_foundation.ui_api.errors import (  # noqa: E402
     CanonicalErrorCategory,
@@ -555,9 +557,16 @@ class AdapterGapMockTests(unittest.TestCase):
 
         disconnected = YahooDelayedEquityQuoteProvider(fetch=boom_os).fetch_quote("AAPL")
         self.assertEqual(disconnected.reason_code, "PROVIDER_DISCONNECTED")
+        self.assertEqual(disconnected.instrument_id, "AAPL")
         mapped = incident_for_reason_code(disconnected.reason_code)
         self.assertEqual(mapped.status_token, TEMPORARY_NETWORK_FAILURE)
+        self.assertEqual(mapped.details.get("source_reason_code"), "PROVIDER_DISCONNECTED")
         self.assertFalse(mapped.fallback.overlay_as_hop_l1)
+        disconnect_receipt = failure_receipt_from_provider_result(disconnected)
+        self.assertEqual(disconnect_receipt["instrument_id"], "AAPL")
+        self.assertEqual(disconnect_receipt["source_reason_code"], "PROVIDER_DISCONNECTED")
+        self.assertEqual(disconnect_receipt["provider_status_token"], TEMPORARY_NETWORK_FAILURE)
+        self.assertEqual(disconnect_receipt["evidence_class"], "SOFTWARE")
 
         no_time = {
             "chart": {
@@ -576,14 +585,23 @@ class AdapterGapMockTests(unittest.TestCase):
         ).fetch_quote("AAPL")
         self.assertEqual(chart_error.reason_code, "PROVIDER_HTTP_ERROR")
         self.assertEqual(chart_error.events, ())
+        self.assertEqual(chart_error.instrument_id, "AAPL")
+        self.assertEqual(chart_error.details.get("chart_error"), "denied")
         http_incident = incident_for_reason_code(chart_error.reason_code)
         self.assertEqual(http_incident.status_token, "PROVIDER_HTTP_ERROR")
         self.assertNotEqual(http_incident.status_token, "UNKNOWN")
         self.assertEqual(http_incident.severity, "UNAVAILABLE")
         self.assertFalse(http_incident.fallback.overlay_as_hop_l1)
-        http_payload = build_provider_error_payload(chart_error.reason_code)
+        http_payload = build_provider_error_payload(
+            chart_error.reason_code,
+            instrument_id=chart_error.instrument_id,
+            details=chart_error.details,
+            provider_id=chart_error.provider_id,
+        )
         self.assertEqual(http_payload["provider_status_token"], "PROVIDER_HTTP_ERROR")
         self.assertEqual(http_payload["reason_code"], "PROVIDER_HTTP_ERROR")
+        self.assertEqual(http_payload["instrument_id"], "AAPL")
+        self.assertEqual(http_payload["failure_details"].get("chart_error"), "denied")
         self.assertEqual(
             canonical_error_category(chart_error.reason_code),
             CanonicalErrorCategory.PROVIDER_UNAVAILABLE,
@@ -592,6 +610,20 @@ class AdapterGapMockTests(unittest.TestCase):
             canonical_error_category(chart_error.reason_code),
             CanonicalErrorCategory.INTERNAL_ERROR,
         )
+
+        http_status = YahooDelayedEquityQuoteProvider(
+            fetch=lambda url: (503, b"unavailable")
+        ).fetch_quote("MSFT")
+        self.assertEqual(http_status.reason_code, "PROVIDER_HTTP_ERROR")
+        self.assertEqual(http_status.instrument_id, "MSFT")
+        self.assertEqual(http_status.details.get("http_status"), 503)
+        status_payload = build_provider_error_payload(
+            http_status.reason_code,
+            instrument_id=http_status.instrument_id,
+            details=http_status.details,
+        )
+        self.assertEqual(status_payload["instrument_id"], "MSFT")
+        self.assertEqual(status_payload["failure_details"]["http_status"], 503)
 
     def test_classify_provider_incident_ignores_primary_available_override(self) -> None:
         """Fixture flags must not mark primary L1 available on failure tokens."""
@@ -608,6 +640,40 @@ class AdapterGapMockTests(unittest.TestCase):
         self.assertEqual(novel.status_token, projected.status_token)
         self.assertEqual(novel.status_token, "UNKNOWN")
         self.assertEqual(novel.details.get("source_reason_code"), "VENDOR_FUTURE_REASON_XYZ")
+
+    def test_opend_failure_receipt_links_requested_symbol(self) -> None:
+        listener, host, port = _loopback_listener()
+        try:
+            with env(IMP_MOOMOO_HOST=host, IMP_MOOMOO_PORT=str(port)):
+                result = MoomooOpenDEquityQuoteProvider(
+                    transport=_ScriptedOpenDTransport(
+                        OpenDSnapshotResult(reason_code=MOOMOO_PROTOCOL_ERROR)
+                    )
+                ).fetch_quote("NVDA")
+        finally:
+            listener.close()
+        self.assertEqual(result.reason_code, MOOMOO_PROTOCOL_ERROR)
+        self.assertEqual(result.instrument_id, "NVDA")
+        receipt = failure_receipt_from_provider_result(result)
+        self.assertEqual(receipt["instrument_id"], "NVDA")
+        self.assertEqual(receipt["provider_id"], MOOMOO_OPEND_PROVIDER_ID)
+        self.assertEqual(receipt["provider_status_token"], MOOMOO_PROTOCOL_ERROR)
+        self.assertEqual(receipt["evidence_class"], "SOFTWARE")
+        self.assertEqual(receipt["live_execution"], "OFF")
+
+    def test_project_provider_failure_receipt_preserves_alias_source(self) -> None:
+        receipt = project_provider_failure_receipt(
+            reason_code="PROVIDER_DISCONNECTED",
+            provider_id=YAHOO_PROVIDER_ID,
+            instrument_id="aapl",
+            details={"http_status": 502},
+        )
+        self.assertEqual(receipt["instrument_id"], "AAPL")
+        self.assertEqual(receipt["provider_status_token"], TEMPORARY_NETWORK_FAILURE)
+        self.assertEqual(receipt["source_reason_code"], "PROVIDER_DISCONNECTED")
+        self.assertEqual(receipt["failure_details"]["http_status"], 502)
+        self.assertEqual(receipt["failure_details"]["source_reason_code"], "PROVIDER_DISCONNECTED")
+        self.assertFalse(receipt["overlay_as_hop_l1"])
 
 
 if __name__ == "__main__":

@@ -88,48 +88,75 @@ class YahooDelayedEquityQuoteProvider:
         if not wanted:
             return self._unavailable(SYMBOL_REQUIRED)
         if is_es_futures_symbol(wanted):
-            return self._unavailable(ES_SYMBOL_BLOCKED)
+            return self._unavailable(ES_SYMBOL_BLOCKED, instrument_id=wanted)
 
         url = YAHOO_CHART_URL.format(symbol=urllib.parse.quote(wanted, safe=""))
         try:
             status, body = self._fetch(url)
         except TimeoutError:
-            return self._unavailable(PROVIDER_TIMEOUT)
+            return self._unavailable(PROVIDER_TIMEOUT, instrument_id=wanted)
         except ConnectionResetError:
-            return self._unavailable(TEMPORARY_NETWORK_FAILURE)
+            return self._unavailable(TEMPORARY_NETWORK_FAILURE, instrument_id=wanted)
         except OSError:
-            return self._unavailable(PROVIDER_DISCONNECTED)
+            return self._unavailable(PROVIDER_DISCONNECTED, instrument_id=wanted)
 
         if status == 429:
-            return self._unavailable(RATE_LIMIT)
+            return self._unavailable(
+                RATE_LIMIT, instrument_id=wanted, details={"http_status": int(status)}
+            )
         if status >= 400:
-            return self._unavailable(PROVIDER_HTTP_ERROR)
+            return self._unavailable(
+                PROVIDER_HTTP_ERROR,
+                instrument_id=wanted,
+                details={"http_status": int(status)},
+            )
         if not body:
-            return self._unavailable(EMPTY_PAYLOAD)
+            return self._unavailable(EMPTY_PAYLOAD, instrument_id=wanted)
 
         try:
             payload = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError, ValueError):
-            return self._unavailable(MALFORMED_RECORD)
+            return self._unavailable(MALFORMED_RECORD, instrument_id=wanted)
+
+        if isinstance(payload, dict):
+            chart = payload.get("chart")
+            if isinstance(chart, dict) and chart.get("error"):
+                err = chart.get("error")
+                return self._unavailable(
+                    PROVIDER_HTTP_ERROR,
+                    instrument_id=wanted,
+                    details={"chart_error": str(err)[:200]},
+                )
 
         event, reason_code = _quote_event_from_chart(
             payload, symbol=wanted, received_ns=monotonic_wall_ns()
         )
         if event is None:
-            return self._unavailable(reason_code or MALFORMED_RECORD)
+            return self._unavailable(
+                reason_code or MALFORMED_RECORD, instrument_id=wanted
+            )
         return ProviderResult(
             status="available",
             events=(event,),
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=wanted,
         )
 
-    def _unavailable(self, reason_code: str) -> ProviderResult:
+    def _unavailable(
+        self,
+        reason_code: str,
+        *,
+        instrument_id: str = "",
+        details: dict[str, Any] | None = None,
+    ) -> ProviderResult:
         return ProviderResult(
             status="unavailable",
             reason_code=reason_code,
             provider_id=self.provider_id,
             capability=self.capability,
+            instrument_id=str(instrument_id or "").strip().upper(),
+            details=dict(details or {}),
         )
 
 
