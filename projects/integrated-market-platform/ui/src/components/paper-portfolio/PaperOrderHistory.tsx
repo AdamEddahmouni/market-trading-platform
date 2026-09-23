@@ -9,6 +9,7 @@ import {
   type PaperOrderHistoryFilters,
   type PaperOrderHistoryRow,
 } from "./paperOrderHistoryModel";
+import { PORTFOLIO_SECTIONS } from "./paperPortfolioPresentation";
 import { PaperOrderHistoryTable } from "./PaperOrderHistoryTable";
 
 type Props = {
@@ -84,14 +85,20 @@ export function PaperOrderHistory({ data, onViewTrace }: Props) {
       ) : null}
 
       {historyQuery.isLoading ? (
-        <section className="panel paper-order-history-panel">
+        <section
+          className="panel paper-order-history-panel"
+          id={PORTFOLIO_SECTIONS.orderHistory}
+        >
           <h2>Order history</h2>
           <LoadingState label="Loading order history…" />
         </section>
       ) : null}
 
       {historyQuery.isError ? (
-        <section className="panel paper-order-history-panel unavailable">
+        <section
+          className="panel paper-order-history-panel unavailable"
+          id={PORTFOLIO_SECTIONS.orderHistory}
+        >
           <h2>Order history</h2>
           <p>Order history is temporarily unavailable. Open orders and account summary remain current.</p>
         </section>
@@ -100,6 +107,7 @@ export function PaperOrderHistory({ data, onViewTrace }: Props) {
       {!historyQuery.isLoading && !historyQuery.isError ? (
         <PaperOrderHistoryTable
           title="Order history"
+          sectionId={PORTFOLIO_SECTIONS.orderHistory}
           rows={paginatedHistoryRows}
           emptyMessage={historyEmptyMessage}
           onViewTrace={onViewTrace}
