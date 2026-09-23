@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Remove prohibited subprocess from campaign_supervision liveness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` phase0 compliance |
+| **Summary** | CI blocked PR #403: governed `process_alive` used `subprocess.run(tasklist)`. Removed that edge. Windows durability still uses tools-layer `service_health.process_alive` (ctypes OpenProcess) via supervisor injection and `load_campaign_supervision_view` default import — same allowed pattern as snapshot.py. |
+| **Key files** | `src/.../campaign_supervision.py` |
+| **Tests** | `tests.phase0.test_analysis.AnalysisTests.test_governed_source_has_no_prohibited_route` OK; durability+heartbeat acceptance 31 OK; readiness 5 OK |
+| **Related** | PR #403 |
+| **Notes** | No phase0 test weakened. |
+
 ## 2026-09-23 — Runtime observation durability (supervisor / poller / preflight)
 
 | Field | Value |

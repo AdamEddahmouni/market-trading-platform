@@ -286,33 +286,17 @@ def read_outage_records(state_directory: str | Path) -> list[dict[str, Any]]:
 
 
 def process_alive(pid: int) -> bool:
-    """Best-effort liveness probe without ``ctypes`` in governed src.
+    """Best-effort stdlib liveness probe (no process spawn / no ctypes).
 
-    On Windows, ``os.kill(pid, 0)`` is **not** a reliable existence probe
-    (commonly raises ``WinError 87`` even for live processes). This fallback
-    uses ``tasklist``. Prefer injecting
-    ``tools.platform.service_health.process_alive`` from the tools layer.
+    Windows ``os.kill(pid, 0)`` is unreliable (often ``WinError 87``). Callers
+    that need accurate Windows liveness must inject
+    ``tools.platform.service_health.process_alive`` (ctypes OpenProcess) via
+    ``process_alive_fn``. ``load_campaign_supervision_view`` does that by
+    default when the tools layer is importable.
     """
 
     if pid <= 0:
         return False
-    if os.name == "nt":
-        try:
-            import subprocess
-
-            result = subprocess.run(
-                ["tasklist.exe", "/FI", f"PID eq {int(pid)}", "/NH"],
-                capture_output=True,
-                text=True,
-                timeout=5,
-                check=False,
-            )
-        except (OSError, subprocess.TimeoutExpired):
-            return False
-        out = result.stdout or ""
-        if "No tasks are running" in out or out.strip().startswith("INFO:"):
-            return False
-        return str(int(pid)) in out
     try:
         os.kill(int(pid), 0)
     except OSError:
@@ -320,6 +304,19 @@ def process_alive(pid: int) -> bool:
     except SystemError:
         return False
     return True
+
+
+def _resolve_process_alive_fn(process_alive_fn):
+    """Prefer launcher-grade probe from tools when available (not governed spawn)."""
+
+    if process_alive_fn is not None:
+        return process_alive_fn
+    try:
+        from tools.platform.service_health import process_alive as platform_process_alive
+
+        return platform_process_alive
+    except ImportError:
+        return process_alive
 
 
 def _parse_utc_seconds(value: str | None) -> float | None:
@@ -596,7 +593,7 @@ def load_campaign_supervision_view(
     import time
     from datetime import datetime, timezone
 
-    alive_fn = process_alive_fn or process_alive
+    alive_fn = _resolve_process_alive_fn(process_alive_fn)
 
     if not state_directory:
         return {
