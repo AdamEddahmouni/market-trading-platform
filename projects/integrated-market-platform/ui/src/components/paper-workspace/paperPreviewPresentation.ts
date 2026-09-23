@@ -32,6 +32,10 @@ export type PaperPreviewPresentationState = {
   decision?: string;
   canSubmit: boolean;
   previewOrigin?: "manual" | "workspace" | null;
+  /** Side × qty locked to the current server preview, when available. */
+  previewedOrderLabel?: string;
+  /** True when handoff placeholder still needs explicit operator confirmation. */
+  requiresPlaceholderConfirmation?: boolean;
 };
 
 export type PreviewPresentationInput = {
@@ -42,6 +46,9 @@ export type PreviewPresentationInput = {
   previewMutationPending: boolean;
   error: string | null;
   previewOrigin: "manual" | "workspace" | null;
+  /** Handoff drafts seed BUY×1 as a non-recommendation placeholder. */
+  requiresPlaceholderConfirmation?: boolean;
+  operatorConfirmedPlaceholder?: boolean;
 };
 
 export function derivePreviewPresentationState(input: PreviewPresentationInput): PaperPreviewPresentationState {
@@ -99,6 +106,11 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
 
   if (input.preview) {
     const passed = input.preview.risk_status === "PASS";
+    const previewedOrderLabel = input.confirmedRequest
+      ? `${input.confirmedRequest.side} × ${input.confirmedRequest.quantity} ${input.confirmedRequest.order_type}`
+      : undefined;
+    const needsPlaceholderConfirmation =
+      Boolean(input.requiresPlaceholderConfirmation) && !input.operatorConfirmedPlaceholder;
     return {
       ...base,
       status: passed ? "ACCEPTED" : "REJECTED",
@@ -108,12 +120,16 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
           : "Preview accepted"
         : "Preview rejected",
       message: passed
-        ? "Current preview passed risk checks. Submit remains operator-controlled."
+        ? needsPlaceholderConfirmation
+          ? "Current preview passed risk checks. Confirm the placeholder side and quantity are intentional before submit — defaults are not a recommendation."
+          : "Current preview passed risk checks. Submit remains operator-controlled."
         : `Preview blocked by risk (${input.preview.decision ?? input.preview.risk_status}).`,
       riskStatus: input.preview.risk_status,
       decision: input.preview.decision,
       reasonCodes: input.preview.reason_codes,
-      canSubmit: passed && input.confirmedRequestIsCurrent,
+      canSubmit: passed && input.confirmedRequestIsCurrent && !needsPlaceholderConfirmation,
+      previewedOrderLabel,
+      requiresPlaceholderConfirmation: needsPlaceholderConfirmation,
     };
   }
 

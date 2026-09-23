@@ -26,6 +26,12 @@ export function PaperPreviewStatus({ state }: Props) {
         <strong>{state.title}</strong>
       </p>
       <p>{state.message}</p>
+      {state.previewedOrderLabel ? (
+        <p data-testid="paper-previewed-order-label">
+          Previewed order: <strong>{state.previewedOrderLabel}</strong>
+          {state.requiresPlaceholderConfirmation ? " (placeholder — confirm before submit)" : ""}
+        </p>
+      ) : null}
       {state.riskStatus ? (
         <p>
           Risk: <strong>{state.riskStatus}</strong>
@@ -36,7 +42,11 @@ export function PaperPreviewStatus({ state }: Props) {
         <p>Reasons: {state.reasonCodes.join(", ")}</p>
       ) : null}
       {!state.canSubmit && state.status !== "AUTHORITY_UNAVAILABLE" && state.status !== "NOT_PREVIEWED" ? (
-        <p className="muted">Submit remains disabled until preview passes and inputs are current.</p>
+        <p className="muted">
+          {state.requiresPlaceholderConfirmation
+            ? "Submit stays disabled until you confirm the editable placeholder side and quantity."
+            : "Submit remains disabled until preview passes and inputs are current."}
+        </p>
       ) : null}
     </section>
   );

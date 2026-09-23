@@ -9,12 +9,14 @@ import {
   createWatchedOpportunityPaperOrderDraft,
   derivePaperDecisionCorrelationId,
   formatPaperDraftSourceLabel,
+  formatPaperPlaceholderOrderLabel,
   isLanePaperOrderDraft,
   isOpportunityPaperOrderDraft,
   parseLaneProvenance,
   parsePaperDraftProvenance,
   paperOrderDraftFingerprint,
   parsePaperOrderDraft,
+  requiresPlaceholderSubmitConfirmation,
 } from "./paperOrderDraft";
 import { attentionItem } from "./paperNowTestFixtures";
 
@@ -275,5 +277,39 @@ describe("paper order draft", () => {
       orderType: "MARKET",
       sourceAttentionId: "attention:ATT-99",
     }).attentionId).toBe("ATT-99");
+  });
+
+  it("requires placeholder submit confirmation for handoff drafts only", () => {
+    expect(
+      requiresPlaceholderSubmitConfirmation({
+        version: 1,
+        instrumentId: "BIYA",
+        side: "BUY",
+        quantity: 1,
+        orderType: "MARKET",
+        sourceAttentionId: "opportunity:opp-1",
+      }),
+    ).toBe(true);
+    expect(
+      requiresPlaceholderSubmitConfirmation({
+        version: 1,
+        instrumentId: "BIYA",
+        side: "BUY",
+        quantity: 1,
+        orderType: "MARKET",
+        sourceAttentionId: "lane:squeeze",
+      }),
+    ).toBe(true);
+    expect(
+      requiresPlaceholderSubmitConfirmation({
+        version: 1,
+        instrumentId: "BIYA",
+        side: "BUY",
+        quantity: 1,
+        orderType: "MARKET",
+      }),
+    ).toBe(false);
+    expect(requiresPlaceholderSubmitConfirmation(undefined)).toBe(false);
+    expect(formatPaperPlaceholderOrderLabel("BUY", 1)).toBe("BUY × 1 MARKET");
   });
 });

@@ -12,9 +12,11 @@ import {
   createPaperOrderDraft,
   createPaperPreviewAttemptKey,
   formatPaperDraftSourceLabel,
+  formatPaperPlaceholderOrderLabel,
   isLanePaperOrderDraft,
   isAttentionPaperOrderDraft,
   parseLaneProvenance,
+  requiresPlaceholderSubmitConfirmation,
   type PaperOrderDraft,
 } from "../paper-now/paperOrderDraft";
 import {
@@ -55,6 +57,7 @@ export function OrderTicket({
   const [previewOrigin, setPreviewOrigin] = useState<"manual" | "workspace" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [placeholderConfirmed, setPlaceholderConfirmed] = useState(false);
   const automaticPreviewAttempted = useRef(false);
   const previewGeneration = useRef(0);
 
@@ -74,6 +77,7 @@ export function OrderTicket({
     preview?.instrument?.instrument_id ||
     ticketSymbol;
   const canPreview = Boolean(ticketSymbol) && quantity > 0 && quantity <= maxOrderShares;
+  const requiresPlaceholderConfirmation = requiresPlaceholderSubmitConfirmation(initialDraft);
   const confirmedRequestIsCurrent = Boolean(
     confirmedRequest &&
     confirmedRequest.instrument_id === ticketSymbol &&
@@ -83,12 +87,20 @@ export function OrderTicket({
     quantity > 0 &&
     quantity <= maxOrderShares,
   );
+  const canSubmit =
+    authorized &&
+    Boolean(preview) &&
+    preview?.risk_status === "PASS" &&
+    confirmedRequestIsCurrent &&
+    !submitting &&
+    (!requiresPlaceholderConfirmation || placeholderConfirmed);
 
   function invalidatePreview() {
     previewGeneration.current += 1;
     setPreview(null);
     setConfirmedRequest(null);
     setPreviewOrigin(null);
+    setPlaceholderConfirmed(false);
     setError(null);
   }
 
@@ -106,6 +118,8 @@ export function OrderTicket({
         previewMutationPending: previewMutation.isPending,
         error,
         previewOrigin,
+        requiresPlaceholderConfirmation,
+        operatorConfirmedPlaceholder: placeholderConfirmed,
       }),
     );
   }, [
@@ -116,6 +130,8 @@ export function OrderTicket({
     previewMutation.isPending,
     error,
     previewOrigin,
+    requiresPlaceholderConfirmation,
+    placeholderConfirmed,
     onPreviewStateChange,
   ]);
 
@@ -158,7 +174,7 @@ export function OrderTicket({
   }, [authorized, initialDraft, maxOrderShares]);
 
   async function handleSubmit() {
-    if (!preview || preview.risk_status !== "PASS" || !confirmedRequest || !confirmedRequestIsCurrent) return;
+    if (!canSubmit || !preview || !confirmedRequest || !confirmedRequestIsCurrent) return;
     if (!preview.preview_id) {
       setError("PREVIEW_REQUIRED: submit requires a current server preview");
       return;
@@ -174,6 +190,7 @@ export function OrderTicket({
       setPreview(null);
       setConfirmedRequest(null);
       setPreviewOrigin(null);
+      setPlaceholderConfirmed(false);
     } catch (err) {
       setError(err instanceof ApiRequestError ? formatApiRequestError(err) : "Submit failed");
     } finally {
@@ -292,6 +309,16 @@ export function OrderTicket({
           />
         </label>
       </div>
+      {requiresPlaceholderConfirmation ? (
+        <p className="muted" data-testid="paper-placeholder-edit-note">
+          Side and quantity start as{" "}
+          {formatPaperPlaceholderOrderLabel(
+            initialDraft?.side ?? "BUY",
+            initialDraft?.quantity ?? 1,
+          )}{" "}
+          — a technical placeholder, not a recommendation. Edit visibly, then confirm after server preview.
+        </p>
+      ) : null}
 
       {contextLanes.length > 0 ? (
         <div className="ticket-context-lanes">
@@ -307,15 +334,23 @@ export function OrderTicket({
         </div>
       ) : null}
 
+      {requiresPlaceholderConfirmation ? (
+        <label className="paper-placeholder-confirm" data-testid="paper-placeholder-confirm">
+          <input
+            type="checkbox"
+            checked={placeholderConfirmed}
+            disabled={!preview || !confirmedRequestIsCurrent || preview?.risk_status !== "PASS"}
+            onChange={(event) => setPlaceholderConfirmed(event.target.checked)}
+          />
+          I confirm side and quantity are intentional — placeholder defaults are not a recommendation
+        </label>
+      ) : null}
+
       <div className="order-ticket-actions">
         <button type="button" onClick={() => void performPreview("manual")} disabled={!canPreview || previewMutation.isPending}>
           Preview
         </button>
-        <button
-          type="button"
-          onClick={() => void handleSubmit()}
-          disabled={!authorized || !preview || preview.risk_status !== "PASS" || !confirmedRequestIsCurrent || submitting}
-        >
+        <button type="button" onClick={() => void handleSubmit()} disabled={!canSubmit}>
           Submit
         </button>
       </div>

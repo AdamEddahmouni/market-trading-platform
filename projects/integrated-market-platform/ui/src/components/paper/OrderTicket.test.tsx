@@ -44,6 +44,13 @@ describe("OrderTicket workspace revalidation", () => {
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
     resolvePreview(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
     expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
+    // Handoff placeholders stay submit-blocked until explicit confirmation.
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    const confirm = screen.getByRole("checkbox", {
+      name: /I confirm side and quantity are intentional/i,
+    });
+    expect(confirm).toBeEnabled();
+    fireEvent.click(confirm);
     expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
   });
 
@@ -109,6 +116,9 @@ describe("OrderTicket workspace revalidation", () => {
     mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
     const view = renderTicket(validDraft);
     expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm side and quantity are intentional/i }),
+    );
     expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
 
     view.rerender(ticket(validDraft, 10));
@@ -147,7 +157,12 @@ describe("OrderTicket workspace revalidation", () => {
     mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
     mocks.submitPaperOrder.mockResolvedValueOnce({ submission: { intent_id: "intent-1" } });
     renderTicket(validDraft);
-    expect(await screen.findByRole("button", { name: "Submit" })).toBeEnabled();
+    expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm side and quantity are intentional/i }),
+    );
+    expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
     fireEvent.click(screen.getByRole("button", { name: "Submit" }));
     await waitFor(() => expect(mocks.submitPaperOrder).toHaveBeenCalledTimes(1));
     expect(mocks.submitPaperOrder).toHaveBeenCalledWith(
@@ -171,7 +186,20 @@ describe("OrderTicket workspace revalidation", () => {
     );
     await waitFor(() =>
       expect(onPreviewStateChange).toHaveBeenCalledWith(
-        expect.objectContaining({ status: "ACCEPTED", canSubmit: true }),
+        expect.objectContaining({
+          status: "ACCEPTED",
+          canSubmit: false,
+          requiresPlaceholderConfirmation: true,
+          previewedOrderLabel: "SELL × 12 MARKET",
+        }),
+      ),
+    );
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm side and quantity are intentional/i }),
+    );
+    await waitFor(() =>
+      expect(onPreviewStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({ status: "ACCEPTED", canSubmit: true, requiresPlaceholderConfirmation: false }),
       ),
     );
     fireEvent.change(screen.getByRole("spinbutton", { name: "Quantity" }), { target: { value: "13" } });
@@ -180,5 +208,32 @@ describe("OrderTicket workspace revalidation", () => {
         expect.objectContaining({ status: "NOT_PREVIEWED" }),
       ),
     );
+  });
+
+  it("blocks accidental submit on watched-opportunity BUY × 1 until confirmation", async () => {
+    const opportunityDraft: PaperOrderDraft = {
+      version: 1,
+      instrumentId: "BIYA",
+      side: "BUY",
+      quantity: 1,
+      orderType: "MARKET",
+      sourceAttentionId: "opportunity:opp-1",
+      sourceContext: {
+        reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+      },
+    };
+    mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    mocks.submitPaperOrder.mockResolvedValueOnce({ submission: { intent_id: "intent-opp" } });
+    renderTicket(opportunityDraft);
+    expect(await screen.findByTestId("paper-placeholder-edit-note")).toHaveTextContent(/BUY × 1/i);
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    expect(mocks.submitPaperOrder).not.toHaveBeenCalled();
+    fireEvent.click(
+      screen.getByRole("checkbox", { name: /I confirm side and quantity are intentional/i }),
+    );
+    expect(screen.getByRole("button", { name: "Submit" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(mocks.submitPaperOrder).toHaveBeenCalledTimes(1));
   });
 });
