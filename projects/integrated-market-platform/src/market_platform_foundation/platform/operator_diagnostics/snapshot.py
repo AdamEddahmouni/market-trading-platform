@@ -29,6 +29,7 @@ from ..artifact_path_resolver import (
     looks_like_posix_absolute_path,
     looks_like_windows_absolute_path,
 )
+from .campaign_supervision import load_campaign_supervision_view
 from .operator_truth import build_operator_truth_section
 from .service_liveness import compose_readiness_vs_liveness
 
@@ -304,6 +305,7 @@ def _public_runtime_resilience_section(
     imp_root: Path,
     lifecycle: Mapping[str, Any] | None = None,
     provider_health: Mapping[str, Any] | None = None,
+    campaign_supervision: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     collector = dict(resilience.get("collector_process") or {})
     matches = list(collector.pop("active_collector_matches", []) or [])
@@ -327,7 +329,9 @@ def _public_runtime_resilience_section(
             resilience=resilience,
             lifecycle=lifecycle,
             provider_health=provider_health,
+            campaign_supervision=campaign_supervision,
         ),
+        "campaign_supervision": deepcopy(campaign_supervision) if campaign_supervision else None,
         "does_not_start_collector": True,
     }
 
@@ -740,6 +744,7 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     imp_root = _imp_root()
 
     from tools.platform.control_service import build_control_status
+    from tools.platform.service_health import process_alive as platform_process_alive
     from tools.state_path_diagnostic import collect_state_path_report
 
     resilience = build_runtime_resilience_diagnostic(imp_root)
@@ -754,11 +759,23 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     config_summary = _config_summary(config)
     state_path = collect_state_path_report(imp_root)
     provider_health = build_provider_health_payload(store)
+    campaign_state = state_path.get("effective_state_dir") or str(state_dir())
+    campaign_supervision = load_campaign_supervision_view(
+        campaign_state,
+        process_alive_fn=platform_process_alive,
+    )
+    # Never leak absolute host paths beyond existing state_path redaction rules.
+    if isinstance(campaign_supervision.get("ownership"), dict):
+        ownership_public = dict(campaign_supervision["ownership"])
+        ownership_public["state_directory"] = "<IMP_STATE_DIR>/campaign-supervision"
+        campaign_supervision = dict(campaign_supervision)
+        campaign_supervision["ownership"] = ownership_public
     resilience_public = _public_runtime_resilience_section(
         resilience,
         imp_root=imp_root,
         lifecycle=lifecycle,
         provider_health=provider_health,
+        campaign_supervision=campaign_supervision,
     )
     opportunity_summary = build_opportunities_summary_payload(store)
 
@@ -810,6 +827,17 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     elif str(readiness.get("status")) != "READY" or evidence_gaps:
         severity = "DEGRADED"
     if str(item9.get("disposition")) in {"WRONG_RUNTIME", "PROVIDER_UNAVAILABLE", "OUTPUT_PATH_INVALID"}:
+        severity = "ACTION_REQUIRED"
+    campaign_status = str(campaign_supervision.get("status") or "NOT_APPLICABLE")
+    campaign_arm = None
+    if isinstance(campaign_supervision.get("ownership"), dict):
+        campaign_arm = campaign_supervision["ownership"].get("arm_status")
+    if campaign_arm == "ARMED_RUNNING" and campaign_status in {
+        "STALE",
+        "PROCESS_DEAD",
+        "APPLICATION_UNREADY",
+        "SESSION_UNAVAILABLE",
+    }:
         severity = "ACTION_REQUIRED"
 
     as_of_utc = datetime.now(timezone.utc).isoformat()
@@ -898,5 +926,6 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "tools/state_path_diagnostic.collect_state_path_report",
             "operations.runtime_resilience_diagnostic.build_runtime_resilience_diagnostic",
             "paper.calibration.item9_calibration_protocol.build_item9_corpus_status_report",
+            "platform.operator_diagnostics.campaign_supervision.load_campaign_supervision_view",
         ],
     }

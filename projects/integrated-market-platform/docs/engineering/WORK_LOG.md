@@ -60,6 +60,42 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | [INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md](INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md); historical Lane D `ibp-smoke10-76DDD188CD080365` unchanged |
 | **Notes** | RTH15-11 real-system Smoke10 remains **NOT_EXECUTED**. Not market/FTEP/Item 9/Paper calibration evidence. Full30 not run. |
 
+## 2026-09-22 — RTH15-09 truthfulness nits (no-breakaway claims)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform`, campaign supervision docs/tests |
+| **Summary** | Corrected overclaims after independent review: default spawn is CREATE_NEW_PROCESS_GROUP\|CREATE_NO_WINDOW; breakaway is opt-in/UNPROVEN; shell-exit test renamed to parent-process exit only; mechanism_description reports the selected default; docs state job/terminal-kill durability UNPROVEN; product guarantee is fail-visible detection. |
+| **Key files** | `detached_process.py`; `local_launcher.py`; `campaign_supervisor.py`; `CAMPAIGN_SUPERVISION_HEARTBEAT.md`; `OPERATOR_DIAGNOSTICS_MODEL.md`; `test_campaign_supervision_heartbeat_acceptance.py` |
+| **Tests** | acceptance except shell-exit; renamed parent-exit test alone; `test_runtime_service_liveness` |
+| **Related** | parent commit `03718e52` |
+| **Notes** | No amend of `03718e52`. Sep 22 root cause still UNKNOWN. Not empirically complete. |
+
+## 2026-09-22 — Item 9 live prospective proof single-fetch (RTH15-04 readiness)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `paper/calibration`, Item 9 / RTH15-04 software readiness |
+| **Summary** | Mode B `run_prospective_proof` reused the already-fetched kline page for the bounded dry-run instead of a second live OpenD pull. That removes a provenance mismatch risk (hash/diag from fetch #1 vs bar from #2) and a fail-after-success race that could block a lawful post-signal receipt. Item 9 remains `PARTIAL_NOT_CALIBRATED`; no fitting, floors, or Full30. |
+| **Key files** | `src/market_platform_foundation/paper/calibration/bar_ohlcv_prospective_proof.py` (modified); `tests/providers/test_opend_history_kline_1m.py` (modified) |
+| **Tests** | `PYTHONPATH=src python -m unittest tests.providers.test_opend_history_kline_1m tests.platform.test_bar_ohlcv_prospective_proof` → **48 OK** (includes new `test_live_prospective_success_fetches_opend_exactly_once`) |
+| **Related** | [ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md](./ITEM9_BAR_OHLCV_PROSPECTIVE_PROOF.md); RTH15-04 readiness audit on `research/item9-readiness-20260922` @ `origin/main` `aa15ebd7` |
+| **Notes** | Local commit only — no push/PR/merge. Market closed; no fake bars; `orders_placed=false`; `execution_authority` untouched/BLOCKED. Remaining empirical need: one genuine prospective post-signal K_1M receipt under lawful RTH with PIT preserved. |
+
+## 2026-09-22 — RTH15-09 campaign supervision heartbeat (software)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `tools/platform`, campaign reliability |
+| **Summary** | Minimal IMP-owned campaign supervisor: durable ownership + heartbeat under `{IMP_STATE_DIR}/campaign-supervision/`, fail-closed stale `ARMED_RUNNING`, additive `NOT_OBSERVED` outages, recovery preserving original arm/segment/runtime SHA. Terminal-independent spawn via `CREATE_NEW_PROCESS_GROUP`/`CREATE_NO_WINDOW` with optional `CREATE_BREAKAWAY_FROM_JOB` (fallback documented). Does not rewrite Sep 22 evidence; root cause remains UNKNOWN. Execution stays BLOCKED. |
+| **Key files** | `platform/operator_diagnostics/campaign_supervision.py` (new); `tools/platform/detached_process.py` (new); `tools/platform/campaign_supervisor.py` (new); `service_liveness.py`; `snapshot.py`; `local_launcher.py`; `tests/acceptance/test_campaign_supervision_heartbeat_acceptance.py`; `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | Campaign acceptance 23/23 (shell-exit alone + 22 classification); phase0 prohibited-route ok; runtime service liveness 18/18. Affected earlier: platform ok; phase0 ctypes fixed. Evidence class SOFTWARE_CONTROLLED_EVIDENCE. |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); [OPERATIONAL_RELIABILITY_SLO_DR_V1.md](OPERATIONAL_RELIABILITY_SLO_DR_V1.md) |
+| **Notes** | Do not mark RTH15-09 empirically complete. Shell-exit proof used no-breakaway fallback under this host's job object; Start-Process Hidden not labeled durable. Coordinator integrates later (no PR/push from this lane). |
+
 ## 2026-09-22 — Segment B close + post-close integration status docs
 
 | Field | Value |

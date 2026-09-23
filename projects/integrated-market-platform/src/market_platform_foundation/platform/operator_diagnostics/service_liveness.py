@@ -302,8 +302,13 @@ def compose_readiness_vs_liveness(
     resilience: Mapping[str, Any],
     lifecycle: Mapping[str, Any] | None = None,
     provider_health: Mapping[str, Any] | None = None,
+    campaign_supervision: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Merge Lane B resilience liveness with progress-aware platform + market data views."""
+    """Merge Lane B resilience liveness with progress-aware platform + market data views.
+
+    Campaign supervision (armed ownership / heartbeat) is additive and does not
+    imply market-data freshness or opportunity quality.
+    """
     base = dict(resilience.get("readiness_vs_liveness") or {})
     readiness = base.get("readiness") if isinstance(base.get("readiness"), dict) else {}
     prior_liveness = base.get("liveness") if isinstance(base.get("liveness"), dict) else {}
@@ -321,14 +326,32 @@ def compose_readiness_vs_liveness(
         if not isinstance(market_data, dict):
             market_data = None
 
+    campaign: dict[str, Any] | None = None
+    if isinstance(campaign_supervision, dict):
+        campaign = {
+            "status": campaign_supervision.get("status"),
+            "healthy": campaign_supervision.get("healthy"),
+            "progress": campaign_supervision.get("progress"),
+            "arm_status": (
+                (campaign_supervision.get("ownership") or {}).get("arm_status")
+                if isinstance(campaign_supervision.get("ownership"), dict)
+                else None
+            ),
+            "service_liveness_separate_from_data_freshness": True,
+            "does_not_imply_data_freshness": True,
+        }
+
     liveness = {
         **prior_liveness,
         "platform_services": platform,
         "market_data_observational": market_data,
+        "campaign_supervision": campaign,
     }
     if market_data is not None:
         liveness["market_data_status"] = market_data.get("status")
     liveness["platform_status"] = platform.get("status")
+    if campaign is not None:
+        liveness["campaign_status"] = campaign.get("status")
 
     return {"readiness": readiness, "liveness": liveness}
 

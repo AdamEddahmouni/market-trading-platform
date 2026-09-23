@@ -110,7 +110,11 @@ class WindowsSystem:
         log_path.parent.mkdir(parents=True, exist_ok=True)
         creation_flags = 0
         if os.name == "nt":
-            creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW
+            from tools.platform.detached_process import windows_detached_creationflags
+
+            # Default = tested flags only (CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW).
+            # Breakaway is opt-in elsewhere and remains unproven for job/terminal kill.
+            creation_flags = windows_detached_creationflags(allow_breakaway=False)
         with log_path.open("ab") as log_handle:
             process = subprocess.Popen(
                 list(argv),
