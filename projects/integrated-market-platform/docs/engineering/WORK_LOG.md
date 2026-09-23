@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Sep 23 partial RTH campaign closeout
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / evidence closeout |
+| **Summary** | Closed frozen campaign `RTH-OBS-NEWS-20260923` (`bf405f46`) as `PARTIAL_LATE_ARM` from the receipt directory without rewriting it. Pre-arm `09:30`→`13:03:32.789` ET stays `NOT_OBSERVED`. Post-arm Finviz receipts, one `HISTORICAL_RECONSTRUCTED` NVDA admit, supervision `PROCESS_DEAD`, and a late `RTH_CLOSE_SHUTDOWN` are recorded. Item 7 governed rows remain 0. Item 9 calibration stays forbidden. Pinned **CURRENT_MAIN** to `4fcec08b` ([#402](https://github.com/AdamEddahmouni/market-trading-platform/pull/402), ancestry [#403](https://github.com/AdamEddahmouni/market-trading-platform/pull/403)). [#403](https://github.com/AdamEddahmouni/market-trading-platform/pull/403) is later software and does not repair this runtime. |
+| **Key files** | `docs/engineering/RTH_OBS_NEWS_20260923_CLOSEOUT.md` (created); `artifacts/campaign-closeout/RTH-OBS-NEWS-20260923.closeout.json` (created); `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | Read-only `item7_corpus_collector.py status --training-cutoff-ns 1790200000000000000 --now-ns 1790195000000000000 --persistence-root .local` → governed rows 0, exit 0. Evidence-directory content hash recomputed `ec9723f66da5db6e340c2955052e1cd17f75f982a5b0e522fea257c54ae036e0` (572 files; matches the in-session hash). `python tools/imp.py format` exit 0. `python tools/check_docs_links.py` OK (257 governance markdown files). No Smoke10, Full30, Item 9 calibration, or new market campaign. |
+| **Related** | [RTH_OBS_NEWS_20260923_CLOSEOUT.md](RTH_OBS_NEWS_20260923_CLOSEOUT.md); [#403](https://github.com/AdamEddahmouni/market-trading-platform/pull/403); [#402](https://github.com/AdamEddahmouni/market-trading-platform/pull/402) |
+| **Notes** | Campaign directory hash at analysis `ec9723f66da5db6e340c2955052e1cd17f75f982a5b0e522fea257c54ae036e0` (572 files). Next arm is a new campaign id on a runtime that contains #403. |
+
 ## 2026-09-23 — Paper post-submit order acknowledgement
 
 | Field | Value |
