@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Segment B close + post-close integration status docs
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | docs / campaign-truth / integration |
+| **Summary** | Recorded CLOSED Segment A (`24a59220`, duplicate historical META / historical WATCH, not prospective proof) and Segment B (`8e92bb37`, arm 17:00:57.745Z, close 16:06:23 ET) with mid-session **`NOT_OBSERVED`** outage (root cause UNKNOWN; poll 4 URLError and poll 30 SESSION_UNAVAILABLE separate). Book: 2 PRE_ARM historical / ZERO prospective-current. Documented post-close stack on `integrate/post-close-20260922` (not yet `origin/main` `24a59220`): Finviz/restart/liveness/OpenD/diagnostics/rejection/linkage/UI/latency/warnings; pre-docs tip `efc17a12`. Item 9 remains PARTIAL_NOT_CALIBRATED / DO_NOT_PROMOTE. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Part A integrated validation on tip `efc17a12`: focused Finviz/restart/liveness/secrets/rejection/linkage/warnings/latency/UI + wire (2/2 pass) + `validate fast` 23/0/0 + `validate changed` (branch vs origin/main paths) 4384 tests / 35 skipped / 0 fail / 0 err |
+| **Related** | Primary `.local/rth-campaign-20260922-B/close-manifest-20260922-B.json` + `close-report-20260922-B.md` (read-only); branch `integrate/post-close-20260922` |
+| **Notes** | Did not mutate campaign state, detached 80d290ff, other worktrees, or origin/main. No fitting / Full30 / live submit. Software-controlled restart/latency evidence is not market proof. |
+
 ## 2026-09-22 — Restack latency instrumentation onto accepted Finviz/linkage backend
 
 | Field | Value |

@@ -10,13 +10,15 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` | Mutable `origin/main` tip after [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) durable serving opportunity book (schema v9; Live **OFF**; parents `b6e8e2b9` / `a2fea490`; ancestry includes [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379) progress-aware liveness). **Historical** pin `1cd63fe9` after [#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376) is **not** the current tip. Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `5b74876d5f4c48aa1b03ff987e6390469bb08c1c` | Tip software merge [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) (ancestry [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)/[#376](https://github.com/AdamEddahmouni/market-trading-platform/pull/376)). Matches **CURRENT_MAIN**. **Not** empirical evidence. Calibration **not** executed. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN** in [PROGRAM_STATUS](../platform/PROGRAM_STATUS.md)) | `24a59220446e2f9c18b4590af133b6b02ffee439` | Mutable `origin/main` tip after [#381](https://github.com/AdamEddahmouni/market-trading-platform/pull/381) docs pin (ancestry [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380) durable serving book schema v9 + [#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379) liveness). Confirm with `git rev-parse origin/main` after `git fetch origin main`. **Not** **ITEM9_FROZEN_COLLECTOR**. Post-close Finviz/restart/linkage stack is on `integrate/post-close-20260922` — **not yet** `origin/main`. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `24a59220446e2f9c18b4590af133b6b02ffee439` | Matches **CURRENT_MAIN** tip; software ancestry through [#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)/[#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379). **Not** empirical evidence. Calibration **not** executed. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; **historical** serving composition was in-memory OE. Current serving book is local_state SQLite schema v9 ([#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)); persist-off is `INTENTIONAL_EPHEMERAL`. Acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
 
 Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (Item 9 pins and Lane F OpenD v3 closeout: [IMP program status header](../platform/PROGRAM_STATUS.md#imp-program-status) and [Lane F closure](../platform/PROGRAM_STATUS.md#imp-opend-fill-economics-v3--lane-f-statusdocs-closure)). Do **not** retarget **ITEM9_FROZEN_COLLECTOR** when reconciling operator docs.
+
+**Closed observational campaign (2026-09-22):** Segments **A** (`24a59220`) and **B** (`8e92bb37`) are **CLOSED** — see [PROGRAM_STATUS RTH-OBS-NEWS-20260922](../platform/PROGRAM_STATUS.md#rth-obs-news-20260922--segment-ab-close-additive). Segment B had a mid-session **`NOT_OBSERVED`** outage (root cause **UNKNOWN**). **ZERO** prospective-current opportunities. Item 9 remains **`PARTIAL_NOT_CALIBRATED`** / **`DO_NOT_PROMOTE`**. Do not start a new campaign from this page without fresh operator authorization.
 
 **Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — use current `main` files plus this page.
 
@@ -29,7 +31,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `5b74876d…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `24a59220…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 **Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
 
@@ -56,7 +58,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `5b74876d`)
+## Platform surfaces (**CURRENT_SOFTWARE_IMPLEMENTATION** `24a59220`)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
