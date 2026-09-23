@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Status reconcile CURRENT_MAIN to 6154cf19 after session #393–#400
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs/platform` status reconciliation |
+| **Summary** | Fresh docs-only tip pin from `origin/main` @ `6154cf19dcf943e1aab5777beaf0c84de0549003` (merge [#400](https://github.com/AdamEddahmouni/market-trading-platform/pull/400)). Session start was `f27f5613` ([#392](https://github.com/AdamEddahmouni/market-trading-platform/pull/392)). Recorded merge-order landings [#393](https://github.com/AdamEddahmouni/market-trading-platform/pull/393)–[#400](https://github.com/AdamEddahmouni/market-trading-platform/pull/400) with confirmed merge SHAs. Software/empirical kept separate: Item 7 persistence on main with governed corpus **NOT ESTABLISHED** (rows **0**); Smoke10 `ibp-smoke10-8C23029DD46FDA78` FAIL 10/10 immutable / not rerun; `RTH-OBS-NEWS-20260923` **`PARTIAL_LATE_ARM`** on frozen `bf405f46`. Did **not** merge obsolete `ops/status-reconciliation-20260923` @ `534a1cb7`. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `NOT_RUN` (documentation only; tip + PR merge SHAs verified via `git fetch` / `gh pr view`) |
+| **Related** | Worktree `.worktrees/status-reconciliation-20260923-fresh` / branch `ops/status-reconciliation-20260923-fresh`; prior stale banner `24a59220` |
+| **Notes** | MASTER_ROADMAP unchanged (no SHA banner). Gates unchanged/not weakened: `ITEM9_CALIBRATED=NO`; `ITEM9_CALIBRATION_RUN=FORBIDDEN`; `FULL30=NOT_RUN`; `FTEP_EMPIRICAL_ACTIVE=NO`; `LIVE_EXECUTION=OFF`; `ITEM7_GOVERNED_CORPUS=NOT ESTABLISHED`; `RTH_20260923=PARTIAL_LATE_ARM`. |
+
 ## 2026-09-23 — Paper preview → submit placeholder confirmation
 
 | Field | Value |
