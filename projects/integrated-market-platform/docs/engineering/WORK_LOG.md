@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Paper Portfolio Fills → Order history handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/portfolio` |
+| **Summary** | Integrated operator friction fix onto current main: Paper Portfolio Fills panel pointed to a vague "activity section" that collided with its own `portfolio-activity` id. It now names Order history, links to `#portfolio-order-history`, and keeps snapshot fills distinct from full order lifecycle without changing semantic states. |
+| **Key files** | `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx` (modified); `ui/src/components/paper-portfolio/paperPortfolioPresentation.ts` (modified); `ui/src/components/paper-portfolio/PaperOrderHistory.tsx` (modified); `ui/src/components/paper-portfolio/PaperOrderHistoryTable.tsx` (modified); `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` (modified) |
+| **Tests** | `ui`: `npm test -- src/components/paper-portfolio/PaperPortfolioPage.test.tsx` → 6 passed; `npm run typecheck` → pass |
+| **Related** | Source `ui/operator-journey-friction` @ `42ab55ea`; worktree `.worktrees/integrate-portfolio-ux-20260923` on `ui/portfolio-order-history-link` from `origin/main` `f27f5613` |
+| **Notes** | Integration-only reapply of copy/UX handoff. Radar cards / Watch / Dismiss / Preview untouched. No trading behavior change. |
+
 ## 2026-09-23 — Controlled Replay Paper preview acceptance
 
 | Field | Value |
