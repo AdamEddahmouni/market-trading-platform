@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Controlled Replay golden-path extra acceptance (post-#392)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/acceptance` / controlled-replay |
+| **Summary** | Reapplied c39ba7ec golden-path strengthenings onto main after PR #392: EventV1/PIT stamps, detector→durable OE repository proof, zero-qualifying skip + no ZZZZ Radar row, Radar removal after Dismiss, DISMISS DecisionTrace + durable REJECTED TradeReview, canonical/non-namespaced reset refusal, namespaced wipe, and SOFTWARE_CONTROLLED / FIXTURE_REPLAY evidence labels. Does not duplicate Paper-preview Controlled Replay acceptance. |
+| **Key files** | `tests/acceptance/test_controlled_replay_golden_path_acceptance.py` |
+| **Tests** | `unittest tests.acceptance.test_controlled_replay_golden_path_acceptance` → 4 ok; `LocalLauncherTests.test_controlled_replay_profile_strips_live_and_isolates_state` → ok |
+| **Related** | Source `c39ba7ec` / `feat/controlled-replay-acceptance`; PR #392 Paper preview lane remains separate |
+| **Notes** | Evidence class SOFTWARE_CONTROLLED / FIXTURE_REPLAY only. No Live authority; no empirical RTH mutation. |
+
 ## 2026-09-23 — NEWS_ARTICLE EventV1 → NEWS_EVENT DetectionV1 convergence
 
 | Field | Value |
@@ -83,7 +95,6 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | `ui`: `npm test -- src/components/paper-portfolio/PaperPortfolioPage.test.tsx` → 6 passed; `npm run typecheck` → pass |
 | **Related** | Source `ui/operator-journey-friction` @ `42ab55ea`; worktree `.worktrees/integrate-portfolio-ux-20260923` on `ui/portfolio-order-history-link` from `origin/main` `f27f5613` |
 | **Notes** | Integration-only reapply of copy/UX handoff. Radar cards / Watch / Dismiss / Preview untouched. No trading behavior change. |
-
 
 ## 2026-09-23 — Controlled Replay Paper preview acceptance
 
