@@ -83,8 +83,18 @@ observation roles: `supervisor`, `poller`, `api`. Optional operator display: `ui
 - Status/heartbeat evaluation injects launcher-grade `service_health.process_alive`
   (Windows `OpenProcess`); src fallback avoids unreliable `os.kill(pid, 0)`.
 - Missing required roles (e.g. unregistered poller) are `PROCESS_DEAD`.
-- `poll-loop` is the long-lived SOFTWARE_CONTROLLED poller role; one-shot ingress
-  scripts must not be registered as the durable poller.
+- `status` appends one open row to `outages.jsonl` when armed progress is an
+  outage, including when the supervisor process itself is already dead. The same
+  open signature is not duplicated. `environment-preflight` fails closed when
+  that ledger is not appendable. Readiness phase becomes `BLOCKED_STATE_DIR`
+  with blocker `OUTAGE_LEDGER_UNAVAILABLE`.
+- `poll-loop` is the long-lived poller. The default cycle is
+  `SOFTWARE_CONTROLLED_CYCLE` and is not a market observation. `--ingress-json`
+  replays a fixture receipt. `--live-ingress` runs
+  `ftep_watch_catalysts.py --live-ingress` once per cycle. `SUCCESS` and
+  `SUCCESS_EMPTY` advance `last_successful_poll_utc`. `PROVIDER_FAILURE`,
+  `ADMISSION_FAILURE`, `POLL_PROCESS_FAILURE`, and `NO_POLL` do not. One-shot
+  ingress scripts must not be registered as the durable poller.
 
 ## Heartbeat / progress / stale detection
 

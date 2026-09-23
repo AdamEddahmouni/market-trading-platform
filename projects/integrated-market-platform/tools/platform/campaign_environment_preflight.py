@@ -332,6 +332,28 @@ def evaluate_campaign_environment_preflight(
                 detail=f"not writable: {exc.__class__.__name__}",
                 category="state",
             )
+        else:
+            supervision = path / "campaign-supervision"
+            ledger = supervision / "outages.jsonl"
+            try:
+                supervision.mkdir(parents=True, exist_ok=True)
+                with ledger.open("a", encoding="utf-8"):
+                    pass
+                add(
+                    "outage_ledger",
+                    "PASS",
+                    required_for_arm=True,
+                    detail="campaign-supervision/outages.jsonl appendable",
+                    category="state",
+                )
+            except OSError as exc:
+                add(
+                    "outage_ledger",
+                    "FAIL",
+                    required_for_arm=True,
+                    detail=f"outage ledger not appendable: {exc.__class__.__name__}",
+                    category="state",
+                )
 
     # --- Provider capability / credentials presence (no values) ---
     finviz_present = _credential_present(

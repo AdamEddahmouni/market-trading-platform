@@ -14,7 +14,7 @@ import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -57,8 +57,8 @@ DEFAULT_POLL_CADENCE_SECONDS = _cs.DEFAULT_POLL_CADENCE_SECONDS
 DEFAULT_STALE_AFTER_SECONDS = _cs.DEFAULT_STALE_AFTER_SECONDS
 CampaignOwnership = _cs.CampaignOwnership
 ProcessIdentity = _cs.ProcessIdentity
-append_outage_record = _cs.append_outage_record
-build_outage_interval = _cs.build_outage_interval
+read_outage_records = _cs.read_outage_records
+record_open_outage_if_changed = _cs.record_open_outage_if_changed
 evaluate_campaign_progress = _cs.evaluate_campaign_progress
 load_campaign_supervision_view = _cs.load_campaign_supervision_view
 preserve_arm_for_recovery = _cs.preserve_arm_for_recovery
@@ -316,13 +316,13 @@ def cmd_heartbeat(args: argparse.Namespace) -> int:
         process_alive_fn=_alive_fn,
     )
     if progress.get("outage") and args.record_outage:
-        record = build_outage_interval(
+        record_open_outage_if_changed(
+            state_dir,
             ownership=ownership,
             progress=progress,
             detected_at_utc=now,
             interval_start_utc=str(last_poll or ownership.arm_timestamp_utc),
         )
-        append_outage_record(state_dir, record)
     print(json.dumps({"status": "HEARTBEAT", "progress": progress}, indent=2, sort_keys=True))
     return 0 if progress.get("status") in {"HEALTHY", "STARTING"} else 2
 
@@ -330,7 +330,28 @@ def cmd_heartbeat(args: argparse.Namespace) -> int:
 def cmd_status(args: argparse.Namespace) -> int:
     state_dir = _state_dir(args.state_dir)
     view = load_campaign_supervision_view(state_dir, process_alive_fn=_alive_fn)
+    progress = view.get("progress") if isinstance(view.get("progress"), dict) else {}
+    ownership = read_ownership(state_dir)
+    ledger = "NOT_APPLICABLE"
+    if ownership is not None and progress.get("outage"):
+        try:
+            written = record_open_outage_if_changed(
+                state_dir,
+                ownership=ownership,
+                progress=progress,
+                detected_at_utc=str(view.get("as_of_utc") or _utc_now()),
+                interval_start_utc=str(
+                    progress.get("last_successful_poll_utc") or ownership.arm_timestamp_utc
+                ),
+            )
+            ledger = "APPENDED" if written is not None else "OPEN_UNCHANGED"
+            view["outages"] = read_outage_records(state_dir)
+        except OSError:
+            ledger = "UNAVAILABLE"
+    view["outage_ledger"] = ledger
     print(json.dumps(view, indent=2, sort_keys=True))
+    if ledger == "UNAVAILABLE":
+        return 2
     status = str(view.get("status") or "UNKNOWN")
     if status == "HEALTHY":
         return 0
@@ -606,15 +627,13 @@ def cmd_run(args: argparse.Namespace) -> int:
             process_alive_fn=_alive_fn,
         )
         if progress.get("outage"):
-            append_outage_record(
+            record_open_outage_if_changed(
                 state_dir,
-                build_outage_interval(
-                    ownership=ownership,
-                    progress=progress,
-                    detected_at_utc=now,
-                    interval_start_utc=str(
-                        heartbeat.get("last_successful_poll_utc") or ownership.arm_timestamp_utc
-                    ),
+                ownership=ownership,
+                progress=progress,
+                detected_at_utc=now,
+                interval_start_utc=str(
+                    heartbeat.get("last_successful_poll_utc") or ownership.arm_timestamp_utc
                 ),
             )
         marker = state_dir / "campaign-supervision" / "supervisor.alive"
@@ -627,13 +646,161 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
-def cmd_poll_loop(args: argparse.Namespace) -> int:
-    """Long-lived poller role for SOFTWARE_CONTROLLED / FIXTURE_REPLAY acceptance.
+_SUCCESSFUL_POLL_CLASSES = frozenset({"SUCCESS", "SUCCESS_EMPTY", "SOFTWARE_CONTROLLED_CYCLE"})
+_PROVIDER_FAILURE_CLASSES = frozenset(
+    {
+        "PROVIDER_FAILURE",
+        "HTTP_429",
+        "TIMEOUT",
+        "MALFORMED_RESPONSE",
+        "TOKEN_ABSENT",
+        "GATES_INACTIVE",
+        "SECRET_DIR_MISSING",
+        "SESSION_UNAVAILABLE",
+    }
+)
+_ADMISSION_MARKERS = (
+    "UI_API_COCKPIT_ADMIT_UNREACHABLE",
+    "COCKPIT_ADMIT_UI_API_UNAVAILABLE",
+    "ADMISSION_FAILURE",
+)
 
-    Registers this process as ``poller`` and advances heartbeat poll progress on
-    cadence. Does not call live Finviz / broker APIs. Observation campaigns that
-    need real ingress should replace the body with a durable ingress worker; the
-    role itself must remain long-lived (not a one-shot shell).
+
+def classify_observed_poll(
+    payload: dict[str, Any] | None,
+    *,
+    invoked: bool,
+    process_ok: bool,
+) -> str:
+    """Separate a real empty poll from failure, no poll, and process death.
+
+    ``SOFTWARE_CONTROLLED_CYCLE`` is only assigned by the caller for the
+    fixture loop. This function never upgrades a payload into market proof.
+    """
+
+    if not invoked:
+        return "NO_POLL"
+    if payload is None:
+        return "POLL_PROCESS_FAILURE"
+    blockers = payload.get("blockers")
+    blocker_text = " ".join(str(item) for item in blockers) if isinstance(blockers, list) else ""
+    outcome = str(payload.get("ingress_outcome") or "")
+    prospective = payload.get("prospective_ingress")
+    nested = prospective if isinstance(prospective, dict) else {}
+    classification = str(
+        payload.get("ingress_classification")
+        or nested.get("classification")
+        or payload.get("classification")
+        or ""
+    ).strip()
+    marker_blob = " ".join((classification, outcome, blocker_text))
+    if any(marker in marker_blob for marker in _ADMISSION_MARKERS):
+        return "ADMISSION_FAILURE"
+    if classification in _PROVIDER_FAILURE_CLASSES:
+        return classification
+    if classification in {"SUCCESS_EMPTY", "SUCCESS"}:
+        return classification
+    if "SUCCESS_ZERO_QUALIFYING" in outcome or "SUCCESS_EMPTY" in outcome:
+        return "SUCCESS_EMPTY"
+    if not process_ok:
+        return "POLL_PROCESS_FAILURE"
+    if classification:
+        return "POLL_UNCLASSIFIED"
+    return "POLL_PROCESS_FAILURE" if not process_ok else "POLL_UNCLASSIFIED"
+
+
+def _parse_poll_json(text: str) -> dict[str, Any] | None:
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start < 0 or end <= start:
+            return None
+        try:
+            payload = json.loads(raw[start : end + 1])
+        except json.JSONDecodeError:
+            return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _append_poll_attempt(state_dir: Path, record: dict[str, Any]) -> None:
+    path = state_dir / "campaign-supervision" / "poll-attempts.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = dict(record)
+    body.setdefault("synthetic_poll_generated", False)
+    body.setdefault("backfill_applied", False)
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(body, sort_keys=True, separators=(",", ":")))
+        handle.write("\n")
+
+
+def _live_ingress_argv(ownership: CampaignOwnership, campaign_slug: str) -> list[str]:
+    """Canonical prospective Finviz watch. Does not grant execution authority."""
+
+    argv = [
+        sys.executable,
+        str(ROOT / "tools" / "ftep_watch_catalysts.py"),
+        campaign_slug,
+        "--live-ingress",
+        "--json",
+        "--current-segment-session-id",
+        str(ownership.observation_window_id),
+    ]
+    arm = str(ownership.arm_timestamp_utc or "")
+    if arm:
+        text = arm[:-1] + "+00:00" if arm.endswith("Z") else arm
+        try:
+            arm_dt = datetime.fromisoformat(text)
+            argv.extend(["--current-segment-start-ns", str(int(arm_dt.timestamp() * 1_000_000_000))])
+        except ValueError:
+            pass
+    return argv
+
+
+def _invoke_poll_payload(args: argparse.Namespace, ownership: CampaignOwnership) -> tuple[dict[str, Any] | None, bool, bool, str]:
+    """Return payload, invoked, process_ok, evidence class for one poll cycle."""
+
+    ingress_json = str(getattr(args, "ingress_json", "") or "").strip()
+    if ingress_json:
+        path = Path(ingress_json)
+        if not path.is_file():
+            return None, True, False, "SOFTWARE_CONTROLLED"
+        try:
+            payload = _parse_poll_json(path.read_text(encoding="utf-8"))
+        except OSError:
+            return None, True, False, "SOFTWARE_CONTROLLED"
+        return payload, True, payload is not None, "SOFTWARE_CONTROLLED"
+    if bool(getattr(args, "live_ingress", False)):
+        import subprocess
+
+        argv = _live_ingress_argv(ownership, str(getattr(args, "campaign_slug", "") or "FTEP-V1-002"))
+        try:
+            completed = subprocess.run(
+                argv,
+                cwd=str(ROOT),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=120,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None, True, False, "LIVE_OBSERVATIONAL_ATTEMPT"
+        payload = _parse_poll_json(completed.stdout or "")
+        return payload, True, completed.returncode == 0 and payload is not None, "LIVE_OBSERVATIONAL_ATTEMPT"
+    return None, False, True, "SOFTWARE_CONTROLLED"
+
+
+def cmd_poll_loop(args: argparse.Namespace) -> int:
+    """Long-lived poller role. One-shot ingress must not register as this role.
+
+    Default cycles are ``SOFTWARE_CONTROLLED_CYCLE`` and are not market polls.
+    ``--ingress-json`` classifies a fixture receipt. ``--live-ingress`` runs the
+    canonical Finviz watch once per cycle and records empty success separately
+    from provider failure, admission failure, and process failure.
     """
 
     state_dir = _state_dir(args.state_dir)
@@ -683,24 +850,35 @@ def cmd_poll_loop(args: argparse.Namespace) -> int:
         now = _utc_now()
         now_epoch = time.time()
         prior = read_heartbeat(state_dir) or {}
+        payload, invoked, process_ok, evidence_class = _invoke_poll_payload(args, ownership)
+        if invoked:
+            classification = classify_observed_poll(payload, invoked=True, process_ok=process_ok)
+        else:
+            classification = "SOFTWARE_CONTROLLED_CYCLE"
+            evidence_class = "SOFTWARE_CONTROLLED"
+        advances = classification in _SUCCESSFUL_POLL_CLASSES
         next_poll = (
             datetime.fromtimestamp(now_epoch + cadence, tz=timezone.utc)
             .isoformat()
             .replace("+00:00", "Z")
         )
+        last_success = now if advances else prior.get("last_successful_poll_utc")
         heartbeat = {
             **prior,
             "campaign_id": ownership.campaign_id,
             "runtime_sha": ownership.runtime_sha,
             "supervisor_pid": ownership.supervisor_pid,
             "last_heartbeat_utc": now,
-            "last_successful_poll_utc": now,
+            "last_poll_attempt_utc": now,
+            "last_poll_classification": classification,
+            "last_successful_poll_utc": last_success,
+            "poll_evidence_class": evidence_class,
             "expected_next_heartbeat_utc": datetime.fromtimestamp(
                 now_epoch + hb_cadence, tz=timezone.utc
             )
             .isoformat()
             .replace("+00:00", "Z"),
-            "expected_next_poll_utc": next_poll,
+            "expected_next_poll_utc": next_poll if advances else prior.get("expected_next_poll_utc"),
             "heartbeat_cadence_seconds": hb_cadence,
             "poll_cadence_seconds": cadence,
             "stale_after_seconds": stale_after,
@@ -710,6 +888,20 @@ def cmd_poll_loop(args: argparse.Namespace) -> int:
             "synthetic_poll_generated": False,
             "poller_pid": os.getpid(),
         }
+        _append_poll_attempt(
+            state_dir,
+            {
+                "campaign_id": ownership.campaign_id,
+                "runtime_sha": ownership.runtime_sha,
+                "attempted_at_utc": now,
+                "classification": classification,
+                "evidence_class": evidence_class,
+                "advances_successful_poll": advances,
+                "provider_invoked": bool(getattr(args, "live_ingress", False)),
+                "fixture_receipt": bool(str(getattr(args, "ingress_json", "") or "").strip()),
+                "process_ok": process_ok,
+            },
+        )
         # Heartbeat-only updates in the loop — do not contend on ownership.json.
         write_heartbeat(state_dir, heartbeat)
         marker = state_dir / "campaign-supervision" / "poller.alive"
@@ -847,6 +1039,17 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--heartbeat-cadence-seconds", type=float, default=DEFAULT_HEARTBEAT_CADENCE_SECONDS)
     poll.add_argument("--stale-after-seconds", type=float, default=DEFAULT_STALE_AFTER_SECONDS)
     poll.add_argument("--iterations", type=int, default=0, help="0 = until shutdown")
+    poll.add_argument(
+        "--ingress-json",
+        default="",
+        help="SOFTWARE_CONTROLLED fixture receipt. Does not call a provider.",
+    )
+    poll.add_argument(
+        "--live-ingress",
+        action="store_true",
+        help="Each cycle runs ftep_watch_catalysts --live-ingress. Not an off-hours market proof.",
+    )
+    poll.add_argument("--campaign-slug", default="FTEP-V1-002")
     poll.set_defaults(func=cmd_poll_loop)
     return parser
 

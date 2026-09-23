@@ -23,6 +23,7 @@ from .campaign_supervision import (
     EVIDENCE_CLASS,
     campaign_supervision_dir,
     load_campaign_supervision_view,
+    outage_ledger_appendable,
 )
 from .service_liveness import classify_platform_services_liveness
 
@@ -260,6 +261,7 @@ def build_campaign_observation_readiness(
     now_et: datetime | None = None,
     state_directory: str | Path | None = None,
     rth_soon_minutes: float = DEFAULT_RTH_SOON_MINUTES,
+    outage_ledger_available: bool | None = None,
 ) -> dict[str, Any]:
     """Derive the observation start-gate read model from existing signals."""
 
@@ -413,6 +415,8 @@ def build_campaign_observation_readiness(
             blockers.append("EXECUTION_AUTHORITY_NOT_BLOCKED")
         if ownership.get("allows_network_submit") is True:
             blockers.append("NETWORK_SUBMIT_NOT_FORBIDDEN")
+        if outage_ledger_available is False:
+            blockers.append("OUTAGE_LEDGER_UNAVAILABLE")
 
     # Deduplicate while preserving order.
     blockers = list(dict.fromkeys(blockers))
@@ -447,7 +451,9 @@ def build_campaign_observation_readiness(
         blockers=blockers,
         provider_status=provider_status,
         runtime_mismatch="RUNTIME_SHA_MISMATCH" in blockers,
-        state_dir_blocked="STATE_DIRECTORY_MISSING" in blockers,
+        state_dir_blocked=(
+            "STATE_DIRECTORY_MISSING" in blockers or "OUTAGE_LEDGER_UNAVAILABLE" in blockers
+        ),
         authority_blocked=(
             "EXECUTION_AUTHORITY_NOT_BLOCKED" in blockers
             or "NETWORK_SUBMIT_NOT_FORBIDDEN" in blockers
@@ -486,6 +492,11 @@ def build_campaign_observation_readiness(
         "heartbeat_detail": {
             "status": heartbeat_status,
             "last_heartbeat_utc": heartbeat.get("last_heartbeat_utc") or progress.get("last_heartbeat_utc"),
+            "last_poll_attempt_utc": heartbeat.get("last_poll_attempt_utc"),
+            "last_poll_classification": heartbeat.get("last_poll_classification") or "NO_POLL",
+            "last_successful_poll_utc": heartbeat.get("last_successful_poll_utc")
+            or progress.get("last_successful_poll_utc"),
+            "poll_evidence_class": heartbeat.get("poll_evidence_class"),
             "reason": progress.get("reason"),
         },
         "state_dir": state_dir or None,
@@ -614,6 +625,9 @@ def compose_campaign_observation_readiness_for_state(
         env=env,
         explicit=intent_explicit,
     )
+    ledger_available = None
+    if state_directory:
+        ledger_available = outage_ledger_appendable(state_directory)
     return build_campaign_observation_readiness(
         campaign_supervision=supervision,
         lifecycle=lifecycle,
@@ -624,6 +638,7 @@ def compose_campaign_observation_readiness_for_state(
         intent=intent,
         now_et=now_et,
         state_directory=state_directory,
+        outage_ledger_available=ledger_available,
     )
 
 

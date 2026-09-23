@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Sep 24 RTH campaign freeze and observation recertification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform` observation runtime / campaign freeze |
+| **Summary** | Reviewed and merged [#404](https://github.com/AdamEddahmouni/market-trading-platform/pull/404) at `2c40c51c`. Froze a new campaign `RTH-OBS-NEWS-20260924` on runtime `02d699768dce2ad2e85d7215f2588fd18a36fcce` (tree `84d254547fa7e209b461c84ce172397f514bc4b9`) as `FROZEN_NOT_ARMED` / `READY_FOR_PRE_RTH_ARM`. Status now writes one open outage when a required role is dead, and the poll loop separates `SUCCESS_EMPTY` from provider, admission, and process failure. Sep 23 receipts were not modified. The campaign was not armed. |
+| **Key files** | `tools/platform/campaign_supervisor.py`; `tools/platform/campaign_environment_preflight.py`; `src/.../campaign_supervision.py`; `src/.../campaign_observation_readiness.py`; `tests/acceptance/test_runtime_observation_durability_acceptance.py`; `docs/engineering/RTH_OBS_NEWS_20260924_FREEZE.md`; `artifacts/campaign-freeze/RTH-OBS-NEWS-20260924.freeze.json`; `artifacts/campaign-readiness/RTH-OBS-NEWS-20260924.pre-rth-readiness.json`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/platform/PROGRAM_STATUS.md` |
+| **Tests** | `python -m unittest tests.acceptance.test_runtime_observation_durability_acceptance tests.acceptance.test_campaign_supervision_heartbeat_acceptance tests.platform.test_campaign_observation_readiness`: 40 OK. `python tools/imp.py test focused` on the new outage test, poll-classification test, and `tests/phase0/test_analysis.py::AnalysisTests::test_governed_source_has_no_prohibited_route`: 3 passed. `python tools/imp.py format` and `python tools/imp.py lint` exit 0. `python tools/imp.py test affected`: mandatory security, shared, validation, phase0, and ui1 passed. The changed suite was interrupted externally after 232 tests, 0 failures, 0 errors. `environment-preflight` for `RTH-OBS-NEWS-20260924` exit 0, `ready_to_arm` true, Finviz env credential WARN. No Smoke10, Full30, Item 9 calibration, live order, or arm. |
+| **Related** | [#404](https://github.com/AdamEddahmouni/market-trading-platform/pull/404); [#403](https://github.com/AdamEddahmouni/market-trading-platform/pull/403); [RTH_OBS_NEWS_20260924_FREEZE.md](RTH_OBS_NEWS_20260924_FREEZE.md) |
+| **Notes** | Preparation is software readiness only. First live Finviz poll is tomorrow's pre-open gate. `ITEM7_GOVERNED_CORPUS` stays `NOT_ESTABLISHED`. Item 9 stays uncalibrated. Live stays OFF. |
+
 ## 2026-09-23 — Sep 23 partial RTH campaign closeout
 
 | Field | Value |
