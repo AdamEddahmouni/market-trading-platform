@@ -9,9 +9,11 @@ import { buildPaperHandoffModel } from "./buildPaperHandoffModel";
 import { buildPaperRiskContext } from "./buildPaperRiskContext";
 import { PaperHandoffPanel } from "./PaperHandoffPanel";
 import { PaperDecisionSnapshotPanel } from "./PaperDecisionSnapshot";
+import { PaperOrderAcknowledgementPanel } from "./PaperOrderAcknowledgementPanel";
 import { PaperPreviewStatus } from "./PaperPreviewStatus";
 import { PaperRiskContext } from "./PaperRiskContext";
 import { PaperWhatMattersNow } from "./PaperWhatMattersNow";
+import type { PaperOrderAcknowledgement } from "./paperOrderAcknowledgement";
 import type { PaperPreviewPresentationState } from "./paperPreviewPresentation";
 
 type Props = {
@@ -44,7 +46,9 @@ export function PaperDecisionCockpit({
   evidencePhaseMessage,
   dataLabel,
 }: Props) {
+  const [acknowledgement, setAcknowledgement] = useState<PaperOrderAcknowledgement | null>(null);
   const [traceIntentId, setTraceIntentId] = useState<string | undefined>();
+  const [traceOrderId, setTraceOrderId] = useState<string | undefined>();
   const [previewState, setPreviewState] = useState<PaperPreviewPresentationState>(DEFAULT_PREVIEW_STATE);
 
   const handoff = buildPaperHandoffModel(initialPaperOrderDraft, instrumentId);
@@ -61,6 +65,7 @@ export function PaperDecisionCockpit({
     portfolioPhase,
   );
   const evidenceAsOf = evidence?.as_of_context?.as_of_time ?? null;
+  const showTrace = Boolean(traceIntentId || traceOrderId);
 
   return (
     <div className="paper-decision-cockpit">
@@ -81,6 +86,16 @@ export function PaperDecisionCockpit({
 
       <div className="paper-cockpit-action">
         <PaperPreviewStatus state={previewState} />
+        {acknowledgement ? (
+          <PaperOrderAcknowledgementPanel
+            model={acknowledgement}
+            onViewTrace={() => {
+              if (acknowledgement.intentId) setTraceIntentId(acknowledgement.intentId);
+              if (acknowledgement.orderId) setTraceOrderId(acknowledgement.orderId);
+            }}
+            onDismiss={() => setAcknowledgement(null)}
+          />
+        ) : null}
         {portfolio && paperActionsAvailable ? (
           <OrderTicket
             symbol={instrumentId}
@@ -91,8 +106,10 @@ export function PaperDecisionCockpit({
             maxOrderShares={portfolio.risk.limits.max_order_shares}
             showLaneBanner={false}
             onPreviewStateChange={setPreviewState}
-            onSubmitted={(intentId) => {
-              if (intentId) setTraceIntentId(intentId);
+            onSubmitted={(ack) => {
+              setAcknowledgement(ack);
+              if (ack.intentId) setTraceIntentId(ack.intentId);
+              if (ack.orderId) setTraceOrderId(ack.orderId);
             }}
           />
         ) : portfolio ? (
@@ -105,8 +122,15 @@ export function PaperDecisionCockpit({
             <p>Loading Paper portfolio context…</p>
           </aside>
         ) : null}
-        {paperActionsAvailable && traceIntentId ? (
-          <ExecutionTracePanel intentId={traceIntentId} onClose={() => setTraceIntentId(undefined)} />
+        {paperActionsAvailable && showTrace ? (
+          <ExecutionTracePanel
+            intentId={traceIntentId}
+            orderId={traceOrderId}
+            onClose={() => {
+              setTraceIntentId(undefined);
+              setTraceOrderId(undefined);
+            }}
+          />
         ) : null}
       </div>
     </div>

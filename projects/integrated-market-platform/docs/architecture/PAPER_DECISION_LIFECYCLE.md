@@ -188,14 +188,23 @@ or unauthorized inputs stop before downstream Paper mutation.
 ### 5. Submit
 
 - Requires current accepted preview (`confirmedRequestIsCurrent`)
+- Placeholder handoff drafts also require explicit side/quantity confirmation
+  before Submit enables (accidental-submit gate)
 - Request includes `decision_source_snapshot` (bounded fields)
 - `correlation_id` preserved through intent
+- Successful submit surfaces a durable **order acknowledgement** in the cockpit:
+  order id, status, provenance (including `opportunity:{id}`), and a link to
+  Portfolio Order history (`/portfolio#portfolio-order-history`)
+- Acknowledgement never invents fills; fill is shown only when the server
+  response already carried one from canonical internal simulation
 
 ### 6. Intent → ledger → projection
 
 - `build_user_order_intent` persists snapshot on intent metadata
 - Ledger append-only events
 - `project_orders()` → Portfolio history, execution trace
+- Order-history query invalidates on submit so the new durable order is
+  readable immediately after navigation to Portfolio
 
 ## Key identifiers
 

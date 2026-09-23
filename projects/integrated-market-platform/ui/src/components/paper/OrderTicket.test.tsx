@@ -154,9 +154,28 @@ describe("OrderTicket workspace revalidation", () => {
   });
 
   it("includes preview_id when submitting after a PASS preview", async () => {
+    const onSubmitted = vi.fn();
     mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
-    mocks.submitPaperOrder.mockResolvedValueOnce({ submission: { intent_id: "intent-1" } });
-    renderTicket(validDraft);
+    mocks.submitPaperOrder.mockResolvedValueOnce({
+      submission: {
+        duplicate: false,
+        intent_id: "intent-1",
+        order_id: "order-1",
+        order: { order_id: "order-1", state: "WORKING", side: "SELL", quantity: 12 },
+        fill: null,
+      },
+    });
+    render(
+      <OrderTicket
+        symbol="BIYA"
+        executionAuthority="PAPER_ONLY"
+        executionMode="INTERNAL_SIMULATION"
+        dataMode="FIXTURE_REPLAY"
+        maxOrderShares={100}
+        initialDraft={validDraft}
+        onSubmitted={onSubmitted}
+      />,
+    );
     expect(await screen.findByRole("heading", { name: "Revalidated in workspace" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
     fireEvent.click(
@@ -167,6 +186,17 @@ describe("OrderTicket workspace revalidation", () => {
     await waitFor(() => expect(mocks.submitPaperOrder).toHaveBeenCalledTimes(1));
     expect(mocks.submitPaperOrder).toHaveBeenCalledWith(
       expect.objectContaining({ preview_id: "preview-test-1", side: "SELL", quantity: 12 }),
+    );
+    await waitFor(() =>
+      expect(onSubmitted).toHaveBeenCalledWith(
+        expect.objectContaining({
+          orderId: "order-1",
+          intentId: "intent-1",
+          hasDurableOrder: true,
+          orderHistoryHref: "/portfolio#portfolio-order-history",
+          fillObserved: false,
+        }),
+      ),
     );
   });
 

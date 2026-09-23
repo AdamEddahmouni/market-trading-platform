@@ -123,6 +123,35 @@
   border-left: 3px solid #8aa0ad;
 }
 
+.paper-order-acknowledgement {
+  border-left: 3px solid #48d6c4;
+}
+
+.paper-order-ack-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.paper-order-ack-header h2 {
+  margin: 0;
+}
+
+.paper-order-ack-actions {
+  margin: 8px 0 0;
+}
+
+.paper-order-ack-actions .linkish {
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+  font: inherit;
+}
+
 .lane-handoff-panel,
 .paper-handoff-panel {
   border-left: 3px solid var(--paper-accent);

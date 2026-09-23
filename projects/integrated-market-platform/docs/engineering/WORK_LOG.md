@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Paper post-submit order acknowledgement
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-workspace` / Paper lifecycle |
+| **Summary** | After legitimate Paper submit, the cockpit now keeps a durable order acknowledgement (order id, status, opportunity provenance) and links to Portfolio Order history instead of clearing the ticket with only an intent-id trace. No second execution stack, no invented fills, Live remains blocked. |
+| **Key files** | `ui/src/components/paper-workspace/paperOrderAcknowledgement.ts` (new); `PaperOrderAcknowledgementPanel.tsx` (new); `PaperDecisionCockpit.tsx`; `OrderTicket.tsx`; `ui/src/styles/paper-workspace.css`; `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; `tests/acceptance/test_controlled_replay_paper_submit_ack_acceptance.py` (new); focused UI tests |
+| **Tests** | `ui`: vitest 4 files / 21 passed; `npm run typecheck` pass; `python tools/imp.py test focused` Controlled Replay submit-ack acceptance **2 passed** |
+| **Related** | PR #400 accidental-submit confirmation; Controlled Replay Paper preview acceptance |
+| **Notes** | Evidence class SOFTWARE_CONTROLLED / FIXTURE_REPLAY. Empirical RTH runtime untouched. Acceptance proves durable order + order-history readback; fill shown only when server returned one; Portfolio position projection after fill not claimed. |
+
 ## 2026-09-23 — Remove prohibited subprocess from campaign_supervision liveness
 
 | Field | Value |
