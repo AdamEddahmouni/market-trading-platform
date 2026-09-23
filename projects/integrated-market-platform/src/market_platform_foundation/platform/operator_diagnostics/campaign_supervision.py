@@ -182,17 +182,30 @@ def safe_command_fingerprint(argv: Sequence[str]) -> str:
 
 def _atomic_write_json(path: Path, payload: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, temporary_name = tempfile.mkstemp(prefix=".campaign-supervision.", suffix=".tmp", dir=str(path.parent))
-    temporary = Path(temporary_name)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            json.dump(dict(payload), handle, sort_keys=True, separators=(",", ":"))
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary, path)
-    finally:
-        temporary.unlink(missing_ok=True)
+    last_error: OSError | None = None
+    for attempt in range(8):
+        fd, temporary_name = tempfile.mkstemp(
+            prefix=".campaign-supervision.", suffix=".tmp", dir=str(path.parent)
+        )
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+                json.dump(dict(payload), handle, sort_keys=True, separators=(",", ":"))
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, path)
+            return
+        except OSError as exc:
+            last_error = exc
+            temporary.unlink(missing_ok=True)
+            # Windows: concurrent replace against a reader/writer can deny access.
+            import time as _time
+
+            _time.sleep(0.02 * (attempt + 1))
+    if last_error is not None:
+        raise last_error
+    raise OSError(f"unable to atomically write {path}")
 
 
 def write_ownership(ownership: CampaignOwnership) -> Path:
@@ -273,10 +286,13 @@ def read_outage_records(state_directory: str | Path) -> list[dict[str, Any]]:
 
 
 def process_alive(pid: int) -> bool:
-    """Best-effort liveness probe without prohibited ``ctypes`` in governed src.
+    """Best-effort stdlib liveness probe (no process spawn / no ctypes).
 
-    Windows callers that need the launcher-grade probe should inject
-    ``tools.platform.service_health.process_alive`` via ``process_alive_fn``.
+    Windows ``os.kill(pid, 0)`` is unreliable (often ``WinError 87``). Callers
+    that need accurate Windows liveness must inject
+    ``tools.platform.service_health.process_alive`` (ctypes OpenProcess) via
+    ``process_alive_fn``. ``load_campaign_supervision_view`` does that by
+    default when the tools layer is importable.
     """
 
     if pid <= 0:
@@ -288,6 +304,19 @@ def process_alive(pid: int) -> bool:
     except SystemError:
         return False
     return True
+
+
+def _resolve_process_alive_fn(process_alive_fn):
+    """Prefer launcher-grade probe from tools when available (not governed spawn)."""
+
+    if process_alive_fn is not None:
+        return process_alive_fn
+    try:
+        from tools.platform.service_health import process_alive as platform_process_alive
+
+        return platform_process_alive
+    except ImportError:
+        return process_alive
 
 
 def _parse_utc_seconds(value: str | None) -> float | None:
@@ -357,6 +386,7 @@ def evaluate_campaign_progress(
     supervisor_alive = process_alive_fn(int(ownership.supervisor_pid))
     child_states: list[dict[str, Any]] = []
     dead_roles: list[str] = []
+    registered_roles = {child.role for child in ownership.child_processes}
     for child in ownership.child_processes:
         alive = process_alive_fn(int(child.pid))
         child_states.append({"role": child.role, "pid": child.pid, "alive": alive})
@@ -364,6 +394,17 @@ def evaluate_campaign_progress(
             dead_roles.append(child.role)
     if "supervisor" in roles_required and not supervisor_alive:
         dead_roles.append("supervisor")
+    # Required observation roles must be registered as live processes (except
+    # supervisor, which is tracked via ownership.supervisor_pid). Missing
+    # registration is PROCESS_DEAD — do not treat an absent poller/api as healthy.
+    for role in roles_required:
+        if role == "supervisor":
+            continue
+        if role == "ui" and ui_required is not True and "ui" not in ownership.required_roles:
+            continue
+        if role not in registered_roles:
+            dead_roles.append(role)
+            child_states.append({"role": role, "pid": None, "alive": False, "registered": False})
 
     hb = dict(heartbeat or {})
     last_heartbeat_utc = hb.get("last_heartbeat_utc")
@@ -552,7 +593,7 @@ def load_campaign_supervision_view(
     import time
     from datetime import datetime, timezone
 
-    alive_fn = process_alive_fn or process_alive
+    alive_fn = _resolve_process_alive_fn(process_alive_fn)
 
     if not state_directory:
         return {
