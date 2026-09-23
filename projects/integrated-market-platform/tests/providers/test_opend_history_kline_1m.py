@@ -391,6 +391,42 @@ class OpenDHistoryKlineLoadWindowTests(unittest.TestCase):
         hit = first_admissible_post_signal_bar(loaded.bars, signal_time_ns=SIGNAL_NS)
         self.assertIsNotNone(hit)
 
+    def test_live_prospective_success_fetches_opend_exactly_once(self) -> None:
+        """Gate + dry-run must reuse one kline page (no second live OpenD pull)."""
+
+        fetch_calls: list[int] = [0]
+        row = _kline_row(f"{SESSION_DAY} 09:35:00")
+
+        def _fetcher(symbol: str, *, host: str, port: int, max_count: int = 120, **kwargs: Any) -> dict[str, Any]:
+            fetch_calls[0] += 1
+            return {
+                "reason_code": None,
+                "rows": [row],
+                "raw_row_count": 1,
+                "first_raw_time_key": row["time_key"],
+                "last_raw_time_key": row["time_key"],
+                "vendor_ret": 0,
+                "vendor_ret_msg": None,
+                "kline_start": SESSION_DAY,
+                "kline_end": SESSION_DAY,
+                "max_count_requested": max_count,
+                "connection_host": host,
+                "connection_port": port,
+                "request_duration_ms": 1.0,
+            }
+
+        outcome = self._proof_with_fetcher(_fetcher)
+        self.assertTrue(outcome["ok"])
+        self.assertEqual(fetch_calls[0], 1)
+        receipt = outcome["receipt"]
+        assert receipt is not None
+        self.assertFalse(receipt["orders_placed"])
+        self.assertFalse(receipt["calibrated"])
+        self.assertEqual(receipt["item9_status"], "PARTIAL_NOT_CALIBRATED")
+        self.assertEqual(int(outcome["kline_fetch"]["raw_row_count"]), 1)
+        self.assertEqual(outcome["kline_fetch"]["first_raw_time_key"], row["time_key"])
+        self.assertEqual(outcome["kline_fetch"]["last_raw_time_key"], row["time_key"])
+
     def _patched_live_load(self, fetcher: Any):
         fake_module = type("M", (), {"fetch_history_kline_1m": staticmethod(fetcher)})()
         return mock.patch(
