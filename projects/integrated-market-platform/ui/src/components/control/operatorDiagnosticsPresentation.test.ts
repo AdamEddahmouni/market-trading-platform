@@ -243,4 +243,43 @@ describe("operatorDiagnosticsPresentation", () => {
     expect(errorSituation.nextSafeAction).toMatch(/enable Live/);
     expect(buildUnavailableOperatorSituation("empty").explanation).toMatch(/UNKNOWN, not 2\/3/);
   });
+
+  it("surfaces NOT_ARMED before RTH as a blocking observation-readiness situation", () => {
+    const withGate: OperatorDiagnostics = {
+      ...SAMPLE_DIAGNOSTICS,
+      severity: "ACTION_REQUIRED",
+      sections: {
+        ...SAMPLE_DIAGNOSTICS.sections,
+        campaign_observation_readiness: {
+          phase: "READY_TO_ARM",
+          campaign_id: "RTH-OBS-NEWS-20260923",
+          armed: false,
+          arm_status: "NOT_ARMED",
+          execution_authority: "BLOCKED",
+          has_blocking_alert: true,
+          blocking_alerts: [
+            {
+              code: "CAMPAIGN_NOT_ARMED_BEFORE_RTH",
+              severity: "ACTION_REQUIRED",
+              message: "RTH starts soon and campaign RTH-OBS-NEWS-20260923 is NOT_ARMED.",
+            },
+          ],
+          arm_observation: {
+            label: "ARM OBSERVATION",
+            never_label: "GO LIVE",
+            ui_mutation_wired: false,
+            wires_existing_cli_arm: true,
+            grants_execution_authority: false,
+          },
+        },
+      },
+    };
+    const situation = buildOperatorSituation(withGate);
+    expect(situation.kind).toBe("impaired");
+    expect(situation.title).toMatch(/not armed/i);
+    expect(situation.explanation).toMatch(/NOT_ARMED/);
+    expect(situation.nextSafeAction).toMatch(/ARM OBSERVATION/);
+    expect(situation.nextSafeAction).toMatch(/Never GO LIVE/);
+    expect(situation.nextSafeAction).toMatch(/execution stays BLOCKED/);
+  });
 });

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Campaign observation readiness / start gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics`, `tools/platform`, `ui/control` |
+| **Summary** | Added a fail-visible Campaign Observation Readiness read model (one backend contract) derived from existing campaign-supervision, platform service liveness, provider readiness, and ingress signals. Surfaces `NOT_ARMED` before RTH as `CAMPAIGN_NOT_ARMED_BEFORE_RTH`, plus API/UI/heartbeat/ingress blockers. Operator Control shows the gate; **ARM OBSERVATION** wires the existing `campaign_supervisor.py arm` CLI (execution stays BLOCKED; UI does not POST a parallel arm). |
+| **Key files** | `campaign_observation_readiness.py` (new); `snapshot.py`; `operator_diagnostics/__init__.py` (lazy snapshot import); `campaign_supervisor.py` (`readiness` + arm help); `OperatorSystemStatusSection.tsx`; `operatorDiagnosticsPresentation.ts(+test)`; `CAMPAIGN_SUPERVISION_HEARTBEAT.md`; `tests/platform/test_campaign_observation_readiness.py` |
+| **Tests** | `unittest tests.platform.test_campaign_observation_readiness` → **5 passed**; `npm test -- operatorDiagnosticsPresentation.test.ts` → **15 passed**; `npm run typecheck` → pass; supervision acceptance suite also run |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); branch `feat/campaign-observation-readiness` from `origin/main` `a340a778` |
+| **Notes** | Frozen Sep 23 runtime / evidence / `.local` not modified. Live execution not enabled. UI arm is display+CLI only to avoid a second arm path. |
+
 ## 2026-09-23 — Controlled Replay golden-path extra acceptance (post-#392)
 
 | Field | Value |
