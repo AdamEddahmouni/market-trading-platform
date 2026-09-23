@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Controlled Replay Paper preview acceptance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/acceptance` / Controlled Replay |
+| **Summary** | Added namespaced/resettable SOFTWARE_CONTROLLED / FIXTURE_REPLAY acceptance for WATCHED Radar → Paper preview handoff (`opportunity:{id}`), proving Watch alone does not unlock Paper, server preview remains authority, and no Live/submit/fake fill. |
+| **Key files** | `tests/acceptance/test_controlled_replay_paper_preview_acceptance.py` |
+| **Tests** | `unittest tests.platform.test_paper_decision_source_snapshot` 11 ok; `unittest tests.acceptance.test_controlled_replay_paper_preview_acceptance` 3 ok; `imp.py test focused` (3 selectors) **passed** |
+| **Related** | Base `36b3ad08` Radar→Paper preview; Controlled Replay golden path |
+| **Notes** | Empirical RTH runtime / frozen campaign SHAs untouched. No push/PR. |
+
 ## 2026-09-23 — Radar watched opportunity → Paper preview handoff
 
 | Field | Value |
