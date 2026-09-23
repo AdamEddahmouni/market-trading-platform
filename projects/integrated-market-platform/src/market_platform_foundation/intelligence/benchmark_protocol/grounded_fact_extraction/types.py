@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from enum import StrEnum
 
-GROUNDED_FACT_EXTRACTION_VERSION = "imp.grounded-fact-extraction/1.0.0"
+GROUNDED_FACT_EXTRACTION_VERSION = "imp.grounded-fact-extraction/1.1.0"
 FACT_ANSWER_NORMALIZATION_POLICY_VERSION = "imp.factual-answer-normalization/1.0.0"
-FACTUAL_UNKNOWN_DISPOSITION_VERSION = "imp.factual-unknown-disposition/1.0.0"
+FACTUAL_UNKNOWN_DISPOSITION_VERSION = "imp.factual-unknown-disposition/1.1.0"
 
 
 class FactualAnswerDisposition(StrEnum):
@@ -19,6 +19,9 @@ class FactualAnswerDisposition(StrEnum):
     INSUFFICIENT_PROVENANCE = "INSUFFICIENT_PROVENANCE"
     TEMPORAL_CUTOFF_REFUSED = "TEMPORAL_CUTOFF_REFUSED"
     EVIDENCE_NOT_PROJECTABLE = "EVIDENCE_NOT_PROJECTABLE"
+    ABSENT_EVIDENCE = "ABSENT_EVIDENCE"
+    CAPABILITY_ABSENT = "CAPABILITY_ABSENT"
+    NEGATIVE_EVIDENCE = "NEGATIVE_EVIDENCE"
 
 
 __all__ = [

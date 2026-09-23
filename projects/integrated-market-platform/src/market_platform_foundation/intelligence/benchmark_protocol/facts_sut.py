@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from typing import Any
 
-from ...assistant.grounded_inference import GroundedEvidenceInference
 from ..contracts import (
     ComponentLineage,
     ContractKind,
@@ -26,6 +25,7 @@ from .admitted_factual_gold.types import IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
 from .grounded_fact_extraction import (
     GROUNDED_FACT_EXTRACTION_VERSION,
     answer_admitted_factual_question,
+    answer_harness_factual_probe,
 )
 from .historical_evidence_context import build_historical_fixture_evidence_context
 from .sut_profiles import (
@@ -136,18 +136,6 @@ def _load_historical_fixture_summary(repository_root: Path, fixture_rel: str | N
     }
 
 
-def _facts_prompt(case_id: str, blind_mode: str, *, question_text: str | None = None) -> str:
-    if question_text:
-        return (
-            f"IBP bounded factual probe for {case_id}; "
-            f"question: {question_text}; cite admitted evidence only."
-        )
-    return (
-        f"IBP bounded facts probe for {case_id} blind mode {blind_mode}; "
-        "cite grounded historical development evidence only."
-    )
-
-
 def _routing_template_for_factual(blind_input: dict[str, Any]) -> str | None:
     routing = blind_input.get("routing_expectation") or {}
     template = routing.get("template")
@@ -167,7 +155,6 @@ def run_ibp_facts_sut(
     factual_protocol = blind_input.get("protocol_version") == IBP_FACTUAL_SMOKE_PROTOCOL_VERSION
     routing_template = _routing_template_for_factual(blind_input) if factual_protocol else None
     question = blind_input.get("question") if factual_protocol else None
-    question_text = question.get("text") if isinstance(question, dict) else None
 
     detection = _detection_for_blind_mode(
         blind_mode,
@@ -206,6 +193,7 @@ def run_ibp_facts_sut(
     inference_provider_id = IBP_FACTS_SUT_MODEL_ID.split(":")[0]
     inference_model_id = IBP_FACTS_SUT_MODEL_ID.split(":")[-1]
     abstention_reason: str | None = None
+    harness_fixture_loaded = False
 
     if factual_protocol and isinstance(question, dict):
         factual_outcome = answer_admitted_factual_question(
@@ -221,15 +209,22 @@ def run_ibp_facts_sut(
         abstention_reason = factual_outcome.abstention_reason
         inference_model_id = f"deterministic.v1+{GROUNDED_FACT_EXTRACTION_VERSION}"
     else:
-        inference = GroundedEvidenceInference()
-        outcome = inference.infer(
-            _facts_prompt(case_id, blind_mode, question_text=question_text),
-            evidence_context=evidence_context,
+        # Legacy Smoke10 / harness path: extract grounded facts or UNKNOWN.
+        # Never dump quality-explain narratives as factual answers.
+        harness_outcome = answer_harness_factual_probe(
+            repository_root=repository_root,
+            fixture_rel=str(fixture_rel) if fixture_rel else None,
+            blind_mode=blind_mode,
+            case_id=case_id,
         )
-        inference_provider_id = outcome.provider_id
-        inference_model_id = outcome.model_id
-        abstention_reason = outcome.abstention_reason
-        answer = "UNKNOWN" if outcome.abstained or not outcome.content.strip() else outcome.content.strip()
+        factual_disposition = harness_outcome.disposition.value
+        structured_facts = [dict(row) for row in harness_outcome.structured_facts]
+        answer = harness_outcome.answer
+        abstention_reason = harness_outcome.abstention_reason
+        inference_model_id = f"deterministic.v1+{GROUNDED_FACT_EXTRACTION_VERSION}"
+        harness_fixture_loaded = bool(fixture_rel) and Path(repository_root, str(fixture_rel)).is_file()
+        if harness_outcome.abstention_reason == "ABSENT_HARNESS_EVIDENCE":
+            harness_fixture_loaded = False
     operator_close = "OK"
     if factual_protocol:
         freshness = "ADMITTED_EVIDENCE_FIXED" if admitted_loaded else "FIXTURE"
@@ -237,7 +232,11 @@ def run_ibp_facts_sut(
         provenance_complete = bool(admitted_loaded)
     else:
         fixture_summary = evidence_context.get("historical_fixture")
-        freshness = "HISTORICAL_DEVELOPMENT" if fixture_summary else "FIXTURE"
+        freshness = (
+            "HISTORICAL_DEVELOPMENT"
+            if fixture_summary or harness_fixture_loaded
+            else "FIXTURE"
+        )
         authority = "HISTORICAL_DEVELOPMENT"
         provenance_complete = True
 
@@ -275,7 +274,11 @@ def run_ibp_facts_sut(
             response["factual_answer_disposition"] = factual_disposition
     else:
         fixture_summary = evidence_context.get("historical_fixture")
-        response["historical_fixture_loaded"] = fixture_summary is not None
+        response["historical_fixture_loaded"] = bool(fixture_summary) or harness_fixture_loaded
+        response["structured_facts"] = structured_facts
+        response["grounded_fact_extraction_version"] = GROUNDED_FACT_EXTRACTION_VERSION
+        if factual_disposition is not None:
+            response["factual_answer_disposition"] = factual_disposition
     return response
 
 

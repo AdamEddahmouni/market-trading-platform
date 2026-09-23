@@ -1,0 +1,6 @@
+{
+  "2024-11-07": [
+    {"code": "US.POLARITY", "time_key": "not-a-clock", "close": 1.0},
+    {"code": "US.POLARITY", "time_key": "2024-11-07 09:30:00", "close": 1.1}
+  ]
+}

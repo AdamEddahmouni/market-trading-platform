@@ -116,7 +116,7 @@ class IntelligenceBenchmarkNonstubSutProtocolTests(unittest.TestCase):
         self.assertNotIn("gold_answer", response)
         self.assertEqual(response["sut_profile_id"], IBP_FACTS_SUT_PROFILE_ID)
 
-    def test_facts_sut_without_fixture_resolver_missing_is_unknown(self) -> None:
+    def test_facts_sut_without_fixture_absent_evidence_is_unknown(self) -> None:
         catalog = load_suite_catalog(ROOT)
         case = next(row for row in catalog["cases"] if not row.get("historical_harness_fixture"))
         response = run_ibp_facts_sut(
@@ -124,7 +124,8 @@ class IntelligenceBenchmarkNonstubSutProtocolTests(unittest.TestCase):
             repository_root=ROOT,
         )
         self.assertEqual(response["answer"], "UNKNOWN")
-        self.assertEqual(response["inference_abstention_reason"], "EVIDENCE_RESOLVER_MISSING")
+        self.assertEqual(response["inference_abstention_reason"], "ABSENT_HARNESS_EVIDENCE")
+        self.assertEqual(response.get("factual_answer_disposition"), "ABSENT_EVIDENCE")
 
     def test_historical_fixture_evidence_context_exposes_resolvers(self) -> None:
         fixture_rel = "tests/fixtures/historical_development/aapl_2026-09-15_rth_sample.json"
