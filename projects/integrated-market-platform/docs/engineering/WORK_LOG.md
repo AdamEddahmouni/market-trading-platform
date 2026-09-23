@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Runtime observation durability (supervisor / poller / preflight)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform` campaign supervision durability |
+| **Summary** | Fixed FUTURE SOFTWARE MAIN observation-runtime defects proven by RTH-OBS-NEWS-20260923 receipts: `register-child`/`recover` no longer clobber durable `supervisor_pid`; status uses launcher-grade process probes; missing required roles are `PROCESS_DEAD`; Windows ownership write races reduced; `environment-preflight` refuses arm when UI/API deps absent; added long-lived `poll-loop` (SOFTWARE_CONTROLLED). Evidence class remains SOFTWARE_CONTROLLED / FIXTURE_REPLAY — not RTH proof. Frozen empirical runtime untouched. |
+| **Key files** | `tools/platform/campaign_supervisor.py`; `tools/platform/campaign_environment_preflight.py`; `src/.../campaign_supervision.py`; `tests/acceptance/test_runtime_observation_durability_acceptance.py`; `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | `python -m unittest tests.acceptance.test_runtime_observation_durability_acceptance tests.acceptance.test_campaign_supervision_heartbeat_acceptance` → 31 passed; readiness unit tests run in same validation pass |
+| **Related** | Receipts (read-only): `.local/rth-campaign-20260923/supervisor-status-*.json`, `ui-start-skip.txt`; base `origin/main` @ `e7615400` (#401); readiness gate #399 already on base |
+| **Notes** | Prefreeze review only — no NEXT_RTH_FREEZE. Execution authority BLOCKED. Job/terminal-kill survival still UNPROVEN. |
+
 ## 2026-09-23 — Status reconcile CURRENT_MAIN to 6154cf19 after session #393–#400
 
 | Field | Value |

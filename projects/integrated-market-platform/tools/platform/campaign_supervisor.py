@@ -69,6 +69,13 @@ safe_command_fingerprint = _cs.safe_command_fingerprint
 write_heartbeat = _cs.write_heartbeat
 write_ownership = _cs.write_ownership
 from tools.platform.detached_process import mechanism_description, spawn_detached  # noqa: E402
+from tools.platform.service_health import process_alive as platform_process_alive  # noqa: E402
+
+
+def _alive_fn(pid: int) -> bool:
+    """Launcher-grade process probe (ctypes OpenProcess on Windows)."""
+
+    return platform_process_alive(pid)
 
 
 def _utc_now() -> str:
@@ -115,6 +122,38 @@ def cmd_mechanism(_: argparse.Namespace) -> int:
 
 def cmd_arm(args: argparse.Namespace) -> int:
     state_dir = _state_dir(args.state_dir)
+    from tools.platform.campaign_environment_preflight import (
+        evaluate_campaign_environment_preflight,
+    )
+
+    # Fail-visible before ARM: missing UI/API deps must not become a mid-campaign surprise.
+    skip_preflight = bool(getattr(args, "skip_environment_preflight", False))
+    require_ui = not bool(getattr(args, "allow_missing_ui_deps", False))
+    if not skip_preflight:
+        preflight = evaluate_campaign_environment_preflight(
+            root=ROOT,
+            state_dir=state_dir,
+            require_ui_deps=require_ui,
+            campaign_id=str(args.campaign_id),
+            observation_window_id=str(args.observation_window_id),
+        )
+        if not preflight.ready_to_arm:
+            print(
+                json.dumps(
+                    {
+                        "status": "BLOCKED",
+                        "detail": "ENVIRONMENT_PREFLIGHT_FAILED",
+                        "ready_to_arm": False,
+                        "blockers": preflight.blockers,
+                        "preflight": preflight.to_dict(),
+                        "execution_authority": "BLOCKED",
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 2
+
     runtime_sha = _resolve_runtime_sha(args.runtime_sha)
     argv = list(args.launch_argv or ["python", "-m", "tools.platform.campaign_supervisor", "run"])
     fingerprint = safe_command_fingerprint(argv)
@@ -163,6 +202,7 @@ def cmd_arm(args: argparse.Namespace) -> int:
                 "state_directory": str(state_dir),
                 "launch_command_fingerprint": fingerprint,
                 "execution_authority": "BLOCKED",
+                "environment_preflight_skipped": skip_preflight,
             },
             indent=2,
             sort_keys=True,
@@ -177,12 +217,26 @@ def cmd_register_child(args: argparse.Namespace) -> int:
     if ownership is None:
         print(json.dumps({"status": "ERROR", "detail": "NO_OWNERSHIP"}))
         return 1
+    pid = int(args.pid)
+    if not _alive_fn(pid):
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "CHILD_PID_NOT_ALIVE",
+                    "role": str(args.role),
+                    "pid": pid,
+                },
+                sort_keys=True,
+            )
+        )
+        return 2
     children = list(ownership.child_processes)
     children = [c for c in children if c.role != args.role]
     children.append(
         ProcessIdentity(
             role=str(args.role),
-            pid=int(args.pid),
+            pid=pid,
             create_time_utc=_utc_now(),
             parent_pid=os.getpid(),
             command_fingerprint=safe_command_fingerprint(list(args.identity_tokens or [args.role])),
@@ -190,9 +244,23 @@ def cmd_register_child(args: argparse.Namespace) -> int:
         )
     )
     ownership.child_processes = children
-    ownership.supervisor_pid = os.getpid()
+    # Do NOT clobber ownership.supervisor_pid with the registering shell/CLI PID.
+    # That was the Sep 23 defect: register-child from a transient parent made the
+    # durable supervisor appear PROCESS_DEAD after the parent exited.
+    if str(args.role) == "supervisor" and bool(getattr(args, "adopt_as_supervisor", False)):
+        ownership.supervisor_pid = pid
     write_ownership(ownership)
-    print(json.dumps({"status": "REGISTERED", "role": args.role, "pid": int(args.pid)}, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": "REGISTERED",
+                "role": args.role,
+                "pid": pid,
+                "supervisor_pid_preserved": ownership.supervisor_pid,
+            },
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -245,6 +313,7 @@ def cmd_heartbeat(args: argparse.Namespace) -> int:
         ownership=ownership,
         heartbeat=heartbeat,
         now_utc_epoch=now_epoch,
+        process_alive_fn=_alive_fn,
     )
     if progress.get("outage") and args.record_outage:
         record = build_outage_interval(
@@ -260,7 +329,7 @@ def cmd_heartbeat(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     state_dir = _state_dir(args.state_dir)
-    view = load_campaign_supervision_view(state_dir)
+    view = load_campaign_supervision_view(state_dir, process_alive_fn=_alive_fn)
     print(json.dumps(view, indent=2, sort_keys=True))
     status = str(view.get("status") or "UNKNOWN")
     if status == "HEALTHY":
@@ -268,6 +337,24 @@ def cmd_status(args: argparse.Namespace) -> int:
     if status in {"NOT_APPLICABLE", "STARTING"}:
         return 0
     return 2
+
+
+def cmd_environment_preflight(args: argparse.Namespace) -> int:
+    from tools.platform.campaign_environment_preflight import (
+        evaluate_campaign_environment_preflight,
+    )
+
+    raw_state = (args.state_dir or os.environ.get("IMP_STATE_DIR") or "").strip()
+    report = evaluate_campaign_environment_preflight(
+        root=ROOT,
+        state_dir=raw_state or None,
+        require_ui_deps=not bool(args.allow_missing_ui_deps),
+        campaign_id=args.campaign_id,
+        observation_window_id=args.observation_window_id,
+        check_opend=not bool(args.skip_opend_check),
+    )
+    print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
+    return 0 if report.ready_to_arm else 2
 
 
 def cmd_readiness(args: argparse.Namespace) -> int:
@@ -288,6 +375,7 @@ def cmd_readiness(args: argparse.Namespace) -> int:
         state_dir,
         intent_explicit=intent_explicit or None,
         ingress_enabled=None,
+        process_alive_fn=_alive_fn,
     )
     print(json.dumps(payload, indent=2, sort_keys=True))
     if payload.get("has_blocking_alert"):
@@ -354,6 +442,19 @@ def cmd_recover(args: argparse.Namespace) -> int:
         return 1
     children = list(ownership.child_processes)
     if args.child_pid and args.child_role:
+        if not _alive_fn(int(args.child_pid)):
+            print(
+                json.dumps(
+                    {
+                        "status": "ERROR",
+                        "detail": "CHILD_PID_NOT_ALIVE",
+                        "role": str(args.child_role),
+                        "pid": int(args.child_pid),
+                    },
+                    sort_keys=True,
+                )
+            )
+            return 2
         children = [c for c in children if c.role != args.child_role]
         children.append(
             ProcessIdentity(
@@ -365,9 +466,30 @@ def cmd_recover(args: argparse.Namespace) -> int:
                 identity_tokens=[str(args.child_role)],
             )
         )
+    # Preserve durable supervisor ownership unless explicitly adopting this process
+    # as the long-lived supervisor (must remain alive after recover returns).
+    if bool(getattr(args, "adopt_as_supervisor", False)):
+        new_supervisor_pid = os.getpid()
+    elif _alive_fn(int(ownership.supervisor_pid)):
+        new_supervisor_pid = int(ownership.supervisor_pid)
+    else:
+        # Fail visible: do not silently claim the short-lived recover CLI is supervisor.
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "SUPERVISOR_PID_DEAD_USE_ADOPT_OR_RUN",
+                    "prior_supervisor_pid": ownership.supervisor_pid,
+                    "hint": "Spawn `run` (durable) or pass --adopt-as-supervisor only from a long-lived process",
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return 2
     recovered = preserve_arm_for_recovery(
         ownership,
-        supervisor_pid=os.getpid(),
+        supervisor_pid=new_supervisor_pid,
         child_processes=children,
         expected_next_cycle_utc=ownership.expected_next_cycle_utc,
     )
@@ -380,6 +502,7 @@ def cmd_recover(args: argparse.Namespace) -> int:
                 "arm_timestamp_utc": recovered.arm_timestamp_utc,
                 "segment_id": recovered.segment_id,
                 "runtime_sha": recovered.runtime_sha,
+                "supervisor_pid": recovered.supervisor_pid,
                 "new_segment_created": False,
                 "backfill_applied": False,
             },
@@ -438,8 +561,11 @@ def cmd_run(args: argparse.Namespace) -> int:
         if ownership.arm_status in {"CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN"}:
             print(json.dumps({"status": ownership.arm_status, "stopped": True}))
             return 0
-        ownership.supervisor_pid = os.getpid()
-        write_ownership(ownership)
+        # Only rewrite ownership when supervisor identity drifts — avoid Windows
+        # atomic-replace races with poll-loop / register-child.
+        if int(ownership.supervisor_pid) != os.getpid():
+            ownership.supervisor_pid = os.getpid()
+            write_ownership(ownership)
         prior = read_heartbeat(state_dir) or {}
         heartbeat = {
             **prior,
@@ -469,13 +595,15 @@ def cmd_run(args: argparse.Namespace) -> int:
                 .isoformat()
                 .replace("+00:00", "Z")
             )
-            ownership.expected_next_cycle_utc = heartbeat["expected_next_poll_utc"]
-            write_ownership(ownership)
+            if ownership.expected_next_cycle_utc != heartbeat["expected_next_poll_utc"]:
+                ownership.expected_next_cycle_utc = heartbeat["expected_next_poll_utc"]
+                write_ownership(ownership)
         write_heartbeat(state_dir, heartbeat)
         progress = evaluate_campaign_progress(
             ownership=ownership,
             heartbeat=heartbeat,
             now_utc_epoch=now_epoch,
+            process_alive_fn=_alive_fn,
         )
         if progress.get("outage"):
             append_outage_record(
@@ -492,6 +620,101 @@ def cmd_run(args: argparse.Namespace) -> int:
         marker = state_dir / "campaign-supervision" / "supervisor.alive"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(f"{os.getpid()}\n{now}\n", encoding="utf-8")
+        count += 1
+        if iterations > 0 and count >= iterations:
+            break
+        time.sleep(max(0.05, cadence))
+    return 0
+
+
+def cmd_poll_loop(args: argparse.Namespace) -> int:
+    """Long-lived poller role for SOFTWARE_CONTROLLED / FIXTURE_REPLAY acceptance.
+
+    Registers this process as ``poller`` and advances heartbeat poll progress on
+    cadence. Does not call live Finviz / broker APIs. Observation campaigns that
+    need real ingress should replace the body with a durable ingress worker; the
+    role itself must remain long-lived (not a one-shot shell).
+    """
+
+    state_dir = _state_dir(args.state_dir)
+    ownership = read_ownership(state_dir)
+    if ownership is None:
+        print(json.dumps({"status": "ERROR", "detail": "ARM_REQUIRED"}))
+        return 1
+    children = [c for c in ownership.child_processes if c.role != "poller"]
+    children.append(
+        ProcessIdentity(
+            role="poller",
+            pid=os.getpid(),
+            create_time_utc=_utc_now(),
+            parent_pid=os.getppid() if hasattr(os, "getppid") else None,
+            command_fingerprint=safe_command_fingerprint(
+                ["python", "tools/platform/campaign_supervisor.py", "poll-loop"]
+            ),
+            identity_tokens=["poller", "poll-loop"],
+        )
+    )
+    ownership.child_processes = children
+    write_ownership(ownership)
+    cadence = float(args.poll_cadence_seconds or ownership.expected_poll_cadence_seconds)
+    hb_cadence = float(args.heartbeat_cadence_seconds or DEFAULT_HEARTBEAT_CADENCE_SECONDS)
+    stale_after = float(args.stale_after_seconds or DEFAULT_STALE_AFTER_SECONDS)
+    iterations = int(args.iterations)
+    count = 0
+    print(
+        json.dumps(
+            {
+                "status": "POLLER_RUNNING",
+                "pid": os.getpid(),
+                "campaign_id": ownership.campaign_id,
+                "evidence_class": "SOFTWARE_CONTROLLED_EVIDENCE",
+                "execution_authority": "BLOCKED",
+            },
+            sort_keys=True,
+        )
+    )
+    while iterations <= 0 or count < iterations:
+        ownership = read_ownership(state_dir)
+        if ownership is None:
+            return 1
+        if ownership.arm_status in {"CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN"}:
+            print(json.dumps({"status": ownership.arm_status, "stopped": True}))
+            return 0
+        now = _utc_now()
+        now_epoch = time.time()
+        prior = read_heartbeat(state_dir) or {}
+        next_poll = (
+            datetime.fromtimestamp(now_epoch + cadence, tz=timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+        heartbeat = {
+            **prior,
+            "campaign_id": ownership.campaign_id,
+            "runtime_sha": ownership.runtime_sha,
+            "supervisor_pid": ownership.supervisor_pid,
+            "last_heartbeat_utc": now,
+            "last_successful_poll_utc": now,
+            "expected_next_heartbeat_utc": datetime.fromtimestamp(
+                now_epoch + hb_cadence, tz=timezone.utc
+            )
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "expected_next_poll_utc": next_poll,
+            "heartbeat_cadence_seconds": hb_cadence,
+            "poll_cadence_seconds": cadence,
+            "stale_after_seconds": stale_after,
+            "application_ready": True,
+            "port_bound_without_progress": False,
+            "phase": "POLLER_CYCLE",
+            "synthetic_poll_generated": False,
+            "poller_pid": os.getpid(),
+        }
+        # Heartbeat-only updates in the loop — do not contend on ownership.json.
+        write_heartbeat(state_dir, heartbeat)
+        marker = state_dir / "campaign-supervision" / "poller.alive"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(f"{os.getpid()}\n{now}\n{count}\n", encoding="utf-8")
         count += 1
         if iterations > 0 and count >= iterations:
             break
@@ -520,18 +743,44 @@ def build_parser() -> argparse.ArgumentParser:
     arm.add_argument("--stale-after-seconds", type=float, default=DEFAULT_STALE_AFTER_SECONDS)
     arm.add_argument("--required-roles", default="supervisor,poller,api")
     arm.add_argument("--launch-argv", nargs="*")
+    arm.add_argument(
+        "--skip-environment-preflight",
+        action="store_true",
+        help="Escape hatch for unit fixtures only; production arm should not skip",
+    )
+    arm.add_argument(
+        "--allow-missing-ui-deps",
+        action="store_true",
+        help="Allow arm when ui/node_modules is absent (UI remains optional runtime role)",
+    )
     arm.set_defaults(func=cmd_arm)
+
+    pref = sub.add_parser(
+        "environment-preflight",
+        help="Fail-visible environment readiness before ARM OBSERVATION",
+    )
+    pref.add_argument("--state-dir")
+    pref.add_argument("--campaign-id")
+    pref.add_argument("--observation-window-id")
+    pref.add_argument("--allow-missing-ui-deps", action="store_true")
+    pref.add_argument("--skip-opend-check", action="store_true")
+    pref.set_defaults(func=cmd_environment_preflight)
 
     reg = sub.add_parser("register-child", help="Record a supervised child process")
     reg.add_argument("--state-dir")
     reg.add_argument("--role", required=True)
     reg.add_argument("--pid", type=int, required=True)
     reg.add_argument("--identity-tokens", nargs="*")
+    reg.add_argument(
+        "--adopt-as-supervisor",
+        action="store_true",
+        help="Only when registering a durable supervisor PID; never from a one-shot shell",
+    )
     reg.set_defaults(func=cmd_register_child)
 
     hb = sub.add_parser("heartbeat", help="Record heartbeat / optional poll progress")
     hb.add_argument("--state-dir")
-    hb.add_argument("--successful-poll", action="store_true")
+    hb.add_argument("--successful-poll", "--mark-poll-success", action="store_true", dest="successful_poll")
     hb.add_argument("--application-ready", action=argparse.BooleanOptionalAction, default=True)
     hb.add_argument("--port-bound-without-progress", action="store_true")
     hb.add_argument("--poll-cadence-seconds", type=float)
@@ -566,6 +815,11 @@ def build_parser() -> argparse.ArgumentParser:
     recover.add_argument("--child-role")
     recover.add_argument("--child-pid", type=int)
     recover.add_argument("--force", action="store_true")
+    recover.add_argument(
+        "--adopt-as-supervisor",
+        action="store_true",
+        help="Adopt this long-lived process as supervisor; never from a one-shot recover shell",
+    )
     recover.set_defaults(func=cmd_recover)
 
     spawn = sub.add_parser(
@@ -583,6 +837,17 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--iterations", type=int, default=0, help="0 = until shutdown")
     run.add_argument("--auto-poll", action="store_true")
     run.set_defaults(func=cmd_run)
+
+    poll = sub.add_parser(
+        "poll-loop",
+        help="Long-lived SOFTWARE_CONTROLLED poller role (not one-shot ingress)",
+    )
+    poll.add_argument("--state-dir")
+    poll.add_argument("--poll-cadence-seconds", type=float)
+    poll.add_argument("--heartbeat-cadence-seconds", type=float, default=DEFAULT_HEARTBEAT_CADENCE_SECONDS)
+    poll.add_argument("--stale-after-seconds", type=float, default=DEFAULT_STALE_AFTER_SECONDS)
+    poll.add_argument("--iterations", type=int, default=0, help="0 = until shutdown")
+    poll.set_defaults(func=cmd_poll_loop)
     return parser
 
 

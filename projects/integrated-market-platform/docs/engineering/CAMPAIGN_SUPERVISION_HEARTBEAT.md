@@ -59,12 +59,30 @@ CLI:
 
 ```powershell
 python tools/platform/campaign_supervisor.py mechanism
+python tools/platform/campaign_supervisor.py environment-preflight --state-dir $env:IMP_STATE_DIR --campaign-id ... --observation-window-id ...
 python tools/platform/campaign_supervisor.py arm --state-dir $env:IMP_STATE_DIR --campaign-id ... --observation-window-id ...
-python tools/platform/campaign_supervisor.py run --state-dir $env:IMP_STATE_DIR --auto-poll
+python tools/platform/campaign_supervisor.py run --state-dir $env:IMP_STATE_DIR
+python tools/platform/campaign_supervisor.py poll-loop --state-dir $env:IMP_STATE_DIR
 python tools/platform/campaign_supervisor.py status --state-dir $env:IMP_STATE_DIR
 python tools/platform/campaign_supervisor.py shutdown --state-dir $env:IMP_STATE_DIR
 python tools/platform/campaign_supervisor.py shutdown --state-dir $env:IMP_STATE_DIR --rth-close
 ```
+
+**Environment preflight (before ARM):** fails closed when required API entrypoint or
+`ui/node_modules` (operator UI dependency readiness) is absent. UI remains an
+**optional runtime role** for observation ingestion; missing UI deps are still
+fail-visible before arm so `:5173` cannot silently never start. Required
+observation roles: `supervisor`, `poller`, `api`. Optional operator display: `ui`.
+
+**Durability invariants (2026-09-23):**
+
+- `register-child` / `recover` must **not** clobber `ownership.supervisor_pid`
+  with a one-shot shell PID (that produced false `PROCESS_DEAD` on RTH-OBS-NEWS-20260923).
+- Status/heartbeat evaluation injects launcher-grade `service_health.process_alive`
+  (Windows `OpenProcess`); src fallback avoids unreliable `os.kill(pid, 0)`.
+- Missing required roles (e.g. unregistered poller) are `PROCESS_DEAD`.
+- `poll-loop` is the long-lived SOFTWARE_CONTROLLED poller role; one-shot ingress
+  scripts must not be registered as the durable poller.
 
 ## Heartbeat / progress / stale detection
 
