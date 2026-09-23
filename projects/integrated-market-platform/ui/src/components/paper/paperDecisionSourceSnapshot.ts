@@ -6,7 +6,10 @@ import {
 } from "../paper-now/paperOrderDraft";
 import { formatPaperSourceTimeLabel } from "./paperSourceTimestamp";
 
-export type PaperDecisionSourceType = "paper_command_attention" | "workspace_lane";
+export type PaperDecisionSourceType =
+  | "paper_command_attention"
+  | "workspace_lane"
+  | "watched_opportunity";
 
 export type PaperDecisionSourceReason = {
   code: string;
@@ -24,7 +27,11 @@ export type PaperDecisionSourceSnapshot = {
   source_time?: number;
 };
 
-export type PaperSourceTimePresentation = "attention_surfaced" | "lane_handoff" | "historical";
+export type PaperSourceTimePresentation =
+  | "attention_surfaced"
+  | "lane_handoff"
+  | "opportunity_watched"
+  | "historical";
 
 export type PaperPersistedSourceContext = {
   snapshot: PaperDecisionSourceSnapshot | null;
@@ -79,7 +86,13 @@ export function parsePaperDecisionSourceSnapshot(value: unknown): PaperDecisionS
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const row = value as Record<string, unknown>;
   const sourceType = row.source_type;
-  if (sourceType !== "paper_command_attention" && sourceType !== "workspace_lane") return null;
+  if (
+    sourceType !== "paper_command_attention" &&
+    sourceType !== "workspace_lane" &&
+    sourceType !== "watched_opportunity"
+  ) {
+    return null;
+  }
   const sourceId = cleanText(row.source_id, 128);
   if (!sourceId) return null;
   const snapshot: PaperDecisionSourceSnapshot = {
@@ -108,7 +121,11 @@ function snapshotMatchesCorrelation(
   if (snapshot.source_type === "workspace_lane") {
     return correlation === `lane:${snapshot.source_id}`;
   }
+  if (snapshot.source_type === "watched_opportunity") {
+    return correlation === `opportunity:${snapshot.source_id}`;
+  }
   if (correlation.startsWith("lane:")) return false;
+  if (correlation.startsWith("opportunity:")) return false;
   if (correlation.startsWith("attention:")) {
     return correlation === `attention:${snapshot.source_id}`;
   }
@@ -159,6 +176,16 @@ export function buildPaperDecisionSourceSnapshot(draft: PaperOrderDraft): PaperD
     };
     return snapshot;
   }
+  if (provenance.type === "OPPORTUNITY") {
+    const opportunityId = provenance.opportunityId ?? provenance.sourceId;
+    if (!opportunityId) return undefined;
+    const snapshot: PaperDecisionSourceSnapshot = {
+      source_type: "watched_opportunity",
+      source_id: opportunityId,
+      ...contextFields,
+    };
+    return snapshot;
+  }
   return undefined;
 }
 
@@ -166,6 +193,7 @@ export function paperSourceTimeFieldLabel(presentation: PaperSourceTimePresentat
   if (!presentation) return null;
   if (presentation === "attention_surfaced") return "Attention surfaced";
   if (presentation === "lane_handoff") return "Lane handoff created";
+  if (presentation === "opportunity_watched") return "Opportunity watched";
   return "Source context captured";
 }
 
@@ -175,6 +203,7 @@ function sourceTimePresentationFromSnapshot(
   if (snapshot.source_time === undefined) return null;
   if (snapshot.source_type === "paper_command_attention") return "attention_surfaced";
   if (snapshot.source_type === "workspace_lane") return "lane_handoff";
+  if (snapshot.source_type === "watched_opportunity") return "opportunity_watched";
   return "historical";
 }
 

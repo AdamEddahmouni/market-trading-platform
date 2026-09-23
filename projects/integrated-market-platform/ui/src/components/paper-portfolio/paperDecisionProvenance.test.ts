@@ -25,6 +25,14 @@ describe("parsePersistedPaperDecisionProvenance", () => {
     expect(provenance.attentionId).toBe("ATT-123");
   });
 
+  it("classifies opportunity: prefix format", () => {
+    const provenance = parsePersistedPaperDecisionProvenance("opportunity:opp-1", "client-1");
+    expect(provenance.sourceCategory).toBe("WATCHED_OPPORTUNITY");
+    expect(provenance.opportunityId).toBe("opp-1");
+    expect(provenance.badgeLabel).toBe("RADAR WATCHED");
+    expect(provenance.isDecisionProvenance).toBe(true);
+  });
+
   it("treats default client-order correlation as manual", () => {
     const provenance = parsePersistedPaperDecisionProvenance("client-abc", "client-abc");
     expect(provenance.sourceCategory).toBe("MANUAL");

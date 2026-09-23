@@ -5,7 +5,7 @@ import {
   formatPaperSourceTimeLabel,
   parsePaperDecisionSourceSnapshot,
 } from "./paperDecisionSourceSnapshot";
-import { createAttentionPaperOrderDraft, createLanePaperOrderDraft } from "../paper-now/paperOrderDraft";
+import { createAttentionPaperOrderDraft, createLanePaperOrderDraft, createWatchedOpportunityPaperOrderDraft } from "../paper-now/paperOrderDraft";
 import { attentionItem } from "../paper-now/paperNowTestFixtures";
 
 describe("paperDecisionSourceSnapshot", () => {
@@ -40,6 +40,31 @@ describe("paperDecisionSourceSnapshot", () => {
       source_module: "squeeze",
       source_time: 1_700_000_100_000_000_000,
     });
+  });
+
+  it("builds watched-opportunity snapshot with opportunity correlation identity", () => {
+    const draft = createWatchedOpportunityPaperOrderDraft(
+      {
+        opportunity_id: "opp-1",
+        summary_id: "sum-1",
+        instrument_id: "BIYA",
+        headline: "BIYA ignition watch",
+        created_at_ns: 1_700_000_000_000_000_000,
+      },
+      { now: () => 1_700_000_100_000 },
+    )!;
+    const snapshot = buildPaperDecisionSourceSnapshot(draft);
+    expect(snapshot).toEqual({
+      source_type: "watched_opportunity",
+      source_id: "opp-1",
+      headline: "BIYA ignition watch",
+      reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+      source_time: 1_700_000_000_000_000_000,
+    });
+    const persisted = buildPersistedPaperSourceContext(snapshot, "opportunity:opp-1");
+    expect(persisted.snapshotAvailable).toBe(true);
+    expect(persisted.sourceTimeFieldLabel).toBe("Opportunity watched");
+    expect(buildPersistedPaperSourceContext(snapshot, "opp-1").snapshotMismatch).toBe(true);
   });
 
   it("returns undefined for manual drafts", () => {

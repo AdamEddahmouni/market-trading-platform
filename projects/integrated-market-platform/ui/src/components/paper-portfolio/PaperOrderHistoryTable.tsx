@@ -77,6 +77,7 @@ export function PaperOrderHistoryTable({
                 <option value="ALL">All sources</option>
                 <option value="PAPER_COMMAND">Paper Command</option>
                 <option value="WORKSPACE_LANE">Workspace lane</option>
+                <option value="WATCHED_OPPORTUNITY">Radar watched opportunity</option>
                 <option value="MANUAL">Manual</option>
                 <option value="UNKNOWN">Unknown</option>
               </select>

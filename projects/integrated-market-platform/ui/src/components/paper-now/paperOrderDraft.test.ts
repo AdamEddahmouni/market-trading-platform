@@ -6,9 +6,11 @@ import {
   createLanePaperOrderDraft,
   createPaperOrderDraft,
   createPaperPreviewAttemptKey,
+  createWatchedOpportunityPaperOrderDraft,
   derivePaperDecisionCorrelationId,
   formatPaperDraftSourceLabel,
   isLanePaperOrderDraft,
+  isOpportunityPaperOrderDraft,
   parseLaneProvenance,
   parsePaperDraftProvenance,
   paperOrderDraftFingerprint,
@@ -185,6 +187,52 @@ describe("paper order draft", () => {
     expect(formatPaperDraftSourceLabel(draft)).toBe("Paper Command attention ATT-123");
   });
 
+  it("creates a watched-opportunity placeholder handoff without inventing trade intent", () => {
+    const draft = createWatchedOpportunityPaperOrderDraft(
+      {
+        opportunity_id: "opp-1",
+        summary_id: "sum-1",
+        instrument_id: "BIYA",
+        headline: "BIYA ignition watch",
+        created_at_ns: CANONICAL_NS,
+      },
+      { now: fixedNow },
+    );
+    expect(draft).toEqual({
+      version: 1,
+      instrumentId: "BIYA",
+      side: "BUY",
+      quantity: 1,
+      orderType: "MARKET",
+      sourceAttentionId: "opportunity:opp-1",
+      sourceContext: {
+        headline: "BIYA ignition watch",
+        reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+        source_time: CANONICAL_NS,
+      },
+    });
+    expect(parsePaperDraftProvenance(draft!).type).toBe("OPPORTUNITY");
+    expect(parsePaperDraftProvenance(draft!).opportunityId).toBe("opp-1");
+    expect(isOpportunityPaperOrderDraft(draft!)).toBe(true);
+    expect(formatPaperDraftSourceLabel(draft)).toBe("Radar watched opportunity opp-1");
+    expect(derivePaperDecisionCorrelationId(draft!)).toBe("opportunity:opp-1");
+    const request = buildPaperOrderRequest(draft!, "workspace-ticket-1");
+    expect(request.correlation_id).toBe("opportunity:opp-1");
+    expect(request.decision_source_snapshot).toEqual({
+      source_type: "watched_opportunity",
+      source_id: "opp-1",
+      headline: "BIYA ignition watch",
+      reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+      source_time: CANONICAL_NS,
+    });
+    expect(createWatchedOpportunityPaperOrderDraft({
+      opportunity_id: "opp-1",
+      summary_id: "sum-1",
+      instrument_id: null,
+      headline: "x",
+    })).toBeNull();
+  });
+
   it("parses provenance variants and malformed ids", () => {
     expect(parsePaperDraftProvenance(undefined).type).toBe("MANUAL");
     expect(parsePaperDraftProvenance({
@@ -202,6 +250,14 @@ describe("paper order draft", () => {
       quantity: 1,
       orderType: "MARKET",
       sourceAttentionId: "attention:",
+    }).isValid).toBe(false);
+    expect(parsePaperDraftProvenance({
+      version: 1,
+      instrumentId: "BIYA",
+      side: "BUY",
+      quantity: 1,
+      orderType: "MARKET",
+      sourceAttentionId: "opportunity:",
     }).isValid).toBe(false);
     expect(parsePaperDraftProvenance({
       version: 1,

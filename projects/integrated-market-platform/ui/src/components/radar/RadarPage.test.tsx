@@ -626,6 +626,59 @@ describe("RadarPage opportunities tab", () => {
     );
   });
 
+  it("offers Preview in Paper only for watched eligible Paper rows and opens workspace with opportunity handoff", async () => {
+    const watched: OpportunityReviewRow = {
+      ...rankedRow,
+      lifecycle_state: "WATCHED",
+    };
+    summaryMock.data = { items: [watched], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    const card = screen.getByTestId("imp-radar-detail-card");
+    expect(screen.getByTestId("imp-radar-preview-in-paper")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Preview in Paper" }));
+    await waitFor(() => expect(screen.getByText("Workspace opened")).toBeInTheDocument());
+  });
+
+  it("hides Preview in Paper when the opportunity is not watched", () => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    expect(screen.queryByTestId("imp-radar-preview-in-paper")).not.toBeInTheDocument();
+  });
+
+  it("hides Preview in Paper for controlled-replay learning acks without Paper authority", () => {
+    contextMock.data.as_of_context.controlled_replay = true;
+    contextMock.data.as_of_context.evidence_class = "CONTROLLED_REPLAY";
+    summaryMock.data = {
+      items: [{ ...rankedRow, lifecycle_state: "WATCHED" }],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("DEMO", "opportunities", false);
+    expect(screen.queryByTestId("imp-radar-preview-in-paper")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Watch" })).toBeInTheDocument();
+    contextMock.data.as_of_context.controlled_replay = false;
+    contextMock.data.as_of_context.evidence_class = undefined;
+  });
+
+  it("refuses Preview in Paper when eligibility fails even if previously watched", () => {
+    summaryMock.data = {
+      items: [
+        {
+          ...rankedRow,
+          lifecycle_state: "WATCHED",
+          eligibility_state: "INELIGIBLE",
+          next_safe_action: "STOP",
+        },
+      ],
+      feed_status: "READY",
+      unready_reason: undefined,
+      next_action: undefined,
+    };
+    renderRadar("PAPER", "opportunities", true);
+    expect(screen.queryByTestId("imp-radar-preview-in-paper")).not.toBeInTheDocument();
+  });
+
   it("hides acks without paper authority and says so", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", false);

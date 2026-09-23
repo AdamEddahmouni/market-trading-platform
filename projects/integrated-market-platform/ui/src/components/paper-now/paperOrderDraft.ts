@@ -31,13 +31,14 @@ export type PaperOrderDraft = {
   sourceContext?: PaperDraftSourceContext;
 };
 
-export type PaperDraftProvenanceType = "LANE" | "ATTENTION" | "MANUAL" | "UNKNOWN";
+export type PaperDraftProvenanceType = "LANE" | "ATTENTION" | "OPPORTUNITY" | "MANUAL" | "UNKNOWN";
 
 export type PaperDraftProvenance = {
   type: PaperDraftProvenanceType;
   sourceId: string | null;
   laneId: string | null;
   attentionId: string | null;
+  opportunityId: string | null;
   sourceLabel: string;
   sourceTimestamp: string | null;
   sourceReasonSummary: string | null;
@@ -66,7 +67,7 @@ const DRAFT_ALLOWED_KEYS = new Set([
   "sourceContext",
 ]);
 
-const KNOWN_PROVENANCE_PREFIXES = ["lane:", "attention:"] as const;
+const KNOWN_PROVENANCE_PREFIXES = ["lane:", "attention:", "opportunity:"] as const;
 
 function parseSourceContext(value: unknown): PaperDraftSourceContext | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
@@ -176,6 +177,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
     sourceId: null,
     laneId: null,
     attentionId: null,
+    opportunityId: null,
     sourceLabel: "Direct workspace entry",
     sourceTimestamp: null,
     sourceReasonSummary: null,
@@ -211,6 +213,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
         sourceId,
         laneId: null,
         attentionId: null,
+        opportunityId: null,
         sourceLabel: "Unknown provenance",
         sourceTimestamp: null,
         sourceReasonSummary,
@@ -226,6 +229,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
       sourceId,
       laneId: moduleId,
       attentionId: null,
+      opportunityId: null,
       sourceLabel: lane?.label ?? moduleId,
       sourceTimestamp,
       sourceReasonSummary,
@@ -244,6 +248,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
         sourceId,
         laneId: null,
         attentionId: null,
+        opportunityId: null,
         sourceLabel: "Unknown provenance",
         sourceTimestamp: null,
         sourceReasonSummary,
@@ -258,7 +263,42 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
       sourceId,
       laneId: null,
       attentionId,
+      opportunityId: null,
       sourceLabel: "Paper Command",
+      sourceTimestamp,
+      sourceReasonSummary,
+      sourceSymbol,
+      isValid: true,
+      warnings,
+      sourceContext,
+    };
+  }
+
+  if (sourceId.startsWith("opportunity:")) {
+    const opportunityId = sourceId.slice("opportunity:".length);
+    if (!opportunityId) {
+      return {
+        type: "UNKNOWN",
+        sourceId,
+        laneId: null,
+        attentionId: null,
+        opportunityId: null,
+        sourceLabel: "Unknown provenance",
+        sourceTimestamp: null,
+        sourceReasonSummary,
+        sourceSymbol,
+        isValid: false,
+        warnings: ["Malformed opportunity provenance — missing opportunity id."],
+        sourceContext,
+      };
+    }
+    return {
+      type: "OPPORTUNITY",
+      sourceId,
+      laneId: null,
+      attentionId: null,
+      opportunityId,
+      sourceLabel: "Radar watched opportunity",
       sourceTimestamp,
       sourceReasonSummary,
       sourceSymbol,
@@ -275,6 +315,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
       sourceId,
       laneId: null,
       attentionId: null,
+      opportunityId: null,
       sourceLabel: "Unknown provenance",
       sourceTimestamp: null,
       sourceReasonSummary,
@@ -286,12 +327,18 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
   }
 
   const colonPrefix = sourceId.includes(":") ? sourceId.split(":")[0] : null;
-  if (colonPrefix && colonPrefix !== "lane" && colonPrefix !== "attention") {
+  if (
+    colonPrefix &&
+    colonPrefix !== "lane" &&
+    colonPrefix !== "attention" &&
+    colonPrefix !== "opportunity"
+  ) {
     return {
       type: "UNKNOWN",
       sourceId,
       laneId: null,
       attentionId: null,
+      opportunityId: null,
       sourceLabel: "Unknown provenance",
       sourceTimestamp: null,
       sourceReasonSummary,
@@ -307,6 +354,7 @@ export function parsePaperDraftProvenance(draft: PaperOrderDraft | undefined): P
     sourceId,
     laneId: null,
     attentionId: sourceId,
+    opportunityId: null,
     sourceLabel: "Paper Command",
     sourceTimestamp,
     sourceReasonSummary,
@@ -334,6 +382,11 @@ export function formatPaperDraftSourceLabel(draft: PaperOrderDraft | undefined):
     return provenance.attentionId
       ? `Paper Command attention ${provenance.attentionId}`
       : "Paper Command attention";
+  }
+  if (provenance.type === "OPPORTUNITY") {
+    return provenance.opportunityId
+      ? `Radar watched opportunity ${provenance.opportunityId}`
+      : "Radar watched opportunity";
   }
   return provenance.sourceLabel;
 }
@@ -402,12 +455,58 @@ export function createAttentionPaperOrderDraft(
   };
 }
 
+/**
+ * Seeds a placeholder MARKET handoff from a watched Radar opportunity into the
+ * existing Paper workspace preview path. Side/qty are placeholders only — not a
+ * recommended order. Server preview remains authority; submit stays operator-controlled.
+ */
+export function createWatchedOpportunityPaperOrderDraft(
+  row: {
+    opportunity_id?: string | null;
+    summary_id: string;
+    instrument_id?: string | null;
+    headline?: string | null;
+    created_at_ns?: number | null;
+  },
+  options?: { now?: () => number },
+): PaperOrderDraft | null {
+  const instrumentId = row.instrument_id?.trim().toUpperCase();
+  const opportunityId = (row.opportunity_id ?? row.summary_id)?.trim();
+  if (!instrumentId || !opportunityId) return null;
+  const handoffTime = handoffTimeFromNow(options?.now);
+  const sourceTime = resolvePaperDecisionSourceTime({
+    canonicalSourceTime:
+      typeof row.created_at_ns === "number" && Number.isFinite(row.created_at_ns) && row.created_at_ns > 0
+        ? row.created_at_ns
+        : undefined,
+    handoffTime,
+  });
+  const sourceContext: PaperDraftSourceContext = {
+    headline: row.headline?.trim() || undefined,
+    reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+  };
+  if (sourceTime !== undefined) sourceContext.source_time = sourceTime;
+  return {
+    version: 1,
+    instrumentId,
+    side: "BUY",
+    quantity: 1,
+    orderType: "MARKET",
+    sourceAttentionId: `opportunity:${opportunityId}`,
+    sourceContext,
+  };
+}
+
 export function isLanePaperOrderDraft(draft: PaperOrderDraft | undefined): boolean {
   return parsePaperDraftProvenance(draft).type === "LANE";
 }
 
 export function isAttentionPaperOrderDraft(draft: PaperOrderDraft | undefined): boolean {
   return parsePaperDraftProvenance(draft).type === "ATTENTION";
+}
+
+export function isOpportunityPaperOrderDraft(draft: PaperOrderDraft | undefined): boolean {
+  return parsePaperDraftProvenance(draft).type === "OPPORTUNITY";
 }
 
 export const LANE_MODULE_IDS: readonly WorkspaceLaneModuleId[] = WORKSPACE_LANE_MODULE_IDS;
@@ -437,3 +536,6 @@ export const LANE_DRAFT_PLACEHOLDER_NOTE =
 
 export const ATTENTION_DRAFT_PLACEHOLDER_NOTE =
   "Placeholder draft from Paper Command — not an execution recommendation. Confirm side and quantity before submit.";
+
+export const OPPORTUNITY_DRAFT_PLACEHOLDER_NOTE =
+  "Placeholder from watched Radar opportunity — not an execution recommendation. Confirm side and quantity, then run server Paper preview before any submit.";

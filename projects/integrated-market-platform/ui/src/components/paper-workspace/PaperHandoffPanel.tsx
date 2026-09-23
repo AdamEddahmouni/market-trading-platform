@@ -17,6 +17,9 @@ function handoffHeading(handoff: PaperHandoffModel): string {
   if (handoff.kind === "attention") {
     return "Attention handoff";
   }
+  if (handoff.kind === "opportunity") {
+    return "Preview in Paper — watched opportunity";
+  }
   return "Handoff";
 }
 
@@ -32,6 +35,9 @@ export function PaperHandoffPanel({ handoff, evidenceAsOf }: Props) {
         <h2 id="paper-handoff-heading">{handoffHeading(handoff)}</h2>
         {handoff.kind === "attention" && handoff.provenanceId ? (
           <span className="paper-handoff-source-badge">Paper Command</span>
+        ) : null}
+        {handoff.kind === "opportunity" && handoff.opportunityId ? (
+          <span className="paper-handoff-source-badge">Radar watched</span>
         ) : null}
       </header>
 
@@ -56,6 +62,34 @@ export function PaperHandoffPanel({ handoff, evidenceAsOf }: Props) {
           <h3>Source context</h3>
           <p>{handoff.sourceContextSummary}</p>
           {handoff.sourceTier !== null ? <p className="muted">Tier {handoff.sourceTier}</p> : null}
+          {handoff.sourceTimeLabel && handoff.sourceTimeFieldLabel ? (
+            <p className="muted">
+              {handoff.sourceTimeFieldLabel}:{" "}
+              <time dateTime={String(handoff.sourceTime ?? "")}>{handoff.sourceTimeLabel}</time>
+            </p>
+          ) : null}
+          {handoff.sourceReasons.length > 0 ? (
+            <ul className="reason-codes">
+              {handoff.sourceReasons.map((reason) => (
+                <li key={reason.code}>
+                  <code>{reason.code}</code> {reason.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <p className="muted">{handoff.sourceContextNote}</p>
+        </div>
+      ) : null}
+
+      {handoff.kind === "opportunity" && handoff.sourceContextSummary ? (
+        <div className="paper-handoff-source-context" data-testid="paper-opportunity-handoff-context">
+          <h3>Watched opportunity context</h3>
+          <p>{handoff.sourceContextSummary}</p>
+          {handoff.opportunityId ? (
+            <p className="muted">
+              Opportunity <code>{handoff.opportunityId}</code>
+            </p>
+          ) : null}
           {handoff.sourceTimeLabel && handoff.sourceTimeFieldLabel ? (
             <p className="muted">
               {handoff.sourceTimeFieldLabel}:{" "}

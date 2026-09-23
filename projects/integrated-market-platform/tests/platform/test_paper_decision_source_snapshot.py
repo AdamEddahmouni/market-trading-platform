@@ -132,6 +132,33 @@ class PaperDecisionSourceSnapshotTests(unittest.TestCase):
             snapshot_matches_correlation(snapshot=snapshot, correlation_id="attention-biya")
         )
 
+    def test_parse_and_validate_watched_opportunity_snapshot(self) -> None:
+        snapshot = parse_decision_source_snapshot(
+            {
+                "source_type": "watched_opportunity",
+                "source_id": "opp-1",
+                "headline": "BIYA ignition watch",
+                "source_time": 1_700_000_000_000,
+            }
+        )
+        self.assertEqual(snapshot["source_type"], "watched_opportunity")
+        self.assertEqual(snapshot["source_id"], "opp-1")
+        validated = validate_snapshot_against_correlation(
+            snapshot=snapshot,
+            correlation_id="opportunity:opp-1",
+        )
+        self.assertEqual(validated["headline"], "BIYA ignition watch")
+        with self.assertRaises(ValueError):
+            validate_snapshot_against_correlation(
+                snapshot=snapshot,
+                correlation_id="opp-1",
+            )
+        with self.assertRaises(ValueError):
+            validate_snapshot_against_correlation(
+                snapshot=snapshot,
+                correlation_id="attention:opp-1",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

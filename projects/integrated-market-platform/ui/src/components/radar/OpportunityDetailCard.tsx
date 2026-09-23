@@ -52,6 +52,7 @@ export type OpportunityDetailCardProps = {
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
   onOpenWorkspace: (item: AttentionItem) => void;
+  onPreviewInPaper?: (row: OpportunityReviewRow) => void;
   onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
 };
 
@@ -113,6 +114,7 @@ export function OpportunityDetailCard({
   onExplain,
   onInspect,
   onOpenWorkspace,
+  onPreviewInPaper,
   onAck,
 }: OpportunityDetailCardProps) {
   const attention = attentionItemFromOpportunity(row);
@@ -144,6 +146,7 @@ export function OpportunityDetailCard({
     ? resolveSemanticState("research", row.eligibility_state)
     : null;
   const canOpen = model.actionReadiness.canPreviewWorkspace;
+  const canPreviewInPaper = Boolean(onPreviewInPaper && model.actionReadiness.canPreviewInPaper);
 
   return (
     <article
@@ -296,6 +299,16 @@ export function OpportunityDetailCard({
           </p>
         ) : null}
         <div className="imp-radar-detail-actions">
+          {canPreviewInPaper ? (
+            <button
+              type="button"
+              className="primary"
+              data-testid="imp-radar-preview-in-paper"
+              onClick={() => onPreviewInPaper?.(row)}
+            >
+              Preview in Paper
+            </button>
+          ) : null}
           {canOpen ? (
             <button type="button" onClick={() => onOpenWorkspace(attention)}>
               Open workspace

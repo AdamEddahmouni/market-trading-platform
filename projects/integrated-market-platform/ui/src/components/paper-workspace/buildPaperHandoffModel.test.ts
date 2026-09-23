@@ -71,6 +71,30 @@ describe("buildPaperHandoffModel", () => {
     expect(model.handoffSummary).toMatch(/Paper Command attention/i);
   });
 
+  it("handles watched opportunity provenance for Preview in Paper", () => {
+    const model = buildPaperHandoffModel(
+      {
+        version: 1,
+        instrumentId: "BIYA",
+        side: "BUY",
+        quantity: 1,
+        orderType: "MARKET",
+        sourceAttentionId: "opportunity:opp-1",
+        sourceContext: {
+          headline: "BIYA ignition watch",
+          reasons: [{ code: "WATCHED_OPPORTUNITY", label: "Watched Radar opportunity handoff" }],
+        },
+      },
+      "BIYA",
+    );
+    expect(model.kind).toBe("opportunity");
+    expect(model.isOpportunityOriginated).toBe(true);
+    expect(model.opportunityId).toBe("opp-1");
+    expect(model.placeholderWarning).toMatch(/not an execution recommendation/i);
+    expect(model.handoffSummary).toMatch(/watched Radar opportunity opp-1/i);
+    expect(model.handoffSummary).toMatch(/operator-controlled/i);
+  });
+
   it("marks malformed drafts when symbol mismatches route", () => {
     const model = buildPaperHandoffModel(
       {

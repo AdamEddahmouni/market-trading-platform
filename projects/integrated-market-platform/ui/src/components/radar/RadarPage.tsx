@@ -1,11 +1,15 @@
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import type { AttentionItem } from "../../api/client";
 import { useContextQuery, usePaperPortfolioQuery } from "../../api/hooks";
+import { workspacePathForInstrument } from "../../api/instrumentIdentity";
+import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { PageHeader } from "../shared/PageHeader";
 import { LinkTabs } from "../imp-ui/LinkTabs";
 import { DiscoverObservability } from "../discover-shared/DiscoverObservability";
 import { ExploreObservability } from "../explore-shared/ExploreObservability";
 import type { Mode } from "../mode-session/types";
+import { createWatchedOpportunityPaperOrderDraft } from "../paper-now/paperOrderDraft";
+import { canPreviewOpportunityInPaper } from "../opportunity/opportunityPresentation";
 import { RadarOpportunitiesPanel } from "./RadarOpportunitiesPanel";
 
 export type RadarTab = "opportunities" | "screeners";
@@ -85,6 +89,7 @@ export function RadarPage({
   onInspect,
   onOpenWorkspace,
 }: RadarPageProps) {
+  const navigate = useNavigate();
   const contextQuery = useContextQuery();
   const asOf = contextQuery.data?.as_of_context as
     | { controlled_replay?: boolean; evidence_class?: string }
@@ -102,6 +107,10 @@ export function RadarPage({
     : paper && paperActionsPermitted
       ? portfolioQuery.data?.account.paper_account_id
       : undefined;
+  /** Real Paper authority only — controlled-replay learning acks are not preview authority. */
+  const paperPreviewPermitted = Boolean(
+    paper && paperActionsPermitted && portfolioQuery.data?.account.paper_account_id,
+  );
   const [searchParams] = useSearchParams();
   const filterQuery = tab === "screeners" ? (searchParams.get("q") ?? undefined) : undefined;
   // Deep link from the Command signal→opportunity bridge: `/radar?selected=<id>`
@@ -109,6 +118,13 @@ export function RadarPage({
   const selectedParam = tab === "opportunities" ? searchParams.get("selected") : null;
   // Controlled replay allows Watch/Dismiss; other Demo/Live surfaces stay read-only.
   const readOnly = controlledReplay ? false : !paper;
+
+  const handlePreviewInPaper = (row: OpportunityReviewRow) => {
+    if (!paperPreviewPermitted || !canPreviewOpportunityInPaper(row)) return;
+    const draft = createWatchedOpportunityPaperOrderDraft(row);
+    if (!draft) return;
+    navigate(workspacePathForInstrument(draft.instrumentId), { state: draft });
+  };
 
   return (
     <section
@@ -148,6 +164,7 @@ export function RadarPage({
           onExplain={onExplain}
           onInspect={onInspect}
           onOpenWorkspace={onOpenWorkspace}
+          onPreviewInPaper={paperPreviewPermitted ? handlePreviewInPaper : undefined}
         />
       ) : (
         <div className="imp-radar-screeners" data-testid="imp-radar-screeners">

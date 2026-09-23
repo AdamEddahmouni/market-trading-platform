@@ -36,6 +36,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Controlled Replay Paper preview acceptance
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/acceptance` / Controlled Replay |
+| **Summary** | Added namespaced/resettable SOFTWARE_CONTROLLED / FIXTURE_REPLAY acceptance for WATCHED Radar → Paper preview handoff (`opportunity:{id}`), proving Watch alone does not unlock Paper, server preview remains authority, and no Live/submit/fake fill. |
+| **Key files** | `tests/acceptance/test_controlled_replay_paper_preview_acceptance.py` |
+| **Tests** | `unittest tests.platform.test_paper_decision_source_snapshot` 11 ok; `unittest tests.acceptance.test_controlled_replay_paper_preview_acceptance` 3 ok; `imp.py test focused` (3 selectors) **passed** |
+| **Related** | Base `36b3ad08` Radar→Paper preview; Controlled Replay golden path |
+| **Notes** | Empirical RTH runtime / frozen campaign SHAs untouched. No push/PR. |
+
+## 2026-09-23 — Radar watched opportunity → Paper preview handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` / `ui/paper-workspace` / `paper/decision_source` |
+| **Summary** | Smallest honest continuation: watched + eligible Radar opportunities can open the existing Paper workspace preview cockpit with canonical `opportunity:{id}` provenance. No second Paper stack, no auto-submit, no invented trade intent (placeholder BUY×1 only). Controlled-replay learning acks are not Paper preview authority. |
+| **Key files** | `src/.../paper/decision_source.py`; `ui/.../paperOrderDraft.ts`; `ui/.../paperDecisionSourceSnapshot.ts`; `ui/.../buildPaperHandoffModel.ts`; `ui/.../PaperHandoffPanel.tsx`; `ui/.../opportunityPresentation.ts`; `ui/.../opportunityDetailModel.ts`; `ui/.../radar/{OpportunityDetailCard,RadarPage,RadarOpportunitiesPanel}.{tsx}`; `ui/.../paper-portfolio/{paperDecisionProvenance.ts,PaperOrderHistoryTable.tsx}`; `docs/architecture/PAPER_DECISION_LIFECYCLE.md`; focused tests |
+| **Tests** | `unittest tests.platform.test_paper_decision_source_snapshot` 11 ok; `imp.py test focused …watched_opportunity…` passed; vitest 6 files / 105 passed; `imp.py test affected` **PASSED** 4726 tests / 32 skipped / 0 failures / 0 errors (first affected run had a flaky intelligence error; clean re-run passed) |
+| **Related** | Operator golden path deferred Paper preview; durable decision closure PR #391 |
+| **Notes** | Empirical runtime / frozen campaign SHAs untouched. Live trading not enabled. |
+
 ## 2026-09-23 — Radar durable decision closure after Watch/Dismiss
 
 | Field | Value |
