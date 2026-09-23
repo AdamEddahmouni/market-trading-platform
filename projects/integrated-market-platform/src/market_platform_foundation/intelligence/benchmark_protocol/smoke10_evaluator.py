@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+from .protocol_controls import CATASTROPHIC_CRITERIA, evaluate_catastrophic_triggers
+
 CASE_DIMENSIONS = (
     "freshness",
     "facts",
@@ -30,6 +32,8 @@ def score_case_dimensions(
     sut_response: dict[str, Any],
     gold: dict[str, Any],
     blind_mode: str | None,
+    blind_input: dict[str, Any] | None = None,
+    case_row_flags: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     failure_reasons: list[str] = []
     dimensions: dict[str, str] = {}
@@ -79,15 +83,23 @@ def score_case_dimensions(
         dimensions["operator_close"] = "FAIL"
         failure_reasons.append("OPERATOR_CLOSE_UNEXPECTED")
 
-    if sut_response.get("catastrophic"):
+    triggered = evaluate_catastrophic_triggers(
+        sut_response=sut_response,
+        blind_input=blind_input or {},
+        case_row_flags=case_row_flags,
+    )
+    if triggered:
         dimensions["catastrophic"] = "FAIL"
-        failure_reasons.append("CATASTROPHIC_FLAG")
+        for criterion_id in triggered:
+            criterion = CATASTROPHIC_CRITERIA[criterion_id]
+            failure_reasons.append(criterion["failure_reason"])
     else:
         dimensions["catastrophic"] = "PASS"
 
     return {
         "dimensions": dimensions,
         "failure_reasons": failure_reasons,
+        "catastrophic_triggers": triggered,
         "evaluator_gold_loaded_for_sut": False,
         "scores_executed": True,
     }

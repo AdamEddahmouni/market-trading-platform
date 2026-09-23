@@ -36,6 +36,53 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 - Fix WORK_LOG UTF-8 encoding for docs CI
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | docs |
+| **Summary** | Re-saved WORK_LOG.md as UTF-8 after a Windows-1252 em dash (0x97) broke validate-docs and the changed-mode documentation cheap check. No protocol, evidence, or freeze changes. |
+| **Key files** | docs/engineering/WORK_LOG.md |
+| **Tests** | python tools/check_docs_links.py -> OK |
+| **Related** | PR #384 |
+| **Notes** | validate-python-changed FAILED status was the docs cheap-check UTF-8 error; perf=INCOMPATIBLE_BASELINE remains OBSERVE_ONLY telemetry and was not the exit cause. Stub Smoke10 pin unchanged. |
+
+## 2026-09-22 - Regenerate nonstub Smoke10 freeze fixture for protocol controls
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | CI on PR #384 failed because `freeze_smoke10_run_configuration` now hashes RTH15-10 protocol-control fields. Regenerated `ibp_smoke10_nonstub_sut_freeze_v1.json` so pinned fingerprint matches the generator (`DE1AADFA...`). Stub evidence pin under `imp-rth15-11-smoke10-20260922` unchanged. |
+| **Key files** | `tests/fixtures/intelligence_benchmark/freeze/ibp_smoke10_nonstub_sut_freeze_v1.json` |
+| **Tests** | nonstub freeze match + protocol/smoke10/harness suites - 23 OK |
+| **Related** | PR #384 |
+| **Notes** | Delta was stable protocol fields only (lookahead/contamination/vanity/evidence_class/freeze certificate), not wall-clock or gold. |
+## 2026-09-22 - Correct stub Smoke10 pin provenance (post-review)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | Replaced unreproducible pin that claimed `code_sha=aa15ebd` while running uncommitted protocol code. Re-ran deterministic-stub Smoke10 from clean `c1e0f9fb`, recorded that SHA, fingerprint `31AF43ED…` / `ibp-smoke10-31AF43EDCC94D346`, and confirmed a second freeze/run matches. This is a stub/harness `SOFTWARE_CONTROLLED` control only — **not** real-system RTH15-11 Smoke10 and not intelligence-capability proof. |
+| **Key files** | `evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/*`; `docs/engineering/WORK_LOG.md`; `docs/engineering/INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md` |
+| **Tests** | `.\.venv\Scripts\python.exe -m unittest tests.intelligence.test_intelligence_benchmark_protocol_controls_v1 tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter` |
+| **Related** | Protocol controls commit `c1e0f9fb`; false prior run id `ibp-smoke10-896D92294A1240B5` superseded |
+| **Notes** | `code_sha` stays the runner commit `c1e0f9fb`, not this evidence commit and not `origin/main`. No push/PR/merge. |
+
+## 2026-09-22 — RTH15-10 Benchmark Protocol controls + stub harness Smoke10 control
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (RTH15-10 protocol); stub harness control only for Smoke10 |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | Closed RTH15-10 gaps (no-lookahead, Modes A–E definitions, catastrophic criteria, contaminated-case invalidation without partial credit, vanity-aggregate ban) with freeze certificate + tests. Also ran a **deterministic-stub / harness** Smoke10 under `synthetic_intelligence_fixture_v1_baseline_v1` as `SOFTWARE_CONTROLLED` only. **Not** real-system RTH15-11 Smoke10; facts FAIL is expected stub behavior, not intelligence-capability proof. Initial evidence pin was later corrected for `code_sha` provenance. |
+| **Key files** | `src/.../benchmark_protocol/protocol_controls.py`; `blind_input.py`; `smoke10_evaluator.py`; `smoke10_execution.py`; `readiness.py`; `tests/intelligence/test_intelligence_benchmark_protocol_controls_v1.py`; `docs/engineering/INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_protocol_controls_v1 tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter` — 22 OK |
+| **Related** | [INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md](INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md); historical Lane D `ibp-smoke10-76DDD188CD080365` unchanged |
+| **Notes** | RTH15-11 real-system Smoke10 remains **NOT_EXECUTED**. Not market/FTEP/Item 9/Paper calibration evidence. Full30 not run. |
+
 ## 2026-09-22 — RTH15-09 truthfulness nits (no-breakaway claims)
 
 | Field | Value |

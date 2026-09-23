@@ -40,6 +40,7 @@ python tools/imp.py historical-data harness --fixture-path tests/fixtures/histor
 
 - Evaluator gold lives only under `tests/fixtures/intelligence_benchmark/evaluator_only/gold/` (catalog `evaluator_gold_ref` prefix `evaluator_only/`).
 - Adapter never copies gold into `system_under_test_input`.
+- RTH15-10 protocol controls: lookahead forbidden, Modes A–E definitions, catastrophic criteria, contaminated-case invalidation (no partial credit), vanity aggregate forbidden. See [INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md](INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md).
 - Full-suite execution is **not** wired in this increment.
 
 ## `BENCHMARK_SMOKE10_READY`
