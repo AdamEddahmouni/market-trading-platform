@@ -1,0 +1,760 @@
+{
+  "ALL_GATES_PASS": true,
+  "artifact_root": "evidence/intelligence-benchmark/imp-rth15-11-smoke10-real-system-20260922",
+  "contamination_audit_overall": "PASS",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "execution_result": "COMPLETED",
+  "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+  "invalid_case_count": 0,
+  "invalidated_case_ids": [],
+  "output_invalidated": false,
+  "per_case_records": [
+    {
+      "case_id": "IBP-CASE-001",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "8EF9761ED461479A572F8BBF6C61FBD095847337D7A1368BF0AC91499662A13D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "FAIL"
+      },
+      "facts": {
+        "answer": "Aggregate data quality for active scope \u2014 Quality state GOOD \u2014 Admitted equity intraday fixture; bar-only capability",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH",
+        "UNKNOWN_NOT_USED"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "HISTORICAL_DEVELOPMENT",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "A",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "A"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": null,
+        "answer_is_unknown": false,
+        "dimension": "FAIL"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-002",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "2B36210DEA3DBA7FDA74F9541B6B8FDB7B8CFBC958139153E2034B92614446A8",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "B",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "B"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-003",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "30168FBDBE800B7EF4B4B402A3E678EF77DA48953D7D150FA02284C956CD2F7C",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "C",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "C"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-004",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "457DF5D9F43EC75D9E90DF74A204643F703AD10FD44217896128C5A742662CAA",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "D",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "D"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-005",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "AE8118CDB8CF6A18887DE6ABBCC50894B91E581C651277C5E7854841C007811D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "E",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "E"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-006",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "CF2F74E7FB7CDBD198715E817BCAC2DFE2575177416D0465FB97472911FC314D",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "A",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "A"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-007",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "0855C362D0A791413D4B47D0AAA3E870282B3E4A3F8BAEF4F1DC2F6BD568AE3E",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "B",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "B"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-008",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "0A844909845A99AB098EDE613CEA09E779D6A2227BE02855AD9803CBE9B7916B",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "C",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "C"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-009",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "42DD1D59A898A3B919C1F2194BFE81032ECB63593D8B11E61AC509823B007D63",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "D",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "D"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    },
+    {
+      "case_id": "IBP-CASE-010",
+      "catastrophic_status": "PASS",
+      "contamination_status": {
+        "evaluator_gold_loaded_for_sut": false,
+        "prior_case_ids_visible_to_sut": false,
+        "sut_response_includes_gold": false
+      },
+      "context_reset_identity": "54F9DD99B1B86AC3C66DA091528613E2E96D3B52217FC548B089CB822FE56706",
+      "dimension_scores": {
+        "catastrophic": "PASS",
+        "facts": "FAIL",
+        "final_state": "PASS",
+        "freshness": "PASS",
+        "operator_close": "PASS",
+        "provenance": "PASS",
+        "routing": "PASS",
+        "unknown_handling": "PASS"
+      },
+      "facts": {
+        "answer": "UNKNOWN",
+        "dimension": "FAIL"
+      },
+      "failure_reasons": [
+        "FACTS_MISMATCH"
+      ],
+      "final_state": {
+        "dimension": "PASS",
+        "final_state": "CLOSED"
+      },
+      "freshness": "FIXTURE",
+      "frozen_code_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+      "frozen_config_fingerprint": "8C23029DD46FDA780AF32E9ED185E64432C3C0A33B38E08F3A000496DB073C59",
+      "frozen_protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+      "invalidation_reason": null,
+      "operator_close": {
+        "dimension": "PASS",
+        "operator_close": "OK"
+      },
+      "protocol_mode": "E",
+      "provenance": {
+        "authority": "HISTORICAL_DEVELOPMENT",
+        "dimension": "PASS",
+        "provenance_complete": true
+      },
+      "routing": {
+        "dimension": "PASS",
+        "routing": "E"
+      },
+      "sut_model_config_identity": {
+        "limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+        "sut_model_id": "grounded.evidence:deterministic.v1",
+        "sut_name": "IMP SmartRouter + Grounded Facts Responder",
+        "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
+        "sut_version": "imp.ibp-facts-sut/1.1.0"
+      },
+      "unknown_handling": {
+        "abstention_reason": "EVIDENCE_RESOLVER_MISSING",
+        "answer_is_unknown": true,
+        "dimension": "PASS"
+      },
+      "valid_invalid_status": "VALID"
+    }
+  ],
+  "protocol_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
+  "real_sut_identity": {
+    "CODE_SHA": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
+    "CONTEXT_RULES": [
+      "one_fresh_context_per_case_v1",
+      "stateless_sut_runner_no_cross_case_memory",
+      "evaluator_gold_prefix_blocked:evaluator_only/",
+      "scores_after_sut_response_only"
+    ],
+    "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
+    "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
+    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
+    "MODEL_ROUTING": {
+      "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
+      "llm_network": "DISABLED_BY_CONSTRUCTION",
+      "primary_inference": "grounded.evidence:deterministic.v1",
+      "router": "market_platform_foundation.intelligence.routing.SmartRouter",
+      "router_policy": "RoutingPolicyV1"
+    },
+    "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
+    "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
+    "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
+    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
+    "TOOLS_AVAILABLE": [
+      "historical_development_fixture_reader",
+      "smart_router_route",
+      "grounded_evidence_infer",
+      "grounded_fact_extraction_v1"
+    ]
+  },
+  "run_id": "ibp-smoke10-8C23029DD46FDA78",
+  "summaries": {
+    "by_dimension": {
+      "catastrophic": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "facts": {
+        "FAIL": 10,
+        "INVALID": 0,
+        "PASS": 0
+      },
+      "final_state": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "freshness": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "operator_close": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "provenance": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "routing": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "unknown_handling": {
+        "FAIL": 1,
+        "INVALID": 0,
+        "PASS": 9
+      }
+    },
+    "by_failure_type": {
+      "FACTS_MISMATCH": 10,
+      "UNKNOWN_NOT_USED": 1
+    },
+    "by_mode": {
+      "A": {
+        "cases": 2,
+        "dimension_failures": 3,
+        "invalid_cases": 0
+      },
+      "B": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "C": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "D": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "E": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      }
+    },
+    "by_system": {
+      "imp_historical_routing_grounded_facts_v1": {
+        "cases": 10,
+        "dimension_failures": 11,
+        "invalid_cases": 0
+      }
+    },
+    "invalidated_case_ids": [],
+    "vanity_aggregate_score": "FORBIDDEN"
+  },
+  "valid_case_count": 10
+}
