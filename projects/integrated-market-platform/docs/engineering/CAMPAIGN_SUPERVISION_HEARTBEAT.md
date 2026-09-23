@@ -124,6 +124,24 @@ governed start/stop/state, job inventory, unified liveness/heartbeat, outage
 history, and recovery workflows — **reusing** these ownership/heartbeat/outage
 files and diagnostics composition rather than inventing a second stack.
 
+## Observation start gate (campaign observation readiness)
+
+ONE read model composes supervision + platform service liveness + provider /
+ingress signals into a fail-visible pre-RTH gate:
+
+- Module: `platform/operator_diagnostics/campaign_observation_readiness.py`
+- Diagnostics: `sections.campaign_observation_readiness` on `GET /operator/diagnostics`
+- CLI: `python tools/platform/campaign_supervisor.py readiness --state-dir $env:IMP_STATE_DIR`
+- **ARM OBSERVATION** = existing `campaign_supervisor.py arm` (execution stays
+  `BLOCKED`; never **GO LIVE**). Operator Control shows the gate and CLI arm
+  command; it does **not** POST a parallel UI arm path.
+
+Fail-loud: intended campaign today + RTH soon/open + `NOT_ARMED` →
+`CAMPAIGN_NOT_ARMED_BEFORE_RTH` blocking alert (`ACTION_REQUIRED`).
+
+Optional intent declaration (env or `{IMP_STATE_DIR}/campaign-supervision/observation-intent.json`):
+`campaign_id`, `intended_date_et`, `frozen`, `runtime_sha`, `observation_window_id`.
+
 ## Historical September 22
 
 Do **not** rewrite Segment A/B manifests or claim the outage was prevented.

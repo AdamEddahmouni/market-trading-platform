@@ -150,6 +150,55 @@ export function diagnosticsGovernance(diagnostics: OperatorDiagnostics | null | 
   }>(diagnostics, "governance");
 }
 
+export type CampaignObservationReadiness = {
+  phase?: string;
+  campaign_id?: string | null;
+  runtime_sha?: string | null;
+  frozen?: boolean | string;
+  armed?: boolean;
+  arm_status?: string;
+  owner?: string | null;
+  heartbeat?: string;
+  state_dir?: string | null;
+  provider_status?: string;
+  ingress_enabled?: boolean | string;
+  api_ready?: boolean;
+  api_status?: string;
+  ui_ready?: boolean;
+  ui_status?: string;
+  item9_collector_status?: string;
+  execution_authority?: string;
+  observation_window?: string | null;
+  blockers?: string[];
+  blocking_alerts?: Array<{ code?: string; severity?: string; message?: string }>;
+  has_blocking_alert?: boolean;
+  arm_observation?: {
+    label?: string;
+    never_label?: string;
+    cli_command?: string;
+    ui_mutation_wired?: boolean;
+    ui_mutation_reason?: string;
+    wires_existing_cli_arm?: boolean;
+    grants_execution_authority?: boolean;
+  };
+};
+
+export function diagnosticsCampaignObservationReadiness(
+  diagnostics: OperatorDiagnostics | null | undefined,
+): CampaignObservationReadiness | undefined {
+  return diagnosticsSection<CampaignObservationReadiness>(
+    diagnostics,
+    "campaign_observation_readiness",
+  );
+}
+
+export function presentObservationReadinessFlag(value: boolean | string | null | undefined): string {
+  if (value === true) return "YES";
+  if (value === false) return "NO";
+  if (value == null || value === "") return "UNKNOWN";
+  return String(value);
+}
+
 export function mapSeverityTone(severity: string | undefined): SemanticTone {
   switch ((severity ?? "").toUpperCase()) {
     case "OK":
@@ -573,6 +622,20 @@ export function buildOperatorSituation(
 ): OperatorSituation {
   if (!diagnostics) {
     return buildUnavailableOperatorSituation("empty");
+  }
+
+  const observation = diagnosticsCampaignObservationReadiness(diagnostics);
+  if (observation?.has_blocking_alert) {
+    const alert = observation.blocking_alerts?.[0];
+    return {
+      kind: "impaired",
+      title: "Campaign observation not armed before RTH",
+      explanation:
+        alert?.message ??
+        `Campaign ${observation.campaign_id ?? "UNKNOWN"} is NOT_ARMED while RTH starts soon or is open.`,
+      nextSafeAction:
+        "ARM OBSERVATION with python tools/platform/campaign_supervisor.py arm (execution stays BLOCKED). Never GO LIVE.",
+    };
   }
 
   const rows = buildOperatorTruthRows(diagnostics);

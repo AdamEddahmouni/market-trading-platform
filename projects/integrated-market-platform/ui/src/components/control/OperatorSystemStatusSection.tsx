@@ -1,5 +1,6 @@
 import type { OperatorDiagnostics } from "../../api/schemas";
 import { StatePill } from "../imp-ui/StatePill";
+import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { EmptyState, ErrorState } from "../imp-ui/FeedbackStates";
 import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import {
@@ -7,11 +8,13 @@ import {
   buildOperatorTruthRows,
   buildUnavailableHonestyRows,
   buildUnavailableOperatorSituation,
+  diagnosticsCampaignObservationReadiness,
   diagnosticsGovernance,
   diagnosticsRuntimeSection,
   explainTruthClass,
   humanDiagnosticsHeadline,
   mapSeverityTone,
+  presentObservationReadinessFlag,
   type OperatorTruthRow,
 } from "./operatorDiagnosticsPresentation";
 
@@ -70,10 +73,123 @@ export function OperatorSystemStatusSection({ diagnostics, isLoading, isError, o
   const situation = buildOperatorSituation(diagnostics);
   const severityTone = mapSeverityTone(diagnostics.severity);
   const corpusScope = String(runtime?.item9_corpus_status?.receipt_scope ?? "");
+  const observation = diagnosticsCampaignObservationReadiness(diagnostics);
 
   return (
     <div className="control-system-status">
       <HonestySituation situation={situation} />
+
+      {observation?.has_blocking_alert ? (
+        <AttentionBanner
+          tone="critical"
+          affects="Observation arm is required before RTH. This does not enable Live or broker submit."
+        >
+          {observation.blocking_alerts?.[0]?.message ??
+            `Campaign ${observation.campaign_id ?? "UNKNOWN"} is NOT_ARMED while RTH starts soon.`}
+        </AttentionBanner>
+      ) : null}
+
+      {observation ? (
+        <section className="control-observation-readiness" aria-labelledby="control-obs-readiness-heading">
+          <h3 id="control-obs-readiness-heading">Campaign observation readiness</h3>
+          <p className="control-muted">
+            Fail-visible start gate before RTH. Execution authority stays BLOCKED. Item 9 status is
+            display-only.
+          </p>
+          <dl className="control-details-grid">
+            <div>
+              <dt>Campaign</dt>
+              <dd>{observation.campaign_id ?? "NONE"}</dd>
+            </div>
+            <div>
+              <dt>Runtime SHA</dt>
+              <dd>
+                {observation.runtime_sha ? (
+                  <CopyableIdentifier value={String(observation.runtime_sha)} chars={12} />
+                ) : (
+                  "UNKNOWN"
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt>Frozen?</dt>
+              <dd>{presentObservationReadinessFlag(observation.frozen)}</dd>
+            </div>
+            <div>
+              <dt>Armed?</dt>
+              <dd>{presentObservationReadinessFlag(observation.armed)} ({observation.arm_status ?? "NOT_ARMED"})</dd>
+            </div>
+            <div>
+              <dt>Owner</dt>
+              <dd>{observation.owner ?? "NONE"}</dd>
+            </div>
+            <div>
+              <dt>Heartbeat</dt>
+              <dd>{observation.heartbeat ?? "NOT_APPLICABLE"}</dd>
+            </div>
+            <div>
+              <dt>State dir</dt>
+              <dd>
+                <code>{observation.state_dir ?? "UNKNOWN"}</code>
+              </dd>
+            </div>
+            <div>
+              <dt>Provider status</dt>
+              <dd>{observation.provider_status ?? "UNKNOWN"}</dd>
+            </div>
+            <div>
+              <dt>Ingress enabled?</dt>
+              <dd>{presentObservationReadinessFlag(observation.ingress_enabled)}</dd>
+            </div>
+            <div>
+              <dt>API ready?</dt>
+              <dd>
+                {presentObservationReadinessFlag(observation.api_ready)} ({observation.api_status ?? "UNKNOWN"})
+              </dd>
+            </div>
+            <div>
+              <dt>UI ready?</dt>
+              <dd>
+                {presentObservationReadinessFlag(observation.ui_ready)} ({observation.ui_status ?? "UNKNOWN"})
+              </dd>
+            </div>
+            <div>
+              <dt>Item 9 collector</dt>
+              <dd>{observation.item9_collector_status ?? "NOT_OBSERVED"} (display-only)</dd>
+            </div>
+            <div>
+              <dt>Execution authority</dt>
+              <dd>{observation.execution_authority ?? "BLOCKED"}</dd>
+            </div>
+            <div>
+              <dt>Observation window</dt>
+              <dd>{observation.observation_window ?? "NONE"}</dd>
+            </div>
+            <div>
+              <dt>Phase</dt>
+              <dd>{observation.phase ?? "UNKNOWN"}</dd>
+            </div>
+            <div>
+              <dt>Blockers</dt>
+              <dd>{(observation.blockers ?? []).join(", ") || "NONE"}</dd>
+            </div>
+          </dl>
+          <div className="control-observation-arm">
+            <p>
+              <strong>{observation.arm_observation?.label ?? "ARM OBSERVATION"}</strong>
+              {" — never "}
+              {observation.arm_observation?.never_label ?? "GO LIVE"}.
+            </p>
+            <p className="control-muted">
+              {observation.arm_observation?.ui_mutation_reason ??
+                "Uses existing campaign_supervisor.py arm (execution BLOCKED)."}
+            </p>
+            {observation.arm_observation?.cli_command ? (
+              <pre className="control-code-block">{observation.arm_observation.cli_command}</pre>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
 
       <div className="control-system-status-headline">
         <StatePill tone={severityTone} label={diagnostics.severity} raw={diagnostics.severity} />

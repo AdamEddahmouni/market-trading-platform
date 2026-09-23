@@ -29,6 +29,10 @@ from ..artifact_path_resolver import (
     looks_like_posix_absolute_path,
     looks_like_windows_absolute_path,
 )
+from .campaign_observation_readiness import (
+    build_campaign_observation_readiness,
+    load_observation_intent,
+)
 from .campaign_supervision import load_campaign_supervision_view
 from .operator_truth import build_operator_truth_section
 from .service_liveness import compose_readiness_vs_liveness
@@ -785,6 +789,37 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
     cycle = _cycle_recovery_view(item9, lifecycle, resilience=resilience)
     evidence_gaps = _evidence_gaps(opportunity_summary, item9)
 
+    item9_collector_view = {
+        "disposition": item9.get("disposition"),
+        "process_probe_status": (
+            (item9.get("active_collector") or {}).get("process_probe_status")
+            if isinstance(item9.get("active_collector"), dict)
+            else None
+        ),
+        "status": (
+            (item9.get("active_collector") or {}).get("process_probe_status")
+            if isinstance(item9.get("active_collector"), dict)
+            else item9.get("disposition")
+        ),
+    }
+    campaign_observation_readiness = build_campaign_observation_readiness(
+        campaign_supervision=campaign_supervision,
+        lifecycle=lifecycle,
+        provider_readiness=readiness,
+        provider_health=provider_health,
+        ingress_enabled=_observation_ingress_enabled(),
+        item9_collector=item9_collector_view,
+        intent=load_observation_intent(campaign_state),
+        state_directory=campaign_state,
+    )
+    # Public snapshot already redacts ownership paths; mirror that on the gate.
+    if isinstance(campaign_observation_readiness.get("state_dir"), str):
+        if looks_like_windows_absolute_path(str(campaign_observation_readiness["state_dir"])) or looks_like_posix_absolute_path(
+            str(campaign_observation_readiness["state_dir"])
+        ):
+            campaign_observation_readiness = dict(campaign_observation_readiness)
+            campaign_observation_readiness["state_dir"] = "<IMP_STATE_DIR>/campaign-supervision"
+
     interventions: list[str] = []
     if str(lifecycle.get("status")) == "STOPPED":
         interventions.append("Run operator lifecycle start (setup/start) for API/UI/control services.")
@@ -798,6 +833,11 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
         )
     if state_path.get("warnings"):
         interventions.append("Run python tools/imp.py state-path and align IMP_STATE_DIR with canonical FTEP state.")
+    if campaign_observation_readiness.get("has_blocking_alert"):
+        interventions.append(
+            "ARM OBSERVATION via python tools/platform/campaign_supervisor.py arm "
+            "(observation-safe; does not grant broker execution)."
+        )
 
     governance = _governance_block(
         lifecycle_status=str(lifecycle.get("status") or "UNKNOWN"),
@@ -838,6 +878,8 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
         "APPLICATION_UNREADY",
         "SESSION_UNAVAILABLE",
     }:
+        severity = "ACTION_REQUIRED"
+    if campaign_observation_readiness.get("has_blocking_alert"):
         severity = "ACTION_REQUIRED"
 
     as_of_utc = datetime.now(timezone.utc).isoformat()
@@ -910,12 +952,18 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "cycle_recovery": cycle,
             "evidence_gaps": evidence_gaps,
             "governance": governance,
+            "campaign_observation_readiness": campaign_observation_readiness,
         },
         "human_summary": [
             governance["headline"],
             f"Lifecycle: {lifecycle.get('status')}; readiness: {readiness.get('status')}; "
             f"Item 9 preflight disposition: {item9.get('disposition')}.",
             f"Runtime SHA {runtime_sha[:12]}…; frozen collector pin {_PIN_ITEM9_FROZEN_COLLECTOR_SHA[:8]}….",
+            (
+                f"Observation readiness: {campaign_observation_readiness.get('phase')}; "
+                f"armed={campaign_observation_readiness.get('armed')}; "
+                f"blocking_alert={campaign_observation_readiness.get('has_blocking_alert')}."
+            ),
         ],
         "sources_composed": [
             "GET /operator/lifecycle/status",
@@ -927,5 +975,25 @@ def build_operator_diagnostics_snapshot(store: ReplayStore) -> dict[str, Any]:
             "operations.runtime_resilience_diagnostic.build_runtime_resilience_diagnostic",
             "paper.calibration.item9_calibration_protocol.build_item9_corpus_status_report",
             "platform.operator_diagnostics.campaign_supervision.load_campaign_supervision_view",
+            "platform.operator_diagnostics.campaign_observation_readiness"
+            ".build_campaign_observation_readiness",
         ],
     }
+
+
+def _observation_ingress_enabled() -> bool | None:
+    """Best-effort ingress gate from existing env helpers; None when unavailable."""
+
+    try:
+        from ...intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
+            prospective_catalyst_ingress_enabled,
+        )
+
+        return bool(prospective_catalyst_ingress_enabled())
+    except Exception:
+        try:
+            from ...news.config import observational_news_ingress_enabled
+
+            return bool(observational_news_ingress_enabled())
+        except Exception:
+            return None
