@@ -11,17 +11,15 @@ import {
   liveFeedClockHonesty,
   readOpportunityFreshnessView,
 } from "./opportunityOperatorBrief";
-import { fixtureOpportunityRowBase } from "./opportunityDetailFixtures";
+import {
+  fixtureOpportunityRowBase,
+  fixtureOpportunityRowProviderLinkageWarned,
+  fixtureOpportunityRowStaleEligible,
+} from "./opportunityDetailFixtures";
 
 describe("opportunityOperatorBrief", () => {
   it("renders backend provider_linkage_warnings phrases and does not invent wrong ticker", () => {
-    const warned = {
-      ...fixtureOpportunityRowBase,
-      instrument_id: "NVDA",
-      headline: "MillerKnoll announces new lineup",
-      provider_linkage_warnings: ["uncorroborated", "contextual concern", "low confidence"],
-    };
-    const brief = buildOpportunityOperatorBrief(warned);
+    const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowProviderLinkageWarned);
     const byQuestion = Object.fromEntries(brief.map((row) => [row.question, row]));
     expect(byQuestion["Provider linkage?"]?.answer).toBe(
       "uncorroborated, contextual concern, low confidence",
@@ -31,6 +29,13 @@ describe("opportunityOperatorBrief", () => {
 
     const clean = buildOpportunityOperatorBrief(fixtureOpportunityRowBase);
     expect(clean.some((row) => row.question === "Provider linkage?")).toBe(false);
+  });
+
+  it("keeps the TEST-ONLY STALE-eligible fixture lagged, not FRESH", () => {
+    const brief = buildOpportunityOperatorBrief(fixtureOpportunityRowStaleEligible);
+    const freshness = brief.find((row) => row.question === "How fresh?");
+    expect(freshness?.answer.toUpperCase()).toContain("STALE");
+    expect(freshness?.answer.toUpperCase()).not.toMatch(/\bFRESH\b/);
   });
 
   it("keeps missing providers, conflicts, and invalidation as UNKNOWN", () => {

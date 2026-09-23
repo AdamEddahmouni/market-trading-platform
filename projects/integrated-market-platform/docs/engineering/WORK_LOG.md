@@ -48,6 +48,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Related** | PR #386 merge `fd19258d` (docs tip); durability branch `diagnostic/win-job-kill-durability-20260922` (unmerged harness) |
 | **Notes** | Gate 11 remains PARTIAL (children die with job under default flags; ambient breakaway not terminal-independent). Sep 22 gap root UNPROVEN. Invalidation: no silent SHA move under same campaign identity. |
 
+## 2026-09-22 - UI positive coverage for STALE / linkage / Watch / Dismiss
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar`, `ui/opportunity` (tests only) |
+| **Summary** | Secondary lane closed browser-unobserved positive gaps with TEST-ONLY fixtures and Vitest assertions. STALE and non-empty `provider_linkage_warnings` were already covered on origin/main; added STALE-eligible Paper orthogonality, named fixtures, and positive eligible Dismiss paths (card, detail, keyboard `d`, mobile sheet). No production semantics changed. |
+| **Key files** | `ui/src/components/opportunity/opportunityDetailFixtures.ts`; `ui/src/components/opportunity/OpportunityCard.test.tsx`; `ui/src/components/opportunity/opportunityOperatorBrief.test.ts`; `ui/src/components/radar/RadarPage.test.tsx` |
+| **Tests** | `cd ui && npm test -- RadarPage.test.tsx OpportunityCard.test.tsx opportunityOperatorBrief.test.ts` → 3 files, 71 passed |
+| **Related** | Isolated worktree `.worktrees/ui-e2e-positive-gaps`, branch `ui/e2e-positive-gaps-20260922` (local only; not merged/pushed) |
+| **Notes** | Playwright e2e remains live-stack and non-deterministic for these states; component/integration tests are the accepted positive evidence. Browser tools not used (no fixture-driven Radar route). |
+
 ## 2026-09-22 — Next RTH candidate SHA after #384 (docs only)
 
 | Field | Value |

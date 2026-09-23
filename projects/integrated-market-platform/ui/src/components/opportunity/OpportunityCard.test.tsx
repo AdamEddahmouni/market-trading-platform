@@ -84,6 +84,8 @@ describe("OpportunityCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Watch" }));
     expect(handlers.onAck).toHaveBeenCalledWith(expect.objectContaining({ summary_id: "sum-attn-1" }), "watch");
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss" }));
+    expect(handlers.onAck).toHaveBeenCalledWith(expect.objectContaining({ summary_id: "sum-attn-1" }), "dismiss");
     unmount();
 
     renderCard(<OpportunityCard row={row()} {...handlers} />);
