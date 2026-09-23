@@ -1,0 +1,129 @@
+{
+  "artifact_kind": "intelligence_benchmark_smoke10_evidence_receipt_v1",
+  "case_ids": [
+    "IBP-CASE-001",
+    "IBP-CASE-002",
+    "IBP-CASE-003",
+    "IBP-CASE-004",
+    "IBP-CASE-005",
+    "IBP-CASE-006",
+    "IBP-CASE-007",
+    "IBP-CASE-008",
+    "IBP-CASE-009",
+    "IBP-CASE-010"
+  ],
+  "code_sha_note": "SHA of the checked-out code commit used for the run (protocol controls at c1e0f9fb). Not origin/main and not a later evidence-only commit.",
+  "contamination_audit_overall": "PASS",
+  "contamination_audit_path": "evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/contamination_audit.json",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "evidence_label": "SOFTWARE_CONTROLLED_STUB_HARNESS_SMOKE10",
+  "frozen_code_sha": "c1e0f9fb08ead8f7764df17e07f8d01a5556a720",
+  "frozen_config_fingerprint": "31AF43EDCC94D346B51571ED8F073DACE4170E0FD27DDF8B854C55AAFA427257",
+  "frozen_config_path": "evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/frozen_config.json",
+  "full30_executed": false,
+  "invalidated_case_ids": [],
+  "not_intelligence_capability_proof": true,
+  "not_market_ftep_or_calibration_evidence": true,
+  "note": "Deterministic stub / harness SOFTWARE_CONTROLLED control only (synthetic_intelligence_fixture_v1_baseline_v1). Not real-system Smoke10. Facts FAIL (FACTS_MISMATCH) is expected for the stub and is not intelligence-capability proof. Does not upgrade FTEP empirical status, Item 9 calibration, or Paper simulator calibration. RTH15-11 real-system Smoke10 remains NOT_EXECUTED.",
+  "protocol_freeze_certificate_path": "evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/protocol_freeze_certificate.json",
+  "protocol_version": "imp.intelligence-benchmark-protocol/1.0.0",
+  "real_system_smoke10": false,
+  "reproduction_fingerprint": "31AF43EDCC94D346B51571ED8F073DACE4170E0FD27DDF8B854C55AAFA427257",
+  "reproduction_match": true,
+  "rth15_11_real_system_status": "NOT_EXECUTED",
+  "run_id": "ibp-smoke10-31AF43EDCC94D346",
+  "scores_executed": true,
+  "smoke10_kind": "DETERMINISTIC_STUB_HARNESS_CONTROL",
+  "smoke10_run_record_path": "evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/smoke10_run_record.json",
+  "summaries": {
+    "by_dimension": {
+      "catastrophic": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "facts": {
+        "FAIL": 10,
+        "INVALID": 0,
+        "PASS": 0
+      },
+      "final_state": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "freshness": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "operator_close": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "provenance": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "routing": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      },
+      "unknown_handling": {
+        "FAIL": 0,
+        "INVALID": 0,
+        "PASS": 10
+      }
+    },
+    "by_failure_type": {
+      "FACTS_MISMATCH": 10
+    },
+    "by_mode": {
+      "A": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "B": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "C": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "D": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      },
+      "E": {
+        "cases": 2,
+        "dimension_failures": 2,
+        "invalid_cases": 0
+      }
+    },
+    "by_system": {
+      "synthetic_intelligence_fixture_v1_baseline_v1": {
+        "cases": 10,
+        "dimension_failures": 10,
+        "invalid_cases": 0
+      }
+    },
+    "invalidated_case_ids": [],
+    "vanity_aggregate_score": "FORBIDDEN"
+  },
+  "supersedes_false_pin": {
+    "prior_code_sha_claim": "aa15ebd714d621c3e4d4e57f093e9a450d03ce79",
+    "prior_run_id": "ibp-smoke10-896D92294A1240B5",
+    "reason": "Prior pin claimed origin/main while executing uncommitted protocol code; unreproducible."
+  },
+  "sut_model_id": "ibp-deterministic-stub-v1",
+  "sut_profile_id": "synthetic_intelligence_fixture_v1_baseline_v1",
+  "vanity_aggregate_score": "FORBIDDEN"
+}

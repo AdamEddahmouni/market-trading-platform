@@ -9,14 +9,22 @@ from typing import Any
 from ...canonical import canonical_bytes, sha256_bytes
 from ...paper.calibration.bar_ohlcv_prospective_proof import resolve_runtime_git_sha
 from .blind_input import build_blind_case_input
+from .protocol_controls import (
+    CONTAMINATED_CASE_POLICY,
+    CONTEXT_RESET_POLICY,
+    EVIDENCE_CLASS,
+    LOOKAHEAD_POLICY,
+    VANITY_AGGREGATE_SCORE_POLICY,
+    apply_contamination_invalidation,
+    assert_no_vanity_aggregate_score,
+    build_protocol_v1_freeze_certificate,
+)
 from .smoke10 import build_smoke10_invocation_contract
 from .smoke10_contamination_audit import audit_smoke10_run_contamination
 from .smoke10_evaluator import CASE_DIMENSIONS, load_evaluator_gold, score_case_dimensions
 from .suite_catalog import load_suite_catalog, smoke10_case_ids, suite_catalog_fingerprint
 from .sut_dispatch import resolve_sut_runner
 from .sut_profiles import (
-    IBP_FACTS_SUT_PROFILE_ID,
-    IBP_SYNTHETIC_SUT_MODEL_ID,
     IBP_SYNTHETIC_SUT_PROFILE_ID,
     resolve_sut_profile,
     sut_profile_documentation,
@@ -30,7 +38,6 @@ from .types import (
 
 IBP_SMOKE10_RUN_KIND = "intelligence_benchmark_smoke10_run_v1"
 IBP_SMOKE10_RUN_SCHEMA_VERSION = "imp.intelligence-benchmark-smoke10-run/1.0.0"
-CONTEXT_RESET_POLICY = "one_fresh_context_per_case_v1"
 IBP_NONSTUB_SMOKE10_FREEZE_ARTIFACT_KIND = "ibp_smoke10_nonstub_sut_freeze_v1"
 
 
@@ -50,6 +57,9 @@ def freeze_smoke10_run_configuration(
         repository_root,
         historical_run_record=historical_run_record,
     )
+    protocol_freeze = build_protocol_v1_freeze_certificate(repository_root)
+    if protocol_freeze.get("RTH15_10_COMPLETE") != "YES":
+        raise ValueError("IBP_PROTOCOL_V1_NOT_COMPLETE")
     config_body = {
         "protocol_id": IBP_PROTOCOL_ID,
         "protocol_schema_version": IBP_PROTOCOL_SCHEMA_VERSION,
@@ -59,6 +69,11 @@ def freeze_smoke10_run_configuration(
         "case_ids": case_ids,
         "case_count": IBP_SMOKE10_CASE_COUNT,
         "context_reset_policy": CONTEXT_RESET_POLICY,
+        "lookahead_policy": LOOKAHEAD_POLICY,
+        "contaminated_case_policy": CONTAMINATED_CASE_POLICY,
+        "vanity_aggregate_score_policy": VANITY_AGGREGATE_SCORE_POLICY,
+        "evidence_class": EVIDENCE_CLASS,
+        "protocol_freeze_certificate": protocol_freeze,
         "sut_profile_id": profile.profile_id,
         "sut_model_id": profile.model_id,
         "evaluator_only_gold_prefix": "evaluator_only/",
@@ -101,23 +116,33 @@ def execute_smoke10_case(
     blind_input = build_blind_case_input(case, context_reset_token=token)
     sut_response = sut_runner(blind_input)
     gold = load_evaluator_gold(repository_root, case["evaluator_gold_ref"])
+    case_flags = {
+        "prior_case_ids_visible_to_sut": False,
+        "evaluator_gold_loaded_for_sut": False,
+        "sut_response_includes_gold": "gold_answer" in sut_response,
+    }
     scoring = score_case_dimensions(
         sut_response=sut_response,
         gold=gold,
         blind_mode=case.get("blind_mode"),
+        blind_input=blind_input,
+        case_row_flags=case_flags,
     )
     return {
         "case_id": case_id,
         "blind_mode": case.get("blind_mode"),
         "context_reset_token": token,
+        "case_validity": "VALID",
+        "partial_credit_applied": False,
         "prior_case_ids_visible_to_sut": False,
         "evaluator_gold_loaded_for_sut": False,
-        "sut_response_includes_gold": "gold_answer" in sut_response,
+        "sut_response_includes_gold": case_flags["sut_response_includes_gold"],
         "sut_profile_id": sut_response.get("sut_profile_id"),
         "sut_model_id": sut_response.get("sut_model_id"),
         "sut_response": sut_response,
         "dimension_scores": scoring["dimensions"],
         "failure_reasons": scoring["failure_reasons"],
+        "catastrophic_triggers": scoring.get("catastrophic_triggers") or [],
         "scores_executed": True,
     }
 
@@ -167,6 +192,16 @@ def execute_smoke10_baseline(
         upstream_manifest = historical_run_record.get("system_under_test_input")
         governance = dict(historical_run_record.get("governance") or governance)
 
+    contamination_audit = audit_smoke10_run_contamination(
+        {
+            "case_results": case_results,
+            "frozen_config_fingerprint": frozen_fp,
+            "config_change_detected": False,
+            "upstream_historical_manifest": upstream_manifest,
+            "governance": governance,
+        },
+        frozen_config_fingerprint=frozen_fp,
+    )
     run_record: dict[str, Any] = {
         "artifact_kind": IBP_SMOKE10_RUN_KIND,
         "schema_version": IBP_SMOKE10_RUN_SCHEMA_VERSION,
@@ -177,6 +212,8 @@ def execute_smoke10_baseline(
         "frozen_config_fingerprint": frozen_fp,
         "config": frozen_config,
         "code_sha": frozen_config.get("code_sha"),
+        "sut_profile_id": frozen_config.get("sut_profile_id"),
+        "sut_model_id": frozen_config.get("sut_model_id"),
         "case_ids": list(frozen_config["case_ids"]),
         "case_count": len(case_results),
         "case_results": case_results,
@@ -186,18 +223,16 @@ def execute_smoke10_baseline(
         "governance": governance,
         "upstream_historical_manifest": upstream_manifest,
         "config_change_detected": False,
-        "contamination_audit": audit_smoke10_run_contamination(
-            {
-                "case_results": case_results,
-                "frozen_config_fingerprint": frozen_fp,
-                "config_change_detected": False,
-                "upstream_historical_manifest": upstream_manifest,
-                "governance": governance,
-            },
-            frozen_config_fingerprint=frozen_fp,
-        ),
-        "summaries": summarize_smoke10_run(case_results),
+        "evidence_class": EVIDENCE_CLASS,
+        "lookahead_policy": LOOKAHEAD_POLICY,
+        "contaminated_case_policy": CONTAMINATED_CASE_POLICY,
+        "vanity_aggregate_score_policy": VANITY_AGGREGATE_SCORE_POLICY,
+        "partial_credit_applied": False,
+        "contamination_audit": contamination_audit,
     }
+    apply_contamination_invalidation(run_record)
+    run_record["summaries"] = summarize_smoke10_run(run_record["case_results"])
+    assert_no_vanity_aggregate_score(run_record)
     run_record["run_fingerprint"] = sha256_bytes(
         canonical_bytes(
             {
@@ -205,8 +240,10 @@ def execute_smoke10_baseline(
                 "frozen_config_fingerprint": frozen_fp,
                 "case_ids": frozen_config["case_ids"],
                 "dimension_outcomes": [
-                    (row["case_id"], row["dimension_scores"]) for row in case_results
+                    (row["case_id"], row["dimension_scores"], row.get("case_validity"))
+                    for row in run_record["case_results"]
                 ],
+                "invalidated_case_ids": run_record.get("invalidated_case_ids") or [],
             }
         )
     )
@@ -225,38 +262,59 @@ def execute_smoke10_baseline(
             json.dumps(run_record["contamination_audit"], indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        (artifact_root / "protocol_freeze_certificate.json").write_text(
+            json.dumps(
+                frozen_config.get("protocol_freeze_certificate")
+                or build_protocol_v1_freeze_certificate(repository_root),
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
     return run_record
 
 
 def summarize_smoke10_run(case_results: list[dict[str, Any]]) -> dict[str, Any]:
-    by_dimension: dict[str, dict[str, int]] = {dim: {"PASS": 0, "FAIL": 0} for dim in CASE_DIMENSIONS}
+    by_dimension: dict[str, dict[str, int]] = {
+        dim: {"PASS": 0, "FAIL": 0, "INVALID": 0} for dim in CASE_DIMENSIONS
+    }
     by_failure_type: dict[str, int] = {}
     by_mode: dict[str, dict[str, int]] = {}
     by_system: dict[str, dict[str, int]] = {}
+    invalidated_case_ids: list[str] = []
 
     for row in case_results:
         mode = str(row.get("blind_mode") or "UNKNOWN")
         system = str(row.get("sut_profile_id") or "UNKNOWN")
-        by_mode.setdefault(mode, {"cases": 0, "dimension_failures": 0})
-        by_system.setdefault(system, {"cases": 0, "dimension_failures": 0})
+        by_mode.setdefault(mode, {"cases": 0, "dimension_failures": 0, "invalid_cases": 0})
+        by_system.setdefault(system, {"cases": 0, "dimension_failures": 0, "invalid_cases": 0})
         by_mode[mode]["cases"] += 1
         by_system[system]["cases"] += 1
+        if row.get("case_validity") == "INVALID":
+            invalidated_case_ids.append(str(row.get("case_id")))
+            by_mode[mode]["invalid_cases"] += 1
+            by_system[system]["invalid_cases"] += 1
 
         for dim, outcome in (row.get("dimension_scores") or {}).items():
             if dim in by_dimension and outcome in by_dimension[dim]:
                 by_dimension[dim][outcome] += 1
-            if outcome == "FAIL":
+            if outcome == "FAIL" and row.get("case_validity") != "INVALID":
                 by_mode[mode]["dimension_failures"] += 1
                 by_system[system]["dimension_failures"] += 1
         for reason in row.get("failure_reasons") or []:
             by_failure_type[reason] = by_failure_type.get(reason, 0) + 1
 
-    return {
+    summary = {
         "by_dimension": by_dimension,
         "by_failure_type": by_failure_type,
         "by_mode": by_mode,
         "by_system": by_system,
+        "invalidated_case_ids": invalidated_case_ids,
+        "vanity_aggregate_score": "FORBIDDEN",
     }
+    assert_no_vanity_aggregate_score({"summaries": summary})
+    return summary
 
 
 __all__ = [

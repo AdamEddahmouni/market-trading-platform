@@ -12,19 +12,13 @@
     "IBP-CASE-009",
     "IBP-CASE-010"
   ],
-  "code_sha": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
+  "code_sha": "c1e0f9fb08ead8f7764df17e07f8d01a5556a720",
   "contaminated_case_policy": "INVALIDATE_NO_PARTIAL_CREDIT",
   "context_reset_policy": "one_fresh_context_per_case_v1",
-  "context_rules": [
-    "one_fresh_context_per_case_v1",
-    "stateless_sut_runner_no_cross_case_memory",
-    "evaluator_gold_prefix_blocked:evaluator_only/",
-    "scores_after_sut_response_only"
-  ],
   "evaluator_only_gold_prefix": "evaluator_only/",
   "evidence_class": "SOFTWARE_CONTROLLED",
   "frozen_at_utc": "BASELINE_V1_NO_WALL_CLOCK",
-  "frozen_config_fingerprint": "DE1AADFA8EDF2D3AAE6E5D076D7B714A88176586B6B7B64FCEB9D78F65359D78",
+  "frozen_config_fingerprint": "31AF43EDCC94D346B51571ED8F073DACE4170E0FD27DDF8B854C55AAFA427257",
   "invocation_contract": {
     "case_count": 10,
     "case_plans": [
@@ -252,48 +246,7 @@
   "smoke10_contract_id": "ibp-smoke10-invocation-v1",
   "suite_catalog_fingerprint": "3805FE6D97FE9B08CF787D4D0BA5BFE47944F44E1FDCE1B390683F9C4C230144",
   "suite_id": "ibp-v1-30",
-  "sut_definition": {
-    "CODE_SHA": "b43cfd5303dbcc5dd14cc5618c72b80c57b7db93",
-    "CONTEXT_RULES": [
-      "one_fresh_context_per_case_v1",
-      "stateless_sut_runner_no_cross_case_memory",
-      "evaluator_gold_prefix_blocked:evaluator_only/",
-      "scores_after_sut_response_only"
-    ],
-    "HYPOTHESIS_ID": "LANE-E-HYP-IBP-FACTS-SUT-V1",
-    "LIMITATION_CLASS": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-    "LIMITATION_SUMMARY": "Uses in-repo SmartRouter (BUILD 09), admitted-evidence grounded fact extraction (question_class handlers), and legacy GroundedEvidenceInference for non-factual blind modes; no Anthropic/network LLM and no evaluator gold.",
-    "MODEL_ROUTING": {
-      "assistant_env_policy": "IMP_ASSISTANT_STUB unset; IMP_ASSISTANT_PROVIDER=grounded",
-      "llm_network": "DISABLED_BY_CONSTRUCTION",
-      "primary_inference": "grounded.evidence:deterministic.v1",
-      "router": "market_platform_foundation.intelligence.routing.SmartRouter",
-      "router_policy": "RoutingPolicyV1"
-    },
-    "SUT_MODEL_ID": "grounded.evidence:deterministic.v1",
-    "SUT_NAME": "IMP SmartRouter + Grounded Facts Responder",
-    "SUT_PROFILE_ID": "imp_historical_routing_grounded_facts_v1",
-    "SUT_VERSION": "imp.ibp-facts-sut/1.1.0",
-    "TOOLS_AVAILABLE": [
-      "historical_development_fixture_reader",
-      "smart_router_route",
-      "grounded_evidence_infer",
-      "grounded_fact_extraction_v1"
-    ]
-  },
-  "sut_hypothesis_id": "LANE-E-HYP-IBP-FACTS-SUT-V1",
-  "sut_limitation_class": "BOUNDED_OFFLINE_NO_LLM_GROUNDED_HISTORICAL",
-  "sut_model_id": "grounded.evidence:deterministic.v1",
-  "sut_profile_id": "imp_historical_routing_grounded_facts_v1",
-  "tool_policy": {
-    "evaluator_gold_access": "DENY",
-    "network_llm_access": "DENY",
-    "tools_available": [
-      "historical_development_fixture_reader",
-      "smart_router_route",
-      "grounded_evidence_infer",
-      "grounded_fact_extraction_v1"
-    ]
-  },
+  "sut_model_id": "ibp-deterministic-stub-v1",
+  "sut_profile_id": "synthetic_intelligence_fixture_v1_baseline_v1",
   "vanity_aggregate_score_policy": "FORBIDDEN"
 }

@@ -10,9 +10,9 @@ This document is the **current-main** operator surface for the **next** US equit
 
 | Label | Git SHA | Role |
 |-------|---------|------|
-| **CANDIDATE_RUNTIME** (next observational arm candidate) | `007d8d9ec9a4237042ffa40c5708442ae35d4c19` | `origin/main` after [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385) campaign supervision merge. Confirm with `git fetch origin main` then `git rev-parse origin/main`. **`frozen=no`** — **NOT FROZEN** for arm. Do **not** declare this SHA frozen from this page alone. |
-| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN**) | `007d8d9ec9a4237042ffa40c5708442ae35d4c19` | Mutable tip matching **CANDIDATE_RUNTIME** after fetch. [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) header may lag until a separate status pin — **git tip wins**. **Not** **ITEM9_FROZEN_COLLECTOR**. |
-| **CURRENT_SOFTWARE_IMPLEMENTATION** | `007d8d9ec9a4237042ffa40c5708442ae35d4c19` | Includes fail-closed campaign supervision ([#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385); ancestry [#381](https://github.com/AdamEddahmouni/market-trading-platform/pull/381)/[#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)/[#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)). **Not** empirical evidence. Calibration **not** executed. |
+| **CANDIDATE_RUNTIME** (next observational arm candidate) | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` | `origin/main` after [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384) benchmark-protocol merge (includes [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385) campaign supervision). Confirm with `git fetch origin main` then `git rev-parse origin/main`. **`frozen=no`** — **NOT FROZEN** for arm. Do **not** declare this SHA frozen from this page alone. |
+| **CURRENT_MAIN** (alias **CURRENT_GIT_MAIN**) | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` | Mutable tip matching **CANDIDATE_RUNTIME** after fetch. [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) header may lag until a separate status pin — **git tip wins**. **Not** **ITEM9_FROZEN_COLLECTOR**. |
+| **CURRENT_SOFTWARE_IMPLEMENTATION** | `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` | Includes fail-closed campaign supervision ([#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385); ancestry [#381](https://github.com/AdamEddahmouni/market-trading-platform/pull/381)/[#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)/[#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)) plus merged benchmark protocol / deterministic-stub Smoke10 pin ([#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384)). **Not** empirical evidence. Calibration **not** executed. Real-system RTH15-11 Smoke10 remains **NOT_EXECUTED**. |
 | **ITEM9_FROZEN_COLLECTOR** | `fed2d9f7e183aecfcac61a7664df69aafc12ea25` | Governed Mode B `--poll` checkout `.imp-actual-01-phase-d/` @ this SHA — **not** **CURRENT_MAIN**. |
 | **SEP15_FROZEN_EMPIRICAL_AUTHORITY** | `7aade60bf8041df5ebf9f0ac856d5d8802845c8d` | Sep 15 observational historical pin — **not** overridden by this runbook. |
 | **RTH15 repair train (ancestry)** | merged through `6e9e88b` ([#203](https://github.com/AdamEddahmouni/market-trading-platform/pull/203)–[#218](https://github.com/AdamEddahmouni/market-trading-platform/pull/218), [#205](https://github.com/AdamEddahmouni/market-trading-platform/pull/205)) | #205/#208 hops are **SOFTWARE**; **historical** serving composition was in-memory OE. Current serving book is local_state SQLite schema v9 ([#380](https://github.com/AdamEddahmouni/market-trading-platform/pull/380)); persist-off is `INTENTIONAL_EPHEMERAL`. Acceptance suite ≠ two-process RTH hop; not empirical RTH readiness. |
@@ -21,7 +21,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 
 **Closed observational campaign (2026-09-22):** Segments **A** (`24a59220`) and **B** (`8e92bb37`) are **CLOSED** — see [PROGRAM_STATUS RTH-OBS-NEWS-20260922](../platform/PROGRAM_STATUS.md#rth-obs-news-20260922--segment-ab-close-additive). Segment B mid-session gap **`14:26:00.749`–`14:57:27.624` ET** remains **`NOT_OBSERVED`** (root cause **UNKNOWN**). Do **not** rewrite historical Sep 22 docs to claim prevention. **ZERO** prospective-current opportunities on Segment B — do not invent one. Item 9 remains **`PARTIAL_NOT_CALIBRATED`** / **`DO_NOT_PROMOTE`**. Item 7 governed/PIT-valid BBO counts remain **0**. Do **not** arm from this page without completing §26 freeze gates and fresh operator authorization.
 
-**Not required for the next campaign:** benchmark PR [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384) (not merged). Do not block arm on it.
+**PR [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384) merged** onto this main: benchmark protocol + deterministic-stub Smoke10 pin (`SOFTWARE_CONTROLLED`). Real-system RTH15-11 Smoke10 remains **NOT_EXECUTED**. Benchmark is still **not** an arm blocker.
 
 **Checklist overlap:** [#207](https://github.com/AdamEddahmouni/market-trading-platform/pull/207) (head `ca3c53a9`) owns deltas to [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md), [RTH_EMPIRICAL_OPS_RUNBOOK.md](RTH_EMPIRICAL_OPS_RUNBOOK.md), and `artifacts/ftep-v1-002/SIGNAL_ONLY_LAUNCH_PREP.md`. **Not on `main`** until merge — use current `main` files plus this page.
 
@@ -29,7 +29,7 @@ Canonical status authority: [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) (
 
 An observational arm is **unlawful** without durable campaign-supervision state. Detail: [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md).
 
-| Concern | Binding on **CANDIDATE_RUNTIME** `007d8d9e` |
+| Concern | Binding on **CANDIDATE_RUNTIME** `bf405f46` |
 |---------|-----------------------------------------------|
 | State directory | `{IMP_STATE_DIR}/campaign-supervision/` → `ownership.json`, `heartbeat.json`, `outages.jsonl` |
 | Supervisor identity | `supervisor_identity=imp-campaign-supervisor`; default required roles `supervisor,poller,api` |
@@ -52,7 +52,7 @@ python tools/platform/campaign_supervisor.py status --state-dir $env:IMP_STATE_D
 #   --campaign-id <id> `
 #   --observation-window-id <window> `
 #   --segment-id <segment> `
-#   --runtime-sha 007d8d9ec9a4237042ffa40c5708442ae35d4c19 `
+#   --runtime-sha bf405f468bee4e70f8a40e97eaaf6c2d46c75e64 `
 #   --poll-cadence-seconds 30 `
 #   --heartbeat-cadence-seconds 15 `
 #   --stale-after-seconds 90
@@ -68,7 +68,7 @@ python tools/platform/campaign_supervisor.py status --state-dir $env:IMP_STATE_D
 | **Cash open transition** | **09:30** | Finviz live ingress, Item 9 `--poll` (frozen collector), Item 7 status/collect, ops dry-run bundle |
 | **Session close** | **16:00** | Summarize, env cleanup, independent review |
 
-Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `007d8d9e…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
+Off-hours `python tools/imp.py item9 next-rth-preflight --json` must show `calendar.rth_active=false` — that is **software success** for the calendar gate, not empirical failure. Overall disposition may be `WRONG_RUNTIME` when the command runs from a **CURRENT_GIT_MAIN** / software worktree checkout (e.g. `bf405f46…` on `main`, **not** the frozen collector) instead of **ITEM9_FROZEN_COLLECTOR** (`fed2d9f7…`); collection still starts only from the frozen checkout. When runtime matches frozen authority off-hours, disposition is `NOT_RTH` (exit 0). Process listing for duplicate `--poll` is **tools-only** ([#251](https://github.com/AdamEddahmouni/market-trading-platform/pull/251)); `imp.py item9` reports `process_probe_status=COMPLETED`. Do **not** run governed Item 9 prospective collection off-hours.
 
 **Governed receipt directory:** corpus-admissible Item 9 JSON lives under the **frozen collector IMP root**, not an empty software worktree copy:
 
@@ -95,7 +95,7 @@ $env:IMP_PERSIST_STATE = "1"
 
 Use the project **CPython 3.11** `.venv` only (`python tools\imp.py env`). Never commit session gates.
 
-## Platform surfaces (**CANDIDATE_RUNTIME** `007d8d9e`, **frozen=no**)
+## Platform surfaces (**CANDIDATE_RUNTIME** `bf405f46`, **frozen=no**)
 
 | Check | Endpoint / command | Notes |
 |-------|-------------------|--------|
@@ -231,11 +231,11 @@ Command details: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKL
 
 **Evidence class:** SOFTWARE coordination. **Live OFF.** Success is the lawful information/decision chain (git pin → supervision → providers → EventV1/PIT news hop → ranked book → non-execution WATCH/DISMISS traces/reviews → evidence path), **not** a trade. Zero qualifying events is a valid market result (`EMPTY` / `LIVE_INGRESS_SUCCESS_ZERO_QUALIFYING_ROWS`). Do **not** backfill missed live-interval market data. Dated 2026-09-15 command tables remain historical: [TUESDAY_RTH_OPERATOR_CHECKLIST.md](TUESDAY_RTH_OPERATOR_CHECKLIST.md).
 
-Run from IMP root `projects/integrated-market-platform/` on the **runtime** checkout (not a dirty detached workspace). **CANDIDATE_RUNTIME** is `007d8d9ec9a4237042ffa40c5708442ae35d4c19` with **`frozen=no`**. Do **not** arm until §26 freeze gates are complete and the operator explicitly freezes (this page does **not** freeze).
+Run from IMP root `projects/integrated-market-platform/` on the **runtime** checkout (not a dirty detached workspace). **CANDIDATE_RUNTIME** is `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` with **`frozen=no`**. Do **not** arm until §26 freeze gates are complete and the operator explicitly freezes (this page does **not** freeze).
 
 | # | Check | Command / path | Pass token |
 |---|-------|----------------|------------|
-| 1 | Git SHA | `git fetch origin main`; `git rev-parse origin/main`; `git rev-parse HEAD` | Exact `007d8d9ec9a4237042ffa40c5708442ae35d4c19` until a later tip. **`frozen=no`**. **Not** **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. |
+| 1 | Git SHA | `git fetch origin main`; `git rev-parse origin/main`; `git rev-parse HEAD` | Exact `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` until a later tip. **`frozen=no`**. **Not** **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. |
 | 2 | Clean runtime tree | `git status --short --branch` on the runtime checkout | No unrelated dirty/untracked product files. Do not clean another lane's tree. |
 | 3 | Clock / timezone | `python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(datetime.now(ZoneInfo('America/New_York')).isoformat())"` | America/New_York wall clock; session kind from `market_sessions` (`PREMARKET`/`REGULAR`/`AFTER_HOURS`/`CLOSED`). |
 | 4 | Provider processes and connectivity | `python tools/provider_readiness.py --probe-local --json`; OpenD loopback `127.0.0.1:11111`; optional `python tools/moomoo/probe.py` | Loopback ports probed only; no external orders. Unreachable OpenD stays fail-closed. |
@@ -264,13 +264,13 @@ Run from IMP root `projects/integrated-market-platform/` on the **runtime** chec
 
 Item 9 Mode B `--poll` stays frozen-collector-only. This preopen does **not** authorize calibration fitting, Paper validation claims, Full30, or Live. Item 9 empirical receipt and Item 7 lawful BBO are **unmet empirical targets**, not software arm blockers.
 
-## 26. Freeze gate (candidate `007d8d9e` — **DO NOT ARM**)
+## 26. Freeze gate (candidate `bf405f46` — **DO NOT ARM**)
 
-**Verdict: NOT FROZEN.** Do not declare the runtime frozen. Do not arm. Software/docs-only assessment after market close 2026-09-22 (~22:33 ET). Live provider/API probes were **not** re-run in this planning session.
+**Verdict: NOT FROZEN.** Do not declare the runtime frozen. Do not arm. Software/docs-only assessment after market close 2026-09-22 (~22:33 ET); candidate retargeted after [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384) merged. Live provider/API probes were **not** re-run in this planning session.
 
 | # | Gate | Result | Evidence |
 |---|------|--------|----------|
-| 1 | Candidate runtime SHA identified | **PASS** | `git fetch origin main` → `007d8d9ec9a4237042ffa40c5708442ae35d4c19` (merge [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385)) |
+| 1 | Candidate runtime SHA identified | **PASS** | `git fetch origin main` → `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` (merge [#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384); prior tip [#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385)) |
 | 2 | Runtime freeze declared | **FAIL** | Explicit **`frozen=no`**. This page forbids freeze claims without a later operator freeze act. |
 | 3 | Campaign supervision on tip | **PASS** | `CAMPAIGN_SUPERVISION_HEARTBEAT.md`, `campaign_supervisor.py`, `campaign_supervision.py` present on this SHA |
 | 4 | Arm requires durable supervision state | **PASS** | This runbook + ownership/heartbeat under `{IMP_STATE_DIR}/campaign-supervision/` |
@@ -292,7 +292,7 @@ Item 9 Mode B `--poll` stays frozen-collector-only. This preopen does **not** au
 | 20 | Safe recovery (preserve arm/outages) | **PASS** | `recover` refreshes PIDs; preserves arm timestamp, segment, runtime SHA, outage gaps — does not mint Segment C |
 | 21 | No-backfill / no synthetic polls | **PASS** | Additive `outages.jsonl`; `NOT_OBSERVED`; `synthetic_poll_generated=false` |
 | 22 | Provider / session / NOT_OBSERVED classification | **PASS** | Progress tokens + outage classification documented; Sep 22 gap stays `NOT_OBSERVED` / UNKNOWN |
-| 23 | Benchmark PR #384 not required | **PASS** | Not merged; explicitly excluded from campaign blockers |
+| 23 | Benchmark PR #384 not an arm blocker | **PASS** | **Merged** on tip: protocol + deterministic-stub Smoke10 pin (`SOFTWARE_CONTROLLED`). Real-system RTH15-11 Smoke10 **NOT_EXECUTED**. Still not a campaign arm blocker. |
 | 24 | Item 9 empirical / calibration | **PARTIAL** | `PARTIAL_NOT_CALIBRATED` / `DO_NOT_PROMOTE`; sample gate met; fitting forbidden — unmet empirical target, not software arm blocker |
 | 25 | Item 7 lawful BBO corpus | **PARTIAL** | Governed/PIT-valid counts **0**; first missing link remains lawful BBO — unmet empirical target, not software arm blocker |
 | 26 | Sep 22 honesty + zero-opportunity rule | **PASS** | Outage not rewritten; Segment B prospective-current remains ZERO; do not invent opportunities |
@@ -303,7 +303,7 @@ Item 9 Mode B `--poll` stays frozen-collector-only. This preopen does **not** au
 
 **Arm (only after §26 freeze + operator authorization — not now):**
 
-1. Checkout clean tree at frozen runtime SHA (today's candidate is `007d8d9e` with **`frozen=no`** — freeze first).
+1. Checkout clean tree at frozen runtime SHA (today's candidate is `bf405f46` with **`frozen=no`** — freeze first).
 2. Bootstrap `IMP_STATE_DIR` / `IMP_PERSIST_STATE=1`; pass FTEP integrity-check; OpenD + Finviz + entitlement + API/UI preflight.
 3. Write durable supervision via `campaign_supervisor.py arm` then `run` (or supervised spawn). Register child roles. Confirm `status` progresses beyond `ARMED_RUNNING`-only.
 4. Temporary shell gates only: `IMP_FINVIZ_LIVE=1`, `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=1` — never commit.
@@ -343,7 +343,7 @@ The table above is the **next lawful** preopen. Off-session minimum:
 
 | Check | Status | Notes |
 |-------|--------|-------|
-| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; tip **`007d8d9e`** ([#385](https://github.com/AdamEddahmouni/market-trading-platform/pull/385)); header may lag — git tip wins. Confirm **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) |
+| PROGRAM_STATUS header vs `git rev-parse origin/main` | Operator | `git fetch origin main`; tip **`bf405f46`** ([#384](https://github.com/AdamEddahmouni/market-trading-platform/pull/384)); header may lag — git tip wins. Confirm **ITEM9_FROZEN_COLLECTOR** in [PROGRAM_STATUS.md](../platform/PROGRAM_STATUS.md) |
 | **CANDIDATE_RUNTIME** freeze | **NOT FROZEN** | `frozen=no`; §26 gate 2 **FAIL** until deliberate freeze |
 | Campaign supervision docs/CLI | On tip | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md) |
 | **ITEM9_FROZEN_COLLECTOR** worktree | Operator | `.imp-actual-01-phase-d` @ `fed2d9f7` |
@@ -355,7 +355,7 @@ The table above is the **next lawful** preopen. Off-session minimum:
 
 ## Recommended next RTH operator actions
 
-1. Night before: `git fetch origin main`; confirm tip **`007d8d9e`** (or newer) and **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. Resolve §26 unpaid PARTIAL operator-at-arm gates. **Do not freeze/arm from docs alone.**
+1. Night before: `git fetch origin main`; confirm tip **`bf405f46`** (or newer) and **ITEM9_FROZEN_COLLECTOR** `fed2d9f7`. Resolve §26 unpaid PARTIAL operator-at-arm gates. **Do not freeze/arm from docs alone.**
 2. Morning: run [next lawful RTH preopen checklist](#next-lawful-rth-preopen-checklist); bootstrap venv/state path; start platform; confirm `service_liveness` + campaign-supervision surfaces (bound port is not HEALTHY; `ARMED_RUNNING` is not alive).
 3. T−15: full preflight including Finviz, OpenD, entitlement, `item9 next-rth-preflight`; set temporary Finviz/catalyst gates only after freeze authorization.
 4. ≥ 09:30 only: arm with durable supervision → Finviz watch → ranked `/opportunities/summary` (zero rows valid) → governed Item 9 `--poll` (frozen collector) → `corpus-status` → Item 7 status → ops dry-run; summarize. Success is the information/decision chain, not a trade.
