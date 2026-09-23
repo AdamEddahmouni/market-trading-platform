@@ -1,8 +1,9 @@
-"""UiApiHandler request-path for already-fetched Finviz/news → EventV1 admission.
+"""UiApiHandler request-path for Finviz/news → EventV1 admission.
 
-Second hop of already-fetched JSON: FTEP ``--live-ingress`` POSTs #207 rows here after
-Finviz fetch; ingestion is labeled ``HISTORICAL_RECONSTRUCTED`` (not ``LIVE_OBSERVED``)
-because the CLI carried provider JSON — server still stamps ``received_time_ns`` and rejects
+Second hop after Finviz fetch: FTEP ``--live-ingress`` POSTs #207 rows here.
+Ingestion mode is selected per item (``LIVE_OBSERVED`` only under live gates with
+trustworthy publication at/after the caller-supplied observation window; otherwise
+``HISTORICAL_RECONSTRUCTED``). Server still stamps ``received_time_ns`` and rejects
 forged ``server_received_time_ns`` in the body. Does not auto-fetch providers.
 """
 
@@ -11,10 +12,15 @@ from __future__ import annotations
 from typing import Any
 
 from ..clock import monotonic_wall_ns
-from ..intelligence.normalization.models import IngestionMode
 from ..news.observational_admit import admit_finviz_export_item_for_observation
 from ..news.observational_opportunity import observational_news_opportunity_id
+from ..news.timestamps import classify_publication_time, epoch_ns_from_iso
 from .live_intelligence import bind_ui_api_intelligence
+from .news_ingest_mode import (
+    news_ingest_live_gates_active,
+    parse_observation_window_start_ns,
+    select_news_ingest_ingestion_mode,
+)
 from .store import ReplayStore
 
 NEWS_INGEST_MAX_BODY_BYTES = 65_536
@@ -31,6 +37,11 @@ def enforce_news_ingest_body_limit(content_length: int) -> None:
 def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
     """Admit already-fetched news rows through ObservationIngressRouter.put_event."""
 
+    from ..observability.latency_instrumentation_v1.context import (
+        bind_latency_collector,
+        resolve_latency_collector,
+    )
+
     bind_ui_api_intelligence(store)
     router = getattr(store, "observation_ingress_router", None)
     if router is None:
@@ -44,81 +55,101 @@ def handle_news_ingest_post(store: ReplayStore, body: dict[str, Any]) -> dict[st
     if body.get("server_received_time_ns") is not None:
         raise ValueError("NEWS_INGEST_FORGED_SERVER_RECEIVE_TIME")
     server_received_time_ns = int(monotonic_wall_ns())
+    observation_window_start_ns = parse_observation_window_start_ns(body)
+    live_gates_active = news_ingest_live_gates_active()
     admitted: list[dict[str, Any]] = []
     opportunity_ids: list[str] = []
     skipped: list[dict[str, str]] = []
     repository = getattr(store, "strategy_repository", None)
-    for item in articles_raw:
-        if not isinstance(item, dict):
-            skipped.append({"reason": "NEWS_INGEST_ITEM_NOT_OBJECT"})
-            continue
-        item_retrieved = str(item.get("retrieved_time") or retrieved_time).strip()
-        if not item_retrieved:
-            skipped.append({"reason": "NEWS_RETRIEVED_TIME_REQUIRED"})
-            continue
-        outcome = admit_finviz_export_item_for_observation(
-            item,
-            retrieved_time=item_retrieved,
-            router=router,
-            store=store,
-            server_received_time_ns=server_received_time_ns,
-            ingestion_mode=IngestionMode.HISTORICAL_RECONSTRUCTED,
-        )
-        if not outcome.accepted or outcome.event is None:
-            skipped.append(
-                {
-                    "reason": str(outcome.reason_code or "NEWS_ADMIT_REJECTED"),
-                    "detail": str(outcome.detail or ""),
-                }
+    collector = resolve_latency_collector(store)
+
+    def _run() -> dict[str, Any]:
+        for item in articles_raw:
+            if not isinstance(item, dict):
+                skipped.append({"reason": "NEWS_INGEST_ITEM_NOT_OBJECT"})
+                continue
+            item_retrieved = str(item.get("retrieved_time") or retrieved_time).strip()
+            if not item_retrieved:
+                skipped.append({"reason": "NEWS_RETRIEVED_TIME_REQUIRED"})
+                continue
+            raw_published = str(item.get("published_time") or item.get("publishedAt") or "")
+            published_iso, published_quality, _flags = classify_publication_time(
+                raw_published,
+                retrieved_time=item_retrieved,
             )
-            continue
-        event = outcome.event
-        receipt = outcome.receipt
-        detector_detail = None
-        if receipt is not None:
-            for row in receipt.outcomes:
-                if str(row.kind) != "DETECTOR":
-                    continue
-                if row.consumer_id == "ingress.observational_news_detector":
-                    detector_detail = row.detail
-                    break
-            if detector_detail is None:
+            ingestion_mode = select_news_ingest_ingestion_mode(
+                published_time_ns=epoch_ns_from_iso(published_iso),
+                published_time_quality=published_quality,
+                observation_window_start_ns=observation_window_start_ns,
+                live_gates_active=live_gates_active,
+            )
+            outcome = admit_finviz_export_item_for_observation(
+                item,
+                retrieved_time=item_retrieved,
+                router=router,
+                store=store,
+                server_received_time_ns=server_received_time_ns,
+                ingestion_mode=ingestion_mode,
+            )
+            if not outcome.accepted or outcome.event is None:
+                skipped.append(
+                    {
+                        "reason": str(outcome.reason_code or "NEWS_ADMIT_REJECTED"),
+                        "detail": str(outcome.detail or ""),
+                    }
+                )
+                continue
+            event = outcome.event
+            receipt = outcome.receipt
+            detector_detail = None
+            if receipt is not None:
                 for row in receipt.outcomes:
-                    if str(row.kind) == "DETECTOR":
+                    if str(row.kind) != "DETECTOR":
+                        continue
+                    if row.consumer_id == "ingress.observational_news_detector":
                         detector_detail = row.detail
                         break
-        opportunity_id = observational_news_opportunity_id(event.event_id)
-        persisted = None
-        getter = getattr(repository, "get_opportunity", None)
-        if callable(getter):
-            persisted = getter(opportunity_id)
-        if persisted is None:
-            opportunity_id = None
-        else:
-            opportunity_ids.append(opportunity_id)
-        admitted.append(
-            {
-                "event_id": event.event_id,
-                "opportunity_id": opportunity_id,
-                "detector_detail": detector_detail,
-                "event_time_ns": event.event_time_ns,
-                "available_time_ns": event.available_time_ns,
-                "received_time_ns": event.received_time_ns,
-                "provider_time_ns": event.provider_time_ns,
-            }
-        )
-    return {
-        "admitted_count": len(admitted),
-        "opportunity_count": len(opportunity_ids),
-        "zero_qualifying_count": len(admitted) - len(opportunity_ids),
-        "skipped_count": len(skipped),
-        "events": admitted,
-        "opportunity_ids": opportunity_ids,
-        "skipped": skipped,
-        "live_authority": False,
-        "auto_fetch": False,
-        "news_event_build09": "INACTIVE",
-    }
+                if detector_detail is None:
+                    for row in receipt.outcomes:
+                        if str(row.kind) == "DETECTOR":
+                            detector_detail = row.detail
+                            break
+            opportunity_id = observational_news_opportunity_id(event.event_id)
+            persisted = None
+            getter = getattr(repository, "get_opportunity", None)
+            if callable(getter):
+                persisted = getter(opportunity_id)
+            if persisted is None:
+                opportunity_id = None
+            else:
+                opportunity_ids.append(opportunity_id)
+            admitted.append(
+                {
+                    "event_id": event.event_id,
+                    "opportunity_id": opportunity_id,
+                    "detector_detail": detector_detail,
+                    "event_time_ns": event.event_time_ns,
+                    "available_time_ns": event.available_time_ns,
+                    "received_time_ns": event.received_time_ns,
+                    "provider_time_ns": event.provider_time_ns,
+                    "ingestion_mode": ingestion_mode.value,
+                }
+            )
+        return {
+            "admitted_count": len(admitted),
+            "opportunity_count": len(opportunity_ids),
+            "zero_qualifying_count": len(admitted) - len(opportunity_ids),
+            "skipped_count": len(skipped),
+            "events": admitted,
+            "opportunity_ids": opportunity_ids,
+            "skipped": skipped,
+            "live_authority": False,
+            "auto_fetch": False,
+            "news_event_build09": "INACTIVE",
+        }
+
+    with bind_latency_collector(collector):
+        return _run()
 
 
 __all__ = [

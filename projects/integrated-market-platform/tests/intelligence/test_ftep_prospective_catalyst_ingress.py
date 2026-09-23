@@ -299,6 +299,120 @@ class FtepProspectiveCatalystIngressTests(unittest.TestCase):
         self.assertEqual(result.classification, CLASS_SUCCESS_EMPTY)
         self.assertEqual(result.rows, ())
         self.assertFalse(result.retry_attempted)
+        summary = result.stats.get("rejection_summary")
+        self.assertIsInstance(summary, dict)
+        counts = summary.get("counts")
+        self.assertIsInstance(counts, dict)
+        self.assertEqual(counts.get("fetched"), 0)
+        self.assertEqual(counts.get("pipeline_accepted"), 0)
+        self.assertEqual(counts.get("pit_reject"), "UNAVAILABLE")
+
+    def test_rejection_summary_explains_zero_accepted_mixed_batch(self) -> None:
+        received = "2026-09-22T17:00:00.000000Z"
+        as_of_ns = (epoch_ns_from_iso(received) or 0) + 1_000_000_000
+        client = _StubFinvizClient(
+            received_at=received,
+            items=[
+                {
+                    "headline": "Outside-universe name announces buyback",
+                    "published_time": "2026-09-22T16:55:00Z",
+                    "url": "https://example.com/gamma-buyback",
+                    "tickers": ["GAMMA"],
+                    "publisher_source": "Reuters",
+                },
+                {
+                    "headline": "Acme weather is nice today",
+                    "published_time": "2026-09-22T16:50:00Z",
+                    "url": "https://example.com/acme-weather",
+                    "tickers": ["AAPL"],
+                    "publisher_source": "Reuters",
+                },
+            ],
+        )
+        result = collect_finviz_prospective_attention_rows(
+            REPO_ROOT,
+            "FTEP-V1-002",
+            live_ingress=True,
+            news_client=client,
+            as_of_ns=as_of_ns,
+            env=_gates_env(FINVIZ_API_KEY="test-token"),
+        )
+        self.assertTrue(result.ready)
+        summary = result.stats["rejection_summary"]
+        counts = summary["counts"]
+        self.assertEqual(counts["fetched"], 2)
+        self.assertEqual(counts["normalization_success"], 2)
+        self.assertGreaterEqual(int(counts["catalyst_reject"]) + int(counts["universe_filtered"]), 1)
+        blob = json.dumps(result.to_report_dict())
+        self.assertNotIn("test-token", blob)
+        self.assertNotIn("FINVIZ_API_KEY", blob)
+        poll_evidence = result.stats.get("poll_evidence")
+        self.assertIsInstance(poll_evidence, dict)
+        self.assertFalse(poll_evidence.get("raw_payloads_retained"))
+        self.assertFalse(poll_evidence.get("retention_enabled"))
+        digests = poll_evidence.get("item_digests")
+        self.assertIsInstance(digests, list)
+        self.assertEqual(len(digests), 2)
+        self.assertTrue(all(isinstance(item, str) and len(item) == 64 for item in digests))
+
+    def test_poll_evidence_retention_opt_in_and_refuses_campaign_root(self) -> None:
+        received = "2026-09-22T17:00:00.000000Z"
+        as_of_ns = (epoch_ns_from_iso(received) or 0) + 1_000_000_000
+        client = _StubFinvizClient(
+            received_at=received,
+            items=[
+                {
+                    "headline": "Apple reports quarterly earnings beat",
+                    "published_time": "2026-09-22T16:55:00Z",
+                    "url": "https://example.com/aapl-earnings?auth=secret-token",
+                    "tickers": ["AAPL"],
+                    "publisher_source": "Reuters",
+                }
+            ],
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            good_root = Path(tmp) / "poll-evidence-ok"
+            env = _gates_env(
+                FINVIZ_API_KEY="test-token",
+                IMP_CAMPAIGN_POLL_EVIDENCE_RETENTION="1",
+                IMP_CAMPAIGN_POLL_EVIDENCE_DIR=str(good_root),
+                IMP_CAMPAIGN_POLL_EVIDENCE_MAX_ITEMS="8",
+            )
+            result = collect_finviz_prospective_attention_rows(
+                REPO_ROOT,
+                "FTEP-V1-002",
+                live_ingress=True,
+                news_client=client,
+                as_of_ns=as_of_ns,
+                env=env,
+            )
+            poll_evidence = result.stats["poll_evidence"]
+            self.assertTrue(poll_evidence["retention_enabled"])
+            retained = poll_evidence["retained_manifest"]
+            self.assertIsNotNone(retained)
+            self.assertTrue(Path(str(retained)).is_file())
+            body = Path(str(retained)).read_text(encoding="utf-8")
+            self.assertNotIn("secret-token", body)
+            self.assertNotIn("test-token", body)
+            self.assertIn("item_digest", body)
+
+            bad_root = Path(tmp) / "rth-campaign-20260922-B"
+            bad_root.mkdir()
+            env_bad = _gates_env(
+                FINVIZ_API_KEY="test-token",
+                IMP_CAMPAIGN_POLL_EVIDENCE_RETENTION="1",
+                IMP_CAMPAIGN_POLL_EVIDENCE_DIR=str(bad_root),
+            )
+            refused = collect_finviz_prospective_attention_rows(
+                REPO_ROOT,
+                "FTEP-V1-002",
+                live_ingress=True,
+                news_client=client,
+                as_of_ns=as_of_ns,
+                env=env_bad,
+            )
+            self.assertIsNone(refused.stats["poll_evidence"]["retained_manifest"])
+            self.assertEqual(list(bad_root.iterdir()), [])
 
     def test_mock_finviz_maps_prospective_rows_with_timestamps(self) -> None:
         received = "2026-09-14T17:00:00.000000Z"

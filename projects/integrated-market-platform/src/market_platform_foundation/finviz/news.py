@@ -3,17 +3,76 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import io
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 from .config import FINVIZ_NEWS_URL, NEWS_CACHE_TTL_S, finviz_api_key
 from .request_manager import FinvizRequestManager, RequestPriority, get_finviz_request_manager, redact_text
 
+_FINVIZ_PROVIDER_ID = "finviz"
+_FINVIZ_SOURCE_ID = "finviz_elite"
+
 
 def _utc_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+
+
+def _canonical_news_url(url: str) -> str:
+    text = (url or "").strip().lower()
+    if not text:
+        return ""
+    parsed = urlparse(text)
+    if not parsed.scheme or not parsed.netloc:
+        return ""
+    path = parsed.path.rstrip("/")
+    return f"{parsed.scheme}://{parsed.netloc}{path}"
+
+
+def _normalize_headline_for_id(headline: str) -> str:
+    text = " ".join(str(headline or "").lower().split())
+    text = re.sub(r"[^\w\s]", "", text)
+    return text.strip()
+
+
+def stable_finviz_provider_news_id(
+    *,
+    url: str = "",
+    headline: str = "",
+    source_id: str = _FINVIZ_SOURCE_ID,
+    provider_id: str = _FINVIZ_PROVIDER_ID,
+) -> str | None:
+    """Process-stable Finviz item id. No ``hash()`` salt; no retrieval timestamp.
+
+    Prefer canonical URL when present; otherwise require a non-empty headline and
+    hash stable fields. Missing identity inputs fail closed (``None``) instead of
+    minting a random or process-salted id.
+    """
+
+    canonical_url = _canonical_news_url(url)
+    if canonical_url:
+        digest = hashlib.sha256(
+            f"{provider_id}|url|{canonical_url}".encode("utf-8")
+        ).hexdigest()[:16]
+        return f"{provider_id}:{digest}"
+    headline_key = _normalize_headline_for_id(headline)
+    if not headline_key:
+        return None
+    source_key = str(source_id or _FINVIZ_SOURCE_ID).strip() or _FINVIZ_SOURCE_ID
+    payload = "|".join(
+        [
+            str(provider_id or _FINVIZ_PROVIDER_ID).strip() or _FINVIZ_PROVIDER_ID,
+            canonical_url,
+            headline_key,
+            source_key,
+        ]
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+    return f"{provider_id}:{digest}"
 
 
 def normalize_news_timestamp(raw: str | None) -> str:
@@ -58,15 +117,21 @@ def parse_news_csv(text: str) -> tuple[list[dict[str, Any]], str | None]:
         tickers_raw = (row.get("Ticker", "") or "").strip()
         tickers = [t.strip().upper() for t in tickers_raw.split(",") if t.strip()]
         published = normalize_news_timestamp(row.get("Date", ""))
+        headline = row.get("Title", "") or ""
+        url = row.get("Url", "") or ""
+        provider_news_id = stable_finviz_provider_news_id(url=url, headline=headline)
+        if provider_news_id is None:
+            # Fail closed: no process salt / random id when identity inputs are missing.
+            continue
         headlines.append(
             {
-                "headline": row.get("Title", ""),
+                "headline": headline,
                 "published_time": published,
-                "url": row.get("Url", ""),
+                "url": url,
                 "tickers": tickers,
                 "provider": "FINVIZ_ELITE",
                 "publisher_source": row.get("Source", "") or "Finviz",
-                "provider_news_id": f"finviz:{hash(row.get('Title', '')) & 0xFFFFFFFF:08x}",
+                "provider_news_id": provider_news_id,
                 "raw_fields": dict(row),
             }
         )
@@ -131,3 +196,11 @@ class FinvizNewsClient:
     def news_for_symbol(self, symbol: str, items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         needle = symbol.strip().upper()
         return [item for item in items if needle in item.get("tickers", [])]
+
+
+__all__ = [
+    "FinvizNewsClient",
+    "normalize_news_timestamp",
+    "parse_news_csv",
+    "stable_finviz_provider_news_id",
+]

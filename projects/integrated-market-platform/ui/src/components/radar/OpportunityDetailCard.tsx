@@ -22,6 +22,7 @@ import {
 import {
   buildOpportunityOperatorBrief,
   opportunityFreshnessQueueLabel,
+  readProviderLinkageWarnings,
   type OperatorBriefFeedContext,
 } from "../opportunity/opportunityOperatorBrief";
 import {
@@ -131,6 +132,7 @@ export function OpportunityDetailCard({
   const rank = opportunityRankLabel(row);
   const provisionalOrder = hasProvisionalOrder(row);
   const quality = row.data_quality ?? {};
+  const linkageWarnings = readProviderLinkageWarnings(row);
   const nextAction = resolveSemanticState("research", model.actionReadiness.nextSafeAction);
   const eligibility = row.eligibility_state
     ? resolveSemanticState("research", row.eligibility_state)
@@ -188,6 +190,12 @@ export function OpportunityDetailCard({
             <dt>Surfaced</dt>
             <dd>{model.ageLabel}</dd>
           </div>
+          {linkageWarnings.length ? (
+            <div data-testid="imp-radar-provider-linkage-warnings">
+              <dt>Provider linkage</dt>
+              <dd>{linkageWarnings.join(", ")}</dd>
+            </div>
+          ) : null}
         </dl>
       </header>
 

@@ -36,6 +36,249 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — Segment B close + post-close integration status docs
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | docs / campaign-truth / integration |
+| **Summary** | Recorded CLOSED Segment A (`24a59220`, duplicate historical META / historical WATCH, not prospective proof) and Segment B (`8e92bb37`, arm 17:00:57.745Z, close 16:06:23 ET) with mid-session **`NOT_OBSERVED`** outage (root cause UNKNOWN; poll 4 URLError and poll 30 SESSION_UNAVAILABLE separate). Book: 2 PRE_ARM historical / ZERO prospective-current. Documented post-close stack on `integrate/post-close-20260922` (not yet `origin/main` `24a59220`): Finviz/restart/liveness/OpenD/diagnostics/rejection/linkage/UI/latency/warnings; pre-docs tip `efc17a12`. Item 9 remains PARTIAL_NOT_CALIBRATED / DO_NOT_PROMOTE. |
+| **Key files** | `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Part A integrated validation on tip `efc17a12`: focused Finviz/restart/liveness/secrets/rejection/linkage/warnings/latency/UI + wire (2/2 pass) + `validate fast` 23/0/0 + `validate changed` (branch vs origin/main paths) 4384 tests / 35 skipped / 0 fail / 0 err |
+| **Related** | Primary `.local/rth-campaign-20260922-B/close-manifest-20260922-B.json` + `close-report-20260922-B.md` (read-only); branch `integrate/post-close-20260922` |
+| **Notes** | Did not mutate campaign state, detached 80d290ff, other worktrees, or origin/main. No fitting / Full30 / live submit. Software-controlled restart/latency evidence is not market proof. |
+
+## 2026-09-22 — Restack latency instrumentation onto accepted Finviz/linkage backend
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | observability / news / ui_api |
+| **Summary** | Restacked optional latency instrumentation v1 onto accepted integrate tip 7ccbac1a (Finviz identity/window/fail-closed + linkage/rejection ancestors). Cherry-picked cae03c8c then resolved conflicts so Finviz mode selection and identity fail-closed win; latency collector binds beside that logic. Old SHA cae03c8c is **not** the approval target; prior APPROVE_WITH_NITS does not survive this restack. |
+| **Key files** | Created: `observability/latency_instrumentation_v1/` (+ COVERAGE.md); `tests/observability/latency_instrumentation_v1/`. Modified: `news/observational_admit.py`, `news/observational_opportunity.py`, `intelligence/observation_ingress/consumers.py`, `ui_api/news_ingest.py`, `ui_api/opportunity_projections.py`, validation manifest/closure JSON. |
+| **Tests** | Latency + Finviz identity/window + ingest-mode + provider-linkage suites (see commit / review packet). |
+| **Related** | Source cae03c8c on feat/latency-instrumentation-v1; base 7ccbac1a; branch feat/latency-restack-20260922 |
+| **Notes** | Worktree `.worktrees/latency-restack-20260922`. Did not merge into integrate/post-close-20260922. No push. Campaign / detached 80d290ff / finviz-admit worktree untouched. |
+
+## 2026-09-22 — Integration merge: provider-linkage quality onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed feat/provider-linkage-quality tip 6eff74be65545dfa47408311ff24234466874e70 onto integrate/post-close-20260922 tip b83c12a2. WORK_LOG conflict only: kept both sides append-only (prior integration/rejection-observability/diagnostics/OpenD/durability/Finviz entries + provider-linkage quality entries). NEWS_EVENT_FOUNDATION.md auto-merged with no markers. No code/test conflicts. Code auto-merged: provider_linkage_quality.py (add), normalize.py, pipeline.py, test_provider_linkage_quality.py (add). Predecessor fc48a9d2 is an ancestor of the tip but was not the landing target. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only); docs/architecture/NEWS_EVENT_FOUNDATION.md (auto-merge) |
+| **Tests** | Focused `tests/news/test_provider_linkage_quality.py` + news package suite + two FTEP cockpit wire tests after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, eb2c3b72, c1321974, b83c12a2, 6eff74be |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land latency or UI. Did not touch detached 80d290ff, campaign state, or .worktrees/finviz-admit-identity-20260922. |
+
+
+## 2026-09-22 — Provider linkage quality: stop false alternate-entity escalations
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Fixed false ALTERNATE_ENTITY/LOW_CONTEXTUAL escalations from English tokens. Corroboration now uses headline company-like spans (letter-aligned to ticker) without relying on Finviz-absent company_names. Removed English-as-ticker rival detection; MULTIPLE only on mixed corroboration; linkage flags no longer inflate timestamp_quality_issues; dropped dead association_confidence/reasons. |
+| **Key files** | `news/provider_linkage_quality.py`; `news/pipeline.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` — 12/12 passed (provider linkage suite). `python tools/imp.py validate changed` — news 83 passed; mandatory suites passed; intelligence 2 errors in unrelated FTEP cockpit UI-API wire HTTP tests (not linkage). |
+| **Related** | Review CHANGES_REQUIRED on `fc48a9d2` |
+| **Notes** | Same worktree `.worktrees/provider-linkage-quality`. No push/PR/campaign touch. Independent re-review still required. |
+
+## 2026-09-22 — Provider linkage quality warnings (no ticker rewrite)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/news` / `evidence-integrity` |
+| **Summary** | Added heuristic provider-symbol linkage quality assessment that preserves `PROVIDER_SYMBOL` tickers and records operator-visible `quality_flags` + linkage `confidence` when headline/text does not corroborate, URL is missing, alternate entity spans appear, or multiple linkages conflict. Suspicion is not treated as deterministic falsehood; events are not dropped. |
+| **Key files** | `news/provider_linkage_quality.py` (new); `news/normalize.py`; `tests/news/test_provider_linkage_quality.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (6 linkage + 1 finviz normalize) → **7 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **PASSED**: 2271 tests, 27 skipped, 0 failures, 0 errors. |
+| **Related** | Segment B base `8e92bb37`; motivation: provider-tagged NVDA on unrelated headline must stay preserved with warning |
+| **Notes** | Worktree `.worktrees/provider-linkage-quality` on `feat/provider-linkage-quality`. No push/PR. Campaign / Segment B / `.local/rth-campaign-*` untouched. Independent exact-SHA review still required. |
+
+## 2026-09-22 — Integration merge: ingest rejection observability onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed feat/ingest-rejection-observability tip c132197497df384065c986ce22c45cfa5e5a5433 onto integrate/post-close-20260922 tip 6a63d4df. WORK_LOG conflict only: kept both sides append-only (prior integration/diagnostics/OpenD/durability/Finviz entries + opt-in retention + rejection-observability entries). NEWS_EVENT_FOUNDATION.md auto-merged with no markers. No code/test conflicts. Code auto-merged: poll_evidence.py (add), ftep_prospective_catalyst_ingress.py, test_poll_evidence_observability.py (add), test_ftep_prospective_catalyst_ingress.py. Predecessor 8762a576 is an ancestor of the tip but was not the landing target. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only); docs/architecture/NEWS_EVENT_FOUNDATION.md (auto-merge) |
+| **Tests** | Focused news poll-evidence + Finviz admit/window + ingest mode stamp + prospective catalyst ingress after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, eb2c3b72, 6a63d4df, c1321974 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land provider linkage 6eff74be / fc48a9d2. Did not touch detached 80d290ff, campaign state, or .worktrees/finviz-admit-identity-20260922. |
+
+
+## 2026-09-22 — Integration merge: diagnostics secret-leak metadata onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/diagnostics-secret-leak-metadata (eb2c3b72) onto integrate/post-close-20260922 tip a655bab8. WORK_LOG conflict only: kept both sides append-only (prior integration/OpenD/durability/Finviz entries + diagnostics secret-leak entry). No code/test conflicts. Code auto-merged: leak_audit.py + test_operator_endpoint_leak_audit.py + test_security_foundations_p5.py; OPERATOR_DIAGNOSTICS_MODEL.md auto-merged. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_operator_endpoint_leak_audit.py` + `tests/platform/test_security_foundations_p5.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 2a0ea41f, be474479, a655bab8, eb2c3b72 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land rejection observability c1321974 / 8762a576. Campaign observation UI_SECRET_LEAK_BLOCKED on 8e92bb37 left intact as evidence. |
+
+## 2026-09-22 — Diagnostics secret-leak false positives on policy tokens
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `platform/security`, `operator_diagnostics` |
+| **Summary** | Fixed `UI_SECRET_LEAK_BLOCKED` 500s on `GET /operator/diagnostics` caused by name-based secret matching on public resilience policy fields (`status_token`, `boundary_token`, nested `fallback.boundary_token`). Auditor remains name-triggered via `is_secret_key` markers (`token`/`auth`/`key`) but now allows those fields only when values match uppercase policy-enum shape (same class as `credential_state`). Also allows dotted `backend_authority` module paths. Live secret-bearing values under those names, and under `api_key` / `session_token` / bearer-shaped keys, stay blocked. Segment B campaign untouched. |
+| **Key files** | `src/market_platform_foundation/platform/security/leak_audit.py`; `tests/platform/test_security_foundations_p5.py`; `tests/platform/test_operator_endpoint_leak_audit.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md` |
+| **Tests** | `unittest` SecretAuditTest + OperatorEndpointLeakAudit + RankedSummaryLeakAudit **26 passed**; focused `imp.py test focused` (3 selectors) **passed**; `imp.py test affected` / `validate changed` **1850 passed, 5 skipped, 0 fail/err** (twice). |
+| **Related** | [OPERATOR_DIAGNOSTICS_MODEL.md](OPERATOR_DIAGNOSTICS_MODEL.md); prior BE-01 readiness/config leak fix |
+| **Notes** | Base `origin/main` `24a59220446e2f9c18b4590af133b6b02ffee439`. Worktree `.worktrees/diagnostics-secret-leak` on `fix/diagnostics-secret-leak-metadata`. No push/PR. Independent exact-SHA review required. Campaign contamination risk: **none**. |
+
+
+## 2026-09-22 — Opt-in bounded Finviz poll-evidence retention
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge` |
+| **Summary** | Wired the shared poll-evidence envelope into Finviz prospective ingress: stable item digests + dispositions in `stats.poll_evidence`, optional manifest retention via `IMP_CAMPAIGN_POLL_EVIDENCE_*`. Forensic reconstruction without raw payload hoarding; refuses `rth-campaign-*` roots; default off. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `src/market_platform_foundation/news/poll_evidence.py` |
+| **Tests** | Focused retention + ingress opt-in/refuse-campaign tests |
+| **Related** | Prior rejection-observability commit on this branch; [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md) |
+| **Notes** | Does not fabricate Segment B evidence. Does not write `.local/rth-campaign-20260922-A/B`. Independent exact-SHA review still required. |
+
+## 2026-09-22 — Bounded Finviz poll rejection observability
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `news`, `intelligence/paper_forward_bridge`, `docs` |
+| **Summary** | Empty Finviz ticks now retain a privacy-safe `stats.rejection_summary` (counts + reason buckets only). Maps existing NewsPipeline / universe decisions; undetermined reasons are `UNKNOWN`; hop-2 stages stay `UNAVAILABLE` on hop 1. Qualification criteria and fail-closed ingest mode selection are unchanged. |
+| **Key files** | `src/market_platform_foundation/news/poll_evidence.py` (created); `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tests/news/test_poll_evidence_observability.py` (created); `tests/intelligence/test_ftep_prospective_catalyst_ingress.py`; `docs/architecture/NEWS_EVENT_FOUNDATION.md` |
+| **Tests** | Focused poll-evidence + ingress rejection summary + fail-closed mode helpers (see commit message / session report) |
+| **Related** | [NEWS_EVENT_FOUNDATION.md](../architecture/NEWS_EVENT_FOUNDATION.md); follow-up commit wires opt-in digest retention |
+| **Notes** | Does not write Segment A/B campaign trees. Provider-linkage contradiction heuristics deferred (`PROVIDER_LINKAGE_QUALITY_HOOK` only). Independent exact-SHA review still required. |
+
+## 2026-09-22 — Integration merge: OpenD single-probe onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/opend-single-probe (be474479) onto integrate/post-close-20260922 tip 55a306e4. WORK_LOG conflict only: kept both sides append-only (prior integration/durability/Finviz entries + OpenD single-probe entry). No code/test conflicts. Code auto-merged: live_projections.py + test_runtime_service_liveness.py; OPERATOR_DIAGNOSTICS_MODEL.md auto-merged. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_runtime_service_liveness.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 23778cea, 2a0ea41f, 55a306e4, be474479 |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Liveness 2a0ea41f already on tip; OpenD delta reuses one service_liveness observation (no cache, no TTL). Did not land diagnostics eb2c3b72. |
+
+## 2026-09-22 — Integration merge: liveness hardening onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed fix/liveness-hardening-20260922 (2a0ea41f) onto integrate/post-close-20260922 tip 23778cea. WORK_LOG conflict only: kept both sides append-only (prior durability/Finviz entries + liveness hardening entry). No code/test conflicts. Code auto-merged: service_liveness.py + test_runtime_service_liveness.py. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused `tests/platform/test_runtime_service_liveness.py` after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b, 23778cea, 2a0ea41f |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. Did not land OpenD single-probe be474479. |
+
+## 2026-09-22 — Integration merge: process-restart durability onto post-close tip
+
+| Field | Value |
+|-------|-------|
+| **Status** | complete |
+| **Area** | integration / docs |
+| **Summary** | Merged reviewed feat/process-restart-durability-e2e (444f401b) onto integrate/post-close-20260922 tip 8e92bb37. WORK_LOG conflict only: kept both sides append-only (durability entry + Finviz/observation-window entries). No code/test conflicts. Evidence class remains SOFTWARE_CONTROLLED_EVIDENCE (second OS process durability), not market proof. |
+| **Key files** | docs/engineering/WORK_LOG.md (conflict resolution only) |
+| **Tests** | Focused acceptance to be run after merge commit |
+| **Related** | Ancestors 8e92bb37, 444f401b |
+| **Notes** | Append-only keep-both for WORK_LOG; no historical rewrite. |
+
+## 2026-09-22 — Single OpenD probe for provider-health liveness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui_api` / `platform/operator_diagnostics` |
+| **Summary** | Removed the duplicate OpenD reachability probe left as a nit on liveness hardening: `build_provider_health_payload` now reuses the authoritative `service_liveness` observation already embedded by `LiveObservationalRuntime.health_payload()`. No TTL cache; staleness tokens unchanged. |
+| **Key files** | `ui_api/live_projections.py`; `tests/platform/test_runtime_service_liveness.py`; `docs/engineering/OPERATOR_DIAGNOSTICS_MODEL.md`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py test focused` (18 selectors incl. single-observation regression + healthy/provider-down/stale/port-bound/idle/unknown-freshness) — **18 passed**; `python tools/imp.py validate changed` — **1736 passed**, 15 skipped, 0 fail/err |
+| **Related** | Parent `fix/liveness-hardening-20260922` @ `2a0ea41f` (APPROVE_WITH_NITS); PR #379 |
+| **Notes** | Isolated worktree `.worktrees/opend-single-probe` on `fix/opend-single-probe` from `2a0ea41f`. Did not push/merge. Did not touch Segment B runtime, `.local/rth-campaign-*`, or Live submit authority. New exact-SHA review required. |
+
+## 2026-09-22 — Process-restart durability acceptance (real OS bounce)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tests/acceptance` / durability |
+| **Summary** | Added a controlled SOFTWARE_CONTROLLED_EVIDENCE / FIXTURE acceptance that spawns a real UI API harness process, drives production `/intelligence/ingest/news` → EventV1 → PIT → observational OpportunityV1 mint → ranked readback → WATCH/DISMISS → ack/trace/review, then terminates and restarts a fresh process against the same temp `IMP_STATE_DIR` to prove durable readback and no identity fork. Not in-process singleton reset. Live off; `allows_network_submit` remains false. Campaign ports/PIDs untouched. |
+| **Key files** | Created: `tests/acceptance/harness_process_restart_ui_api.py`; `tests/acceptance/test_process_restart_durability_acceptance.py`. Modified: `docs/engineering/WORK_LOG.md`. No production `src/` serving changes. |
+| **Tests** | `python -m unittest tests.acceptance.test_process_restart_durability_acceptance` → **2 passed**. Related: software fullstack **6 passed**; canonical durable loop **8 passed** (`PYTHONPATH=src`); watch/dismiss learning loop **5 passed**; trade review durable **6 passed**. |
+| **Related** | Prior in-process watch/dismiss learning loop; software fullstack acceptance; canonical opportunity durable loop |
+| **Notes** | Worktree `.worktrees/restart-e2e-20260922` on `feat/process-restart-durability-e2e` from base `24a59220`. Process bounce via `subprocess.Popen` + Windows `taskkill /T /F` of the spawned harness only. Ephemeral ports outside `{8766,5173,11111}`. Re-ingest after restart may fail-closed on immutable receive-clock conflict; book counts stay stable (no duplicate mint). Did not push/PR. Did not touch `.worktrees/rth-obs-20260922` or campaign PIDs 102752/99624/125168. |
+
+## 2026-09-22 — Observation window requires explicit current-segment arg
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/ftep` / `evidence-integrity` |
+| **Summary** | `load_governed_session_observation_window_start_ns` no longer mines append-only history by min/max. Admit caller must supply `current_segment_start_ns` and/or `current_segment_session_id` for THIS arm; absent → `None` (HISTORICAL_RECONSTRUCTED). Older successful `sessions_created` lines and stray later primary lines without the current id are never selected. |
+| **Key files** | `ftep_catalyst_watch.py`; `tools/ftep_watch_catalysts.py`; `tests/intelligence/test_ftep_catalyst_watch.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `PYTHONPATH=src` + main IMP `.venv` 3.11: `python -m unittest tests.intelligence.test_ftep_catalyst_watch tests.news.test_finviz_admit_identity_and_window tests.news.test_news_ingest_mode_stamp -v` → **32 passed**, 0 failed. |
+| **Related** | Review CHANGES_REQUIRED on `482c8852` / `25ce8e26`; ancestor `9a14c958` |
+| **Notes** | Worktree `.worktrees/finviz-admit-identity-20260922`. No push/PR/deploy; campaign runtime / poller / frozen RTH campaign untouched. Stamp rule + Finviz identity unchanged; `news_event_build09` stays INACTIVE. |
+
+## 2026-09-22 — Observation window = current segment start (not min history)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `superseded` |
+| **Area** | `backend/ftep` / `evidence-integrity` |
+| **Summary** | REJECTED approach: selecting **latest** `recorded_at_ns` across roots still inferred "this segment" from append-only history. Replaced by explicit current-segment arg (see entry above). |
+| **Key files** | (historical) `ftep_catalyst_watch.py`; `tests/intelligence/test_ftep_catalyst_watch.py` |
+| **Tests** | n/a — superseded |
+| **Related** | `482c8852` |
+| **Notes** | Kept for provenance; do not reintroduce max/min history mining. |
+
+## 2026-09-22 — Finviz admit identity + observation window
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/finviz` / `ui_api/cockpit_admit` |
+| **Summary** | Stable Finviz `provider_news_id` (canonical URL / salt-free hash; fail closed if missing). Prospective body builder plumbs caller/evidence `observation_window_start(_ns)` so LIVE_OBSERVED stamp can fire. |
+| **Key files** | `finviz/news.py`; `ui_api/cockpit_admit.py`; `ftep_catalyst_watch.py`; `tests/news/test_finviz_admit_identity_and_window.py` |
+| **Tests** | Focused **43 passed**. `validate changed` → **4373** passed, **43** skipped, 0 fail/err. |
+| **Related** | Base `9a14c958` stamp rule preserved |
+| **Notes** | Worktree `.worktrees/finviz-admit-identity-20260922`. No push/PR/deploy; campaign runtime untouched. |
+
+## 2026-09-22 — Finviz news ingest mode stamp (live vs historical)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/ui_api/news_ingest` / `evidence-integrity` |
+| **Summary** | `POST /intelligence/ingest/news` no longer hardcodes `HISTORICAL_RECONSTRUCTED` for every Finviz admit. Mode is selected fail-closed: `LIVE_OBSERVED` only when live gates (`IMP_LIVE_OBSERVATIONAL` + `IMP_FINVIZ_LIVE` + `IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS`) are on, a caller-supplied observation window is present, and publication quality is `KNOWN` at/after that window; otherwise `HISTORICAL_RECONSTRUCTED`. Does not retcon stored campaign rows; not deployed into RTH-OBS-NEWS-20260922-A. |
+| **Key files** | Created: `src/.../ui_api/news_ingest_mode.py`; `tests/news/test_news_ingest_mode_stamp.py`. Modified: `src/.../ui_api/news_ingest.py`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | Focused mode-stamp selectors: **12 passed**, 0 failed, 0 skipped. `python tools/imp.py validate changed` → **2986** passed, **38** skipped, 0 fail/err. |
+| **Related** | Campaign audit STAMP_CORRECT_HISTORICAL for META pre-arm item; base SHA `24a59220` |
+| **Notes** | Isolated worktree `.worktrees/finviz-ingest-mode-20260922` on `fix/finviz-ingest-mode-stamp`. Did **not** push/PR/deploy. Did **not** touch campaign sqlite, ports 8766/5173/11111, or sibling worktrees. `news_event_build09` remains INACTIVE. |
+
+## 2026-09-22 — Harden observational liveness classifier (PR #379 nits)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `platform/operator_diagnostics` |
+| **Summary** | Hardened `classify_observational_market_data_liveness` for non-blocking PR #379 nits: zero-subscription idle stays `NOT_APPLICABLE` even if `receiving=True`; subscribed cycles fail closed to `UNAVAILABLE`/`FRESHNESS_UNAVAILABLE` when freshness is missing; entitled=False → `UNREADY`/`NOT_ENTITLED`; market-data `process_id` documented as diagnostic-only (platform `identity_owned` still gates). Duplicate OpenD probe left deferred (call sites outside ownership). |
+| **Key files** | `platform/operator_diagnostics/service_liveness.py`; `tests/platform/test_runtime_service_liveness.py` |
+| **Tests** | `python tools/imp.py test focused` (17 selectors) — **17 passed**; `python tools/imp.py validate changed --paths-file` — **1852 passed**, 5 skipped, 0 fail/err |
+| **Related** | PR #379 `ba8de6df` APPROVE_WITH_NITS |
+| **Notes** | Did not edit live_runtime / live_projections / campaign runtime. Frozen RTH campaign worktree untouched. |
+
 ## 2026-09-22 — Docs pin CURRENT_MAIN to 5b74876d after #379/#380
 
 | Field | Value |

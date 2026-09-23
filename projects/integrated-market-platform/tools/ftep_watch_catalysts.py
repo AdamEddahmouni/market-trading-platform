@@ -111,6 +111,23 @@ def main(argv: list[str] | None = None) -> int:
         type=Path,
         help="Optional JSON file with attention-candidate rows",
     )
+    parser.add_argument(
+        "--current-segment-session-id",
+        default=None,
+        help=(
+            "Explicit current-arm session_id for prospective observation window "
+            "(required for LIVE_OBSERVED; not inferred from append-only history)"
+        ),
+    )
+    parser.add_argument(
+        "--current-segment-start-ns",
+        type=int,
+        default=None,
+        help=(
+            "Explicit current-arm observation-window start (ns) captured when THIS "
+            "segment was armed; not inferred by min/max over history"
+        ),
+    )
     args = parser.parse_args(argv)
 
     src = ROOT / "src"
@@ -129,6 +146,8 @@ def main(argv: list[str] | None = None) -> int:
             fixture_only=args.fixture,
             input_path=args.input,
             live_ingress=args.live_ingress,
+            current_segment_session_id=args.current_segment_session_id,
+            current_segment_start_ns=args.current_segment_start_ns,
         )
     except Exception as exc:
         payload = _exception_receipt(

@@ -110,6 +110,8 @@ class OpportunitySummary:
     evidence_class: str | None = None
     eligibility_state: str | None = None
     data_quality: dict[str, Any] | None = None
+    # Operator phrases from quality.flags linkage tokens — not freshness.
+    provider_linkage_warnings: tuple[str, ...] = ()
     ranking_vector: RankingVectorV1 | None = None
     lifecycle_state: str | None = None
     lineage_refs: tuple[dict[str, Any], ...] = ()
@@ -142,6 +144,7 @@ class OpportunitySummary:
             "evidence_class": self.evidence_class,
             "eligibility_state": self.eligibility_state,
             "data_quality": dict(self.data_quality) if self.data_quality else None,
+            "provider_linkage_warnings": list(self.provider_linkage_warnings),
             "ranking_vector": self.ranking_vector.to_dict() if self.ranking_vector else None,
             "lifecycle_state": self.lifecycle_state,
             "lineage_refs": [dict(item) for item in self.lineage_refs],

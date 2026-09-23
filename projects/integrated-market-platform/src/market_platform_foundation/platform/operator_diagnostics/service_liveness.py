@@ -123,7 +123,12 @@ def classify_observational_market_data_liveness(
     max_subscribed_freshness_ms: int | None,
     quote_stale_threshold_ms: int,
 ) -> dict[str, Any]:
-    """Live observational ingest liveness using existing cycle semantics."""
+    """Live observational ingest liveness using existing cycle semantics.
+
+    ``process_id`` is diagnostic metadata for the classifying process only; it
+    does not participate in status classification (unlike loopback
+    ``identity_owned``, which gates platform services).
+    """
     base = {
         "last_successful_event_ns": last_successful_event_ns,
         "process_id": process_id,
@@ -189,22 +194,45 @@ def classify_observational_market_data_liveness(
             "transport_up": True,
         }
 
+    # Zero subscriptions: expected idle. Never HEALTHY, never a false failure.
+    # receiving=True with no subscription cycle is inconsistent, not progress.
     if active_subscription_count == 0:
         return {
             **base,
-            "application_progress": receiving,
+            "application_progress": False,
             "expected_cycle": "NOT_APPLICABLE",
-            "healthy": receiving,
-            "reason": None if receiving else "NO_ACTIVE_SUBSCRIPTION_CYCLE",
-            "status": "HEALTHY" if receiving else "NOT_APPLICABLE",
+            "healthy": False,
+            "reason": "NO_ACTIVE_SUBSCRIPTION_CYCLE",
+            "status": "NOT_APPLICABLE",
+            "transport_up": transport_up,
+        }
+
+    if not entitled:
+        return {
+            **base,
+            "application_progress": False,
+            "expected_cycle": "INGEST",
+            "healthy": False,
+            "reason": "NOT_ENTITLED",
+            "status": "UNREADY",
             "transport_up": transport_up,
         }
 
     if receiving:
-        stale = (
-            max_subscribed_freshness_ms is not None
-            and max_subscribed_freshness_ms > quote_stale_threshold_ms
-        )
+        # Fail closed: subscribed + receiving without measurable freshness is
+        # not HEALTHY. Do not invent a generic timeout; require the existing
+        # quote-cycle freshness sample.
+        if max_subscribed_freshness_ms is None:
+            return {
+                **base,
+                "application_progress": True,
+                "expected_cycle": "INGEST",
+                "healthy": False,
+                "reason": "FRESHNESS_UNAVAILABLE",
+                "status": "UNAVAILABLE",
+                "transport_up": transport_up,
+            }
+        stale = max_subscribed_freshness_ms > quote_stale_threshold_ms
         if stale:
             return {
                 **base,
@@ -236,10 +264,18 @@ def classify_observational_market_data_liveness(
             "transport_up": transport_up,
         }
 
-    if (
-        max_subscribed_freshness_ms is not None
-        and max_subscribed_freshness_ms > quote_stale_threshold_ms
-    ):
+    if max_subscribed_freshness_ms is None:
+        return {
+            **base,
+            "application_progress": False,
+            "expected_cycle": "INGEST",
+            "healthy": False,
+            "reason": "FRESHNESS_UNAVAILABLE",
+            "status": "UNAVAILABLE",
+            "transport_up": transport_up,
+        }
+
+    if max_subscribed_freshness_ms > quote_stale_threshold_ms:
         return {
             **base,
             "application_progress": False,

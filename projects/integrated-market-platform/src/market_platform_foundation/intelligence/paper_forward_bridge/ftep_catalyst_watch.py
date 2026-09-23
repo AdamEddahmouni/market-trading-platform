@@ -97,6 +97,96 @@ def load_governed_session_ids_from_evidence(
     return [], last_path
 
 
+def _parse_nonnegative_ns(raw: object) -> int | None:
+    if raw is None or str(raw).strip() == "":
+        return None
+    try:
+        value = int(raw)
+    except (TypeError, ValueError):
+        return None
+    if value < 0:
+        return None
+    return value
+
+
+def _recorded_at_ns_for_session_id(
+    repository_root: Path,
+    campaign_slug: str,
+    session_id: str,
+) -> int | None:
+    """Return ``recorded_at_ns`` for the evidence line that lists ``session_id``.
+
+    Exact session-id match only — never min/max across unrelated append-only
+    history. First match wins (worktree root before primary).
+    """
+
+    target = session_id.strip()
+    if not target:
+        return None
+    for root in _evidence_search_roots(repository_root):
+        path = governed_session_start_evidence_path(root, campaign_slug)
+        if not path.is_file():
+            continue
+        try:
+            lines = path.read_text(encoding="utf-8").splitlines()
+        except OSError:
+            continue
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(record, dict):
+                continue
+            sessions = record.get("sessions_created") or []
+            if not isinstance(sessions, list) or not sessions:
+                continue
+            matched = False
+            for item in sessions:
+                if isinstance(item, dict) and str(item.get("session_id") or "").strip() == target:
+                    matched = True
+                    break
+            if not matched:
+                continue
+            return _parse_nonnegative_ns(record.get("recorded_at_ns"))
+    return None
+
+
+def load_governed_session_observation_window_start_ns(
+    repository_root: Path,
+    campaign_slug: str,
+    *,
+    current_segment_session_id: str | None = None,
+    current_segment_start_ns: int | None = None,
+) -> int | None:
+    """Return THIS arm/run's observation-window start from an explicit segment arg.
+
+    Prospective cockpit admit must supply the current segment: either
+    ``current_segment_start_ns`` (captured when THIS segment was armed) or
+    ``current_segment_session_id`` (looked up for that id's ``recorded_at_ns``
+    only). Append-only history is never mined by min or max across roots or
+    lines. Absent current-segment identity → ``None`` (ingest stays
+    ``HISTORICAL_RECONSTRUCTED``). Does not invent RTH open (09:30).
+    """
+
+    explicit_start = _parse_nonnegative_ns(current_segment_start_ns)
+    if explicit_start is not None:
+        return explicit_start
+
+    segment_id = (
+        str(current_segment_session_id).strip()
+        if current_segment_session_id is not None
+        else ""
+    )
+    if not segment_id:
+        return None
+
+    return _recorded_at_ns_for_session_id(repository_root, campaign_slug, segment_id)
+
+
 def campaign_attention_fixture_path(repository_root: Path, campaign_slug: str) -> Path:
     return (
         repository_root
@@ -168,12 +258,18 @@ def collect_ftep_catalyst_watch(
     fixture_only: bool = False,
     input_path: Path | None = None,
     live_ingress: bool = False,
+    current_segment_session_id: str | None = None,
+    current_segment_start_ns: int | None = None,
 ) -> dict[str, Any]:
     """Compose campaign status, evidence session_ids, and ranked attention summaries.
 
     Fixture/smoke paths are dry-run (no cockpit writes). ``--live-ingress`` fetches Finviz
     (#207) then POSTs already-fetched rows to the **running** UI API store via HTTP
     (``IMP_UI_API_BASE_URL``); that hop is not dry-run.
+
+    Prospective admit observation window requires an explicit current-segment
+    ``current_segment_session_id`` and/or ``current_segment_start_ns`` for THIS
+    arm/run; otherwise the window is omitted and ingest stays historical.
     """
 
     status = collect_ftep_campaign_status(repository_root, campaign_slug)
@@ -380,11 +476,18 @@ def collect_ftep_catalyst_watch(
     if used_live_ingress and prospective_ingress_result is not None:
         from ...ui_api.cockpit_admit import post_prospective_ingress_to_running_ui_api
 
+        observation_window_start_ns = load_governed_session_observation_window_start_ns(
+            repository_root,
+            campaign_slug,
+            current_segment_session_id=current_segment_session_id,
+            current_segment_start_ns=current_segment_start_ns,
+        )
         if prospective_ingress_result.rows:
             cockpit_http_post = True
             cockpit_admit_hop = "HTTP_UI_API"
             observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
                 prospective_ingress_result,
+                observation_window_start_ns=observation_window_start_ns,
             )
             if observational_cockpit_admit.get("ok"):
                 ingress_outcome = "COCKPIT_ADMIT_HTTP_OK"
@@ -398,6 +501,7 @@ def collect_ftep_catalyst_watch(
         else:
             observational_cockpit_admit = post_prospective_ingress_to_running_ui_api(
                 prospective_ingress_result,
+                observation_window_start_ns=observation_window_start_ns,
             )
 
     disposition = "PASS" if not blockers else "BLOCKED"
@@ -444,5 +548,6 @@ __all__ = [
     "collect_ftep_catalyst_watch",
     "governed_session_start_evidence_path",
     "load_governed_session_ids_from_evidence",
+    "load_governed_session_observation_window_start_ns",
     "operator_primary_imp_root_for_evidence",
 ]

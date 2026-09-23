@@ -1,5 +1,5 @@
 /*
- * Radar surface styles (UIR-01) — ranked queue + opportunity detail.
+ * Radar surface styles (UIR-01) â€” ranked queue + opportunity detail.
  * Tokens only; state colors come from the --imp-state-* semantic tokens.
  */
 
@@ -16,6 +16,61 @@
   align-items: start;
 }
 
+.imp-radar-opportunities-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-3);
+  min-width: 0;
+}
+
+.imp-radar-feed-truth {
+  display: flex;
+  flex-direction: column;
+  gap: var(--imp-space-2);
+  padding: var(--imp-space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--imp-radius-lg);
+  background: rgba(26, 31, 40, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.imp-radar-feed-truth[data-non-current="true"] {
+  border-color: var(--imp-state-replay-border);
+}
+
+.imp-radar-feed-truth-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-radar-feed-truth-copy {
+  margin: 0;
+  font-size: var(--imp-text-sm);
+  color: var(--text-secondary);
+}
+
+.imp-radar-feed-truth-copy code {
+  font-family: var(--font-mono);
+  font-size: var(--imp-text-xs);
+  color: var(--text-primary);
+}
+
+.imp-radar-feed-truth-fresh {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
+  align-items: center;
+}
+
+.imp-radar-feed-truth-hint {
+  margin: 0;
+  font-size: var(--imp-text-micro);
+}
+
 .imp-radar-queue-section,
 .imp-radar-detail-section {
   min-width: 0;
@@ -26,7 +81,9 @@
   overflow-x: auto;
   border: 1px solid var(--border-subtle);
   border-radius: var(--imp-radius-lg);
-  background: var(--surface-1);
+  background: rgba(19, 22, 28, 0.88);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .imp-radar-queue-table {
@@ -47,7 +104,7 @@
   border-bottom: 1px solid var(--border-subtle);
   position: sticky;
   top: 0;
-  background: var(--surface-1);
+  background: rgba(19, 22, 28, 0.96);
 }
 
 .imp-radar-queue-table td {
@@ -71,20 +128,35 @@
 }
 
 .imp-radar-queue-table tbody tr.imp-radar-row-selected {
-  background: var(--surface-2);
-  box-shadow: inset 2px 0 0 var(--accent-primary);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 106, 0, 0.12) 0%,
+    rgba(32, 38, 47, 0.9) 12px,
+    rgba(32, 38, 47, 0.9) 100%
+  );
+  box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 
 .imp-radar-queue-headline {
-  max-width: 36ch;
+  margin: 0;
+  max-width: 42ch;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.imp-radar-queue-rank-basis {
+  margin: 2px 0 var(--imp-space-2);
+  font-size: var(--imp-text-micro);
+}
+
+.imp-radar-queue-state {
+  margin-top: var(--imp-space-1);
 }
 
 .imp-radar-queue-scan {
   display: grid;
-  grid-template-columns: repeat(2, minmax(16ch, 1fr));
-  gap: var(--imp-space-2) var(--imp-space-3);
+  gap: var(--imp-space-1);
   margin: 0;
-  min-width: 36ch;
 }
 
 .imp-radar-queue-scan-row dt {
@@ -100,6 +172,29 @@
   color: var(--text-primary);
 }
 
+.imp-radar-queue-fresh-detail {
+  margin: var(--imp-space-1) 0 0;
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+  max-width: 28ch;
+}
+
+.imp-radar-queue-conflict {
+  margin: var(--imp-space-1) 0 0;
+  font-size: var(--imp-text-xs);
+  color: var(--imp-state-critical-fg);
+}
+
+.imp-radar-queue-blockers {
+  max-width: 32ch;
+  font-size: var(--imp-text-xs);
+  color: var(--text-secondary);
+}
+
+.imp-radar-queue-blockers p {
+  margin: 0;
+}
+
 .imp-radar-queue-table code {
   font-family: var(--font-mono);
   font-size: var(--imp-text-xs);
@@ -111,6 +206,17 @@
 
 .imp-radar-queue-actions button {
   margin-right: var(--imp-space-1);
+  margin-bottom: var(--imp-space-1);
+}
+
+.imp-radar-ack-watch {
+  border-color: var(--accent-primary) !important;
+  color: var(--accent-primary-bright) !important;
+}
+
+.imp-radar-ack-dismiss {
+  border-color: var(--imp-state-critical-border) !important;
+  color: var(--imp-state-critical-fg) !important;
 }
 
 .imp-radar-epistemic-layer {
@@ -132,13 +238,17 @@
 .imp-radar-detail-card {
   border: 1px solid var(--border-subtle);
   border-radius: var(--imp-radius-lg);
-  background: var(--surface-1);
+  background: rgba(26, 31, 40, 0.78);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 12px 40px rgba(0, 0, 0, 0.35);
   padding: var(--imp-space-4);
   display: flex;
   flex-direction: column;
   gap: var(--imp-space-3);
 }
-
 .imp-radar-detail-state-row {
   display: flex;
   flex-wrap: wrap;
@@ -374,7 +484,7 @@
   }
 }
 
-/* ---- Mobile detail sheet (below BP_MD; see responsive-contract §3) ---- */
+/* ---- Mobile detail sheet (below BP_MD; see responsive-contract Â§3) ---- */
 .imp-radar-sheet-backdrop {
   position: fixed;
   inset: 0;

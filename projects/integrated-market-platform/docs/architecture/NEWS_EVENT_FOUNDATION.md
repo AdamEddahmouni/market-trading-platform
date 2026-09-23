@@ -39,9 +39,55 @@ IMP already had read-only `news/aggregator.py` (Finviz + NewsAPI + Finnhub) with
 | `published_time_quality` | `KNOWN`, `INFERRED_LOW_CONFIDENCE`, or `UNKNOWN` |
 | `retrieved_time` | When IMP observed/received the item |
 | `instrument_linkages` | Canonical instrument associations (multi-asset) |
-| `quality_flags` | Timestamp/provenance issues |
+| `quality_flags` | Timestamp/provenance issues **and** provider-linkage evidence-quality warnings |
 
 **Invariant:** `published_time` and `retrieved_time` are never conflated. Missing publication time is `UNKNOWN`, not silently replaced by retrieval time.
+
+### Provider linkage quality (heuristic suspicion, not rewrite)
+
+Module: `news/provider_linkage_quality.py`, hooked from `news/normalize.py`.
+
+When a provider supplies `PROVIDER_SYMBOL` linkages, IMP **preserves** those
+tickers (`provider_symbol`, `instrument_id`, `linkage_method`) and may only:
+
+- adjust `InstrumentLinkage.confidence` (`EXPLICIT` /
+  `PROVIDER_UNCORROBORATED` / `UNKNOWN`)
+- append operator-visible `quality_flags` such as
+  `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT`,
+  `PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT`,
+  `PROVIDER_LINKAGE_SOURCE_URL_MISSING`,
+  `PROVIDER_LINKAGE_MULTIPLE_CONTRADICTORY`,
+  `PROVIDER_LINKAGE_LOW_CONTEXTUAL_CONFIDENCE`
+
+These flags mean **uncorroborated / suspicious association evidence**. They do
+**not** declare the provider false, invent a better ticker, drop the event, or
+change LIVE_OBSERVED vs HISTORICAL_RECONSTRUCTED gates. Missing URL is a quality
+signal only. Empty/unassessable text keeps confidence `UNKNOWN`.
+
+Operator HTTP cards (`/opportunities/summary`, `/opportunities/{id}`) expose
+`provider_linkage_warnings: string[]` — **operator phrases**, not raw flag
+dumps. Translation is owned by
+`intelligence/opportunity/provider_linkage_warnings.py` (UI renders the field
+verbatim and must not invent a second map). Phrase map:
+
+| Flag | Operator phrase |
+| --- | --- |
+| `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT` | uncorroborated |
+| `PROVIDER_LINKAGE_LOW_CONTEXTUAL_CONFIDENCE` | low confidence |
+| `PROVIDER_LINKAGE_MULTIPLE_CONTRADICTORY` | source mismatch |
+| `PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT` | contextual concern |
+| `PROVIDER_LINKAGE_SOURCE_URL_MISSING` | source URL missing |
+
+Never emit or display "wrong ticker". Linkage warnings stay out of
+`data_quality` freshness.
+
+Company-name corroboration is derived from **headline/summary surface forms**
+(CamelCase compounds and Title Case words letter-aligned to the provider
+symbol). Ordinary English tokens are never treated as rival tickers.
+`PROVIDER_LINKAGE_ALTERNATE_ENTITY_PROMINENT` requires an inconsistent CamelCase
+company-like span; prefer an absent flag over a false alternate-entity
+escalation. Optional raw `company_name` fields are supplemental only —
+Finviz production rows need not supply them.
 
 ## Observability / availability rule
 
@@ -65,6 +111,26 @@ Order:
 5. **Catalyst keywords** — governed registry match
 
 Each stage emits `FilterDecision` with `reason_code`, `stage`, and matched catalyst IDs.
+
+### Poll rejection observability
+
+Prospective Finviz ingress attaches a privacy-safe `stats.rejection_summary` per
+poll/tick (`news/poll_evidence.py`). It records **counts and reason buckets
+only** — never raw provider payloads. Undetermined reasons use `UNKNOWN`.
+Stages that are not part of the current hop (for example EventV1 persist /
+Opportunity mint on hop 1) are marked `UNAVAILABLE` rather than invented.
+
+Existing hop-1 semantics are preserved:
+
+- `ingested_events` — fetched/normalized rows before qualification gates
+- `accepted_pipeline_events` — survived NewsPipeline acceptance, catalyst/filter,
+  symbol presence, and configured universe membership
+- A zero-opportunity tick remains valid; diagnostics do not loosen gates
+
+Bounded campaign poll-evidence retention (digests + dispositions, opt-in via
+`IMP_CAMPAIGN_POLL_EVIDENCE_*`) is documented under Configuration below.
+Provider-linkage contradiction heuristics are owned by another lane; this
+module only exposes the no-op `PROVIDER_LINKAGE_QUALITY_HOOK` extension point.
 
 ## Source trust catalog
 
@@ -120,7 +186,17 @@ IMP_NEWS_RECENCY_MAX_AGE_SECONDS=259200   # optional, default 72h
 IMP_NEWS_RECENCY_FUTURE_TOLERANCE_SECONDS=300
 IMP_NEWSAPI_LIVE=1
 IMP_FINNHUB_LIVE=1
+
+# Opt-in bounded poll evidence (digests/dispositions only; never raw payloads)
+IMP_CAMPAIGN_POLL_EVIDENCE_RETENTION=1
+IMP_CAMPAIGN_POLL_EVIDENCE_DIR=/path/to/non-campaign/evidence-root
+IMP_CAMPAIGN_POLL_EVIDENCE_MAX_ITEMS=128
+IMP_CAMPAIGN_POLL_EVIDENCE_MAX_POLLS=48
+IMP_CAMPAIGN_POLL_EVIDENCE_HEADLINE_CHARS=80
 ```
+
+Retention refuses known `rth-campaign-*` roots even if misconfigured. Missing
+retention config is a no-op (`enabled=false`).
 
 Verify: `verify_news_config()` from `market_platform_foundation.news.config`.
 

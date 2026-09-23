@@ -8,7 +8,7 @@
 
 Answer sixteen operator questions without raw logs or secret material. The model **composes** existing endpoints and read-only libraries; it does not upgrade evidence classes or start collectors.
 
-**Liveness ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)):** a bound port is **not** HEALTHY. Inspect `GET /provider/health` (`service_liveness`) and this snapshot's `readiness_vs_liveness`. Existing tokens only (`HEALTHY` / `UNREADY` / `UNAVAILABLE` / `NOT_APPLICABLE`; `STALLED` unused). Transport-up without application progress is `UNREADY` (`TRANSPORT_UP_APPLICATION_NOT_PROGRESSED`). HTTP 200 on a listening port is not sufficient.
+**Liveness ([#379](https://github.com/AdamEddahmouni/market-trading-platform/pull/379)):** a bound port is **not** HEALTHY. Inspect `GET /provider/health` (`service_liveness`) and this snapshot's `readiness_vs_liveness`. Existing tokens only (`HEALTHY` / `UNREADY` / `UNAVAILABLE` / `NOT_APPLICABLE`; `STALLED` unused). Transport-up without application progress is `UNREADY` (`TRANSPORT_UP_APPLICATION_NOT_PROGRESSED`). HTTP 200 on a listening port is not sufficient. Provider-health composition reuses the single `service_liveness` observation already embedded in `LiveObservationalRuntime.health_payload()` — do not re-probe OpenD in the UI projection, and do not introduce a TTL cache that would hide staleness.
 
 ## Canonical API
 
@@ -71,7 +71,7 @@ Observed diagnostic gaps during the Sep 18 engineering window (treat `121031` as
 2. **State path split** — Linked worktrees with empty `.local` while canonical FTEP SQLite lived on the primary checkout (`WORKTREE_STATE_MISMATCH` from `imp.py state-path`).
 3. **Process probe asymmetry** — `imp.py item9 next-rth-preflight` runs duplicate `--poll` detection; HTTP diagnostics intentionally pass `active_collector_probe=None` until Lane B injects a shared probe adapter.
 4. **Feed vs platform health** — `/opportunities/summary` `UNREADY` / `LIVE_AS_OF_UNAVAILABLE` did not surface as a first-class platform severity alongside lifecycle `HEALTHY`.
-5. **Secret-leak audit fragility** — Historical `UI_SECRET_LEAK_BLOCKED` on readiness/config blocked the very surfaces operators need (fixed on main for enum-shaped metadata).
+5. **Secret-leak audit fragility** — Historical `UI_SECRET_LEAK_BLOCKED` on readiness/config blocked the very surfaces operators need (fixed on main for enum-shaped `credential_state` / config field-descriptor metadata). Provider resilience **policy tokens** (`status_token`, `boundary_token`, `provider_status_token`) are likewise public uppercase enums — name+value-shape allowed; live secret-bearing values under those names or under `api_key` / `session_token` / bearer-shaped keys remain blocked.
 
 This model elevates those failures into `severity`, `human_summary`, and `operator_questions` without mutating receipts or restarting collectors.
 

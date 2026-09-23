@@ -7,6 +7,10 @@ from typing import Any
 
 from ..canonical import sha256_bytes
 from .contracts import InstrumentLinkage, NewsArticleEvent, PublicationTimeQuality
+from .provider_linkage_quality import (
+    assess_provider_linkage_quality,
+    company_names_from_raw,
+)
 from .timestamps import classify_publication_time, to_utc_iso
 from .timestamps import parse_utc_iso
 
@@ -81,10 +85,23 @@ def normalize_raw_item(
         or item.get("provider_news_id")
         or item.get("id")
         or ""
-    )
+    ).strip()
     headline = str(item.get("headline") or item.get("title") or "")
     url = str(item.get("url") or "")
-    all_flags = tuple(quality_flags)
+    summary = str(item.get("summary") or item.get("description") or "")
+    # Fail closed: never mint an event id from empty identity material.
+    if not provider_native_id and not str(url).strip() and not str(headline).strip():
+        raise ValueError("NEWS_IDENTITY_INPUTS_REQUIRED")
+    linkages = _linkages_from_raw(item)
+    # Preserve provider symbols; only annotate confidence + quality_flags.
+    linkage_quality = assess_provider_linkage_quality(
+        headline=headline,
+        summary=summary,
+        url=url,
+        linkages=linkages,
+        company_names=company_names_from_raw(item),
+    )
+    all_flags = tuple(dict.fromkeys((*quality_flags, *linkage_quality.quality_flags)))
     event_id = _build_event_id(
         provider_id=provider_id,
         provider_native_id=provider_native_id,
@@ -101,10 +118,10 @@ def normalize_raw_item(
         published_time_quality=quality,
         retrieved_time=retrieved,
         headline=headline,
-        summary=str(item.get("summary") or item.get("description") or ""),
+        summary=summary,
         url=url,
         language=str(item.get("language") or "en"),
-        instrument_linkages=_linkages_from_raw(item),
+        instrument_linkages=linkage_quality.linkages,
         publisher_source=str(item.get("publisher_source") or item.get("source") or ""),
         raw_reference=hashlib.sha256(str(item.get("raw_fields", item)).encode("utf-8")).hexdigest()[:16],
         quality_flags=all_flags,

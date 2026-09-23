@@ -36,7 +36,9 @@ def build_provider_health_payload(store: ReplayStore) -> dict[str, Any]:
     from .discovery_projections import build_finviz_diagnostics_payload
 
     health["finviz"] = build_finviz_diagnostics_payload()
-    health["service_liveness"] = runtime.observational_liveness_view()
+    # service_liveness comes from runtime.health_payload() only — one OpenD
+    # reachability observation per composition. Do not re-call
+    # observational_liveness_view() here (would double-probe without a TTL).
     health["provider_summary"] = {
         "provider": "MOOMOO",
         "provider_role": "MARKET_DATA",
