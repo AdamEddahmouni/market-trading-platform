@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-22 — RTH15-10 Benchmark Protocol controls + RTH15-11 Smoke10
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `intelligence/benchmark_protocol` |
+| **Summary** | Closed RTH15-10 gaps (no-lookahead, Modes A–E definitions, catastrophic criteria, contaminated-case invalidation without partial credit, vanity-aggregate ban) with freeze certificate + tests; then executed bounded Smoke10 `ibp-smoke10-896D92294A1240B5` under synthetic stub (contamination PASS; facts FAIL 10/10 expected). Evidence class `SOFTWARE_CONTROLLED` only. |
+| **Key files** | `src/.../benchmark_protocol/protocol_controls.py`; `blind_input.py`; `smoke10_evaluator.py`; `smoke10_execution.py`; `readiness.py`; `tests/intelligence/test_intelligence_benchmark_protocol_controls_v1.py`; `docs/engineering/INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md`; `evidence/intelligence-benchmark/imp-rth15-11-smoke10-20260922/*` |
+| **Tests** | `python -m unittest tests.intelligence.test_intelligence_benchmark_protocol_controls_v1 tests.intelligence.test_intelligence_benchmark_smoke10_execution tests.intelligence.test_intelligence_benchmark_harness_adapter` — 22 OK |
+| **Related** | [INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md](INTELLIGENCE_BENCHMARK_PROTOCOL_V1.md); historical Lane D `ibp-smoke10-76DDD188CD080365` unchanged |
+| **Notes** | No push/PR/merge. Not market/FTEP/Item 9/Paper calibration evidence. Full30 not run. |
+
 ## 2026-09-22 — Segment B close + post-close integration status docs
 
 | Field | Value |

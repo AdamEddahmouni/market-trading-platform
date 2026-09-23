@@ -18,7 +18,7 @@ ITEM9_CALIBRATION_RESULT_KIND = "ITEM9_CALIBRATION_RESULT"
 
 
 class IntelligenceBenchmarkBlindMode(StrEnum):
-    """Blind evaluation modes (Modes A–E); catalog metadata only in v1."""
+    """Blind evaluation Modes A–E (capability-surface routing; see protocol_controls)."""
 
     A = "A"
     B = "B"
