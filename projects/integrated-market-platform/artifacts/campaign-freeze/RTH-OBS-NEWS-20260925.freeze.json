@@ -13,7 +13,7 @@
   "evidence_class": "SOFTWARE_COORDINATION",
   "evidence_namespace": "projects/integrated-market-platform/.local/rth-campaign-20260925",
   "execution_authority": "BLOCKED",
-  "freeze_sha256": "76bccf2b83233611d10f3f709c0b58e00c0f44d8ac7bf77967bd600c1bbcd6a8",
+  "freeze_sha256": "74f49092afc93ee550ffd41e862ec8f76f2ad32637c2194cfd0e0bbd3cba660b",
   "ftep_empirical_active": false,
   "full30": "NOT_RUN",
   "historical_mutation": "FORBIDDEN",
@@ -38,11 +38,11 @@
   ],
   "rth_close_et": "16:00:00",
   "rth_open_et": "09:30:00",
-  "runtime_sha": "bd8036a6a010b17c5343f110c8f0fd8be31505fd",
-  "runtime_tree_sha": "8be687198a6e62ce292a2923f72828b4956a212c",
+  "runtime_sha": "f8f42547293d0f8e84e07a9ecc647f949af60289",
+  "runtime_tree_sha": "c3ac61007419d34981f84ce20786bb342048a1b0",
   "schema_version": "campaign-freeze/1.1.0",
   "session_date": "2026-09-25",
-  "source_main_at_freeze": "bd8036a6a010b17c5343f110c8f0fd8be31505fd",
+  "source_main_at_freeze": "d79c664be7deda1d463ddf715319a7ee481ac220",
   "target_evidence_class": "prospective_forward_test",
   "timezone": "America/New_York"
 }

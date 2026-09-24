@@ -38,12 +38,12 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `in-progress` |
+| **Status** | `complete` |
 | **Area** | observation / campaign |
-| **Summary** | Added regression checks and code-level refusal for unavailable Git status, mismatched campaign/window arm arguments, and unreadable or unknown ownership state. The launch handoff also needs the API started after arm because GO/NO-GO requires a free API port. |
-| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py` |
+| **Summary** | Added regression checks and code-level refusal for unavailable Git status, mismatched campaign/window arm arguments, and unreadable or unknown ownership state. With explicit approval, revised the unarmed freeze to runtime `f8f42547293d0f8e84e07a9ecc647f949af60289` and moved API startup after arm because GO/NO-GO requires a free API port. |
+| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `artifacts/campaign-freeze/RTH-OBS-NEWS-20260925.freeze.json`; `docs/engineering/RTH_OBS_NEWS_20260925_LAUNCH.md` |
 | **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 12 tests, OK on the development branch. |
-| **Notes** | Frozen runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd` and its manifest remain unchanged. These fixes are not active in that runtime; re-freezing requires explicit approval. The campaign remains `FROZEN_NOT_ARMED`. |
+| **Notes** | The campaign remains `FROZEN_NOT_ARMED`. No empirical evidence or ownership state was created. Live remains OFF. |
 
 ## 2026-09-24 — Fail-closed next-RTH GO/NO-GO
 
