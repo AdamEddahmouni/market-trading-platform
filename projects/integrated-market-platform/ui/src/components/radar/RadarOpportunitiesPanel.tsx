@@ -212,7 +212,9 @@ export function RadarOpportunitiesPanel({
   const handleRetryReconcile = useCallback(() => {
     if (!closure) return;
     setAckPhase("synchronizing");
-    void reconcileTradeReviews(closure.opportunityId, closure.tradeReviewId);
+    void reconcileTradeReviews(closure.opportunityId, closure.tradeReviewId).catch(() => {
+      setAckPhase("reconciliation_failed");
+    });
   }, [closure, reconcileTradeReviews]);
 
   const acksEnabled = Boolean(paperActions && !readOnly && paperAccountId);
