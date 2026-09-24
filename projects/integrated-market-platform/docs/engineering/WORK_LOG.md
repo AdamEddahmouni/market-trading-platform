@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Make Sep 25 launch checkout reproducible
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / campaign handoff |
+| **Summary** | Export the canonical freeze with explicit UTF-8 encoding and create a dedicated detached worktree at the frozen runtime. This avoids PowerShell redirection encoding differences and switching an operator's existing checkout. |
+| **Key files** | `docs/engineering/RTH_OBS_NEWS_20260925_LAUNCH.md` |
+| **Tests** | Freeze export JSON/hash check; documentation link check; `git diff --check`. |
+| **Notes** | The manifest and runtime SHA are unchanged; campaign remains `FROZEN_NOT_ARMED`. |
+
 ## 2026-09-24 — Version canonical control-plane references
 
 | Field | Value |
