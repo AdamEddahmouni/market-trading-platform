@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Make Paper session history fail visibly on bad responses
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Session history now reports an unavailable state when its API returns an HTTP error or malformed sessions, instead of claiming no persisted sessions exist. The current account session remains authoritative. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` |
+| **Tests** | PaperPortfolioPage Vitest suite: 9 passed; UI typecheck and production build passed. |
+| **Notes** | Read-only history handling; no Paper submit behavior or authority gate changed. |
+
 ## 2026-09-24 — Keep Radar review retry recoverable after fetch errors
 
 | Field | Value |
