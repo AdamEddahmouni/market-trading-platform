@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Formalize IMP's unified operator and research workspace
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | architecture / product direction |
+| **Summary** | Recorded the approved future requirement for IMP to operate research, campaigns, experiments, and project development through typed, auditable UI workflows. Kept trading and development authority separate and reused the existing run and artifact standard. |
+| **Key files** | `docs/architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md`; `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md`; `docs/platform/README.md` |
+| **Tests** | Documentation links and `git diff --check`; no runtime behavior changed. |
+| **Notes** | Future design only. No empirical campaign, Paper, Live, or release authority changed. |
+
 ## 2026-09-24 — Record the unarmed Sep 24 cash session
 
 | Field | Value |

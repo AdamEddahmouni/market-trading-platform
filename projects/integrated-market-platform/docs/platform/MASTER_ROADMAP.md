@@ -17,6 +17,11 @@ milestone numbering do not imply implementation, qualification, production
 eligibility, or authorization. BUILD01-35 remains historical, and EVIDENCE is
 an independent semantic track.
 
+The approved future [unified operator and research control plane](../architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md)
+is a product direction across these milestones. It adds typed operator
+workflows over accepted run, artifact, registry, and domain authorities; it
+does not alter their dependency order or grant execution authority.
+
 ## Dependency vocabulary
 
 - **Hard dependency:** the destination cannot safely satisfy its contract before

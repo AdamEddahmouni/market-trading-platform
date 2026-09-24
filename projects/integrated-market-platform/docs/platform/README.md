@@ -51,6 +51,7 @@ scope.
 | How are runs, attempts, and reproducibility represented? | [Reproducibility and Run Standard](REPRODUCIBILITY_AND_RUN_STANDARD.md) |
 | How are logs, metrics, traces, and correlation defined? | [Observability Standard](OBSERVABILITY_STANDARD.md) |
 | How are validation, benchmarks, and evaluation governed? | [Test and Evaluation Standard](TEST_AND_EVALUATION_STANDARD.md) |
+| What is the future operator and research workspace boundary? | [Unified Operator and Research Control Plane](../architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md) |
 
 ## Recommended reading order
 
