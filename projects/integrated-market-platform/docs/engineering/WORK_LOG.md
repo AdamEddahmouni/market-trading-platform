@@ -34,7 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
-## Entries
+## 2026-09-24 — Supersede Sep 24 frozen runtime after outage and shutdown repair
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | campaign freeze |
+| **Summary** | `RTH-OBS-NEWS-20260924` stays `FROZEN_NOT_ARMED`. The pinned runtime moves from `c15527221a21d7bc88acefbe0971b6de9292247e` to `1cbc8b0551179e1724033ee0036fb3366174daca` because the old runtime left outages open and could keep a poller alive past the 16:00 boundary. |
+| **Key files** | `docs/engineering/RTH_OBS_NEWS_20260924_FREEZE.md`; `artifacts/campaign-freeze/RTH-OBS-NEWS-20260924.freeze.json`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | Durability behavior is the [#410](https://github.com/AdamEddahmouni/market-trading-platform/pull/410) suite: `validate.py changed` 2114 passed, 5 skipped, 0 failures. This commit is the freeze pointer only. |
+| **Related** | [#410](https://github.com/AdamEddahmouni/market-trading-platform/pull/410). Old runtime tree `e77f72208b6547d63dc4b7101c5cfa357114052b` is `SUPERSEDED`. New tree `c673ada98b7f3dc56f1073fe65854984259a800d`. |
+| **Notes** | `ARMED=NO`. `RETARGETED` by an explicit freeze commit, not a silent edit. Empirical locks unchanged. |
 
 ## 2026-09-23 — Observation runtime outage close and shutdown wake
 
