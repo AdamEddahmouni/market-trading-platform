@@ -21,8 +21,12 @@ from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospecti
     describe_finviz_ingress_credential_availability,
     resolve_finviz_ingress_token,
 )
-from market_platform_foundation.providers.adapters.finviz_elite_context import (  # noqa: E402
-    FINVIZ_TOKEN_NAMES,
+from market_platform_foundation.finviz.credential_manager import (  # noqa: E402
+    reset_finviz_credential_manager,
+)
+from market_platform_foundation.finviz.token_names import FINVIZ_TOKEN_NAMES  # noqa: E402
+from market_platform_foundation.providers.equity_quote_discovery import (  # noqa: E402
+    names_present,
 )
 from tools.platform.campaign_environment_preflight import (  # noqa: E402
     evaluate_campaign_environment_preflight,
@@ -239,6 +243,116 @@ class FinvizPreflightCredentialIdentityTests(unittest.TestCase):
             report = self._preflight(env, required=True)
         self.assertEqual(_check(report, "credentials_presence_finviz").status, "PASS")
         self._assert_redacted(report)
+
+    def test_env_alias_precedence_is_canonical_list_order(self) -> None:
+        earlier = "dummy-earlier-token-aaa111"
+        later = "dummy-later-token-bbb222"
+        env = _isolated_env(
+            IMP_FINVIZ_SECRET_DIR=str(self.secret_dir),
+            FINVIZ_API_KEY=earlier,
+            IMP_FINVIZ_TOKEN=later,
+        )
+        token, _, source = resolve_finviz_ingress_token(ROOT, env=env)
+        self.assertEqual(source, "ENVIRONMENT")
+        self.assertEqual(token, earlier)
+        self.assertNotEqual(token, later)
+        availability = describe_finviz_ingress_credential_availability(ROOT, env=env)
+        self.assertEqual(availability.source, "ENVIRONMENT")
+        self.assertNotIn(earlier, availability.reason or "")
+        self.assertNotIn(later, availability.reason or "")
+
+    def test_environment_token_wins_over_secret_file(self) -> None:
+        env_token = "dummy-env-token-ccc333"
+        file_token = "dummy-file-token-ddd444"
+        (self.secret_dir / "finviz-token.txt").write_text(file_token, encoding="utf-8")
+        env = _isolated_env(
+            IMP_FINVIZ_SECRET_DIR=str(self.secret_dir),
+            FINVIZ_ELITE_TOKEN=env_token,
+        )
+        token, _, source = resolve_finviz_ingress_token(ROOT, env=env)
+        self.assertEqual(source, "ENVIRONMENT")
+        self.assertEqual(token, env_token)
+
+    def test_empty_and_whitespace_secret_files_are_absent(self) -> None:
+        for contents in ("", "   \n\t"):
+            with self.subTest(contents=repr(contents)):
+                (self.secret_dir / "finviz-token.txt").write_text(contents, encoding="utf-8")
+                env = _isolated_env(
+                    IMP_FINVIZ_SECRET_DIR=str(self.secret_dir),
+                    IMP_FINVIZ_LIVE="1",
+                    IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS="1",
+                )
+                report = self._preflight(env, required=True)
+                self.assertEqual(_check(report, "credentials_presence_finviz").detail, "FINVIZ_TOKEN_ABSENT")
+                self._assert_agrees(env, report)
+
+    def test_unreadable_secret_file_is_absent(self) -> None:
+        path = self.secret_dir / "finviz-token.txt"
+        path.write_text(DUMMY_TOKEN, encoding="utf-8")
+        env = _isolated_env(IMP_FINVIZ_SECRET_DIR=str(self.secret_dir))
+        with patch.object(Path, "read_text", side_effect=OSError("unreadable")):
+            token, _, source = resolve_finviz_ingress_token(ROOT, env=env)
+            availability = describe_finviz_ingress_credential_availability(ROOT, env=env)
+        self.assertIsNone(token)
+        self.assertEqual(source, "NONE")
+        self.assertFalse(availability.available)
+        self.assertEqual(availability.reason, "FINVIZ_TOKEN_ABSENT")
+        self.assertNotIn(DUMMY_TOKEN, availability.reason or "")
+
+    def test_quote_discovery_uses_canonical_names_including_imp_finviz_token(self) -> None:
+        self.assertIn("IMP_FINVIZ_TOKEN", FINVIZ_TOKEN_NAMES)
+        from market_platform_foundation.providers import equity_quote_discovery as discovery
+
+        self.assertIs(discovery.FINVIZ_TOKEN_NAMES, FINVIZ_TOKEN_NAMES)
+        cleared = {name: "" for name in (*FINVIZ_TOKEN_NAMES, *OBSOLETE_NAMES)}
+        with patch.dict("os.environ", {**cleared, "IMP_FINVIZ_TOKEN": DUMMY_TOKEN}, clear=False):
+            present = names_present(FINVIZ_TOKEN_NAMES)
+        self.assertEqual(present, ("IMP_FINVIZ_TOKEN",))
+
+    def test_screener_manager_reads_the_same_env_alias(self) -> None:
+        from market_platform_foundation.finviz.credential_manager import _env_override_token
+
+        cleared = {name: "" for name in (*FINVIZ_TOKEN_NAMES, *OBSOLETE_NAMES)}
+        reset_finviz_credential_manager()
+        try:
+            with patch.dict("os.environ", {**cleared, "IMP_FINVIZ_TOKEN": DUMMY_TOKEN}, clear=False):
+                found = _env_override_token()
+            self.assertEqual(found, DUMMY_TOKEN)
+            with patch.dict("os.environ", {**cleared, "FINVIZ_ELITE_AUTH": DUMMY_TOKEN}, clear=False):
+                self.assertIsNone(_env_override_token())
+        finally:
+            reset_finviz_credential_manager()
+
+    def test_child_process_sees_inherited_canonical_env_without_printing_it(self) -> None:
+        import os
+        import subprocess
+
+        env = os.environ.copy()
+        for name in (*FINVIZ_TOKEN_NAMES, *OBSOLETE_NAMES):
+            env.pop(name, None)
+        env["FINVIZ_API_KEY"] = DUMMY_TOKEN
+        env["IMP_FINVIZ_SECRET_DIR"] = str(self.secret_dir)
+        env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
+        code = (
+            "from pathlib import Path\n"
+            "from market_platform_foundation.intelligence.paper_forward_bridge"
+            ".ftep_prospective_catalyst_ingress import resolve_finviz_ingress_token\n"
+            f"token, _secret, source = resolve_finviz_ingress_token(Path({str(ROOT)!r}))\n"
+            "assert token\n"
+            "print(source)\n"
+        )
+        completed = subprocess.run(
+            [sys.executable, "-c", code],
+            cwd=str(ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        self.assertEqual(completed.stdout.strip(), "ENVIRONMENT")
+        self.assertNotIn(DUMMY_TOKEN, completed.stdout)
+        self.assertNotIn(DUMMY_TOKEN, completed.stderr)
 
 
 if __name__ == "__main__":
