@@ -144,8 +144,22 @@ freshness, opportunity summary).
 
 ## Outage classification / NOT_OBSERVED / recovery
 
-Outage records are **additive**. Missed evidence is `NOT_OBSERVED`. Root cause
-defaults to `UNKNOWN` (no false narrative). No synthetic polls. No backfill.
+Outage records are **additive**. An opening row stays immutable. Recovery and
+campaign termination append a later `INTERVAL_CLOSED` row that references the
+opening identity. They do not rewrite `interval_end_utc` on the opening row.
+
+- `RECOVERED` means required roles are healthy again. Repeated healthy status
+  checks do not append another close.
+- `SUPERSEDED` closes an open interval when the failure signature changes.
+- `CAMPAIGN_TERMINATED` / `termination_reason=SHUTDOWN_TERMINATED` means the
+  campaign ended while the interval was still open. That is not recovery.
+- A historical closed interval does not make current progress unhealthy.
+  `active_outages` is the open set. `outages` is the full ledger.
+- Root cause is `POLL_PROCESS_DEAD`, `API_UNAVAILABLE`, `PROCESS_DEAD`,
+  `HEARTBEAT_STALE`, or `APPLICATION_UNREADY` only when progress already says
+  so. Otherwise it stays `UNKNOWN`. September 22 rows are not rewritten.
+
+Missed evidence remains `NOT_OBSERVED`. No synthetic polls. No backfill.
 Deliberate recovery (`recover`) refreshes PIDs while preserving original arm
 timestamp, segment ID, runtime SHA, and existing outage gaps — it does **not**
 silently create Segment C.
@@ -155,8 +169,32 @@ recovery.
 
 ## Shutdown
 
-- `CLEAN_SHUTDOWN` / `RTH_CLOSE_SHUTDOWN` → progress `NOT_APPLICABLE` (not an outage)
-- Do not misclassify intentional RTH close as PROCESS_DEAD/STALE outage
+- Once `shutdown` or `shutdown --rth-close` is written, the supervisor and
+  poller stop before the next cycle. Idle waits check every 0.2s. They do not
+  sleep the full poll cadence, and they do not busy-loop.
+- An in-flight `--live-ingress` child is terminated if shutdown is observed
+  before its stdout is persisted. The attempt is `SHUTDOWN_INTERRUPTED` /
+  `INTERRUPTED_BEFORE_RECEIPT` and does not advance `last_successful_poll_utc`.
+- A response already fully read when shutdown is observed is kept as evidence
+  with `poll_boundary=INITIATED_BEFORE_CLOSE_COMPLETED_AFTER` and
+  `counts_as_in_window_observation=false`. It is not an in-window observation.
+- If `ownership.session_end_utc` is already past, the poller does not start
+  another poll. It waits for governed shutdown.
+- `CLEAN_SHUTDOWN` / `RTH_CLOSE_SHUTDOWN` → progress `NOT_APPLICABLE` (not an
+  outage). Heartbeat commands after that do not advance a healthy heartbeat.
+- Do not misclassify intentional RTH close as PROCESS_DEAD/STALE outage.
+- `spawn-detached` prints `spawn_shim_pid` and `durable_pid`. The shim is the
+  process `Popen` created. The durable PID is the one written into ownership.
+  Role logs are `campaign-supervision/logs/<role>.log`. Launch flags append to
+  `detach-flags.jsonl` and are not overwritten.
+
+**Tested on this host, not proven as terminal-close survival:** a disposable
+parent killed with `taskkill /F /PID` (no tree flag) left its child alive.
+`CREATE_BREAKAWAY_FROM_JOB` did not remove the child from a job when the
+parent was already inside one (`IsProcessInJob` stayed true). Closing that
+job can still kill the child. `job_or_terminal_kill_survival_proven` stays
+false. Launch from a standalone PowerShell that is not inside an editor job
+when window-close survival matters.
 
 ## Execution safety
 

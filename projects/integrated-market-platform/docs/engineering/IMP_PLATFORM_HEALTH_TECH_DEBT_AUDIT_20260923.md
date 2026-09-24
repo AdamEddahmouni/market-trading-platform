@@ -10,6 +10,21 @@
 
 **Companion:** [IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.json](../../artifacts/audits/IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.json)
 
+## Disposition update — observation runtime durability
+
+Historical findings above stay as written. This section records what later software changed.
+
+| Finding | Later state |
+|---|---|
+| Open outages never close | `SOFTWARE_PROVEN` on the durability branch. Opening rows stay immutable. Recovery appends `INTERVAL_CLOSED` / `RECOVERED`. Shutdown appends `CAMPAIGN_TERMINATED` with `recovered=false`. |
+| Poller sleeps the full cadence after shutdown | `SOFTWARE_PROVEN`. Idle wait and a 30s software block both returned in under 2s. No following cycle. |
+| Shim PID vs durable PID | `SOFTWARE_PROVEN` contract: `spawn_shim_pid` and `durable_pid` are separate fields. |
+| Shared detached log and overwritten flags | `SOFTWARE_PROVEN`. Role logs under `campaign-supervision/logs/`. Flags append to `detach-flags.jsonl`. |
+| Spawn log handle ResourceWarning | Parent closes its log handle after `Popen`. The detached-child warning filter is not used. |
+| Job/terminal kill | `TESTED_WITH_LIMITATIONS`. A disposable job with `KILL_ON_JOB_CLOSE` and `BREAKAWAY_OK` killed the non-breakaway child and left the breakaway child alive after parent termination and job-handle close. `job_or_terminal_kill_survival_proven` is true only when breakaway is selected. An existing parent job that denies breakaway is not escaped; spawn fails visibly. |
+
+The Sep 24 freeze decision is made after this change is on `main`. It is not decided in the original audit text.
+
 ## Executive technical-health summary
 
 `origin/main` matches the #406 merge. The Sep 24 campaign remains pinned to runtime `c15527221a21d7bc88acefbe0971b6de9292247e` (tree `e77f72208b6547d63dc4b7101c5cfa357114052b`), state `FROZEN_NOT_ARMED`, and its state directory `.local/rth-campaign-20260924` was absent in the audit worktree and in the main checkout. This audit did not arm it.

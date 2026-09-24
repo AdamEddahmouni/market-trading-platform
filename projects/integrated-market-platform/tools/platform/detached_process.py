@@ -1,14 +1,18 @@
 """IMP-owned process spawn helper for campaign supervision.
 
-Default Windows flags (tested): ``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``.
-``CREATE_BREAKAWAY_FROM_JOB`` is an explicit opt-in and remains **unproven** for
-job/terminal-kill survival on this host. ``DETACHED_PROCESS`` is **not** used
-(aborted child Python processes in testing). This helper does **not** claim that
+Campaign spawn requests ``CREATE_BREAKAWAY_FROM_JOB`` together with
+``CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW``. A disposable job created with
+``KILL_ON_JOB_CLOSE | BREAKAWAY_OK`` kills a child that lacks breakaway and
+leaves a breakaway child alive after the parent is terminated and the job
+handle is closed. A parent job that denies breakaway makes ``Popen`` fail;
+that failure is visible and is not rewritten into a weaker spawn.
+``DETACHED_PROCESS`` is not used. This helper does not claim that
 ``Start-Process -WindowStyle Hidden`` is durable.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -44,7 +48,8 @@ def spawn_detached(
     cwd: Path | str,
     env: Mapping[str, str] | None = None,
     log_path: Path | str | None = None,
-    allow_breakaway: bool = False,
+    allow_breakaway: bool = True,
+    role: str | None = None,
 ) -> int:
     """Spawn a child with the default tested flags (no breakaway unless opted in).
 
@@ -85,21 +90,25 @@ def spawn_detached(
         path = Path(log_path)
         path.parent.mkdir(parents=True, exist_ok=True)
         handle = path.open("ab")
-        process = subprocess.Popen(
-            command,
-            stdout=handle,
-            stderr=subprocess.STDOUT,
-            **popen_kwargs,
-        )
-        process._imp_log_handle = handle  # type: ignore[attr-defined]
-        note = path.parent / "detach-flags-used.txt"
         try:
-            note.write_text(
-                f"{'breakaway_opt_in' if allow_breakaway else 'no_breakaway_default'}:{creationflags}\n",
-                encoding="utf-8",
+            process = subprocess.Popen(
+                command,
+                stdout=handle,
+                stderr=subprocess.STDOUT,
+                **popen_kwargs,
             )
-        except OSError:
-            pass
+        finally:
+            # Parent closes its duplicate. The child keeps the inherited stdout handle.
+            handle.close()
+        _release_parent_popen_bookkeeping(process)
+        _append_detach_flags(
+            path.parent,
+            creationflags=creationflags,
+            allow_breakaway=allow_breakaway,
+            role=role,
+            log_path=path,
+            spawn_shim_pid=int(process.pid),
+        )
         return int(process.pid)
 
     process = subprocess.Popen(
@@ -108,10 +117,49 @@ def spawn_detached(
         stderr=subprocess.DEVNULL,
         **popen_kwargs,
     )
+    _release_parent_popen_bookkeeping(process)
     return int(process.pid)
 
 
-def mechanism_description(*, allow_breakaway: bool = False) -> dict[str, object]:
+def _release_parent_popen_bookkeeping(process: subprocess.Popen[bytes]) -> None:
+    """Stop the parent interpreter from finalizing a process it intentionally detached.
+
+    This is not a warning filter. The OS process is already running. Clearing
+    ``_child_created`` makes ``Popen.__del__`` return without emitting
+    ``ResourceWarning: subprocess is still running``. The parent does not
+    reap or kill the child.
+    """
+
+    process._child_created = False  # type: ignore[attr-defined]
+
+
+def _append_detach_flags(
+    directory: Path,
+    *,
+    creationflags: int,
+    allow_breakaway: bool,
+    role: str | None,
+    log_path: Path,
+    spawn_shim_pid: int,
+) -> None:
+    """Append one launch record. Historical rows are not replaced."""
+
+    path = directory / "detach-flags.jsonl"
+    record = {
+        "role": role,
+        "allow_breakaway": bool(allow_breakaway),
+        "creationflags": int(creationflags),
+        "log_path": str(log_path),
+        "spawn_shim_pid": int(spawn_shim_pid),
+        "semantics": "append_only_launch_evidence",
+    }
+    with path.open("a", encoding="utf-8", newline="\n") as handle:
+        handle.write(json.dumps(record, sort_keys=True, separators=(",", ":")))
+        handle.write("\n")
+        handle.flush()
+
+
+def mechanism_description(*, allow_breakaway: bool = True) -> dict[str, object]:
     """Describe the mechanism actually selected for the given flag choice."""
 
     selected = (
@@ -127,16 +175,19 @@ def mechanism_description(*, allow_breakaway: bool = False) -> dict[str, object]
         "creationflags_with_breakaway_opt_in": windows_detached_creationflags(allow_breakaway=True),
         "creationflags_default": windows_detached_creationflags(allow_breakaway=False),
         "start_process_hidden_assumed_durable": False,
-        "job_or_terminal_kill_survival_proven": False,
+        "job_or_terminal_kill_survival_proven": bool(allow_breakaway),
         "parent_process_exit_survival_proven_without_breakaway": True,
+        "breakaway_escapes_existing_parent_job": False,
         "notes": (
-            "Default/tested mechanism is CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW "
-            f"({SELECTED_MECHANISM_DEFAULT}). CREATE_BREAKAWAY_FROM_JOB is an explicit "
-            "opt-in and remains UNPROVEN for Windows job-kill / terminal-independent "
-            "durability on this host. DETACHED_PROCESS is not used. "
-            "Start-Process -WindowStyle Hidden is not treated as durable. "
-            "Product guarantee is fail-visible detection when supervisor/heartbeat is "
-            "dead or stale — not a proven detached OS service."
+            "Campaign spawn uses CREATE_NEW_PROCESS_GROUP | CREATE_NO_WINDOW | "
+            "CREATE_BREAKAWAY_FROM_JOB. Disposable evidence: a job created with "
+            "KILL_ON_JOB_CLOSE and BREAKAWAY_OK killed the non-breakaway child and "
+            "left the breakaway child alive after parent termination and job-handle "
+            "close. Without breakaway, job close still kills the child. If the "
+            "parent job denies breakaway, process creation fails visibly. "
+            "DETACHED_PROCESS is not used. Start-Process -WindowStyle Hidden is "
+            "not durable. This is software-controlled process evidence, not a "
+            "claim that every Windows terminal or editor job can be escaped."
         ),
     }
 
