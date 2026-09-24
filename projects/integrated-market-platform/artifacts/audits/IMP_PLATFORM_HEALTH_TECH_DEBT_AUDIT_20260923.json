@@ -10,7 +10,11 @@
   "evidence_class": "SOFTWARE_CONTROLLED",
   "frozen_runtime_sha": "c15527221a21d7bc88acefbe0971b6de9292247e",
   "frozen_tree_sha": "e77f72208b6547d63dc4b7101c5cfa357114052b",
-  "next_implementation_lane": "observation-ledger-and-shutdown-visibility",
+  "next_implementation_lane": "finviz-preflight-identity",
+  "high_findings": [
+    "job_or_terminal_kill_survival_unproven",
+    "finviz_preflight_names_do_not_match_runtime"
+  ],
   "schema_version": "platform-health-audit/1.0.0",
   "state_namespace_present": false,
   "superseded_runtime_sha": "02d699768dce2ad2e85d7215f2588fd18a36fcce"
