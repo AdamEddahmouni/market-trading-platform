@@ -176,6 +176,13 @@ def cmd_arm(args: argparse.Namespace) -> int:
             state_dir=state_dir,
             probe_network=True,
         )
+        if gate.get("arm_allowed") and (
+            str(args.campaign_id) != gate.get("campaign_id")
+            or str(args.observation_window_id) != gate.get("observation_window_id")
+        ):
+            gate["arm_allowed"] = False
+            gate["disposition"] = "BLOCKED"
+            gate["blockers"] = ["ARM_ARGUMENTS_FREEZE_MISMATCH"]
         if not gate.get("arm_allowed"):
             print(
                 json.dumps(

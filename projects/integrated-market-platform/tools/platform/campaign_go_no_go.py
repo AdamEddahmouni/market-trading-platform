@@ -74,7 +74,7 @@ def _parse_day(value: str) -> date | None:
         return None
 
 
-def _git(cwd: Path, *args: str) -> str | None:
+def _git(cwd: Path, *args: str, allow_empty: bool = False) -> str | None:
     git = shutil.which("git.exe") or shutil.which("git")
     if not git:
         return None
@@ -92,7 +92,7 @@ def _git(cwd: Path, *args: str) -> str | None:
     if result.returncode != 0:
         return None
     text = (result.stdout or "").strip()
-    return text or None
+    return text if text or allow_empty else None
 
 
 def _port_open(host: str, port: int) -> bool:
@@ -223,11 +223,13 @@ def evaluate_campaign_go_no_go(
         add("runtime_tree", "PASS", tree)
 
     if worktree_dirty is None:
-        porcelain = _git(root, "status", "--porcelain", "--untracked-files=no")
+        porcelain = _git(root, "status", "--porcelain", "--untracked-files=no", allow_empty=True)
+        if porcelain is None:
+            add("worktree", "FAIL", "WORKTREE_STATUS_UNAVAILABLE")
         worktree_dirty = bool(porcelain)
     if worktree_dirty:
         add("worktree", "FAIL", "DIRTY_WORKTREE")
-    else:
+    elif not any(c["name"] == "worktree" for c in checks):
         add("worktree", "PASS", "clean tracked tree")
 
     evidence = str(document.get("evidence_namespace") or "")
@@ -399,6 +401,7 @@ def _finish(
         "live_execution": "OFF",
         "as_of_et": now.isoformat(),
         "campaign_id": campaign_id,
+        "observation_window_id": None if document is None else document.get("observation_window_id"),
         "session_date": session.isoformat() if session else None,
         "runtime_sha": None if document is None else document.get("runtime_sha"),
         "blockers": blockers,

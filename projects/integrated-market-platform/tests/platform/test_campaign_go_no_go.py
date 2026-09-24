@@ -7,6 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime
 from pathlib import Path
+from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
 from tools.platform.campaign_go_no_go import (
@@ -140,6 +141,16 @@ class CampaignGoNoGoTests(unittest.TestCase):
             )
             self.assertIn("API_RUNTIME_MISMATCH", port["blockers"])
 
+    def test_git_status_failure_blocks_arm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            with patch("tools.platform.campaign_go_no_go._git", return_value=None):
+                report = _eval(
+                    _freeze(), now="2026-09-25T09:00:00", state=Path(tmp),
+                    worktree_dirty=None,
+                )
+        self.assertIn("WORKTREE_STATUS_UNAVAILABLE", report["blockers"])
+        self.assertFalse(report["arm_allowed"])
+
     def test_missing_freeze_and_late_arm(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             missing = evaluate_campaign_go_no_go(
@@ -226,6 +237,32 @@ class CampaignGoNoGoTests(unittest.TestCase):
             )
             self.assertEqual(code, 2)
             self.assertFalse((state / "rth-campaign-20260925" / "campaign-supervision" / "ownership.json").exists())
+
+    def test_arm_refuses_mismatched_freeze_identity(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp)
+            freeze = state / "freeze.json"
+            freeze.write_text(json.dumps(_freeze()), encoding="utf-8")
+            gate = {
+                "arm_allowed": True,
+                "runtime_sha": RUNTIME,
+                "campaign_id": "RTH-OBS-NEWS-20260925",
+                "observation_window_id": "RTH-OBS-NEWS-20260925-A",
+            }
+            for campaign_id, window_id in (
+                ("RTH-OBS-NEWS-20260924", "RTH-OBS-NEWS-20260925-A"),
+                ("RTH-OBS-NEWS-20260925", "RTH-OBS-NEWS-20260925-B"),
+            ):
+                with self.subTest(campaign_id=campaign_id, window_id=window_id):
+                    with patch("tools.platform.campaign_go_no_go.evaluate_campaign_go_no_go", return_value=gate.copy()):
+                        code = supervisor_main([
+                            "arm", "--state-dir", str(state / "rth-campaign-20260925"),
+                            "--campaign-id", campaign_id,
+                            "--observation-window-id", window_id,
+                            "--freeze", str(freeze), "--skip-environment-preflight",
+                        ])
+                    self.assertEqual(code, 2)
+                    self.assertFalse((state / "rth-campaign-20260925" / "campaign-supervision" / "ownership.json").exists())
 
 
 if __name__ == "__main__":
