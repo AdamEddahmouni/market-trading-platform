@@ -33,8 +33,8 @@
   "resume_sep23": false,
   "rth_close_et": "16:00:00",
   "rth_open_et": "09:30:00",
-  "runtime_sha": "c15527221a21d7bc88acefbe0971b6de9292247e",
-  "runtime_tree_sha": "e77f72208b6547d63dc4b7101c5cfa357114052b",
+  "runtime_sha": "1cbc8b0551179e1724033ee0036fb3366174daca",
+  "runtime_tree_sha": "c673ada98b7f3dc56f1073fe65854984259a800d",
   "schema_version": "campaign-freeze/1.0.0",
   "sep23_campaign_id": "RTH-OBS-NEWS-20260923",
   "sep23_runtime_sha": "bf405f468bee4e70f8a40e97eaaf6c2d46c75e64",
@@ -47,10 +47,13 @@
     "result": "FAIL 10/10"
   },
   "source_main_at_freeze": "2c40c51cc951c90418b3d6e13b86355ba7e884df",
-  "source_main_at_refreeze": "060118933354ce3ffcfce4ec32f38549595d70f9",
+  "source_main_at_refreeze": "1cbc8b0551179e1724033ee0036fb3366174daca",
   "state_namespace": "projects/integrated-market-platform/.local/rth-campaign-20260924",
-  "superseded_reason": "launcher script ModuleNotFoundError, readiness relative-import crash, status omitted API pid",
-  "superseded_runtime_sha": "02d699768dce2ad2e85d7215f2588fd18a36fcce",
-  "superseded_runtime_tree_sha": "84d254547fa7e209b461c84ce172397f514bc4b9",
+  "prior_superseded_reason": "launcher script ModuleNotFoundError, readiness relative-import crash, status omitted API pid",
+  "prior_superseded_runtime_sha": "02d699768dce2ad2e85d7215f2588fd18a36fcce",
+  "prior_superseded_runtime_tree_sha": "84d254547fa7e209b461c84ce172397f514bc4b9",
+  "superseded_reason": "open outage intervals never closed, and pollers could remain in cadence sleep or in-flight work after the 16:00 boundary",
+  "superseded_runtime_sha": "c15527221a21d7bc88acefbe0971b6de9292247e",
+  "superseded_runtime_tree_sha": "e77f72208b6547d63dc4b7101c5cfa357114052b",
   "timezone": "America/New_York"
 }
