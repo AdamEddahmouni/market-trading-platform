@@ -25,6 +25,7 @@ _AUDIT_SOURCE_EXCEPTIONS = {
     "src/market_platform_foundation/credential_audit.py",
     "src/market_platform_foundation/finviz/credential_manager.py",
     "tests/phase0/test_credential_audit.py",
+    "tests/platform/test_finviz_preflight_credential_identity.py",
 }
 
 

@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Observation runtime outage close and shutdown wake
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` / campaign supervision |
+| **Summary** | Open outages now close by append-only recovery or campaign-termination events. Pollers wake on shutdown instead of sleeping the cadence, and spawn output distinguishes the shim PID from the durable PID. |
+| **Key files** | `src/market_platform_foundation/platform/operator_diagnostics/campaign_supervision.py`; `tools/platform/campaign_supervisor.py`; `tools/platform/detached_process.py`; `tests/acceptance/test_observation_runtime_lifecycle.py`; `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | `python -m unittest` durability + heartbeat acceptance: 42 OK. Lifecycle, outage contract, and Windows job-kill: 22 OK. `python tools/imp.py format` and `lint` exit 0. `python tools/validate.py changed`: 2114 passed, 5 skipped, 0 failures, 0 errors in 299.874s. |
+| **Related** | [CAMPAIGN_SUPERVISION_HEARTBEAT.md](CAMPAIGN_SUPERVISION_HEARTBEAT.md); audit disposition in [IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md](IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md) |
+| **Notes** | Disposable Windows job with `KILL_ON_JOB_CLOSE` and `BREAKAWAY_OK`: the breakaway child survived parent termination and job-handle close; the non-breakaway child did not. `job_or_terminal_kill_survival_proven` is true only for that breakaway mechanism. A parent job that denies breakaway makes spawn fail visibly. `breakaway_escapes_existing_parent_job` stays false. Evidence class remains `SOFTWARE_CONTROLLED_EVIDENCE`. |
+
 ## 2026-09-23 — Finviz credential contract unification
 
 | Field | Value |

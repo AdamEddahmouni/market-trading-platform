@@ -40,6 +40,21 @@ ARM_STATUSES = (
 
 OUTAGE_CLASSIFICATION = "NOT_OBSERVED"
 OUTAGE_ROOT_CAUSE = "UNKNOWN"
+OUTAGE_RECORD_OPEN = "INTERVAL_OPEN"
+OUTAGE_RECORD_CLOSED = "INTERVAL_CLOSED"
+OUTAGE_CLOSE_RECOVERED = "RECOVERED"
+OUTAGE_CLOSE_SUPERSEDED = "SUPERSEDED"
+OUTAGE_CLOSE_CAMPAIGN_TERMINATED = "CAMPAIGN_TERMINATED"
+# Opening root causes the supervisor can actually see. SHUTDOWN_TERMINATED is a
+# close reason, not an opening cause. UNKNOWN stays when the evidence is thinner.
+OUTAGE_ROOT_CAUSES = (
+    "PROCESS_DEAD",
+    "POLL_PROCESS_DEAD",
+    "API_UNAVAILABLE",
+    "HEARTBEAT_STALE",
+    "APPLICATION_UNREADY",
+    "UNKNOWN",
+)
 EVIDENCE_CLASS = "SOFTWARE_CONTROLLED_EVIDENCE"
 SCHEMA_VERSION = "campaign-supervision/1.0.0"
 
@@ -94,6 +109,7 @@ class CampaignOwnership:
     execution_mode: str = "NONE"
     allows_network_submit: bool = False
     live_submit_forbidden: bool = True
+    session_end_utc: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
@@ -147,6 +163,7 @@ class CampaignOwnership:
             execution_mode=str(raw.get("execution_mode") or "NONE"),
             allows_network_submit=bool(raw.get("allows_network_submit", False)),
             live_submit_forbidden=bool(raw.get("live_submit_forbidden", True)),
+            session_end_utc=(str(raw["session_end_utc"]) if raw.get("session_end_utc") else None),
         )
 
 
@@ -252,15 +269,39 @@ def append_outage_record(state_directory: str | Path, record: Mapping[str, Any])
     path = outages_path(state_directory)
     path.parent.mkdir(parents=True, exist_ok=True)
     body = dict(record)
+    body.setdefault("record_kind", OUTAGE_RECORD_OPEN)
     body.setdefault("classification", OUTAGE_CLASSIFICATION)
     body.setdefault("root_cause", OUTAGE_ROOT_CAUSE)
     body.setdefault("synthetic_poll_generated", False)
     body.setdefault("backfill_applied", False)
     body.setdefault("evidence_class", EVIDENCE_CLASS)
-    with path.open("a", encoding="utf-8", newline="\n") as handle:
-        handle.write(json.dumps(body, sort_keys=True, separators=(",", ":")))
-        handle.write("\n")
-    return path
+    line = json.dumps(body, sort_keys=True, separators=(",", ":")) + "\n"
+    lock_path = path.with_name(path.name + ".lock")
+    last_error: OSError | None = None
+    for attempt in range(20):
+        try:
+            lock_fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError as exc:
+            last_error = exc
+            import time as _time
+
+            _time.sleep(0.02 * (attempt + 1))
+            continue
+        try:
+            with path.open("a", encoding="utf-8", newline="\n") as handle:
+                handle.write(line)
+                handle.flush()
+                os.fsync(handle.fileno())
+            return path
+        except OSError as exc:
+            last_error = exc
+            raise
+        finally:
+            os.close(lock_fd)
+            lock_path.unlink(missing_ok=True)
+    if last_error is not None:
+        raise last_error
+    raise OSError(f"unable to append outage ledger {path}")
 
 
 def outage_process_signature(record: Mapping[str, Any]) -> tuple[Any, ...]:
@@ -277,6 +318,76 @@ def outage_process_signature(record: Mapping[str, Any]) -> tuple[Any, ...]:
         dead_roles,
         str(record.get("root_cause") or ""),
     )
+
+
+def derive_outage_root_cause(progress: Mapping[str, Any]) -> str:
+    """Root cause only from facts already on the progress record.
+
+    A dead required role is not UNKNOWN. A stale heartbeat is not a dead
+    process. Anything thinner stays UNKNOWN.
+    """
+
+    status = str(progress.get("status") or "")
+    dead = progress.get("dead_roles")
+    dead_roles = {str(item) for item in dead} if isinstance(dead, list) else set()
+    if status == "PROCESS_DEAD":
+        if dead_roles == {"poller"}:
+            return "POLL_PROCESS_DEAD"
+        if dead_roles == {"api"}:
+            return "API_UNAVAILABLE"
+        if dead_roles:
+            return "PROCESS_DEAD"
+        return OUTAGE_ROOT_CAUSE
+    if status == "STALE":
+        return "HEARTBEAT_STALE"
+    if status == "APPLICATION_UNREADY":
+        return "APPLICATION_UNREADY"
+    return OUTAGE_ROOT_CAUSE
+
+
+def outage_identity(record: Mapping[str, Any]) -> tuple[Any, ...]:
+    explicit = str(record.get("outage_id") or "")
+    if explicit:
+        return ("id", explicit)
+    return (
+        "legacy",
+        outage_process_signature(record),
+        str(record.get("interval_start_utc") or ""),
+        str(record.get("detected_at_utc") or ""),
+    )
+
+
+def _identity_key(identity: Sequence[Any]) -> str:
+    return json.dumps(list(identity), sort_keys=True, default=str)
+
+
+def active_outage_records(records: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Open intervals with no later close event and no end timestamp.
+
+    A historical row that already carries ``interval_end_utc`` is closed.
+    Close events are append-only and do not rewrite the opening row.
+    """
+
+    closed: set[str] = set()
+    for record in records:
+        if str(record.get("record_kind") or "") != OUTAGE_RECORD_CLOSED:
+            continue
+        target = record.get("closes_outage_identity")
+        if isinstance(target, list):
+            closed.add(_identity_key(target))
+        elif record.get("closes_outage_id"):
+            closed.add(_identity_key(("id", str(record.get("closes_outage_id")))))
+    active: list[dict[str, Any]] = []
+    for record in records:
+        if str(record.get("record_kind") or OUTAGE_RECORD_OPEN) == OUTAGE_RECORD_CLOSED:
+            continue
+        if record.get("interval_end_utc") not in (None, ""):
+            continue
+        identity = outage_identity(record)
+        if _identity_key(identity) in closed:
+            continue
+        active.append(dict(record))
+    return active
 
 
 def record_open_outage_if_changed(
@@ -297,19 +408,128 @@ def record_open_outage_if_changed(
 
     if not progress.get("outage"):
         return None
+    root_cause = derive_outage_root_cause(progress)
     record = build_outage_interval(
         ownership=ownership,
         progress=progress,
         detected_at_utc=detected_at_utc,
         interval_start_utc=interval_start_utc,
+        root_cause=root_cause,
     )
-    existing = read_outage_records(state_directory)
-    if existing:
-        last = existing[-1]
-        still_open = last.get("interval_end_utc") in (None, "")
-        if still_open and outage_process_signature(last) == outage_process_signature(record):
+    record["record_kind"] = OUTAGE_RECORD_OPEN
+    record["recovered"] = False
+    identity_material = "|".join(str(part) for part in outage_process_signature(record))
+    digest = hashlib.sha256(
+        f"{ownership.campaign_id}|{interval_start_utc or ownership.arm_timestamp_utc}|{identity_material}|{detected_at_utc}".encode(
+            "utf-8"
+        )
+    ).hexdigest()[:16]
+    record["outage_id"] = f"outage-{digest}"
+    signature = outage_process_signature(record)
+    close_active_outages(
+        state_directory,
+        ownership=ownership,
+        closed_at_utc=detected_at_utc,
+        close_reason=OUTAGE_CLOSE_SUPERSEDED,
+        except_signature=signature,
+    )
+    for open_row in active_outage_records(read_outage_records(state_directory)):
+        if str(open_row.get("campaign_id") or "") not in {"", ownership.campaign_id}:
+            continue
+        if outage_process_signature(open_row) == signature:
             return None
     return append_outage_record(state_directory, record)
+
+
+def close_active_outages(
+    state_directory: str | Path,
+    *,
+    ownership: CampaignOwnership,
+    closed_at_utc: str,
+    close_reason: str,
+    recovery_detected_by: str | None = None,
+    except_signature: tuple[Any, ...] | None = None,
+) -> list[dict[str, Any]]:
+    """Append one close event per active interval. Opening rows stay immutable.
+
+    ``RECOVERED`` means the required roles are healthy again.
+    ``CAMPAIGN_TERMINATED`` means observation stopped; it is not recovery.
+    """
+
+    if close_reason not in {
+        OUTAGE_CLOSE_RECOVERED,
+        OUTAGE_CLOSE_SUPERSEDED,
+        OUTAGE_CLOSE_CAMPAIGN_TERMINATED,
+    }:
+        raise ValueError(f"unsupported outage close reason: {close_reason}")
+    written: list[dict[str, Any]] = []
+    for open_row in active_outage_records(read_outage_records(state_directory)):
+        if str(open_row.get("campaign_id") or "") not in {"", ownership.campaign_id}:
+            continue
+        if except_signature is not None and outage_process_signature(open_row) == except_signature:
+            continue
+        identity = outage_identity(open_row)
+        event = {
+            "record_kind": OUTAGE_RECORD_CLOSED,
+            "closes_outage_id": open_row.get("outage_id"),
+            "closes_outage_identity": list(identity),
+            "campaign_id": ownership.campaign_id,
+            "segment_id": ownership.segment_id,
+            "runtime_sha": ownership.runtime_sha,
+            "interval_start_utc": open_row.get("interval_start_utc"),
+            "interval_end_utc": closed_at_utc,
+            "detected_at_utc": closed_at_utc,
+            "close_reason": close_reason,
+            "recovered": close_reason == OUTAGE_CLOSE_RECOVERED,
+            "recovery_detected_by": recovery_detected_by,
+            "root_cause": open_row.get("root_cause") or OUTAGE_ROOT_CAUSE,
+            "classification": OUTAGE_CLASSIFICATION,
+            "synthetic_poll_generated": False,
+            "backfill_applied": False,
+            "evidence_class": open_row.get("evidence_class") or EVIDENCE_CLASS,
+            "process_state": open_row.get("process_state"),
+        }
+        if close_reason == OUTAGE_CLOSE_CAMPAIGN_TERMINATED:
+            event["termination_reason"] = "SHUTDOWN_TERMINATED"
+            event["service_recovered"] = False
+        append_outage_record(state_directory, event)
+        written.append(event)
+    return written
+
+
+def reconcile_outage_ledger(
+    state_directory: str | Path,
+    *,
+    ownership: CampaignOwnership,
+    progress: Mapping[str, Any],
+    detected_at_utc: str,
+    interval_start_utc: str | None,
+) -> str:
+    """Open, keep, or close intervals from the current armed progress.
+
+    Healthy checks close active intervals once. They do not append a recovered
+    outage on every later check. Terminal arm status is not recovery.
+    """
+
+    if ownership.arm_status != "ARMED_RUNNING":
+        return "NOT_APPLICABLE"
+    if progress.get("outage"):
+        written = record_open_outage_if_changed(
+            state_directory,
+            ownership=ownership,
+            progress=progress,
+            detected_at_utc=detected_at_utc,
+            interval_start_utc=interval_start_utc,
+        )
+        return "APPENDED" if written is not None else "OPEN_UNCHANGED"
+    closed = close_active_outages(
+        state_directory,
+        ownership=ownership,
+        closed_at_utc=detected_at_utc,
+        close_reason=OUTAGE_CLOSE_RECOVERED,
+        recovery_detected_by="REQUIRED_ROLES_HEALTHY",
+    )
+    return "CLOSED_RECOVERED" if closed else "IDLE"
 
 
 def outage_ledger_appendable(state_directory: str | Path) -> bool:
@@ -322,6 +542,33 @@ def outage_ledger_appendable(state_directory: str | Path) -> bool:
             return True
     except OSError:
         return False
+
+
+def outage_ledger_defects(state_directory: str | Path) -> list[str]:
+    """Fail-visible ledger problems. Malformed lines stay on disk."""
+
+    path = outages_path(state_directory)
+    if not path.exists():
+        return []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return ["LEDGER_UNREADABLE"]
+    defects: list[str] = []
+    for index, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+        if not stripped:
+            continue
+        try:
+            payload = json.loads(stripped)
+        except json.JSONDecodeError:
+            defects.append(f"MALFORMED_LINE:{index}")
+            continue
+        if not isinstance(payload, dict):
+            defects.append(f"MALFORMED_LINE:{index}")
+    if text and not text.endswith("\n"):
+        defects.append("MISSING_TRAILING_NEWLINE")
+    return defects
 
 
 def read_outage_records(state_directory: str | Path) -> list[dict[str, Any]]:
@@ -581,8 +828,13 @@ def build_outage_interval(
     detected_at_utc: str,
     interval_start_utc: str | None,
     interval_end_utc: str | None = None,
+    root_cause: str | None = None,
 ) -> dict[str, Any]:
-    """Additive outage record. Missed evidence remains NOT_OBSERVED."""
+    """Additive outage record. Missed evidence remains NOT_OBSERVED.
+
+    ``root_cause`` stays UNKNOWN unless the caller supplies a cause derived
+    from process evidence. Historical callers that omit it keep UNKNOWN.
+    """
 
     return {
         "campaign_id": ownership.campaign_id,
@@ -602,7 +854,7 @@ def build_outage_interval(
         },
         "last_successful_observation_utc": progress.get("last_successful_poll_utc"),
         "classification": OUTAGE_CLASSIFICATION,
-        "root_cause": OUTAGE_ROOT_CAUSE,
+        "root_cause": root_cause or OUTAGE_ROOT_CAUSE,
         "synthetic_poll_generated": False,
         "backfill_applied": False,
         "new_segment_created": False,
@@ -640,6 +892,7 @@ def preserve_arm_for_recovery(
         execution_mode=ownership.execution_mode,
         allows_network_submit=False,
         live_submit_forbidden=True,
+        session_end_utc=ownership.session_end_utc,
     )
 
 
@@ -687,6 +940,8 @@ def load_campaign_supervision_view(
         "status": progress.get("status"),
         "healthy": bool(progress.get("healthy")),
         "outages": outages,
+        "active_outages": active_outage_records(outages),
+        "outage_ledger_defects": outage_ledger_defects(state_directory),
         "service_liveness_separate_from_data_freshness": True,
         "does_not_imply_data_freshness": True,
         "does_not_imply_opportunity_quality": True,
@@ -706,8 +961,17 @@ __all__ = [
     "OUTAGE_ROOT_CAUSE",
     "ProcessIdentity",
     "SCHEMA_VERSION",
+    "OUTAGE_CLOSE_CAMPAIGN_TERMINATED",
+    "OUTAGE_CLOSE_RECOVERED",
+    "OUTAGE_RECORD_CLOSED",
+    "OUTAGE_RECORD_OPEN",
+    "active_outage_records",
     "append_outage_record",
     "build_outage_interval",
+    "OUTAGE_CLOSE_SUPERSEDED",
+    "close_active_outages",
+    "derive_outage_root_cause",
+    "reconcile_outage_ledger",
     "outage_ledger_appendable",
     "outage_process_signature",
     "record_open_outage_if_changed",

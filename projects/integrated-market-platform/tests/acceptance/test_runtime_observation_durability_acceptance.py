@@ -407,7 +407,11 @@ class RuntimeObservationDurabilityAcceptanceTests(unittest.TestCase):
         port = int(server.server_address[1])
         thread = Thread(target=server.serve_forever, daemon=True)
         thread.start()
-        self.addCleanup(server.shutdown)
+        def _stop_api() -> None:
+            server.shutdown()
+            server.server_close()
+
+        self.addCleanup(_stop_api)
         api_pid = os.getpid()  # register this test process as api owning the fixture server
         reg = _run_supervisor(
             "register-child",
@@ -652,6 +656,400 @@ class RuntimeObservationDurabilityAcceptanceTests(unittest.TestCase):
         payload = json.loads(result.stdout)
         self.assertIn(payload["phase"], {"NOT_ARMED", "READY_TO_ARM", "BLOCKED_STATE_DIR"})
         self.assertEqual(payload["execution_authority"], "BLOCKED")
+
+
+class ObservationOutageAndShutdownTests(unittest.TestCase):
+    """SOFTWARE_CONTROLLED evidence. Not an RTH observation."""
+
+    def setUp(self) -> None:
+        self._tmpdir = tempfile.TemporaryDirectory(prefix="imp-outage-lifecycle-")
+        self.state_dir = Path(self._tmpdir.name)
+        self.addCleanup(self._tmpdir.cleanup)
+        self._child_pids: list[int] = []
+        self.addCleanup(self._stop_children)
+
+    def _stop_children(self) -> None:
+        for pid in self._child_pids:
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill.exe", "/PID", str(pid), "/T", "/F"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+            else:
+                try:
+                    os.kill(pid, 15)
+                except OSError:
+                    pass
+
+    def _arm(self, campaign_id: str = "SW-OUTAGE-LIFECYCLE") -> None:
+        result = _run_supervisor(
+            "arm",
+            "--state-dir",
+            str(self.state_dir),
+            "--campaign-id",
+            campaign_id,
+            "--observation-window-id",
+            "OBS-SW-OUTAGE",
+            "--skip-environment-preflight",
+            "--required-roles",
+            "supervisor,poller,api",
+            "--poll-cadence-seconds",
+            "30",
+            "--heartbeat-cadence-seconds",
+            "15",
+            "--stale-after-seconds",
+            "90",
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+        ownership = read_ownership(self.state_dir)
+        assert ownership is not None
+        ownership.supervisor_pid = os.getpid()
+        ownership.child_processes = [
+            ProcessIdentity(role="api", pid=os.getpid(), create_time_utc=_utc()),
+        ]
+        write_ownership(ownership)
+        write_heartbeat(
+            self.state_dir,
+            {
+                "last_heartbeat_utc": _utc(),
+                "application_ready": True,
+                "stale_after_seconds": 90,
+                "synthetic_poll_generated": False,
+            },
+        )
+
+    def _rows(self) -> list[dict]:
+        path = self.state_dir / "campaign-supervision" / "outages.jsonl"
+        if not path.is_file():
+            return []
+        return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+    def test_failure_recovery_second_failure_and_terminal_close(self) -> None:
+        self._arm()
+        first = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(first.returncode, 2, msg=first.stdout + first.stderr)
+        opened = json.loads(first.stdout)
+        self.assertEqual(opened["outage_ledger"], "APPENDED")
+        self.assertEqual(opened["progress"]["status"], "PROCESS_DEAD")
+        rows = self._rows()
+        self.assertEqual(len(rows), 1)
+        self.assertIsNone(rows[0]["interval_end_utc"])
+        self.assertEqual(rows[0]["root_cause"], "POLL_PROCESS_DEAD")
+        self.assertEqual(rows[0]["record_kind"], "INTERVAL_OPEN")
+        again = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(json.loads(again.stdout)["outage_ledger"], "OPEN_UNCHANGED")
+        self.assertEqual(len(self._rows()), 1)
+
+        ownership = read_ownership(self.state_dir)
+        assert ownership is not None
+        ownership.child_processes.append(
+            ProcessIdentity(role="poller", pid=os.getpid(), create_time_utc=_utc())
+        )
+        write_ownership(ownership)
+        recovered = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(recovered.returncode, 0, msg=recovered.stdout + recovered.stderr)
+        recovered_view = json.loads(recovered.stdout)
+        self.assertEqual(recovered_view["status"], "HEALTHY")
+        self.assertEqual(recovered_view["outage_ledger"], "CLOSED")
+        self.assertEqual(recovered_view["active_outages"], [])
+        closed_rows = self._rows()
+        self.assertEqual(len(closed_rows), 2)
+        self.assertIsNone(closed_rows[0]["interval_end_utc"])
+        self.assertEqual(closed_rows[1]["record_kind"], "INTERVAL_CLOSED")
+        self.assertEqual(closed_rows[1]["close_reason"], "RECOVERED")
+        self.assertTrue(closed_rows[1]["recovered"])
+        self.assertEqual(closed_rows[1]["interval_start_utc"], closed_rows[0]["interval_start_utc"])
+        idle = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(json.loads(idle.stdout)["outage_ledger"], "NO_ACTIVE_OUTAGE")
+        self.assertEqual(len(self._rows()), 2)
+
+        ownership = read_ownership(self.state_dir)
+        assert ownership is not None
+        ownership.child_processes = [
+            child for child in ownership.child_processes if child.role != "poller"
+        ]
+        write_ownership(ownership)
+        second = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(json.loads(second.stdout)["outage_ledger"], "APPENDED")
+        self.assertEqual(len(self._rows()), 3)
+        shutdown = _run_supervisor("shutdown", "--state-dir", str(self.state_dir), "--rth-close")
+        self.assertEqual(shutdown.returncode, 0, msg=shutdown.stdout + shutdown.stderr)
+        payload = json.loads(shutdown.stdout)
+        self.assertEqual(payload["status"], "RTH_CLOSE_SHUTDOWN")
+        self.assertFalse(payload["recovered"])
+        self.assertEqual(payload["active_outages_terminated"], 1)
+        final_rows = self._rows()
+        close = final_rows[-1]
+        self.assertEqual(close["close_reason"], "CAMPAIGN_TERMINATED")
+        self.assertFalse(close["recovered"])
+        self.assertEqual(close["termination_reason"], "SHUTDOWN_TERMINATED")
+        self.assertIsNone(final_rows[-2]["interval_end_utc"])
+        repeat = _run_supervisor("shutdown", "--state-dir", str(self.state_dir), "--rth-close")
+        self.assertEqual(repeat.returncode, 0, msg=repeat.stdout + repeat.stderr)
+        self.assertEqual(json.loads(repeat.stdout)["active_outages_terminated"], 0)
+        self.assertEqual(len(self._rows()), len(final_rows))
+        terminal = _run_supervisor("heartbeat", "--state-dir", str(self.state_dir))
+        self.assertEqual(terminal.returncode, 0, msg=terminal.stdout + terminal.stderr)
+        self.assertFalse(json.loads(terminal.stdout)["heartbeat_advanced"])
+
+    def test_unwritable_ledger_and_malformed_line_fail_visible(self) -> None:
+        self._arm()
+        ledger_dir = self.state_dir / "campaign-supervision" / "outages.jsonl"
+        ledger_dir.mkdir(parents=True)
+        status = _run_supervisor("status", "--state-dir", str(self.state_dir))
+        self.assertEqual(status.returncode, 2, msg=status.stdout + status.stderr)
+        self.assertEqual(json.loads(status.stdout)["outage_ledger"], "UNAVAILABLE")
+        ledger_dir.rmdir()
+        path = self.state_dir / "campaign-supervision" / "outages.jsonl"
+        path.write_text('{"record_kind":"INTERVAL_OPEN","interval_end_utc":null}\nnot-json\n', encoding="utf-8")
+        from market_platform_foundation.platform.operator_diagnostics.campaign_supervision import (
+            outage_ledger_defects,
+            read_outage_records,
+        )
+
+        self.assertEqual(len(read_outage_records(self.state_dir)), 1)
+        self.assertIn("MALFORMED_LINE:2", outage_ledger_defects(self.state_dir))
+
+    def test_shutdown_during_idle_wait_and_in_flight_block(self) -> None:
+        self._arm()
+        idle = subprocess.Popen(
+            [
+                sys.executable,
+                str(SUPERVISOR),
+                "poll-loop",
+                "--state-dir",
+                str(self.state_dir),
+                "--poll-cadence-seconds",
+                "30",
+                "--iterations",
+                "0",
+            ],
+            cwd=str(ROOT),
+            env={
+                **os.environ,
+                "PYTHONPATH": os.pathsep.join([str(ROOT / "src"), str(ROOT)]),
+                "PYTHONUNBUFFERED": "1",
+            },
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        self._child_pids.append(idle.pid)
+        marker = self.state_dir / "campaign-supervision" / "poller.alive"
+        deadline = time.time() + 8
+        while time.time() < deadline and not marker.is_file():
+            time.sleep(0.05)
+        self.assertTrue(marker.is_file(), "poller did not start")
+        started = time.perf_counter()
+        shutdown = _run_supervisor("shutdown", "--state-dir", str(self.state_dir))
+        self.assertEqual(shutdown.returncode, 0, msg=shutdown.stdout + shutdown.stderr)
+        idle.wait(timeout=5)
+        idle_latency = time.perf_counter() - started
+        self.assertLess(idle_latency, 3.0, msg=f"idle shutdown took {idle_latency:.3f}s")
+        idle_out = (idle.stdout.read() if idle.stdout else "") + (idle.stderr.read() if idle.stderr else "")
+        if idle.stdout is not None:
+            idle.stdout.close()
+        if idle.stderr is not None:
+            idle.stderr.close()
+        self.assertIn("poll_started_after_shutdown", idle_out)
+        self.assertFalse(idle_out.strip().endswith("POLLER_RUNNING") and "stopped" not in idle_out)
+
+        blocked_dir = self.state_dir / "blocked-campaign"
+        blocked_dir.mkdir()
+        arm = _run_supervisor(
+            "arm",
+            "--state-dir",
+            str(blocked_dir),
+            "--campaign-id",
+            "SW-OUTAGE-BLOCK",
+            "--observation-window-id",
+            "OBS-SW-BLOCK",
+            "--skip-environment-preflight",
+            "--required-roles",
+            "supervisor",
+        )
+        self.assertEqual(arm.returncode, 0, msg=arm.stdout + arm.stderr)
+        blocked = subprocess.Popen(
+            [
+                sys.executable,
+                str(SUPERVISOR),
+                "poll-loop",
+                "--state-dir",
+                str(blocked_dir),
+                "--poll-cadence-seconds",
+                "30",
+                "--iterations",
+                "1",
+                "--block-seconds",
+                "30",
+            ],
+            cwd=str(ROOT),
+            env={
+                **os.environ,
+                "PYTHONPATH": os.pathsep.join([str(ROOT / "src"), str(ROOT)]),
+                "PYTHONUNBUFFERED": "1",
+            },
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        self._child_pids.append(blocked.pid)
+        deadline = time.time() + 8
+        registered = False
+        while time.time() < deadline:
+            owned = read_ownership(blocked_dir)
+            if owned is not None and any(child.role == "poller" for child in owned.child_processes):
+                registered = True
+                break
+            time.sleep(0.05)
+        self.assertTrue(registered, "blocking poller did not register")
+        started = time.perf_counter()
+        stop = _run_supervisor("shutdown", "--state-dir", str(blocked_dir), "--rth-close")
+        self.assertEqual(stop.returncode, 0, msg=stop.stdout + stop.stderr)
+        blocked.wait(timeout=5)
+        if blocked.stdout is not None:
+            blocked.stdout.close()
+        if blocked.stderr is not None:
+            blocked.stderr.close()
+        block_latency = time.perf_counter() - started
+        self.assertLess(block_latency, 3.0, msg=f"in-flight shutdown took {block_latency:.3f}s")
+        attempts = (blocked_dir / "campaign-supervision" / "poll-attempts.jsonl").read_text(encoding="utf-8")
+        self.assertIn("SHUTDOWN_INTERRUPTED", attempts)
+        self.assertIn("INTERRUPTED_BEFORE_RECEIPT", attempts)
+        self.assertIn('"counts_as_in_window_observation":false', attempts)
+
+    def test_session_boundary_does_not_start_a_poll(self) -> None:
+        result = _run_supervisor(
+            "arm",
+            "--state-dir",
+            str(self.state_dir),
+            "--campaign-id",
+            "SW-BOUNDARY",
+            "--observation-window-id",
+            "OBS-SW-BOUNDARY",
+            "--skip-environment-preflight",
+            "--required-roles",
+            "supervisor",
+            "--session-end-utc",
+            _utc(-5),
+            "--poll-cadence-seconds",
+            "30",
+        )
+        self.assertEqual(result.returncode, 0, msg=result.stdout + result.stderr)
+        poller = subprocess.Popen(
+            [
+                sys.executable,
+                str(SUPERVISOR),
+                "poll-loop",
+                "--state-dir",
+                str(self.state_dir),
+                "--poll-cadence-seconds",
+                "30",
+                "--iterations",
+                "3",
+            ],
+            cwd=str(ROOT),
+            env={
+                **os.environ,
+                "PYTHONPATH": os.pathsep.join([str(ROOT / "src"), str(ROOT)]),
+                "PYTHONUNBUFFERED": "1",
+            },
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        self._child_pids.append(poller.pid)
+        time.sleep(0.4)
+        started = time.perf_counter()
+        shutdown = _run_supervisor("shutdown", "--state-dir", str(self.state_dir), "--rth-close")
+        self.assertEqual(shutdown.returncode, 0, msg=shutdown.stdout + shutdown.stderr)
+        poller.wait(timeout=5)
+        self.assertLess(time.perf_counter() - started, 3.0)
+        attempts = self.state_dir / "campaign-supervision" / "poll-attempts.jsonl"
+        self.assertFalse(attempts.exists())
+        output = (poller.stdout.read() if poller.stdout else "")
+        if poller.stdout is not None:
+            poller.stdout.close()
+        if poller.stderr is not None:
+            poller.stderr.close()
+        self.assertIn("poll_started", output)
+        self.assertIn("false", output)
+
+    def test_spawn_labels_shim_and_keeps_role_logs(self) -> None:
+        import gc
+        import warnings
+
+        log_a = self.state_dir / "logs" / "supervisor.log"
+        log_b = self.state_dir / "logs" / "poller.log"
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", ResourceWarning)
+            pid_a = spawn_detached(
+                [sys.executable, "-c", "print('supervisor-line')"],
+                cwd=ROOT,
+                log_path=log_a,
+                role="supervisor",
+            )
+            pid_b = spawn_detached(
+                [sys.executable, "-c", "print('poller-line')"],
+                cwd=ROOT,
+                log_path=log_b,
+                role="poller",
+            )
+            self._child_pids.extend([pid_a, pid_b])
+            deadline = time.time() + 8
+            while time.time() < deadline and not (
+                log_a.is_file() and "supervisor-line" in log_a.read_text(encoding="utf-8", errors="replace")
+                and log_b.is_file() and "poller-line" in log_b.read_text(encoding="utf-8", errors="replace")
+            ):
+                time.sleep(0.05)
+            gc.collect()
+        self.assertIn("supervisor-line", log_a.read_text(encoding="utf-8", errors="replace"))
+        self.assertIn("poller-line", log_b.read_text(encoding="utf-8", errors="replace"))
+        self.assertNotIn("poller-line", log_a.read_text(encoding="utf-8", errors="replace"))
+        flags = (self.state_dir / "logs" / "detach-flags.jsonl").read_text(encoding="utf-8")
+        self.assertEqual(flags.count("append_only_launch_evidence"), 2)
+        self.assertFalse(any("unclosed file" in str(item.message) for item in caught))
+        dead = _run_supervisor(
+            "register-child",
+            "--state-dir",
+            str(self.state_dir),
+            "--role",
+            "poller",
+            "--pid",
+            "999999",
+        )
+        # No ownership yet: fail visible, not a silent register.
+        self.assertNotEqual(dead.returncode, 0)
+
+    def test_second_namespace_does_not_inherit_shutdown(self) -> None:
+        self._arm("SW-FIRST-NAMESPACE")
+        first = _run_supervisor("shutdown", "--state-dir", str(self.state_dir))
+        self.assertEqual(first.returncode, 0, msg=first.stdout + first.stderr)
+        other = self.state_dir / "second-namespace"
+        other.mkdir()
+        second = _run_supervisor(
+            "arm",
+            "--state-dir",
+            str(other),
+            "--campaign-id",
+            "SW-SECOND-NAMESPACE",
+            "--observation-window-id",
+            "OBS-SW-SECOND",
+            "--skip-environment-preflight",
+            "--required-roles",
+            "supervisor",
+        )
+        self.assertEqual(second.returncode, 0, msg=second.stdout + second.stderr)
+        owned = read_ownership(other)
+        assert owned is not None
+        self.assertEqual(owned.arm_status, "ARMED_RUNNING")
+        self.assertFalse((other / "campaign-supervision" / "outages.jsonl").exists())
+        heartbeat = json.loads((other / "campaign-supervision" / "heartbeat.json").read_text(encoding="utf-8"))
+        self.assertEqual(heartbeat["phase"], "ARMED")
+        stop = _run_supervisor("shutdown", "--state-dir", str(other))
+        self.assertEqual(stop.returncode, 0, msg=stop.stdout + stop.stderr)
 
 
 if __name__ == "__main__":

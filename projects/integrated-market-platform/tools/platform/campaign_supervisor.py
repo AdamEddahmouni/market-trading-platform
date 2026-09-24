@@ -58,7 +58,16 @@ DEFAULT_STALE_AFTER_SECONDS = _cs.DEFAULT_STALE_AFTER_SECONDS
 CampaignOwnership = _cs.CampaignOwnership
 ProcessIdentity = _cs.ProcessIdentity
 read_outage_records = _cs.read_outage_records
+outage_ledger_defects = _cs.outage_ledger_defects
 record_open_outage_if_changed = _cs.record_open_outage_if_changed
+reconcile_outage_ledger = _cs.reconcile_outage_ledger
+close_active_outages = _cs.close_active_outages
+OUTAGE_CLOSE_CAMPAIGN_TERMINATED = _cs.OUTAGE_CLOSE_CAMPAIGN_TERMINATED
+TERMINAL_ARM_STATUSES = ("CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN")
+close_active_outages = _cs.close_active_outages
+active_outage_records = _cs.active_outage_records
+OUTAGE_CLOSE_RECOVERED = _cs.OUTAGE_CLOSE_RECOVERED
+OUTAGE_CLOSE_CAMPAIGN_TERMINATED = _cs.OUTAGE_CLOSE_CAMPAIGN_TERMINATED
 evaluate_campaign_progress = _cs.evaluate_campaign_progress
 load_campaign_supervision_view = _cs.load_campaign_supervision_view
 preserve_arm_for_recovery = _cs.preserve_arm_for_recovery
@@ -176,6 +185,7 @@ def cmd_arm(args: argparse.Namespace) -> int:
         launch_command_fingerprint=fingerprint,
         segment_id=(str(args.segment_id) if args.segment_id else None),
         required_roles=[r.strip() for r in str(args.required_roles).split(",") if r.strip()],
+        session_end_utc=(str(args.session_end_utc).strip() if getattr(args, "session_end_utc", None) else None),
     )
     write_ownership(ownership)
     write_heartbeat(
@@ -221,6 +231,11 @@ def cmd_register_child(args: argparse.Namespace) -> int:
         print(json.dumps({"status": "ERROR", "detail": "NO_OWNERSHIP"}))
         return 1
     pid = int(args.pid)
+    role = str(args.role)
+    allowed_roles = {"supervisor", "poller", "api", "ui"}
+    if role not in allowed_roles:
+        print(json.dumps({"status": "ERROR", "detail": "ROLE_NOT_ALLOWED", "role": role}, sort_keys=True))
+        return 2
     if not _alive_fn(pid):
         print(
             json.dumps(
@@ -234,11 +249,59 @@ def cmd_register_child(args: argparse.Namespace) -> int:
             )
         )
         return 2
+    spawn_book = state_dir / "campaign-supervision" / "spawn-identity.json"
+    shim_pids: set[int] = set()
+    if spawn_book.is_file():
+        try:
+            book = json.loads(spawn_book.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            book = {}
+        if isinstance(book, dict):
+            for item in book.get("spawns") or []:
+                if isinstance(item, dict) and item.get("spawn_shim_pid") is not None:
+                    shim = int(item["spawn_shim_pid"])
+                    durable = item.get("durable_pid")
+                    if durable is None or int(durable) != shim:
+                        shim_pids.add(shim)
+    if pid in shim_pids and not bool(getattr(args, "adopt_as_supervisor", False)):
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "SPAWN_SHIM_PID_IS_NOT_DURABLE_ROLE",
+                    "role": role,
+                    "pid": pid,
+                },
+                sort_keys=True,
+            )
+        )
+        return 2
+    if role == "supervisor" and not bool(getattr(args, "adopt_as_supervisor", False)):
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "SUPERVISOR_ROLE_REQUIRES_ADOPT",
+                    "pid": pid,
+                },
+                sort_keys=True,
+            )
+        )
+        return 2
+    for existing in ownership.child_processes:
+        if existing.role == role and int(existing.pid) == pid:
+            print(
+                json.dumps(
+                    {"status": "REGISTERED_UNCHANGED", "role": role, "pid": pid},
+                    sort_keys=True,
+                )
+            )
+            return 0
     children = list(ownership.child_processes)
-    children = [c for c in children if c.role != args.role]
+    children = [c for c in children if c.role != role]
     children.append(
         ProcessIdentity(
-            role=str(args.role),
+            role=role,
             pid=pid,
             create_time_utc=_utc_now(),
             parent_pid=os.getpid(),
@@ -250,14 +313,14 @@ def cmd_register_child(args: argparse.Namespace) -> int:
     # Do NOT clobber ownership.supervisor_pid with the registering shell/CLI PID.
     # That was the Sep 23 defect: register-child from a transient parent made the
     # durable supervisor appear PROCESS_DEAD after the parent exited.
-    if str(args.role) == "supervisor" and bool(getattr(args, "adopt_as_supervisor", False)):
+    if role == "supervisor" and bool(getattr(args, "adopt_as_supervisor", False)):
         ownership.supervisor_pid = pid
     write_ownership(ownership)
     print(
         json.dumps(
             {
                 "status": "REGISTERED",
-                "role": args.role,
+                "role": role,
                 "pid": pid,
                 "supervisor_pid_preserved": ownership.supervisor_pid,
             },
@@ -273,6 +336,18 @@ def cmd_heartbeat(args: argparse.Namespace) -> int:
     if ownership is None:
         print(json.dumps({"status": "ERROR", "detail": "NO_OWNERSHIP"}))
         return 1
+    if ownership.arm_status in {"CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN"}:
+        print(
+            json.dumps(
+                {
+                    "status": ownership.arm_status,
+                    "phase": "TERMINAL",
+                    "heartbeat_advanced": False,
+                },
+                sort_keys=True,
+            )
+        )
+        return 0
     now = _utc_now()
     now_epoch = time.time()
     prior = read_heartbeat(state_dir) or {}
@@ -335,6 +410,17 @@ def cmd_status(args: argparse.Namespace) -> int:
     view = load_campaign_supervision_view(state_dir, process_alive_fn=_alive_fn)
     progress = view.get("progress") if isinstance(view.get("progress"), dict) else {}
     ownership = read_ownership(state_dir)
+    defects = outage_ledger_defects(state_dir)
+    if "LEDGER_UNREADABLE" in defects:
+        view["outage_ledger_defects"] = defects
+        view["outage_ledger"] = "UNAVAILABLE"
+        print(json.dumps(view, indent=2, sort_keys=True))
+        return 2
+    if defects:
+        view["outage_ledger_defects"] = defects
+        view["outage_ledger"] = "MALFORMED"
+        print(json.dumps(view, indent=2, sort_keys=True))
+        return 2
     ledger = "NOT_APPLICABLE"
     if ownership is not None and progress.get("outage"):
         try:
@@ -349,11 +435,30 @@ def cmd_status(args: argparse.Namespace) -> int:
             )
             ledger = "APPENDED" if written is not None else "OPEN_UNCHANGED"
             view["outages"] = read_outage_records(state_dir)
+            view["active_outages"] = active_outage_records(view["outages"])
         except OSError:
             ledger = "UNAVAILABLE"
+    elif ownership is not None and progress.get("healthy") and ownership.arm_status == "ARMED_RUNNING":
+        try:
+            closed = close_active_outages(
+                state_dir,
+                ownership=ownership,
+                closed_at_utc=str(view.get("as_of_utc") or _utc_now()),
+                close_reason=OUTAGE_CLOSE_RECOVERED,
+                recovery_detected_by="STATUS_HEALTHY",
+            )
+            view["outages"] = read_outage_records(state_dir)
+            view["active_outages"] = active_outage_records(view["outages"])
+            ledger = "CLOSED" if closed else "NO_ACTIVE_OUTAGE"
+        except OSError:
+            ledger = "UNAVAILABLE"
+    defects = outage_ledger_defects(state_dir)
+    view["outage_ledger_defects"] = defects
+    if defects and ledger != "UNAVAILABLE":
+        ledger = "MALFORMED"
     view["outage_ledger"] = ledger
     print(json.dumps(view, indent=2, sort_keys=True))
-    if ledger == "UNAVAILABLE":
+    if ledger in {"UNAVAILABLE", "MALFORMED"}:
         return 2
     status = str(view.get("status") or "UNKNOWN")
     if status == "HEALTHY":
@@ -434,9 +539,30 @@ def cmd_shutdown(args: argparse.Namespace) -> int:
         print(json.dumps({"status": "ALREADY_STOPPED"}))
         return 0
     reason = "RTH_CLOSE_SHUTDOWN" if args.rth_close else "CLEAN_SHUTDOWN"
+    now = _utc_now()
+    terminated: list[dict[str, Any]] = []
+    try:
+        terminated = close_active_outages(
+            state_dir,
+            ownership=ownership,
+            closed_at_utc=now,
+            close_reason=OUTAGE_CLOSE_CAMPAIGN_TERMINATED,
+            recovery_detected_by=None,
+        )
+    except OSError as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "OUTAGE_LEDGER_UNAVAILABLE",
+                    "error": type(exc).__name__,
+                },
+                sort_keys=True,
+            )
+        )
+        return 2
     ownership.arm_status = reason
     write_ownership(ownership)
-    now = _utc_now()
     prior = read_heartbeat(state_dir) or {}
     prior.update(
         {
@@ -447,7 +573,18 @@ def cmd_shutdown(args: argparse.Namespace) -> int:
         }
     )
     write_heartbeat(state_dir, prior)
-    print(json.dumps({"status": reason, "campaign_id": ownership.campaign_id, "outage": False}, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "status": reason,
+                "campaign_id": ownership.campaign_id,
+                "outage": False,
+                "active_outages_terminated": len(terminated),
+                "recovered": False,
+            },
+            sort_keys=True,
+        )
+    )
     return 0
 
 
@@ -535,21 +672,101 @@ def cmd_recover(args: argparse.Namespace) -> int:
     return 0
 
 
+def _infer_spawn_role(argv: Sequence[str]) -> str | None:
+    tokens = [str(part) for part in argv]
+    if "poll-loop" in tokens:
+        return "poller"
+    if "run" in tokens:
+        return "supervisor"
+    return None
+
+
+def _remember_spawn(state_dir: Path, record: dict[str, Any]) -> None:
+    path = state_dir / "campaign-supervision" / "spawn-identity.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    book: dict[str, Any] = {"spawns": []}
+    if path.is_file():
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            loaded = {}
+        if isinstance(loaded, dict) and isinstance(loaded.get("spawns"), list):
+            book = loaded
+    book.setdefault("spawns", []).append(record)
+    _cs._atomic_write_json(path, book)
+
+
+def _wait_durable_pid(state_dir: Path, role: str | None, shim_pid: int, timeout: float = 8.0) -> int | None:
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        ownership = read_ownership(state_dir)
+        if ownership is None:
+            time.sleep(0.1)
+            continue
+        if role == "supervisor" and _alive_fn(int(ownership.supervisor_pid)):
+            return int(ownership.supervisor_pid)
+        if role == "poller":
+            for child in ownership.child_processes:
+                if child.role == "poller" and _alive_fn(int(child.pid)):
+                    return int(child.pid)
+        if role is None and _alive_fn(shim_pid):
+            return shim_pid
+        time.sleep(0.1)
+    if _alive_fn(shim_pid):
+        return shim_pid
+    return None
+
+
 def cmd_spawn_detached(args: argparse.Namespace) -> int:
     state_dir = _state_dir(args.state_dir)
-    log_path = state_dir / "campaign-supervision" / "detached-child.log"
     argv = list(args.spawn_argv or [])
     if argv and argv[0] == "--":
         argv = argv[1:]
     if not argv:
         print(json.dumps({"status": "ERROR", "detail": "COMMAND_REQUIRED"}))
         return 2
-    pid = spawn_detached(argv, cwd=ROOT, log_path=log_path)
+    role = _infer_spawn_role(argv)
+    log_name = f"{role}.log" if role else "detached-other.log"
+    log_path = state_dir / "campaign-supervision" / "logs" / log_name
+    shim_pid = spawn_detached(
+        argv,
+        cwd=ROOT,
+        log_path=log_path,
+        role=role or "other",
+    )
+    durable_pid = _wait_durable_pid(state_dir, role, shim_pid)
+    if durable_pid is None:
+        print(
+            json.dumps(
+                {
+                    "status": "ERROR",
+                    "detail": "DURABLE_PID_UNRESOLVED",
+                    "spawn_shim_pid": shim_pid,
+                    "role": role,
+                    "log_path": str(log_path),
+                },
+                sort_keys=True,
+            )
+        )
+        return 2
+    record = {
+        "spawn_shim_pid": shim_pid,
+        "durable_pid": durable_pid,
+        "role": role,
+        "log_path": str(log_path),
+        "spawned_at_utc": _utc_now(),
+        "pid_contract": "spawn_shim_pid_is_not_the_durable_role_pid",
+    }
+    _remember_spawn(state_dir, record)
     print(
         json.dumps(
             {
                 "status": "SPAWNED",
-                "pid": pid,
+                "spawn_shim_pid": shim_pid,
+                "durable_pid": durable_pid,
+                "role": role,
+                "pids_differ": shim_pid != durable_pid,
+                "pid_contract": "use_durable_pid_not_spawn_shim_pid",
                 "mechanism": mechanism_description(),
                 "log_path": str(log_path),
             },
@@ -558,6 +775,44 @@ def cmd_spawn_detached(args: argparse.Namespace) -> int:
         )
     )
     return 0
+
+
+_TERMINAL_ARM = frozenset({"CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN"})
+_SHUTDOWN_POLL_SECONDS = 0.2
+
+
+def _shutdown_requested(state_dir: Path) -> str | None:
+    ownership = read_ownership(state_dir)
+    if ownership is None:
+        return "NO_OWNERSHIP"
+    if ownership.arm_status in _TERMINAL_ARM:
+        return str(ownership.arm_status)
+    return None
+
+
+def _session_boundary_reached(ownership: CampaignOwnership, now_epoch: float) -> bool:
+    end = _cs._parse_utc_seconds(ownership.session_end_utc)
+    if end is None:
+        return False
+    return now_epoch >= end
+
+
+def wait_until_shutdown_or_deadline(state_dir: Path, seconds: float) -> str | None:
+    """Sleep until cadence elapses or governed shutdown is visible.
+
+    Returns the shutdown reason, or None when the wait completed.
+    Slices are 0.2s so this does not busy-loop and does not sleep the full cadence.
+    """
+
+    deadline = time.monotonic() + max(0.0, seconds)
+    while True:
+        reason = _shutdown_requested(state_dir)
+        if reason is not None:
+            return reason
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return None
+        time.sleep(min(_SHUTDOWN_POLL_SECONDS, remaining))
 
 
 def cmd_run(args: argparse.Namespace) -> int:
@@ -588,6 +843,9 @@ def cmd_run(args: argparse.Namespace) -> int:
         if int(ownership.supervisor_pid) != os.getpid():
             ownership.supervisor_pid = os.getpid()
             write_ownership(ownership)
+        if _shutdown_requested(state_dir) is not None:
+            print(json.dumps({"status": _shutdown_requested(state_dir), "stopped": True, "phase": "TERMINAL"}))
+            return 0
         prior = read_heartbeat(state_dir) or {}
         heartbeat = {
             **prior,
@@ -620,6 +878,9 @@ def cmd_run(args: argparse.Namespace) -> int:
             if ownership.expected_next_cycle_utc != heartbeat["expected_next_poll_utc"]:
                 ownership.expected_next_cycle_utc = heartbeat["expected_next_poll_utc"]
                 write_ownership(ownership)
+        if _shutdown_requested(state_dir) is not None:
+            print(json.dumps({"status": ownership.arm_status, "stopped": True, "phase": "TERMINAL", "heartbeat_advanced": False}))
+            return 0
         write_heartbeat(state_dir, heartbeat)
         progress = evaluate_campaign_progress(
             ownership=ownership,
@@ -637,13 +898,24 @@ def cmd_run(args: argparse.Namespace) -> int:
                     heartbeat.get("last_successful_poll_utc") or ownership.arm_timestamp_utc
                 ),
             )
+        elif progress.get("healthy"):
+            close_active_outages(
+                state_dir,
+                ownership=ownership,
+                closed_at_utc=now,
+                close_reason=OUTAGE_CLOSE_RECOVERED,
+                recovery_detected_by="SUPERVISOR_HEALTHY",
+            )
         marker = state_dir / "campaign-supervision" / "supervisor.alive"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(f"{os.getpid()}\n{now}\n", encoding="utf-8")
         count += 1
         if iterations > 0 and count >= iterations:
             break
-        time.sleep(max(0.05, cadence))
+        stopped = wait_until_shutdown_or_deadline(state_dir, max(0.05, cadence))
+        if stopped is not None:
+            print(json.dumps({"status": stopped, "stopped": True, "phase": "TERMINAL"}))
+            return 0
     return 0
 
 
@@ -762,37 +1034,81 @@ def _live_ingress_argv(ownership: CampaignOwnership, campaign_slug: str) -> list
     return argv
 
 
-def _invoke_poll_payload(args: argparse.Namespace, ownership: CampaignOwnership) -> tuple[dict[str, Any] | None, bool, bool, str]:
-    """Return payload, invoked, process_ok, evidence class for one poll cycle."""
+def _invoke_poll_payload(
+    args: argparse.Namespace,
+    ownership: CampaignOwnership,
+    state_dir: Path,
+) -> tuple[dict[str, Any] | None, bool, bool, str, str | None]:
+    """Return payload, invoked, process_ok, evidence class, interrupt reason.
+
+    Interrupt reason is set only when governed shutdown cancels work before a
+    response is persisted. A finished response is returned even if shutdown
+    landed while the process was exiting; the caller stamps the boundary.
+    """
 
     ingress_json = str(getattr(args, "ingress_json", "") or "").strip()
     if ingress_json:
         path = Path(ingress_json)
         if not path.is_file():
-            return None, True, False, "SOFTWARE_CONTROLLED"
+            return None, True, False, "SOFTWARE_CONTROLLED", None
         try:
             payload = _parse_poll_json(path.read_text(encoding="utf-8"))
         except OSError:
-            return None, True, False, "SOFTWARE_CONTROLLED"
-        return payload, True, payload is not None, "SOFTWARE_CONTROLLED"
+            return None, True, False, "SOFTWARE_CONTROLLED", None
+        return payload, True, payload is not None, "SOFTWARE_CONTROLLED", None
+    block_seconds = float(getattr(args, "block_seconds", 0) or 0)
+    if block_seconds > 0:
+        deadline = time.monotonic() + block_seconds
+        while True:
+            stopped = _shutdown_requested(state_dir)
+            if stopped is not None:
+                return None, True, False, "SOFTWARE_CONTROLLED", stopped
+            if _session_boundary_reached(ownership, time.time()):
+                return None, True, False, "SOFTWARE_CONTROLLED", "SESSION_BOUNDARY"
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(_SHUTDOWN_POLL_SECONDS, remaining))
+        return {
+            "classification": "SOFTWARE_CONTROLLED_BLOCK",
+            "ingress_classification": "SOFTWARE_CONTROLLED_BLOCK",
+        }, True, True, "SOFTWARE_CONTROLLED", None
     if bool(getattr(args, "live_ingress", False)):
         import subprocess
 
         argv = _live_ingress_argv(ownership, str(getattr(args, "campaign_slug", "") or "FTEP-V1-002"))
         try:
-            completed = subprocess.run(
+            process = subprocess.Popen(
                 argv,
                 cwd=str(ROOT),
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                check=False,
-                timeout=120,
             )
-        except (OSError, subprocess.TimeoutExpired):
-            return None, True, False, "LIVE_OBSERVATIONAL_ATTEMPT"
-        payload = _parse_poll_json(completed.stdout or "")
-        return payload, True, completed.returncode == 0 and payload is not None, "LIVE_OBSERVATIONAL_ATTEMPT"
-    return None, False, True, "SOFTWARE_CONTROLLED"
+        except OSError:
+            return None, True, False, "LIVE_OBSERVATIONAL_ATTEMPT", None
+        deadline = time.monotonic() + 120
+        while process.poll() is None:
+            stop = _shutdown_requested(state_dir)
+            if stop is None and _session_boundary_reached(ownership, time.time()):
+                stop = "SESSION_BOUNDARY"
+            if stop is not None:
+                process.terminate()
+                try:
+                    process.wait(timeout=2)
+                except subprocess.TimeoutExpired:
+                    process.kill()
+                    process.wait(timeout=2)
+                return None, True, False, "LIVE_OBSERVATIONAL_ATTEMPT", stop
+            if time.monotonic() >= deadline:
+                process.kill()
+                process.wait(timeout=2)
+                return None, True, False, "LIVE_OBSERVATIONAL_ATTEMPT", None
+            time.sleep(_SHUTDOWN_POLL_SECONDS)
+        stdout, _stderr = process.communicate()
+        payload = _parse_poll_json(stdout or "")
+        return payload, True, process.returncode == 0 and payload is not None, "LIVE_OBSERVATIONAL_ATTEMPT", None
+    return None, False, True, "SOFTWARE_CONTROLLED", None
 
 
 def cmd_poll_loop(args: argparse.Namespace) -> int:
@@ -845,19 +1161,67 @@ def cmd_poll_loop(args: argparse.Namespace) -> int:
         ownership = read_ownership(state_dir)
         if ownership is None:
             return 1
-        if ownership.arm_status in {"CLEAN_SHUTDOWN", "RTH_CLOSE_SHUTDOWN"}:
-            print(json.dumps({"status": ownership.arm_status, "stopped": True}))
+        if ownership.arm_status in _TERMINAL_ARM:
+            print(json.dumps({"status": ownership.arm_status, "stopped": True, "phase": "TERMINAL"}))
             return 0
-        now = _utc_now()
         now_epoch = time.time()
+        if _session_boundary_reached(ownership, now_epoch):
+            prior = read_heartbeat(state_dir) or {}
+            held = {
+                **prior,
+                "campaign_id": ownership.campaign_id,
+                "runtime_sha": ownership.runtime_sha,
+                "last_heartbeat_utc": _utc_now(),
+                "phase": "SESSION_BOUNDARY_HOLD",
+                "application_ready": True,
+                "poller_pid": os.getpid(),
+                "synthetic_poll_generated": False,
+            }
+            write_heartbeat(state_dir, held)
+            count += 1
+            if iterations > 0 and count >= iterations:
+                print(json.dumps({"status": "SESSION_BOUNDARY_HOLD", "poll_started": False, "stopped": False}))
+                return 0
+            stopped = wait_until_shutdown_or_deadline(state_dir, max(0.05, cadence))
+            if stopped is not None:
+                print(json.dumps({"status": stopped, "stopped": True, "phase": "TERMINAL", "poll_started": False}))
+                return 0
+            continue
+        now = _utc_now()
         prior = read_heartbeat(state_dir) or {}
-        payload, invoked, process_ok, evidence_class = _invoke_poll_payload(args, ownership)
-        if invoked:
+        payload, invoked, process_ok, evidence_class, interrupted = _invoke_poll_payload(args, ownership, state_dir)
+        boundary = None
+        if interrupted is not None:
+            classification = "SHUTDOWN_INTERRUPTED"
+            evidence_class = evidence_class or "SOFTWARE_CONTROLLED"
+            invoked = True
+            boundary = {
+                "poll_boundary": "INTERRUPTED_BEFORE_RECEIPT",
+                "counts_as_in_window_observation": False,
+                "shutdown_reason": interrupted,
+            }
+        elif _shutdown_requested(state_dir) is not None and invoked:
+            boundary = {
+                "poll_boundary": "INITIATED_BEFORE_CLOSE_COMPLETED_AFTER",
+                "counts_as_in_window_observation": False,
+                "shutdown_reason": _shutdown_requested(state_dir),
+            }
+            classification = classify_observed_poll(payload, invoked=True, process_ok=process_ok)
+        elif invoked and _session_boundary_reached(ownership, time.time()):
+            boundary = {
+                "poll_boundary": "INITIATED_BEFORE_CLOSE_COMPLETED_AFTER",
+                "counts_as_in_window_observation": False,
+                "shutdown_reason": "SESSION_BOUNDARY",
+            }
+            classification = classify_observed_poll(payload, invoked=True, process_ok=process_ok)
+        elif invoked:
             classification = classify_observed_poll(payload, invoked=True, process_ok=process_ok)
         else:
             classification = "SOFTWARE_CONTROLLED_CYCLE"
             evidence_class = "SOFTWARE_CONTROLLED"
         advances = classification in _SUCCESSFUL_POLL_CLASSES
+        if boundary is not None and boundary.get("counts_as_in_window_observation") is False:
+            advances = False
         next_poll = (
             datetime.fromtimestamp(now_epoch + cadence, tz=timezone.utc)
             .isoformat()
@@ -885,9 +1249,11 @@ def cmd_poll_loop(args: argparse.Namespace) -> int:
             "stale_after_seconds": stale_after,
             "application_ready": True,
             "port_bound_without_progress": False,
-            "phase": "POLLER_CYCLE",
+            "phase": "POLLER_CYCLE" if boundary is None else "POLLER_BOUNDARY",
             "synthetic_poll_generated": False,
             "poller_pid": os.getpid(),
+            "poll_boundary": None if boundary is None else boundary.get("poll_boundary"),
+            "counts_as_in_window_observation": None if boundary is None else boundary.get("counts_as_in_window_observation"),
         }
         _append_poll_attempt(
             state_dir,
@@ -901,17 +1267,30 @@ def cmd_poll_loop(args: argparse.Namespace) -> int:
                 "provider_invoked": bool(getattr(args, "live_ingress", False)),
                 "fixture_receipt": bool(str(getattr(args, "ingress_json", "") or "").strip()),
                 "process_ok": process_ok,
+                "poll_boundary": None if boundary is None else boundary.get("poll_boundary"),
+                "counts_as_in_window_observation": (
+                    True if boundary is None else boundary.get("counts_as_in_window_observation")
+                ),
             },
         )
+        if interrupted is not None or _shutdown_requested(state_dir) is not None:
+            heartbeat["phase"] = _shutdown_requested(state_dir) or "TERMINAL"
+            heartbeat["application_ready"] = False
         # Heartbeat-only updates in the loop — do not contend on ownership.json.
         write_heartbeat(state_dir, heartbeat)
         marker = state_dir / "campaign-supervision" / "poller.alive"
         marker.parent.mkdir(parents=True, exist_ok=True)
         marker.write_text(f"{os.getpid()}\n{now}\n{count}\n", encoding="utf-8")
         count += 1
+        if interrupted is not None or _shutdown_requested(state_dir) is not None:
+            print(json.dumps({"status": _shutdown_requested(state_dir) or interrupted, "stopped": True, "phase": "TERMINAL", "poll_started_after_shutdown": False}))
+            return 0
         if iterations > 0 and count >= iterations:
             break
-        time.sleep(max(0.05, cadence))
+        stopped = wait_until_shutdown_or_deadline(state_dir, max(0.05, cadence))
+        if stopped is not None:
+            print(json.dumps({"status": stopped, "stopped": True, "phase": "TERMINAL", "poll_started_after_shutdown": False}))
+            return 0
     return 0
 
 
@@ -950,6 +1329,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--require-finviz-live-ingress",
         action="store_true",
         help="Fail arm when the live Finviz ingress resolver has no credential or gates are off",
+    )
+    arm.add_argument(
+        "--session-end-utc",
+        default=None,
+        help="UTC instant at which poll-loop must not start a new cycle (RTH close boundary)",
     )
     arm.set_defaults(func=cmd_arm)
 
@@ -1054,6 +1438,12 @@ def build_parser() -> argparse.ArgumentParser:
     poll.add_argument("--heartbeat-cadence-seconds", type=float, default=DEFAULT_HEARTBEAT_CADENCE_SECONDS)
     poll.add_argument("--stale-after-seconds", type=float, default=DEFAULT_STALE_AFTER_SECONDS)
     poll.add_argument("--iterations", type=int, default=0, help="0 = until shutdown")
+    poll.add_argument(
+        "--block-seconds",
+        type=float,
+        default=0,
+        help="Software-controlled stand-in for an in-flight provider call. No network.",
+    )
     poll.add_argument(
         "--ingress-json",
         default="",
