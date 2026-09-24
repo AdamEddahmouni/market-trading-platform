@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Version canonical control-plane references
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | documentation governance |
+| **Summary** | Advanced the Master Architecture and Master Roadmap semantic versions and verification dates after #416 added the unified operator and research control-plane requirement. |
+| **Key files** | `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md` |
+| **Tests** | Documentation links and `git diff --check`. |
+| **Related** | [#416](https://github.com/AdamEddahmouni/market-trading-platform/pull/416) |
+
 ## 2026-09-24 — Make Paper session history fail visibly on bad responses
 
 | Field | Value |

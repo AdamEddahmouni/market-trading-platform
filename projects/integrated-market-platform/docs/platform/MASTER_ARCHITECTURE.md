@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.7` |
-| Last Verified | `2026-09-21` |
+| Version | `1.8` |
+| Last Verified | `2026-09-24` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
 
