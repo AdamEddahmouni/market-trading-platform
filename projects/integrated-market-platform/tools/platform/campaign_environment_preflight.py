@@ -14,9 +14,14 @@ import subprocess
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parents[2]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 API_HOST = "127.0.0.1"
 API_PORT = 8766
@@ -98,8 +103,8 @@ def _git_rev_parse(cwd: Path, *args: str) -> str | None:
     return text or None
 
 
-def _credential_present(environ: Mapping[str, str], keys: Sequence[str]) -> bool:
-    return any(str(environ.get(key) or "").strip() for key in keys)
+def _flag_enabled(environ: Mapping[str, str], name: str) -> bool:
+    return str(environ.get(name) or "").strip().lower() in {"1", "true", "yes"}
 
 
 def evaluate_campaign_environment_preflight(
@@ -112,6 +117,7 @@ def evaluate_campaign_environment_preflight(
     check_opend: bool = True,
     campaign_id: str | None = None,
     observation_window_id: str | None = None,
+    require_finviz_live_ingress: bool = False,
 ) -> PreflightReport:
     """Evaluate environment readiness before ARM OBSERVATION.
 
@@ -355,24 +361,60 @@ def evaluate_campaign_environment_preflight(
                     category="state",
                 )
 
-    # --- Provider capability / credentials presence (no values) ---
-    finviz_present = _credential_present(
-        env,
-        ("FINVIZ_ELITE_AUTH", "FINVIZ_AUTH", "IMP_FINVIZ_ELITE_AUTH"),
+    # --- Provider capability / credentials (canonical ingress resolver; no values) ---
+    from market_platform_foundation.intelligence.paper_forward_bridge.ftep_prospective_catalyst_ingress import (
+        describe_finviz_ingress_credential_availability,
     )
+
+    credential = describe_finviz_ingress_credential_availability(imp_root, env=environ)
+    if credential.available:
+        credential_status = "PASS"
+        credential_detail = f"source={credential.source}"
+    elif require_finviz_live_ingress:
+        credential_status = "FAIL"
+        credential_detail = credential.reason or credential.classification
+    else:
+        credential_status = "WARN"
+        credential_detail = credential.reason or "absent"
     add(
         "credentials_presence_finviz",
-        "PASS" if finviz_present else "WARN",
-        required_for_arm=False,
-        detail="present" if finviz_present else "absent",
+        credential_status,
+        required_for_arm=require_finviz_live_ingress and not credential.available,
+        detail=credential_detail,
         category="credentials",
     )
-    provider_flag = str(env.get("IMP_FINVIZ_LIVE") or "").strip()
+    live_enabled = _flag_enabled(env, "IMP_FINVIZ_LIVE")
+    if live_enabled:
+        live_status = "PASS"
+        live_detail = "IMP_FINVIZ_LIVE=enabled"
+    elif require_finviz_live_ingress:
+        live_status = "FAIL"
+        live_detail = "FINVIZ_LIVE_DISABLED"
+    else:
+        live_status = "WARN"
+        live_detail = "IMP_FINVIZ_LIVE=unset"
     add(
         "provider_capability_finviz_flag",
-        "PASS" if provider_flag in {"1", "true", "TRUE", "yes"} else "WARN",
-        required_for_arm=False,
-        detail=f"IMP_FINVIZ_LIVE={provider_flag or 'unset'}",
+        live_status,
+        required_for_arm=require_finviz_live_ingress and not live_enabled,
+        detail=live_detail,
+        category="provider",
+    )
+    ingress_enabled = _flag_enabled(env, "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS")
+    if ingress_enabled:
+        ingress_status = "PASS"
+        ingress_detail = "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=enabled"
+    elif require_finviz_live_ingress:
+        ingress_status = "FAIL"
+        ingress_detail = "INGRESS_NOT_ENABLED"
+    else:
+        ingress_status = "WARN"
+        ingress_detail = "IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS=unset"
+    add(
+        "prospective_catalyst_ingress_gate",
+        ingress_status,
+        required_for_arm=require_finviz_live_ingress and not ingress_enabled,
+        detail=ingress_detail,
         category="provider",
     )
 

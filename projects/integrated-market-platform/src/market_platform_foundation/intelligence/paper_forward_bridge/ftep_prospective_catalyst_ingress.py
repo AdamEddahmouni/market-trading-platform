@@ -261,6 +261,58 @@ def resolve_finviz_ingress_token(
     return None, secret, TOKEN_SOURCE_NONE
 
 
+@dataclass(frozen=True)
+class FinvizIngressCredentialAvailability:
+    """Whether the live ingress resolver can obtain a credential. No secret material."""
+
+    available: bool
+    source: str
+    classification: str
+    reason: str | None
+
+
+def describe_finviz_ingress_credential_availability(
+    repository_root: Path,
+    *,
+    env: Mapping[str, str] | None = None,
+    primary_root: Path | None = None,
+) -> FinvizIngressCredentialAvailability:
+    """Same resolution as ``resolve_finviz_ingress_token``. Does not return the token.
+
+    Classifications match the pre-network poll outcomes ``TOKEN_ABSENT`` and
+    ``SECRET_DIR_MISSING``. This does not contact the provider.
+    """
+
+    token, secret, token_source = resolve_finviz_ingress_token(
+        repository_root,
+        env=env,
+        primary_root=primary_root,
+    )
+    del token
+    if token_source in {TOKEN_SOURCE_ENVIRONMENT, TOKEN_SOURCE_SECRET_DIR}:
+        return FinvizIngressCredentialAvailability(
+            available=True,
+            source=token_source,
+            classification="AVAILABLE",
+            reason=None,
+        )
+    mapping = _env_mapping(env)
+    override = str(mapping.get("IMP_FINVIZ_SECRET_DIR") or "").strip()
+    if (override or env is None) and not secret.present:
+        return FinvizIngressCredentialAvailability(
+            available=False,
+            source=TOKEN_SOURCE_NONE,
+            classification=CLASS_SECRET_DIR_MISSING,
+            reason=REASON_SECRET_DIR_MISSING,
+        )
+    return FinvizIngressCredentialAvailability(
+        available=False,
+        source=TOKEN_SOURCE_NONE,
+        classification=CLASS_TOKEN_ABSENT,
+        reason=REASON_TOKEN_ABSENT,
+    )
+
+
 def prospective_catalyst_ingress_enabled(
     env: Mapping[str, str] | None = None,
     *,
@@ -649,9 +701,11 @@ __all__ = [
     "CLASS_TIMEOUT",
     "CLASS_MALFORMED_RESPONSE",
     "CLASS_TOKEN_ABSENT",
+    "FinvizIngressCredentialAvailability",
     "FinvizIngressSecretDir",
     "ProspectiveCatalystIngressResult",
     "classify_finviz_fetch_exception",
+    "describe_finviz_ingress_credential_availability",
     "collect_finviz_prospective_attention_rows",
     "pipeline_config_from_manifest",
     "prospective_catalyst_ingress_enabled",
