@@ -1042,6 +1042,21 @@ describe("RadarPage durable decision closure", () => {
       expect(screen.getAllByRole("button", { name: /Retry review retrieval/i }).length).toBeGreaterThan(0);
     });
   });
+
+  it("keeps review retrieval retry available after a network failure", async () => {
+    tradeReviewsFetch.mockResolvedValue({ opportunity_id: "opp-1", items: [] });
+    renderRadar("PAPER", "opportunities", true);
+    fireEvent.click(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Watch" }));
+    await waitFor(() =>
+      expect(screen.getAllByRole("button", { name: /Retry review retrieval/i }).length).toBeGreaterThan(0),
+    );
+    tradeReviewsFetch.mockRejectedValueOnce(new Error("REVIEW_API_UNAVAILABLE"));
+    fireEvent.click(screen.getAllByRole("button", { name: /Retry review retrieval/i })[0]);
+    await waitFor(() => {
+      expect(screen.getAllByText(/durable review retrieval failed/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByRole("button", { name: /Retry review retrieval/i }).length).toBeGreaterThan(0);
+    });
+  });
 });
 
 describe("RadarPage feed truth strip", () => {

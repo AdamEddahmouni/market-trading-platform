@@ -34,6 +34,61 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Version canonical control-plane references
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | documentation governance |
+| **Summary** | Advanced the Master Architecture and Master Roadmap semantic versions and verification dates after #416 added the unified operator and research control-plane requirement. |
+| **Key files** | `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md` |
+| **Tests** | Documentation links and `git diff --check`. |
+| **Related** | [#416](https://github.com/AdamEddahmouni/market-trading-platform/pull/416) |
+
+## 2026-09-24 — Surface operator Settings request failures
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/settings` |
+| **Summary** | Settings no longer presents failed startup state or capture replay as successful. Capture reindex and watchlist transport failures now show a retryable error instead of leaving an unhandled rejection. |
+| **Key files** | `ui/src/components/OperatorSettingsPage.tsx`; `ui/src/components/OperatorSettingsPage.test.tsx` |
+| **Tests** | OperatorSettingsPage Vitest suite: 7 passed; UI typecheck and production build passed. |
+| **Notes** | Existing mode-based mutation restrictions remain unchanged. |
+
+## 2026-09-24 — Make Paper session history fail visibly on bad responses
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Session history now reports an unavailable state when its API returns an HTTP error or malformed sessions, instead of claiming no persisted sessions exist. The current account session remains authoritative. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` |
+| **Tests** | PaperPortfolioPage Vitest suite: 9 passed; UI typecheck and production build passed. |
+| **Notes** | Read-only history handling; no Paper submit behavior or authority gate changed. |
+
+## 2026-09-24 — Keep Radar review retry recoverable after fetch errors
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | A network failure during durable TradeReview retry no longer leaves Radar in a syncing state or raises an unhandled rejection. The retry error restores the visible reconciliation-failed state and retry control. |
+| **Key files** | `ui/src/components/radar/RadarOpportunitiesPanel.tsx`; `ui/src/components/radar/RadarPage.test.tsx` |
+| **Tests** | RadarPage Vitest suite: 44 passed; UI typecheck and production build passed. |
+| **Notes** | Existing accepted acknowledgement and durable review semantics are unchanged. |
+
+## 2026-09-24 — Formalize IMP's unified operator and research workspace
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | architecture / product direction |
+| **Summary** | Recorded the approved future requirement for IMP to operate research, campaigns, experiments, and project development through typed, auditable UI workflows. Kept trading and development authority separate and reused the existing run and artifact standard. |
+| **Key files** | `docs/architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md`; `docs/platform/MASTER_ARCHITECTURE.md`; `docs/platform/MASTER_ROADMAP.md`; `docs/platform/README.md` |
+| **Tests** | Documentation links and `git diff --check`; no runtime behavior changed. |
+| **Notes** | Future design only. No empirical campaign, Paper, Live, or release authority changed. |
+
 ## 2026-09-24 — Review fail-closed RTH arm state
 
 | Field | Value |
@@ -55,7 +110,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `docs/engineering/RTH_OBS_NEWS_20260924_MISSED_ARM.md` |
 | **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 9 tests, OK |
 | **Related** | [RTH_OBS_NEWS_20260924_SESSION.md](RTH_OBS_NEWS_20260924_SESSION.md) |
-| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Next freeze is `RTH-OBS-NEWS-20260925` bound to runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd`. |
+| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Initial freeze was `RTH-OBS-NEWS-20260925` bound to runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd`; see the revised freeze above. |
 
 ## 2026-09-24 — Record the unarmed Sep 24 cash session
 

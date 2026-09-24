@@ -7,14 +7,19 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Whole-program composition and architectural relationships |
 | Establishing Milestone | `IMP-REBASE-01` |
-| Version | `1.7` |
-| Last Verified | `2026-09-21` |
+| Version | `1.8` |
+| Last Verified | `2026-09-24` |
 | Supersedes | No accepted post-EVIDENCE whole-program architecture |
 | Superseded By | None |
 
 This document explains how IMP fits together. It does not define policy values
 or grant runtime authority. Executable authorities listed in the
 [Canonical Truth Map](CANONICAL_TRUTH_MAP.md) control their own behavior.
+
+The approved future [unified operator and research control plane](../architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md)
+sets the product direction for conducting research, campaigns, experiments,
+and IMP development through typed UI workflows. It grants no new trading,
+empirical, or release authority.
 
 ## State labels
 
