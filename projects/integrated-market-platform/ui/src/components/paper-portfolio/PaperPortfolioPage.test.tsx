@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -165,5 +165,18 @@ describe("PaperPortfolioPage", () => {
     expect(handoff).toHaveAttribute("href", "#portfolio-order-history");
     expect(document.getElementById("portfolio-order-history")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Fills" })).toBeInTheDocument();
+  });
+
+  it.each([
+    { label: "HTTP failure", response: { ok: false, json: async () => ({ sessions: [] }) } },
+    { label: "malformed response", response: { ok: true, json: async () => ({ message: "error" }) } },
+    { label: "malformed session", response: { ok: true, json: async () => ({ sessions: [{}] }) } },
+  ])("shows unavailable session history on $label", async ({ response }) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
+    renderPage(false);
+    await waitFor(() =>
+      expect(screen.getByText(/Session list unavailable/i)).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("No persisted sessions yet.")).not.toBeInTheDocument();
   });
 });

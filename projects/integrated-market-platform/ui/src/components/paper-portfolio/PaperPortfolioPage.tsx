@@ -42,8 +42,20 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   function loadSessions() {
     setSessionsError(false);
     void fetch("/paper/sessions")
-      .then((response) => response.json())
-      .then((payload) => setSessions(payload.sessions ?? []))
+      .then(async (response) => {
+        if (!response.ok) throw new Error("SESSION_LIST_HTTP_ERROR");
+        const payload = await response.json();
+        if (
+          !Array.isArray(payload?.sessions) ||
+          !payload.sessions.every(
+            (row: StoredSession) =>
+              row && typeof row.session_id === "string" && typeof row.status === "string",
+          )
+        ) {
+          throw new Error("SESSION_LIST_INVALID_RESPONSE");
+        }
+        setSessions(payload.sessions);
+      })
       .catch(() => {
         setSessionsError(true);
         setSessions([]);
