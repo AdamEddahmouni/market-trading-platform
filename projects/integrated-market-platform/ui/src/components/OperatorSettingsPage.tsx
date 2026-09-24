@@ -43,34 +43,69 @@ export function OperatorSettingsPage({ mode }: Props) {
 
   async function refresh() {
     const [boot, operator] = await Promise.all([
-      fetch("/state/startup").then((response) => response.json()),
-      fetch("/operator/state").then((response) => response.json()),
+      fetch("/state/startup").then((response) => {
+        if (!response.ok) throw new Error("STARTUP_STATE_UNAVAILABLE");
+        return response.json();
+      }),
+      fetch("/operator/state").then((response) => {
+        if (!response.ok) throw new Error("OPERATOR_STATE_UNAVAILABLE");
+        return response.json();
+      }),
     ]);
     setStartup(boot);
     setState(operator);
   }
 
   useEffect(() => {
-    void refresh().catch((err: unknown) => setError(String(err)));
+    void refresh().catch(() => setError("Settings state unavailable. Retry after the local platform is ready."));
   }, []);
 
   async function addWatch() {
     if (!mutationsEnabled) return;
     const current = state?.watchlists?.[0];
     const existing = (current?.items ?? []).map((item) => item.instrument_id);
-    const response = await fetch("/operator/watchlist", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        watchlist_id: current?.watchlist_id,
-        instrument_ids: [...new Set([...existing, watchInput.toUpperCase()])],
-      }),
-    });
-    if (!response.ok) {
+    try {
+      const response = await fetch("/operator/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          watchlist_id: current?.watchlist_id,
+          instrument_ids: [...new Set([...existing, watchInput.toUpperCase()])],
+        }),
+      });
+      if (!response.ok) throw new Error("WATCHLIST_UPDATE_FAILED");
+      await refresh();
+      setError(null);
+    } catch {
       setError("Watchlist update failed");
-      return;
     }
-    await refresh();
+  }
+
+  async function reindexCaptures() {
+    try {
+      const response = await fetch("/captures");
+      if (!response.ok) throw new Error("CAPTURE_REINDEX_FAILED");
+      await response.json();
+      await refresh();
+      setError(null);
+    } catch {
+      setError("Capture reindex failed. Retry after the local platform is ready.");
+    }
+  }
+
+  async function replayCapture(captureId: string) {
+    try {
+      const response = await fetch("/captures/replay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ capture_id: captureId }),
+      });
+      if (!response.ok) throw new Error("CAPTURE_REPLAY_FAILED");
+      const payload = await response.json();
+      setError(payload.provenance ? `Replay ready: ${payload.provenance}` : payload.error ?? "Replay request failed");
+    } catch {
+      setError("Replay request failed. Retry after the local platform is ready.");
+    }
   }
 
   return (
@@ -149,11 +184,7 @@ export function OperatorSettingsPage({ mode }: Props) {
           <div className="live-actions">
             <button
               type="button"
-              onClick={() => {
-                void fetch("/captures")
-                  .then((response) => response.json())
-                  .then(() => refresh());
-              }}
+              onClick={() => void reindexCaptures()}
             >
               Reindex captures
             </button>
@@ -166,21 +197,7 @@ export function OperatorSettingsPage({ mode }: Props) {
               {mutationsEnabled && capture.status === "AVAILABLE" ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    void fetch("/captures/replay", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ capture_id: capture.capture_id }),
-                    })
-                      .then((response) => response.json())
-                      .then((payload) => {
-                        setError(
-                          payload.provenance
-                            ? `Replay ready: ${payload.provenance}`
-                            : payload.error ?? "Replay request failed",
-                        );
-                      });
-                  }}
+                  onClick={() => void replayCapture(capture.capture_id)}
                 >
                   Replay
                 </button>

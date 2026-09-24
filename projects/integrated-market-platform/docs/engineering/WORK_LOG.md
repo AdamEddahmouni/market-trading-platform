@@ -45,6 +45,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Documentation links and `git diff --check`. |
 | **Related** | [#416](https://github.com/AdamEddahmouni/market-trading-platform/pull/416) |
 
+## 2026-09-24 — Surface operator Settings request failures
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/settings` |
+| **Summary** | Settings no longer presents failed startup state or capture replay as successful. Capture reindex and watchlist transport failures now show a retryable error instead of leaving an unhandled rejection. |
+| **Key files** | `ui/src/components/OperatorSettingsPage.tsx`; `ui/src/components/OperatorSettingsPage.test.tsx` |
+| **Tests** | OperatorSettingsPage Vitest suite: 7 passed; UI typecheck and production build passed. |
+| **Notes** | Existing mode-based mutation restrictions remain unchanged. |
+
 ## 2026-09-24 — Make Paper session history fail visibly on bad responses
 
 | Field | Value |
