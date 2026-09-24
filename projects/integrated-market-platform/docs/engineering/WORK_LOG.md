@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Platform health and technical-debt audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / platform audit |
+| **Summary** | Recorded a software-only platform health audit on `origin/main` `8562c76a`. No product behavior change. Sep 24 campaign stays `FROZEN_NOT_ARMED` on `c15527221a21d7bc88acefbe0971b6de9292247e`. Parent-exit survival, heartbeat acceptance, outage append, poll classification, and Controlled Replay Paper acknowledgement were re-run. Open outages are never closed. Job-kill survival stays unproven. |
+| **Key files** | `docs/engineering/IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md`; `artifacts/audits/IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.json`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format` and `lint` exit 0. Security focused selectors 3 passed. Heartbeat acceptance 23 passed. Durability outage/poll/register-child 3 passed. Controlled Replay golden path, preview, and submit-ack 9 passed. `test affected` not finished. `npm audit --package-lock-only` reported 7 findings. |
+| **Related** | [IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md](IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md) |
+| **Notes** | Next lane is observation-ledger and shutdown visibility on `main`. Do not retarget the frozen runtime. Campaign state directory was absent and was not created. |
+
 ## 2026-09-23 — Sep 24 operator launch path fail-closed repair
 
 | Field | Value |
