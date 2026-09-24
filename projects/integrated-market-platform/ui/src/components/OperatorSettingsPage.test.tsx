@@ -83,4 +83,46 @@ describe("OperatorSettingsPage", () => {
       );
     });
   });
+
+  it("does not present failed startup state as healthy", async () => {
+    const original = vi.mocked(globalThis.fetch);
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: RequestInfo) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.endsWith("/state/startup")) return { ok: false, json: async () => startupState };
+      return original(input);
+    }));
+    render(<OperatorSettingsPage mode="PAPER" />);
+    await waitFor(() => expect(screen.getByText(/Settings state unavailable/i)).toBeInTheDocument());
+    expect(screen.queryByText("Provider ready.")).not.toBeInTheDocument();
+  });
+
+  it("does not claim replay is ready after an HTTP failure", async () => {
+    const original = vi.mocked(globalThis.fetch);
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: RequestInfo) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.endsWith("/captures/replay")) {
+        return { ok: false, json: async () => ({ provenance: "false-success" }) };
+      }
+      return original(input);
+    }));
+    render(<OperatorSettingsPage mode="PAPER" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Replay" }));
+    await waitFor(() => expect(screen.getByText(/Replay request failed/i)).toBeInTheDocument());
+    expect(screen.queryByText(/Replay ready: false-success/i)).not.toBeInTheDocument();
+  });
+
+  it("reports capture reindex and watchlist transport failures", async () => {
+    const original = vi.mocked(globalThis.fetch);
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async (input: RequestInfo) => {
+      const url = typeof input === "string" ? input : input.url;
+      if (url.endsWith("/captures")) return { ok: false, json: async () => ({}) };
+      if (url.endsWith("/operator/watchlist")) throw new Error("NETWORK_DOWN");
+      return original(input);
+    }));
+    render(<OperatorSettingsPage mode="PAPER" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Reindex captures" }));
+    await waitFor(() => expect(screen.getByText(/Capture reindex failed/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Add to watchlist" }));
+    await waitFor(() => expect(screen.getByText(/Watchlist update failed/i)).toBeInTheDocument());
+  });
 });
