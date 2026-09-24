@@ -81,7 +81,7 @@ python -c "from datetime import datetime; from zoneinfo import ZoneInfo; print(d
 python tools/platform/campaign_supervisor.py environment-preflight --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260924 --observation-window-id RTH-OBS-NEWS-20260924-A
 ```
 
-Preflight must exit 0 with `ready_to_arm: true`. `credentials_presence_finviz` may warn in a shell that has no env token. Do not print the token. If the first live poll below classifies `TOKEN_ABSENT`, `GATES_INACTIVE`, or `SECRET_DIR_MISSING`, stop. That is not an armed healthy campaign.
+Preflight on this frozen runtime must exit 0 with `ready_to_arm: true`. On `c15527221`, `credentials_presence_finviz` may warn even when the launch shell has no token the poller reads. That warning is a frozen-runtime limitation: do not treat it as proof the live ingress credential is present. Put a runtime-recognized Finviz credential in the launch shell (`FINVIZ_API_KEY` or another name that runtime reads, or `finviz-token.txt` in the resolved secret directory). Do not print the token. If the first live poll classifies `TOKEN_ABSENT`, `GATES_INACTIVE`, or `SECRET_DIR_MISSING`, stop. That is not an armed healthy campaign. Later `main` preflight alignment does not retarget this runtime.
 
 ```powershell
 python tools/platform/local_launcher.py start

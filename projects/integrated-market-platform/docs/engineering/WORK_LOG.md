@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Finviz preflight credential identity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / provider readiness |
+| **Summary** | Campaign environment preflight now asks the live Finviz ingress resolver whether a credential can be obtained. Obsolete names `FINVIZ_ELITE_AUTH`, `FINVIZ_AUTH`, and `IMP_FINVIZ_ELITE_AUTH` no longer count as present. When `--require-finviz-live-ingress` is set, a missing credential or a disabled live/ingress gate blocks `ready_to_arm`. Non-Finviz preflight stays a warning. No token value is reported. Sep 24 runtime `c15527221` was not retargeted. |
+| **Key files** | `src/market_platform_foundation/intelligence/paper_forward_bridge/ftep_prospective_catalyst_ingress.py`; `tools/platform/campaign_environment_preflight.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_finviz_preflight_credential_identity.py`; `docs/engineering/RTH_OBS_NEWS_20260924_FREEZE.md`; `.gitignore` |
+| **Tests** | `python -m unittest tests.platform.test_finviz_preflight_credential_identity` 10 OK. `python tools/imp.py test focused` on those 10 selectors: 10 passed. Ingress, auth lifecycle, and Finviz elite context with `PYTHONPATH=src`: 90 OK. Security selectors: 3 passed. `python tools/imp.py format` and `lint` exit 0. `python tools/imp.py test affected`: 3394 passed, 31 skipped, 0 failures, exit 0. Manual `environment-preflight` for `FINVIZ-PREFLIGHT-REHEARSAL`: no token `ready_to_arm=false` / `FINVIZ_TOKEN_ABSENT`; dummy canonical token `ready_to_arm=true` / `source=ENVIRONMENT`; dummy value absent from output. |
+| **Related** | Audit #407 finding `finviz_preflight_names_do_not_match_runtime`. Software proof only. Next provider network call remains `EMPIRICAL_PROOF_REQUIRED`. |
+| **Notes** | Audit finding status for the identity mismatch is `SOFTWARE_PROVEN` on current main after this change. Frozen campaign `RTH-OBS-NEWS-20260924` stays `FROZEN_NOT_ARMED` on `c15527221a21d7bc88acefbe0971b6de9292247e`. `RETARGETED=NO`. `REFROZEN=NO`. `ARMED=NO`. Empirical locks unchanged. |
+
 ## 2026-09-23 — Platform health and technical-debt audit
 
 | Field | Value |

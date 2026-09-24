@@ -136,6 +136,9 @@ def cmd_arm(args: argparse.Namespace) -> int:
             require_ui_deps=require_ui,
             campaign_id=str(args.campaign_id),
             observation_window_id=str(args.observation_window_id),
+            require_finviz_live_ingress=bool(
+                getattr(args, "require_finviz_live_ingress", False)
+            ),
         )
         if not preflight.ready_to_arm:
             print(
@@ -373,6 +376,9 @@ def cmd_environment_preflight(args: argparse.Namespace) -> int:
         campaign_id=args.campaign_id,
         observation_window_id=args.observation_window_id,
         check_opend=not bool(args.skip_opend_check),
+        require_finviz_live_ingress=bool(
+            getattr(args, "require_finviz_live_ingress", False)
+        ),
     )
     print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     return 0 if report.ready_to_arm else 2
@@ -940,6 +946,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Allow arm when ui/node_modules is absent (UI remains optional runtime role)",
     )
+    arm.add_argument(
+        "--require-finviz-live-ingress",
+        action="store_true",
+        help="Fail arm when the live Finviz ingress resolver has no credential or gates are off",
+    )
     arm.set_defaults(func=cmd_arm)
 
     pref = sub.add_parser(
@@ -951,6 +962,11 @@ def build_parser() -> argparse.ArgumentParser:
     pref.add_argument("--observation-window-id")
     pref.add_argument("--allow-missing-ui-deps", action="store_true")
     pref.add_argument("--skip-opend-check", action="store_true")
+    pref.add_argument(
+        "--require-finviz-live-ingress",
+        action="store_true",
+        help="Fail when live Finviz ingress cannot resolve a credential or its gates are off",
+    )
     pref.set_defaults(func=cmd_environment_preflight)
 
     reg = sub.add_parser("register-child", help="Record a supervised child process")
