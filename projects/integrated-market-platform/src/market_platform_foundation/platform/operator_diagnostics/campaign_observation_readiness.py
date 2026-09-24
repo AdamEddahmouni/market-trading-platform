@@ -29,6 +29,32 @@ from .service_liveness import classify_platform_services_liveness
 
 ET = ZoneInfo("America/New_York")
 SCHEMA_VERSION = "campaign-observation-readiness/1.0.0"
+# Market-poll progress. Anything else is not a successful market observation.
+_MARKET_POLL_SUCCESS_CLASSES = frozenset({"SUCCESS", "SUCCESS_EMPTY"})
+# These never count as a healthy observation, including during cash RTH.
+_ALWAYS_STALL_POLL_CLASSES = frozenset(
+    {
+        "NO_POLL",
+        "SOFTWARE_CONTROLLED_CYCLE",
+        "POLL_PROCESS_FAILURE",
+        "POLL_UNCLASSIFIED",
+        "ADMISSION_FAILURE",
+        "TOKEN_ABSENT",
+        "GATES_INACTIVE",
+        "SECRET_DIR_MISSING",
+    }
+)
+# Before the cash open these are stop conditions. During RTH a single provider
+# failure stays visible on the heartbeat and does not by itself stall the gate.
+_PREOPEN_STALL_POLL_CLASSES = frozenset(
+    {
+        "PROVIDER_FAILURE",
+        "HTTP_429",
+        "TIMEOUT",
+        "MALFORMED_RESPONSE",
+        "SESSION_UNAVAILABLE",
+    }
+)
 
 # Overall gate phases. Prefer existing ARM / progress tokens in field values;
 # these labels only compose the start-gate summary.
@@ -417,6 +443,15 @@ def build_campaign_observation_readiness(
             blockers.append("NETWORK_SUBMIT_NOT_FORBIDDEN")
         if outage_ledger_available is False:
             blockers.append("OUTAGE_LEDGER_UNAVAILABLE")
+        poll_class = str(heartbeat.get("last_poll_classification") or "").strip()
+        if armed and poll_class and poll_class not in _MARKET_POLL_SUCCESS_CLASSES:
+            before_open = not bool(timing.get("rth_open"))
+            if poll_class in _ALWAYS_STALL_POLL_CLASSES or (
+                before_open and poll_class in _PREOPEN_STALL_POLL_CLASSES
+            ):
+                blockers.append(f"POLL_{poll_class}")
+        if armed and intended_date and intended_date != now.date():
+            blockers.append("INTENDED_DATE_NOT_TODAY")
 
     # Deduplicate while preserving order.
     blockers = list(dict.fromkeys(blockers))
@@ -562,6 +597,8 @@ def _derive_phase(
         return "BLOCKED_PROVIDER"
 
     if armed:
+        if any(str(item).startswith("POLL_") or item == "INTENDED_DATE_NOT_TODAY" for item in blockers):
+            return "ACTIVE_STALLED"
         if progress_status == "HEALTHY":
             return "ACTIVE_PROGRESSING"
         if progress_status in {"STALE", "PROCESS_DEAD", "APPLICATION_UNREADY", "SESSION_UNAVAILABLE"}:

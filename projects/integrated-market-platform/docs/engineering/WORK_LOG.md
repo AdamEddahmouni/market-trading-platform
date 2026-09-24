@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Sep 24 operator launch path fail-closed repair
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend` / campaign supervision |
+| **Summary** | Rehearsal of frozen runtime `02d69976` showed the documented launcher script could not import `tools`, `readiness` crashed on a standalone module load, and `status` did not print the API pid. The repair puts the repo root on `sys.path`, loads readiness as a package leaf, prints service pids, stalls readiness on a non-market poll class, and uses the 15s heartbeat default for `run`. |
+| **Key files** | `tools/platform/local_launcher.py`, `tools/platform/campaign_supervisor.py`, `src/market_platform_foundation/platform/operator_diagnostics/campaign_observation_readiness.py`, durability and launcher tests, `docs/engineering/CAMPAIGN_SUPERVISION_HEARTBEAT.md` |
+| **Tests** | Focused launcher, readiness, and durability tests: 42 OK. `python tools/imp.py lint` exit 0. `python tools/imp.py format` exit 0. Affected mandatory security, shared, validation, phase0, and ui1 passed. Changed suite interrupted at 232 tests / 0 failures in this environment and is not a completed pass. |
+| **Related** | Supersedes operator behavior on runtime `02d699768dce2ad2e85d7215f2588fd18a36fcce` only after the replacement freeze. Real campaign `RTH-OBS-NEWS-20260924` stays `FROZEN_NOT_ARMED` until that freeze is updated. |
+| **Notes** | Live Finviz ingress was not run. Rehearsal evidence is `SOFTWARE_CONTROLLED` / `REHEARSAL`. |
+
 ## 2026-09-23 — Sep 24 RTH campaign freeze and observation recertification
 
 | Field | Value |

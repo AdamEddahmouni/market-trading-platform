@@ -20,6 +20,8 @@ from typing import Callable, Mapping, Protocol, Sequence
 
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 API_HOST = "127.0.0.1"
 API_PORT = 8766
 UI_HOST = "127.0.0.1"
@@ -511,6 +513,7 @@ class PlatformController:
                 http_probe=self.system.url_ready,
             )
             health_by_name[service.name] = health
+            print(f"{service.name.upper()} pid               {service.pid}")
             print(f"{service.name.upper()} process alive   {'YES' if health.process_alive else 'NO'}")
             print(f"{service.name.upper()} identity owned  {'YES' if health.identity_owned else 'NO'}")
             print(f"{service.name.upper()} port bound        {'YES' if health.port_bound else 'NO'}")
