@@ -682,9 +682,9 @@ describe("RadarPage opportunities tab", () => {
   it("hides acks without paper authority and says so", () => {
     summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
     renderRadar("PAPER", "opportunities", false);
-    expect(screen.queryByRole("button", { name: "Watch BIYA" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Paper actions unavailable in this mode/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Watch BIYA" })).toBeDisabled();
+    expect(within(screen.getByTestId("imp-radar-detail-card")).getByRole("button", { name: "Watch" })).toBeDisabled();
+    expect(screen.getAllByText(/Paper actions unavailable in this mode/i).length).toBeGreaterThan(0);
   });
 
   it("marks demo read-only", () => {
@@ -736,8 +736,8 @@ describe("RadarPage opportunities tab", () => {
     expect(queue).toHaveTextContent(/never grants live execution/i);
     expect(queue).toHaveTextContent(/INELIGIBLE/i);
     expect(within(queue).queryByText("Open workspace")).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Watch BIYA" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Watch" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Watch BIYA" })).toBeDisabled();
+    expect(screen.getAllByText(/This opportunity is expired/i).length).toBeGreaterThan(0);
     const brief = within(await screen.findByTestId("imp-radar-detail-card")).getByTestId(
       "imp-radar-operator-brief",
     );

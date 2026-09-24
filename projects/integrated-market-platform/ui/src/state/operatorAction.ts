@@ -15,7 +15,12 @@ export const OPERATOR_ACTION_AVAILABILITY = [
 
 export type OperatorActionAvailability = (typeof OPERATOR_ACTION_AVAILABILITY)[number];
 
-export type OperatorActionConsequence = "none" | "local_workstation" | "configuration";
+export type OperatorActionConsequence =
+  | "none"
+  | "local_workstation"
+  | "configuration"
+  | "operator_record"
+  | "navigation";
 
 /** Domain-owned reason. Codes are not a global IMP state enum. */
 export type OperatorActionDomainReason = {

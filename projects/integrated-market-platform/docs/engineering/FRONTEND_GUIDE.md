@@ -220,6 +220,8 @@ Shared controls live in `ui/src/components/operator-action/`:
 
 Control (`/control`) builds descriptors in `controlOperatorActions.ts` and still calls the existing domain clients: `POST /operator/lifecycle/actions`, `POST /operator/providers/{provider}/refresh`, and `POST /operator/config/provider`. Credential fields stay in the form. Restart and apply-update require inline confirmation. Check-update, provider refresh, and status reload do not.
 
+Radar opportunity actions use the same presentation model. `radarOperatorActions.ts` adapts the current opportunity row. Review, watch, and dismiss stay mutations through the existing opportunity ack client. Open workspace is navigation (`consequence: "navigation"`), not a mutation, and it keeps the selected opportunity identity. Those four actions do not use a confirmation dialog. Consequence `operator_record` means a durable operator decision record, not an order. Ranking, Paper preview, risk checks, and Live authority stay where they were.
+
 Result copy is transient. `SUCCESS` is used when the operation body reports `SUCCEEDED`. A queued acceptance is `RESULT_UNVERIFIED` until a later snapshot proves completion. `REQUEST_FAILED` is a rejected call. `REFRESH_FAILED_AFTER_MUTATION` means the call was accepted and the follow-up reload failed. This is not a durable action ledger.
 
 Workspace Paper submit, Live authority, Lab execution, and Controlled Replay are outside this model.
