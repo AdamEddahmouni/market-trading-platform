@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Record the unarmed Sep 24 cash session
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | evidence |
+| **Summary** | `RTH-OBS-NEWS-20260924` stayed frozen and was not armed. The cash session produced no campaign directory, no provider receipts, and no operator decisions. Evidence class is `OPERATIONAL_ONLY`. A future RTH campaign is still required. |
+| **Key files** | `docs/engineering/RTH_OBS_NEWS_20260924_SESSION.md`; `docs/platform/PROGRAM_STATUS.md`; `docs/engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md` |
+| **Tests** | Read-only process, port, and path checks. No calibration, no Full30, no Live arm. |
+| **Related** | Frozen runtime `1cbc8b0551179e1724033ee0036fb3366174daca`. Radar convergence [#413](https://github.com/AdamEddahmouni/market-trading-platform/pull/413) is software and is not this evidence. |
+| **Notes** | Sep 23 `PARTIAL_LATE_ARM` was not edited. Item 7 governed rows remain 0. `ITEM9_CALIBRATION_RUN` remains `FORBIDDEN`. |
+
 ## 2026-09-24 — Converge Radar opportunity actions
 
 | Field | Value |
