@@ -199,6 +199,28 @@ class CampaignGoNoGoTests(unittest.TestCase):
             terminal = _eval(_freeze(), now="2026-09-25T09:00:00", state=state)
             self.assertEqual(terminal["disposition"], "TERMINAL")
 
+    def test_unreadable_or_unknown_ownership_blocks_arm(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            state = Path(tmp)
+            sup = state / "rth-campaign-20260925" / "campaign-supervision"
+            sup.mkdir(parents=True)
+            path = sup / "ownership.json"
+            path.write_text("{broken", encoding="utf-8")
+            corrupt = _eval(_freeze(), now="2026-09-25T09:00:00", state=state)
+            self.assertIn("OWNERSHIP_UNREADABLE", corrupt["blockers"])
+            self.assertFalse(corrupt["arm_allowed"])
+            path.write_text(
+                json.dumps({"campaign_id": "RTH-OBS-NEWS-20260925", "arm_status": "UNKNOWN"}),
+                encoding="utf-8",
+            )
+            unknown = _eval(_freeze(), now="2026-09-25T09:00:00", state=state)
+            self.assertIn("ARM_STATUS_UNKNOWN", unknown["blockers"])
+            self.assertFalse(unknown["arm_allowed"])
+            path.write_text(json.dumps({"arm_status": "NOT_ARMED"}), encoding="utf-8")
+            missing_id = _eval(_freeze(), now="2026-09-25T09:00:00", state=state)
+            self.assertIn("FOREIGN_CAMPAIGN_STATE", missing_id["blockers"])
+            self.assertFalse(missing_id["arm_allowed"])
+
     def test_live_and_calibration_env_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             live = _eval(

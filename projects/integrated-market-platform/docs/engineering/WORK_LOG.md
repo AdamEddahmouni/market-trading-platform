@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Review fail-closed RTH arm state
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | observation / campaign |
+| **Summary** | Added regression checks and code-level refusal for unavailable Git status, mismatched campaign/window arm arguments, and unreadable or unknown ownership state. The launch handoff also needs the API started after arm because GO/NO-GO requires a free API port. |
+| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py` |
+| **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 12 tests, OK on the development branch. |
+| **Notes** | Frozen runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd` and its manifest remain unchanged. These fixes are not active in that runtime; re-freezing requires explicit approval. The campaign remains `FROZEN_NOT_ARMED`. |
+
 ## 2026-09-24 — Fail-closed next-RTH GO/NO-GO
 
 | Field | Value |

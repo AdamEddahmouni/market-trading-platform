@@ -323,18 +323,26 @@ def evaluate_campaign_go_no_go(
     else:
         add("api_port", "FAIL", "API_PORT_OCCUPIED_UNIDENTIFIED")
 
+    ownership_file = state_path / "campaign-supervision" / "ownership.json" if state_path else None
     own = _ownership(state_path)
-    arm_status = str((own or {}).get("arm_status") or "NOT_ARMED")
-    if own and str(own.get("campaign_id") or "") not in {"", campaign_id}:
+    ownership_unreadable = bool(ownership_file and ownership_file.is_file() and own is None)
+    arm_status = str(own.get("arm_status") or "") if own else "NOT_ARMED"
+    if ownership_unreadable:
+        add("foreign_campaign", "FAIL", "OWNERSHIP_UNREADABLE")
+    elif own and str(own.get("campaign_id") or "") != campaign_id:
         add("foreign_campaign", "FAIL", "FOREIGN_CAMPAIGN_STATE")
     else:
         add("foreign_campaign", "PASS", arm_status)
-    if arm_status in _TERMINAL:
+    if ownership_unreadable:
+        add("arm_state", "FAIL", "OWNERSHIP_UNREADABLE")
+    elif arm_status in _TERMINAL:
         add("arm_state", "FAIL", "TERMINAL")
     elif arm_status == "ARMED_RUNNING":
         add("arm_state", "FAIL", "ALREADY_ARMED")
-    else:
+    elif arm_status == "NOT_ARMED":
         add("arm_state", "PASS", "NOT_ARMED")
+    else:
+        add("arm_state", "FAIL", "ARM_STATUS_UNKNOWN")
 
     beat = _heartbeat(state_path)
     if arm_status == "ARMED_RUNNING":
