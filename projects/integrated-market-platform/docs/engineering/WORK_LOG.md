@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Platform health and technical-debt audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `docs` / platform audit |
+| **Summary** | Recorded a software-only platform health audit on `origin/main` `8562c76a`. No product behavior change. Sep 24 campaign stays `FROZEN_NOT_ARMED` on `c15527221a21d7bc88acefbe0971b6de9292247e`. Finviz preflight checks environment names the runtime does not read. Open outages are never closed. Parent-exit survival and the shim/child pid split were reproduced on disposable processes. Job-kill survival stays unproven. |
+| **Key files** | `docs/engineering/IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md`; `artifacts/audits/IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.json`; `docs/engineering/WORK_LOG.md` |
+| **Tests** | `python tools/imp.py format` and `lint` exit 0. Security focused selectors 3 passed. Unittest golden path + paper submit-ack + runtime durability: 19 OK in 25.7s, with ResourceWarnings. Disposable spawn: parent exit 0, shim pid ≠ child pid. `test affected --plan` selected 0 suites on a clean tree. Full affected suite not run. `npm audit --package-lock-only`: 7 findings (1 critical vitest, 1 high vite). |
+| **Related** | [IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md](IMP_PLATFORM_HEALTH_TECH_DEBT_AUDIT_20260923.md) |
+| **Notes** | Next lane is Finviz preflight identity on `main`. Do not retarget the frozen runtime. Campaign state directory was absent and was not created. Tomorrow still stops if the first live poll is `TOKEN_ABSENT`. |
+
 ## 2026-09-23 — Sep 24 operator launch path fail-closed repair
 
 | Field | Value |
