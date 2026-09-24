@@ -45,6 +45,7 @@ export type StateDomain =
   | "portfolio"
   | "research"
   | "platform"
+  | "action"
   | "error";
 
 export type SemanticStateParams = Record<string, string | number | null | undefined>;
@@ -305,6 +306,30 @@ const PLATFORM_TABLE: Record<string, Entry> = {
   QUEUED: { tone: "neutral", label: "Queued" },
 };
 
+/**
+ * Operator-action availability. This translates presentation availability only.
+ * Domain reason codes stay on the action descriptor; they are not folded into
+ * this table. Unknown availability values stay neutral via the shared fallback.
+ */
+const ACTION_TABLE: Record<string, Entry> = {
+  AVAILABLE: { tone: "live", label: "Available" },
+  BLOCKED: {
+    tone: "critical",
+    label: "Blocked",
+    sentence: "This action is blocked.",
+  },
+  READ_ONLY: {
+    tone: "neutral",
+    label: "Read-only",
+    sentence: "This action is read-only.",
+  },
+  UNAVAILABLE: {
+    tone: "neutral",
+    label: "Unavailable",
+    sentence: "This action is unavailable.",
+  },
+};
+
 const DATA_HEALTH_TABLE: Record<string, Entry> = {
   GOOD: { tone: "live", label: "Market data healthy" },
   PASS: { tone: "live", label: "Mark data current" },
@@ -464,6 +489,7 @@ const DOMAIN_TABLES: Record<StateDomain, Record<string, Entry>> = {
   portfolio: PORTFOLIO_TABLE,
   research: RESEARCH_TABLE,
   platform: PLATFORM_TABLE,
+  action: ACTION_TABLE,
   error: ERROR_TABLE,
 };
 

@@ -333,3 +333,19 @@ noise) except in L3 evidence grids, where "—" with a tooltip is allowed.
 source-agreement count ("3 of 4 sources agree" via `EvidenceStack`) +
 `FreshnessIndicator`. All three must be visible in the expanded card; the compact
 card shows confidence + freshness only.
+
+## 7. Domain `action` (operator-action availability)
+
+Added with the Control operator-action foundation. This domain translates presentation
+availability only. It does not replace domain reason codes.
+
+| Value | Tone | Label |
+|---|---|---|
+| `AVAILABLE` | `live` | "Available" |
+| `BLOCKED` | `critical` | "Blocked" |
+| `READ_ONLY` | `neutral` | "Read-only" |
+| `UNAVAILABLE` | `neutral` | "Unavailable" |
+
+Unknown values stay on the shared neutral fallback with the raw token preserved.
+See [FRONTEND_GUIDE.md](../engineering/FRONTEND_GUIDE.md) for `OperatorActionDescriptor`.
+

@@ -2,7 +2,20 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../api/endpoints";
-import type { LifecycleAction, OperatorLifecycleStatus, ProviderReadiness } from "../../api/schemas";
+import type { LifecycleAction, OperatorDiagnostics, OperatorLifecycleStatus, ProviderReadiness } from "../../api/schemas";
+import type { OperatorActionResultState } from "../../state/operatorAction";
+import { actionExplanation } from "../../state/operatorAction";
+import { OperatorActionButton } from "../operator-action/OperatorActionButton";
+import { ActionResult } from "../operator-action/ActionResult";
+import {
+  applyUpdateAction,
+  checkUpdateAction,
+  providerConfigSaveAction,
+  providerRefreshAction,
+  reloadControlAction,
+  restartPlatformAction,
+  type LifecycleSnapshot,
+} from "./controlOperatorActions";
 import {
   queryKeys,
   useContextQuery,
@@ -83,10 +96,8 @@ export function OperatorControlCenterPage({ mode }: Props) {
   const lifecycle = diagnosticsLifecycle(diagnostics) as OperatorLifecycleStatus | undefined;
   const opportunitySurface = diagnosticsOpportunitySurface(diagnostics);
 
-  const [message, setMessage] = useState<string | null>(null);
-  const [busyProvider, setBusyProvider] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<LifecycleAction | null>(null);
-  const [confirmingUpdate, setConfirmingUpdate] = useState(false);
+  const [pendingActionId, setPendingActionId] = useState<string | null>(null);
+  const [actionResults, setActionResults] = useState<Record<string, OperatorActionResultState | null>>({});
 
   const contextState = contextQuery.isLoading
     ? "loading"
@@ -153,46 +164,138 @@ export function OperatorControlCenterPage({ mode }: Props) {
     attentionItems.length,
   ]);
 
-  useEffect(() => {
-    if (!confirmingUpdate) return;
-    const confirm = document.getElementById("control-confirm-apply");
-    confirm?.focus();
-  }, [confirmingUpdate]);
-
-  const refreshAll = () => {
-    setMessage(null);
-    void diagnosticsQuery.refetch();
-    void configQuery.refetch();
-    void contextQuery.refetch();
-    if (mode === "PAPER") void paperPortfolioQuery.refetch();
+  const lifecycleSnapshot = (): LifecycleSnapshot => {
+    const state = queryClient.getQueryState(queryKeys.operatorDiagnostics);
+    const data = queryClient.getQueryData<OperatorDiagnostics>(queryKeys.operatorDiagnostics);
+    return {
+      loading: state?.fetchStatus === "fetching" && data == null,
+      failed: state?.status === "error",
+      lifecycle: diagnosticsLifecycle(data),
+    };
   };
 
-  const runLifecycleAction = async (action: LifecycleAction) => {
-    setBusyAction(action);
-    setMessage(null);
+  const rememberResult = (id: string, result: OperatorActionResultState | null) => {
+    setActionResults((current) => ({ ...current, [id]: result }));
+  };
+
+  const reloadStatus = async () => {
+    const action = reloadControlAction();
+    if (pendingActionId) return;
+    setPendingActionId(action.id);
+    rememberResult(action.id, null);
+    const diagnostics = await diagnosticsQuery.refetch();
+    await Promise.all([
+      configQuery.refetch(),
+      contextQuery.refetch(),
+      mode === "PAPER" ? paperPortfolioQuery.refetch() : Promise.resolve(),
+    ]);
+    if (diagnostics.isError) {
+      rememberResult(action.id, {
+        kind: "REQUEST_FAILED",
+        message: "Status could not be reloaded.",
+      });
+    } else {
+      rememberResult(action.id, {
+        kind: "SUCCESS",
+        message: "Status reloaded from the local platform.",
+      });
+    }
+    setPendingActionId(null);
+  };
+
+  const runLifecycleAction = async (kind: LifecycleAction) => {
+    const descriptor =
+      kind === "restart"
+        ? restartPlatformAction(lifecycleSnapshot())
+        : kind === "check_update"
+          ? checkUpdateAction(lifecycleSnapshot())
+          : applyUpdateAction(lifecycleSnapshot());
+    if (pendingActionId) return;
+    if (descriptor.availability !== "AVAILABLE") {
+      rememberResult(descriptor.id, {
+        kind: "REQUEST_FAILED",
+        message: actionExplanation(descriptor),
+        reasonCode: descriptor.reason?.code,
+      });
+      return;
+    }
+    setPendingActionId(descriptor.id);
+    rememberResult(descriptor.id, null);
+    const queuedLabel = `${kind.replace(/_/g, " ")} queued.`;
     try {
-      await api.runOperatorLifecycleAction(action);
-      setMessage(`${action.replace(/_/g, " ")} queued.`);
-      await diagnosticsQuery.refetch();
+      const operation = await api.runOperatorLifecycleAction(kind);
+      if (operation.status === "BLOCKED") {
+        rememberResult(descriptor.id, {
+          kind: "REQUEST_FAILED",
+          message: operation.detail?.trim() || `${queuedLabel} The platform refused the action.`,
+          reasonCode: "UPDATE_BLOCKED",
+        });
+        return;
+      }
+      const refreshed = await diagnosticsQuery.refetch();
+      if (refreshed.isError) {
+        rememberResult(descriptor.id, {
+          kind: "REFRESH_FAILED_AFTER_MUTATION",
+          message: `${queuedLabel} Platform status could not be reloaded afterward.`,
+        });
+        return;
+      }
+      const verified = operation.status === "SUCCEEDED";
+      rememberResult(descriptor.id, {
+        kind: verified ? "SUCCESS" : "RESULT_UNVERIFIED",
+        message: verified
+          ? queuedLabel
+          : `${queuedLabel} The refreshed snapshot does not prove the operation finished.`,
+      });
     } catch {
-      setMessage(`Could not queue ${action.replace(/_/g, " ")}. Start the local platform first.`);
+      rememberResult(descriptor.id, {
+        kind: "REQUEST_FAILED",
+        message: `Could not queue ${kind.replace(/_/g, " ")}. Start the local platform first.`,
+      });
     } finally {
-      setBusyAction(null);
-      setConfirmingUpdate(false);
+      setPendingActionId(null);
     }
   };
 
   const refreshProvider = async (provider: ProviderReadiness) => {
-    setBusyProvider(provider.provider);
-    setMessage(null);
+    const descriptor = providerRefreshAction(provider);
+    if (pendingActionId) return;
+    setPendingActionId(descriptor.id);
+    rememberResult(descriptor.id, null);
+    const label = providerLabel(provider);
     try {
-      await api.refreshOperatorProvider(provider.provider);
-      setMessage(`Refresh queued for ${providerLabel(provider)}.`);
-      await diagnosticsQuery.refetch();
+      const operation = await api.refreshOperatorProvider(provider.provider);
+      if (operation.status === "BLOCKED") {
+        rememberResult(descriptor.id, {
+          kind: "REQUEST_FAILED",
+          message: `Refresh could not be queued for ${label}.`,
+          reasonCode: "PROVIDER_REFRESH_BLOCKED",
+        });
+        return;
+      }
+      const refreshed = await diagnosticsQuery.refetch();
+      const queued = `Refresh queued for ${label}.`;
+      if (refreshed.isError) {
+        rememberResult(descriptor.id, {
+          kind: "REFRESH_FAILED_AFTER_MUTATION",
+          message: `${queued} Provider status could not be reloaded afterward.`,
+        });
+        return;
+      }
+      rememberResult(descriptor.id, {
+        kind: operation.status === "SUCCEEDED" ? "SUCCESS" : "RESULT_UNVERIFIED",
+        message:
+          operation.status === "SUCCEEDED"
+            ? queued
+            : `${queued} The refreshed snapshot does not prove the refresh finished.`,
+      });
     } catch {
-      setMessage(`Refresh could not be queued for ${providerLabel(provider)}.`);
+      rememberResult(descriptor.id, {
+        kind: "REQUEST_FAILED",
+        message: `Refresh could not be queued for ${label}.`,
+      });
     } finally {
-      setBusyProvider(null);
+      setPendingActionId(null);
     }
   };
 
@@ -202,7 +305,24 @@ export function OperatorControlCenterPage({ mode }: Props) {
   const lifecycleState = lifecycle
     ? resolveSemanticState("platform", lifecycle.status)
     : null;
-  const updateAvailable = lifecycle?.update?.status === "AVAILABLE";
+  const lifecycleActions = {
+    restart: restartPlatformAction({
+      loading: diagnosticsQuery.isLoading,
+      failed: diagnosticsQuery.isError,
+      lifecycle,
+    }),
+    checkUpdate: checkUpdateAction({
+      loading: diagnosticsQuery.isLoading,
+      failed: diagnosticsQuery.isError,
+      lifecycle,
+    }),
+    applyUpdate: applyUpdateAction({
+      loading: diagnosticsQuery.isLoading,
+      failed: diagnosticsQuery.isError,
+      lifecycle,
+    }),
+  };
+  const reloadAction = reloadControlAction();
 
   return (
     <section className="page control-page">
@@ -214,14 +334,12 @@ export function OperatorControlCenterPage({ mode }: Props) {
         title="Platform control"
         subtitle="Can this workstation operate safely right now? Status is translated into trader language; canonical tokens stay visible. Calendar waits are IDLE, not DEGRADED."
         actions={
-          <button
-            type="button"
-            onClick={refreshAll}
-            disabled={diagnosticsQuery.isFetching}
-            aria-busy={diagnosticsQuery.isFetching}
-          >
-            {diagnosticsQuery.isFetching ? "Checking…" : "Check again"}
-          </button>
+          <OperatorActionButton
+            action={reloadAction}
+            pending={pendingActionId === reloadAction.id}
+            result={actionResults[reloadAction.id]}
+            onActivate={reloadStatus}
+          />
         }
       />
 
@@ -232,12 +350,6 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </a>
         ))}
       </nav>
-
-      {message ? (
-        <p className="control-message" role="status">
-          {message}
-        </p>
-      ) : null}
 
       {/* A. System operating state */}
       <section
@@ -351,49 +463,25 @@ export function OperatorControlCenterPage({ mode }: Props) {
           </>
         ) : null}
         <div className="control-hero-actions" role="group" aria-label="Platform actions">
-          <button
-            type="button"
-            onClick={() => void runLifecycleAction("restart")}
-            disabled={busyAction !== null}
-          >
-            {busyAction === "restart" ? "Queueing…" : "Restart platform"}
-          </button>
-          <button
-            type="button"
-            onClick={() => void runLifecycleAction("check_update")}
-            disabled={busyAction !== null}
-          >
-            {busyAction === "check_update" ? "Checking…" : "Check for updates"}
-          </button>
-          {confirmingUpdate && updateAvailable ? (
-            <span className="control-confirm-group" role="group" aria-label="Confirm update">
-              <button
-                id="control-confirm-apply"
-                type="button"
-                className="control-confirm-action"
-                onClick={() => void runLifecycleAction("apply_update")}
-                disabled={busyAction !== null}
-              >
-                {busyAction === "apply_update" ? "Applying…" : "Confirm apply and restart"}
-              </button>
-              <button type="button" onClick={() => setConfirmingUpdate(false)}>
-                Cancel
-              </button>
-            </span>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setConfirmingUpdate(true)}
-              disabled={!updateAvailable || busyAction !== null}
-              title={
-                updateAvailable
-                  ? (lifecycle?.update?.detail ?? "Apply the available fast-forward update.")
-                  : (lifecycle?.update?.detail ?? "A fast-forward update must be available.")
-              }
-            >
-              Apply fast-forward update
-            </button>
-          )}
+          <OperatorActionButton
+            action={lifecycleActions.restart}
+            pending={pendingActionId === lifecycleActions.restart.id}
+            result={actionResults[lifecycleActions.restart.id]}
+            onActivate={() => runLifecycleAction("restart")}
+          />
+          <OperatorActionButton
+            action={lifecycleActions.checkUpdate}
+            pending={pendingActionId === lifecycleActions.checkUpdate.id}
+            result={actionResults[lifecycleActions.checkUpdate.id]}
+            onActivate={() => runLifecycleAction("check_update")}
+          />
+          <OperatorActionButton
+            action={lifecycleActions.applyUpdate}
+            pending={pendingActionId === lifecycleActions.applyUpdate.id}
+            result={actionResults[lifecycleActions.applyUpdate.id]}
+            onActivate={() => runLifecycleAction("apply_update")}
+            confirmId="control-confirm-apply"
+          />
         </div>
         {lifecycle?.update ? (
           <p className="control-muted">
@@ -643,17 +731,25 @@ export function OperatorControlCenterPage({ mode }: Props) {
             Checking providers… this is a load wait, not an off-by-configuration provider.
           </p>
         ) : diagnosticsQuery.isError ? (
-          <ErrorState
-            title="Provider readiness is unavailable."
-            affects="This is a load failure. Provider states are unknown until the local platform responds."
-            rawDetail="GET /operator/diagnostics sections.readiness.providers"
-            onRetry={() => void diagnosticsQuery.refetch()}
-          />
+          <>
+            {Object.entries(actionResults).map(([id, result]) =>
+              id.startsWith("platform.provider-refresh.") && result ? (
+                <ActionResult key={id} result={result} />
+              ) : null,
+            )}
+            <ErrorState
+              title="Provider readiness is unavailable."
+              affects="This is a load failure. Provider states are unknown until the local platform responds."
+              rawDetail="GET /operator/diagnostics sections.readiness.providers"
+              onRetry={() => void diagnosticsQuery.refetch()}
+            />
+          </>
         ) : (
           <ProviderGroups
             providers={readiness?.providers ?? []}
-            busyProvider={busyProvider}
-            onRefresh={(provider) => void refreshProvider(provider)}
+            pendingActionId={pendingActionId}
+            results={actionResults}
+            onRefresh={(provider) => refreshProvider(provider)}
           />
         )}
       </section>
@@ -813,6 +909,9 @@ export function OperatorControlCenterPage({ mode }: Props) {
                 key={provider.provider}
                 provider={provider}
                 onSaved={(next) => queryClient.setQueryData(queryKeys.operatorConfig, next)}
+                savePending={pendingActionId === `platform.provider-config.${provider.label}`}
+                onSaveStart={() => setPendingActionId(`platform.provider-config.${provider.label}`)}
+                onSaveFinish={() => setPendingActionId(null)}
               />
             ))}
             {!configQuery.data?.providers?.length ? (
@@ -831,12 +930,14 @@ export function OperatorControlCenterPage({ mode }: Props) {
 
 function ProviderGroups({
   providers,
-  busyProvider,
+  pendingActionId,
+  results,
   onRefresh,
 }: {
   providers: ProviderReadiness[];
-  busyProvider: string | null;
-  onRefresh: (provider: ProviderReadiness) => void;
+  pendingActionId: string | null;
+  results: Record<string, OperatorActionResultState | null>;
+  onRefresh: (provider: ProviderReadiness) => Promise<void>;
 }) {
   const groups = partitionProviders(providers);
   if (!providers.length) {
@@ -858,7 +959,8 @@ function ProviderGroups({
           <ProviderRow
             key={provider.provider}
             provider={provider}
-            busy={busyProvider === provider.provider}
+            pendingActionId={pendingActionId}
+            result={results[providerRefreshAction(provider).id]}
             onRefresh={() => onRefresh(provider)}
           />
         ))}
@@ -871,7 +973,8 @@ function ProviderGroups({
               <ProviderRow
                 key={provider.provider}
                 provider={provider}
-                busy={busyProvider === provider.provider}
+                pendingActionId={pendingActionId}
+                result={results[providerRefreshAction(provider).id]}
                 onRefresh={() => onRefresh(provider)}
               />
             ))}
@@ -884,12 +987,14 @@ function ProviderGroups({
 
 function ProviderRow({
   provider,
-  busy,
+  pendingActionId,
+  result,
   onRefresh,
 }: {
   provider: ProviderReadiness;
-  busy: boolean;
-  onRefresh: () => void;
+  pendingActionId: string | null;
+  result?: OperatorActionResultState | null;
+  onRefresh: () => Promise<void>;
 }) {
   const transport = presentProviderTransport(provider);
   const credential = resolveSemanticState("providerHealth", provider.credential_state);
@@ -922,14 +1027,13 @@ function ProviderRow({
         </p>
       </div>
       <div className="control-provider-actions">
-        <button
-          type="button"
-          onClick={onRefresh}
-          disabled={busy}
-          aria-label={`Refresh ${providerLabel(provider)}`}
-        >
-          {busy ? "Queueing…" : "Refresh"}
-        </button>
+        <OperatorActionButton
+          action={providerRefreshAction(provider)}
+          pending={pendingActionId === providerRefreshAction(provider).id}
+          result={result}
+          accessibleName={`Refresh ${providerLabel(provider)}`}
+          onActivate={onRefresh}
+        />
       </div>
     </article>
   );
@@ -1086,26 +1190,39 @@ function FeedReadiness({
 function ProviderConfigCard({
   provider,
   onSaved,
+  savePending,
+  onSaveStart,
+  onSaveFinish,
 }: {
   provider: OperatorConfig["providers"][number];
   onSaved: (config: OperatorConfig) => void;
+  savePending: boolean;
+  onSaveStart: () => void;
+  onSaveFinish: () => void;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [result, setResult] = useState<OperatorActionResultState | null>(null);
+  const saveAction = providerConfigSaveAction(provider.label);
 
   async function save() {
-    setSaving(true);
-    setMessage(null);
+    if (savePending) return;
+    onSaveStart();
+    setResult(null);
     try {
       const next = await api.saveOperatorProviderConfig(provider.provider, values);
       onSaved(next);
       setValues({});
-      setMessage("Saved. Restart the API if the provider is already running.");
+      setResult({
+        kind: "SUCCESS",
+        message: "Saved. Restart the API if the provider is already running.",
+      });
     } catch {
-      setMessage("Configuration was not saved. Check the fields and operator permissions.");
+      setResult({
+        kind: "REQUEST_FAILED",
+        message: "Configuration was not saved. Check the fields and operator permissions.",
+      });
     } finally {
-      setSaving(false);
+      onSaveFinish();
     }
   }
 
@@ -1129,14 +1246,12 @@ function ProviderConfigCard({
           <small>{field.configured ? "A value is stored locally." : "No value is stored."}</small>
         </label>
       ))}
-      <button type="button" onClick={() => void save()} disabled={saving}>
-        {saving ? "Saving…" : `Save ${provider.label}`}
-      </button>
-      {message ? (
-        <p className="control-config-message" role="status">
-          {message}
-        </p>
-      ) : null}
+      <OperatorActionButton
+        action={saveAction}
+        pending={savePending}
+        result={result}
+        onActivate={save}
+      />
     </article>
   );
 }

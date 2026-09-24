@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Unify operator actions on Control
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/control` |
+| **Summary** | Control now presents restart, update check, update apply, provider refresh, status reload, and credential save through one operator-action descriptor and shared controls. Domain endpoints stay authoritative. The model does not add a generic execute API, an action ledger, or Workspace/Lab/Replay authority. |
+| **Key files** | `ui/src/state/operatorAction.ts`; `ui/src/state/semanticState.ts` (`action` domain); `ui/src/components/operator-action/*`; `ui/src/components/control/controlOperatorActions.ts`; `ui/src/components/control/OperatorControlCenterPage.tsx`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npm run typecheck` passed. `npm test -- src/components/operator-action/OperatorActionButton.test.tsx src/components/control/controlOperatorActions.test.ts src/components/control/OperatorControlCenterPage.test.tsx src/state/semanticState.test.ts` — 4 files, 72 tests passed. |
+| **Related** | [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md); [semantic-state-system.md](../ui-redesign-v2/semantic-state-system.md) |
+| **Notes** | Radar, Settings, Portfolio, and Workspace mutations were inventoried and left on their existing controls. Lifecycle queue acceptance is `RESULT_UNVERIFIED` because the status snapshot does not prove the process finished. Backend duplicate-submit protection was not added. |
+
 ## 2026-09-24 — Supersede Sep 24 frozen runtime after outage and shutdown repair
 
 | Field | Value |

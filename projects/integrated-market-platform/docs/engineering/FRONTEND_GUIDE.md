@@ -203,6 +203,27 @@ Opportunity L3 links to `/research/evidence` without fabricating per-opportunity
 relations. Presentation: `researchPresentation.ts` + `research` domain in
 `semanticState.ts`.
 
+## Operator actions
+
+Control actions use a presentation model, not a new execution API.
+
+`OperatorActionDescriptor` (`ui/src/state/operatorAction.ts`) answers what the operator can do, whether it is available now, why, what confirmation will show, and how the last attempt turned out. It does not carry an endpoint, a shell command, or secret field values.
+
+Availability is `AVAILABLE`, `BLOCKED`, `READ_ONLY`, or `UNAVAILABLE`. Those four tokens are the `action` domain of `resolveSemanticState`. Domain reason codes stay on the descriptor (`UPDATE_NOT_AVAILABLE`, `LIFECYCLE_STATUS_UNAVAILABLE`, and so on). Unknown availability stays neutral and keeps the raw token.
+
+Shared controls live in `ui/src/components/operator-action/`:
+
+- `OperatorActionButton`
+- `ActionUnavailableReason`
+- `ActionConfirmation`
+- `ActionResult`
+
+Control (`/control`) builds descriptors in `controlOperatorActions.ts` and still calls the existing domain clients: `POST /operator/lifecycle/actions`, `POST /operator/providers/{provider}/refresh`, and `POST /operator/config/provider`. Credential fields stay in the form. Restart and apply-update require inline confirmation. Check-update, provider refresh, and status reload do not.
+
+Result copy is transient. `SUCCESS` is used when the operation body reports `SUCCEEDED`. A queued acceptance is `RESULT_UNVERIFIED` until a later snapshot proves completion. `REQUEST_FAILED` is a rejected call. `REFRESH_FAILED_AFTER_MUTATION` means the call was accepted and the follow-up reload failed. This is not a durable action ledger.
+
+Workspace Paper submit, Live authority, Lab execution, and Controlled Replay are outside this model.
+
 ## Testing patterns
 
 - Pure helper: `*.test.ts` colocated or in same folder
