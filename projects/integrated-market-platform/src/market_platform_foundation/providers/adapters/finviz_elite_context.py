@@ -7,6 +7,7 @@ from typing import Any, Callable, Mapping, MutableMapping
 from ...clock import monotonic_wall_ns
 from ...finviz.provider_role import EXECUTION_ROLE
 from ...finviz.redaction import redact_payload
+from ...finviz.token_names import FINVIZ_TOKEN_NAMES, token_value_present
 from ..contracts import ProviderResult
 
 FINVIZ_CONTEXT_PROVIDER_ID = "finviz.elite.context"
@@ -15,21 +16,11 @@ FINVIZ_CONTEXT_ROLE = "CONTEXT"
 FINVIZ_CONTEXT_TIMELINESS = "DELAYED"
 FINVIZ_NORMALIZATION_VERSION = "finviz.elite.context/1.0.0"
 
-FINVIZ_TOKEN_NAMES = (
-    "FINVIZ_API_KEY",
-    "FINVIZ_AUTH_TOKEN",
-    "FINVIZ_API_TOKEN",
-    "FINVIZ_ELITE_TOKEN",
-    "IMP_FINVIZ_ELITE_TOKEN",
-    "IMP_FINVIZ_TOKEN",
-)
-
 FINVIZ_LOGIN_NAMES = (
     "FINVIZ_USERNAME",
     "FINVIZ_PASSWORD",
 )
 
-_PLACEHOLDERS = frozenset({"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
 _ES_OR_FUTURES = frozenset({"ES", "MES", "NQ", "MNQ", "YM", "RTY", "CL", "GC", "SI"})
 _LIVE_TRUTHY = frozenset({"1", "true", "yes"})
 
@@ -42,10 +33,6 @@ def _env_mapping(env: Mapping[str, str] | None) -> Mapping[str, str]:
     import os
 
     return os.environ
-
-
-def token_value_present(value: str | None) -> bool:
-    return str(value or "").strip().upper() not in _PLACEHOLDERS
 
 
 def token_names_present(env: Mapping[str, str] | None = None) -> tuple[str, ...]:

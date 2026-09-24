@@ -19,6 +19,7 @@ from .config import (
 )
 from .http_client import urllib_get
 from .login_recovery import LoginRecoveryStatus, recover_token_via_login
+from .token_names import FINVIZ_TOKEN_NAMES, token_value_present
 from .secure_store import (
     FinvizCredentialMetadata,
     clear_login_credentials,
@@ -36,10 +37,12 @@ MAX_RECOVERY_ATTEMPTS_PER_WINDOW = 2
 
 
 def _env_override_token() -> str | None:
-    for key in ("FINVIZ_API_KEY", "FINVIZ_AUTH_TOKEN", "FINVIZ_API_TOKEN"):
+    """First canonical env alias. Same names and order as prospective ingress."""
+
+    for key in FINVIZ_TOKEN_NAMES:
         value = os.environ.get(key)
-        if value and value not in ("CHANGEME", ""):
-            return value
+        if token_value_present(value):
+            return str(value).strip()
     return None
 
 
@@ -48,9 +51,10 @@ def _provider_env_token() -> str | None:
     if path is None:
         return None
     values = _read_env_file(path)
-    token = values.get("FINVIZ_API_KEY") or values.get("FINVIZ_AUTH_TOKEN")
-    if token and token not in ("CHANGEME", ""):
-        return token
+    for key in FINVIZ_TOKEN_NAMES:
+        token = values.get(key)
+        if token_value_present(token):
+            return str(token).strip()
     return None
 
 
@@ -91,7 +95,13 @@ class FinvizAuthHealth:
 
 
 class FinvizCredentialManager:
-    """Single owner for Finviz API credentials — load, validate, recover, swap."""
+    """Screener owner for Finviz API credentials — load, validate, recover, swap.
+
+    Environment names match ``FINVIZ_TOKEN_NAMES``. Login username/password and
+    automatic recovery belong only to this screener path. Prospective news
+    ingress reads the same env names, then ``finviz-token.txt``, and consults
+    this manager only when it is resolving the process environment.
+    """
 
     def __init__(self) -> None:
         self._lock = threading.RLock()

@@ -39,8 +39,7 @@ requests continue through the governed stdlib client.
 
 | Variable | Purpose |
 |---|---|
-| `FINVIZ_API_KEY` (or `FINVIZ_AUTH_TOKEN`) | Elite export token |
-| `FINVIZ_API_TOKEN` / `FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_ELITE_TOKEN` / `IMP_FINVIZ_TOKEN` | Additional env aliases recognized by the fail-closed context overlay (presence only; never logged) |
+| `FINVIZ_API_KEY`, then `FINVIZ_AUTH_TOKEN`, `FINVIZ_API_TOKEN`, `FINVIZ_ELITE_TOKEN`, `IMP_FINVIZ_ELITE_TOKEN`, `IMP_FINVIZ_TOKEN` | Canonical Elite API token. First present non-placeholder wins. Screener env override and prospective ingress use this same list. `FINVIZ_ELITE_AUTH`, `FINVIZ_AUTH`, and `IMP_FINVIZ_ELITE_AUTH` are ignored. |
 | `FINVIZ_USERNAME` / `FINVIZ_PASSWORD` | Elite login names already used in `.private/providers.env` for operator-zero token refresh (values never logged or committed) |
 | `IMP_FINVIZ_LIVE=1` | Opt-in live probe / paid Elite HTTP |
 | `IMP_FINVIZ_CAPTURE_DIR` | Prospective capture root |

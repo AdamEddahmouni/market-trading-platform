@@ -1,5 +1,8 @@
 """Value-blind equity-quote provider discovery. Never prints secret values.
 
+``finviz_token_names_present`` reports the canonical Elite API-token names.
+It does not authenticate quotes. OpenD remains the quote provider.
+
 OpenD reachability is diagnostic only. It never selects Yahoo as the hop
 ``quote_provider`` — Yahoo remains a distinct delayed overlay via
 ``delayed_cloud_overlay_provider()``.
@@ -11,6 +14,7 @@ import os
 from dataclasses import dataclass
 from typing import Any
 
+from ..finviz.token_names import FINVIZ_TOKEN_NAMES
 from .adapters.moomoo_opend_equity_quote import opend_sdk_available
 from .adapters.yahoo_delayed_equity_quote import YAHOO_PROVIDER_ID
 from .contracts import EquityQuoteProvider
@@ -19,14 +23,6 @@ from .resilience import incident_for_reason_code
 from .stubs import UnconfiguredEquityQuoteProvider
 
 _PLACEHOLDERS = frozenset({"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
-
-FINVIZ_TOKEN_NAMES = (
-    "FINVIZ_API_KEY",
-    "FINVIZ_AUTH_TOKEN",
-    "FINVIZ_API_TOKEN",
-    "FINVIZ_ELITE_TOKEN",
-    "IMP_FINVIZ_ELITE_TOKEN",
-)
 
 _MOOMOO_CONFIG_NAMES = (
     "IMP_MOOMOO_HOST",

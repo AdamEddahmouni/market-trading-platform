@@ -36,6 +36,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ## Entries
 
+## 2026-09-23 — Finviz credential contract unification
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / provider readiness |
+| **Summary** | Canonical Finviz API-token names now live in `finviz/token_names.py`. Screener env override, prospective ingress, quote-discovery presence, and provider readiness all use that tuple and its order. Obsolete names stay unrecognized. Login/password remains screener recovery only. |
+| **Key files** | `src/market_platform_foundation/finviz/token_names.py`; `finviz/credential_manager.py`; `providers/adapters/finviz_elite_context.py`; `providers/equity_quote_discovery.py`; `tools/provider_readiness.py`; `tests/platform/test_finviz_preflight_credential_identity.py`; `docs/providers/FINVIZ_ELITE.md`; audit and `PROGRAM_STATUS.md` |
+| **Tests** | `python -m unittest tests.finviz.test_auth_lifecycle tests.platform.test_finviz_preflight_credential_identity`: 62 OK. `python tools/imp.py format` and `lint` exit 0. `python tools/imp.py test affected`: 2007 passed, 15 skipped, 0 failures, exit 0. Disposable arm matrix: no token and obsolete alias exit 2 with `credentials_presence_finviz`; canonical env and secret file exit 0; gates off exit 2 on the two gate blockers with credential `PASS`; Finviz not required exit 0. Dummy token absent from captured output. |
+| **Related** | [#408](https://github.com/AdamEddahmouni/market-trading-platform/pull/408). Audit finding disposition `SOFTWARE_PROVEN`. Live provider I/O remains `EMPIRICAL_PROOF_REQUIRED`. |
+| **Notes** | `RTH-OBS-NEWS-20260924` stays `FROZEN_NOT_ARMED` on `c15527221a21d7bc88acefbe0971b6de9292247e`. `RETARGETED=NO`. `REFROZEN=NO`. `ARMED=NO`. Post-arm readiness reports `provider_status=UNKNOWN` until a provider snapshot exists; that is not a credential-absent result. |
+
 ## 2026-09-23 — Finviz preflight credential identity
 
 | Field | Value |

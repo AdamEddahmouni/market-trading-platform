@@ -13,6 +13,12 @@ from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
+
+from market_platform_foundation.finviz.token_names import FINVIZ_TOKEN_NAMES  # noqa: E402
+
 PRIMARY_OBSERVATIONAL_PROVIDER = "moomoo"
 PLACEHOLDERS = frozenset({"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
 LOOPBACK_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
@@ -82,9 +88,11 @@ def _private_provider_env(environment: Mapping[str, str], repository_root: Path)
 
 
 def _finviz_token_present(environment: Mapping[str, str], repository_root: Path) -> bool:
-    if _any_present(environment, ("FINVIZ_API_KEY", "FINVIZ_AUTH_TOKEN", "FINVIZ_API_TOKEN")):
+    if _any_present(environment, FINVIZ_TOKEN_NAMES):
         return True
-    token_file = repository_root / ".private" / "finviz-token.txt"
+    override = environment.get("IMP_FINVIZ_SECRET_DIR", "").strip()
+    secret_dir = Path(override).expanduser() if override else repository_root / ".private"
+    token_file = secret_dir / "finviz-token.txt"
     if token_file.is_file():
         try:
             if _present(token_file.read_text(encoding="utf-8")):
@@ -94,7 +102,7 @@ def _finviz_token_present(environment: Mapping[str, str], repository_root: Path)
     provider_env = _private_provider_env(environment, repository_root)
     if provider_env is None:
         return False
-    return _any_present(load_env_file(provider_env), ("FINVIZ_API_KEY", "FINVIZ_AUTH_TOKEN"))
+    return _any_present(load_env_file(provider_env), FINVIZ_TOKEN_NAMES)
 
 
 def _safe_local_probe(host: str, port: int) -> bool:
@@ -294,7 +302,7 @@ def collect_readiness(
             credential_state="CONFIGURED" if finviz else "MISSING",
             gate_state="ENABLED" if _enabled(environment, "IMP_FINVIZ_LIVE") else "DISABLED",
             transport_state="IMPLEMENTED_READ_ONLY",
-            required_credentials=("FINVIZ_API_KEY", "FINVIZ_AUTH_TOKEN"),
+            required_credentials=FINVIZ_TOKEN_NAMES,
             next_action=(
                 "Run tools/finviz/auth.py status, then validate a prospective capture."
                 if finviz
