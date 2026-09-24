@@ -166,7 +166,37 @@ def cmd_arm(args: argparse.Namespace) -> int:
             )
             return 2
 
-    runtime_sha = _resolve_runtime_sha(args.runtime_sha)
+    freeze_path = str(getattr(args, "freeze", "") or "").strip()
+    if freeze_path:
+        from tools.platform.campaign_go_no_go import evaluate_campaign_go_no_go
+
+        gate = evaluate_campaign_go_no_go(
+            freeze_path=freeze_path,
+            root=ROOT,
+            state_dir=state_dir,
+            probe_network=True,
+        )
+        if not gate.get("arm_allowed"):
+            print(
+                json.dumps(
+                    {
+                        "status": "BLOCKED",
+                        "detail": "GO_NO_GO_REFUSED",
+                        "armed": False,
+                        "disposition": gate.get("disposition"),
+                        "blockers": gate.get("blockers"),
+                        "execution_authority": "BLOCKED",
+                    },
+                    indent=2,
+                    sort_keys=True,
+                )
+            )
+            return 2
+        runtime_sha = str(gate.get("runtime_sha") or "")
+    else:
+        runtime_sha = None
+    if not runtime_sha:
+        runtime_sha = _resolve_runtime_sha(args.runtime_sha)
     argv = list(args.launch_argv or ["python", "-m", "tools.platform.campaign_supervisor", "run"])
     fingerprint = safe_command_fingerprint(argv)
     arm_ts = _utc_now()
@@ -487,6 +517,19 @@ def cmd_environment_preflight(args: argparse.Namespace) -> int:
     )
     print(json.dumps(report.to_dict(), indent=2, sort_keys=True))
     return 0 if report.ready_to_arm else 2
+
+
+def cmd_go_no_go(args: argparse.Namespace) -> int:
+    from tools.platform.campaign_go_no_go import evaluate_campaign_go_no_go
+
+    raw_state = (args.state_dir or os.environ.get("IMP_STATE_DIR") or "").strip()
+    report = evaluate_campaign_go_no_go(
+        freeze_path=args.freeze,
+        root=ROOT,
+        state_dir=raw_state or None,
+    )
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report.get("go") else 2
 
 
 def cmd_readiness(args: argparse.Namespace) -> int:
@@ -1331,6 +1374,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fail arm when the live Finviz ingress resolver has no credential or gates are off",
     )
     arm.add_argument(
+        "--freeze",
+        default=None,
+        help="Campaign freeze JSON. When set, arm runs GO/NO-GO and refuses unless READY_FOR_PRE_RTH_ARM.",
+    )
+    arm.add_argument(
         "--session-end-utc",
         default=None,
         help="UTC instant at which poll-loop must not start a new cycle (RTH close boundary)",
@@ -1391,6 +1439,14 @@ def build_parser() -> argparse.ArgumentParser:
     readiness.add_argument("--runtime-sha")
     readiness.add_argument("--observation-window-id")
     readiness.set_defaults(func=cmd_readiness)
+
+    go = sub.add_parser(
+        "go-no-go",
+        help="Fail-closed pre-open GO/NO-GO. Does not arm.",
+    )
+    go.add_argument("--freeze", required=True)
+    go.add_argument("--state-dir")
+    go.set_defaults(func=cmd_go_no_go)
 
     shutdown = sub.add_parser("shutdown", help="Deliberate clean or RTH-close shutdown")
     shutdown.add_argument("--state-dir")

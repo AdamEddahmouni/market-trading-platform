@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Fail-closed next-RTH GO/NO-GO
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / campaign |
+| **Summary** | Sep 24 missed the arm because nothing refused an unstarted launch. `go-no-go` now lists every blocker and `arm --freeze` will not write ownership unless the disposition is `READY_FOR_PRE_RTH_ARM`. The next session is 2026-09-25. This change does not arm it. |
+| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `docs/engineering/RTH_OBS_NEWS_20260924_MISSED_ARM.md` |
+| **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 9 tests, OK |
+| **Related** | [RTH_OBS_NEWS_20260924_SESSION.md](RTH_OBS_NEWS_20260924_SESSION.md) |
+| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Freeze artifact for 20260925 is a follow-up commit that pins the software SHA. |
+
 ## 2026-09-24 — Record the unarmed Sep 24 cash session
 
 | Field | Value |
