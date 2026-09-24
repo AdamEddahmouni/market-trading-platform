@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Keep Radar review retry recoverable after fetch errors
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | A network failure during durable TradeReview retry no longer leaves Radar in a syncing state or raises an unhandled rejection. The retry error restores the visible reconciliation-failed state and retry control. |
+| **Key files** | `ui/src/components/radar/RadarOpportunitiesPanel.tsx`; `ui/src/components/radar/RadarPage.test.tsx` |
+| **Tests** | RadarPage Vitest suite: 44 passed; UI typecheck and production build passed. |
+| **Notes** | Existing accepted acknowledgement and durable review semantics are unchanged. |
+
 ## 2026-09-24 — Formalize IMP's unified operator and research workspace
 
 | Field | Value |
