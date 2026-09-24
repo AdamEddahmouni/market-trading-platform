@@ -348,4 +348,3 @@ availability only. It does not replace domain reason codes.
 
 Unknown values stay on the shared neutral fallback with the raw token preserved.
 See [FRONTEND_GUIDE.md](../engineering/FRONTEND_GUIDE.md) for `OperatorActionDescriptor`.
-
