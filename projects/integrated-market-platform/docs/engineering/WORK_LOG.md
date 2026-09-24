@@ -44,7 +44,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `docs/engineering/RTH_OBS_NEWS_20260924_MISSED_ARM.md` |
 | **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 9 tests, OK |
 | **Related** | [RTH_OBS_NEWS_20260924_SESSION.md](RTH_OBS_NEWS_20260924_SESSION.md) |
-| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Freeze artifact for 20260925 is a follow-up commit that pins the software SHA. |
+| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Next freeze is `RTH-OBS-NEWS-20260925` bound to runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd`. |
 
 ## 2026-09-24 — Record the unarmed Sep 24 cash session
 
