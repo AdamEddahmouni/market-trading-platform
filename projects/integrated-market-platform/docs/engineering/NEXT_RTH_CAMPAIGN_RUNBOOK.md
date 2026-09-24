@@ -1,5 +1,7 @@
 # Next US equity RTH campaign runbook (post–IMP-EVIDENCE-HARDENING-02)
 
+**Current launch authority:** [RTH_OBS_NEWS_20260925_LAUNCH.md](RTH_OBS_NEWS_20260925_LAUNCH.md). The SHA table below is historical and is not the next campaign runtime. Sep 24 `RTH-OBS-NEWS-20260924` remains `OPERATIONAL_ONLY` / not armed. Sep 23 remains `PARTIAL_LATE_ARM`.
+
 **Evidence class:** SOFTWARE coordination only. **Live OFF.** No Paper/Live orders. No empirical locks. Do not declare FTEP `EMPIRICAL_ACTIVE`.
 
 This document is the **current-main** operator surface for the **next** US equity regular-hours (RTH) window. It does **not** rewrite Sep 15 empirical findings or Sep 17 frozen receipts.

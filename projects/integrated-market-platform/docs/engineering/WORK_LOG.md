@@ -89,6 +89,29 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Documentation links and `git diff --check`; no runtime behavior changed. |
 | **Notes** | Future design only. No empirical campaign, Paper, Live, or release authority changed. |
 
+## 2026-09-24 — Review fail-closed RTH arm state
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / campaign |
+| **Summary** | Added regression checks and code-level refusal for unavailable Git status, mismatched campaign/window arm arguments, and unreadable or unknown ownership state. With explicit approval, revised the unarmed freeze to runtime `f8f42547293d0f8e84e07a9ecc647f949af60289` and moved API startup after arm because GO/NO-GO requires a free API port. |
+| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `artifacts/campaign-freeze/RTH-OBS-NEWS-20260925.freeze.json`; `docs/engineering/RTH_OBS_NEWS_20260925_LAUNCH.md` |
+| **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 12 tests, OK on the development branch. |
+| **Notes** | The campaign remains `FROZEN_NOT_ARMED`. No empirical evidence or ownership state was created. Live remains OFF. |
+
+## 2026-09-24 — Fail-closed next-RTH GO/NO-GO
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | observation / campaign |
+| **Summary** | Sep 24 missed the arm because nothing refused an unstarted launch. `go-no-go` now lists every blocker and `arm --freeze` will not write ownership unless the disposition is `READY_FOR_PRE_RTH_ARM`. The next session is 2026-09-25. This change does not arm it. |
+| **Key files** | `tools/platform/campaign_go_no_go.py`; `tools/platform/campaign_supervisor.py`; `tests/platform/test_campaign_go_no_go.py`; `docs/engineering/RTH_OBS_NEWS_20260924_MISSED_ARM.md` |
+| **Tests** | `.venv\Scripts\python.exe -m unittest tests.platform.test_campaign_go_no_go` — 9 tests, OK |
+| **Related** | [RTH_OBS_NEWS_20260924_SESSION.md](RTH_OBS_NEWS_20260924_SESSION.md) |
+| **Notes** | Live stays OFF. `ITEM9_CALIBRATION_RUN` stays FORBIDDEN. `FULL30` stays NOT_RUN. Initial freeze was `RTH-OBS-NEWS-20260925` bound to runtime `bd8036a6a010b17c5343f110c8f0fd8be31505fd`; see the revised freeze above. |
+
 ## 2026-09-24 — Record the unarmed Sep 24 cash session
 
 | Field | Value |
