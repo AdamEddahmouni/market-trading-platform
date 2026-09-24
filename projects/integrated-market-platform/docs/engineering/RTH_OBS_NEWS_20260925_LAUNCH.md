@@ -27,13 +27,19 @@ Do not arm on any date other than 2026-09-25 before 09:30 ET. Do not write rehea
 
 ## T-60
 
-From the monorepo, save the freeze, then check out the runtime. The freeze file lives on the later documentation commit. The running tree must be the runtime SHA.
+From the monorepo, save the freeze as UTF-8 without a byte-order mark, then create a dedicated runtime worktree. The freeze file lives on the later documentation commit. Keep the commands in one PowerShell session; the running tree must be the runtime SHA.
 
 ```powershell
 git fetch origin main
-git show origin/main:projects/integrated-market-platform/artifacts/campaign-freeze/RTH-OBS-NEWS-20260925.freeze.json > $env:TEMP\RTH-OBS-NEWS-20260925.freeze.json
-git checkout f8f42547293d0f8e84e07a9ecc647f949af60289
-cd projects\integrated-market-platform
+$freezePath = Join-Path $env:TEMP 'RTH-OBS-NEWS-20260925.freeze.json'
+$freezeLines = git show origin/main:projects/integrated-market-platform/artifacts/campaign-freeze/RTH-OBS-NEWS-20260925.freeze.json
+if ($LASTEXITCODE -ne 0) { throw 'Could not read the canonical freeze' }
+[System.IO.File]::WriteAllText($freezePath, ($freezeLines -join "`n"), [System.Text.UTF8Encoding]::new($false))
+$runtimePath = Join-Path (Get-Location) '.worktrees\rth-campaign-20260925-runtime'
+git worktree add --detach $runtimePath f8f42547293d0f8e84e07a9ecc647f949af60289
+if ($LASTEXITCODE -ne 0) { throw 'Could not create the frozen runtime worktree' }
+Set-Location $runtimePath
+Set-Location projects\integrated-market-platform
 git rev-parse HEAD
 git rev-parse "HEAD^{tree}"
 git status --porcelain --untracked-files=no
@@ -49,7 +55,7 @@ $env:IMP_STATE_DIR = Join-Path (Get-Location) ".local\rth-campaign-20260925"
 $env:IMP_PERSIST_STATE = "1"
 $env:IMP_FINVIZ_LIVE = "1"
 $env:IMP_FTEP_PROSPECTIVE_CATALYST_INGRESS = "1"
-python tools\platform\campaign_supervisor.py go-no-go --freeze $env:TEMP\RTH-OBS-NEWS-20260925.freeze.json --state-dir $env:IMP_STATE_DIR
+python tools\platform\campaign_supervisor.py go-no-go --freeze $freezePath --state-dir $env:IMP_STATE_DIR
 ```
 
 Exit 0 and `disposition=READY_FOR_PRE_RTH_ARM` are required before arm. Any other disposition is NO-GO. Read every name in `blockers`. Do not arm to clear them.
@@ -61,7 +67,7 @@ Port 8766 must be free for this gate. If another process owns it, identify and s
 Only when GO/NO-GO is `READY_FOR_PRE_RTH_ARM`:
 
 ```powershell
-python tools\platform\campaign_supervisor.py arm --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260925 --observation-window-id RTH-OBS-NEWS-20260925-A --segment-id A --freeze $env:TEMP\RTH-OBS-NEWS-20260925.freeze.json --require-finviz-live-ingress
+python tools\platform\campaign_supervisor.py arm --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260925 --observation-window-id RTH-OBS-NEWS-20260925-A --segment-id A --freeze $freezePath --require-finviz-live-ingress
 python tools\platform\local_launcher.py start
 python tools\platform\local_launcher.py status
 ```
