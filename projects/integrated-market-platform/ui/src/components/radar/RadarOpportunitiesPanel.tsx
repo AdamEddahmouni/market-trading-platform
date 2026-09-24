@@ -85,6 +85,7 @@ export function RadarOpportunitiesPanel({
   const [ackPhase, setAckPhase] = useState<TradeReviewAckPhase>("idle");
   const [closure, setClosure] = useState<DecisionClosureRecord | null>(null);
   const [activeAckKey, setActiveAckKey] = useState<string | null>(null);
+  const [activeAckAction, setActiveAckAction] = useState<OpportunityAckAction | null>(null);
   const ackInFlightRef = useRef(false);
   const queueRegionRef = useRef<HTMLDivElement | null>(null);
 
@@ -171,6 +172,7 @@ export function RadarOpportunitiesPanel({
       const rowId = row.opportunity_id || row.summary_id;
       const key = stableOpportunityKey(row);
       setActiveAckKey(key);
+      setActiveAckAction(action);
       setAckPhase("submitting");
       setClosure(null);
       let data;
@@ -312,6 +314,7 @@ export function RadarOpportunitiesPanel({
       bookHonesty={query.data?.book_honesty}
       unreadyReason={query.data?.unready_reason}
       ackPhase={selectedAckPhase}
+      ackAction={activeAckKey === stableOpportunityKey(selectedRow) ? activeAckAction : null}
       expectedReviewId={selectedExpectedReviewId}
       onRetryReconcile={
         selectedAckPhase === "reconciliation_failed" || selectedExpectedReviewId
@@ -361,7 +364,9 @@ export function RadarOpportunitiesPanel({
               onInspect={onInspect}
               onOpenWorkspace={onOpenWorkspace}
               onAck={acksEnabled ? (row, action) => void handleAck(row, action) : undefined}
-              acksBusy={ackPhase === "submitting" || ackPhase === "synchronizing"}
+              pendingAckKey={
+                ackPhase === "submitting" || ackPhase === "synchronizing" ? activeAckKey : null
+              }
             />
           </section>
         </div>

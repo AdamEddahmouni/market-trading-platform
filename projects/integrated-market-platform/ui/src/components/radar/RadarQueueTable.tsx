@@ -11,10 +11,9 @@ import {
   opportunityFreshnessQueueLabel,
   type OperatorBriefFeedContext,
 } from "../opportunity/opportunityOperatorBrief";
+import { OperatorActionButton } from "../operator-action/OperatorActionButton";
 import {
   attentionItemFromOpportunity,
-  canAckOpportunity,
-  canOpenOpportunityWorkspace,
   derivePresentationState,
   evidenceInputsSummary,
   OPPORTUNITY_STATE_LABEL,
@@ -23,6 +22,7 @@ import {
   opportunitySymbol,
   stableOpportunityKey,
 } from "../opportunity/opportunityPresentation";
+import { radarOpportunityActions } from "./radarOperatorActions";
 
 type Props = {
   items: OpportunityReviewRow[];
@@ -39,8 +39,8 @@ type Props = {
   onInspect?: (item: AttentionItem) => void;
   onOpenWorkspace?: (item: AttentionItem) => void;
   onAck?: (row: OpportunityReviewRow, action: OpportunityAckAction) => void;
-  /** True while an operator ack is submitting or synchronizing. */
-  acksBusy?: boolean;
+  /** Stable key of the row whose ack is in flight, if any. */
+  pendingAckKey?: string | null;
 };
 
 function truncate(text: string, max = 72): string {
@@ -68,10 +68,8 @@ export function RadarQueueTable({
   onInspect,
   onOpenWorkspace,
   onAck,
-  acksBusy = false,
+  pendingAckKey = null,
 }: Props) {
-  const acksEnabled = Boolean(onAck && paperActions && !readOnly && paperAccountId);
-
   return (
     <div className="imp-radar-queue-wrap" data-testid="imp-radar-queue">
       <table className="imp-radar-queue-table" aria-label="Ranked opportunity queue">
@@ -97,8 +95,15 @@ export function RadarQueueTable({
         <tbody>
           {items.map((row) => {
             const attention = attentionItemFromOpportunity(row);
-            const canOpen = canOpenOpportunityWorkspace(row);
-            const canAck = acksEnabled && canAckOpportunity(row);
+            const symbol = opportunitySymbol(row);
+            const radarActions = radarOpportunityActions({
+              row,
+              sourceState: "ready",
+              readOnly,
+              paperActions,
+              paperAccountId,
+              surface: "queue",
+            });
             const rowKey = stableOpportunityKey(row);
             const selected = selectedStableKey === rowKey;
             const presentation = derivePresentationState(row);
@@ -195,34 +200,37 @@ export function RadarQueueTable({
                   <span className="imp-radar-brief-honesty">{primary.refusal.honesty}</span>
                 </td>
                 <td className="imp-radar-queue-actions">
-                  {canAck ? (
-                    <>
-                      <button
-                        type="button"
-                        className="imp-radar-ack-watch"
-                        aria-label={`Watch ${opportunitySymbol(row)}`}
-                        disabled={acksBusy}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onAck?.(row, "watch");
-                        }}
-                      >
-                        Watch
-                      </button>
-                      <button
-                        type="button"
-                        className="imp-radar-ack-dismiss"
-                        aria-label={`Dismiss ${opportunitySymbol(row)}`}
-                        disabled={acksBusy}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onAck?.(row, "dismiss");
-                        }}
-                      >
-                        Dismiss
-                      </button>
-                    </>
-                  ) : null}
+                  <span
+                    className="imp-radar-queue-action"
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                  >
+                    <OperatorActionButton
+                      action={radarActions.watch}
+                      accessibleName={`Watch ${symbol}`}
+                      pending={pendingAckKey === rowKey}
+                      buttonClassName="imp-radar-ack-watch"
+                      onActivate={() => onAck?.(row, "watch")}
+                    />
+                    <OperatorActionButton
+                      action={radarActions.review}
+                      accessibleName={`Review ${symbol}`}
+                      pending={pendingAckKey === rowKey}
+                      onActivate={() => onAck?.(row, "review")}
+                    />
+                    <OperatorActionButton
+                      action={radarActions.dismiss}
+                      accessibleName={`Dismiss ${symbol}`}
+                      pending={pendingAckKey === rowKey}
+                      buttonClassName="imp-radar-ack-dismiss"
+                      onActivate={() => onAck?.(row, "dismiss")}
+                    />
+                    <OperatorActionButton
+                      action={radarActions.openWorkspace}
+                      accessibleName={`Open workspace for ${symbol}`}
+                      onActivate={() => onOpenWorkspace?.(attention)}
+                    />
+                  </span>
                   {onExplain ? (
                     <button
                       type="button"
@@ -245,18 +253,6 @@ export function RadarQueueTable({
                       }}
                     >
                       Inspect
-                    </button>
-                  ) : null}
-                  {canOpen && onOpenWorkspace ? (
-                    <button
-                      type="button"
-                      aria-label={`Open workspace for ${opportunitySymbol(row)}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onOpenWorkspace(attention);
-                      }}
-                    >
-                      Workspace
                     </button>
                   ) : null}
                   {readOnly ? <span className="imp-radar-muted">Read-only</span> : null}

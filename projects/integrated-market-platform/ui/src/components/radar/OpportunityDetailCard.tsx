@@ -34,6 +34,8 @@ import {
   opportunityRankLabel,
 } from "../opportunity/opportunityPresentation";
 import { TradeReviewLearningPanel, type TradeReviewAckPhase } from "../imp-product/TradeReviewLearningPanel";
+import { OperatorActionButton } from "../operator-action/OperatorActionButton";
+import { radarAckResult, radarOpportunityActions } from "./radarOperatorActions";
 
 export type OpportunityDetailCardProps = {
   row: OpportunityReviewRow;
@@ -47,6 +49,7 @@ export type OpportunityDetailCardProps = {
   bookHonesty?: string;
   unreadyReason?: string;
   ackPhase?: TradeReviewAckPhase;
+  ackAction?: OpportunityAckAction | null;
   expectedReviewId?: string | null;
   onRetryReconcile?: () => void;
   onExplain: (item: AttentionItem) => void;
@@ -109,6 +112,7 @@ export function OpportunityDetailCard({
   bookHonesty,
   unreadyReason,
   ackPhase = "idle",
+  ackAction = null,
   expectedReviewId = null,
   onRetryReconcile,
   onExplain,
@@ -145,8 +149,17 @@ export function OpportunityDetailCard({
   const eligibility = row.eligibility_state
     ? resolveSemanticState("research", row.eligibility_state)
     : null;
-  const canOpen = model.actionReadiness.canPreviewWorkspace;
   const canPreviewInPaper = Boolean(onPreviewInPaper && model.actionReadiness.canPreviewInPaper);
+  const radarActions = radarOpportunityActions({
+    row,
+    sourceState: "ready",
+    readOnly,
+    paperActions,
+    paperAccountId,
+    surface: "detail",
+  });
+  const ackResult = radarAckResult(ackPhase, expectedReviewId);
+  const ackPending = ackPhase === "submitting" || ackPhase === "synchronizing";
 
   return (
     <article
@@ -309,46 +322,36 @@ export function OpportunityDetailCard({
               Preview in Paper
             </button>
           ) : null}
-          {canOpen ? (
-            <button type="button" onClick={() => onOpenWorkspace(attention)}>
-              Open workspace
-            </button>
-          ) : null}
+          <OperatorActionButton
+            action={radarActions.openWorkspace}
+            onActivate={() => onOpenWorkspace(attention)}
+          />
           <button type="button" onClick={() => onExplain(attention)}>
             Explain
           </button>
           <button type="button" onClick={() => onInspect(attention)}>
             Inspect
           </button>
-          {paperAccountId && onAck && model.actionReadiness.canWatch ? (
-            <>
-              <button
-                type="button"
-                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
-                onClick={() => onAck(row, "watch")}
-              >
-                {ackPhase === "submitting" ? "Submitting…" : "Watch"}
-              </button>
-              <button
-                type="button"
-                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
-                onClick={() => onAck(row, "review")}
-              >
-                Mark reviewed
-              </button>
-              <button
-                type="button"
-                disabled={ackPhase === "submitting" || ackPhase === "synchronizing"}
-                onClick={() => onAck(row, "dismiss")}
-              >
-                {ackPhase === "submitting" ? "Submitting…" : "Dismiss"}
-              </button>
-            </>
-          ) : null}
-          {readOnly ? <span className="imp-radar-muted">Read-only in this mode.</span> : null}
-          {!paperActions && !readOnly ? (
-            <span className="imp-radar-muted">Paper actions unavailable in this mode.</span>
-          ) : null}
+          <OperatorActionButton
+            action={radarActions.watch}
+            pending={ackPending && ackAction === "watch"}
+            result={ackAction === "watch" ? ackResult : null}
+            buttonClassName="imp-radar-ack-watch"
+            onActivate={() => onAck?.(row, "watch")}
+          />
+          <OperatorActionButton
+            action={radarActions.review}
+            pending={ackPending && ackAction === "review"}
+            result={ackAction === "review" ? ackResult : null}
+            onActivate={() => onAck?.(row, "review")}
+          />
+          <OperatorActionButton
+            action={radarActions.dismiss}
+            pending={ackPending && ackAction === "dismiss"}
+            result={ackAction === "dismiss" ? ackResult : null}
+            buttonClassName="imp-radar-ack-dismiss"
+            onActivate={() => onAck?.(row, "dismiss")}
+          />
         </div>
         {ackPhase === "submitting" ? (
           <p className="imp-radar-muted" role="status">

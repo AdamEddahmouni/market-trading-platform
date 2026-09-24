@@ -131,6 +131,7 @@ Two tabs: **Opportunities** (`/radar`, today's discover cockpit) and **Screeners
 - Live: `symbolSearch` (`/symbols/search`), `instrumentCapabilities`
   (`/instruments/{id}/capabilities`), `providerHealth` (5s).
 - Mutations: opportunity ack POSTs; discover POSTs (Paper); subscribe POST (Live).
+- Review, watch, dismiss, and open-workspace presentation use `OperatorActionDescriptor` via `radarOperatorActions.ts`. Ack mutations still go to the existing opportunity ack endpoint. Open workspace remains navigation and does not authorize execution. No confirmation dialog is added for these four actions.
 
 ## Responsive behavior
 

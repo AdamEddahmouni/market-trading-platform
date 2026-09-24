@@ -13,6 +13,7 @@ type Props = {
   confirmId?: string;
   /** Overrides the accessible name when the visible title is shared (e.g. "Refresh"). */
   accessibleName?: string;
+  buttonClassName?: string;
 };
 
 /**
@@ -26,6 +27,7 @@ export function OperatorActionButton({
   onActivate,
   confirmId,
   accessibleName,
+  buttonClassName,
 }: Props) {
   const reasonId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -76,7 +78,7 @@ export function OperatorActionButton({
         <button
           ref={triggerRef}
           type="button"
-          className="operator-action-button"
+          className={buttonClassName ? `operator-action-button ${buttonClassName}` : "operator-action-button"}
           onClick={() => void activate()}
           disabled={unavailable || pending}
           aria-disabled={unavailable || pending || undefined}

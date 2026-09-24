@@ -201,7 +201,19 @@
 }
 
 .imp-radar-queue-actions {
-  white-space: nowrap;
+  white-space: normal;
+  min-width: 12rem;
+}
+
+.imp-radar-queue-actions .operator-action {
+  display: inline-block;
+  max-width: 14rem;
+  margin-right: var(--imp-space-1);
+  vertical-align: top;
+}
+
+.imp-radar-queue-actions .operator-action-description {
+  display: none;
 }
 
 .imp-radar-queue-actions button {

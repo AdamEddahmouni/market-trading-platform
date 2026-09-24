@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Converge Radar opportunity actions
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/radar` |
+| **Summary** | Review, watch, dismiss, and open-workspace on Radar now use the shared operator-action descriptor. Ack mutations still use the existing opportunity ack client. Open workspace stays navigation and does not authorize execution. Availability is derived from the opportunity row and the current mode. |
+| **Key files** | `ui/src/components/radar/radarOperatorActions.ts`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/state/operatorAction.ts`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | `npm run typecheck` passed. `npm test` — 140 files, 929 tests passed. After scoping in-flight pending to the active row, `npx vitest run` on RadarPage, radarOperatorActions, and OperatorActionButton — 3 files, 57 tests passed. |
+| **Related** | Control operator-action foundation, 2026-09-24. |
+| **Notes** | No confirmation dialogs were added. No generic execute API. Ranking, Paper preview, risk checks, and Live authority are unchanged. Sep 24 campaign `RTH-OBS-NEWS-20260924` was not armed by this work. |
+
 ## 2026-09-24 — Unify operator actions on Control
 
 | Field | Value |
