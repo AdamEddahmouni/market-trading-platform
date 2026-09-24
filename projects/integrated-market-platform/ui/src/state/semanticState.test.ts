@@ -248,6 +248,19 @@ describe("resolveSemanticState", () => {
     });
   });
 
+  describe("action domain", () => {
+    it("maps availability without treating unknown values as available", () => {
+      expect(resolveSemanticState("action", "AVAILABLE").tone).toBe("live");
+      expect(resolveSemanticState("action", "BLOCKED").tone).toBe("critical");
+      expect(resolveSemanticState("action", "READ_ONLY").label).toBe("Read-only");
+      expect(resolveSemanticState("action", "UNAVAILABLE").tone).toBe("neutral");
+      const unknown = resolveSemanticState("action", "MYSTERY_ACTION");
+      expect(unknown.tone).toBe("neutral");
+      expect(unknown.raw).toBe("MYSTERY_ACTION");
+      expect(unknown.label).not.toBe("Available");
+    });
+  });
+
   describe("error domain", () => {
     it("maps the twelve canonical error categories", () => {
       expect(resolveSemanticState("error", "STALE_DATA").tone).toBe("caution");

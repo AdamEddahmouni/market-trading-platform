@@ -502,8 +502,115 @@ describe("OperatorControlCenterPage", () => {
   it("keeps apply-update disabled when no update is available", async () => {
     stubFetch();
     renderControl("DEMO");
-    const apply = await screen.findByRole("button", { name: "Apply fast-forward update" });
+    await waitFor(() => expect(screen.getByText("UPDATE_NOT_AVAILABLE")).toBeInTheDocument());
+    const apply = screen.getByRole("button", { name: "Apply fast-forward update" });
     expect(apply).toBeDisabled();
+    expect(apply).toHaveAccessibleDescription(/fast-forward update must be available/i);
+  });
+
+  it("confirms restart once and reports an unverified queue plus a failed reload", async () => {
+    stubFetch();
+    const fetchMock = vi.mocked(fetch);
+    let lifecyclePosts = 0;
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      if (path.includes("/operator/lifecycle/actions")) {
+        lifecyclePosts += 1;
+        expect(init?.method).toBe("POST");
+        const body = JSON.parse(String(init?.body));
+        expect(body.action).toBe("restart");
+        return response({ operation_id: "op-restart", status: "QUEUED" });
+      }
+      if (path.includes("/operator/diagnostics")) {
+        return response(buildDiagnostics({}));
+      }
+      if (path.includes("/operator/config")) return response({ providers: [] });
+      if (path.includes("/context")) return response(DEMO_CONTEXT);
+      return response({});
+    });
+    renderControl("DEMO");
+    const restart = await screen.findByRole("button", { name: "Restart platform" });
+    await waitFor(() => expect(restart).toBeEnabled());
+    fireEvent.click(restart);
+    expect(lifecyclePosts).toBe(0);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm restart" }));
+    await waitFor(() => expect(screen.getByText(/restart queued/i)).toBeInTheDocument());
+    expect(lifecyclePosts).toBe(1);
+    expect(screen.getByText(/does not prove the operation finished/i)).toBeInTheDocument();
+  });
+
+  it("reports a lifecycle request failure without hiding the rest of Control", async () => {
+    stubFetch();
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      if (path.includes("/operator/lifecycle/actions")) {
+        return response({ error: "no platform" }, false);
+      }
+      if (path.includes("/operator/diagnostics")) return response(buildDiagnostics({}));
+      if (path.includes("/operator/config")) return response({ providers: [] });
+      if (path.includes("/context")) return response(DEMO_CONTEXT);
+      return response({});
+    });
+    renderControl("DEMO");
+    const check = await screen.findByRole("button", { name: "Check for updates" });
+    await waitFor(() => expect(check).toBeEnabled());
+    fireEvent.click(check);
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(/Could not queue check update/));
+    expect(screen.getByRole("region", { name: "Platform status" })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Providers" })).toBeInTheDocument();
+  });
+
+  it("keeps an accepted provider refresh distinct from a failed status reload", async () => {
+    stubFetch({ readiness: DEGRADED_READINESS });
+    const fetchMock = vi.mocked(fetch);
+    let refreshSent = false;
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path.includes("/operator/providers/moomoo_observational/refresh")) {
+        refreshSent = true;
+        return response({ operation_id: "op-refresh", status: "QUEUED" });
+      }
+      if (path.includes("/operator/diagnostics")) {
+        if (refreshSent) return response({ error: "reload failed" }, false);
+        return response(buildDiagnostics({ readiness: DEGRADED_READINESS }));
+      }
+      if (path.includes("/operator/config")) return response({ providers: [] });
+      if (path.includes("/context")) return response(DEMO_CONTEXT);
+      return response({});
+    });
+    renderControl("DEMO");
+    const refresh = await screen.findByRole("button", { name: "Refresh Moomoo observational" });
+    await waitFor(() => expect(refresh).toBeEnabled());
+    fireEvent.click(refresh);
+    await waitFor(() =>
+      expect(screen.getByText(/Provider status could not be reloaded afterward/)).toBeInTheDocument(),
+    );
+    expect(screen.getByText(/Refresh queued for Moomoo observational/)).toBeInTheDocument();
+    expect(screen.queryByText(/Refresh could not be queued/)).not.toBeInTheDocument();
+  });
+
+  it("keeps provider refresh failure inside the provider row", async () => {
+    stubFetch({ readiness: DEGRADED_READINESS });
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockImplementation((input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path.includes("/operator/providers/moomoo_observational/refresh")) {
+        return response({ error: "refresh failed" }, false);
+      }
+      if (path.includes("/operator/diagnostics")) {
+        return response(buildDiagnostics({ readiness: DEGRADED_READINESS }));
+      }
+      if (path.includes("/operator/config")) return response({ providers: [] });
+      if (path.includes("/context")) return response(DEMO_CONTEXT);
+      return response({});
+    });
+    renderControl("DEMO");
+    fireEvent.click(await screen.findByRole("button", { name: "Refresh Moomoo observational" }));
+    await waitFor(() =>
+      expect(screen.getByText(/Refresh could not be queued for Moomoo observational/)).toBeInTheDocument(),
+    );
+    expect(screen.getByRole("region", { name: "Platform status" })).toHaveTextContent(/Running|Ready|Unavailable|Partially/i);
   });
 
   it("flags a missing paper session in Paper mode only", async () => {

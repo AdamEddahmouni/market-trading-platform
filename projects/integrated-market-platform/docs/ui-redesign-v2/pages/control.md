@@ -1,5 +1,7 @@
 # CONTROL — `/control` (+ `/diagnostics/provider`, `/live-canary`, `/settings`)
 
+**Current Control actions (2026-09-24):** restart, check update, apply update, provider refresh, status reload, and credential-form submit use `OperatorActionDescriptor` and the shared action primitives. Domain endpoints are unchanged. Credential fields stay on the form. There is no generic execute API and no action ledger. See [FRONTEND_GUIDE.md](../../engineering/FRONTEND_GUIDE.md).
+
 ## Purpose
 
 Platform operations: provider health matrix (state / provides / impact), runtime,

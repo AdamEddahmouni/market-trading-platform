@@ -178,16 +178,6 @@
   background: var(--surface-0);
 }
 
-.control-message {
-  margin: 0 0 var(--imp-space-4);
-  padding: var(--imp-space-2) var(--imp-space-3);
-  border-left: 3px solid var(--imp-state-live-border);
-  border-radius: var(--imp-radius-sm);
-  background: var(--imp-state-live-bg);
-  color: var(--text-primary);
-  font-size: var(--imp-text-sm);
-}
-
 .control-system-status-headline {
   display: flex;
   flex-direction: column;
@@ -352,17 +342,73 @@
   flex-wrap: wrap;
   gap: var(--imp-space-2);
   margin-bottom: var(--imp-space-3);
+  align-items: flex-start;
 }
 
-.control-confirm-group {
-  display: inline-flex;
-  flex-wrap: wrap;
+.operator-action {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--imp-space-1);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.operator-action-description,
+.operator-action-reason,
+.operator-action-result,
+.operator-action-confirm-title {
+  margin: 0;
+  max-width: 36rem;
+  overflow-wrap: anywhere;
+  font-size: var(--imp-text-sm);
+}
+
+.operator-action-reason {
+  color: var(--text-primary);
+}
+
+.operator-action-reason-code,
+.operator-action-description,
+.operator-action-result {
+  color: var(--text-secondary);
+}
+
+.operator-action-confirm {
+  display: flex;
+  flex-direction: column;
   gap: var(--imp-space-2);
-  align-items: center;
-  padding: var(--imp-space-1);
+  max-width: 100%;
+  padding: var(--imp-space-2);
   border: 1px solid var(--imp-state-caution-border);
   border-radius: var(--imp-radius-md);
   background: var(--imp-state-caution-bg);
+}
+
+.operator-action-confirm-facts {
+  display: grid;
+  gap: var(--imp-space-1);
+  margin: 0;
+}
+
+.operator-action-confirm-facts div {
+  min-width: 0;
+}
+
+.operator-action-confirm-facts dt {
+  font-size: var(--imp-text-xs, 0.75rem);
+  color: var(--text-secondary);
+}
+
+.operator-action-confirm-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.operator-action-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--imp-space-2);
 }
 
 .control-hero .control-muted + .control-muted,
@@ -776,7 +822,12 @@
     flex-direction: column;
   }
 
-  .control-hero-actions button {
+  .control-hero-actions button,
+  .control-hero-actions .operator-action,
+  .control-provider-actions .operator-action,
+  .operator-action-confirm,
+  .operator-action-confirm-buttons,
+  .operator-action-confirm-buttons button {
     width: 100%;
   }
 }
