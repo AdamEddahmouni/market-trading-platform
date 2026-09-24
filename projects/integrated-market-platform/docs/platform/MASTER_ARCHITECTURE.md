@@ -16,6 +16,11 @@ This document explains how IMP fits together. It does not define policy values
 or grant runtime authority. Executable authorities listed in the
 [Canonical Truth Map](CANONICAL_TRUTH_MAP.md) control their own behavior.
 
+The approved future [unified operator and research control plane](../architecture/UNIFIED_OPERATOR_AND_RESEARCH_CONTROL_PLANE.md)
+sets the product direction for conducting research, campaigns, experiments,
+and IMP development through typed UI workflows. It grants no new trading,
+empirical, or release authority.
+
 ## State labels
 
 - `IMPLEMENTED`: code or an executable contract exists. The label does not by
