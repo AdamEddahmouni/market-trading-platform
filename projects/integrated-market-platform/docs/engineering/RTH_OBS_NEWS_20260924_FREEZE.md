@@ -10,6 +10,8 @@
 
 **Readiness receipt:** [RTH-OBS-NEWS-20260924.pre-rth-readiness.json](../../artifacts/campaign-readiness/RTH-OBS-NEWS-20260924.pre-rth-readiness.json)
 
+**Supersedes:** `02d699768dce2ad2e85d7215f2588fd18a36fcce` (tree `84d254547fa7e209b461c84ce172397f514bc4b9`). Rehearsal on that checkout showed `python tools/platform/local_launcher.py` raised `ModuleNotFoundError: No module named 'tools'`, `readiness` crashed on a relative import, and `local_launcher.py status` did not print the API pid. Do not arm that SHA.
+
 This is the only launch procedure for the next cash session. Closed campaign `RTH-OBS-NEWS-20260923` on `bf405f468bee4e70f8a40e97eaaf6c2d46c75e64` stays read-only.
 
 ## Identity
@@ -22,8 +24,8 @@ This is the only launch procedure for the next cash session. Closed campaign `RT
 | Session | `2026-09-24` America/New_York |
 | Cash RTH | `09:30`–`16:00` ET (`market_sessions` label `REGULAR` at `09:30`, `AFTER_HOURS` at `16:00`) |
 | Calendar | `is_trading_day(2026-09-24)` is true. `2026-09-07` is the holiday. `2026-09-26` is not a trading day. |
-| Runtime commit | `02d699768dce2ad2e85d7215f2588fd18a36fcce` |
-| Runtime tree | `84d254547fa7e209b461c84ce172397f514bc4b9` |
+| Runtime commit | `c15527221a21d7bc88acefbe0971b6de9292247e` |
+| Runtime tree | `e77f72208b6547d63dc4b7101c5cfa357114052b` |
 | State and evidence namespace | `projects/integrated-market-platform/.local/rth-campaign-20260924` |
 | Required roles | `supervisor`, `poller`, `api` |
 | Execution | `BLOCKED`. Live **OFF**. |
@@ -37,8 +39,8 @@ A manifest file alone is not readiness. SHA, date, preflight, writable state, ou
 | Check | Fail closed when |
 |---|---|
 | Campaign ID | anything other than `RTH-OBS-NEWS-20260924` |
-| Runtime SHA | `git rev-parse HEAD` is not `02d699768dce2ad2e85d7215f2588fd18a36fcce` |
-| Tree SHA | `git rev-parse "HEAD^{tree}"` is not `84d254547fa7e209b461c84ce172397f514bc4b9` |
+| Runtime SHA | `git rev-parse HEAD` is not `c15527221a21d7bc88acefbe0971b6de9292247e` |
+| Tree SHA | `git rev-parse "HEAD^{tree}"` is not `e77f72208b6547d63dc4b7101c5cfa357114052b` |
 | Session | wall clock date in America/New_York is not `2026-09-24`, or the clock is not `America/New_York` |
 | Environment preflight | exit code is not 0, or `ready_to_arm` is not true |
 | UI dependencies | `ui/node_modules` is absent |
@@ -60,12 +62,12 @@ Run from `projects/integrated-market-platform` on a clean checkout of the frozen
 
 ```powershell
 git fetch origin
-git checkout 02d699768dce2ad2e85d7215f2588fd18a36fcce
+git checkout c15527221a21d7bc88acefbe0971b6de9292247e
 git rev-parse HEAD
 git rev-parse "HEAD^{tree}"
 ```
 
-`HEAD` must be `02d699768dce2ad2e85d7215f2588fd18a36fcce`. The tree must be `84d254547fa7e209b461c84ce172397f514bc4b9`.
+`HEAD` must be `c15527221a21d7bc88acefbe0971b6de9292247e`. The tree must be `e77f72208b6547d63dc4b7101c5cfa357114052b`.
 
 ```powershell
 python tools/imp.py env bootstrap --link-venv
@@ -89,15 +91,15 @@ python tools/platform/local_launcher.py status
 Arm writes ownership. The arm process exits, so start the durable supervisor immediately after. `run` and `poll-loop` refuse to start without that ownership.
 
 ```powershell
-python tools/platform/campaign_supervisor.py arm --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260924 --observation-window-id RTH-OBS-NEWS-20260924-A --segment-id A --runtime-sha 02d699768dce2ad2e85d7215f2588fd18a36fcce
+python tools/platform/campaign_supervisor.py arm --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260924 --observation-window-id RTH-OBS-NEWS-20260924-A --segment-id A --runtime-sha c15527221a21d7bc88acefbe0971b6de9292247e
 python tools/platform/campaign_supervisor.py spawn-detached --state-dir $env:IMP_STATE_DIR -- .venv\Scripts\python.exe tools\platform\campaign_supervisor.py run --state-dir $env:IMP_STATE_DIR
 python tools/platform/campaign_supervisor.py spawn-detached --state-dir $env:IMP_STATE_DIR -- .venv\Scripts\python.exe tools\platform\campaign_supervisor.py poll-loop --state-dir $env:IMP_STATE_DIR --live-ingress --campaign-slug FTEP-V1-002
 python tools/platform/campaign_supervisor.py register-child --state-dir $env:IMP_STATE_DIR --role api --pid <API_PID> --identity-tokens run_ui_api.py
 python tools/platform/campaign_supervisor.py status --state-dir $env:IMP_STATE_DIR
-python tools/platform/campaign_supervisor.py readiness --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260924 --intended-date-et 2026-09-24 --frozen yes --runtime-sha 02d699768dce2ad2e85d7215f2588fd18a36fcce --observation-window-id RTH-OBS-NEWS-20260924-A
+python tools/platform/campaign_supervisor.py readiness --state-dir $env:IMP_STATE_DIR --campaign-id RTH-OBS-NEWS-20260924 --intended-date-et 2026-09-24 --frozen yes --runtime-sha c15527221a21d7bc88acefbe0971b6de9292247e --observation-window-id RTH-OBS-NEWS-20260924-A
 ```
 
-`<API_PID>` is the API pid from `local_launcher.py status`. Do not register the spawn shell as the supervisor.
+`<API_PID>` is the integer on the `API pid` line printed by `local_launcher.py status`. Do not use the `SPAWNED` pid from `spawn-detached`; that pid is the Windows interpreter shim. `ownership.supervisor_pid` is the durable `run` process. Do not register the spawn shell as the supervisor.
 
 The arm command's pid is not the durable supervisor. Confirm `run` has adopted `ownership.supervisor_pid` and that pid is alive. `ARMED_RUNNING` alone is not healthy. Required status before `09:30` is `HEALTHY` or `STARTING` with supervisor, poller, and API alive.
 
@@ -151,7 +153,7 @@ python tools/platform/campaign_supervisor.py shutdown --state-dir $env:IMP_STATE
 python tools/platform/local_launcher.py stop
 ```
 
-A replacement runtime requires a new freeze commit before any empirical run. Do not move `02d699768dce2ad2e85d7215f2588fd18a36fcce` in place.
+A replacement runtime requires a new freeze commit before any empirical run. Do not move `c15527221a21d7bc88acefbe0971b6de9292247e` in place.
 
 ## Locks that stay closed
 
