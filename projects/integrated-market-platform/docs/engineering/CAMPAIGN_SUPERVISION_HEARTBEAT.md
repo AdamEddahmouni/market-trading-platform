@@ -93,8 +93,24 @@ observation roles: `supervisor`, `poller`, `api`. Optional operator display: `ui
   replays a fixture receipt. `--live-ingress` runs
   `ftep_watch_catalysts.py --live-ingress` once per cycle. `SUCCESS` and
   `SUCCESS_EMPTY` advance `last_successful_poll_utc`. `PROVIDER_FAILURE`,
-  `ADMISSION_FAILURE`, `POLL_PROCESS_FAILURE`, and `NO_POLL` do not. One-shot
-  ingress scripts must not be registered as the durable poller.
+  `ADMISSION_FAILURE`, `POLL_PROCESS_FAILURE`, and `NO_POLL` do not.
+  `SOFTWARE_CONTROLLED_CYCLE` may advance the heartbeat timestamp so the
+  process loop does not look stale, and it records `poll_evidence_class`
+  `SOFTWARE_CONTROLLED`. It is not a market poll. Readiness phase becomes
+  `ACTIVE_STALLED` with blocker `POLL_SOFTWARE_CONTROLLED_CYCLE` when that
+  classification is present. The same stall applies to `NO_POLL`,
+  `POLL_PROCESS_FAILURE`, `ADMISSION_FAILURE`, `TOKEN_ABSENT`,
+  `GATES_INACTIVE`, and `SECRET_DIR_MISSING`. Before the cash open,
+  `PROVIDER_FAILURE`, `HTTP_429`, `TIMEOUT`, `MALFORMED_RESPONSE`, and
+  `SESSION_UNAVAILABLE` also stall. During RTH those provider classes stay on
+  the heartbeat and do not by themselves change the phase. An armed campaign
+  whose intended America/New_York date is not today stalls with
+  `INTENDED_DATE_NOT_TODAY`. One-shot ingress scripts must not be registered
+  as the durable poller.
+- `local_launcher.py status` prints `API pid <pid>` (and the same line for
+  `UI` and `CONTROL`). That pid is the value for `register-child --role api`.
+- `run` heartbeats at `DEFAULT_HEARTBEAT_CADENCE_SECONDS` (15) unless
+  `--heartbeat-cadence-seconds` is set. Do not assume a sub-second default.
 
 ## Heartbeat / progress / stale detection
 

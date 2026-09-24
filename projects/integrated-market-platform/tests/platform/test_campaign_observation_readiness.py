@@ -157,6 +157,84 @@ class CampaignObservationReadinessTests(unittest.TestCase):
         self.assertTrue(payload["item9_display_only"])
         self.assertEqual(payload["phase"], "ACTIVE_PROGRESSING")
 
+    def test_software_controlled_poll_is_not_market_progress(self) -> None:
+        supervision = _supervision(arm_status="ARMED_RUNNING", progress_status="HEALTHY")
+        supervision["heartbeat"]["last_poll_classification"] = "SOFTWARE_CONTROLLED_CYCLE"
+        payload = build_campaign_observation_readiness(
+            campaign_supervision=supervision,
+            now_et=datetime(2026, 9, 24, 9, 0, tzinfo=ET),
+            intent={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": True,
+                "source": "EXPLICIT",
+            },
+        )
+        self.assertEqual(payload["phase"], "ACTIVE_STALLED")
+        self.assertIn("POLL_SOFTWARE_CONTROLLED_CYCLE", payload["blockers"])
+        self.assertEqual(payload["execution_authority"], "BLOCKED")
+
+    def test_market_empty_success_stays_progressing(self) -> None:
+        supervision = _supervision(arm_status="ARMED_RUNNING", progress_status="HEALTHY")
+        supervision["heartbeat"]["last_poll_classification"] = "SUCCESS_EMPTY"
+        payload = build_campaign_observation_readiness(
+            campaign_supervision=supervision,
+            now_et=datetime(2026, 9, 24, 10, 0, tzinfo=ET),
+            intent={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": True,
+                "source": "EXPLICIT",
+            },
+        )
+        self.assertEqual(payload["phase"], "ACTIVE_PROGRESSING")
+        self.assertNotIn("POLL_SUCCESS_EMPTY", payload["blockers"])
+
+    def test_provider_failure_stalls_before_the_open_only(self) -> None:
+        before = _supervision(arm_status="ARMED_RUNNING", progress_status="HEALTHY")
+        before["heartbeat"]["last_poll_classification"] = "PROVIDER_FAILURE"
+        payload = build_campaign_observation_readiness(
+            campaign_supervision=before,
+            now_et=datetime(2026, 9, 24, 9, 0, tzinfo=ET),
+            intent={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": True,
+                "source": "EXPLICIT",
+            },
+        )
+        self.assertEqual(payload["phase"], "ACTIVE_STALLED")
+        self.assertIn("POLL_PROVIDER_FAILURE", payload["blockers"])
+
+        during = _supervision(arm_status="ARMED_RUNNING", progress_status="HEALTHY")
+        during["heartbeat"]["last_poll_classification"] = "PROVIDER_FAILURE"
+        payload = build_campaign_observation_readiness(
+            campaign_supervision=during,
+            now_et=datetime(2026, 9, 24, 10, 0, tzinfo=ET),
+            intent={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": True,
+                "source": "EXPLICIT",
+            },
+        )
+        self.assertEqual(payload["phase"], "ACTIVE_PROGRESSING")
+        self.assertNotIn("POLL_PROVIDER_FAILURE", payload["blockers"])
+
+    def test_armed_on_the_wrong_calendar_day_stalls(self) -> None:
+        payload = build_campaign_observation_readiness(
+            campaign_supervision=_supervision(arm_status="ARMED_RUNNING", progress_status="HEALTHY"),
+            now_et=datetime(2026, 9, 23, 20, 0, tzinfo=ET),
+            intent={
+                "campaign_id": "RTH-OBS-NEWS-20260924",
+                "intended_date_et": "2026-09-24",
+                "frozen": True,
+                "source": "EXPLICIT",
+            },
+        )
+        self.assertEqual(payload["phase"], "ACTIVE_STALLED")
+        self.assertIn("INTENDED_DATE_NOT_TODAY", payload["blockers"])
+
 
 if __name__ == "__main__":
     unittest.main()

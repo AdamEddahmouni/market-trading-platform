@@ -407,22 +407,17 @@ def cmd_readiness(args: argparse.Namespace) -> int:
 
 
 def _load_campaign_observation_readiness():
-    module_path = (
-        SRC
-        / "market_platform_foundation"
-        / "platform"
-        / "operator_diagnostics"
-        / "campaign_observation_readiness.py"
+    """Import the readiness model as a package leaf.
+
+    A standalone ``spec_from_file_location`` load breaks relative imports and
+    crashes the operator ``readiness`` command. Package ``__init__`` keeps the
+    snapshot lazy. This import does not grant execution authority.
+    """
+
+    from market_platform_foundation.platform.operator_diagnostics import (
+        campaign_observation_readiness as module,
     )
-    spec = importlib.util.spec_from_file_location(
-        "imp_campaign_observation_readiness_standalone",
-        module_path,
-    )
-    if spec is None or spec.loader is None:
-        raise ImportError(f"unable to load campaign_observation_readiness from {module_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+
     return module
 
 
@@ -1024,7 +1019,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="Run supervisor heartbeat loop")
     run.add_argument("--state-dir")
-    run.add_argument("--heartbeat-cadence-seconds", type=float, default=0.2)
+    run.add_argument(
+        "--heartbeat-cadence-seconds",
+        type=float,
+        default=DEFAULT_HEARTBEAT_CADENCE_SECONDS,
+    )
     run.add_argument("--stale-after-seconds", type=float, default=DEFAULT_STALE_AFTER_SECONDS)
     run.add_argument("--iterations", type=int, default=0, help="0 = until shutdown")
     run.add_argument("--auto-poll", action="store_true")

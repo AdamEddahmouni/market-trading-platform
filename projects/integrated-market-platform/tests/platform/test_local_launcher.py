@@ -3,9 +3,14 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
 
 from tools.platform.local_launcher import (
     LauncherError,
@@ -300,6 +305,23 @@ class LocalLauncherTests(unittest.TestCase):
             text = captured.getvalue()
             self.assertIn("http://127.0.0.1:5173/", text)
             self.assertNotIn("/discover", text)
+            self.assertIn("API pid               1000", text)
+
+    def test_script_status_imports_without_pythonpath(self) -> None:
+        env = dict(os.environ)
+        env.pop("PYTHONPATH", None)
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / "tools" / "platform" / "local_launcher.py"), "status"],
+            cwd=str(ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+        self.assertNotIn("ModuleNotFoundError", completed.stderr)
+        self.assertIn("LOCAL PLATFORM STATUS", completed.stdout)
+        self.assertEqual(completed.returncode, 1)
 
     def test_status_partial_when_owned_identity_lost(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

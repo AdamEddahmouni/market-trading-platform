@@ -635,6 +635,24 @@ class RuntimeObservationDurabilityAcceptanceTests(unittest.TestCase):
         self.assertEqual(payload["phase"], "BLOCKED_STATE_DIR")
         self.assertNotEqual(payload["phase"], "READY_TO_ARM")
 
+    def test_readiness_cli_imports_as_package(self) -> None:
+        result = _run_supervisor(
+            "readiness",
+            "--state-dir",
+            str(self.state_dir),
+            "--campaign-id",
+            "RTH-OBS-NEWS-20260924-REHEARSAL-CLI",
+            "--intended-date-et",
+            "2026-09-24",
+            "--frozen",
+            "yes",
+        )
+        self.assertNotIn("ImportError", result.stderr)
+        self.assertNotIn("attempted relative import", result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertIn(payload["phase"], {"NOT_ARMED", "READY_TO_ARM", "BLOCKED_STATE_DIR"})
+        self.assertEqual(payload["execution_authority"], "BLOCKED")
+
 
 if __name__ == "__main__":
     unittest.main()
