@@ -106,6 +106,7 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
 
   if (input.preview) {
     const passed = input.preview.risk_status === "PASS";
+    const projectedRejection = input.preview.order_preview?.state === "REJECTED";
     const previewedOrderLabel = input.confirmedRequest
       ? `${input.confirmedRequest.side} × ${input.confirmedRequest.quantity} ${input.confirmedRequest.order_type}`
       : undefined;
@@ -113,13 +114,19 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
       Boolean(input.requiresPlaceholderConfirmation) && !input.operatorConfirmedPlaceholder;
     return {
       ...base,
-      status: passed ? "ACCEPTED" : "REJECTED",
-      title: passed
+      status: passed && !projectedRejection ? "ACCEPTED" : "REJECTED",
+      title: projectedRejection
+        ? "Order preview rejected"
+        : passed
         ? input.previewOrigin === "workspace"
           ? "Revalidated in workspace"
           : "Preview accepted"
         : "Preview rejected",
-      message: passed
+      message: projectedRejection
+        ? input.preview.quality_state === "NO_EXECUTABLE_BAR"
+          ? "No executable bar after the replay cursor. Scrub replay forward and preview again."
+          : "The projected order is rejected. Review the preview before trying again."
+        : passed
         ? needsPlaceholderConfirmation
           ? "Current preview passed risk checks. Confirm the placeholder side and quantity are intentional before submit — defaults are not a recommendation."
           : "Current preview passed risk checks. Submit remains operator-controlled."
@@ -127,7 +134,7 @@ export function derivePreviewPresentationState(input: PreviewPresentationInput):
       riskStatus: input.preview.risk_status,
       decision: input.preview.decision,
       reasonCodes: input.preview.reason_codes,
-      canSubmit: passed && input.confirmedRequestIsCurrent && !needsPlaceholderConfirmation,
+      canSubmit: passed && !projectedRejection && input.confirmedRequestIsCurrent && !needsPlaceholderConfirmation,
       previewedOrderLabel,
       requiresPlaceholderConfirmation: needsPlaceholderConfirmation,
     };

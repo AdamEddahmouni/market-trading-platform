@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-25 — Workspace Paper ticket and position entry
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/workspace`, `ui/portfolio`, `ui/paper` |
+| **Summary** | Added exact-cent Limit terms to the canonical Workspace ticket and editable Add/Reduce/Close position handoffs. The ticket surfaces Paper mode, exposure, risk, pending submit and backend acknowledgement while preserving preview invalidation and authority checks. A real Paper smoke found that a no-bar preview projected rejection despite risk PASS; projected rejections now block Submit and rejected acknowledgements are labeled accurately. |
+| **Key files** | `ui/src/components/paper/OrderTicket.tsx`, `ui/src/components/paper/paperOrderTerms.ts`, `ui/src/components/paper-portfolio/paperPortfolioActions.ts`, `ui/src/components/WorkspaceRoute.tsx`, `ui/src/components/paper-workspace/`, `ui/src/styles/paper-workspace.css`, `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | Focused UI and App integration: 145 passed; the final side-label change passed 35 focused tests. Typecheck, production build, bundle check, docs links, and diff check passed. Browser smoke in an isolated authorized Paper state covered Market and Limit preview, invalid decimal price, submit to a durable rejected order, Portfolio history, Radar → Workspace, and 1024px layout. |
+| **Notes** | The fixture's replay cursor produced no executable bar, so no working order was available for a browser cancel action. No Live broker action. Isolated `.local/browser-smoke-20260925` state and logs are ignored and unstaged. |
+
 ## 2026-09-25 — Portfolio positions and working-order controls
 
 | Field | Value |

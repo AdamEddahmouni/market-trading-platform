@@ -8,12 +8,15 @@ import type {
   SignedAmountPresentation,
 } from "./paperPortfolioPresentation";
 import { positionNeedsAttention } from "./paperPortfolioPresentation";
+import { buildPositionTradeDraft, type PositionTradeAction } from "./paperPortfolioActions";
 
 type Props = {
   positions: PortfolioPositionRow[];
   marksDecay: boolean;
   /** Handoff target used by the positions empty state. */
   workspaceHref: string;
+  canTrade?: boolean;
+  maxOrderShares?: number;
 };
 
 function SignedAmount({ amount }: { amount: SignedAmountPresentation }) {
@@ -68,7 +71,9 @@ function PositionRowDetails({ row, marksDecay: decay }: { row: PortfolioPosition
  * Row selection surfaces the legitimate next actions for that position instead
  * of stamping a button set on every row.
  */
-export function PortfolioPositionsTable({ positions, marksDecay: decay, workspaceHref }: Props) {
+export function PortfolioPositionsTable({
+  positions, marksDecay: decay, workspaceHref, canTrade = false, maxOrderShares = 0,
+}: Props) {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const selected = useMemo(
     () => positions.find((row) => row.rowId === selectedRowId) ?? null,
@@ -194,6 +199,20 @@ export function PortfolioPositionsTable({ positions, marksDecay: decay, workspac
               <Link className="portfolio-action-primary" to={selected.workspaceHref}>
                 Open Workspace
               </Link>
+              {canTrade ? (["add", "reduce", "close"] as PositionTradeAction[]).map((action) => {
+                const draft = buildPositionTradeDraft(selected, action, maxOrderShares);
+                return draft ? (
+                  <Link
+                    key={action}
+                    className="portfolio-action-secondary"
+                    to={selected.workspaceHref}
+                    state={draft}
+                    aria-label={`${action[0].toUpperCase()}${action.slice(1)} ${selected.symbol} position`}
+                  >
+                    {action[0].toUpperCase()}{action.slice(1)}
+                  </Link>
+                ) : null;
+              }) : null}
               <button
                 type="button"
                 className="portfolio-action-secondary"

@@ -7,6 +7,7 @@ import {
   useSubmitPaperOrderMutation,
 } from "../../api/hooks";
 import type { PaperOrderPreviewResponse, PaperOrderRequest } from "../../api/schemas";
+import { parseLimitPriceMinor } from "./paperOrderTerms";
 import {
   buildPaperOrderRequest,
   createPaperOrderDraft,
@@ -34,6 +35,8 @@ type OrderTicketProps = {
   executionMode: string;
   dataMode: string;
   maxOrderShares: number;
+  positionSummary?: string | null;
+  workingOrderCount?: number;
   initialDraft?: PaperOrderDraft;
   contextLanes?: Array<{ lane: string; relevance: string; summary: string }>;
   onSubmitted?: (acknowledgement: PaperOrderAcknowledgement) => void;
@@ -47,6 +50,8 @@ export function OrderTicket({
   executionMode,
   dataMode,
   maxOrderShares,
+  positionSummary = null,
+  workingOrderCount = 0,
   initialDraft,
   contextLanes = [],
   onSubmitted,
@@ -55,6 +60,8 @@ export function OrderTicket({
 }: OrderTicketProps) {
   const [side, setSide] = useState<"BUY" | "SELL">(() => initialDraft?.side ?? "BUY");
   const [quantity, setQuantity] = useState(() => initialDraft?.quantity ?? 1);
+  const [orderType, setOrderType] = useState<"MARKET" | "LIMIT">("MARKET");
+  const [limitPrice, setLimitPrice] = useState("");
   const [explicitSymbol, setExplicitSymbol] = useState("");
   const [preview, setPreview] = useState<PaperOrderPreviewResponse["preview"] | null>(null);
   const [confirmedRequest, setConfirmedRequest] = useState<PaperOrderRequest | null>(null);
@@ -75,19 +82,24 @@ export function OrderTicket({
     executionMode === "INTERNAL_SIMULATION";
   const override = explicitSymbol.trim().toUpperCase();
   const ticketSymbol = override || symbol || "";
+  const limitPriceMinor = orderType === "LIMIT" ? parseLimitPriceMinor(limitPrice) : null;
   const previewInstrument =
     preview?.intent?.instrument_id ||
     preview?.intent?.instrument?.instrument_id ||
     preview?.instrument?.instrument_id ||
     ticketSymbol;
-  const canPreview = Boolean(ticketSymbol) && quantity > 0 && quantity <= maxOrderShares;
+  const canPreview = Boolean(ticketSymbol) && Number.isInteger(quantity) && quantity > 0 &&
+    quantity <= maxOrderShares && (orderType === "MARKET" || limitPriceMinor !== null);
   const requiresPlaceholderConfirmation = requiresPlaceholderSubmitConfirmation(initialDraft);
   const confirmedRequestIsCurrent = Boolean(
     confirmedRequest &&
     confirmedRequest.instrument_id === ticketSymbol &&
     confirmedRequest.side === side &&
     confirmedRequest.quantity === quantity &&
-    confirmedRequest.order_type === "MARKET" &&
+    confirmedRequest.order_type === orderType &&
+    (orderType === "MARKET"
+      ? confirmedRequest.limit_price_minor == null
+      : confirmedRequest.limit_price_minor === limitPriceMinor && limitPriceMinor !== null) &&
     quantity > 0 &&
     quantity <= maxOrderShares,
   );
@@ -95,6 +107,7 @@ export function OrderTicket({
     authorized &&
     Boolean(preview) &&
     preview?.risk_status === "PASS" &&
+    preview?.order_preview?.state !== "REJECTED" &&
     confirmedRequestIsCurrent &&
     !submitting &&
     (!requiresPlaceholderConfirmation || placeholderConfirmed);
@@ -153,7 +166,15 @@ export function OrderTicket({
       return;
     }
     const generation = ++previewGeneration.current;
-    const request = buildPaperOrderRequest(currentDraft, createPaperPreviewAttemptKey("workspace-ticket"));
+    if (orderType === "LIMIT" && limitPriceMinor === null) {
+      setError("Enter a positive limit price with no more than two decimal places.");
+      return;
+    }
+    const request: PaperOrderRequest = {
+      ...buildPaperOrderRequest(currentDraft, createPaperPreviewAttemptKey("workspace-ticket")),
+      order_type: orderType,
+      ...(orderType === "LIMIT" ? { limit_price_minor: limitPriceMinor! } : {}),
+    };
     setError(null);
     setPreview(null);
     setConfirmedRequest(null);
@@ -196,7 +217,8 @@ export function OrderTicket({
       setPreviewOrigin(null);
       setPlaceholderConfirmed(false);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? formatApiRequestError(err) : "Submit failed");
+      const detail = err instanceof ApiRequestError ? formatApiRequestError(err) : "Connection or submit failed";
+      setError(`Submission not confirmed. Check Order history before retrying. ${detail}`);
     } finally {
       setSubmitting(false);
     }
@@ -232,12 +254,10 @@ export function OrderTicket({
           <p>Placeholder values — edit and re-preview before submit.</p>
         </aside>
       ) : null}
-      <p className="simulation-banner">
-        DATA: {dataMode.replace(/_/g, " ")} · EXEC: {executionMode.replace(/_/g, " ")} · AUTH:{" "}
-        {executionAuthority === "AUTHORIZED" || executionAuthority === "PAPER_ONLY"
-          ? "PAPER ONLY"
-          : executionAuthority}
-      </p>
+      <div className="ticket-mode-line">
+        <strong>Paper · Internal simulation</strong>
+        <span>Simulated order · no real money</span>
+      </div>
 
       {!authorized ? (
         <div className="capability-panel unavailable">
@@ -248,28 +268,39 @@ export function OrderTicket({
         </div>
       ) : null}
 
-      <dl className="metric-list">
+      <dl className="ticket-context-strip">
         <div>
           <dt>Instrument</dt>
           <dd>{ticketSymbol || "SELECT AN INSTRUMENT"}</dd>
         </div>
         <div>
-          <dt>Order type</dt>
-          <dd>MARKET</dd>
+          <dt>Position</dt>
+          <dd>{positionSummary ?? "None"}</dd>
+        </div>
+        <div>
+          <dt>Working orders</dt>
+          <dd>{workingOrderCount}</dd>
         </div>
       </dl>
-      <label className="order-ticket-symbol">
-        Symbol override
-        <input
-          aria-label="Order ticket symbol"
-          value={explicitSymbol}
-          onChange={(event) => {
-            invalidatePreview();
-            setExplicitSymbol(event.target.value.toUpperCase());
-          }}
-          placeholder={symbol ?? "SELECT AN INSTRUMENT"}
-        />
-      </label>
+      <details className="ticket-secondary-detail">
+        <summary>Instrument override and execution details</summary>
+        <label className="order-ticket-symbol">
+          Symbol override
+          <input
+            aria-label="Order ticket symbol"
+            value={explicitSymbol}
+            onChange={(event) => {
+              invalidatePreview();
+              setExplicitSymbol(event.target.value.toUpperCase());
+            }}
+            placeholder={symbol ?? "SELECT AN INSTRUMENT"}
+          />
+        </label>
+        <p className="muted">
+          Data {dataMode.replace(/_/g, " ")} · Execution {executionMode.replace(/_/g, " ")} · Authority{" "}
+          {executionAuthority.replace(/_/g, " ")}
+        </p>
+      </details>
       {preview && previewInstrument && symbol && previewInstrument !== symbol ? (
         <p className="muted">Preview locked to {previewInstrument}; submit will not switch with workspace.</p>
       ) : null}
@@ -312,6 +343,35 @@ export function OrderTicket({
             }}
           />
         </label>
+        <label className="order-ticket-quantity">
+          Order type
+          <select
+            value={orderType}
+            onChange={(event) => {
+              invalidatePreview();
+              setOrderType(event.target.value as "MARKET" | "LIMIT");
+            }}
+          >
+            <option value="MARKET">Market</option>
+            <option value="LIMIT">Limit</option>
+          </select>
+        </label>
+        {orderType === "LIMIT" ? (
+          <label className="order-ticket-quantity">
+            Limit price
+            <input
+              type="text"
+              inputMode="decimal"
+              value={limitPrice}
+              onChange={(event) => {
+                invalidatePreview();
+                setLimitPrice(event.target.value);
+              }}
+              aria-invalid={limitPrice.length > 0 && limitPriceMinor === null}
+              placeholder="0.00"
+            />
+          </label>
+        ) : null}
       </div>
       {requiresPlaceholderConfirmation ? (
         <p className="muted" data-testid="paper-placeholder-edit-note">
@@ -359,10 +419,11 @@ export function OrderTicket({
         </button>
       </div>
 
-      {error ? <p className="order-ticket-error">{error}</p> : null}
+      {submitting ? <p role="status" className="ticket-submit-status">Submitting Paper order… awaiting backend acknowledgement.</p> : null}
+      {error ? <p className="order-ticket-error" role="alert">{error}</p> : null}
 
       {preview ? (
-        <div className={`order-preview ${preview.risk_status === "PASS" ? "pass" : "blocked"}`}>
+        <div className={`order-preview ${preview.risk_status === "PASS" && preview.order_preview?.state !== "REJECTED" ? "pass" : "blocked"}`}>
           <h3>{previewOrigin === "workspace" ? "Revalidated in workspace" : "Preview"}</h3>
           <p>
             Risk: <strong>{preview.risk_status}</strong> ({preview.decision})

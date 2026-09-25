@@ -50,4 +50,15 @@ describe("PaperOrderAcknowledgementPanel", () => {
     screen.getByRole("button", { name: /View execution trace/i }).click();
     expect(onViewTrace).toHaveBeenCalledTimes(1);
   });
+
+  it("reports a rejected ledger order without implying acceptance or a working fill", () => {
+    render(
+      <MemoryRouter>
+        <PaperOrderAcknowledgementPanel model={{ ...baseAck, orderState: "REJECTED" }} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "Paper order rejected" })).toBeInTheDocument();
+    expect(screen.getByText(/Submission was recorded by the Paper ledger, but the order was rejected/)).toBeInTheDocument();
+    expect(screen.getByText(/No fill was recorded/)).toBeInTheDocument();
+  });
 });

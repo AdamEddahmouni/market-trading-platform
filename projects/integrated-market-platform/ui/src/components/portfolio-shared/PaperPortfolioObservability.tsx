@@ -88,9 +88,11 @@ export function PortfolioGlanceStrip({ data }: { data: PaperPortfolioResponse })
 export function PortfolioPositionsSection({
   data,
   viewMode: _viewMode,
+  canTrade = false,
 }: {
   data: PaperPortfolioResponse;
   viewMode?: "DEMO" | "PAPER";
+  canTrade?: boolean;
 }) {
   const positions = buildPortfolioPositions(data);
   const decayMarks = marksDecay(data.account.data_mode);
@@ -115,6 +117,8 @@ export function PortfolioPositionsSection({
         positions={positions}
         marksDecay={decayMarks}
         workspaceHref={workspaceHref}
+        canTrade={canTrade}
+        maxOrderShares={data.risk.limits.max_order_shares}
       />
     </section>
   );

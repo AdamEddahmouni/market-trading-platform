@@ -9,9 +9,12 @@ type Props = {
 };
 
 export function PaperOrderAcknowledgementPanel({ model, onViewTrace, onDismiss }: Props) {
+  const rejected = model.orderState === "REJECTED";
   const title = model.duplicate
     ? "Paper order already on ledger"
-    : model.hasDurableOrder
+    : rejected
+      ? "Paper order rejected"
+      : model.hasDurableOrder
       ? "Paper order accepted"
       : "Paper submit acknowledged";
 
@@ -32,7 +35,9 @@ export function PaperOrderAcknowledgementPanel({ model, onViewTrace, onDismiss }
       </header>
 
       <p>
-        {model.duplicate
+        {rejected
+          ? "Submission was recorded by the Paper ledger, but the order was rejected. Review Order history for the outcome."
+          : model.duplicate
           ? "Idempotent retry — the durable Paper order was already recorded."
           : "Submit reached the Paper ledger. This is internal simulation, not Live broker execution."}
       </p>
@@ -103,7 +108,7 @@ export function PaperOrderAcknowledgementPanel({ model, onViewTrace, onDismiss }
         ) : (
           <div>
             <dt>Fill</dt>
-            <dd className="muted">Not observed on this acknowledgement — order remains durable.</dd>
+            <dd className="muted">{rejected ? "No fill was recorded for this rejected order." : "Not observed on this acknowledgement — order remains durable."}</dd>
           </div>
         )}
       </dl>

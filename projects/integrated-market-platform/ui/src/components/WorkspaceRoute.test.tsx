@@ -20,6 +20,15 @@ function Launcher({ state }: { state: unknown }) {
   return <button type="button" onClick={() => navigate("/workspace/BIYA", { state })}>Open</button>;
 }
 
+function Switcher() {
+  const navigate = useNavigate();
+  return <>
+    <button type="button" onClick={() => navigate("/workspace/BIYA", { state: validDraft })}>Open first</button>
+    <button type="button" onClick={() => navigate("/workspace/NVDA")}>Open second</button>
+    <button type="button" onClick={() => navigate("/workspace/NVDA", { state: { ...validDraft, instrumentId: "NVDA", quantity: 3 } })}>Trade second</button>
+  </>;
+}
+
 function renderPush(state: unknown) {
   render(<MemoryRouter initialEntries={["/start"]}><Routes><Route path="/start" element={<Launcher state={state} />} /><Route path="/workspace/:symbol" element={<WorkspaceRoute {...routeProps} />} /></Routes></MemoryRouter>);
   fireEvent.click(screen.getByRole("button", { name: "Open" }));
@@ -43,5 +52,15 @@ describe("WorkspaceRoute Paper draft state", () => {
   it("ignores history state on POP so reloads are ephemeral", async () => {
     render(<MemoryRouter initialEntries={[{ pathname: "/workspace/BIYA", state: validDraft }]}><Routes><Route path="/workspace/:symbol" element={<WorkspaceRoute {...routeProps} />} /></Routes></MemoryRouter>);
     expect(await screen.findByTestId("draft")).toHaveTextContent("none");
+  });
+
+  it("replaces the handoff when the mounted Workspace route changes instruments", async () => {
+    render(<MemoryRouter initialEntries={["/start"]}><Switcher /><Routes><Route path="/workspace/:symbol" element={<WorkspaceRoute {...routeProps} />} /></Routes></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Open first" }));
+    expect(await screen.findByTestId("draft")).toHaveTextContent('"instrumentId":"BIYA"');
+    fireEvent.click(screen.getByRole("button", { name: "Open second" }));
+    expect(screen.getByTestId("draft")).toHaveTextContent("none");
+    fireEvent.click(screen.getByRole("button", { name: "Trade second" }));
+    expect(screen.getByTestId("draft")).toHaveTextContent('"instrumentId":"NVDA"');
   });
 });

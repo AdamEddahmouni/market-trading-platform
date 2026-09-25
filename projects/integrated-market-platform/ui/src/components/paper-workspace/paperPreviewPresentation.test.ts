@@ -97,6 +97,17 @@ describe("derivePreviewPresentationState", () => {
     expect(state.reasonCodes).toEqual(["POSITION_LIMIT"]);
   });
 
+  it("treats a projected REJECTED order as a blocker even when risk passes", () => {
+    const state = derivePreviewPresentationState({
+      ...base,
+      preview: { risk_status: "PASS", decision: "APPROVE", quality_state: "NO_EXECUTABLE_BAR", order_preview: { state: "REJECTED" } },
+      confirmedRequestIsCurrent: true,
+    });
+    expect(state.status).toBe("REJECTED");
+    expect(state.canSubmit).toBe(false);
+    expect(state.message).toMatch(/No executable bar/i);
+  });
+
   it("maps revalidation required when preview is stale", () => {
     const state = derivePreviewPresentationState({
       ...base,

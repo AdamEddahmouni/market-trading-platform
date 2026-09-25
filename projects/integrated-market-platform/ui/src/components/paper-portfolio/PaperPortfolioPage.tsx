@@ -176,7 +176,7 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             sections={["attention"]}
           />
 
-          <PortfolioPositionsSection data={data} viewMode="PAPER" />
+          <PortfolioPositionsSection data={data} viewMode="PAPER" canTrade={actionEligible} />
 
           <PaperOrderHistory
             data={data}

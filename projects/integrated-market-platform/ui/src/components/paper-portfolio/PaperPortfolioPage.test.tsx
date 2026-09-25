@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPaperOrderHistoryInfiniteQueryMock } from "../../test/paperOrderHistoryQueryMock";
 import { PaperPortfolioPage } from "./PaperPortfolioPage";
@@ -67,11 +67,16 @@ vi.mock("../../api/hooks", () => ({
 }));
 
 function renderPage(paperActionsPermitted: boolean) {
+  function RouteStateProbe() {
+    const location = useLocation();
+    return <output data-testid="route-state">{JSON.stringify(location.state)}</output>;
+  }
   const client = new QueryClient();
   return render(
     <QueryClientProvider client={client}>
       <MemoryRouter>
         <PaperPortfolioPage paperActionsPermitted={paperActionsPermitted} />
+        <RouteStateProbe />
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -284,6 +289,35 @@ describe("PaperPortfolioPage", () => {
     );
     fireEvent.click(within(selection).getByRole("button", { name: "Clear selection" }));
     expect(screen.queryByTestId("portfolio-position-selection")).not.toBeInTheDocument();
+  });
+
+  it("hands a selected Paper position action to Workspace with editable terms", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    portfolio.positions = [{
+      instrument_id: "AAPL", symbol: "AAPL", quantity: 12, side: "LONG",
+      mark_display: "228.41", mark_quality: "FRESH", average_fill_display: "221.06",
+      unrealized_pnl_display: "88.00",
+    }];
+    renderPage(true);
+    fireEvent.click(screen.getByRole("rowheader", { name: /AAPL/ }));
+    const selection = screen.getByTestId("portfolio-position-selection");
+    expect(within(selection).getByRole("link", { name: "Add AAPL position" })).toHaveAttribute("href", "/workspace/AAPL");
+    fireEvent.click(within(selection).getByRole("link", { name: "Close AAPL position" }));
+    expect(JSON.parse(screen.getByTestId("route-state").textContent ?? "null")).toMatchObject({
+      version: 1, instrumentId: "AAPL", side: "SELL", quantity: 12, orderType: "MARKET",
+    });
+  });
+
+  it("does not expose trade actions when Paper authority is unavailable", () => {
+    portfolio.positions = [{
+      instrument_id: "AAPL", symbol: "AAPL", quantity: 12, side: "LONG",
+      mark_display: "228.41", mark_quality: "FRESH", average_fill_display: "221.06",
+      unrealized_pnl_display: "88.00",
+    }];
+    renderPage(false);
+    fireEvent.click(screen.getByRole("rowheader", { name: /AAPL/ }));
+    expect(screen.queryByRole("link", { name: "Close" })).not.toBeInTheDocument();
   });
 
   it("withholds order cancel while Paper authority is unavailable", () => {
