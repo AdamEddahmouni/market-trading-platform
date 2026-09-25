@@ -372,6 +372,36 @@
   gap: 8px;
 }
 
+.portfolio-session-history-disclosure {
+  margin-top: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.portfolio-session-history-disclosure > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  color: var(--text-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.portfolio-session-history-disclosure > summary small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 400;
+}
+
+.portfolio-session-history-disclosure[open] > summary {
+  margin-bottom: 8px;
+}
+
+.portfolio-session-history-disclosure > .session-history-panel {
+  margin-top: 0;
+}
+
 .portfolio-session-list {
   list-style: none;
   margin: 0;

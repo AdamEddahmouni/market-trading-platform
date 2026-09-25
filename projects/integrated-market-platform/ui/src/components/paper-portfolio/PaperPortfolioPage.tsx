@@ -167,38 +167,45 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             }}
           />
 
-          <section className="panel session-history-panel" aria-labelledby="portfolio-sessions-heading">
-            <div className="paper-order-history-header">
-              <h2 id="portfolio-sessions-heading">Session history</h2>
-              <button type="button" onClick={loadSessions}>
-                Refresh sessions
-              </button>
-            </div>
-            {sessionsError ? (
-              <p className="muted">Session list unavailable. Refresh to retry. The current account session above remains authoritative.</p>
-            ) : sessions.length === 0 ? (
-              <p className="muted">No persisted sessions yet.</p>
-            ) : (
-              <ul className="portfolio-session-list">
-                {sessions.map((row) => {
-                  const status = resolveSemanticState("session", row.status);
-                  return (
-                    <li key={row.session_id}>
-                      <StatePill tone={status.tone} label={status.label} raw={row.status} size="sm" />
-                      <CopyableIdentifier value={row.session_id} />
-                      <span>
-                        {row.data_mode ? humanizeEnum(row.data_mode) : "Data mode unavailable"}
-                        {" / "}
-                        {row.execution_mode
-                          ? humanizeEnum(row.execution_mode)
-                          : "Execution mode unavailable"}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+          <details className="portfolio-session-history-disclosure" data-testid="portfolio-session-history">
+            <summary>
+              <span>Session history</span>
+              <small>Secondary history</small>
+            </summary>
+            <section className="panel session-history-panel" aria-labelledby="portfolio-sessions-heading">
+              <div className="paper-order-history-header">
+                <h2 id="portfolio-sessions-heading">Session history</h2>
+                <button type="button" onClick={loadSessions}>
+                  Refresh sessions
+                </button>
+              </div>
+              {sessionsError ? (
+                <p className="muted">Session list unavailable. Refresh to retry. The current account session above remains authoritative.</p>
+              ) : sessions.length === 0 ? (
+                <p className="muted">No persisted sessions yet.</p>
+              ) : (
+                <ul className="portfolio-session-list">
+                  {sessions.map((row) => {
+                    const status = resolveSemanticState("session", row.status);
+                    return (
+                      <li key={row.session_id}>
+                        <StatePill tone={status.tone} label={status.label} raw={status.raw} size="sm" />
+                        <CopyableIdentifier value={row.session_id} />
+                        <span>
+                          {row.data_mode ? humanizeEnum(row.data_mode) : "Data mode unavailable"}
+                          {" / "}
+                          {row.execution_mode
+                            ? humanizeEnum(row.execution_mode)
+                            : "Execution mode unavailable"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </details>
+
         </div>
 
         {traceIntentId || traceOrderId ? (

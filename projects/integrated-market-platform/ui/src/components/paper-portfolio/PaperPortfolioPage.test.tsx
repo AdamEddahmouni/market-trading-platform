@@ -180,6 +180,13 @@ describe("PaperPortfolioPage", () => {
     expect(screen.getByRole("heading", { name: "Fills" })).toBeInTheDocument();
   });
 
+  it("keeps session history behind a compact disclosure", () => {
+    renderPage(false);
+    const disclosure = screen.getByTestId("portfolio-session-history");
+    expect(disclosure).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "Refresh sessions" })).toBeInTheDocument();
+  });
+
   it.each([
     { label: "HTTP failure", response: { ok: false, json: async () => ({ sessions: [] }) } },
     { label: "malformed response", response: { ok: true, json: async () => ({ message: "error" }) } },

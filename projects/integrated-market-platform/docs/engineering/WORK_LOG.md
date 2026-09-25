@@ -45,6 +45,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
 | **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes were addressed in the next execution/context slice; no Paper or Live authority boundary changed. |
 
+## 2026-09-25 — Keep Portfolio secondary history on demand
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Paper Portfolio now keeps the long persisted-session list behind a compact secondary disclosure, leaving positions, exposure, fills, order activity, and order history in the primary scan path. Refresh, empty, and error states remain available when opened. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx`; `ui/src/styles/paper-portfolio.css` |
+| **Tests** | PaperPortfolioPage suite: 11 passed; UI typecheck passed; production build passed. Browser verified the collapsed disclosure and interactive expansion. |
+| **Notes** | No order mutation, authority, or execution path changed. |
+
 ## 2026-09-25 — Unify global operator search and shell access
 
 | Field | Value |
