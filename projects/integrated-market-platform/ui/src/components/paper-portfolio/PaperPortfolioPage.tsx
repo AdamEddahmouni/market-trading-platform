@@ -99,6 +99,10 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   const data = portfolioQuery.data;
   const { account } = data;
   const actionEligible = canUsePaperActions("PAPER", paperActionsPermitted, account);
+  const activeInstrument = data.active_instrument?.trim();
+  const workspaceHref = activeInstrument
+    ? `/workspace/${encodeURIComponent(activeInstrument)}`
+    : "/workspace";
 
   return (
     <section className="page portfolio-page paper-portfolio-page">
@@ -108,7 +112,7 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
         subtitle="What this simulated account holds, what the backend says it is worth, and which positions need review. Paper orders are submitted only from Workspace."
         actions={
           <div className="portfolio-header-actions">
-            <Link className="portfolio-row-action" to="/workspace">
+            <Link className="portfolio-row-action" to={workspaceHref}>
               Open Workspace
             </Link>
             {actionEligible ? (
@@ -122,9 +126,9 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void openSession.mutateAsync(data.active_instrument ?? undefined)}
-                  disabled={openSession.isPending || !data.active_instrument?.trim()}
-                  title={data.active_instrument?.trim() ? undefined : "Choose an instrument in Workspace first."}
+                  onClick={() => void openSession.mutateAsync(activeInstrument)}
+                  disabled={openSession.isPending || !activeInstrument}
+                  title={activeInstrument ? undefined : "Choose an instrument in Workspace first."}
                 >
                   New Paper Session
                 </button>

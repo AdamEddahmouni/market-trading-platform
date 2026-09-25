@@ -57,6 +57,10 @@ export function PaperPortfolioObservability({
   const executionMode = resolveSemanticState("executionAuthority", account.execution_mode);
   const dataMode = resolveSemanticState("session", account.data_mode);
   const decayMarks = marksDecay(account.data_mode);
+  const activeInstrument = data.active_instrument?.trim();
+  const workspaceHref = activeInstrument
+    ? `/workspace/${encodeURIComponent(activeInstrument)}`
+    : "/workspace";
 
   return (
     <div className="portfolio-operator">
@@ -147,16 +151,7 @@ export function PaperPortfolioObservability({
         </dl>
         <p className="portfolio-workspace-bridge">
           Construct and submit Paper orders in{" "}
-          <Link to="/workspace">Workspace</Link>
-          {data.active_instrument ? (
-            <>
-              {" "}
-              · active instrument{" "}
-              <Link to={`/workspace/${encodeURIComponent(data.active_instrument)}`}>
-                {data.active_instrument}
-              </Link>
-            </>
-          ) : null}
+          <Link to={workspaceHref}>{activeInstrument ? `${activeInstrument} Workspace` : "Workspace"}</Link>
           .
         </p>
         <details className="portfolio-technical">
@@ -253,7 +248,7 @@ export function PaperPortfolioObservability({
           <EmptyState
             title="No open positions"
             reason="This simulated account has no open positions in the current session."
-            action={{ label: "Open Workspace", href: "/workspace" }}
+            action={{ label: "Open Workspace", href: workspaceHref }}
           />
         ) : (
           <>

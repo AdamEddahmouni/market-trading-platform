@@ -180,6 +180,17 @@ describe("PaperPortfolioPage", () => {
     expect(screen.getByRole("heading", { name: "Fills" })).toBeInTheDocument();
   });
 
+  it("keeps the header Workspace handoff on the active instrument", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    renderPage(true);
+    const handoffs = screen.getAllByRole("link", { name: "Open Workspace" });
+    expect(handoffs.length).toBeGreaterThan(0);
+    for (const handoff of handoffs) {
+      expect(handoff).toHaveAttribute("href", "/workspace/BIYA");
+    }
+  });
+
   it("keeps session history behind a compact disclosure", () => {
     renderPage(false);
     const disclosure = screen.getByTestId("portfolio-session-history");

@@ -45,6 +45,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
 | **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes were addressed in the next execution/context slice; no Paper or Live authority boundary changed. |
 
+## 2026-09-25 — Preserve instrument context on the Portfolio handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Every Portfolio Workspace handoff — header action, empty-position action, and account bridge prose — now targets the account's active instrument instead of the generic Workspace index, so an operator moves from portfolio state into the correct decision desk without re-establishing context. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` |
+| **Tests** | Paper Portfolio + shared observability suites: 41 passed; UI typecheck passed; browser verified `/portfolio` → `/workspace/OPTIONS` with instrument context retained. |
+| **Notes** | Handoffs still degrade to `/workspace` when no active instrument exists. No order, authority, or execution path changed. |
+
 ## 2026-09-25 — Keep Portfolio secondary history on demand
 
 | Field | Value |
