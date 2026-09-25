@@ -30,6 +30,7 @@ import {
   PaperOrderHistoryPageSchema,
   PaperOrderPreviewResponseSchema,
   PaperOrderSubmitResponseSchema,
+  PaperOrderCancelResponseSchema,
   PaperSessionResponseSchema,
   PaperTraceResponseSchema,
   PaperStrategyProfitabilityResponseSchema,
@@ -171,7 +172,7 @@ export const api = {
     ),
   closePaperSession: () => postJson("/paper/sessions/close", {}, PaperSessionResponseSchema),
   cancelPaperOrder: (orderId: string) =>
-    postJson("/paper/orders/cancel", { order_id: orderId }, PaperOrderSubmitResponseSchema),
+    postJson("/paper/orders/cancel", { order_id: orderId }, PaperOrderCancelResponseSchema),
   getPaperTrace: (params: {
     intentId?: string;
     orderId?: string;

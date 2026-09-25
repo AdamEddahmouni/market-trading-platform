@@ -1,4 +1,7 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { paperPortfolio } from "../paper-now/paperNowTestFixtures";
 import { PaperOrderHistory } from "./PaperOrderHistory";
@@ -66,39 +69,65 @@ vi.mock("../../api/hooks", async () => {
   };
 });
 
+function renderHistory(node: ReactElement) {
+  return render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter>{node}</MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
 describe("PaperOrderHistory", () => {
-  it("renders provenance badges, status, trace action, and rejection reason", () => {
+  it("renders status in the table and keeps provenance behind row selection and detail", () => {
     mockHistoryOrders = historyOrders;
     const onViewTrace = vi.fn();
     const data = paperPortfolio({ orders: historyOrders });
 
-    render(<PaperOrderHistory data={data} onViewTrace={onViewTrace} />);
+    renderHistory(<PaperOrderHistory data={data} onViewTrace={onViewTrace} />);
 
-    expect(screen.getByText("PAPER COMMAND")).toBeInTheDocument();
-    expect(screen.getByText("ORDER FLOW")).toBeInTheDocument();
-    expect(screen.getByText("Short interest elevated into catalyst window")).toBeInTheDocument();
-    expect(screen.getByText("order-flow")).toBeInTheDocument();
+    // Default table answers "what happened", not "why".
+    expect(screen.getByText("Filled", { selector: ".paper-order-status" })).toBeInTheDocument();
     expect(screen.getByText("Rejected", { selector: ".paper-order-status" })).toBeInTheDocument();
+    expect(screen.queryByText("PAPER COMMAND")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /View trace/ })).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getAllByRole("button", { name: /View trace for/i })[0]!);
+    // Selecting a row exposes its legitimate next actions and provenance.
+    fireEvent.click(screen.getAllByRole("rowheader")[0]!);
+    expect(screen.getByText("PAPER COMMAND")).toBeInTheDocument();
+    expect(screen.getByText("Short interest elevated into catalyst window")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "View trace" }));
     expect(onViewTrace).toHaveBeenCalledWith("intent-attention", "order-attention");
 
+    // Full decision provenance stays in the disclosure.
     fireEvent.click(screen.getAllByRole("button", { name: "Details" })[0]!);
     expect(screen.getAllByText("attention-biya").length).toBeGreaterThan(0);
     expect(screen.getByText("Source context at decision handoff")).toBeInTheDocument();
     expect(screen.getByText("Attention surfaced")).toBeInTheDocument();
     expect(
-      screen.getByText("Historical source-time context — not current market or workspace evidence."),
+      screen.getByText(/Historical source-time context/),
     ).toBeInTheDocument();
     expect(screen.getByText("SI")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Details" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Details" })[1]!);
     expect(screen.getByText("RISK_MAX_ORDER")).toBeInTheDocument();
+  });
+
+  it("hands each order's own instrument to Workspace", () => {
+    mockHistoryOrders = historyOrders;
+    renderHistory(<PaperOrderHistory data={paperPortfolio({ orders: historyOrders })} />);
+    expect(screen.getByRole("link", { name: "Open BIYA Workspace" })).toHaveAttribute(
+      "href",
+      "/workspace/BIYA",
+    );
+    expect(screen.getByRole("link", { name: "Open NVDA Workspace" })).toHaveAttribute(
+      "href",
+      "/workspace/NVDA",
+    );
   });
 
   it("shows empty state when no orders exist", () => {
     mockHistoryOrders = [];
-    render(<PaperOrderHistory data={paperPortfolio({ orders: [] })} />);
+    renderHistory(<PaperOrderHistory data={paperPortfolio({ orders: [] })} />);
     expect(screen.getByText(/No simulated orders yet/i)).toBeInTheDocument();
   });
 });

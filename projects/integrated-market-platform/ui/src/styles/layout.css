@@ -34,11 +34,28 @@ body,
   min-width: 0;
 }
 
+/* Fixed corner control: keep it small and low-contrast so it never competes
+ * with table content, and give page content bottom clearance so the last row
+ * can always scroll clear of it. */
 .assistant-toggle {
   position: fixed;
-  right: 16px;
-  bottom: 16px;
+  right: 14px;
+  bottom: 14px;
   z-index: 20;
+  min-height: 26px;
+  padding: 2px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  background: var(--surface-1, #12161c);
+  color: var(--text-muted, #9db0bd);
+  font-size: 0.7rem;
+  opacity: 0.75;
+}
+
+.assistant-toggle:hover,
+.assistant-toggle:focus-visible {
+  color: var(--text-primary, #e6edf3);
+  opacity: 1;
 }
 
 .assistant-sidecar {

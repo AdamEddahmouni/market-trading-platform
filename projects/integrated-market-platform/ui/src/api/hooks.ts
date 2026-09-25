@@ -381,6 +381,19 @@ export function useClosePaperSessionMutation() {
   });
 }
 
+/**
+ * Cancel a working Paper order. Server-authoritative: the backend owns the
+ * cancel transition and every authority/exposure rule. The UI only decides
+ * whether the operator is currently allowed to attempt it.
+ */
+export function useCancelPaperOrderMutation() {
+  const invalidate = useInvalidatePaper();
+  return useMutation({
+    mutationFn: (orderId: string) => api.cancelPaperOrder(orderId),
+    onSuccess: () => invalidate(),
+  });
+}
+
 export function useProviderHealthQuery() {
   return useQuery({
     queryKey: queryKeys.providerHealth,

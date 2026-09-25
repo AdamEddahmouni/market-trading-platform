@@ -1823,7 +1823,7 @@ export const PaperPortfolioResponseSchema = z.object({
       mark_quality: z.string().nullable().optional(),
       mark_as_of_ns: z.number().nullable().optional(),
       average_fill_display: z.string().nullable().optional(),
-      unrealized_pnl_display: z.string().optional(),
+      unrealized_pnl_display: z.string().nullable().optional(),
     }),
   ),
   orders: z.array(z.record(z.unknown())),
@@ -1968,6 +1968,25 @@ export const PaperSessionResponseSchema = z.object({
     starting_cash_minor: z.number().optional(),
   }),
 });
+
+/**
+ * Backend cancel contract (`POST /paper/orders/cancel`). The response carries
+ * a `cancellation` envelope, not a `submission` — the two must not be conflated.
+ */
+export const PaperOrderCancelResponseSchema = z.object({
+  as_of_context: AsOfContextSchema,
+  capability_states: z.array(CapabilityStateSchema).optional(),
+  cancellation: z.object({
+    duplicate: z.boolean().optional(),
+    order_id: z.string().optional(),
+    state: z.string().optional(),
+    order: z.record(z.unknown()).optional(),
+    filled_quantity: z.number().optional(),
+    working_remaining: z.number().optional(),
+  }),
+});
+
+export type PaperOrderCancelResponse = z.infer<typeof PaperOrderCancelResponseSchema>;
 
 export const PaperTraceResponseSchema = z.object({
   as_of_context: AsOfContextSchema,

@@ -4,18 +4,17 @@ import { resolveSemanticState } from "../../state/semanticState";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
 import { CopyableIdentifier } from "../imp-ui/CopyableIdentifier";
 import { EmptyState } from "../imp-ui/FeedbackStates";
-import { FreshnessIndicator } from "../imp-ui/FreshnessIndicator";
 import { StatePill } from "../imp-ui/StatePill";
-import { PaperRiskRibbon } from "../paper-now/PaperRiskRibbon";
+import { PortfolioPositionsTable } from "../paper-portfolio/PortfolioPositionsTable";
 import {
   PORTFOLIO_SECTIONS,
   buildPortfolioAttention,
+  buildPortfolioGlanceMetrics,
   buildPortfolioPositions,
-  buildPortfolioSummaryMetrics,
   exposureAvailable,
+  formatShareCount,
   marksDecay,
   paperCapitalHonesty,
-  positionNeedsAttention,
   type SignedAmountPresentation,
 } from "../paper-portfolio/paperPortfolioPresentation";
 
@@ -24,15 +23,121 @@ type Props = {
   viewMode: "DEMO" | "PAPER";
   onTraceOrder?: (intentId?: string, orderId?: string) => void;
   hideOrdersSection?: boolean;
+  /**
+   * Which blocks to render, in the order given. Omit for the full default
+   * sequence. The Paper page renders only the primary operator surface and
+   * places account/technical detail behind its own disclosure.
+   */
+  sections?: readonly PortfolioSectionId[];
 };
+
+export const PORTFOLIO_SECTION_IDS = [
+  "honesty",
+  "glance",
+  "positions",
+  "attention",
+  "account",
+  "exposure",
+  "fills",
+] as const;
+
+export type PortfolioSectionId = (typeof PORTFOLIO_SECTION_IDS)[number];
 
 function SignedAmount({ amount }: { amount: SignedAmountPresentation }) {
   return (
     <span className="portfolio-signed" data-direction={amount.direction}>
       {amount.text}
-      {amount.direction === "gain" ? " gain" : null}
-      {amount.direction === "loss" ? " loss" : null}
     </span>
+  );
+}
+
+/**
+ * One glance row answering "what exposure and active execution state do I have
+ * right now?". Every figure is canonical account/risk state already on the
+ * payload; nothing is derived from a frontend guess.
+ */
+export function PortfolioGlanceStrip({ data }: { data: PaperPortfolioResponse }) {
+  const metrics = buildPortfolioGlanceMetrics(data);
+  return (
+    <section className="portfolio-glance-panel" aria-label="Exposure at a glance">
+      <dl className="portfolio-glance" data-testid="portfolio-glance">
+        {metrics.map((metric) => (
+          <div
+            key={metric.id}
+            className={metric.available ? undefined : "unavailable"}
+            data-lead={metric.emphasis === "lead" ? "true" : undefined}
+          >
+            <dt>{metric.label}</dt>
+            <dd>{metric.signed ? <SignedAmount amount={metric.signed} /> : metric.value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="portfolio-glance-limits">
+        <span>Risk limits</span>
+        <span>
+          Position {formatShareCount(data.risk.limits.max_position_shares)} sh · Order{" "}
+          {formatShareCount(data.risk.limits.max_order_shares)} sh ·{" "}
+          {formatShareCount(data.risk.limits.max_open_orders)} working
+        </span>
+      </p>
+    </section>
+  );
+}
+
+/** Open simulated exposure. The primary Portfolio table. */
+export function PortfolioPositionsSection({
+  data,
+  viewMode: _viewMode,
+}: {
+  data: PaperPortfolioResponse;
+  viewMode?: "DEMO" | "PAPER";
+}) {
+  const positions = buildPortfolioPositions(data);
+  const decayMarks = marksDecay(data.account.data_mode);
+  const activeInstrument = data.active_instrument?.trim();
+  const workspaceHref = activeInstrument
+    ? `/workspace/${encodeURIComponent(activeInstrument)}`
+    : "/workspace";
+
+  return (
+    <section
+      className="panel portfolio-section portfolio-primary-section"
+      id={PORTFOLIO_SECTIONS.positions}
+      aria-labelledby="portfolio-positions-heading"
+    >
+      <div className="portfolio-section-head">
+        <h2 id="portfolio-positions-heading">Positions</h2>
+        <span className="portfolio-section-count">
+          {positions.length} open
+        </span>
+      </div>
+      <PortfolioPositionsTable
+        positions={positions}
+        marksDecay={decayMarks}
+        workspaceHref={workspaceHref}
+      />
+    </section>
+  );
+}
+
+export function PortfolioAttentionSection({ data }: { data: PaperPortfolioResponse }) {
+  const attention = buildPortfolioAttention(data);
+  if (attention.length === 0) return null;
+  return (
+    <section
+      className="panel portfolio-section"
+      id={PORTFOLIO_SECTIONS.attention}
+      aria-labelledby="portfolio-attention-heading"
+    >
+      <h2 id="portfolio-attention-heading">Needs attention</h2>
+      <div className="portfolio-attention-stack">
+        {attention.map((item) => (
+          <AttentionBanner key={item.code} tone={item.tone} affects={item.affects} action={item.action}>
+            {item.message}
+          </AttentionBanner>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -41,12 +146,11 @@ export function PaperPortfolioObservability({
   viewMode,
   onTraceOrder,
   hideOrdersSection = false,
+  sections = PORTFOLIO_SECTION_IDS,
 }: Props) {
   const { account, risk, data_health, fills } = data;
   const honesty = paperCapitalHonesty(viewMode);
-  const summary = buildPortfolioSummaryMetrics(data);
-  const attention = buildPortfolioAttention(data);
-  const positions = buildPortfolioPositions(data);
+  const show = (id: PortfolioSectionId) => sections.includes(id);
   const killSwitch = resolveSemanticState("portfolio", risk.kill_switch_active ? "ACTIVE" : "OFF");
   const reconciliation = resolveSemanticState(
     "portfolio",
@@ -56,7 +160,6 @@ export function PaperPortfolioObservability({
   const execution = resolveSemanticState("executionAuthority", account.execution_authority);
   const executionMode = resolveSemanticState("executionAuthority", account.execution_mode);
   const dataMode = resolveSemanticState("session", account.data_mode);
-  const decayMarks = marksDecay(account.data_mode);
   const activeInstrument = data.active_instrument?.trim();
   const workspaceHref = activeInstrument
     ? `/workspace/${encodeURIComponent(activeInstrument)}`
@@ -64,10 +167,19 @@ export function PaperPortfolioObservability({
 
   return (
     <div className="portfolio-operator">
-      <AttentionBanner tone={honesty.tone} affects={honesty.affects}>
-        {honesty.sentence}
-      </AttentionBanner>
+      {show("honesty") ? (
+        <AttentionBanner tone={honesty.tone} affects={honesty.affects}>
+          {honesty.sentence}
+        </AttentionBanner>
+      ) : null}
 
+      {show("glance") ? <PortfolioGlanceStrip data={data} /> : null}
+
+      {show("positions") ? <PortfolioPositionsSection data={data} viewMode={viewMode} /> : null}
+
+      {show("attention") ? <PortfolioAttentionSection data={data} /> : null}
+
+      {show("account") ? (
       <section
         className="panel portfolio-section"
         id={PORTFOLIO_SECTIONS.account}
@@ -196,151 +308,9 @@ export function PaperPortfolioObservability({
           </dl>
         </details>
       </section>
-
-      <section
-        className="panel portfolio-section"
-        id={PORTFOLIO_SECTIONS.summary}
-        aria-labelledby="portfolio-summary-heading"
-      >
-        <h2 id="portfolio-summary-heading">Summary</h2>
-        <dl className="portfolio-metric-strip">
-          {summary.map((metric) => (
-            <div key={metric.id} className={metric.available ? undefined : "unavailable"}>
-              <dt>{metric.label}</dt>
-              <dd>
-                {metric.signed ? <SignedAmount amount={metric.signed} /> : metric.value}
-              </dd>
-            </div>
-          ))}
-        </dl>
-        <PaperRiskRibbon portfolio={data} state="ready" />
-      </section>
-
-      {attention.length ? (
-        <section
-          className="panel portfolio-section"
-          id={PORTFOLIO_SECTIONS.attention}
-          aria-labelledby="portfolio-attention-heading"
-        >
-          <h2 id="portfolio-attention-heading">Needs attention</h2>
-          <div className="portfolio-attention-stack">
-            {attention.map((item) => (
-              <AttentionBanner
-                key={item.code}
-                tone={item.tone}
-                affects={item.affects}
-                action={item.action}
-              >
-                {item.message}
-              </AttentionBanner>
-            ))}
-          </div>
-        </section>
       ) : null}
 
-      <section
-        className="panel portfolio-section"
-        id={PORTFOLIO_SECTIONS.positions}
-        aria-labelledby="portfolio-positions-heading"
-      >
-        <h2 id="portfolio-positions-heading">Positions</h2>
-        {positions.length === 0 ? (
-          <EmptyState
-            title="No open positions"
-            reason="This simulated account has no open positions in the current session."
-            action={{ label: "Open Workspace", href: workspaceHref }}
-          />
-        ) : (
-          <>
-            <div className="portfolio-table-wrap portfolio-positions-table-wrap">
-              <table className="data-table portfolio-positions-table">
-                <caption className="imp-visually-hidden">Open simulated positions</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Symbol</th>
-                    <th scope="col">Side</th>
-                    <th scope="col">Qty</th>
-                    <th scope="col">Avg fill</th>
-                    <th scope="col">Mark</th>
-                    <th scope="col">Mark freshness</th>
-                    <th scope="col">Unrealized P&amp;L</th>
-                    <th scope="col">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {positions.map((row) => (
-                    <tr key={row.instrumentId} data-attention={positionNeedsAttention(row) ? "true" : "false"}>
-                      <td>{row.symbol}</td>
-                      <td>{row.sideLabel}</td>
-                      <td>{row.quantity}</td>
-                      <td>{row.averageFill}</td>
-                      <td>{row.mark}</td>
-                      <td>
-                        <FreshnessIndicator
-                          backendLabel={row.markQuality}
-                          asOf={row.markAsOfNs}
-                          decays={decayMarks}
-                        />
-                      </td>
-                      <td>
-                        <SignedAmount amount={row.unrealized} />
-                      </td>
-                      <td>
-                        <Link className="portfolio-row-action" to={row.workspaceHref}>
-                          Inspect in Workspace
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <ul className="portfolio-position-cards">
-              {positions.map((row) => (
-                <li key={row.instrumentId} className="portfolio-position-card">
-                  <header>
-                    <h3>{row.symbol}</h3>
-                    <p>
-                      {row.sideLabel} · {row.quantity}
-                    </p>
-                  </header>
-                  <dl>
-                    <div>
-                      <dt>Mark</dt>
-                      <dd>{row.mark}</dd>
-                    </div>
-                    <div>
-                      <dt>Freshness</dt>
-                      <dd>
-                        <FreshnessIndicator
-                          backendLabel={row.markQuality}
-                          asOf={row.markAsOfNs}
-                          decays={decayMarks}
-                        />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Unrealized P&amp;L</dt>
-                      <dd>
-                        <SignedAmount amount={row.unrealized} />
-                      </dd>
-                    </div>
-                    <div>
-                      <dt>Avg fill</dt>
-                      <dd>{row.averageFill}</dd>
-                    </div>
-                  </dl>
-                  <Link className="portfolio-row-action" to={row.workspaceHref}>
-                    Inspect in Workspace
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </>
-        )}
-      </section>
-
-      {exposureAvailable(data.exposure) ? (
+      {show("exposure") && exposureAvailable(data.exposure) ? (
         <section
           className="panel portfolio-section"
           id={PORTFOLIO_SECTIONS.exposure}
@@ -361,6 +331,7 @@ export function PaperPortfolioObservability({
         </section>
       ) : null}
 
+      {show("fills") ? (
       <section
         className="panel portfolio-section"
         id={PORTFOLIO_SECTIONS.activity}
@@ -370,7 +341,7 @@ export function PaperPortfolioObservability({
         {hideOrdersSection ? (
           <p className="muted">
             Snapshot fills only. Full order lifecycle is under{" "}
-            <a href={`#${PORTFOLIO_SECTIONS.orderHistory}`}>Order history</a> below — not in this
+            <a href={`#${PORTFOLIO_SECTIONS.orderHistory}`}>Order history</a> above — not in this
             Fills panel.
           </p>
         ) : null}
@@ -462,6 +433,7 @@ export function PaperPortfolioObservability({
           </div>
         ) : null}
       </section>
+      ) : null}
     </div>
   );
 }

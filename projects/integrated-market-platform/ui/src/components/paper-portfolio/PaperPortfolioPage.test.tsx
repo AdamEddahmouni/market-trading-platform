@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -48,6 +48,7 @@ function portfolioPayload() {
 }
 
 let portfolio = portfolioPayload();
+const cancelPaperOrder = vi.fn().mockResolvedValue({});
 
 vi.mock("../../api/hooks", () => ({
   usePaperPortfolioQuery: () => ({
@@ -62,6 +63,7 @@ vi.mock("../../api/hooks", () => ({
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useClosePaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCancelPaperOrderMutation: () => ({ mutateAsync: cancelPaperOrder, isPending: false }),
 }));
 
 function renderPage(paperActionsPermitted: boolean) {
@@ -78,6 +80,7 @@ function renderPage(paperActionsPermitted: boolean) {
 describe("PaperPortfolioPage", () => {
   beforeEach(() => {
     portfolio = portfolioPayload();
+    cancelPaperOrder.mockClear();
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -154,8 +157,13 @@ describe("PaperPortfolioPage", () => {
     renderPage(false);
 
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
-    expect(screen.getByText("SHORT SQUEEZE")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /View trace for BIYA/i })).toBeInTheDocument();
+    expect(screen.getByText("BIYA")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open BIYA Workspace" })).toHaveAttribute(
+      "href",
+      "/workspace/BIYA",
+    );
+    fireEvent.click(screen.getByRole("rowheader", { name: /BIYA/ }));
+    expect(screen.getByRole("button", { name: "View trace" })).toBeInTheDocument();
   });
 
   it("renders empty holdings with a Workspace handoff and never submits from Portfolio", () => {
@@ -196,6 +204,115 @@ describe("PaperPortfolioPage", () => {
     const disclosure = screen.getByTestId("portfolio-session-history");
     expect(disclosure).not.toHaveAttribute("open");
     expect(screen.getByRole("button", { name: "Refresh sessions" })).toBeInTheDocument();
+  });
+
+  it("keeps account and fills detail behind a secondary disclosure", () => {
+    renderPage(false);
+    const secondary = screen.getByTestId("portfolio-secondary");
+    expect(secondary).not.toHaveAttribute("open");
+    expect(within(secondary).getByRole("heading", { name: "Account" })).toBeInTheDocument();
+  });
+
+  it("puts exposure, positions, and orders ahead of account and fills detail", () => {
+    portfolio.orders = [
+      { order_id: "order-9", symbol: "AAPL", side: "BUY", desired_quantity: 10, state: "WORKING" },
+    ];
+    renderPage(false);
+    const headings = screen
+      .getAllByRole("heading")
+      .map((node) => node.textContent?.trim() ?? "")
+      .filter(Boolean);
+    const positions = headings.indexOf("Positions");
+    const working = headings.indexOf("Working orders");
+    const account = headings.indexOf("Account");
+    const fills = headings.indexOf("Fills");
+    expect(positions).toBeGreaterThanOrEqual(0);
+    expect(working).toBeGreaterThan(positions);
+    expect(account).toBeGreaterThan(working);
+    expect(fills).toBeGreaterThan(account);
+  });
+
+  it("leads the glance strip with position and working-order counts", () => {
+    renderPage(false);
+    const glance = screen.getByTestId("portfolio-glance");
+    expect(within(glance).getByText("Positions")).toBeInTheDocument();
+    expect(within(glance).getByText("Working orders")).toBeInTheDocument();
+  });
+
+  it("carries a position's own instrument into its Workspace handoff", () => {
+    portfolio.positions = [
+      {
+        instrument_id: "AAPL",
+        symbol: "AAPL",
+        quantity: 120,
+        side: "LONG",
+        mark_display: "228.41",
+        mark_quality: "FRESH",
+        average_fill_display: "221.06",
+        unrealized_pnl_display: "882.00",
+      },
+    ];
+    renderPage(false);
+    const handoff = screen.getByRole("link", { name: "Open AAPL Workspace" });
+    expect(handoff).toHaveAttribute("href", "/workspace/AAPL");
+    expect(screen.getByText("Long")).toBeInTheDocument();
+    expect(screen.getByText("120")).toBeInTheDocument();
+  });
+
+  it("reveals deeper position context only for the selected row", () => {
+    portfolio.positions = [
+      {
+        instrument_id: "AAPL",
+        symbol: "AAPL",
+        quantity: 120,
+        side: "SHORT",
+        mark_display: "228.41",
+        mark_provider: "INTERNAL",
+        mark_quality: "FRESH",
+        average_fill_display: "221.06",
+        unrealized_pnl_display: "882.00",
+      },
+    ];
+    renderPage(false);
+    expect(screen.queryByTestId("portfolio-position-selection")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("rowheader", { name: /AAPL/ }));
+    const selection = screen.getByTestId("portfolio-position-selection");
+    expect(within(selection).getByText("INTERNAL")).toBeInTheDocument();
+    expect(within(selection).getByRole("link", { name: "Open Workspace" })).toHaveAttribute(
+      "href",
+      "/workspace/AAPL",
+    );
+    fireEvent.click(within(selection).getByRole("button", { name: "Clear selection" }));
+    expect(screen.queryByTestId("portfolio-position-selection")).not.toBeInTheDocument();
+  });
+
+  it("withholds order cancel while Paper authority is unavailable", () => {
+    portfolio.orders = [
+      { order_id: "order-9", symbol: "AAPL", side: "BUY", desired_quantity: 10, state: "WORKING" },
+    ];
+    renderPage(true);
+    expect(screen.queryByRole("button", { name: /Cancel working AAPL order/i })).not.toBeInTheDocument();
+  });
+
+  it("cancels a working order through the backend contract when Paper authority allows it", async () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    portfolio.orders = [
+      { order_id: "order-9", symbol: "AAPL", side: "BUY", desired_quantity: 10, state: "WORKING" },
+    ];
+    renderPage(true);
+    fireEvent.click(screen.getByRole("button", { name: /Cancel working AAPL order/i }));
+    await waitFor(() => expect(cancelPaperOrder).toHaveBeenCalledWith("order-9"));
+  });
+
+  it("never offers cancel for a filled order even with Paper authority", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    portfolio.orders = [
+      { order_id: "order-8", symbol: "AAPL", side: "BUY", desired_quantity: 10, state: "FILLED" },
+    ];
+    renderPage(true);
+    expect(screen.queryByRole("button", { name: /Cancel working AAPL order/i })).not.toBeInTheDocument();
   });
 
   it.each([

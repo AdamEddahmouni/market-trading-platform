@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-25 — Portfolio positions and working-order controls
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/portfolio`, `ui/api` |
+| **Summary** | Compressed Paper Portfolio into an exposure glance, position and working-order tables, and on-demand account detail. Working-order cancel calls the canonical backend contract; eligible controls match the internal Paper ledger states. |
+| **Key files** | `ui/src/components/paper-portfolio/`, `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx`, `ui/src/api/`, `ui/src/styles/paper-portfolio.css` |
+| **Tests** | Focused UI: 144 passed; typecheck, production build, and `git diff --check` passed. Browser smoke rendered the Paper Portfolio from this worktree; the current backend reported blocked Paper authority, so no cancel action was attempted against that session. |
+| **Notes** | `.local` browser audit scripts and local state remain ignored and unstaged. Workspace remains the Paper submit boundary; Demo and Live remain read-only. |
+
 ## 2026-09-25 — Compact operator shell, Radar scan, and Workspace resume
 
 | Field | Value |

@@ -5,7 +5,7 @@
  */
 import type { PaperPortfolioResponse } from "../../api/client";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
-import { humanizeEnum, type SemanticTone } from "../../state/semanticState";
+import type { SemanticTone } from "../../state/semanticState";
 import {
   derivePaperExceptions,
   formatMinorCurrency,
@@ -21,6 +21,8 @@ export const PORTFOLIO_SECTIONS = {
   activity: "portfolio-activity",
   /** Full order lifecycle panel below snapshot fills (Paper Portfolio only). */
   orderHistory: "portfolio-order-history",
+  /** Open (working) orders — the operator's active execution state. */
+  openOrders: "portfolio-open-orders",
 } as const;
 
 export type SignedAmountPresentation = {
@@ -48,7 +50,11 @@ export type PortfolioAttentionItem = {
 export type PortfolioPositionRow = {
   instrumentId: string;
   symbol: string;
-  quantity: string;
+  /** Absolute share count as the backend reports it. */
+  quantity: number;
+  /** Pre-formatted absolute size for the Qty cell. */
+  quantityLabel: string;
+  side: PortfolioPositionSide;
   sideLabel: string;
   averageFill: string;
   mark: string;
@@ -57,9 +63,39 @@ export type PortfolioPositionRow = {
   unrealized: SignedAmountPresentation;
   markProvenance: string;
   workspaceHref: string;
+  /** Stable identity for selection + row-detail disclosure. */
+  rowId: string;
 };
 
-const HEALTHY_MARK = new Set(["PASS", "HEALTHY", "CURRENT", "AVAILABLE", "FRESH"]);
+export type PortfolioPositionSide = "long" | "short" | "flat";
+
+/**
+ * One glance row that answers "what exposure and active execution state do I
+ * have right now?" Every value here is derived from canonical account/risk
+ * state already on the payload — nothing is invented.
+ */
+export type PortfolioGlanceMetric = {
+  id: string;
+  label: string;
+  value: string;
+  available: boolean;
+  signed?: SignedAmountPresentation;
+  emphasis?: "lead";
+};
+
+/** Healthy mark qualities. Mirrors the mark vocabulary in `FreshnessIndicator` —
+ * `FRESH`/`LIVE`/`SNAPSHOT`/`REPLAY` are current, not problems. */
+const HEALTHY_MARK = new Set([
+  "PASS",
+  "HEALTHY",
+  "CURRENT",
+  "AVAILABLE",
+  "FRESH",
+  "LIVE",
+  "SNAPSHOT",
+  "REPLAY",
+  "NOT_APPLICABLE",
+]);
 
 export function classifySignedDisplay(value: string | null | undefined): SignedAmountPresentation {
   if (value == null || value.trim() === "" || value === "—") {
@@ -179,24 +215,122 @@ export function buildPortfolioAttention(data: PaperPortfolioResponse): Portfolio
 }
 
 export function buildPortfolioPositions(data: PaperPortfolioResponse): PortfolioPositionRow[] {
-  return data.positions.map((row) => ({
-    instrumentId: row.instrument_id,
-    symbol: row.symbol,
-    quantity: String(row.quantity),
-    sideLabel: humanizeEnum(row.side),
-    averageFill: row.average_fill_display?.trim() ? row.average_fill_display : "Unavailable",
-    mark: row.mark_display?.trim() ? row.mark_display : "Unavailable",
-    markQuality: row.mark_quality ?? null,
-    markAsOfNs: row.mark_as_of_ns ?? null,
-    unrealized: classifySignedDisplay(row.unrealized_pnl_display),
-    markProvenance: row.mark_provider ?? row.mark_source ?? "Unavailable",
-    workspaceHref: workspacePathForInstrument(row.instrument_id),
-  }));
+  return data.positions.map((row) => {
+    const side = classifyPositionSide(row.side, row.quantity);
+    return {
+      instrumentId: row.instrument_id,
+      rowId: `${row.instrument_id}:${side}`,
+      symbol: row.symbol,
+      quantity: Math.abs(row.quantity),
+      quantityLabel: formatShareCount(Math.abs(row.quantity)),
+      side,
+      sideLabel: POSITION_SIDE_LABEL[side],
+      averageFill: row.average_fill_display?.trim() ? row.average_fill_display : "Unavailable",
+      mark: row.mark_display?.trim() ? row.mark_display : "Unavailable",
+      markQuality: row.mark_quality ?? null,
+      markAsOfNs: row.mark_as_of_ns ?? null,
+      unrealized: classifySignedDisplay(row.unrealized_pnl_display),
+      markProvenance: row.mark_provider ?? row.mark_source ?? "Unavailable",
+      workspaceHref: workspacePathForInstrument(row.instrument_id),
+    };
+  });
+}
+
+const POSITION_SIDE_LABEL: Record<PortfolioPositionSide, string> = {
+  long: "Long",
+  short: "Short",
+  flat: "Flat",
+};
+
+/**
+ * The backend is the authority on side, but a signed quantity is an equally
+ * canonical statement of direction. Trust the explicit side when it maps to a
+ * known direction, and fall back to the sign of the quantity otherwise.
+ */
+export function classifyPositionSide(side: string | undefined, quantity: number): PortfolioPositionSide {
+  const normalized = (side ?? "").trim().toUpperCase();
+  if (normalized === "LONG" || normalized === "BUY" || normalized === "BULL") return "long";
+  if (normalized === "SHORT" || normalized === "SELL" || normalized === "BEAR") return "short";
+  if (normalized === "FLAT" || normalized === "NONE") return "flat";
+  if (quantity > 0) return "long";
+  if (quantity < 0) return "short";
+  return "flat";
+}
+
+/** Thousands-separated integer share count. Never a locale-dependent float. */
+export function formatShareCount(quantity: number): string {
+  if (!Number.isFinite(quantity)) return "—";
+  return Math.round(quantity).toLocaleString("en-US");
 }
 
 export function positionNeedsAttention(row: PortfolioPositionRow): boolean {
   const quality = row.markQuality?.toUpperCase();
   return Boolean(quality && !HEALTHY_MARK.has(quality));
+}
+
+/**
+ * The single answer to "what exposure and active execution state do I have
+ * right now?" — net/gross exposure, working orders, and the three canonical
+ * P&L figures on one row. This deliberately replaces the previous Summary +
+ * Risk summary pair, which repeated buying power and total P&L twice.
+ */
+export function buildPortfolioGlanceMetrics(data: PaperPortfolioResponse): PortfolioGlanceMetric[] {
+  const { account, risk, exposure } = data;
+  const realized = data.pnl?.realized_display ?? account.realized_pnl_display;
+  const unrealized = data.pnl?.unrealized_display ?? null;
+  const total = data.pnl?.total_display ?? realized;
+  const metrics: PortfolioGlanceMetric[] = [];
+
+  metrics.push({
+    id: "positions",
+    label: "Positions",
+    value: String(data.positions.length),
+    available: true,
+    emphasis: "lead",
+  });
+  metrics.push({
+    id: "open-orders",
+    label: "Working orders",
+    value: String(risk.open_order_count ?? 0),
+    available: true,
+    emphasis: "lead",
+  });
+  if (exposureAvailable(exposure)) {
+    metrics.push({
+      id: "net-exposure",
+      label: "Net exposure",
+      value: `${formatShareCount(exposure.net_shares)} sh`,
+      available: true,
+    });
+    metrics.push({
+      id: "gross-exposure",
+      label: "Gross exposure",
+      value: `${formatShareCount(exposure.gross_shares)} sh`,
+      available: true,
+    });
+  }
+  metrics.push({
+    id: "realized",
+    label: "Realized P&L",
+    value: realized,
+    available: true,
+    signed: classifySignedDisplay(realized),
+  });
+  metrics.push({
+    id: "unrealized",
+    label: "Unrealized P&L",
+    value: unrealized ?? "Unavailable",
+    available: Boolean(unrealized),
+    signed: classifySignedDisplay(unrealized),
+  });
+  metrics.push({
+    id: "total-pnl",
+    label: "Total P&L",
+    value: total,
+    available: true,
+    signed: classifySignedDisplay(total),
+  });
+  return metrics;
 }
 
 export function exposureAvailable(

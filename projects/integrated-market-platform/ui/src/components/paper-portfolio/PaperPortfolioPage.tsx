@@ -13,9 +13,15 @@ import { ExecutionTracePanel } from "../paper/ExecutionTracePanel";
 import { canUsePaperActions } from "../mode-session/modeAuthority";
 import { LoadingState } from "../shared/LoadingState";
 import { PageHeader } from "../shared/PageHeader";
-import { PaperPortfolioObservability } from "../portfolio-shared/PaperPortfolioObservability";
+import {
+  PaperPortfolioObservability,
+  PortfolioGlanceStrip,
+  PortfolioPositionsSection,
+} from "../portfolio-shared/PaperPortfolioObservability";
 import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
 import { PaperOrderHistory } from "./PaperOrderHistory";
+import { paperCapitalHonesty } from "./paperPortfolioPresentation";
+import { AttentionBanner } from "../imp-ui/AttentionBanner";
 
 type StoredSession = {
   session_id: string;
@@ -103,16 +109,21 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   const workspaceHref = activeInstrument
     ? `/workspace/${encodeURIComponent(activeInstrument)}`
     : "/workspace";
+  const honesty = paperCapitalHonesty("PAPER");
+  const onTraceOrder = (intentId?: string, orderId?: string) => {
+    setTraceIntentId(intentId);
+    setTraceOrderId(orderId);
+  };
 
   return (
     <section className="page portfolio-page paper-portfolio-page">
       <PageHeader
         eyebrow="Paper-only simulation"
         title="Paper Portfolio"
-        subtitle="What this simulated account holds, what the backend says it is worth, and which positions need review. Paper orders are submitted only from Workspace."
+        subtitle="Exposure and active execution state. Orders are submitted from Workspace."
         actions={
           <div className="portfolio-header-actions">
-            <Link className="portfolio-row-action" to={workspaceHref}>
+            <Link className="portfolio-header-action" to={workspaceHref}>
               Open Workspace
             </Link>
             {actionEligible ? (
@@ -151,25 +162,44 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
 
       <div className="portfolio-layout">
         <div className="portfolio-main">
+          <AttentionBanner tone={honesty.tone} affects={honesty.affects}>
+            {honesty.sentence}
+          </AttentionBanner>
+
+          <PortfolioGlanceStrip data={data} />
+
           <PaperPortfolioObservability
             data={data}
             viewMode="PAPER"
             hideOrdersSection
-            onTraceOrder={(intentId, orderId) => {
-              setTraceIntentId(intentId);
-              setTraceOrderId(orderId);
-            }}
+            onTraceOrder={onTraceOrder}
+            sections={["attention"]}
           />
 
-          <PaperStrategyProfitabilityObservability />
+          <PortfolioPositionsSection data={data} viewMode="PAPER" />
 
           <PaperOrderHistory
             data={data}
-            onViewTrace={(intentId, orderId) => {
-              setTraceIntentId(intentId);
-              setTraceOrderId(orderId);
-            }}
+            onViewTrace={onTraceOrder}
+            canCancelOrders={actionEligible}
           />
+
+          <details className="portfolio-secondary-disclosure" data-testid="portfolio-secondary">
+            <summary>
+              <span>Account detail, fills and strategy lineage</span>
+              <small>Secondary detail</small>
+            </summary>
+            <div className="portfolio-secondary-body">
+              <PaperPortfolioObservability
+                data={data}
+                viewMode="PAPER"
+                hideOrdersSection
+                onTraceOrder={onTraceOrder}
+                sections={["account", "exposure", "fills"]}
+              />
+              <PaperStrategyProfitabilityObservability />
+            </div>
+          </details>
 
           <details className="portfolio-session-history-disclosure" data-testid="portfolio-session-history">
             <summary>

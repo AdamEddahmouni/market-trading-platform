@@ -5,6 +5,23 @@ export type PaperException = { code: string; severity: 0 | 1 | 2; message: strin
 export type LimitUtilization = { raw: number; limit: number; percent: number; available: boolean };
 
 const HEALTHY = new Set(["PASS", "HEALTHY", "CURRENT", "AVAILABLE"]);
+/**
+ * Mark-quality vocabulary is NOT the data-health vocabulary. `FRESH`, `LIVE`,
+ * `SNAPSHOT`, and `REPLAY` are healthy marks; only staleness or an unreadable
+ * mark warrants operator attention. Reusing `HEALTHY` here raised a false
+ * attention alarm on every correctly-marked position.
+ */
+const HEALTHY_MARK = new Set([
+  "PASS",
+  "HEALTHY",
+  "CURRENT",
+  "AVAILABLE",
+  "FRESH",
+  "LIVE",
+  "SNAPSHOT",
+  "REPLAY",
+  "NOT_APPLICABLE",
+]);
 const RECONCILED = new Set(["PASS", "HEALTHY", "CLEAN", "RECONCILED", "INTERNAL_AUTHORITATIVE"]);
 const HEALTHY_RISK_DECISION = new Set(["PASS", "ALLOW", "APPROVE", "RESIZE"]);
 const PROBLEM_ORDER_STATE = /(BLOCKED|REJECTED|WAITING|FAILED)/;
@@ -87,7 +104,7 @@ export function derivePaperExceptions(portfolio: PaperPortfolioResponse): PaperE
   });
   portfolio.positions.forEach((position) => {
     const quality = position.mark_quality?.toUpperCase();
-    if (quality && !HEALTHY.has(quality)) add({ code: `MARK_${quality}`, severity: 2, message: `${position.symbol} mark is ${quality}.` });
+    if (quality && !HEALTHY_MARK.has(quality)) add({ code: `MARK_${quality}`, severity: 2, message: `${position.symbol} mark is ${quality}.` });
   });
   return rows.sort((left, right) => left.severity - right.severity || left.sourceOrder - right.sourceOrder).slice(0, 5).map(({ sourceOrder: _sourceOrder, ...item }) => item);
 }

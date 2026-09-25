@@ -35,7 +35,7 @@ describe("DemoPortfolioPage", () => {
     expect(screen.getByRole("heading", { name: "Positions" })).toBeInTheDocument();
     expect(screen.getAllByText("BIYA").length).toBeGreaterThan(0);
     expect(screen.getByText(/simulated Demo account — not live capital/i)).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "Inspect in Workspace" })[0]).toHaveAttribute(
+    expect(screen.getAllByRole("link", { name: "Open BIYA Workspace" })[0]).toHaveAttribute(
       "href",
       "/workspace/BIYA",
     );

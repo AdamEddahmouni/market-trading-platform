@@ -333,6 +333,7 @@ vi.mock("./api/hooks", () => ({
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useClosePaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCancelPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useProviderHealthQuery: () => ({
     isLoading: false,
     error: null,
