@@ -123,7 +123,8 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
                 <button
                   type="button"
                   onClick={() => void openSession.mutateAsync(data.active_instrument ?? undefined)}
-                  disabled={openSession.isPending}
+                  disabled={openSession.isPending || !data.active_instrument?.trim()}
+                  title={data.active_instrument?.trim() ? undefined : "Choose an instrument in Workspace first."}
                 >
                   New Paper Session
                 </button>

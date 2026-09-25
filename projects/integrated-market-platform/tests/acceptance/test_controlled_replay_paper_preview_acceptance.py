@@ -358,7 +358,7 @@ class ControlledReplayPaperPreviewAcceptanceTests(unittest.TestCase):
 
                 # Watch alone must not unlock Paper preview / execution.
                 self.assertEqual(os.environ.get("IMP_PAPER_EXECUTION"), "0")
-                blocked_session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+                blocked_session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
                 self.assertEqual(
                     blocked_session["session"]["execution_authority"],
                     "BLOCKED",
@@ -397,7 +397,7 @@ class ControlledReplayPaperPreviewAcceptanceTests(unittest.TestCase):
 
                 # Explicit Paper authority is required for the preview continuation.
                 os.environ["IMP_PAPER_EXECUTION"] = "1"
-                session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+                session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
                 self.assertEqual(session["session"]["execution_mode"], "INTERNAL_SIMULATION")
                 self.assertIn(
                     session["session"]["execution_authority"],

@@ -1,5 +1,5 @@
 import type { Mode } from "../mode-session/types";
-import { ADMITTED_FUTURES_INSTRUMENT_ID } from "../../api/schemas";
+import { InstrumentSelectionEmpty } from "../shared/InstrumentSelectionEmpty";
 import { WorkspaceModuleModeShell } from "../workspace-module-shared/WorkspaceModuleModeShell";
 import { useWorkspaceInstrumentId } from "../workspace-module-shared/useWorkspaceInstrumentId";
 import { workspaceModuleModeDescription } from "../workspace-module-shared/workspaceModuleModeDescription";
@@ -15,7 +15,11 @@ type Props = {
 };
 
 export function ModeFuturesWorkspaceRoute({ mode, ...props }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_FUTURES_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
+
+  if (!instrumentId) {
+    return <InstrumentSelectionEmpty mode={mode} laneLabel="Futures " />;
+  }
 
   return (
     <WorkspaceModuleModeShell

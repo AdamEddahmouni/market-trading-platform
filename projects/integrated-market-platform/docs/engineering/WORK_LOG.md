@@ -43,7 +43,18 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Summary** | Recovered and completed the UI/UX pass: compressed global capability and navigation chrome, made Radar a faster compact scan with progressive detail, and reshaped Workspace as a calm resume surface. Historical replay remains explicitly labeled and BIYA is no longer a generic Workspace default. |
 | **Key files** | `ui/src/App.tsx`; `ui/src/components/imp-product/ImpCapabilityStrip.tsx`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `ui/src/components/WorkspaceIndex.tsx`; `ui/src/styles/imp-product.css`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
 | **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
-| **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes remain for the next execution/context cleanup lane; no Paper or Live authority boundary changed. |
+| **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes were addressed in the next execution/context slice; no Paper or Live authority boundary changed. |
+
+## 2026-09-25 — Make Paper execution context explicit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-now`, `ui/paper-workspace`, `ui/portfolio`, `ui/workspace-lanes`, `ui_api/paper` |
+| **Summary** | Replay Paper Command now waits for an explicit candidate instead of auto-selecting BIYA. Desktop Workspace keeps the order rail reachable, while replay preview/session APIs and instrument-less lanes fail closed instead of borrowing a fixture identity. Institutional Flow no longer substitutes unrelated NVDA, ES, or BOXL symbols. |
+| **Key files** | `ui/src/components/paper-now/PaperNowPage.tsx`; `ui/src/components/paper-workspace/PaperDecisionCockpit.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/workspace-module-shared/useWorkspaceInstrumentId.ts`; `src/market_platform_foundation/ui_api/operator_instrument.py`; `src/market_platform_foundation/ui_api/paper_projections.py`; `ui/src/components/institutional/InstitutionalFlowWorkspacePanel.tsx` |
+| **Tests** | Focused Paper/Workspace/lane/Radar UI suites: 128 passed; App integration: 74 passed; Paper execution, preview-binding, session, trace, forward-test, and route safety suites passed; UI typecheck and production build passed. |
+| **Notes** | Existing shared-process full-suite timing failures remain separately documented; no execution authority, risk gate, or Live boundary was weakened. |
 
 ## 2026-09-24 — Persist Radar investigations in Workspace
 

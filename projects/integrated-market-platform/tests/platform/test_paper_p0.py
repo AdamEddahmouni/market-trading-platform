@@ -125,7 +125,7 @@ class PlatformPaperSimulationTests(unittest.TestCase):
     def setUp(self) -> None:
         self._prior = os.environ.get("IMP_PAPER_EXECUTION")
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         self._select_fillable_cursor()
 
     def _select_fillable_cursor(self) -> None:
@@ -157,6 +157,8 @@ class PlatformPaperSimulationTests(unittest.TestCase):
         body = {
             "side": "BUY",
             "quantity": 1,
+            "instrument_id": self.store.instrument_id,
+            "symbol": self.store.symbol,
             "client_order_id": "biya-slice-1",
             "idempotency_key": "biya-slice-key-1",
         }

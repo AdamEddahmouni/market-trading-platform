@@ -210,6 +210,17 @@ function renderRouteCase({ path, Component }: Pick<RouteCase, "path" | "Componen
 }
 
 describe("Mode workspace routes", () => {
+  it.each(routeCases)("requires an explicit instrument for $label", ({ Component }) => {
+    render(
+      <MemoryRouter initialEntries={["/workspace"]}>
+        <Routes>
+          <Route path="/workspace/*" element={<Component mode="DEMO" />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("heading", { name: "Select an instrument" })).toBeInTheDocument();
+  });
+
   it.each(routeCases)("renders Demo $label module chrome", ({ heading, ...routeCase }) => {
     renderRouteCase(routeCase, "DEMO");
     expect(screen.getByRole("heading", { name: heading })).toBeInTheDocument();

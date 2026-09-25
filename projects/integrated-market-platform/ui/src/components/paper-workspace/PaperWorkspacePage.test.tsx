@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
+import paperWorkspaceCss from "../../styles/paper-workspace.css?raw";
 import { PaperWorkspacePage } from "./PaperWorkspacePage";
 
 const portfolio = {
@@ -105,6 +106,13 @@ describe("PaperWorkspacePage", () => {
         json: async () => ({}),
       }),
     );
+  });
+
+  it("keeps the execution rail reachable on desktop without changing mobile flow", () => {
+    expect(paperWorkspaceCss).toContain("@media (min-width: 960px)");
+    expect(paperWorkspaceCss).toContain(".paper-cockpit-action");
+    expect(paperWorkspaceCss).toContain("position: sticky");
+    expect(paperWorkspaceCss).toContain("max-height: calc(100vh");
   });
 
   it("fails closed when global Paper permission is false", () => {

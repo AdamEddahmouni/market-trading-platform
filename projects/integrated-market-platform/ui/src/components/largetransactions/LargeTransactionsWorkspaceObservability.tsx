@@ -1,5 +1,4 @@
 import { useWorkspaceLargeTransactionsQuery } from "../../api/hooks";
-import { ADMITTED_ORDER_FLOW_INSTRUMENT_ID } from "../../api/schemas";
 import type { Mode } from "../mode-session/types";
 import { deriveLaneQueryState } from "../workspace-module-shared/laneQueryState";
 import { ModeAwareWorkspaceLane } from "../workspace-module-shared/ModeAwareWorkspaceLane";
@@ -13,7 +12,7 @@ type Props = {
 };
 
 export function LargeTransactionsWorkspaceObservability({ mode, onExplain, onInspect }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_ORDER_FLOW_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const largeTransactionsQuery = useWorkspaceLargeTransactionsQuery(instrumentId);
   const queryState = deriveLaneQueryState(largeTransactionsQuery, "large-transactions");
 

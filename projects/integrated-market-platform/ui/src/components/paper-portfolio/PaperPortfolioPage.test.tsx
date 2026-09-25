@@ -43,7 +43,7 @@ function portfolioPayload() {
       execution_authority: "BLOCKED",
     },
     active_instrument: "BIYA",
-    active_instrument_source: "FIXTURE_DEFAULT",
+    active_instrument_source: "WORKSPACE",
   };
 }
 
@@ -105,6 +105,19 @@ describe("PaperPortfolioPage", () => {
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/Paper authority unavailable/i);
     expect(screen.getByRole("heading", { name: "Profitability lineage" })).toBeInTheDocument();
+  });
+
+  it("requires an explicit instrument before opening a new Paper session", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    portfolio.active_instrument = null;
+    portfolio.active_instrument_source = "NONE";
+
+    renderPage(true);
+
+    const newSession = screen.getByRole("button", { name: "New Paper Session" });
+    expect(newSession).toBeDisabled();
+    expect(newSession).toHaveAttribute("title", "Choose an instrument in Workspace first.");
   });
 
   it("shows Paper actions only when both authority checks pass", () => {

@@ -40,9 +40,14 @@ COLLECTION_ROOT = ROOT.parent
 
 def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
     """G3 preview-first submit: issue a server preview, then submit bound to it."""
-    preview = preview_paper_order(store, body)
+    request = {
+        "instrument_id": store.instrument_id,
+        "symbol": store.symbol,
+        **body,
+    }
+    preview = preview_paper_order(store, request)
     preview_id = str(preview["preview"]["preview_id"])
-    return submit_paper_order(store, {**body, "preview_id": preview_id})
+    return submit_paper_order(store, {**request, "preview_id": preview_id})
 
 
 class InteractiveExecutionParityTests(unittest.TestCase):
@@ -187,7 +192,7 @@ class PaperP1SimulationTests(unittest.TestCase):
         bind_context(None)
         self._prior = os.environ.get("IMP_PAPER_EXECUTION")
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         self._select_fillable_cursor()
 
     def tearDown(self) -> None:
@@ -219,6 +224,8 @@ class PaperP1SimulationTests(unittest.TestCase):
         body = {
             "side": "BUY",
             "quantity": 1,
+            "instrument_id": self.store.instrument_id,
+            "symbol": self.store.symbol,
             "client_order_id": "risk-block-1",
             "idempotency_key": "risk-block-key-1",
         }
@@ -235,6 +242,8 @@ class PaperP1SimulationTests(unittest.TestCase):
             {
                 "side": "BUY",
                 "quantity": 1,
+                "instrument_id": self.store.instrument_id,
+                "symbol": self.store.symbol,
                 "client_order_id": "trace-ui-1",
                 "idempotency_key": "trace-ui-key-1",
                 "correlation_id": "trace-ui-correlation",
@@ -262,6 +271,8 @@ class PaperP1SimulationTests(unittest.TestCase):
             {
                 "side": "BUY",
                 "quantity": 1,
+                "instrument_id": self.store.instrument_id,
+                "symbol": self.store.symbol,
                 "client_order_id": "trace-preview-1",
                 "idempotency_key": "trace-preview-key-1",
                 "correlation_id": "trace-preview-correlation",
@@ -278,6 +289,8 @@ class PaperP1SimulationTests(unittest.TestCase):
         body = {
             "side": "BUY",
             "quantity": 1,
+            "instrument_id": self.store.instrument_id,
+            "symbol": self.store.symbol,
             "client_order_id": "idempotent-1",
             "idempotency_key": "idempotent-key-1",
         }

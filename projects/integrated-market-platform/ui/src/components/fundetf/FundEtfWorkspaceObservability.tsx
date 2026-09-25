@@ -1,5 +1,4 @@
 import { useWorkspaceFundEtfQuery } from "../../api/hooks";
-import { ADMITTED_FUND_ETF_INSTRUMENT_ID } from "../../api/schemas";
 import type { Mode } from "../mode-session/types";
 import { deriveLaneQueryState } from "../workspace-module-shared/laneQueryState";
 import { ModeAwareWorkspaceLane } from "../workspace-module-shared/ModeAwareWorkspaceLane";
@@ -13,7 +12,7 @@ type Props = {
 };
 
 export function FundEtfWorkspaceObservability({ mode, onExplain, onInspect }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_FUND_ETF_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const fundEtfQuery = useWorkspaceFundEtfQuery(instrumentId);
   const queryState = deriveLaneQueryState(fundEtfQuery, "fund-etf");
 

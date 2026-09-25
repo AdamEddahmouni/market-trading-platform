@@ -44,7 +44,10 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       ? "error"
       : "ready";
   const opportunityItems = opportunitiesQuery.data?.items ?? [];
-  const [selectedAttentionId, setSelectedAttentionId] = useState<string | null>(() => nextPaperCandidateId(items, null));
+  const [selectedAttentionId, setSelectedAttentionId] = useState<string | null>(null);
+  const replayContext = [portfolio?.account.data_mode, portfolio?.as_of_context.data_mode].some(
+    (mode) => mode === "FIXTURE_REPLAY" || mode === "CONTROLLED_REPLAY",
+  );
   const [side, setSide] = useState<PaperOrderSide | null>(null);
   const [quantityText, setQuantityText] = useState("");
   const [confirmedPreview, setConfirmedPreview] = useState<ConfirmedPreview | null>(null);
@@ -54,6 +57,15 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
   const opportunityAck = useOpportunityAckMutation();
 
   useEffect(() => {
+    if (portfolioState !== "ready" || replayContext) {
+      if (selectedAttentionId && !items.some((item) => item.attention_id === selectedAttentionId)) {
+        previewGeneration.current += 1;
+        setConfirmedPreview(null);
+        setPreviewError(null);
+        setSelectedAttentionId(null);
+      }
+      return;
+    }
     const next = nextPaperCandidateId(items, selectedAttentionId);
     if (next !== selectedAttentionId) {
       previewGeneration.current += 1;
@@ -61,7 +73,7 @@ export function PaperNowPage({ items, attentionState, portfolio, portfolioState,
       setPreviewError(null);
       setSelectedAttentionId(next);
     }
-  }, [items, selectedAttentionId]);
+  }, [items, portfolioState, replayContext, selectedAttentionId]);
   const selected = items.find((item) => item.attention_id === selectedAttentionId && item.instrument_id?.trim()) ?? null;
   const quantity = /^\d+$/.test(quantityText) ? Number(quantityText) : null;
   const authorized = Boolean(paperActionsPermitted && portfolio && portfolio.account.execution_mode === "INTERNAL_SIMULATION" && portfolio.account.execution_authority === "PAPER_ONLY");

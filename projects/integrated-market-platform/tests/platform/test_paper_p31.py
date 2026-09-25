@@ -288,6 +288,14 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
         store.load()
         return store
 
+    def test_replay_session_requires_operator_instrument(self) -> None:
+        from market_platform_foundation.ui_api.paper_projections import open_paper_session
+
+        store = self._store()
+        with self.assertRaises(ValueError) as raised:
+            open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        self.assertEqual(str(raised.exception), "OPERATOR_INSTRUMENT_REQUIRED")
+
     def test_workspace_symbol_becomes_ticket_symbol(self) -> None:
         from market_platform_foundation.local_state.startup import open_local_state
         from market_platform_foundation.ui_api.operator_instrument import (
@@ -309,6 +317,18 @@ class ActiveOperatorInstrumentTests(unittest.TestCase):
         )
         self.assertEqual(preview["preview"]["instrument"]["instrument_id"], "AAPL")
         self.assertEqual(preview["preview"]["intent"]["instrument_id"], "AAPL")
+
+    def test_replay_without_operator_instrument_rejects_fixture_fallback(self) -> None:
+        from market_platform_foundation.ui_api.paper_projections import preview_paper_order
+
+        store = self._store()
+        self.assertEqual(store.instrument_id, "BIYA")
+        with self.assertRaises(ValueError) as raised:
+            preview_paper_order(
+                store,
+                {"side": "BUY", "quantity": 1, "client_order_id": "p31-no-instrument", "idempotency_key": "p31-no-instrument"},
+            )
+        self.assertEqual(str(raised.exception), "OPERATOR_INSTRUMENT_REQUIRED")
 
     def test_live_mode_does_not_fallback_to_biya(self) -> None:
         import os

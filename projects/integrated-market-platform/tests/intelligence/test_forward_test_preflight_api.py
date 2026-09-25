@@ -42,7 +42,7 @@ class ForwardTestPreflightApiTests(unittest.TestCase):
         fixture_root = ROOT.parent
         self.store = ReplayStore(collection_root=fixture_root)
         self.store.load()
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         self.account_id = self.store.paper_ledger.paper_account_id
         seed_baseline_campaign(self.campaigns_root, paper_account_id=self.account_id)
 

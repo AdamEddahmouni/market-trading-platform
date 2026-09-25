@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
 import { useFuturesProductQuery, useWorkspaceFuturesQuery } from "../../api/hooks";
-import { ADMITTED_FUTURES_INSTRUMENT_ID } from "../../api/schemas";
 import type { Mode } from "../mode-session/types";
 import { deriveLaneQueryState } from "../workspace-module-shared/laneQueryState";
 import { ModeAwareWorkspaceLane } from "../workspace-module-shared/ModeAwareWorkspaceLane";
@@ -21,7 +20,7 @@ type Props = {
 };
 
 export function FuturesWorkspaceObservability({ mode, onExplain, onInspect }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_FUTURES_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const futuresQuery = useWorkspaceFuturesQuery(instrumentId);
   const productQuery = useFuturesProductQuery(instrumentId, mode);
   const queryState = deriveLaneQueryState(futuresQuery, "futures");

@@ -64,19 +64,22 @@ export function InstitutionalFlowWorkspacePanel({
   onInspect,
 }: Props) {
   const families = payload?.families ?? [];
-  const [activeFamily, setActiveFamily] = useState(families[0]?.family_id ?? "regulatory_disclosure");
+  const [activeFamily, setActiveFamily] = useState(families[0]?.family_id ?? "");
+  const selectedFamily = families.some((family) => family.family_id === activeFamily)
+    ? activeFamily
+    : families[0]?.family_id ?? "";
+  const familySymbol = (familyId: string) =>
+    families.find((family) => family.family_id === familyId)?.entitled_symbol ?? "";
 
-  const disclosureSymbol = families.find((f) => f.family_id === "regulatory_disclosure")?.entitled_symbol ?? instrumentId;
-  const orderFlowSymbol = families.find((f) => f.family_id === "order_flow")?.entitled_symbol ?? "NVDA";
-  const orderBookSymbol = families.find((f) => f.family_id === "order_book")?.entitled_symbol ?? "NVDA";
-  const optionsSymbol = families.find((f) => f.family_id === "options")?.entitled_symbol ?? instrumentId;
-  const largeTxnSymbol = families.find((f) => f.family_id === "large_transactions")?.entitled_symbol ?? "NVDA";
+  const disclosureSymbol = familySymbol("regulatory_disclosure");
+  const orderFlowSymbol = familySymbol("order_flow");
+  const orderBookSymbol = familySymbol("order_book");
+  const optionsSymbol = familySymbol("options");
+  const largeTxnSymbol = familySymbol("large_transactions");
   const futuresSymbol =
-    families.find((f) => f.family_id === "futures_depth")?.entitled_symbol ??
-    families.find((f) => f.family_id === "futures_positioning")?.entitled_symbol ??
-    "ES";
-  const catalystSymbol = families.find((f) => f.family_id === "public_catalyst")?.entitled_symbol ?? "BOXL";
-  const fundEtfSymbol = families.find((f) => f.family_id === "fund_etf_cross_asset")?.entitled_symbol ?? "NVDA";
+    familySymbol("futures_depth") || familySymbol("futures_positioning");
+  const catalystSymbol = familySymbol("public_catalyst");
+  const fundEtfSymbol = familySymbol("fund_etf_cross_asset");
 
   const disclosureQuery = useWorkspaceDisclosureQuery(disclosureSymbol);
   const orderFlowQuery = useWorkspaceOrderFlowQuery(orderFlowSymbol);
@@ -88,8 +91,8 @@ export function InstitutionalFlowWorkspacePanel({
   const fundEtfQuery = useWorkspaceFundEtfQuery(fundEtfSymbol);
 
   const activeLabel = useMemo(
-    () => families.find((row) => row.family_id === activeFamily)?.label ?? activeFamily,
-    [activeFamily, families],
+    () => families.find((row) => row.family_id === selectedFamily)?.label ?? selectedFamily,
+    [selectedFamily, families],
   );
 
   if (loading) {
@@ -101,6 +104,15 @@ export function InstitutionalFlowWorkspacePanel({
       <aside className="capability-panel unavailable">
         <h2>Institutional Flow</h2>
         <p>UNAVAILABLE — aggregator payload missing.</p>
+      </aside>
+    );
+  }
+
+  if (!families.length) {
+    return (
+      <aside className="capability-panel unavailable" data-instrument-id={instrumentId || undefined}>
+        <h2>Institutional Flow</h2>
+        <p>No entitled institutional-flow family is available.</p>
       </aside>
     );
   }
@@ -121,8 +133,8 @@ export function InstitutionalFlowWorkspacePanel({
             key={family.family_id}
             type="button"
             role="tab"
-            aria-selected={activeFamily === family.family_id}
-            className={activeFamily === family.family_id ? "active" : undefined}
+            aria-selected={selectedFamily === family.family_id}
+            className={selectedFamily === family.family_id ? "active" : undefined}
             onClick={() => setActiveFamily(family.family_id)}
           >
             {family.label}
@@ -150,7 +162,7 @@ export function InstitutionalFlowWorkspacePanel({
 
       <section className="institutional-family-detail" aria-label={`${activeLabel} detail`}>
         <h3>{activeLabel}</h3>
-        {activeFamily === "regulatory_disclosure" ? (
+        {selectedFamily === "regulatory_disclosure" ? (
           <DisclosureWorkspacePanel
             instrumentId={disclosureSymbol}
             disclosure={disclosureQuery.data ?? null}
@@ -159,7 +171,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "order_flow" ? (
+        {selectedFamily === "order_flow" ? (
           <OrderFlowWorkspacePanel
             instrumentId={orderFlowSymbol}
             orderFlow={orderFlowQuery.data ?? null}
@@ -168,7 +180,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "order_book" ? (
+        {selectedFamily === "order_book" ? (
           <OrderBookWorkspacePanel
             instrumentId={orderBookSymbol}
             orderBook={orderBookQuery.data ?? null}
@@ -177,7 +189,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "options" ? (
+        {selectedFamily === "options" ? (
           <OptionsWorkspacePanel
             instrumentId={optionsSymbol}
             options={optionsQuery.data ?? null}
@@ -186,7 +198,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "large_transactions" ? (
+        {selectedFamily === "large_transactions" ? (
           <LargeTransactionsWorkspacePanel
             instrumentId={largeTxnSymbol}
             largeTransactions={largeTxnQuery.data ?? null}
@@ -195,7 +207,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "futures_positioning" ? (
+        {selectedFamily === "futures_positioning" ? (
           <FuturesWorkspacePanel
             instrumentId={futuresSymbol}
             futures={futuresQuery.data ?? null}
@@ -204,7 +216,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "public_catalyst" ? (
+        {selectedFamily === "public_catalyst" ? (
           <CatalystWorkspacePanel
             instrumentId={catalystSymbol}
             catalyst={catalystQuery.data ?? null}
@@ -213,7 +225,7 @@ export function InstitutionalFlowWorkspacePanel({
             onInspect={onInspect}
           />
         ) : null}
-        {activeFamily === "fund_etf_cross_asset" ? (
+        {selectedFamily === "fund_etf_cross_asset" ? (
           <FundEtfWorkspacePanel
             instrumentId={fundEtfSymbol}
             fundEtf={fundEtfQuery.data ?? null}

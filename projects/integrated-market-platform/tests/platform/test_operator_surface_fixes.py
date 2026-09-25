@@ -337,7 +337,7 @@ class LedgerRouteLockSmokeTests(IsolatedStateTest):
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         store = ReplayStore(collection_root=COLLECTION_ROOT)
         store.load()
-        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
 
         handler = type("BoundHandler", (UiApiHandler,), {"store": store})
         server = ThreadingHTTPServer(("127.0.0.1", 0), handler)

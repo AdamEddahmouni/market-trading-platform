@@ -42,6 +42,31 @@ function renderWithClient(ui: ReactElement) {
 }
 
 describe("InstitutionalFlowWorkspacePanel", () => {
+  it("selects the first family when data arrives after loading", () => {
+    const view = renderWithClient(
+      <InstitutionalFlowWorkspacePanel instrumentId="BIYA" payload={null} loading />,
+    );
+    view.rerender(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter>
+          <InstitutionalFlowWorkspacePanel instrumentId="BIYA" payload={flowFixture} />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("tab", { name: /Disclosure/ })).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("does not substitute fixture symbols when no family is entitled", () => {
+    renderWithClient(
+      <InstitutionalFlowWorkspacePanel
+        instrumentId="BIYA"
+        payload={{ ...flowFixture, families: [], family_count: 0, available_family_count: 0 }}
+      />,
+    );
+    expect(screen.getByText("No entitled institutional-flow family is available.")).toBeInTheDocument();
+    expect(screen.queryByText("NVDA")).not.toBeInTheDocument();
+  });
+
   it("shows unavailable reason instead of fake rows", () => {
     renderWithClient(
       <InstitutionalFlowWorkspacePanel instrumentId="BIYA" payload={flowFixture} />,

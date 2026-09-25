@@ -1108,7 +1108,9 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
     from .operator_instrument import resolve_active_operator_instrument
 
     focus, _source = resolve_active_operator_instrument(store, explicit=preferred)
-    session_instrument = focus or ("UNKNOWN" if store.data_mode == "LIVE_OBSERVATIONAL" else store.instrument_id)
+    if not focus:
+        raise ValueError("OPERATOR_INSTRUMENT_REQUIRED")
+    session_instrument = focus
     from ..providers.composition import get_provider_composition
 
     provider = get_provider_composition().paper_execution

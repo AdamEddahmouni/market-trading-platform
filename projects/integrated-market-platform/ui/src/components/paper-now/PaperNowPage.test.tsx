@@ -36,6 +36,15 @@ function previewResponse(preview: Partial<PaperOrderPreviewResponse["preview"]> 
   };
 }
 
+function currentPaperPortfolio() {
+  const portfolio = paperPortfolio();
+  return {
+    ...portfolio,
+    account: { ...portfolio.account, data_mode: "LIVE_OBSERVATIONAL" },
+    as_of_context: { ...portfolio.as_of_context, data_mode: "LIVE_OBSERVATIONAL" },
+  };
+}
+
 function pageProps(overrides: Partial<PaperNowPageProps> = {}): PaperNowPageProps {
   return {
     items: [
@@ -44,7 +53,7 @@ function pageProps(overrides: Partial<PaperNowPageProps> = {}): PaperNowPageProp
       attentionItem({ attention_id: "attention-nvda", priority_rank: 3, instrument_id: "NVDA", headline: "NVDA setup" }),
     ],
     attentionState: "ready",
-    portfolio: paperPortfolio(),
+    portfolio: currentPaperPortfolio(),
     portfolioState: "ready",
     paperActionsPermitted: true,
     onWhy: vi.fn(),
@@ -97,6 +106,16 @@ describe("PaperNowPage", () => {
     expect(screen.getByRole("radio", { name: /BIYA candidate/ })).toBeChecked();
     expect(screen.getByText("Macro review").closest("article")).toHaveTextContent("Research only");
     expect(screen.getByRole("button", { name: "Explain Macro review" })).toBeEnabled();
+  });
+
+  it("requires an explicit candidate choice for replay portfolios", () => {
+    renderPage({ portfolio: paperPortfolio() });
+    const candidate = screen.getByRole("radio", { name: /BIYA candidate/ });
+    expect(candidate).not.toBeChecked();
+    expect(screen.getByRole("heading", { name: "No candidate selected" })).toBeInTheDocument();
+    fireEvent.click(candidate);
+    expect(candidate).toBeChecked();
+    expect(screen.getByRole("heading", { name: "BIYA" })).toBeInTheDocument();
   });
 
   it("starts with neutral direction, empty quantity, and Preview disabled", () => {

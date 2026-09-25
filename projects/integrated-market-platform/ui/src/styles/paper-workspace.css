@@ -39,6 +39,15 @@
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
     align-items: start;
   }
+
+  .paper-cockpit-action {
+    position: sticky;
+    top: calc(var(--imp-topbar-height) + var(--imp-statusbar-height) + 2rem);
+    max-height: calc(100vh - var(--imp-topbar-height) - var(--imp-statusbar-height) - 3rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-right: 0.25rem;
+  }
 }
 
 .paper-cockpit-context,
