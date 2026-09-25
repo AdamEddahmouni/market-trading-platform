@@ -95,6 +95,7 @@
 }
 
 .imp-command-search {
+  position: relative;
   flex: 1 1 14rem;
   min-width: 0;
   max-width: 36rem;
@@ -114,6 +115,50 @@
   outline: 2px solid var(--accent-primary);
   outline-offset: 1px;
   border-color: rgba(255, 106, 0, 0.45);
+}
+
+.imp-command-search-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  left: 0;
+  z-index: 20;
+  display: grid;
+  gap: 2px;
+  padding: 0.35rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.imp-command-search-menu button {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.imp-command-search-menu button:hover,
+.imp-command-search-menu button:focus-visible,
+.imp-command-search-menu button.is-active {
+  border-color: var(--border-subtle);
+  background: var(--surface-2);
+  outline: none;
+}
+
+.imp-command-search-menu small {
+  color: var(--text-muted);
+  font-size: 0.7rem;
 }
 
 .imp-execution-posture {

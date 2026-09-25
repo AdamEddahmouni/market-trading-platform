@@ -76,6 +76,23 @@ describe("ImpProductChrome", () => {
     expect(screen.getByRole("searchbox")).toHaveFocus();
   });
 
+  it("offers local destinations from command search", () => {
+    renderChrome();
+    const search = screen.getByRole("searchbox");
+    fireEvent.focus(search);
+    expect(screen.getByRole("option", { name: /Radar/ })).toBeInTheDocument();
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(screen.getByRole("option", { name: /Radar/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: /Workspace/ })).toHaveAttribute("aria-selected", "false");
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByRole("listbox", { name: "Command destinations" })).not.toBeInTheDocument();
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: "portfolio" } });
+
+    expect(screen.getByRole("option", { name: /Portfolio/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Workspace/ })).not.toBeInTheDocument();
+  });
+
   it("does not open shortcuts from a select", () => {
     renderChrome();
     const select = document.createElement("select");

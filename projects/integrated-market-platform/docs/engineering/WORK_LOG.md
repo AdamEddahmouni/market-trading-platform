@@ -45,6 +45,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
 | **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes were addressed in the next execution/context slice; no Paper or Live authority boundary changed. |
 
+## 2026-09-25 — Unify global operator search and shell access
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell`, `ui/search` |
+| **Summary** | Extended the existing Ctrl/Cmd+K search into a restrained local destination menu for Workspace, Radar, Portfolio, Research, Lab, and Control while preserving ticker-first instrument navigation and Radar screener fallback. Added active keyboard selection, Enter activation, Escape dismissal, and no-network suggestions. |
+| **Key files** | `ui/src/components/imp-product/ImpCommandSearch.tsx`; `ui/src/components/imp-product/ImpProductChrome.test.tsx`; `ui/src/styles/imp-product.css` |
+| **Tests** | Chrome/search suite: 7 passed; App integration: 74 passed; UI typecheck passed; production build passed. Browser verified case-insensitive Portfolio matching, arrow selection, Enter navigation to `/portfolio`, and historical replay search behavior. |
+| **Notes** | Suggestions are local routes only; no remote palette, command DSL, or new execution path was introduced. |
+
 ## 2026-09-25 — Make Paper execution context explicit
 
 | Field | Value |
