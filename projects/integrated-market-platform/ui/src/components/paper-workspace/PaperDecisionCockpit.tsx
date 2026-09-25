@@ -71,17 +71,22 @@ export function PaperDecisionCockpit({
     <div className="paper-decision-cockpit">
       <div className="paper-cockpit-context">
         <PaperHandoffPanel handoff={handoff} evidenceAsOf={evidenceAsOf} />
-        <PaperDecisionSnapshotPanel snapshot={snapshot} handoff={handoff} />
-        <PaperWhatMattersNow
-          instrumentId={instrumentId}
-          lanes={evidence?.what_matters_now ?? []}
-          mixSummary={evidence?.evidence_mix_summary}
-          dataLabel={dataLabel}
-          evidenceAsOf={evidenceAsOf}
-          phase={evidencePhase}
-          phaseMessage={evidencePhaseMessage}
-        />
         <PaperRiskContext model={riskContext} />
+        <details className="paper-context-detail" data-testid="decision-context-detail">
+          <summary>Decision evidence and market context</summary>
+          <div className="paper-context-detail-body">
+            <PaperDecisionSnapshotPanel snapshot={snapshot} handoff={handoff} />
+            <PaperWhatMattersNow
+              instrumentId={instrumentId}
+              lanes={evidence?.what_matters_now ?? []}
+              mixSummary={evidence?.evidence_mix_summary}
+              dataLabel={dataLabel}
+              evidenceAsOf={evidenceAsOf}
+              phase={evidencePhase}
+              phaseMessage={evidencePhaseMessage}
+            />
+          </div>
+        </details>
       </div>
 
       <div className="paper-cockpit-action">
@@ -104,6 +109,8 @@ export function PaperDecisionCockpit({
             executionMode={portfolio.account.execution_mode}
             dataMode={portfolio.account.data_mode}
             maxOrderShares={portfolio.risk.limits.max_order_shares}
+            positionSummary={riskContext.symbolPosition}
+            workingOrderCount={riskContext.openOrdersForSymbol}
             showLaneBanner={false}
             onPreviewStateChange={setPreviewState}
             onSubmitted={(ack) => {

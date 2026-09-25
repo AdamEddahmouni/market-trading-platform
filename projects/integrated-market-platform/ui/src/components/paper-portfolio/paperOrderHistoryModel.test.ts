@@ -4,6 +4,7 @@ import {
   buildPaperOrderHistoryRow,
   buildPaperOrderHistoryRows,
   filterPaperOrderHistoryRows,
+  formatOrderAge,
   splitPaperOrderHistoryRows,
 } from "./paperOrderHistoryModel";
 
@@ -129,5 +130,83 @@ describe("paperOrderHistoryModel", () => {
     );
     expect(row.provenance.persistedSourceContext.snapshotAvailable).toBe(true);
     expect(row.provenance.tableSourceSummary).toBe("Short interest elevated into catalyst window");
+  });
+
+  it("carries the order's own instrument into a Workspace handoff", () => {
+    const row = buildPaperOrderHistoryRow(
+      { order_id: "o", state: "WORKING", symbol: "AAPL", side: "BUY" },
+      new Map(),
+    );
+    expect(row.instrumentId).toBe("AAPL");
+    expect(row.workspaceHref).toBe("/workspace/AAPL");
+  });
+
+  it("leaves the handoff empty rather than inventing an instrument", () => {
+    const row = buildPaperOrderHistoryRow({ order_id: "o", state: "WORKING" }, new Map());
+    expect(row.workspaceHref).toBeNull();
+    expect(row.instrumentId).toBeNull();
+  });
+
+  it("formats fill price from minor units and separates filled from working size", () => {
+    const row = buildPaperOrderHistoryRow(
+      {
+        order_id: "order-1",
+        state: "PARTIALLY_FILLED",
+        side: "SELL",
+        symbol: "NVDA",
+        desired_quantity: 400,
+        filled_quantity: 150,
+      },
+      fillsByOrderId,
+    );
+    // Fills on the record win for the display figures; the working remainder is
+    // requested minus the backend's filled quantity.
+    expect(row.filledLabel).toBe("5");
+    expect(row.fillPriceLabel).toBe("12.00");
+    expect(row.workingQuantity).toBe(250);
+  });
+
+  it("offers cancel only for states the backend cancel path can still act on", () => {
+    const working = buildPaperOrderHistoryRow(
+      { order_id: "w", state: "WORKING", symbol: "AAPL" },
+      new Map(),
+    );
+    const partial = buildPaperOrderHistoryRow(
+      { order_id: "p", state: "PARTIALLY_FILLED", symbol: "AAPL" },
+      new Map(),
+    );
+    const filled = buildPaperOrderHistoryRow({ order_id: "f", state: "FILLED" }, new Map());
+    const cancelled = buildPaperOrderHistoryRow(
+      { order_id: "c", state: "CANCELLED" },
+      new Map(),
+    );
+    expect(working.cancelEligible).toBe(true);
+    expect(partial.cancelEligible).toBe(true);
+    expect(filled.cancelEligible).toBe(false);
+    expect(cancelled.cancelEligible).toBe(false);
+    for (const state of ["CREATED", "RISK_ACCEPTED", "SUBMITTED", "CANCEL_PENDING", "REPLACE_PENDING"]) {
+      expect(buildPaperOrderHistoryRow({ order_id: state, state }, new Map()).cancelEligible).toBe(false);
+    }
+    for (const state of ["ACTIVATED", "REPLACED"]) {
+      expect(buildPaperOrderHistoryRow({ order_id: state, state }, new Map()).cancelEligible).toBe(true);
+    }
+  });
+
+  it("shows a working order's age but a fixed record time for a completed one", () => {
+    const now = Date.parse("2026-09-25T12:00:00Z");
+    const working = buildPaperOrderHistoryRow(
+      { order_id: "w", state: "WORKING", created_time: now - 90 * 60_000 },
+      new Map(),
+    );
+    const done = buildPaperOrderHistoryRow(
+      { order_id: "d", state: "FILLED", created_time: now - 26 * 3_600_000 },
+      new Map(),
+    );
+    expect(formatOrderAge(working, now)).toEqual({
+      label: "1h",
+      title: "2026-09-25 10:30:00 UTC",
+    });
+    expect(formatOrderAge(done, now)?.label).toBe("09-24 10:00");
+    expect(formatOrderAge(done, now)?.title).toBe("2026-09-24 10:00:00 UTC");
   });
 });

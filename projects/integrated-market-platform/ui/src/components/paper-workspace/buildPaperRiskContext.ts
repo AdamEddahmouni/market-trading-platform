@@ -1,5 +1,7 @@
 import type { PaperPortfolioResponse } from "../../api/client";
 import { paperRiskMetrics } from "../paper-now/paperDashboardViewModel";
+import { isTerminalPaperOrderState } from "../paper-portfolio/paperDecisionProvenance";
+import { classifyPositionSide } from "../paper-portfolio/paperPortfolioPresentation";
 
 export type PaperRiskContextItem = {
   id: string;
@@ -65,7 +67,7 @@ export function buildPaperRiskContext(
   );
   const openOrdersForSymbol = orders.filter((order) => {
     const orderSymbol = recordString(order, ["symbol", "instrument_id"])?.toUpperCase();
-    return orderSymbol === normalizedSymbol;
+    return orderSymbol === normalizedSymbol && !isTerminalPaperOrderState(recordString(order, ["state"]));
   }).length;
 
   const items: PaperRiskContextItem[] = [
@@ -96,7 +98,7 @@ export function buildPaperRiskContext(
     items.push({
       id: "symbol-position",
       label: `${normalizedSymbol} position`,
-      value: `${position.quantity} sh (${position.side})`,
+      value: `${classifyPositionSide(position.side, position.quantity) === "short" ? "Short" : "Long"} ${Math.abs(position.quantity)} sh`,
       detail: position.mark_display ?? undefined,
     });
   }
@@ -118,7 +120,9 @@ export function buildPaperRiskContext(
     items,
     warnings,
     paperActionsAvailable,
-    symbolPosition: position ? `${position.quantity} sh` : null,
+    symbolPosition: position
+      ? `${classifyPositionSide(position.side, position.quantity) === "short" ? "Short" : "Long"} ${Math.abs(position.quantity)} sh`
+      : null,
     openOrdersForSymbol,
   };
 }

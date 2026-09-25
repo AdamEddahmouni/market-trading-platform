@@ -39,6 +39,7 @@ from market_platform_foundation.rt01.execution_decision_trace.runtime import (
     reset_execution_decision_trace_runtime_for_tests,
 )
 from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
+from market_platform_foundation.ui_api import workspace_investigations
 from market_platform_foundation.ui_api.news_ingest import handle_news_ingest_post
 from market_platform_foundation.ui_api.opportunity_projections import (
     apply_opportunity_ack,
@@ -118,11 +119,11 @@ class CanonicalOpportunityDurableLoopTests(unittest.TestCase):
         bind_ui_api_intelligence(restarted)
         return restarted
 
-    def test_schema_v9_intelligence_book_tables(self) -> None:
+    def test_schema_v11_workspace_investigation_tables(self) -> None:
         local = open_local_state(force=True)
         assert local is not None
-        self.assertEqual(SCHEMA_VERSION, 9)
-        self.assertEqual(local.connection.schema_version(), 9)
+        self.assertEqual(SCHEMA_VERSION, 11)
+        self.assertEqual(local.connection.schema_version(), 11)
         tables = {
             str(row[0])
             for row in local.connection.execute(
@@ -131,6 +132,7 @@ class CanonicalOpportunityDurableLoopTests(unittest.TestCase):
         }
         self.assertIn("intelligence_events", tables)
         self.assertIn("intelligence_opportunities", tables)
+        self.assertIn("workspace_investigations", tables)
         self.assertEqual(opportunity_book_storage(), "DURABLE_SQLITE")
 
     def test_valid_provider_like_event_admitted_and_minted(self) -> None:
@@ -167,6 +169,31 @@ class CanonicalOpportunityDurableLoopTests(unittest.TestCase):
         summary = build_opportunities_summary_payload(self.store)
         ids = [item.get("opportunity_id") for item in summary["items"]]
         self.assertIn(opportunity_id, ids)
+        subject = minted.scope.instrument_ids[0]
+        investigation = workspace_investigations.create_investigation(
+            {
+                "title": "News investigation", "instrument_id": subject,
+                "source_kind": "radar_attention", "source_id": "summary-news-1",
+                "opportunity_id": opportunity_id,
+            },
+            data_mode="FIXTURE_REPLAY", execution_mode="INTERNAL_SIMULATION",
+            execution_authority="PAPER_ONLY", opportunity_repository=self.store.strategy_repository,
+        )
+        self.assertEqual(investigation["opportunity_id"], opportunity_id)
+        with self.assertRaisesRegex(ValueError, "WORKSPACE_OPPORTUNITY_INSTRUMENT_MISMATCH"):
+            workspace_investigations.create_investigation(
+                {
+                    "title": "Wrong subject", "instrument_id": "WRONG",
+                    "source_kind": "radar_attention", "source_id": "summary-wrong",
+                    "opportunity_id": opportunity_id,
+                },
+                data_mode="FIXTURE_REPLAY", execution_mode="INTERNAL_SIMULATION",
+                execution_authority="PAPER_ONLY", opportunity_repository=self.store.strategy_repository,
+            )
+        restarted = self._restart_store()
+        resumed = workspace_investigations.get_investigation(investigation["workspace_id"])
+        self.assertEqual(resumed["instrument_id"], subject)
+        self.assertIsNotNone(restarted.strategy_repository.get_opportunity(resumed["opportunity_id"]))
 
     def test_malformed_item_and_missing_source_rejected(self) -> None:
         malformed = handle_news_ingest_post(

@@ -26,7 +26,7 @@ type Props = {
 };
 
 export function OptionsWorkspaceObservability({ mode, onExplain, onInspect }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_REPLAY_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const optionsQuery = useWorkspaceOptionsQuery(instrumentId);
   const productQuery = useOptionsProductQuery(instrumentId, mode);
   const queryState = deriveLaneQueryState(optionsQuery, "options");

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { PaperPortfolioResponse } from "../../api/client";
-import { usePaperOrderHistoryInfiniteQuery } from "../../api/hooks";
+import { useCancelPaperOrderMutation, usePaperOrderHistoryInfiniteQuery } from "../../api/hooks";
 import { LoadingState } from "../shared/LoadingState";
 import {
   buildPaperOrderHistoryFromPortfolio,
@@ -15,6 +15,12 @@ import { PaperOrderHistoryTable } from "./PaperOrderHistoryTable";
 type Props = {
   data: PaperPortfolioResponse;
   onViewTrace?: (intentId?: string, orderId?: string) => void;
+  /**
+   * True only when the backend reports Paper execution authority for this
+   * account. Cancel is a backend-authoritative mutation: the UI offers it only
+   * when the operator is actually permitted to attempt it.
+   */
+  canCancelOrders?: boolean;
 };
 
 function dedupeHistoryRows(rows: PaperOrderHistoryRow[]): PaperOrderHistoryRow[] {
@@ -28,10 +34,33 @@ function dedupeHistoryRows(rows: PaperOrderHistoryRow[]): PaperOrderHistoryRow[]
   return unique;
 }
 
-export function PaperOrderHistory({ data, onViewTrace }: Props) {
+export function PaperOrderHistory({ data, onViewTrace, canCancelOrders = false }: Props) {
   const [filters, setFilters] = useState<PaperOrderHistoryFilters>(DEFAULT_PAPER_ORDER_HISTORY_FILTERS);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const portfolioModel = useMemo(() => buildPaperOrderHistoryFromPortfolio(data), [data]);
   const historyQuery = usePaperOrderHistoryInfiniteQuery();
+  const cancelOrder = useCancelPaperOrderMutation();
+
+  function cancelWorkingOrder(order: PaperOrderHistoryRow) {
+    if (!order.orderId) return;
+    setCancelError(null);
+    void cancelOrder
+      .mutateAsync(order.orderId)
+      .catch((error: unknown) => {
+        setCancelError(
+          error instanceof Error && error.message
+            ? `Cancel rejected: ${error.message}`
+            : "Cancel rejected by the Paper ledger. The order is unchanged.",
+        );
+      });
+  }
+
+  const cancelHandlers = {
+    onCancel: canCancelOrders ? cancelWorkingOrder : undefined,
+    canCancel: canCancelOrders,
+    cancelPending: cancelOrder.isPending,
+    cancelError,
+  };
 
   const paginatedHistoryRows = useMemo(() => {
     if (!historyQuery.data?.pages.length) return [];
@@ -41,7 +70,6 @@ export function PaperOrderHistory({ data, onViewTrace }: Props) {
   }, [historyQuery.data?.pages]);
 
   const totalTerminalCount = historyQuery.data?.pages[0]?.total_count ?? paginatedHistoryRows.length;
-  const metrics = portfolioModel.metrics;
   const historyEmptyMessage =
     totalTerminalCount === 0 && !historyQuery.isLoading
       ? "No simulated orders yet. Decisions submitted from Paper Workspace or Paper Command will appear here."
@@ -49,38 +77,14 @@ export function PaperOrderHistory({ data, onViewTrace }: Props) {
 
   return (
     <div className="paper-order-history-stack">
-      <section className="panel paper-order-metrics-panel" aria-label="Paper order summary">
-        <h2>Order activity</h2>
-        <dl className="metric-list paper-order-metrics-grid">
-          <div>
-            <dt>Open orders</dt>
-            <dd>{metrics.openOrders}</dd>
-          </div>
-          <div>
-            <dt>Filled</dt>
-            <dd>{metrics.filled}</dd>
-          </div>
-          <div>
-            <dt>Rejected</dt>
-            <dd>{metrics.rejected}</dd>
-          </div>
-          <div>
-            <dt>Paper Command sourced</dt>
-            <dd>{metrics.paperCommandSourced}</dd>
-          </div>
-          <div>
-            <dt>Lane sourced</dt>
-            <dd>{metrics.laneSourced}</dd>
-          </div>
-        </dl>
-      </section>
-
       {portfolioModel.openOrders.length > 0 ? (
         <PaperOrderHistoryTable
-          title="Open orders"
+          title="Working orders"
+          sectionId={PORTFOLIO_SECTIONS.openOrders}
           rows={portfolioModel.openOrders}
-          emptyMessage="No open simulated orders."
+          emptyMessage="No working simulated orders."
           onViewTrace={onViewTrace}
+          {...cancelHandlers}
         />
       ) : null}
 

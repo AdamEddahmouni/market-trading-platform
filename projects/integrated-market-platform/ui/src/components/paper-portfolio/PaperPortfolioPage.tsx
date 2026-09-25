@@ -13,9 +13,15 @@ import { ExecutionTracePanel } from "../paper/ExecutionTracePanel";
 import { canUsePaperActions } from "../mode-session/modeAuthority";
 import { LoadingState } from "../shared/LoadingState";
 import { PageHeader } from "../shared/PageHeader";
-import { PaperPortfolioObservability } from "../portfolio-shared/PaperPortfolioObservability";
+import {
+  PaperPortfolioObservability,
+  PortfolioGlanceStrip,
+  PortfolioPositionsSection,
+} from "../portfolio-shared/PaperPortfolioObservability";
 import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
 import { PaperOrderHistory } from "./PaperOrderHistory";
+import { paperCapitalHonesty } from "./paperPortfolioPresentation";
+import { AttentionBanner } from "../imp-ui/AttentionBanner";
 
 type StoredSession = {
   session_id: string;
@@ -99,16 +105,25 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
   const data = portfolioQuery.data;
   const { account } = data;
   const actionEligible = canUsePaperActions("PAPER", paperActionsPermitted, account);
+  const activeInstrument = data.active_instrument?.trim();
+  const workspaceHref = activeInstrument
+    ? `/workspace/${encodeURIComponent(activeInstrument)}`
+    : "/workspace";
+  const honesty = paperCapitalHonesty("PAPER");
+  const onTraceOrder = (intentId?: string, orderId?: string) => {
+    setTraceIntentId(intentId);
+    setTraceOrderId(orderId);
+  };
 
   return (
     <section className="page portfolio-page paper-portfolio-page">
       <PageHeader
         eyebrow="Paper-only simulation"
         title="Paper Portfolio"
-        subtitle="What this simulated account holds, what the backend says it is worth, and which positions need review. Paper orders are submitted only from Workspace."
+        subtitle="Exposure and active execution state. Orders are submitted from Workspace."
         actions={
           <div className="portfolio-header-actions">
-            <Link className="portfolio-row-action" to="/workspace">
+            <Link className="portfolio-header-action" to={workspaceHref}>
               Open Workspace
             </Link>
             {actionEligible ? (
@@ -122,8 +137,9 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => void openSession.mutateAsync(data.active_instrument ?? undefined)}
-                  disabled={openSession.isPending}
+                  onClick={() => void openSession.mutateAsync(activeInstrument)}
+                  disabled={openSession.isPending || !activeInstrument}
+                  title={activeInstrument ? undefined : "Choose an instrument in Workspace first."}
                 >
                   New Paper Session
                 </button>
@@ -146,58 +162,84 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
 
       <div className="portfolio-layout">
         <div className="portfolio-main">
+          <AttentionBanner tone={honesty.tone} affects={honesty.affects}>
+            {honesty.sentence}
+          </AttentionBanner>
+
+          <PortfolioGlanceStrip data={data} />
+
           <PaperPortfolioObservability
             data={data}
             viewMode="PAPER"
             hideOrdersSection
-            onTraceOrder={(intentId, orderId) => {
-              setTraceIntentId(intentId);
-              setTraceOrderId(orderId);
-            }}
+            onTraceOrder={onTraceOrder}
+            sections={["attention"]}
           />
 
-          <PaperStrategyProfitabilityObservability />
+          <PortfolioPositionsSection data={data} viewMode="PAPER" canTrade={actionEligible} />
 
           <PaperOrderHistory
             data={data}
-            onViewTrace={(intentId, orderId) => {
-              setTraceIntentId(intentId);
-              setTraceOrderId(orderId);
-            }}
+            onViewTrace={onTraceOrder}
+            canCancelOrders={actionEligible}
           />
 
-          <section className="panel session-history-panel" aria-labelledby="portfolio-sessions-heading">
-            <div className="paper-order-history-header">
-              <h2 id="portfolio-sessions-heading">Session history</h2>
-              <button type="button" onClick={loadSessions}>
-                Refresh sessions
-              </button>
+          <details className="portfolio-secondary-disclosure" data-testid="portfolio-secondary">
+            <summary>
+              <span>Account detail, fills and strategy lineage</span>
+              <small>Secondary detail</small>
+            </summary>
+            <div className="portfolio-secondary-body">
+              <PaperPortfolioObservability
+                data={data}
+                viewMode="PAPER"
+                hideOrdersSection
+                onTraceOrder={onTraceOrder}
+                sections={["account", "exposure", "fills"]}
+              />
+              <PaperStrategyProfitabilityObservability />
             </div>
-            {sessionsError ? (
-              <p className="muted">Session list unavailable. Refresh to retry. The current account session above remains authoritative.</p>
-            ) : sessions.length === 0 ? (
-              <p className="muted">No persisted sessions yet.</p>
-            ) : (
-              <ul className="portfolio-session-list">
-                {sessions.map((row) => {
-                  const status = resolveSemanticState("session", row.status);
-                  return (
-                    <li key={row.session_id}>
-                      <StatePill tone={status.tone} label={status.label} raw={row.status} size="sm" />
-                      <CopyableIdentifier value={row.session_id} />
-                      <span>
-                        {row.data_mode ? humanizeEnum(row.data_mode) : "Data mode unavailable"}
-                        {" / "}
-                        {row.execution_mode
-                          ? humanizeEnum(row.execution_mode)
-                          : "Execution mode unavailable"}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+          </details>
+
+          <details className="portfolio-session-history-disclosure" data-testid="portfolio-session-history">
+            <summary>
+              <span>Session history</span>
+              <small>Secondary history</small>
+            </summary>
+            <section className="panel session-history-panel" aria-labelledby="portfolio-sessions-heading">
+              <div className="paper-order-history-header">
+                <h2 id="portfolio-sessions-heading">Session history</h2>
+                <button type="button" onClick={loadSessions}>
+                  Refresh sessions
+                </button>
+              </div>
+              {sessionsError ? (
+                <p className="muted">Session list unavailable. Refresh to retry. The current account session above remains authoritative.</p>
+              ) : sessions.length === 0 ? (
+                <p className="muted">No persisted sessions yet.</p>
+              ) : (
+                <ul className="portfolio-session-list">
+                  {sessions.map((row) => {
+                    const status = resolveSemanticState("session", row.status);
+                    return (
+                      <li key={row.session_id}>
+                        <StatePill tone={status.tone} label={status.label} raw={status.raw} size="sm" />
+                        <CopyableIdentifier value={row.session_id} />
+                        <span>
+                          {row.data_mode ? humanizeEnum(row.data_mode) : "Data mode unavailable"}
+                          {" / "}
+                          {row.execution_mode
+                            ? humanizeEnum(row.execution_mode)
+                            : "Execution mode unavailable"}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </details>
+
         </div>
 
         {traceIntentId || traceOrderId ? (

@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { Navigate, useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
 import { decodeInstrumentRouteParam } from "../api/instrumentIdentity";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
 import { ModeWorkspacePage } from "./ModeWorkspacePage";
 import type { Mode } from "./mode-session/types";
-import { parsePaperOrderDraft } from "./paper-now/paperOrderDraft";
+import { parsePaperOrderDraft, type PaperOrderDraft } from "./paper-now/paperOrderDraft";
 import { LoadingState } from "./shared/LoadingState";
+import { InvestigationPanel } from "./workspace/InvestigationPanel";
 
 type Props = {
   mode: Mode;
@@ -30,13 +31,22 @@ export function WorkspaceRoute({
   maxIndex,
 }: Props) {
   const { symbol } = useParams<{ symbol: string }>();
-  const instrumentId = symbol ? decodeInstrumentRouteParam(symbol) : ADMITTED_REPLAY_INSTRUMENT_ID;
+  const instrumentId = symbol ? decodeInstrumentRouteParam(symbol) : "";
   const location = useLocation();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
-  const [initialPaperOrderDraft] = useState(() =>
-    navigationType === "PUSH" ? parsePaperOrderDraft(location.state, instrumentId) : undefined,
-  );
+  const handoff = useRef<{ instrumentId: string; token: string; draft?: PaperOrderDraft } | null>(null);
+  if (
+    handoff.current?.instrumentId !== instrumentId ||
+    (navigationType === "PUSH" && handoff.current?.token !== location.key)
+  ) {
+    handoff.current = {
+      instrumentId,
+      token: location.key,
+      draft: navigationType === "PUSH" ? parsePaperOrderDraft(location.state, instrumentId) : undefined,
+    };
+  }
+  const initialPaperOrderDraft = handoff.current.draft;
   const replayChartAvailable = instrumentId === ADMITTED_REPLAY_INSTRUMENT_ID;
 
   useEffect(() => {
@@ -45,6 +55,8 @@ export function WorkspaceRoute({
 
   const instrumentQuery = useInstrumentQuery(instrumentId, replayChartAvailable);
   const squeezeQuery = useWorkspaceSqueezeQuery(instrumentId);
+
+  if (!instrumentId) return <Navigate to="/workspace" replace />;
 
   if (replayChartAvailable && instrumentQuery.isLoading) {
     return <LoadingState label="Loading instrument…" />;
@@ -56,7 +68,10 @@ export function WorkspaceRoute({
   }
 
   return (
+    <>
+    <InvestigationPanel instrumentId={instrumentId} mode={mode} />
     <ModeWorkspacePage
+      key={`${instrumentId}:${handoff.current.token}`}
       mode={mode}
       paperActionsPermitted={paperActionsPermitted}
       initialPaperOrderDraft={initialPaperOrderDraft}
@@ -77,5 +92,6 @@ export function WorkspaceRoute({
       onInspect={onInspect}
       onOpenSqueezeHistory={onOpenSqueezeHistory}
     />
+    </>
   );
 }

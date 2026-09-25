@@ -42,7 +42,7 @@ def _open_store(mode: str = "INTERNAL_SIMULATION") -> ReplayStore:
     store.load()
     from market_platform_foundation.ui_api.paper_projections import open_paper_session
 
-    open_paper_session(store, {"execution_mode": mode})
+    open_paper_session(store, {"execution_mode": mode, "preferred_instrument": store.instrument_id})
     # Move the cursor to a fillable region like the platform suite does.
     from market_platform_foundation.paper.execution import preview_interactive_order
 
@@ -68,6 +68,8 @@ def _base_body(**overrides: object) -> dict[str, object]:
     body: dict[str, object] = {
         "client_order_id": "g3-preview-1",
         "idempotency_key": "g3-preview-key-1",
+        "instrument_id": "BIYA",
+        "symbol": "BIYA",
         "quantity": 1,
         "side": "BUY",
     }

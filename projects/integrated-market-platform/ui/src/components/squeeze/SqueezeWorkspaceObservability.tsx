@@ -1,5 +1,4 @@
 import { useSearchParams } from "react-router-dom";
-import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../../api/client";
 import { useWorkspaceSqueezeQuery } from "../../api/hooks";
 import type { Mode } from "../mode-session/types";
 import { deriveLaneQueryState } from "../workspace-module-shared/laneQueryState";
@@ -15,7 +14,7 @@ type Props = {
 };
 
 export function SqueezeWorkspaceObservability({ mode, onExplain, onInspect, onOpenHistory }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_REPLAY_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const [searchParams] = useSearchParams();
   const dataMode = searchParams.get("data_mode") === "current" ? "current" : "frozen";
   const squeezeQuery = useWorkspaceSqueezeQuery(instrumentId, dataMode);

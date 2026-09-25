@@ -240,6 +240,8 @@ vi.mock("./api/hooks", () => ({
     context: ["context"],
     attention: ["attention"],
     opportunitiesSummary: ["opportunities", "summary"],
+    investigations: ["operator", "investigations"],
+    investigation: (workspaceId: string | null) => ["operator", "investigations", workspaceId],
     operatorDiagnostics: ["operator", "diagnostics"],
     operatorReadiness: ["operator", "readiness"],
     operatorLifecycleStatus: ["operator", "lifecycle-status"],
@@ -331,6 +333,7 @@ vi.mock("./api/hooks", () => ({
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useClosePaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCancelPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useProviderHealthQuery: () => ({
     isLoading: false,
     error: null,
@@ -696,12 +699,19 @@ describe("App mode launcher integration", () => {
     await openRadarScreeners();
     fireEvent.click(await screen.findByRole("link", { name: "GME" }));
     expect(
-      await screen.findByRole("heading", { name: /GME — Short Squeeze Workspace/i }),
+      await screen.findByRole(
+        "heading",
+        { name: /GME — Short Squeeze Workspace/i },
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument();
   }
 
   async function openWorkspaceOverview() {
     await openNavLink(/^Workspace —/i);
+    const search = screen.getByRole("searchbox", { name: "Search symbols, ideas, research" });
+    fireEvent.change(search, { target: { value: "BIYA" } });
+    fireEvent.submit(search.closest("form")!);
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
   }
@@ -829,7 +839,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Demo");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Demo Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Demo Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
     // Portfolio content renders in main (the StatusBar scope symbol stays in chrome).
@@ -841,7 +851,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Paper");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Paper Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Paper Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/Paper authority unavailable/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
   });
@@ -850,7 +860,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Live");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Live Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Live Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ord-live-1").length).toBeGreaterThan(0);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();

@@ -240,7 +240,7 @@ class ControlledReplayPaperSubmitAckAcceptanceTests(unittest.TestCase):
                 conn.close()
 
             os.environ["IMP_PAPER_EXECUTION"] = "1"
-            session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+            session = open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
             self.assertIn(session["session"]["execution_authority"], {"AUTHORIZED", "PAPER_ONLY"})
             self.assertNotEqual(session["session"]["execution_authority"], "AUTHORIZED_LIVE")
             paper_account_id = str(session["session"]["paper_account_id"] or "")

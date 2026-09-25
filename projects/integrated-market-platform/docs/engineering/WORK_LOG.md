@@ -34,6 +34,96 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-25 — Workspace Paper ticket and position entry
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/workspace`, `ui/portfolio`, `ui/paper` |
+| **Summary** | Added exact-cent Limit terms to the canonical Workspace ticket and editable Add/Reduce/Close position handoffs. The ticket surfaces Paper mode, exposure, risk, pending submit and backend acknowledgement while preserving preview invalidation and authority checks. A real Paper smoke found that a no-bar preview projected rejection despite risk PASS; projected rejections now block Submit and rejected acknowledgements are labeled accurately. |
+| **Key files** | `ui/src/components/paper/OrderTicket.tsx`, `ui/src/components/paper/paperOrderTerms.ts`, `ui/src/components/paper-portfolio/paperPortfolioActions.ts`, `ui/src/components/WorkspaceRoute.tsx`, `ui/src/components/paper-workspace/`, `ui/src/styles/paper-workspace.css`, `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | Focused UI and App integration: 145 passed; the final side-label change passed 35 focused tests. Typecheck, production build, bundle check, docs links, and diff check passed. Browser smoke in an isolated authorized Paper state covered Market and Limit preview, invalid decimal price, submit to a durable rejected order, Portfolio history, Radar → Workspace, and 1024px layout. |
+| **Notes** | The fixture's replay cursor produced no executable bar, so no working order was available for a browser cancel action. No Live broker action. Isolated `.local/browser-smoke-20260925` state and logs are ignored and unstaged. |
+
+## 2026-09-25 — Portfolio positions and working-order controls
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/portfolio`, `ui/api` |
+| **Summary** | Compressed Paper Portfolio into an exposure glance, position and working-order tables, and on-demand account detail. Working-order cancel calls the canonical backend contract; eligible controls match the internal Paper ledger states. |
+| **Key files** | `ui/src/components/paper-portfolio/`, `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx`, `ui/src/api/`, `ui/src/styles/paper-portfolio.css` |
+| **Tests** | Focused UI: 144 passed; typecheck, production build, and `git diff --check` passed. Browser smoke rendered the Paper Portfolio from this worktree; the current backend reported blocked Paper authority, so no cancel action was attempted against that session. |
+| **Notes** | `.local` browser audit scripts and local state remain ignored and unstaged. Workspace remains the Paper submit boundary; Demo and Live remain read-only. |
+
+## 2026-09-25 — Compact operator shell, Radar scan, and Workspace resume
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell`, `ui/radar`, `ui/workspace`, `ui/replay` |
+| **Summary** | Recovered and completed the UI/UX pass: compressed global capability and navigation chrome, made Radar a faster compact scan with progressive detail, and reshaped Workspace as a calm resume surface. Historical replay remains explicitly labeled and BIYA is no longer a generic Workspace default. |
+| **Key files** | `ui/src/App.tsx`; `ui/src/components/imp-product/ImpCapabilityStrip.tsx`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `ui/src/components/WorkspaceIndex.tsx`; `ui/src/styles/imp-product.css`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
+| **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes were addressed in the next execution/context slice; no Paper or Live authority boundary changed. |
+
+## 2026-09-25 — Preserve instrument context on the Portfolio handoff
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Every Portfolio Workspace handoff — header action, empty-position action, and account bridge prose — now targets the account's active instrument instead of the generic Workspace index, so an operator moves from portfolio state into the correct decision desk without re-establishing context. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/portfolio-shared/PaperPortfolioObservability.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx` |
+| **Tests** | Paper Portfolio + shared observability suites: 41 passed; UI typecheck passed; browser verified `/portfolio` → `/workspace/OPTIONS` with instrument context retained. |
+| **Notes** | Handoffs still degrade to `/workspace` when no active instrument exists. No order, authority, or execution path changed. |
+
+## 2026-09-25 — Keep Portfolio secondary history on demand
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-portfolio` |
+| **Summary** | Paper Portfolio now keeps the long persisted-session list behind a compact secondary disclosure, leaving positions, exposure, fills, order activity, and order history in the primary scan path. Refresh, empty, and error states remain available when opened. |
+| **Key files** | `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.test.tsx`; `ui/src/styles/paper-portfolio.css` |
+| **Tests** | PaperPortfolioPage suite: 11 passed; UI typecheck passed; production build passed. Browser verified the collapsed disclosure and interactive expansion. |
+| **Notes** | No order mutation, authority, or execution path changed. |
+
+## 2026-09-25 — Unify global operator search and shell access
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell`, `ui/search` |
+| **Summary** | Extended the existing Ctrl/Cmd+K search into a restrained local destination menu for Workspace, Radar, Portfolio, Research, Lab, and Control while preserving ticker-first instrument navigation and Radar screener fallback. Added active keyboard selection, Enter activation, Escape dismissal, and no-network suggestions. |
+| **Key files** | `ui/src/components/imp-product/ImpCommandSearch.tsx`; `ui/src/components/imp-product/ImpProductChrome.test.tsx`; `ui/src/styles/imp-product.css` |
+| **Tests** | Chrome/search suite: 7 passed; App integration: 74 passed; UI typecheck passed; production build passed. Browser verified case-insensitive Portfolio matching, arrow selection, Enter navigation to `/portfolio`, and historical replay search behavior. |
+| **Notes** | Suggestions are local routes only; no remote palette, command DSL, or new execution path was introduced. |
+
+## 2026-09-25 — Make Paper execution context explicit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/paper-now`, `ui/paper-workspace`, `ui/portfolio`, `ui/workspace-lanes`, `ui_api/paper` |
+| **Summary** | Replay Paper Command now waits for an explicit candidate instead of auto-selecting BIYA. Desktop Workspace keeps the order rail reachable, while replay preview/session APIs and instrument-less lanes fail closed instead of borrowing a fixture identity. Institutional Flow no longer substitutes unrelated NVDA, ES, or BOXL symbols. |
+| **Key files** | `ui/src/components/paper-now/PaperNowPage.tsx`; `ui/src/components/paper-workspace/PaperDecisionCockpit.tsx`; `ui/src/components/paper-portfolio/PaperPortfolioPage.tsx`; `ui/src/components/workspace-module-shared/useWorkspaceInstrumentId.ts`; `src/market_platform_foundation/ui_api/operator_instrument.py`; `src/market_platform_foundation/ui_api/paper_projections.py`; `ui/src/components/institutional/InstitutionalFlowWorkspacePanel.tsx` |
+| **Tests** | Focused Paper/Workspace/lane/Radar UI suites: 128 passed; App integration: 74 passed; Paper execution, preview-binding, session, trace, forward-test, and route safety suites passed; UI typecheck and production build passed. |
+| **Notes** | Existing shared-process full-suite timing failures remain separately documented; no execution authority, risk gate, or Live boundary was weakened. |
+
+## 2026-09-24 — Persist Radar investigations in Workspace
+
+| Field | Value |
+|-------|-------|
+| **Status** | `Workspace investigation slice implemented` |
+| **Area** | `ui/workspace`, `backend/local-state` |
+| **Summary** | Added a durable investigation context linked to an instrument, optional Radar attention ID, and optional opportunity ID. Radar resolves repeated handoffs by source identity; the Workspace index and instrument route list resumable investigations and save operator notes with conflict detection. Demo remains read-only; a governed Paper session can save local work. |
+| **Key files** | `src/market_platform_foundation/local_state/schema.py`; `src/market_platform_foundation/local_state/migrations.py`; `src/market_platform_foundation/local_state/repository.py`; `src/market_platform_foundation/ui_api/workspace_investigations.py`; `src/market_platform_foundation/ui_api/server.py`; `ui/src/components/workspace/InvestigationPanel.tsx`; `ui/src/components/WorkspaceRoute.tsx`; `ui/src/App.tsx`; `docs/architecture/ARCHITECTURE.md` |
+| **Tests** | Investigation persistence and v9 upgrade: 4 passed; related durable-loop suites: 62 passed; targeted UI suites: 90 passed; UI typecheck and production build passed. Browser Demo pass confirmed Radar → BIYA Workspace preserves attention ID and shows read-only investigation context without a create control. Earlier browser Paper flow verified Radar handoff, note persistence, deep-link reload, and conflict draft preservation. The first Vite build attempt was blocked by sandbox path resolution; an approved rerun passed. |
+| **Notes** | Paper execution boundaries and the Sep 25 frozen runtime were not changed. |
+
+---
+
 ## 2026-09-24 — Make Sep 25 launch checkout reproducible
 
 | Field | Value |

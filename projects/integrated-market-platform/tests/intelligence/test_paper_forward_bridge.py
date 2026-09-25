@@ -360,7 +360,7 @@ class ForwardTestApiTests(unittest.TestCase):
         fixture_root = ROOT.parent
         self.store = ReplayStore(collection_root=fixture_root)
         self.store.load()
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         self.store.paper_ledger.execution_authority = "AUTHORIZED"
         self.store.paper_ledger.execution_mode = "INTERNAL_SIMULATION"
         self.account_id = self.store.paper_ledger.paper_account_id

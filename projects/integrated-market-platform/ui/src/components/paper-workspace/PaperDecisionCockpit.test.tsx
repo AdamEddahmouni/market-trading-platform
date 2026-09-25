@@ -79,6 +79,7 @@ describe("PaperDecisionCockpit", () => {
   it("renders decision cockpit without lane handoff", () => {
     renderCockpit();
     expect(screen.getByRole("heading", { name: "Decision snapshot" })).toBeInTheDocument();
+    expect(screen.getByTestId("decision-context-detail")).not.toHaveAttribute("open");
     expect(screen.getByText(/No handoff — review workspace evidence before drafting/i)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Order ticket" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /Handoff from/i })).not.toBeInTheDocument();

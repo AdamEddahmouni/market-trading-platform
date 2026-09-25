@@ -129,13 +129,15 @@ class ExecutionDecisionTraceRuntimeTests(unittest.TestCase):
     def test_preview_blocked_without_placing_order(self) -> None:
         ensure_operator_fixture_registered()
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         with self.assertRaises(ValueError) as ctx:
             submit_paper_order(
                 self.store,
                 {
                     "client_order_id": "trace-block-1",
                     "idempotency_key": "trace-block-key-1",
+                    "instrument_id": self.store.instrument_id,
+                    "symbol": self.store.symbol,
                     "quantity": 1,
                     "side": "BUY",
                     "opportunity_id": "opp-trace-runtime-1",
@@ -154,7 +156,7 @@ class ExecutionDecisionTraceRuntimeTests(unittest.TestCase):
     def test_preview_allowed_and_replay_determinism(self) -> None:
         ensure_operator_fixture_registered()
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(self.store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": self.store.instrument_id})
         from market_platform_foundation.paper.execution import preview_interactive_order
 
         for index in range(len(self.store.bars) - 2, -1, -1):
@@ -177,6 +179,8 @@ class ExecutionDecisionTraceRuntimeTests(unittest.TestCase):
         body = {
             "client_order_id": "trace-preview-1",
             "idempotency_key": "trace-preview-key-1",
+            "instrument_id": self.store.instrument_id,
+            "symbol": self.store.symbol,
             "quantity": 1,
             "side": "BUY",
             "opportunity_id": "opp-trace-runtime-1",

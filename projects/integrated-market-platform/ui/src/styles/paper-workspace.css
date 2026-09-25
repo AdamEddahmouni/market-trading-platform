@@ -39,6 +39,15 @@
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
     align-items: start;
   }
+
+  .paper-cockpit-action {
+    position: sticky;
+    top: calc(var(--imp-topbar-height) + var(--imp-statusbar-height) + 2rem);
+    max-height: calc(100vh - var(--imp-topbar-height) - var(--imp-statusbar-height) - 3rem);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    padding-right: 0.25rem;
+  }
 }
 
 .paper-cockpit-context,
@@ -47,6 +56,101 @@
   flex-direction: column;
   gap: 12px;
   min-width: 0;
+}
+
+/* The ticket is a compact trading instrument: mode, exposure, terms, decision. */
+.paper-workspace-page .order-ticket-panel {
+  padding: 16px;
+  border-color: rgba(72, 214, 196, 0.26);
+}
+
+.paper-workspace-page .order-ticket-panel h2 {
+  margin: 0 0 10px;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.ticket-mode-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  color: var(--text-secondary, #c3ced6);
+  font-size: 0.73rem;
+}
+
+.ticket-mode-line strong {
+  color: var(--paper-accent, #48d6c4);
+  font: 600 0.72rem var(--font-mono, monospace);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ticket-context-strip {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+  padding: 11px 0;
+  border-top: 1px solid var(--paper-line);
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.ticket-context-strip > div { min-width: 0; }
+.ticket-context-strip dt {
+  color: var(--text-muted, #9db0bd);
+  font: 0.64rem var(--font-mono, monospace);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ticket-context-strip dd {
+  margin: 3px 0 0;
+  overflow-wrap: anywhere;
+  color: var(--text-primary, #e6edf3);
+  font: 600 0.85rem var(--font-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.paper-workspace-page .order-ticket-panel .order-ticket-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  margin: 14px 0;
+}
+.paper-workspace-page .order-ticket-controls > * { min-width: 0; }
+.paper-workspace-page .order-ticket-controls input,
+.paper-workspace-page .order-ticket-controls select { width: 100%; min-width: 0; }
+.paper-workspace-page .side-toggle { display: flex; }
+.paper-workspace-page .side-toggle button { flex: 1; }
+.paper-workspace-page .order-ticket-actions { display: grid; grid-template-columns: 1fr 1.35fr; }
+.paper-workspace-page .order-ticket-actions button { min-width: 0; }
+.paper-workspace-page .order-ticket-actions button:last-child:not(:disabled) {
+  border-color: var(--paper-accent, #48d6c4);
+  color: var(--paper-accent, #48d6c4);
+}
+
+.ticket-secondary-detail,
+.paper-context-detail {
+  border: 1px solid var(--paper-line);
+  border-radius: 3px;
+  color: var(--text-secondary, #c3ced6);
+  font-size: 0.76rem;
+}
+.ticket-secondary-detail { margin-top: 12px; padding: 6px 9px; }
+.paper-context-detail { padding: 10px 12px; }
+.ticket-secondary-detail summary,
+.paper-context-detail summary { cursor: pointer; }
+.ticket-secondary-detail[open] summary,
+.paper-context-detail[open] summary { margin-bottom: 10px; }
+.ticket-secondary-detail .order-ticket-symbol { display: grid; gap: 4px; }
+.ticket-secondary-detail .order-ticket-symbol input { width: 100%; }
+.paper-context-detail-body { display: grid; gap: 12px; }
+
+@media (max-width: 560px) {
+  .ticket-context-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ticket-context-strip > :first-child { grid-column: 1 / -1; }
+  .paper-workspace-page .order-ticket-panel .order-ticket-controls { grid-template-columns: 1fr; }
 }
 
 .paper-cockpit-panel h2 {

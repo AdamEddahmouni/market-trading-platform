@@ -39,9 +39,14 @@ COLLECTION_ROOT = ROOT.parent
 
 def _preview_and_submit(store: ReplayStore, body: dict) -> dict:
     """G3 preview-first submit: issue a server preview, then submit bound to it."""
-    preview = preview_paper_order(store, body)
+    request = {
+        "instrument_id": store.instrument_id,
+        "symbol": store.symbol,
+        **body,
+    }
+    preview = preview_paper_order(store, request)
     preview_id = str(preview["preview"]["preview_id"])
-    return submit_paper_order(store, {**body, "preview_id": preview_id})
+    return submit_paper_order(store, {**request, "preview_id": preview_id})
 
 
 class BrokerRuntimeWiringTests(unittest.TestCase):
@@ -84,7 +89,7 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
 
     def _open_broker_session(self) -> None:
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(self.store, {"execution_mode": "BROKER_PAPER"})
+        open_paper_session(self.store, {"execution_mode": "BROKER_PAPER", "preferred_instrument": self.store.instrument_id})
         # G3 BL-0202: broker MARKET buys require a current price reference
         # (live mark). The real UI path applies marks from the live runtime;
         # this fixture environment has no runtime, so supply the mark the
@@ -112,6 +117,8 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
             {
                 "side": "BUY",
                 "quantity": 1,
+                "instrument_id": self.store.instrument_id,
+                "symbol": self.store.symbol,
                 "client_order_id": "broker-preview",
                 "idempotency_key": "broker-preview-key",
             },
@@ -205,9 +212,12 @@ class BrokerRuntimeWiringTests(unittest.TestCase):
             {
                 "side": "BUY",
                 "quantity": 100,
+                "instrument_id": self.store.instrument_id,
+                "symbol": self.store.symbol,
                 "client_order_id": "cli-broker-market-1",
                 "idempotency_key": "key-broker-market-1",
             },
+
         )
 
         result = reconcile_broker_paper(self.store)

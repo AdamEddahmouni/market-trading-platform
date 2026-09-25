@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ApiRequestError } from "../../api/errors";
 import type { PaperOrderPreviewResponse } from "../../api/schemas";
@@ -61,6 +61,16 @@ describe("OrderTicket workspace revalidation", () => {
     expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });
 
+  it("keeps Submit disabled when execution would reject despite a passing risk check", async () => {
+    mocks.previewPaperOrder.mockResolvedValueOnce(previewResponse({
+      risk_status: "PASS", decision: "APPROVE", quality_state: "NO_EXECUTABLE_BAR",
+      order_preview: { state: "REJECTED" },
+    }));
+    renderTicket(validDraft);
+    expect(await screen.findByText(/Order state preview: REJECTED/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+  });
+
   it("retains the imported draft when automatic preview fails", async () => {
     mocks.previewPaperOrder.mockRejectedValueOnce(new Error("offline"));
     renderTicket(validDraft);
@@ -88,6 +98,55 @@ describe("OrderTicket workspace revalidation", () => {
   it("does not auto-preview an ordinary workspace ticket", () => {
     renderTicket();
     expect(mocks.previewPaperOrder).not.toHaveBeenCalled();
+  });
+
+  it("shows Paper mode and immediate exposure context in the ticket", () => {
+    render(
+      <OrderTicket
+        symbol="AAPL"
+        executionAuthority="PAPER_ONLY"
+        executionMode="INTERNAL_SIMULATION"
+        dataMode="FIXTURE_REPLAY"
+        maxOrderShares={100}
+        positionSummary="Long 12 sh"
+        workingOrderCount={2}
+      />,
+    );
+    const panel = screen.getByRole("heading", { name: "Order ticket" }).closest("section")!;
+    expect(panel).toHaveTextContent("Paper · Internal simulation");
+    expect(within(panel).getByText("Position").parentElement).toHaveTextContent("Long 12 sh");
+    expect(within(panel).getByText("Working orders").parentElement).toHaveTextContent("2");
+  });
+
+  it("previews and submits an exact limit price from the canonical ticket", async () => {
+    mocks.previewPaperOrder.mockResolvedValue(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    mocks.submitPaperOrder.mockResolvedValue({ submission: { intent_id: "intent-limit" } });
+    renderTicket();
+    fireEvent.change(screen.getByRole("combobox", { name: "Order type" }), { target: { value: "LIMIT" } });
+    fireEvent.change(screen.getByRole("textbox", { name: "Limit price" }), { target: { value: "12.34" } });
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await waitFor(() => expect(mocks.previewPaperOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ order_type: "LIMIT", limit_price_minor: 1234, instrument_id: "BIYA" }),
+    ));
+    expect(await screen.findByRole("button", { name: "Submit" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    await waitFor(() => expect(mocks.submitPaperOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ order_type: "LIMIT", limit_price_minor: 1234, preview_id: "preview-test-1" }),
+    ));
+  });
+
+  it("requires a valid limit price and invalidates an accepted preview when it changes", async () => {
+    mocks.previewPaperOrder.mockResolvedValue(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    renderTicket();
+    fireEvent.change(screen.getByRole("combobox", { name: "Order type" }), { target: { value: "LIMIT" } });
+    expect(screen.getByRole("button", { name: "Preview" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Limit price" }), { target: { value: "1.234" } });
+    expect(screen.getByRole("button", { name: "Preview" })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Limit price" }), { target: { value: "12.34" } });
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(await screen.findByRole("button", { name: "Submit" })).toBeEnabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Limit price" }), { target: { value: "12.35" } });
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
   });
 
   it("invalidates a workspace PASS when the user edits the draft", async () => {
@@ -198,6 +257,21 @@ describe("OrderTicket workspace revalidation", () => {
         }),
       ),
     );
+  });
+
+  it("keeps an uncertain submit visible until the operator checks authoritative history", async () => {
+    let rejectSubmit!: (reason: Error) => void;
+    mocks.previewPaperOrder.mockResolvedValue(previewResponse({ risk_status: "PASS", decision: "ALLOW" }));
+    mocks.submitPaperOrder.mockReturnValue(new Promise((_resolve, reject) => { rejectSubmit = reject; }));
+    renderTicket();
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(await screen.findByRole("button", { name: "Submit" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Submit" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Submitting Paper order");
+    expect(screen.getByRole("button", { name: "Submit" })).toBeDisabled();
+    await act(async () => rejectSubmit(new Error("connection interrupted")));
+    expect(screen.getByRole("alert")).toHaveTextContent("Submission not confirmed");
+    expect(screen.getByRole("alert")).toHaveTextContent("Check Order history before retrying");
   });
 
   it("reports preview presentation state through callback", async () => {

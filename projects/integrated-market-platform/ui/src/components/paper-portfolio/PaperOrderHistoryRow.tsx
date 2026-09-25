@@ -1,13 +1,16 @@
+import { Link } from "react-router-dom";
 import { PaperDecisionProvenanceBadge } from "./PaperDecisionProvenanceBadge";
 import { PaperPersistedSourceContextPanel } from "./PaperPersistedSourceContextPanel";
-import type { PaperOrderHistoryRow } from "./paperOrderHistoryModel";
+import { formatOrderAge, type PaperOrderHistoryRow } from "./paperOrderHistoryModel";
 import { paperOrderStatusLabel, paperOrderStatusTone } from "./paperOrderStatusPresentation";
 
 type Props = {
   row: PaperOrderHistoryRow;
+  nowMs: number;
+  selected: boolean;
+  onSelect: () => void;
   expanded: boolean;
-  onToggle: () => void;
-  onViewTrace?: (intentId?: string, orderId?: string) => void;
+  onToggleDetails: () => void;
 };
 
 export function PaperOrderHistoryRowDetails({ row }: { row: PaperOrderHistoryRow }) {
@@ -46,7 +49,9 @@ export function PaperOrderHistoryRowDetails({ row }: { row: PaperOrderHistoryRow
         ) : null}
         <div>
           <dt>Decision source</dt>
-          <dd>{row.provenance.provenanceLabel}</dd>
+          <dd>
+            <PaperDecisionProvenanceBadge provenance={row.provenance} />
+          </dd>
         </div>
         <div>
           <dt>Source detail</dt>
@@ -100,57 +105,131 @@ export function PaperOrderHistoryRowDetails({ row }: { row: PaperOrderHistoryRow
   );
 }
 
-export function PaperOrderHistoryRowView({ row, expanded, onToggle, onViewTrace }: Props) {
+/**
+ * Rapid order-state comprehension. Instrument and status lead; size, fill, and
+ * age are aligned numerals. Provenance and technical identifiers stay in row
+ * detail — they answer "why", not "what is working right now".
+ */
+export function PaperOrderHistoryRowView({
+  row,
+  nowMs,
+  selected,
+  onSelect,
+  expanded,
+  onToggleDetails,
+  onCancel,
+  canCancel,
+  cancelPending,
+}: Props & {
+  onCancel?: (order: PaperOrderHistoryRow) => void;
+  canCancel: boolean;
+  cancelPending: boolean;
+}) {
   const statusTone = paperOrderStatusTone(row.status);
-  const traceLabel = row.symbol && row.symbol !== "—" ? `View trace for ${row.symbol}` : "View trace";
+  const age = formatOrderAge(row, nowMs);
+  const cancelLabel = row.symbol !== "—" ? `Cancel working ${row.symbol} order` : "Cancel order";
+  const canOfferCancel = Boolean(onCancel) && canCancel && row.cancelEligible && Boolean(row.orderId);
 
   return (
     <>
-      <tr className={expanded ? "paper-order-row expanded" : "paper-order-row"}>
-        <td className="paper-order-time">{row.submittedAtLabel ?? "—"}</td>
-        <td>{row.symbol}</td>
-        <td>{row.side}</td>
-        <td>{row.quantity ?? "—"}</td>
-        <td className="paper-order-type">{row.orderType}</td>
-        <td>
-          <span className={`paper-order-status paper-order-status--${statusTone}`}>{paperOrderStatusLabel(row.status)}</span>
-        </td>
-        <td className="paper-order-fill">{row.fillSummary}</td>
-        <td>
-          <PaperDecisionProvenanceBadge provenance={row.provenance} />
-        </td>
-        <td className="paper-order-source-detail">{row.provenance.tableSourceSummary}</td>
-        <td>
-          {onViewTrace ? (
-            <button
-              type="button"
-              className="paper-order-trace-action"
-              aria-label={traceLabel}
-              onClick={() => onViewTrace(row.intentId ?? undefined, row.orderId ?? undefined)}
+      <tr
+        className="paper-order-row"
+        data-selected={selected ? "true" : "false"}
+        aria-selected={selected}
+        tabIndex={0}
+        onClick={onSelect}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect();
+          }
+        }}
+      >
+        <th scope="row" className="portfolio-col-instrument">
+          {row.workspaceHref ? (
+            <Link
+              className="portfolio-instrument-link"
+              to={row.workspaceHref}
+              onClick={(event) => event.stopPropagation()}
             >
-              View trace
-            </button>
-          ) : null}
+              {row.symbol}
+            </Link>
+          ) : (
+            <span className="portfolio-instrument-link">{row.symbol}</span>
+          )}
+          <span className="portfolio-side-chip" data-side={classifyOrderSide(row.side)}>
+            {row.side}
+          </span>
+        </th>
+        <td className="portfolio-col-num">{row.quantity ?? "—"}</td>
+        <td className="portfolio-col-num">{row.filledLabel}</td>
+        <td className="portfolio-col-num portfolio-order-price">{row.fillPriceLabel ?? "—"}</td>
+        <td className="portfolio-col-type">{row.orderType}</td>
+        <td>
+          <span className={`paper-order-status paper-order-status--${statusTone}`}>
+            {paperOrderStatusLabel(row.status)}
+          </span>
         </td>
-        <td className="paper-order-expand-cell">
+        <td className="portfolio-col-num portfolio-order-age" title={age?.title}>
+          {age?.label ?? "—"}
+        </td>
+        <td className="portfolio-col-actions">
+          <div className="portfolio-row-actions">
+            {row.workspaceHref ? (
+              <Link
+                className="portfolio-row-open"
+                to={row.workspaceHref}
+                aria-label={`Open ${row.symbol} Workspace`}
+                onClick={(event) => event.stopPropagation()}
+              >
+                Open<span aria-hidden="true"> →</span>
+              </Link>
+            ) : null}
+            {canOfferCancel ? (
+              <button
+                type="button"
+                className="portfolio-row-action-danger"
+                aria-label={cancelLabel}
+                disabled={cancelPending}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onCancel?.(row);
+                }}
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
+        </td>
+        <td className="portfolio-col-actions">
           <button
             type="button"
-            className="paper-order-expand-action"
+            className="portfolio-row-open"
             aria-expanded={expanded}
             aria-controls={`paper-order-details-${row.rowId}`}
-            onClick={onToggle}
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleDetails();
+            }}
           >
-            {expanded ? "Hide details" : "Details"}
+            Details
           </button>
         </td>
       </tr>
       {expanded ? (
         <tr className="paper-order-details-row">
-          <td colSpan={11} id={`paper-order-details-${row.rowId}`}>
+          <td colSpan={9} id={`paper-order-details-${row.rowId}`}>
             <PaperOrderHistoryRowDetails row={row} />
           </td>
         </tr>
       ) : null}
     </>
   );
+}
+
+function classifyOrderSide(side: string): "long" | "short" | "flat" {
+  const normalized = side.trim().toUpperCase();
+  if (normalized === "BUY" || normalized === "LONG") return "long";
+  if (normalized === "SELL" || normalized === "SHORT") return "short";
+  return "flat";
 }

@@ -28,6 +28,7 @@ from . import trade_review_projections
 from . import paper_projections
 from . import projections
 from . import strategy_runtime_projections
+from . import workspace_investigations
 from .account_registry import build_accounts_payload
 from ..operational_identity import OperationalIdentityError
 from .auth_projections import (
@@ -198,6 +199,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/operator/state":
                 self._send_json(operator_projections.build_operator_state_payload(self.store))
+                return
+            if path == "/operator/investigations":
+                self._send_json(workspace_investigations.list_investigations())
+                return
+            if path.startswith("/operator/investigations/"):
+                try:
+                    self._send_json(workspace_investigations.get_investigation(path.rsplit("/", 1)[-1]))
+                except KeyError:
+                    self._send_error_json("WORKSPACE_NOT_FOUND", "Investigation not found", status=HTTPStatus.NOT_FOUND)
                 return
             if path == "/operator/readiness":
                 self._send_json(operator_projections.build_operator_readiness_payload(self.store))
@@ -1414,6 +1424,37 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(operator_projections.save_workspace(body))
             except ValueError as exc:
                 self._send_error_json("OPERATOR_WORKSPACE_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/operator/investigations" or path.startswith("/operator/investigations/"):
+            try:
+                if path == "/operator/investigations":
+                    result = workspace_investigations.create_investigation(
+                        body, data_mode=self.store.data_mode,
+                        execution_mode=self.store.execution_mode,
+                        execution_authority=self.store.execution_authority,
+                        opportunity_repository=getattr(self.store, "strategy_repository", None),
+                    )
+                    self._send_json(result, status=HTTPStatus.CREATED)
+                elif path.endswith("/note"):
+                    workspace_id = path.removeprefix("/operator/investigations/").removesuffix("/note").strip("/")
+                    self._send_json(workspace_investigations.save_note(
+                        workspace_id, body, data_mode=self.store.data_mode,
+                        execution_mode=self.store.execution_mode,
+                        execution_authority=self.store.execution_authority,
+                    ))
+                else:
+                    self._send_error_json("UI_ROUTE_NOT_FOUND", "Unknown path", status=HTTPStatus.NOT_FOUND)
+            except PermissionError as exc:
+                self._send_error_json(str(exc), str(exc), status=HTTPStatus.FORBIDDEN)
+            except KeyError:
+                self._send_error_json("WORKSPACE_NOT_FOUND", "Investigation not found", status=HTTPStatus.NOT_FOUND)
+            except ValueError as exc:
+                status = (
+                    HTTPStatus.CONFLICT if str(exc) in {"WORKSPACE_SOURCE_CONFLICT", "WORKSPACE_NOTE_CONFLICT"}
+                    else HTTPStatus.NOT_FOUND if str(exc) == "WORKSPACE_OPPORTUNITY_NOT_FOUND"
+                    else HTTPStatus.BAD_REQUEST
+                )
+                self._send_error_json(str(exc), str(exc), status=status)
             return
         if path == "/operator/preferences":
             try:

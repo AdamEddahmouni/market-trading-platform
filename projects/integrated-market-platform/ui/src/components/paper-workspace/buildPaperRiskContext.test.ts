@@ -50,9 +50,27 @@ describe("buildPaperRiskContext", () => {
   it("maps ready portfolio with symbol position and open orders", () => {
     const model = buildPaperRiskContext(portfolio(), "BIYA", true, "ready");
     expect(model.phase).toBe("ready");
-    expect(model.symbolPosition).toBe("5 sh");
+    expect(model.symbolPosition).toBe("Long 5 sh");
     expect(model.openOrdersForSymbol).toBe(1);
     expect(model.items.some((item) => item.id === "buying-power")).toBe(true);
+  });
+
+  it("counts only working orders for the current instrument", () => {
+    const model = buildPaperRiskContext(portfolio({
+      orders: [
+        { symbol: "BIYA", state: "WORKING" },
+        { symbol: "BIYA", state: "FILLED" },
+        { symbol: "AAPL", state: "WORKING" },
+      ],
+    }), "BIYA", true, "ready");
+    expect(model.openOrdersForSymbol).toBe(1);
+  });
+
+  it("uses the canonical side when a short quantity is unsigned", () => {
+    const model = buildPaperRiskContext(portfolio({
+      positions: [{ instrument_id: "BIYA", symbol: "BIYA", quantity: 5, side: "SELL" }],
+    }), "BIYA", true, "ready");
+    expect(model.symbolPosition).toBe("Short 5 sh");
   });
 
   it("warns when authority is unavailable", () => {

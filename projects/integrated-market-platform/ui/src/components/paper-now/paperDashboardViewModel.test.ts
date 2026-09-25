@@ -71,4 +71,36 @@ describe("Paper dashboard view model", () => {
   it("returns no exceptions for explicitly healthy states", () => {
     expect(derivePaperExceptions(paperPortfolio({ positions: [] }))).toEqual([]);
   });
+
+  it("does not raise an exception for a mark the backend calls fresh", () => {
+    // Regression: mark quality was checked against the data-health vocabulary,
+    // so every correctly-marked position reported "mark is FRESH" as an alert.
+    const fresh = derivePaperExceptions(
+      paperPortfolio({
+        positions: [
+          { instrument_id: "AAPL", symbol: "AAPL", quantity: 10, side: "LONG", mark_quality: "FRESH" },
+        ],
+      }),
+    );
+    expect(fresh).toEqual([]);
+    const live = derivePaperExceptions(
+      paperPortfolio({
+        positions: [
+          { instrument_id: "AAPL", symbol: "AAPL", quantity: 10, side: "LONG", mark_quality: "LIVE" },
+        ],
+      }),
+    );
+    expect(live).toEqual([]);
+  });
+
+  it("still raises an exception for a stale or unreadable mark", () => {
+    const stale = derivePaperExceptions(
+      paperPortfolio({
+        positions: [
+          { instrument_id: "NVDA", symbol: "NVDA", quantity: 10, side: "LONG", mark_quality: "STALE" },
+        ],
+      }),
+    );
+    expect(stale.map((item) => item.code)).toEqual(["MARK_STALE"]);
+  });
 });

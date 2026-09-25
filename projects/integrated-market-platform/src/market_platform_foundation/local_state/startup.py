@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..operating_modes import (
     PAPER_EXECUTION_AUTHORITIES,
     resolve_execution_authority,
 )
-from ..paper.ledger import PaperExecutionLedger
+if TYPE_CHECKING:
+    from ..paper.ledger import PaperExecutionLedger
 from .capture_index import refresh_capture_catalog
 from .connection import CorruptStateError, LocalStateConnection
 from .opend import diagnose_opend
@@ -140,6 +141,7 @@ def persist_ledger(ledger: PaperExecutionLedger, *, events: list[dict[str, Any]]
 
 
 def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idempotency: dict[str, str]) -> PaperExecutionLedger:
+    from ..paper.ledger import PaperExecutionLedger
     import json
 
     from ..risk.policy import DEFAULT_RISK_POLICY

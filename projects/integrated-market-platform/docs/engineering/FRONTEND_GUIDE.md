@@ -24,6 +24,10 @@ Radar Screeners still host `DiscoverObservability` (the leftover Discover desk).
 
 Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Paper positions; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
+## Historical fixture treatment
+
+BIYA is a frozen historical short squeeze screener case. It may appear in Demo replay when that dataset is in context, labeled as historical evidence. It is not IMP's default instrument, a general market feed, or a standalone product feature. Workspace entry comes from an operator-selected instrument, an opportunity, an existing investigation, or search; do not add a BIYA shortcut or fallback to a general route.
+
 ## Mode route pattern
 
 ```
@@ -81,6 +85,8 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 ## Paper cockpit
 
 **Workspace** is the decision desk: `PaperWorkspacePage` → `PaperDecisionCockpit` + `WorkspaceObservability`. **Portfolio** (`/portfolio`) is the operator view of simulated/observed holdings, exposure, P&L, and order history — not the submit surface. See [PAPER_DECISION_LIFECYCLE.md](../architecture/PAPER_DECISION_LIFECYCLE.md) and [portfolio-contract-map.md](../ui-redesign-v2/portfolio-contract-map.md).
+
+The Workspace ticket defaults to Market. Limit price is a positive decimal with at most two fractional digits and becomes integer minor units in both preview and submit. The version-1 Radar, lane, and attention handoff remains Market-only; side, quantity, type, and price are editable terms. Changing any term or instrument invalidates the server preview. Portfolio position actions pass editable Add/Reduce/Close Market drafts into Workspace only under Paper authority; Close appears only within the backend per-order share limit. A projected `REJECTED` order blocks submit even if the risk check passed. The submit acknowledgement reports the server's actual order state, including rejection.
 
 ## CSS organization
 

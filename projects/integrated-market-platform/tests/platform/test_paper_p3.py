@@ -83,7 +83,7 @@ class PaperPersistenceTests(IsolatedStateTest):
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         store = ReplayStore(collection_root=COLLECTION_ROOT)
         store.load()
-        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
         for index in range(len(store.bars) - 2, -1, -1):
             store.set_cursor_index(index)
             bars = store.bars_for_execution()
@@ -286,7 +286,7 @@ class PaperPersistenceTests(IsolatedStateTest):
             idempotency_key="p3-old",
         )
         old_id = store.paper_ledger.session_id
-        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
         self.assertNotEqual(store.paper_ledger.session_id, old_id)
         self.assertEqual(store.paper_ledger.project_positions(), [])
         repo = open_local_state(force=True)
@@ -380,7 +380,7 @@ class CrashConsistencyTests(IsolatedStateTest):
         store = ReplayStore(collection_root=COLLECTION_ROOT)
         store.load()
         os.environ["IMP_PAPER_EXECUTION"] = "1"
-        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
         session = session_record_from_ledger(store.paper_ledger)
         with self.assertRaises(sqlite3.OperationalError):
             with repo.connection.transaction():
@@ -398,7 +398,7 @@ class CrashConsistencyTests(IsolatedStateTest):
         os.environ["IMP_PAPER_EXECUTION"] = "1"
         store = ReplayStore(collection_root=COLLECTION_ROOT)
         store.load()
-        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION"})
+        open_paper_session(store, {"execution_mode": "INTERNAL_SIMULATION", "preferred_instrument": store.instrument_id})
         persist_ledger(store.paper_ledger)
         persist_ledger(store.paper_ledger)
         repo = open_local_state(force=True)

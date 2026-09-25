@@ -47,7 +47,7 @@ describe("ImpProductChrome", () => {
       "#imp-main-content",
     );
     expect(screen.getByLabelText("Execution posture")).toHaveTextContent("Live off");
-    expect(screen.getByText(/Ctrl\+K · \?/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Keyboard shortcuts" })).toBeInTheDocument();
   });
 
   it("opens keyboard shortcuts from ? and the header control, then closes on Escape", () => {
@@ -74,6 +74,23 @@ describe("ImpProductChrome", () => {
     screen.getByRole("searchbox").blur();
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
     expect(screen.getByRole("searchbox")).toHaveFocus();
+  });
+
+  it("offers local destinations from command search", () => {
+    renderChrome();
+    const search = screen.getByRole("searchbox");
+    fireEvent.focus(search);
+    expect(screen.getByRole("option", { name: /Radar/ })).toBeInTheDocument();
+    fireEvent.keyDown(search, { key: "ArrowDown" });
+    expect(screen.getByRole("option", { name: /Radar/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("option", { name: /Workspace/ })).toHaveAttribute("aria-selected", "false");
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByRole("listbox", { name: "Command destinations" })).not.toBeInTheDocument();
+    fireEvent.focus(search);
+    fireEvent.change(search, { target: { value: "portfolio" } });
+
+    expect(screen.getByRole("option", { name: /Portfolio/ })).toBeInTheDocument();
+    expect(screen.queryByRole("option", { name: /Workspace/ })).not.toBeInTheDocument();
   });
 
   it("does not open shortcuts from a select", () => {

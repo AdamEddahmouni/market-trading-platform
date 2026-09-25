@@ -9,6 +9,8 @@ export const queryKeys = {
   attention: ["attention"] as const,
   opportunitiesSummary: ["opportunities", "summary"] as const,
   opportunityEvidence: (rowId: string) => ["opportunities", "evidence", rowId] as const,
+  investigations: ["operator", "investigations"] as const,
+  investigation: (workspaceId: string | null) => ["operator", "investigations", workspaceId] as const,
   /** Durable TradeReview learning records keyed by opportunity id. */
   tradeReviews: (opportunityId: string) => ["trade-reviews", opportunityId] as const,
   instrument: (instrumentId: string) => ["instrument", instrumentId] as const,
@@ -375,6 +377,19 @@ export function useClosePaperSessionMutation() {
   const invalidate = useInvalidatePaper();
   return useMutation({
     mutationFn: () => api.closePaperSession(),
+    onSuccess: () => invalidate(),
+  });
+}
+
+/**
+ * Cancel a working Paper order. Server-authoritative: the backend owns the
+ * cancel transition and every authority/exposure rule. The UI only decides
+ * whether the operator is currently allowed to attempt it.
+ */
+export function useCancelPaperOrderMutation() {
+  const invalidate = useInvalidatePaper();
+  return useMutation({
+    mutationFn: (orderId: string) => api.cancelPaperOrder(orderId),
     onSuccess: () => invalidate(),
   });
 }

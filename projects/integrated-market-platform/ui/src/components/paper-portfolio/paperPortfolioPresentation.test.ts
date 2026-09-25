@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import { paperPortfolio } from "../paper-now/paperNowTestFixtures";
 import {
   buildPortfolioAttention,
+  buildPortfolioGlanceMetrics,
   buildPortfolioPositions,
   buildPortfolioSummaryMetrics,
+  classifyPositionSide,
   classifySignedDisplay,
   marksDecay,
   paperCapitalHonesty,
@@ -75,5 +77,49 @@ describe("paperPortfolioPresentation", () => {
   it("treats fixture replay marks as non-decaying", () => {
     expect(marksDecay("FIXTURE_REPLAY")).toBe(false);
     expect(marksDecay("LIVE_OBSERVATIONAL")).toBe(true);
+  });
+
+  it("answers the glance question from canonical account and risk state", () => {
+    const metrics = buildPortfolioGlanceMetrics(paperPortfolio());
+    const byId = new Map(metrics.map((metric) => [metric.id, metric]));
+    expect(byId.get("positions")?.value).toBe("2");
+    expect(byId.get("open-orders")?.value).toBe("2");
+    expect(byId.get("net-exposure")?.value).toBe("150 sh");
+    expect(byId.get("gross-exposure")?.value).toBe("250 sh");
+    expect(byId.get("total-pnl")?.signed).toMatchObject({ direction: "gain" });
+  });
+
+  it("omits exposure figures the contract did not report instead of assuming zero", () => {
+    const metrics = buildPortfolioGlanceMetrics(
+      paperPortfolio({ exposure: undefined }),
+    );
+    expect(metrics.map((metric) => metric.id)).not.toContain("net-exposure");
+    expect(metrics.map((metric) => metric.id)).not.toContain("gross-exposure");
+  });
+
+  it("derives position direction and an absolute size for the Qty column", () => {
+    const rows = buildPortfolioPositions(paperPortfolio());
+    const long = rows.find((row) => row.symbol === "BIYA");
+    const short = rows.find((row) => row.symbol === "NVDA");
+    expect(long).toMatchObject({ side: "long", sideLabel: "Long", quantity: 200, quantityLabel: "200" });
+    expect(short).toMatchObject({ side: "short", sideLabel: "Short", quantity: 50, quantityLabel: "50" });
+  });
+
+  it("falls back to the signed quantity when the contract omits a direction word", () => {
+    expect(classifyPositionSide(undefined, 10)).toBe("long");
+    expect(classifyPositionSide("", -10)).toBe("short");
+    expect(classifyPositionSide("weird", 0)).toBe("flat");
+  });
+
+  it("does not flag a healthy mark as needing attention", () => {
+    const fresh = buildPortfolioPositions(
+      paperPortfolio({
+        positions: [
+          { instrument_id: "AAPL", symbol: "AAPL", quantity: 10, side: "LONG", mark_quality: "FRESH" },
+        ],
+      }),
+    );
+    expect(positionNeedsAttention(fresh[0])).toBe(false);
+    expect(buildPortfolioAttention(paperPortfolio({ positions: [] }))).toEqual([]);
   });
 });

@@ -63,7 +63,7 @@ class TradeReviewDurableTests(unittest.TestCase):
         local = open_local_state(force=True)
         assert local is not None
         self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
-        self.assertEqual(SCHEMA_VERSION, 9)
+        self.assertEqual(SCHEMA_VERSION, 11)
         tables = {
             str(row[0])
             for row in local.connection.execute(

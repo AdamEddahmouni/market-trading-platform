@@ -74,19 +74,15 @@ export function RadarQueueTable({
     <div className="imp-radar-queue-wrap" data-testid="imp-radar-queue">
       <table className="imp-radar-queue-table" aria-label="Ranked opportunity queue">
         <caption className="imp-visually-hidden">
-          Ranked opportunity queue. Columns cover why-now, freshness, evidence,
-          providers, contradictions, and blocking reasons. Select a row for the
-          full operator brief. Watch and Dismiss post to the opportunity ack API
-          when paper actions are permitted.
+          Ranked opportunity queue. Each row shows its signal, evidence, freshness,
+          and reason for blocked action. Select a row for the full operator brief.
+          Watch and Dismiss post to the opportunity ack API when paper actions are permitted.
         </caption>
         <thead>
           <tr>
             <th scope="col">Rank</th>
             <th scope="col">Symbol</th>
-            <th scope="col">Why now</th>
-            <th scope="col">Fresh</th>
-            <th scope="col">Evidence</th>
-            <th scope="col">Blockers</th>
+            <th scope="col">Signal and evidence</th>
             <th scope="col">
               <span className="imp-visually-hidden">Row actions</span>
             </th>
@@ -164,40 +160,45 @@ export function RadarQueueTable({
                       </dd>
                     </div>
                   </dl>
-                </td>
-                <td>
-                  <FreshnessIndicator backendLabel={freshnessWord} />
-                  <p className="imp-radar-queue-fresh-detail" title={primary.freshness.answer}>
-                    {truncate(primary.freshness.answer, 96)}
-                  </p>
-                  <span className="imp-radar-brief-honesty">{primary.freshness.honesty}</span>
-                </td>
-                <td>
-                  <strong>{evidenceInputsSummary(row)}</strong>
-                  <p className="imp-radar-muted" title={primary.providers.answer}>
-                    {primary.providers.answer.startsWith("UNKNOWN")
-                      ? "Providers unknown"
-                      : truncate(primary.providers.answer, 64)}
-                  </p>
+                  <div className="imp-radar-queue-facts">
+                    <span title={primary.freshness.answer}>
+                      <FreshnessIndicator backendLabel={freshnessWord} />
+                      {primary.freshness.answer.toLowerCase() !== freshnessWord?.toLowerCase() ? (
+                        <span className="imp-radar-queue-fact-detail">
+                          {truncate(primary.freshness.answer, 48)}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span>{evidenceInputsSummary(row)}</span>
+                    <span
+                      className="imp-radar-queue-provider"
+                      data-honesty={primary.providers.honesty}
+                      title={primary.providers.answer}
+                    >
+                      {truncate(primary.providers.answer, 64)}
+                    </span>
+                  </div>
                   {primary.hasContradiction ? (
                     <p className="imp-radar-queue-conflict" data-honesty={primary.conflict.honesty}>
-                      Conflict: {truncate(primary.conflict.answer, 80)}
+                      Conflict: {truncate(primary.conflict.answer, 72)}
                       <span className="imp-radar-brief-honesty">{primary.conflict.honesty}</span>
                     </p>
                   ) : (
-                    <p
-                      className="imp-radar-muted"
-                      data-honesty={primary.conflict.honesty}
-                      title={primary.conflict.answer}
-                    >
-                      {truncate(primary.conflict.answer, 96)}
+                    <p className="imp-radar-queue-conflict-note" data-honesty={primary.conflict.honesty} title={primary.conflict.answer}>
+                      {primary.conflict.answer}
                       <span className="imp-radar-brief-honesty">{primary.conflict.honesty}</span>
                     </p>
                   )}
-                </td>
-                <td className="imp-radar-queue-blockers">
-                  <p title={primary.refusal.answer}>{primary.refusal.answer}</p>
-                  <span className="imp-radar-brief-honesty">{primary.refusal.honesty}</span>
+                  {primary.refusal.answer ? (
+                    <p
+                      className="imp-radar-queue-blockers"
+                      data-honesty={primary.refusal.honesty}
+                      title={primary.refusal.answer}
+                    >
+                      {primary.refusal.answer}
+                      <span className="imp-radar-brief-honesty">{primary.refusal.honesty}</span>
+                    </p>
+                  ) : null}
                 </td>
                 <td className="imp-radar-queue-actions">
                   <span

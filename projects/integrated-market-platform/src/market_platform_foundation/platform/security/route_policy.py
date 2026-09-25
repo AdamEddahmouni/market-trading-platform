@@ -54,6 +54,7 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             "/replay/session",
             "/state/startup",
             "/operator/state",
+            "/operator/investigations",
             "/operator/readiness",
             "/operator/config",
             "/operator/diagnostics",
@@ -76,6 +77,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path.startswith("/instruments/") or path.startswith("/market-state/"):
             return RoutePolicy(capability="state.read")
         if path.startswith("/operator/lifecycle/operations/"):
+            return RoutePolicy(capability="state.read")
+        if path.startswith("/operator/investigations/"):
             return RoutePolicy(capability="state.read")
         if path.startswith("/workspace/") or path.startswith("/explain/") or path.startswith("/inspect/"):
             return RoutePolicy(capability="state.read")
