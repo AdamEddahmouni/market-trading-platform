@@ -51,7 +51,9 @@ export function StatusBar({ mode, context, contextState }: Props) {
     params: { provider: asOf?.data_provider },
   });
   const scope = context?.scope_symbols ?? [];
-  const scopeLabel = scope.length ? scope.join(", ") : "No instrument selected";
+  const scopeLabel = scope.length
+    ? `${mode === "DEMO" ? "Replay scope: " : ""}${scope.join(", ")}`
+    : "No instrument selected";
   // Replay/frozen data does not decay (semantic-state-system §6): show the
   // as-of time only. Freshness banding applies to live/delayed data.
   const isLiveData =

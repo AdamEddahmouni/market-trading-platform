@@ -12,11 +12,23 @@ export function ImpCapabilityStrip({ capabilityStates, onOpenProviderMatrix }: P
   }
 
   const items = presentCapabilityStates(capabilityStates);
+  const availableCount = items.filter(({ tone }) => tone === "ok").length;
+  const limitedCount = items.filter(({ tone }) => tone === "warn").length;
+  const blockedCount = items.filter(({ tone }) => tone === "blocked").length;
+  const summary = [
+    `${availableCount} available`,
+    limitedCount ? `${limitedCount} limited` : null,
+    blockedCount ? `${blockedCount} blocked` : null,
+  ].filter(Boolean).join(" · ");
 
   return (
     <div className="imp-capability-strip" role="region" aria-label="Platform capabilities">
-      <span className="imp-capability-strip-label">Capabilities</span>
-      <ul className="imp-capability-strip-list">
+      <details className="imp-capability-disclosure">
+        <summary>
+          <span className="imp-capability-strip-label">Capabilities</span>
+          <span>{summary}</span>
+        </summary>
+        <ul className="imp-capability-strip-list">
         {items.map(({ capability, tone, label }) => (
           <li key={capability.capability_id} className={`imp-capability-chip imp-capability-${tone}`}>
             <span className="imp-capability-icon" aria-hidden="true">
@@ -34,7 +46,8 @@ export function ImpCapabilityStrip({ capabilityStates, onOpenProviderMatrix }: P
             <span className="imp-capability-name">No capability rows on context</span>
           </li>
         ) : null}
-      </ul>
+        </ul>
+      </details>
       {onOpenProviderMatrix ? (
         <button type="button" className="imp-capability-matrix-trigger" onClick={onOpenProviderMatrix}>
           Provider matrix

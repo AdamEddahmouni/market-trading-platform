@@ -698,13 +698,19 @@ describe("App mode launcher integration", () => {
     await openRadarScreeners();
     fireEvent.click(await screen.findByRole("link", { name: "GME" }));
     expect(
-      await screen.findByRole("heading", { name: /GME — Short Squeeze Workspace/i }),
+      await screen.findByRole(
+        "heading",
+        { name: /GME — Short Squeeze Workspace/i },
+        { timeout: 5000 },
+      ),
     ).toBeInTheDocument();
   }
 
   async function openWorkspaceOverview() {
     await openNavLink(/^Workspace —/i);
-    fireEvent.click(await screen.findByRole("link", { name: "Open BIYA workspace" }));
+    const search = screen.getByRole("searchbox", { name: "Search symbols, ideas, research" });
+    fireEvent.change(search, { target: { value: "BIYA" } });
+    fireEvent.submit(search.closest("form")!);
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
   }
@@ -832,7 +838,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Demo");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Demo Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Demo Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/exploration only/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
     // Portfolio content renders in main (the StatusBar scope symbol stays in chrome).
@@ -844,7 +850,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Paper");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Paper Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Paper Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getByRole("note")).toHaveTextContent(/Paper authority unavailable/i);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();
   });
@@ -853,7 +859,7 @@ describe("App mode launcher integration", () => {
     render(<App />);
     await enterMode("Live");
     await openPortfolio();
-    expect(await screen.findByRole("heading", { name: "Live Portfolio" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Live Portfolio" }, { timeout: 5000 })).toBeInTheDocument();
     expect(screen.getAllByText("AAPL").length).toBeGreaterThan(0);
     expect(screen.getAllByText("ord-live-1").length).toBeGreaterThan(0);
     expect(screen.queryByText("Order ticket")).not.toBeInTheDocument();

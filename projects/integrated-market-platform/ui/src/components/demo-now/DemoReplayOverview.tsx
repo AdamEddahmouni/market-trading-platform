@@ -32,10 +32,9 @@ type Props = {
   state: "loading" | "ready" | "error";
   scrubState: "idle" | "pending" | "error";
   onScrub: (index: number) => void;
-  onOpenTimeline: () => void;
 };
 
-export function DemoReplayOverview({ cursorIndex, eventCount, state, scrubState, onScrub, onOpenTimeline }: Props) {
+export function DemoReplayOverview({ cursorIndex, eventCount, state, scrubState, onScrub }: Props) {
   const progress = state === "ready" ? deriveReplayProgress(cursorIndex, eventCount) : null;
   const controlsDisabled = scrubState === "pending" || !progress || progress.eventCount === 0;
 
@@ -49,8 +48,8 @@ export function DemoReplayOverview({ cursorIndex, eventCount, state, scrubState,
         <span className="demo-state-badge">Read-only replay</span>
       </div>
       <div className="demo-scenario-card">
-        <strong>BIYA admitted replay</strong>
-        <span>Known historical sequence · No execution risk</span>
+        <strong>Historical case: BIYA short squeeze</strong>
+        <span>Frozen data from the earlier short squeeze screener prediction · Read-only</span>
         <span className="demo-scenario-note">Scenario switching is not available in this Demo build.</span>
       </div>
       {state === "loading" ? <p role="status">Loading replay status…</p> : null}
@@ -91,9 +90,6 @@ export function DemoReplayOverview({ cursorIndex, eventCount, state, scrubState,
               onClick={() => onScrub(progress.cursorIndex + 1)}
             >
               Next event
-            </button>
-            <button type="button" onClick={onOpenTimeline}>
-              Open full timeline
             </button>
           </div>
         </>

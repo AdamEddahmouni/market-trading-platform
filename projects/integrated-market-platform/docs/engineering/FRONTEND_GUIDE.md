@@ -24,6 +24,10 @@ Radar Screeners still host `DiscoverObservability` (the leftover Discover desk).
 
 Operator group: Live Canary `/live-canary`, Settings `/settings`, Diagnostics `/diagnostics/provider`. Paper mode hints: Workspace — Decision desk; Portfolio — Paper positions; Research — Evidence & validation. Operator URLs: [DEVELOPER_RUNBOOK.md](DEVELOPER_RUNBOOK.md).
 
+## Historical fixture treatment
+
+BIYA is a frozen historical short squeeze screener case. It may appear in Demo replay when that dataset is in context, labeled as historical evidence. It is not IMP's default instrument, a general market feed, or a standalone product feature. Workspace entry comes from an operator-selected instrument, an opportunity, an existing investigation, or search; do not add a BIYA shortcut or fallback to a general route.
+
 ## Mode route pattern
 
 ```

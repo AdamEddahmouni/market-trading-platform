@@ -7,25 +7,13 @@
 
 .imp-product-sidebar {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto 1fr;
   gap: 0.5rem;
   padding: 1rem 0.75rem 1.25rem;
   border-right: 1px solid var(--border-subtle);
-  background:
-    linear-gradient(180deg, rgba(255, 106, 0, 0.07) 0%, transparent 42%),
-    linear-gradient(165deg, var(--surface-3) 0%, var(--surface-0) 55%, #0a0c10 100%);
+  background: linear-gradient(180deg, #1a1d22, #111419 65%);
   position: relative;
   overflow: hidden;
-}
-
-.imp-product-sidebar::before {
-  content: "";
-  position: absolute;
-  inset: auto -40% -30% -20%;
-  height: 55%;
-  background: radial-gradient(ellipse at 30% 80%, rgba(255, 106, 0, 0.18), transparent 68%);
-  pointer-events: none;
-  opacity: 0.85;
 }
 
 .imp-brand-block {
@@ -44,7 +32,6 @@
 
 .imp-bull-mark {
   flex-shrink: 0;
-  filter: drop-shadow(0 0 12px rgba(255, 106, 0, 0.35));
 }
 
 .imp-wordmark {
@@ -233,7 +220,6 @@
   background: rgba(255, 106, 0, 0.12);
   border-color: rgba(255, 106, 0, 0.45);
   color: var(--accent-primary-bright);
-  box-shadow: 0 0 20px rgba(255, 106, 0, 0.12);
 }
 
 .nav-shell-sidebar .nav-link-operator {
@@ -242,13 +228,117 @@
 }
 
 .nav-shell-sidebar .nav-mode-hint {
-  font-size: 0.62rem;
+  display: none;
 }
 
 .imp-overview-board {
   display: grid;
   gap: 1.25rem;
   margin-bottom: 1rem;
+}
+
+.workspace-resume {
+  width: min(100%, 76rem);
+  margin: 0 auto;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+}
+
+.workspace-resume-header,
+.workspace-resume-section-head,
+.workspace-resume-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.workspace-resume-header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.workspace-resume-header h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+  line-height: 1.2;
+}
+
+.workspace-resume-header p:last-child {
+  margin: 0.4rem 0 0;
+  color: var(--text-secondary);
+}
+
+.workspace-resume-primary {
+  flex-shrink: 0;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  color: var(--accent-primary-bright);
+  text-decoration: none;
+}
+
+.workspace-resume-primary:hover,
+.workspace-resume-primary:focus-visible {
+  background: rgba(255, 106, 0, 0.12);
+}
+
+.workspace-resume-section-head {
+  margin: 1.75rem 0 0.75rem;
+}
+
+.workspace-resume-section-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.workspace-resume-section-head a,
+.workspace-resume-empty a,
+.workspace-resume-list a {
+  color: var(--accent-primary-bright);
+}
+
+.workspace-resume-empty {
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+}
+
+.workspace-resume-empty p {
+  margin: 0 0 0.4rem;
+}
+
+.workspace-resume-empty p:first-child {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.workspace-resume-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.workspace-resume-list li {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.workspace-resume-item-main {
+  min-width: 0;
+}
+
+.workspace-resume-item-meta {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .workspace-resume-header,
+  .workspace-resume-list li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .imp-overview-board-body {
@@ -521,14 +611,36 @@
 
 .imp-capability-strip {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 10px 14px;
-  padding: 6px 16px;
-  min-height: 32px;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.3rem 1rem;
+  min-height: 30px;
   border-bottom: 1px solid var(--border-subtle);
   background: rgba(8, 10, 16, 0.85);
   font-size: 12px;
+}
+
+.imp-capability-disclosure {
+  min-width: 0;
+  flex: 1;
+}
+
+.imp-capability-disclosure summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.imp-capability-disclosure summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 3px;
+}
+
+.imp-capability-disclosure[open] summary {
+  margin-bottom: 0.55rem;
 }
 
 .imp-capability-strip-label {
@@ -545,7 +657,6 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  flex: 1;
 }
 
 .imp-capability-chip {

@@ -84,7 +84,7 @@ function Disclosure({
   children: ReactNode;
 }) {
   return (
-    <details className="imp-radar-disclosure" open={defaultOpen}>
+    <details className="imp-radar-disclosure" open={defaultOpen ? true : undefined}>
       <summary id={id}>{title}</summary>
       <div className="imp-radar-disclosure-body" aria-labelledby={id}>
         {children}
@@ -221,12 +221,12 @@ export function OpportunityDetailCard({
         </dl>
       </header>
 
-      <section
+      <details
         className="imp-radar-operator-brief"
         aria-label="Operator questions"
         data-testid="imp-radar-operator-brief"
       >
-        <h4 className="imp-radar-subhead">Operator questions</h4>
+        <summary>Decision questions</summary>
         <dl className="imp-radar-brief-grid">
           {operatorBrief.map((item) => (
             <div key={item.question} className="imp-radar-brief-row" data-honesty={item.honesty}>
@@ -238,15 +238,15 @@ export function OpportunityDetailCard({
             </div>
           ))}
         </dl>
-      </section>
+      </details>
 
       {decisionProvenance.present ? (
-        <section
+        <details
           className="imp-radar-decision-provenance"
           aria-label="Decision provenance"
           data-testid="imp-radar-decision-provenance"
         >
-          <h4 className="imp-radar-subhead">Decision provenance</h4>
+          <summary>Decision provenance</summary>
           <p className="imp-radar-muted">
             Admitted-opportunity audit trail. Thesis language is derived or asserted — never an observed
             market fact.
@@ -282,7 +282,7 @@ export function OpportunityDetailCard({
               ))}
             </ul>
           </div>
-        </section>
+        </details>
       ) : null}
 
       {hasNonFactualResearchOutput(epistemic) ? (
@@ -389,7 +389,7 @@ export function OpportunityDetailCard({
       </div>
 
       {/* L2 — epistemic layers */}
-      <Disclosure title="Evidence layers" id={`${model.stableKey}-evidence`} defaultOpen>
+      <Disclosure title="Evidence layers" id={`${model.stableKey}-evidence`}>
         {evidencePhase === "loading" ? (
           <p className="imp-radar-muted" role="status">
             Loading evidence projection…

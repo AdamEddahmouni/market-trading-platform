@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { WorkspaceIndex } from "./WorkspaceIndex";
+import layoutCss from "../styles/layout.css?raw";
 
 const contextMock = vi.hoisted(() => ({
   isLoading: false,
@@ -57,5 +58,16 @@ describe("WorkspaceIndex", () => {
     render(<MemoryRouter><WorkspaceIndex /></MemoryRouter>);
     expect(screen.getByText(/Opportunity opp-1/)).toHaveTextContent("BIYA catalyst");
     expect(screen.getByRole("link", { name: "Resume" })).toHaveAttribute("href", "/workspace/BIYA?work=ws-1");
+  });
+
+  it("keeps the resume list as a separator list rather than nested cards", () => {
+    expect(layoutCss).not.toMatch(/\.workspace-resume-list\s*\{\s*display:\s*grid/);
+  });
+
+  it("does not promote the frozen replay instrument to a default Workspace shortcut", () => {
+    contextMock.data = { as_of_context: { data_mode: "FIXTURE_REPLAY" }, active_instrument: "BIYA", scope_symbols: ["BIYA"] };
+    render(<MemoryRouter><WorkspaceIndex /></MemoryRouter>);
+    expect(screen.queryByRole("link", { name: "Open BIYA workspace" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Explore Radar" })).toHaveAttribute("href", "/radar");
   });
 });

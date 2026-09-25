@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpportunityReviewRow } from "../../api/opportunityClient";
 import { RadarPage } from "./RadarPage";
+import radarCss from "../../styles/radar.css?raw";
 
 const summaryMock = vi.hoisted(() => ({
   data: {
@@ -574,6 +575,45 @@ describe("RadarPage opportunities tab", () => {
     await waitFor(() =>
       expect(ackMutateAsync).toHaveBeenCalledWith({ rowId: "opp-2", action: "dismiss" }),
     );
+  });
+
+  it("keeps queue freshness, provider, and refusal honesty visible", () => {
+    const freshnessHonestRow: OpportunityReviewRow = {
+      ...rankedRow,
+      data_quality: {
+        ...rankedRow.data_quality,
+        source: undefined,
+        freshness_evaluation: {
+          status: "FRESH",
+          reason_code: "LIVE_AS_OF_UNAVAILABLE",
+          source: "unit-test",
+          as_of_time_ns: 1,
+          age_ns: 0,
+          actionable: true,
+        },
+      },
+    };
+    summaryMock.data = { items: [freshnessHonestRow], feed_status: "READY" };
+    renderRadar("PAPER", "opportunities", true);
+    const queue = screen.getByTestId("imp-radar-queue");
+    expect(queue).toHaveTextContent("live receive clock unavailable");
+    expect(queue).toHaveTextContent("no provider or source identifiers attached");
+    expect(queue.querySelector(".imp-radar-queue-blockers")).toHaveAttribute("data-honesty", "DERIVED");
+  });
+
+  it("keeps the queue contained and matches the detail-sheet breakpoint", () => {
+    expect(radarCss).toContain("@media (max-width: 1024px)");
+    expect(radarCss).toContain("min-width: var(--imp-table-min-compact)");
+    expect(radarCss).toContain(".imp-radar-detail-actions .operator-action-description");
+  });
+
+  it("allows selected detail evidence to open on demand", () => {
+    summaryMock.data = { items: [rankedRow], feed_status: "READY", unready_reason: undefined, next_action: undefined };
+    renderRadar("PAPER", "opportunities", true);
+    const evidence = within(screen.getByTestId("imp-radar-detail-card")).getByText("Evidence layers").closest("details");
+    expect(evidence).not.toHaveAttribute("open");
+    fireEvent.click(within(evidence!).getByText("Evidence layers"));
+    expect(evidence).toHaveAttribute("open");
   });
 
   it("selects a row and shows the progressive detail card", async () => {

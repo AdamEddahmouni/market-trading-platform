@@ -23,7 +23,6 @@ export type DemoNowPageProps = {
   portfolioState: LoadState;
   portfolio?: PaperPortfolioResponse;
   onScrub: (index: number) => void;
-  onOpenTimeline: () => void;
   onWhy: (item: AttentionItem) => void;
   onExplain: (item: AttentionItem) => void;
   onInspect: (item: AttentionItem) => void;
@@ -88,7 +87,6 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
           state={props.replayState}
           scrubState={props.scrubState}
           onScrub={props.onScrub}
-          onOpenTimeline={props.onOpenTimeline}
         />
         {!signalsDesk ? (
           <DemoPortfolioSummary state={props.portfolioState} portfolio={props.portfolio} />
@@ -123,7 +121,7 @@ export function DemoNowPage({ desk = "overview", ...props }: DemoNowPageProps) {
               : "Move through a known historical sequence, inspect the evidence at each event, and learn without execution risk."}
           </p>
         </div>
-        <span className="demo-intro-mark">BIYA / REPLAY</span>
+        <span className="demo-intro-mark">HISTORICAL REPLAY</span>
       </header>
       {signalsDesk ? (
         bodyGrid

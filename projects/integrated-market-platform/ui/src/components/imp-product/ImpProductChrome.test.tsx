@@ -47,7 +47,7 @@ describe("ImpProductChrome", () => {
       "#imp-main-content",
     );
     expect(screen.getByLabelText("Execution posture")).toHaveTextContent("Live off");
-    expect(screen.getByText(/Ctrl\+K · \?/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Keyboard shortcuts" })).toBeInTheDocument();
   });
 
   it("opens keyboard shortcuts from ? and the header control, then closes on Escape", () => {

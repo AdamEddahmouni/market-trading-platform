@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-25 — Compact operator shell, Radar scan, and Workspace resume
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/shell`, `ui/radar`, `ui/workspace`, `ui/replay` |
+| **Summary** | Recovered and completed the UI/UX pass: compressed global capability and navigation chrome, made Radar a faster compact scan with progressive detail, and reshaped Workspace as a calm resume surface. Historical replay remains explicitly labeled and BIYA is no longer a generic Workspace default. |
+| **Key files** | `ui/src/App.tsx`; `ui/src/components/imp-product/ImpCapabilityStrip.tsx`; `ui/src/components/radar/RadarQueueTable.tsx`; `ui/src/components/radar/OpportunityDetailCard.tsx`; `ui/src/components/WorkspaceIndex.tsx`; `ui/src/styles/imp-product.css`; `ui/src/styles/radar.css`; `docs/engineering/FRONTEND_GUIDE.md` |
+| **Tests** | Focused UI suites passed; App integration: 74 passed; UI typecheck passed; production build passed. A serial whole-suite run reached 941/945 with four existing App lazy-route timing failures under shared test-process load; browser verification covered shell, Radar, Workspace, historical replay, and narrow Radar layout. |
+| **Notes** | Generic fixture fallbacks in non-Radar Workspace lanes remain for the next execution/context cleanup lane; no Paper or Live authority boundary changed. |
+
 ## 2026-09-24 — Persist Radar investigations in Workspace
 
 | Field | Value |

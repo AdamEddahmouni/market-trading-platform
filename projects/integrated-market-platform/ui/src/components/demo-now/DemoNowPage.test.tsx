@@ -41,7 +41,6 @@ function props(overrides: Partial<DemoNowPageProps> = {}): DemoNowPageProps {
     portfolioState: "ready",
     portfolio,
     onScrub: vi.fn(),
-    onOpenTimeline: vi.fn(),
     onWhy: vi.fn(),
     onExplain: vi.fn(),
     onInspect: vi.fn(),

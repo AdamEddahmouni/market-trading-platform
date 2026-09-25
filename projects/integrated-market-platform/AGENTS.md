@@ -29,6 +29,10 @@ backend work. Use the relevant SOP from `docs/engineering/sops/`.
   revalidation, risk authority, execution controls, account isolation,
   source-time semantics, immutable provenance, persistence correctness, and
   offline network denial.
+- BIYA is a frozen historical short squeeze screener case, not a default
+  instrument, product feature, or representative current market feed. Keep it
+  labeled as replay evidence where used; do not make it a generic navigation
+  destination or automatic Workspace entry.
 - Fail closed on authority loss, stale preview, schema mismatch, unknown
   identifiers, and unconfigured providers. Never fabricate data or API shapes.
 

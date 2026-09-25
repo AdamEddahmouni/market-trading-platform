@@ -170,9 +170,6 @@ export function ImpProductChrome({ mode, onSwitchMode, onToggleAssistant, childr
           ) : null}
         </div>
         <NavShell mode={mode} />
-        <footer className="imp-sidebar-footer">
-          <span className="imp-sidebar-version">Operator UI · current contracts · Ctrl+K · ?</span>
-        </footer>
       </aside>
       <div className="imp-product-main" ref={mainRef}>
         <header className="imp-top-bar">

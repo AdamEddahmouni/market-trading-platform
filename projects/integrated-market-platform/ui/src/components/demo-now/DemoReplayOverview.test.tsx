@@ -26,7 +26,6 @@ function renderReplay(overrides: Partial<ComponentProps<typeof DemoReplayOvervie
     state: "ready",
     scrubState: "idle",
     onScrub: vi.fn(),
-    onOpenTimeline: vi.fn(),
     ...overrides,
   };
   render(<DemoReplayOverview {...props} />);
@@ -36,16 +35,14 @@ function renderReplay(overrides: Partial<ComponentProps<typeof DemoReplayOvervie
 describe("DemoReplayOverview", () => {
   it("shows truthful BIYA identity and invokes bounded replay actions", () => {
     const props = renderReplay();
-    expect(screen.getByRole("region", { name: "Replay overview" })).toHaveTextContent("BIYA admitted replay");
+    expect(screen.getByRole("region", { name: "Replay overview" })).toHaveTextContent("Historical case: BIYA short squeeze");
     expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
     expect(screen.getByText("Event 2 of 4")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Replay progress" })).toHaveAttribute("aria-valuenow", "2");
     fireEvent.click(screen.getByRole("button", { name: "Previous" }));
     fireEvent.click(screen.getByRole("button", { name: "Next event" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open full timeline" }));
     expect(props.onScrub).toHaveBeenNthCalledWith(1, 0);
     expect(props.onScrub).toHaveBeenNthCalledWith(2, 2);
-    expect(props.onOpenTimeline).toHaveBeenCalledOnce();
   });
 
   it("enforces first, final, empty, and pending boundaries", () => {
@@ -56,7 +53,6 @@ describe("DemoReplayOverview", () => {
         state="ready"
         scrubState="idle"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
@@ -67,7 +63,6 @@ describe("DemoReplayOverview", () => {
         state="ready"
         scrubState="idle"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByRole("button", { name: "Next event" })).toBeDisabled();
@@ -78,7 +73,6 @@ describe("DemoReplayOverview", () => {
         state="ready"
         scrubState="idle"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByText("0 events")).toBeInTheDocument();
@@ -91,7 +85,6 @@ describe("DemoReplayOverview", () => {
         state="ready"
         scrubState="pending"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
@@ -106,7 +99,6 @@ describe("DemoReplayOverview", () => {
         state="loading"
         scrubState="idle"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByRole("status")).toHaveTextContent("Loading replay status");
@@ -117,7 +109,6 @@ describe("DemoReplayOverview", () => {
         state="error"
         scrubState="idle"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByText(/Replay status unavailable/)).toBeInTheDocument();
@@ -128,7 +119,6 @@ describe("DemoReplayOverview", () => {
         state="ready"
         scrubState="error"
         onScrub={vi.fn()}
-        onOpenTimeline={vi.fn()}
       />,
     );
     expect(screen.getByText("Event 2 of 4")).toBeInTheDocument();

@@ -115,7 +115,7 @@
      offsets cannot drift again */
   --imp-topbar-height: 48px;
   --imp-statusbar-height: 40px;
-  --imp-sidebar-width: 220px; /* was referenced but never defined */
+  --imp-sidebar-width: 188px;
   --imp-drawer-width: 360px;
   --imp-drawer-max-width: 420px; /* overlay drawers: min(420px, 100vw) */
 

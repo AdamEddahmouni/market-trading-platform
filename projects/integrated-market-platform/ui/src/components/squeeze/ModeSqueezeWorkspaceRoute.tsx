@@ -3,7 +3,6 @@ import type { Mode } from "../mode-session/types";
 import { WorkspaceModuleModeShell } from "../workspace-module-shared/WorkspaceModuleModeShell";
 import { useWorkspaceInstrumentId } from "../workspace-module-shared/useWorkspaceInstrumentId";
 import { workspaceModuleModeDescription } from "../workspace-module-shared/workspaceModuleModeDescription";
-import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../../api/client";
 import {
   SqueezeWorkspaceObservability,
   squeezeModuleDescription,
@@ -17,7 +16,7 @@ type Props = {
 };
 
 export function ModeSqueezeWorkspaceRoute({ mode, ...props }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_REPLAY_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
   const [searchParams] = useSearchParams();
   const dataMode = searchParams.get("data_mode") === "current" ? "current" : "frozen";
   const squeezeQuery = dataMode === "current" ? "?data_mode=current" : "";

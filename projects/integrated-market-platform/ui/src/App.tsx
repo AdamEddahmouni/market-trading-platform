@@ -9,7 +9,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router-dom";
-import { ADMITTED_REPLAY_INSTRUMENT_ID, api, type AttentionItem } from "./api/client";
+import { api, type AttentionItem } from "./api/client";
 import {
   queryKeys,
   useAttentionQuery,
@@ -409,7 +409,6 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
     onScrub: (index: number) => {
       void scrub(index);
     },
-    onOpenTimeline: () => navigate(`/workspace/${encodeURIComponent(ADMITTED_REPLAY_INSTRUMENT_ID)}`),
     onWhy: openExplain,
     onExplain: openExplain,
     onInspect: openInspect,

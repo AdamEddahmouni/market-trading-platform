@@ -8,6 +8,9 @@ Parent: [AGENTS.md](../AGENTS.md)
 - React Query: `ui/src/api/hooks.ts` → `queryKeys` — **never** duplicate semantics under same key
 - Paper: `canUsePaperActions` from `mode-session/modeAuthority.ts`
 - Lazy routes in `App.tsx` for lanes and heavy pages
+- Instrument entry is contextual or search-driven. Do not use the frozen BIYA
+  short squeeze replay fixture as the default instrument or a product shortcut.
+  Label that dataset as historical replay when it appears in Demo.
 
 ## Tests
 

@@ -1,5 +1,4 @@
 import type { Mode } from "../mode-session/types";
-import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../../api/schemas";
 import { WorkspaceModuleModeShell } from "../workspace-module-shared/WorkspaceModuleModeShell";
 import { useWorkspaceInstrumentId } from "../workspace-module-shared/useWorkspaceInstrumentId";
 import { workspaceModuleModeDescription } from "../workspace-module-shared/workspaceModuleModeDescription";
@@ -16,7 +15,7 @@ type Props = {
 };
 
 export function ModeOptionsWorkspaceRoute({ mode, ...props }: Props) {
-  const instrumentId = useWorkspaceInstrumentId(ADMITTED_REPLAY_INSTRUMENT_ID);
+  const instrumentId = useWorkspaceInstrumentId();
 
   return (
     <WorkspaceModuleModeShell

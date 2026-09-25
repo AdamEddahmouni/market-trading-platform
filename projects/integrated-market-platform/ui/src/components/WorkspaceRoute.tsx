@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useNavigationType, useParams } from "react-router-dom";
 import { ADMITTED_REPLAY_INSTRUMENT_ID } from "../api/client";
 import { decodeInstrumentRouteParam } from "../api/instrumentIdentity";
 import { useInstrumentQuery, useWorkspaceSqueezeQuery } from "../api/hooks";
@@ -31,7 +31,7 @@ export function WorkspaceRoute({
   maxIndex,
 }: Props) {
   const { symbol } = useParams<{ symbol: string }>();
-  const instrumentId = symbol ? decodeInstrumentRouteParam(symbol) : ADMITTED_REPLAY_INSTRUMENT_ID;
+  const instrumentId = symbol ? decodeInstrumentRouteParam(symbol) : "";
   const location = useLocation();
   const navigate = useNavigate();
   const navigationType = useNavigationType();
@@ -46,6 +46,8 @@ export function WorkspaceRoute({
 
   const instrumentQuery = useInstrumentQuery(instrumentId, replayChartAvailable);
   const squeezeQuery = useWorkspaceSqueezeQuery(instrumentId);
+
+  if (!instrumentId) return <Navigate to="/workspace" replace />;
 
   if (replayChartAvailable && instrumentQuery.isLoading) {
     return <LoadingState label="Loading instrument…" />;

@@ -1725,6 +1725,3 @@ body,
 .workspace-investigation nav ul { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; padding: 0; }
 .workspace-investigation textarea { display: block; width: 100%; max-width: 60rem; margin: .5rem 0; }
 .workspace-investigation [aria-current="page"] { font-weight: 700; text-decoration: underline; }
-.workspace-resume { margin: 1rem; padding: 1rem; }
-.workspace-resume-list { display: grid; gap: .75rem; list-style: none; padding: 0; }
-.workspace-resume-list li { border: 1px solid var(--border, #777); border-radius: .5rem; padding: .75rem; overflow-wrap: anywhere; }
