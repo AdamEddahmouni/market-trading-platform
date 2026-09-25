@@ -34,6 +34,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-24 — Persist Radar investigations in Workspace
+
+| Field | Value |
+|-------|-------|
+| **Status** | `Workspace investigation slice implemented` |
+| **Area** | `ui/workspace`, `backend/local-state` |
+| **Summary** | Added a durable investigation context linked to an instrument, optional Radar attention ID, and optional opportunity ID. Radar resolves repeated handoffs by source identity; the Workspace index and instrument route list resumable investigations and save operator notes with conflict detection. Demo remains read-only; a governed Paper session can save local work. |
+| **Key files** | `src/market_platform_foundation/local_state/schema.py`; `src/market_platform_foundation/local_state/migrations.py`; `src/market_platform_foundation/local_state/repository.py`; `src/market_platform_foundation/ui_api/workspace_investigations.py`; `src/market_platform_foundation/ui_api/server.py`; `ui/src/components/workspace/InvestigationPanel.tsx`; `ui/src/components/WorkspaceRoute.tsx`; `ui/src/App.tsx`; `docs/architecture/ARCHITECTURE.md` |
+| **Tests** | Investigation persistence and v9 upgrade: 4 passed; related durable-loop suites: 62 passed; targeted UI suites: 90 passed; UI typecheck and production build passed. Browser Demo pass confirmed Radar → BIYA Workspace preserves attention ID and shows read-only investigation context without a create control. Earlier browser Paper flow verified Radar handoff, note persistence, deep-link reload, and conflict draft preservation. The first Vite build attempt was blocked by sandbox path resolution; an approved rerun passed. |
+| **Notes** | Paper execution boundaries and the Sep 25 frozen runtime were not changed. |
+
+---
+
 ## 2026-09-24 — Make Sep 25 launch checkout reproducible
 
 | Field | Value |

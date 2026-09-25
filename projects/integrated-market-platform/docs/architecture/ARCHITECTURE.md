@@ -56,6 +56,15 @@ App.tsx
 - **React Query** for server state (`ui/src/api/hooks.ts`, `queryKeys`)
 - **Router state** for short-lived Paper draft handoffs
 - **Versioned draft state** (`paperOrderDraft.ts`) for Paper tickets
+- **Durable investigation context** (`workspace_investigations`) for resumable operator work
+
+Workspace is the investigation surface: Radar can link an opportunity attention
+ID and instrument into a durable investigation, and the operator can resume it
+from the Workspace index or instrument workspace with notes and source provenance. The record is
+local-first, typed, and independent from the existing saved panel layout. Demo
+and historical replay contexts remain read-only in Demo; a governed Paper session
+can save local investigations without gaining order authority. Paper preview and submit stay
+inside the existing Workspace cockpit and authority gates.
 
 ## Backend architecture
 
@@ -71,6 +80,14 @@ market_platform_foundation/
 ```
 
 Request path: **UI API handler → projection/service → domain → storage/events**
+
+Workspace investigation path: **Radar attention → `/workspace/:instrument?attention=…&opportunity=…`
+→ typed `/operator/investigations` API → SQLite migrations 10–11 → Workspace
+resume and notes**. The durable record preserves the Radar attention ID and,
+when present, the originating opportunity ID. This stores investigation context
+only; it does not create an execution, campaign, or unrestricted agent run.
+Research runs, experiments, artifacts, decisions, Paper preparation, monitoring,
+and outcomes remain separate planned Workspace integrations.
 
 ## Paper execution path (summary)
 

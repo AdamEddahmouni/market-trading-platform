@@ -218,10 +218,6 @@ export function openWorkspaceAction(ctx: RadarActionContext): OperatorActionDesc
       reason: missing ?? { code: "OPPORTUNITY_STATE_UNAVAILABLE", detail: "No opportunity is selected." },
     };
   }
-  const gated = opportunityGate(ctx.row);
-  if (gated) {
-    return { ...base, availability: gated.availability, reason: gated.reason };
-  }
   if (!ctx.row.instrument_id) {
     return {
       ...base,
@@ -229,16 +225,6 @@ export function openWorkspaceAction(ctx: RadarActionContext): OperatorActionDesc
       reason: {
         code: "WORKSPACE_INSTRUMENT_MISSING",
         detail: "Workspace handoff needs an instrument on this opportunity.",
-      },
-    };
-  }
-  if (ctx.row.next_safe_action !== "OPEN_WORKSPACE") {
-    return {
-      ...base,
-      availability: "BLOCKED",
-      reason: {
-        code: "WORKSPACE_HANDOFF_UNAVAILABLE",
-        detail: "Workspace handoff is not the current next action for this opportunity.",
       },
     };
   }

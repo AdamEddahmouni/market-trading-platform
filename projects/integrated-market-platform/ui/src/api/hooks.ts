@@ -9,6 +9,8 @@ export const queryKeys = {
   attention: ["attention"] as const,
   opportunitiesSummary: ["opportunities", "summary"] as const,
   opportunityEvidence: (rowId: string) => ["opportunities", "evidence", rowId] as const,
+  investigations: ["operator", "investigations"] as const,
+  investigation: (workspaceId: string | null) => ["operator", "investigations", workspaceId] as const,
   /** Durable TradeReview learning records keyed by opportunity id. */
   tradeReviews: (opportunityId: string) => ["trade-reviews", opportunityId] as const,
   instrument: (instrumentId: string) => ["instrument", instrumentId] as const,

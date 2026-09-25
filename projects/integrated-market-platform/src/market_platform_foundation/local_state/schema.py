@@ -2,10 +2,32 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 11
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
+
+WORKSPACE_INVESTIGATIONS_V10: tuple[str, ...] = (
+    """
+    CREATE TABLE workspace_investigations (
+        workspace_id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        instrument_id TEXT NOT NULL,
+        source_kind TEXT NOT NULL,
+        source_id TEXT,
+        status TEXT NOT NULL CHECK(status IN ('ACTIVE', 'ARCHIVED')),
+        note TEXT NOT NULL DEFAULT '',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+    )
+    """,
+    "CREATE INDEX workspace_investigations_recent ON workspace_investigations(updated_at DESC)",
+)
+
+WORKSPACE_INVESTIGATIONS_V11: tuple[str, ...] = (
+    "ALTER TABLE workspace_investigations ADD COLUMN opportunity_id TEXT",
+    "CREATE UNIQUE INDEX workspace_investigations_radar_source ON workspace_investigations(instrument_id, source_id) WHERE source_kind='radar_attention' AND source_id IS NOT NULL",
+)
 
 CREATE_STATEMENTS: tuple[str, ...] = (
     """

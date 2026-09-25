@@ -61,6 +61,7 @@ export function explanationRefForRow(row: OpportunityReviewRow): string {
 export function attentionItemFromOpportunity(row: OpportunityReviewRow): AttentionItem {
   return {
     attention_id: row.summary_id,
+    opportunity_id: row.opportunity_id ?? undefined,
     priority_rank: row.rank_order ?? 0,
     headline: row.headline,
     instrument_id: row.instrument_id ?? undefined,

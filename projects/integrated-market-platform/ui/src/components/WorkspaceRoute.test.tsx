@@ -10,6 +10,7 @@ vi.mock("../api/hooks", () => ({
 vi.mock("./ModeWorkspacePage", () => ({
   ModeWorkspacePage: ({ initialPaperOrderDraft }: { initialPaperOrderDraft?: unknown }) => <output data-testid="draft">{initialPaperOrderDraft ? JSON.stringify(initialPaperOrderDraft) : "none"}</output>,
 }));
+vi.mock("./workspace/InvestigationPanel", () => ({ InvestigationPanel: () => null }));
 
 const validDraft = { version: 1, instrumentId: "BIYA", side: "SELL", quantity: 12, orderType: "MARKET" };
 const routeProps = { mode: "PAPER" as const, paperActionsPermitted: true, onScrub: vi.fn(), onExplain: vi.fn(), onInspect: vi.fn(), cursorIndex: 0, maxIndex: 0 };

@@ -186,6 +186,7 @@ export const AttentionItemSchema = z.object({
   priority_rank: z.number(),
   reasons: z.array(AttentionReasonSchema),
   instrument_id: z.string().optional(),
+  opportunity_id: z.string().optional(),
   headline: z.string(),
   explanation_ref: z.string(),
   tier: z.number().optional(),

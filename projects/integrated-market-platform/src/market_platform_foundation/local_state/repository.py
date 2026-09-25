@@ -352,6 +352,58 @@ class LocalStateRepository:
             }
         return {"workspace_id": row["workspace_id"], "layout": layout, "fallback": False}
 
+    def create_investigation(
+        self,
+        *,
+        title: str,
+        instrument_id: str,
+        source_kind: str,
+        source_id: str | None,
+        opportunity_id: str | None,
+    ) -> dict[str, Any]:
+        with self.connection.transaction():
+            if source_kind == "radar_attention" and source_id is not None:
+                existing = self.connection.execute(
+                    "SELECT * FROM workspace_investigations WHERE instrument_id=? AND source_kind='radar_attention' AND source_id=?",
+                    (instrument_id, source_id),
+                ).fetchone()
+                if existing is not None:
+                    if existing["opportunity_id"] != opportunity_id:
+                        raise ValueError("WORKSPACE_SOURCE_CONFLICT")
+                    return dict(existing)
+            workspace_id = f"ws-{uuid4().hex}"
+            now = _ns()
+            self.connection.execute(
+                "INSERT INTO workspace_investigations(workspace_id,title,instrument_id,source_kind,source_id,opportunity_id,status,note,created_at,updated_at) VALUES (?,?,?,?,?,?,'ACTIVE','',?,?)",
+                (workspace_id, title, instrument_id, source_kind, source_id, opportunity_id, now, now),
+            )
+            row = self.get_investigation(workspace_id)
+            assert row is not None
+            return row
+
+    def get_investigation(self, workspace_id: str) -> dict[str, Any] | None:
+        row = self.connection.execute(
+            "SELECT * FROM workspace_investigations WHERE workspace_id=?", (workspace_id,)
+        ).fetchone()
+        return dict(row) if row is not None else None
+
+    def list_investigations(self, limit: int = 50) -> list[dict[str, Any]]:
+        return [dict(row) for row in self.connection.execute(
+            "SELECT * FROM workspace_investigations ORDER BY updated_at DESC, workspace_id DESC LIMIT ?", (limit,)
+        ).fetchall()]
+
+    def update_investigation_note(self, workspace_id: str, note: str, expected_note: str) -> dict[str, Any] | None:
+        with self.connection.transaction():
+            cursor = self.connection.execute(
+                "UPDATE workspace_investigations SET note=?, updated_at=? WHERE workspace_id=? AND status='ACTIVE' AND note=?",
+                (note, _ns(), workspace_id, expected_note),
+            )
+            if cursor.rowcount:
+                return self.get_investigation(workspace_id)
+            if self.get_investigation(workspace_id) is not None:
+                raise ValueError("WORKSPACE_NOTE_CONFLICT")
+            return None
+
     def set_preference(self, key: str, value: Any) -> None:
         reject_secret_key(key)
         if isinstance(value, str):

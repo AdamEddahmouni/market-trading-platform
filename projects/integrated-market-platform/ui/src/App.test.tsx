@@ -240,6 +240,8 @@ vi.mock("./api/hooks", () => ({
     context: ["context"],
     attention: ["attention"],
     opportunitiesSummary: ["opportunities", "summary"],
+    investigations: ["operator", "investigations"],
+    investigation: (workspaceId: string | null) => ["operator", "investigations", workspaceId],
     operatorDiagnostics: ["operator", "diagnostics"],
     operatorReadiness: ["operator", "readiness"],
     operatorLifecycleStatus: ["operator", "lifecycle-status"],
@@ -702,6 +704,7 @@ describe("App mode launcher integration", () => {
 
   async function openWorkspaceOverview() {
     await openNavLink(/^Workspace —/i);
+    fireEvent.click(await screen.findByRole("link", { name: "Open BIYA workspace" }));
     expect(await screen.findByRole("heading", { name: "BIYA" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Workspace modules" })).toBeInTheDocument();
   }

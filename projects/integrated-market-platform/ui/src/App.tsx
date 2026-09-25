@@ -389,7 +389,11 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   };
 
   const openAttentionWorkspace = (item: AttentionItem) => {
-    if (item.instrument_id) navigate(`/workspace/${encodeURIComponent(item.instrument_id)}`);
+    if (item.instrument_id) {
+      const query = new URLSearchParams({ attention: item.attention_id });
+      if (item.opportunity_id) query.set("opportunity", item.opportunity_id);
+      navigate(`/workspace/${encodeURIComponent(item.instrument_id)}?${query.toString()}`);
+    }
   };
 
   const nowRouteProps = {

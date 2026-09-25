@@ -455,11 +455,11 @@ class DurableForwardTestPersistenceV7Tests(IsolatedForwardTestPersistenceTest):
             ).fetchall()
         }
 
-    def test_schema_version_is_nine(self) -> None:
+    def test_current_schema_retains_prior_tables(self) -> None:
         local = open_local_state(force=True)
         assert local is not None
         self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
-        self.assertEqual(SCHEMA_VERSION, 9)
+        self.assertEqual(SCHEMA_VERSION, 11)
         tables = self._table_names(local)
         self.assertIn("forward_test_signal_links", tables)
         self.assertIn("enrichment_outbox", tables)

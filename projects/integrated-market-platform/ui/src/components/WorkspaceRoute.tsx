@@ -7,6 +7,7 @@ import { ModeWorkspacePage } from "./ModeWorkspacePage";
 import type { Mode } from "./mode-session/types";
 import { parsePaperOrderDraft } from "./paper-now/paperOrderDraft";
 import { LoadingState } from "./shared/LoadingState";
+import { InvestigationPanel } from "./workspace/InvestigationPanel";
 
 type Props = {
   mode: Mode;
@@ -56,6 +57,8 @@ export function WorkspaceRoute({
   }
 
   return (
+    <>
+    <InvestigationPanel instrumentId={instrumentId} mode={mode} />
     <ModeWorkspacePage
       mode={mode}
       paperActionsPermitted={paperActionsPermitted}
@@ -77,5 +80,6 @@ export function WorkspaceRoute({
       onInspect={onInspect}
       onOpenSqueezeHistory={onOpenSqueezeHistory}
     />
+    </>
   );
 }

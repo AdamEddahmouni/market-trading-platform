@@ -101,13 +101,13 @@ describe("radar operator actions", () => {
     expect(noAccount.review.reason?.code).toBe("PAPER_ACCOUNT_UNAVAILABLE");
   });
 
-  it("blocks workspace handoff when the instrument or next action is missing", () => {
+  it("allows investigation even when execution review is blocked, but requires an instrument", () => {
     expect(
       radarOpportunityActions(ctx({ row: row({ instrument_id: null }) })).openWorkspace.reason?.code,
     ).toBe("WORKSPACE_INSTRUMENT_MISSING");
     expect(
-      radarOpportunityActions(ctx({ row: row({ next_safe_action: "EXPLAIN" }) })).openWorkspace.reason?.code,
-    ).toBe("WORKSPACE_HANDOFF_UNAVAILABLE");
+      radarOpportunityActions(ctx({ row: row({ next_safe_action: "EXPLAIN" }) })).openWorkspace.availability,
+    ).toBe("AVAILABLE");
   });
 
   it("maps ack failure and failed reconciliation onto shared result kinds", () => {
