@@ -7,6 +7,7 @@ import {
   Route,
   Routes,
   useNavigate,
+  useLocation,
   useSearchParams,
 } from "react-router-dom";
 import { api, type AttentionItem } from "./api/client";
@@ -55,6 +56,11 @@ import "./components/imp-ui/imp-ui.css";
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
     default: module.AssistantHistoryPage,
+  })),
+);
+const ScreenerPage = lazy(() =>
+  import("./components/screener/ScreenerPage").then((module) => ({
+    default: module.ScreenerPage,
   })),
 );
 const AssistantSidecar = lazy(() =>
@@ -666,15 +672,23 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
   );
 }
 
+function ProductEntry() {
+  const location = useLocation();
+  if (location.pathname.replace(/\/+$/, "") === "/screener") {
+    return <LazyBoundary label="Loading Screener…"><ScreenerPage /></LazyBoundary>;
+  }
+  return <ApplicationBootstrap>
+    {(mode, switchMode) => <WorkstationShell mode={mode} onSwitchMode={switchMode} />}
+  </ApplicationBootstrap>;
+}
+
 export default function App() {
   return (
     <AuthProvider>
       <OperatorLoginGate>
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
-            <ApplicationBootstrap>
-              {(mode, switchMode) => <WorkstationShell mode={mode} onSwitchMode={switchMode} />}
-            </ApplicationBootstrap>
+            <ProductEntry />
           </BrowserRouter>
         </QueryClientProvider>
       </OperatorLoginGate>

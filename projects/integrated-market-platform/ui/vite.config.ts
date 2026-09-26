@@ -48,6 +48,10 @@ export default defineConfig({
         target: apiTarget,
         bypass: spaHtmlBypass,
       },
+      "/screener": {
+        target: apiTarget,
+        bypass: spaHtmlBypass,
+      },
       "/instruments": apiTarget,
       "/explain": apiTarget,
       "/inspect": apiTarget,
