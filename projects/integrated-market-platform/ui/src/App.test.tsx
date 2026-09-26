@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { api } from "./api/client";
 
+vi.mock("./components/screener/ScreenerPage", () => ({
+  ScreenerPage: () => <h1>Main Screener</h1>,
+}));
+
 vi.mock("./components/charts/ResearchChartPanels", () => ({
   CountBarChartPanel: () => null,
   SignalTimelineChartPanel: () => null,
@@ -694,6 +698,21 @@ describe("App mode launcher integration", () => {
   async function openRadar() {
     await openNavLink(/^Radar —/i);
   }
+
+  it("opens the first-class standalone Screener from primary navigation", async () => {
+    render(<App />);
+    await enterMode("Paper");
+    fireEvent.click(screen.getByRole("link", { name: "Screener" }));
+    expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Session environment" })).not.toBeInTheDocument();
+  });
+
+  it("loads Screener directly without the old mode launcher", async () => {
+    window.history.pushState({}, "", "/screener");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /ENTER ENVIRONMENT/ })).not.toBeInTheDocument();
+  });
 
   async function openSqueezeFromScreeners() {
     await openRadarScreeners();

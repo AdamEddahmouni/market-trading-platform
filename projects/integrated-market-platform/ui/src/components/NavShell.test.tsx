@@ -15,6 +15,7 @@ describe("NavShell", () => {
   it("renders the operator IA without mode hints when mode is omitted", () => {
     renderNav();
     expect(screen.getByRole("link", { name: "Command" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Screener" })).toHaveAttribute("href", "/screener");
     expect(screen.getByRole("link", { name: "Radar" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Workspace" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Portfolio" })).toBeInTheDocument();

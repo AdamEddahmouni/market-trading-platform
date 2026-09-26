@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-25 — Main Screener S1 current US-equity scan
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (ready for owner review) |
+| **Area** | `ui/screener`, `ui_api`, `docs` |
+| **Summary** | Added a first-class dense Screener, broad normalized Finviz stock projection, and bounded live quote viewport independent of Radar. Corrected real export columns and bare million-unit values; improved source retry and unavailable state. |
+| **Key files** | `ui/src/components/screener/`, `ui/src/api/screener.ts`, `src/market_platform_foundation/ui_api/screener_projections.py`, `src/market_platform_foundation/finviz/screener.py`, `docs/engineering/SCREENER_S1.md` |
+| **Tests** | `validate changed`: 5,014 tests, 35 skipped, zero failures/errors. Required `validate full`: 6,838 tests, 52 skipped, zero failures/errors. UI: 1,008/1,008 tests, typecheck and production build/bundle budget pass (initial 201.28 KiB gzip). Docs links pass (264 files). Manual real-provider browser acceptance at 1920×1080, 2560×1440, and 1100×800. |
+| **Notes** | No capture or fixture fallback in current Screener path. Real provider first showed `NOT_CONFIGURED`, then became available and returned 4,293 current US-equity rows; one intermittent `FinvizHTTPError` surfaced as unavailable/degraded without replay substitution. Market session was `CLOSED` on Saturday. |
+
 ## 2026-09-25 — Workspace Paper ticket and position entry
 
 | Field | Value |
