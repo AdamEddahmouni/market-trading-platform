@@ -7,6 +7,7 @@ import ChartsPanel from "./ChartsPanel";
 import CvdPanel from "./CvdPanel";
 import FuturesContextPanel from "./FuturesContextPanel";
 import Level2Panel from "./Level2Panel";
+import OptionsPanel from "./OptionsPanel";
 import OrderFlowPanel from "./OrderFlowPanel";
 import { LIVE_PANELS, PANEL_TITLES, PANELS } from "./registry";
 import { PanelErrorBoundary, PanelFrame, PanelMessage, SpecialistContext, useSelection, type PanelActions, type SpecialistSelection } from "./shared";
@@ -29,6 +30,7 @@ function contained(id: PanelId, Panel: FunctionComponent<IDockviewPanelProps>) {
 const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   order_flow: contained("order_flow", OrderFlowPanel), cvd: contained("cvd", CvdPanel), level2: contained("level2", Level2Panel),
   charts: contained("charts", ChartsPanel), futures: contained("futures", FuturesContextPanel),
+  options: contained("options", OptionsPanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
@@ -105,7 +107,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);

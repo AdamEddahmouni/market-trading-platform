@@ -44,7 +44,7 @@ UNIVERSES: dict[str, Universe] = {
             "Custom": ("symbol", "price", "change_pct", "volume"),
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
-        ("order_flow", "cvd", "level2", "charts", "futures"),
+        ("order_flow", "cvd", "level2", "charts", "futures", "options"),
     ),
     FUTURES: Universe(
         FUTURES, "Futures", "FUTURE", "FUTURE_CONTRACT", "MOOMOO_OPEND_CONTRACT_CATALOG",
@@ -67,7 +67,7 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "company", "price", "change_pct", "volume"),
             "Custom": ("symbol", "company", "exchange", "price"),
         },
-        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts"),
+        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts", "options"),
     ),
 }
 

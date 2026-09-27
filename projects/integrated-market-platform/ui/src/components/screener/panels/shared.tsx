@@ -22,7 +22,7 @@ export type PanelActions = {
 };
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
-  row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures"]),
+  row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]),
   settledId: null, quote: undefined, demand: null, actions: { close: noop, move: noop, resize: noop },
 });
 export const useSelection = () => useContext(SpecialistContext);

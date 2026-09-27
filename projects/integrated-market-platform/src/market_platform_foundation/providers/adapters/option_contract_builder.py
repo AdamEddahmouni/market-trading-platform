@@ -29,6 +29,12 @@ def _option_id(symbol: str, expiration: str, option_type: str, strike: float) ->
     return f"{symbol.upper()}{exp}{cp}{strike_int:08d}"
 
 
+def canonical_option_id(symbol: str, expiration: str, option_type: str, strike: Decimal) -> str:
+    """Canonical ``OptionContract.option_id``: underlying + YYYYMMDD + C/P + strike × 1000 (8 digits)."""
+
+    return _option_id(symbol, expiration, option_type, float(strike))
+
+
 def _resolve_deliverable(
     activity: dict[str, Any],
     *,
@@ -163,4 +169,5 @@ def activities_to_chain_dicts(
 __all__ = [
     "activity_to_option_contract",
     "activities_to_chain_dicts",
+    "canonical_option_id",
 ]

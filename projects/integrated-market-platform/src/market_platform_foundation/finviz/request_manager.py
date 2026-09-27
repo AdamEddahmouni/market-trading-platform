@@ -188,14 +188,16 @@ class FinvizRequestManager:
             cached = self._cache.get(key)
             if cached is not None and (time.monotonic() - cached.stored_at) < cached.ttl_s:
                 self.metrics.cache_hits += 1
-                return cached.status_code, cached.body, {"cached": True, "cache_hit": True}
+                return cached.status_code, cached.body, {"cached": True, "cache_hit": True,
+                                                         "cache_age_s": time.monotonic() - cached.stored_at}
 
         with self._lock:
             if cache_ttl_s is not None:
                 cached = self._cache.get(key)
                 if cached is not None and (time.monotonic() - cached.stored_at) < cached.ttl_s:
                     self.metrics.cache_hits += 1
-                    return cached.status_code, cached.body, {"cached": True, "cache_hit": True}
+                    return cached.status_code, cached.body, {"cached": True, "cache_hit": True,
+                                                             "cache_age_s": time.monotonic() - cached.stored_at}
 
             inflight = self._inflight.get(key)
             if inflight is not None:
@@ -203,7 +205,8 @@ class FinvizRequestManager:
                 cached = self._cache.get(key)
                 if cached is not None:
                     self.metrics.cache_hits += 1
-                    return cached.status_code, cached.body, {"cached": True, "coalesced": True}
+                    return cached.status_code, cached.body, {"cached": True, "coalesced": True,
+                                                             "cache_age_s": time.monotonic() - cached.stored_at}
 
             event = threading.Event()
             self._inflight[key] = event

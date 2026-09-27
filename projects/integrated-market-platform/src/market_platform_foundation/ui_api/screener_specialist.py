@@ -39,6 +39,8 @@ PANEL_CAPABILITIES: dict[str, tuple[str, ...]] = {
     "level2": (DEPTH,),
     "charts": (),
     "futures": (),
+    # S7: a per-underlying Finviz snapshot; no streaming subscription.
+    "options": (),
 }
 CLIENT_TTL_SECONDS = 45
 #: OpenD holds a subscription for at least one minute; a released instrument

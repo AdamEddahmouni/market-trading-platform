@@ -292,6 +292,28 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path == "/screener/options":
+                from .screener_options import read_options
+                from .screener_universes import US_EQUITIES, universe_spec
+
+                universe = (query.get("universe") or [US_EQUITIES])[0]
+                try:
+                    if "options" not in universe_spec(universe).panels:
+                        raise ValueError("OPTIONS_UNAVAILABLE_FOR_UNIVERSE")
+                    payload = read_options(
+                        (query.get("instrument") or [""])[0], universe=universe,
+                        expiration=(query.get("expiration") or [None])[0],
+                        view=(query.get("view") or ["chain"])[0],
+                        snapshot_id=(query.get("snapshot") or [None])[0],
+                    )
+                except ValueError as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return

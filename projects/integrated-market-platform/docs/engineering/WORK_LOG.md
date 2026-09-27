@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S7 current options context
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `providers`, `finviz`, `docs` |
+| **Summary** | Selected-instrument current options context from the real Finviz Elite options export: a `FinvizOptionChainProvider` (existing `OptionChainProvider` protocol, existing request manager) normalizing contracts once on the backend, `GET /screener/options` (`screener-options/1.0.0`) with its own snapshot clock and explicit states, chain and per-expiry analytics, an Options dock panel (US Equities and ETFs; Futures unavailable), and a lazy Quick Preview Options tab with panel handoff. No options universe, filter, sort, or column; fixture chains are refused on this path. |
+| **Key files** | `src/market_platform_foundation/providers/adapters/finviz_option_chain.py`, `ui_api/screener_options.py`, `server.py`, `screener_universes.py`, `screener_multi.py`, `finviz/request_manager.py`, `ui/src/api/screenerOptions.ts`, `ui/src/components/screener/panels/OptionsPanel.tsx`, `ui/src/components/screener/options/`, `tests/platform/test_screener_s7.py`, `docs/engineering/SCREENER_S7_OPTIONS.md` |
+| **Tests** | Screener backend S1–S7 178 passed (S7 35); Screener UI + options API 71 passed (S7 14); full UI suite 1,074 passed (149 files); typecheck, build, bundle budget (initial 201.33 KiB gzip, unchanged), format, lint, docs links passed. `validate changed` exit 0 (5,419 tests, 43 skipped, 0 failures, 0 errors) — see [SCREENER_S7_OPTIONS.md](SCREENER_S7_OPTIONS.md#validation). |
+| **Related** | [SCREENER_S7_OPTIONS.md](SCREENER_S7_OPTIONS.md), [SCREENER_S6.md](SCREENER_S6.md) |
+| **Notes** | Real Finviz 2026-09-27 (closed): SPY 13,994 rows → 12,336 usable (1,658 expired excluded), AAPL 3,754 → 3,400, NVDA 4,090 → 3,670, MSFT 3,792 → 3,396; BRK-A and CTNT `NO_CHAIN`. OpenD options refused (no US options quote permission). Real-server acceptance caught request-manager `HTTPError`s escaping the adapter (now classified by status) and a squeezed chain area (legend folded). Rapid navigation: 0 options requests with Options closed, 1 with panel or Preview tab open. |
+
+---
+
 ## 2026-09-27 — Main Screener S6 server-side querying, paging, and market-filter truth
 
 | Field | Value |
