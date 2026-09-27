@@ -22,11 +22,11 @@ function Item({ item }: { item: FuturesContextPayload["futures"]["items"][number
 }
 
 export default function FuturesContextPanel({ api }: IDockviewPanelProps) {
-  const { row, settledId } = useSelection();
+  const { row, settledId, universe } = useSelection();
   const visible = usePanelVisible(api);
   const query = useQuery({
-    queryKey: ["screener-futures-context", settledId],
-    queryFn: ({ signal }) => fetchFuturesContext(settledId!, signal),
+    queryKey: ["screener-futures-context", universe, settledId],
+    queryFn: ({ signal }) => universe === "US_EQUITIES" ? fetchFuturesContext(settledId!, signal) : fetchFuturesContext(settledId!, signal, universe),
     enabled: Boolean(settledId) && visible, staleTime: 20_000, refetchInterval: visible ? 30_000 : false, retry: 1,
   });
   const gate = selectionGate("futures", row, settledId);

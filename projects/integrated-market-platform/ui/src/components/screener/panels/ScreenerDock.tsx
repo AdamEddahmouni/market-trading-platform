@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
 import { DockviewReact, themeDark, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
-import type { PanelId, PanelLayout, ScreenerQuote, ScreenerRow } from "../../../api/screener";
+import type { PanelId, PanelLayout, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import { demandPanels, releasePanels, releasePanelsOnUnload, type PanelDemand } from "../../../api/screenerPanels";
 import ChartsPanel from "./ChartsPanel";
 import CvdPanel from "./CvdPanel";
@@ -9,7 +9,7 @@ import FuturesContextPanel from "./FuturesContextPanel";
 import Level2Panel from "./Level2Panel";
 import OrderFlowPanel from "./OrderFlowPanel";
 import { LIVE_PANELS, PANEL_TITLES, PANELS } from "./registry";
-import { PanelErrorBoundary, SpecialistContext, type PanelActions, type SpecialistSelection } from "./shared";
+import { PanelErrorBoundary, PanelFrame, PanelMessage, SpecialistContext, useSelection, type PanelActions, type SpecialistSelection } from "./shared";
 import "./dock.css";
 
 /** Arrowing past rows must not open provider subscriptions for each row. */
@@ -18,7 +18,11 @@ const HEARTBEAT_MS = 15_000;
 const ORDER = PANELS.map((panel) => panel.id);
 
 function contained(id: PanelId, Panel: FunctionComponent<IDockviewPanelProps>) {
-  const Wrapped = (props: IDockviewPanelProps) => <PanelErrorBoundary id={id}><Panel {...props} /></PanelErrorBoundary>;
+  const Wrapped = (props: IDockviewPanelProps) => {
+    const { supportedPanels } = useSelection();
+    return <PanelErrorBoundary id={id}>{supportedPanels.has(id) ? <Panel {...props} /> :
+      <PanelFrame id={id} state="UNAVAILABLE"><PanelMessage>{PANEL_TITLES[id]} is unavailable for this universe. The layout is retained.</PanelMessage></PanelFrame>}</PanelErrorBoundary>;
+  };
   Wrapped.displayName = `Contained(${id})`;
   return Wrapped;
 }
@@ -33,6 +37,8 @@ type Props = {
   layout: PanelLayout;
   row: ScreenerRow | null;
   quote: ScreenerQuote | undefined;
+  universe?: ScreenerUniverse;
+  supportedPanels?: ReadonlySet<PanelId>;
   clientId: string;
   /** A launcher request made before the lazy dock had loaded. */
   pending: PanelId | null;
@@ -67,22 +73,25 @@ function useSettled(value: string | null, delay: number) {
 }
 
 /** Selected instrument + open live panels → one reference-counted demand, with heartbeat and release. */
-function usePanelDemand(clientId: string, instrumentId: string | null, livePanels: PanelId[]) {
+function usePanelDemand(clientId: string, instrumentId: string | null, livePanels: PanelId[], universe: ScreenerUniverse) {
   const [demand, setDemand] = useState<PanelDemand | null>(null);
   const held = useRef(false);
-  const key = `${instrumentId ?? ""}|${livePanels.join(",")}`;
+  const key = `${universe}|${instrumentId ?? ""}|${livePanels.join(",")}`;
   useEffect(() => {
     if (!livePanels.length && !held.current) { setDemand(null); return; }
     let cancelled = false;
+    // No live panel (e.g. a universe without the capability) releases by
+    // demanding nothing; a stale instrument would be refused and leak holds.
+    const target = livePanels.length ? instrumentId : null;
     const send = () => {
-      held.current = livePanels.length > 0 && instrumentId !== null;
-      void demandPanels(clientId, instrumentId, livePanels)
-        .then((result) => { if (!cancelled) setDemand(result.instrument_id === instrumentId ? result : null); })
+      held.current = livePanels.length > 0 && target !== null;
+      void (universe === "US_EQUITIES" ? demandPanels(clientId, target, livePanels) : demandPanels(clientId, target, livePanels, universe))
+        .then((result) => { if (!cancelled) setDemand(result.instrument_id === target ? result : null); })
         .catch(() => { if (!cancelled) setDemand(null); });
     };
     send();
     // A heartbeat keeps the backend's client lease alive; nothing held needs none.
-    const timer = livePanels.length && instrumentId !== null ? window.setInterval(send, HEARTBEAT_MS) : undefined;
+    const timer = target !== null ? window.setInterval(send, HEARTBEAT_MS) : undefined;
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [key]);
   useEffect(() => {
@@ -96,15 +105,15 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);
   const callbacks = useRef({ onOpenChange, onLayout });
   callbacks.current = { onOpenChange, onLayout };
   const settledId = useSettled(row?.instrument.instrument_id ?? null, PANEL_SETTLE_MS);
-  const livePanels = useMemo(() => open.filter((id) => LIVE_PANELS.has(id)), [open]);
-  const demand = usePanelDemand(clientId, settledId, livePanels);
+  const livePanels = useMemo(() => open.filter((id) => LIVE_PANELS.has(id) && supportedPanels.has(id)), [open, supportedPanels]);
+  const demand = usePanelDemand(clientId, settledId, livePanels, universe);
 
   const focusPanel = useCallback((id: PanelId) => {
     window.requestAnimationFrame(() => document.getElementById(`screener-panel-${id}`)?.focus());
@@ -191,7 +200,7 @@ export default function ScreenerDock({ layout, row, quote, clientId, pending, ha
       if (group) group.api.setSize({ width: Math.max(160, group.api.width + delta) });
     },
   }), [focusPanel]);
-  const selection = useMemo<SpecialistSelection>(() => ({ row, settledId, quote, demand, actions }), [row, settledId, quote, demand, actions]);
+  const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, demand, actions }), [row, universe, supportedPanels, settledId, quote, demand, actions]);
 
   return <SpecialistContext.Provider value={selection}>
     <div className="screener-dock-host" ref={hostRef}>

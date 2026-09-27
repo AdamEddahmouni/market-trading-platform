@@ -111,6 +111,28 @@ def register_equity(
     return canonical_id
 
 
+def register_etf_fund(
+    *, symbol: str, venue_id: str = "US_ETF", display_name: str = "",
+    registry: InstrumentRegistry | None = None,
+) -> str:
+    """Exchange-traded fund identity, distinct from an equity with the same ticker."""
+
+    store = registry or get_registry()
+    descriptor = _descriptor(
+        instrument_kind=InstrumentKind.TRADABLE_SECURITY,
+        asset_class=XaAssetClass.ETF_FUND,
+        identity_key=equity_identity_key(symbol=symbol, venue_id=venue_id),
+        display_name=display_name or symbol.upper(), venue_id=venue_id,
+        denomination=DenominationMetadata(currency="USD", price_unit_kind=PriceUnitKind.CURRENCY_PER_SHARE),
+    )
+    canonical_id = store.register_descriptor(descriptor)
+    store.add_domains(canonical_id, (AnalyticalDomain.EQUITY,))
+    store.add_alias(canonical_id, ExternalIdentifier(
+        identifier_type=ExternalIdentifierType.TICKER, alias_value=symbol.upper(), venue_id=venue_id,
+    ))
+    return canonical_id
+
+
 def register_sovereign_security(
     *,
     cusip: str,
@@ -405,6 +427,31 @@ def register_future_contract(
                 to_canonical_id=commodity_id,
             )
         )
+    return canonical_id
+
+
+def register_future_contract_reference(
+    *, contract_id: str, family_root: str, contract_month: str,
+    expiration: str, registry: InstrumentRegistry | None = None,
+) -> str:
+    """Real dated contract identity with execution withheld when economics are unknown."""
+
+    store = registry or get_registry()
+    descriptor = _descriptor(
+        instrument_kind=InstrumentKind.FUTURE_CONTRACT,
+        asset_class=XaAssetClass.FUTURE,
+        identity_key=future_contract_identity_key(contract_id=contract_id),
+        display_name=contract_id.upper(), contract_month=contract_month,
+        expiration=expiration, tradability=Tradability.REFERENCE_ONLY,
+        denomination=DenominationMetadata(currency="USD", price_unit_kind=PriceUnitKind.CURRENCY_PER_CONTRACT),
+    )
+    canonical_id = store.register_descriptor(descriptor)
+    store.add_domains(canonical_id, (AnalyticalDomain.DERIVATIVES,))
+    family_id = register_future_family(family_root=family_root, registry=store)
+    store.add_relationship(InstrumentRelationship(
+        relationship_type=RelationshipType.CONTRACT_ROOT,
+        from_canonical_id=canonical_id, to_canonical_id=family_id,
+    ))
     return canonical_id
 
 

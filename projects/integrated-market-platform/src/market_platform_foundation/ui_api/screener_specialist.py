@@ -199,12 +199,16 @@ class ScreenerSpecialistService:
             self._release(client_id)
         return {"released": True}
 
-    def demand(self, client_id: str, instrument_id: str | None, panels: list[str]) -> dict[str, Any]:
+    def demand(self, client_id: str, instrument_id: str | None, panels: list[str], *,
+               admitted: bool = False) -> dict[str, Any]:
+        """``admitted`` means the caller already resolved ``instrument_id`` from a
+        current universe catalog (S5 ETFs); otherwise the equity snapshot admits it."""
+
         if not client_id or len(client_id) > 80 or not all(c.isalnum() or c in "-_" for c in client_id):
             raise ValueError("INVALID_CLIENT_ID")
         if len(set(panels)) != len(panels) or any(panel not in PANEL_CAPABILITIES for panel in panels):
             raise ValueError("INVALID_PANELS")
-        if instrument_id is not None and (not isinstance(instrument_id, str) or not self._known(instrument_id)):
+        if instrument_id is not None and (not isinstance(instrument_id, str) or not (admitted or self._known(instrument_id))):
             raise ValueError("UNKNOWN_INSTRUMENT")
         with self._lock:
             self.expire()

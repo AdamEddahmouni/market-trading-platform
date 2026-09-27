@@ -35,11 +35,11 @@ function Body({ data }: { data: CvdPayload }) {
 }
 
 export default function CvdPanel({ api }: IDockviewPanelProps) {
-  const { row, settledId } = useSelection();
+  const { row, settledId, universe } = useSelection();
   const visible = usePanelVisible(api);
   const query = useQuery({
-    queryKey: ["screener-cvd", settledId],
-    queryFn: ({ signal }) => fetchCvd(settledId!, signal),
+    queryKey: ["screener-cvd", universe, settledId],
+    queryFn: ({ signal }) => universe === "US_EQUITIES" ? fetchCvd(settledId!, signal) : fetchCvd(settledId!, signal, universe),
     enabled: Boolean(settledId) && visible,
     refetchInterval: (current) => visible ? (current.state.data?.state === "CURRENT" ? 1_000 : 3_000) : false,
     retry: 1,

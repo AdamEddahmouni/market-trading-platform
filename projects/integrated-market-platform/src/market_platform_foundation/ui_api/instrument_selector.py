@@ -171,6 +171,19 @@ def resolve_instrument_route_ref(
         return decoded
     except Xa01Error:
         pass
+    if decoded.startswith("XA01:"):
+        # S5 catalogs are current provider metadata. Rehydrate their identities
+        # for a direct Workspace link after process restart, never from fixtures.
+        from .screener_multi import multi_screener_service
+        from .screener_universes import FUTURES, US_ETFS
+
+        for universe in (FUTURES, US_ETFS):
+            multi_screener_service().read(universe=universe, limit=1)
+            try:
+                store.get(decoded)
+                return decoded
+            except Xa01Error:
+                continue
     needle = decoded.upper()
     for canonical_id in store.list_ids():
         record = store.get(canonical_id)

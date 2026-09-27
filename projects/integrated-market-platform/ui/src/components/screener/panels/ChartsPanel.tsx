@@ -12,13 +12,13 @@ const SCOPES = [{ id: "EXTENDED", label: "Extended" }, { id: "RTH", label: "RTH"
 const BAR_STATES: Record<string, string> = { CURRENT: "Current", SESSION_CLOSED: "Session closed · last session", STALE: "Stale", UNAVAILABLE: "Unavailable" };
 
 export default function ChartsPanel({ api }: IDockviewPanelProps) {
-  const { row, settledId, quote } = useSelection();
+  const { row, settledId, quote, universe } = useSelection();
   const visible = usePanelVisible(api);
   const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("5m");
   const [scope, setScope] = useState<"EXTENDED" | "RTH">("EXTENDED");
   const query = useQuery({
-    queryKey: ["screener-chart", settledId, timeframe, scope],
-    queryFn: ({ signal }) => fetchChart(settledId!, timeframe, scope, signal),
+    queryKey: ["screener-chart", universe, settledId, timeframe, scope],
+    queryFn: ({ signal }) => universe === "US_EQUITIES" ? fetchChart(settledId!, timeframe, scope, signal) : fetchChart(settledId!, timeframe, scope, signal, universe),
     enabled: Boolean(settledId) && visible, staleTime: 10_000, retry: 1,
     refetchInterval: (current) => !visible ? false : current.state.data?.bars.provider_reason === "MOOMOO_SUBSCRIPTION_BUSY" ? 5_000 : 15_000,
     // Keep the previous chart only while this instrument changes timeframe or scope.

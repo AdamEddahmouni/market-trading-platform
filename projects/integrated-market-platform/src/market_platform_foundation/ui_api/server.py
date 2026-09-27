@@ -222,6 +222,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 try:
                     preview = read_preview(
                         (query.get("instrument") or [""])[0],
+                        universe=(query.get("universe") or ["US_EQUITIES"])[0],
                         timeframe=(query.get("timeframe") or ["5m"])[0],
                         scope=(query.get("scope") or ["EXTENDED"])[0],
                         filters=json.loads((query.get("filters") or ["[]"])[0]),
@@ -236,22 +237,43 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth"):
                 from .screener_specialist import specialist_service
+                from .screener_multi import multi_screener_service
+                from .screener_universes import US_EQUITIES, universe_spec
 
                 instrument = (query.get("instrument") or [""])[0].strip().upper()
-                if not instrument or len(instrument) > 16 or not all(c.isalnum() or c in ".-" for c in instrument):
+                universe = (query.get("universe") or [US_EQUITIES])[0]
+                try:
+                    spec = universe_spec(universe)
+                    row, _error = multi_screener_service().row_for(instrument, universe=universe)
+                except ValueError:
+                    row = None
+                    spec = None
+                panel = {"/screener/order-flow": "order_flow", "/screener/cvd": "cvd", "/screener/depth": "level2"}[path]
+                if row is None or spec is None or panel not in spec.panels:
                     self._send_error_json("SCREENER_PANEL_INVALID", "A valid instrument is required", status=HTTPStatus.BAD_REQUEST)
                     return
+                canonical_instrument = instrument
+                instrument = row.get("market_data_id") or instrument
                 service = specialist_service()
                 builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
                            "/screener/depth": service.depth}[path]
-                self._send_json(builder(instrument))
+                payload = builder(instrument)
+                payload["instrument_id"] = canonical_instrument
+                self._send_json(payload)
                 return
             if path in ("/screener/chart", "/screener/futures-context"):
                 from .screener_preview import preview_service
+                from .screener_universes import US_EQUITIES, universe_spec
 
                 instrument = (query.get("instrument") or [""])[0]
+                universe = (query.get("universe") or [US_EQUITIES])[0]
                 try:
-                    payload = (preview_service().chart(instrument, timeframe=(query.get("timeframe") or ["5m"])[0],
+                    spec = universe_spec(universe)
+                    panel = "charts" if path == "/screener/chart" else "futures"
+                    if panel not in spec.panels:
+                        raise ValueError("PANEL_UNAVAILABLE_FOR_UNIVERSE")
+                    payload = (preview_service().chart(instrument, universe=universe,
+                                                       timeframe=(query.get("timeframe") or ["5m"])[0],
                                                        scope=(query.get("scope") or ["EXTENDED"])[0])
                                if path == "/screener/chart" else preview_service().futures_context(instrument))
                 except ValueError as exc:
@@ -1210,13 +1232,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             try:
                 result = (release_screener_window(client_id) if path.endswith("/release")
-                          else update_screener_window(client_id, symbols))
+                          else update_screener_window(client_id, symbols, universe=body.get("universe", "US_EQUITIES")))
                 self._send_json(result)
             except ValueError as exc:
                 self._send_error_json("SCREENER_WINDOW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path in ("/screener/panels", "/screener/panels/release"):
             from .screener_specialist import specialist_service
+            from .screener_multi import multi_screener_service
+            from .screener_universes import universe_spec
 
             client_id = body.get("client_id")
             instrument = body.get("instrument_id")
@@ -1226,8 +1250,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             try:
                 service = specialist_service()
-                self._send_json(service.release(client_id) if path.endswith("/release")
-                                else service.demand(client_id, instrument, panels))
+                if path.endswith("/release"):
+                    result = service.release(client_id)
+                else:
+                    universe = body.get("universe", "US_EQUITIES")
+                    spec = universe_spec(universe)
+                    row, _error = multi_screener_service().row_for(instrument, universe=universe) if instrument else (None, None)
+                    if any(panel not in spec.panels for panel in panels) or (instrument and row is None):
+                        raise ValueError("PANEL_UNAVAILABLE_FOR_UNIVERSE")
+                    result = service.demand(client_id, row.get("market_data_id", instrument) if row else None, panels,
+                                            admitted=row is not None and universe != "US_EQUITIES")
+                    if row:
+                        result["instrument_id"] = instrument
+                self._send_json(result)
             except ValueError as exc:
                 self._send_error_json("SCREENER_PANELS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return

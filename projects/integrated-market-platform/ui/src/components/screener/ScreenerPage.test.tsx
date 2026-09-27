@@ -43,6 +43,55 @@ const payload = {
   provider_health: [{ provider: "FINVIZ_ELITE", state: "HEALTHY", reason: null }], rows,
 };
 
+const s5Field = (field: string, label: string, universes: string[], type: "text" | "number" = "text") => ({
+  field, label, category: "Contract", type, unit: type === "text" ? "text" : "days",
+  operators: type === "text" ? ["eq", "contains"] : ["eq", "lt", "gt"], universes, availability: "CURRENT_METADATA",
+});
+const s5Config = (saved: unknown[] = []) => ({ schema_version: 2, persistence_available: true,
+  catalog: [s5Field("symbol", "Symbol", ["US_EQUITIES", "FUTURES", "US_ETFS"]),
+    s5Field("root", "Root", ["FUTURES"]), s5Field("dte", "Days to Expiry", ["FUTURES"], "number"),
+    s5Field("exchange", "Exchange", ["FUTURES", "US_ETFS"])],
+  universes: [
+    { id: "US_EQUITIES", label: "US Equities", asset_class: "EQUITY", instrument_kind: "TRADABLE_SECURITY",
+      source: "FINVIZ_ELITE", session_model: "US_EQUITY", default_sort: "volume",
+      default_columns: ["symbol", "price", "volume"],
+      views: { Overview: ["symbol", "price", "volume"], Technical: ["symbol", "price"], Custom: ["symbol", "price"] },
+      quote_capability: "US_EQUITY_L1", bars_capability: "US_EQUITY_CURRENT_KLINE",
+      panels: ["order_flow", "cvd", "level2", "charts", "futures"] },
+    { id: "FUTURES", label: "Futures", asset_class: "FUTURE", instrument_kind: "FUTURE_CONTRACT",
+      source: "MOOMOO_OPEND_CONTRACT_CATALOG", session_model: "PROVIDER_STATE", default_sort: "root",
+      default_columns: ["symbol", "root", "expiry", "dte"],
+      // Server JSON sorts keys; view_order carries the registry order.
+      views: { Contract: ["symbol", "root", "expiry", "dte"], Custom: ["symbol", "root"],
+        Overview: ["symbol", "root", "expiry", "dte"], Performance: ["symbol", "root"] },
+      view_order: ["Overview", "Contract", "Performance", "Custom"],
+      quote_capability: "US_FUTURES_QUOTE", bars_capability: "FUTURES_CURRENT_KLINE_UNVERIFIED", panels: [] },
+    { id: "US_ETFS", label: "ETFs", asset_class: "ETF_FUND", instrument_kind: "TRADABLE_SECURITY",
+      source: "MOOMOO_OPEND_ETF_CATALOG", session_model: "US_EQUITY", default_sort: "symbol",
+      default_columns: ["symbol", "company", "exchange"],
+      views: { Overview: ["symbol", "company", "exchange"], Performance: ["symbol", "company"],
+        Custom: ["symbol", "company"] },
+      quote_capability: "US_EQUITY_L1", bars_capability: "US_EQUITY_CURRENT_KLINE",
+      panels: ["order_flow", "cvd", "level2", "charts"] },
+  ], presets: [], saved, last: null });
+const s5Rows = {
+  FUTURES: [{ instrument: { instrument_id: "XA01-FUTURE-ESZ26", venue_id: "CME", asset_class: "FUTURE", instrument_kind: "FUTURE_CONTRACT" },
+    symbol: "ESZ26", company: "E-mini S&P 500", root: "ES", exchange: "CME", expiry: "2026-12-18", lead: true,
+    sector: null, industry: null, fields: { dte: { value: 82, source: "MOOMOO_OPEND", state: "CURRENT_METADATA", as_of: "2026-09-27T12:00:00Z" } } }],
+  US_ETFS: [{ instrument: { instrument_id: "XA01-ETF-SPY", venue_id: "NYSE", asset_class: "ETF_FUND", instrument_kind: "TRADABLE_SECURITY" },
+    symbol: "SPY", company: "SPDR S&P 500 ETF", exchange: "NYSE", sector: null, industry: null,
+    fields: { price: { value: null, source: "MOOMOO_OPEND", state: "UNAVAILABLE", as_of: null } } }],
+};
+
+function mockS5(saved: unknown[] = []) {
+  mocks.config.mockResolvedValue(s5Config(saved));
+  mocks.fetch.mockImplementation(async (_search: string, _sort: string, _descending: boolean, _force: boolean, _filters: unknown[], universe: string) => {
+    const selected = universe === "FUTURES" ? s5Rows.FUTURES : universe === "US_ETFS" ? s5Rows.US_ETFS : rows;
+    return { ...payload, universe: universe ?? "US_EQUITIES", market_session: universe === "FUTURES" ? "PROVIDER_SPECIFIC" : "REGULAR",
+      rows: selected, result_count: selected.length, unfiltered_count: selected.length };
+  });
+}
+
 function mount(path = "/screener") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}>
@@ -248,5 +297,59 @@ describe("ScreenerPage", () => {
     const before = Number(handle.getAttribute("aria-valuenow"));
     fireEvent.keyDown(handle, { key: "ArrowRight" });
     expect(Number(screen.getByRole("separator", { name: "Resize RVOL" }).getAttribute("aria-valuenow"))).toBe(before + 10);
+  });
+
+  it("restores Futures from a URL and reconciles views, filters, rows, and quote subscriptions", async () => {
+    mockS5();
+    mount("/screener?universe=FUTURES");
+    await waitFor(() => expect(screen.getByText("ESZ26")).toBeInTheDocument());
+    expect(screen.getByRole("grid", { name: "Futures screener" })).toBeInTheDocument();
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Overview", "Contract", "Performance", "Custom"]);
+    expect(screen.queryByRole("tab", { name: "Fundamentals" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
+    expect(screen.getByRole("button", { name: "Root" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Price" })).not.toBeInTheDocument();
+    fireEvent.change(screen.getByRole("combobox", { name: "Screener universe" }), { target: { value: "US_ETFS" } });
+    await waitFor(() => expect(screen.getByText("SPY")).toBeInTheDocument());
+    expect(screen.getByRole("grid", { name: "ETFs screener" })).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Contract" })).not.toBeInTheDocument();
+    await waitFor(() => expect(mocks.release).toHaveBeenCalledWith("abc123"));
+    fireEvent.click(screen.getByRole("button", { name: "Browser back" }));
+    await waitFor(() => expect(screen.getByText("ESZ26")).toBeInTheDocument());
+  });
+
+  it("names Futures entitlement only when the provider refused on entitlement", async () => {
+    mockS5();
+    mocks.window.mockResolvedValue({ market_session: "CLOSED", active: 0, cap: 32, quotes: {
+      "XA01-FUTURE-ESZ26": { state: "UNAVAILABLE", reason: "PROVIDER_UNAVAILABLE", fields: {}, session_state: "CLOSED" } } });
+    const { unmount } = mount("/screener?universe=FUTURES");
+    await screen.findByText("ESZ26");
+    await waitFor(() => expect(screen.getByText("Quotes unavailable")).toBeInTheDocument());
+    expect(screen.queryByText(/entitlement required/)).not.toBeInTheDocument();
+    unmount();
+    mocks.window.mockResolvedValue({ market_session: "CLOSED", active: 0, cap: 32, quotes: {
+      "XA01-FUTURE-ESZ26": { state: "UNAVAILABLE", reason: "MOOMOO_QUOTE_NOT_ENTITLED", fields: {}, session_state: "CLOSED" } } });
+    mount("/screener?universe=FUTURES");
+    await waitFor(() => expect(screen.getByText("Quotes unavailable · entitlement required")).toBeInTheDocument());
+  });
+
+  it("loads a saved Futures screen into its own universe", async () => {
+    const saved = { id: "user-futures", version: 2, name: "Quarterly contracts", universe: "FUTURES",
+      filters: [{ id: "dte", field: "dte", operator: "lt", value: 90 }], view: "Contract",
+      sort: { field: "root", descending: false },
+      columns: { visible: ["symbol", "root", "expiry", "dte"], order: ["symbol", "root", "expiry", "dte"],
+        widths: {}, pinned: ["symbol"] } };
+    mockS5([saved]);
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
+    expect(screen.getByRole("button", { name: "Quarterly contracts · Futures" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Quarterly contracts · Futures" }));
+    await waitFor(() => expect(screen.getByText("ESZ26")).toBeInTheDocument());
+    expect(screen.getByRole("combobox", { name: "Screener universe" })).toHaveValue("FUTURES");
+    expect(screen.getByRole("tab", { name: "Contract" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("button", { name: /Edit Days to Expiry/ })).toBeInTheDocument();
+    expect(mocks.fetch).toHaveBeenCalledWith("", "root", false, false,
+      [expect.objectContaining({ field: "dte", value: 90 })], "FUTURES");
   });
 });

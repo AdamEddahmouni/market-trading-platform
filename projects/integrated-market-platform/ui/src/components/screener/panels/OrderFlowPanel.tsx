@@ -56,11 +56,11 @@ function Tape({ data }: { data: OrderFlowPayload }) {
 }
 
 export default function OrderFlowPanel({ api }: IDockviewPanelProps) {
-  const { row, settledId } = useSelection();
+  const { row, settledId, universe } = useSelection();
   const visible = usePanelVisible(api);
   const query = useQuery({
-    queryKey: ["screener-order-flow", settledId],
-    queryFn: ({ signal }) => fetchOrderFlow(settledId!, signal),
+    queryKey: ["screener-order-flow", universe, settledId],
+    queryFn: ({ signal }) => universe === "US_EQUITIES" ? fetchOrderFlow(settledId!, signal) : fetchOrderFlow(settledId!, signal, universe),
     enabled: Boolean(settledId) && visible,
     refetchInterval: (current) => visible ? (current.state.data?.state === "CURRENT" ? 1_000 : 3_000) : false,
     retry: 1,

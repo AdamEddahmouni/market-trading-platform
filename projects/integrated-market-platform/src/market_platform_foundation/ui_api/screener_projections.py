@@ -94,6 +94,7 @@ def _snapshot_row(row: FinvizScreenerRow, as_of: str) -> dict[str, Any]:
             "instrument_id": identity.instrument_id,
             "venue_id": identity.venue_id,
             "asset_class": "EQUITY",
+            "instrument_kind": "TRADABLE_SECURITY",
         },
         "symbol": row.ticker,
         "company": row.company,
@@ -252,7 +253,8 @@ class ScreenerService:
             self._release(client_id)
         return {"released": True}
 
-    def window(self, client_id: str, symbols: list[str]) -> dict[str, Any]:
+    def window(self, client_id: str, symbols: list[str], *, known: dict[str, str] | None = None,
+               market_session: str | None = None) -> dict[str, Any]:
         if not client_id or len(client_id) > 80 or not all(c.isalnum() or c in "-_" for c in client_id):
             raise ValueError("INVALID_CLIENT_ID")
         if len(symbols) > MAX_WINDOW:
@@ -262,9 +264,10 @@ class ScreenerService:
             for expired, (_, seen, _) in list(self._clients.items()):
                 if now - seen > CLIENT_TTL_SECONDS:
                     self._release(expired)
-            known = {row["instrument"]["instrument_id"] for row in self._rows}
-            targets = set(symbols)
-            if len(targets) != len(symbols) or not targets <= known:
+            admitted = (known if known is not None else
+                        {row["instrument"]["instrument_id"]: row["instrument"]["instrument_id"] for row in self._rows})
+            targets = {admitted[item] for item in symbols if item in admitted}
+            if len(set(symbols)) != len(symbols) or len(targets) != len(symbols) or not set(symbols) <= set(admitted):
                 raise ValueError("UNKNOWN_OR_DUPLICATE_INSTRUMENT")
             runtime = self._runtime_getter(create=False)
             previous, _, previous_runtime = self._clients.get(client_id, (set(), now, runtime))
@@ -277,7 +280,8 @@ class ScreenerService:
                     runtime.unsubscribe(instrument_id=symbol, capabilities=["BASIC_QUOTE"], consumer_id=self._consumer(client_id))
                 active.remove(symbol)
             rejected: dict[str, str] = {}
-            for symbol in symbols:
+            for requested in symbols:
+                symbol = admitted[requested]
                 if symbol in active or runtime is None:
                     continue
                 result = runtime.subscribe(
@@ -292,14 +296,15 @@ class ScreenerService:
             self._clients[client_id] = (active, now, runtime)
             self._schedule_expiry()
             quotes: dict[str, dict[str, Any]] = {}
-            for symbol in symbols:
+            for requested in symbols:
+                symbol = admitted[requested]
                 quote = runtime.state.quote_for(symbol) if runtime is not None and symbol in active else None
                 if quote is None:
-                    quotes[symbol] = {"state": "UNAVAILABLE", "reason": rejected.get(symbol, "AWAITING_QUOTE" if symbol in active else "RUNTIME_UNAVAILABLE"), "fields": {}}
+                    quotes[requested] = {"state": "UNAVAILABLE", "reason": rejected.get(symbol, "AWAITING_QUOTE" if symbol in active else "RUNTIME_UNAVAILABLE"), "fields": {}}
                     continue
-                quotes[symbol] = quote_view(runtime, quote)
+                quotes[requested] = quote_view(runtime, quote)
             return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),
-                    "market_session": us_equity_session_label(), "active": len(active),
+                    "market_session": market_session or us_equity_session_label(), "active": len(active),
                     "cap": MAX_WINDOW, "quotes": quotes}
 
 
@@ -311,11 +316,15 @@ def screener_service() -> ScreenerService:
 
 
 def read_screener(**kwargs: Any) -> dict[str, Any]:
-    return _SERVICE.read(**kwargs)
+    from .screener_multi import multi_screener_service
+
+    return multi_screener_service().read(**kwargs)
 
 
-def update_screener_window(client_id: str, symbols: list[str]) -> dict[str, Any]:
-    return _SERVICE.window(client_id, symbols)
+def update_screener_window(client_id: str, symbols: list[str], *, universe: str = UNIVERSE) -> dict[str, Any]:
+    from .screener_multi import multi_screener_service
+
+    return multi_screener_service().window(client_id, symbols, universe=universe)
 
 
 def release_screener_window(client_id: str) -> dict[str, Any]:
