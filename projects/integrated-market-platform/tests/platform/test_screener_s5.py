@@ -79,7 +79,10 @@ class UniverseContractTests(unittest.TestCase):
     def test_fields_and_screens_cannot_cross_universes(self) -> None:
         self.assertIn("dte", {item["field"] for item in filter_catalog(FUTURES)})
         self.assertNotIn("short_float_pct", {item["field"] for item in filter_catalog(FUTURES)})
-        self.assertNotIn("price", {item["field"] for item in filter_catalog(US_ETFS)})
+        # S6: ETF market fields filter only through the complete ETF snapshot; Futures
+        # market fields stay unfilterable while quote entitlement is absent.
+        self.assertNotIn("price", {item["field"] for item in filter_catalog(FUTURES)})
+        self.assertNotIn("rel_volume", {item["field"] for item in filter_catalog(US_ETFS)})
         with self.assertRaisesRegex(ValueError, "FILTER_UNIVERSE_MISMATCH"):
             validate_filters([{"id": "x", "field": "short_float_pct", "operator": "gt", "value": 5}], universe=FUTURES)
         with self.assertRaisesRegex(ValueError, "INVALID_SCREEN_VIEW"):

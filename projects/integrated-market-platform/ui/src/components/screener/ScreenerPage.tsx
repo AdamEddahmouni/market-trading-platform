@@ -1,12 +1,12 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { ColumnPinningState, ColumnSizingState, VisibilityState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
-import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
+import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
 import { QuickPreview } from "./QuickPreview";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
@@ -97,7 +97,10 @@ const snapshotOf = (screen: ScreenerScreen) => ({ filters: screen.filters, view:
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
 const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
 const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct"]);
-const sourceSort = (key: SortKey, fallback: string) => ["bid", "ask", "spread_pct"].includes(key) ? fallback : key;
+// Load the next server page this many rows before the loaded end is scrolled into view.
+const PREFETCH_ROWS = 60;
+const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
+const clock = (value: string) => new Date(value).toLocaleTimeString();
 function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
   if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED") && current.value !== null) return current;
@@ -145,6 +148,10 @@ export function ScreenerPage() {
   const [filterNotice, setFilterNotice] = useState("");
   const [restored, setRestored] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
+  // The selected row survives page boundaries: Preview and panels never depend on page presence.
+  const [selectedCache, setSelectedCache] = useState<ScreenerRow | null>(null);
+  const selectedRef = useRef<string | null>(null);
+  selectedRef.current = selected;
   const [quotes, setQuotes] = useState<Record<string, ScreenerQuote>>({});
   const [quoteError, setQuoteError] = useState(false);
   const [windowSession, setWindowSession] = useState<string | null>(null);
@@ -163,6 +170,12 @@ export function ScreenerPage() {
   const availableKeys = activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
     Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys;
   const availableFilters = config.data?.catalog.filter((item) => (item.universes ?? ["US_EQUITIES"]).includes(universe)) ?? [];
+  // Sort/filter support is server metadata: a live-window column may display but never order the universe.
+  const fieldCaps = activeSpec?.fields;
+  const isSortable = (key: string) => Boolean(fieldCaps?.[key]?.sortable);
+  const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
+  const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
+    filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
   const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures"] : [])) as PanelId[]);
   useEffect(() => {
     if (!activeSpec || initialized.current || selectedScreenId || universe === "US_EQUITIES") return;
@@ -274,7 +287,7 @@ export function ScreenerPage() {
     const nextUniverse = universeFromUrl(params.get("universe"));
     if (nextUniverse !== universe) {
       const spec = config.data?.universes?.find((item) => item.id === nextUniverse);
-      setUniverse(nextUniverse); setSelected(null); setQuotes({}); setQuoteError(false);
+      setUniverse(nextUniverse); setSelected(null); setSelectedCache(null); setQuotes({}); setQuoteError(false);
       if (filters.length) setFilterNotice("Filters were cleared when the universe changed.");
       setFilters([]); setView("Overview"); setSort((spec?.default_sort ?? (nextUniverse === "FUTURES" ? "root" : nextUniverse === "US_ETFS" ? "symbol" : "volume")) as SortKey);
       setColumnVisibility(viewVisibility("Overview", spec?.views ?? views));
@@ -309,8 +322,11 @@ export function ScreenerPage() {
         setUniverse(screenUniverse); setSelected(null); setQuotes({});
         urlUpdate({ universe: screenUniverse }, true);
       }
+      // A preset's baseline uses the same universe-scoped column set as the live
+      // snapshot, so an untouched preset never reads as modified.
+      const screenKeys = allKeys.filter((key) => Object.values(screenViews).some((fields) => fields.includes(key)));
       const source = saved ?? { filters: preset!.filters, view: "Overview", sort: { field: "volume", descending: true },
-        columns: { visible: screenViews.Overview, order: allKeys, widths: {}, pinned: ["symbol"] } };
+        columns: { visible: screenKeys.filter((key) => screenViews.Overview.includes(key)), order: screenKeys, widths: {}, pinned: ["symbol"] } };
       setFilters(source.filters);
       const nextView = params.get("view") && screenViews[params.get("view")!] ? params.get("view")! : source.view;
       setView(nextView);
@@ -340,30 +356,45 @@ export function ScreenerPage() {
     }
     initialized.current = true; setRestored(true);
   }, [config.data, selectedScreenId]);
-  const query = useQuery({
-    queryKey: ["main-screener", universe, search, sourceSort(sort, activeSpec?.default_sort ?? "volume"), descending, filters],
-    queryFn: () => {
-      const force = forceNextRefresh.current;
-      forceNextRefresh.current = false;
-      const sourceKey = sourceSort(sort, activeSpec?.default_sort ?? "volume");
-      if (universe !== "US_EQUITIES") return fetchScreener(search, sourceKey, descending, force, filters, universe);
-      return filters.length ? fetchScreener(search, sourceKey, descending, force, filters)
-        : force ? fetchScreener(search, sourceKey, descending, true)
-          : fetchScreener(search, sourceKey, descending);
+  const queryInput = { universe, search, sort: effectiveSort, descending, filters };
+  const query = useInfiniteQuery({
+    // Every page belongs to this canonical query identity; a change starts a new chain.
+    queryKey: ["main-screener", universe, search, effectiveSort, descending, filters],
+    initialPageParam: { offset: 0, resultSet: null } as ScreenerPageParam,
+    queryFn: ({ pageParam, signal }) => {
+      const first = pageParam.offset === 0;
+      const force = first && forceNextRefresh.current;
+      if (first) forceNextRefresh.current = false;
+      return fetchScreener(queryInput, pageParam, { refresh: force, selected: first ? selectedRef.current : null, signal });
+    },
+    getNextPageParam: (last) => last.has_more && last.result_set_id
+      ? { offset: (last.offset ?? 0) + last.rows.length, resultSet: last.result_set_id } : undefined,
+    enabled: !config.isPending,
+    // A changed result set restarts the chain instead of retrying; other errors keep the client default.
+    retry: (count, error) => {
+      if (resultSetChanged(error)) return false;
+      const fallback = queryClient.getDefaultOptions().queries?.retry;
+      return typeof fallback === "function" ? fallback(count, error) : typeof fallback === "number" ? count < fallback : fallback !== false && count < 3;
     },
     staleTime: 30_000, refetchInterval: 120_000,
   });
+  const firstPage = query.data?.pages[0];
   const rows = useMemo(() => {
-    const source = query.data?.rows ?? [];
-    if (!["bid", "ask", "spread_pct"].includes(sort)) return source;
-    return [...source].sort((a, b) => {
-      const av = fieldFor(a, sort, quotes[a.instrument.instrument_id])?.value;
-      const bv = fieldFor(b, sort, quotes[b.instrument.instrument_id])?.value;
-      if (av == null) return bv == null ? a.symbol.localeCompare(b.symbol) : 1;
-      if (bv == null) return -1;
-      return (descending ? bv - av : av - bv) || a.symbol.localeCompare(b.symbol);
-    });
-  }, [query.data?.rows, sort, descending, quotes]);
+    const seen = new Set<string>();
+    const merged: ScreenerRow[] = [];
+    for (const page of query.data?.pages ?? []) {
+      for (const row of page.rows) {
+        if (seen.has(row.instrument.instrument_id)) continue;
+        seen.add(row.instrument.instrument_id); merged.push(row);
+      }
+    }
+    return merged;
+  }, [query.data]);
+  const resultCount = firstPage?.source_error ? null : firstPage?.result_count ?? null;
+  // A later page whose pinned snapshot is gone restarts the chain at page 1; loaded rows stay until it lands.
+  useEffect(() => {
+    if (query.isFetchNextPageError && resultSetChanged(query.error)) void query.refetch();
+  }, [query.isFetchNextPageError, query.error]);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.label, size: definition.width,
     cell: ({ row }) => {
@@ -385,12 +416,19 @@ export function ScreenerPage() {
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing, onColumnPinningChange: setColumnPinning,
     columnResizeMode: "onChange" });
-  const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => scrollRef.current, estimateSize: () => 34, overscan: 5 });
+  const loaderRow = query.hasNextPage ? 1 : 0;
+  const virtualizer = useVirtualizer({ count: rows.length + loaderRow, getScrollElement: () => scrollRef.current, estimateSize: () => 34, overscan: 5 });
   const virtualRows = virtualizer.getVirtualItems();
   const indices = virtualRows.map((item) => item.index).join(",");
+  const lastVirtual = virtualRows.length ? virtualRows[virtualRows.length - 1].index : -1;
+  useEffect(() => {
+    if (!query.hasNextPage || query.isFetchingNextPage || query.isFetchNextPageError || query.isRefetching) return;
+    if (lastVirtual >= rows.length - PREFETCH_ROWS) void query.fetchNextPage();
+  }, [lastVirtual, rows.length, query.hasNextPage, query.isFetchingNextPage, query.isFetchNextPageError, query.isRefetching]);
+  // Loaded rows are not subscribed: only visible rows plus the selection acquire L1.
   const visible = useMemo(() => {
     const ids = virtualRows.slice(0, 26).map((item) => rows[item.index]?.instrument.instrument_id).filter((id): id is string => Boolean(id));
-    if (selected && rows.some((row) => row.instrument.instrument_id === selected)) ids.unshift(selected);
+    if (selected) ids.unshift(selected);
     return [...new Set(ids)].slice(0, 32);
   }, [indices, rows, selected]);
   useEffect(() => {
@@ -441,12 +479,21 @@ export function ScreenerPage() {
     return () => window.removeEventListener("keydown", shortcut);
   }, []);
   // A selection filtered or searched out of the settled result set is cleared, so
-  // the preview never shows an instrument the table no longer lists.
+  // the preview never shows an instrument the table no longer lists. A selection
+  // that is still matched but not in a loaded page (the server reports its
+  // position) stays selected.
   useEffect(() => {
-    if (selected && query.isSuccess && !query.isFetching && !rows.some((row) => row.instrument.instrument_id === selected)) setSelected(null);
-  }, [rows, selected, query.isSuccess, query.isFetching]);
+    if (!selected || !query.isSuccess || query.isFetching || rows.some((row) => row.instrument.instrument_id === selected)) return;
+    if (firstPage?.selected_id === selected && firstPage.selected_index != null) return;
+    setSelected(null);
+  }, [rows, selected, query.isSuccess, query.isFetching, firstPage]);
   const selectedIndex = rows.findIndex((row) => row.instrument.instrument_id === selected);
-  const selectedRow = selectedIndex >= 0 ? rows[selectedIndex] : null;
+  const selectedRow = selectedIndex >= 0 ? rows[selectedIndex]
+    : selectedCache?.instrument.instrument_id === selected ? selectedCache : null;
+  useEffect(() => {
+    if (selectedIndex >= 0) setSelectedCache(rows[selectedIndex]);
+    else if (!selected) setSelectedCache(null);
+  }, [selectedIndex >= 0 ? rows[selectedIndex] : null, selected]);
   const activate = (index: number) => {
     const row = rows[index];
     if (!row) return;
@@ -595,7 +642,7 @@ export function ScreenerPage() {
     const value = Array.isArray(rule.value) ? rule.value.join(rule.operator === "between" ? "–" : ", ") : String(rule.value);
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
-  const session = (universe === "FUTURES" ? windowSession ?? query.data?.market_session : query.data?.market_session)?.replace(/_/g, " ").toLowerCase() ?? "—";
+  const session = (universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session)?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
   const quoteReasons = Object.values(quotes).map((quote) => quote.reason);
   const quoteLabel = quoteError ? "unavailable" :
@@ -607,7 +654,7 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{universe === "FUTURES" ? windowSession ?? query.data?.market_session ?? "MARKET" : query.data?.market_session ?? "MARKET"}</span></header>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{universe === "FUTURES" ? windowSession ?? firstPage?.market_session ?? "MARKET" : firstPage?.market_session ?? "MARKET"}</span></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
@@ -661,7 +708,7 @@ export function ScreenerPage() {
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
     <div className="screener-body" ref={bodyRef}>
-    <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={rows.length + 1} tabIndex={0}
+    <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={(resultCount ?? rows.length) + 1} aria-busy={query.isFetching} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
         {table.getHeaderGroups()[0]?.headers.map((header) => {
@@ -670,26 +717,41 @@ export function ScreenerPage() {
           return <button type="button" role="columnheader" key={header.id}
             className={leftAligned.has(key) ? "screener-heading screener-left" : "screener-heading"}
             style={{ width: header.getSize(), ...(pinned ? { position: "sticky", left: header.column.getStart("left"), zIndex: 4, background: "#1b2530" } : {}) }}
-            aria-sort={sort === key ? descending ? "descending" : "ascending" : "none"}
-            onClick={() => { if (availableKeys.includes(key) && !["sector", "industry", "country", "earnings_date", "recommendation"].includes(key)) sortBy(key as SortKey); }}>
+            aria-sort={isSortable(key) ? effectiveSort === key ? descending ? "descending" : "ascending" : "none" : undefined}
+            aria-disabled={isSortable(key) ? undefined : true}
+            title={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW"
+              ? "Current quotes for visible rows only; not sortable across the universe" : "Not sortable"}
+            onClick={() => { if (availableKeys.includes(key) && isSortable(key)) sortBy(key as SortKey); }}>
             {flexRender(header.column.columnDef.header, header.getContext())}
-            <span className="screener-sort">{sort === key ? descending ? "▼" : "▲" : ""}</span>
+            <span className="screener-sort">{effectiveSort === key ? descending ? "▼" : "▲" : ""}</span>
             <span className="screener-resize" role="separator" tabIndex={0} aria-orientation="vertical" aria-valuenow={header.getSize()} aria-label={`Resize ${columnByKey[key].label}`}
               onKeyDown={(event) => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); const width = Math.max(50, header.getSize() + (event.key === "ArrowRight" ? 10 : -10)); setColumnSizing((current) => ({ ...current, [key]: width })); setView("Custom"); } }}
               onMouseDown={(event) => { event.stopPropagation(); header.getResizeHandler()(event); }} onTouchStart={header.getResizeHandler()} /></button>;
         })}
       </div>
-      {query.isPending ? <div className="screener-message">Loading current {activeSpec?.label ?? "US equity"} universe…</div> :
-        query.isError || query.data?.source_error ? <div className="screener-message screener-message-error" role="alert">
-          <strong>Screener source unavailable</strong>
-          <span>{query.data?.source_error === "NOT_CONFIGURED"
+      {query.isPending ? <div className="screener-message">{snapshotQuery
+        ? `Evaluating the current ${activeSpec?.label ?? "universe"} market snapshot…`
+        : `Loading current ${activeSpec?.label ?? "US equity"} universe…`}</div> :
+        (query.isError && !query.data) || firstPage?.source_error ? <div className="screener-message screener-message-error" role="alert">
+          <strong>{firstPage?.source_error?.startsWith("MARKET_SNAPSHOT") || (snapshotQuery && firstPage?.source_error) ? "Market snapshot unavailable" : "Screener source unavailable"}</strong>
+          <span>{firstPage?.source_error === "NOT_CONFIGURED"
             ? "Finviz access is not configured for this workstation."
-            : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
+            : snapshotQuery && firstPage?.source_error
+              ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
+              : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
           <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>
         </div> :
         rows.length === 0 ? <div className="screener-message">No instruments match {filters.length ? "these filters or this search" : "this search"}.</div> :
         <div className="screener-virtual" style={{ height: virtualizer.getTotalSize(), width: table.getTotalSize() }}>
           {virtualRows.map((virtual) => {
+            if (virtual.index === rows.length) {
+              return <div role="row" key="screener-more" aria-rowindex={virtual.index + 2} className="screener-row screener-more-row"
+                style={{ transform: `translateY(${virtual.start}px)`, width: table.getTotalSize() }}>
+                <div role="gridcell" className="screener-cell screener-left screener-more">{query.isFetchNextPageError && !resultSetChanged(query.error)
+                  ? <>Could not load more results <button type="button" onClick={() => void query.fetchNextPage()}>Retry</button></>
+                  : <span role="status">Loading more results…</span>}</div>
+              </div>;
+            }
             const row = table.getRowModel().rows[virtual.index];
             if (!row) return null;
             return <div role="row" key={row.id} aria-rowindex={virtual.index + 2} aria-selected={row.id === selected}
@@ -728,10 +790,11 @@ export function ScreenerPage() {
       </section>
     </>}
     <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
-    <footer className="screener-footer"><span>{query.data?.result_count.toLocaleString() ?? "—"}{filters.length && query.data?.unfiltered_count !== undefined ? ` of ${query.data.unfiltered_count.toLocaleString()}` : ""} results</span>
+    <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
+      {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of)} · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
       <span>Quotes {universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
       <span>Market {session}</span>
-      <span>Universe {query.data?.universe_as_of ? `as of ${new Date(query.data.universe_as_of).toLocaleTimeString()}` : "unavailable"}</span>
-      <span>Source {query.data?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
+      <span>Universe {firstPage?.universe_as_of ? `as of ${clock(firstPage.universe_as_of)}` : "unavailable"}</span>
+      <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
   </section>;
 }

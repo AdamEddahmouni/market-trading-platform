@@ -43,6 +43,29 @@ const payload = {
   provider_health: [{ provider: "FINVIZ_ELITE", state: "HEALTHY", reason: null }], rows,
 };
 
+// Server-published field capabilities (S6): only CATALOG/SNAPSHOT fields sort the universe.
+const caps = (sortable: string[], windowOnly: string[] = []) => Object.fromEntries([
+  ...sortable.map((field) => [field, { execution: "SNAPSHOT", sortable: true, filterable: true }]),
+  ...windowOnly.map((field) => [field, { execution: "LIVE_WINDOW", sortable: false, filterable: false }]),
+]);
+const equityViews = {
+  Overview: ["symbol", "price", "change_pct", "volume", "rel_volume", "float_shares", "market_cap", "short_float_pct", "bid", "ask", "spread_pct", "rsi_14"],
+  Performance: ["symbol", "price", "change_pct", "perf_week", "volume", "rel_volume", "rsi_14", "market_cap"],
+  Technical: ["symbol", "price", "change_pct", "rsi_14", "perf_week", "volume", "rel_volume"],
+  Volume: ["symbol", "price", "volume", "avg_volume", "rel_volume", "float_shares", "change_pct"],
+  Short: ["symbol", "price", "change_pct", "float_shares", "short_float_pct", "short_ratio", "rel_volume", "volume"],
+  Fundamentals: ["symbol", "company", "sector", "industry", "market_cap", "eps_ttm", "pe", "fwd_pe", "earnings_date", "recommendation"],
+  Custom: ["symbol", "price", "change_pct", "volume"],
+};
+const equitySpec = { id: "US_EQUITIES", label: "US Equities", asset_class: "EQUITY", instrument_kind: "TRADABLE_SECURITY",
+  source: "FINVIZ_ELITE", session_model: "US_EQUITY", default_sort: "volume", default_columns: equityViews.Overview,
+  views: equityViews, view_order: Object.keys(equityViews), quote_capability: "US_EQUITY_L1",
+  bars_capability: "US_EQUITY_CURRENT_KLINE", panels: ["order_flow", "cvd", "level2", "charts", "futures"],
+  fields: caps(["symbol", "company", "price", "change_pct", "volume", "avg_volume", "rel_volume", "float_shares", "market_cap",
+    "short_float_pct", "short_ratio", "rsi_14", "eps_ttm", "pe", "fwd_pe", "perf_week"], ["bid", "ask", "spread_pct"]) };
+const called = (query: Record<string, unknown>, options: Record<string, unknown> = {}) =>
+  [expect.objectContaining(query), expect.objectContaining({ offset: 0 }), expect.objectContaining(options)];
+
 const s5Field = (field: string, label: string, universes: string[], type: "text" | "number" = "text") => ({
   field, label, category: "Contract", type, unit: type === "text" ? "text" : "days",
   operators: type === "text" ? ["eq", "contains"] : ["eq", "lt", "gt"], universes, availability: "CURRENT_METADATA",
@@ -57,7 +80,7 @@ const s5Config = (saved: unknown[] = []) => ({ schema_version: 2, persistence_av
       default_columns: ["symbol", "price", "volume"],
       views: { Overview: ["symbol", "price", "volume"], Technical: ["symbol", "price"], Custom: ["symbol", "price"] },
       quote_capability: "US_EQUITY_L1", bars_capability: "US_EQUITY_CURRENT_KLINE",
-      panels: ["order_flow", "cvd", "level2", "charts", "futures"] },
+      panels: ["order_flow", "cvd", "level2", "charts", "futures"], fields: caps(["symbol", "price", "volume"]) },
     { id: "FUTURES", label: "Futures", asset_class: "FUTURE", instrument_kind: "FUTURE_CONTRACT",
       source: "MOOMOO_OPEND_CONTRACT_CATALOG", session_model: "PROVIDER_STATE", default_sort: "root",
       default_columns: ["symbol", "root", "expiry", "dte"],
@@ -65,14 +88,15 @@ const s5Config = (saved: unknown[] = []) => ({ schema_version: 2, persistence_av
       views: { Contract: ["symbol", "root", "expiry", "dte"], Custom: ["symbol", "root"],
         Overview: ["symbol", "root", "expiry", "dte"], Performance: ["symbol", "root"] },
       view_order: ["Overview", "Contract", "Performance", "Custom"],
-      quote_capability: "US_FUTURES_QUOTE", bars_capability: "FUTURES_CURRENT_KLINE_UNVERIFIED", panels: [] },
+      quote_capability: "US_FUTURES_QUOTE", bars_capability: "FUTURES_CURRENT_KLINE_UNVERIFIED", panels: [],
+      fields: caps(["symbol", "root", "expiry", "dte"]) },
     { id: "US_ETFS", label: "ETFs", asset_class: "ETF_FUND", instrument_kind: "TRADABLE_SECURITY",
       source: "MOOMOO_OPEND_ETF_CATALOG", session_model: "US_EQUITY", default_sort: "symbol",
       default_columns: ["symbol", "company", "exchange"],
       views: { Overview: ["symbol", "company", "exchange"], Performance: ["symbol", "company"],
         Custom: ["symbol", "company"] },
       quote_capability: "US_EQUITY_L1", bars_capability: "US_EQUITY_CURRENT_KLINE",
-      panels: ["order_flow", "cvd", "level2", "charts"] },
+      panels: ["order_flow", "cvd", "level2", "charts"], fields: caps(["symbol", "company", "exchange"]) },
   ], presets: [], saved, last: null });
 const s5Rows = {
   FUTURES: [{ instrument: { instrument_id: "XA01-FUTURE-ESZ26", venue_id: "CME", asset_class: "FUTURE", instrument_kind: "FUTURE_CONTRACT" },
@@ -85,7 +109,7 @@ const s5Rows = {
 
 function mockS5(saved: unknown[] = []) {
   mocks.config.mockResolvedValue(s5Config(saved));
-  mocks.fetch.mockImplementation(async (_search: string, _sort: string, _descending: boolean, _force: boolean, _filters: unknown[], universe: string) => {
+  mocks.fetch.mockImplementation(async ({ universe }: { universe: string }) => {
     const selected = universe === "FUTURES" ? s5Rows.FUTURES : universe === "US_ETFS" ? s5Rows.US_ETFS : rows;
     return { ...payload, universe: universe ?? "US_EQUITIES", market_session: universe === "FUTURES" ? "PROVIDER_SPECIFIC" : "REGULAR",
       rows: selected, result_count: selected.length, unfiltered_count: selected.length };
@@ -107,7 +131,7 @@ function HistoryBack() {
 
 describe("ScreenerPage", () => {
   beforeEach(() => {
-    mocks.config.mockReset().mockResolvedValue({ schema_version: 1, persistence_available: true,
+    mocks.config.mockReset().mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [equitySpec],
       catalog: [
         { field: "price", label: "Price", category: "Price & Movement", type: "number", unit: "USD", operators: ["gt", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
         { field: "rel_volume", label: "Relative Volume", category: "Volume & Liquidity", type: "number", unit: "ratio", operators: ["gt"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
@@ -116,7 +140,7 @@ describe("ScreenerPage", () => {
     mocks.save.mockReset().mockImplementation(async (value) => ({ result: { ...value, id: "user-1", version: 1 }, saved: [{ ...value, id: "user-1", version: 1 }] }));
     mocks.remove.mockReset().mockResolvedValue({ result: true, saved: [] });
     mocks.last.mockReset().mockResolvedValue({ result: {}, saved: [] });
-    mocks.fetch.mockReset().mockImplementation(async (search: string) => ({
+    mocks.fetch.mockReset().mockImplementation(async ({ search }: { search: string }) => ({
       ...payload,
       rows: rows.filter((row) => `${row.symbol} ${row.company}`.toLowerCase().includes(search.toLowerCase())),
       result_count: rows.filter((row) => `${row.symbol} ${row.company}`.toLowerCase().includes(search.toLowerCase())).length,
@@ -135,9 +159,9 @@ describe("ScreenerPage", () => {
     expect(screen.getByText("-3.00%")).toHaveClass("screener-negative");
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     fireEvent.click(screen.getByRole("columnheader", { name: /Price/ }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "price", true));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "", sort: "price", descending: true })));
     fireEvent.click(screen.getByRole("columnheader", { name: /Price/ }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "price", false));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "", sort: "price", descending: false })));
     const grid = screen.getByRole("grid");
     fireEvent.keyDown(grid, { key: "ArrowDown" });
     fireEvent.keyDown(grid, { key: "Enter" });
@@ -151,7 +175,7 @@ describe("ScreenerPage", () => {
     const input = screen.getByRole("textbox", { name: "Search instruments" });
     expect(input).toHaveFocus();
     fireEvent.change(input, { target: { value: "Microsoft" } });
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("Microsoft", "volume", true));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "Microsoft", sort: "volume", descending: true })));
     fireEvent.change(input, { target: { value: "NO_MATCH" } });
     expect(await screen.findByText("No instruments match this search.")).toBeInTheDocument();
   });
@@ -197,7 +221,7 @@ describe("ScreenerPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Screener source unavailable");
     expect(screen.getByRole("alert")).toHaveTextContent("Finviz access is not configured");
     fireEvent.click(screen.getByRole("button", { name: "Retry source" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, true));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ sort: "volume" }, { refresh: true })));
     await waitFor(() => expect(screen.getByText("AAPL")).toBeInTheDocument(), { timeout: 3_000 });
   });
 
@@ -219,8 +243,8 @@ describe("ScreenerPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Price" }));
     fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "10" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply Filter" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, false,
-      [expect.objectContaining({ field: "price", operator: "gt", value: 10 })]));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ sort: "volume", descending: true,
+      filters: [expect.objectContaining({ field: "price", operator: "gt", value: 10 })] })));
     fireEvent.click(screen.getByRole("button", { name: /Edit Price/ }));
     fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "12" } });
     fireEvent.click(screen.getByRole("button", { name: "Apply Filter" }));
@@ -248,8 +272,8 @@ describe("ScreenerPage", () => {
     await screen.findByText("AAPL");
     fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
     fireEvent.click(screen.getByRole("button", { name: "Unusual Volume" }));
-    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, false,
-      [expect.objectContaining({ field: "rel_volume", value: 2 })]));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ sort: "volume",
+      filters: [expect.objectContaining({ field: "rel_volume", value: 2 })] })));
     expect(screen.getByRole("button", { name: /Unusual Volume ▾/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Edit Relative Volume/ }));
     fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "3" } });
@@ -278,13 +302,13 @@ describe("ScreenerPage", () => {
     await screen.findByText("AAPL");
     expect(screen.getByRole("textbox", { name: "Search instruments" })).toHaveValue("Apple");
     expect(screen.getByRole("tab", { name: "Technical" })).toHaveAttribute("aria-selected", "true");
-    expect(mocks.fetch).toHaveBeenCalledWith("Apple", "price", false);
+    expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "Apple", sort: "price", descending: false }));
   });
 
   it("ignores an unsupported sort in a direct link", async () => {
     mount("/screener?sort=sector");
     await screen.findByText("AAPL");
-    expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true);
+    expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "", sort: "volume", descending: true }));
   });
 
   it("resizes a column by one keyboard step under StrictMode", async () => {
@@ -349,7 +373,7 @@ describe("ScreenerPage", () => {
     expect(screen.getByRole("combobox", { name: "Screener universe" })).toHaveValue("FUTURES");
     expect(screen.getByRole("tab", { name: "Contract" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("button", { name: /Edit Days to Expiry/ })).toBeInTheDocument();
-    expect(mocks.fetch).toHaveBeenCalledWith("", "root", false, false,
-      [expect.objectContaining({ field: "dte", value: 90 })], "FUTURES");
+    expect(mocks.fetch).toHaveBeenCalledWith(...called({ universe: "FUTURES", sort: "root", descending: false,
+      filters: [expect.objectContaining({ field: "dte", value: 90 })] }));
   });
 });

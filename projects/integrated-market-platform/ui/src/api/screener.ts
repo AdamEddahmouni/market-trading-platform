@@ -30,6 +30,7 @@ const RowSchema = z.object({
   lead: z.boolean().optional(),
   market_data_id: z.string().optional(),
   provider_symbol: z.string().optional(),
+  snapshot_id: z.string().optional(),
   fields: z.record(FieldSchema),
 });
 export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS"]);
@@ -43,6 +44,17 @@ const ScreenerSchema = z.object({
   screener_as_of: z.string().nullable(),
   result_count: z.number(),
   unfiltered_count: z.number().optional(),
+  // S6 bounded page: the server owns filtering, ordering, and the page window.
+  offset: z.number().optional(),
+  limit: z.number().optional(),
+  returned: z.number().optional(),
+  has_more: z.boolean().optional(),
+  result_set_id: z.string().nullable().optional(),
+  selected_id: z.string().nullable().optional(),
+  selected_index: z.number().nullable().optional(),
+  evaluation: z.enum(["CATALOG", "SNAPSHOT"]).optional(),
+  snapshot: z.object({ id: z.string(), as_of: z.string(), source: z.string(), complete: z.boolean(), total: z.number(),
+    returned: z.number(), priced: z.number(), refused: z.number(), refused_reason: z.string().nullable() }).passthrough().nullable().optional(),
   provider_health: z.array(z.object({ provider: z.string(), role: z.string().optional(), state: z.string(), reason: z.string().nullable() })),
   source_error: z.string().nullable(),
   rows: z.array(RowSchema),
@@ -86,7 +98,9 @@ const ScreenerConfigSchema = z.object({
   universes: z.array(z.object({ id: ScreenerUniverseSchema, label: z.string(), asset_class: z.string(),
     instrument_kind: z.string(), source: z.string(), session_model: z.string(), default_sort: z.string(),
     default_columns: z.array(z.string()), views: z.record(z.array(z.string())), view_order: z.array(z.string()).optional(),
-    quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()) })),
+    quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()),
+    fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean() })).optional() })),
+  query: z.object({ default_limit: z.number(), max_limit: z.number() }).optional(),
   catalog: z.array(z.object({ field: z.string(), label: z.string(), category: z.string(),
     type: z.enum(["number", "text"]), unit: z.string(), operators: z.array(z.string()),
     universes: z.array(z.string()), availability: z.string() })),
@@ -117,14 +131,27 @@ export function persistScreenerPanelLayout(layout: PanelLayout) {
   return postJson("/screener/config", { action: "panel_layout", layout }, z.object({ result: PanelLayoutSchema }).passthrough());
 }
 
-export function fetchScreener(search: string, sort: string, descending: boolean, refresh = false, filters: ScreenerFilter[] = [], universe: ScreenerUniverse = "US_EQUITIES") {
-  const query = new URLSearchParams({
-    universe, search, sort,
-    descending: descending ? "1" : "0", limit: "10000",
+/** The canonical Screener query. Pages never change it; any change starts a new result chain. */
+export type ScreenerQueryInput = {
+  universe: ScreenerUniverse; search: string; sort: string; descending: boolean; filters: ScreenerFilter[];
+};
+export type ScreenerPageParam = { offset: number; resultSet: string | null };
+export const SCREENER_PAGE_LIMIT = 200;
+
+export async function fetchScreener(query: ScreenerQueryInput, page: ScreenerPageParam = { offset: 0, resultSet: null },
+  options: { refresh?: boolean; selected?: string | null; signal?: AbortSignal; limit?: number } = {}) {
+  const params = new URLSearchParams({
+    universe: query.universe, search: query.search, sort: query.sort,
+    descending: query.descending ? "1" : "0", offset: String(page.offset), limit: String(options.limit ?? SCREENER_PAGE_LIMIT),
   });
-  if (refresh) query.set("refresh", "1");
-  if (filters.length) query.set("filters", JSON.stringify(filters));
-  return fetchJson(`/screener?${query}`, ScreenerSchema);
+  if (page.resultSet) params.set("result_set", page.resultSet);
+  if (options.refresh) params.set("refresh", "1");
+  if (options.selected) params.set("selected", options.selected);
+  if (query.filters.length) params.set("filters", JSON.stringify(query.filters));
+  const result = await fetchJson(`/screener?${params}`, ScreenerSchema, options.signal ? { signal: options.signal } : undefined);
+  // Response identity guard: a page for another universe or window is never appended.
+  if (result.universe !== query.universe || (result.offset ?? 0) !== page.offset) throw new Error("SCREENER_PAGE_IDENTITY_MISMATCH");
+  return result;
 }
 
 export function fetchScreenerConfig() {
@@ -210,9 +237,11 @@ export type ScreenerPreview = z.infer<typeof PreviewSchema>;
 export type SrZone = z.infer<typeof ZoneSchema>;
 export type PreviewBar = z.infer<typeof BarSchema>;
 
-export async function fetchScreenerPreview(instrumentId: string, timeframe: string, scope: string, filters: ScreenerFilter[], signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+export async function fetchScreenerPreview(instrumentId: string, timeframe: string, scope: string, filters: ScreenerFilter[], signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES", snapshotId?: string | null) {
   const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope, universe });
   if (filters.length) query.set("filters", JSON.stringify(filters));
+  // "Why it matched" explains the snapshot the result was filtered on, not a later quote.
+  if (snapshotId) query.set("snapshot", snapshotId);
   const preview = await fetchJson(`/screener/preview?${query}`, PreviewSchema, { signal });
   // Request identity guard: a response for another instrument is never rendered.
   if (preview.instrument.instrument_id !== instrumentId) throw new Error("PREVIEW_IDENTITY_MISMATCH");

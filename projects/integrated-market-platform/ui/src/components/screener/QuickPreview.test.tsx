@@ -126,7 +126,7 @@ describe("Screener Quick Preview", () => {
     await clickRow("AAPL");
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
     expect(within(pane).getByRole("heading", { name: "AAPL" })).toBeInTheDocument();
-    await waitFor(() => expect(mocks.preview).toHaveBeenCalledWith("AAPL", "5m", "EXTENDED", [], expect.anything(), "US_EQUITIES"));
+    await waitFor(() => expect(mocks.preview).toHaveBeenCalledWith("AAPL", "5m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null));
     expect(await within(pane).findByRole("img", { name: /AAPL 5m candles, 3 completed bars/ })).toBeInTheDocument();
     expect(within(pane).getByText("Auto S/R · 5m · Extended")).toBeInTheDocument();
     expect(within(pane).getByText("$11.00–11.10")).toBeInTheDocument();
@@ -230,7 +230,7 @@ describe("Screener Quick Preview", () => {
     expect(await within(pane).findByText("Chart unavailable · OpenD is not reachable")).toBeInTheDocument();
     expect(within(pane).getByText("Levels unavailable · Current bars unavailable")).toBeInTheDocument();
     expect(within(pane).getByText("Auto S/R · 15m · Extended")).toBeInTheDocument();
-    expect(mocks.preview).toHaveBeenCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES");
+    expect(mocks.preview).toHaveBeenCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null);
     expect(within(pane).queryByRole("img", { name: /candles/ })).not.toBeInTheDocument();
   });
 

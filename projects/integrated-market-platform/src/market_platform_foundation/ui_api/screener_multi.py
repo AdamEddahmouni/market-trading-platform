@@ -11,6 +11,7 @@ import math
 import re
 import threading
 import time
+from collections import OrderedDict
 from datetime import UTC, date, datetime
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
@@ -19,19 +20,24 @@ from ..futures.spec_registry import resolve_futures_spec
 from ..market_data.current_bars import current_bars_service
 from ..market_sessions import us_equity_session_label
 from ..xa01.compatibility import register_etf_fund, register_future_contract, register_future_contract_reference
-from .screener_filters import apply_filters, validate_filters
+from .screener_filters import apply_filters, field_value
 from .screener_futures_context import resolve_contract
-from .screener_projections import MAX_WINDOW, SCHEMA_VERSION, screener_service
+from .screener_projections import MAX_WINDOW, RESULT_CACHE_ENTRIES, SCHEMA_VERSION, screener_service
+from .screener_query import DEFAULT_PAGE_LIMIT, ScreenerQuery, order_rows, page_payload, parse_query, snapshot_fields
+from .screener_snapshot import SOURCE as SNAPSHOT_SOURCE
+from .screener_snapshot import EtfSnapshotSource, MarketSnapshot
 from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 ET = ZoneInfo("America/New_York")
 CATALOG_TTL_SECONDS = 900
+CATALOG_RETAINED = 2
 QUOTE_REFUSAL_TTL_SECONDS = 300
 MARKET_STATE_TTL_SECONDS = 30
 _MAIN_CODE = re.compile(r"^US\.([A-Za-z0-9]+)main$", re.IGNORECASE)
 _DATED_CODE = re.compile(r"^US\.([A-Za-z0-9]+)(\d{2})(0[1-9]|1[0-2])$")
 _FUTURES_NUMBERS = ("price", "change_pct", "volume", "open_interest", "bid", "ask", "spread_pct", "dte", "lead", "tick_size", "multiplier")
 _ETF_NUMBERS = ("price", "change_pct", "volume", "avg_volume", "rel_volume", "rsi_14", "bid", "ask", "spread_pct")
+SNAPSHOT_FIELDS = snapshot_fields(US_ETFS)
 
 
 def _now() -> str:
@@ -186,11 +192,39 @@ def _futures_session(raw: Any) -> str:
     return "UNAVAILABLE"
 
 
+def _observer(snapshot: MarketSnapshot | None) -> Callable[[dict[str, Any], str], Any]:
+    """Field values for filtering/sorting: catalog values, or one complete snapshot."""
+
+    if snapshot is None:
+        return field_value
+
+    def observe(row: dict[str, Any], name: str) -> Any:
+        if name in SNAPSHOT_FIELDS:
+            return snapshot.value(row["instrument"]["instrument_id"], name)
+        return field_value(row, name)
+    return observe
+
+
+def _with_snapshot(row: dict[str, Any], snapshot: MarketSnapshot) -> dict[str, Any]:
+    """A page row carrying the snapshot values it was filtered and ordered by."""
+
+    identity = row["instrument"]["instrument_id"]
+    as_of = snapshot.row_as_of.get(identity)
+    fields = dict(row["fields"])
+    for name in SNAPSHOT_FIELDS:
+        value = snapshot.value(identity, name)
+        fields[name] = {"value": value, "source": SNAPSHOT_SOURCE,
+                        "state": "SNAPSHOT" if value is not None else "UNAVAILABLE",
+                        "as_of": as_of if value is not None else None}
+    return {**row, "fields": fields, "snapshot_id": snapshot.id}
+
+
 class MultiUniverseScreener:
     def __init__(self, *, transport_getter: Callable[[], Any | None] = _transport,
                  clock: Callable[[], float] = time.monotonic,
                  today: Callable[[], date] = lambda: datetime.now(ET).date(),
-                 now: Callable[[], str] = _now, now_s: Callable[[], float] = time.time) -> None:
+                 now: Callable[[], str] = _now, now_s: Callable[[], float] = time.time,
+                 wall: Callable[[], datetime] = lambda: datetime.now(UTC)) -> None:
         self._transport_getter = transport_getter
         self._clock = clock
         self._today = today
@@ -198,7 +232,11 @@ class MultiUniverseScreener:
         self._now_s = now_s
         self._lock = threading.RLock()
         self._catalogs: dict[str, tuple[float, str, list[dict[str, Any]], str | None]] = {}
-        self._projected: dict[str, tuple[str, date, list[dict[str, Any]]]] = {}
+        # Current and previous projection per universe, so a pinned page chain
+        # finishes on the rows it started from.
+        self._projected: dict[str, OrderedDict[tuple[str, date], list[dict[str, Any]]]] = {}
+        self._ordered: OrderedDict[tuple[Any, ...], list[dict[str, Any]]] = OrderedDict()
+        self._snapshots = EtfSnapshotSource(transport_getter=transport_getter, clock=clock, wall=wall)
         self._quote_refusal: tuple[float, str] | None = None
         self._market_states: tuple[float, frozenset[str], dict[str, str]] | None = None
 
@@ -225,57 +263,104 @@ class MultiUniverseScreener:
                     as_of = self._now()
                 self._catalogs[universe] = (self._clock(), as_of or "", raw, error)
             today = self._today()
-            projected = self._projected.get(universe)
-            if projected and projected[0] == (as_of or "") and projected[1] == today:
-                rows = projected[2]
-            else:
+            retained = self._projected.setdefault(universe, OrderedDict())
+            rows = retained.get((as_of or "", today))
+            if rows is None:
+                # Expiry and lead status are re-derived whenever the trading date changes.
                 rows = (project_futures_catalog(raw, today=today, as_of=as_of or "") if universe == FUTURES
                         else project_etf_catalog(raw, as_of=as_of or ""))
-                self._projected[universe] = (as_of or "", today, rows)
+                retained[(as_of or "", today)] = rows
+                while len(retained) > CATALOG_RETAINED:
+                    retained.popitem(last=False)
             return rows, as_of or None, error
 
+    def _pinned_catalog(self, universe: str, as_of: str) -> list[dict[str, Any]] | None:
+        with self._lock:
+            return self._projected.get(universe, OrderedDict()).get((as_of, self._today()))
+
     def read(self, *, universe: str, search: str = "", sort: str | None = None, descending: bool = True,
-             offset: int = 0, limit: int = 10_000, force_refresh: bool = False,
-             filters: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-        spec = universe_spec(universe)
+             offset: int = 0, limit: int = DEFAULT_PAGE_LIMIT, force_refresh: bool = False,
+             filters: list[dict[str, Any]] | None = None, result_set: str | None = None,
+             selected: str | None = None) -> dict[str, Any]:
+        universe_spec(universe)
         if universe == US_EQUITIES:
             return screener_service().read(universe=universe, search=search, sort=sort or "volume",
                                            descending=descending, offset=offset, limit=limit,
-                                           force_refresh=force_refresh, filters=filters)
-        if offset < 0 or not 1 <= limit <= 10_000:
-            raise ValueError("INVALID_RESULT_WINDOW")
-        chosen_sort = sort or spec.default_sort
-        if chosen_sort not in spec.columns:
-            raise ValueError("UNSUPPORTED_SORT")
-        rules = validate_filters([] if filters is None else filters, universe=universe)
-        rows, as_of, error = self._catalog(universe, force=force_refresh)
-        needle = search.strip().casefold()
-        matched = [row for row in apply_filters(rows, rules)
-                   if not needle or any(needle in str(row.get(key) or "").casefold()
-                                        for key in (("symbol", "company", "root") if universe == FUTURES else ("symbol", "company")))]
-        def sort_value(row: dict[str, Any]) -> Any:
-            return row.get(chosen_sort) if chosen_sort not in row["fields"] else row["fields"][chosen_sort]["value"]
-        present = [row for row in matched if sort_value(row) is not None]
-        missing = [row for row in matched if sort_value(row) is None]
-        present.sort(key=lambda row: (sort_value(row), row["instrument"]["instrument_id"]), reverse=descending)
-        matched = present + missing
-        return {"schema_version": SCHEMA_VERSION, "universe": universe, "generated_at": self._now(),
-                "market_session": "PROVIDER_SPECIFIC" if universe == FUTURES else us_equity_session_label(),
-                "universe_as_of": as_of, "screener_as_of": as_of,
-                "result_count": len(matched), "unfiltered_count": len(rows), "offset": offset,
-                "provider_health": [
-                    {"provider": spec.source, "role": "IDENTITY_SOURCE",
-                     "state": "DEGRADED" if error and rows else "UNAVAILABLE" if error else "HEALTHY", "reason": error},
-                    {"provider": "MOOMOO_OPEND", "role": "QUOTE_SOURCE", "state": "UNAVAILABLE" if universe == FUTURES else "WINDOW_ONLY",
-                     "reason": "NOT_ENTITLED_OR_UNVERIFIED" if universe == FUTURES else None},
-                ],
-                "source_error": error if not rows else None, "rows": matched[offset:offset + limit]}
+                                           force_refresh=force_refresh, filters=filters, result_set=result_set,
+                                           selected=selected)
+        query = parse_query(universe=universe, search=search, sort=sort, descending=descending, offset=offset,
+                            limit=limit, filters=filters, result_set=result_set, selected=selected)
+        return self._read_query(query, force_refresh=force_refresh)
 
-    def row_for(self, instrument_id: str, *, universe: str) -> tuple[dict[str, Any] | None, str | None]:
+    def _read_query(self, query: ScreenerQuery, *, force_refresh: bool) -> dict[str, Any]:
+        universe, spec = query.universe, universe_spec(query.universe)
+        snapshot: MarketSnapshot | None = None
+        snapshot_error: str | None = None
+        if query.result_set is not None:
+            # A later page reads the exact catalog and snapshot its first page used.
+            catalog_as_of, _, snapshot_id = query.result_set.partition("|")
+            pinned = self._pinned_catalog(universe, catalog_as_of)
+            snapshot = self._snapshots.retained(snapshot_id) if snapshot_id else None
+            if pinned is None or bool(snapshot_id) != query.uses_snapshot or (snapshot_id and snapshot is None):
+                raise ValueError("RESULT_SET_CHANGED")
+            rows, as_of, error = pinned, catalog_as_of, None
+        else:
+            rows, as_of, error = self._catalog(universe, force=force_refresh)
+            if query.uses_snapshot and rows:
+                snapshot, snapshot_error = self._snapshots.current(rows, catalog_as_of=as_of or "",
+                                                                   force=force_refresh)
+        envelope = {"schema_version": SCHEMA_VERSION, "universe": universe, "generated_at": self._now(),
+                    "market_session": "PROVIDER_SPECIFIC" if universe == FUTURES else us_equity_session_label(),
+                    "universe_as_of": as_of, "screener_as_of": snapshot.as_of if snapshot else as_of,
+                    "evaluation": "SNAPSHOT" if query.uses_snapshot else "CATALOG",
+                    "snapshot": snapshot.summary() if snapshot else None,
+                    "unfiltered_count": len(rows),
+                    "provider_health": [
+                        {"provider": spec.source, "role": "IDENTITY_SOURCE",
+                         "state": "DEGRADED" if error and rows else "UNAVAILABLE" if error else "HEALTHY",
+                         "reason": error},
+                        {"provider": "MOOMOO_OPEND", "role": "QUOTE_SOURCE",
+                         "state": "UNAVAILABLE" if universe == FUTURES else "WINDOW_ONLY",
+                         "reason": "NOT_ENTITLED_OR_UNVERIFIED" if universe == FUTURES else None},
+                        *([{"provider": SNAPSHOT_SOURCE, "role": "MARKET_SNAPSHOT",
+                            "state": "UNAVAILABLE" if snapshot is None else "HEALTHY", "reason": snapshot_error}]
+                          if query.uses_snapshot else []),
+                    ]}
+        if query.uses_snapshot and snapshot is None:
+            # Never evaluate a market filter or sort on a partial or visible-row subset.
+            return {**envelope, "result_set_id": None,
+                    "source_error": error if not rows else snapshot_error or "MARKET_SNAPSHOT_UNAVAILABLE",
+                    **page_payload(query, [])}
+        key = (universe, as_of, self._today(), snapshot.id if snapshot else None, query.identity)
+        with self._lock:
+            ordered = self._ordered.get(key)
+        if ordered is None:
+            observe = _observer(snapshot)
+            needle = query.search.casefold()
+            keys = ("symbol", "company", "root") if universe == FUTURES else ("symbol", "company")
+            matched = [row for row in apply_filters(rows, list(query.filters), observe)
+                       if not needle or any(needle in str(row.get(key) or "").casefold() for key in keys)]
+            ordered = order_rows(matched, query.sort, query.descending, observe)
+            with self._lock:
+                self._ordered[key] = ordered
+                while len(self._ordered) > RESULT_CACHE_ENTRIES:
+                    self._ordered.popitem(last=False)
+        page = page_payload(query, ordered)
+        if snapshot is not None:
+            page["rows"] = [_with_snapshot(row, snapshot) for row in page["rows"]]
+        return {**envelope, "result_set_id": f"{as_of}|{snapshot.id if snapshot else ''}" if rows else None,
+                "source_error": error if not rows else None, **page}
+
+    def row_for(self, instrument_id: str, *, universe: str,
+                snapshot_id: str | None = None) -> tuple[dict[str, Any] | None, str | None]:
+        """The catalog row; with a retained snapshot id, carrying that snapshot's values."""
+
         if universe == US_EQUITIES:
             return screener_service().row_for(instrument_id)
         rows, _as_of, error = self._catalog(universe)
-        return next((row for row in rows if row["instrument"]["instrument_id"] == instrument_id), None), error
+        row = next((row for row in rows if row["instrument"]["instrument_id"] == instrument_id), None)
+        snapshot = self._snapshots.retained(snapshot_id) if snapshot_id and universe == US_ETFS else None
+        return (_with_snapshot(row, snapshot) if row is not None and snapshot is not None else row), error
 
     def quote_for(self, instrument_id: str, *, universe: str) -> dict[str, Any]:
         if universe == US_EQUITIES:

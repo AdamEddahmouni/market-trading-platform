@@ -219,9 +219,13 @@ class ScreenerConfigRepository:
 def read_config() -> dict[str, Any]:
     from ..local_state.startup import open_local_state
     from .screener_filters import filter_catalog
+    from .screener_query import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT, field_capabilities
 
     store = open_local_state()
-    return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(None), "universes": universe_payload(),
+    # Field capabilities come from the server so the UI never invents sort/filter support.
+    universes = [{**spec, "fields": field_capabilities(str(spec["id"]))} for spec in universe_payload()]
+    return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(None), "universes": universes,
+            "query": {"default_limit": DEFAULT_PAGE_LIMIT, "max_limit": MAX_PAGE_LIMIT},
             "presets": builtin_presets(), "saved": ScreenerConfigRepository(store).list_saved() if store else [],
             "last": ScreenerConfigRepository(store).get_last() if store else None,
             "preview_layout": ScreenerConfigRepository(store).get_preview_layout() if store else dict(DEFAULT_PREVIEW),

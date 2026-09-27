@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S6 server-side querying, paging, and market-filter truth
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `tools/moomoo`, `docs` |
+| **Summary** | One canonical Screener query (universe, filters, search, sort, direction, offset, bounded limit) executed server-side for all three universes: shared deterministic ordering (missing last, canonical-id ties), 200-row pages with truthful matched/loaded counts, pinned result sets for adjacent pages, and a result-reference cache. Field execution modes (`CATALOG`, `SNAPSHOT`, `LIVE_WINDOW`, `UNAVAILABLE`) published per universe drive filter and sort availability. ETF price/change/volume/bid/ask/spread filter and sort through a complete OpenD universe snapshot (every row returned or refused by name, else refused); Futures market fields stay display-only while entitlement is absent; equity bid/ask/spread no longer sort the loaded rows in the browser. The UI loads pages incrementally in one continuous virtualized table, keeps selection/Preview/panels independent of page presence, and pins "why it matched" to the evaluated snapshot. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_query.py`, `screener_snapshot.py`, `screener_multi.py`, `screener_projections.py`, `screener_filters.py`, `screener_config.py`, `screener_preview.py`, `server.py`, `tools/moomoo/opend_quote_transport.py`, `ui/src/api/screener.ts`, `ui/src/components/screener/`, `tests/platform/test_screener_s6.py`, `docs/engineering/SCREENER_S6.md` |
+| **Tests** | Screener backend S1–S6 143 passed (S6 20); Screener UI 57 passed (S6 13); full UI suite 1,060 passed (147 files); typecheck, production build, bundle budget (initial 201.33 KiB gzip), format, lint, and docs links passed. `validate changed` exit 0 (5,039 tests, 34 skipped, 0 failures, 0 errors) with `APPDATA` isolated — see [SCREENER_S6.md](SCREENER_S6.md#validation). |
+| **Related** | [SCREENER_S6.md](SCREENER_S6.md), [SCREENER_S5.md](SCREENER_S5.md) |
+| **Notes** | Real OpenD 2026-09-27 (closed): first ETF request 7,170,029 B → 227,820 B (−96.8%), 0.83 s → 0.03 s warm; snapshot 6,306 accounted (6,289 returned, 17 OTC refused, 6,264 priced), 33 calls, ≈3.5 s first build; `Price > 100` 407 of 6,306. Futures still `MOOMOO_QUOTE_NOT_ENTITLED`. Real-server acceptance caught a `result_token` key blocked by the API secret-leak audit (renamed `result_set_id`, regression-tested) and a built-in preset reading as modified once universe views load. |
+
+---
+
 ## 2026-09-27 — Main Screener S5 multi-universe convergence
 
 | Field | Value |

@@ -71,6 +71,13 @@ def format_value(field: str, value: Any, unit: str) -> str:
 
 
 # ---------------------------------------------------------------- why it matched
+def _clock(value: str) -> str:
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(ET).strftime("%b %d %H:%M:%S ET")
+    except ValueError:
+        return value
+
+
 def explain_matches(row: dict[str, Any], filters: list[dict[str, Any]], *, universe: str = US_EQUITIES) -> dict[str, Any]:
     """Per-rule facts using the exact S2 predicate; never provider tokens."""
 
@@ -93,6 +100,9 @@ def explain_matches(row: dict[str, Any], filters: list[dict[str, Any]], *, unive
             shown = format_value(rule["field"], observed, entry["unit"])
             text = (f"{entry['label']} {shown} is {_PHRASES[rule['operator']]} {expected}" if passed
                     else f"{entry['label']} {shown} does not satisfy {_SYMBOLS[rule['operator']]} {expected}")
+            evaluated = row.get("fields", {}).get(rule["field"], {})
+            if not text_field and evaluated.get("source") == "MOOMOO_OPEND_SNAPSHOT" and evaluated.get("as_of"):
+                text += f" (market snapshot, quote {_clock(evaluated['as_of'])})"
         items.append({"filter_id": rule["id"], "field": rule["field"], "label": entry["label"],
                       "operator": rule["operator"], "value": wanted, "observed": observed,
                       "passed": passed, "missing": observed is None, "text": text})
@@ -275,11 +285,13 @@ class ScreenerPreviewService:
                 "tolerance": structure.tolerance, "zones": [zone.to_dict() for zone in structure.zones], "price": price}
 
     def read(self, instrument_id: str, *, timeframe: str = "5m", scope: str = "EXTENDED",
-             filters: list[dict[str, Any]] | None = None, universe: str = US_EQUITIES) -> dict[str, Any] | None:
+             filters: list[dict[str, Any]] | None = None, universe: str = US_EQUITIES,
+             snapshot_id: str | None = None) -> dict[str, Any] | None:
         universe_spec(universe)
         rules = validate_filters([] if filters is None else filters, universe=universe)
         if universe != US_EQUITIES:
-            return self._read_other(instrument_id, universe=universe, timeframe=timeframe, scope=scope, rules=rules)
+            return self._read_other(instrument_id, universe=universe, timeframe=timeframe, scope=scope, rules=rules,
+                                    snapshot_id=snapshot_id)
         row, _error = self._screener.row_for(instrument_id)
         if row is None:
             return None
@@ -317,10 +329,12 @@ class ScreenerPreviewService:
         }
 
     def _read_other(self, instrument_id: str, *, universe: str, timeframe: str,
-                    scope: str, rules: list[dict[str, Any]]) -> dict[str, Any] | None:
+                    scope: str, rules: list[dict[str, Any]], snapshot_id: str | None = None) -> dict[str, Any] | None:
         from .screener_multi import multi_screener_service
 
-        row, _error = multi_screener_service().row_for(instrument_id, universe=universe)
+        # With the result's snapshot id, "why it matched" explains the values the
+        # server filtered on, not a later streaming quote.
+        row, _error = multi_screener_service().row_for(instrument_id, universe=universe, snapshot_id=snapshot_id)
         if row is None:
             return None
         now_ns = self._now_ns()

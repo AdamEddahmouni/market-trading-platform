@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
-from typing import Any
+from typing import Any, Callable
 
 from ..discovery.screens import SCREEN_LIBRARY
 from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
@@ -34,6 +34,9 @@ _FIELDS: tuple[tuple[str, str, str, str, str], ...] = (
     ("recommendation", "Recommendation", "Fundamentals", "text", "text"),
     ("rsi_14", "RSI (14)", "Technical", "number", "index"),
     ("perf_week", "Weekly Performance", "Price & Movement", "number", "percent"),
+    ("bid", "Bid", "Price & Movement", "number", "USD"),
+    ("ask", "Ask", "Price & Movement", "number", "USD"),
+    ("spread_pct", "Spread %", "Volume & Liquidity", "number", "percent"),
 )
 _CATALOG = {
     field: {"field": field, "label": label, "category": category, "type": kind,
@@ -43,7 +46,12 @@ _CATALOG = {
 }
 for field in ("symbol", "company"):
     _CATALOG[field]["universes"] = [US_EQUITIES, FUTURES, US_ETFS]
-_CATALOG["price"]["universes"] = [US_EQUITIES]
+# ETF market fields filter only through the universe-wide OpenD market snapshot
+# (S6); bid/ask/spread have no universe-wide equity source, so equities omit them.
+for field in ("price", "change_pct", "volume"):
+    _CATALOG[field]["universes"] = [US_EQUITIES, US_ETFS]
+for field in ("bid", "ask", "spread_pct"):
+    _CATALOG[field]["universes"] = [US_ETFS]
 _CATALOG.update({
     field: {"field": field, "label": label, "category": category, "type": kind,
             "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
@@ -103,9 +111,18 @@ def validate_filters(raw: Any, *, universe: str = US_EQUITIES) -> list[dict[str,
     return validated
 
 
-def _matches(row: dict[str, Any], rule: dict[str, Any]) -> bool:
+Observe = Callable[[dict[str, Any], str], Any]
+
+
+def field_value(row: dict[str, Any], field: str) -> Any:
+    """A row's own value: text from the row, numbers from its field envelope."""
+
+    return row.get(field) if _CATALOG.get(field, {}).get("type") == "text" or field not in row.get("fields", {})         else row["fields"][field]["value"]
+
+
+def _matches(row: dict[str, Any], rule: dict[str, Any], observe: Observe = field_value) -> bool:
     field, operator, wanted = rule["field"], rule["operator"], rule["value"]
-    observed = row.get(field) if _CATALOG[field]["type"] == "text" else row.get("fields", {}).get(field, {}).get("value")
+    observed = observe(row, field)
     if observed is None:
         return False
     if _CATALOG[field]["type"] == "text":
@@ -122,8 +139,9 @@ def _matches(row: dict[str, Any], rule: dict[str, Any]) -> bool:
             "between": lambda: wanted[0] <= observed <= wanted[1]}[operator]()
 
 
-def apply_filters(rows: list[dict[str, Any]], rules: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [row for row in rows if all(_matches(row, rule) for rule in rules)]
+def apply_filters(rows: list[dict[str, Any]], rules: list[dict[str, Any]],
+                  observe: Observe = field_value) -> list[dict[str, Any]]:
+    return [row for row in rows if all(_matches(row, rule, observe) for rule in rules)]
 
 
 def rule_matches(row: dict[str, Any], rule: dict[str, Any]) -> bool:
