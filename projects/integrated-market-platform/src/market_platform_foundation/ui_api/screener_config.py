@@ -11,6 +11,9 @@ from .screener_projections import FIELD_NAMES
 
 PREF_KEY = "screener.s2.screens"
 LAST_KEY = "screener.s2.last"
+PREVIEW_KEY = "screener.s3.preview"
+PREVIEW_WIDTH = (320, 720)
+DEFAULT_PREVIEW = {"version": 1, "open": True, "width": 400}
 SCHEMA_VERSION = 1
 VIEWS = ("Overview", "Performance", "Technical", "Volume", "Short", "Fundamentals", "Custom")
 COLUMNS = frozenset((*FIELD_NAMES, "symbol", "company", "sector", "industry", "country",
@@ -57,6 +60,19 @@ def validate_screen(raw: Any, *, identity: str | None = None) -> dict[str, Any]:
             "columns": {"visible": list(visible), "order": list(order), "widths": dict(widths), "pinned": list(pinned)}}
 
 
+def validate_preview_layout(raw: Any) -> dict[str, Any]:
+    """Quick Preview pane layout only; saved-screen definitions are not touched."""
+
+    if not isinstance(raw, dict) or raw.get("version", 1) != 1:
+        raise ValueError("INVALID_PREVIEW_LAYOUT")
+    is_open, width = raw.get("open"), raw.get("width")
+    if not isinstance(is_open, bool) or isinstance(width, bool) or not isinstance(width, int):
+        raise ValueError("INVALID_PREVIEW_LAYOUT")
+    if not PREVIEW_WIDTH[0] <= width <= PREVIEW_WIDTH[1]:
+        raise ValueError("INVALID_PREVIEW_WIDTH")
+    return {"version": 1, "open": is_open, "width": width}
+
+
 class ScreenerConfigRepository:
     def __init__(self, store: Any):
         self._store = store
@@ -87,6 +103,17 @@ class ScreenerConfigRepository:
         screen = validate_screen(raw, identity="user-last")
         self._store.set_preference(LAST_KEY, screen)
         return screen
+
+    def get_preview_layout(self) -> dict[str, Any]:
+        try:
+            return validate_preview_layout(self._store.get_preferences().get(PREVIEW_KEY))
+        except ValueError:
+            return dict(DEFAULT_PREVIEW)
+
+    def save_preview_layout(self, raw: Any) -> dict[str, Any]:
+        layout = validate_preview_layout(raw)
+        self._store.set_preference(PREVIEW_KEY, layout)
+        return layout
 
     def save(self, raw: Any) -> dict[str, Any]:
         screen = validate_screen(raw)
@@ -120,6 +147,7 @@ def read_config() -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(),
             "presets": builtin_presets(), "saved": ScreenerConfigRepository(store).list_saved() if store else [],
             "last": ScreenerConfigRepository(store).get_last() if store else None,
+            "preview_layout": ScreenerConfigRepository(store).get_preview_layout() if store else dict(DEFAULT_PREVIEW),
             "persistence_available": store is not None}
 
 
@@ -140,6 +168,8 @@ def write_config(body: dict[str, Any]) -> dict[str, Any]:
         result = repository.delete(screen_id)
     elif action == "last":
         result = repository.save_last(body.get("screen"))
+    elif action == "preview_layout":
+        result = repository.save_preview_layout(body.get("layout"))
     else:
         raise ValueError("INVALID_SCREEN_ACTION")
     return {"result": result, "saved": repository.list_saved()}

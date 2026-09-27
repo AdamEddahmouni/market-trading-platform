@@ -477,6 +477,187 @@ def fetch_snapshot(
                     pass
 
 
+MOOMOO_QUOTE_NOT_ENTITLED = "MOOMOO_QUOTE_NOT_ENTITLED"
+MOOMOO_SUBSCRIPTION_BUSY = "MOOMOO_SUBSCRIPTION_BUSY"
+# The vendor refuses to unsubscribe a code within one minute of subscribing it.
+CURRENT_KLINE_MIN_HOLD_SECONDS = 60.0
+CURRENT_KLINE_MAX_COUNT = 1000
+
+
+def _vendor_reason(message: Any) -> str:
+    text = str(message or "").lower()
+    if "permission" in text or "quote card" in text or "no right" in text:
+        return MOOMOO_QUOTE_NOT_ENTITLED
+    return MOOMOO_PROTOCOL_ERROR
+
+
+class OpendCurrentKlineSession:
+    """Bounded K_1M subscriptions for product current-bar reads (quote context only).
+
+    ``get_cur_kline`` reads subscribed data, so it does not consume the vendor's
+    30-day history-kline symbol quota. At most ``max_held`` codes stay
+    subscribed; the least recently read code is released once the vendor's
+    one-minute minimum hold has elapsed. All calls are serialized.
+    """
+
+    def __init__(
+        self,
+        *,
+        host: str,
+        port: int,
+        sdk: Any | None = None,
+        max_held: int = 12,
+        monotonic: Any = time.monotonic,
+    ) -> None:
+        import threading
+
+        self._host = host
+        self._port = int(port)
+        self._sdk = sdk
+        self._max_held = max(1, int(max_held))
+        self._monotonic = monotonic
+        self._lock = threading.RLock()
+        self._ctx: Any | None = None
+        self._ft: Any | None = None
+        self._held: dict[str, tuple[float, float]] = {}  # code -> (subscribed_at, last_read)
+
+    def close(self) -> None:
+        with self._lock:
+            _close_quote_context(self._ctx)
+            self._ctx = None
+            self._ft = None
+            self._held.clear()
+
+    def held_codes(self) -> list[str]:
+        with self._lock:
+            return sorted(self._held)
+
+    def _context(self) -> tuple[Any, Any] | str:
+        if self._ctx is not None and self._ft is not None:
+            return self._ctx, self._ft
+        if self._host not in _LOOPBACK_HOSTS:
+            return OPEND_NON_LOOPBACK_BLOCKED
+        ft = self._sdk if self._sdk is not None else load_vendor_sdk()
+        if ft is None or not hasattr(ft, "OpenQuoteContext"):
+            return MOOMOO_SDK_MISSING
+        try:
+            ctx = ft.OpenQuoteContext(host=self._host, port=self._port)
+            ret, state = ctx.get_global_state()
+        except Exception:  # noqa: BLE001
+            return MOOMOO_PROTOCOL_ERROR
+        if ret != ft.RET_OK:
+            _close_quote_context(ctx)
+            return MOOMOO_PROTOCOL_ERROR
+        if not _qot_logined(state):
+            _close_quote_context(ctx)
+            return MOOMOO_AUTH_FAILURE
+        self._ctx, self._ft = ctx, ft
+        self._held.clear()
+        return ctx, ft
+
+    def _make_room(self, ctx: Any, ft: Any) -> bool:
+        now = self._monotonic()
+        while len(self._held) >= self._max_held:
+            code, (subscribed_at, _read) = min(self._held.items(), key=lambda item: (item[1][1], item[0]))
+            if now - subscribed_at < CURRENT_KLINE_MIN_HOLD_SECONDS:
+                return False
+            ret, _msg = ctx.unsubscribe([code], [ft.SubType.K_1M])
+            if ret != ft.RET_OK:
+                return False
+            del self._held[code]
+        return True
+
+    def fetch_current_kline_1m(self, symbol: str, *, count: int = CURRENT_KLINE_MAX_COUNT) -> dict[str, Any]:
+        """Latest ``count`` 1m klines (vendor bar-end ``time_key``), including the forming bar."""
+
+        started = time.monotonic()
+
+        def _finish(reason: str | None, rows: list[dict[str, Any]] | None = None, message: Any = None) -> dict[str, Any]:
+            return {
+                "reason_code": reason,
+                "rows": rows if reason is None else None,
+                "vendor_ret_msg": _bounded_vendor_msg(message),
+                "request_duration_ms": round((time.monotonic() - started) * 1000.0, 3),
+            }
+
+        code = _provider_code(symbol)
+        if not code:
+            return _finish(MOOMOO_PROTOCOL_ERROR)
+        with self._lock:
+            pair = self._context()
+            if isinstance(pair, str):
+                return _finish(pair)
+            ctx, ft = pair
+            try:
+                if code not in self._held:
+                    if not self._make_room(ctx, ft):
+                        return _finish(MOOMOO_SUBSCRIPTION_BUSY)
+                    ret, msg = ctx.subscribe([code], [ft.SubType.K_1M], subscribe_push=False, extended_time=True)
+                    if ret != ft.RET_OK:
+                        return _finish(_vendor_reason(msg), message=msg)
+                    now = self._monotonic()
+                    self._held[code] = (now, now)
+                ret, data = ctx.get_cur_kline(code, max(1, min(int(count), CURRENT_KLINE_MAX_COUNT)), ft.KLType.K_1M, ft.AuType.QFQ)
+                subscribed_at, _read = self._held[code]
+                self._held[code] = (subscribed_at, self._monotonic())
+                if ret != ft.RET_OK:
+                    return _finish(_vendor_reason(data), message=data)
+                return _finish(None, _snapshot_rows(data))
+            except Exception as exc:  # noqa: BLE001 — vendor surface is fail-closed
+                message = f"{type(exc).__name__}: {exc}"
+                if "disconnect" in message.lower() or "connection" in message.lower():
+                    _close_quote_context(self._ctx)
+                    self._ctx = self._ft = None
+                    self._held.clear()
+                return _finish(MOOMOO_PROTOCOL_ERROR, message=message)
+
+    def fetch_future_contracts(self, codes: list[str]) -> dict[str, Any]:
+        """Vendor futures reference rows (name, main flag, last trade date). Not a quote."""
+
+        with self._lock:
+            pair = self._context()
+            if isinstance(pair, str):
+                return {"reason_code": pair, "rows": None}
+            ctx, ft = pair
+            try:
+                ret, data = ctx.get_stock_basicinfo(ft.Market.US, ft.SecurityType.FUTURE, list(codes))
+            except Exception as exc:  # noqa: BLE001
+                return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None, "vendor_ret_msg": _bounded_vendor_msg(repr(exc))}
+            if ret != ft.RET_OK:
+                return {"reason_code": _vendor_reason(data), "rows": None, "vendor_ret_msg": _bounded_vendor_msg(data)}
+            return {"reason_code": None, "rows": _snapshot_rows(data)}
+
+    def fetch_future_quotes(self, codes: list[str]) -> dict[str, Any]:
+        """Vendor snapshot rows for futures codes, or the entitlement/protocol refusal."""
+
+        with self._lock:
+            pair = self._context()
+            if isinstance(pair, str):
+                return {"reason_code": pair, "rows": None}
+            ctx, ft = pair
+            try:
+                ret, data = ctx.get_market_snapshot(list(codes))
+            except Exception as exc:  # noqa: BLE001
+                return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None, "vendor_ret_msg": _bounded_vendor_msg(repr(exc))}
+            if ret != ft.RET_OK:
+                return {"reason_code": _vendor_reason(data), "rows": None, "vendor_ret_msg": _bounded_vendor_msg(data)}
+            return {"reason_code": None, "rows": _snapshot_rows(data)}
+
+    def fetch_market_states(self, codes: list[str]) -> dict[str, Any]:
+        with self._lock:
+            pair = self._context()
+            if isinstance(pair, str):
+                return {"reason_code": pair, "rows": None}
+            ctx, ft = pair
+            try:
+                ret, data = ctx.get_market_state(list(codes))
+            except Exception:  # noqa: BLE001
+                return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+            if ret != ft.RET_OK:
+                return {"reason_code": _vendor_reason(data), "rows": None}
+            return {"reason_code": None, "rows": _snapshot_rows(data)}
+
+
 def is_vendor_sdk(module: Any) -> bool:
     """True only for the vendor quote package, not ``tools/moomoo``."""
 
@@ -692,10 +873,13 @@ __all__ = [
     "MOOMOO_AUTH_FAILURE",
     "MOOMOO_LAST_PRICE_MISSING",
     "MOOMOO_PROTOCOL_ERROR",
+    "MOOMOO_QUOTE_NOT_ENTITLED",
     "MOOMOO_SDK_MISSING",
+    "MOOMOO_SUBSCRIPTION_BUSY",
     "OPEND_NON_LOOPBACK_BLOCKED",
     "US_EQUITY_1M_HISTORY_MIN_COUNT",
     "KLINE_PROTOCOL_UNCLASSIFIED",
+    "OpendCurrentKlineSession",
     "OpendQuoteKlineSession",
     "classify_kline_protocol_error_category",
     "fetch_history_kline_1m",

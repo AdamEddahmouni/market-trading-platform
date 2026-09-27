@@ -216,6 +216,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(read_config())
                 return
+            if path == "/screener/preview":
+                from .screener_preview import read_preview
+
+                try:
+                    preview = read_preview(
+                        (query.get("instrument") or [""])[0],
+                        timeframe=(query.get("timeframe") or ["5m"])[0],
+                        scope=(query.get("scope") or ["EXTENDED"])[0],
+                        filters=json.loads((query.get("filters") or ["[]"])[0]),
+                    )
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_PREVIEW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if preview is None:
+                    self._send_error_json("SCREENER_PREVIEW_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(preview)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return

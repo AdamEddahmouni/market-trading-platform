@@ -1,5 +1,7 @@
 # Main Screener S2 — filters, views, columns, saved screens
 
+S3 adds the Quick Preview; see [Main Screener S3](SCREENER_S3.md).
+
 This document describes the S2 Screener implementation on the S1 branch head.
 The current normal Screener path remains a real US-equity Finviz snapshot plus
 the bounded Moomoo L1 viewport. No replay or fixture source is substituted.

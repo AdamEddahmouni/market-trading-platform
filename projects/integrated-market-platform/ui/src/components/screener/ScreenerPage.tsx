@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { ColumnPinningState, ColumnSizingState, VisibilityState } from "@tanstack/react-table";
@@ -6,8 +6,27 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
-import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, persistLastScreenerConfig, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen } from "../../api/screener";
+import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, persistLastScreenerConfig, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen } from "../../api/screener";
+import { QuickPreview } from "./QuickPreview";
 import "./screener.css";
+
+const PREVIEW_MIN = 320;
+const PREVIEW_MAX = 720;
+const TABLE_MIN = 560;
+const NARROW_QUERY = "(max-width: 1279px)";
+const clampPreview = (width: number, bodyWidth: number) =>
+  Math.round(Math.max(PREVIEW_MIN, Math.min(PREVIEW_MAX, bodyWidth ? bodyWidth - TABLE_MIN : PREVIEW_MAX, width)));
+function useNarrow() {
+  const query = typeof window !== "undefined" && window.matchMedia ? window.matchMedia(NARROW_QUERY) : null;
+  const [narrow, setNarrow] = useState(Boolean(query?.matches));
+  useEffect(() => {
+    if (!query) return;
+    const update = () => setNarrow(query.matches);
+    query.addEventListener?.("change", update);
+    return () => query.removeEventListener?.("change", update);
+  }, []);
+  return narrow;
+}
 
 type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "price" | "change_pct" | "volume" | "avg_volume" | "rel_volume" | "float_shares" | "shares_outstanding" | "market_cap" | "short_float_pct" | "short_ratio" | "rsi_14" | "eps_ttm" | "pe" | "fwd_pe" | "perf_week" | "earnings_date" | "recommendation" | "bid" | "ask" | "spread_pct";
 type SortKey = Exclude<ColumnKey, "sector" | "industry" | "country" | "earnings_date" | "recommendation" | "bid" | "ask" | "spread_pct"> | "bid" | "ask" | "spread_pct";
@@ -115,6 +134,24 @@ export function ScreenerPage() {
   const initialized = useRef(false);
   const loadedScreen = useRef<string | null>(null);
   const config = useQuery({ queryKey: ["main-screener-config"], queryFn: fetchScreenerConfig, staleTime: 60_000 });
+  const narrow = useNarrow();
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewWidth, setPreviewWidth] = useState(400);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLElement>(null);
+  const layoutRestored = useRef(false);
+  const layoutTimer = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    const layout = config.data?.preview_layout;
+    if (!layout || layoutRestored.current) return;
+    layoutRestored.current = true;
+    setPreviewOpen(layout.open); setPreviewWidth(clampPreview(layout.width, 0));
+  }, [config.data?.preview_layout]);
+  const persistLayout = (open: boolean, width: number) => {
+    if (!config.data?.persistence_available) return;
+    window.clearTimeout(layoutTimer.current);
+    layoutTimer.current = window.setTimeout(() => { void persistScreenerPreviewLayout({ open, width }).catch(() => undefined); }, 400);
+  };
   const urlUpdate = (updates: Record<string, string | null>, replace = false) => {
     const params = new URLSearchParams(location.search);
     for (const [key, value] of Object.entries(updates)) value ? params.set(key, value) : params.delete(key);
@@ -261,14 +298,47 @@ export function ScreenerPage() {
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
   }, []);
+  // A selection filtered or searched out of the settled result set is cleared, so
+  // the preview never shows an instrument the table no longer lists.
+  useEffect(() => {
+    if (selected && query.isSuccess && !query.isFetching && !rows.some((row) => row.instrument.instrument_id === selected)) setSelected(null);
+  }, [rows, selected, query.isSuccess, query.isFetching]);
   const selectedIndex = rows.findIndex((row) => row.instrument.instrument_id === selected);
+  const selectedRow = selectedIndex >= 0 ? rows[selectedIndex] : null;
   const activate = (index: number) => {
     const row = rows[index];
     if (!row) return;
     setSelected(row.instrument.instrument_id);
     virtualizer.scrollToIndex(index, { align: "auto" });
   };
-  const open = (row: ScreenerRow) => navigate(workspacePathForInstrument(row.instrument.instrument_id));
+  const open = useCallback((row: ScreenerRow) => navigate(workspacePathForInstrument(row.instrument.instrument_id)), [navigate]);
+  const closePreview = useCallback(() => {
+    setPreviewOpen(false); persistLayout(false, previewWidth);
+    scrollRef.current?.focus();
+  }, [previewWidth, config.data?.persistence_available]);
+  const togglePreview = () => { const next = !previewOpen; setPreviewOpen(next); persistLayout(next, previewWidth); };
+  const commitWidth = (width: number) => {
+    const next = clampPreview(width, bodyRef.current?.clientWidth ?? 0);
+    setPreviewWidth(next); persistLayout(true, next);
+    return next;
+  };
+  const onSplitterPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startX = event.clientX, startWidth = previewWidth, pane = previewRef.current;
+    let latest = startWidth;
+    const move = (moveEvent: PointerEvent) => {
+      latest = clampPreview(startWidth + startX - moveEvent.clientX, bodyRef.current?.clientWidth ?? 0);
+      if (pane) pane.style.width = `${latest}px`; // no React render per pointer move
+    };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); commitWidth(latest); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  };
+  const onSplitterKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const steps: Record<string, number> = { ArrowLeft: 16, ArrowRight: -16, Home: PREVIEW_MAX, End: -PREVIEW_MAX };
+    if (!(event.key in steps)) return;
+    event.preventDefault();
+    commitWidth(event.key === "Home" ? PREVIEW_MAX : event.key === "End" ? PREVIEW_MIN : previewWidth + steps[event.key]);
+  };
   const onGridKeyDown = (event: KeyboardEvent) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
       event.preventDefault();
@@ -396,7 +466,8 @@ export function ScreenerPage() {
     <div className="screener-toolbar"><span>Universe <strong>US Equities</strong></span><span>Session <strong>{session}</strong></span>
       <div className="screener-toolbar-end"><button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setScreenOpen(!screenOpen); setColumnOpen(false); setFilterOpen(false); }} aria-expanded={screenOpen} aria-haspopup="dialog">{selectedName}{changed ? " *" : ""} ▾</button>
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
-        <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button></div></div>
+        <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
+        <button type="button" className="screener-control" aria-pressed={previewOpen} onClick={togglePreview}>Preview</button></div></div>
     <div className="screener-tabs" role="tablist" aria-label="Screener views">{Object.keys(views).map((name) => <button key={name} type="button" role="tab" aria-selected={view === name} onClick={() => chooseView(name)}>{name}</button>)}</div>
     <div className="screener-filters" aria-label="Active filters">{filters.map((rule) => <span className="screener-chip" key={rule.id}>
       <button type="button" onClick={(event) => { transientTrigger.current = event.currentTarget; beginFilter(rule.field, rule); setFilterOpen(true); }} aria-label={`Edit ${config.data?.catalog.find((item) => item.field === rule.field)?.label ?? rule.field}`}>{labelFilter(rule)}</button>
@@ -437,6 +508,7 @@ export function ScreenerPage() {
       <div className="screener-popover-actions"><button type="button" onClick={closeTransient}>Cancel</button><button type="button" className="screener-primary" disabled={!saveName.trim()} onClick={() => void saveCurrent()}>Save</button></div>
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
+    <div className="screener-body" ref={bodyRef}>
     <div className="screener-grid" role="grid" aria-label="US equity screener" aria-rowcount={rows.length + 1} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
@@ -471,7 +543,11 @@ export function ScreenerPage() {
             return <div role="row" key={row.id} aria-rowindex={virtual.index + 2} aria-selected={row.id === selected}
               className={`screener-row${row.id === selected ? " selected" : ""}`}
               style={{ transform: `translateY(${virtual.start}px)`, width: table.getTotalSize() }}
-              onClick={() => { if (row.id === selected) open(row.original); else setSelected(row.id); }}
+              onClick={() => {
+                if (row.id === selected) { open(row.original); return; }
+                setSelected(row.id);
+                if (!previewOpen) { setPreviewOpen(true); persistLayout(true, previewWidth); }
+              }}
               onDoubleClick={() => open(row.original)}>
               {row.getVisibleCells().map((cell) => <div role="gridcell" key={cell.id}
                 className={leftAligned.has(cell.column.id) ? "screener-cell screener-left" : "screener-cell"}
@@ -479,6 +555,13 @@ export function ScreenerPage() {
             </div>;
           })}
         </div>}
+    </div>
+    {previewOpen && !narrow && <div className="screener-splitter" role="separator" aria-orientation="vertical" aria-label="Resize quick preview"
+      aria-valuemin={PREVIEW_MIN} aria-valuemax={PREVIEW_MAX} aria-valuenow={previewWidth} tabIndex={0}
+      onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
+    {previewOpen && (!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters}
+      screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
+      paneRef={previewRef} onClose={closePreview} onOpen={open} />}
     </div>
     <footer className="screener-footer"><span>{query.data?.result_count.toLocaleString() ?? "—"}{filters.length && query.data?.unfiltered_count !== undefined ? ` of ${query.data.unfiltered_count.toLocaleString()}` : ""} results</span>
       <span>Quotes {quoteLabel}</span>

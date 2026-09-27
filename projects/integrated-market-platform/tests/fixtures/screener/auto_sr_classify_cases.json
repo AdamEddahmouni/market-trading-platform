@@ -1,0 +1,59 @@
+{
+  "description": "AUTO_SR_V1 price classification cases shared by backend and frontend tests. Zones use the backend zone shape.",
+  "min_strength": 20,
+  "cases": [
+    {
+      "name": "support and resistance around price",
+      "price": 6.42,
+      "zones": [
+        {"lower": 5.8, "upper": 5.9, "center": 5.85, "strength": 70},
+        {"lower": 6.08, "upper": 6.13, "center": 6.105, "strength": 55},
+        {"lower": 6.55, "upper": 6.6, "center": 6.575, "strength": 61},
+        {"lower": 7.0, "upper": 7.1, "center": 7.05, "strength": 90}
+      ],
+      "support_center": 6.105,
+      "resistance_center": 6.575,
+      "testing_center": null,
+      "support_distance_pct": 4.5171,
+      "resistance_distance_pct": 2.0249
+    },
+    {
+      "name": "weak nearer zone ignored",
+      "price": 10.0,
+      "zones": [
+        {"lower": 9.0, "upper": 9.1, "center": 9.05, "strength": 40},
+        {"lower": 9.8, "upper": 9.9, "center": 9.85, "strength": 19}
+      ],
+      "support_center": 9.05,
+      "resistance_center": null,
+      "testing_center": null,
+      "support_distance_pct": 9.0,
+      "resistance_distance_pct": null
+    },
+    {
+      "name": "price testing a zone",
+      "price": 20.0,
+      "zones": [
+        {"lower": 19.9, "upper": 20.1, "center": 20.0, "strength": 50},
+        {"lower": 21.0, "upper": 21.2, "center": 21.1, "strength": 30}
+      ],
+      "support_center": null,
+      "resistance_center": 21.1,
+      "testing_center": 20.0,
+      "support_distance_pct": null,
+      "resistance_distance_pct": 5.0
+    },
+    {
+      "name": "only resistance",
+      "price": 3.0,
+      "zones": [
+        {"lower": 3.5, "upper": 3.6, "center": 3.55, "strength": 44}
+      ],
+      "support_center": null,
+      "resistance_center": 3.55,
+      "testing_center": null,
+      "support_distance_pct": null,
+      "resistance_distance_pct": 16.6667
+    }
+  ]
+}

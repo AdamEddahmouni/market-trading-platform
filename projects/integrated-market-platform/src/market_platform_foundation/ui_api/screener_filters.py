@@ -104,6 +104,16 @@ def apply_filters(rows: list[dict[str, Any]], rules: list[dict[str, Any]]) -> li
     return [row for row in rows if all(_matches(row, rule) for rule in rules)]
 
 
+def rule_matches(row: dict[str, Any], rule: dict[str, Any]) -> bool:
+    """The exact per-rule predicate used by ``apply_filters`` (validated rules only)."""
+
+    return _matches(row, rule)
+
+
+def catalog_entry(field: str) -> dict[str, Any]:
+    return deepcopy(_CATALOG[field])
+
+
 # Exact, reviewed translations from the immutable discovery definitions. A
 # provider-only condition is reported as unsupported until the snapshot can
 # actually evaluate it; it is never silently replaced by a different rule.
