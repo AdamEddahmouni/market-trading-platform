@@ -55,6 +55,7 @@ LARGE_PRINT_MIN_TRADES = 20
 IMBALANCE_DEPTHS = (5, 10)
 DISPLAY_LEVELS = 20
 DISCONNECTED_STATES = frozenset(("DISCONNECTED", "RECONNECTING", "DISABLED", "CONNECTING", "ERROR"))
+_UNVERIFIED_REASONS = frozenset(("PROBE_STALE", "PROBE_MISSING"))
 _PERMISSION_WORDS = ("permission", "quote card", "entitle", "authority")
 _QUOTA_WORDS = ("quota", "subscription limit", "exceed")
 #: Provider-supplied side labels, never exchange aggressor truth.
@@ -276,9 +277,9 @@ class ScreenerSpecialistService:
             return "UNAVAILABLE", "LIVE_RUNTIME_UNAVAILABLE", None
         if self._provider(runtime) is None:
             return "UNAVAILABLE", "NO_CURRENT_FEED", None
-        registry = getattr(runtime, "capability_registry", None)
-        entry = registry.get(capability) if registry is not None else None
-        if entry is not None and not entry.account_entitled:
+        # A stale or missing probe is unverified, not refused: the provider's own
+        # subscribe answer (below) decides. Only an observed refusal is NOT_ENTITLED.
+        if self._entitlement(runtime, capability) == "NOT_ENTITLED":
             return "NOT_ENTITLED", "ENTITLEMENT_MISSING", None
         feed = getattr(runtime, "feed", None)
         errors = getattr(feed, "subscription_errors", {}) or {}
@@ -301,6 +302,16 @@ class ScreenerSpecialistService:
         activated = runtime.subscriptions.activated_at(instrument_id=instrument_id, capability=capability) or 0
         anchor = max(activated, int(getattr(runtime.lifecycle, "connected_ns", None) or 0))
         return None, None, anchor
+
+    @staticmethod
+    def _entitlement(runtime: Any, capability: str) -> str:
+        registry = getattr(runtime, "capability_registry", None) if runtime is not None else None
+        entry = registry.get(capability) if registry is not None else None
+        if entry is None:
+            return "UNVERIFIED"
+        if entry.account_entitled:
+            return "PROBE_VERIFIED"
+        return "UNVERIFIED" if entry.reason_code in _UNVERIFIED_REASONS else "NOT_ENTITLED"
 
     def _feed_silent(self, runtime: Any) -> bool:
         last = getattr(runtime.lifecycle, "last_received_ns", None)
@@ -337,6 +348,7 @@ class ScreenerSpecialistService:
     def order_flow(self, instrument_id: str) -> dict[str, Any]:
         payload = self._base("order_flow", instrument_id, TRADES)
         runtime = self._runtime_getter()
+        payload["entitlement"] = self._entitlement(runtime, TRADES)
         blocked, reason, anchor = self._gate(runtime, instrument_id, TRADES)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         if blocked is not None:
@@ -381,6 +393,7 @@ class ScreenerSpecialistService:
     def cvd(self, instrument_id: str) -> dict[str, Any]:
         payload = self._base("cvd", instrument_id, TRADES)
         runtime = self._runtime_getter()
+        payload["entitlement"] = self._entitlement(runtime, TRADES)
         blocked, reason, anchor = self._gate(runtime, instrument_id, TRADES)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         payload["derivation"] = "DERIVED"
@@ -417,6 +430,7 @@ class ScreenerSpecialistService:
     def depth(self, instrument_id: str) -> dict[str, Any]:
         payload = self._base("level2", instrument_id, DEPTH)
         runtime = self._runtime_getter()
+        payload["entitlement"] = self._entitlement(runtime, DEPTH)
         blocked, reason, anchor = self._gate(runtime, instrument_id, DEPTH)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         empty = {"bids": [], "asks": [], "best_bid": None, "best_ask": None, "spread": None, "mid": None,

@@ -49,15 +49,17 @@ class Clock:
 
 
 class Registry:
-    def __init__(self, entitled: dict[str, bool] | None = None):
+    def __init__(self, entitled: dict[str, bool] | None = None, reason: str | None = "NOT_ENTITLED"):
         self.entitled = entitled or {}
+        self.reason = reason
 
     def get(self, capability):
         if capability not in self.entitled:
             return None
+        entitled = self.entitled[capability]
         return CapabilityState(capability=MarketCapability(capability), provider_supports=True,
-                               account_entitled=self.entitled[capability], adapter_implemented=True,
-                               runtime_tested=True, data_currently_fresh=True)
+                               account_entitled=entitled, adapter_implemented=True,
+                               runtime_tested=True, data_currently_fresh=True, reason_code=None if entitled else self.reason)
 
 
 def make_runtime(clock: Clock, *, max_trades: int = 500, feed: bool = True) -> LiveObservationalRuntime:
@@ -283,6 +285,14 @@ class OrderFlowTests(unittest.TestCase):
         self.assertEqual(self.service.cvd("NVDA")["state"], "NOT_ENTITLED")
         self.runtime.feed.subscription_errors[("US.NVDA", "TICKER")] = {"message": "Subscription quota exceeded", "at_ns": 1}
         self.assertEqual(self.service.order_flow("NVDA")["reason"], "PROVIDER_QUOTA_EXHAUSTED")
+
+    def test_stale_probe_is_unverified_not_refused(self):
+        self.runtime.capability_registry = Registry({"US_EQUITY_TICKS": False}, reason="PROBE_STALE")  # type: ignore[assignment]
+        tick(self.runtime, "NVDA", seq=1, price=100, volume=10, direction="BUY", event_ns=self.clock.now)
+        payload = self.service.order_flow("NVDA")
+        self.assertEqual((payload["state"], payload["entitlement"], len(payload["tape"])), ("CURRENT", "UNVERIFIED", 1))
+        self.runtime.feed.subscription_errors[("US.NVDA", "TICKER")] = {"message": "No permission for this quote", "at_ns": 1}
+        self.assertEqual(self.service.order_flow("NVDA")["state"], "NOT_ENTITLED")  # the provider's own refusal decides
 
     def test_fixture_fed_runtime_is_unavailable_not_substituted(self):
         runtime = make_runtime(self.clock, feed=False)
