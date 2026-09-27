@@ -234,6 +234,34 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(preview)
                 return
+            if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth"):
+                from .screener_specialist import specialist_service
+
+                instrument = (query.get("instrument") or [""])[0].strip().upper()
+                if not instrument or len(instrument) > 16 or not all(c.isalnum() or c in ".-" for c in instrument):
+                    self._send_error_json("SCREENER_PANEL_INVALID", "A valid instrument is required", status=HTTPStatus.BAD_REQUEST)
+                    return
+                service = specialist_service()
+                builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
+                           "/screener/depth": service.depth}[path]
+                self._send_json(builder(instrument))
+                return
+            if path in ("/screener/chart", "/screener/futures-context"):
+                from .screener_preview import preview_service
+
+                instrument = (query.get("instrument") or [""])[0]
+                try:
+                    payload = (preview_service().chart(instrument, timeframe=(query.get("timeframe") or ["5m"])[0],
+                                                       scope=(query.get("scope") or ["EXTENDED"])[0])
+                               if path == "/screener/chart" else preview_service().futures_context(instrument))
+                except ValueError as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return
@@ -1186,6 +1214,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except ValueError as exc:
                 self._send_error_json("SCREENER_WINDOW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/screener/panels", "/screener/panels/release"):
+            from .screener_specialist import specialist_service
+
+            client_id = body.get("client_id")
+            instrument = body.get("instrument_id")
+            panels = body.get("panels", [])
+            if not isinstance(client_id, str) or not (instrument is None or isinstance(instrument, str)) or                     not isinstance(panels, list) or not all(isinstance(item, str) for item in panels):
+                self._send_error_json("SCREENER_PANELS_INVALID", "Invalid panel demand", status=HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                service = specialist_service()
+                self._send_json(service.release(client_id) if path.endswith("/release")
+                                else service.demand(client_id, instrument, panels))
+            except ValueError as exc:
+                self._send_error_json("SCREENER_PANELS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/screener/config":
             from .screener_config import write_config

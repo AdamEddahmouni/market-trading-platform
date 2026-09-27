@@ -135,6 +135,8 @@ class ObservationalStateStore:
                     "aggressor_provenance": trade.aggressor_source.value,
                     "aggressor_side": trade.aggressor_side.value.upper(),
                     "available_time_ns": available_ns,
+                    "classification_method": trade.classification_method,
+                    "condition": str(payload.get("type") or "") or None,
                     "event_time_ns": event_time_ns,
                     "price": trade.price,
                     "provider": provider,
