@@ -11,7 +11,7 @@ from types import SimpleNamespace
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from market_platform_foundation.finviz.screener import FinvizScreenerRow
-from market_platform_foundation.ui_api.screener_projections import MAX_WINDOW, ScreenerService
+from market_platform_foundation.ui_api.screener_projections import MAX_WINDOW, SCREENER_COLUMNS, ScreenerService
 
 
 class Source:
@@ -22,7 +22,7 @@ class Source:
     def fetch_export(self, *, filter_expr: str, columns: str):
         self.calls += 1
         assert filter_expr == "geo_usa,ind_stocksonly"
-        assert columns == "1,2,3,4,5,6,25,30,31,59,64,65,66,67"
+        assert columns == SCREENER_COLUMNS
         return {
             "success": self.success,
             "error": None if self.success else "NOT_CONFIGURED",

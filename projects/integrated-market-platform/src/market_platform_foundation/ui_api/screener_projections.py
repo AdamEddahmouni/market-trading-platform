@@ -13,23 +13,26 @@ from datetime import UTC, datetime
 from typing import Any, Callable
 
 from ..finviz.screener import FinvizScreenerClient, FinvizScreenerRow
+from ..finviz.config import DEFAULT_SCREENER_COLUMNS
 from ..finviz.symbols import finviz_to_canonical
 from ..market_data.live_runtime import get_live_runtime
 from ..market_data.subscription_manager import SubscriptionPriority
 from ..market_sessions import us_equity_session_label
+from .screener_filters import apply_filters, validate_filters
 
 SCHEMA_VERSION = "screener/1.0.0"
 UNIVERSE = "US_EQUITIES"
 FILTER = "geo_usa,ind_stocksonly"
 # Verified export IDs: ticker, company, sector, industry, country, cap, float,
 # short float, short ratio, RSI, RVOL, price, change, and volume.
-SCREENER_COLUMNS = "1,2,3,4,5,6,25,30,31,59,64,65,66,67"
+SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
 MAX_WINDOW = 32
 SNAPSHOT_TTL_SECONDS = 120
 CLIENT_TTL_SECONDS = 45
 FIELD_NAMES = (
     "price", "change_pct", "volume", "rel_volume", "float_shares",
-    "market_cap", "short_float_pct", "rsi_14",
+    "market_cap", "short_float_pct", "rsi_14", "avg_volume",
+    "shares_outstanding", "short_ratio", "eps_ttm", "pe", "fwd_pe", "perf_week",
 )
 
 
@@ -66,6 +69,9 @@ def _snapshot_row(row: FinvizScreenerRow, as_of: str) -> dict[str, Any]:
         "company": row.company,
         "sector": row.sector or None,
         "industry": row.industry or None,
+        "country": row.country or None,
+        "earnings_date": row.earnings_date or None,
+        "recommendation": row.recommendation or None,
         "fields": fields,
     }
 
@@ -130,6 +136,7 @@ class ScreenerService:
         self, *, universe: str = UNIVERSE, search: str = "",
         sort: str = "volume", descending: bool = True,
         offset: int = 0, limit: int = 10_000, force_refresh: bool = False,
+        filters: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         if universe != UNIVERSE:
             raise ValueError("UNSUPPORTED_UNIVERSE")
@@ -137,11 +144,13 @@ class ScreenerService:
             raise ValueError("UNSUPPORTED_SORT")
         if offset < 0 or limit < 1 or limit > 10_000:
             raise ValueError("INVALID_RESULT_WINDOW")
+        rules = validate_filters([] if filters is None else filters)
         with self._lock:
             self._refresh(force=force_refresh)
             needle = search.strip().casefold()
+            filtered = apply_filters(self._rows, rules)
             matched = [
-                row for row in self._rows
+                row for row in filtered
                 if not needle or needle in row["symbol"].casefold()
                 or needle in row["company"].casefold()
             ]
@@ -166,6 +175,7 @@ class ScreenerService:
                 "universe_as_of": self._as_of,
                 "screener_as_of": self._as_of,
                 "result_count": len(matched),
+                "unfiltered_count": len(self._rows),
                 "offset": offset,
                 "provider_health": [{
                     "provider": "FINVIZ_ELITE",

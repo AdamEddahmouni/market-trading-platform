@@ -104,6 +104,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.QUERY_ACCOUNT_ID)
 
     if method_upper == "POST":
+        if path == "/screener/config":
+            return RoutePolicy(capability="state.write")
         if path == "/paper/orders/preview":
             return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/orders":

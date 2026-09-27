@@ -1,14 +1,19 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { StrictMode } from "react";
 import { ScreenerPage } from "./ScreenerPage";
 
 const mocks = vi.hoisted(() => ({
-  fetch: vi.fn(), window: vi.fn(), release: vi.fn(),
+  fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
 }));
 vi.mock("../../api/screener", () => ({
   fetchScreener: mocks.fetch,
+  fetchScreenerConfig: mocks.config,
+  saveScreenerScreen: mocks.save,
+  deleteScreenerScreen: mocks.remove,
+  persistLastScreenerConfig: mocks.last,
   updateScreenerWindow: mocks.window,
   releaseScreenerWindow: mocks.release,
   releaseScreenerWindowOnUnload: mocks.release,
@@ -38,16 +43,31 @@ const payload = {
   provider_health: [{ provider: "FINVIZ_ELITE", state: "HEALTHY", reason: null }], rows,
 };
 
-function mount() {
+function mount(path = "/screener") {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={["/screener"]}>
+  return render(<QueryClientProvider client={client}><MemoryRouter initialEntries={[path]}>
+    <HistoryBack />
     <Routes><Route path="/screener" element={<ScreenerPage />} /><Route path="/workspace/:symbol" element={<div>Instrument workspace</div>} /></Routes>
   </MemoryRouter></QueryClientProvider>);
 }
 
+function HistoryBack() {
+  const navigate = useNavigate();
+  return <button type="button" onClick={() => navigate(-1)}>Browser back</button>;
+}
+
 describe("ScreenerPage", () => {
   beforeEach(() => {
-    mocks.fetch.mockReset().mockImplementation(async (search: string, sort: string, desc: boolean) => ({
+    mocks.config.mockReset().mockResolvedValue({ schema_version: 1, persistence_available: true,
+      catalog: [
+        { field: "price", label: "Price", category: "Price & Movement", type: "number", unit: "USD", operators: ["gt", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
+        { field: "rel_volume", label: "Relative Volume", category: "Volume & Liquidity", type: "number", unit: "ratio", operators: ["gt"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
+      ], presets: [{ id: "UNUSUAL_VOLUME_DISCOVERY", name: "Unusual Volume", version: "1.0.0", status: "SUPPORTED", reason: null,
+        filters: [{ id: "u", field: "rel_volume", operator: "gt", value: 2 }] }], saved: [] });
+    mocks.save.mockReset().mockImplementation(async (value) => ({ result: { ...value, id: "user-1", version: 1 }, saved: [{ ...value, id: "user-1", version: 1 }] }));
+    mocks.remove.mockReset().mockResolvedValue({ result: true, saved: [] });
+    mocks.last.mockReset().mockResolvedValue({ result: {}, saved: [] });
+    mocks.fetch.mockReset().mockImplementation(async (search: string) => ({
       ...payload,
       rows: rows.filter((row) => `${row.symbol} ${row.company}`.toLowerCase().includes(search.toLowerCase())),
       result_count: rows.filter((row) => `${row.symbol} ${row.company}`.toLowerCase().includes(search.toLowerCase())).length,
@@ -130,5 +150,103 @@ describe("ScreenerPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Retry source" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, true));
     await waitFor(() => expect(screen.getByText("AAPL")).toBeInTheDocument(), { timeout: 3_000 });
+  });
+
+  it("switches views without changing the result query or quote window", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const calls = mocks.fetch.mock.calls.length;
+    const windows = mocks.window.mock.calls.length;
+    fireEvent.click(screen.getByRole("tab", { name: "Technical" }));
+    expect(screen.getByRole("columnheader", { name: /RSI/ })).toBeInTheDocument();
+    expect(mocks.fetch.mock.calls.length).toBe(calls);
+    expect(mocks.window.mock.calls.length).toBe(windows);
+  });
+
+  it("adds edits and removes a typed filter", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Price" }));
+    fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "10" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply Filter" }));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, false,
+      [expect.objectContaining({ field: "price", operator: "gt", value: 10 })]));
+    fireEvent.click(screen.getByRole("button", { name: /Edit Price/ }));
+    fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "12" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply Filter" }));
+    expect(screen.getByText(/Price > \$12/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Remove Price/ }));
+    expect(screen.queryByText(/Price > \$12/)).not.toBeInTheDocument();
+  });
+
+  it("customizes visible order and pinned columns", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Price" }));
+    expect(screen.queryByRole("columnheader", { name: /Price/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Custom" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Move Volume left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pin Volume" }));
+    expect(screen.getByRole("button", { name: "Unpin Volume" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reset to view default" }));
+    expect(screen.getByRole("columnheader", { name: /Price/ })).toBeInTheDocument();
+  });
+
+  it("loads a built-in preset and saves edits as a personal screen", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Unusual Volume" }));
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true, false,
+      [expect.objectContaining({ field: "rel_volume", value: 2 })]));
+    expect(screen.getByRole("button", { name: /Unusual Volume ▾/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Edit Relative Volume/ }));
+    fireEvent.change(screen.getByLabelText("Filter value"), { target: { value: "3" } });
+    fireEvent.click(screen.getByRole("button", { name: "Apply Filter" }));
+    expect(screen.getByRole("button", { name: /Unusual Volume \*/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.change(screen.getByLabelText("Screen name"), { target: { value: "My Volume" } });
+    fireEvent.click(screen.getByRole("dialog", { name: "Save screen" }).querySelector("button.screener-primary")!);
+    await waitFor(() => expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ name: "My Volume", filters: [expect.objectContaining({ value: 3 })] })));
+    expect(screen.getByRole("button", { name: /My Volume/ })).toBeInTheDocument();
+  });
+
+  it("restores the unsaved screen when browser history leaves a preset", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Unusual Volume" }));
+    await screen.findByRole("button", { name: /Edit Relative Volume/ });
+    fireEvent.click(screen.getByRole("button", { name: "Browser back" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Unsaved Screen/ })).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /Edit Relative Volume/ })).not.toBeInTheDocument();
+  });
+
+  it("restores explicit URL search and view", async () => {
+    mount("/screener?q=Apple&view=Technical&sort=price&dir=asc");
+    await screen.findByText("AAPL");
+    expect(screen.getByRole("textbox", { name: "Search instruments" })).toHaveValue("Apple");
+    expect(screen.getByRole("tab", { name: "Technical" })).toHaveAttribute("aria-selected", "true");
+    expect(mocks.fetch).toHaveBeenCalledWith("Apple", "price", false);
+  });
+
+  it("ignores an unsupported sort in a direct link", async () => {
+    mount("/screener?sort=sector");
+    await screen.findByText("AAPL");
+    expect(mocks.fetch).toHaveBeenCalledWith("", "volume", true);
+  });
+
+  it("resizes a column by one keyboard step under StrictMode", async () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<StrictMode><QueryClientProvider client={client}><MemoryRouter initialEntries={["/screener"]}>
+      <Routes><Route path="/screener" element={<ScreenerPage />} /></Routes>
+    </MemoryRouter></QueryClientProvider></StrictMode>);
+    await screen.findByText("AAPL");
+    const handle = screen.getByRole("separator", { name: "Resize RVOL" });
+    const before = Number(handle.getAttribute("aria-valuenow"));
+    fireEvent.keyDown(handle, { key: "ArrowRight" });
+    expect(Number(screen.getByRole("separator", { name: "Resize RVOL" }).getAttribute("aria-valuenow"))).toBe(before + 10);
   });
 });
