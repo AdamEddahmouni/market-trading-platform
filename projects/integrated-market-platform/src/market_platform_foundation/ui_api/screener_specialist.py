@@ -41,6 +41,10 @@ PANEL_CAPABILITIES: dict[str, tuple[str, ...]] = {
     "futures": (),
     # S7: a per-underlying Finviz snapshot; no streaming subscription.
     "options": (),
+    # S8: live-confirmation evidence reads the order-flow/CVD projections, so the
+    # panel holds the same reference-counted trades capability (one provider
+    # subscription however many panels ask).
+    "short_squeeze": (TRADES,),
 }
 CLIENT_TTL_SECONDS = 45
 #: OpenD holds a subscription for at least one minute; a released instrument

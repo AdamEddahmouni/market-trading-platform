@@ -1,4 +1,5 @@
 import type { WorkspaceSqueezeResponse } from "../../api/client";
+import { squeezeStateLabel } from "./SqueezeLifecycle";
 
 type Criterion = {
   rule_id: string;
@@ -16,7 +17,7 @@ export function StateTransitionBlock({ squeeze }: Props) {
   if (!machine) {
     return (
       <div className="squeeze-state-banner">
-        <span className="squeeze-state-label">STATE: {squeeze.ignition_state ?? "UNKNOWN"}</span>
+        <span className="squeeze-state-label">STATE: {squeezeStateLabel(squeeze.ignition_state ?? "UNKNOWN")}</span>
         <span className="squeeze-freshness">Freshness: {squeeze.freshness ?? "UNKNOWN"}</span>
       </div>
     );
@@ -27,7 +28,7 @@ export function StateTransitionBlock({ squeeze }: Props) {
   return (
     <section className="squeeze-state-machine" aria-label="Causal squeeze state">
       <div className="squeeze-state-banner">
-        <span className="squeeze-state-label">STATE: {machine.current_state}</span>
+        <span className="squeeze-state-label">STATE: {squeezeStateLabel(machine.current_state)}</span>
         <span className="squeeze-freshness">last Δ {machine.last_transition_label}</span>
         {machine.transition_count && machine.transition_count > 1 ? (
           <span className="squeeze-transition-count">

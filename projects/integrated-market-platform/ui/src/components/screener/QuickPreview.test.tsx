@@ -9,7 +9,7 @@ import { classifyZones } from "./srClassify";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
-  preview: vi.fn(), layout: vi.fn(), priceLines: [] as number[],
+  preview: vi.fn(), squeeze: vi.fn(), layout: vi.fn(), priceLines: [] as number[],
 }));
 vi.mock("../../api/screener", () => ({
   fetchScreener: mocks.fetch, fetchScreenerConfig: mocks.config, saveScreenerScreen: mocks.save,
@@ -17,6 +17,7 @@ vi.mock("../../api/screener", () => ({
   releaseScreenerWindow: mocks.release, releaseScreenerWindowOnUnload: mocks.release,
   fetchScreenerPreview: mocks.preview, persistScreenerPreviewLayout: mocks.layout,
 }));
+vi.mock("../../api/screenerSqueeze", () => ({ fetchScreenerSqueeze: mocks.squeeze }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
     getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ index, start: index * 34 })),
@@ -118,6 +119,11 @@ describe("Screener Quick Preview", () => {
     mocks.last.mockReset().mockResolvedValue({});
     mocks.layout.mockReset().mockResolvedValue({ result: {} });
     mocks.preview.mockReset().mockImplementation(async (id: string) => preview(id, id === "AAPL" ? 12 : 20));
+    mocks.squeeze.mockReset().mockImplementation(async (id: string) => ({ instrument_id: id, universe: "US_EQUITIES", symbol: id,
+      assessment: { state: "BASELINE", state_basis: "SNAPSHOT_ASSESSMENT" }, source_state: "PARTIAL",
+      coverage: { supporting: 0, conflicting: 0, unavailable: 2, stale: 0, pending: 0 },
+      sections: { structural_pressure: [], ignition: [], live_confirmation: [] },
+      why_listed: { state: "NO_ACTIVE_FILTERS", items: [] } }));
     vi.stubGlobal("crypto", { randomUUID: () => "abc-123" });
   });
 
@@ -262,10 +268,10 @@ describe("Screener Quick Preview", () => {
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveAttribute("aria-selected", "true");
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveFocus();
     fireEvent.keyDown(within(pane).getByRole("tab", { name: "Key Data" }), { key: "End" });
-    // S7: Options is the last tab for US Equities.
+    // S8: Squeeze is last for US equities; left returns to Options.
+    expect(within(pane).getByRole("tab", { name: "Squeeze" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(within(pane).getByRole("tab", { name: "Squeeze" }), { key: "ArrowLeft" });
     expect(within(pane).getByRole("tab", { name: "Options" })).toHaveAttribute("aria-selected", "true");
-    fireEvent.keyDown(within(pane).getByRole("tab", { name: "Options" }), { key: "ArrowLeft" });
-    expect(within(pane).getByRole("tab", { name: "Futures" })).toHaveAttribute("aria-selected", "true");
     fireEvent.click(within(pane).getByRole("button", { name: "Open Instrument" }));
     expect(screen.getByText("Instrument workspace")).toBeInTheDocument();
   });
@@ -293,6 +299,24 @@ describe("Screener Quick Preview", () => {
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
     expect(await within(pane).findByText("MSFT Relative Volume 3.00× is above 2.00×")).toBeInTheDocument();
     expect(mocks.preview.mock.calls.map((call) => call[0])).toEqual(["MSFT"]);
+  });
+
+  it("requests Squeeze only while its tab is open and only for the final rapid row", async () => {
+    const symbols = ["GME", "NVDA", "AAPL", "AMC", "CVNA"];
+    mocks.fetch.mockResolvedValue({ ...payload, rows: symbols.map((symbol) => makeRow(symbol, `${symbol} Inc`, 12, 2)), result_count: 5 });
+    mount();
+    await screen.findByText("GME");
+    expect(mocks.squeeze).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("GME", { selector: ".screener-symbol strong" }));
+    const pane = await screen.findByRole("complementary", { name: "Quick preview" });
+    fireEvent.click(await within(pane).findByRole("tab", { name: "Squeeze" }));
+    await waitFor(() => expect(mocks.squeeze).toHaveBeenCalledWith("GME", expect.objectContaining({ view: "summary" })));
+    mocks.squeeze.mockClear();
+    const grid = screen.getByRole("grid");
+    for (let index = 0; index < 4; index += 1) fireEvent.keyDown(grid, { key: "ArrowDown" });
+    expect(await within(pane).findByRole("heading", { name: "CVNA" })).toBeInTheDocument();
+    await waitFor(() => expect(mocks.squeeze.mock.calls.map((call) => call[0])).toEqual(["CVNA"]));
+    expect(within(pane).getByRole("button", { name: "Open Short Squeeze Panel" })).toBeInTheDocument();
   });
 
   it("Enter still opens the canonical workspace from the grid", async () => {

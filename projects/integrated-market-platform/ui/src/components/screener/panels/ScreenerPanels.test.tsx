@@ -11,7 +11,7 @@ import ScreenerDock, { serializeLayout } from "./ScreenerDock";
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
   preview: vi.fn(), layout: vi.fn(), panelLayout: vi.fn(),
-  flow: vi.fn(), cvd: vi.fn(), depth: vi.fn(), chart: vi.fn(), futures: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(),
+  flow: vi.fn(), cvd: vi.fn(), depth: vi.fn(), chart: vi.fn(), futures: vi.fn(), squeeze: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -25,6 +25,7 @@ vi.mock("../../../api/screenerPanels", () => ({
   fetchFuturesContext: mocks.futures, demandPanels: mocks.demand, releasePanels: mocks.releasePanels,
   releasePanelsOnUnload: mocks.releasePanels,
 }));
+vi.mock("../../../api/screenerSqueeze", () => ({ fetchScreenerSqueeze: mocks.squeeze }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
     getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ index, start: index * 34 })),
@@ -125,6 +126,7 @@ beforeEach(() => {
   mocks.depth.mockImplementation(async (id: string) => depthPayload(id));
   mocks.chart.mockReturnValue(new Promise(() => undefined));
   mocks.futures.mockReturnValue(new Promise(() => undefined));
+  mocks.squeeze.mockReturnValue(new Promise(() => undefined));
 });
 afterEach(() => vi.useRealTimers());
 
@@ -170,6 +172,18 @@ describe("S5 universe capability", () => {
 });
 
 describe("S4 Screener dock", () => {
+  it("lazily opens one Short Squeeze panel and shares the S4 trade demand", async () => {
+    renderPage();
+    await selectRow("AAPL");
+    expect(mocks.squeeze).not.toHaveBeenCalled();
+    fireEvent.click(launcher().getByRole("button", { name: "Short Squeeze" }));
+    expect(await screen.findByText("Loading AAPL squeeze evidence…")).toBeInTheDocument();
+    await waitFor(() => expect(mocks.squeeze).toHaveBeenCalledWith("AAPL", expect.objectContaining({ view: "detail", universe: "US_EQUITIES" })));
+    await waitFor(() => expect(mocks.demand).toHaveBeenCalledWith(expect.any(String), "AAPL", ["short_squeeze"]));
+    fireEvent.click(launcher().getByRole("button", { name: "Short Squeeze" }));
+    expect(document.querySelectorAll("#screener-panel-short_squeeze")).toHaveLength(1);
+  });
+
   it("keeps one launcher, no dock, and no demand until a panel is opened", async () => {
     renderPage();
     await screen.findByText("AAPL", { selector: "strong" });

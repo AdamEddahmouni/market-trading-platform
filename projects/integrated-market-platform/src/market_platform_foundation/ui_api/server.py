@@ -314,6 +314,27 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path == "/screener/squeeze":
+                from .screener_squeeze import read_squeeze
+                from .screener_universes import US_EQUITIES, universe_spec
+
+                universe = (query.get("universe") or [US_EQUITIES])[0]
+                try:
+                    if "short_squeeze" not in universe_spec(universe).panels:
+                        raise ValueError("SQUEEZE_UNAVAILABLE_FOR_UNIVERSE")
+                    payload = read_squeeze(
+                        (query.get("instrument") or [""])[0], universe=universe,
+                        view=(query.get("view") or ["detail"])[0],
+                        filters=json.loads((query.get("filters") or ["[]"])[0]),
+                    )
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return

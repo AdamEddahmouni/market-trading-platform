@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
 import { DockviewReact, themeDark, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
-import type { PanelId, PanelLayout, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
+import type { PanelId, PanelLayout, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import { demandPanels, releasePanels, releasePanelsOnUnload, type PanelDemand } from "../../../api/screenerPanels";
 import ChartsPanel from "./ChartsPanel";
 import CvdPanel from "./CvdPanel";
 import FuturesContextPanel from "./FuturesContextPanel";
 import Level2Panel from "./Level2Panel";
 import OptionsPanel from "./OptionsPanel";
+import ShortSqueezePanel from "./ShortSqueezePanel";
 import OrderFlowPanel from "./OrderFlowPanel";
 import { LIVE_PANELS, PANEL_TITLES, PANELS } from "./registry";
 import { PanelErrorBoundary, PanelFrame, PanelMessage, SpecialistContext, useSelection, type PanelActions, type SpecialistSelection } from "./shared";
@@ -31,6 +32,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   order_flow: contained("order_flow", OrderFlowPanel), cvd: contained("cvd", CvdPanel), level2: contained("level2", Level2Panel),
   charts: contained("charts", ChartsPanel), futures: contained("futures", FuturesContextPanel),
   options: contained("options", OptionsPanel),
+  short_squeeze: contained("short_squeeze", ShortSqueezePanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
@@ -39,6 +41,7 @@ type Props = {
   layout: PanelLayout;
   row: ScreenerRow | null;
   quote: ScreenerQuote | undefined;
+  filters?: ScreenerFilter[];
   universe?: ScreenerUniverse;
   supportedPanels?: ReadonlySet<PanelId>;
   clientId: string;
@@ -107,7 +110,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, filters = [], universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);
@@ -202,7 +205,7 @@ export default function ScreenerDock({ layout, row, quote, universe = "US_EQUITI
       if (group) group.api.setSize({ width: Math.max(160, group.api.width + delta) });
     },
   }), [focusPanel]);
-  const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, demand, actions }), [row, universe, supportedPanels, settledId, quote, demand, actions]);
+  const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters, demand, actions }), [row, universe, supportedPanels, settledId, quote, filters, demand, actions]);
 
   return <SpecialistContext.Provider value={selection}>
     <div className="screener-dock-host" ref={hostRef}>
