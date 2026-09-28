@@ -3,7 +3,7 @@
 See docs/engineering/SCREENER_UNIVERSE_ARCHITECTURE.md: the canonical core
 universes are US Equities, ETFs, Futures, Bonds / Fixed Income, and Crypto
 (all five implemented; Crypto in S10). Intelligence lenses (Options, Short
-Squeeze, Whales, Institutions, Order Flow, ...) are views or panels, never
+Squeeze, Whales, Institutions, Order Flow, News, ...) are views or panels, never
 universes; a new universe requires explicit owner authorization.
 """
 
@@ -64,7 +64,7 @@ UNIVERSES: dict[str, Universe] = {
             "Custom": ("symbol", "price", "change_pct", "volume"),
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
-        ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"),
+        ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"),
     ),
     FUTURES: Universe(
         FUTURES, "Futures", "FUTURE", "FUTURE_CONTRACT", "MOOMOO_OPEND_CONTRACT_CATALOG",
@@ -76,7 +76,7 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "root", "price", "change_pct", "volume", "open_interest"),
             "Custom": ("symbol", "root", "expiry", "dte"),
         },
-        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", (),
+        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", ("news",),
     ),
     US_ETFS: Universe(
         US_ETFS, "ETFs", "ETF_FUND", "TRADABLE_SECURITY", "MOOMOO_OPEND_ETF_CATALOG",
@@ -87,7 +87,7 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "company", "price", "change_pct", "volume"),
             "Custom": ("symbol", "company", "exchange", "price"),
         },
-        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts", "options"),
+        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts", "options", "news"),
     ),
     # S9: one Bonds / Fixed Income universe. Categories (Treasury, corporate,
     # agency) are filters inside it, never separate universes. Rows are
@@ -108,7 +108,7 @@ UNIVERSES: dict[str, Universe] = {
                               "reference_tenor", "reference_rate", "indicative_rate", "auction_yield"),
             "Custom": ("symbol", "security_type", "coupon", "maturity"),
         },
-        "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve",),
+        "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve", "news"),
         admitted_asset_classes=("SOVEREIGN_DEBT", "BOND"),
         admitted_instrument_kinds=("SOVEREIGN_SECURITY", "BOND"),
         identity_fields=("cusip", "isin"),
@@ -130,7 +130,7 @@ UNIVERSES: dict[str, Universe] = {
         # (Charts), trades with the exchange-native taker side (Order Flow, CVD),
         # and a checksummed snapshot+delta book (Level 2). No Futures Context,
         # Options, or Short Squeeze semantics exist for a spot pair.
-        "KRAKEN_PUBLIC_TICKER", "KRAKEN_PUBLIC_OHLC", ("order_flow", "cvd", "level2", "charts"),
+        "KRAKEN_PUBLIC_TICKER", "KRAKEN_PUBLIC_OHLC", ("order_flow", "cvd", "level2", "charts", "news"),
         identity_fields=("base_asset", "quote_asset", "venue", "product_type"),
         data_sources=("KRAKEN_SPOT_ASSET_PAIRS", "KRAKEN_SPOT_TICKER", "KRAKEN_SPOT_OHLC",
                       "KRAKEN_WS_V2_TRADE", "KRAKEN_WS_V2_BOOK"),

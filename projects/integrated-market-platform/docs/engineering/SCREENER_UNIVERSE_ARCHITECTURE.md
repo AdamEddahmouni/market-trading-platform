@@ -86,7 +86,7 @@ disclosures:
 | Order Flow, CVD, Level 2 | specialist panels (S4) |
 | Catalysts, Insiders | evidence in Preview and panels |
 | Rates & Curve | a Bonds specialist panel (S9) |
-| News (headlines, sentiment, analysis) | a cross-universe intelligence layer: views, panels, and Preview context across the five universes — **never a universe** |
+| News (headlines, sentiment, analysis) | a cross-universe intelligence layer: views, panels, and Preview context across the five universes — **never a universe**; implemented in [Screener S11](SCREENER_S11_NEWS.md) (News view, News & Analysis panel, Preview News) |
 
 ## Governance rule
 
@@ -99,3 +99,5 @@ Tests pin the registry by exact equality: `tests/platform/test_screener_s9.py`
 (`UniverseArchitectureTests`) and `tests/platform/test_screener_s10.py`
 (`CryptoUniverseTests`) fail if the registry is anything other than the five
 implemented universes — an unauthorized sixth entry fails them.
+`tests/platform/test_screener_s11.py` (`ArchitectureTests`) additionally pins
+that News is not a registry entry.

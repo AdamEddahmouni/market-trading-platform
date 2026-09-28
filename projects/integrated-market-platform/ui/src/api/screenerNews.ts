@@ -123,7 +123,7 @@ export const InstrumentNewsSchema = z.object({
     basis: z.string(), timeframe: z.string().nullable(), note: z.string(),
     items: z.array(z.object({
       story_id: z.string(), published_at: Iso,
-      reference: z.object({ price: z.number(), bar_start: Iso }).passthrough().nullable(),
+      reference: z.object({ price: z.number(), bar_start: Iso.nullable() }).passthrough().nullable(),
       horizons: z.array(z.object({ id: z.enum(["+5m", "+15m", "+1h"]), change_pct: z.number().nullable(), price: z.number().nullable(),
         bar_end: Iso.nullable(), state: z.enum(["OBSERVED", "PENDING", "UNAVAILABLE"]) }).passthrough()),
     }).passthrough()),

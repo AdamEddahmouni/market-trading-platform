@@ -57,8 +57,12 @@ export function SentimentCell({ sentiment }: { sentiment: StorySentiment }) {
       title={`Headline language classified by ${sentiment.model_id ?? "unknown model"}${p ? ` · positive ${p.positive.toFixed(2)} · neutral ${p.neutral.toFixed(2)} · negative ${p.negative.toFixed(2)}` : ""}. Describes language, not a forecast.`}>
       {SENTIMENT_TEXT[sentiment.label]}</span>;
   }
-  const text = sentiment.state === "NOT_SCORED" ? "not scored" : sentiment.state === "NOT_CONFIGURED" ? "model not configured"
-    : sentiment.state === "ERROR" ? "scoring error" : "—";
+  if (sentiment.state === "NOT_CONFIGURED" || sentiment.state === "UNAVAILABLE") {
+    // Dense rows: the status strip names the model state once; each row keeps it for assistive tech and on hover.
+    const text = sentiment.state === "NOT_CONFIGURED" ? "model not configured" : "unavailable";
+    return <span className="news-sentiment none" title={`Sentiment ${text}`}><span aria-hidden="true">—</span><span className="sr-only">{text}</span></span>;
+  }
+  const text = sentiment.state === "NOT_SCORED" ? "not scored" : sentiment.state === "ERROR" ? "scoring error" : "—";
   return <span className="news-sentiment none" title={`Sentiment ${humanize(sentiment.state)}`}>{text}</span>;
 }
 

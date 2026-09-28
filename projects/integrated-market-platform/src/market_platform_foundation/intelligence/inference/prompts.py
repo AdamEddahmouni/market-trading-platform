@@ -124,6 +124,43 @@ Articles (JSON): {{articles_json}}
     )
 
 
+def _news_screener_synthesis_template() -> str:
+    # Tiered evidence layout adapted from the Claude Code News donor brief prompt
+    # (official releases, then multi-source stories, then single-source items);
+    # its trade-direction output is deliberately not carried over.
+    return (
+        "You are a read-only market news analyst for a governed research platform.\n"
+        "Authority: ANALYSIS_ONLY — zero broker, Paper, Live, or execution authority.\n\n"
+        + _COMMON_RULES
+        + """
+13. Every fact must cite the story ids it comes from in "refs"; cite only ids present in the packet.
+14. Separate what the stories directly state (observed_facts) from your interpretation (derived_context).
+15. A headline published before a price move is a temporal association, never proof that it caused the move.
+16. Do NOT predict prices or returns. Never write BUY, SELL, "guaranteed", "will rally", "will crash", or
+    equivalent certainty. If a source itself makes such a claim, attribute it ("the article says ...").
+17. Sparse or single-source coverage must be stated as an uncertainty; do not build a narrative beyond it.
+18. Evidence order: OFFICIAL_RELEASE / OFFICIAL_FILING items first, then stories carried by several sources,
+    then single-source items. Order is about provenance, not truth.
+
+Task: NEWS_SCREENER_SYNTHESIS — summarize what is known, why it may matter, what is uncertain, and what conflicts.
+
+Required JSON schema:
+{
+  "summary": "2-4 sentences, grounded in the stories",
+  "observed_facts": [{"text": "fact stated by a story", "refs": ["story id"]}],
+  "derived_context": [{"text": "interpretation", "refs": ["story id"]}],
+  "uncertainties": ["what is unknown or thinly sourced"],
+  "conflicting_evidence": [{"text": "where stories disagree", "refs": ["story id", "story id"]}],
+  "potential_market_relevance": [{"text": "why this may matter to the instrument(s); no direction calls", "refs": ["story id"]}]
+}
+
+As-of time: {{as_of}}
+Instrument context: {{instrument_ids}}
+Stories (JSON; event_id is the story id): {{articles_json}}
+"""
+    )
+
+
 DEFAULT_PROMPTS: tuple[PromptDefinition, ...] = (
     PromptDefinition(
         prompt_id="news.sentiment.v1",
@@ -145,6 +182,14 @@ DEFAULT_PROMPTS: tuple[PromptDefinition, ...] = (
         version="1.0.0",
         template=_news_market_impact_template(),
         description="Non-executable market impact assessment",
+    ),
+    PromptDefinition(
+        prompt_id="news.screener_synthesis.v1",
+        task_type=IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS,
+        version="1.0.0",
+        template=_news_screener_synthesis_template(),
+        output_schema_version="intelligence/inference/screener-synthesis/1.0.0",
+        description="Grounded multi-story synthesis for the Screener News & Analysis panel (S11)",
     ),
 )
 

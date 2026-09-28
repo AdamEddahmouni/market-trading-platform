@@ -25,7 +25,7 @@ function Headlines({ data }: { data: InstrumentNews }) {
 
 function Sentiment({ data }: { data: InstrumentNews }) {
   const s = data.sentiment;
-  const note = <p className="screener-panel-note">Describes the language of matched headlines; it is not a forecast of price direction. Method: {s.method}.</p>;
+  const note = <p className="screener-panel-note">Describes the language of matched headlines; it is not a forecast of price direction. Method: {s.method.replace(/\.$/, "")}.</p>;
   if (s.state === "NOT_CONFIGURED") return <><p className="screener-panel-note">Sentiment model not configured{s.reason ? ` · ${s.reason}` : ""}. Headlines are not scored.</p>{note}</>;
   if (s.state === "UNAVAILABLE") return <><p className="screener-panel-note">Sentiment unavailable{s.reason ? ` · ${s.reason}` : ""}.</p>{note}</>;
   return <>
@@ -69,7 +69,7 @@ function Reaction({ data }: { data: InstrumentNews }) {
     {r.state === "NOT_SUPPORTED" ? <p className="screener-panel-note">Not supported for this instrument{r.reason ? ` · ${r.reason}` : ""}.</p>
       : r.state === "UNAVAILABLE" ? <p className="screener-panel-note">Unavailable{r.reason ? ` · ${r.reason}` : ""}.</p>
       : !r.items.length ? <p className="screener-panel-note">No timed headlines to measure.</p>
-      : <table className="news-table-plain"><caption className="sr-only">Price change after each headline ({r.basis}{r.timeframe ? `, ${r.timeframe} bars` : ""})</caption>
+      : <table className="news-table-plain"><caption className="sr-only">Price change after each headline ({r.basis.replace(/\.$/, "")}{r.timeframe ? `, ${r.timeframe} bars` : ""})</caption>
         <thead><tr><th scope="col">Headline</th><th scope="col">Published</th><th scope="col">Reference</th>
           {["+5m", "+15m", "+1h"].map((id) => <th key={id} scope="col">{id}</th>)}</tr></thead>
         <tbody>{r.items.map((item) => <tr key={item.story_id}><th scope="row" className="news-ellipsis" title={headline(item.story_id)}>{headline(item.story_id)}</th>

@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-28 — Main Screener S11 News, Headlines, Sentiment & Analysis
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `ui_api`, `news`, `intelligence/inference`, `docs` |
+| **Summary** | Added cross-universe News as an intelligence layer (never a universe): a Screener News view, a News & Analysis dock panel, and Quick Preview news across all five universes. Canonical news contract and dedupe, deterministic story clusters, keyword event categories, per-universe instrument matching with explicit basis, lazy local FinBERT, public RSS/Atom and SEC filing adapters, independent provider health, attention windows, post-headline price reaction, deterministic brief, and grounded AI synthesis on the canonical inference provider. |
+| **Key files** | `src/market_platform_foundation/news/{event_taxonomy,story_clusters,instrument_matching,finbert_sentiment,rss_feeds,sec_filings_news}.py`, `ui_api/screener_news.py`, `intelligence/inference/screener_synthesis.py`, `ui/src/api/screenerNews.ts`, `ui/src/components/screener/news/`, `panels/NewsAnalysisPanel.tsx`, `tests/news/test_s11_news_domain.py`, `tests/platform/test_screener_s11.py`, `docs/engineering/SCREENER_S11_NEWS.md` |
+| **Tests** | Focused backend 62 and UI news 25; `validate changed`, full UI, typecheck, build, and bundle budget — details in [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md#tests). |
+| **Related** | [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md), [SCREENER_UNIVERSE_ARCHITECTURE.md](SCREENER_UNIVERSE_ARCHITECTURE.md), [SCREENER_S10_CRYPTO.md](SCREENER_S10_CRYPTO.md) |
+| **Notes** | Live acceptance used Finviz Elite and public RSS; NewsAPI, Finnhub, SEC EDGAR, FinBERT, and Anthropic were not configured and are reported as such. No execution authority; no sixth universe. |
+
+---
+
 ## 2026-09-28 — Main Screener S10 Crypto universe
 
 | Field | Value |

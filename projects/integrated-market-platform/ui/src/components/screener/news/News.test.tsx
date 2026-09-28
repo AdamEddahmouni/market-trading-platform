@@ -232,6 +232,20 @@ describe("S11 Screener News view", () => {
     expect(within(table).queryByText(/bullish|bearish|buy|sell/i)).toBeNull();
   });
 
+  it("keeps rows dense: at most three match chips plus an overflow count, and a quiet unconfigured-sentiment cell", async () => {
+    const many = ["AAPL", "MSFT", "GOOG", "AMZN", "DELL"].map((symbol) => ({ instrument_id: symbol, symbol, basis: "PROVIDER_TICKER", confidence: "EXACT", term: symbol }));
+    mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => feed({ universe: params.universe, offset: params.offset ?? 0,
+      stories: [story("m1", "Big tech story", { matches: many, sentiment: { state: "NOT_CONFIGURED", label: null, probabilities: null, model_id: null } })], result_count: 1 }));
+    await openNews();
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    expect(within(table).getAllByRole("button", { name: /^Filter news by/ })).toHaveLength(3);
+    const more = within(table).getByText("+2");
+    expect(more).toHaveAttribute("title", "AMZN (exact), DELL (exact)");
+    const cell = within(table).getByText("model not configured");
+    expect(cell).toHaveClass("sr-only");
+    expect(cell.parentElement).toHaveAttribute("title", "Sentiment model not configured");
+  });
+
   it("builds sort, source, category, and sentiment controls only from the server", async () => {
     await openNews();
     await screen.findByRole("table", { name: "US Equities news feed" });

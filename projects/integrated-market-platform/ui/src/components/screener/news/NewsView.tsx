@@ -12,6 +12,8 @@ const WINDOW_LABELS: Record<NewsWindowId, string> = { "1h": "Last 1h", "4h": "La
 const SENTIMENTS = [{ id: "POSITIVE", label: "Positive" }, { id: "NEUTRAL", label: "Neutral" }, { id: "NEGATIVE", label: "Negative" }];
 const PREFETCH_ROWS = 30;
 const REFRESH_MS = 60_000;
+// Dense rows: further matches stay available on hover and in the instrument filter.
+const MAX_CHIPS = 3;
 
 type Props = {
   universe: ScreenerUniverse;
@@ -63,7 +65,7 @@ function Brief({ brief, providers, universe }: { brief: NewsBrief; providers: Pr
         <td>{group.story_count}</td><td>{group.source_count}</td><td>{newsDayTime(group.latest_published_at, universe)}</td></tr>)}</tbody></table>
       : <p className="news-meta">No categorized stories in this window.</p>}
     <p className="news-meta">Uncategorized stories: {brief.uncategorized_count}</p>
-    <p className="news-meta">Method: {brief.method}. Deterministic grouping of headlines; not a forecast.</p>
+    <p className="news-meta">Method: {brief.method.replace(/\.$/, "")}. Deterministic grouping of headlines; not a forecast.</p>
   </section>;
 }
 
@@ -168,8 +170,10 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
             return <div key={story.story_id} role="row" data-index={virtual.index} ref={virtualizer.measureElement} aria-rowindex={virtual.index + 2}
               className="news-row" style={{ transform: `translateY(${virtual.start}px)` }}>
               <span role="cell"><StoryTime story={story} universe={universe} /></span>
-              <span role="cell" className="news-matches">{story.matches.length ? story.matches.map((match, index) =>
-                <MatchChip key={`${match.symbol}-${index}`} match={match} onFilter={filterInstrument} />) : <span className="news-muted">—</span>}</span>
+              <span role="cell" className="news-matches">{story.matches.length ? <>{story.matches.slice(0, MAX_CHIPS).map((match, index) =>
+                <MatchChip key={`${match.symbol}-${index}`} match={match} onFilter={filterInstrument} />)}
+                {story.matches.length > MAX_CHIPS && <span className="news-chip more" title={story.matches.slice(MAX_CHIPS).map((match) => `${match.symbol} (${match.confidence.toLowerCase()})`).join(", ")}>
+                  +{story.matches.length - MAX_CHIPS}</span>}</> : <span className="news-muted">—</span>}</span>
               <span role="cell" className="news-headline-cell"><Headline story={story} /></span>
               <span role="cell"><StorySources story={story} universe={universe} /></span>
               <span role="cell" className="news-categories" title={story.categories.map((item) => item.label).join(", ") || "Uncategorized"}>
