@@ -132,6 +132,7 @@
         "src/market_platform_foundation/cboe_regsho",
         "src/market_platform_foundation/cftc",
         "src/market_platform_foundation/congressional_ptr",
+        "src/market_platform_foundation/crypto_market",
         "src/market_platform_foundation/eia",
         "src/market_platform_foundation/finra",
         "src/market_platform_foundation/finviz",
