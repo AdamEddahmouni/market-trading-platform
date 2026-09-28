@@ -25,6 +25,8 @@ from .screener_futures_context import FuturesContextService
 from .screener_projections import ScreenerService, screener_service
 
 SCHEMA_VERSION = "screener-preview/1.0.0"
+CHART_SCHEMA_VERSION = "screener-chart/1.0.0"
+FUTURES_SCHEMA_VERSION = "screener-futures-context/1.0.0"
 ET = ZoneInfo("America/New_York")
 STRENGTH_SEMANTICS = "Zone strength 0-100 scores structural evidence (touches, recency, rejection, volume); it is not a probability that the zone holds."
 MAX_HEADLINES = 3
@@ -311,17 +313,52 @@ class ScreenerPreviewService:
         }
 
 
+    def chart(self, instrument_id: str, *, timeframe: str = "5m", scope: str = "EXTENDED") -> dict[str, Any] | None:
+        """S4 expanded chart: the preview's bar series, levels, and quote, without Why/news.
+
+        Same ``CurrentBarsService`` and level cache as ``read``, so the Quick
+        Preview and the Charts panel share one provider bar subscription and
+        can never disagree about bars or zones.
+        """
+
+        row, _error = self._screener.row_for(instrument_id)
+        if row is None:
+            return None
+        series = self._bars.read(instrument_id, timeframe=timeframe, scope=scope)
+        quote = self._screener.quote_for(instrument_id)
+        return {"schema_version": CHART_SCHEMA_VERSION, "generated_at": _iso(self._now_ns()),
+                "market_session": us_equity_session_label(),
+                "instrument": {**row["instrument"], "symbol": row["symbol"], "company": row["company"]},
+                "quote": quote, "bars": series.to_dict(), "levels": self.levels(series, quote)}
+
+    def futures_context(self, instrument_id: str) -> dict[str, Any] | None:
+        """S4 Futures Context panel: the S3 relationship model for one instrument."""
+
+        row, _error = self._screener.row_for(instrument_id)
+        if row is None:
+            return None
+        market_cap = row["fields"].get("market_cap", {}).get("value")
+        return {"schema_version": FUTURES_SCHEMA_VERSION, "generated_at": _iso(self._now_ns()),
+                "instrument": {**row["instrument"], "symbol": row["symbol"], "company": row["company"],
+                               "sector": row.get("sector"), "industry": row.get("industry")},
+                "futures": self._futures.read(sector=row.get("sector"), industry=row.get("industry"), market_cap=market_cap)}
+
+
 _PREVIEW: ScreenerPreviewService | None = None
 _PREVIEW_LOCK = threading.Lock()
 
 
-def read_preview(instrument_id: str, **kwargs: Any) -> dict[str, Any] | None:
+def preview_service() -> ScreenerPreviewService:
     global _PREVIEW
     with _PREVIEW_LOCK:
         if _PREVIEW is None:
             _PREVIEW = ScreenerPreviewService()
-    return _PREVIEW.read(instrument_id, **kwargs)
+    return _PREVIEW
+
+
+def read_preview(instrument_id: str, **kwargs: Any) -> dict[str, Any] | None:
+    return preview_service().read(instrument_id, **kwargs)
 
 
 __all__ = ["ScreenerPreviewService", "explain_matches", "explain_movement", "format_value", "move_window_start",
-           "read_preview"]
+           "preview_service", "read_preview"]

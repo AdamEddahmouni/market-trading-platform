@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { ColumnPinningState, ColumnSizingState, VisibilityState } from "@tanstack/react-table";
@@ -6,9 +6,16 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
-import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, persistLastScreenerConfig, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen } from "../../api/screener";
+import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen } from "../../api/screener";
 import { QuickPreview } from "./QuickPreview";
+import { PanelLauncher } from "./panels/PanelLauncher";
+import { clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
+import type { DockHandle } from "./panels/ScreenerDock";
 import "./screener.css";
+
+// Dockview and the specialist panels load only when a panel is first opened.
+const ScreenerDock = lazy(() => import("./panels/ScreenerDock"));
+const DOCK_TABLE_RESERVE = 420;
 
 const PREVIEW_MIN = 320;
 const PREVIEW_MAX = 720;
@@ -141,6 +148,83 @@ export function ScreenerPage() {
   const previewRef = useRef<HTMLElement>(null);
   const layoutRestored = useRef(false);
   const layoutTimer = useRef<number | undefined>(undefined);
+  // Specialist panel dock. Arrangement changes are written to a ref and persisted
+  // without React state, so moving or resizing panels never re-renders the table.
+  const [openPanels, setOpenPanels] = useState<PanelId[]>([]);
+  const [pendingPanel, setPendingPanel] = useState<PanelId | null>(null);
+  const [dockHeight, setDockHeight] = useState(DOCK_HEIGHT_DEFAULT);
+  const dockHeightRef = useRef(DOCK_HEIGHT_DEFAULT);
+  const panelLayout = useRef<PanelLayout>({ ...DEFAULT_PANEL_LAYOUT });
+  const panelRestored = useRef(false);
+  const panelTimer = useRef<number | undefined>(undefined);
+  const dockHandle = useRef<DockHandle | null>(null);
+  const dockRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const saved = config.data?.panel_layout;
+    if (!config.data || panelRestored.current) return;
+    panelRestored.current = true;
+    if (!saved) return;
+    panelLayout.current = { ...saved, dock_height: clampDockHeight(saved.dock_height) };
+    setOpenPanels(saved.open_panels); setDockHeight(panelLayout.current.dock_height);
+    dockHeightRef.current = panelLayout.current.dock_height;
+  }, [config.data]);
+  const persistPanels = useCallback(() => {
+    // Keep the cached config current: returning to the Screener within this session
+    // must restore the latest arrangement, never the one fetched at first load.
+    const latest = panelLayout.current;
+    queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old ? { ...old, panel_layout: latest } : old);
+    if (!config.data?.persistence_available) return;
+    window.clearTimeout(panelTimer.current);
+    panelTimer.current = window.setTimeout(() => { void persistScreenerPanelLayout(panelLayout.current).catch(() => undefined); }, 500);
+  }, [config.data?.persistence_available]);
+  const onPanelLayout = useCallback((next: Pick<PanelLayout, "open_panels" | "active_panel" | "dockview_layout">) => {
+    panelLayout.current = { ...panelLayout.current, ...next };
+    persistPanels();
+  }, [persistPanels]);
+  const onOpenPanels = useCallback((ids: PanelId[]) => {
+    setOpenPanels((current) => current.join() === ids.join() ? current : ids);
+    if (!ids.length) { panelLayout.current = { ...panelLayout.current, open_panels: [], active_panel: null, dockview_layout: null }; persistPanels(); }
+  }, [persistPanels]);
+  const launchPanel = useCallback((id: PanelId) => {
+    if (dockHandle.current) { dockHandle.current.openOrFocus(id); return; }
+    setPendingPanel(id);
+    setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
+  }, []);
+  const resetPanels = useCallback(() => {
+    dockHandle.current?.reset();
+    setDockHeight(DOCK_HEIGHT_DEFAULT);
+    dockHeightRef.current = DOCK_HEIGHT_DEFAULT;
+    panelLayout.current = { ...panelLayout.current, dock_height: DOCK_HEIGHT_DEFAULT };
+    persistPanels();
+  }, [persistPanels]);
+  // The ref, not the render-time value, is the source for relative steps, so fast
+  // key repeats never lose a step to a stale closure.
+  const commitDockHeight = (height: number) => {
+    // The table keeps at least ~200 px: matches the dock's CSS max-height.
+    const next = clampDockHeight(Math.min(height, window.innerHeight - DOCK_TABLE_RESERVE));
+    dockHeightRef.current = next;
+    setDockHeight(next);
+    panelLayout.current = { ...panelLayout.current, dock_height: next };
+    persistPanels();
+  };
+  const onDockSplitterPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const startY = event.clientY, startHeight = dockHeightRef.current, dock = dockRef.current;
+    let latest = startHeight;
+    const move = (moveEvent: PointerEvent) => {
+      latest = clampDockHeight(Math.min(startHeight + startY - moveEvent.clientY, window.innerHeight - DOCK_TABLE_RESERVE));
+      if (dock) dock.style.height = `${latest}px`; // no React render per pointer move
+    };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); commitDockHeight(latest); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  };
+  const onDockSplitterKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const steps: Record<string, number> = { ArrowUp: 16, ArrowDown: -16 };
+    if (!(event.key in steps) && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    commitDockHeight(event.key === "Home" ? 1200 : event.key === "End" ? 0 : dockHeightRef.current + steps[event.key]);
+  };
+  const dockVisible = openPanels.length > 0 || pendingPanel !== null;
   useEffect(() => {
     const layout = config.data?.preview_layout;
     if (!layout || layoutRestored.current) return;
@@ -563,6 +647,19 @@ export function ScreenerPage() {
       screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
       paneRef={previewRef} onClose={closePreview} onOpen={open} />}
     </div>
+    {dockVisible && <>
+      <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
+        aria-valuemin={140} aria-valuemax={1200} aria-valuenow={dockHeight} tabIndex={0}
+        onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />
+      <section className="screener-dock" aria-label="Specialist panels" ref={dockRef} style={{ height: dockHeight }}>
+        <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
+          <ScreenerDock layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined}
+            clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
+            onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
+        </Suspense>
+      </section>
+    </>}
+    <PanelLauncher open={openPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{query.data?.result_count.toLocaleString() ?? "—"}{filters.length && query.data?.unfiltered_count !== undefined ? ` of ${query.data.unfiltered_count.toLocaleString()}` : ""} results</span>
       <span>Quotes {quoteLabel}</span>
       <span>Market {session}</span>

@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S4 specialist dock panels
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `market_data`, `tools/moomoo`, `docs` |
+| **Summary** | Added a Screener-local Dockview Community dock with Order Flow, CVD, Level 2, Charts, and Futures Context panels driven by the one selected instrument, a single Open Panels launcher, versioned layout persistence separate from saved screens, and reset. Open panels map to reference-counted runtime subscriptions (Order Flow and CVD share one trade subscription). Level 2 derives validity, crossed/malformed rejection, partial and stale states from the canonical book engine. Charts and futures reuse the S3 services. No replay or fixture substitution. |
+| **Key files** | `ui/src/components/screener/panels/`, `ui/src/api/screenerPanels.ts`, `src/market_platform_foundation/ui_api/screener_specialist.py`, `screener_preview.py`, `screener_config.py`, `market_data/subscription_manager.py`, `tools/moomoo/push_feed.py`, `docs/engineering/SCREENER_S4.md` |
+| **Tests** | Screener backend S1–S4 110 passed (S4 38); market-data, order-flow, provider, and Moomoo modules 814 passed with `APPDATA` isolated; Screener UI 40 passed (S4 13); full UI suite 1,043 passed (146 files); typecheck, production build, bundle budget (initial 201.34 KiB gzip), format, lint, and docs links passed. `validate changed` on the S4 path list (core checkpoint required by the `package-lock.json` change): 5,334 tests, 35 skipped, 0 failures, 0 errors (exit 0) with `APPDATA` isolated. Real OpenD: two provider subscriptions for three NVDA panels, one for CVD alone, only the settled row after arrowing ten rows, full release after close. Visual acceptance at 1920×1080, 2560×1440, 1100×800; fixed empty-state zero summaries, an off-screen ladder spread, a stale-closure dock resize, stale layout restore from the config cache, and crowded narrow headers. |
+| **Notes** | OpenD refuses unsubscribes within one minute; the push feed previously forgot such slots (quota leak) and now retries. A stale capability probe was first reported as not entitled; it is now `UNVERIFIED` and only an observed refusal is `NOT_ENTITLED`. Market closed (Sunday); populated states were inspected through a test-only in-page interception. `powershell.exe` startup still hangs on this host. `WORKBOOK_SURFACE_ABSENT`. |
+
 ## 2026-09-27 — Main Screener S3 Quick Preview, automatic S/R, Why, contextual futures
 
 | Field | Value |

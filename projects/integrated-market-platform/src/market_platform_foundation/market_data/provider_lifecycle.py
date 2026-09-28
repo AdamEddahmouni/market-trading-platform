@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -37,6 +38,9 @@ class ProviderLifecycle:
     execution_use: str = "DISPLAY_ONLY"
     active_subscriptions: list[dict[str, Any]] = field(default_factory=list)
     feed_metrics: dict[str, Any] = field(default_factory=dict)
+    #: Wall-clock ns of the latest successful (re)connect. Book and trade
+    #: state received before it belongs to a previous connection.
+    connected_ns: int | None = None
 
     def mark_connected(self, *, quota_available: int | None = None, provider_generation_id: int | None = None) -> None:
         if provider_generation_id is not None:
@@ -44,6 +48,7 @@ class ProviderLifecycle:
         if self.connection_state == ProviderConnectionState.RECONNECTING:
             self.reconnect_count += 1
         self.connection_state = ProviderConnectionState.CONNECTED_DEGRADED
+        self.connected_ns = time.time_ns()
         if quota_available is not None:
             self.quota_available = quota_available
         self.last_error = None

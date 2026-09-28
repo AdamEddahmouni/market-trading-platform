@@ -81,8 +81,25 @@ const ScreenerConfigSchema = z.object({
   saved: z.array(ScreenerScreenSchema),
   last: ScreenerScreenSchema.nullable(),
   preview_layout: z.object({ version: z.number(), open: z.boolean(), width: z.number() }).optional(),
+  panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
+export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures"] as const;
+export type PanelId = (typeof PANEL_IDS)[number];
+// Presentation only: which specialist panels are open and how they are arranged.
+// Market observations never enter this record.
+const PanelLayoutSchema = z.object({
+  version: z.literal(1),
+  open_panels: z.array(z.enum(PANEL_IDS)),
+  active_panel: z.enum(PANEL_IDS).nullable(),
+  dock_height: z.number(),
+  dockview_layout: z.record(z.unknown()).nullable(),
+});
+export type PanelLayout = z.infer<typeof PanelLayoutSchema>;
+
+export function persistScreenerPanelLayout(layout: PanelLayout) {
+  return postJson("/screener/config", { action: "panel_layout", layout }, z.object({ result: PanelLayoutSchema }).passthrough());
+}
 
 export function fetchScreener(search: string, sort: string, descending: boolean, refresh = false, filters: ScreenerFilter[] = []) {
   const query = new URLSearchParams({

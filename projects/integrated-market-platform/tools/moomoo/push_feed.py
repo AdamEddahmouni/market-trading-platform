@@ -42,6 +42,9 @@ KNOWN_INSTRUMENTS: dict[str, dict[str, str]] = {
     "SPY": {"provider_symbol": "US.SPY", "venue_id": "US_EQUITY"},
 }
 
+SUBSCRIBE_RETRY_NS = 15_000_000_000
+UNSUBSCRIBE_RETRY_NS = 5_000_000_000
+
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
     "US_EQUITY_TICKS": "TICKER",
@@ -100,6 +103,11 @@ class MoomooPushFeed:
     _last_sequence: dict[str, int] = field(default_factory=dict, repr=False)
     _handler_errors: int = 0
     last_error: str | None = None
+    #: Provider refusals keyed by (code, subtype): ``{"message", "at_ns"}``.
+    #: Read by projections to report entitlement or quota refusals truthfully.
+    subscription_errors: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict, repr=False)
+    _retry_after_ns: dict[tuple[str, str], int] = field(default_factory=dict, repr=False)
+    clock: Callable[[], int] = field(default=time.time_ns, repr=False)
     trade_api_counters: dict[str, int] = field(
         default_factory=lambda: {
             "broker_cancels": 0,
@@ -189,6 +197,7 @@ class MoomooPushFeed:
 
         self.provider_generation += 1
         self._subscribed_subtypes.clear()
+        self._retry_after_ns.clear()
         self._first_push_seen.clear()
         self._last_sequence.clear()
         quote_ctx = ft.OpenQuoteContext(host=moomoo_host(), port=moomoo_port())
@@ -279,8 +288,12 @@ class MoomooPushFeed:
             subtype_name = CAP_TO_SUBTYPE_NAME.get(cap)
             if subtype_name:
                 desired.add((code, subtype_name))
-        for code, subtype_name in desired - self._subscribed_subtypes:
-            ret, _msg = quote_ctx.subscribe(
+        now = self.clock()
+        for key in sorted(desired - self._subscribed_subtypes):
+            code, subtype_name = key
+            if self._retry_after_ns.get(key, 0) > now:
+                continue
+            ret, msg = quote_ctx.subscribe(
                 [code],
                 [subtype_map[subtype_name]],
                 is_first_push=True,
@@ -288,7 +301,18 @@ class MoomooPushFeed:
                 session=ft.Session.ALL,
             )
             if ret == ft.RET_OK:
-                self._subscribed_subtypes.add((code, subtype_name))
+                self._subscribed_subtypes.add(key)
+                self.subscription_errors.pop(key, None)
+                self._retry_after_ns.pop(key, None)
+            else:
+                # Entitlement or quota refusals do not clear by retrying every
+                # sync tick; back off and keep the provider message.
+                self.subscription_errors[key] = {"message": str(msg), "at_ns": now}
+                self._retry_after_ns[key] = now + SUBSCRIBE_RETRY_NS
+        for key in list(self.subscription_errors):
+            if key not in desired:
+                self.subscription_errors.pop(key, None)
+                self._retry_after_ns.pop(key, None)
         quote_codes = sorted({code for code, subtype in self._subscribed_subtypes if subtype == "QUOTE"})
         if quote_codes:
             ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
@@ -299,9 +323,19 @@ class MoomooPushFeed:
                         payload=payload,
                         generation=self.provider_generation,
                     )
-        for code, subtype_name in self._subscribed_subtypes - desired:
-            quote_ctx.unsubscribe([code], [subtype_map[subtype_name]])
-            self._subscribed_subtypes.discard((code, subtype_name))
+        for key in sorted(self._subscribed_subtypes - desired):
+            code, subtype_name = key
+            if self._retry_after_ns.get(key, 0) > now:
+                continue
+            ret, _msg = quote_ctx.unsubscribe([code], [subtype_map[subtype_name]])
+            if ret == ft.RET_OK:
+                self._subscribed_subtypes.discard(key)
+                self._retry_after_ns.pop(key, None)
+            else:
+                # OpenD refuses an unsubscribe within one minute of the
+                # subscribe. The provider slot is still held, so keep tracking
+                # it and retry; discarding it here would leak provider quota.
+                self._retry_after_ns[key] = now + UNSUBSCRIBE_RETRY_NS
 
     def _enqueue_from_payload(
         self,

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import Any
+from typing import Any, Callable
 
 
 class SubscriptionPriority(IntEnum):
@@ -55,10 +56,23 @@ class LiveSubscriptionManager:
     max_quota: int = 100
     refs: dict[str, dict[str, ConsumerHandle]] = field(default_factory=dict)
     active_keys: set[str] = field(default_factory=set)
+    #: Wall-clock ns at which each key last became active. Consumers that
+    #: aggregate a stream (captured-window CVD) anchor to it so data retained
+    #: from an earlier subscription is never presented as one window.
+    activated_ns: dict[str, int] = field(default_factory=dict)
+    clock: Callable[[], int] = field(default=time.time_ns, repr=False)
 
     def _key_str(self, key: SubscriptionKey) -> str:
         normalized = key.normalized()
         return f"{normalized.instrument_id}:{normalized.capability}"
+
+    def activated_at(self, *, instrument_id: str, capability: str) -> int | None:
+        key = SubscriptionKey(instrument_id=instrument_id, capability=capability).normalized()
+        return self.activated_ns.get(self._key_str(key))
+
+    def ref_count(self, *, instrument_id: str, capability: str) -> int:
+        key = SubscriptionKey(instrument_id=instrument_id, capability=capability).normalized()
+        return len(self.refs.get(self._key_str(key), {}))
 
     def acquire(
         self,
@@ -89,6 +103,7 @@ class LiveSubscriptionManager:
         consumers[consumer_id] = ConsumerHandle(consumer_id=consumer_id, priority=int(priority))
         if key_str not in self.active_keys:
             self.active_keys.add(key_str)
+            self.activated_ns[key_str] = self.clock()
         return SubscriptionResult(
             accepted=True,
             key=key,
@@ -104,6 +119,7 @@ class LiveSubscriptionManager:
         if not consumers:
             self.refs.pop(key_str, None)
             self.active_keys.discard(key_str)
+            self.activated_ns.pop(key_str, None)
         return SubscriptionResult(
             accepted=True,
             key=key,
