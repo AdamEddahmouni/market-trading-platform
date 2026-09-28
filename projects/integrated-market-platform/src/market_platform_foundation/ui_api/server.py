@@ -194,6 +194,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(build_mixed_discover_payload())
                 return
+            if path == "/screener":
+                from .screener_projections import read_screener
+
+                try:
+                    self._send_json(read_screener(
+                        universe=(query.get("universe") or ["US_EQUITIES"])[0],
+                        search=(query.get("search") or [""])[0],
+                        sort=(query.get("sort") or ["volume"])[0],
+                        descending=(query.get("descending") or ["1"])[0] != "0",
+                        offset=int((query.get("offset") or ["0"])[0]),
+                        limit=int((query.get("limit") or ["10000"])[0]),
+                        force_refresh=(query.get("refresh") or ["0"])[0] == "1",
+                    ))
+                except ValueError as exc:
+                    self._send_error_json("SCREENER_QUERY_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return
@@ -1131,6 +1147,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_json(handle_auth_logout(token))
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
+            return
+        if path in ("/screener/window", "/screener/window/release"):
+            from .screener_projections import release_screener_window, update_screener_window
+
+            client_id = body.get("client_id")
+            symbols = body.get("symbols", [])
+            if not isinstance(client_id, str) or not isinstance(symbols, list) or not all(isinstance(item, str) for item in symbols):
+                self._send_error_json("SCREENER_WINDOW_INVALID", "Invalid window request", status=HTTPStatus.BAD_REQUEST)
+                return
+            try:
+                result = (release_screener_window(client_id) if path.endswith("/release")
+                          else update_screener_window(client_id, symbols))
+                self._send_json(result)
+            except ValueError as exc:
+                self._send_error_json("SCREENER_WINDOW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/opportunities/") and path.endswith(("/watch", "/dismiss", "/review")):
             row_id, action = path.removeprefix("/opportunities/").rsplit("/", 1)

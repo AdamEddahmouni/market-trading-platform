@@ -25,6 +25,10 @@ const primaryLinks: NavLinkDef[] = [
     },
   },
   {
+    to: "/screener",
+    label: "Screener",
+  },
+  {
     to: "/radar",
     label: "Radar",
     modeHint: {

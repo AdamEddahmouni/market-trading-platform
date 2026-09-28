@@ -35,6 +35,15 @@ def _parse_float(raw: str | None) -> float | None:
         return None
 
 
+def _parse_millions_or_suffix(raw: str | None) -> float | None:
+    """Finviz CSV bare cap/share values are millions; suffixed values are absolute."""
+    value = _parse_suffix(raw)
+    if value is None:
+        return None
+    text = str(raw).strip().upper()
+    return value if text.endswith(("K", "M", "B", "T")) else value * 1_000_000
+
+
 def _parse_int(raw: str | None) -> int | None:
     if raw is None or str(raw).strip() in ("", "-", "N/A"):
         return None
@@ -155,15 +164,15 @@ def _parse_row(row: dict[str, str]) -> FinvizScreenerRow:
         volume=_parse_int(row.get("Volume")),
         avg_volume=_parse_int(row.get("Average Volume")),
         rel_volume=_parse_float(row.get("Relative Volume")),
-        market_cap=_parse_suffix(row.get("Market Cap.")),
-        shares_outstanding=_parse_suffix(row.get("Shares Out.")),
-        float_shares=_parse_suffix(row.get("Shares Float") or row.get("Float")),
+        market_cap=_parse_millions_or_suffix(row.get("Market Cap.") or row.get("Market Cap")),
+        shares_outstanding=_parse_millions_or_suffix(row.get("Shares Out.") or row.get("Shares Outstanding")),
+        float_shares=_parse_millions_or_suffix(row.get("Shares Float") or row.get("Float")),
         short_float_pct=_parse_float(row.get("Short Float")),
         short_ratio=_parse_float(row.get("Short Ratio")),
         eps_ttm=_parse_float(row.get("EPS ttm")),
         pe=_parse_float(row.get("P/E")),
         fwd_pe=_parse_float(row.get("Fwd P/E")),
-        rsi_14=_parse_float(row.get("RSI (14)")),
+        rsi_14=_parse_float(row.get("RSI (14)") or row.get("Relative Strength Index (14)")),
         earnings_date=row.get("Earnings"),
         perf_week=_parse_float(row.get("Perf Week")),
         recommendation=row.get("Recommendation"),

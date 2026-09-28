@@ -47,6 +47,20 @@ class FinvizProviderTests(unittest.TestCase):
         self.assertEqual(aapl.sector, "Technology")
         self.assertAlmostEqual(aapl.change_pct, 2.50)
 
+    def test_current_export_headers_and_million_units(self) -> None:
+        text = (
+            "Ticker,Company,Market Cap,Shares Float,Relative Strength Index (14),Volume\n"
+            "AAPL,Apple Inc,4977636.97,14576.80,65.67,30002507\n"
+        )
+        rows, _, error = parse_screener_csv(text)
+        self.assertIsNone(error)
+        row = rows[0]
+        self.assertEqual(row.company, "Apple Inc")
+        self.assertEqual(row.market_cap, 4_977_636_970_000)
+        self.assertEqual(row.float_shares, 14_576_800_000)
+        self.assertEqual(row.rsi_14, 65.67)
+        self.assertEqual(row.volume, 30_002_507)
+
     def test_news_normalization(self) -> None:
         text = (FIXTURES / "news_sample.csv").read_text(encoding="utf-8")
         items, err = parse_news_csv(text)
