@@ -361,6 +361,41 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path in ("/screener/news", "/screener/news/instrument"):
+                # S11: News is a view/panel over the active universe, never a universe.
+                from .screener_news import read_instrument_news, read_news_feed
+                from .screener_universes import universe_spec
+
+                universe = (query.get("universe") or [""])[0]
+                try:
+                    if "news" not in universe_spec(universe).panels:
+                        raise ValueError("NEWS_UNAVAILABLE_FOR_UNIVERSE")
+                    if path == "/screener/news":
+                        payload = read_news_feed(
+                            universe=universe,
+                            window=(query.get("window") or ["24h"])[0],
+                            sort=(query.get("sort") or ["newest"])[0],
+                            source=(query.get("source") or [None])[0] or None,
+                            category=(query.get("category") or [None])[0] or None,
+                            sentiment=(query.get("sentiment") or [None])[0] or None,
+                            instrument=(query.get("instrument") or [None])[0] or None,
+                            offset=int((query.get("offset") or ["0"])[0]),
+                            limit=int((query.get("limit") or ["100"])[0]),
+                            view=(query.get("view") or ["feed"])[0],
+                        )
+                    else:
+                        payload = read_instrument_news(
+                            universe=universe, instrument_id=(query.get("instrument") or [""])[0].strip(),
+                            compact=(query.get("compact") or ["0"])[0] == "1",
+                        )
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_NEWS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return
@@ -1357,6 +1392,31 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(write_config(body))
             except ValueError as exc:
                 self._send_error_json("SCREENER_CONFIG_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/screener/news/synthesis":
+            # S11: AI synthesis runs only on this explicit operator action, never on render.
+            from .screener_news import request_news_synthesis
+            from .screener_universes import universe_spec
+
+            universe = body.get("universe")
+            scope = body.get("scope", "INSTRUMENT")
+            instrument = body.get("instrument")
+            window = body.get("window", "24h")
+            try:
+                if not isinstance(universe, str) or "news" not in universe_spec(universe).panels:
+                    raise ValueError("NEWS_UNAVAILABLE_FOR_UNIVERSE")
+                if not isinstance(scope, str) or not isinstance(window, str) or not (instrument is None or isinstance(instrument, str)):
+                    raise ValueError("INVALID_SYNTHESIS_REQUEST")
+                if window not in ("1h", "4h", "24h", "72h"):
+                    raise ValueError("INVALID_WINDOW")
+                result = request_news_synthesis(universe=universe, scope=scope, instrument_id=instrument, window=window)
+            except (ValueError, TypeError) as exc:
+                self._send_error_json("SCREENER_NEWS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            if result is None:
+                self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(result)
             return
         if path.startswith("/opportunities/") and path.endswith(("/watch", "/dismiss", "/review")):
             row_id, action = path.removeprefix("/opportunities/").rsplit("/", 1)

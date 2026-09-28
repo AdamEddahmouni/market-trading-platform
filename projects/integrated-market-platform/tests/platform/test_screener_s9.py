@@ -103,7 +103,7 @@ class UniverseArchitectureTests(unittest.TestCase):
         self.assertEqual(spec.identity_fields, ("cusip", "isin"))
         self.assertEqual(spec.tradability, "REFERENCE_ONLY")
         self.assertEqual(list(spec.views), ["Overview", "Treasuries", "Rates & Curve", "Custom"])
-        self.assertEqual(spec.panels, ("rates_curve",))
+        self.assertEqual(spec.panels, ("rates_curve", "news"))  # S11 adds cross-universe News & Analysis
         payload = next(item for item in universe_payload() if item["id"] == BONDS)
         self.assertEqual(payload["view_order"], ["Overview", "Treasuries", "Rates & Curve", "Custom"])
         self.assertEqual(payload["quote_capability"], "NO_STREAMING_QUOTE")

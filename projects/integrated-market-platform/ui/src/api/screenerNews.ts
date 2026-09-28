@@ -1,0 +1,196 @@
+import { z } from "zod";
+import { fetchJson, postJson } from "./fetchJson";
+import type { ScreenerUniverse } from "./screener";
+
+/**
+ * S11 cross-universe News contracts. News is a view inside a universe, never a
+ * universe. `null` always means unknown/missing, never zero; every derived value
+ * (categories, matches, sentiment, attention) is labelled as such by the server.
+ */
+const Iso = z.string();
+// Local copy: this module must not depend on runtime values of ./screener (tests mock it wholesale).
+const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS", "CRYPTO"]);
+export const ProviderStateSchema = z.enum(["CURRENT", "STALE", "PENDING", "NOT_CONFIGURED", "LIVE_DISABLED",
+  "RATE_LIMITED", "AUTH_FAILED", "ERROR", "NOT_APPLICABLE"]);
+export type ProviderState = z.infer<typeof ProviderStateSchema>;
+const ProviderStatus = z.object({
+  id: z.string(), label: z.string(),
+  kind: z.enum(["NEWS", "OFFICIAL_RELEASE", "OFFICIAL_FILING", "SENTIMENT", "AI"]),
+  state: ProviderStateSchema, reason: z.string().nullable(), fetched_at: Iso.nullable(),
+  item_count: z.number().nullable(), scope: z.enum(["UNIVERSE", "INSTRUMENT"]),
+}).passthrough();
+export type ProviderStatus = z.infer<typeof ProviderStatus>;
+const Category = z.object({ id: z.string(), label: z.string(),
+  group: z.enum(["CORPORATE", "REGULATORY", "MACRO", "CRYPTO", "FILING"]) }).passthrough();
+export type NewsCategory = z.infer<typeof Category>;
+const SourceType = z.enum(["NEWS", "OFFICIAL_RELEASE", "OFFICIAL_FILING"]);
+const StorySource = z.object({
+  provider_id: z.string(), provider_label: z.string(), publisher: z.string(), url: z.string().nullable(),
+  published_at: Iso.nullable(), retrieved_at: Iso, source_type: SourceType,
+}).passthrough();
+export type StorySource = z.infer<typeof StorySource>;
+const MatchBasis = z.enum(["EXACT_TICKER", "PROVIDER_TICKER", "EXACT_CUSIP", "EXACT_ENTITY", "ASSET_MATCH",
+  "PAIR_MATCH", "VENUE_MATCH", "UNDERLYING_MATCH", "MACRO_CONTEXT", "ISSUER_MATCH", "AMBIGUOUS"]);
+const Match = z.object({ instrument_id: z.string().nullable(), symbol: z.string(), basis: MatchBasis,
+  confidence: z.enum(["EXACT", "CONTEXT", "AMBIGUOUS"]), term: z.string().nullable() }).passthrough();
+export type NewsMatch = z.infer<typeof Match>;
+const SentimentLabel = z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE"]);
+const StorySentiment = z.object({
+  state: z.enum(["SCORED", "NOT_SCORED", "NOT_CONFIGURED", "UNAVAILABLE", "ERROR"]),
+  label: SentimentLabel.nullable(),
+  probabilities: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }).passthrough().nullable(),
+  model_id: z.string().nullable(),
+}).passthrough();
+export type StorySentiment = z.infer<typeof StorySentiment>;
+const Story = z.object({
+  story_id: z.string(), headline: z.string(), summary: z.string().nullable(), url: z.string().nullable(),
+  published_at: Iso.nullable(), published_time_quality: z.enum(["KNOWN", "INFERRED_LOW_CONFIDENCE", "UNKNOWN"]),
+  latest_published_at: Iso.nullable(), first_retrieved_at: Iso, source_type: SourceType,
+  sources: z.array(StorySource), source_count: z.number(), provider_count: z.number(),
+  categories: z.array(Category), matches: z.array(Match), sentiment: StorySentiment, quality_flags: z.array(z.string()),
+}).passthrough();
+export type NewsStory = z.infer<typeof Story>;
+const SentimentModelStatus = z.object({
+  state: z.enum(["CURRENT", "NOT_CONFIGURED", "UNAVAILABLE", "ERROR"]), reason: z.string().nullable(),
+  model_id: z.string().nullable(), model_revision: z.string().nullable(), loaded: z.boolean(),
+}).passthrough();
+export type SentimentModelStatus = z.infer<typeof SentimentModelStatus>;
+export const NEWS_WINDOWS = ["1h", "4h", "24h", "72h"] as const;
+export type NewsWindowId = (typeof NEWS_WINDOWS)[number];
+const Window = z.object({ id: z.enum(NEWS_WINDOWS), start: Iso, end: Iso }).passthrough();
+const FeedState = z.enum(["CURRENT", "PARTIAL", "PENDING", "NOT_CONFIGURED", "UNAVAILABLE"]);
+export type NewsFeedState = z.infer<typeof FeedState>;
+export const NEWS_SORTS = ["newest", "oldest", "sources", "relevance"] as const;
+const Brief = z.object({
+  generated_at: Iso, window: Window, method: z.string(),
+  story_count: z.number(), headline_count: z.number(), source_count: z.number(),
+  missing_providers: z.array(z.string()),
+  groups: z.array(z.object({ category: Category, story_count: z.number(), source_count: z.number(),
+    latest_published_at: Iso.nullable(), story_ids: z.array(z.string()) }).passthrough()),
+  uncategorized_count: z.number(), coverage_note: z.string(),
+}).passthrough();
+export type NewsBrief = z.infer<typeof Brief>;
+
+export const NewsFeedSchema = z.object({
+  schema_version: z.literal("screener-news/1.0.0"),
+  generated_at: Iso, universe: ScreenerUniverseSchema, window: Window, state: FeedState, reason: z.string().nullable(),
+  providers: z.array(ProviderStatus), sentiment_model: SentimentModelStatus,
+  filters: z.object({
+    sources: z.array(z.object({ id: z.string(), label: z.string(), count: z.number() }).passthrough()),
+    categories: z.array(z.object({ id: z.string(), label: z.string(), group: z.string(), count: z.number() }).passthrough()),
+    sentiment: z.object({ enabled: z.boolean(), reason: z.string().nullable() }).passthrough(),
+    applied: z.object({ source: z.string().nullable(), category: z.string().nullable(), sentiment: z.string().nullable(),
+      instrument: z.string().nullable() }).passthrough(),
+  }).passthrough(),
+  sorts: z.array(z.object({ id: z.enum(NEWS_SORTS), label: z.string() }).passthrough()),
+  sort: z.string(), result_count: z.number(), headline_count: z.number(),
+  offset: z.number(), limit: z.number(), has_more: z.boolean(),
+  stories: z.array(Story), brief: Brief.nullable(),
+}).passthrough();
+export type NewsFeed = z.infer<typeof NewsFeedSchema>;
+
+const AnalysisItem = z.object({ text: z.string(), source: z.string(), as_of: Iso.nullable(), story_id: z.string().nullable() }).passthrough();
+export type NewsAnalysisItem = z.infer<typeof AnalysisItem>;
+export const InstrumentNewsSchema = z.object({
+  schema_version: z.literal("screener-news-instrument/1.0.0"),
+  generated_at: Iso, universe: ScreenerUniverseSchema,
+  instrument: z.object({ instrument_id: z.string(), symbol: z.string(), label: z.string() }).passthrough(),
+  capability: z.object({ state: z.enum(["SUPPORTED", "PARTIAL", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
+    match_bases: z.array(MatchBasis), terms: z.array(z.string()) }).passthrough(),
+  window: Window, state: FeedState, reason: z.string().nullable(), providers: z.array(ProviderStatus),
+  coverage: z.object({ story_count: z.number(), headline_count: z.number(), source_count: z.number(),
+    latest_published_at: Iso.nullable() }).passthrough(),
+  stories: z.array(Story),
+  sentiment: z.object({
+    state: z.enum(["CURRENT", "PARTIAL", "NOT_CONFIGURED", "UNAVAILABLE", "INSUFFICIENT_DATA"]), reason: z.string().nullable(),
+    model_id: z.string().nullable(),
+    counts: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }).passthrough(),
+    scored: z.number(), unscored: z.number(),
+    dominant: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE", "MIXED"]).nullable(),
+    latest: z.object({ story_id: z.string(), label: z.string(), published_at: Iso.nullable() }).passthrough().nullable(),
+    method: z.string(),
+  }).passthrough(),
+  catalysts: z.array(z.object({ category: Category, story_count: z.number(), latest_published_at: Iso.nullable(),
+    story_ids: z.array(z.string()) }).passthrough()),
+  attention: z.object({
+    state: z.enum(["CURRENT", "PARTIAL", "UNAVAILABLE"]), reason: z.string().nullable(), class: z.literal("DERIVED"),
+    windows: z.array(z.object({ id: z.enum(["15m", "1h", "4h", "24h"]), headline_count: z.number(), story_count: z.number(),
+      prior_headline_count: z.number().nullable() }).passthrough()),
+    independent_sources: z.number(), latest_published_at: Iso.nullable(), method: z.string(),
+  }).passthrough(),
+  reaction: z.object({
+    state: z.enum(["CURRENT", "UNAVAILABLE", "NOT_SUPPORTED"]), reason: z.string().nullable(),
+    basis: z.string(), timeframe: z.string().nullable(), note: z.string(),
+    items: z.array(z.object({
+      story_id: z.string(), published_at: Iso,
+      reference: z.object({ price: z.number(), bar_start: Iso.nullable() }).passthrough().nullable(),
+      horizons: z.array(z.object({ id: z.enum(["+5m", "+15m", "+1h"]), change_pct: z.number().nullable(), price: z.number().nullable(),
+        bar_end: Iso.nullable(), state: z.enum(["OBSERVED", "PENDING", "UNAVAILABLE"]) }).passthrough()),
+    }).passthrough()),
+  }).passthrough(),
+  analysis: z.object({ observed: z.array(AnalysisItem), derived: z.array(AnalysisItem), insufficient: z.array(AnalysisItem) }).passthrough(),
+  ai: z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
+    provider_id: z.string().nullable(), model_id: z.string().nullable() }).passthrough(),
+}).passthrough();
+export type InstrumentNews = z.infer<typeof InstrumentNewsSchema>;
+
+const Ref = z.object({ text: z.string(), refs: z.array(z.string()) }).passthrough();
+export type SynthesisRefItem = z.infer<typeof Ref>;
+export const SynthesisSchema = z.object({
+  schema_version: z.literal("screener-news-synthesis/1.0.0"),
+  state: z.enum(["CURRENT", "NOT_CONFIGURED", "UNAVAILABLE", "INSUFFICIENT_EVIDENCE", "INVALID_OUTPUT"]),
+  reason: z.string().nullable(), epistemic_class: z.literal("AI_SYNTHESIS"), generated_at: Iso,
+  provider_id: z.string().nullable(), model_id: z.string().nullable(), prompt_id: z.string(), prompt_version: z.string(),
+  input_hash: z.string().nullable(), cache: z.enum(["HIT", "MISS"]).nullable(), story_ids: z.array(z.string()),
+  coverage: z.object({ story_count: z.number(), source_count: z.number(), window: Window, missing_providers: z.array(z.string()) }).passthrough(),
+  synthesis: z.object({
+    summary: z.string(), observed_facts: z.array(Ref), derived_context: z.array(Ref), uncertainties: z.array(z.string()),
+    conflicting_evidence: z.array(Ref), potential_market_relevance: z.array(Ref),
+  }).passthrough().nullable(),
+}).passthrough();
+export type NewsSynthesis = z.infer<typeof SynthesisSchema>;
+
+export type NewsFeedParams = {
+  universe: ScreenerUniverse;
+  window?: NewsWindowId;
+  sort?: string | null;
+  source?: string | null;
+  category?: string | null;
+  sentiment?: string | null;
+  instrument?: string | null;
+  offset?: number;
+  limit?: number;
+  view?: "feed" | "brief";
+};
+export const NEWS_PAGE_LIMIT = 100;
+
+export async function fetchScreenerNews(params: NewsFeedParams, signal?: AbortSignal) {
+  const offset = params.offset ?? 0;
+  const query = new URLSearchParams({ universe: params.universe, window: params.window ?? "24h",
+    offset: String(offset), limit: String(params.limit ?? NEWS_PAGE_LIMIT), view: params.view ?? "feed" });
+  if (params.sort) query.set("sort", params.sort);
+  if (params.source) query.set("source", params.source);
+  if (params.category) query.set("category", params.category);
+  if (params.sentiment) query.set("sentiment", params.sentiment);
+  if (params.instrument) query.set("instrument", params.instrument);
+  const feed = await fetchJson(`/screener/news?${query}`, NewsFeedSchema, signal ? { signal } : undefined);
+  // Identity guard: a page for another universe or offset is never appended.
+  if (feed.universe !== params.universe || feed.offset !== offset) throw new Error("SCREENER_NEWS_IDENTITY_MISMATCH");
+  return feed;
+}
+
+export async function fetchInstrumentNews(universe: ScreenerUniverse, instrumentId: string, compact: boolean, signal?: AbortSignal) {
+  const query = new URLSearchParams({ universe, instrument: instrumentId });
+  if (compact) query.set("compact", "1");
+  const payload = await fetchJson(`/screener/news/instrument?${query}`, InstrumentNewsSchema, signal ? { signal } : undefined);
+  // Identity guard: a response for another instrument or universe is never rendered.
+  if (payload.instrument.instrument_id !== instrumentId || payload.universe !== universe) throw new Error("SCREENER_NEWS_IDENTITY_MISMATCH");
+  return payload;
+}
+
+export type SynthesisRequest = { universe: ScreenerUniverse; scope: "INSTRUMENT" | "UNIVERSE"; instrument?: string; window?: "24h" };
+
+/** Explicit operator action only; never called on render. */
+export function postNewsSynthesis(body: SynthesisRequest) {
+  return postJson("/screener/news/synthesis", body, SynthesisSchema);
+}

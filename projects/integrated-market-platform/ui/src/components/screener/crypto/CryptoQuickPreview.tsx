@@ -5,16 +5,18 @@ import { fetchCryptoPreview } from "../../../api/screenerCrypto";
 import PreviewChart from "../PreviewChart";
 import { pricePrecision } from "../panels/shared";
 import { classifyZones } from "../srClassify";
+import { PreviewNewsSection } from "../news/PreviewNewsSection";
 import "./crypto.css";
 
 type Props = { row: ScreenerRow | null; filters: ScreenerFilter[]; screenLabel: string | null;
-  overlay: boolean; width: number; paneRef?: Ref<HTMLElement>; onClose: () => void };
+  overlay: boolean; width: number; paneRef?: Ref<HTMLElement>; onClose: () => void;
+  newsSupported?: boolean; onOpenNews?: () => void };
 type Timeframe = "1m" | "5m" | "15m";
 const frames: Timeframe[] = ["1m", "5m", "15m"];
 const stamp = (value: string | null | undefined) => value ? `${new Date(value).toISOString().slice(0, 19)} UTC` : "unavailable";
 const number = (value: number | null | undefined, digits = 2) => value == null ? "—" : value.toLocaleString("en-US", { maximumFractionDigits: digits });
 
-export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, paneRef, onClose }: Props) {
+export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, paneRef, onClose, newsSupported = false, onOpenNews }: Props) {
   const id = row?.instrument.instrument_id ?? null;
   const [settledId, setSettledId] = useState(id);
   const [timeframe, setTimeframe] = useState<Timeframe>("1m");
@@ -69,6 +71,7 @@ export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, 
         <section className="crypto-preview-section" aria-label="Why it matched"><h3>Why it matched</h3>{data.why.matched.items.length
           ? <ul>{data.why.matched.items.map((item) => <li key={item.filter_id}>{item.text}</li>)}</ul> : <p>No active filters.</p>}</section>
       </>}
+      {newsSupported && <PreviewNewsSection row={row} settledId={settledId} universe="CRYPTO" onOpenNews={onOpenNews} />}
     </>}
   </aside>;
 }
