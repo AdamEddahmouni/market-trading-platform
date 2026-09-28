@@ -53,13 +53,13 @@ const equityViews = {
   Performance: ["symbol", "price", "change_pct", "perf_week", "volume", "rel_volume", "rsi_14", "market_cap"],
   Technical: ["symbol", "price", "change_pct", "rsi_14", "perf_week", "volume", "rel_volume"],
   Volume: ["symbol", "price", "volume", "avg_volume", "rel_volume", "float_shares", "change_pct"],
-  Short: ["symbol", "price", "change_pct", "float_shares", "short_float_pct", "short_ratio", "rel_volume", "volume"],
+  "Short Squeeze": ["symbol", "price", "change_pct", "rel_volume", "volume", "float_shares", "short_float_pct", "short_ratio", "bid", "ask", "spread_pct"],
   Fundamentals: ["symbol", "company", "sector", "industry", "market_cap", "eps_ttm", "pe", "fwd_pe", "earnings_date", "recommendation"],
   Custom: ["symbol", "price", "change_pct", "volume"],
 };
 const equitySpec = { id: "US_EQUITIES", label: "US Equities", asset_class: "EQUITY", instrument_kind: "TRADABLE_SECURITY",
   source: "FINVIZ_ELITE", session_model: "US_EQUITY", default_sort: "volume", default_columns: equityViews.Overview,
-  views: equityViews, view_order: Object.keys(equityViews), quote_capability: "US_EQUITY_L1",
+  views: equityViews, view_order: Object.keys(equityViews), view_aliases: { Short: "Short Squeeze" }, quote_capability: "US_EQUITY_L1",
   bars_capability: "US_EQUITY_CURRENT_KLINE", panels: ["order_flow", "cvd", "level2", "charts", "futures"],
   fields: caps(["symbol", "company", "price", "change_pct", "volume", "avg_volume", "rel_volume", "float_shares", "market_cap",
     "short_float_pct", "short_ratio", "rsi_14", "eps_ttm", "pe", "fwd_pe", "perf_week"], ["bid", "ask", "spread_pct"]) };
@@ -303,6 +303,49 @@ describe("ScreenerPage", () => {
     expect(screen.getByRole("textbox", { name: "Search instruments" })).toHaveValue("Apple");
     expect(screen.getByRole("tab", { name: "Technical" })).toHaveAttribute("aria-selected", "true");
     expect(mocks.fetch).toHaveBeenCalledWith(...called({ search: "Apple", sort: "price", descending: false }));
+  });
+
+  it("opens the S8 view with registry columns and no selected-only filters", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("tab", { name: "Short Squeeze" }));
+    expect(screen.getByRole("tab", { name: "Short Squeeze" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    expect(screen.getByRole("checkbox", { name: /Short Float/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Short Ratio/ })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /Bid/ })).toBeChecked();
+    expect(screen.queryByRole("checkbox", { name: /Borrow Fee/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
+    expect(screen.queryByRole("button", { name: /Borrow Fee/ })).toBeNull();
+  });
+
+  it("restores legacy Short links as Short Squeeze", async () => {
+    mount("/screener?view=Short");
+    await screen.findByText("AAPL");
+    expect(screen.getByRole("tab", { name: "Short Squeeze" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.queryByRole("tab", { name: "Short" })).toBeNull();
+    expect(screen.getByRole("columnheader", { name: /Short Ratio/ })).toBeInTheDocument();
+    expect(screen.queryByRole("columnheader", { name: /Mkt Cap/ })).toBeNull();
+  });
+
+  it("lets a direct Short Squeeze link override Last Used columns", async () => {
+    const last = { id: "last", version: 2, name: "Last Used", universe: "US_EQUITIES", filters: [], view: "Overview",
+      sort: { field: "volume", descending: true }, columns: { visible: equityViews.Overview, order: equityViews.Overview,
+        widths: {}, pinned: ["symbol"] } };
+    mocks.config.mockResolvedValue({ schema_version: 2, persistence_available: true, universes: [equitySpec], catalog: [], presets: [], saved: [], last });
+    mount("/screener?view=Short");
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(screen.getByRole("columnheader", { name: /Short Ratio/ })).toBeInTheDocument());
+    expect(screen.queryByRole("columnheader", { name: /Mkt Cap/ })).toBeNull();
+  });
+
+  it("restores legacy saved screens as Short Squeeze", async () => {
+    const saved = { id: "legacy-short", version: 2, name: "My old short screen", universe: "US_EQUITIES", filters: [], view: "Short",
+      sort: { field: "volume", descending: true }, columns: { visible: equityViews["Short Squeeze"], order: equityViews["Short Squeeze"], widths: {}, pinned: ["symbol"] } };
+    mocks.config.mockResolvedValue({ schema_version: 2, persistence_available: true, universes: [equitySpec], catalog: [], presets: [], saved: [saved], last: null });
+    mount("/screener?screen=legacy-short");
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Short Squeeze" })).toHaveAttribute("aria-selected", "true"));
   });
 
   it("ignores an unsupported sort in a direct link", async () => {

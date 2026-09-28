@@ -1,6 +1,6 @@
 import { Component, createContext, useContext, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
-import type { PanelId, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
+import type { PanelId, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { PANEL_TITLES } from "./registry";
 
@@ -12,6 +12,7 @@ export type SpecialistSelection = {
   /** The selection after the settle delay; requests are only made for it. */
   settledId: string | null;
   quote: ScreenerQuote | undefined;
+  filters: ScreenerFilter[];
   demand: PanelDemand | null;
   actions: PanelActions;
 };
@@ -23,7 +24,7 @@ export type PanelActions = {
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
   row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]),
-  settledId: null, quote: undefined, demand: null, actions: { close: noop, move: noop, resize: noop },
+  settledId: null, quote: undefined, filters: [], demand: null, actions: { close: noop, move: noop, resize: noop },
 });
 export const useSelection = () => useContext(SpecialistContext);
 

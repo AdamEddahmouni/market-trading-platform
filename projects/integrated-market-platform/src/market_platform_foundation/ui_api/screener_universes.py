@@ -39,12 +39,17 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "price", "change_pct", "perf_week", "volume", "rel_volume", "rsi_14", "market_cap"),
             "Technical": ("symbol", "price", "change_pct", "rsi_14", "perf_week", "volume", "rel_volume"),
             "Volume": ("symbol", "price", "volume", "avg_volume", "rel_volume", "float_shares", "change_pct"),
-            "Short": ("symbol", "price", "change_pct", "float_shares", "short_float_pct", "short_ratio", "rel_volume", "volume"),
+            # S8: the squeeze-discovery perspective. Every column is a universe-wide
+            # Finviz snapshot field or a visible-row L1 quote; selected-instrument
+            # squeeze evidence (FINRA, Reg SHO, FTD, borrow, order flow, options)
+            # lives in the Short Squeeze panel and never becomes a column.
+            "Short Squeeze": ("symbol", "price", "change_pct", "rel_volume", "volume", "float_shares", "short_float_pct",
+                              "short_ratio", "bid", "ask", "spread_pct"),
             "Fundamentals": ("symbol", "company", "sector", "industry", "market_cap", "eps_ttm", "pe", "fwd_pe", "earnings_date", "recommendation"),
             "Custom": ("symbol", "price", "change_pct", "volume"),
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
-        ("order_flow", "cvd", "level2", "charts", "futures", "options"),
+        ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"),
     ),
     FUTURES: Universe(
         FUTURES, "Futures", "FUTURE", "FUTURE_CONTRACT", "MOOMOO_OPEND_CONTRACT_CATALOG",
@@ -72,6 +77,14 @@ UNIVERSES: dict[str, Universe] = {
 }
 
 
+#: Views renamed after release; saved screens and URLs holding the old name keep working.
+VIEW_ALIASES: dict[str, dict[str, str]] = {US_EQUITIES: {"Short": "Short Squeeze"}}
+
+
+def canonical_view(universe: str, view: object) -> object:
+    return VIEW_ALIASES.get(universe, {}).get(view, view) if isinstance(view, str) else view
+
+
 def universe_spec(value: str) -> Universe:
     try:
         return UNIVERSES[value]
@@ -91,6 +104,7 @@ def universe_payload() -> list[dict[str, object]]:
             "view_order": list(spec.views),
             "quote_capability": spec.quote_capability,
             "bars_capability": spec.bars_capability, "panels": list(spec.panels),
+            "view_aliases": dict(VIEW_ALIASES.get(spec.id, {})),
         }
         for spec in UNIVERSES.values()
     ]

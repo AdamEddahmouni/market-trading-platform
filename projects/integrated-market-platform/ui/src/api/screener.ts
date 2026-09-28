@@ -98,6 +98,7 @@ const ScreenerConfigSchema = z.object({
   universes: z.array(z.object({ id: ScreenerUniverseSchema, label: z.string(), asset_class: z.string(),
     instrument_kind: z.string(), source: z.string(), session_model: z.string(), default_sort: z.string(),
     default_columns: z.array(z.string()), views: z.record(z.array(z.string())), view_order: z.array(z.string()).optional(),
+    view_aliases: z.record(z.string()).optional(),
     quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()),
     fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean() })).optional() })),
   query: z.object({ default_limit: z.number(), max_limit: z.number() }).optional(),
@@ -114,7 +115,7 @@ const ScreenerConfigSchema = z.object({
   panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
-export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options"] as const;
+export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.

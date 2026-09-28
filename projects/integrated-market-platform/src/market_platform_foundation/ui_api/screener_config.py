@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from .screener_filters import builtin_presets, validate_filters
 from .screener_projections import FIELD_NAMES
-from .screener_universes import US_EQUITIES, universe_payload, universe_spec
+from .screener_universes import US_EQUITIES, canonical_view, universe_payload, universe_spec
 
 PREF_KEY = "screener.s2.screens"
 LAST_KEY = "screener.s2.last"
@@ -17,14 +17,14 @@ PREVIEW_KEY = "screener.s3.preview"
 PREVIEW_WIDTH = (320, 720)
 DEFAULT_PREVIEW = {"version": 1, "open": True, "width": 400}
 PANEL_KEY = "screener.s4.panels"
-PANEL_IDS = ("order_flow", "cvd", "level2", "charts", "futures", "options")
+PANEL_IDS = ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze")
 PANEL_LAYOUT_VERSION = 1
 DOCK_HEIGHT = (140, 1200)
 DEFAULT_PANEL_LAYOUT = {"version": PANEL_LAYOUT_VERSION, "open_panels": [], "active_panel": None,
                         "dock_height": 300, "dockview_layout": None}
 MAX_DOCKVIEW_LAYOUT_BYTES = 32_768
 SCHEMA_VERSION = 2
-VIEWS = ("Overview", "Performance", "Technical", "Volume", "Short", "Fundamentals", "Custom")
+VIEWS = ("Overview", "Performance", "Technical", "Volume", "Short Squeeze", "Fundamentals", "Custom")
 COLUMNS = frozenset((*FIELD_NAMES, "symbol", "company", "sector", "industry", "country",
                      "earnings_date", "recommendation", "bid", "ask", "spread_pct"))
 SORTS = frozenset((*FIELD_NAMES, "symbol", "company"))
@@ -38,7 +38,9 @@ def validate_screen(raw: Any, *, identity: str | None = None) -> dict[str, Any]:
         raise ValueError("INVALID_SCREEN_NAME")
     universe = raw.get("universe", US_EQUITIES)
     spec = universe_spec(universe)
-    if raw.get("view") not in spec.views:
+    # A screen saved before S8 with the "Short" view opens as "Short Squeeze".
+    view = canonical_view(universe, raw.get("view"))
+    if view not in spec.views:
         raise ValueError("INVALID_SCREEN_VIEW")
     sort = raw.get("sort")
     if not isinstance(sort, dict) or sort.get("field") not in (SORTS if universe == US_EQUITIES else spec.columns) or not isinstance(sort.get("descending"), bool):
@@ -65,7 +67,7 @@ def validate_screen(raw: Any, *, identity: str | None = None) -> dict[str, Any]:
     if version not in (1, SCHEMA_VERSION) or (version == 1 and universe != US_EQUITIES):
         raise ValueError("UNSUPPORTED_SCREEN_VERSION")
     return {"id": screen_id, "version": SCHEMA_VERSION, "name": name.strip(), "universe": universe,
-            "filters": validate_filters(raw.get("filters"), universe=universe), "view": raw["view"],
+            "filters": validate_filters(raw.get("filters"), universe=universe), "view": view,
             "sort": {"field": sort["field"], "descending": sort["descending"]},
             "columns": {"visible": list(visible), "order": list(order), "widths": dict(widths), "pinned": list(pinned)}}
 

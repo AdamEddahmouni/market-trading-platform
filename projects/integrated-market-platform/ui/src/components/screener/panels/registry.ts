@@ -8,10 +8,11 @@ export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
   { id: "charts", title: "Charts" },
   { id: "futures", title: "Futures Context" },
   { id: "options", title: "Options" },
+  { id: "short_squeeze", title: "Short Squeeze" },
 ];
 export const PANEL_TITLES = Object.fromEntries(PANELS.map((panel) => [panel.id, panel.title])) as Record<PanelId, string>;
 /** Panels that hold a live provider subscription while open. */
-export const LIVE_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["order_flow", "cvd", "level2"]);
+export const LIVE_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["order_flow", "cvd", "level2", "short_squeeze"]);
 export const DOCK_HEIGHT_DEFAULT = 300;
 export const DOCK_HEIGHT_MIN = 140;
 export const DOCK_HEIGHT_MAX = 1200;

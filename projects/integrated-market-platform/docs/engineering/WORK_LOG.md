@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S8 Short Squeeze evidence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` |
+| **Area** | `ui/screener`, `ui_api`, `short_intelligence`, `docs` |
+| **Summary** | Resumed and preserved the uncommitted S8 backend from exact S7 head. Added a selected-instrument Short Squeeze dock panel, lazy Quick Preview tab, strict contract and identity guard, operator-friendly lifecycle presentation, and legacy Short view normalization. Evidence remains source-clocked and separate from universe-wide filter/sort authority. |
+| **Key files** | `src/market_platform_foundation/short_intelligence/squeeze_state.py`, `src/market_platform_foundation/ui_api/screener_squeeze.py`, `screener_squeeze_sources.py`, `ui/src/api/screenerSqueeze.ts`, `ui/src/components/screener/`, `docs/engineering/SCREENER_S8_SHORT_SQUEEZE.md` |
+| **Tests** | S1–S8 backend 228; short intelligence 37; donor squeeze bridge 26 (2 skipped); focused UI 95; full UI 1,089 in 150 files; typecheck, build, bundle, format, lint, docs links green; `validate changed` with isolated `APPDATA` exit 0 (5,300 tests, 35 skipped). |
+| **Related** | [SCREENER_S8_SHORT_SQUEEZE.md](SCREENER_S8_SHORT_SQUEEZE.md), [SCREENER_S7_OPTIONS.md](SCREENER_S7_OPTIONS.md) |
+| **Notes** | No score, probability, frozen fallback, or broker authority. Borrow and dealer positioning remain unavailable. |
+
+---
+
 ## 2026-09-27 — Main Screener S7 current options context
 
 | Field | Value |

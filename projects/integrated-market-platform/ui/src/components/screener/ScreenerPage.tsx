@@ -52,7 +52,7 @@ const definitions: ColumnDefinition[] = [
   { key: "float_shares", label: "Float", width: 93, format: "compact" },
   { key: "shares_outstanding", label: "Shares Out", width: 105, format: "compact" },
   { key: "market_cap", label: "Mkt Cap", width: 95, format: "compact" },
-  { key: "short_float_pct", label: "Short %", width: 87, format: "percent" },
+  { key: "short_float_pct", label: "Short Float", width: 94, format: "percent" },
   { key: "short_ratio", label: "Short Ratio", width: 100, format: "decimal" },
   { key: "bid", label: "Bid", width: 90, format: "price" },
   { key: "ask", label: "Ask", width: 90, format: "price" },
@@ -81,7 +81,7 @@ const views: Record<string, ColumnKey[]> = {
   Performance: ["symbol", "price", "change_pct", "perf_week", "volume", "rel_volume", "rsi_14", "market_cap"],
   Technical: ["symbol", "price", "change_pct", "rsi_14", "perf_week", "volume", "rel_volume"],
   Volume: ["symbol", "price", "volume", "avg_volume", "rel_volume", "float_shares", "change_pct"],
-  Short: ["symbol", "price", "change_pct", "float_shares", "short_float_pct", "short_ratio", "rel_volume", "volume"],
+  "Short Squeeze": ["symbol", "price", "change_pct", "rel_volume", "volume", "float_shares", "short_float_pct", "short_ratio", "bid", "ask", "spread_pct"],
   Fundamentals: ["symbol", "company", "sector", "industry", "market_cap", "eps_ttm", "pe", "fwd_pe", "earnings_date", "recommendation"],
   Custom: ["symbol", "price", "change_pct", "volume"],
 };
@@ -90,6 +90,8 @@ const sortKeys = new Set(allKeys.filter((key) => !["sector", "industry", "countr
 const sortFromUrl = (value: string | null): SortKey | null => value && sortKeys.has(value as ColumnKey) ? value as SortKey : null;
 const universeFromUrl = (value: string | null): ScreenerUniverse =>
   value === "FUTURES" || value === "US_ETFS" ? value : "US_EQUITIES";
+export const canonicalScreenerView = (value: string | null, universe: ScreenerUniverse, aliases?: Record<string, string>) =>
+  value && universe === "US_EQUITIES" ? (aliases?.[value] ?? (value === "Short" ? "Short Squeeze" : value)) : value;
 const viewVisibility = (view: string, choices: Record<string, readonly string[]> = views): VisibilityState =>
   Object.fromEntries(allKeys.map((key) => [key, (choices[view] ?? choices.Overview ?? []).includes(key)]));
 const snapshotOf = (screen: ScreenerScreen) => ({ filters: screen.filters, view: screen.view,
@@ -124,12 +126,16 @@ export function ScreenerPage() {
   const [sort, setSort] = useState<SortKey>(sortFromUrl(initialParams.get("sort")) ??
     (universe === "FUTURES" ? "root" : universe === "US_ETFS" ? "symbol" : "volume"));
   const [descending, setDescending] = useState(initialParams.has("dir") ? initialParams.get("dir") !== "asc" : universe === "US_EQUITIES");
-  const [view, setView] = useState(initialParams.get("view") && views[initialParams.get("view")!] ? initialParams.get("view")! : "Overview");
+  const [view, setView] = useState(() => {
+    const requested = canonicalScreenerView(initialParams.get("view"), universe);
+    return requested && views[requested] ? requested : "Overview";
+  });
   const [filters, setFilters] = useState<ScreenerFilter[]>([]);
   const [selectedScreenId, setSelectedScreenId] = useState(initialParams.get("screen") ?? "");
   const [savedBase, setSavedBase] = useState("");
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => viewVisibility("Overview"));
-  const [columnOrder, setColumnOrder] = useState<string[]>(allKeys);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(() => viewVisibility(view));
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => [...(views[view] ?? views.Overview),
+    ...allKeys.filter((key) => !(views[view] ?? views.Overview).includes(key))]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [columnPinning, setColumnPinning] = useState<ColumnPinningState>({ left: ["symbol"], right: [] });
   const [filterOpen, setFilterOpen] = useState(false);
@@ -176,7 +182,7 @@ export function ScreenerPage() {
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
     filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
-  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options"] : [])) as PanelId[]);
+  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"] : [])) as PanelId[]);
   useEffect(() => {
     if (!activeSpec || initialized.current || selectedScreenId || universe === "US_EQUITIES") return;
     setColumnVisibility(viewVisibility("Overview", activeSpec.views));
@@ -232,6 +238,7 @@ export function ScreenerPage() {
     setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
   }, []);
   const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
+  const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const resetPanels = useCallback(() => {
     dockHandle.current?.reset();
     setDockHeight(DOCK_HEIGHT_DEFAULT);
@@ -302,8 +309,9 @@ export function ScreenerPage() {
     if (urlSort && (!config.data?.universes || (config.data.universes.find((item) => item.id === nextUniverse)?.views &&
       Object.values(config.data.universes.find((item) => item.id === nextUniverse)!.views).some((fields) => fields.includes(urlSort))))) setSort(urlSort);
     setDescending(params.has("dir") ? params.get("dir") !== "asc" : nextUniverse === "US_EQUITIES");
-    const nextView = params.get("view");
-    const nextViews = config.data?.universes?.find((item) => item.id === nextUniverse)?.views ?? views;
+    const nextSpec = config.data?.universes?.find((item) => item.id === nextUniverse);
+    const nextView = canonicalScreenerView(params.get("view"), nextUniverse, nextSpec?.view_aliases);
+    const nextViews = nextSpec?.views ?? views;
     if (nextView && nextViews[nextView] && nextView !== view) {
       setView(nextView);
       setColumnVisibility(viewVisibility(nextView, nextViews));
@@ -328,24 +336,32 @@ export function ScreenerPage() {
       const screenKeys = allKeys.filter((key) => Object.values(screenViews).some((fields) => fields.includes(key)));
       const source = saved ?? { filters: preset!.filters, view: "Overview", sort: { field: "volume", descending: true },
         columns: { visible: screenKeys.filter((key) => screenViews.Overview.includes(key)), order: screenKeys, widths: {}, pinned: ["symbol"] } };
+      const sourceView = canonicalScreenerView(source.view, screenUniverse, screenSpec?.view_aliases) ?? "Overview";
       setFilters(source.filters);
-      const nextView = params.get("view") && screenViews[params.get("view")!] ? params.get("view")! : source.view;
+      const requestedView = canonicalScreenerView(params.get("view"), screenUniverse, screenSpec?.view_aliases);
+      const nextView = requestedView && screenViews[requestedView] ? requestedView : sourceView;
+      const overrideColumns = requestedView && requestedView !== sourceView && requestedView !== "Custom" && screenViews[requestedView];
       setView(nextView);
       setSort(sortFromUrl(params.get("sort")) ?? source.sort.field as SortKey);
       setDescending(params.has("dir") ? params.get("dir") !== "asc" : source.sort.descending);
-      setColumnVisibility(Object.fromEntries(allKeys.map((key) => [key, source.columns.visible.includes(key)])));
-      setColumnOrder(source.columns.order); setColumnSizing(source.columns.widths);
+      setColumnVisibility(overrideColumns ? viewVisibility(nextView, screenViews) : Object.fromEntries(allKeys.map((key) => [key, source.columns.visible.includes(key)])));
+      setColumnOrder(overrideColumns ? [...screenViews[nextView], ...allKeys.filter((key) => !screenViews[nextView].includes(key))] : source.columns.order);
+      setColumnSizing(overrideColumns ? {} : source.columns.widths);
       setColumnPinning({ left: source.columns.pinned, right: [] });
-      setSavedBase(JSON.stringify(snapshotOf(source as ScreenerScreen)));
+      setSavedBase(JSON.stringify(snapshotOf({ ...source, view: sourceView } as ScreenerScreen)));
       loadedScreen.current = id;
     } else if (!id && (!initialized.current || loadedScreen.current !== null) && (config.data.last?.universe ?? "US_EQUITIES") === universe && config.data.last) {
       const last = config.data.last;
       setFilters(last.filters);
-      const nextView = params.get("view") && activeViews[params.get("view")!] ? params.get("view")! : last.view;
+      const requestedView = canonicalScreenerView(params.get("view"), universe, activeSpec?.view_aliases);
+      const lastView = canonicalScreenerView(last.view, universe, activeSpec?.view_aliases) ?? "Overview";
+      const nextView = requestedView && activeViews[requestedView] ? requestedView : lastView;
+      const overrideColumns = requestedView && requestedView !== lastView && requestedView !== "Custom" && activeViews[requestedView];
       setView(nextView); setSort(sortFromUrl(params.get("sort")) ?? last.sort.field as SortKey);
       setDescending(params.has("dir") ? params.get("dir") !== "asc" : last.sort.descending);
-      setColumnVisibility(Object.fromEntries(allKeys.map((key) => [key, last.columns.visible.includes(key)])));
-      setColumnOrder(last.columns.order); setColumnSizing(last.columns.widths);
+      setColumnVisibility(overrideColumns ? viewVisibility(nextView, activeViews) : Object.fromEntries(allKeys.map((key) => [key, last.columns.visible.includes(key)])));
+      setColumnOrder(overrideColumns ? [...activeViews[nextView], ...allKeys.filter((key) => !activeViews[nextView].includes(key))] : last.columns.order);
+      setColumnSizing(overrideColumns ? {} : last.columns.widths);
       setColumnPinning({ left: last.columns.pinned, right: [] });
       setSavedBase("");
       loadedScreen.current = null;
@@ -777,7 +793,8 @@ export function ScreenerPage() {
     {previewOpen && (!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
       screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
       paneRef={previewRef} onClose={closePreview} onOpen={open}
-      optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel} />}
+      optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
+      squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel} />}
     </div>
     {dockVisible && <>
       <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
@@ -785,7 +802,7 @@ export function ScreenerPage() {
         onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />
       <section className="screener-dock" aria-label="Specialist panels" ref={dockRef} style={{ height: dockHeight }}>
         <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-          <ScreenerDock layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} universe={universe} supportedPanels={supportedPanels}
+          <ScreenerDock layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels}
             clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
             onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
         </Suspense>
