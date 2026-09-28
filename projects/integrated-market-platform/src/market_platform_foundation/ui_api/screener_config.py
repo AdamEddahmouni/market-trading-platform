@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from .screener_filters import builtin_presets, validate_filters
 from .screener_projections import FIELD_NAMES
+from .screener_universes import US_EQUITIES, universe_payload, universe_spec
 
 PREF_KEY = "screener.s2.screens"
 LAST_KEY = "screener.s2.last"
@@ -22,7 +23,7 @@ DOCK_HEIGHT = (140, 1200)
 DEFAULT_PANEL_LAYOUT = {"version": PANEL_LAYOUT_VERSION, "open_panels": [], "active_panel": None,
                         "dock_height": 300, "dockview_layout": None}
 MAX_DOCKVIEW_LAYOUT_BYTES = 32_768
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 VIEWS = ("Overview", "Performance", "Technical", "Volume", "Short", "Fundamentals", "Custom")
 COLUMNS = frozenset((*FIELD_NAMES, "symbol", "company", "sector", "industry", "country",
                      "earnings_date", "recommendation", "bid", "ask", "spread_pct"))
@@ -35,12 +36,12 @@ def validate_screen(raw: Any, *, identity: str | None = None) -> dict[str, Any]:
     name = raw.get("name")
     if not isinstance(name, str) or not name.strip() or len(name.strip()) > 80:
         raise ValueError("INVALID_SCREEN_NAME")
-    if raw.get("universe") != "US_EQUITIES":
-        raise ValueError("INVALID_SCREEN_UNIVERSE")
-    if raw.get("view") not in VIEWS:
+    universe = raw.get("universe", US_EQUITIES)
+    spec = universe_spec(universe)
+    if raw.get("view") not in spec.views:
         raise ValueError("INVALID_SCREEN_VIEW")
     sort = raw.get("sort")
-    if not isinstance(sort, dict) or sort.get("field") not in SORTS or not isinstance(sort.get("descending"), bool):
+    if not isinstance(sort, dict) or sort.get("field") not in (SORTS if universe == US_EQUITIES else spec.columns) or not isinstance(sort.get("descending"), bool):
         raise ValueError("INVALID_SCREEN_SORT")
     columns = raw.get("columns")
     if not isinstance(columns, dict):
@@ -48,22 +49,23 @@ def validate_screen(raw: Any, *, identity: str | None = None) -> dict[str, Any]:
     visible, order, widths, pinned = (columns.get(key) for key in ("visible", "order", "widths", "pinned"))
     if not isinstance(visible, list) or not visible or not isinstance(order, list) or not isinstance(pinned, list) or not isinstance(widths, dict):
         raise ValueError("INVALID_SCREEN_COLUMNS")
-    if any(not isinstance(value, str) or value not in COLUMNS for value in visible + order + pinned):
+    allowed = COLUMNS if universe == US_EQUITIES else spec.columns
+    if any(not isinstance(value, str) or value not in allowed for value in visible + order + pinned):
         raise ValueError("INVALID_SCREEN_COLUMN")
     if len(set(visible)) != len(visible) or len(set(order)) != len(order) or len(set(pinned)) != len(pinned):
         raise ValueError("DUPLICATE_SCREEN_COLUMN")
     if not set(visible) <= set(order) or not set(pinned) <= set(visible):
         raise ValueError("INVALID_SCREEN_COLUMN_STATE")
-    if any(key not in COLUMNS or isinstance(value, bool) or not isinstance(value, (int, float)) or not 50 <= value <= 600 for key, value in widths.items()):
+    if any(key not in allowed or isinstance(value, bool) or not isinstance(value, (int, float)) or not 50 <= value <= 600 for key, value in widths.items()):
         raise ValueError("INVALID_SCREEN_COLUMN_WIDTH")
     screen_id = identity or raw.get("id") or f"user-{uuid4().hex}"
     if not isinstance(screen_id, str) or len(screen_id) > 80 or not screen_id.startswith("user-"):
         raise ValueError("INVALID_SCREEN_ID")
     version = raw.get("version", SCHEMA_VERSION)
-    if version != SCHEMA_VERSION:
+    if version not in (1, SCHEMA_VERSION) or (version == 1 and universe != US_EQUITIES):
         raise ValueError("UNSUPPORTED_SCREEN_VERSION")
-    return {"id": screen_id, "version": version, "name": name.strip(), "universe": "US_EQUITIES",
-            "filters": validate_filters(raw.get("filters")), "view": raw["view"],
+    return {"id": screen_id, "version": SCHEMA_VERSION, "name": name.strip(), "universe": universe,
+            "filters": validate_filters(raw.get("filters"), universe=universe), "view": raw["view"],
             "sort": {"field": sort["field"], "descending": sort["descending"]},
             "columns": {"visible": list(visible), "order": list(order), "widths": dict(widths), "pinned": list(pinned)}}
 
@@ -141,7 +143,7 @@ class ScreenerConfigRepository:
 
     def list_saved(self) -> list[dict[str, Any]]:
         envelope = self._store.get_preferences().get(PREF_KEY)
-        if not isinstance(envelope, dict) or envelope.get("version") != SCHEMA_VERSION or not isinstance(envelope.get("screens"), list):
+        if not isinstance(envelope, dict) or envelope.get("version") not in (1, SCHEMA_VERSION) or not isinstance(envelope.get("screens"), list):
             return []
         screens = []
         for raw in envelope["screens"]:
@@ -219,7 +221,7 @@ def read_config() -> dict[str, Any]:
     from .screener_filters import filter_catalog
 
     store = open_local_state()
-    return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(),
+    return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(None), "universes": universe_payload(),
             "presets": builtin_presets(), "saved": ScreenerConfigRepository(store).list_saved() if store else [],
             "last": ScreenerConfigRepository(store).get_last() if store else None,
             "preview_layout": ScreenerConfigRepository(store).get_preview_layout() if store else dict(DEFAULT_PREVIEW),

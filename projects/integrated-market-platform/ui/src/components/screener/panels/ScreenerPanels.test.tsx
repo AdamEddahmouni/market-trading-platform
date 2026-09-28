@@ -6,7 +6,7 @@ import { ScreenerPage } from "../ScreenerPage";
 import { sideLabel, windowLabel } from "./OrderFlowPanel";
 import { anchorLabel } from "./CvdPanel";
 import { perSecond } from "./CvdChart";
-import { serializeLayout } from "./ScreenerDock";
+import ScreenerDock, { serializeLayout } from "./ScreenerDock";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -152,6 +152,20 @@ describe("S4 specialist panel semantics", () => {
       panels: { cvd: { id: "cvd", contentComponent: "cvd", title: "CVD", params: { cvd: 1 }, nested: { price: 1 } } } }) };
     expect(serializeLayout(api as never)).toEqual({ grid: { root: {} }, panels: { cvd: { id: "cvd", contentComponent: "cvd", title: "CVD" } } });
     expect(serializeLayout({ panels: [] } as never)).toBeNull();
+  });
+});
+
+describe("S5 universe capability", () => {
+  it("releases held panel demand when a universe loses the capability instead of re-demanding the stale instrument", async () => {
+    const props = { layout: { version: 1, open_panels: ["order_flow" as const], active_panel: "order_flow" as const, dock_height: 300, dockview_layout: null },
+      row: makeRow("SPY"), quote: undefined, clientId: "dock-s5", pending: null, handleRef: { current: null },
+      onOpenChange: () => undefined, onLayout: () => undefined };
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(<QueryClientProvider client={client}><ScreenerDock {...props} universe="US_ETFS" supportedPanels={new Set(["order_flow", "cvd", "level2", "charts"] as const)} /></QueryClientProvider>);
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith("dock-s5", "SPY", ["order_flow"], "US_ETFS"));
+    view.rerender(<QueryClientProvider client={client}><ScreenerDock {...props} universe="FUTURES" supportedPanels={new Set()} /></QueryClientProvider>);
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith("dock-s5", null, [], "FUTURES"));
+    expect(screen.getByText("Order Flow is unavailable for this universe. The layout is retained.")).toBeInTheDocument();
   });
 });
 

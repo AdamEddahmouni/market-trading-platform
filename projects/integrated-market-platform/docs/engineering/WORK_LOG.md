@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S5 multi-universe convergence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `xa01`, `tools/moomoo`, `docs` |
+| **Summary** | One Screener over three typed universes — US Equities (S1–S4 unchanged), Futures (current OpenD lead contracts, per-contract XA-01 identity, provider expiry/DTE/market state), and US ETFs (OpenD-classified `ETF_FUND`). Universe-scoped fields, views, filters, sort, source/footer, saved screens (schema v2 with migration of pre-S5 screens to US Equities), URL `universe` state, universe-aware Quick Preview, and capability-gated S4 panels. Futures quotes stay unavailable while the provider refuses entitlement; no fixture, replay, or synthetic price enters the path. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_universes.py`, `screener_multi.py`, `screener_config.py`, `screener_filters.py`, `screener_preview.py`, `screener_projections.py`, `screener_specialist.py`, `server.py`, `instrument_selector.py`, `g14_product_projections.py`, `xa01/compatibility.py`, `tools/moomoo/opend_quote_transport.py`, `ui/src/api/screener.ts`, `ui/src/api/screenerPanels.ts`, `ui/src/components/screener/`, `tests/platform/test_screener_s5.py`, `docs/engineering/SCREENER_S5.md` |
+| **Tests** | Screener backend S1–S5 123 passed (S5 13); Screener UI 44 passed; full UI suite 1,047 passed (146 files); typecheck, production build, bundle budget (initial 201.35 KiB gzip), format, lint, and docs links passed. `validate changed` exit 0 (5,610 tests, 35 skipped, 0 failures, 0 errors; two earlier runs had non-reproducible errors in other suites — see [SCREENER_S5.md](SCREENER_S5.md#validation-evidence)). |
+| **Related** | [SCREENER_S5.md](SCREENER_S5.md), [SCREENER_S4.md](SCREENER_S4.md) |
+| **Notes** | Observed 2026-09-27 (Sunday, closed): 178 Futures lead contracts with `MOOMOO_QUOTE_NOT_ENTITLED`; 6,306 ETFs, SPY bars/levels current and SPY panel subscriptions accepted. Recovery fixes: ETF panel demand was refused against the Finviz snapshot; a universe without supported panels re-demanded the stale instrument and leaked holds; view tabs were alphabetized by JSON key sorting (also Equities); Futures/ETF Technical views duplicated Performance; provider `N/A` exchange shown raw; entitlement footer shown for any quote failure. US Equities was inspected with Finviz unconfigured in the isolated acceptance environment; populated Equity and priced Futures layouts used a test-only in-page interception. |
+
+---
+
 ## 2026-09-27 — Main Screener S4 specialist dock panels
 
 | Field | Value |

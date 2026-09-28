@@ -1,4 +1,4 @@
-"""Provider-neutral filters for the current US-equity Screener snapshot."""
+"""Provider-neutral, universe-scoped Screener fields and predicates."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from copy import deepcopy
 from typing import Any
 
 from ..discovery.screens import SCREEN_LIBRARY
+from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 NUMERIC_OPERATORS = ("eq", "ne", "gt", "gte", "lt", "lte", "between")
 TEXT_OPERATORS = ("eq", "ne", "in", "not_in", "contains")
@@ -40,13 +41,32 @@ _CATALOG = {
             "universes": ["US_EQUITIES"], "availability": "SNAPSHOT"}
     for field, label, category, kind, unit in _FIELDS
 }
+for field in ("symbol", "company"):
+    _CATALOG[field]["universes"] = [US_EQUITIES, FUTURES, US_ETFS]
+_CATALOG["price"]["universes"] = [US_EQUITIES]
+_CATALOG.update({
+    field: {"field": field, "label": label, "category": category, "type": kind,
+            "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
+            "universes": universes, "availability": "CURRENT_METADATA"}
+    for field, label, category, kind, unit, universes in (
+        ("root", "Root", "Contract", "text", "text", [FUTURES]),
+        ("exchange", "Exchange", "Identity", "text", "text", [FUTURES, US_ETFS]),
+        ("contract_month", "Contract Month", "Contract", "text", "text", [FUTURES]),
+        ("dte", "Days to Expiry", "Contract", "number", "days", [FUTURES]),
+        ("lead", "Lead Contract", "Contract", "number", "boolean", [FUTURES]),
+    )
+})
 
 
-def filter_catalog() -> list[dict[str, Any]]:
-    return deepcopy(list(_CATALOG.values()))
+def filter_catalog(universe: str | None = US_EQUITIES) -> list[dict[str, Any]]:
+    if universe is not None:
+        universe_spec(universe)
+    return deepcopy([entry for entry in _CATALOG.values()
+                     if universe is None or universe in entry["universes"]])
 
 
-def validate_filters(raw: Any) -> list[dict[str, Any]]:
+def validate_filters(raw: Any, *, universe: str = US_EQUITIES) -> list[dict[str, Any]]:
+    universe_spec(universe)
     if not isinstance(raw, list) or len(raw) > 32:
         raise ValueError("INVALID_FILTER_LIST")
     validated: list[dict[str, Any]] = []
@@ -57,6 +77,8 @@ def validate_filters(raw: Any) -> list[dict[str, Any]]:
         field, operator, identity = item.get("field"), item.get("operator"), item.get("id")
         if field not in _CATALOG:
             raise ValueError("UNKNOWN_FILTER_FIELD")
+        if universe not in _CATALOG[field]["universes"]:
+            raise ValueError("FILTER_UNIVERSE_MISMATCH")
         if operator not in _CATALOG[field]["operators"]:
             raise ValueError("UNSUPPORTED_FILTER_OPERATOR")
         if not isinstance(identity, str) or not identity or len(identity) > 80 or identity in ids:
@@ -146,6 +168,7 @@ def builtin_presets() -> list[dict[str, Any]]:
         mapping = _TRANSLATIONS[screen_id]
         result.append({
             "id": screen_id, "name": _PRESET_NAMES[screen_id],
+            "universe": US_EQUITIES,
             "version": screen.version, "status": "SUPPORTED" if mapping is not None else "UNSUPPORTED",
             "reason": None if mapping is not None else "Existing discovery condition is absent from the current broad Screener contract",
             "filters": [{"id": f"{screen_id.lower()}-{index}", "field": field, "operator": operator, "value": value}

@@ -627,6 +627,22 @@ class OpendCurrentKlineSession:
                 return {"reason_code": _vendor_reason(data), "rows": None, "vendor_ret_msg": _bounded_vendor_msg(data)}
             return {"reason_code": None, "rows": _snapshot_rows(data)}
 
+    def fetch_etf_catalog(self) -> dict[str, Any]:
+        """Current US ETF security metadata; no quote or history subscription."""
+
+        with self._lock:
+            pair = self._context()
+            if isinstance(pair, str):
+                return {"reason_code": pair, "rows": None}
+            ctx, ft = pair
+            try:
+                ret, data = ctx.get_stock_basicinfo(ft.Market.US, ft.SecurityType.ETF)
+            except Exception as exc:  # noqa: BLE001 — vendor boundary
+                return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None, "vendor_ret_msg": _bounded_vendor_msg(repr(exc))}
+            if ret != ft.RET_OK:
+                return {"reason_code": _vendor_reason(data), "rows": None, "vendor_ret_msg": _bounded_vendor_msg(data)}
+            return {"reason_code": None, "rows": _snapshot_rows(data)}
+
     def fetch_future_quotes(self, codes: list[str]) -> dict[str, Any]:
         """Vendor snapshot rows for futures codes, or the entitlement/protocol refusal."""
 

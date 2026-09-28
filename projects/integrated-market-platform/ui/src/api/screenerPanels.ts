@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { authHeaders } from "../auth/session";
 import { fetchJson, postJson } from "./fetchJson";
-import type { PanelId } from "./screener";
+import type { PanelId, ScreenerUniverse } from "./screener";
 
 // S4 specialist panel contracts. Each panel keeps its own clock and state; a
 // response for another instrument is never rendered (identity guard below).
@@ -94,30 +94,30 @@ function guard<T>(payload: T, requested: string, actual: string): T {
   return payload;
 }
 
-export async function fetchOrderFlow(instrumentId: string, signal?: AbortSignal) {
-  const payload = await fetchJson(`/screener/order-flow?instrument=${encodeURIComponent(instrumentId)}`, OrderFlowSchema, { signal });
+export async function fetchOrderFlow(instrumentId: string, signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const payload = await fetchJson(`/screener/order-flow?instrument=${encodeURIComponent(instrumentId)}&universe=${universe}`, OrderFlowSchema, { signal });
   return guard(payload, instrumentId, payload.instrument_id);
 }
-export async function fetchCvd(instrumentId: string, signal?: AbortSignal) {
-  const payload = await fetchJson(`/screener/cvd?instrument=${encodeURIComponent(instrumentId)}`, CvdSchema, { signal });
+export async function fetchCvd(instrumentId: string, signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const payload = await fetchJson(`/screener/cvd?instrument=${encodeURIComponent(instrumentId)}&universe=${universe}`, CvdSchema, { signal });
   return guard(payload, instrumentId, payload.instrument_id);
 }
-export async function fetchDepth(instrumentId: string, signal?: AbortSignal) {
-  const payload = await fetchJson(`/screener/depth?instrument=${encodeURIComponent(instrumentId)}`, DepthSchema, { signal });
+export async function fetchDepth(instrumentId: string, signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const payload = await fetchJson(`/screener/depth?instrument=${encodeURIComponent(instrumentId)}&universe=${universe}`, DepthSchema, { signal });
   return guard(payload, instrumentId, payload.instrument_id);
 }
-export async function fetchChart(instrumentId: string, timeframe: string, scope: string, signal?: AbortSignal) {
-  const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope });
+export async function fetchChart(instrumentId: string, timeframe: string, scope: string, signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope, universe });
   const payload = await fetchJson(`/screener/chart?${query}`, ChartSchema, { signal });
   return guard(payload, instrumentId, payload.instrument.instrument_id);
 }
-export async function fetchFuturesContext(instrumentId: string, signal?: AbortSignal) {
-  const payload = await fetchJson(`/screener/futures-context?instrument=${encodeURIComponent(instrumentId)}`, FuturesSchema, { signal });
+export async function fetchFuturesContext(instrumentId: string, signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const payload = await fetchJson(`/screener/futures-context?instrument=${encodeURIComponent(instrumentId)}&universe=${universe}`, FuturesSchema, { signal });
   return guard(payload, instrumentId, payload.instrument.instrument_id);
 }
 
-export function demandPanels(clientId: string, instrumentId: string | null, panels: PanelId[]) {
-  return postJson("/screener/panels", { client_id: clientId, instrument_id: instrumentId, panels }, DemandSchema);
+export function demandPanels(clientId: string, instrumentId: string | null, panels: PanelId[], universe: ScreenerUniverse = "US_EQUITIES") {
+  return postJson("/screener/panels", { client_id: clientId, instrument_id: instrumentId, panels, universe }, DemandSchema);
 }
 export function releasePanels(clientId: string) {
   return postJson("/screener/panels/release", { client_id: clientId }, z.object({ released: z.boolean() }));

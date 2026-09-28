@@ -43,11 +43,11 @@ function Imbalance({ data }: { data: DepthPayload }) {
 }
 
 export default function Level2Panel({ api }: IDockviewPanelProps) {
-  const { row, settledId } = useSelection();
+  const { row, settledId, universe } = useSelection();
   const visible = usePanelVisible(api);
   const query = useQuery({
-    queryKey: ["screener-depth", settledId],
-    queryFn: ({ signal }) => fetchDepth(settledId!, signal),
+    queryKey: ["screener-depth", universe, settledId],
+    queryFn: ({ signal }) => universe === "US_EQUITIES" ? fetchDepth(settledId!, signal) : fetchDepth(settledId!, signal, universe),
     enabled: Boolean(settledId) && visible,
     refetchInterval: (current) => visible ? (["CURRENT", "PARTIAL", "STALE"].includes(current.state.data?.state ?? "") ? 1_000 : 3_000) : false,
     retry: 1,

@@ -1,12 +1,14 @@
 import { Component, createContext, useContext, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
-import type { PanelId, ScreenerQuote, ScreenerRow } from "../../../api/screener";
+import type { PanelId, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { PANEL_TITLES } from "./registry";
 
 /** One canonical selection drives every panel; panels never pick their own ticker. */
 export type SpecialistSelection = {
   row: ScreenerRow | null;
+  universe: ScreenerUniverse;
+  supportedPanels: ReadonlySet<PanelId>;
   /** The selection after the settle delay; requests are only made for it. */
   settledId: string | null;
   quote: ScreenerQuote | undefined;
@@ -20,7 +22,8 @@ export type PanelActions = {
 };
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
-  row: null, settledId: null, quote: undefined, demand: null, actions: { close: noop, move: noop, resize: noop },
+  row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures"]),
+  settledId: null, quote: undefined, demand: null, actions: { close: noop, move: noop, resize: noop },
 });
 export const useSelection = () => useContext(SpecialistContext);
 

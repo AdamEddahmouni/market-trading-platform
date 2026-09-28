@@ -13,7 +13,7 @@ from ..cross_lane.multi_asset_runtime import (
 from ..paper.margin_resolution import resolve_futures_margin_facts
 from ..portfolio.paper_adapter import paper_snapshot_to_canonical
 from ..risk.margin_facts import MARGIN_MISSING, MARGIN_STALE
-from ..xa01.enums import InstrumentKind
+from ..xa01.enums import InstrumentKind, Tradability
 from ..xa01.errors import Xa01Error
 from ..xa01.registry import get_registry
 from .instrument_route_codec import decode_instrument_route_param
@@ -251,11 +251,13 @@ def build_futures_product_payload(
     descriptor = _resolve_descriptor(route_ref)
     instrument_id = descriptor.identity.canonical_id
     kind = descriptor.identity.instrument_kind
-    runtime = _runtime_projection(descriptor)
+    runtime = (_runtime_projection(descriptor) if descriptor.tradability == Tradability.TRADABLE else
+               {"status": "UNAVAILABLE", "reason": "CONTRACT_ECONOMICS_UNVERIFIED",
+                "execution_available": False, "domain_payload": {}})
     observation_time_ns = int(getattr(store, "cursor_index", 0) or 0) * 1_000_000_000 or 1
     margin: dict[str, Any] = {"state": "NOT_APPLICABLE", "reason": None}
     instrument_ref: dict[str, Any] | None = None
-    if kind == InstrumentKind.FUTURE_CONTRACT:
+    if kind == InstrumentKind.FUTURE_CONTRACT and descriptor.tradability == Tradability.TRADABLE:
         from ..paper.contracts import build_instrument_ref
         from ..portfolio.instrument_economics import economics_from_descriptor
 
@@ -274,7 +276,9 @@ def build_futures_product_payload(
             instrument_id=instrument_id,
             observation_time_ns=observation_time_ns,
         )
-    execution_available = kind == InstrumentKind.FUTURE_CONTRACT and bool(runtime.get("execution_available"))
+    execution_available = (kind == InstrumentKind.FUTURE_CONTRACT
+                           and descriptor.tradability == Tradability.TRADABLE
+                           and bool(runtime.get("execution_available")))
     if kind in {InstrumentKind.FUTURE_FAMILY, InstrumentKind.CONTINUOUS_SERIES}:
         execution_available = False
     position = _portfolio_position_for_instrument(store, instrument_id) if execution_available else None

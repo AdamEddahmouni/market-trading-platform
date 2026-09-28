@@ -23,6 +23,7 @@ from ..market_sessions import us_equity_session_label
 from .screener_filters import catalog_entry, rule_matches, validate_filters
 from .screener_futures_context import FuturesContextService
 from .screener_projections import ScreenerService, screener_service
+from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 SCHEMA_VERSION = "screener-preview/1.0.0"
 CHART_SCHEMA_VERSION = "screener-chart/1.0.0"
@@ -70,10 +71,10 @@ def format_value(field: str, value: Any, unit: str) -> str:
 
 
 # ---------------------------------------------------------------- why it matched
-def explain_matches(row: dict[str, Any], filters: list[dict[str, Any]]) -> dict[str, Any]:
+def explain_matches(row: dict[str, Any], filters: list[dict[str, Any]], *, universe: str = US_EQUITIES) -> dict[str, Any]:
     """Per-rule facts using the exact S2 predicate; never provider tokens."""
 
-    rules = validate_filters(filters)
+    rules = validate_filters(filters, universe=universe)
     if not rules:
         return {"state": "NO_ACTIVE_FILTERS", "items": []}
     items = []
@@ -274,8 +275,11 @@ class ScreenerPreviewService:
                 "tolerance": structure.tolerance, "zones": [zone.to_dict() for zone in structure.zones], "price": price}
 
     def read(self, instrument_id: str, *, timeframe: str = "5m", scope: str = "EXTENDED",
-             filters: list[dict[str, Any]] | None = None) -> dict[str, Any] | None:
-        rules = validate_filters([] if filters is None else filters)
+             filters: list[dict[str, Any]] | None = None, universe: str = US_EQUITIES) -> dict[str, Any] | None:
+        universe_spec(universe)
+        rules = validate_filters([] if filters is None else filters, universe=universe)
+        if universe != US_EQUITIES:
+            return self._read_other(instrument_id, universe=universe, timeframe=timeframe, scope=scope, rules=rules)
         row, _error = self._screener.row_for(instrument_id)
         if row is None:
             return None
@@ -312,8 +316,79 @@ class ScreenerPreviewService:
             "futures": futures,
         }
 
+    def _read_other(self, instrument_id: str, *, universe: str, timeframe: str,
+                    scope: str, rules: list[dict[str, Any]]) -> dict[str, Any] | None:
+        from .screener_multi import multi_screener_service
 
-    def chart(self, instrument_id: str, *, timeframe: str = "5m", scope: str = "EXTENDED") -> dict[str, Any] | None:
+        row, _error = multi_screener_service().row_for(instrument_id, universe=universe)
+        if row is None:
+            return None
+        now_ns = self._now_ns()
+        if universe == US_ETFS:
+            market_id = row["market_data_id"]
+            series = self._bars.read(market_id, timeframe=timeframe, scope=scope)
+            bars = series.to_dict()
+            quote = self._screener.quote_for(market_id)
+            levels = self.levels(series, quote)
+            session = us_equity_session_label()
+            key_fields = ("price", "volume", "bid", "ask", "spread_pct")
+        else:
+            if timeframe not in ("1m", "5m", "15m") or scope not in ("EXTENDED", "RTH"):
+                raise ValueError("INVALID_PREVIEW_BAR_SCOPE")
+            bars = {"timeframe": timeframe, "session_scope": "PROVIDER_SPECIFIC",
+                    "provider": "", "source_id": "FUTURES_BARS_UNVERIFIED", "state": "UNAVAILABLE",
+                    "reason": "FUTURES_BARS_UNVERIFIED", "provider_reason": None,
+                    "received_at": None, "latest_complete_bar_end": None, "bar_count": 0,
+                    "bars": [], "forming": None}
+            levels = {"method": METHOD, "timeframe": timeframe, "session_scope": "PROVIDER_SPECIFIC",
+                      "bar_state": "UNAVAILABLE", "state": "UNAVAILABLE", "reason": "FUTURES_BARS_UNVERIFIED",
+                      "reasons": ["FUTURES_BARS_UNVERIFIED"], "calculated_at": None,
+                      "input_bar_count": 0, "input_latest_bar_end": None,
+                      "min_strength": MIN_STRENGTH, "strength_semantics": STRENGTH_SEMANTICS,
+                      "zones": [], "price": None, "support": None, "resistance": None, "testing": None}
+            quote = multi_screener_service().quote_for(instrument_id, universe=FUTURES)
+            session = "PROVIDER_SPECIFIC"
+            key_fields = ("dte", "lead", "tick_size", "multiplier", "price", "volume", "open_interest")
+        labels = {"dte": ("Days to Expiry", "days"), "lead": ("Lead Contract", "boolean"),
+                  "tick_size": ("Tick Size", "points"), "multiplier": ("Multiplier", "USD"),
+                  "open_interest": ("Open Interest", "contracts"), "price": ("Last", "USD"),
+                  "volume": ("Volume", "shares" if universe == US_ETFS else "contracts"),
+                  "bid": ("Bid", "USD"), "ask": ("Ask", "USD"), "spread_pct": ("Spread %", "percent")}
+        key_data = []
+        for field in key_fields:
+            live = quote["fields"].get(field)
+            source = live if quote["state"] in {"LIVE", "DELAYED"} and live and live["value"] is not None else row["fields"].get(field)
+            label, unit = labels[field]
+            key_data.append({"field": field, "label": label, "unit": unit,
+                             "value": source.get("value") if source else None,
+                             "source": source.get("source") if source else None,
+                             "state": source.get("state", "UNAVAILABLE") if source else "UNAVAILABLE",
+                             "as_of": (source.get("as_of") or (_iso(source["as_of_ns"]) if source.get("as_of_ns") else None)) if source else None})
+        futures = {"mapping_version": "NOT_APPLICABLE", "causal_note": "No verified contextual futures relationship for this universe.", "items": []}
+        observed = []
+        change = quote["fields"].get("change_pct") if quote["state"] == "LIVE" else None
+        if change and change["value"] is not None:
+            observed.append({"class": "OBSERVED", "kind": "PRICE_MOVE",
+                             "text": f"Change {change['value']:+.2f}% on the current quote",
+                             "source": change["source"], "as_of": change.get("as_of")})
+        observed.append({"class": "INSUFFICIENT_EVIDENCE", "kind": "CAUSATION",
+                         "text": "No verified causal driver identified from current evidence.",
+                         "source": "IMP", "as_of": None})
+        return {"schema_version": SCHEMA_VERSION, "generated_at": _iso(now_ns),
+                "market_session": session, "universe": universe,
+                "instrument": {**row["instrument"], "symbol": row["symbol"],
+                               "company": row["company"], "sector": None, "industry": None,
+                               "root": row.get("root"), "expiry": row.get("expiry"),
+                               "exchange": row.get("exchange")},
+                "snapshot_as_of": None,
+                "quote": quote, "key_data": key_data, "bars": bars, "levels": levels,
+                "why": {"matched": explain_matches(row, rules, universe=universe),
+                        "moving": {"items": observed, "headline_window_start": _iso(now_ns)}},
+                "futures": futures}
+
+
+    def chart(self, instrument_id: str, *, timeframe: str = "5m", scope: str = "EXTENDED",
+              universe: str = US_EQUITIES) -> dict[str, Any] | None:
         """S4 expanded chart: the preview's bar series, levels, and quote, without Why/news.
 
         Same ``CurrentBarsService`` and level cache as ``read``, so the Quick
@@ -321,6 +396,12 @@ class ScreenerPreviewService:
         can never disagree about bars or zones.
         """
 
+        if universe != US_EQUITIES:
+            preview = self.read(instrument_id, universe=universe, timeframe=timeframe, scope=scope)
+            if preview is None:
+                return None
+            return {key: preview[key] for key in ("generated_at", "market_session", "instrument", "quote", "bars", "levels")} | {
+                "schema_version": CHART_SCHEMA_VERSION}
         row, _error = self._screener.row_for(instrument_id)
         if row is None:
             return None

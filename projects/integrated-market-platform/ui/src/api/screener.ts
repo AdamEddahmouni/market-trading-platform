@@ -6,7 +6,7 @@ const FieldSchema = z.object({
   value: z.number().nullable(),
   source: z.string(),
   state: z.string(),
-  as_of: z.string().optional(),
+  as_of: z.string().nullable().optional(),
   as_of_ns: z.number().optional(),
 });
 const RowSchema = z.object({
@@ -14,6 +14,7 @@ const RowSchema = z.object({
     instrument_id: z.string(),
     venue_id: z.string(),
     asset_class: z.string(),
+    instrument_kind: z.string().optional(),
   }),
   symbol: z.string(),
   company: z.string(),
@@ -22,23 +23,33 @@ const RowSchema = z.object({
   country: z.string().nullable().optional(),
   earnings_date: z.string().nullable().optional(),
   recommendation: z.string().nullable().optional(),
+  root: z.string().optional(),
+  exchange: z.string().nullable().optional(),
+  contract_month: z.string().optional(),
+  expiry: z.string().optional(),
+  lead: z.boolean().optional(),
+  market_data_id: z.string().optional(),
+  provider_symbol: z.string().optional(),
   fields: z.record(FieldSchema),
 });
+export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS"]);
+export type ScreenerUniverse = z.infer<typeof ScreenerUniverseSchema>;
 const ScreenerSchema = z.object({
   schema_version: z.literal("screener/1.0.0"),
-  universe: z.literal("US_EQUITIES"),
+  universe: ScreenerUniverseSchema,
   generated_at: z.string(),
-  market_session: z.enum(["PREMARKET", "REGULAR", "AFTER_HOURS", "CLOSED"]),
+  market_session: z.string(),
   universe_as_of: z.string().nullable(),
   screener_as_of: z.string().nullable(),
   result_count: z.number(),
   unfiltered_count: z.number().optional(),
-  provider_health: z.array(z.object({ provider: z.string(), state: z.string(), reason: z.string().nullable() })),
+  provider_health: z.array(z.object({ provider: z.string(), role: z.string().optional(), state: z.string(), reason: z.string().nullable() })),
   source_error: z.string().nullable(),
   rows: z.array(RowSchema),
 });
 const QuoteSchema = z.object({
   state: z.string(),
+  session_state: z.string().optional(),
   reason: z.string().nullable().optional(),
   age_ms: z.number().optional(),
   fields: z.record(FieldSchema),
@@ -63,7 +74,7 @@ export const ScreenerFilterSchema = z.object({
 });
 export type ScreenerFilter = z.infer<typeof ScreenerFilterSchema>;
 export const ScreenerScreenSchema = z.object({
-  id: z.string(), version: z.number(), name: z.string(), universe: z.literal("US_EQUITIES"),
+  id: z.string(), version: z.number(), name: z.string(), universe: ScreenerUniverseSchema,
   filters: z.array(ScreenerFilterSchema), view: z.string(),
   sort: z.object({ field: z.string(), descending: z.boolean() }),
   columns: z.object({ visible: z.array(z.string()), order: z.array(z.string()),
@@ -72,10 +83,15 @@ export const ScreenerScreenSchema = z.object({
 export type ScreenerScreen = z.infer<typeof ScreenerScreenSchema>;
 const ScreenerConfigSchema = z.object({
   schema_version: z.number(), persistence_available: z.boolean(),
+  universes: z.array(z.object({ id: ScreenerUniverseSchema, label: z.string(), asset_class: z.string(),
+    instrument_kind: z.string(), source: z.string(), session_model: z.string(), default_sort: z.string(),
+    default_columns: z.array(z.string()), views: z.record(z.array(z.string())), view_order: z.array(z.string()).optional(),
+    quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()) })),
   catalog: z.array(z.object({ field: z.string(), label: z.string(), category: z.string(),
     type: z.enum(["number", "text"]), unit: z.string(), operators: z.array(z.string()),
     universes: z.array(z.string()), availability: z.string() })),
   presets: z.array(z.object({ id: z.string(), name: z.string(), version: z.string(),
+    universe: ScreenerUniverseSchema,
     status: z.enum(["SUPPORTED", "UNSUPPORTED"]), reason: z.string().nullable(),
     filters: z.array(ScreenerFilterSchema) })),
   saved: z.array(ScreenerScreenSchema),
@@ -101,9 +117,9 @@ export function persistScreenerPanelLayout(layout: PanelLayout) {
   return postJson("/screener/config", { action: "panel_layout", layout }, z.object({ result: PanelLayoutSchema }).passthrough());
 }
 
-export function fetchScreener(search: string, sort: string, descending: boolean, refresh = false, filters: ScreenerFilter[] = []) {
+export function fetchScreener(search: string, sort: string, descending: boolean, refresh = false, filters: ScreenerFilter[] = [], universe: ScreenerUniverse = "US_EQUITIES") {
   const query = new URLSearchParams({
-    universe: "US_EQUITIES", search, sort,
+    universe, search, sort,
     descending: descending ? "1" : "0", limit: "10000",
   });
   if (refresh) query.set("refresh", "1");
@@ -153,7 +169,9 @@ const PreviewSchema = z.object({
   generated_at: z.string(),
   market_session: ScreenerSchema.shape.market_session,
   instrument: z.object({ instrument_id: z.string(), venue_id: z.string(), asset_class: z.string(), symbol: z.string(),
-    company: z.string(), sector: z.string().nullable(), industry: z.string().nullable() }),
+    company: z.string(), sector: z.string().nullable(), industry: z.string().nullable(),
+    root: z.string().nullable().optional(), expiry: z.string().nullable().optional(), exchange: z.string().nullable().optional() }),
+  universe: ScreenerUniverseSchema.optional(),
   snapshot_as_of: z.string().nullable().optional(),
   quote: QuoteSchema,
   key_data: z.array(z.object({ field: z.string(), label: z.string(), unit: z.string(), value: z.number().nullable(),
@@ -192,8 +210,8 @@ export type ScreenerPreview = z.infer<typeof PreviewSchema>;
 export type SrZone = z.infer<typeof ZoneSchema>;
 export type PreviewBar = z.infer<typeof BarSchema>;
 
-export async function fetchScreenerPreview(instrumentId: string, timeframe: string, scope: string, filters: ScreenerFilter[], signal?: AbortSignal) {
-  const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope });
+export async function fetchScreenerPreview(instrumentId: string, timeframe: string, scope: string, filters: ScreenerFilter[], signal?: AbortSignal, universe: ScreenerUniverse = "US_EQUITIES") {
+  const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope, universe });
   if (filters.length) query.set("filters", JSON.stringify(filters));
   const preview = await fetchJson(`/screener/preview?${query}`, PreviewSchema, { signal });
   // Request identity guard: a response for another instrument is never rendered.
@@ -201,8 +219,8 @@ export async function fetchScreenerPreview(instrumentId: string, timeframe: stri
   return preview;
 }
 
-export function updateScreenerWindow(clientId: string, symbols: string[]) {
-  return postJson("/screener/window", { client_id: clientId, symbols }, WindowSchema);
+export function updateScreenerWindow(clientId: string, symbols: string[], universe: ScreenerUniverse = "US_EQUITIES") {
+  return postJson("/screener/window", { client_id: clientId, symbols, universe }, WindowSchema);
 }
 
 export function releaseScreenerWindow(clientId: string) {
