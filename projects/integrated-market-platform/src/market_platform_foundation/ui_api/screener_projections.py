@@ -48,6 +48,36 @@ def _number(value: Any) -> float | None:
     return result if math.isfinite(result) else None
 
 
+def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
+    """Current L1 quote with its own state/age; stale quotes are never labelled LIVE."""
+
+    age_ms = max(0, (time.time_ns() - int(quote.received_ns)) // 1_000_000)
+    quality = str(quote.quality or "UNKNOWN").upper()
+    admission = str(quote.admission or "UNKNOWN").upper()
+    connection = str(getattr(getattr(runtime, "lifecycle", None), "connection_state", "AVAILABLE")).upper()
+    if age_ms > 5_000 or "DISCONNECTED" in connection or "RECONNECTING" in connection:
+        state = "STALE"
+    elif "DELAY" in quality:
+        state = "DELAYED"
+    elif admission in ("BLOCKED", "DEGRADED") or quality not in ("PASS", "GOOD"):
+        state = "UNAVAILABLE"
+    else:
+        state = "LIVE"
+    bid, ask = _number(quote.bid_price), _number(quote.ask_price)
+    spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
+    values = {"price": _number(quote.last_price), "volume": _number(quote.volume), "bid": bid, "ask": ask, "spread_pct": spread}
+    return {
+        "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else quality,
+        "quality": quality, "admission": admission,
+        "fields": {
+            name: {"value": value, "source": str(quote.provider or "MOOMOO"),
+                   "state": state if value is not None else "UNAVAILABLE",
+                   "as_of_ns": int(quote.available_time_ns)}
+            for name, value in values.items()
+        },
+    }
+
+
 def _snapshot_row(row: FinvizScreenerRow, as_of: str) -> dict[str, Any]:
     identity = finviz_to_canonical(row.ticker)
     fields = {
@@ -186,6 +216,21 @@ class ScreenerService:
                 "rows": matched[offset:offset + limit],
             }
 
+    def row_for(self, instrument_id: str) -> tuple[dict[str, Any] | None, str | None]:
+        """One current snapshot row by canonical ID (no filters/search), plus source error."""
+
+        with self._lock:
+            self._refresh()
+            row = next((item for item in self._rows if item["instrument"]["instrument_id"] == instrument_id), None)
+            return row, self._error if not self._rows else None
+
+    def quote_for(self, instrument_id: str) -> dict[str, Any]:
+        runtime = self._runtime_getter(create=False)
+        quote = runtime.state.quote_for(instrument_id) if runtime is not None else None
+        if quote is None:
+            return {"state": "UNAVAILABLE", "reason": "RUNTIME_UNAVAILABLE" if runtime is None else "AWAITING_QUOTE", "fields": {}}
+        return quote_view(runtime, quote)
+
     @staticmethod
     def _consumer(client_id: str) -> str:
         return f"main-screener:{client_id}"
@@ -252,37 +297,17 @@ class ScreenerService:
                 if quote is None:
                     quotes[symbol] = {"state": "UNAVAILABLE", "reason": rejected.get(symbol, "AWAITING_QUOTE" if symbol in active else "RUNTIME_UNAVAILABLE"), "fields": {}}
                     continue
-                age_ms = max(0, (time.time_ns() - int(quote.received_ns)) // 1_000_000)
-                quality = str(quote.quality or "UNKNOWN").upper()
-                admission = str(quote.admission or "UNKNOWN").upper()
-                connection = str(getattr(getattr(runtime, "lifecycle", None), "connection_state", "AVAILABLE")).upper()
-                if age_ms > 5_000 or "DISCONNECTED" in connection or "RECONNECTING" in connection:
-                    state = "STALE"
-                elif "DELAY" in quality:
-                    state = "DELAYED"
-                elif admission in ("BLOCKED", "DEGRADED") or quality not in ("PASS", "GOOD"):
-                    state = "UNAVAILABLE"
-                else:
-                    state = "LIVE"
-                bid, ask = _number(quote.bid_price), _number(quote.ask_price)
-                spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
-                values = {"price": _number(quote.last_price), "volume": _number(quote.volume), "bid": bid, "ask": ask, "spread_pct": spread}
-                quotes[symbol] = {
-                    "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else quality,
-                    "quality": quality, "admission": admission,
-                    "fields": {
-                        name: {"value": value, "source": str(quote.provider or "MOOMOO"),
-                               "state": state if value is not None else "UNAVAILABLE",
-                               "as_of_ns": int(quote.available_time_ns)}
-                        for name, value in values.items()
-                    },
-                }
+                quotes[symbol] = quote_view(runtime, quote)
             return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),
                     "market_session": us_equity_session_label(), "active": len(active),
                     "cap": MAX_WINDOW, "quotes": quotes}
 
 
 _SERVICE = ScreenerService()
+
+
+def screener_service() -> ScreenerService:
+    return _SERVICE
 
 
 def read_screener(**kwargs: Any) -> dict[str, Any]:

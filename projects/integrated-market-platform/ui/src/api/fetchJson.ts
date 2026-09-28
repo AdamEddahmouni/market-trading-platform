@@ -15,8 +15,8 @@ async function parseError(response: Response, path: string): Promise<never> {
   throw new Error(`Request failed: ${path}`);
 }
 
-export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>): Promise<T> {
-  const response = await fetch(path, { headers: authHeaders() });
+export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>, init?: { signal?: AbortSignal }): Promise<T> {
+  const response = await fetch(path, init?.signal ? { headers: authHeaders(), signal: init.signal } : { headers: authHeaders() });
   if (!response.ok) {
     await parseError(response, path);
   }

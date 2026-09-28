@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-27 — Main Screener S3 Quick Preview, automatic S/R, Why, contextual futures
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `market_data`, `features`, `tools/moomoo`, `docs` |
+| **Summary** | Added a resizable selected-instrument Quick Preview with current Moomoo 1m/5m/15m bars, deterministic no-lookahead `AUTO_SR_V1` zones, filter explanations from the S2 predicate, classed movement evidence, and contextual futures with validated current contract identity. Quote, bar, and level clocks stay separate; no replay or fixture substitution. |
+| **Key files** | `ui/src/components/screener/QuickPreview.tsx`, `srClassify.ts`, `PreviewChart.tsx`, `src/market_platform_foundation/ui_api/screener_preview.py`, `screener_futures_context.py`, `market_data/current_bars.py`, `features/auto_support_resistance.py`, `docs/engineering/SCREENER_S3.md` |
+| **Tests** | Screener backend S1–S3 72 passed; Screener UI 27 passed; full UI suite 1,030 passed (145 files); typecheck, production build, bundle budget (initial 201.27 KiB gzip), format, lint, and docs links passed. `validate changed` on the S3 path list: 5,307 tests, 35 skipped, 0 failures, 0 errors (exit 0) with `APPDATA` isolated as on CI; on the unisolated host the same selection had 7 errors, all `TimeoutExpired` from `check_live_environment._opend_file_version` because `powershell.exe` startup hung machine-wide during the run. Visual acceptance at 1920×1080, 2560×1440, 1100×800 on real Finviz/OpenD data plus a test-only in-page fetch interception for live-quote and priced-futures states; fixed S/R tolerance collapse on quiet extended bars, bar-subscription exhaustion while arrowing, header price clock mixing, and a misleading chart last-value label. |
+| **Notes** | Moomoo futures quotes are not entitled on this account and the FuturesX bridge was not running, so related contracts show identity without price. Market was closed (Sunday), so L1 was unavailable and bars were `SESSION_CLOSED`. |
+
 ## 2026-09-26 — Main Screener S2 filtering and configuration
 
 | Field | Value |

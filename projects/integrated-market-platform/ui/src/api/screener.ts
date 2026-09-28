@@ -80,6 +80,7 @@ const ScreenerConfigSchema = z.object({
     filters: z.array(ScreenerFilterSchema) })),
   saved: z.array(ScreenerScreenSchema),
   last: ScreenerScreenSchema.nullable(),
+  preview_layout: z.object({ version: z.number(), open: z.boolean(), width: z.number() }).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
 
@@ -110,6 +111,77 @@ export function deleteScreenerScreen(id: string) {
 export function persistLastScreenerConfig(screen: Omit<ScreenerScreen, "id" | "version">) {
   return postJson("/screener/config", { action: "last", screen },
     z.object({ result: ScreenerScreenSchema, saved: z.array(ScreenerScreenSchema) }));
+}
+
+export function persistScreenerPreviewLayout(layout: { open: boolean; width: number }) {
+  return postJson("/screener/config", { action: "preview_layout", layout },
+    z.object({ result: z.object({ version: z.number(), open: z.boolean(), width: z.number() }) }).passthrough());
+}
+
+const BarSchema = z.object({
+  time: z.number(), start: z.string(), end: z.string(), open: z.number(), high: z.number(),
+  low: z.number(), close: z.number(), volume: z.number().nullable(), session: z.string(),
+});
+const ZoneSchema = z.object({
+  lower: z.number(), upper: z.number(), center: z.number(), touches: z.number(), strength: z.number(),
+  last_touch_end_ns: z.number(), kinds: z.array(z.string()),
+});
+const SideSchema = ZoneSchema.extend({ distance_pct: z.number() }).nullable();
+const EvidenceSchema = z.object({
+  class: z.enum(["OBSERVED", "DERIVED", "AI_SYNTHESIS", "UNAVAILABLE", "INSUFFICIENT_EVIDENCE"]),
+  kind: z.string(), text: z.string(), source: z.string(), as_of: z.string().nullable(),
+});
+const PreviewSchema = z.object({
+  schema_version: z.literal("screener-preview/1.0.0"),
+  generated_at: z.string(),
+  market_session: ScreenerSchema.shape.market_session,
+  instrument: z.object({ instrument_id: z.string(), venue_id: z.string(), asset_class: z.string(), symbol: z.string(),
+    company: z.string(), sector: z.string().nullable(), industry: z.string().nullable() }),
+  snapshot_as_of: z.string().nullable().optional(),
+  quote: QuoteSchema,
+  key_data: z.array(z.object({ field: z.string(), label: z.string(), unit: z.string(), value: z.number().nullable(),
+    source: z.string().nullable(), state: z.string(), as_of: z.string().nullable() })),
+  bars: z.object({
+    timeframe: z.string(), session_scope: z.string(), provider: z.string(), source_id: z.string(), state: z.string(),
+    reason: z.string().nullable(), provider_reason: z.string().nullable(), received_at: z.string().nullable(),
+    latest_complete_bar_end: z.string().nullable(), bar_count: z.number(), bars: z.array(BarSchema), forming: BarSchema.nullable(),
+  }),
+  levels: z.object({
+    method: z.string(), timeframe: z.string(), session_scope: z.string(), bar_state: z.string(), state: z.string(),
+    reason: z.string().nullable(), reasons: z.array(z.string()), calculated_at: z.string().nullable(),
+    input_bar_count: z.number(), input_latest_bar_end: z.string().nullable(), min_strength: z.number(),
+    strength_semantics: z.string(), zones: z.array(ZoneSchema),
+    price: z.object({ value: z.number(), source: z.string(), state: z.string(), as_of: z.string() }).nullable(),
+    support: SideSchema, resistance: SideSchema, testing: SideSchema,
+  }),
+  why: z.object({
+    matched: z.object({ state: z.string(), items: z.array(z.object({ filter_id: z.string(), label: z.string(),
+      passed: z.boolean(), missing: z.boolean(), text: z.string() })) }),
+    moving: z.object({ items: z.array(EvidenceSchema), headline_window_start: z.string() }),
+  }),
+  futures: z.object({
+    mapping_version: z.string(), causal_note: z.string(),
+    items: z.array(z.object({
+      root: z.string(), name: z.string(), relationship_type: z.string(), relationship_reason: z.string(),
+      contract: z.object({ state: z.string(), reason: z.string().nullable().optional(), contract_id: z.string().optional(),
+        last_trade_date: z.string().optional() }),
+      quote: z.object({ price: z.number(), price_basis: z.string(), change_pct: z.number().nullable(), provider: z.string(),
+        as_of: z.string().nullable(), age_ms: z.number().nullable(), state: z.string() }).nullable(),
+      availability: z.string(), unavailable_reason: z.string().nullable(),
+    })),
+  }),
+});
+export type ScreenerPreview = z.infer<typeof PreviewSchema>;
+export type SrZone = z.infer<typeof ZoneSchema>;
+export type PreviewBar = z.infer<typeof BarSchema>;
+
+export async function fetchScreenerPreview(instrumentId: string, timeframe: string, scope: string, filters: ScreenerFilter[], signal?: AbortSignal) {
+  const query = new URLSearchParams({ instrument: instrumentId, timeframe, scope });
+  if (filters.length) query.set("filters", JSON.stringify(filters));
+  const preview = await fetchJson(`/screener/preview?${query}`, PreviewSchema, { signal });
+  // Request identity guard: a response for another instrument is never rendered.
+  if (preview.instrument.instrument_id !== instrumentId) throw new Error("PREVIEW_IDENTITY_MISMATCH");
+  return preview;
 }
 
 export function updateScreenerWindow(clientId: string, symbols: string[]) {
