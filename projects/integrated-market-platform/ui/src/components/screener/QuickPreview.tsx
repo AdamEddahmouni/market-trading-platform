@@ -1,6 +1,7 @@
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScreenerPreview, type ScreenerFilter, type ScreenerPreview, type ScreenerQuote, type ScreenerRow, type ScreenerUniverse } from "../../api/screener";
+import { PreviewOptions } from "./options/PreviewOptions";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
 
 const PreviewChart = lazy(() => import("./PreviewChart"));
@@ -8,7 +9,7 @@ const PreviewChart = lazy(() => import("./PreviewChart"));
 const TIMEFRAMES = ["1m", "5m", "15m"] as const;
 const SELECTION_SETTLE_MS = 180;
 const SCOPES = [{ id: "EXTENDED", label: "Extended" }, { id: "RTH", label: "RTH" }] as const;
-const TABS = [{ id: "why", label: "Why" }, { id: "key", label: "Key Data" }, { id: "futures", label: "Futures" }] as const;
+const TABS = [{ id: "why", label: "Why" }, { id: "key", label: "Key Data" }, { id: "futures", label: "Futures" }, { id: "options", label: "Options" }] as const;
 type Tab = (typeof TABS)[number]["id"];
 const etTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 const etShort = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -57,6 +58,9 @@ export type QuickPreviewProps = {
   paneRef?: React.Ref<HTMLElement>;
   onClose: () => void;
   onOpen: (row: ScreenerRow) => void;
+  /** S7: the universe offers selected-underlying options context. */
+  optionsSupported?: boolean;
+  onOpenOptions?: () => void;
 };
 
 function SrBar({ price, support, resistance, testing }: { price: number | null; support: ClassifiedZone | null; resistance: ClassifiedZone | null; testing: ClassifiedZone | null }) {
@@ -161,7 +165,7 @@ function Futures({ preview }: { preview: ScreenerPreview }) {
   </div>;
 }
 
-function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay, width, paneRef, onClose, onOpen }: QuickPreviewProps) {
+function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay, width, paneRef, onClose, onOpen, optionsSupported = false, onOpenOptions }: QuickPreviewProps) {
   const [tab, setTab] = useState<Tab>("why");
   const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("5m");
   const [scope, setScope] = useState<"EXTENDED" | "RTH">("EXTENDED");
@@ -196,7 +200,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
   const priceSource = livePrice != null ? `L1 live${quote?.age_ms != null ? ` · ${quote.age_ms}ms` : ""}` : data?.levels.price?.source === "LAST_BAR_CLOSE" ? `Last bar close · ${time(data.levels.price.as_of, true)}` : "Snapshot";
   const classified = useMemo(() => data ? classifyZones(data.levels.zones, price, data.levels.min_strength) : null, [data, price]);
   const change = quote?.state === "LIVE" || quote?.state === "DELAYED" ? quote.fields.change_pct?.value ?? row?.fields.change_pct?.value ?? null : row?.fields.change_pct?.value ?? null;
-  const tabs = TABS.filter((item) => item.id !== "futures" || universe === "US_EQUITIES");
+  const tabs = TABS.filter((item) => (item.id !== "futures" || universe === "US_EQUITIES") && (item.id !== "options" || optionsSupported));
   const onTabKey = (event: KeyboardEvent) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
@@ -204,7 +208,9 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
     const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
     setTab(tabs[next].id); tabRefs.current[tabs[next].id]?.focus();
   };
-  useEffect(() => { if (universe !== "US_EQUITIES" && tab === "futures") setTab("why"); }, [universe, tab]);
+  useEffect(() => {
+    if ((universe !== "US_EQUITIES" && tab === "futures") || (!optionsSupported && tab === "options")) setTab("why");
+  }, [universe, tab, optionsSupported]);
   const bars = data?.bars;
   const chartLabel = bars && bars.bars.length ? `${data.instrument.symbol} ${bars.timeframe} candles, ${bars.bar_count} completed bars to ${time(bars.latest_complete_bar_end, true)}, last close ${money(bars.bars[bars.bars.length - 1].close)}` : "";
   return <aside className={`screener-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef as React.Ref<HTMLElement>} tabIndex={-1}
@@ -245,7 +251,8 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
               tabIndex={tab === item.id ? 0 : -1} onClick={() => setTab(item.id)}>{item.label}</button>)}
           </div>
           <div className="screener-preview-panel" role="tabpanel" id={`screener-preview-panel-${tab}`} aria-labelledby={`screener-preview-tab-${tab}`} tabIndex={0}>
-            {tab === "why" ? <WhyPanel preview={data} screenLabel={screenLabel} universe={universe} /> : tab === "key" ? <KeyData preview={data} quote={quote} /> : <Futures preview={data} />}
+            {tab === "why" ? <WhyPanel preview={data} screenLabel={screenLabel} universe={universe} /> : tab === "key" ? <KeyData preview={data} quote={quote} />
+              : tab === "options" ? <PreviewOptions row={row} universe={universe} onOpenPanel={() => onOpenOptions?.()} /> : <Futures preview={data} />}
           </div>
         </>}
       <footer className="screener-preview-footer"><button type="button" className="screener-control screener-primary" onClick={() => onOpen(row)}>Open Instrument</button></footer>

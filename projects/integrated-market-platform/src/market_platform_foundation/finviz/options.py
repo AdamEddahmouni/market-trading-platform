@@ -51,6 +51,8 @@ class FinvizOptionsClient:
             api_key=self._api_key,
         )
         available_ns = time.time_ns()
+        # A cached export keeps the clock of the request that fetched it.
+        fetched_ns = available_ns - int(float(meta.get("cache_age_s") or 0.0) * 1_000_000_000)
         if status != 200:
             return {
                 "success": False,
@@ -75,6 +77,7 @@ class FinvizOptionsClient:
             "columns": list(columns),
             "contract_count": len(contracts),
             "available_time_ns": available_ns,
+            "fetched_time_ns": fetched_ns,
             "meta": meta,
             "capability": {
                 "OPTIONS_DISCOVERY": "AVAILABLE" if contracts else "UNAVAILABLE",

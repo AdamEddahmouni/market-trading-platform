@@ -262,6 +262,9 @@ describe("Screener Quick Preview", () => {
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveAttribute("aria-selected", "true");
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveFocus();
     fireEvent.keyDown(within(pane).getByRole("tab", { name: "Key Data" }), { key: "End" });
+    // S7: Options is the last tab for US Equities.
+    expect(within(pane).getByRole("tab", { name: "Options" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(within(pane).getByRole("tab", { name: "Options" }), { key: "ArrowLeft" });
     expect(within(pane).getByRole("tab", { name: "Futures" })).toHaveAttribute("aria-selected", "true");
     fireEvent.click(within(pane).getByRole("button", { name: "Open Instrument" }));
     expect(screen.getByText("Instrument workspace")).toBeInTheDocument();

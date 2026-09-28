@@ -11,6 +11,8 @@ class OptionQualityFlag(StrEnum):
     # Quote / chain freshness
     OPTION_CHAIN_STALE = "OPTION_CHAIN_STALE"
     OPTION_QUOTE_STALE = "OPTION_QUOTE_STALE"
+    # Provider rows that failed normalization were dropped (usable < supplied)
+    OPTION_CHAIN_INCOMPLETE = "OPTION_CHAIN_INCOMPLETE"
 
     # Market structure
     CROSSED_OPTION_MARKET = "CROSSED_OPTION_MARKET"

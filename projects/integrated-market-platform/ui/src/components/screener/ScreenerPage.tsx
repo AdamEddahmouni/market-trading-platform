@@ -176,7 +176,7 @@ export function ScreenerPage() {
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
     filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
-  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures"] : [])) as PanelId[]);
+  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options"] : [])) as PanelId[]);
   useEffect(() => {
     if (!activeSpec || initialized.current || selectedScreenId || universe === "US_EQUITIES") return;
     setColumnVisibility(viewVisibility("Overview", activeSpec.views));
@@ -231,6 +231,7 @@ export function ScreenerPage() {
     setPendingPanel(id);
     setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
   }, []);
+  const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
   const resetPanels = useCallback(() => {
     dockHandle.current?.reset();
     setDockHeight(DOCK_HEIGHT_DEFAULT);
@@ -775,7 +776,8 @@ export function ScreenerPage() {
       onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
     {previewOpen && (!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
       screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
-      paneRef={previewRef} onClose={closePreview} onOpen={open} />}
+      paneRef={previewRef} onClose={closePreview} onOpen={open}
+      optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel} />}
     </div>
     {dockVisible && <>
       <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"

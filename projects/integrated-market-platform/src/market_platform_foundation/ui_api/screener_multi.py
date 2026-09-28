@@ -362,6 +362,14 @@ class MultiUniverseScreener:
         snapshot = self._snapshots.retained(snapshot_id) if snapshot_id and universe == US_ETFS else None
         return (_with_snapshot(row, snapshot) if row is not None and snapshot is not None else row), error
 
+    def latest_snapshot_id(self, universe: str) -> str | None:
+        """The most recent retained complete market snapshot, without building a new one."""
+
+        if universe != US_ETFS:
+            return None
+        latest = self._snapshots.latest()
+        return latest.id if latest is not None else None
+
     def quote_for(self, instrument_id: str, *, universe: str) -> dict[str, Any]:
         if universe == US_EQUITIES:
             return screener_service().quote_for(instrument_id)
