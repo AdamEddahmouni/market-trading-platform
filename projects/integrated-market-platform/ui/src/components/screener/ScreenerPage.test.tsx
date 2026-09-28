@@ -371,7 +371,7 @@ describe("ScreenerPage", () => {
     mount("/screener?universe=FUTURES");
     await waitFor(() => expect(screen.getByText("ESZ26")).toBeInTheDocument());
     expect(screen.getByRole("grid", { name: "Futures screener" })).toBeInTheDocument();
-    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Overview", "Contract", "Performance", "Custom"]);
+    expect(screen.getAllByRole("tab").map((tab) => tab.textContent)).toEqual(["Overview", "Contract", "Performance", "Custom", "News"]);
     expect(screen.queryByRole("tab", { name: "Fundamentals" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
     expect(screen.getByRole("button", { name: "Root" })).toBeInTheDocument();

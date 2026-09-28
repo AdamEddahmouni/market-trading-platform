@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ScreenerFilter, ScreenerRow } from "../../../api/screener";
 import { fetchBondPreview, type BondItem, type BondPreview } from "../../../api/screenerBonds";
 import { bondValue, CLASS_LABEL, isoDate, provenance, reasonLabel, sourceState } from "./bondFormat";
+import { PreviewNewsSection } from "../news/PreviewNewsSection";
 import "./bonds.css";
 
 const SELECTION_SETTLE_MS = 180;
@@ -17,6 +18,8 @@ export type BondQuickPreviewProps = {
   onClose: () => void;
   ratesSupported: boolean;
   onOpenRates?: () => void;
+  newsSupported?: boolean;
+  onOpenNews?: () => void;
 };
 
 /** The provenance most of a section's values share; shown once under the section title. */
@@ -47,7 +50,7 @@ function Sections({ preview }: { preview: BondPreview }) {
   })}</>;
 }
 
-function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, paneRef, onClose, ratesSupported, onOpenRates }: BondQuickPreviewProps) {
+function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, paneRef, onClose, ratesSupported, onOpenRates, newsSupported = false, onOpenNews }: BondQuickPreviewProps) {
   const id = row?.instrument.instrument_id ?? null;
   const [requestId, setRequestId] = useState(id);
   useEffect(() => {
@@ -97,6 +100,7 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
               <small>{source.as_of ? (source.as_of.length > 10 ? new Date(source.as_of).toLocaleString() : isoDate(source.as_of)) : reasonLabel(source.reason)}</small></li>)}</ul>
           </section>
         </div>}
+      {newsSupported && <PreviewNewsSection row={row} settledId={requestId} universe="BONDS" onOpenNews={onOpenNews} />}
       <footer className="screener-preview-footer bond-preview-footer">
         <button type="button" className="screener-control screener-primary" disabled={!ratesSupported} onClick={() => onOpenRates?.()}>Open Rates &amp; Curve</button>
         <span className="screener-muted">Reference only · no bond Workspace or execution</span>

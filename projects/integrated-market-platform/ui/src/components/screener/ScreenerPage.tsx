@@ -12,10 +12,14 @@ import { PanelLauncher } from "./panels/PanelLauncher";
 import { marketPrice } from "./panels/shared";
 import { clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
 import type { DockHandle } from "./panels/ScreenerDock";
+import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
 const ScreenerDock = lazy(() => import("./panels/ScreenerDock"));
+// S11: the News view loads only when News mode is first entered.
+const NewsView = lazy(() => import("./news/NewsView"));
+const UNIVERSE_LABELS: Record<ScreenerUniverse, string> = { US_EQUITIES: "US Equities", FUTURES: "Futures", US_ETFS: "ETFs", BONDS: "Bonds", CRYPTO: "Crypto" };
 const DOCK_TABLE_RESERVE = 420;
 
 const PREVIEW_MIN = 320;
@@ -234,7 +238,10 @@ export function ScreenerPage() {
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
     filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
-  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"] : [])) as PanelId[]);
+  // News & Analysis is universe-agnostic; the server lists it for every universe.
+  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])) as PanelId[]);
+  // News is a view inside the active universe (URL `news=1`), never a universe.
+  const newsMode = isNewsMode(location.search);
   // Universe capabilities come from the registry: a reference-only universe never hands off to a Workspace,
   // and a universe without streaming quotes never opens a quote window.
   const referenceOnly = activeSpec?.tradability === "REFERENCE_ONLY";
@@ -301,6 +308,7 @@ export function ScreenerPage() {
   const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
+  const openNewsPanel = useCallback(() => launchPanel("news"), [launchPanel]);
   const resetPanels = useCallback(() => {
     dockHandle.current?.reset();
     setDockHeight(DOCK_HEIGHT_DEFAULT);
@@ -638,7 +646,8 @@ export function ScreenerPage() {
       setColumnOrder([...activeViews[next], ...allKeys.filter((key) => !activeViews[next].includes(key))]);
       setColumnSizing({}); setColumnPinning({ left: ["symbol"], right: [] });
     }
-    urlUpdate({ view: next });
+    // A column view always leaves News mode.
+    urlUpdate({ view: next, ...exitNewsUpdates() });
   };
   const beginFilter = (field: string, existing?: ScreenerFilter) => {
     const definition = catalogEntry(field);
@@ -751,7 +760,8 @@ export function ScreenerPage() {
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
-      urlUpdate({ universe: next, screen: null, view: null, sort: null, dir: null });
+      // News mode, window, and sort survive a universe switch; News filters reset.
+      urlUpdate({ universe: next, screen: null, view: null, sort: null, dir: null, ...resetNewsFilterUpdates() });
     }}>{(config.data?.universes ?? [
       { id: "US_EQUITIES", label: "US Equities" }, { id: "FUTURES", label: "Futures" }, { id: "US_ETFS", label: "ETFs" },
       { id: "CRYPTO", label: "Crypto" },
@@ -760,7 +770,8 @@ export function ScreenerPage() {
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
         <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
         <button type="button" className="screener-control" aria-pressed={previewOpen} onClick={togglePreview}>Preview</button></div></div>
-    <div className="screener-tabs" role="tablist" aria-label="Screener views">{(activeSpec?.view_order ?? Object.keys(activeViews)).filter((name) => activeViews[name]).map((name) => <button key={name} type="button" role="tab" aria-selected={view === name} onClick={() => chooseView(name)}>{name}</button>)}</div>
+    <div className="screener-tabs" role="tablist" aria-label="Screener views">{(activeSpec?.view_order ?? Object.keys(activeViews)).filter((name) => activeViews[name]).map((name) => <button key={name} type="button" role="tab" aria-selected={!newsMode && view === name} onClick={() => chooseView(name)}>{name}</button>)}
+      <button type="button" role="tab" aria-selected={newsMode} className="screener-news-tab" onClick={() => { if (!newsMode) urlUpdate({ news: "1" }); }}>News</button></div>
     {filterNotice && <div className="screener-filter-notice" role="status">{filterNotice}<button type="button" onClick={() => setFilterNotice("")} aria-label="Dismiss filter notice">×</button></div>}
     <div className="screener-filters" aria-label="Active filters">{filters.map((rule) => <span className="screener-chip" key={rule.id}>
       <button type="button" onClick={(event) => { transientTrigger.current = event.currentTarget; beginFilter(rule.field, rule); setFilterOpen(true); }} aria-label={`Edit ${catalogEntry(rule.field)?.label ?? rule.field}`}>{labelFilter(rule)}</button>
@@ -802,6 +813,9 @@ export function ScreenerPage() {
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
     <div className="screener-body" ref={bodyRef}>
+    {newsMode ? <Suspense fallback={<div className="screener-message" role="status">Loading news view…</div>}>
+      <NewsView universe={universe} universeLabel={activeSpec?.label ?? UNIVERSE_LABELS[universe]} search={location.search} onUpdate={(updates) => urlUpdate(updates)} />
+    </Suspense> :
     <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={(resultCount ?? rows.length) + 1} aria-busy={query.isFetching} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
@@ -867,7 +881,7 @@ export function ScreenerPage() {
             </div>;
           })}
         </div>}
-    </div>
+    </div>}
     {previewOpen && !narrow && <div className="screener-splitter" role="separator" aria-orientation="vertical" aria-label="Resize quick preview"
       aria-valuemin={PREVIEW_MIN} aria-valuemax={PREVIEW_MAX} aria-valuenow={previewWidth} tabIndex={0}
       onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
@@ -876,7 +890,8 @@ export function ScreenerPage() {
       paneRef={previewRef} onClose={closePreview} onOpen={open}
       optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
       ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
-      squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel} />}
+      squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel}
+      newsSupported={supportedPanels.has("news")} onOpenNews={openNewsPanel} />}
     </div>
     {dockVisible && <>
       <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"

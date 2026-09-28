@@ -268,7 +268,9 @@ describe("Screener Quick Preview", () => {
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveAttribute("aria-selected", "true");
     expect(within(pane).getByRole("tab", { name: "Key Data" })).toHaveFocus();
     fireEvent.keyDown(within(pane).getByRole("tab", { name: "Key Data" }), { key: "End" });
-    // S8: Squeeze is last for US equities; left returns to Options.
+    // S11: News is last for US equities; left returns to Squeeze, then Options.
+    expect(within(pane).getByRole("tab", { name: "News" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.keyDown(within(pane).getByRole("tab", { name: "News" }), { key: "ArrowLeft" });
     expect(within(pane).getByRole("tab", { name: "Squeeze" })).toHaveAttribute("aria-selected", "true");
     fireEvent.keyDown(within(pane).getByRole("tab", { name: "Squeeze" }), { key: "ArrowLeft" });
     expect(within(pane).getByRole("tab", { name: "Options" })).toHaveAttribute("aria-selected", "true");

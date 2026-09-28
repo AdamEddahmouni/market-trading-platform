@@ -149,7 +149,7 @@ const ScreenerConfigSchema = z.object({
   panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
-export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve"] as const;
+export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.

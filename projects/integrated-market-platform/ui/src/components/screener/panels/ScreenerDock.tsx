@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
 import { DockviewReact, themeDark, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import type { PanelId, PanelLayout, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
@@ -19,6 +19,11 @@ import "./dock.css";
 export const PANEL_SETTLE_MS = 250;
 const HEARTBEAT_MS = 15_000;
 const ORDER = PANELS.map((panel) => panel.id);
+// S11: News & Analysis loads on first open, keeping the dock chunk within budget.
+const LazyNewsAnalysisPanel = lazy(() => import("./NewsAnalysisPanel"));
+function NewsAnalysisPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading News &amp; Analysis…</PanelMessage>}><LazyNewsAnalysisPanel {...props} /></Suspense>;
+}
 
 function contained(id: PanelId, Panel: FunctionComponent<IDockviewPanelProps>) {
   const Wrapped = (props: IDockviewPanelProps) => {
@@ -35,6 +40,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   options: contained("options", OptionsPanel),
   short_squeeze: contained("short_squeeze", ShortSqueezePanel),
   rates_curve: contained("rates_curve", RatesCurvePanel),
+  news: contained("news", NewsAnalysisPanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
@@ -112,7 +118,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, filters = [], universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, filters = [], universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);

@@ -10,6 +10,7 @@ export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
   { id: "options", title: "Options" },
   { id: "short_squeeze", title: "Short Squeeze" },
   { id: "rates_curve", title: "Rates & Curve" },
+  { id: "news", title: "News & Analysis" },
 ];
 export const PANEL_TITLES = Object.fromEntries(PANELS.map((panel) => [panel.id, panel.title])) as Record<PanelId, string>;
 /** Panels that hold a live provider subscription while open. */
