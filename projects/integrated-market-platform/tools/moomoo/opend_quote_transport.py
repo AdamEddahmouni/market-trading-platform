@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import sys
 import time
 from datetime import datetime
@@ -479,6 +480,9 @@ def fetch_snapshot(
 
 MOOMOO_QUOTE_NOT_ENTITLED = "MOOMOO_QUOTE_NOT_ENTITLED"
 MOOMOO_SUBSCRIPTION_BUSY = "MOOMOO_SUBSCRIPTION_BUSY"
+# Vendor ``get_market_snapshot`` accepts at most 400 codes per request.
+MARKET_SNAPSHOT_MAX_CODES = 400
+_SNAPSHOT_REFUSED_CODE = re.compile(r"quote is not available for ([A-Za-z0-9.\-]+)", re.IGNORECASE)
 # The vendor refuses to unsubscribe a code within one minute of subscribing it.
 CURRENT_KLINE_MIN_HOLD_SECONDS = 60.0
 CURRENT_KLINE_MAX_COUNT = 1000
@@ -642,6 +646,24 @@ class OpendCurrentKlineSession:
             if ret != ft.RET_OK:
                 return {"reason_code": _vendor_reason(data), "rows": None, "vendor_ret_msg": _bounded_vendor_msg(data)}
             return {"reason_code": None, "rows": _snapshot_rows(data)}
+
+    def fetch_market_snapshot(self, codes: list[str]) -> dict[str, Any]:
+        """One bounded ``get_market_snapshot`` call (at most 400 codes). Not a subscription.
+
+        The vendor refuses a whole batch when one code lacks quote entitlement
+        (for example an OTC listing) and names that code; it is returned as
+        ``refused_codes`` so the caller can account for it instead of guessing.
+        """
+
+        if not codes or len(codes) > MARKET_SNAPSHOT_MAX_CODES:
+            return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
+        result = self.fetch_future_quotes(codes)
+        if result.get("reason_code") and result["reason_code"] != MOOMOO_QUOTE_NOT_ENTITLED:
+            match = _SNAPSHOT_REFUSED_CODE.search(str(result.get("vendor_ret_msg") or ""))
+            code = f"US.{match.group(1).rstrip('.')}" if match else None
+            if code in codes:
+                return {**result, "reason_code": MOOMOO_QUOTE_NOT_ENTITLED, "refused_codes": [code]}
+        return result
 
     def fetch_future_quotes(self, codes: list[str]) -> dict[str, Any]:
         """Vendor snapshot rows for futures codes, or the entitlement/protocol refusal."""

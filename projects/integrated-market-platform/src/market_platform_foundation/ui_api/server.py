@@ -196,6 +196,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/screener":
                 from .screener_projections import read_screener
+                from .screener_query import DEFAULT_PAGE_LIMIT
 
                 try:
                     self._send_json(read_screener(
@@ -204,12 +205,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                         sort=(query.get("sort") or ["volume"])[0],
                         descending=(query.get("descending") or ["1"])[0] != "0",
                         offset=int((query.get("offset") or ["0"])[0]),
-                        limit=int((query.get("limit") or ["10000"])[0]),
+                        limit=int((query.get("limit") or [str(DEFAULT_PAGE_LIMIT)])[0]),
                         force_refresh=(query.get("refresh") or ["0"])[0] == "1",
                         filters=json.loads((query.get("filters") or ["[]"])[0]),
+                        result_set=(query.get("result_set") or [None])[0],
+                        selected=(query.get("selected") or [None])[0],
                     ))
                 except (ValueError, TypeError) as exc:
-                    self._send_error_json("SCREENER_QUERY_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    if str(exc) == "RESULT_SET_CHANGED":
+                        # A later page's pinned catalog/snapshot is gone: the client restarts at page 1.
+                        self._send_error_json("SCREENER_RESULT_SET_CHANGED", str(exc), status=HTTPStatus.CONFLICT)
+                    else:
+                        self._send_error_json("SCREENER_QUERY_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/screener/config":
                 from .screener_config import read_config
@@ -226,6 +233,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                         timeframe=(query.get("timeframe") or ["5m"])[0],
                         scope=(query.get("scope") or ["EXTENDED"])[0],
                         filters=json.loads((query.get("filters") or ["[]"])[0]),
+                        snapshot_id=(query.get("snapshot") or [None])[0],
                     )
                 except (ValueError, TypeError) as exc:
                     self._send_error_json("SCREENER_PREVIEW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)

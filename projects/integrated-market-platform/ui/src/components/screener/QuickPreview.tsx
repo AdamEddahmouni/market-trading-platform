@@ -174,9 +174,11 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
     return () => window.clearTimeout(timer);
   }, [id]);
   const filterKey = JSON.stringify(filters);
+  // Snapshot-evaluated rows explain the values they were filtered and ordered by.
+  const snapshotId = row?.snapshot_id ?? null;
   const preview = useQuery({
-    queryKey: ["screener-preview", universe, requestId, timeframe, scope, filterKey],
-    queryFn: ({ signal }) => fetchScreenerPreview(requestId!, timeframe, scope, filters, signal, universe),
+    queryKey: ["screener-preview", universe, requestId, timeframe, scope, filterKey, snapshotId],
+    queryFn: ({ signal }) => fetchScreenerPreview(requestId!, timeframe, scope, filters, signal, universe, snapshotId),
     enabled: Boolean(requestId) && requestId === id, staleTime: 10_000, retry: 1,
     refetchInterval: (query) => query.state.data?.bars.provider_reason === "MOOMOO_SUBSCRIPTION_BUSY" ? 5_000 : 15_000,
     // Keep the previous payload only while the same instrument changes timeframe/scope.

@@ -9,6 +9,7 @@ from __future__ import annotations
 import math
 import threading
 import time
+from collections import OrderedDict
 from datetime import UTC, datetime
 from typing import Any, Callable
 
@@ -18,7 +19,8 @@ from ..finviz.symbols import finviz_to_canonical
 from ..market_data.live_runtime import get_live_runtime
 from ..market_data.subscription_manager import SubscriptionPriority
 from ..market_sessions import us_equity_session_label
-from .screener_filters import apply_filters, validate_filters
+from .screener_filters import apply_filters, field_value
+from .screener_query import DEFAULT_PAGE_LIMIT, order_rows, page_payload, parse_query
 
 SCHEMA_VERSION = "screener/1.0.0"
 UNIVERSE = "US_EQUITIES"
@@ -27,6 +29,7 @@ FILTER = "geo_usa,ind_stocksonly"
 # short float, short ratio, RSI, RVOL, price, change, and volume.
 SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
 MAX_WINDOW = 32
+RESULT_CACHE_ENTRIES = 16  # ordered result references per query identity, never row copies
 SNAPSHOT_TTL_SECONDS = 120
 CLIENT_TTL_SECONDS = 45
 FIELD_NAMES = (
@@ -127,6 +130,8 @@ class ScreenerService:
         self._as_of: str | None = None
         self._last_fetch = 0.0
         self._error: str | None = None
+        self._previous: tuple[str | None, list[dict[str, Any]]] = (None, [])
+        self._ordered: OrderedDict[tuple[str | None, str], list[dict[str, Any]]] = OrderedDict()
         self._clients: dict[str, tuple[set[str], float, Any]] = {}
         self._expiry_timer: threading.Timer | None = None
 
@@ -157,8 +162,11 @@ class ScreenerService:
                 self._error = str(export.get("error") or "SOURCE_UNAVAILABLE")
                 return
             as_of = str(export.get("received_at") or self._now())
+            if self._as_of is not None and self._as_of != as_of:
+                self._previous = (self._as_of, self._rows)
             self._rows = [_snapshot_row(row, as_of) for row in export["rows"]]
             self._as_of = as_of
+            self._ordered.clear()
             self._error = None
         except Exception as exc:
             self._error = type(exc).__name__
@@ -166,55 +174,53 @@ class ScreenerService:
     def read(
         self, *, universe: str = UNIVERSE, search: str = "",
         sort: str = "volume", descending: bool = True,
-        offset: int = 0, limit: int = 10_000, force_refresh: bool = False,
-        filters: list[dict[str, Any]] | None = None,
+        offset: int = 0, limit: int = DEFAULT_PAGE_LIMIT, force_refresh: bool = False,
+        filters: list[dict[str, Any]] | None = None, result_set: str | None = None,
+        selected: str | None = None,
     ) -> dict[str, Any]:
         if universe != UNIVERSE:
             raise ValueError("UNSUPPORTED_UNIVERSE")
-        if sort not in (*FIELD_NAMES, "symbol", "company"):
-            raise ValueError("UNSUPPORTED_SORT")
-        if offset < 0 or limit < 1 or limit > 10_000:
-            raise ValueError("INVALID_RESULT_WINDOW")
-        rules = validate_filters([] if filters is None else filters)
+        query = parse_query(universe=universe, search=search, sort=sort, descending=descending,
+                            offset=offset, limit=limit, filters=filters, result_set=result_set, selected=selected)
         with self._lock:
-            self._refresh(force=force_refresh)
-            needle = search.strip().casefold()
-            filtered = apply_filters(self._rows, rules)
-            matched = [
-                row for row in filtered
-                if not needle or needle in row["symbol"].casefold()
-                or needle in row["company"].casefold()
-            ]
-            def key(row: dict[str, Any]) -> tuple[Any, ...]:
-                value = (
-                    row[sort].casefold() if sort in ("symbol", "company")
-                    else row["fields"][sort]["value"]
-                )
-                # Stable ties; missing values always last regardless of direction.
-                return (value is None, -value if descending and isinstance(value, (int, float))
-                        else value, row["symbol"])
-            if sort in ("symbol", "company") and descending:
-                present = sorted((row for row in matched if row[sort]), key=lambda row: (row[sort].casefold(), row["symbol"]), reverse=True)
-                matched = present + [row for row in matched if not row[sort]]
+            if query.result_set is not None:
+                # A later page reads the exact snapshot its first page was ordered from.
+                pinned = next(((as_of, rows) for as_of, rows in ((self._as_of, self._rows), self._previous)
+                               if as_of is not None and as_of == query.result_set), None)
+                if pinned is None:
+                    raise ValueError("RESULT_SET_CHANGED")
+                as_of, source_rows = pinned
             else:
-                matched.sort(key=key)
+                self._refresh(force=force_refresh)
+                as_of, source_rows = self._as_of, self._rows
+            key = (as_of, query.identity)
+            ordered = self._ordered.get(key)
+            if ordered is None:
+                needle = query.search.casefold()
+                matched = [row for row in apply_filters(source_rows, list(query.filters))
+                           if not needle or needle in row["symbol"].casefold() or needle in row["company"].casefold()]
+                ordered = order_rows(matched, query.sort, query.descending, field_value)
+                self._ordered[key] = ordered
+                while len(self._ordered) > RESULT_CACHE_ENTRIES:
+                    self._ordered.popitem(last=False)
             return {
                 "schema_version": SCHEMA_VERSION,
                 "universe": UNIVERSE,
                 "generated_at": self._now(),
                 "market_session": us_equity_session_label(),
-                "universe_as_of": self._as_of,
-                "screener_as_of": self._as_of,
-                "result_count": len(matched),
-                "unfiltered_count": len(self._rows),
-                "offset": offset,
+                "universe_as_of": as_of,
+                "screener_as_of": as_of,
+                "evaluation": "SNAPSHOT",
+                "snapshot": None,
+                "result_set_id": as_of,
+                "unfiltered_count": len(source_rows),
                 "provider_health": [{
                     "provider": "FINVIZ_ELITE",
                     "state": "DEGRADED" if self._error and self._rows else "UNAVAILABLE" if self._error else "HEALTHY",
                     "reason": self._error,
                 }],
                 "source_error": self._error if not self._rows else None,
-                "rows": matched[offset:offset + limit],
+                **page_payload(query, ordered),
             }
 
     def row_for(self, instrument_id: str) -> tuple[dict[str, Any] | None, str | None]:
