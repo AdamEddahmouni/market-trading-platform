@@ -90,9 +90,9 @@ def by_cusip(payload: dict) -> dict[str, dict]:
 
 # --------------------------------------------------------------- architecture
 class UniverseArchitectureTests(unittest.TestCase):
-    def test_bonds_is_the_fourth_universe_and_nothing_else_was_added(self):
-        self.assertEqual(list(UNIVERSES), [US_EQUITIES, FUTURES, US_ETFS, BONDS])
-        for forbidden in ("CRYPTO", "COMMODITIES", "OPTIONS", "WHALES", "INSTITUTIONS", "TREASURIES", "CORPORATE_BONDS"):
+    def test_bonds_is_the_fourth_universe_and_crypto_is_the_fifth(self):
+        self.assertEqual(list(UNIVERSES), [US_EQUITIES, FUTURES, US_ETFS, BONDS, "CRYPTO"])
+        for forbidden in ("COMMODITIES", "OPTIONS", "WHALES", "INSTITUTIONS", "NEWS", "TREASURIES", "CORPORATE_BONDS"):
             self.assertNotIn(forbidden, UNIVERSES)
 
     def test_spec_declares_identity_sources_views_panels_and_reference_only(self):

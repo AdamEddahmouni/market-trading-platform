@@ -1,0 +1,11 @@
+/* S10 Crypto Quick Preview: the shared preview shell with compact spot-pair sections. */
+.crypto-preview-subtitle{margin:3px 0 0;color:#8fa2b6;font-size:11px}
+.crypto-preview-section{padding:8px 14px 4px}
+.crypto-preview-section h3{margin:0 0 6px;color:#e8f1fc;font-size:11px;font-weight:750;letter-spacing:.06em;text-transform:uppercase}
+.crypto-preview-section .screener-segment{margin-bottom:6px}
+.crypto-preview-section ul{margin:0;padding-left:16px;color:#c4d3e2}
+.crypto-preview-section p{margin:0;color:#aebdcc}
+.crypto-preview .screener-key-data dd.positive{color:#57c79a}.crypto-preview .screener-key-data dd.negative{color:#e27d86}
+/* Pair values (sub-cent prices, base volumes in the billions) are never ellipsized: wrap instead of hiding digits. */
+.crypto-preview .screener-key-data dt{white-space:nowrap}
+.crypto-preview .screener-key-data dd{white-space:normal;overflow-wrap:anywhere;text-overflow:clip}

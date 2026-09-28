@@ -603,7 +603,7 @@ class ScopeTests(unittest.TestCase):
         self.assertNotIn("Short", spec.views)
         self.assertNotIn("Short Squeeze", universe_spec(US_ETFS).views)
         self.assertNotIn("Short Squeeze", universe_spec(FUTURES).views)
-        self.assertEqual({item["id"] for item in universe_payload()}, {US_EQUITIES, FUTURES, US_ETFS, "BONDS"})
+        self.assertEqual({item["id"] for item in universe_payload()}, {US_EQUITIES, FUTURES, US_ETFS, "BONDS", "CRYPTO"})
         self.assertNotIn("Short Squeeze", universe_spec("BONDS").views)
         payload = next(item for item in universe_payload() if item["id"] == US_EQUITIES)
         self.assertEqual(payload["view_order"][4], "Short Squeeze")

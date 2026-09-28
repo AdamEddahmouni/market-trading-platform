@@ -126,6 +126,8 @@ class BookStatusReason(StrEnum):
     INVALID_OPERATION = "INVALID_OPERATION"
     GENERATION_MISMATCH = "GENERATION_MISMATCH"
     STRUCTURALLY_CORRUPT = "STRUCTURALLY_CORRUPT"
+    #: A venue-published book checksum disagreed with the local book (e.g. Kraken WS v2 CRC32).
+    CHECKSUM_MISMATCH = "CHECKSUM_MISMATCH"
     UNKNOWN = "UNKNOWN"
 
 

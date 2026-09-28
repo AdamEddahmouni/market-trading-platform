@@ -118,7 +118,10 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
   const [open, setOpen] = useState<PanelId[]>([]);
   const callbacks = useRef({ onOpenChange, onLayout });
   callbacks.current = { onOpenChange, onLayout };
-  const settledId = useSettled(row?.instrument.instrument_id ?? null, PANEL_SETTLE_MS);
+  const settled = useSettled(row?.instrument.instrument_id ?? null, PANEL_SETTLE_MS);
+  // A cleared selection (e.g. a universe switch) must not lend the previous
+  // universe's instrument to this render's demand or panel queries.
+  const settledId = row ? settled : null;
   const livePanels = useMemo(() => open.filter((id) => LIVE_PANELS.has(id) && supportedPanels.has(id)), [open, supportedPanels]);
   const demand = usePanelDemand(clientId, settledId, livePanels, universe);
 

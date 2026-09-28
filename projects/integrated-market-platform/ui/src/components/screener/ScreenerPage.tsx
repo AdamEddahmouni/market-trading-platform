@@ -9,6 +9,7 @@ import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
 import { QuickPreview } from "./QuickPreview";
 import { PanelLauncher } from "./panels/PanelLauncher";
+import { marketPrice } from "./panels/shared";
 import { clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
 import type { DockHandle } from "./panels/ScreenerDock";
 import "./screener.css";
@@ -38,7 +39,8 @@ function useNarrow() {
 type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "price" | "change_pct" | "volume" | "avg_volume" | "rel_volume" | "float_shares" | "shares_outstanding" | "market_cap" | "short_float_pct" | "short_ratio" | "rsi_14" | "eps_ttm" | "pe" | "fwd_pe" | "perf_week" | "earnings_date" | "recommendation" | "bid" | "ask" | "spread_pct" | "root" | "exchange" | "contract_month" | "expiry" | "dte" | "lead" | "tick_size" | "multiplier" | "open_interest"
   | "security_type" | "term" | "coupon" | "issue_date" | "maturity" | "years_to_maturity" | "maturity_bucket" | "tips" | "frn"
   | "auction_date" | "auction_yield" | "auction_real_yield" | "auction_discount_margin" | "bid_to_cover" | "outstanding"
-  | "reference_tenor" | "reference_rate" | "indicative_rate";
+  | "reference_tenor" | "reference_rate" | "indicative_rate"
+  | "base_asset" | "quote_asset" | "venue" | "status" | "base_volume" | "quote_volume" | "high_24h" | "low_24h" | "trade_count";
 type SortKey = ColumnKey;
 type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions"; title?: string };
 const definitions: ColumnDefinition[] = [
@@ -95,10 +97,20 @@ const definitions: ColumnDefinition[] = [
   { key: "reference_tenor", label: "Ref. Tenor", width: 86, format: "text", title: "Nearest published Treasury par-curve tenor." },
   { key: "reference_rate", label: "Ref. Par Yld", width: 96, format: "rate", title: "Treasury par-curve point for the matched tenor: a benchmark, not this security's yield." },
   { key: "indicative_rate", label: "Closing Bid", width: 94, format: "rate", title: "Treasury daily bill rates: indicative closing bid (coupon-equivalent), on-the-run bills only." },
+  { key: "base_asset", label: "Base", width: 76, format: "text" },
+  { key: "quote_asset", label: "Quote", width: 76, format: "text" },
+  { key: "venue", label: "Venue", width: 86, format: "text" },
+  { key: "status", label: "Status", width: 86, format: "text" },
+  { key: "base_volume", label: "24h Base Vol", width: 108, format: "compact" },
+  { key: "quote_volume", label: "24h Quote Vol", width: 112, format: "compact" },
+  { key: "high_24h", label: "24h High", width: 92, format: "price" },
+  { key: "low_24h", label: "24h Low", width: 92, format: "price" },
+  { key: "trade_count", label: "24h Trades", width: 94, format: "compact" },
 ];
 const columnByKey = Object.fromEntries(definitions.map((item) => [item.key, item])) as Record<ColumnKey, ColumnDefinition>;
 const textKeys = ["company", "sector", "industry", "country", "earnings_date", "recommendation", "root", "exchange", "contract_month", "expiry",
-  "security_type", "term", "issue_date", "maturity", "maturity_bucket", "tips", "frn", "auction_date", "reference_tenor"] as const;
+  "security_type", "term", "issue_date", "maturity", "maturity_bucket", "tips", "frn", "auction_date", "reference_tenor",
+  "base_asset", "quote_asset", "venue", "status"] as const;
 type TextKey = (typeof textKeys)[number];
 const textColumns = new Set<string>(textKeys);
 const leftAligned = new Set<string>(["symbol", ...textKeys.filter((key) => !["earnings_date", "recommendation"].includes(key))]);
@@ -115,8 +127,8 @@ const allKeys = definitions.map((item) => item.key);
 const sortKeys = new Set(allKeys.filter((key) => !["sector", "industry", "country", "earnings_date", "recommendation"].includes(key)));
 const sortFromUrl = (value: string | null): SortKey | null => value && sortKeys.has(value as ColumnKey) ? value as SortKey : null;
 const universeFromUrl = (value: string | null): ScreenerUniverse =>
-  value === "FUTURES" || value === "US_ETFS" || value === "BONDS" ? value : "US_EQUITIES";
-const DEFAULT_SORT: Record<ScreenerUniverse, SortKey> = { US_EQUITIES: "volume", FUTURES: "root", US_ETFS: "symbol", BONDS: "maturity" };
+  value === "FUTURES" || value === "US_ETFS" || value === "BONDS" || value === "CRYPTO" ? value : "US_EQUITIES";
+const DEFAULT_SORT: Record<ScreenerUniverse, SortKey> = { US_EQUITIES: "volume", FUTURES: "root", US_ETFS: "symbol", BONDS: "maturity", CRYPTO: "symbol" };
 export const canonicalScreenerView = (value: string | null, universe: ScreenerUniverse, aliases?: Record<string, string>) =>
   value && universe === "US_EQUITIES" ? (aliases?.[value] ?? (value === "Short" ? "Short Squeeze" : value)) : value;
 const viewVisibility = (view: string, choices: Record<string, readonly string[]> = views): VisibilityState =>
@@ -125,16 +137,18 @@ const snapshotOf = (screen: ScreenerScreen) => ({ filters: screen.filters, view:
   sort: screen.sort, columns: screen.columns });
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
 const decimal = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
-const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct"]);
+const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct", "base_volume", "quote_volume"]);
 // Load the next server page this many rows before the loaded end is scrolled into view.
 const PREFETCH_ROWS = 60;
 const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
-const clock = (value: string) => new Date(value).toLocaleTimeString();
+// Crypto reads venue UTC everywhere (panels, preview); US universes keep the local wall clock.
+const clock = (value: string, universe?: ScreenerUniverse) => universe === "CRYPTO"
+  ? `${new Date(value).toISOString().slice(11, 19)} UTC` : new Date(value).toLocaleTimeString();
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
-  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED") && current.value !== null) return current;
+  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT") && current.value !== null) return current;
   return row.fields[key];
 }
 function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false) {
@@ -206,9 +220,16 @@ export function ScreenerPage() {
   const activeViews = activeSpec?.views ?? views;
   const availableKeys = activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
     Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys;
-  const availableFilters = config.data?.catalog.filter((item) => (item.universes ?? ["US_EQUITIES"]).includes(universe)) ?? [];
   // Sort/filter support is server metadata: a live-window column may display but never order the universe.
   const fieldCaps = activeSpec?.fields;
+  // The universe's own label/unit for a shared field (Crypto change is a UTC-day change).
+  const catalogEntry = (name: string) => {
+    const entry = config.data?.catalog.find((item) => item.field === name);
+    const own = fieldCaps?.[name];
+    return entry && own?.label ? { ...entry, label: own.label, unit: own.unit ?? entry.unit } : entry;
+  };
+  const availableFilters = config.data?.catalog.filter((item) => (item.universes ?? ["US_EQUITIES"]).includes(universe))
+    .map((item) => catalogEntry(item.field) ?? item) ?? [];
   const isSortable = (key: string) => Boolean(fieldCaps?.[key]?.sortable);
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
@@ -454,10 +475,10 @@ export function ScreenerPage() {
     if (query.isFetchNextPageError && resultSetChanged(query.error)) void query.refetch();
   }, [query.isFetchNextPageError, query.error]);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
-    id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.label, size: definition.width,
+    id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
-      if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong><small>{item.company}</small></span>;
+      if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong><small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
       if (textColumns.has(definition.key)) {
         const value = item[definition.key as TextKey] ?? null;
         const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
@@ -468,9 +489,10 @@ export function ScreenerPage() {
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
       const detail = field ? [field.source, field.state, field.basis, field.as_of ? `as of ${field.as_of}` : null].filter(Boolean).join(" · ") : "Unavailable";
-      return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{valueText(field, definition.format, definition.key === "change_pct")}</span>;
+      return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
+        ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes, referenceOnly]);
+  })), [quotes, referenceOnly, universe]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -515,7 +537,7 @@ export function ScreenerPage() {
       });
     };
     refresh();
-    const timer = window.setInterval(refresh, 3_000);
+    const timer = window.setInterval(refresh, universe === "CRYPTO" ? 15_000 : 3_000);
     return () => { cancelled = true; window.clearInterval(timer); };
   }, [windowKey, universe, streamingQuotes]);
   useEffect(() => () => {
@@ -563,7 +585,7 @@ export function ScreenerPage() {
   const open = useCallback((row: ScreenerRow) => {
     // A reference-only identity (e.g. a Treasury CUSIP) is never routed to a Workspace as if it were a ticker;
     // its reference detail is the Quick Preview.
-    if (referenceOnly || row.instrument.tradability === "REFERENCE_ONLY") {
+    if (referenceOnly || row.instrument.tradability === "REFERENCE_ONLY" || row.instrument.tradability === "DISCOVERY_ONLY") {
       setSelected(row.instrument.instrument_id); setPreviewOpen(true);
       return;
     }
@@ -619,7 +641,7 @@ export function ScreenerPage() {
     urlUpdate({ view: next });
   };
   const beginFilter = (field: string, existing?: ScreenerFilter) => {
-    const definition = config.data?.catalog.find((item) => item.field === field);
+    const definition = catalogEntry(field);
     if (!definition) return;
     setDraftField(field);
     setDraftOperator(existing?.operator ?? definition.operators[0]);
@@ -628,7 +650,7 @@ export function ScreenerPage() {
     setEditFilterId(existing?.id ?? null);
   };
   const applyFilter = () => {
-    const definition = config.data?.catalog.find((item) => item.field === draftField);
+    const definition = catalogEntry(draftField);
     if (!definition) return;
     let value: ScreenerFilter["value"];
     if (definition.type === "number") {
@@ -704,30 +726,35 @@ export function ScreenerPage() {
     } catch { setConfigError("Unable to delete this screen."); }
   };
   const labelFilter = (rule: ScreenerFilter) => {
-    const definition = config.data?.catalog.find((item) => item.field === rule.field);
+    const definition = catalogEntry(rule.field);
     const operator = { eq: "=", ne: "≠", gt: ">", gte: "≥", lt: "<", lte: "≤", between: "", in: "in", not_in: "not in", contains: "contains" }[rule.operator] ?? rule.operator;
     const value = Array.isArray(rule.value) ? rule.value.join(rule.operator === "between" ? "–" : ", ") : String(rule.value);
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
-  const session = (universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session)?.replace(/_/g, " ").toLowerCase() ?? "—";
+  const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
+  // Crypto is continuous: "24/7", never an equity session label.
+  const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
   const quoteReasons = Object.values(quotes).map((quote) => quote.reason);
   const quoteLabel = quoteError ? "unavailable" :
     quoteStates.includes("LIVE") ? "live for visible rows" :
     quoteStates.includes("DELAYED") ? "delayed" :
+    // Crypto visible rows refresh from the venue's public REST ticker, not a stream.
+    quoteStates.includes("SNAPSHOT") ? "REST snapshot for visible rows" :
     quoteStates.includes("STALE") ? "stale" : "unavailable";
   return <section className="screener-page" aria-label="Screener">
     <header className="screener-topline"><div className="screener-brand"><Link to="/" aria-label="IMP home">IMP</Link><span className="screener-brand-divider" /><h1>Screener</h1></div>
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{universe === "FUTURES" ? windowSession ?? firstPage?.market_session ?? "MARKET" : firstPage?.market_session ?? "MARKET"}</span></header>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
       urlUpdate({ universe: next, screen: null, view: null, sort: null, dir: null });
     }}>{(config.data?.universes ?? [
       { id: "US_EQUITIES", label: "US Equities" }, { id: "FUTURES", label: "Futures" }, { id: "US_ETFS", label: "ETFs" },
+      { id: "CRYPTO", label: "Crypto" },
     ]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><span>Session <strong>{session}</strong></span>
       <div className="screener-toolbar-end"><button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setScreenOpen(!screenOpen); setColumnOpen(false); setFilterOpen(false); }} aria-expanded={screenOpen} aria-haspopup="dialog">{selectedName}{changed ? " *" : ""} ▾</button>
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
@@ -736,8 +763,8 @@ export function ScreenerPage() {
     <div className="screener-tabs" role="tablist" aria-label="Screener views">{(activeSpec?.view_order ?? Object.keys(activeViews)).filter((name) => activeViews[name]).map((name) => <button key={name} type="button" role="tab" aria-selected={view === name} onClick={() => chooseView(name)}>{name}</button>)}</div>
     {filterNotice && <div className="screener-filter-notice" role="status">{filterNotice}<button type="button" onClick={() => setFilterNotice("")} aria-label="Dismiss filter notice">×</button></div>}
     <div className="screener-filters" aria-label="Active filters">{filters.map((rule) => <span className="screener-chip" key={rule.id}>
-      <button type="button" onClick={(event) => { transientTrigger.current = event.currentTarget; beginFilter(rule.field, rule); setFilterOpen(true); }} aria-label={`Edit ${config.data?.catalog.find((item) => item.field === rule.field)?.label ?? rule.field}`}>{labelFilter(rule)}</button>
-      <button type="button" onClick={() => setFilters((current) => current.filter((item) => item.id !== rule.id))} aria-label={`Remove ${config.data?.catalog.find((item) => item.field === rule.field)?.label ?? rule.field}`}>×</button></span>)}
+      <button type="button" onClick={(event) => { transientTrigger.current = event.currentTarget; beginFilter(rule.field, rule); setFilterOpen(true); }} aria-label={`Edit ${catalogEntry(rule.field)?.label ?? rule.field}`}>{labelFilter(rule)}</button>
+      <button type="button" onClick={() => setFilters((current) => current.filter((item) => item.id !== rule.id))} aria-label={`Remove ${catalogEntry(rule.field)?.label ?? rule.field}`}>×</button></span>)}
       <button type="button" className="screener-add" onClick={(event) => { transientTrigger.current = event.currentTarget; setFilterOpen(!filterOpen); setColumnOpen(false); setScreenOpen(false); setDraftField(""); setFilterSearch(""); }} aria-expanded={filterOpen} aria-haspopup="dialog">+ Add Filter</button>
       {filters.length > 0 && <button type="button" className="screener-clear" onClick={() => setFilters([])}>Clear All</button>}
     </div>
@@ -745,9 +772,9 @@ export function ScreenerPage() {
       <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close filter picker">×</button>
       {!draftField ? <><input autoFocus aria-label="Search filters" placeholder="Search filters..." value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} />
         <div className="screener-picker-list">{[...new Set(availableFilters.map((item) => item.category))].map((category) => <div key={category}><h3>{category}</h3>{availableFilters.filter((item) => item.category === category && item.label.toLowerCase().includes(filterSearch.toLowerCase())).map((item) => <button key={item.field} type="button" onClick={() => beginFilter(item.field)}>{item.label}</button>)}</div>)}</div></> : <>
-        <h3>{config.data?.catalog.find((item) => item.field === draftField)?.label}</h3>
-        <label>Operator <select aria-label="Filter operator" value={draftOperator} onChange={(event) => setDraftOperator(event.target.value)}>{config.data?.catalog.find((item) => item.field === draftField)?.operators.map((operator) => <option key={operator} value={operator}>{({ eq: "Equals", ne: "Not equals", gt: "Greater than", gte: "At least", lt: "Less than", lte: "At most", between: "Between", in: "In", not_in: "Not in", contains: "Contains" } as Record<string, string>)[operator]}</option>)}</select></label>
-        <label>Value <input autoFocus aria-label="Filter value" type={config.data?.catalog.find((item) => item.field === draftField)?.type === "number" ? "number" : "text"} value={draftValue} onChange={(event) => setDraftValue(event.target.value)} /></label>
+        <h3>{catalogEntry(draftField)?.label}</h3>
+        <label>Operator <select aria-label="Filter operator" value={draftOperator} onChange={(event) => setDraftOperator(event.target.value)}>{catalogEntry(draftField)?.operators.map((operator) => <option key={operator} value={operator}>{({ eq: "Equals", ne: "Not equals", gt: "Greater than", gte: "At least", lt: "Less than", lte: "At most", between: "Between", in: "In", not_in: "Not in", contains: "Contains" } as Record<string, string>)[operator]}</option>)}</select></label>
+        <label>Value <input autoFocus aria-label="Filter value" type={catalogEntry(draftField)?.type === "number" ? "number" : "text"} value={draftValue} onChange={(event) => setDraftValue(event.target.value)} /></label>
         {draftOperator === "between" && <label>Maximum <input aria-label="Filter maximum" type="number" value={draftSecond} onChange={(event) => setDraftSecond(event.target.value)} /></label>}
         <div className="screener-popover-actions"><button type="button" onClick={() => setDraftField("")}>Back</button><button type="button" className="screener-primary" onClick={applyFilter} disabled={!draftValue.trim() || (draftOperator === "between" && !draftSecond.trim())}>Apply Filter</button></div></>}
     </div>}
@@ -791,7 +818,7 @@ export function ScreenerPage() {
             onClick={() => { if (availableKeys.includes(key) && isSortable(key)) sortBy(key as SortKey); }}>
             {flexRender(header.column.columnDef.header, header.getContext())}
             <span className="screener-sort">{effectiveSort === key ? descending ? "▼" : "▲" : ""}</span>
-            <span className="screener-resize" role="separator" tabIndex={0} aria-orientation="vertical" aria-valuenow={header.getSize()} aria-label={`Resize ${columnByKey[key].label}`}
+            <span className="screener-resize" role="separator" tabIndex={0} aria-orientation="vertical" aria-valuenow={header.getSize()} aria-label={`Resize ${typeof header.column.columnDef.header === "string" ? header.column.columnDef.header : columnByKey[key].label}`}
               onKeyDown={(event) => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); const width = Math.max(50, header.getSize() + (event.key === "ArrowRight" ? 10 : -10)); setColumnSizing((current) => ({ ...current, [key]: width })); setView("Custom"); } }}
               onMouseDown={(event) => { event.stopPropagation(); header.getResizeHandler()(event); }} onTouchStart={header.getResizeHandler()} /></button>;
         })}
@@ -805,6 +832,8 @@ export function ScreenerPage() {
             ? "Finviz access is not configured for this workstation."
             : firstPage?.source_error === "TREASURY_NOT_CONFIGURED"
               ? "U.S. Treasury Fiscal Data is not enabled for this workstation (set IMP_TREASURY_LIVE=1)."
+            : firstPage?.source_error === "CRYPTO_NOT_CONFIGURED"
+              ? "Kraken public market data is not enabled for this workstation (set IMP_CRYPTO_LIVE=1)."
             : snapshotQuery && firstPage?.source_error
               ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
@@ -863,12 +892,12 @@ export function ScreenerPage() {
     </>}
     <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
-      {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of)} · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
+      {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
       {firstPage?.coverage && <span title="Categories without a permitted source are reported, never counted">{Object.entries(firstPage.coverage).sort(([a], [b]) => coverageRank(a) - coverageRank(b)).map(([category, item]) =>
         `${category.charAt(0) + category.slice(1).toLowerCase()} ${item.count != null ? item.count.toLocaleString() : "unavailable"}`).join(" · ")}</span>}
       <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
       <span>Market {session}</span>
-      <span>Universe {firstPage?.universe_as_of ? `as of ${clock(firstPage.universe_as_of)}` : "unavailable"}</span>
+      <span>Universe {firstPage?.universe_as_of ? `as of ${clock(firstPage.universe_as_of, universe)}` : "unavailable"}</span>
       <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
   </section>;
 }

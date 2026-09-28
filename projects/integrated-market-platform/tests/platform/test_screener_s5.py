@@ -64,8 +64,8 @@ class Store:
 class UniverseContractTests(unittest.TestCase):
     def test_admitted_universes_with_typed_capabilities(self) -> None:
         payload = universe_payload()
-        # S9 added the owner-authorized Bonds universe; nothing else may join without authorization.
-        self.assertEqual([item["id"] for item in payload], [US_EQUITIES, FUTURES, US_ETFS, "BONDS"])
+        # S9 added the owner-authorized Bonds universe and S10 Crypto; nothing else may join without authorization.
+        self.assertEqual([item["id"] for item in payload], [US_EQUITIES, FUTURES, US_ETFS, "BONDS", "CRYPTO"])
         self.assertEqual(universe_spec(FUTURES).asset_class, "FUTURE")
         self.assertEqual(universe_spec(US_ETFS).asset_class, "ETF_FUND")
         self.assertEqual(universe_spec(FUTURES).panels, ())
@@ -109,7 +109,7 @@ class UniverseContractTests(unittest.TestCase):
         self.assertEqual(repo.get(future["id"])["sort"]["field"], "root")
         self.assertEqual(repo.get(etf_saved["id"])["universe"], US_ETFS)
         with self.assertRaisesRegex(ValueError, "UNSUPPORTED_UNIVERSE"):
-            validate_screen(screen("CRYPTO"))
+            validate_screen(screen("OPTIONS"))
 
 
 class CatalogProjectionTests(unittest.TestCase):

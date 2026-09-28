@@ -15,10 +15,13 @@ export type PreviewChartProps = {
   support: ClassifiedZone | null;
   resistance: ClassifiedZone | null;
   label: string;
+  timeZone?: "UTC" | "America/New_York";
+  /** Decimal places for the price axis (sub-cent crypto pairs need more than two). */
+  precision?: number;
 };
 
 /** Compact current candles with the nearest structure zones as dashed bounds. */
-export default function PreviewChart({ bars, forming, support, resistance, label }: PreviewChartProps) {
+export default function PreviewChart({ bars, forming, support, resistance, label, timeZone = "America/New_York", precision = 2 }: PreviewChartProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -27,27 +30,29 @@ export default function PreviewChart({ bars, forming, support, resistance, label
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
+    const timeFormat = timeZone === "UTC" ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit" }) : et;
+    const dayFormat = timeZone === "UTC" ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) : etDay;
     const chart = createChart(element, {
       width: element.clientWidth || 360, height: 188,
       layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
       rightPriceScale: { borderColor: "#27323f" },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: false, rightOffset: 2,
-        tickMarkFormatter: (time: Time) => et.format(new Date(Number(time) * 1000)) },
-      localization: { timeFormatter: (time: Time) => `${etDay.format(new Date(Number(time) * 1000))} ${et.format(new Date(Number(time) * 1000))} ET` },
+        tickMarkFormatter: (time: Time) => timeFormat.format(new Date(Number(time) * 1000)) },
+      localization: { timeFormatter: (time: Time) => `${dayFormat.format(new Date(Number(time) * 1000))} ${timeFormat.format(new Date(Number(time) * 1000))} ${timeZone === "UTC" ? "UTC" : "ET"}` },
       crosshair: { mode: 0 },
       handleScroll: false, handleScale: false,
     });
     seriesRef.current = chart.addCandlestickSeries({ upColor: "#57c79a", downColor: "#e27d86", borderVisible: false,
       wickUpColor: "#57c79a", wickDownColor: "#e27d86", priceLineVisible: false,
       // Green/red axis labels are reserved for support/resistance bounds.
-      lastValueVisible: false });
+      lastValueVisible: false, priceFormat: { type: "price", precision, minMove: 10 ** -precision } });
     chartRef.current = chart;
     const observer = typeof ResizeObserver === "undefined" ? null
       : new ResizeObserver(() => chart.applyOptions({ width: element.clientWidth }));
     observer?.observe(element);
     return () => { observer?.disconnect(); chart.remove(); chartRef.current = null; seriesRef.current = null; linesRef.current = []; };
-  }, []);
+  }, [timeZone, precision]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -55,7 +60,7 @@ export default function PreviewChart({ bars, forming, support, resistance, label
     const data = [...bars, ...(forming ? [forming] : [])].map((bar) => ({ time: bar.time as Time, open: bar.open, high: bar.high, low: bar.low, close: bar.close }));
     series.setData(data);
     chartRef.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, data.length - VISIBLE_BARS), to: data.length + 1 });
-  }, [bars, forming]);
+  }, [bars, forming, timeZone, precision]);
 
   useEffect(() => {
     const series = seriesRef.current;
@@ -68,7 +73,7 @@ export default function PreviewChart({ bars, forming, support, resistance, label
     };
     if (support) { add(support.upper, SUPPORT, "S"); add(support.lower, SUPPORT, ""); }
     if (resistance) { add(resistance.lower, RESISTANCE, "R"); add(resistance.upper, RESISTANCE, ""); }
-  }, [support?.lower, support?.upper, resistance?.lower, resistance?.upper]);
+  }, [support?.lower, support?.upper, resistance?.lower, resistance?.upper, timeZone, precision]);
 
   return <div className="screener-preview-chart" ref={containerRef} role="img" aria-label={label} />;
 }

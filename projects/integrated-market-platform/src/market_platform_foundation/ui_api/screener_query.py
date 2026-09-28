@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 from .screener_filters import filter_catalog, validate_filters
-from .screener_universes import BONDS, FUTURES, UNIVERSES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, CRYPTO, FUTURES, UNIVERSES, US_EQUITIES, US_ETFS, universe_spec
 
 CATALOG = "CATALOG"
 SNAPSHOT = "SNAPSHOT"
@@ -69,6 +69,11 @@ FIELD_EXECUTION: dict[str, dict[str, str]] = {
                                          "auction_discount_margin", "bid_to_cover")},
         **{field: REFERENCE for field in ("reference_tenor", "reference_rate", "indicative_rate")},
     },
+    CRYPTO: {
+        **{field: CATALOG for field in ("symbol", "base_asset", "quote_asset", "venue", "status")},
+        **{field: SNAPSHOT for field in ("price", "change_pct", "base_volume", "quote_volume", "bid", "ask",
+                                          "spread_pct", "high_24h", "low_24h", "trade_count")},
+    },
 }
 
 
@@ -88,10 +93,20 @@ def snapshot_fields(universe: str) -> frozenset[str]:
 def field_capabilities(universe: str) -> dict[str, dict[str, Any]]:
     """Per displayed column: its execution source and whether it sorts/filters the universe."""
 
-    filterable = {entry["field"] for entry in filter_catalog(universe)}
+    catalog = {entry["field"]: entry for entry in filter_catalog(universe)}
+    shared = {entry["field"]: entry for entry in filter_catalog(None)}
+
+    def own(field: str) -> dict[str, str]:
+        # A universe may name or measure a shared field its own way (Crypto: "UTC Day
+        # Change %" in UTC_DAY_PERCENT); only such overrides travel here.
+        entry, base = catalog.get(field), shared.get(field)
+        if entry is None or base is None or (entry["label"], entry["unit"]) == (base["label"], base["unit"]):
+            return {}
+        return {"label": entry["label"], "unit": entry["unit"]}
+
     return {field: {"execution": field_execution(universe, field), "sortable": is_sortable(universe, field),
-                    "filterable": field in filterable}
-            for field in sorted(universe_spec(universe).columns | filterable)}
+                    "filterable": field in catalog, **own(field)}
+            for field in sorted(universe_spec(universe).columns | set(catalog))}
 
 
 @dataclass(frozen=True, slots=True)

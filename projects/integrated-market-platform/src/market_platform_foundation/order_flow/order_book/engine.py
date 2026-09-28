@@ -75,6 +75,7 @@ RECOVERY_REQUIRED_REASONS = frozenset(
         BookStatusReason.SEQUENCE_REGRESSION,
         BookStatusReason.LEVEL_NOT_FOUND,
         BookStatusReason.STRUCTURALLY_CORRUPT,
+        BookStatusReason.CHECKSUM_MISMATCH,
     }
 )
 
@@ -311,6 +312,15 @@ class IncrementalOrderBook:
         else:
             self.last_sequence = sequence
             self.sequence_state = SequenceState.CONTIGUOUS
+
+    def invalidate(self, reason: BookStatusReason) -> None:
+        """Fail closed on an integrity failure detected outside ``apply``.
+
+        Adapters use this when a venue-level integrity check (for example a
+        published checksum) disagrees with the book. A recovery-required
+        reason blocks every further event until a RESET or full snapshot.
+        """
+        self._invalidate(reason)
 
     def _invalidate(self, reason: BookStatusReason) -> None:
         self.validity = BookValidity.INVALID

@@ -52,9 +52,16 @@ const RowSchema = z.object({
   reference_tenor: z.string().nullable().optional(),
   reference_date: z.string().nullable().optional(),
   reference_reason: z.string().nullable().optional(),
+  base_asset: z.string().optional(),
+  quote_asset: z.string().optional(),
+  venue: z.string().optional(),
+  product_type: z.string().optional(),
+  status: z.string().optional(),
+  price_increment: z.string().nullable().optional(),
+  min_order_size: z.string().nullable().optional(),
   fields: z.record(FieldSchema),
 });
-export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS"]);
+export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS", "CRYPTO"]);
 export type ScreenerUniverse = z.infer<typeof ScreenerUniverseSchema>;
 const ScreenerSchema = z.object({
   schema_version: z.literal("screener/1.0.0"),
@@ -126,7 +133,8 @@ const ScreenerConfigSchema = z.object({
     admitted_asset_classes: z.array(z.string()).optional(), admitted_instrument_kinds: z.array(z.string()).optional(),
     identity_fields: z.array(z.string()).optional(), data_sources: z.array(z.string()).optional(),
     tradability: z.string().optional(),
-    fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean() })).optional() })),
+    fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean(),
+      label: z.string().optional(), unit: z.string().optional() })).optional() })),
   query: z.object({ default_limit: z.number(), max_limit: z.number() }).optional(),
   catalog: z.array(z.object({ field: z.string(), label: z.string(), category: z.string(),
     type: z.enum(["number", "text"]), unit: z.string(), operators: z.array(z.string()),

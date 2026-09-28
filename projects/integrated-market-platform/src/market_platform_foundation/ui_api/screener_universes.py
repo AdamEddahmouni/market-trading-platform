@@ -2,7 +2,7 @@
 
 See docs/engineering/SCREENER_UNIVERSE_ARCHITECTURE.md: the canonical core
 universes are US Equities, ETFs, Futures, Bonds / Fixed Income, and Crypto
-(documented, not yet implemented). Intelligence lenses (Options, Short
+(all five implemented; Crypto in S10). Intelligence lenses (Options, Short
 Squeeze, Whales, Institutions, Order Flow, ...) are views or panels, never
 universes; a new universe requires explicit owner authorization.
 """
@@ -15,6 +15,7 @@ US_EQUITIES = "US_EQUITIES"
 FUTURES = "FUTURES"
 US_ETFS = "US_ETFS"
 BONDS = "BONDS"
+CRYPTO = "CRYPTO"
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +115,26 @@ UNIVERSES: dict[str, Universe] = {
         data_sources=("US_TREASURY_FISCAL_DATA_AUCTIONS", "US_TREASURY_FISCAL_DATA_MSPD", "US_TREASURY_DAILY_RATES",
                       "FRED", "FINRA_TRACE_AGGREGATES"),
         tradability="REFERENCE_ONLY",
+    ),
+    CRYPTO: Universe(
+        CRYPTO, "Crypto", "CRYPTO", "CRYPTO_PAIR", "KRAKEN_SPOT_PUBLIC",
+        "24_7", "symbol",
+        ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct", "venue"),
+        {
+            "Overview": ("symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct", "venue"),
+            "Performance": ("symbol", "price", "change_pct", "high_24h", "low_24h", "base_volume", "quote_volume"),
+            "Liquidity": ("symbol", "bid", "ask", "spread_pct", "quote_volume", "trade_count", "venue"),
+            "Custom": ("symbol", "base_asset", "quote_asset", "price", "change_pct", "quote_volume"),
+        },
+        # S10: panels only where the venue publishes the evidence: OHLC bars
+        # (Charts), trades with the exchange-native taker side (Order Flow, CVD),
+        # and a checksummed snapshot+delta book (Level 2). No Futures Context,
+        # Options, or Short Squeeze semantics exist for a spot pair.
+        "KRAKEN_PUBLIC_TICKER", "KRAKEN_PUBLIC_OHLC", ("order_flow", "cvd", "level2", "charts"),
+        identity_fields=("base_asset", "quote_asset", "venue", "product_type"),
+        data_sources=("KRAKEN_SPOT_ASSET_PAIRS", "KRAKEN_SPOT_TICKER", "KRAKEN_SPOT_OHLC",
+                      "KRAKEN_WS_V2_TRADE", "KRAKEN_WS_V2_BOOK"),
+        tradability="DISCOVERY_ONLY",
     ),
 }
 

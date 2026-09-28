@@ -60,7 +60,7 @@ LARGE_PRINT_MULTIPLE = 10
 LARGE_PRINT_MIN_TRADES = 20
 IMBALANCE_DEPTHS = (5, 10)
 DISPLAY_LEVELS = 20
-DISCONNECTED_STATES = frozenset(("DISCONNECTED", "RECONNECTING", "DISABLED", "CONNECTING", "ERROR"))
+DISCONNECTED_STATES = frozenset(("DISCONNECTED", "RECONNECTING", "DISABLED", "CONNECTING", "ERROR", "MAINTENANCE"))
 _UNVERIFIED_REASONS = frozenset(("PROBE_STALE", "PROBE_MISSING"))
 _PERMISSION_WORDS = ("permission", "quote card", "entitle", "authority")
 _QUOTA_WORDS = ("quota", "subscription limit", "exceed")
@@ -131,7 +131,22 @@ class ScreenerSpecialistService:
         now_ns: Callable[[], int] = time.time_ns,
         monotonic: Callable[[], float] = time.monotonic,
         schedule_expiry: bool = True,
+        trades_capability: str = TRADES,
+        depth_capability: str = DEPTH,
+        panels: tuple[str, ...] | None = None,
+        provider_hold_seconds: float = PROVIDER_HOLD_SECONDS,
     ) -> None:
+        # One service per market runtime: US equities/ETFs share the Moomoo/IBKR
+        # runtime; Crypto (S10) supplies its own venue runtime and capability names
+        # while every panel projection below stays identical.
+        self._trades, self._depth = trades_capability, depth_capability
+        # How long a released instrument still occupies provider slots (OpenD: 60 s;
+        # a venue whose unsubscribe takes effect immediately passes 0).
+        self._provider_hold = provider_hold_seconds
+        rename = {TRADES: trades_capability, DEPTH: depth_capability}
+        self._panel_capabilities = {panel: tuple(rename.get(item, item) for item in capabilities)
+                                    for panel, capabilities in PANEL_CAPABILITIES.items()
+                                    if panels is None or panel in panels}
         self._runtime_getter = runtime_getter
         self._known = known_instrument
         self._session = session_label
@@ -157,7 +172,7 @@ class ScreenerSpecialistService:
 
     def _occupied(self, now: float) -> set[str]:
         for instrument, released in list(self._released.items()):
-            if now - released >= PROVIDER_HOLD_SECONDS:
+            if now - released >= self._provider_hold:
                 self._released.pop(instrument, None)
         return self._held_instruments() | set(self._released)
 
@@ -169,7 +184,7 @@ class ScreenerSpecialistService:
                 runtime.unsubscribe(instrument_id=instrument, capabilities=[capability],
                                     consumer_id=self.consumer_id(client_id, panel))
         # The caller has already removed ``pairs`` from this client's record.
-        if instrument not in self._held_instruments():
+        if self._provider_hold > 0 and instrument not in self._held_instruments():
             self._released[instrument] = self._monotonic()
 
     def _release(self, client_id: str) -> None:
@@ -212,7 +227,7 @@ class ScreenerSpecialistService:
 
         if not client_id or len(client_id) > 80 or not all(c.isalnum() or c in "-_" for c in client_id):
             raise ValueError("INVALID_CLIENT_ID")
-        if len(set(panels)) != len(panels) or any(panel not in PANEL_CAPABILITIES for panel in panels):
+        if len(set(panels)) != len(panels) or any(panel not in self._panel_capabilities for panel in panels):
             raise ValueError("INVALID_PANELS")
         if instrument_id is not None and (not isinstance(instrument_id, str) or not (admitted or self._known(instrument_id))):
             raise ValueError("UNKNOWN_INSTRUMENT")
@@ -224,7 +239,8 @@ class ScreenerSpecialistService:
             if previous_runtime is not runtime or previous_instrument != instrument_id:
                 self._release(client_id)
                 held = set()
-            desired = {(panel, capability) for panel in panels for capability in PANEL_CAPABILITIES[panel]} if instrument_id else set()
+            desired = ({(panel, capability) for panel in panels for capability in self._panel_capabilities[panel]}
+                       if instrument_id else set())
             stale = held - desired
             held = held - stale
             self._clients[client_id] = (instrument_id, held, now, runtime)
@@ -274,6 +290,8 @@ class ScreenerSpecialistService:
 
     @staticmethod
     def _provider(runtime: Any) -> str | None:
+        if getattr(runtime, "provider_name", None):
+            return str(runtime.provider_name)
         if getattr(runtime, "feed", None) is not None:
             return "MOOMOO"
         if getattr(runtime, "ibkr_transport", None) is not None:
@@ -291,11 +309,14 @@ class ScreenerSpecialistService:
         # subscribe answer (below) decides. Only an observed refusal is NOT_ENTITLED.
         if self._entitlement(runtime, capability) == "NOT_ENTITLED":
             return "NOT_ENTITLED", "ENTITLEMENT_MISSING", None
-        feed = getattr(runtime, "feed", None)
-        errors = getattr(feed, "subscription_errors", {}) or {}
-        subtype = {TRADES: "TICKER", DEPTH: "ORDER_BOOK"}[capability]
-        refusal = next((value for (code, name), value in errors.items()
-                        if name == subtype and code.split(".")[-1].upper() == instrument_id.upper()), None)
+        if hasattr(runtime, "subscription_refusal"):
+            refusal = runtime.subscription_refusal(instrument_id, capability)
+        else:
+            feed = getattr(runtime, "feed", None)
+            errors = getattr(feed, "subscription_errors", {}) or {}
+            subtype = {TRADES: "TICKER", DEPTH: "ORDER_BOOK"}[capability]
+            refusal = next((value for (code, name), value in errors.items()
+                            if name == subtype and code.split(".")[-1].upper() == instrument_id.upper()), None)
         if refusal is not None:
             message = str(refusal.get("message") or "").lower()
             if any(word in message for word in _PERMISSION_WORDS):
@@ -315,6 +336,8 @@ class ScreenerSpecialistService:
 
     @staticmethod
     def _entitlement(runtime: Any, capability: str) -> str:
+        if runtime is not None and hasattr(runtime, "entitlement_for"):
+            return str(runtime.entitlement_for(capability))
         registry = getattr(runtime, "capability_registry", None) if runtime is not None else None
         entry = registry.get(capability) if registry is not None else None
         if entry is None:
@@ -356,10 +379,10 @@ class ScreenerSpecialistService:
         return "CURRENT", None if has_data else "AWAITING_DATA"
 
     def order_flow(self, instrument_id: str) -> dict[str, Any]:
-        payload = self._base("order_flow", instrument_id, TRADES)
+        payload = self._base("order_flow", instrument_id, self._trades)
         runtime = self._runtime_getter()
-        payload["entitlement"] = self._entitlement(runtime, TRADES)
-        blocked, reason, anchor = self._gate(runtime, instrument_id, TRADES)
+        payload["entitlement"] = self._entitlement(runtime, self._trades)
+        blocked, reason, anchor = self._gate(runtime, instrument_id, self._trades)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         if blocked is not None:
             return {**payload, "state": blocked, "reason": reason, "summary": None, "tape": [], "window": None}
@@ -401,10 +424,10 @@ class ScreenerSpecialistService:
                 "tape": tape}
 
     def cvd(self, instrument_id: str) -> dict[str, Any]:
-        payload = self._base("cvd", instrument_id, TRADES)
+        payload = self._base("cvd", instrument_id, self._trades)
         runtime = self._runtime_getter()
-        payload["entitlement"] = self._entitlement(runtime, TRADES)
-        blocked, reason, anchor = self._gate(runtime, instrument_id, TRADES)
+        payload["entitlement"] = self._entitlement(runtime, self._trades)
+        blocked, reason, anchor = self._gate(runtime, instrument_id, self._trades)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         payload["derivation"] = "DERIVED"
         if blocked is not None:
@@ -438,10 +461,10 @@ class ScreenerSpecialistService:
                 "points": points}
 
     def depth(self, instrument_id: str) -> dict[str, Any]:
-        payload = self._base("level2", instrument_id, DEPTH)
+        payload = self._base("level2", instrument_id, self._depth)
         runtime = self._runtime_getter()
-        payload["entitlement"] = self._entitlement(runtime, DEPTH)
-        blocked, reason, anchor = self._gate(runtime, instrument_id, DEPTH)
+        payload["entitlement"] = self._entitlement(runtime, self._depth)
+        blocked, reason, anchor = self._gate(runtime, instrument_id, self._depth)
         payload["provider"] = self._provider(runtime) if runtime is not None else None
         empty = {"bids": [], "asks": [], "best_bid": None, "best_ask": None, "spread": None, "mid": None,
                  "spread_bps": None, "imbalance": [], "completeness": None, "freshness": None,
@@ -510,7 +533,8 @@ class ScreenerSpecialistService:
                 "spread_bps": spread / mid * 10_000 if spread is not None and mid else None,
                 "imbalance": imbalance,
                 "completeness": {"basis": "PROVIDER_MBP_TOP_N", "bid_levels": len(bids_raw), "ask_levels": len(asks_raw),
-                                 "venue_scope": "PROVIDER_UNSPECIFIED", "update_semantics": "SNAPSHOT"},
+                                 "venue_scope": "PROVIDER_UNSPECIFIED", "update_semantics": "SNAPSHOT",
+                                 **(runtime.depth_completeness() if hasattr(runtime, "depth_completeness") else {})},
                 "freshness": {"status": freshness.status.value, "age_ms": None if freshness.age_ns is None else freshness.age_ns // 1_000_000,
                               "ttl_ms": policy.stale_after_ns // 1_000_000, "policy": policy.name}}
 
