@@ -1,6 +1,7 @@
 # Main Screener universe architecture
 
-Status: **canonical — owner decision (recorded 2026-09-27, Screener S9).**
+Status: **canonical — owner decision (recorded 2026-09-27, Screener S9; Crypto
+implemented 2026-09-28, Screener S10).**
 
 This document fixes what a Main Screener *universe* is, which universes IMP
 has, and which subjects are intelligence layers rather than universes. Agents
@@ -33,11 +34,14 @@ architecture.
 | 2 | ETFs | `US_ETFS` | implemented (S5) |
 | 3 | Futures | `FUTURES` | implemented (S5) |
 | 4 | Bonds / Fixed Income | `BONDS` | implemented (S9) — [Screener S9](SCREENER_S9_BONDS.md) |
-| 5 | Crypto | — | **documented only; not implemented, not in the registry** |
+| 5 | Crypto | `CRYPTO` | implemented (S10) — [Screener S10](SCREENER_S10_CRYPTO.md) |
 
-The registry holds exactly the implemented universes. Crypto is part of the
-canonical model but has no registry entry, code, or UI until the owner
-authorizes its implementation.
+**IMPLEMENTED CORE UNIVERSES: 5/5** — US Equities, ETFs, Futures,
+Bonds / Fixed Income, Crypto.
+
+The registry holds exactly these five. Crypto rows are venue-qualified spot
+pairs (XA-01 `CRYPTO_PAIR`, e.g. `BTC/USD` on Kraken): one venue's market, never
+a consolidated crypto price.
 
 Inside a universe, categories are filters and views, never new universes.
 For example, Treasuries, corporate bonds, agency debt, and municipals are
@@ -82,14 +86,16 @@ disclosures:
 | Order Flow, CVD, Level 2 | specialist panels (S4) |
 | Catalysts, Insiders | evidence in Preview and panels |
 | Rates & Curve | a Bonds specialist panel (S9) |
+| News (headlines, sentiment, analysis) | a cross-universe intelligence layer: views, panels, and Preview context across the five universes — **never a universe** |
 
 ## Governance rule
 
 **No agent may create a Screener universe because a subject deserves a tab,
-view, or panel.** A new universe — including Crypto, Options, or any other —
+view, or panel.** A new universe — including Options, Commodities, News, or any other —
 requires explicit owner authorization. Everything else is expressed as a
 view, filter, or panel inside an existing universe.
 
-Tests pin the registry: `tests/platform/test_screener_s9.py`
-(`UniverseArchitectureTests`) fails if any universe other than the four
-implemented ones appears.
+Tests pin the registry by exact equality: `tests/platform/test_screener_s9.py`
+(`UniverseArchitectureTests`) and `tests/platform/test_screener_s10.py`
+(`CryptoUniverseTests`) fail if the registry is anything other than the five
+implemented universes — an unauthorized sixth entry fails them.

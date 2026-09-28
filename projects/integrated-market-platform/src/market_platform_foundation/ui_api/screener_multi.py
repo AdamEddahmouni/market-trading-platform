@@ -27,7 +27,8 @@ from .screener_query import DEFAULT_PAGE_LIMIT, ScreenerQuery, order_rows, page_
 from .screener_snapshot import SOURCE as SNAPSHOT_SOURCE
 from .screener_snapshot import EtfSnapshotSource, MarketSnapshot
 from .screener_bonds import bond_screener_service
-from .screener_universes import BONDS, FUTURES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_crypto import crypto_screener_service
+from .screener_universes import BONDS, CRYPTO, FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 ET = ZoneInfo("America/New_York")
 CATALOG_TTL_SECONDS = 900
@@ -293,6 +294,8 @@ class MultiUniverseScreener:
                             limit=limit, filters=filters, result_set=result_set, selected=selected)
         if universe == BONDS:
             return bond_screener_service().read(query, force_refresh=force_refresh)
+        if universe == CRYPTO:
+            return crypto_screener_service().read(query, force_refresh=force_refresh)
         return self._read_query(query, force_refresh=force_refresh)
 
     def _read_query(self, query: ScreenerQuery, *, force_refresh: bool) -> dict[str, Any]:
@@ -362,6 +365,8 @@ class MultiUniverseScreener:
             return screener_service().row_for(instrument_id)
         if universe == BONDS:
             return bond_screener_service().row_for(instrument_id)
+        if universe == CRYPTO:
+            return crypto_screener_service().row_for(instrument_id)
         rows, _as_of, error = self._catalog(universe)
         row = next((row for row in rows if row["instrument"]["instrument_id"] == instrument_id), None)
         snapshot = self._snapshots.retained(snapshot_id) if snapshot_id and universe == US_ETFS else None
@@ -380,6 +385,9 @@ class MultiUniverseScreener:
             return screener_service().quote_for(instrument_id)
         if universe == BONDS:
             return {"state": "UNAVAILABLE", "reason": "NO_STREAMING_BOND_QUOTES", "fields": {}}
+        if universe == CRYPTO:
+            return crypto_screener_service().window([instrument_id])["quotes"].get(instrument_id,
+                   {"state": "UNAVAILABLE", "reason": "UNKNOWN_INSTRUMENT", "fields": {}})
         row, error = self.row_for(instrument_id, universe=universe)
         if row is None:
             return {"state": "UNAVAILABLE", "reason": error or "UNKNOWN_INSTRUMENT", "fields": {}}
@@ -399,6 +407,9 @@ class MultiUniverseScreener:
             # No streaming bond quotes exist; any equity/ETF subscription this client held is released.
             screener_service().release(client_id)
             return bond_screener_service().window(symbols)
+        if universe == CRYPTO:
+            screener_service().release(client_id)
+            return crypto_screener_service().window(symbols)
         rows, _as_of, error = self._catalog(universe)
         by_id = {row["instrument"]["instrument_id"]: row for row in rows}
         if not set(symbols) <= set(by_id):

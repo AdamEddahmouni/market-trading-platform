@@ -1517,6 +1517,30 @@
       ]
     },
     {
+      "id": "crypto_market",
+      "path": "tests/crypto_market",
+      "classification": "offline",
+      "tiers": [
+        "full"
+      ],
+      "domains": [
+        "order-flow"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/crypto_market/**",
+        "tests/fixtures/crypto_market/**"
+      ],
+      "test_globs": [
+        "tests/crypto_market/test_*.py"
+      ],
+      "neighbors": [
+        "order_flow",
+        "ui1"
+      ]
+    },
+    {
       "id": "fixed_income",
       "path": "tests/fixed_income",
       "classification": "offline",

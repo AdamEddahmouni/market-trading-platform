@@ -98,6 +98,11 @@ def depth_freshness_policy(provider_id: str = "") -> "FreshnessPolicy":
             )
         )
         name = "moomoo_l2"
+    elif normalized == "kraken":
+        # Kraken WS v2 book (Screener S10): a book with no level change stays
+        # current while the connection heartbeat confirms continuity.
+        ms = int(os.environ.get("IMP_KRAKEN_L2_MAX_AGE_MS", os.environ.get("IMP_LIVE_DEPTH_STALE_MS", "5000")))
+        name = "kraken_l2"
     else:
         ms = depth_stale_threshold_ms()
         name = "default_l2"

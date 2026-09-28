@@ -20,10 +20,10 @@ from ..market_data.current_bars import PROVIDER as BAR_PROVIDER
 from ..market_data.current_bars import SOURCE_ID as BAR_SOURCE_ID
 from ..market_data.current_bars import BarSeries, CurrentBarsService, current_bars_service
 from ..market_sessions import us_equity_session_label
-from .screener_filters import catalog_entry, rule_matches, validate_filters
+from .screener_filters import catalog_entry, filter_catalog, rule_matches, validate_filters
 from .screener_futures_context import FuturesContextService
 from .screener_projections import ScreenerService, screener_service
-from .screener_universes import BONDS, FUTURES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, CRYPTO, FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 SCHEMA_VERSION = "screener-preview/1.0.0"
 CHART_SCHEMA_VERSION = "screener-chart/1.0.0"
@@ -75,6 +75,10 @@ def format_value(field: str, value: Any, unit: str) -> str:
         return f"{value:.0f}"
     if unit == "USD_BILLIONS":
         return f"${value:,.1f}B"
+    if unit in ("BASE_UNITS", "QUOTE_UNITS"):
+        return f"{value:,.8f}".rstrip("0").rstrip(".")
+    if unit == "UTC_DAY_PERCENT":
+        return f"{value:+.2f}% UTC day"
     return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
@@ -94,7 +98,8 @@ def explain_matches(row: dict[str, Any], filters: list[dict[str, Any]], *, unive
         return {"state": "NO_ACTIVE_FILTERS", "items": []}
     items = []
     for rule in rules:
-        entry = catalog_entry(rule["field"])
+        entry = (next(item for item in filter_catalog(CRYPTO) if item["field"] == rule["field"])
+                 if universe == CRYPTO else catalog_entry(rule["field"]))
         text_field = entry["type"] == "text"
         observed = row.get(rule["field"]) if text_field else row.get("fields", {}).get(rule["field"], {}).get("value")
         wanted = rule["value"]
@@ -301,6 +306,26 @@ class ScreenerPreviewService:
             # Bond-specific preview: terms, auction facts, curve reference, source clocks.
             from .screener_bonds import bond_screener_service
             return bond_screener_service().preview(instrument_id, rules)
+        if universe == CRYPTO:
+            from .screener_crypto import crypto_screener_service
+            service = crypto_screener_service()
+            row, _error = service.row_for(instrument_id)
+            if row is None:
+                return None
+            quote = service.window([instrument_id])["quotes"][instrument_id]
+            bars = service.bars(instrument_id, timeframe)
+            return {"schema_version": "screener-crypto-preview/1.0.0", "generated_at": _iso(self._now_ns()),
+                    "market_session": "24_7", "instrument": {**row["instrument"], "symbol": row["symbol"],
+                    "base_asset": row["base_asset"], "quote_asset": row["quote_asset"],
+                    "venue": row["venue"], "product_type": "SPOT", "status": row["status"],
+                    "price_increment": row.get("price_increment"), "min_order_size": row.get("min_order_size"),
+                    "base_increment": row.get("base_increment"), "quote_increment": row.get("quote_increment"),
+                    "min_order_notional": row.get("min_order_notional"), "catalog_as_of": row.get("catalog_as_of")},
+                    "snapshot_as_of": row.get("snapshot_id"), "quote": quote,
+                    "fields": row["fields"], "bars": bars, "levels": service.levels(bars, quote),
+                    "why": {"matched": explain_matches(row, rules, universe=CRYPTO)},
+                    "source_health": {"catalog": "CURRENT", "snapshot": "SNAPSHOT" if row.get("snapshot_id") else "UNAVAILABLE",
+                                      "quote": quote["state"], "bars": bars["state"]}}
         if universe != US_EQUITIES:
             return self._read_other(instrument_id, universe=universe, timeframe=timeframe, scope=scope, rules=rules,
                                     snapshot_id=snapshot_id)
@@ -422,6 +447,9 @@ class ScreenerPreviewService:
         can never disagree about bars or zones.
         """
 
+        if universe == CRYPTO:
+            from .screener_crypto import crypto_screener_service
+            return crypto_screener_service().chart(instrument_id, timeframe)
         if universe != US_EQUITIES:
             preview = self.read(instrument_id, universe=universe, timeframe=timeframe, scope=scope)
             if preview is None:

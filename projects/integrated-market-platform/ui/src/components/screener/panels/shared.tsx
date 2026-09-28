@@ -47,6 +47,36 @@ export const etDay = (iso: string | null | undefined) => iso ? `${etShort.format
 export const compact = (value: number) => compactFormat.format(value);
 export const signedCompact = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${compactFormat.format(Math.abs(value))}`;
 export const money = (value: number) => value >= 1 ? value.toFixed(2) : value.toFixed(4);
+const utcTime = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const utcShort = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+export const utcClock = (iso: string | null | undefined) => iso ? `${utcTime.format(new Date(iso))} UTC` : "—";
+export const utcDay = (iso: string | null | undefined) => iso ? `${utcShort.format(new Date(iso))} UTC` : "—";
+/** Crypto trades 24/7 on venue clocks: its panels read UTC; US markets read ET. */
+export const marketClock = (universe: ScreenerUniverse) => universe === "CRYPTO"
+  ? { clock: utcClock, day: utcDay, suffix: " UTC", zone: "UTC" as const }
+  : { clock: etClock, day: etDay, suffix: " ET", zone: "America/New_York" as const };
+const PROVIDER_LABELS: Record<string, string> = { MOOMOO: "Moomoo", IBKR: "IBKR", KRAKEN: "Kraken" };
+export const providerLabel = (provider: string | null | undefined) => provider ? PROVIDER_LABELS[provider] ?? provider : "No provider";
+/** Pair prices keep the venue's price increment (sub-cent assets included); US prices keep the dollar format. */
+export function pricePrecision(row: ScreenerRow | null, value: number) {
+  const step = (row?.price_increment?.split(".")[1] ?? "").replace(/0+$/, "").length;
+  return Math.min(10, Math.max(step, value >= 1 ? 2 : value >= 0.01 ? 4 : 8));
+}
+/** Crypto sizes are fractional base units (0.00012 BTC); US sizes stay whole-unit formatted. */
+export const marketSize = (value: number, universe: ScreenerUniverse) =>
+  value.toLocaleString("en-US", universe === "CRYPTO" ? { maximumFractionDigits: 8 } : undefined);
+/** Aggregated volume: Crypto keeps four significant digits below 1,000 base units so 0.0123 BTC never reads 0. */
+export const marketVolume = (value: number, universe: ScreenerUniverse) =>
+  universe === "CRYPTO" && value !== 0 && Math.abs(value) < 1_000 ? value.toLocaleString("en-US", { maximumSignificantDigits: 4 }) : compact(value);
+export const signedMarketVolume = (value: number, universe: ScreenerUniverse) =>
+  `${value > 0 ? "+" : value < 0 ? "−" : ""}${marketVolume(Math.abs(value), universe)}`;
+/** Sub-0.1 bps spreads (deep crypto books) keep three decimals instead of rounding to 0.0. */
+export const spreadBps = (bps: number) => (bps !== 0 && Math.abs(bps) < 0.1 ? bps.toFixed(3) : bps.toFixed(1));
+export function marketPrice(value: number, row: ScreenerRow | null, universe: ScreenerUniverse) {
+  if (universe !== "CRYPTO") return money(value);
+  const digits = pricePrecision(row, value);
+  return value.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+}
 export function age(iso: string | null | undefined, now = Date.now()) {
   if (!iso) return null;
   const ms = Math.max(0, now - Date.parse(iso));
@@ -74,6 +104,8 @@ const REASONS: Record<string, string> = {
   BAR_SOURCE_UNAVAILABLE: "Current bars unavailable", STALE_BAR_SOURCE: "Bar source is stale", INSUFFICIENT_BARS: "Not enough completed bars",
   MOOMOO_SUBSCRIPTION_BUSY: "Chart data slots busy; retrying shortly", MOOMOO_QUOTE_NOT_ENTITLED: "No quote entitlement for bars",
   MARKET_DATA_UNAVAILABLE: "Market data unavailable",
+  MAINTENANCE: "Venue is in maintenance; market data paused", CHECKSUM_MISMATCH: "Book failed the venue checksum; resyncing",
+  CRYPTO_BARS_UNAVAILABLE: "Venue bars unavailable", CRYPTO_NOT_CONFIGURED: "Crypto market data is not enabled",
 };
 export const reasonText = (code: string | null | undefined) => (code && (REASONS[code] ?? code.replace(/_/g, " ").toLowerCase())) || "";
 

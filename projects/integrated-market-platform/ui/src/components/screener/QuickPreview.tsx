@@ -2,6 +2,7 @@ import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState, type Keyboa
 import { useQuery } from "@tanstack/react-query";
 import { fetchScreenerPreview, type ScreenerFilter, type ScreenerPreview, type ScreenerQuote, type ScreenerRow, type ScreenerUniverse } from "../../api/screener";
 import { BondQuickPreview } from "./bonds/BondQuickPreview";
+import { CryptoQuickPreview } from "./crypto/CryptoQuickPreview";
 import { PreviewOptions } from "./options/PreviewOptions";
 import { PreviewSqueeze } from "./squeeze/PreviewSqueeze";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
@@ -270,6 +271,10 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
 
 /** Bonds get a fixed-income preview (terms, auction, curve reference); no equity concepts render for them. */
 function QuickPreviewSwitch(props: QuickPreviewProps) {
+  if (props.universe === "CRYPTO") {
+    return <CryptoQuickPreview row={props.row} filters={props.filters} screenLabel={props.screenLabel} overlay={props.overlay}
+      width={props.width} paneRef={props.paneRef} onClose={props.onClose} />;
+  }
   if (props.universe === "BONDS") {
     return <BondQuickPreview row={props.row} filters={props.filters} screenLabel={props.screenLabel} overlay={props.overlay}
       width={props.width} paneRef={props.paneRef} onClose={props.onClose} ratesSupported={props.ratesSupported ?? false}

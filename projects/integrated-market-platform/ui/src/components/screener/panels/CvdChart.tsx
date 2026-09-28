@@ -10,21 +10,28 @@ export function perSecond(points: ReadonlyArray<{ time_ms: number; cvd: number }
   return [...byTime].sort((a, b) => a[0] - b[0]).map(([time, value]) => ({ time: time as Time, value }));
 }
 
-export default function CvdChart({ points, label }: { points: ReadonlyArray<{ time_ms: number; cvd: number }>; label: string }) {
+type Props = { points: ReadonlyArray<{ time_ms: number; cvd: number }>; label: string; timeZone?: "UTC" | "America/New_York";
+  /** Axis/crosshair value format; omitted keeps the chart default (US share volume). */
+  formatValue?: (value: number) => string };
+
+export default function CvdChart({ points, label, timeZone = "America/New_York", formatValue }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Baseline"> | null>(null);
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
+    const utc = timeZone === "UTC";
+    const time = utc ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : et;
     const chart = createChart(element, {
       autoSize: true,
       layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
       rightPriceScale: { borderColor: "#27323f" },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: true,
-        tickMarkFormatter: (time: Time) => et.format(new Date(Number(time) * 1000)) },
-      localization: { timeFormatter: (time: Time) => `${et.format(new Date(Number(time) * 1000))} ET` },
+        tickMarkFormatter: (value: Time) => time.format(new Date(Number(value) * 1000)) },
+      localization: { timeFormatter: (value: Time) => `${time.format(new Date(Number(value) * 1000))} ${utc ? "UTC" : "ET"}`,
+        ...(formatValue ? { priceFormatter: formatValue } : {}) },
       crosshair: { mode: 0 }, handleScroll: false, handleScale: false,
     });
     seriesRef.current = chart.addBaselineSeries({
@@ -34,10 +41,10 @@ export default function CvdChart({ points, label }: { points: ReadonlyArray<{ ti
     });
     chartRef.current = chart;
     return () => { chart.remove(); chartRef.current = null; seriesRef.current = null; };
-  }, []);
+  }, [timeZone, formatValue]);
   useEffect(() => {
     seriesRef.current?.setData(perSecond(points));
     chartRef.current?.timeScale().fitContent();
-  }, [points]);
+  }, [points, timeZone]);
   return <div className="screener-cvd-chart" ref={containerRef} role="img" aria-label={label} />;
 }

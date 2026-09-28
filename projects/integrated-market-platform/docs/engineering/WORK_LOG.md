@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-28 — Main Screener S10 Crypto universe
+
+| Field | Value |
+|-------|-------|
+| **Status** | `local-validation-complete` |
+| **Area** | `ui/screener`, `ui_api`, `crypto_market`, `order_flow`, `docs` |
+| **Summary** | Added the fifth core Screener universe: Kraken venue-qualified spot pairs through the canonical query, 24/7 bars, Preview, and shared Order Flow, CVD, and checksum-verified Level 2 panels. Preserved missing data and provider clocks; corrected rapid pair switching, depth-qualified unsubscribe, and stale cross-universe selection. |
+| **Key files** | `src/market_platform_foundation/crypto_market/`, `ui_api/screener_crypto.py`, `screener_universes.py`, `screener_specialist.py`, `ui/src/components/screener/crypto/`, `tests/crypto_market/`, `tests/platform/test_screener_s10.py`, `docs/engineering/SCREENER_S10_CRYPTO.md` |
+| **Tests** | `validate changed`: 5,906 tests, 35 skipped, exit 0; serial `validate full`: 7,177 tests, 52 skipped, exit 0; both zero failures/errors. Full UI 1,111/1,111 across 152 files; typecheck, production build, and bundle budget pass. Focused and live acceptance details: [SCREENER_S10_CRYPTO.md](SCREENER_S10_CRYPTO.md#tests). |
+| **Related** | [SCREENER_S10_CRYPTO.md](SCREENER_S10_CRYPTO.md), [SCREENER_UNIVERSE_ARCHITECTURE.md](SCREENER_UNIVERSE_ARCHITECTURE.md) |
+| **Notes** | Kraken is the sole S10 runtime venue; Coinbase remains a documented reference/deferred provider. Full core checkpoint passed; final repo checks, commit, and required CI remain pending at this entry. No execution or Live trading authority was added. |
+
+---
+
 ## 2026-09-28 — Main Screener S9 Bonds / Fixed Income universe
 
 | Field | Value |

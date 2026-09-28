@@ -263,7 +263,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 canonical_instrument = instrument
                 instrument = row.get("market_data_id") or instrument
-                service = specialist_service()
+                if universe == "CRYPTO":
+                    from .screener_crypto import crypto_specialist_service
+
+                    service = crypto_specialist_service()
+                else:
+                    service = specialist_service()
                 builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
                            "/screener/depth": service.depth}[path]
                 payload = builder(instrument)
@@ -1321,12 +1326,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("SCREENER_PANELS_INVALID", "Invalid panel demand", status=HTTPStatus.BAD_REQUEST)
                 return
             try:
-                service = specialist_service()
+                from .screener_crypto import crypto_specialist_service
+
                 if path.endswith("/release"):
-                    result = service.release(client_id)
+                    crypto_specialist_service().release(client_id)
+                    result = specialist_service().release(client_id)
                 else:
                     universe = body.get("universe", "US_EQUITIES")
                     spec = universe_spec(universe)
+                    # One client holds one market's stream at a time: switching
+                    # universe releases the other runtime's subscriptions.
+                    service, other = ((crypto_specialist_service(), specialist_service()) if universe == "CRYPTO"
+                                      else (specialist_service(), crypto_specialist_service()))
+                    other.release(client_id)
                     row, _error = multi_screener_service().row_for(instrument, universe=universe) if instrument else (None, None)
                     if any(panel not in spec.panels for panel in panels) or (instrument and row is None):
                         raise ValueError("PANEL_UNAVAILABLE_FOR_UNIVERSE")

@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any, Callable
 
 from ..discovery.screens import SCREEN_LIBRARY
-from .screener_universes import BONDS, FUTURES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, CRYPTO, FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 NUMERIC_OPERATORS = ("eq", "ne", "gt", "gte", "lt", "lte", "between")
 TEXT_OPERATORS = ("eq", "ne", "in", "not_in", "contains")
@@ -51,7 +51,25 @@ for field in ("symbol", "company"):
 for field in ("price", "change_pct", "volume"):
     _CATALOG[field]["universes"] = [US_EQUITIES, US_ETFS]
 for field in ("bid", "ask", "spread_pct"):
-    _CATALOG[field]["universes"] = [US_ETFS]
+    _CATALOG[field]["universes"] = [US_ETFS, CRYPTO]
+for field in ("symbol", "price", "change_pct"):
+    _CATALOG[field]["universes"].append(CRYPTO)
+_CATALOG.update({
+    field: {"field": field, "label": label, "category": category, "type": kind,
+            "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
+            "universes": [CRYPTO], "availability": "CURRENT_SPOT"}
+    for field, label, category, kind, unit in (
+        ("base_asset", "Base Asset", "Identity", "text", "text"),
+        ("quote_asset", "Quote Asset", "Identity", "text", "text"),
+        ("venue", "Venue", "Identity", "text", "text"),
+        ("status", "Status", "Identity", "text", "text"),
+        ("base_volume", "24h Base Volume", "Volume & Liquidity", "number", "BASE_UNITS"),
+        ("quote_volume", "24h Quote Volume", "Volume & Liquidity", "number", "QUOTE_UNITS"),
+        ("high_24h", "24h High", "Price & Movement", "number", "QUOTE_UNITS"),
+        ("low_24h", "24h Low", "Price & Movement", "number", "QUOTE_UNITS"),
+        ("trade_count", "24h Trades", "Volume & Liquidity", "number", "count"),
+    )
+})
 _CATALOG.update({
     field: {"field": field, "label": label, "category": category, "type": kind,
             "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
@@ -94,8 +112,20 @@ _CATALOG.update({
 def filter_catalog(universe: str | None = US_EQUITIES) -> list[dict[str, Any]]:
     if universe is not None:
         universe_spec(universe)
-    return deepcopy([entry for entry in _CATALOG.values()
-                     if universe is None or universe in entry["universes"]])
+    entries = deepcopy([entry for entry in _CATALOG.values()
+                        if universe is None or universe in entry["universes"]])
+    if universe == CRYPTO:
+        # Pair prices are in the quote asset, and Kraken's open is the midnight-UTC
+        # open: the change is a UTC-day change, never a rolling 24h change.
+        units = {"price": "QUOTE_UNITS", "bid": "QUOTE_UNITS", "ask": "QUOTE_UNITS",
+                 "change_pct": "UTC_DAY_PERCENT"}
+        labels = {"symbol": "Pair", "price": "Last", "change_pct": "UTC Day Change %"}
+        for entry in entries:
+            if entry["field"] in units:
+                entry["unit"] = units[entry["field"]]
+            if entry["field"] in labels:
+                entry["label"] = labels[entry["field"]]
+    return entries
 
 
 def validate_filters(raw: Any, *, universe: str = US_EQUITIES) -> list[dict[str, Any]]:
