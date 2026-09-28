@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-26 — Main Screener S2 filtering and configuration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `local_state`, `docs` |
+| **Summary** | Added canonical backend filters, explicit discovery-preset translations, seven column views, table column controls, and durable personal screen configuration on local SQLite. Preserved the broad Finviz snapshot and bounded L1 viewport separation. |
+| **Key files** | `ui/src/components/screener/`, `ui/src/api/screener.ts`, `src/market_platform_foundation/ui_api/screener_filters.py`, `screener_config.py`, `screener_projections.py`, `docs/engineering/SCREENER_S2.md` |
+| **Tests** | S1/S2 backend 18 passed; focused Screener UI 13 passed (adds StrictMode keyboard-resize regression); full UI suite 1,014 passed across 144 files; typecheck, production build, bundle budget, format, lint, and docs links passed. `imp.py validate changed` exit 0: 5026 tests, 35 skipped, 0 failures. Visual acceptance at 1920×1080, 2560×1440, 1100×800 against the real (unavailable) Finviz source plus test-only Playwright-intercepted dense rows; fixed filter-picker overlap, popover close-button overlap, left alignment of name columns, and double-step keyboard resize under StrictMode. |
+| **Notes** | Five legacy discovery conditions cannot be represented by the broad normalized result contract and are surfaced as unavailable. No S3 work or replay substitution. |
+
 ## 2026-09-25 — Main Screener S1 current US-equity scan
 
 | Field | Value |

@@ -1,5 +1,9 @@
 # Main Screener S1
 
+S2 extends this baseline with filters, views, columns, and personal screens;
+see [Main Screener S2](SCREENER_S2.md). The S1 description below remains the
+historical S1 delivery contract.
+
 The first-class `/screener` route is a current US-equity market scan with its
 own full-screen workstation layout. It bypasses the existing mode launcher,
 product chrome, mode banners, and assistant. Radar and its investigation

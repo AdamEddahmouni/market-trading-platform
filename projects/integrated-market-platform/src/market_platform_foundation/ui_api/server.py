@@ -206,9 +206,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                         offset=int((query.get("offset") or ["0"])[0]),
                         limit=int((query.get("limit") or ["10000"])[0]),
                         force_refresh=(query.get("refresh") or ["0"])[0] == "1",
+                        filters=json.loads((query.get("filters") or ["[]"])[0]),
                     ))
-                except ValueError as exc:
+                except (ValueError, TypeError) as exc:
                     self._send_error_json("SCREENER_QUERY_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            if path == "/screener/config":
+                from .screener_config import read_config
+
+                self._send_json(read_config())
                 return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
@@ -1162,6 +1168,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except ValueError as exc:
                 self._send_error_json("SCREENER_WINDOW_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path == "/screener/config":
+            from .screener_config import write_config
+
+            try:
+                self._send_json(write_config(body))
+            except ValueError as exc:
+                self._send_error_json("SCREENER_CONFIG_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/opportunities/") and path.endswith(("/watch", "/dismiss", "/review")):
             row_id, action = path.removeprefix("/opportunities/").rsplit("/", 1)
