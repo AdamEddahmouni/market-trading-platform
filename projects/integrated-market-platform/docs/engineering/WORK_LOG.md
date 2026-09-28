@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-28 — Main Screener S9 Bonds / Fixed Income universe
+
+| Field | Value |
+|-------|-------|
+| **Status** | `ready-for-owner-review` |
+| **Area** | `ui/screener`, `ui_api`, `fixed_income`, `docs`, `tools/validation_manifest.json` |
+| **Summary** | Added the owner-authorized fourth Screener universe `BONDS`: outstanding U.S. Treasury securities from official Treasury Fiscal Data (auctions + MSPD) with CUSIP-keyed reference-only XA-01 sovereign identities, the S6 query/paging, Treasury par nominal/real curves and bill closing bids as labeled reference context, Treasury-convention bond math validated against published auction results, a fixed-income Quick Preview, and a Rates & Curve panel. FRED and FINRA context are credential-gated; corporate/agency coverage is reported unavailable. Recorded the canonical universe model (five core universes, conditional Options, Commodities inside Futures, Whales/Institutions/Short Squeeze as intelligence layers). |
+| **Key files** | `src/market_platform_foundation/fixed_income/` (new), `ui_api/screener_bonds.py` (new), `screener_universes.py`, `screener_query.py`, `screener_filters.py`, `screener_multi.py`, `screener_preview.py`, `screener_config.py`, `server.py`, `ui/src/api/screenerBonds.ts`, `ui/src/components/screener/bonds/`, `panels/RatesCurvePanel.tsx`, `ScreenerPage.tsx`, `QuickPreview.tsx`, `tests/fixed_income/`, `tests/platform/test_screener_s9.py`, `tests/fixtures/fixed_income/`, `docs/engineering/SCREENER_S9_BONDS.md`, `docs/engineering/SCREENER_UNIVERSE_ARCHITECTURE.md` |
+| **Tests** | fixed income 37; S1–S9 Screener backend 266 (S9 38); XA-01 72; FRED 30; validation 209; Screener UI 83 (6 files); full UI 1,098 (151 files); typecheck, build, bundle (initial 201.37 KiB gzip), format, lint, docs links (273), `git diff --check` green; `validate changed` with isolated `APPDATA` exit 0 (5,341 tests, 35 skipped). Details: [SCREENER_S9_BONDS.md](SCREENER_S9_BONDS.md#validation). |
+| **Related** | [SCREENER_S9_BONDS.md](SCREENER_S9_BONDS.md), [SCREENER_UNIVERSE_ARCHITECTURE.md](SCREENER_UNIVERSE_ARCHITECTURE.md), [SCREENER_S8_SHORT_SQUEEZE.md](SCREENER_S8_SHORT_SQUEEZE.md) |
+| **Notes** | Opt-in with `IMP_TREASURY_LIVE=1`. Real 2026-09-27/28: 463 outstanding (241 Notes, 112 Bonds, 53 TIPS, 49 Bills, 8 FRNs). TreasuryDirect/FedInvest not used (robots disallow). No Crypto, Commodities, Options, Whale, or Institutions universe; no bond execution. |
+
+---
+
 ## 2026-09-27 — Main Screener S8 Short Squeeze evidence
 
 | Field | Value |

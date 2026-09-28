@@ -35,9 +35,12 @@ function useNarrow() {
   return narrow;
 }
 
-type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "price" | "change_pct" | "volume" | "avg_volume" | "rel_volume" | "float_shares" | "shares_outstanding" | "market_cap" | "short_float_pct" | "short_ratio" | "rsi_14" | "eps_ttm" | "pe" | "fwd_pe" | "perf_week" | "earnings_date" | "recommendation" | "bid" | "ask" | "spread_pct" | "root" | "exchange" | "contract_month" | "expiry" | "dte" | "lead" | "tick_size" | "multiplier" | "open_interest";
+type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "price" | "change_pct" | "volume" | "avg_volume" | "rel_volume" | "float_shares" | "shares_outstanding" | "market_cap" | "short_float_pct" | "short_ratio" | "rsi_14" | "eps_ttm" | "pe" | "fwd_pe" | "perf_week" | "earnings_date" | "recommendation" | "bid" | "ask" | "spread_pct" | "root" | "exchange" | "contract_month" | "expiry" | "dte" | "lead" | "tick_size" | "multiplier" | "open_interest"
+  | "security_type" | "term" | "coupon" | "issue_date" | "maturity" | "years_to_maturity" | "maturity_bucket" | "tips" | "frn"
+  | "auction_date" | "auction_yield" | "auction_real_yield" | "auction_discount_margin" | "bid_to_cover" | "outstanding"
+  | "reference_tenor" | "reference_rate" | "indicative_rate";
 type SortKey = ColumnKey;
-type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" };
+type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions"; title?: string };
 const definitions: ColumnDefinition[] = [
   { key: "symbol", label: "Symbol", width: 190, format: "text" },
   { key: "company", label: "Company", width: 180, format: "text" },
@@ -73,9 +76,32 @@ const definitions: ColumnDefinition[] = [
   { key: "tick_size", label: "Tick", width: 75, format: "decimal" },
   { key: "multiplier", label: "Multiplier", width: 95, format: "decimal" },
   { key: "open_interest", label: "Open Int.", width: 95, format: "compact" },
+  // S9 Bonds: terms and auction facts are catalog values; curve and bill-rate columns are reference context.
+  { key: "security_type", label: "Type", width: 70, format: "text" },
+  { key: "term", label: "Orig. Term", width: 104, format: "text" },
+  { key: "coupon", label: "Coupon", width: 82, format: "rate" },
+  { key: "issue_date", label: "Issued", width: 100, format: "text" },
+  { key: "maturity", label: "Maturity", width: 100, format: "text" },
+  { key: "years_to_maturity", label: "Yrs", width: 64, format: "fixed2" },
+  { key: "maturity_bucket", label: "Bucket", width: 76, format: "text" },
+  { key: "tips", label: "TIPS", width: 58, format: "text" },
+  { key: "frn", label: "FRN", width: 56, format: "text" },
+  { key: "auction_date", label: "Last Auction", width: 106, format: "text" },
+  { key: "auction_yield", label: "Auction Yld", width: 96, format: "rate", title: "Latest auction high yield (bills: investment rate). An auction fact, not a current yield." },
+  { key: "auction_real_yield", label: "Auction Real", width: 98, format: "rate", title: "TIPS latest auction high yield, in real terms." },
+  { key: "auction_discount_margin", label: "Auction DM", width: 94, format: "rate", title: "FRN latest auction high discount margin." },
+  { key: "bid_to_cover", label: "Bid/Cover", width: 86, format: "decimal", title: "Latest auction bid-to-cover ratio; an auction fact, not a signal." },
+  { key: "outstanding", label: "Outstanding", width: 100, format: "billions", title: "Amount outstanding at the latest MSPD month end." },
+  { key: "reference_tenor", label: "Ref. Tenor", width: 86, format: "text", title: "Nearest published Treasury par-curve tenor." },
+  { key: "reference_rate", label: "Ref. Par Yld", width: 96, format: "rate", title: "Treasury par-curve point for the matched tenor: a benchmark, not this security's yield." },
+  { key: "indicative_rate", label: "Closing Bid", width: 94, format: "rate", title: "Treasury daily bill rates: indicative closing bid (coupon-equivalent), on-the-run bills only." },
 ];
 const columnByKey = Object.fromEntries(definitions.map((item) => [item.key, item])) as Record<ColumnKey, ColumnDefinition>;
-const leftAligned = new Set<string>(["symbol", "company", "sector", "industry", "country", "root", "exchange", "contract_month", "expiry"]);
+const textKeys = ["company", "sector", "industry", "country", "earnings_date", "recommendation", "root", "exchange", "contract_month", "expiry",
+  "security_type", "term", "issue_date", "maturity", "maturity_bucket", "tips", "frn", "auction_date", "reference_tenor"] as const;
+type TextKey = (typeof textKeys)[number];
+const textColumns = new Set<string>(textKeys);
+const leftAligned = new Set<string>(["symbol", ...textKeys.filter((key) => !["earnings_date", "recommendation"].includes(key))]);
 const views: Record<string, ColumnKey[]> = {
   Overview: ["symbol", "price", "change_pct", "volume", "rel_volume", "float_shares", "market_cap", "short_float_pct", "bid", "ask", "spread_pct", "rsi_14"],
   Performance: ["symbol", "price", "change_pct", "perf_week", "volume", "rel_volume", "rsi_14", "market_cap"],
@@ -89,7 +115,8 @@ const allKeys = definitions.map((item) => item.key);
 const sortKeys = new Set(allKeys.filter((key) => !["sector", "industry", "country", "earnings_date", "recommendation"].includes(key)));
 const sortFromUrl = (value: string | null): SortKey | null => value && sortKeys.has(value as ColumnKey) ? value as SortKey : null;
 const universeFromUrl = (value: string | null): ScreenerUniverse =>
-  value === "FUTURES" || value === "US_ETFS" ? value : "US_EQUITIES";
+  value === "FUTURES" || value === "US_ETFS" || value === "BONDS" ? value : "US_EQUITIES";
+const DEFAULT_SORT: Record<ScreenerUniverse, SortKey> = { US_EQUITIES: "volume", FUTURES: "root", US_ETFS: "symbol", BONDS: "maturity" };
 export const canonicalScreenerView = (value: string | null, universe: ScreenerUniverse, aliases?: Record<string, string>) =>
   value && universe === "US_EQUITIES" ? (aliases?.[value] ?? (value === "Short" ? "Short Squeeze" : value)) : value;
 const viewVisibility = (view: string, choices: Record<string, readonly string[]> = views): VisibilityState =>
@@ -103,6 +130,8 @@ const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct"]);
 const PREFETCH_ROWS = 60;
 const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
 const clock = (value: string) => new Date(value).toLocaleTimeString();
+const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY"];
+const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
   if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED") && current.value !== null) return current;
@@ -112,6 +141,9 @@ function valueText(field: ScreenerField | undefined, format: (typeof definitions
   if (!field || field.value === null) return "—";
   if (format === "price") return field.value.toFixed(2);
   if (format === "percent") return `${signed && field.value > 0 ? "+" : ""}${field.value.toFixed(2)}%`;
+  if (format === "rate") return `${field.value.toFixed(3)}%`;
+  if (format === "fixed2") return field.value.toFixed(2);
+  if (format === "billions") return `$${field.value.toLocaleString("en-US", { maximumFractionDigits: 1 })}B`;
   return format === "compact" ? compact.format(field.value) : decimal.format(field.value);
 }
 const helper = createColumnHelper<ScreenerRow>();
@@ -123,8 +155,7 @@ export function ScreenerPage() {
   const initialParams = useMemo(() => new URLSearchParams(location.search), []);
   const [universe, setUniverse] = useState<ScreenerUniverse>(() => universeFromUrl(initialParams.get("universe")));
   const [search, setSearch] = useState(initialParams.get("q") ?? "");
-  const [sort, setSort] = useState<SortKey>(sortFromUrl(initialParams.get("sort")) ??
-    (universe === "FUTURES" ? "root" : universe === "US_ETFS" ? "symbol" : "volume"));
+  const [sort, setSort] = useState<SortKey>(sortFromUrl(initialParams.get("sort")) ?? DEFAULT_SORT[universe]);
   const [descending, setDescending] = useState(initialParams.has("dir") ? initialParams.get("dir") !== "asc" : universe === "US_EQUITIES");
   const [view, setView] = useState(() => {
     const requested = canonicalScreenerView(initialParams.get("view"), universe);
@@ -183,10 +214,19 @@ export function ScreenerPage() {
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
     filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
   const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"] : [])) as PanelId[]);
+  // Universe capabilities come from the registry: a reference-only universe never hands off to a Workspace,
+  // and a universe without streaming quotes never opens a quote window.
+  const referenceOnly = activeSpec?.tradability === "REFERENCE_ONLY";
+  const streamingQuotes = activeSpec?.quote_capability !== "NO_STREAMING_QUOTE";
   useEffect(() => {
     if (!activeSpec || initialized.current || selectedScreenId || universe === "US_EQUITIES") return;
-    setColumnVisibility(viewVisibility("Overview", activeSpec.views));
-    setColumnOrder([...activeSpec.default_columns, ...allKeys.filter((key) => !activeSpec.default_columns.includes(key))]);
+    // A direct link's view is only known to be valid once the universe's views arrive from the server.
+    const requested = canonicalScreenerView(new URLSearchParams(location.search).get("view"), universe, activeSpec.view_aliases);
+    const initialView = requested && requested !== "Custom" && activeSpec.views[requested] ? requested : "Overview";
+    const initialColumns = initialView === "Overview" ? activeSpec.default_columns : activeSpec.views[initialView];
+    setView(initialView);
+    setColumnVisibility(viewVisibility(initialView, activeSpec.views));
+    setColumnOrder([...initialColumns, ...allKeys.filter((key) => !initialColumns.includes(key))]);
   }, [activeSpec, selectedScreenId, universe]);
   const narrow = useNarrow();
   const [previewOpen, setPreviewOpen] = useState(true);
@@ -239,6 +279,7 @@ export function ScreenerPage() {
   }, []);
   const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
+  const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
   const resetPanels = useCallback(() => {
     dockHandle.current?.reset();
     setDockHeight(DOCK_HEIGHT_DEFAULT);
@@ -297,7 +338,7 @@ export function ScreenerPage() {
       const spec = config.data?.universes?.find((item) => item.id === nextUniverse);
       setUniverse(nextUniverse); setSelected(null); setSelectedCache(null); setQuotes({}); setQuoteError(false);
       if (filters.length) setFilterNotice("Filters were cleared when the universe changed.");
-      setFilters([]); setView("Overview"); setSort((spec?.default_sort ?? (nextUniverse === "FUTURES" ? "root" : nextUniverse === "US_ETFS" ? "symbol" : "volume")) as SortKey);
+      setFilters([]); setView("Overview"); setSort((spec?.default_sort ?? DEFAULT_SORT[nextUniverse]) as SortKey);
       setColumnVisibility(viewVisibility("Overview", spec?.views ?? views));
       setColumnOrder(spec ? [...spec.default_columns, ...allKeys.filter((key) => !spec.default_columns.includes(key))] : allKeys);
       setColumnSizing({}); setColumnPinning({ left: ["symbol"], right: [] });
@@ -413,21 +454,23 @@ export function ScreenerPage() {
     if (query.isFetchNextPageError && resultSetChanged(query.error)) void query.refetch();
   }, [query.isFetchNextPageError, query.error]);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
-    id: definition.key, header: definition.label, size: definition.width,
+    id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong><small>{item.company}</small></span>;
-      if (["company", "sector", "industry", "country", "earnings_date", "recommendation", "root", "exchange", "contract_month", "expiry"].includes(definition.key)) {
-        const value = item[definition.key as "company" | "sector" | "industry" | "country" | "earnings_date" | "recommendation" | "root" | "exchange" | "contract_month" | "expiry"];
-        return <span title={value ?? "Unavailable"}>{value || "—"}</span>;
+      if (textColumns.has(definition.key)) {
+        const value = item[definition.key as TextKey] ?? null;
+        const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
+        return <span title={reason ?? definition.title ?? value ?? "Unavailable"}>{value || "—"}</span>;
       }
       if (definition.key === "lead") return <span>{item.lead ? "Lead" : "—"}</span>;
       const field = fieldFor(item, definition.key, quotes[item.instrument.instrument_id]);
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
-      return <span className={tone} title={field ? `${field.source} · ${field.state}` : "Unavailable"}>{valueText(field, definition.format, definition.key === "change_pct")}</span>;
+      const detail = field ? [field.source, field.state, field.basis, field.as_of ? `as of ${field.as_of}` : null].filter(Boolean).join(" · ") : "Unavailable";
+      return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes]);
+  })), [quotes, referenceOnly]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -456,7 +499,7 @@ export function ScreenerPage() {
   }, [universe]);
   const windowKey = visible.join(",");
   useEffect(() => {
-    if (!windowKey) return;
+    if (!windowKey || !streamingQuotes) return;
     let cancelled = false;
     const refresh = () => {
       quoteQueue.current = quoteQueue.current.then(async () => {
@@ -474,7 +517,7 @@ export function ScreenerPage() {
     refresh();
     const timer = window.setInterval(refresh, 3_000);
     return () => { cancelled = true; window.clearInterval(timer); };
-  }, [windowKey, universe]);
+  }, [windowKey, universe, streamingQuotes]);
   useEffect(() => () => {
     void quoteQueue.current
       .then(() => releaseScreenerWindow(clientId.current))
@@ -517,8 +560,15 @@ export function ScreenerPage() {
     setSelected(row.instrument.instrument_id);
     virtualizer.scrollToIndex(index, { align: "auto" });
   };
-  const open = useCallback((row: ScreenerRow) => navigate(workspacePathForInstrument(
-    row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : "")), [navigate]);
+  const open = useCallback((row: ScreenerRow) => {
+    // A reference-only identity (e.g. a Treasury CUSIP) is never routed to a Workspace as if it were a ticker;
+    // its reference detail is the Quick Preview.
+    if (referenceOnly || row.instrument.tradability === "REFERENCE_ONLY") {
+      setSelected(row.instrument.instrument_id); setPreviewOpen(true);
+      return;
+    }
+    navigate(workspacePathForInstrument(row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : ""));
+  }, [navigate, referenceOnly]);
   const closePreview = useCallback(() => {
     setPreviewOpen(false); persistLayout(false, previewWidth);
     scrollRef.current?.focus();
@@ -671,7 +721,7 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{universe === "FUTURES" ? windowSession ?? firstPage?.market_session ?? "MARKET" : firstPage?.market_session ?? "MARKET"}</span></header>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{universe === "FUTURES" ? windowSession ?? firstPage?.market_session ?? "MARKET" : firstPage?.market_session ?? "MARKET"}</span></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
@@ -753,6 +803,8 @@ export function ScreenerPage() {
           <strong>{firstPage?.source_error?.startsWith("MARKET_SNAPSHOT") || (snapshotQuery && firstPage?.source_error) ? "Market snapshot unavailable" : "Screener source unavailable"}</strong>
           <span>{firstPage?.source_error === "NOT_CONFIGURED"
             ? "Finviz access is not configured for this workstation."
+            : firstPage?.source_error === "TREASURY_NOT_CONFIGURED"
+              ? "U.S. Treasury Fiscal Data is not enabled for this workstation (set IMP_TREASURY_LIVE=1)."
             : snapshotQuery && firstPage?.source_error
               ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
@@ -794,6 +846,7 @@ export function ScreenerPage() {
       screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
       paneRef={previewRef} onClose={closePreview} onOpen={open}
       optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
+      ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
       squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel} />}
     </div>
     {dockVisible && <>
@@ -811,7 +864,9 @@ export function ScreenerPage() {
     <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
       {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of)} · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
-      <span>Quotes {universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
+      {firstPage?.coverage && <span title="Categories without a permitted source are reported, never counted">{Object.entries(firstPage.coverage).sort(([a], [b]) => coverageRank(a) - coverageRank(b)).map(([category, item]) =>
+        `${category.charAt(0) + category.slice(1).toLowerCase()} ${item.count != null ? item.count.toLocaleString() : "unavailable"}`).join(" · ")}</span>}
+      <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
       <span>Market {session}</span>
       <span>Universe {firstPage?.universe_as_of ? `as of ${clock(firstPage.universe_as_of)}` : "unavailable"}</span>
       <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>

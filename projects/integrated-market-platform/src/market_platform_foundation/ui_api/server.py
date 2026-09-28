@@ -202,7 +202,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     self._send_json(read_screener(
                         universe=(query.get("universe") or ["US_EQUITIES"])[0],
                         search=(query.get("search") or [""])[0],
-                        sort=(query.get("sort") or ["volume"])[0],
+                        # No sort means the universe's own default (US Equities: volume; Bonds: maturity).
+                        sort=(query.get("sort") or [None])[0],
                         descending=(query.get("descending") or ["1"])[0] != "0",
                         offset=int((query.get("offset") or ["0"])[0]),
                         limit=int((query.get("limit") or [str(DEFAULT_PAGE_LIMIT)])[0]),
@@ -328,6 +329,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                         filters=json.loads((query.get("filters") or ["[]"])[0]),
                     )
                 except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
+            if path == "/screener/rates-curve":
+                from .screener_bonds import bond_screener_service
+                from .screener_universes import universe_spec
+
+                universe = (query.get("universe") or [""])[0]
+                instrument = (query.get("instrument") or [""])[0].strip() or None
+                try:
+                    if "rates_curve" not in universe_spec(universe).panels:
+                        raise ValueError("RATES_CURVE_UNAVAILABLE_FOR_UNIVERSE")
+                    if instrument is not None and (len(instrument) > 64 or not instrument.startswith("XA01:")):
+                        raise ValueError("INVALID_INSTRUMENT")
+                    payload = bond_screener_service().rates_curve(instrument)
+                except ValueError as exc:
                     self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                     return
                 if payload is None:

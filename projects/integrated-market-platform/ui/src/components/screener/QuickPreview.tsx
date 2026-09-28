@@ -1,6 +1,7 @@
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScreenerPreview, type ScreenerFilter, type ScreenerPreview, type ScreenerQuote, type ScreenerRow, type ScreenerUniverse } from "../../api/screener";
+import { BondQuickPreview } from "./bonds/BondQuickPreview";
 import { PreviewOptions } from "./options/PreviewOptions";
 import { PreviewSqueeze } from "./squeeze/PreviewSqueeze";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
@@ -64,6 +65,9 @@ export type QuickPreviewProps = {
   onOpenOptions?: () => void;
   squeezeSupported?: boolean;
   onOpenSqueeze?: () => void;
+  /** S9: the universe offers the Rates & Curve specialist panel. */
+  ratesSupported?: boolean;
+  onOpenRates?: () => void;
 };
 
 function SrBar({ price, support, resistance, testing }: { price: number | null; support: ClassifiedZone | null; resistance: ClassifiedZone | null; testing: ClassifiedZone | null }) {
@@ -264,4 +268,14 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
   </aside>;
 }
 
-export const QuickPreview = memo(QuickPreviewInner);
+/** Bonds get a fixed-income preview (terms, auction, curve reference); no equity concepts render for them. */
+function QuickPreviewSwitch(props: QuickPreviewProps) {
+  if (props.universe === "BONDS") {
+    return <BondQuickPreview row={props.row} filters={props.filters} screenLabel={props.screenLabel} overlay={props.overlay}
+      width={props.width} paneRef={props.paneRef} onClose={props.onClose} ratesSupported={props.ratesSupported ?? false}
+      onOpenRates={props.onOpenRates} />;
+  }
+  return <QuickPreviewInner {...props} />;
+}
+
+export const QuickPreview = memo(QuickPreviewSwitch);
