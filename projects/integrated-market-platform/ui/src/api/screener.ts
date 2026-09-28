@@ -8,6 +8,8 @@ const FieldSchema = z.object({
   state: z.string(),
   as_of: z.string().nullable().optional(),
   as_of_ns: z.number().optional(),
+  /** S9: what the number is (e.g. HIGH_YIELD vs HIGH_INVESTMENT_RATE, NOMINAL_PAR_10Y). */
+  basis: z.string().optional(),
 });
 const RowSchema = z.object({
   instrument: z.object({
@@ -15,6 +17,7 @@ const RowSchema = z.object({
     venue_id: z.string(),
     asset_class: z.string(),
     instrument_kind: z.string().optional(),
+    tradability: z.string().optional(),
   }),
   symbol: z.string(),
   company: z.string(),
@@ -31,9 +34,27 @@ const RowSchema = z.object({
   market_data_id: z.string().optional(),
   provider_symbol: z.string().optional(),
   snapshot_id: z.string().optional(),
+  // S9 Bonds: provider-neutral terms. The CUSIP is also `symbol`; it is never a ticker.
+  cusip: z.string().optional(),
+  isin: z.string().nullable().optional(),
+  identity_source: z.string().optional(),
+  issuer: z.string().optional(),
+  security_type: z.string().optional(),
+  term: z.string().nullable().optional(),
+  issue_date: z.string().optional(),
+  maturity: z.string().optional(),
+  maturity_bucket: z.string().nullable().optional(),
+  tips: z.string().optional(),
+  frn: z.string().optional(),
+  callable: z.string().nullable().optional(),
+  auction_date: z.string().nullable().optional(),
+  series: z.string().nullable().optional(),
+  reference_tenor: z.string().nullable().optional(),
+  reference_date: z.string().nullable().optional(),
+  reference_reason: z.string().nullable().optional(),
   fields: z.record(FieldSchema),
 });
-export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS"]);
+export const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS"]);
 export type ScreenerUniverse = z.infer<typeof ScreenerUniverseSchema>;
 const ScreenerSchema = z.object({
   schema_version: z.literal("screener/1.0.0"),
@@ -56,6 +77,8 @@ const ScreenerSchema = z.object({
   snapshot: z.object({ id: z.string(), as_of: z.string(), source: z.string(), complete: z.boolean(), total: z.number(),
     returned: z.number(), priced: z.number(), refused: z.number(), refused_reason: z.string().nullable() }).passthrough().nullable().optional(),
   provider_health: z.array(z.object({ provider: z.string(), role: z.string().optional(), state: z.string(), reason: z.string().nullable() })),
+  /** S9: per-category coverage; an unavailable category has no count and is never folded into a total. */
+  coverage: z.record(z.object({ state: z.string(), count: z.number().nullable() })).optional(),
   source_error: z.string().nullable(),
   rows: z.array(RowSchema),
 });
@@ -100,6 +123,9 @@ const ScreenerConfigSchema = z.object({
     default_columns: z.array(z.string()), views: z.record(z.array(z.string())), view_order: z.array(z.string()).optional(),
     view_aliases: z.record(z.string()).optional(),
     quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()),
+    admitted_asset_classes: z.array(z.string()).optional(), admitted_instrument_kinds: z.array(z.string()).optional(),
+    identity_fields: z.array(z.string()).optional(), data_sources: z.array(z.string()).optional(),
+    tradability: z.string().optional(),
     fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean() })).optional() })),
   query: z.object({ default_limit: z.number(), max_limit: z.number() }).optional(),
   catalog: z.array(z.object({ field: z.string(), label: z.string(), category: z.string(),
@@ -115,7 +141,7 @@ const ScreenerConfigSchema = z.object({
   panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
-export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze"] as const;
+export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.

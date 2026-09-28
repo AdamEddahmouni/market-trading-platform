@@ -6,6 +6,9 @@ every universe. Each field declares how the server can evaluate it:
 - ``CATALOG``: complete universe metadata the server holds.
 - ``SNAPSHOT``: one universe-wide market snapshot taken at a known time.
 - ``LIVE_WINDOW``: current quotes for visible/selected rows only.
+- ``REFERENCE``: publication context attached to a row (a Treasury curve
+  point for the matched tenor, or an on-the-run bill's daily closing bid);
+  it describes a benchmark or a subset of rows, so it is display-only.
 - ``UNAVAILABLE``: no evaluation source.
 
 Only ``CATALOG`` and ``SNAPSHOT`` fields may filter or sort a universe. A
@@ -20,11 +23,12 @@ from dataclasses import dataclass
 from typing import Any, Callable, Iterable
 
 from .screener_filters import filter_catalog, validate_filters
-from .screener_universes import FUTURES, UNIVERSES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, FUTURES, UNIVERSES, US_EQUITIES, US_ETFS, universe_spec
 
 CATALOG = "CATALOG"
 SNAPSHOT = "SNAPSHOT"
 LIVE_WINDOW = "LIVE_WINDOW"
+REFERENCE = "REFERENCE"
 UNAVAILABLE = "UNAVAILABLE"
 
 # Measured on the real 6,306-row ETF catalog (docs/engineering/SCREENER_S6.md).
@@ -54,6 +58,16 @@ FIELD_EXECUTION: dict[str, dict[str, str]] = {
     US_ETFS: {
         **{field: CATALOG for field in ("symbol", "company", "exchange")},
         **{field: SNAPSHOT for field in ("price", "change_pct", "volume", *_QUOTE_WINDOW)},
+    },
+    # S9: terms and auction facts are complete for every outstanding security.
+    # There is no universe-wide bond price, yield, spread, or trade source.
+    BONDS: {
+        **{field: CATALOG for field in ("symbol", "company", "issuer", "security_type", "term", "issue_date",
+                                         "maturity", "maturity_bucket", "tips", "frn", "callable", "coupon",
+                                         "years_to_maturity", "days_to_maturity", "maturity_year", "outstanding",
+                                         "auction_date", "auction_yield", "auction_real_yield",
+                                         "auction_discount_margin", "bid_to_cover")},
+        **{field: REFERENCE for field in ("reference_tenor", "reference_rate", "indicative_rate")},
     },
 }
 

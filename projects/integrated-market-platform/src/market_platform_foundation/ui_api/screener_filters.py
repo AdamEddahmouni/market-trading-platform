@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import Any, Callable
 
 from ..discovery.screens import SCREEN_LIBRARY
-from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 NUMERIC_OPERATORS = ("eq", "ne", "gt", "gte", "lt", "lte", "between")
 TEXT_OPERATORS = ("eq", "ne", "in", "not_in", "contains")
@@ -62,6 +62,31 @@ _CATALOG.update({
         ("contract_month", "Contract Month", "Contract", "text", "text", [FUTURES]),
         ("dte", "Days to Expiry", "Contract", "number", "days", [FUTURES]),
         ("lead", "Lead Contract", "Contract", "number", "boolean", [FUTURES]),
+    )
+})
+# S9: Bond terms, maturity, and auction facts are complete for every catalog
+# row. No price, yield-to-maturity, spread, rating, or trade-activity filter
+# exists because no universe-wide source supplies them.
+_CATALOG.update({
+    field: {"field": field, "label": label, "category": category, "type": kind,
+            "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
+            "universes": [BONDS], "availability": "CURRENT_METADATA"}
+    for field, label, category, kind, unit in (
+        ("security_type", "Security Type", "Terms", "text", "text"),
+        ("issuer", "Issuer", "Identity", "text", "text"),
+        ("term", "Original Term", "Terms", "text", "text"),
+        ("tips", "TIPS", "Terms", "text", "text"),
+        ("frn", "Floating Rate (FRN)", "Terms", "text", "text"),
+        ("callable", "Callable", "Terms", "text", "text"),
+        ("coupon", "Coupon", "Terms", "number", "percent"),
+        ("maturity_bucket", "Maturity Bucket", "Maturity", "text", "text"),
+        ("years_to_maturity", "Years to Maturity", "Maturity", "number", "years"),
+        ("days_to_maturity", "Days to Maturity", "Maturity", "number", "days"),
+        ("maturity_year", "Maturity Year", "Maturity", "number", "year"),
+        ("outstanding", "Amount Outstanding", "Size", "number", "USD_BILLIONS"),
+        ("auction_yield", "Auction Yield (latest)", "Auction", "number", "percent"),
+        ("auction_real_yield", "Auction Real Yield (TIPS)", "Auction", "number", "percent"),
+        ("bid_to_cover", "Bid-to-Cover (latest auction)", "Auction", "number", "ratio"),
     )
 })
 

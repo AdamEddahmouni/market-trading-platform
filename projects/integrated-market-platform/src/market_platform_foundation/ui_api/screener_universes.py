@@ -1,4 +1,11 @@
-"""The three admitted Main Screener universes and their market semantics."""
+"""The admitted Main Screener universes and their market semantics.
+
+See docs/engineering/SCREENER_UNIVERSE_ARCHITECTURE.md: the canonical core
+universes are US Equities, ETFs, Futures, Bonds / Fixed Income, and Crypto
+(documented, not yet implemented). Intelligence lenses (Options, Short
+Squeeze, Whales, Institutions, Order Flow, ...) are views or panels, never
+universes; a new universe requires explicit owner authorization.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +14,7 @@ from dataclasses import dataclass
 US_EQUITIES = "US_EQUITIES"
 FUTURES = "FUTURES"
 US_ETFS = "US_ETFS"
+BONDS = "BONDS"
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +31,12 @@ class Universe:
     quote_capability: str
     bars_capability: str
     panels: tuple[str, ...]
+    #: Real XA-01 classes/kinds a row may carry (a universe may admit several).
+    admitted_asset_classes: tuple[str, ...] = ()
+    admitted_instrument_kinds: tuple[str, ...] = ()
+    identity_fields: tuple[str, ...] = ("symbol",)
+    data_sources: tuple[str, ...] = ()
+    tradability: str = "PER_INSTRUMENT"
 
     @property
     def columns(self) -> frozenset[str]:
@@ -74,6 +88,33 @@ UNIVERSES: dict[str, Universe] = {
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts", "options"),
     ),
+    # S9: one Bonds / Fixed Income universe. Categories (Treasury, corporate,
+    # agency) are filters inside it, never separate universes. Rows are
+    # reference-only: there is no bond execution path.
+    BONDS: Universe(
+        BONDS, "Bonds", "FIXED_INCOME", "FIXED_INCOME_SECURITY", "US_TREASURY_FISCAL_DATA",
+        "PUBLICATION", "maturity",
+        ("symbol", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield", "auction_date", "outstanding"),
+        {
+            "Overview": ("symbol", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield",
+                         "auction_date", "outstanding"),
+            "Treasuries": ("symbol", "security_type", "term", "coupon", "issue_date", "maturity", "tips", "frn",
+                           "auction_yield", "auction_real_yield", "auction_discount_margin", "bid_to_cover",
+                           "reference_tenor", "reference_rate"),
+            # Curve points are reference observations for the matched tenor,
+            # never this security's own yield.
+            "Rates & Curve": ("symbol", "security_type", "maturity", "years_to_maturity", "maturity_bucket",
+                              "reference_tenor", "reference_rate", "indicative_rate", "auction_yield"),
+            "Custom": ("symbol", "security_type", "coupon", "maturity"),
+        },
+        "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve",),
+        admitted_asset_classes=("SOVEREIGN_DEBT", "BOND"),
+        admitted_instrument_kinds=("SOVEREIGN_SECURITY", "BOND"),
+        identity_fields=("cusip", "isin"),
+        data_sources=("US_TREASURY_FISCAL_DATA_AUCTIONS", "US_TREASURY_FISCAL_DATA_MSPD", "US_TREASURY_DAILY_RATES",
+                      "FRED", "FINRA_TRACE_AGGREGATES"),
+        tradability="REFERENCE_ONLY",
+    ),
 }
 
 
@@ -105,6 +146,10 @@ def universe_payload() -> list[dict[str, object]]:
             "quote_capability": spec.quote_capability,
             "bars_capability": spec.bars_capability, "panels": list(spec.panels),
             "view_aliases": dict(VIEW_ALIASES.get(spec.id, {})),
+            "admitted_asset_classes": list(spec.admitted_asset_classes or (spec.asset_class,)),
+            "admitted_instrument_kinds": list(spec.admitted_instrument_kinds or (spec.instrument_kind,)),
+            "identity_fields": list(spec.identity_fields), "data_sources": list(spec.data_sources or (spec.source,)),
+            "tradability": spec.tradability,
         }
         for spec in UNIVERSES.values()
     ]

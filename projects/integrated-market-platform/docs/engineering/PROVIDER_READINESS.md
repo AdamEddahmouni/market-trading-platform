@@ -66,6 +66,9 @@ Configured in the ignored local `.env`, but still opt-in:
 - FINRA: `FINRA_CLIENT_ID` and `FINRA_CLIENT_SECRET`; set
   `IMP_FINRA_LIVE=1` for live short intelligence.
 - FRED/ALFRED: `FRED_API_KEY`; set `IMP_FRED_LIVE=1`.
+- U.S. Treasury Fiscal Data and daily rates (public, no credential): set
+  `IMP_TREASURY_LIVE=1` for the Screener Bonds universe
+  ([Screener S9](SCREENER_S9_BONDS.md)).
 - EIA: `EIA_API_KEY`; set `IMP_EIA_LIVE=1`.
 
 The repository must not print, commit, or copy those values into evidence.

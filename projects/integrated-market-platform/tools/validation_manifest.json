@@ -1517,6 +1517,31 @@
       ]
     },
     {
+      "id": "fixed_income",
+      "path": "tests/fixed_income",
+      "classification": "offline",
+      "tiers": [
+        "full"
+      ],
+      "domains": [
+        "macro"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/fixed_income/**",
+        "tests/fixtures/fixed_income/**"
+      ],
+      "test_globs": [
+        "tests/fixed_income/test_*.py"
+      ],
+      "neighbors": [
+        "fred",
+        "xa01",
+        "ui1"
+      ]
+    },
+    {
       "id": "eia",
       "path": "tests/eia",
       "classification": "offline",

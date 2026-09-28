@@ -8,6 +8,7 @@ import CvdPanel from "./CvdPanel";
 import FuturesContextPanel from "./FuturesContextPanel";
 import Level2Panel from "./Level2Panel";
 import OptionsPanel from "./OptionsPanel";
+import RatesCurvePanel from "./RatesCurvePanel";
 import ShortSqueezePanel from "./ShortSqueezePanel";
 import OrderFlowPanel from "./OrderFlowPanel";
 import { LIVE_PANELS, PANEL_TITLES, PANELS } from "./registry";
@@ -33,6 +34,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   charts: contained("charts", ChartsPanel), futures: contained("futures", FuturesContextPanel),
   options: contained("options", OptionsPanel),
   short_squeeze: contained("short_squeeze", ShortSqueezePanel),
+  rates_curve: contained("rates_curve", RatesCurvePanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };

@@ -23,7 +23,7 @@ from ..market_sessions import us_equity_session_label
 from .screener_filters import catalog_entry, rule_matches, validate_filters
 from .screener_futures_context import FuturesContextService
 from .screener_projections import ScreenerService, screener_service
-from .screener_universes import FUTURES, US_EQUITIES, US_ETFS, universe_spec
+from .screener_universes import BONDS, FUTURES, US_EQUITIES, US_ETFS, universe_spec
 
 SCHEMA_VERSION = "screener-preview/1.0.0"
 CHART_SCHEMA_VERSION = "screener-chart/1.0.0"
@@ -60,13 +60,21 @@ def format_value(field: str, value: Any, unit: str) -> str:
     if unit == "USD":
         return f"${_compact(value)}" if field == "market_cap" else f"${value:,.2f}"
     if unit == "percent":
+        if field in ("coupon", "auction_yield", "auction_real_yield"):
+            return f"{value:.3f}%"  # Treasury terms and auction results publish three decimals
         return f"{value:+.2f}%" if field in SIGNED_FIELDS else f"{value:.2f}%"
     if unit == "shares":
         return _compact(value)
     if unit == "ratio":
         return f"{value:.2f}×"
     if unit == "days":
-        return f"{value:.2f} days"
+        return f"{value:,.0f} days" if field == "days_to_maturity" else f"{value:.2f} days"
+    if unit == "years":
+        return f"{value:.2f} years"
+    if unit == "year":
+        return f"{value:.0f}"
+    if unit == "USD_BILLIONS":
+        return f"${value:,.1f}B"
     return f"{value:.2f}".rstrip("0").rstrip(".")
 
 
@@ -289,6 +297,10 @@ class ScreenerPreviewService:
              snapshot_id: str | None = None) -> dict[str, Any] | None:
         universe_spec(universe)
         rules = validate_filters([] if filters is None else filters, universe=universe)
+        if universe == BONDS:
+            # Bond-specific preview: terms, auction facts, curve reference, source clocks.
+            from .screener_bonds import bond_screener_service
+            return bond_screener_service().preview(instrument_id, rules)
         if universe != US_EQUITIES:
             return self._read_other(instrument_id, universe=universe, timeframe=timeframe, scope=scope, rules=rules,
                                     snapshot_id=snapshot_id)

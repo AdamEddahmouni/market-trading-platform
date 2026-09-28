@@ -62,9 +62,10 @@ class Store:
 
 
 class UniverseContractTests(unittest.TestCase):
-    def test_only_three_universes_with_typed_capabilities(self) -> None:
+    def test_admitted_universes_with_typed_capabilities(self) -> None:
         payload = universe_payload()
-        self.assertEqual([item["id"] for item in payload], [US_EQUITIES, FUTURES, US_ETFS])
+        # S9 added the owner-authorized Bonds universe; nothing else may join without authorization.
+        self.assertEqual([item["id"] for item in payload], [US_EQUITIES, FUTURES, US_ETFS, "BONDS"])
         self.assertEqual(universe_spec(FUTURES).asset_class, "FUTURE")
         self.assertEqual(universe_spec(US_ETFS).asset_class, "ETF_FUND")
         self.assertEqual(universe_spec(FUTURES).panels, ())

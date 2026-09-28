@@ -1,0 +1,79 @@
+/* S9 Bonds: fixed-income Quick Preview and the Rates & Curve panel. Dense workstation layout;
+   state is always written as text, colour is never the only carrier. Series colours validated
+   (dataviz validator, dark surface #121a23): nominal #3987e5, real #d95926. */
+.bond-preview{display:flex;flex-direction:column}
+.bond-preview-identity{padding:10px 14px 8px;border-bottom:1px solid #222d39}
+.bond-preview-identity h2{margin:0;color:#e8f1fc;font-size:14px;font-weight:700;line-height:1.3}
+.bond-preview-identity p{display:flex;flex-wrap:wrap;gap:4px 10px;margin:4px 0 8px;color:#8ea0b3;font-size:11px}
+.bond-preview-identity strong{color:#dce8f3;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.bond-reference-only{padding:0 5px;border:1px solid #394b61;border-radius:2px;color:#b8c7d8;font-size:10px}
+.bond-preview-headline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:0}
+.bond-preview-headline div{min-width:0}
+.bond-preview-headline dt{color:#7f91a4;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.bond-preview-headline dd{margin:1px 0 0;color:#e8f1fc;font-size:13px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bond-preview-body{flex:1 1 auto;overflow:auto;padding:4px 14px 10px}
+.bond-preview-body:focus-visible{outline:2px solid #70afff;outline-offset:-2px}
+.bond-preview-section{padding:8px 0 4px;border-bottom:1px solid #1b2530}
+.bond-preview-section h3{margin:0 0 4px;color:#9fb8d2;font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
+.bond-preview-section dl{margin:0}
+.bond-section-source{display:block;margin-top:1px;color:#6f8196;font-size:9.5px;font-weight:500;letter-spacing:0;text-transform:none}
+.bond-item{display:grid;grid-template-columns:minmax(0,46%) minmax(0,1fr);gap:8px;padding:2px 0;font-size:11px}
+.bond-item dt{color:#8ea0b3}
+.bond-item dd{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin:0;color:#dce8f3;font-variant-numeric:tabular-nums}
+.bond-item dd small{flex-basis:100%;color:#6f8196;font-size:9.5px;line-height:1.3}
+.bond-item.unavailable .bond-item-value{color:#7f91a4}
+.bond-item-class{padding:0 4px;border:1px solid #33475c;border-radius:2px;color:#9aabbd;font-size:9px;text-transform:uppercase;letter-spacing:.04em}
+.bond-item.reference .bond-item-class{border-color:#35557a;color:#8fbef5}
+.bond-sources{display:grid;gap:2px;margin:0;padding:0;list-style:none;font-size:10.5px}
+.bond-sources li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:0 8px;color:#b8c7d8}
+.bond-sources small{grid-column:1 / -1;color:#6f8196;font-size:9.5px}
+.bond-source-state{color:#9fb8d2;font-weight:650}
+.bond-source-state.not_configured,.bond-source-state.unavailable,.bond-source-state.stale,.bond-source-state.finra_terms_required{color:#f0c36b}
+.bond-preview-footer{display:flex;flex-direction:column;gap:5px}
+.bond-preview-footer .screener-muted{font-size:10px;text-align:center}
+
+.bond-panel{display:grid;grid-template-columns:minmax(300px,1.2fr) minmax(260px,1fr);gap:10px;min-height:0}
+.bond-panel-chart{min-width:0}
+.bond-panel-side{display:grid;align-content:start;gap:2px;min-width:0}
+.bond-panel-section{padding:4px 0 6px;border-bottom:1px solid #1f2b38}
+.bond-panel-section h3{display:flex;gap:6px;align-items:baseline;margin:0 0 3px;color:#9fb8d2;font-size:10px;font-weight:750;letter-spacing:.07em;text-transform:uppercase}
+.bond-panel-section h3 small{color:#6f8196;font-weight:500;letter-spacing:0;text-transform:none}
+.bond-panel-spreads{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0 0 4px}
+.bond-panel-spreads dt{color:#7f91a4;font-size:10px}
+.bond-panel-spreads dd{margin:0;color:#e8f1fc;font-size:12px;font-weight:650;font-variant-numeric:tabular-nums}
+.bond-panel-list{display:grid;gap:2px;margin:0;font-size:11px}
+.bond-panel-list div{display:grid;grid-template-columns:minmax(0,40%) minmax(0,1fr);gap:6px}
+.bond-panel-list dt{color:#8ea0b3}
+.bond-panel-list dd{margin:0;color:#dce8f3;font-variant-numeric:tabular-nums}
+.bond-panel-list small{color:#6f8196;font-size:9.5px}
+.bond-panel-table{width:100%;border-collapse:collapse;font-size:10.5px;font-variant-numeric:tabular-nums}
+.bond-panel-table th,.bond-panel-table td{padding:1px 4px;text-align:right;color:#dce8f3}
+.bond-panel-table thead th{color:#7f91a4;font-weight:650}
+.bond-panel-table tbody th{text-align:left;color:#8ea0b3;font-weight:600}
+
+.bond-curve{position:relative;margin:0}
+.bond-curve svg{display:block;width:100%;height:auto;max-height:260px}
+.bond-curve-legend{display:flex;flex-wrap:wrap;gap:4px 12px;margin-bottom:2px;color:#b8c7d8;font-size:10px}
+.bond-curve-key{display:inline-flex;align-items:center;gap:5px}
+.bond-curve-key i{display:inline-block;width:14px;height:0;border-top:2px solid currentColor}
+.bond-curve-key.nominal i{color:#3987e5}
+.bond-curve-key.real i{color:#d95926}
+.bond-curve-key.dashed i{border-top-style:dashed;opacity:.6}
+.bond-curve-grid line{stroke:#1f2b38;stroke-width:1}
+.bond-curve-grid text,.bond-curve-axis{fill:#7f91a4;font-size:9px}
+.bond-curve-series path{fill:none;stroke-width:2;stroke-linejoin:round}
+.bond-curve-series.nominal path{stroke:#3987e5}
+.bond-curve-series.real path{stroke:#d95926}
+.bond-curve-series.dashed path{stroke-dasharray:4 3;stroke-width:1.5;opacity:.55}
+.bond-curve-series circle{stroke:#121a23;stroke-width:2}
+.bond-curve-series.nominal circle{fill:#3987e5}
+.bond-curve-series.real circle{fill:#d95926}
+.bond-curve-end{fill:#b8c7d8;font-size:9px}
+.bond-curve-marker line{stroke:#8ea0b3;stroke-width:1;stroke-dasharray:2 3}
+.bond-curve-marker circle{fill:none;stroke:#e8f1fc;stroke-width:2}
+.bond-curve-marker text{fill:#dce8f3;font-size:9px}
+.bond-curve-crosshair{stroke:#394b61;stroke-width:1}
+.bond-curve-hit{fill:transparent;cursor:crosshair}
+.bond-curve-tooltip{position:absolute;top:22px;right:4px;display:grid;gap:1px;padding:4px 7px;border:1px solid #33475c;border-radius:3px;background:#141c26;color:#dce8f3;font-size:10px;font-variant-numeric:tabular-nums;pointer-events:none}
+.bond-curve .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media (max-width:1279px){.bond-panel{grid-template-columns:minmax(0,1fr)}}
