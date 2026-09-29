@@ -100,14 +100,15 @@ UNIVERSES: dict[str, Universe] = {
         intelligence_views=("congress",),
     ),
     # S9: one Bonds / Fixed Income universe. Categories (Treasury, corporate,
-    # agency) are filters inside it, never separate universes. Rows are
-    # reference-only: there is no bond execution path.
+    # agency, municipal, securitized — S16) are filters inside it, never separate
+    # universes. Rows are reference-only: there is no bond execution path.
     BONDS: Universe(
         BONDS, "Bonds", "FIXED_INCOME", "FIXED_INCOME_SECURITY", "US_TREASURY_FISCAL_DATA",
         "PUBLICATION", "maturity",
-        ("symbol", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield", "auction_date", "outstanding"),
+        ("symbol", "category", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield", "auction_date",
+         "outstanding"),
         {
-            "Overview": ("symbol", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield",
+            "Overview": ("symbol", "category", "security_type", "coupon", "maturity", "years_to_maturity", "auction_yield",
                          "auction_date", "outstanding"),
             "Treasuries": ("symbol", "security_type", "term", "coupon", "issue_date", "maturity", "tips", "frn",
                            "auction_yield", "auction_real_yield", "auction_discount_margin", "bid_to_cover",
@@ -116,6 +117,13 @@ UNIVERSES: dict[str, Universe] = {
             # never this security's own yield.
             "Rates & Curve": ("symbol", "security_type", "maturity", "years_to_maturity", "maturity_bucket",
                               "reference_tenor", "reference_rate", "indicative_rate", "auction_yield"),
+            # S16: fund-reported terms and holdings (Form N-PORT). Values are the
+            # funds' own, at their report dates — never a current price.
+            "Credit & Munis": ("symbol", "issuer", "category", "security_type", "coupon", "coupon_type", "maturity",
+                               "years_to_maturity", "fund_count", "fund_par_held", "fund_value_pct", "report_date"),
+            # Dated operation prices (buybacks, Fed purchases) and what follows from them.
+            "Observed": ("symbol", "security_type", "maturity", "observed_price", "observed_yield", "benchmark_spread",
+                         "observed_date", "reference_tenor", "reference_rate"),
             "Custom": ("symbol", "security_type", "coupon", "maturity"),
         },
         "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve", "news"),
@@ -123,7 +131,9 @@ UNIVERSES: dict[str, Universe] = {
         admitted_instrument_kinds=("SOVEREIGN_SECURITY", "BOND"),
         identity_fields=("cusip", "isin"),
         data_sources=("US_TREASURY_FISCAL_DATA_AUCTIONS", "US_TREASURY_FISCAL_DATA_MSPD", "US_TREASURY_DAILY_RATES",
-                      "FRED", "FINRA_TRACE_AGGREGATES"),
+                      "FRED", "FINRA_TRACE_AGGREGATES", "SEC_FORM_NPORT", "US_TREASURY_FISCAL_DATA_TIPS_CPI",
+                      "US_TREASURY_FISCAL_DATA_FRN_INDEXES", "US_TREASURY_FISCAL_DATA_BUYBACKS",
+                      "NY_FED_TREASURY_OPERATIONS", "NY_FED_REFERENCE_RATES", "NY_FED_SOMA_HOLDINGS", "OPENFIGI"),
         tradability="REFERENCE_ONLY",
     ),
     CRYPTO: Universe(

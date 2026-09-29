@@ -24,7 +24,11 @@ Fixed-coupon securities (Treasury notes, bonds, and TIPS in real terms):
 
 Bills are discount instruments (no coupon): price = 100 · (1 − d·t/360); the
 investment rate follows the Treasury coupon-equivalent formulas (simple for
-t ≤ 182 days, the quadratic form beyond). TIPS math is in real terms on the
+t ≤ 182 days, the quadratic form beyond). Inverting those formulas gives a
+bill's price at an investment rate — ``100 / (1 + t·y)`` for the simple form
+and ``100 / ((1 + y/2)(1 + (t − ½)·y))`` for the quadratic form, t = days /
+year basis — so bill DV01 and modified duration use the same ±1 bp central
+difference as coupon securities (S16). TIPS math is in real terms on the
 unadjusted price. FRN coupons float, so fixed-rate formulas are refused.
 """
 
@@ -236,3 +240,38 @@ def bill_macaulay_years(days: int, start: date) -> float:
     if days <= 0:
         raise FixedIncomeMathError("MATURED")
     return days / _year_basis(start, days)
+
+
+def bill_price_from_investment_rate(rate_pct: float, days: int, start: date) -> float:
+    """Price per 100 at a coupon-equivalent (investment) rate: the inverse of ``bill_investment_rate``."""
+
+    if days <= 0:
+        raise FixedIncomeMathError("MATURED")
+    basis = _year_basis(start, days)
+    t, y = days / basis, rate_pct / 100.0
+    denominator = 1 + t * y if days <= basis / 2 else (1 + y / 2) * (1 + (t - 0.5) * y)
+    if denominator <= 0:
+        raise FixedIncomeMathError("INVALID_YIELD")
+    return 100.0 / denominator
+
+
+@dataclass(frozen=True, slots=True)
+class BillAnalytics:
+    price: float
+    investment_rate_pct: float
+    discount_rate_pct: float
+    macaulay_years: float
+    modified_duration: float
+    dv01: float  # per 100 par
+
+
+def bill_analytics(price: float, days: int, start: date) -> BillAnalytics:
+    """Investment and discount rates at ``price``, with DV01 on the investment-rate basis."""
+
+    rate = bill_investment_rate(price, days, start)
+    down = bill_price_from_investment_rate(rate - 0.01, days, start)
+    up = bill_price_from_investment_rate(rate + 0.01, days, start)
+    dv01 = (down - up) / 2
+    return BillAnalytics(price=price, investment_rate_pct=rate,
+                         discount_rate_pct=(100.0 - price) / 100.0 * 360.0 / days * 100,
+                         macaulay_years=bill_macaulay_years(days, start), modified_duration=dv01 / price * 1e4, dv01=dv01)

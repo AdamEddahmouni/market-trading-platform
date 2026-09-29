@@ -431,7 +431,7 @@ class FinraFixedIncomeTests(unittest.TestCase):
     def test_security_level_trace_requires_licensed_terms(self):
         capability = finra.trace_capability()
         self.assertEqual(capability["state"], "FINRA_TERMS_REQUIRED")
-        self.assertEqual(capability["corporate_coverage"], "CORPORATE_COVERAGE_UNAVAILABLE")
+        self.assertEqual(capability["corporate_coverage"], "TRADES_LICENSED_TRACE_ONLY")
 
     def test_aggregates_not_configured_without_the_flag(self):
         result = finra.load_treasury_aggregates(today=TODAY, env={})

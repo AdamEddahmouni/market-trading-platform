@@ -1580,6 +1580,7 @@
       "resource_weight": 1,
       "source_globs": [
         "src/market_platform_foundation/fixed_income/**",
+        "tools/fixed_income/**",
         "tests/fixtures/fixed_income/**"
       ],
       "test_globs": [
@@ -1588,7 +1589,8 @@
       "neighbors": [
         "fred",
         "xa01",
-        "ui1"
+        "ui1",
+        "sec_edgar"
       ]
     },
     {

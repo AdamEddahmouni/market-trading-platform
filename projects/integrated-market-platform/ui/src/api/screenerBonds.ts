@@ -8,7 +8,8 @@ import type { ScreenerFilter } from "./screener";
  * benchmark reference and never a security's own yield.
  */
 const Value = z.union([z.number().finite(), z.string()]).nullable();
-const ItemClass = z.enum(["OBSERVED", "DERIVED", "REFERENCE", "UNAVAILABLE"]);
+// S16: STALE marks a fund-reported valuation at its report date (never a price).
+const ItemClass = z.enum(["OBSERVED", "DERIVED", "REFERENCE", "STALE", "UNAVAILABLE"]);
 const Item = z.object({
   id: z.string().min(1), label: z.string(), value: Value, unit: z.string(), class: ItemClass,
   source: z.string().nullable(), as_of: z.string().nullable(), note: z.string().nullable(),
@@ -17,6 +18,7 @@ export type BondItem = z.infer<typeof Item>;
 const Source = z.object({
   id: z.string(), label: z.string(), provider: z.string(), clock: z.string(), state: z.string().nullable(),
   as_of: z.string().nullable(), reason: z.string().nullable(),
+  count: z.number().nullable().optional(), licence: z.string().optional(),
 }).strict();
 export type BondSource = z.infer<typeof Source>;
 const Field = z.object({ value: z.number().nullable(), source: z.string(), state: z.string(),
@@ -28,8 +30,8 @@ export const BondPreviewSchema = z.object({
   instrument: z.object({
     instrument_id: z.string().min(1), venue_id: z.string(), asset_class: z.enum(["SOVEREIGN_DEBT", "BOND"]),
     instrument_kind: z.enum(["SOVEREIGN_SECURITY", "BOND"]), tradability: z.literal("REFERENCE_ONLY"),
-    cusip: z.string().length(9), isin: z.string().nullable(), identity_source: z.string(), issuer: z.string(),
-    description: z.string(), security_type: z.string(), series: z.string().nullable(),
+    cusip: z.string().length(9), isin: z.string().nullable(), identity_source: z.string(), issuer: z.string().nullable(),
+    description: z.string(), security_type: z.string(), series: z.string().nullable(), category: z.string().optional(),
   }).strict(),
   sections: z.array(z.object({ id: z.string(), title: z.string(), items: z.array(Item) }).strict()),
   why: z.object({ matched: z.object({ state: z.string(), items: z.array(z.object({
@@ -62,6 +64,23 @@ const FredItem = z.object({
 }).strict();
 export type FredItem = z.infer<typeof FredItem>;
 
+const UnavailableSpread = z.object({ state: z.literal("UNAVAILABLE"), reason: z.string(), note: z.string() }).strict();
+/** A dated spread: yield at an observed operation price minus the same-day interpolated par curve. */
+const ObservedSpread = z.object({
+  state: z.literal("DERIVED"), reason: z.null(), value: z.number(), unit: z.literal("bp"), yield: z.number(),
+  yield_basis: z.string(), price: z.number(), price_kind: z.string(), source: z.string(), operation_date: z.string(),
+  settlement_date: z.string(), curve: z.string(), curve_date: z.string(), par_yield: z.number(),
+  tenors: z.array(z.string()), note: z.string(),
+}).strict();
+export type ObservedSpread = z.infer<typeof ObservedSpread>;
+const NyFedRate = z.object({ id: z.string(), label: z.string(), value: z.number(), unit: z.string(), effective_date: z.string(),
+  volume_billions: z.number().nullable().optional(), p1: z.number().nullable().optional(), p99: z.number().nullable().optional(),
+  target_from: z.number().nullable().optional(), target_to: z.number().nullable().optional(), class: z.string(), source: z.string() }).strict();
+export type NyFedRate = z.infer<typeof NyFedRate>;
+const BreadthCategory = z.object({ state: z.string(), reason: z.string().nullable().optional(), trade_date: z.string().nullable().optional(),
+  rows: z.array(z.record(z.unknown())) }).passthrough();
+const Breadth = z.object({ state: z.string(), reason: z.string().nullable(), categories: z.record(BreadthCategory) }).passthrough();
+
 export const RatesCurveSchema = z.object({
   schema_version: z.literal("screener-rates-curve/1.0.0"), universe: z.literal("BONDS"), generated_at: z.string(),
   instrument_id: z.string().nullable(), nominal: Curve, real: Curve,
@@ -74,8 +93,9 @@ export const RatesCurveSchema = z.object({
       value: z.number() }).strict()) }).strict(),
   selected: z.object({
     instrument_id: z.string(), cusip: z.string(), description: z.string(), security_type: z.string(), maturity: z.string(),
+    category: z.string().optional(),
     years_to_maturity: z.number(), reference: Reference, indicative: Field.nullable(), auction_yield: Field,
-    auction_real_yield: Field, spread: z.object({ state: z.literal("UNAVAILABLE"), reason: z.string(), note: z.string() }).strict(),
+    auction_real_yield: Field, spread: z.union([ObservedSpread, UnavailableSpread]),
   }).strict().nullable(),
   policy: z.object({ state: z.string(), reason: z.string().nullable(), items: z.array(FredItem) }).strict(),
   credit: z.object({ state: z.string(), reason: z.string().nullable(), items: z.array(FredItem), note: z.string() }).strict(),
@@ -84,7 +104,10 @@ export const RatesCurveSchema = z.object({
       agency_coverage: z.string() }).strict(),
     aggregates: z.object({ state: z.string(), reason: z.string().nullable(), trade_date: z.string().nullable().optional(),
       rows: z.array(z.record(z.unknown())).optional() }).passthrough(),
+    breadth: Breadth.optional(),
   }).strict(),
+  nyfed: z.object({ state: z.string().nullable(), reason: z.string().nullable(), items: z.array(NyFedRate) }).passthrough().optional(),
+  soma: z.object({ state: z.string(), as_of: z.string().nullable(), counts: z.record(z.number()) }).passthrough().optional(),
   sources: z.array(Source),
 }).strict();
 export type RatesCurvePayload = z.infer<typeof RatesCurveSchema>;

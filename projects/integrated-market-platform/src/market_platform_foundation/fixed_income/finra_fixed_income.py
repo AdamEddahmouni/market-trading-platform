@@ -17,6 +17,13 @@ Probed 2026-09-27 against the FINRA Query API:
 The aggregate adapter normalizes the documented ``treasuryDailyAggregates``
 fields (shape taken from FINRA's published metadata). An aggregate is market
 activity context, never a quote, order book, or security price.
+
+S16 adds the documented market-breadth datasets (``corporateMarketBreadth``,
+``agencyMarketBreadth``; fields ``tradeReportDate``, ``productCategory``,
+``totalTrades``, ``advances``, ``declines``, ``unchanged``, ``fiftyTwoWeekHigh``,
+``fiftyTwoWeekLow``, ``totalVolume`` per the public metadata endpoint): daily
+counts of issues that traded and how many advanced or declined. Breadth is
+category context for the Corporate and Agency rows, never a per-bond value.
 """
 
 from __future__ import annotations
@@ -37,12 +44,17 @@ _NUMBERS = ("atsInterdealerCount", "atsInterdealerVolume", "dealerCustomerCount"
             "volumeWeightedAveragePrice")
 
 
+BREADTH_DATASETS: tuple[tuple[str, str], ...] = (("CORPORATE", "corporateMarketBreadth"), ("AGENCY", "agencyMarketBreadth"))
+_BREADTH_NUMBERS = ("totalTrades", "advances", "declines", "unchanged", "fiftyTwoWeekHigh", "fiftyTwoWeekLow", "totalVolume")
+
+
 def trace_capability() -> dict[str, Any]:
     """Security-level TRACE prints: not available through a permitted programmatic path."""
 
     return {"source": SOURCE_TRACE, "state": "FINRA_TERMS_REQUIRED",
             "reason": "Per-security TRACE trade data is a licensed FINRA data product; the public Query API offers aggregates only.",
-            "corporate_coverage": "CORPORATE_COVERAGE_UNAVAILABLE", "agency_coverage": "UNAVAILABLE"}
+            # S16: corporate/agency reference rows come from SEC Form N-PORT; security-level trades remain licensed.
+            "corporate_coverage": "TRADES_LICENSED_TRACE_ONLY", "agency_coverage": "TRADES_LICENSED_TRACE_ONLY"}
 
 
 def configuration_state(env: Mapping[str, str] = os.environ) -> tuple[str, str | None]:
@@ -107,3 +119,58 @@ def load_treasury_aggregates(*, today: date, env: Mapping[str, str] = os.environ
     if not isinstance(records, list):
         return {"source": SOURCE_AGGREGATES, "state": "UNAVAILABLE", "reason": "MALFORMED_RESPONSE", "trade_date": None, "rows": []}
     return {"source": SOURCE_AGGREGATES, **normalize_treasury_aggregates([item for item in records if isinstance(item, dict)])}
+
+
+def normalize_breadth(records: list[dict[str, Any]]) -> dict[str, Any]:
+    """The latest trade-report date's breadth rows (one per product category)."""
+
+    rows = []
+    for record in records:
+        day = str(record.get("tradeReportDate") or "")[:10]
+        try:
+            date.fromisoformat(day)
+        except ValueError:
+            continue
+        rows.append({"trade_date": day, "product": str(record.get("productCategory") or "") or None,
+                     **{key: _number(record.get(key)) for key in _BREADTH_NUMBERS}})
+    if not rows:
+        return {"state": "UNAVAILABLE", "reason": "NO_RECORDS", "trade_date": None, "rows": []}
+    latest = max(row["trade_date"] for row in rows)
+    return {"state": "PUBLICATION_CURRENT", "reason": None, "trade_date": latest,
+            "rows": [row for row in rows if row["trade_date"] == latest],
+            "semantics": "Counts of issues traded, advancing, and declining (TRACE market breadth); not a quote or a price."}
+
+
+def load_market_breadth(*, today: date, env: Mapping[str, str] = os.environ,
+                        transport_factory: Callable[[], Any] | None = None) -> dict[str, Any]:
+    """Corporate and agency market breadth; each dataset fails independently."""
+
+    state, reason = configuration_state(env) if transport_factory is None else ("CONFIGURED", None)
+    if state != "CONFIGURED":
+        return {"source": SOURCE_AGGREGATES, "state": state, "reason": reason, "categories": {}}
+    if transport_factory is None:
+        from ..finra.live import transport_from_env
+        transport_factory = transport_from_env
+    categories: dict[str, Any] = {}
+    try:
+        transport = transport_factory()
+    except Exception:  # noqa: BLE001
+        return {"source": SOURCE_AGGREGATES, "state": "UNAVAILABLE", "reason": "FINRA_UNAVAILABLE", "categories": {}}
+    for category, dataset in BREADTH_DATASETS:
+        try:
+            response = transport.post(f"/data/group/{DATASET_GROUP}/name/{dataset}", {
+                "limit": MAX_RECORDS,
+                "dateRangeFilters": [{"fieldName": "tradeReportDate",
+                                      "startDate": (today - timedelta(days=LOOKBACK_DAYS)).isoformat(), "endDate": today.isoformat()}],
+            })
+            records = response.records
+            categories[category] = (normalize_breadth([item for item in records if isinstance(item, dict)])
+                                    if isinstance(records, list) else
+                                    {"state": "UNAVAILABLE", "reason": "MALFORMED_RESPONSE", "rows": [], "trade_date": None})
+        except Exception as exc:  # noqa: BLE001 — stable code only
+            text = str(exc)
+            categories[category] = {"state": "UNAVAILABLE", "rows": [], "trade_date": None,
+                                    "reason": next((item for item in ("AUTH_FAILED", "FINRA_HTTP_429") if item in text), "FINRA_UNAVAILABLE")}
+    present = [item for item in categories.values() if item["state"] == "PUBLICATION_CURRENT"]
+    return {"source": SOURCE_AGGREGATES, "state": "PUBLICATION_CURRENT" if len(present) == len(categories) else
+            "PARTIAL" if present else "UNAVAILABLE", "reason": None if present else "NO_RECORDS", "categories": categories}

@@ -49,9 +49,11 @@ type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "pri
   | "security_type" | "term" | "coupon" | "issue_date" | "maturity" | "years_to_maturity" | "maturity_bucket" | "tips" | "frn"
   | "auction_date" | "auction_yield" | "auction_real_yield" | "auction_discount_margin" | "bid_to_cover" | "outstanding"
   | "reference_tenor" | "reference_rate" | "indicative_rate"
+  | "category" | "issuer" | "isin" | "coupon_type" | "fund_count" | "fund_par_held" | "fund_value_pct" | "report_date"
+  | "observed_price" | "observed_yield" | "benchmark_spread" | "observed_date"
   | "base_asset" | "quote_asset" | "venue" | "status" | "base_volume" | "quote_volume" | "high_24h" | "low_24h" | "trade_count";
 type SortKey = ColumnKey;
-type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions"; title?: string };
+type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions" | "millions" | "per100" | "bp"; title?: string };
 const definitions: ColumnDefinition[] = [
   { key: "symbol", label: "Symbol", width: 190, format: "text" },
   { key: "company", label: "Company", width: 180, format: "text" },
@@ -106,6 +108,19 @@ const definitions: ColumnDefinition[] = [
   { key: "reference_tenor", label: "Ref. Tenor", width: 86, format: "text", title: "Nearest published Treasury par-curve tenor." },
   { key: "reference_rate", label: "Ref. Par Yld", width: 96, format: "rate", title: "Treasury par-curve point for the matched tenor: a benchmark, not this security's yield." },
   { key: "indicative_rate", label: "Closing Bid", width: 94, format: "rate", title: "Treasury daily bill rates: indicative closing bid (coupon-equivalent), on-the-run bills only." },
+  // S16: categories inside the one Bonds universe, fund-reported (Form N-PORT) terms and holdings, and dated observations.
+  { key: "category", label: "Category", width: 96, format: "text" },
+  { key: "issuer", label: "Issuer", width: 170, format: "text" },
+  { key: "isin", label: "ISIN", width: 124, format: "text" },
+  { key: "coupon_type", label: "Cpn Type", width: 92, format: "text" },
+  { key: "fund_count", label: "Funds", width: 70, format: "decimal", title: "SEC-registered fund series that reported holding this CUSIP (Form N-PORT)." },
+  { key: "fund_par_held", label: "Fund Par", width: 92, format: "millions", title: "Principal reported held across funds' latest filings; not the amount outstanding." },
+  { key: "fund_value_pct", label: "Fund Value", width: 94, format: "per100", title: "Median fund fair value per 100 of par at the funds' report dates: stale, never a price." },
+  { key: "report_date", label: "Reported", width: 100, format: "text", title: "Latest N-PORT report date for this CUSIP (published about 60 days later)." },
+  { key: "observed_price", label: "Obs. Price", width: 92, format: "per100", title: "Latest Treasury buyback or Fed outright purchase price (Fed bill purchases: from the accepted discount rate): a dated observation, not a quote." },
+  { key: "observed_yield", label: "Obs. Yield", width: 92, format: "rate", title: "Yield at the observed operation price, on the operation's settlement date." },
+  { key: "benchmark_spread", label: "Spread", width: 82, format: "bp", title: "Observed yield minus the same-day interpolated par curve; dated, not current." },
+  { key: "observed_date", label: "Obs. Date", width: 100, format: "text", title: "Date of the observed operation price." },
   { key: "base_asset", label: "Base", width: 76, format: "text" },
   { key: "quote_asset", label: "Quote", width: 76, format: "text" },
   { key: "venue", label: "Venue", width: 86, format: "text" },
@@ -119,6 +134,7 @@ const definitions: ColumnDefinition[] = [
 const columnByKey = Object.fromEntries(definitions.map((item) => [item.key, item])) as Record<ColumnKey, ColumnDefinition>;
 const textKeys = ["company", "sector", "industry", "country", "earnings_date", "recommendation", "root", "exchange", "contract_month", "expiry",
   "security_type", "term", "issue_date", "maturity", "maturity_bucket", "tips", "frn", "auction_date", "reference_tenor",
+  "category", "issuer", "isin", "coupon_type", "report_date", "observed_date",
   "base_asset", "quote_asset", "venue", "status"] as const;
 type TextKey = (typeof textKeys)[number];
 const textColumns = new Set<string>(textKeys);
@@ -153,7 +169,7 @@ const resultSetChanged = (error: unknown) => (error as { code?: string } | null)
 // Crypto reads venue UTC everywhere (panels, preview); US universes keep the local wall clock.
 const clock = (value: string, universe?: ScreenerUniverse) => universe === "CRYPTO"
   ? `${new Date(value).toISOString().slice(11, 19)} UTC` : new Date(value).toLocaleTimeString();
-const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY"];
+const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
@@ -167,6 +183,9 @@ function valueText(field: ScreenerField | undefined, format: (typeof definitions
   if (format === "rate") return `${field.value.toFixed(3)}%`;
   if (format === "fixed2") return field.value.toFixed(2);
   if (format === "billions") return `$${field.value.toLocaleString("en-US", { maximumFractionDigits: 1 })}B`;
+  if (format === "millions") return `$${field.value.toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
+  if (format === "per100") return field.value.toFixed(3);
+  if (format === "bp") return `${field.value > 0 ? "+" : ""}${field.value.toFixed(1)} bp`;
   return format === "compact" ? compact.format(field.value) : decimal.format(field.value);
 }
 const helper = createColumnHelper<ScreenerRow>();

@@ -84,7 +84,9 @@ _CATALOG.update({
 })
 # S9: Bond terms, maturity, and auction facts are complete for every catalog
 # row. No price, yield-to-maturity, spread, rating, or trade-activity filter
-# exists because no universe-wide source supplies them.
+# exists because no universe-wide source supplies them. S16 adds the category
+# and fund-reported (Form N-PORT) terms and holdings; Treasury rows have no
+# fund-held values, so a fund-holdings filter excludes them.
 _CATALOG.update({
     field: {"field": field, "label": label, "category": category, "type": kind,
             "unit": unit, "operators": list(NUMERIC_OPERATORS if kind == "number" else TEXT_OPERATORS),
@@ -105,6 +107,15 @@ _CATALOG.update({
         ("auction_yield", "Auction Yield (latest)", "Auction", "number", "percent"),
         ("auction_real_yield", "Auction Real Yield (TIPS)", "Auction", "number", "percent"),
         ("bid_to_cover", "Bid-to-Cover (latest auction)", "Auction", "number", "ratio"),
+        ("category", "Category", "Identity", "text", "text"),
+        ("isin", "ISIN", "Identity", "text", "text"),
+        ("coupon_type", "Coupon Type", "Terms", "text", "text"),
+        ("in_default", "In Default (fund-reported)", "Credit", "text", "text"),
+        ("convertible", "Convertible", "Terms", "text", "text"),
+        ("pik", "Paid in Kind", "Terms", "text", "text"),
+        ("fund_count", "Reporting Funds", "Fund Holdings", "number", "count"),
+        ("fund_par_held", "Par Held by Funds", "Fund Holdings", "number", "USD_MILLIONS"),
+        ("fund_value_pct", "Fund Value (% of par, stale)", "Fund Holdings", "number", "per_100_par"),
     )
 })
 

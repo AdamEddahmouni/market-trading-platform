@@ -61,13 +61,19 @@ FIELD_EXECUTION: dict[str, dict[str, str]] = {
     },
     # S9: terms and auction facts are complete for every outstanding security.
     # There is no universe-wide bond price, yield, spread, or trade source.
+    # S16: category and fund-reported terms/holdings are catalog facts; observed
+    # operation prices exist for a few CUSIPs on dated operations, so they are
+    # shown per visible row but never filter or sort the universe.
     BONDS: {
         **{field: CATALOG for field in ("symbol", "company", "issuer", "security_type", "term", "issue_date",
                                          "maturity", "maturity_bucket", "tips", "frn", "callable", "coupon",
                                          "years_to_maturity", "days_to_maturity", "maturity_year", "outstanding",
                                          "auction_date", "auction_yield", "auction_real_yield",
-                                         "auction_discount_margin", "bid_to_cover")},
-        **{field: REFERENCE for field in ("reference_tenor", "reference_rate", "indicative_rate")},
+                                         "auction_discount_margin", "bid_to_cover",
+                                         "category", "isin", "coupon_type", "in_default", "convertible", "pik",
+                                         "fund_count", "fund_par_held", "fund_value_pct", "report_date")},
+        **{field: REFERENCE for field in ("reference_tenor", "reference_rate", "indicative_rate",
+                                          "observed_price", "observed_yield", "benchmark_spread", "observed_date")},
     },
     CRYPTO: {
         **{field: CATALOG for field in ("symbol", "base_asset", "quote_asset", "venue", "status")},
