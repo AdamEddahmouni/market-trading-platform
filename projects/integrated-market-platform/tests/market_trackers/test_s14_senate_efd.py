@@ -87,6 +87,27 @@ class ParserTests(unittest.TestCase):
         self.assertIsNone(report.transactions[0].amount)
         self.assertIn("AMOUNT_RANGE_UNPARSED", report.transactions[0].quality_flags)
 
+    def test_filer_with_a_courtesy_title_and_suffix(self):
+        # Live eFD (owner acceptance, 2026-09-29): a sitting senator's PTR printed the filer as
+        # "Mr. <given> <middle> <family> II" over several lines with a "(Family II, Given Middle)"
+        # parenthetical, not "The Honorable …". The parser used to fail it with FILER_NOT_FOUND.
+        html = (FIXTURES / "ptr_electronic.html").read_text().replace(
+            '<h2 class="filedReport">The Honorable Jane Q Example (Example, Jane)</h2>',
+            '<h2 class="filedReport">\n  Mr. John Quincy\n  Sample\n  II\n  (Sample II,  John Quincy)\n</h2>').replace(
+            "$1,000,001 - $5,000,000", "Over $50,000,000")
+        report = senate.parse_report(html)
+        self.assertEqual((report.parse_state, report.reason), ("PARSED", None))
+        self.assertEqual((report.filer_name, report.filer_alternate), ("John Quincy Sample II", "Sample II, John Quincy"))
+        self.assertEqual(len(report.transactions), 4)
+        band = report.transactions[3].amount
+        self.assertEqual((band.min_amount, band.max_amount), (50_000_001, None))   # open-ended, never a point
+        for title in ("Ms.", "Mrs.", "Dr.", "The Honorable"):
+            variant = html.replace("Mr. John Quincy", f"{title} John Quincy")
+            self.assertEqual(senate.parse_report(variant).filer_name, "John Quincy Sample II", title)
+        # A page saved without the heading's class still falls back to "The Honorable …".
+        classless = (FIXTURES / "ptr_electronic.html").read_text().replace('<h2 class="filedReport">', "<h2>")
+        self.assertEqual(senate.parse_report(classless).filer_name, "Jane Q Example")
+
     def test_columns_are_found_by_header_not_position(self):
         header = ["Amount", "Type", "Asset Type", "Asset Name", "Ticker", "Owner", "Transaction Date", "#"]
         cells = ["$1,001 - $15,000", "Purchase", "Stock", "Apple Inc.", "AAPL", "Self", "01/05/2026", "1"]

@@ -64,7 +64,8 @@ _FILED = re.compile(r"Filed\s+(\d{1,2}/\d{1,2}/\d{4})(?:\s*@\s*(\d{1,2}:\d{2})\s
 _TITLE = re.compile(r"Periodic Transaction Report", re.I)
 _AMENDMENT = re.compile(r"Amendment\s*(?:No\.?\s*)?(\d+)?", re.I)
 _REPORT_FOR = re.compile(r"for\s+(\d{1,2}/\d{1,2}/\d{4})", re.I)
-_FILER = re.compile(r"^(?:The\s+Honorable\s+)?(.+?)(?:\s*\(([^()]*)\))?\s*$", re.I)
+# eFD prints sitting senators as "The Honorable …" and other filers with a courtesy title ("Mr. …").
+_FILER = re.compile(r"^(?:(?:The\s+Honorable|Mr\.?|Mrs\.?|Ms\.?|Miss|Dr\.?)\s+)?(.+?)(?:\s*\(([^()]*)\))?\s*$", re.I)
 
 
 # ------------------------------------------------------------------ HTML
@@ -74,6 +75,8 @@ class _Page(HTMLParser):
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
         self.headings: list[tuple[str, str]] = []
+        self.filer_headings: list[str] = []   # headings eFD marks class="filedReport"
+        self._filer = False
         self.paragraphs: list[str] = []
         self.tables: list[list[tuple[bool, list[str]]]] = []
         self.links: list[str] = []
@@ -89,6 +92,7 @@ class _Page(HTMLParser):
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag in ("h1", "h2", "h3", "p") and self._cell is None:
             self._text, self._tag = [], tag
+            self._filer = "filedreport" in (dict(attrs).get("class") or "").lower().split()
         elif tag == "table":
             self.tables.append([])
             self._depth += 1
@@ -113,6 +117,8 @@ class _Page(HTMLParser):
                 self.paragraphs.append(text)
             else:
                 self.headings.append((tag, text))
+                if self._filer:
+                    self.filer_headings.append(text)
             self._text, self._tag = None, None
         elif tag in ("td", "th") and self._cell is not None and self._row is not None:
             self._row.append(" ".join("".join(self._cell).split()))
@@ -233,7 +239,9 @@ def parse_report(html_text: str, *, file_name: str = "report.html", sidecar: Map
                             "HTML_UNREADABLE", (), digest, retrieved_at, retrieved_basis, file_name)
     report_id, kind, url = _report_identity(page, html_text, sidecar)
     title = next((text for level, text in page.headings if _TITLE.search(text)), None)
-    filer_heading = next((text for level, text in page.headings if text.lower().startswith("the honorable")), None)
+    # The page's own filer heading first; the title-based match is the fallback for pages saved without classes.
+    filer_heading = next(iter(page.filer_headings), None) or next(
+        (text for level, text in page.headings if text.lower().startswith("the honorable")), None)
     filer_name = filer_alt = None
     if filer_heading:
         match = _FILER.match(filer_heading)
