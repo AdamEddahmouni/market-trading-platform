@@ -6,7 +6,8 @@ Status: **implementation and local validation complete (S12, 2026-09-29)** — b
 ## Validation
 
 Final canonical changed validation, 2026-09-29, on commit `1071d39` (the
-handoff commit; no product code changed afterwards), Linux cloud container,
+handoff commit; the later Quick Preview layout fixes under "Visual acceptance"
+are covered by PR CI, not by this run), Linux cloud container,
 Python 3.11.15, Node 22.22.2, live provider gates unset, no Moomoo OpenD, IBKR,
 or MongoDB:
 
