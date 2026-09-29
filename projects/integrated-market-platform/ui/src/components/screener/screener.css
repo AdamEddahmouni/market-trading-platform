@@ -86,7 +86,7 @@
 .screener-body>.screener-grid{flex:1 1 auto;min-width:0}
 .screener-splitter{flex:0 0 5px;margin:0 -2px;cursor:col-resize;background:transparent;border-left:1px solid #2a3542;z-index:3}
 .screener-splitter:hover,.screener-splitter:focus-visible{background:#3d6fa866;outline:none}
-.screener-preview{display:flex;flex:0 0 auto;flex-direction:column;min-width:320px;max-width:720px;overflow-y:auto;background:#121a23;border-left:1px solid #2a3542;scrollbar-color:#394b61 #121a23}
+.screener-preview{position:relative;display:flex;flex:0 0 auto;flex-direction:column;min-width:320px;max-width:720px;overflow-y:auto;background:#121a23;border-left:1px solid #2a3542;scrollbar-color:#394b61 #121a23}
 .screener-preview.overlay{position:absolute;z-index:12;top:0;right:0;bottom:0;width:min(400px,46vw);box-shadow:-18px 0 36px #03080dcc}
 .screener-preview:focus{outline:none}
 .screener-preview-header{display:flex;align-items:center;justify-content:space-between;min-height:30px;padding:0 8px 0 14px;border-bottom:1px solid #222d39}
