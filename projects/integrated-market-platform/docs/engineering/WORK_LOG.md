@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-29 — Main Screener S15 Futures CFTC Positioning Coverage
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` (implementation, local gates, and live acceptance done; awaiting PR CI) |
+| **Area** | `cftc`, `ui_api`, `ui/screener`, `tools/screener`, `docs` |
+| **Summary** | Every Futures root now has an explicit, evidence-backed CFTC coverage decision: 178 roots on the live 2026-09-29 catalog = 67 mapped, 77 single-stock (no COT market), 33 with no CFTC market, 1 ambiguous (VXM), 0 unclassified (S12: 32 of 178, with unmapped roots unexplained). Fixed S12's Micro Ether key (`MET` → `METH`). Mappings are code-exact with a basis (exchange + product, or curated official alias), are checked against the provider venue (a mismatch fails closed), and follow the CFTC code across renames (KC wheat `001612`). Duplicate rows resolve deterministically; conflicting rows withhold values. A known market missing from the latest release is distinguished from "no CFTC market". Wired into the existing Positioning view, Institutional & Whale panel, and Quick Preview; new audit tool fails on any unclassified root. |
+| **Key files** | `src/market_platform_foundation/cftc/{screener_positioning.py,root_coverage.py (new)}`, `ui_api/screener_participants.py`, `tools/screener/cftc_coverage_audit.py` (new), `tools/validation_manifest.json`, `ui/src/api/screenerParticipants.ts`, `ui/src/components/screener/participants/{sections.tsx,IntelligenceView.tsx,participantFormat.tsx,ParticipantsS15.test.tsx (new)}`, `tests/cftc/test_s15_cftc_coverage.py` (new), `tests/platform/test_screener_s15.py` (new), `tests/fixtures/cftc/s15_futures_roots_20260929.json` (new), `docs/engineering/SCREENER_S15_CFTC_COVERAGE.md` (new), S12/S14 docs (historical lines annotated) |
+| **Tests** | S15 backend 37, UI 13; Screener S1–S15 412; CFTC 53; XA-03 31; UI 1,176; see [SCREENER_S15_CFTC_COVERAGE.md](SCREENER_S15_CFTC_COVERAGE.md#tests). |
+| **Related** | [SCREENER_S15_CFTC_COVERAGE.md](SCREENER_S15_CFTC_COVERAGE.md), [SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md), [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md) |
+| **Notes** | Live acceptance on the owner workstation (real OpenD + CFTC Public Reporting): latest release as of 2026-09-22, released 2026-09-25 19:30 UTC; 61 of 67 mapped markets have a report in the 35-day window. The other six (ALI, MHG, MXP, NKD, QG, SIL) are real markets below the CFTC reporting threshold recently. |
+
 ## 2026-09-29 — Main Screener S14 Disclosure Coverage, Identity & Refresh Automation
 
 | Field | Value |

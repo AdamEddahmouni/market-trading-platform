@@ -600,7 +600,8 @@ parsed · 2 partly parsed · 19 scanned/unparsed" and "Senate · Imported".
 - **Futures positioning:** 32 of 178 roots are mapped to a CFTC market
   (`PARTIAL · SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET`). CFTC is
   `PUBLICATION_CURRENT` (165 items, released 2026-09-25 19:30 UTC). No mapping
-  was added.
+  was added. *(Historical; superseded by [S15](SCREENER_S15_CFTC_COVERAGE.md):
+  all 178 roots classified, 67 mapped, and S12's `MET` key corrected to `METH`.)*
 - **Controlled source failure:** a separate API with `IMP_PUBLIC_RECORDS_LIVE`
   off reported `LIVE_DISABLED · IMP_PUBLIC_RECORDS_LIVE_NOT_SET` for House,
   awards, and lobbying, never `NO_DISCLOSURES`.

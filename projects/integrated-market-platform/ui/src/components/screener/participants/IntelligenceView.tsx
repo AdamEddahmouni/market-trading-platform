@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import type { ScreenerUniverse } from "../../../api/screener";
 import { CONGRESS_WINDOWS, fetchCongressView, fetchOwnershipView, fetchPositioningView, OWNERSHIP_WINDOWS,
   PARTICIPANT_PAGE_LIMIT, type ParticipantProvider } from "../../../api/screenerParticipants";
-import { CongressTable, count, FAMILY_TEXT, Providers, reasonText, SourceLink, stamp, StateTag, TYPE_TEXT } from "./participantFormat";
+import { CongressTable, count, FAMILY_TEXT, Providers, reasonText, signed, SourceLink, stamp, StateTag, TYPE_TEXT } from "./participantFormat";
 import { ChamberCoverage } from "./sections";
 import type { IntelView } from "./participantParams";
-import { PositioningTable } from "./sections";
+import { CoverageSummary, PositioningFlags, PositioningTable, UnmappedRoots } from "./sections";
 import "../news/news.css";
 import "./participants.css";
 
@@ -157,12 +157,21 @@ function PositioningPane({ universe }: { universe: ScreenerUniverse }) {
     <div className="news-status-strip"><Providers providers={data.providers} label="Positioning sources" /></div>
     <Notice state={data.state} reason={data.reason} providers={data.providers} />
     <div className="participant-body" tabIndex={0} role="region" aria-label="CFTC positioning by root">
+      {data.coverage.breakdown && <CoverageSummary coverage={data.coverage} />}
       {data.groups.map((group) => group.rows.length > 0 && <section key={group.report} className="participant-section" aria-label={group.label}>
         <h3>{group.label}</h3>
         {group.rows.map((report) => <div key={report.root} className="participant-filing">
           <h4>{report.root} · {report.market_name} · as of {report.report_date} · published {stamp(report.publication_time)} · OI {count(report.open_interest)}</h4>
-          <PositioningTable report={report} compact /></div>)}</section>)}
-      {data.coverage.unmapped_roots.length > 0 && <p className="participant-note">No CFTC market mapped for: {data.coverage.unmapped_roots.join(", ")}.</p>}
+          {report.contract && <p className="participant-note">{report.contract} · CFTC {report.cftc_contract_market_code}
+            {report.mapping ? ` · mapped by ${report.mapping.basis.replace(/_/g, " ").toLowerCase()}` : ""}
+            {" "}· OI weekly change {signed(report.change_open_interest)} (published)</p>}
+          <PositioningFlags report={report} />
+          <PositioningTable report={report} compact={!report.contract} /></div>)}</section>)}
+      {(data.coverage.mapped_without_report ?? []).length > 0 && <p className="participant-note">Known CFTC markets with no public report in the
+        {" "}loaded window (below the CFTC reporting threshold): {data.coverage.mapped_without_report?.join(", ")}.</p>}
+      {data.unmapped ? data.unmapped.length > 0 && <UnmappedRoots roots={data.unmapped} />
+        : data.coverage.unmapped_roots.length > 0 && <p className="participant-note">No CFTC market mapped for: {data.coverage.unmapped_roots.join(", ")}.</p>}
+      {data.report_policy && <p className="participant-note">{data.report_policy}</p>}
       <p className="participant-note">{data.time_note} Categories of the two reports differ and are never mapped onto each other.</p>
       <ul className="participant-boundaries" aria-label="Evidence boundaries">{data.boundaries.map((item) => <li key={item}>{item}</li>)}</ul>
     </div>
