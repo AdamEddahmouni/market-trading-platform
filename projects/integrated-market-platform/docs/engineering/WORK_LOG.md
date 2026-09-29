@@ -38,11 +38,11 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `in-progress` (implemented and cloud-validated; live catalog acceptance pending on the owner workstation) |
+| **Status** | `complete` (cloud-validated; live catalog acceptance passed on the owner workstation 2026-09-29: audit exit 0, 0 duplicates, ETFs 5,734 of 6,312 provider rows, US Equities 4,625; Finviz strings verified; one tooling defect fixed: the live audit did not exit) |
 | **Area** | `ui_api`, `ui/screener`, `tools/screener`, `docs` |
 | **Summary** | Fixed ETF catalog contamination. Moomoo's `ETF` security type also returns equity REITs (EQIX, WY), closed-end funds (AIO), and OTC trusts, and it was admitted verbatim. `US_ETFS` now admits a row only when the provider type is `ETF` **and** the Finviz reference industry is `Exchange Traded Fund` (fail-closed, with a reason for every rejection). `US_EQUITIES` replaces Finviz's opaque `ind_stocksonly` filter with an IMP rule (every `geo_usa` listing except ETFs), so REITs, CEFs, and BDCs are listed equities with a recorded category, and the two universes are disjoint by construction. Rows carry classification provenance; a developer audit command reports counts, reasons, duplicates, and latency. No new universe, view, or feature. |
 | **Key files** | `src/market_platform_foundation/ui_api/screener_admission.py` (new), `ui_api/screener_multi.py`, `ui_api/screener_projections.py`, `tools/screener/universe_audit.py` (new), `ui/src/components/screener/ScreenerPage.tsx`, `tests/platform/test_screener_s13.py` (new), `tests/platform/test_screener_{s1,s5,s6}.py`, `docs/engineering/SCREENER_S13_UNIVERSE_INTEGRITY.md` (new), `SCREENER_UNIVERSE_ARCHITECTURE.md`, `SCREENER_S5.md` |
-| **Tests** | S13 28; Screener S1–S13 backend; UI `ScreenerPage.test.tsx`; full gates in [SCREENER_S13_UNIVERSE_INTEGRITY.md](SCREENER_S13_UNIVERSE_INTEGRITY.md#tests) and the PR. |
+| **Tests** | S13 29; Screener S1–S13 backend; UI `ScreenerPage.test.tsx`; full gates in [SCREENER_S13_UNIVERSE_INTEGRITY.md](SCREENER_S13_UNIVERSE_INTEGRITY.md#tests) and the PR. |
 | **Related** | [SCREENER_S13_UNIVERSE_INTEGRITY.md](SCREENER_S13_UNIVERSE_INTEGRITY.md), [SCREENER_UNIVERSE_ARCHITECTURE.md](SCREENER_UNIVERSE_ARCHITECTURE.md), [SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md) |
 | **Notes** | The cloud container has no OpenD or Finviz credentials, and provider hosts are denied, so the live five-universe counts and the EQIX/WY/AIO samples must come from `python tools/screener/universe_audit.py` on the owner workstation. ETNs are not separable with the current sources (documented limitation). |
 
