@@ -396,6 +396,44 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path in ("/screener/participants/ownership", "/screener/participants/positioning",
+                        "/screener/participants/congress", "/screener/participants/instrument"):
+                # S12: institutional / whale / congressional / government evidence over the active universe.
+                from .screener_participants import participant_service
+
+                service = participant_service()
+                universe = (query.get("universe") or [""])[0]
+                try:
+                    if path == "/screener/participants/ownership":
+                        payload = service.ownership_view(
+                            universe=universe, window=(query.get("window") or ["5d"])[0],
+                            family=(query.get("family") or [None])[0] or None, sort=(query.get("sort") or ["latest"])[0],
+                            offset=int((query.get("offset") or ["0"])[0]), limit=int((query.get("limit") or ["100"])[0]),
+                        )
+                    elif path == "/screener/participants/positioning":
+                        payload = service.positioning_view(universe=universe)
+                    elif path == "/screener/participants/congress":
+                        amount = (query.get("min_amount") or [""])[0]
+                        payload = service.congress_view(
+                            universe=universe, window=(query.get("window") or ["60d"])[0],
+                            transaction_type=(query.get("type") or [None])[0] or None,
+                            min_amount=int(amount) if amount else None, member=(query.get("member") or [None])[0] or None,
+                            sort=(query.get("sort") or ["filed"])[0], offset=int((query.get("offset") or ["0"])[0]),
+                            limit=int((query.get("limit") or ["100"])[0]),
+                        )
+                    else:
+                        payload = service.instrument(
+                            universe=universe, instrument_id=(query.get("instrument") or [""])[0].strip(),
+                            lens=(query.get("lens") or [""])[0], compact=(query.get("compact") or ["0"])[0] == "1",
+                        )
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_PARTICIPANTS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/state/startup":
                 self._send_json(operator_projections.build_startup_payload(self.store))
                 return

@@ -68,7 +68,8 @@ class UniverseContractTests(unittest.TestCase):
         self.assertEqual([item["id"] for item in payload], [US_EQUITIES, FUTURES, US_ETFS, "BONDS", "CRYPTO"])
         self.assertEqual(universe_spec(FUTURES).asset_class, "FUTURE")
         self.assertEqual(universe_spec(US_ETFS).asset_class, "ETF_FUND")
-        self.assertEqual(universe_spec(FUTURES).panels, ("news",))  # S11: cross-universe News & Analysis only
+        # S11: cross-universe News & Analysis; S12: Institutional & Whale (CFTC positioning) is a panel, never a universe.
+        self.assertEqual(universe_spec(FUTURES).panels, ("news", "institutional"))
         self.assertNotIn("Fundamentals", universe_spec(FUTURES).views)
         self.assertNotIn("Fund", universe_spec(US_ETFS).views)
         self.assertEqual(list(universe_spec(FUTURES).views), ["Overview", "Contract", "Performance", "Custom"])

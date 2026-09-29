@@ -38,6 +38,8 @@ class Universe:
     identity_fields: tuple[str, ...] = ("symbol",)
     data_sources: tuple[str, ...] = ()
     tradability: str = "PER_INSTRUMENT"
+    #: S12 universe-wide intelligence views (only where universe-complete evidence exists).
+    intelligence_views: tuple[str, ...] = ()
 
     @property
     def columns(self) -> frozenset[str]:
@@ -64,7 +66,11 @@ UNIVERSES: dict[str, Universe] = {
             "Custom": ("symbol", "price", "change_pct", "volume"),
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
-        ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"),
+        # S12: Institutional & Whale and Congress & Government are panels (intelligence
+        # lenses), never universes; see SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md.
+        ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "institutional",
+         "congress_gov"),
+        intelligence_views=("ownership", "congress"),
     ),
     FUTURES: Universe(
         FUTURES, "Futures", "FUTURE", "FUTURE_CONTRACT", "MOOMOO_OPEND_CONTRACT_CATALOG",
@@ -76,7 +82,9 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "root", "price", "change_pct", "volume", "open_interest"),
             "Custom": ("symbol", "root", "expiry", "dte"),
         },
-        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", ("news",),
+        # S12: CFTC positioning only; congressional securities disclosures do not map to futures.
+        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", ("news", "institutional"),
+        intelligence_views=("positioning",),
     ),
     US_ETFS: Universe(
         US_ETFS, "ETFs", "ETF_FUND", "TRADABLE_SECURITY", "MOOMOO_OPEND_ETF_CATALOG",
@@ -87,7 +95,9 @@ UNIVERSES: dict[str, Universe] = {
             "Performance": ("symbol", "company", "price", "change_pct", "volume"),
             "Custom": ("symbol", "company", "exchange", "price"),
         },
-        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE", ("order_flow", "cvd", "level2", "charts", "options", "news"),
+        "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
+        ("order_flow", "cvd", "level2", "charts", "options", "news", "institutional", "congress_gov"),
+        intelligence_views=("congress",),
     ),
     # S9: one Bonds / Fixed Income universe. Categories (Treasury, corporate,
     # agency) are filters inside it, never separate universes. Rows are
@@ -170,7 +180,7 @@ def universe_payload() -> list[dict[str, object]]:
             "admitted_asset_classes": list(spec.admitted_asset_classes or (spec.asset_class,)),
             "admitted_instrument_kinds": list(spec.admitted_instrument_kinds or (spec.instrument_kind,)),
             "identity_fields": list(spec.identity_fields), "data_sources": list(spec.data_sources or (spec.source,)),
-            "tradability": spec.tradability,
+            "tradability": spec.tradability, "intelligence_views": list(spec.intelligence_views),
         }
         for spec in UNIVERSES.values()
     ]

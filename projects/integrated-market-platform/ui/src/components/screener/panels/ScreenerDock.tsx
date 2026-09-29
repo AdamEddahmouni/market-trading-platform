@@ -24,6 +24,15 @@ const LazyNewsAnalysisPanel = lazy(() => import("./NewsAnalysisPanel"));
 function NewsAnalysisPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading News &amp; Analysis…</PanelMessage>}><LazyNewsAnalysisPanel {...props} /></Suspense>;
 }
+// S12: the participant and government lenses load on first open as well.
+const LazyInstitutionalPanel = lazy(() => import("./InstitutionalPanel"));
+function InstitutionalPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading Institutional &amp; Whale…</PanelMessage>}><LazyInstitutionalPanel {...props} /></Suspense>;
+}
+const LazyCongressGovPanel = lazy(() => import("./CongressGovPanel"));
+function CongressGovPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading Congress &amp; Government…</PanelMessage>}><LazyCongressGovPanel {...props} /></Suspense>;
+}
 
 function contained(id: PanelId, Panel: FunctionComponent<IDockviewPanelProps>) {
   const Wrapped = (props: IDockviewPanelProps) => {
@@ -41,6 +50,8 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   short_squeeze: contained("short_squeeze", ShortSqueezePanel),
   rates_curve: contained("rates_curve", RatesCurvePanel),
   news: contained("news", NewsAnalysisPanel),
+  institutional: contained("institutional", InstitutionalPanel),
+  congress_gov: contained("congress_gov", CongressGovPanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
@@ -215,7 +226,8 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
       const group = apiRef.current?.getPanel(id)?.group;
       if (group) group.api.setSize({ width: Math.max(160, group.api.width + delta) });
     },
-  }), [focusPanel]);
+    open: openOrFocus,
+  }), [focusPanel, openOrFocus]);
   const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters, demand, actions }), [row, universe, supportedPanels, settledId, quote, filters, demand, actions]);
 
   return <SpecialistContext.Provider value={selection}>

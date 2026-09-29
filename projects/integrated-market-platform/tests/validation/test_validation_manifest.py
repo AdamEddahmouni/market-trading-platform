@@ -172,10 +172,11 @@ class ValidationManifestTests(unittest.TestCase):
         absent = [
             suite for suite in manifest.suites if suite.classification == "intentionally_absent"
         ]
-        # 71 offline suites: 70 prior + crypto_market (Screener S10, 2026-09-28).
+        # 72 offline suites: 71 prior + public_records (Screener S12, 2026-09-28).
+        # (71 = 70 + crypto_market, Screener S10, 2026-09-28.)
         # (70 = 69 + fixed_income, Screener S9, 2026-09-28; 69 = 68 + latency_instrumentation_v1, 2026-09-22;
         # 68 = 67 + software_fullstack_acceptance #208, 2026-09-15.)
-        self.assertEqual(len(offline), 71)
+        self.assertEqual(len(offline), 72)
         self.assertEqual(len(live), 12)
         self.assertEqual(len(absent), 3)
         self.assertNotIn("live", {tier for suite in offline for tier in suite.tiers})

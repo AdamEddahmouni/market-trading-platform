@@ -12,7 +12,7 @@
       "cftc_commodity_code": "138",
       "open_interest_all": "2650000",
       "dealer_positions_long_all": "125000",
-      "dealer_positions_short": "98000",
+      "dealer_positions_short_all": "98000",
       "asset_mgr_positions_long": "460000",
       "asset_mgr_positions_short": "390000",
       "lev_money_positions_long": "320000",

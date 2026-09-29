@@ -7,18 +7,21 @@ from pathlib import Path
 from typing import Any
 
 # Priority markets — deterministic seed mapping; ProductHierarchy extends at runtime.
+# Codes verified against CFTC Public Reporting market names on 2026-09-28 (report of
+# 2026-09-22). Earlier seeds had the 10Y/Bond and 2Y/5Y codes swapped and used
+# non-existent Dow and Ultra Bond codes.
 SEED_MARKET_MAPPINGS: dict[str, str] = {
   # TFF equity indices
-  "13874+": "ES",  # E-MINI S&P 500
-  "209742": "NQ",  # E-MINI NASDAQ-100
-  "12460+": "YM",  # E-MINI DOW
-  "239742": "RTY",  # E-MINI RUSSELL 2000
+  "13874+": "ES",  # S&P 500 Consolidated (E-mini + micro, E-mini equivalents) — the ES family aggregate
+  "209742": "NQ",  # NASDAQ MINI
+  "124603": "YM",  # DJIA x $5
+  "239742": "RTY",  # RUSSELL E-MINI
   # Rates
-  "020601": "ZN",  # 10-Year T-Note
-  "043602": "ZB",  # 30-Year T-Bond
-  "042601": "ZF",  # 5-Year T-Note
-  "044601": "ZT",  # 2-Year T-Note
-  "045601": "UB",  # Ultra T-Bond
+  "043602": "ZN",  # UST 10Y NOTE
+  "020601": "ZB",  # UST BOND
+  "044601": "ZF",  # UST 5Y NOTE
+  "042601": "ZT",  # UST 2Y NOTE
+  "020604": "UB",  # ULTRA UST BOND
   # FX
   "099741": "6E",  # Euro FX
   "097741": "6J",  # Japanese Yen

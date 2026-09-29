@@ -1,0 +1,30 @@
+Description:           Daily Index of EDGAR Dissemination Feed by Form Type
+Last Data Received:    Sep 25, 2026
+Comments:              webmaster@sec.gov
+Anonymous FTP:         ftp://ftp.sec.gov/edgar/
+
+
+
+
+Form Type   Company Name                                                  CIK
+      Date Filed  File Name
+---------------------------------------------------------------------------------------------------------------------------------------------
+4                908 Devices Inc.                                              1555279     20260925    edgar/data/1555279/0001535264-26-000053.txt
+4                AWM Investment Company, Inc.                                  1535264     20260925    edgar/data/1535264/0001535264-26-000053.txt
+4                ABBOTT LABORATORIES                                           1800        20260925    edgar/data/1800/0001306119-26-000009.txt
+4                Conroy Kevin T                                                1306119     20260925    edgar/data/1306119/0001306119-26-000009.txt
+4                ACI WORLDWIDE, INC.                                           935036      20260925    edgar/data/935036/0002080452-26-000013.txt
+4                Leibrock Robert William                                       2080452     20260925    edgar/data/2080452/0002080452-26-000013.txt
+4                BERKSHIRE HATHAWAY INC                                        1067983     20260925    edgar/data/1067983/0001193125-26-403089.txt
+4                BUFFETT WARREN E                                              315090      20260925    edgar/data/315090/0001193125-26-403089.txt
+4                LENNAR CORP /NEW/                                             920760      20260925    edgar/data/920760/0001193125-26-403089.txt
+SCHEDULE 13D     Amster Howard                                                 904853      20260925    edgar/data/904853/0000904853-26-000006.txt
+SCHEDULE 13D     Electra Therapeutics, Inc.                                    2088082     20260925    edgar/data/2088082/0000947871-26-000898.txt
+SCHEDULE 13D     FMC CORP                                                      37785       20260925    edgar/data/37785/0001140361-26-037699.txt
+SCHEDULE 13D     ORBIMED ADVISORS LLC                                          1055951     20260925    edgar/data/1055951/0000947871-26-000898.txt
+SCHEDULE 13D     REDWOOD TRUST INC                                             930236      20260925    edgar/data/930236/0000904853-26-000006.txt
+SCHEDULE 13D     Tessenderlo Group NV                                          2150441     20260925    edgar/data/2150441/0001140361-26-037699.txt
+SCHEDULE 13D/A   ADURO CLEAN TECHNOLOGIES INC.                                 1863934     20260925    edgar/data/1863934/0001062993-26-005078.txt
+SCHEDULE 13D/A   AJB Investment Fund II, LP                                    1536588     20260925    edgar/data/1536588/0001536588-26-000035.txt
+10-Q             CID Holdco, Inc.                                              2033770     20260925    edgar/data/2033770/0001213900-26-103514.txt
+10-Q             SCHOLASTIC CORP                                               866729      20260925    edgar/data/866729/0000866729-26-000025.txt

@@ -20,6 +20,8 @@ export type PanelActions = {
   close: (id: PanelId) => void;
   move: (id: PanelId, direction: "left" | "right" | "split") => void;
   resize: (id: PanelId, delta: number) => void;
+  /** Open (or focus) another panel, e.g. a hand-off from one lens to the panel that owns its evidence. */
+  open?: (id: PanelId) => void;
 };
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
@@ -109,27 +111,29 @@ const REASONS: Record<string, string> = {
 };
 export const reasonText = (code: string | null | undefined) => (code && (REASONS[code] ?? code.replace(/_/g, " ").toLowerCase())) || "";
 
-export function StateBadge({ state }: { state: PanelState | string }) {
-  return <span className={`screener-panel-state state-${state.toLowerCase()}`}>{STATE_LABELS[state as PanelState] ?? state}</span>;
+export function StateBadge({ state, label }: { state: PanelState | string; label?: string }) {
+  return <span className={`screener-panel-state state-${state.toLowerCase()}`}>{label ?? STATE_LABELS[state as PanelState] ?? state}</span>;
 }
 
 type FrameProps = {
   id: PanelId;
   detail?: ReactNode;
   state?: PanelState | string | null;
+  /** Plain-language label for a state outside the market-data vocabulary (e.g. S12 disclosure states). */
+  stateLabel?: string;
   clock?: ReactNode;
   children: ReactNode;
 };
 
 /** Compact panel header: title, instrument · class · provider, state, and the panel's own clock. */
-export function PanelFrame({ id, detail, state, clock, children }: FrameProps) {
+export function PanelFrame({ id, detail, state, stateLabel, clock, children }: FrameProps) {
   const { row, actions } = useSelection();
   const title = PANEL_TITLES[id];
   return <section className="screener-panel" id={`screener-panel-${id}`} tabIndex={-1} aria-label={`${title}${row ? ` for ${row.symbol}` : ""}`}>
     <header className="screener-panel-header">
       <div className="screener-panel-title"><h2>{title}</h2>
         <span className="screener-panel-meta">{row ? row.symbol : "No selection"}{detail ? <> · {detail}</> : null}</span></div>
-      <div className="screener-panel-status">{state ? <StateBadge state={state} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
+      <div className="screener-panel-status">{state ? <StateBadge state={state} label={stateLabel} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
       <div className="screener-panel-actions" role="group" aria-label={`${title} layout`}>
         <button type="button" onClick={() => actions.move(id, "left")} aria-label={`Move ${title} to the previous group`} title="Move to previous group">‹</button>
         <button type="button" onClick={() => actions.move(id, "right")} aria-label={`Move ${title} to the next group`} title="Move to next group">›</button>

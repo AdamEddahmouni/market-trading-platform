@@ -25,7 +25,10 @@
 .screener-panel-status{display:flex;align-items:center;gap:7px;margin-left:auto;min-width:0;white-space:nowrap}
 .screener-panel-clock{overflow:hidden;color:#7d8fa3;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .screener-panel-state{padding:1px 5px;border:1px solid #3a4b5e;border-radius:2px;color:#b4c3d3;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.screener-panel-state.state-current{border-color:#2f6a55;color:#78d6ad}
+.screener-panel-state.state-current,.screener-panel-state.state-publication_current,.screener-panel-state.state-current_as_filed{border-color:#2f6a55;color:#78d6ad}
+.screener-panel-state.state-pending{border-color:#3b536b;color:#9fc9ff}
+.screener-panel-state.state-not_configured,.screener-panel-state.state-live_disabled{border-color:#7a5c24;color:#f0c36b}
+.screener-panel-state.state-source_error{border-color:#7a3f47;color:#f0a0a8}
 .screener-panel-state.state-session_closed,.screener-panel-state.state-connecting{border-color:#3b536b;color:#9fc9ff}
 .screener-panel-state.state-stale,.screener-panel-state.state-partial,.screener-panel-state.state-subscription_busy{border-color:#7a5c24;color:#f0c36b}
 .screener-panel-state.state-invalid,.screener-panel-state.state-disconnected,.screener-panel-state.state-not_entitled,.screener-panel-state.state-unavailable{border-color:#7a3f47;color:#f0a0a8}

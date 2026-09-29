@@ -142,6 +142,7 @@
         "src/market_platform_foundation/nasdaq_regsho",
         "src/market_platform_foundation/nyse_regsho",
         "src/market_platform_foundation/news",
+        "src/market_platform_foundation/public_records",
         "src/market_platform_foundation/sec_edgar",
         "src/market_platform_foundation/sec_ftd",
         "src/market_platform_foundation/weather"
