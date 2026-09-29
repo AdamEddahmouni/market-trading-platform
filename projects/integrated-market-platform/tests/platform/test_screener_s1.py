@@ -21,7 +21,7 @@ class Source:
 
     def fetch_export(self, *, filter_expr: str, columns: str):
         self.calls += 1
-        assert filter_expr == "geo_usa,ind_stocksonly"
+        assert filter_expr == "geo_usa"  # S13: fund exclusion is an IMP admission rule, not a Finviz filter
         assert columns == SCREENER_COLUMNS
         return {
             "success": self.success,

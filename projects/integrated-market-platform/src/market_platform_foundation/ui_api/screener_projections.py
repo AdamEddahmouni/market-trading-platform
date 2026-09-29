@@ -19,12 +19,17 @@ from ..finviz.symbols import finviz_to_canonical
 from ..market_data.live_runtime import get_live_runtime
 from ..market_data.subscription_manager import SubscriptionPriority
 from ..market_sessions import us_equity_session_label
+from .screener_admission import UNAVAILABLE_REFERENCE, ClassificationReference, admission_summary, admit_equity
 from .screener_filters import apply_filters, field_value
 from .screener_query import DEFAULT_PAGE_LIMIT, order_rows, page_payload, parse_query
 
 SCHEMA_VERSION = "screener/1.0.0"
 UNIVERSE = "US_EQUITIES"
-FILTER = "geo_usa,ind_stocksonly"
+# S13: the export is every US listing, including funds. Admission (ETFs out,
+# REITs / closed-end funds / BDCs in) is an IMP rule in screener_admission,
+# not Finviz's opaque "Stocks only (ex-Funds)" filter; the same export is the
+# classification reference that keeps REITs and CEFs out of US_ETFS.
+FILTER = "geo_usa"
 # Verified export IDs: ticker, company, sector, industry, country, cap, float,
 # short float, short ratio, RSI, RVOL, price, change, and volume.
 SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
@@ -81,7 +86,7 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     }
 
 
-def _snapshot_row(row: FinvizScreenerRow, as_of: str) -> dict[str, Any]:
+def _snapshot_row(row: FinvizScreenerRow, as_of: str, classification: dict[str, Any] | None = None) -> dict[str, Any]:
     identity = finviz_to_canonical(row.ticker)
     fields = {
         name: {
@@ -106,6 +111,8 @@ def _snapshot_row(row: FinvizScreenerRow, as_of: str) -> dict[str, Any]:
         "country": row.country or None,
         "earnings_date": row.earnings_date or None,
         "recommendation": row.recommendation or None,
+        # S13 provenance: why this listing is in US Equities (backend/debug metadata).
+        "classification": classification or admit_equity(row, as_of=as_of).classification,
         "fields": fields,
     }
 
@@ -130,6 +137,8 @@ class ScreenerService:
         self._as_of: str | None = None
         self._last_fetch = 0.0
         self._error: str | None = None
+        self._reference: ClassificationReference = UNAVAILABLE_REFERENCE
+        self._admission: dict[str, Any] | None = None
         self._previous: tuple[str | None, list[dict[str, Any]]] = (None, [])
         self._ordered: OrderedDict[tuple[str | None, str], list[dict[str, Any]]] = OrderedDict()
         self._clients: dict[str, tuple[set[str], float, Any]] = {}
@@ -164,7 +173,12 @@ class ScreenerService:
             as_of = str(export.get("received_at") or self._now())
             if self._as_of is not None and self._as_of != as_of:
                 self._previous = (self._as_of, self._rows)
-            self._rows = [_snapshot_row(row, as_of) for row in export["rows"]]
+            decisions = [(row, admit_equity(row, as_of=as_of)) for row in export["rows"]]
+            self._rows = [_snapshot_row(row, as_of, decision.classification)
+                          for row, decision in decisions if decision.admitted]
+            self._reference = ClassificationReference.build(export["rows"], as_of=as_of)
+            self._admission = admission_summary(UNIVERSE, (decision for _row, decision in decisions),
+                                                reference_as_of=as_of)
             self._as_of = as_of
             self._ordered.clear()
             self._error = None
@@ -214,6 +228,7 @@ class ScreenerService:
                 "snapshot": None,
                 "result_set_id": as_of,
                 "unfiltered_count": len(source_rows),
+                "admission": self._admission,
                 "provider_health": [{
                     "provider": "FINVIZ_ELITE",
                     "state": "DEGRADED" if self._error and self._rows else "UNAVAILABLE" if self._error else "HEALTHY",
@@ -222,6 +237,22 @@ class ScreenerService:
                 "source_error": self._error if not self._rows else None,
                 **page_payload(query, ordered),
             }
+
+    def classification_reference(self) -> ClassificationReference:
+        """The current export's classification of every US listing (the ETF admission reference)."""
+
+        with self._lock:
+            self._refresh()
+            reference = self._reference
+            # A failed refresh keeps the last good classification (as it keeps the rows), with the error attached.
+            if not reference.available:
+                return ClassificationReference(None, {}, self._error or "SOURCE_UNAVAILABLE")
+            return ClassificationReference(reference.as_of, reference.entries, self._error, reference.fingerprint)
+
+    def admission_audit(self) -> dict[str, Any] | None:
+        with self._lock:
+            self._refresh()
+            return self._admission
 
     def row_for(self, instrument_id: str) -> tuple[dict[str, Any] | None, str | None]:
         """One current snapshot row by canonical ID (no filters/search), plus source error."""

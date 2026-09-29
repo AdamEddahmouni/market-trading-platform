@@ -394,7 +394,9 @@ open in every retry, including the same sequence.
   recipients are included and named, generic names are refused.
 - The ETF universe catalog (Moomoo) includes some REITs, closed-end funds, and
   trusts (e.g. EQIX, WY, AIO); the ETF Congress view matches them because they
-  are universe members. This predates S12 and is tracked separately.
+  are universe members. This predates S12 and is corrected at the source in
+  [Screener S13](SCREENER_S13_UNIVERSE_INTEGRITY.md); the ETF views follow the
+  corrected universe with no downstream special case.
 - Large prints carry no participant identity; S12 links to Order Flow and never
   labels them institutional.
 - Cold Congress & Government panels take 5–8 s, bounded by the government APIs.

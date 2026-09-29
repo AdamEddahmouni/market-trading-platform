@@ -43,6 +43,30 @@ The registry holds exactly these five. Crypto rows are venue-qualified spot
 pairs (XA-01 `CRYPTO_PAIR`, e.g. `BTC/USD` on Kraken): one venue's market, never
 a consolidated crypto price.
 
+### Membership (Screener S13)
+
+Membership is decided by recorded evidence, never by which provider endpoint
+returned a row ([Screener S13](SCREENER_S13_UNIVERSE_INTEGRITY.md)):
+
+- `US_EQUITIES`: every US-listed security (Finviz `geo_usa`) that the
+  reference does not classify as an exchange-traded fund. REITs, closed-end
+  funds, BDCs, royalty trusts, and SPAC shells are listed equities, each with a
+  recorded category.
+- `US_ETFS`: exchange-traded funds only. The provider type must be `ETF`
+  **and** the reference must classify the listing as an exchange-traded fund;
+  anything unresolved is rejected (fail-closed). Bond ETFs are ETFs, never
+  `BONDS`.
+- `FUTURES`: the current dated lead contract of each provider main alias.
+  Treasury futures are futures, never `BONDS`.
+- `BONDS`: CUSIP-identified marketable Treasury securities. Curve points are
+  reference fields, never rows.
+- `CRYPTO`: venue-qualified spot pairs. Derivatives and tokenized assets are
+  excluded.
+
+An instrument belongs to one core universe; `US_EQUITIES` and `US_ETFS` are
+disjoint by construction. `tests/platform/test_screener_s13.py` enforces the
+cross-universe invariants.
+
 Inside a universe, categories are filters and views, never new universes.
 For example, Treasuries, corporate bonds, agency debt, and municipals are
 categories inside `BONDS`; commodity futures families are categories inside

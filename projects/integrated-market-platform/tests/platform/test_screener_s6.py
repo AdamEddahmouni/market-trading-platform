@@ -6,6 +6,7 @@ import sys
 import unittest
 from datetime import UTC, date, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -22,10 +23,12 @@ from market_platform_foundation.ui_api.screener_query import (  # noqa: E402
 from market_platform_foundation.ui_api.screener_snapshot import (  # noqa: E402
     SNAPSHOT_RETAINED, SNAPSHOT_TTL_SECONDS, snapshot_values,
 )
+from market_platform_foundation.ui_api.screener_admission import ClassificationReference  # noqa: E402
 from market_platform_foundation.ui_api.screener_universes import FUTURES, US_EQUITIES, US_ETFS  # noqa: E402
 
 TODAY = date(2026, 9, 27)
 AS_OF = "2026-09-27T12:00:00Z"
+REFERENCE_AS_OF = "2026-09-27T11:58:00Z"
 WALL = datetime(2026, 9, 27, 16, 0, tzinfo=UTC)
 FRESH = "2026-09-25 16:00:00"
 
@@ -74,8 +77,21 @@ class EtfTransport:
                 "reason_code": None}
 
 
+def etf_reference(symbols) -> ClassificationReference:
+    """S13: Finviz evidence that each listing is an exchange-traded fund (ETF admission needs it)."""
+
+    return ClassificationReference.build(
+        [SimpleNamespace(ticker=symbol, sector="Financial", industry="Exchange Traded Fund", country="USA")
+         for symbol in symbols], as_of=REFERENCE_AS_OF)
+
+
 def service_for(transport: object, clock: Clock | None = None) -> MultiUniverseScreener:
-    return MultiUniverseScreener(transport_getter=lambda: transport, today=lambda: TODAY, now=lambda: AS_OF,
+    def reference() -> ClassificationReference:
+        catalog = transport.fetch_etf_catalog() if hasattr(transport, "fetch_etf_catalog") else {"rows": []}
+        return etf_reference(row["code"][3:] for row in catalog["rows"] or [])
+
+    return MultiUniverseScreener(transport_getter=lambda: transport, reference_getter=reference,
+                                 today=lambda: TODAY, now=lambda: AS_OF,
                                  clock=clock or Clock(), wall=lambda: WALL)
 
 
