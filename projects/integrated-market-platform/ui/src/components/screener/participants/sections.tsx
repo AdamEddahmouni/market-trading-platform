@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import type { CongressTransaction, ParticipantInstrument, ParticipantSection, PositioningReport } from "../../../api/screenerParticipants";
-import { amountText, ClassTag, CongressTable, count, money, reasonText, short, signed, SourceLink, stamp, StateTag } from "./participantFormat";
+import { amountText, ClassTag, CongressTable, count, memberTitle, money, reasonText, short, signed, SourceLink, stamp, StateTag, stateText } from "./participantFormat";
 
 /** Section payload shapes (the API schema keeps sections open; these are what S12 sections carry). */
 type Clocks = { accession: string; form_type: string; filing_date: string | null; accepted_at: string | null; available_at: string | null;
@@ -96,12 +96,29 @@ export function RecentFilings({ section }: { section: ParticipantSection }) {
       <SourceLink href={filing.source_url}>{filing.form_type}</SourceLink> · <FilingClock filing={filing} /></li>)}</ul></Section>;
 }
 
+type IndexStatus = { refresh_state?: string; refresh_reason?: string | null; indexed_through?: string | null; generated_at?: string | null;
+  source_dataset_count?: number; managed?: boolean };
+const REFRESH_TEXT: Record<string, string> = { CURRENT_AS_FILED: "current for published SEC data sets", REFRESH_AVAILABLE: "update available",
+  REFRESHING: "refreshing (previous index served)", SOURCE_ERROR: "SEC list unavailable", UNCHECKED: "not yet checked", INDEX_INVALID: "index invalid",
+  UNMANAGED: "manual build (no refresh)", NOT_CONFIGURED: "not configured" };
+
+/** S14: what the local 13F index holds and whether a newer published data set exists. Publication-driven, never live. */
+function ThirteenFIndexStatus({ index, compact }: { index: IndexStatus; compact: boolean }) {
+  if (!index.refresh_state) return null;
+  const refresh = REFRESH_TEXT[index.refresh_state] ?? stateText(index.refresh_state);
+  if (compact) return index.indexed_through ? <p className="participant-note">13F data sets indexed through {index.indexed_through} · {refresh}.</p> : null;
+  return <p className="participant-note" aria-label="13F index status" title={index.refresh_reason ? reasonText(index.refresh_reason) : undefined}>
+    13F index: data sets indexed through {index.indexed_through ?? "—"}{index.source_dataset_count ? ` (${index.source_dataset_count} data sets)` : ""}
+    {" "}· generated {stamp(index.generated_at)} · refresh: {refresh}.</p>;
+}
+
 export function Holdings13F({ section, compact }: { section: ParticipantSection; compact: boolean }) {
   const data = as<{ period?: string; prior_period?: string | null; holder_count?: number; filing_deadline?: string;
-    change_counts?: Record<string, number>; holders?: Holder[]; note?: string; source_url?: string }>(section);
+    change_counts?: Record<string, number>; holders?: Holder[]; note?: string; source_url?: string; index?: IndexStatus }>(section);
   const holders = (data.holders ?? []).slice(0, compact ? 3 : undefined);
   return <Section title="13F holdings (quarter-end)" state={data.state} reason={data.reason} cls="OBSERVED">
     <StateNote section={data} empty="No 13F lines for this issuer's CUSIP in the loaded quarters." />
+    {data.index && <ThirteenFIndexStatus index={data.index} compact={compact} />}
     {data.period && <p className="participant-note">As of quarter end {data.period}{data.prior_period ? ` · compared with ${data.prior_period}` : ""} ·
       {" "}{count(data.holder_count)} reporting managers{data.state === "PARTIAL" ? ` · filing window open until ${data.filing_deadline}` : ""}.
       A quarter-end holding filed weeks later is not a live position.</p>}
@@ -155,14 +172,34 @@ export function FuturesPositioning({ section, compact }: { section: ParticipantS
   </Section>;
 }
 
+type ChamberSource = { id: string; chamber: string; state: string; reason: string | null };
+type HouseCoverage = { parsed?: number; partially_parsed?: number; scanned_unparsed?: number; failed?: number; loading?: number };
+
+/** S14: each chamber's source state and read coverage, side by side (one failing source never hides the other). */
+export function ChamberCoverage({ sources, house }: { sources: ChamberSource[]; house?: HouseCoverage | null }) {
+  return <ul className="participant-list" aria-label="Congressional source coverage">{sources.map((source) => {
+    const counts = source.chamber === "HOUSE" && house && ["PUBLICATION_CURRENT", "PARTIAL"].includes(source.state)
+      ? [`${count(house.parsed)} parsed`, house.partially_parsed ? `${count(house.partially_parsed)} partly parsed` : null,
+        `${count(house.scanned_unparsed)} scanned/unparsed`, house.failed ? `${count(house.failed)} unreadable` : null,
+        house.loading ? `${count(house.loading)} loading` : null].filter(Boolean).join(" · ") : null;
+    return <li key={source.id} title={source.reason ? reasonText(source.reason) : undefined}>
+      {source.chamber === "HOUSE" ? "House" : "Senate"} · {stateText(source.state)}{counts ? ` · ${counts}` : ""}</li>;
+  })}</ul>;
+}
+
 export function Congressional({ section, compact }: { section: ParticipantSection; compact: boolean }) {
-  const data = as<{ transactions?: CongressTransaction[]; total?: number; window_days?: number; note?: string }>(section);
+  const data = as<{ transactions?: CongressTransaction[]; total?: number; window_days?: number; note?: string; chambers?: string[];
+    sources?: ChamberSource[]; coverage?: { house?: HouseCoverage } }>(section);
   const rows = data.transactions ?? [];
+  const chambers = (data.chambers ?? ["HOUSE"]).includes("SENATE") ? "House or Senate" : "House";
   return <Section title="Congressional disclosures" state={data.state} reason={data.reason} cls="OBSERVED">
-    <StateNote section={data} empty={`No House transactions disclosing this ticker were filed in the last ${data.window_days ?? 90} days.`} />
-    {rows.length > 0 && (compact ? <ul className="participant-list">{rows.map((row) => <li key={row.id}>
+    <StateNote section={data} empty={`No ${chambers} transactions disclosing this ticker were filed in the last ${data.window_days ?? 90} days.`} />
+    {data.sources && !compact && <ChamberCoverage sources={data.sources} house={data.coverage?.house} />}
+    {data.sources && compact && data.sources.some((source) => source.state !== "PUBLICATION_CURRENT" && source.state !== "READY") &&
+      <p className="participant-note">{data.sources.map((source) => `${source.chamber === "HOUSE" ? "House" : "Senate"}: ${stateText(source.state).toLowerCase()}`).join(" · ")}</p>}
+    {rows.length > 0 && (compact ? <ul className="participant-list">{rows.map((row) => <li key={row.id} title={memberTitle(row.member)}>
       {row.member.name} · {row.transaction_type.replace("_", " ").toLowerCase()} · {amountText(row.amount)} · traded {row.transaction_date ?? "—"} · filed {row.filing_date}</li>)}</ul>
-      : <CongressTable rows={rows} caption="House transactions disclosing this ticker" showInstrument={false} />)}
+      : <CongressTable rows={rows} caption={`${chambers} transactions disclosing this ticker`} showInstrument={false} />)}
     {data.total != null && data.total > rows.length && <p className="participant-note">{data.total - rows.length} more in the panel.</p>}
     {!compact && data.note && <p className="participant-note">{data.note}</p>}
   </Section>;

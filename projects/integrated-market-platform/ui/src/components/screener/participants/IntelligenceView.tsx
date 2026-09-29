@@ -3,6 +3,7 @@ import type { ScreenerUniverse } from "../../../api/screener";
 import { CONGRESS_WINDOWS, fetchCongressView, fetchOwnershipView, fetchPositioningView, OWNERSHIP_WINDOWS,
   PARTICIPANT_PAGE_LIMIT, type ParticipantProvider } from "../../../api/screenerParticipants";
 import { CongressTable, count, FAMILY_TEXT, Providers, reasonText, SourceLink, stamp, StateTag, TYPE_TEXT } from "./participantFormat";
+import { ChamberCoverage } from "./sections";
 import type { IntelView } from "./participantParams";
 import { PositioningTable } from "./sections";
 import "../news/news.css";
@@ -116,7 +117,8 @@ function CongressPane({ universe, params, onUpdate }: { universe: ScreenerUniver
       <label>Disclosed band from <select aria-label="Minimum disclosed amount" value={minAmount ?? ""} onChange={(event) => onUpdate({ iamt: event.target.value || null, ioff: null })}>
         <option value="">Any</option>{(data?.filters.amount_floors ?? []).map((item) => <option key={item} value={item}>${count(item)}+</option>)}</select></label>
       <label>Member <select aria-label="Member" value={member ?? ""} onChange={(event) => onUpdate({ imem: event.target.value || null, ioff: null })}>
-        <option value="">All members</option>{(data?.filters.members ?? []).map((item) => <option key={item.id} value={item.id}>{item.name} ({item.state_district})</option>)}</select></label>
+        <option value="">All members</option>{(data?.filters.members ?? []).map((item) => <option key={item.id} value={item.id}
+          title={item.filed_as && item.filed_as.length > 1 ? `Filed as: ${item.filed_as.join("; ")}` : undefined}>{item.name} ({item.state_district || (item.chamber === "SENATE" ? "Senate" : "—")})</option>)}</select></label>
       <label>Sort <select aria-label="Congress sort" value={sort} onChange={(event) => onUpdate({ isort: event.target.value, ioff: null })}>
         {(data?.sorts ?? [{ id: "filed", label: "Latest filed" }]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
     </div>
@@ -131,6 +133,9 @@ function CongressPane({ universe, params, onUpdate }: { universe: ScreenerUniver
           {" "}{count(coverage.not_machine_readable as number)} scanned (open on the Clerk site){coverage.loading ? ` · ${coverage.loading} still loading` : ""} ·
           {" "}{count(coverage.matched as number)} transactions match this universe · {count(coverage.ticker_outside_universe as number)} name other tickers ·
           {" "}{count(coverage.no_disclosed_ticker as number)} have no ticker.</p>
+        <ChamberCoverage sources={data.providers.filter((item) => item.family === "CONGRESSIONAL").map((item) => ({ id: item.id,
+          chamber: item.id === "senate_efd" ? "SENATE" : "HOUSE", state: item.state, reason: item.reason }))}
+          house={coverage.house as { parsed?: number } | undefined} />
         <p className="participant-note">{data.time_note}</p>
         <p className="participant-note">{data.neutrality_note}</p>
         <ul className="participant-boundaries" aria-label="Evidence boundaries">{data.boundaries.map((item) => <li key={item}>{item}</li>)}</ul>

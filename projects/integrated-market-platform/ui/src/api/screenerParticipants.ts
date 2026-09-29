@@ -28,9 +28,15 @@ const Amount = z.object({ min_amount: z.number().nullable(), max_amount: z.numbe
   exact_value_disclosed: z.literal(false) }).passthrough();
 export type DisclosedAmount = z.infer<typeof Amount>;
 
+// S14: `name` is the canonical display name when identity is proven on evidence; `source_name` is always the
+// spelling as filed. Unproven identities keep the filed spelling as `name`.
+const Member = z.object({ name: z.string(), state_district: z.string(), member_id: z.string(),
+  source_name: z.string().optional(), canonical_member_id: z.string().optional(), canonical_name: z.string().optional(),
+  resolution: z.string().optional(), basis: z.string().optional(), aliases: z.array(z.string()).optional() }).passthrough();
+export type CongressMember = z.infer<typeof Member>;
 const CongressRow = z.object({
   id: z.string(), chamber: z.string(),
-  member: z.object({ name: z.string(), state_district: z.string(), member_id: z.string() }).passthrough(),
+  member: Member,
   owner: z.string(), asset_description: z.string(), asset_type_code: z.string().nullable(),
   disclosed_ticker: z.string().nullable(), transaction_type: z.string(),
   transaction_date: z.string().nullable(), notification_date: z.string().nullable(), filing_date: z.string(),
@@ -52,7 +58,8 @@ export const CongressViewSchema = z.object({
   filters: z.object({
     transaction_types: z.array(z.object({ id: z.string(), count: z.number() }).passthrough()),
     amount_floors: z.array(z.number()),
-    members: z.array(z.object({ id: z.string(), name: z.string(), state_district: z.string() }).passthrough()),
+    members: z.array(z.object({ id: z.string(), name: z.string(), state_district: z.string(),
+      filed_as: z.array(z.string()).optional(), chamber: z.string().optional() }).passthrough()),
     applied: z.object({ transaction_type: z.string().nullable(), min_amount: z.number().nullable(),
       member: z.string().nullable() }).passthrough(),
   }).passthrough(),

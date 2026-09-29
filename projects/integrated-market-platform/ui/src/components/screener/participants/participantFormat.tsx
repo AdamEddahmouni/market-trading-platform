@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CongressTransaction, DisclosedAmount, ParticipantProvider } from "../../../api/screenerParticipants";
+import type { CongressMember, CongressTransaction, DisclosedAmount, ParticipantProvider } from "../../../api/screenerParticipants";
 
 /** Plain-language states. A provider state is never presented as an absence of disclosures. */
 const STATE_TEXT: Record<string, string> = {
@@ -7,6 +7,9 @@ const STATE_TEXT: Record<string, string> = {
   PARTIAL: "Partial", PENDING: "Loading", NOT_CONFIGURED: "Not configured", LIVE_DISABLED: "Live data off",
   UNAVAILABLE: "Unavailable", SOURCE_ERROR: "Source error", NO_MATCH: "No exact match", NO_DISCLOSURES: "No disclosures",
   NOT_APPLICABLE: "Not applicable", NOT_LOADED: "Not loaded", SEE_ORDER_FLOW: "See Order Flow",
+  // S14: Senate eFD access boundary and managed 13F index (refresh states say nothing about liveness).
+  TERMS_ACCEPTANCE_REQUIRED: "Terms acceptance required", READY: "Imported", INDEX_INVALID: "Index invalid",
+  REFRESHING: "Refreshing", REFRESH_AVAILABLE: "Update available", UNCHECKED: "Not checked", UNMANAGED: "Manual build",
 };
 export const stateText = (state: string) => STATE_TEXT[state] ?? state.replace(/_/g, " ").toLowerCase();
 
@@ -14,9 +17,16 @@ const REASON_TEXT: Record<string, string> = {
   IMP_EDGAR_LIVE_NOT_SET: "SEC EDGAR live access is off (IMP_EDGAR_LIVE)",
   SEC_USER_AGENT_NOT_SET: "SEC requires a User-Agent with a contact email (SEC_USER_AGENT)",
   IMP_PUBLIC_RECORDS_LIVE_NOT_SET: "Official public-record access is off (IMP_PUBLIC_RECORDS_LIVE)",
-  SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE: "Senate eFD requires interactive terms acceptance; not integrated",
+  SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE: "Senate eFD needs the operator to accept its terms and import reports",
+  OPERATOR_ATTESTATION_MISSING: "Senate import has no operator terms-acceptance record", SENATE_EFD_IMPORT_DIR_MISSING: "Senate import folder not found",
+  SOME_REPORTS_FAILED: "Some imported reports could not be read", NO_REPORT_PARSED: "No imported report could be read",
+  SENATE_PARTIAL: "Some Senate reports could not be read", HOUSE_SOURCE_ERROR: "House source error; Senate shown",
+  HOUSE_LIVE_DISABLED: "House access off; Senate shown", HOUSE_NOT_CONFIGURED: "House not configured; Senate shown",
   THIRTEEN_F_INDEX_NOT_BUILT: "Local 13F index not built",
-  HOUSE_ONLY: "House disclosures only; Senate not integrated",
+  INDEX_ENDS_BEFORE_FILING_DEADLINE: "Index data sets end before this quarter's filing deadline",
+  NEWER_SEC_DATASET_PUBLISHED: "A newer SEC data set is published", SERVING_PREVIOUS_GENERATION: "Refresh running; previous index served",
+  NEVER_CHECKED: "Not yet checked against the SEC list", LAST_CHECK_OLDER_THAN_7_DAYS: "Last SEC check is over 7 days old",
+  HOUSE_ONLY: "House disclosures only; Senate not imported",
   LOADING_DOCUMENTS: "Official documents still loading", LOADING_INDEX: "Official index loading", FETCHING: "Fetching",
   TICKER_NOT_IN_SEC_MAP: "Ticker not in the SEC company map", ISSUER_CUSIP_UNKNOWN: "Issuer CUSIP not known from a filing",
   ROOT_NOT_MAPPED_TO_A_CFTC_MARKET: "Root not mapped to a CFTC market", ENTITY_NAME_TOO_GENERIC: "Company name too generic to match",
@@ -72,6 +82,13 @@ export function Boundaries({ items }: { items: string[] }) {
   return <ul className="participant-boundaries" aria-label="Evidence boundaries">{items.map((item) => <li key={item}>{item}</li>)}</ul>;
 }
 
+/** Seat (House) or chamber (Senate). */
+const seatText = (member: CongressMember, chamber: string) => member.state_district || (chamber === "SENATE" ? "Senate" : "—");
+/** Provenance for a member cell: the spelling as filed and how identity was established. */
+export const memberTitle = (member: CongressMember) => [member.source_name && member.source_name !== member.name ? `Filed as: ${member.source_name}` : null,
+  member.resolution ? `Identity: ${member.resolution.replace(/_/g, " ").toLowerCase()}${member.basis ? ` (${member.basis.replace(/_/g, " ").toLowerCase()})` : ""}` : null]
+  .filter(Boolean).join(" · ") || undefined;
+
 /** Congressional transactions as filed: clocks kept apart, bands never points, no member characterization. */
 export function CongressTable({ rows, caption, showInstrument = true }: { rows: CongressTransaction[]; caption: string; showInstrument?: boolean }) {
   return <table className="news-table-plain participant-table"><caption className="sr-only">{caption}</caption>
@@ -81,7 +98,7 @@ export function CongressTable({ rows, caption, showInstrument = true }: { rows: 
       <th scope="col">Source</th></tr></thead>
     <tbody>{rows.map((row) => <tr key={row.id}>
       {showInstrument && <th scope="row">{row.instrument?.symbol ?? row.disclosed_ticker ?? "—"}{row.instrument?.is_option ? <small> · option</small> : null}</th>}
-      <td>{row.member.name} <small>({row.member.state_district})</small></td>
+      <td title={memberTitle(row.member)}>{row.member.name} <small>({seatText(row.member, row.chamber)})</small></td>
       <td>{OWNER_TEXT[row.owner] ?? row.owner}</td>
       <td>{TYPE_TEXT[row.transaction_type] ?? row.transaction_type}</td>
       <td className="news-ellipsis" title={row.asset_description}>{row.asset_description}</td>

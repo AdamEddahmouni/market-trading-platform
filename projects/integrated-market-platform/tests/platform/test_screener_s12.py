@@ -252,17 +252,19 @@ class CongressViewTests(unittest.TestCase):
 
     def test_rows_are_disclosures_matched_by_disclosed_ticker(self):
         view = self.view
-        self.assertEqual(view["state"], "PARTIAL")      # House only: the Senate is not integrated
+        self.assertEqual(view["state"], "PARTIAL")      # House only: no Senate import (S14: terms acceptance required)
         self.assertEqual(view["reason"], "HOUSE_ONLY")
         self.assertEqual({item["id"]: item["state"] for item in view["providers"]},
-                         {"house_ptr": "PUBLICATION_CURRENT", "senate_efd": "NOT_CONFIGURED"})
+                         {"house_ptr": "PUBLICATION_CURRENT", "senate_efd": "TERMS_ACCEPTANCE_REQUIRED"})
         symbols = {item["instrument"]["symbol"] for item in view["rows"]}
         self.assertEqual(symbols, {"AMAT", "MSFT", "HWM"})
         amat = next(item for item in view["rows"] if item["instrument"]["symbol"] == "AMAT")
         self.assertEqual(amat["instrument"]["confidence"], "MATCH_EXACT")
         self.assertEqual((amat["transaction_date"], amat["filing_date"], amat["disclosure_lag_days"]),
                          ("2026-08-06", "2026-09-14", 39))
-        self.assertEqual(amat["available_at"], "2026-09-28T14:00:00Z")  # first retrieval is later than the filing day
+        # S14: availability is the end of the (Eastern) filing day; IMP's later first retrieval is its own clock.
+        self.assertEqual(amat["available_at"], "2026-09-15T03:59:59Z")
+        self.assertEqual((amat["retrieved_at"], amat["imp_known_at"]), ("2026-09-28T14:00:00Z", "2026-09-28T14:00:00Z"))
         self.assertFalse(amat["amount"]["exact_value_disclosed"])
         msft_options = [item for item in view["rows"] if item["instrument"]["symbol"] == "MSFT"]
         self.assertTrue(all(item["instrument"]["is_option"] for item in msft_options))
@@ -281,7 +283,10 @@ class CongressViewTests(unittest.TestCase):
         self.assertEqual(view["rows"][0]["amount"]["max_amount"], 1_000_000)
         member = self.view["filters"]["members"][0]["id"]
         only = self.svc.congress_view(universe="US_EQUITIES", member=member)
-        self.assertEqual({item["member"]["member_id"] for item in only["rows"]}, {member})
+        # S14: member filter ids are canonical; an S12 source id still selects the same member.
+        self.assertEqual({item["member"]["canonical_member_id"] for item in only["rows"]}, {member})
+        legacy = only["rows"][0]["member"]["member_id"]
+        self.assertEqual(self.svc.congress_view(universe="US_EQUITIES", member=legacy)["result_count"], only["result_count"])
         text = json.dumps(self.view).lower()
         for banned in ("party", "score", "rank", "smart money"):
             self.assertNotIn(f'"{banned}', text)
@@ -473,7 +478,9 @@ class InstrumentPanelTests(unittest.TestCase):
         # Every state in every payload (overall, sections, providers, filings) is an S12 state: never a generic "CURRENT".
         allowed = {"PUBLICATION_CURRENT", "CURRENT_AS_FILED", "STALE", "PARTIAL", "NOT_CONFIGURED", "UNAVAILABLE",
                    "SOURCE_ERROR", "NO_MATCH", "NO_DISCLOSURES", "PENDING", "LIVE_DISABLED", "NOT_APPLICABLE",
-                   "NOT_LOADED", "SEE_ORDER_FLOW"}
+                   "NOT_LOADED", "SEE_ORDER_FLOW",
+                   # S14 (narrow): Senate eFD access boundary and managed 13F index states.
+                   "TERMS_ACCEPTANCE_REQUIRED", "READY", "INDEX_INVALID", "REFRESHING"}
 
         def states(value, path="$"):
             if isinstance(value, dict):

@@ -8,6 +8,10 @@ User-Agent that names you and a contact email (SEC Fair Access), then:
 
 and start the UI API with ``IMP_13F_INDEX_PATH=<path>.sqlite``. Keep the ZIPs and the
 index outside the repository.
+
+Screener S14: prefer ``tools/sec_edgar/thirteen_f_refresh.py`` (``IMP_13F_DATA_ROOT``),
+which discovers, verifies, rebuilds, and publishes generations atomically. This
+manual build still works and is reported as ``UNMANAGED``.
 """
 
 from __future__ import annotations
