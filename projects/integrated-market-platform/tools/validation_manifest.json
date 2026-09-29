@@ -1541,6 +1541,31 @@
       ]
     },
     {
+      "id": "public_records",
+      "path": "tests/public_records",
+      "classification": "offline",
+      "tiers": [
+        "full"
+      ],
+      "domains": [
+        "sec",
+        "participant"
+      ],
+      "parallel_safety": "PARALLEL_SAFE",
+      "resource_weight": 1,
+      "source_globs": [
+        "src/market_platform_foundation/public_records/**",
+        "tests/fixtures/public_records/**"
+      ],
+      "test_globs": [
+        "tests/public_records/test_*.py"
+      ],
+      "neighbors": [
+        "market_trackers",
+        "sec_edgar"
+      ]
+    },
+    {
       "id": "fixed_income",
       "path": "tests/fixed_income",
       "classification": "offline",

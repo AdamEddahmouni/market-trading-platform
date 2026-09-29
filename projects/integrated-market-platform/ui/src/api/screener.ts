@@ -17,7 +17,7 @@ const RowSchema = z.object({
     venue_id: z.string(),
     asset_class: z.string(),
     instrument_kind: z.string().optional(),
-    tradability: z.string().optional(),
+    tradability: z.string().optional(), intelligence_views: z.array(z.string()).optional(),
   }),
   symbol: z.string(),
   company: z.string(),
@@ -132,7 +132,7 @@ const ScreenerConfigSchema = z.object({
     quote_capability: z.string(), bars_capability: z.string(), panels: z.array(z.string()),
     admitted_asset_classes: z.array(z.string()).optional(), admitted_instrument_kinds: z.array(z.string()).optional(),
     identity_fields: z.array(z.string()).optional(), data_sources: z.array(z.string()).optional(),
-    tradability: z.string().optional(),
+    tradability: z.string().optional(), intelligence_views: z.array(z.string()).optional(),
     fields: z.record(z.object({ execution: z.string(), sortable: z.boolean(), filterable: z.boolean(),
       label: z.string().optional(), unit: z.string().optional() })).optional() })),
   query: z.object({ default_limit: z.number(), max_limit: z.number() }).optional(),
@@ -149,7 +149,8 @@ const ScreenerConfigSchema = z.object({
   panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
-export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news"] as const;
+export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
+  "institutional", "congress_gov"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.

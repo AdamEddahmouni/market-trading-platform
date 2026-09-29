@@ -1,0 +1,287 @@
+{
+ "count": 34,
+ "next": null,
+ "previous": null,
+ "results": [
+  {
+   "filing_uuid": "1f41499b-1d77-4e18-aea8-4d5149fc70fc",
+   "filing_type": "Q2",
+   "filing_type_display": "2nd Quarter - Report",
+   "filing_year": 2026,
+   "filing_period_display": "2nd Quarter (Apr 1 - June 30)",
+   "dt_posted": "2026-07-20T16:51:53-04:00",
+   "income": null,
+   "expenses": "4180000.00",
+   "filing_document_url": "https://lda.gov/filings/public/filing/1f41499b-1d77-4e18-aea8-4d5149fc70fc/print/",
+   "registrant": {
+    "id": 23031,
+    "name": "LOCKHEED MARTIN CORPORATION"
+   },
+   "client": {
+    "id": 129850,
+    "name": "LOCKHEED MARTIN CORPORATION"
+   },
+   "lobbying_activities": [
+    {
+     "general_issue_code": "BUD",
+     "general_issue_code_display": "Budget/Appropriations",
+     "government_entities": [
+      {
+       "name": "Commerce, Dept of (DOC)"
+      },
+      {
+       "name": "Defense, Dept of (DOD)"
+      },
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "Office of Management & Budget (OMB)"
+      },
+      {
+       "name": "SENATE"
+      },
+      {
+       "name": "White House Office"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "DEF",
+     "general_issue_code_display": "Defense",
+     "government_entities": [
+      {
+       "name": "Commerce, Dept of (DOC)"
+      },
+      {
+       "name": "Defense, Dept of (DOD)"
+      },
+      {
+       "name": "Executive Office of the President (EOP)"
+      },
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "Natl Aeronautics & Space Administration (NASA)"
+      },
+      {
+       "name": "Natl Security Council (NSC)"
+      },
+      {
+       "name": "Office of Management & Budget (OMB)"
+      },
+      {
+       "name": "Office of the Vice President of the United States"
+      },
+      {
+       "name": "SENATE"
+      },
+      {
+       "name": "White House Office"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "AER",
+     "general_issue_code_display": "Aerospace",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "HCR",
+     "general_issue_code_display": "Health Issues",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "HOM",
+     "general_issue_code_display": "Homeland Security",
+     "government_entities": [
+      {
+       "name": "Homeland Security, Dept of (DHS)"
+      },
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "INT",
+     "general_issue_code_display": "Intelligence",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "TAX",
+     "general_issue_code_display": "Taxation/Internal Revenue Code",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "TRD",
+     "general_issue_code_display": "Trade (domestic/foreign)",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "filing_uuid": "665b6bbd-b40f-4e87-a282-3e9ad9ec8d2c",
+   "filing_type": "Q2",
+   "filing_type_display": "2nd Quarter - Report",
+   "filing_year": 2026,
+   "filing_period_display": "2nd Quarter (Apr 1 - June 30)",
+   "dt_posted": "2026-07-20T15:26:30-04:00",
+   "income": "80000.00",
+   "expenses": null,
+   "filing_document_url": "https://lda.gov/filings/public/filing/665b6bbd-b40f-4e87-a282-3e9ad9ec8d2c/print/",
+   "registrant": {
+    "id": 401103565,
+    "name": "MICHAEL BEST STRATEGIES LLC"
+   },
+   "client": {
+    "id": 67402,
+    "name": "LOCKHEED MARTIN CORPORATION"
+   },
+   "lobbying_activities": [
+    {
+     "general_issue_code": "DEF",
+     "general_issue_code_display": "Defense",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "Office of Management & Budget (OMB)"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "filing_uuid": "a308da0e-ebe8-4245-9ac0-0626372b8467",
+   "filing_type": "Q2",
+   "filing_type_display": "2nd Quarter - Report",
+   "filing_year": 2026,
+   "filing_period_display": "2nd Quarter (Apr 1 - June 30)",
+   "dt_posted": "2026-07-20T15:17:49-04:00",
+   "income": "30000.00",
+   "expenses": null,
+   "filing_document_url": "https://lda.gov/filings/public/filing/a308da0e-ebe8-4245-9ac0-0626372b8467/print/",
+   "registrant": {
+    "id": 32486,
+    "name": "PUBLIC STRATEGIES WASHINGTON, INC."
+   },
+   "client": {
+    "id": 140639,
+    "name": "LOCKHEED MARTIN"
+   },
+   "lobbying_activities": [
+    {
+     "general_issue_code": "DEF",
+     "general_issue_code_display": "Defense",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "BUD",
+     "general_issue_code_display": "Budget/Appropriations",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    },
+    {
+     "general_issue_code": "TAX",
+     "general_issue_code_display": "Taxation/Internal Revenue Code",
+     "government_entities": [
+      {
+       "name": "HOUSE OF REPRESENTATIVES"
+      },
+      {
+       "name": "SENATE"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "filing_uuid": "6a98dd0d-bab3-4b0e-909e-31fe38cda090",
+   "filing_type": "RR",
+   "filing_type_display": "Registration",
+   "filing_year": 2026,
+   "filing_period_display": "2nd Quarter (Apr 1 - June 30)",
+   "dt_posted": "2026-07-15T11:34:06-04:00",
+   "income": null,
+   "expenses": null,
+   "filing_document_url": "https://lda.gov/filings/public/filing/6a98dd0d-bab3-4b0e-909e-31fe38cda090/print/",
+   "registrant": {
+    "id": 401110345,
+    "name": "POTOMAC STRATEGIC CONSULTING LLC"
+   },
+   "client": {
+    "id": 74038,
+    "name": "LOCKHEED MARTIN CORPORATION"
+   },
+   "lobbying_activities": [
+    {
+     "general_issue_code": "DEF",
+     "general_issue_code_display": "Defense",
+     "government_entities": []
+    },
+    {
+     "general_issue_code": "BUD",
+     "general_issue_code_display": "Budget/Appropriations",
+     "government_entities": []
+    }
+   ]
+  }
+ ]
+}

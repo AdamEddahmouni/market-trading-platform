@@ -9,11 +9,13 @@ import { PreviewNews } from "./news/PreviewNews";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
 
 const PreviewChart = lazy(() => import("./PreviewChart"));
+// S12: loaded only when the Participants tab is opened.
+const PreviewParticipants = lazy(() => import("./participants/PreviewParticipants").then((module) => ({ default: module.PreviewParticipants })));
 
 const TIMEFRAMES = ["1m", "5m", "15m"] as const;
 const SELECTION_SETTLE_MS = 180;
 const SCOPES = [{ id: "EXTENDED", label: "Extended" }, { id: "RTH", label: "RTH" }] as const;
-const TABS = [{ id: "why", label: "Why" }, { id: "key", label: "Key Data" }, { id: "futures", label: "Futures" }, { id: "options", label: "Options" }, { id: "squeeze", label: "Squeeze" }, { id: "news", label: "News" }] as const;
+const TABS = [{ id: "why", label: "Why" }, { id: "key", label: "Key Data" }, { id: "futures", label: "Futures" }, { id: "options", label: "Options" }, { id: "squeeze", label: "Squeeze" }, { id: "news", label: "News" }, { id: "participants", label: "Participants" }] as const;
 type Tab = (typeof TABS)[number]["id"];
 const etTime = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 const etShort = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -73,6 +75,10 @@ export type QuickPreviewProps = {
   /** S11: the universe offers the News & Analysis panel. */
   newsSupported?: boolean;
   onOpenNews?: () => void;
+  /** S12: the universe offers the Institutional & Whale and/or Congress & Government lenses. */
+  institutionalSupported?: boolean;
+  governmentSupported?: boolean;
+  onOpenParticipants?: (lens: "institutional" | "congress_gov") => void;
 };
 
 function SrBar({ price, support, resistance, testing }: { price: number | null; support: ClassifiedZone | null; resistance: ClassifiedZone | null; testing: ClassifiedZone | null }) {
@@ -177,7 +183,7 @@ function Futures({ preview }: { preview: ScreenerPreview }) {
   </div>;
 }
 
-function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay, width, paneRef, onClose, onOpen, optionsSupported = false, onOpenOptions, squeezeSupported = false, onOpenSqueeze, newsSupported = false, onOpenNews }: QuickPreviewProps) {
+function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay, width, paneRef, onClose, onOpen, optionsSupported = false, onOpenOptions, squeezeSupported = false, onOpenSqueeze, newsSupported = false, onOpenNews, institutionalSupported = false, governmentSupported = false, onOpenParticipants }: QuickPreviewProps) {
   const [tab, setTab] = useState<Tab>("why");
   const [timeframe, setTimeframe] = useState<(typeof TIMEFRAMES)[number]>("5m");
   const [scope, setScope] = useState<"EXTENDED" | "RTH">("EXTENDED");
@@ -212,7 +218,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
   const priceSource = livePrice != null ? `L1 live${quote?.age_ms != null ? ` · ${quote.age_ms}ms` : ""}` : data?.levels.price?.source === "LAST_BAR_CLOSE" ? `Last bar close · ${time(data.levels.price.as_of, true)}` : "Snapshot";
   const classified = useMemo(() => data ? classifyZones(data.levels.zones, price, data.levels.min_strength) : null, [data, price]);
   const change = quote?.state === "LIVE" || quote?.state === "DELAYED" ? quote.fields.change_pct?.value ?? row?.fields.change_pct?.value ?? null : row?.fields.change_pct?.value ?? null;
-  const tabs = TABS.filter((item) => (item.id !== "futures" || universe === "US_EQUITIES") && (item.id !== "options" || optionsSupported) && (item.id !== "squeeze" || squeezeSupported) && (item.id !== "news" || newsSupported));
+  const tabs = TABS.filter((item) => (item.id !== "futures" || universe === "US_EQUITIES") && (item.id !== "options" || optionsSupported) && (item.id !== "squeeze" || squeezeSupported) && (item.id !== "news" || newsSupported) && (item.id !== "participants" || institutionalSupported || governmentSupported));
   const onTabKey = (event: KeyboardEvent) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
@@ -221,8 +227,9 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
     setTab(tabs[next].id); tabRefs.current[tabs[next].id]?.focus();
   };
   useEffect(() => {
-    if ((universe !== "US_EQUITIES" && tab === "futures") || (!optionsSupported && tab === "options") || (!squeezeSupported && tab === "squeeze") || (!newsSupported && tab === "news")) setTab("why");
-  }, [universe, tab, optionsSupported, squeezeSupported, newsSupported]);
+    if ((universe !== "US_EQUITIES" && tab === "futures") || (!optionsSupported && tab === "options") || (!squeezeSupported && tab === "squeeze") || (!newsSupported && tab === "news")
+      || (!institutionalSupported && !governmentSupported && tab === "participants")) setTab("why");
+  }, [universe, tab, optionsSupported, squeezeSupported, newsSupported, institutionalSupported, governmentSupported]);
   const bars = data?.bars;
   const chartLabel = bars && bars.bars.length ? `${data.instrument.symbol} ${bars.timeframe} candles, ${bars.bar_count} completed bars to ${time(bars.latest_complete_bar_end, true)}, last close ${money(bars.bars[bars.bars.length - 1].close)}` : "";
   return <aside className={`screener-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef as React.Ref<HTMLElement>} tabIndex={-1}
@@ -266,7 +273,10 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
             {tab === "why" ? <WhyPanel preview={data} screenLabel={screenLabel} universe={universe} /> : tab === "key" ? <KeyData preview={data} quote={quote} />
               : tab === "options" ? <PreviewOptions row={row} universe={universe} onOpenPanel={() => onOpenOptions?.()} />
                 : tab === "squeeze" ? <PreviewSqueeze row={row} settledId={requestId} filters={filters} onOpenPanel={() => onOpenSqueeze?.()} />
-                  : tab === "news" ? <PreviewNews row={row} settledId={requestId} universe={universe} onOpenNews={onOpenNews} /> : <Futures preview={data} />}
+                  : tab === "news" ? <PreviewNews row={row} settledId={requestId} universe={universe} onOpenNews={onOpenNews} />
+                    : tab === "participants" ? <Suspense fallback={<p className="screener-preview-note" role="status">Loading participants…</p>}>
+                      <PreviewParticipants row={row} settledId={requestId} universe={universe} institutional={institutionalSupported}
+                        government={governmentSupported} onOpen={onOpenParticipants} /></Suspense> : <Futures preview={data} />}
           </div>
         </>}
       <footer className="screener-preview-footer"><button type="button" className="screener-control screener-primary" onClick={() => onOpen(row)}>Open Instrument</button></footer>

@@ -29,7 +29,22 @@ TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 TICKER_MAP_TTL_S = 24 * 3600
 SUBMISSIONS_TTL_S = 600
 EVENT_FORMS = ("8-K", "8-K/A", "6-K", "10-Q", "10-K", "10-K/A", "20-F", "S-1", "S-3", "424B1", "424B2", "424B3",
-               "424B4", "424B5", "SC 13D", "SC 13D/A", "SC 13G", "SC 13G/A", "DEF 14A", "4")
+               "424B4", "424B5", "SC 13D", "SC 13D/A", "SC 13G", "SC 13G/A", "SCHEDULE 13D", "SCHEDULE 13D/A",
+               "SCHEDULE 13G", "SCHEDULE 13G/A", "DEF 14A", "4")
+#: Beneficial-ownership schedules (EDGAR form names before and after the December 2024 change).
+BENEFICIAL_FORMS = frozenset({"SC 13D", "SC 13D/A", "SC 13G", "SC 13G/A", "SCHEDULE 13D", "SCHEDULE 13D/A",
+                              "SCHEDULE 13G", "SCHEDULE 13G/A"})
+
+
+def is_issuer_event(filing: FilingEvent, cik: str) -> bool:
+    """An event about this issuer. A company's submissions also list the 13D/13G it filed *as a
+    holder of another company* (submitted under its own CIK); those are not its news."""
+
+    form = filing.form_type.upper()
+    if form not in EVENT_FORMS:
+        return False
+    submitter = filing.normalized_accession.split("-", 1)[0].lstrip("0")
+    return not (form in BENEFICIAL_FORMS and submitter == cik.lstrip("0"))
 
 
 def live_state(env: Callable[[str], str | None] = os.environ.get) -> tuple[str, str | None]:
@@ -125,8 +140,9 @@ class SecFilingNews:
             code = str(exc) if str(exc).startswith("SEC_") else "NETWORK_ERROR"
             return {"success": False, "error": code, "state": "ERROR", "items": [], "received_at": received}
         items = [filing_item(filing, ticker=ticker, retrieved_time=received)
-                 for filing in filings if filing.form_type.upper() in EVENT_FORMS][:40]
+                 for filing in filings if is_issuer_event(filing, cik)][:40]
         return {"success": True, "error": None, "state": "CURRENT", "items": items, "received_at": received}
 
 
-__all__ = ["EVENT_FORMS", "SecFilingNews", "filing_headline", "filing_item", "live_state"]
+__all__ = ["BENEFICIAL_FORMS", "EVENT_FORMS", "SecFilingNews", "filing_headline", "filing_item", "is_issuer_event",
+           "live_state"]

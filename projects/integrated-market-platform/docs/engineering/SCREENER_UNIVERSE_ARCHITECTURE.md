@@ -79,8 +79,9 @@ disclosures:
 
 | Layer | Delivered as |
 |-------|--------------|
-| Whales (large-participant evidence) | views, panels, filters where universe-complete, selected-instrument context, disclosures |
-| Institutions (institutional activity) | the same, across instruments |
+| Whales (large-participant evidence) | views, panels, filters where universe-complete, selected-instrument context, disclosures; implemented in [Screener S12](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md) as CFTC positioning (Futures view and panel) with large prints linked to Order Flow, participant unknown — **never a universe** |
+| Institutions (institutional activity) | the same, across instruments; implemented in [Screener S12](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md) as the Institutional view (Form 4, 13D/13G) and the Institutional & Whale panel (plus 13F quarter-end holdings) |
+| Congressional and government records | a cross-universe intelligence layer — **never a universe**; implemented in [Screener S12](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md) (Congress view, Congress & Government panel: House PTRs, federal awards, lobbying — as filed, never scored) |
 | Short Squeeze | a US Equities view and a specialist panel (S8) |
 | Options | selected-underlying context and panel (S7), until the conditional rule above is met |
 | Order Flow, CVD, Level 2 | specialist panels (S4) |

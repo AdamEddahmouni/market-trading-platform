@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-28 — Main Screener S12 Institutional, Whale, Congressional & Government Intelligence
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `ui_api`, `sec_edgar`, `cftc`, `congressional_ptr`, `public_records`, `docs` |
+| **Summary** | Added participant and public-record intelligence as a cross-universe layer (never a universe): Institutional, Congress, and Positioning views; Institutional & Whale and Congress & Government dock panels; and a Quick Preview Participants tab. Four evidence families stay separate and unscored: SEC Form 4 / 13D / 13G / 13F (local point-in-time 13F index), CFTC COT categories with large prints linked to Order Flow (participant unknown), House PTRs as filed (bands, separate clocks, no member characterization; Senate not integrated), and USAspending awards plus LDA filings. Every source loads off-request with explicit states; every payload passes the secret-leak audit. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_participants.py`, `sec_edgar/{ownership,thirteen_f_index}.py`, `cftc/screener_positioning.py`, `congressional_ptr/house.py`, `public_records/`, `tools/sec_edgar/thirteen_f_index.py`, `ui/src/api/screenerParticipants.ts`, `ui/src/components/screener/participants/`, `panels/{InstitutionalPanel,CongressGovPanel}.tsx`, `tests/platform/test_screener_s12.py`, `docs/engineering/SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md` |
+| **Tests** | Focused backend 89 and UI participants 17; `validate changed` passed on `1071d39` (33 suites, 5,884 tests, 43 skipped, 0 failures, 0 errors); full UI (1,153 tests), typecheck, build, and bundle budget (201.40 of 203 KiB) — details in [SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md#validation). |
+| **Related** | [SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md), [SCREENER_UNIVERSE_ARCHITECTURE.md](SCREENER_UNIVERSE_ARCHITECTURE.md), [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md) |
+| **Notes** | Live acceptance used SEC EDGAR (contact User-Agent), House Clerk, USAspending, LDA, CFTC, a locally built 13F index, Finviz Elite, and Moomoo OpenD until it stopped responding; the Quick Preview Participants tab was not verified live. No execution authority; no sixth universe. |
+
 ## 2026-09-28 — Main Screener S11 News, Headlines, Sentiment & Analysis
 
 | Field | Value |
