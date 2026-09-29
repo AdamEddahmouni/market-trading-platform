@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-29 — Main Screener S14 Disclosure Coverage, Identity & Refresh Automation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` (cloud implementation and deterministic validation complete; live 13F/House/Senate acceptance pending on the owner workstation) |
+| **Area** | `sec_edgar`, `congressional_ptr`, `ui_api`, `ui/screener`, `tools/sec_edgar`, `docs` |
+| **Summary** | Removed S12's disclosure weaknesses without a new universe or feature. 13F: managed lifecycle (SEC page discovery, verified downloads with hashes, deterministic full rebuild, validation + smoke query, atomic `CURRENT` switch, lock, crash cleanup, rollback) with a file-only freshness state on the 13F section; duplicate accessions no longer double-sum. Congress: canonical member identity beside the filed spelling (official Bioguide registry by dated term, or same-House-seat evidence; ambiguity stays separate). House PTRs: document classes and parse states (scans are `SCANNED_UNPARSED`, never "no transactions"), row labels/page refs, scanned-extractor boundary without an engine. Senate eFD: operator-attested import boundary (no terms automation) and header-driven report parser on synthetic fixtures; both chambers share one normalized contract. PIT: House filing dates now bounded at the end of the Eastern day (S12's UTC bound was a 4–5 h lookahead) and retrieval kept as a separate clock; amendment versions as of a cutoff. |
+| **Key files** | `src/market_platform_foundation/sec_edgar/{thirteen_f_index.py,thirteen_f_lifecycle.py (new)}`, `congressional_ptr/{house.py,identity.py (new),senate.py (new),normalized.py (new)}`, `ui_api/screener_participants.py`, `tools/sec_edgar/{thirteen_f_refresh.py (new),thirteen_f_index.py}`, `ui/src/api/screenerParticipants.ts`, `ui/src/components/screener/participants/{participantFormat.tsx,sections.tsx,IntelligenceView.tsx,ParticipantsS14.test.tsx (new)}`, `tests/sec_edgar/test_s14_thirteen_f_lifecycle.py`, `tests/market_trackers/test_s14_{house_ptr_coverage,congress_identity,senate_efd}.py`, `tests/platform/test_screener_s14{,_pit}.py`, `tests/fixtures/congressional_disclosure/senate_efd/` (synthetic), `tests/market_trackers/test_s12_house_ptr.py`, `tests/platform/test_screener_s12.py`, `docs/engineering/SCREENER_S14_DISCLOSURE_COVERAGE.md` (new), `SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md` |
+| **Tests** | S14 backend 115 and UI 7; S12/S13 regressions; full gates in [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md#tests) and the PR. |
+| **Related** | [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md), [SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md), [SCREENER_S13_UNIVERSE_INTEGRITY.md](SCREENER_S13_UNIVERSE_INTEGRITY.md) |
+| **Notes** | Cloud egress denies sec.gov, the House Clerk, eFD, and Bioguide (`SOURCE_UNAVAILABLE_IN_CLOUD`); no live acceptance is claimed. Owner steps: `thirteen_f_refresh.py --check/--refresh/--status`, House coverage check, and Senate terms acceptance + one attested import. Separate from the pending S13 ETF catalog gate. Scans stay unparsed (no approved OCR). |
+
 ## 2026-09-29 — Main Screener S13 Universe Integrity, Classification & Catalog Hardening
 
 | Field | Value |

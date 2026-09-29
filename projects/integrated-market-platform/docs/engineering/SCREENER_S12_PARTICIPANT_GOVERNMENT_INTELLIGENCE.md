@@ -159,6 +159,9 @@ Clocks are kept apart and every row carries its own:
   `available_at` = the later of the end of the filing day (UTC) and IMP's first
   retrieval. Windows select by **filing date**. Disclosure lag is DERIVED
   (transaction → filing, calendar days) and unknown when a date is missing.
+  *Superseded by [S14](SCREENER_S14_DISCLOSURE_COVERAGE.md):* `available_at` is the end of the **Eastern** filing day
+  (the UTC bound was 4–5 hours early), and first retrieval is kept as a separate
+  clock (`imp_known_at`) instead of moving availability.
 - **USAspending / LDA:** action date or filing period, plus the source's
   publication stamp.
 
@@ -175,7 +178,8 @@ Shown with every surface:
 Congressional amounts are **bands** (`exact_value_disclosed: false`; the UI
 contract rejects a point value). Members are listed as named in the Clerk's
 index (e.g. "Richard Dean Dr McCormick" is the index's own spelling); party is
-not part of the index and is not shown. Award sums are DERIVED, signed
+not part of the index and is not shown. ([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md) adds a canonical member identity
+beside the filed spelling, merged only on official-id or same-seat evidence.) Award sums are DERIVED, signed
 (de-obligations subtract), and shown only when every action in the window is
 listed. Lobbying income (outside firms) and expenses (in-house) are never added
 together.
@@ -213,7 +217,10 @@ House PTRs from the Clerk's annual index; machine-readable PDFs are parsed,
 scanned ones are counted and linked (open on the Clerk site). Matching uses
 the **disclosed ticker** and asset type only (options flagged). Senate eFD
 requires interactive terms acceptance and is **not integrated**; it is
-reported as `NOT_CONFIGURED` on every surface.
+reported as `NOT_CONFIGURED` on every surface. ([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md): scanned filings are
+`SCANNED_UNPARSED` with document classes and parse states; Senate reports can be
+imported by the operator after accepting eFD's terms, and the provider reports
+`TERMS_ACCEPTANCE_REQUIRED` until then.)
 
 ### Government (US equities only)
 
@@ -236,6 +243,10 @@ The CFTC client is the existing S5 path. No credential, cookie, or session
 token is used for any S12 source.
 
 ### Building the 13F index
+
+> Superseded for routine use by the managed lifecycle in [S14](SCREENER_S14_DISCLOSURE_COVERAGE.md)
+> (`tools/sec_edgar/thirteen_f_refresh.py`, `IMP_13F_DATA_ROOT`). The manual build
+> below still works and is served as `UNMANAGED`.
 
 Download the quarterly *Form 13F data sets* ZIPs from sec.gov (each covers
 about three months of filings) and build the index **outside the repository**:
@@ -356,12 +367,17 @@ open in every retry, including the same sequence.
 ## Known limitations
 
 - Senate eFD is not integrated (interactive terms acceptance); House only.
+  *([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md): operator-import boundary; live acceptance pending the owner.)*
 - 20 of 136 House PTRs in the acceptance window were scanned images; they are
-  counted and linked, not parsed.
+  counted and linked, not parsed. *([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md): explicit `SCANNED_UNPARSED` state and
+  coverage metrics; still not parsed — no approved extraction engine.)*
 - Member names are shown as indexed; one member can appear under two index
   spellings (e.g. "John McGuire" and "John J Mr McGuire III", VA05).
+  *([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md): canonical identity; that suffix variant merges only with the official
+  registry.)*
 - The 13F index is a manual local build and is not refreshed automatically;
   reports filed after the newest data set are missing until the next one.
+  *([S14](SCREENER_S14_DISCLOSURE_COVERAGE.md): managed refresh lifecycle with freshness state.)*
 - The daily form index carries dates only; acceptance times appear in the
   per-instrument panel, not the universe view.
 - USAspending and LDA matching is by name as written by the source; parent-linked

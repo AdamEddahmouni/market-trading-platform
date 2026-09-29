@@ -121,13 +121,17 @@ class AmountTests(unittest.TestCase):
 
 class ClockTests(unittest.TestCase):
     def test_availability_is_never_the_transaction_date(self):
+        # S14 supersedes S12 here: the Clerk's filing date is an Eastern date, so availability is the end
+        # of that ET day (S12 used the end of the UTC day, 4-5 hours early), and IMP's retrieval is a
+        # separate clock that no longer moves public availability (see test_s14_pit.py).
         available, basis = house.filing_available_at(date(2026, 9, 14), retrieved_at=None)
-        self.assertEqual(available, datetime(2026, 9, 14, 23, 59, 59, tzinfo=UTC))
-        self.assertEqual(basis, "house_index.filing_date_end_of_utc_day")
+        self.assertEqual(available, datetime(2026, 9, 15, 3, 59, 59, tzinfo=UTC))
+        self.assertEqual(basis, "house_index.filing_date_end_of_et_day")
         later = datetime(2026, 9, 20, 12, tzinfo=UTC)
-        self.assertEqual(house.filing_available_at(date(2026, 9, 14), retrieved_at=later), (later, "imp.first_retrieved_at"))
+        self.assertEqual(house.filing_available_at(date(2026, 9, 14), retrieved_at=later)[0], available)
+        self.assertEqual(house.imp_known_at(available, later), later)
         early = datetime(2026, 9, 14, 12, tzinfo=UTC)
-        self.assertEqual(house.filing_available_at(date(2026, 9, 14), retrieved_at=early)[0].hour, 23)
+        self.assertEqual(house.imp_known_at(available, early), available)
 
     def test_disclosure_lag(self):
         self.assertEqual(house.disclosure_lag_days(date(2026, 8, 6), date(2026, 9, 14)), 39)

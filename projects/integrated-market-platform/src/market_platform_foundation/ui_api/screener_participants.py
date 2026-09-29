@@ -9,7 +9,9 @@ separate and are never blended into a score:
   Traders categories (Futures), and large-print market activity whose participant is
   UNKNOWN (the Order Flow panel's evidence; never attributed to an institution);
 * CONGRESSIONAL — House Periodic Transaction Reports from the House Clerk (official
-  PDFs; transaction rows only where the filer disclosed a ticker);
+  PDFs; transaction rows only where the filer disclosed a ticker) and, since S14, Senate
+  eFD reports the operator imported after accepting eFD's terms themselves; members
+  carry an evidence-based canonical identity beside the filed spelling;
 * GOVERNMENT — USAspending federal award transactions (contracts, grants kept
   separate) and Lobbying Disclosure Act filings.
 
@@ -39,7 +41,9 @@ from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from ..cftc.screener_positioning import DATASETS, POSITIONING_MARKETS, build_positioning, where_clause
-from ..congressional_ptr import house
+from ..congressional_ptr import house, normalized
+from ..congressional_ptr import senate as senate_ptr
+from ..congressional_ptr.identity import REGISTRY_ENV, MemberResolver, registry_from_env
 from ..public_records.http import PublicRecordsError, PublicRecordsHttp
 from ..public_records.http import live_state as public_live_state
 from ..sec_edgar import ownership as sec_ownership
@@ -70,8 +74,9 @@ CONGRESS_TYPES = ("PURCHASE", "SALE", "SALE_PARTIAL", "EXCHANGE")
 OWNERSHIP_FAMILIES = {"INSIDER": sec_ownership.INSIDER_FORMS,
                       "BENEFICIAL_13D": frozenset({"SCHEDULE 13D", "SCHEDULE 13D/A", "SC 13D", "SC 13D/A"}),
                       "BENEFICIAL_13G": frozenset({"SCHEDULE 13G", "SCHEDULE 13G/A", "SC 13G", "SC 13G/A"})}
-SENATE_REASON = "SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE"
-SENATE_URL = "https://efdsearch.senate.gov/search/"
+SENATE_REASON = senate_ptr.TERMS_REASON
+SENATE_URL = senate_ptr.SEARCH_URL
+SENATE_RESCAN_S = 300.0
 HOUSE_SEARCH_URL = "https://disclosures-clerk.house.gov/FinancialDisclosure"
 
 PROVIDERS = {
@@ -81,7 +86,7 @@ PROVIDERS = {
     "cftc_cot": ("CFTC Commitments of Traders", "WHALE", "Weekly; Tuesday positions, Friday 15:30 ET release"),
     "order_flow": ("Large prints (Order Flow panel)", "WHALE", "Live session; participant unknown"),
     "house_ptr": ("House Clerk financial disclosures", "CONGRESSIONAL", "Filing-driven; index refreshed by the Clerk"),
-    "senate_efd": ("Senate eFD", "CONGRESSIONAL", "Filing-driven"),
+    "senate_efd": ("Senate eFD (operator import)", "CONGRESSIONAL", "Filing-driven; imported by the operator after eFD terms acceptance"),
     "usaspending": ("USAspending.gov", "GOVERNMENT", "Daily loads; FPDS contract actions lag several days"),
     "lobbying": ("Lobbying Disclosure Act (lda.gov)", "GOVERNMENT", "Quarterly LD-2 reports; posted when filed"),
 }
@@ -238,7 +243,8 @@ class ScreenerParticipantService:
                  cot_query: Callable[[Any, str], list[dict[str, Any]]] = _default_cot_query,
                  house_loader: HousePtrLoader | None = None, usaspending: Any = None, lobbying: Any = None,
                  thirteen_f: Any = None, cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
-                 wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get) -> None:
+                 wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
+                 member_resolver: MemberResolver | None = None) -> None:
         from ..public_records.lobbying import LobbyingClient
         from ..public_records.usaspending import UsaSpendingClient
 
@@ -261,6 +267,9 @@ class ScreenerParticipantService:
         self._documents: dict[str, Any] = {}          # accession → parsed SEC document (immutable)
         self._tickers: tuple[float, dict[str, str]] | None = None
         self.provider_requests: Counter[str] = Counter()
+        self._resolver = member_resolver
+        self._registry_error: str | None = None
+        self._senate_scan: tuple[float, senate_ptr.SenateImportState] | None = None
 
     # -------------------------------------------------------------- clocks & gates
     def _now(self) -> datetime:
@@ -542,8 +551,8 @@ class ScreenerParticipantService:
                 "time_note": "Positions as of the report date (Tuesday); public from the official release time."}
 
     # -------------------------------------------------------------- Congress view
-    def _house_transactions(self) -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any]]:
-        """All parsed transactions in the loaded window, plus provider status and coverage."""
+    def _house_disclosures(self) -> tuple[list[normalized.CongressionalDisclosure], dict[str, Any], dict[str, Any]]:
+        """Every House disclosure in the loaded window, plus provider status and coverage."""
 
         state, reason = self._public_state()
         if state != "CURRENT":
@@ -554,46 +563,108 @@ class ScreenerParticipantService:
             return [], provider("house_ptr", "SOURCE_ERROR", snap["index_error"], scope="UNIVERSE"), {}
         if not snap["filings"] and snap["running"]:
             return [], provider("house_ptr", "PENDING", "LOADING_INDEX", scope="UNIVERSE"), {}
-        rows: list[dict[str, Any]] = []
-        states = Counter()
+        items: list[normalized.CongressionalDisclosure] = []
+        loading = errors = 0
+        documents = []
         for filing in snap["filings"]:
             document = snap["documents"].get(filing.doc_id)
             if document is None:
-                states["DOCUMENT_ERROR" if filing.doc_id in snap["doc_errors"] else "LOADING"] += 1
+                if filing.doc_id in snap["doc_errors"]:
+                    errors += 1
+                else:
+                    loading += 1
                 continue
-            states[document.state] += 1
+            documents.append(document)
             retrieved = snap["retrieved"].get(filing.doc_id)
-            available, basis = house.filing_available_at(
-                filing.filing_date, retrieved_at=datetime.fromisoformat(retrieved.replace("Z", "+00:00")) if retrieved else None)
-            for txn in document.transactions:
-                rows.append({
-                    "id": f"house:{filing.doc_id}:{txn.row_index}", "chamber": house.CHAMBER,
-                    "member": {"name": filing.member_name, "state_district": filing.state_district,
-                               "member_id": filing.member_id, "identity_basis": "HOUSE_INDEX_NAME_AND_DISTRICT"},
-                    "owner": txn.owner, "asset_description": txn.asset_description, "asset_type_code": txn.asset_type_code,
-                    "disclosed_ticker": txn.disclosed_ticker, "matchable_ticker": txn.matchable_ticker,
-                    "transaction_type": txn.transaction_type, "transaction_type_code": txn.transaction_type_code,
-                    "transaction_date": txn.transaction_date.isoformat() if txn.transaction_date else None,
-                    "notification_date": txn.notification_date.isoformat() if txn.notification_date else None,
-                    "filing_date": filing.filing_date.isoformat(), "available_at": _iso(available),
-                    "available_basis": basis, "retrieved_at": retrieved,
-                    "amount": txn.amount.to_dict() if txn.amount else None,
-                    "disclosure_lag_days": house.disclosure_lag_days(txn.transaction_date, filing.filing_date),
-                    "doc_id": filing.doc_id, "source_url": filing.document_url, "quality_flags": list(txn.quality_flags),
-                })
-        loading = states["LOADING"]
-        status_state = "PARTIAL" if loading or states["DOCUMENT_ERROR"] else "PUBLICATION_CURRENT"
-        status_reason = "LOADING_DOCUMENTS" if loading else "SOME_DOCUMENTS_FAILED" if states["DOCUMENT_ERROR"] else None
-        coverage = {"filings": len(snap["filings"]), "parsed": states["PARSED"],
-                    "not_machine_readable": states["TRANSACTIONS_NOT_MACHINE_READABLE"],
-                    "parse_errors": states["PARSE_ERROR"], "loading": loading, "document_errors": states["DOCUMENT_ERROR"],
-                    "index_fetched_at": snap["index_fetched_at"], "max_documents": MAX_PTR_DOCUMENTS}
-        return rows, provider("house_ptr", status_state, status_reason, fetched_at=snap["index_fetched_at"],
-                              items=len(rows), scope="UNIVERSE"), coverage
+            items.extend(normalized.from_house(
+                filing, document, datetime.fromisoformat(retrieved.replace("Z", "+00:00")) if retrieved else None))
+        legacy = Counter(document.state for document in documents)
+        status_state = "PARTIAL" if loading or errors else "PUBLICATION_CURRENT"
+        status_reason = "LOADING_DOCUMENTS" if loading else "SOME_DOCUMENTS_FAILED" if errors else None
+        metrics = house.coverage_metrics(documents, loading=loading, document_errors=errors)
+        coverage = {"filings": len(snap["filings"]), "parsed": legacy["PARSED"],
+                    "not_machine_readable": legacy["TRANSACTIONS_NOT_MACHINE_READABLE"], "parse_errors": legacy["PARSE_ERROR"],
+                    "loading": loading, "document_errors": errors, "index_fetched_at": snap["index_fetched_at"],
+                    "max_documents": MAX_PTR_DOCUMENTS, "house": metrics}
+        status = provider("house_ptr", status_state, status_reason, fetched_at=snap["index_fetched_at"], items=len(items),
+                          scope="UNIVERSE")
+        return items, {**status, "coverage": metrics}, coverage
+
+    def _senate_state(self) -> senate_ptr.SenateImportState:
+        now = self._clock()
+        cached = self._senate_scan
+        if cached is not None and cached[0] > now:
+            return cached[1]
+        state = senate_ptr.scan_import(senate_ptr.import_root_from_env(self._env), clock=self._clock)
+        self._senate_scan = (now + SENATE_RESCAN_S, state)
+        return state
+
+    def _senate_disclosures(self, scope: str = "UNIVERSE") -> tuple[list[normalized.CongressionalDisclosure], dict[str, Any]]:
+        state = self._senate_state()
+        items = [item for report in state.reports for item in normalized.from_senate(report)]
+        coverage = state.coverage()
+        status = provider("senate_efd", state.state, state.reason, fetched_at=state.scanned_at,
+                          items=len(items) if state.state in ("READY", "PARTIAL") else None, scope=scope)
+        return items, {**status, "source_url": SENATE_URL, "coverage": coverage,
+                       "attested": state.attestation is not None}
+
+    def _member_resolver(self) -> MemberResolver:
+        if self._resolver is None:
+            try:
+                self._resolver = MemberResolver(registry_from_env({REGISTRY_ENV: self._env(REGISTRY_ENV) or ""}))
+            except (OSError, ValueError):
+                # An unreadable registry never blocks disclosures: identities fall back to seat evidence.
+                self._registry_error = "MEMBER_REGISTRY_UNREADABLE"
+                self._resolver = MemberResolver()
+        return self._resolver
+
+    def _congress(self, scope: str = "UNIVERSE") -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+        """Both chambers as normalized rows (identity resolved over the whole batch), providers, and coverage."""
+
+        house_items, house_status, coverage = self._house_disclosures()
+        senate_items, senate_status = self._senate_disclosures(scope)
+        if scope != "UNIVERSE":
+            house_status = {**house_status, "scope": scope}
+        resolver = self._member_resolver()
+        rows = normalized.to_rows(house_items + senate_items, resolver=resolver, now=self._now())
+        chambers = ["HOUSE"] + (["SENATE"] if senate_status["state"] in ("READY", "PARTIAL") else [])
+        registry = resolver.registry
+        coverage = {**coverage, "senate": senate_status["coverage"], "chambers": chambers,
+                    "identity": {"registry": registry.source if registry else None,
+                                 "registry_members": len(registry.members) if registry else 0,
+                                 "registry_error": self._registry_error,
+                                 "resolutions": dict(Counter(row["member"].get("resolution") for row in rows))}}
+        return rows, [house_status, senate_status], coverage
 
     @staticmethod
-    def _senate_status(scope: str) -> dict[str, Any]:
-        return {**provider("senate_efd", "NOT_CONFIGURED", SENATE_REASON, scope=scope), "source_url": SENATE_URL}
+    def _chamber_state(house_status: dict[str, Any], senate_status: dict[str, Any], matched: bool) -> tuple[str, str | None]:
+        """One view state from two independent sources; neither erases the other."""
+
+        house_state, senate_state = house_status["state"], senate_status["state"]
+        senate_ok = senate_state in ("READY", "PARTIAL")
+        if house_state == "PUBLICATION_CURRENT":
+            if senate_state == "READY":
+                return ("PUBLICATION_CURRENT" if matched else "NO_DISCLOSURES"), None
+            reason = "HOUSE_ONLY" if not senate_ok else "SENATE_PARTIAL"
+            return ("PARTIAL" if matched else "NO_DISCLOSURES"), reason
+        if senate_ok and house_state not in ("PARTIAL", "PENDING"):
+            return "PARTIAL", f"HOUSE_{house_state}"
+        return house_state, house_status["reason"]
+
+    @staticmethod
+    def _member_filter(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """One entry per canonical member; spellings resolved on evidence collapse, unresolved ones stay apart."""
+
+        members: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            member = row["member"]
+            key = member.get("canonical_member_id") or member["member_id"]
+            entry = members.setdefault(key, {"id": key, "name": member["name"], "state_district": member["state_district"],
+                                             "chamber": row["chamber"], "resolution": member.get("resolution"),
+                                             "filed_as": set()})
+            entry["filed_as"].add(member["source_name"])
+        return sorted(({**item, "filed_as": sorted(item["filed_as"])} for item in members.values()),
+                      key=lambda item: (item["name"], item["id"]))
 
     def _match_row(self, row: dict[str, Any], universe: str, index: _Index) -> dict[str, Any] | None:
         ticker = row.get("disclosed_ticker")
@@ -623,7 +694,8 @@ class ScreenerParticipantService:
         self._validate_page(offset, limit)
         now = self._now()
         index = self._index(universe)
-        rows, status, coverage = self._house_transactions()
+        rows, providers, coverage = self._congress()
+        house_status, senate_status = providers
         since = self._today() - timedelta(days=CONGRESS_WINDOWS[window])
         in_window = [row for row in rows if row["filing_date"] >= since.isoformat()]
         matched, unmatched, outside = [], 0, 0
@@ -636,8 +708,7 @@ class ScreenerParticipantService:
                     unmatched += 1
                 continue
             matched.append({**row, "instrument": match})
-        members = sorted({(row["member"]["member_id"], row["member"]["name"], row["member"]["state_district"])
-                          for row in matched}, key=lambda item: item[1])
+        members = self._member_filter(matched)
         type_counts = Counter(row["transaction_type"] for row in matched)
         filtered = matched
         if transaction_type:
@@ -645,7 +716,8 @@ class ScreenerParticipantService:
         if min_amount is not None:
             filtered = [row for row in filtered if row["amount"] and (row["amount"]["min_amount"] or 0) >= min_amount]
         if member:
-            filtered = [row for row in filtered if row["member"]["member_id"] == member]
+            # Canonical ids (S14) and S12 source ids both select: an S12 link keeps working.
+            filtered = [row for row in filtered if member in (row["member"].get("canonical_member_id"), row["member"]["member_id"])]
         if sort == "traded":
             filtered.sort(key=lambda row: (row["transaction_date"] or "", row["id"]), reverse=True)
         elif sort == "amount":
@@ -654,35 +726,33 @@ class ScreenerParticipantService:
         else:
             filtered.sort(key=lambda row: (row["filing_date"], row["id"]), reverse=True)
         page = filtered[offset:offset + limit]
-        state = status["state"]
-        if state == "PUBLICATION_CURRENT" and not matched:
-            state = "NO_DISCLOSURES"
-        reason = status["reason"] or "HOUSE_ONLY"
-        state = "PARTIAL" if state == "PUBLICATION_CURRENT" else state
+        state, reason = self._chamber_state(house_status, senate_status, bool(matched))
         if (override := self._index_override(index)) is not None:
             state, reason = override
         return {
             "schema_version": SCHEMA_VERSION, "generated_at": _iso(now), "universe": universe, "view": "congress",
             "window": {"id": window, "days": CONGRESS_WINDOWS[window], "since": since.isoformat(), "basis": "FILING_DATE"},
             "state": state, "reason": reason,
-            "providers": [status, self._senate_status("UNIVERSE")],
+            "providers": providers,
             "sorts": [{"id": "filed", "label": "Latest filed"}, {"id": "traded", "label": "Latest transaction"},
                       {"id": "amount", "label": "Largest disclosed band"}], "sort": sort,
             "filters": {"transaction_types": [{"id": key, "count": type_counts.get(key, 0)} for key in CONGRESS_TYPES],
                         "amount_floors": list(AMOUNT_FLOORS),
-                        "members": [{"id": key, "name": name, "state_district": district} for key, name, district in members],
+                        "members": members,
                         "applied": {"transaction_type": transaction_type, "min_amount": min_amount, "member": member}},
             "rows": page, "result_count": len(filtered), "offset": offset, "limit": limit,
             "has_more": offset + limit < len(filtered),
             "coverage": {**coverage, "transactions_in_window": len(in_window), "matched": len(matched),
                          "ticker_outside_universe": outside, "no_disclosed_ticker": unmatched,
-                         "chambers": ["HOUSE"], "universe_index_error": index.error},
+                         "universe_index_error": index.error},
             "boundaries": [EVIDENCE_BOUNDARIES[1]],
             "time_note": ("Transaction date = when the trade happened; filing date = when the report was filed; "
-                          "available = the later of the end of the filing day (UTC) and IMP's first retrieval. "
+                          "available = public availability: the Senate's filed time, or the end of the House filing "
+                          "day (Eastern) — never earlier. IMP's retrieval time is kept separately. "
                           "Disclosure lag is DERIVED (transaction → filing, calendar days)."),
             "neutrality_note": ("Disclosures are shown as filed. No member is scored, ranked, or characterized; party is "
-                                "not part of the official index and is not shown."),
+                                "not part of the official index and is not shown. Member names are merged only on "
+                                "official-id or same-seat evidence; the filed spelling is kept."),
         }
 
     # ============================================================== instrument panels
@@ -846,13 +916,18 @@ class ScreenerParticipantService:
                                 "trades). Print size is market activity; the counterparty is not disclosed, so it is "
                                 "never attributed to an institution or read as accumulation."))
 
+    def _thirteen_f_status(self) -> dict[str, Any] | None:
+        status = getattr(self._thirteen_f, "status", None)
+        return status() if callable(status) else None
+
     def _thirteen_f_section(self, cusips: list[str]) -> dict[str, Any]:
         if self._thirteen_f is None:
             return _section("NOT_CONFIGURED", "THIRTEEN_F_INDEX_NOT_BUILT",
                             note=("13F holdings come from the SEC's quarterly Form 13F data sets (~100 MB per quarter); "
-                                  "build the local index with tools/sec_edgar/thirteen_f_index.py to enable this section."))
+                                  "build and refresh the local index with tools/sec_edgar/thirteen_f_refresh.py "
+                                  "(IMP_13F_DATA_ROOT) to enable this section."))
         if not cusips:
-            return _section("NO_MATCH", "ISSUER_CUSIP_UNKNOWN",
+            return _section("NO_MATCH", "ISSUER_CUSIP_UNKNOWN", index=self._thirteen_f_status(),
                             note="No issuer CUSIP is known from an official filing, so 13F lines cannot be matched exactly.")
         return self._thirteen_f.section(cusips, now=self._now())
 
@@ -928,7 +1003,12 @@ class ScreenerParticipantService:
             identity["cusips"] = cusips
             identity["cusip_basis"] = "SEC_13DG_ISSUER_CUSIP" if cusips else None
         sections["holdings_13f"] = self._thirteen_f_section(cusips)
-        providers.append(provider("thirteen_f", sections["holdings_13f"]["state"], sections["holdings_13f"]["reason"]))
+        freshness = sections["holdings_13f"].get("index") or {}
+        providers.append({**provider("thirteen_f", sections["holdings_13f"]["state"], sections["holdings_13f"]["reason"],
+                                     fetched_at=freshness.get("generated_at"),
+                                     published=(f"data sets through {freshness['indexed_through']}"
+                                                if freshness.get("indexed_through") else None)),
+                          "refresh_state": freshness.get("refresh_state")})
         sections["large_activity"] = self._large_activity(universe)
         providers.append(provider("order_flow", sections["large_activity"]["state"], sections["large_activity"]["reason"]))
         states = {section["state"] for key, section in sections.items() if key not in ("large_activity",)}
@@ -1017,8 +1097,9 @@ class ScreenerParticipantService:
         providers: list[dict[str, Any]] = []
         sections: dict[str, Any] = {}
         index = self._index(universe)
-        rows, status, coverage = self._house_transactions()
-        providers.extend([status, self._senate_status("INSTRUMENT")])
+        rows, chamber_providers, coverage = self._congress("INSTRUMENT")
+        house_status, senate_status = chamber_providers
+        providers.extend(chamber_providers)
         since = (self._today() - timedelta(days=INSTRUMENT_CONGRESS_DAYS)).isoformat()
         symbol_key = _norm_ticker(row.get("symbol"))
         matched = []
@@ -1031,16 +1112,25 @@ class ScreenerParticipantService:
         matched.sort(key=lambda item: (item["filing_date"], item["id"]), reverse=True)
         if (override := self._index_override(index)) is not None:
             sections["congressional"] = _section(*override)
-        elif status["state"] in ("PUBLICATION_CURRENT", "PARTIAL"):
+        elif house_status["state"] in ("PUBLICATION_CURRENT", "PARTIAL") or senate_status["state"] in ("READY", "PARTIAL"):
+            status = house_status if house_status["state"] in ("PUBLICATION_CURRENT", "PARTIAL") else senate_status
             congress_state = ("PARTIAL" if status["state"] == "PARTIAL" and not matched else
                               "PUBLICATION_CURRENT" if matched else "NO_DISCLOSURES")
+            senate_in = senate_status["state"] in ("READY", "PARTIAL")
             sections["congressional"] = _section(
                 congress_state, status["reason"] if congress_state == "PARTIAL" else None if matched else "NO_DISCLOSED_TRANSACTIONS",
                 window_days=INSTRUMENT_CONGRESS_DAYS, transactions=matched[: 3 if compact else 40], total=len(matched),
-                chambers=["HOUSE"], coverage=coverage,
-                note="House transactions whose filer disclosed this ticker. Senate eFD is not integrated (see provenance).")
+                chambers=coverage["chambers"], coverage=coverage,
+                sources=[{"id": item["id"], "chamber": "HOUSE" if item["id"] == "house_ptr" else "SENATE",
+                          "state": item["state"], "reason": item["reason"]} for item in chamber_providers],
+                note=("House and operator-imported Senate transactions whose filer disclosed this ticker." if senate_in else
+                      "House transactions whose filer disclosed this ticker. Senate eFD needs the operator to accept "
+                      "its terms and import reports (see provenance)."))
         else:
-            sections["congressional"] = _section(status["state"], status["reason"])
+            sections["congressional"] = _section(house_status["state"], house_status["reason"],
+                                                 sources=[{"id": item["id"], "chamber": "HOUSE" if item["id"] == "house_ptr" else "SENATE",
+                                                           "state": item["state"], "reason": item["reason"]}
+                                                          for item in chamber_providers])
         if universe == US_EQUITIES:
             name, reason = self._entity(row)
             public_state, public_reason = self._public_state()
@@ -1106,6 +1196,24 @@ class ScreenerParticipantService:
             raise ValueError("INVALID_PAGE")
 
 
+class UnmanagedThirteenF:
+    """An S12 hand-built index (``IMP_13F_INDEX_PATH``): served as is, freshness reported as unmanaged."""
+
+    def __init__(self, path: str) -> None:
+        from ..sec_edgar.thirteen_f_index import ThirteenFIndex
+
+        self._index = ThirteenFIndex.load(path)
+
+    def status(self) -> dict[str, Any]:
+        through = self._index.indexed_through
+        return {"managed": False, "refresh_state": "UNMANAGED", "refresh_reason": "IMP_13F_INDEX_PATH_WITHOUT_LIFECYCLE",
+                "generated_at": self._index.built_at, "indexed_through": through.isoformat() if through else None,
+                "source_datasets": [item for item in (self._index.meta.get("sources") or "").split(";") if item]}
+
+    def section(self, cusips: list[str], *, now: datetime) -> dict[str, Any]:
+        return {**self._index.section(cusips, now=now), "index": self.status()}
+
+
 _SERVICE: ScreenerParticipantService | None = None
 _SERVICE_LOCK = threading.Lock()
 
@@ -1114,12 +1222,15 @@ def participant_service() -> ScreenerParticipantService:
     global _SERVICE
     with _SERVICE_LOCK:
         if _SERVICE is None:
-            thirteen_f = None
+            thirteen_f: Any = None
+            root = os.environ.get("IMP_13F_DATA_ROOT", "").strip()
             path = os.environ.get("IMP_13F_INDEX_PATH", "").strip()
-            if path:
-                from ..sec_edgar.thirteen_f_index import ThirteenFIndex
+            if root:
+                from ..sec_edgar.thirteen_f_lifecycle import ManagedIndex
 
-                thirteen_f = ThirteenFIndex.load(path)
+                thirteen_f = ManagedIndex(root)   # S14: managed generations + freshness (no network)
+            elif path:
+                thirteen_f = UnmanagedThirteenF(path)
             _SERVICE = ScreenerParticipantService(thirteen_f=thirteen_f)
         return _SERVICE
 

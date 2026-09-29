@@ -31,6 +31,7 @@ import io
 import sqlite3
 import threading
 import zipfile
+import zlib
 from collections.abc import Iterable, Iterator
 from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
@@ -54,6 +55,41 @@ def parse_sec_date(value: str) -> date | None:
         return date(int(year), _MONTHS[month.upper()], int(day))
     except (ValueError, KeyError):
         return None
+
+
+#: Tables and columns every data set must carry (SEC Form 13F data-set readme); anything else fails closed.
+REQUIRED_COLUMNS = {
+    "SUBMISSION.tsv": ("ACCESSION_NUMBER", "FILING_DATE", "SUBMISSIONTYPE", "CIK", "PERIODOFREPORT"),
+    "COVERPAGE.tsv": ("ACCESSION_NUMBER", "AMENDMENTTYPE", "FILINGMANAGER_NAME", "REPORTTYPE"),
+    "INFOTABLE.tsv": ("ACCESSION_NUMBER", "CUSIP", "VALUE", "SSHPRNAMT", "SSHPRNAMTTYPE", "PUTCALL"),
+}
+
+
+class SourceIntegrityError(ValueError):
+    """A 13F data set is corrupt, partial, or inconsistent; the message is a stable code."""
+
+
+def verify_archive(path: Path) -> dict[str, Any]:
+    """Structural check of one data-set ZIP: readable archive, required tables, required columns.
+
+    Row-level CRCs are verified while the build streams every table (``zipfile`` raises on a
+    mismatch), so a corrupt member fails the candidate build, never the active index.
+    """
+
+    try:
+        with zipfile.ZipFile(path) as archive:
+            names = set(archive.namelist())
+            for table, columns in REQUIRED_COLUMNS.items():
+                if table not in names:
+                    raise SourceIntegrityError(f"THIRTEEN_F_SOURCE_TABLE_MISSING:{table}")
+                with archive.open(table) as handle:
+                    header = handle.readline().decode("utf-8", "replace").rstrip("\r\n").split("\t")
+                missing = [column for column in columns if column not in header]
+                if missing:
+                    raise SourceIntegrityError(f"THIRTEEN_F_SOURCE_COLUMNS_MISSING:{table}")
+            return {"tables": sorted(REQUIRED_COLUMNS), "members": len(names)}
+    except (zipfile.BadZipFile, EOFError, OSError) as exc:
+        raise SourceIntegrityError("THIRTEEN_F_SOURCE_CORRUPT") from exc
 
 
 def _rows(archive: zipfile.ZipFile, name: str) -> Iterator[dict[str, str]]:
@@ -95,27 +131,49 @@ def select_reports(submissions: dict[str, dict[str, Any]]) -> dict[str, dict[str
     return selected
 
 
-def build_index(zip_paths: Iterable[Path], out_path: Path) -> dict[str, int]:
-    """Build (or replace) the SQLite index from one or more data-set ZIPs."""
+def build_index(zip_paths: Iterable[Path], out_path: Path, *, meta: dict[str, str] | None = None) -> dict[str, Any]:
+    """Build (or replace) the SQLite index from one or more data-set ZIPs.
 
+    Data sets cover disjoint filing-date windows, so an accession appears in one of them. If an
+    accession appears in two archives with the same submission facts, the first archive's lines
+    are kept and the repeat is counted (never summed twice); conflicting facts fail closed with
+    ``THIRTEEN_F_DUPLICATE_ACCESSION_CONFLICT``. ``meta`` adds provenance keys (S14 lifecycle).
+    """
+
+    paths = [Path(path) for path in zip_paths]
+    for path in paths:
+        verify_archive(path)
     submissions: dict[str, dict[str, Any]] = {}
-    archives = [zipfile.ZipFile(path) for path in zip_paths]
+    owner: dict[str, int] = {}                       # accession → index of the archive whose lines count
+    duplicates = 0
+    archives = [zipfile.ZipFile(path) for path in paths]
+    out_path = Path(out_path)
+    tmp = out_path.with_suffix(".tmp")
+    db: sqlite3.Connection | None = None
     try:
-        for archive in archives:
+        for position, archive in enumerate(archives):
             covers = {row["ACCESSION_NUMBER"]: row for row in _rows(archive, "COVERPAGE.tsv")}
             for row in _rows(archive, "SUBMISSION.tsv"):
                 accession = row["ACCESSION_NUMBER"]
                 cover = covers.get(accession, {})
-                submissions[accession] = {
+                item = {
                     "cik": row["CIK"].zfill(10), "period": parse_sec_date(row["PERIODOFREPORT"]),
                     "filing_date": parse_sec_date(row["FILING_DATE"]), "type": row["SUBMISSIONTYPE"],
                     "report_type": (cover.get("REPORTTYPE") or "").strip().upper(),
                     "amendment_type": (cover.get("AMENDMENTTYPE") or "").strip().upper(),
                     "manager": (cover.get("FILINGMANAGER_NAME") or "").strip()}
+                if accession in submissions:
+                    previous = submissions[accession]
+                    if any(previous[key] != item[key] for key in ("cik", "period", "filing_date", "report_type",
+                                                                   "amendment_type")):
+                        raise SourceIntegrityError("THIRTEEN_F_DUPLICATE_ACCESSION_CONFLICT")
+                    duplicates += 1
+                    continue
+                submissions[accession] = item
+                owner[accession] = position
         holdings = {accession: item for accession, item in submissions.items()
                     if item["report_type"] in HOLDINGS_TYPES and item["period"] and item["filing_date"]}
         out_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = out_path.with_suffix(".tmp")
         tmp.unlink(missing_ok=True)
         db = sqlite3.connect(tmp)
         # Every holdings report is kept (originals, restatements, add-ons): which ones form a
@@ -135,11 +193,11 @@ def build_index(zip_paths: Iterable[Path], out_path: Path) -> dict[str, int]:
                    "is_option INTEGER)")
         lines_read = 0
         batch: list[tuple[Any, ...]] = []
-        for archive in archives:
+        for position, archive in enumerate(archives):
             for row in _rows(archive, "INFOTABLE.tsv"):
                 accession = row["ACCESSION_NUMBER"]
                 cusip = (row.get("CUSIP") or "").strip().upper()
-                if accession not in holdings or len(cusip) != 9:
+                if accession not in holdings or owner.get(accession) != position or len(cusip) != 9:
                     continue
                 lines_read += 1
                 option = bool((row.get("PUTCALL") or "").strip())
@@ -156,18 +214,30 @@ def build_index(zip_paths: Iterable[Path], out_path: Path) -> dict[str, int]:
         db.execute("DROP TABLE staged")
         db.execute("CREATE INDEX positions_cusip ON positions(cusip)")
         db.execute("CREATE INDEX filings_manager ON filings(manager_cik, period)")
-        db.executemany("INSERT INTO meta VALUES (?,?)", [
-            ("schema", SCHEMA), ("built_at", datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")),
-            ("sources", ";".join(Path(path.filename or "").name for path in archives))])
+        filed = sorted(item["filing_date"] for item in holdings.values())
+        stats = {"submissions": len(submissions), "holdings_reports": len(holdings), "lines": lines_read,
+                 "positions": positions, "duplicate_accessions": duplicates,
+                 "filing_date_min": filed[0].isoformat() if filed else None,
+                 "filing_date_max": filed[-1].isoformat() if filed else None}
+        rows = {"schema": SCHEMA, "built_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "sources": ";".join(Path(archive.filename or "").name for archive in archives),
+                "filing_date_min": stats["filing_date_min"] or "", "filing_date_max": stats["filing_date_max"] or "",
+                **(meta or {})}
+        db.executemany("INSERT INTO meta VALUES (?,?)", sorted(rows.items()))
         db.commit()
         db.execute("VACUUM")
         db.close()
+        db = None
         tmp.replace(out_path)
-        return {"submissions": len(submissions), "holdings_reports": len(holdings), "lines": lines_read,
-                "positions": positions}
+        return stats
+    except (zipfile.BadZipFile, EOFError, zlib.error) as exc:
+        raise SourceIntegrityError("THIRTEEN_F_SOURCE_CORRUPT") from exc
     finally:
+        if db is not None:
+            db.close()
         for archive in archives:
             archive.close()
+        tmp.unlink(missing_ok=True)
 
 
 def _available(filing_date: str) -> datetime:
@@ -181,7 +251,17 @@ class ThirteenFIndex:
         meta = dict(connection.execute("SELECT key, value FROM meta").fetchall())
         if meta.get("schema") != SCHEMA:
             raise ValueError("THIRTEEN_F_INDEX_SCHEMA_MISMATCH")
+        self.meta = meta
         self.built_at = meta.get("built_at")
+        # Filings are indexed through the end of the newest data set's window (S14 manifest), else
+        # through the newest filing date the index holds (S12 builds carry no window).
+        through = meta.get("coverage_end") or meta.get("filing_date_max") or connection.execute(
+            "SELECT MAX(filing_date) FROM filings").fetchone()[0]
+        self.indexed_through: date | None = date.fromisoformat(through) if through else None
+
+    def close(self) -> None:
+        with self._lock:
+            self._db.close()
 
     @classmethod
     def load(cls, path: str | Path) -> ThirteenFIndex:
@@ -203,6 +283,7 @@ class ThirteenFIndex:
             f"JOIN filings f ON f.accession = p.accession WHERE p.cusip IN ({marks}) AND f.filing_date <= ?",
             (*cusips, cutoff)).fetchall()
         base = {"source_url": SOURCE_URL, "index_built_at": self.built_at, "cusips": cusips,
+                "indexed_through": self.indexed_through.isoformat() if self.indexed_through else None,
                 "evidence_basis": "THIRTEEN_F_QUARTER_END_HOLDINGS"}
         periods = sorted({row[2] for row in rows}, reverse=True)
         if not periods:
@@ -247,8 +328,12 @@ class ThirteenFIndex:
         holders.sort(key=lambda item: (-item["shares"], item["manager"]))
         deadline = date.fromisoformat(current) + timedelta(days=45)
         window_open = now.astimezone(UTC).date() <= deadline
-        return {"state": "PARTIAL" if window_open else "CURRENT_AS_FILED",
-                "reason": "FILING_WINDOW_OPEN" if window_open else None, **base, "period": current, "prior_period": prior,
+        # An index whose data sets end before the deadline has not seen every on-time filing for the
+        # quarter even when the calendar window has closed: managers missing from it are unknown, not exited.
+        coverage_short = not window_open and self.indexed_through is not None and self.indexed_through < deadline
+        partial_reason = "FILING_WINDOW_OPEN" if window_open else "INDEX_ENDS_BEFORE_FILING_DEADLINE" if coverage_short else None
+        return {"state": "PARTIAL" if partial_reason else "CURRENT_AS_FILED",
+                "reason": partial_reason, **base, "period": current, "prior_period": prior,
                 "filing_deadline": deadline.isoformat(), "filing_window_open": window_open,
                 "holder_count": len(holders), "change_counts": counts, "holders": holders[:top],
                 "note": ("Quarter-end holdings reported by 13F managers, filed up to 45 days later. Managers who have "
@@ -273,4 +358,5 @@ class ThirteenFIndex:
         return out
 
 
-__all__ = ["HOLDINGS_TYPES", "SOURCE_URL", "ThirteenFIndex", "build_index", "parse_sec_date", "select_reports"]
+__all__ = ["HOLDINGS_TYPES", "REQUIRED_COLUMNS", "SOURCE_URL", "SourceIntegrityError", "ThirteenFIndex", "build_index",
+           "parse_sec_date", "select_reports", "verify_archive"]

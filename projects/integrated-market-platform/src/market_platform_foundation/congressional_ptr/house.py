@@ -10,8 +10,12 @@ Electronically filed PTRs are generated PDFs with a text layer (Standard securit
 handler with an empty user password, CID fonts with ToUnicode maps). This module
 reads that text layer with the standard library only — RC4/MD5 object keys, Flate,
 ToUnicode CMaps — and parses the transaction table. Paper filings are scanned
-images: they have no text layer and are reported ``TRANSACTIONS_NOT_MACHINE_READABLE``,
-never guessed.
+images: they have no text layer and are reported ``SCANNED_UNPARSED`` (legacy state
+``TRANSACTIONS_NOT_MACHINE_READABLE``), never guessed. S14 separates the document
+class (TEXT_PDF / SCANNED_PDF / MIXED / MALFORMED / UNSUPPORTED) from the parse state
+(PARSED / PARTIALLY_PARSED / NO_TRANSACTIONS / SCANNED_UNPARSED / PARSE_FAILED), so
+"not read" is never "no transactions", and puts scanned extraction behind
+``ScannedPtrExtractor`` (no engine by default).
 
 Semantics kept exact:
 
@@ -34,13 +38,16 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time
 from io import BytesIO
 from typing import Any
+from zoneinfo import ZoneInfo
+from collections.abc import Iterable
 
-PARSER_VERSION = "congressional_ptr.house/1.0.0"
+PARSER_VERSION = "congressional_ptr.house/1.1.0"
 INDEX_URL = "https://disclosures-clerk.house.gov/public_disc/financial-pdfs/{year}FD.zip"
 PTR_URL = "https://disclosures-clerk.house.gov/public_disc/ptr-pdfs/{year}/{doc_id}.pdf"
 CHAMBER = "HOUSE"
 PTR_FILING_TYPE = "P"
 MAX_PDF_BYTES = 8 * 1024 * 1024
+_ET = ZoneInfo("America/New_York")
 
 #: STOCK Act transaction codes as printed on House PTRs.
 TRANSACTION_TYPES = {"P": "PURCHASE", "S": "SALE", "S (partial)": "SALE_PARTIAL", "E": "EXCHANGE"}
@@ -255,31 +262,48 @@ _TEXT_OPS = re.compile(
 )
 
 
-def pdf_text_lines(data: bytes) -> list[str]:
-    """Text-layer lines (cells joined by ' | '); empty for a scanned (image-only) document."""
+def pdf_pages(data: bytes) -> tuple[list[list[str]], int]:
+    """Text-layer lines per page (cells joined by ' | ') and the number of image XObjects.
+
+    A scanned (image-only) document has no text lines on any page; its page objects may
+    sit in compressed object streams this reader does not expand, so the page list can be
+    empty — the image count is what distinguishes a scan from an empty document.
+    """
 
     pdf = _Pdf(data)
     fonts: dict[int, dict[int, str]] = {}
+    images = 0
     for number in pdf.objects:
         head = pdf.dictionary(number)
+        if re.search(rb"/Subtype\s*/Image\b", head):
+            images += 1
         if b"/Type /Font" in head and b"/ToUnicode" in head:
             ref = re.search(rb"/ToUnicode\s+(\d+) 0 R", head)
             if ref:
                 fonts[number] = _cmap(pdf.stream(int(ref.group(1))))
     pages = [number for number in pdf.objects if re.search(rb"/Type\s*/Page\b(?!s)", pdf.dictionary(number))]
-    lines: list[str] = []
+    out: list[list[str]] = []
     for page in sorted(pages, key=lambda number: _page_order(pdf, number)):
         head = pdf.dictionary(page)
         page_fonts = {name.decode(): fonts[int(ref)] for name, ref in _FONT_REF.findall(head) if int(ref) in fonts}
         contents = [int(ref) for ref in re.findall(rb"/Contents\s+(\d+) 0 R", head)]
         contents += [int(ref) for ref in re.findall(rb"/XObject\s*<<\s*(?:/\w+\s+\d+ 0 R\s*)*?/\w+\s+(\d+) 0 R", head)]
+        lines: list[str] = []
         for ref in contents:
-            if ref not in pdf.objects:
+            if ref not in pdf.objects or re.search(rb"/Subtype\s*/Image\b", pdf.dictionary(ref)):
                 continue
             own = {name.decode(): fonts[int(num)] for name, num in _FONT_REF.findall(pdf.dictionary(ref)) if int(num) in fonts}
             lines.extend(_content_lines(pdf.stream(ref), {**page_fonts, **own}))
-    cleaned = (_CONTROL.sub("", line).strip() for line in lines)
-    return [line for line in cleaned if line.strip(" |")]
+        cleaned = (_CONTROL.sub("", line).strip() for line in lines)
+        out.append([line for line in cleaned if line.strip(" |")])
+    return out, images
+
+
+def pdf_text_lines(data: bytes) -> list[str]:
+    """Text-layer lines (cells joined by ' | '); empty for a scanned (image-only) document."""
+
+    pages, _images = pdf_pages(data)
+    return [line for page in pages for line in page]
 
 
 def _page_order(pdf: _Pdf, page: int) -> int:
@@ -338,6 +362,12 @@ class PtrTransaction:
     amount: AmountRange | None
     row_index: int
     quality_flags: tuple[str, ...] = field(default_factory=tuple)
+    filing_status: str | None = None    # per-row "Filing Status" as printed (e.g. New, Amended)
+    description: str | None = None      # "Description" (e.g. option strike / expiry) as printed
+    subholding_of: str | None = None    # "Subholding Of" account as printed
+    source_page: int | None = None      # 1-based page of the row's anchor line
+    evidence_class: str = "OBSERVED"    # OBSERVED (text layer) / EXTRACTED (scanned-document extractor)
+    extraction: dict[str, Any] | None = None  # extractor provenance (page, raw text, confidence) when EXTRACTED
 
     @property
     def matchable_ticker(self) -> str | None:
@@ -377,6 +407,8 @@ class _Row:
     asset_text: str
     amount_text: str
     amount_open: bool  # the amount's upper bound has not been read yet ("$15,001 -")
+    page: int | None = None
+    labels: dict[str, str] = field(default_factory=dict)
 
     @property
     def asset_complete(self) -> bool:
@@ -402,41 +434,84 @@ def _freeze(row: _Row, row_index: int) -> PtrTransaction:
         flags.append("ASSET_DESCRIPTION_MISSING")
     if asset_code is None:
         flags.append("ASSET_TYPE_CODE_MISSING")
+    traded, notified = _parse_date(row.traded), _parse_date(row.notified)
+    if traded is None:
+        flags.append("TRANSACTION_DATE_UNPARSED")
+    if notified is None:
+        flags.append("NOTIFICATION_DATE_UNPARSED")
+    if traded is not None and notified is not None and notified < traded:
+        flags.append("NOTIFICATION_BEFORE_TRANSACTION")
     return PtrTransaction(
         owner=owner, asset_description=description, asset_type_code=asset_code,
         disclosed_ticker=ticker_match.group(1) if ticker_match else None,
         transaction_type=TRANSACTION_TYPES[row.code], transaction_type_code=row.code,
-        transaction_date=_parse_date(row.traded), notification_date=_parse_date(row.notified), amount=amount,
-        row_index=row_index, quality_flags=tuple(flags))
+        transaction_date=traded, notification_date=notified, amount=amount,
+        row_index=row_index, quality_flags=tuple(flags), filing_status=row.labels.get("F"),
+        description=row.labels.get("D"), subholding_of=row.labels.get("S O"), source_page=row.page)
 
 
-def parse_transactions(lines: list[str]) -> list[PtrTransaction]:
+#: Row flags that mean a field the Screener relies on was not read; such a row is kept, the document is PARTIALLY_PARSED.
+CRITICAL_FLAGS = frozenset({"AMOUNT_RANGE_UNPARSED", "TRANSACTION_DATE_UNPARSED", "ASSET_DESCRIPTION_MISSING"})
+_LABEL_VALUE = re.compile(r"^([A-Z](?:\s+[A-Z])*)\s*:\s*\|?\s*(.*)$")
+_ROWISH = re.compile(r"\d{2}/\d{2}/\d{4}\s*\|\s*\d{2}/\d{2}/\d{4}")
+
+
+def _spaced_text(text: str) -> str:
+    """Undo the generator's per-glyph spacing: words are separated by 2+ spaces ("N ew" → "New")."""
+
+    words = [part.replace(" ", "") for part in re.split(r"\s{2,}", text.strip()) if part.strip()]
+    return " ".join(words)
+
+
+def _row_label(body: str) -> tuple[str, str] | None:
+    """A per-row label line ("F   S :  | N ew") → (label capitals, value); None for anything else."""
+
+    match = _LABEL_VALUE.match(body)
+    if not match:
+        return None
+    capitals = " ".join(match.group(1).split())
+    key = {"F S": "F", "D": "D", "S O": "S O"}.get(capitals)
+    if key is None:
+        return None
+    return key, _spaced_text(match.group(2))
+
+
+def parse_transactions(lines: list[str], *, line_pages: list[int] | None = None) -> list[PtrTransaction]:
     """Parse the transaction table from PTR text-layer lines.
 
     A row is anchored on ``type | transaction date | notification date | amount``;
     the asset text precedes it and ends with the ``[XX]`` asset-type code. A row
     cut by a page break continues after the next page's table header: the
-    remaining asset text (up to ``[XX]``) and/or the amount's upper bound.
+    remaining asset text (up to ``[XX]``) and/or the amount's upper bound. The
+    per-row label lines that follow a row (Filing Status, Description, Subholding
+    Of) are attached to it verbatim. ``line_pages`` (1-based) records each row's page.
     """
 
     rows: list[_Row] = []
     buffer: list[str] = []
-    for raw in lines:
+    for position, raw in enumerate(lines):
         body = raw.strip(" |").strip()
         anchor = _ANCHOR.search(body)
         pending = rows[-1] if rows and (rows[-1].amount_open or not rows[-1].asset_complete) else None
+        label = _row_label(body) if rows else None
         if anchor and not _is_label(body):
             code, traded, notified, amount_text = anchor.groups()
             prefix = body[:anchor.start()].strip(" |")
             if prefix:
                 buffer.append(prefix)
             rows.append(_Row(code, traded, notified, " ".join(buffer), amount_text,
-                             amount_text.rstrip().endswith("-")))
+                             amount_text.rstrip().endswith("-"),
+                             line_pages[position] if line_pages and position < len(line_pages) else None))
             buffer = []
         elif pending is not None and pending.amount_open and body.startswith("$") and not _is_boundary(body):
             pending.amount_text = f"{pending.amount_text} {body}"
             pending.amount_open = False
-        elif _is_boundary(body):
+        elif label is not None:
+            rows[-1].labels.setdefault(label[0], label[1])
+            buffer = []
+        elif _is_boundary(body) or _ROWISH.search(body):
+            # A row-shaped line that is not a valid anchor (e.g. an unknown transaction code) is counted
+            # as unrecognized by the caller; its asset text must not bleed into the next row.
             buffer = []
         elif pending is not None and not pending.asset_complete and not buffer and _ASSET_CODE.search(body.split(" | $")[0]):
             # Page-break continuation: "Common Stock (LAMR) |  [ST] | $50,000".
@@ -452,46 +527,209 @@ def parse_transactions(lines: list[str]) -> list[PtrTransaction]:
     return [_freeze(row, index) for index, row in enumerate(rows)]
 
 
+#: Document classes (what the file is) and parse states (what IMP read from it) are separate.
+DOCUMENT_CLASSES = ("TEXT_PDF", "SCANNED_PDF", "MIXED", "MALFORMED", "UNSUPPORTED")
+PARSE_STATES = ("PARSED", "PARTIALLY_PARSED", "NO_TRANSACTIONS", "SCANNED_UNPARSED", "PARSE_FAILED")
+#: S12's coarse document state, kept for existing consumers.
+LEGACY_STATE = {"PARSED": "PARSED", "PARTIALLY_PARSED": "PARSED", "NO_TRANSACTIONS": "PARSED",
+                "SCANNED_UNPARSED": "TRANSACTIONS_NOT_MACHINE_READABLE", "PARSE_FAILED": "PARSE_ERROR"}
+_UNSUPPORTED = frozenset({"UNSUPPORTED_PDF_ENCRYPTION", "PDF_TOO_LARGE"})
+_TABLE_HEADER = "I D | O w n e r"
+
+
 @dataclass(frozen=True, slots=True)
 class PtrDocument:
     doc_id: str
-    state: str                     # PARSED / TRANSACTIONS_NOT_MACHINE_READABLE / PARSE_ERROR
+    state: str                     # legacy: PARSED / TRANSACTIONS_NOT_MACHINE_READABLE / PARSE_ERROR
     reason: str | None
     transactions: tuple[PtrTransaction, ...]
     source_sha256: str
     parser_version: str = PARSER_VERSION
+    document_class: str = "TEXT_PDF"
+    parse_state: str = "PARSED"
+    page_count: int | None = None
+    text_pages: int | None = None
+    image_objects: int | None = None
+    unrecognized_rows: int = 0
+    withheld_rows: int = 0
+    amended_rows: int = 0
+    extraction: dict[str, Any] | None = None
+
+    def coverage(self) -> dict[str, Any]:
+        return {"document_class": self.document_class, "parse_state": self.parse_state, "reason": self.reason,
+                "page_count": self.page_count, "text_pages": self.text_pages, "transactions": len(self.transactions),
+                "unrecognized_rows": self.unrecognized_rows, "withheld_rows": self.withheld_rows,
+                "amended_rows": self.amended_rows, "extraction": self.extraction}
 
 
-def parse_ptr_pdf(doc_id: str, data: bytes) -> PtrDocument:
+def _document(doc_id: str, digest: str, document_class: str, parse_state: str, reason: str | None,
+              transactions: tuple[PtrTransaction, ...] = (), **extra: Any) -> PtrDocument:
+    amended = sum(1 for item in transactions if (item.filing_status or "").lower().startswith("amend"))
+    return PtrDocument(doc_id, LEGACY_STATE[parse_state], reason, transactions, digest, document_class=document_class,
+                       parse_state=parse_state, amended_rows=amended, **extra)
+
+
+# ------------------------------------------------------------------ scanned documents
+@dataclass(frozen=True, slots=True)
+class ExtractedRow:
+    """One row an extractor read from a scanned page, with the evidence to audit it."""
+
+    transaction: PtrTransaction
+    page: int
+    raw_text: str
+    confidence: float
+    bbox: tuple[float, float, float, float] | None = None
+    field_text: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ScannedExtraction:
+    status: str                      # EXTRACTED / ENGINE_NOT_CONFIGURED / FAILED
+    rows: tuple[ExtractedRow, ...] = ()
+    confidence: float | None = None
+    engine: str | None = None
+    warnings: tuple[str, ...] = ()
+
+
+class ScannedPtrExtractor:
+    """Boundary for reading scanned PTRs. The default has no engine: scans stay SCANNED_UNPARSED.
+
+    An engine plugged in here must be deterministic, report per-row confidence and the
+    source page, and fail closed; its rows are EXTRACTED evidence, never OBSERVED, and a
+    row below ``MIN_EXTRACTION_CONFIDENCE`` is withheld rather than shown as a filed fact.
+    """
+
+    engine = None
+
+    def extract(self, doc_id: str, data: bytes) -> ScannedExtraction:
+        return ScannedExtraction("ENGINE_NOT_CONFIGURED", engine=None)
+
+
+MIN_EXTRACTION_CONFIDENCE = 0.98
+
+
+def _admit_extraction(doc_id: str, digest: str, extraction: ScannedExtraction, **extra: Any) -> PtrDocument:
+    summary = {"status": extraction.status, "engine": extraction.engine, "confidence": extraction.confidence,
+               "warnings": list(extraction.warnings), "min_confidence": MIN_EXTRACTION_CONFIDENCE}
+    if extraction.status != "EXTRACTED":
+        reason = "NO_TEXT_LAYER_SCANNED_FILING" if extraction.status == "ENGINE_NOT_CONFIGURED" else "SCANNED_EXTRACTION_FAILED"
+        return _document(doc_id, digest, "SCANNED_PDF", "SCANNED_UNPARSED", reason, extraction=summary, **extra)
+    admitted, withheld = [], 0
+    for index, row in enumerate(extraction.rows):
+        if row.confidence < MIN_EXTRACTION_CONFIDENCE or row.page < 1:
+            withheld += 1
+            continue
+        txn = row.transaction
+        admitted.append(PtrTransaction(
+            owner=txn.owner, asset_description=txn.asset_description, asset_type_code=txn.asset_type_code,
+            disclosed_ticker=txn.disclosed_ticker, transaction_type=txn.transaction_type,
+            transaction_type_code=txn.transaction_type_code, transaction_date=txn.transaction_date,
+            notification_date=txn.notification_date, amount=txn.amount, row_index=index,
+            quality_flags=(*txn.quality_flags, "EXTRACTED_FROM_SCAN"), filing_status=txn.filing_status,
+            description=txn.description, subholding_of=txn.subholding_of, source_page=row.page,
+            evidence_class="EXTRACTED",
+            extraction={"engine": extraction.engine, "page": row.page, "raw_text": row.raw_text,
+                        "confidence": row.confidence, "bbox": list(row.bbox) if row.bbox else None,
+                        "fields": dict(row.field_text)}))
+    if not admitted:
+        return _document(doc_id, digest, "SCANNED_PDF", "SCANNED_UNPARSED",
+                         "EXTRACTION_BELOW_CONFIDENCE" if withheld else "EXTRACTION_FOUND_NO_ROWS",
+                         withheld_rows=withheld, extraction=summary, **extra)
+    state = "PARTIALLY_PARSED" if withheld else "PARSED"
+    return _document(doc_id, digest, "SCANNED_PDF", state, "LOW_CONFIDENCE_ROWS_WITHHELD" if withheld else None,
+                     tuple(admitted), withheld_rows=withheld, extraction=summary, **extra)
+
+
+def parse_ptr_pdf(doc_id: str, data: bytes, *, scanned: ScannedPtrExtractor | None = None) -> PtrDocument:
+    """Classify the document, then read what it lawfully and reliably contains.
+
+    ``parse_state`` never lets "not read" look like "no transactions": NO_TRANSACTIONS
+    requires a readable transaction table with no row in it.
+    """
+
     digest = hashlib.sha256(data).hexdigest()
     if len(data) > MAX_PDF_BYTES:
-        return PtrDocument(doc_id, "PARSE_ERROR", "PDF_TOO_LARGE", (), digest)
+        return _document(doc_id, digest, "UNSUPPORTED", "PARSE_FAILED", "PDF_TOO_LARGE")
     try:
-        lines = pdf_text_lines(data)
+        pages, images = pdf_pages(data)
     except (ValueError, KeyError, zlib.error) as exc:
         code = str(exc) if str(exc).isupper() else "PDF_TEXT_LAYER_UNREADABLE"
-        return PtrDocument(doc_id, "PARSE_ERROR", code, (), digest)
-    if not lines:
-        return PtrDocument(doc_id, "TRANSACTIONS_NOT_MACHINE_READABLE", "NO_TEXT_LAYER_SCANNED_FILING", (), digest)
-    transactions = tuple(parse_transactions(lines))
+        return _document(doc_id, digest, "UNSUPPORTED" if code in _UNSUPPORTED else "MALFORMED", "PARSE_FAILED", code)
+    text_pages = sum(1 for page in pages if page)
+    counts = {"page_count": len(pages) or None, "text_pages": text_pages, "image_objects": images}
+    if text_pages == 0:
+        if images == 0:
+            return _document(doc_id, digest, "MALFORMED", "PARSE_FAILED", "NO_TEXT_LAYER_AND_NO_IMAGES", **counts)
+        return _admit_extraction(doc_id, digest, (scanned or ScannedPtrExtractor()).extract(doc_id, data), **counts)
+    document_class = "MIXED" if text_pages < len(pages) else "TEXT_PDF"
+    lines = [line for page in pages for line in page]
+    line_pages = [number for number, page in enumerate(pages, start=1) for _ in page]
+    transactions = tuple(parse_transactions(lines, line_pages=line_pages))
+    rowish = sum(1 for line in lines if _ROWISH.search(line))
+    unrecognized = max(0, rowish - len(transactions))
+    counts["unrecognized_rows"] = unrecognized
     if not transactions:
-        return PtrDocument(doc_id, "TRANSACTIONS_NOT_MACHINE_READABLE", "NO_TRANSACTION_ROWS_RECOGNIZED", (), digest)
-    return PtrDocument(doc_id, "PARSED", None, transactions, digest)
+        if unrecognized:
+            return _document(doc_id, digest, document_class, "PARSE_FAILED", "TRANSACTION_ROWS_UNRECOGNIZED", **counts)
+        if any(line.startswith(_TABLE_HEADER) for line in lines):
+            if document_class == "MIXED":
+                return _document(doc_id, digest, document_class, "PARTIALLY_PARSED", "IMAGE_ONLY_PAGES_UNPARSED", **counts)
+            return _document(doc_id, digest, document_class, "NO_TRANSACTIONS", "TRANSACTION_TABLE_EMPTY", **counts)
+        return _document(doc_id, digest, document_class, "PARSE_FAILED", "TRANSACTION_TABLE_NOT_FOUND", **counts)
+    reasons = []
+    if document_class == "MIXED":
+        reasons.append("IMAGE_ONLY_PAGES_UNPARSED")
+    if unrecognized:
+        reasons.append("SOME_ROWS_UNRECOGNIZED")
+    if any(CRITICAL_FLAGS & set(item.quality_flags) for item in transactions):
+        reasons.append("SOME_ROW_FIELDS_UNPARSED")
+    return _document(doc_id, digest, document_class, "PARTIALLY_PARSED" if reasons else "PARSED",
+                     ";".join(reasons) or None, transactions, **counts)
+
+
+def coverage_metrics(documents: Iterable[PtrDocument], *, loading: int = 0, document_errors: int = 0) -> dict[str, int]:
+    """Coverage counts for a set of documents — how much was read, not a quality score."""
+
+    items = list(documents)
+    by_class = {name: 0 for name in DOCUMENT_CLASSES}
+    by_state = {name: 0 for name in PARSE_STATES}
+    for item in items:
+        by_class[item.document_class] = by_class.get(item.document_class, 0) + 1
+        by_state[item.parse_state] = by_state.get(item.parse_state, 0) + 1
+    return {"documents_total": len(items) + loading + document_errors, "documents_read": len(items),
+            "machine_readable": by_class["TEXT_PDF"] + by_class["MIXED"], "scanned": by_class["SCANNED_PDF"],
+            "mixed": by_class["MIXED"], "malformed": by_class["MALFORMED"], "unsupported": by_class["UNSUPPORTED"],
+            "parsed": by_state["PARSED"], "partially_parsed": by_state["PARTIALLY_PARSED"],
+            "no_transactions": by_state["NO_TRANSACTIONS"], "scanned_unparsed": by_state["SCANNED_UNPARSED"],
+            "failed": by_state["PARSE_FAILED"], "loading": loading, "document_errors": document_errors,
+            "transaction_count": sum(len(item.transactions) for item in items),
+            "extracted_transactions": sum(1 for item in items for txn in item.transactions if txn.evidence_class == "EXTRACTED"),
+            "withheld_rows": sum(item.withheld_rows for item in items),
+            "unrecognized_rows": sum(item.unrecognized_rows for item in items)}
 
 
 # ------------------------------------------------------------------ availability
-def filing_available_at(filing_date: date, *, retrieved_at: datetime | None) -> tuple[datetime, str]:
-    """Lawful public-availability bound for a House filing (never the transaction date).
+def filing_available_at(filing_date: date, *, retrieved_at: datetime | None = None) -> tuple[datetime, str]:
+    """Public-availability bound for a House filing (never the transaction date).
 
-    The index carries a filing *date* only. As in the canonical congressional clock
-    reconciliation, availability is the later of the end of the filing's UTC day
-    and IMP's own first retrieval of the document.
+    The Clerk's index carries a filing *date* only, and that date is Eastern. A filing
+    is therefore public no earlier than the end of that ET day. (S12 used the end of the
+    UTC day, which precedes the end of the ET day by four to five hours — a filing made
+    in the evening, ET, would have looked public before it was filed.)
+
+    IMP's own first retrieval is a separate clock (``imp_known_at``); it never moves
+    public availability (S14). ``retrieved_at`` is accepted for S12 callers and ignored.
     """
 
-    end_of_day = datetime.combine(filing_date, time(23, 59, 59), tzinfo=UTC)
-    if retrieved_at is not None and retrieved_at > end_of_day:
-        return retrieved_at, "imp.first_retrieved_at"
-    return end_of_day, "house_index.filing_date_end_of_utc_day"
+    del retrieved_at
+    end_of_et_day = datetime.combine(filing_date, time(23, 59, 59), tzinfo=_ET).astimezone(UTC)
+    return end_of_et_day, "house_index.filing_date_end_of_et_day"
+
+
+def imp_known_at(available_at: datetime, retrieved_at: datetime | None) -> datetime:
+    """When IMP itself could first have known the record: the later of public availability and first retrieval."""
+
+    return max(available_at, retrieved_at) if retrieved_at is not None else available_at
 
 
 def disclosure_lag_days(transaction_date: date | None, filing_date: date) -> int | None:
@@ -503,8 +741,10 @@ def disclosure_lag_days(transaction_date: date | None, filing_date: date) -> int
 
 
 __all__ = [
-    "AmountRange", "CHAMBER", "HouseFiling", "INDEX_URL", "OWNER_CODES", "PARSER_VERSION", "PTR_URL", "PtrDocument",
-    "PtrTransaction", "TICKER_ASSET_TYPES", "TRANSACTION_TYPES", "disclosure_lag_days",
-    "filing_available_at", "parse_amount_range", "parse_filing_index", "parse_ptr_pdf", "parse_transactions",
-    "pdf_text_lines", "periodic_transaction_reports",
+    "AmountRange", "CHAMBER", "CRITICAL_FLAGS", "DOCUMENT_CLASSES", "ExtractedRow", "HouseFiling", "INDEX_URL",
+    "LEGACY_STATE", "MIN_EXTRACTION_CONFIDENCE", "OWNER_CODES", "PARSER_VERSION", "PARSE_STATES", "PTR_URL",
+    "PtrDocument", "PtrTransaction", "ScannedExtraction", "ScannedPtrExtractor", "TICKER_ASSET_TYPES",
+    "TRANSACTION_TYPES", "coverage_metrics", "disclosure_lag_days", "filing_available_at", "imp_known_at",
+    "parse_amount_range", "parse_filing_index", "parse_ptr_pdf", "parse_transactions", "pdf_pages", "pdf_text_lines",
+    "periodic_transaction_reports",
 ]
