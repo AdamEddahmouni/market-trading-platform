@@ -38,10 +38,10 @@ const RowSchema = z.object({
   cusip: z.string().optional(),
   isin: z.string().nullable().optional(),
   identity_source: z.string().optional(),
-  issuer: z.string().optional(),
+  issuer: z.string().nullable().optional(),
   security_type: z.string().optional(),
   term: z.string().nullable().optional(),
-  issue_date: z.string().optional(),
+  issue_date: z.string().nullable().optional(),
   maturity: z.string().optional(),
   maturity_bucket: z.string().nullable().optional(),
   tips: z.string().optional(),
@@ -52,6 +52,15 @@ const RowSchema = z.object({
   reference_tenor: z.string().nullable().optional(),
   reference_date: z.string().nullable().optional(),
   reference_reason: z.string().nullable().optional(),
+  // S16: categories inside Bonds, fund-reported (Form N-PORT) flags, and the date of an observed operation price.
+  category: z.string().nullable().optional(),
+  isin_source: z.string().nullable().optional(),
+  coupon_type: z.string().nullable().optional(),
+  in_default: z.string().nullable().optional(),
+  convertible: z.string().nullable().optional(),
+  pik: z.string().nullable().optional(),
+  report_date: z.string().nullable().optional(),
+  observed_date: z.string().nullable().optional(),
   base_asset: z.string().optional(),
   quote_asset: z.string().optional(),
   venue: z.string().optional(),
@@ -86,6 +95,9 @@ const ScreenerSchema = z.object({
   provider_health: z.array(z.object({ provider: z.string(), role: z.string().optional(), state: z.string(), reason: z.string().nullable() })),
   /** S9: per-category coverage; an unavailable category has no count and is never folded into a total. */
   coverage: z.record(z.object({ state: z.string(), count: z.number().nullable() })).optional(),
+  /** S16: each category's own source and clock (a fund-held category's clock is its N-PORT report date). */
+  coverage_sources: z.record(z.object({ source: z.string(), as_of: z.string().nullable(), reason: z.string().nullable(),
+    basis: z.string().nullable() }).passthrough()).optional(),
   source_error: z.string().nullable(),
   rows: z.array(RowSchema),
 });

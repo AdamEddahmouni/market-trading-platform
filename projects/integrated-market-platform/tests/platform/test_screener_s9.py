@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.fixed_income.http import FixedIncomeSourceError  # noqa: E402
 from market_platform_foundation.fixed_income.treasury_catalog import build_catalog  # noqa: E402
+from market_platform_foundation.fixed_income.treasury_market import TreasuryMarketData  # noqa: E402
 from market_platform_foundation.fixed_income.treasury_rates import (  # noqa: E402
     NOMINAL, REAL, TreasuryRates, parse_bills, parse_curve,
 )
@@ -67,11 +68,22 @@ class Clock:
         return self.value
 
 
+def no_market(today: date, fetched_at: str) -> TreasuryMarketData:
+    return TreasuryMarketData({}, {}, {}, {}, fetched_at)
+
+
 def service(env=LIVE, *, catalog_loader=fixture_catalog, rates_loader=fixture_rates, today=TODAY, clock=None,
-            fred=None, finra=None) -> BondScreener:
+            fred=None, finra=None, market_loader=no_market) -> BondScreener:
+    """The S9 service with every S16 source injected empty: no network, no N-PORT catalog."""
+
     day = [today]
     svc = BondScreener(
         env=env, catalog_loader=catalog_loader, rates_loader=rates_loader,
+        market_loader=market_loader, nport=None,
+        nyfed_rates_loader=lambda: {"state": "UNAVAILABLE", "reason": "TEST", "items": []},
+        soma_loader=lambda: None,
+        breadth_loader=lambda **_: {"source": "FINRA_TRACE_AGGREGATES", "state": "NOT_CONFIGURED",
+                                    "reason": "IMP_FINRA_LIVE_NOT_SET", "categories": {}},
         fred_loader=fred or (lambda **_: {"state": "NOT_CONFIGURED", "reason": "FRED_API_KEY_MISSING", "items": []}),
         finra_loader=finra or (lambda **_: {"source": "FINRA_TRACE_AGGREGATES", "state": "NOT_CONFIGURED",
                                             "reason": "IMP_FINRA_LIVE_NOT_SET", "trade_date": None, "rows": []}),
@@ -102,10 +114,11 @@ class UniverseArchitectureTests(unittest.TestCase):
         self.assertEqual(spec.admitted_instrument_kinds, ("SOVEREIGN_SECURITY", "BOND"))
         self.assertEqual(spec.identity_fields, ("cusip", "isin"))
         self.assertEqual(spec.tradability, "REFERENCE_ONLY")
-        self.assertEqual(list(spec.views), ["Overview", "Treasuries", "Rates & Curve", "Custom"])
+        # S16 adds the fund-held (Credit & Munis) and dated-observation views.
+        self.assertEqual(list(spec.views), ["Overview", "Treasuries", "Rates & Curve", "Credit & Munis", "Observed", "Custom"])
         self.assertEqual(spec.panels, ("rates_curve", "news"))  # S11 adds cross-universe News & Analysis
         payload = next(item for item in universe_payload() if item["id"] == BONDS)
-        self.assertEqual(payload["view_order"], ["Overview", "Treasuries", "Rates & Curve", "Custom"])
+        self.assertEqual(payload["view_order"], ["Overview", "Treasuries", "Rates & Curve", "Credit & Munis", "Observed", "Custom"])
         self.assertEqual(payload["quote_capability"], "NO_STREAMING_QUOTE")
         for other in (US_EQUITIES, FUTURES, US_ETFS):
             self.assertNotIn("rates_curve", universe_spec(other).panels)
@@ -118,10 +131,14 @@ class UniverseArchitectureTests(unittest.TestCase):
         filters = {entry["field"] for entry in filter_catalog(BONDS)}
         self.assertEqual(filters, {"security_type", "issuer", "term", "tips", "frn", "callable", "coupon", "maturity_bucket",
                                    "years_to_maturity", "days_to_maturity", "maturity_year", "outstanding",
-                                   "auction_yield", "auction_real_yield", "bid_to_cover"})
+                                   "auction_yield", "auction_real_yield", "bid_to_cover",
+                                   # S16: category and fund-reported terms/holdings
+                                   "category", "isin", "coupon_type", "in_default", "convertible", "pik",
+                                   "fund_count", "fund_par_held", "fund_value_pct"})
         capabilities = field_capabilities(BONDS)
         self.assertTrue(all(capabilities[field]["execution"] == "CATALOG" for field in filters))
-        for field in ("reference_rate", "reference_tenor", "indicative_rate"):
+        for field in ("reference_rate", "reference_tenor", "indicative_rate", "observed_price", "observed_yield",
+                      "benchmark_spread"):
             self.assertEqual(capabilities[field], {"execution": "REFERENCE", "sortable": False, "filterable": False})
         for equity in (US_EQUITIES, US_ETFS, FUTURES):
             self.assertFalse({"coupon", "maturity_bucket", "security_type"} & {e["field"] for e in filter_catalog(equity)})
@@ -188,7 +205,8 @@ class BondQueryTests(unittest.TestCase):
         self.assertEqual(payload["market_session"], "PUBLICATION_BASED")
         self.assertEqual(payload["evaluation"], "CATALOG")
         self.assertEqual(payload["coverage"]["TREASURY"], {"state": "CURRENT", "count": 8})
-        self.assertEqual(payload["coverage"]["CORPORATE"]["state"], "CORPORATE_COVERAGE_UNAVAILABLE")
+        # S16: without an N-PORT catalog the fund-held categories say so; never a folded zero.
+        self.assertEqual(payload["coverage"]["CORPORATE"]["state"], "NOT_CONFIGURED")
         self.assertIsNone(payload["coverage"]["CORPORATE"]["count"])
 
     def test_search_by_cusip_description_type_and_maturity(self):

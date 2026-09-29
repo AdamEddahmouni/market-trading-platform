@@ -65,6 +65,10 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
   });
   const data = preview.data && preview.data.instrument.instrument_id === id ? preview.data : undefined;
   const matched = data?.why.matched;
+  // S16: a fund-held row names its reported issuer; only Treasury rows are "U.S. Treasury".
+  const treasury = !row?.category || row.category === "Treasury";
+  const observed = row?.fields.observed_price;
+  const fundValue = row?.fields.fund_value_pct;
   return <aside className={`screener-preview bond-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef as React.Ref<HTMLElement>}
     tabIndex={-1} style={overlay ? undefined : { width }}
     onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }}>
@@ -72,16 +76,21 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
       <span className="screener-preview-kicker">Quick Preview · Bond</span>
       <button type="button" className="screener-preview-close" onClick={onClose} aria-label="Close quick preview">×</button>
     </header>
-    {!row ? <p className="screener-preview-empty">Select a security to preview its terms, latest auction, and rates context.</p> : <>
+    {!row ? <p className="screener-preview-empty">Select a security to preview its terms, market observations, and rates context.</p> : <>
       <div className="bond-preview-identity">
         <h2>{row.company}</h2>
-        <p><span>CUSIP <strong>{row.cusip ?? row.symbol}</strong></span><span>{row.security_type}</span>
-          <span>{row.issuer ?? "U.S. Treasury"}</span><span className="bond-reference-only">Reference only</span></p>
+        <p><span>CUSIP <strong>{row.cusip ?? row.symbol}</strong></span>{row.category && <span className="bond-category">{row.category}</span>}
+          <span>{row.security_type}</span>
+          <span>{treasury ? "U.S. Treasury" : row.issuer ?? "Issuer not reported"}</span><span className="bond-reference-only">Reference only</span></p>
         <dl className="bond-preview-headline">
           <div><dt>Coupon</dt><dd>{bondValue(row.fields.coupon?.value ?? null, "percent")}</dd></div>
           <div><dt>Maturity</dt><dd>{isoDate(row.maturity)}</dd></div>
           <div><dt>Years</dt><dd>{bondValue(row.fields.years_to_maturity?.value ?? null, "years")}</dd></div>
-          <div><dt>Price</dt><dd title="No permitted security-level Treasury price source is integrated">—</dd></div>
+          {observed?.value != null
+            ? <div><dt>Obs. price</dt><dd title={`${observed.basis ?? ""} · dated observation, not a quote`}>{observed.value.toFixed(3)} <small>{isoDate(observed.as_of ?? null)}</small></dd></div>
+            : !treasury && fundValue?.value != null
+              ? <div><dt>Fund value</dt><dd title="Median fund fair value per 100 of par at the funds' report dates: stale, never a price">{fundValue.value.toFixed(2)} <small>stale · {isoDate(fundValue.as_of ?? null)}</small></dd></div>
+              : <div><dt>Price</dt><dd title="No permitted security-level price source is integrated">—</dd></div>}
         </dl>
       </div>
       {preview.isError && !data ? <p className="screener-preview-note" role="alert">Preview unavailable for {row.cusip}. <button type="button" onClick={() => void preview.refetch()}>Retry</button></p> :

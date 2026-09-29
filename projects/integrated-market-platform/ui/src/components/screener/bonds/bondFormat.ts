@@ -23,6 +23,7 @@ export function bondValue(value: number | string | null, unit: string): string {
     case "years": return `${value.toFixed(2)} yrs`;
     case "days": return `${Math.round(value).toLocaleString()} days`;
     case "USD_BILLIONS": return `$${value.toLocaleString("en-US", { maximumFractionDigits: 1 })}B`;
+    case "USD_MILLIONS": return `$${value.toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
     case "USD": return `$${compact.format(value)}`;
     case "ratio": return `${value.toFixed(2)}×`;
     case "bp": return `${value > 0 ? "+" : ""}${value.toFixed(1)} bp`;
@@ -33,13 +34,17 @@ export function bondValue(value: number | string | null, unit: string): string {
 }
 
 export const CLASS_LABEL: Record<BondItem["class"], string> = {
-  OBSERVED: "Observed", DERIVED: "Derived", REFERENCE: "Reference", UNAVAILABLE: "Unavailable",
+  OBSERVED: "Observed", DERIVED: "Derived", REFERENCE: "Reference", STALE: "Stale", UNAVAILABLE: "Unavailable",
 };
 
 const SOURCE_LABEL: Record<string, string> = {
   US_TREASURY_FISCAL_DATA_AUCTIONS: "Treasury Fiscal Data · auctions", US_TREASURY_FISCAL_DATA_MSPD: "Treasury Fiscal Data · MSPD",
   US_TREASURY_DAILY_RATES: "U.S. Treasury daily rates", IMP_DERIVED: "IMP derived", IMP_XA01: "IMP identity",
   FINRA_TRACE: "FINRA TRACE", IMP: "IMP",
+  SEC_FORM_NPORT: "SEC Form N-PORT", US_TREASURY_FISCAL_DATA_TIPS_CPI: "Treasury Fiscal Data · TIPS CPI",
+  US_TREASURY_FISCAL_DATA_FRN_INDEXES: "Treasury Fiscal Data · FRN indexes", US_TREASURY_FISCAL_DATA_BUYBACKS: "Treasury buybacks",
+  NY_FED_TREASURY_OPERATIONS: "NY Fed operations", NY_FED_REFERENCE_RATES: "NY Fed reference rates",
+  NY_FED_SOMA_HOLDINGS: "NY Fed SOMA", OPENFIGI: "OpenFIGI", NRSRO: "NRSRO ratings", MSRB_EMMA: "MSRB EMMA",
 };
 export const sourceLabel = (source: string | null) => (source && (SOURCE_LABEL[source] ?? source)) || "";
 
@@ -52,11 +57,17 @@ export function provenance(item: Pick<BondItem, "source" | "as_of">) {
 const STATE_TEXT: Record<string, string> = {
   CURRENT: "Current", PUBLICATION_CURRENT: "Publication current", STALE: "Stale", NOT_CONFIGURED: "Not configured",
   UNAVAILABLE: "Unavailable", DEGRADED: "Degraded (last good)", PARTIAL: "Partial", FINRA_TERMS_REQUIRED: "Licence required",
+  TERMS_REQUIRED: "Licence required", CONFIGURED: "On demand", CURRENT_AS_FILED: "Current as filed",
+  FUND_HELD_REFERENCE: "Fund-held reference", STALE_AS_FILED: "Stale as filed",
 };
 export const sourceState = (source: BondSource) => STATE_TEXT[source.state ?? ""] ?? humanize(source.state ?? "UNAVAILABLE");
 const REASON_TEXT: Record<string, string> = {
   IMP_TREASURY_LIVE_NOT_SET: "set IMP_TREASURY_LIVE=1", FRED_API_KEY_MISSING: "FRED API key not configured",
   IMP_FRED_LIVE_NOT_SET: "set IMP_FRED_LIVE=1", IMP_FINRA_LIVE_NOT_SET: "set IMP_FINRA_LIVE=1",
   FINRA_CREDENTIALS_MISSING: "FINRA credentials not configured", LICENSED_TRACE_FEED_REQUIRED: "licensed TRACE feed required",
+  IMP_NPORT_DATA_ROOT_NOT_SET: "set IMP_NPORT_DATA_ROOT (tools/fixed_income/nport_refresh.py)",
+  NPORT_CATALOG_NOT_BUILT: "build with tools/fixed_income/nport_refresh.py", IMP_OPENFIGI_LIVE_NOT_SET: "set IMP_OPENFIGI_LIVE=1",
+  LICENSED_RATINGS_FEED_REQUIRED: "licensed ratings feed required", NOT_LICENSED_FOR_REDISTRIBUTION: "not licensed for redistribution",
+  NO_CURRENT_SECURITY_YIELD: "needs a current security yield",
 };
 export const reasonLabel = (reason: string | null | undefined) => (reason && (REASON_TEXT[reason] ?? reason.replace(/_/g, " ").toLowerCase())) || "";

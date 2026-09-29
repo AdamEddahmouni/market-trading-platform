@@ -205,7 +205,17 @@ def _write_json_atomic(path: Path, payload: dict[str, Any]) -> None:
 
 # ------------------------------------------------------------------ store
 class ThirteenFStore:
-    """One external 13F data root. All mutation happens under ``refresh.lock``."""
+    """One external 13F data root. All mutation happens under ``refresh.lock``.
+
+    The class attributes below are the only data-set-specific parts of the store; the
+    N-PORT bond catalog (S16) subclasses it rather than keeping a second lifecycle.
+    """
+
+    SOURCE_SUFFIX = "_form13f.zip"
+    MANIFEST_SCHEMA = MANIFEST_SCHEMA
+    TOOL_VERSION = TOOL_VERSION
+    ERROR_PREFIX = "THIRTEEN_F"
+    IMPORT_URL_BASE = f"{SEC_ORIGIN}/files/structureddata/data/form-13f-data-sets/"
 
     def __init__(self, root: str | Path, *, clock: Callable[[], float] = time.time) -> None:
         self.root = Path(root)
@@ -259,7 +269,7 @@ class ThirteenFStore:
         index = self.generation_dir(generation) / "index.sqlite"
         if manifest is None:
             return "MANIFEST_MISSING"
-        if manifest.get("schema_version") != MANIFEST_SCHEMA or manifest.get("generation") != generation:
+        if manifest.get("schema_version") != self.MANIFEST_SCHEMA or manifest.get("generation") != generation:
             return "MANIFEST_INVALID"
         if not index.is_file():
             return "INDEX_MISSING"
@@ -295,7 +305,7 @@ class ThirteenFStore:
     def acquire(self, *, break_stale: bool = True) -> None:
         self.root.mkdir(parents=True, exist_ok=True)
         payload = json.dumps({"pid": os.getpid(), "host": socket.gethostname(), "started_at": _now_iso(self.clock),
-                              "started_at_epoch": time.time(), "tool": TOOL_VERSION}).encode("utf-8")
+                              "started_at_epoch": time.time(), "tool": self.TOOL_VERSION}).encode("utf-8")
         for _ in range(2):
             try:
                 fd = os.open(self.lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
@@ -333,6 +343,13 @@ class ThirteenFStore:
                 removed.append(name)
         return removed
 
+    # -------------------------------------------------------------- data-set specifics
+    def verify_source(self, path: Path) -> dict[str, Any]:
+        return verify_archive(path)
+
+    def dataset_ref(self, name: str, url: str) -> DatasetRef | None:
+        return dataset_from_name(name, url)
+
     # -------------------------------------------------------------- sources
     def local_sources(self) -> dict[str, dict[str, Any]]:
         """Verified data sets on disk: name → sidecar."""
@@ -340,7 +357,7 @@ class ThirteenFStore:
         out: dict[str, dict[str, Any]] = {}
         if not self.sources.is_dir():
             return out
-        for sidecar in sorted(self.sources.glob("*_form13f.zip.json")):
+        for sidecar in sorted(self.sources.glob(f"*{self.SOURCE_SUFFIX}.json")):
             info = _read_json(sidecar)
             name = sidecar.name[: -len(".json")]
             if info and (self.sources / name).is_file():
@@ -361,19 +378,19 @@ class ThirteenFStore:
             if sha256_file(path) != sidecar.get("sha256") or path.stat().st_size != sidecar.get("bytes"):
                 os.replace(path, path.with_name(path.name + ".quarantine"))
                 sidecar_path.unlink(missing_ok=True)
-                raise RefreshError("THIRTEEN_F_SOURCE_HASH_MISMATCH", "verify")
+                raise RefreshError(f"{self.ERROR_PREFIX}_SOURCE_HASH_MISMATCH", "verify")
             return sidecar
         part = path.with_name(path.name + ".part")
         part.unlink(missing_ok=True)
         try:
             download(ref.url, part)
-            verify_archive(part)
+            self.verify_source(part)
         except SourceIntegrityError as exc:
             part.unlink(missing_ok=True)
             raise RefreshError(str(exc).split(":")[0], "download") from exc
         except OSError as exc:
             part.unlink(missing_ok=True)
-            raise RefreshError("THIRTEEN_F_SOURCE_DOWNLOAD_FAILED", "download") from exc
+            raise RefreshError(f"{self.ERROR_PREFIX}_SOURCE_DOWNLOAD_FAILED", "download") from exc
         info = {"name": ref.name, "url": ref.url, "sha256": sha256_file(part), "bytes": part.stat().st_size,
                 "coverage_start": ref.coverage_start, "coverage_end": ref.coverage_end,
                 "downloaded_at": _now_iso(self.clock)}
@@ -384,9 +401,9 @@ class ThirteenFStore:
     def import_source(self, zip_path: Path) -> dict[str, Any]:
         """Admit an operator-downloaded official data set (same verification as a download)."""
 
-        ref = dataset_from_name(zip_path.name, f"{SEC_ORIGIN}/files/structureddata/data/form-13f-data-sets/{zip_path.name.lower()}")
+        ref = self.dataset_ref(zip_path.name, f"{self.IMPORT_URL_BASE}{zip_path.name.lower()}")
         if ref is None:
-            raise RefreshError("THIRTEEN_F_SOURCE_NAME_UNRECOGNISED", "import")
+            raise RefreshError(f"{self.ERROR_PREFIX}_SOURCE_NAME_UNRECOGNISED", "import")
         return self.ensure_source(ref, lambda _url, dest: shutil.copyfile(zip_path, dest))
 
     # -------------------------------------------------------------- pointer
@@ -468,10 +485,13 @@ class ThirteenFLifecycle:
         except (OSError, ValueError) as exc:
             code = str(exc) if str(exc).isupper() or str(exc).startswith("SEC_") else "SEC_LISTING_UNAVAILABLE"
             raise RefreshError(code, "discover") from exc
-        refs = parse_listing(listing)
+        refs = self.parse_listing(listing)
         if not refs:
             raise RefreshError("SEC_LISTING_HAS_NO_DATASETS", "discover")
         return refs
+
+    def parse_listing(self, listing: str) -> list[DatasetRef]:
+        return parse_listing(listing)
 
     def wanted(self, refs: list[DatasetRef]) -> list[DatasetRef]:
         return refs[-self.datasets:]
@@ -591,27 +611,33 @@ class ThirteenFLifecycle:
         coverage_start = min(item["coverage_start"] for item in ordered)
         coverage_end = max(item["coverage_end"] for item in ordered)
         meta = {"generation": generation, "coverage_start": coverage_start, "coverage_end": coverage_end,
-                "tool_version": TOOL_VERSION, "source_sha256": source_key}
+                "tool_version": store.TOOL_VERSION, "source_sha256": source_key}
         self._hook("build")
         mark = time.monotonic()
         stats = self._builder([store.source_path(item["name"]) for item in ordered], candidate / "index.sqlite", meta=meta)
         timings["build_s"] = round(time.monotonic() - mark, 3)
-        if not stats.get("holdings_reports") or not stats.get("positions"):
-            raise RefreshError("INDEX_EMPTY", "build")
         index = candidate / "index.sqlite"
         manifest = {
-            "schema_version": MANIFEST_SCHEMA, "generation": generation, "generated_at": _now_iso(store.clock),
-            "index_schema": SCHEMA, "tool_version": TOOL_VERSION, "parent_generation": previous,
+            "schema_version": store.MANIFEST_SCHEMA, "generation": generation, "generated_at": _now_iso(store.clock),
+            "tool_version": store.TOOL_VERSION, "parent_generation": previous,
             "source_datasets": [{key: item[key] for key in ("name", "url", "sha256", "bytes", "coverage_start",
                                                             "coverage_end", "downloaded_at")} for item in ordered],
             "source_sha256": source_key, "coverage_start": coverage_start, "coverage_end": coverage_end,
-            "filing_date_min": stats.get("filing_date_min"), "filing_date_max": stats.get("filing_date_max"),
-            "filing_count": stats["holdings_reports"], "submission_count": stats["submissions"],
-            "position_count": stats["positions"], "line_count": stats["lines"],
-            "duplicate_accessions": stats.get("duplicate_accessions", 0),
+            **self.manifest_counts(stats),
             "index_bytes": index.stat().st_size, "index_sha256": sha256_file(index)}
         _write_json_atomic(candidate / "manifest.json", manifest)
         return generation, candidate, manifest
+
+    def manifest_counts(self, stats: dict[str, Any]) -> dict[str, Any]:
+        """Data-set-specific manifest fields; raises when the build produced nothing servable."""
+
+        if not stats.get("holdings_reports") or not stats.get("positions"):
+            raise RefreshError("INDEX_EMPTY", "build")
+        return {"index_schema": SCHEMA,
+                "filing_date_min": stats.get("filing_date_min"), "filing_date_max": stats.get("filing_date_max"),
+                "filing_count": stats["holdings_reports"], "submission_count": stats["submissions"],
+                "position_count": stats["positions"], "line_count": stats["lines"],
+                "duplicate_accessions": stats.get("duplicate_accessions", 0)}
 
     # -------------------------------------------------------------- rollback
     def rollback(self) -> dict[str, Any]:
@@ -634,7 +660,9 @@ class ThirteenFLifecycle:
 
 
 # ------------------------------------------------------------------ status (no network; Screener-safe)
-def status(root: str | Path | None, *, clock: Callable[[], float] = time.time) -> dict[str, Any]:
+def status(root: str | Path | None, *, clock: Callable[[], float] = time.time,
+           store_cls: type[ThirteenFStore] = ThirteenFStore, root_env: str = "IMP_13F_DATA_ROOT",
+           not_built: str = "THIRTEEN_F_INDEX_NOT_BUILT") -> dict[str, Any]:
     """Freshness and refresh state of the local index, read from files only.
 
     ``refresh_state``: NOT_CONFIGURED · INDEX_INVALID · REFRESHING · REFRESH_AVAILABLE ·
@@ -644,8 +672,8 @@ def status(root: str | Path | None, *, clock: Callable[[], float] = time.time) -
     """
 
     if not root:
-        return {"refresh_state": "NOT_CONFIGURED", "refresh_reason": "IMP_13F_DATA_ROOT_NOT_SET", "managed": False}
-    store = ThirteenFStore(root, clock=clock)
+        return {"refresh_state": "NOT_CONFIGURED", "refresh_reason": f"{root_env}_NOT_SET", "managed": False}
+    store = store_cls(root, clock=clock)
     now = datetime.fromtimestamp(clock(), tz=UTC)
     out: dict[str, Any] = {"managed": True, "refreshing": store.lock_active()}
     check = _read_json(store.root / "last_check.json")
@@ -654,7 +682,7 @@ def status(root: str | Path | None, *, clock: Callable[[], float] = time.time) -
         out["last_refresh_error"] = {key: last_refresh.get(key) for key in ("error", "stage", "finished_at")}
     generation = store.current_generation()
     if generation is None:
-        state, reason = ("REFRESHING", "FIRST_BUILD_RUNNING") if out["refreshing"] else ("NOT_CONFIGURED", "THIRTEEN_F_INDEX_NOT_BUILT")
+        state, reason = ("REFRESHING", "FIRST_BUILD_RUNNING") if out["refreshing"] else ("NOT_CONFIGURED", not_built)
         return {**out, "refresh_state": state, "refresh_reason": reason, "generation": None}
     problem = store.verify_generation(generation)
     manifest = store.manifest(generation) or {}

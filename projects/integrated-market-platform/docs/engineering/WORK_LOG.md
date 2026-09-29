@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-29 — Main Screener S16 Fixed Income Coverage & Market Data Expansion
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` (implementation, local gates, and live acceptance done; awaiting PR CI and owner review) |
+| **Area** | `fixed_income`, `sec_edgar` (lifecycle subclassing), `ui_api`, `ui/screener`, `tools/fixed_income`, `docs` |
+| **Summary** | BONDS now has Corporate, Agency, Municipal, and Securitized categories alongside Treasury in the one universe: 318,388 outstanding rows on 2026-09-29. The new categories come from SEC Form N-PORT, reconciled across every reporting fund: check-digit and TBA exclusion, letter-prefixed IDs need an embedding ISIN, 75 % category/maturity consensus, and a corroborated coupon fold. They are built offline into an S14-lifecycle generation and served through the canonical query as slotted views. Fund values are STALE, never prices. Treasury rows gain TIPS index ratios, FRN indexes, and dated buyback/Fed-purchase observations. Fed bill purchases are discount-rate quotes. Dated yield, duration, DV01, and the spread to the same-day par curve are computed from those observations. Also added: NY Fed reference rates and SOMA holdings, FINRA breadth (credential-gated), and OpenFIGI (opt-in). Ratings, TRACE prints, and EMMA are TERMS_REQUIRED, and nothing is scraped. |
+| **Key files** | `src/market_platform_foundation/fixed_income/{nport_catalog,identifiers,nyfed,treasury_market,observed,openfigi}.py` (new), `fixed_income/{analytics,http,treasury_rates,finra_fixed_income}.py`, `sec_edgar/thirteen_f_lifecycle.py` (store hooks for subclassing), `ui_api/{screener_bonds,screener_bonds_fund (new),screener_filters,screener_query,screener_universes}.py`, `tools/fixed_income/nport_refresh.py` (new), `tools/validation_manifest.json`, `ui/src/api/{screener,screenerBonds}.ts`, `ui/src/components/screener/{ScreenerPage.tsx,bonds/*,panels/RatesCurvePanel.tsx}`, `tests/fixed_income/test_s16_fixed_income_expansion.py` (new), `tests/platform/test_screener_s9.py`, `tests/fixed_income/test_fixed_income.py`, `docs/engineering/SCREENER_S16_FIXED_INCOME_EXPANSION.md` (new) |
+| **Tests** | S16 backend 42, UI Bonds 14; `validate changed` 2,770 and `validate full` 7,553 tests, 0 failures, 0 errors; UI 1,181 passed; typecheck and build clean; see [SCREENER_S16_FIXED_INCOME_EXPANSION.md](SCREENER_S16_FIXED_INCOME_EXPANSION.md#tests). |
+| **Related** | [SCREENER_S16_FIXED_INCOME_EXPANSION.md](SCREENER_S16_FIXED_INCOME_EXPANSION.md), [SCREENER_S9_BONDS.md](SCREENER_S9_BONDS.md), [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md) |
+| **Notes** | Live acceptance found and fixed two data defects before the PR. (1) NY Fed bill purchases quote a discount rate in the "price" field; reading it as a price gave spreads of 1.38M bp, and the dated spreads now range from −9.6 to +21 bp. (2) Fund administrators' internal IDs pass the CUSIP check digit; 2,225 are now rejected unless an ISIN corroborates them. The N-PORT data root is external (`IMP_NPORT_DATA_ROOT`). FINRA and OpenFIGI were not configured on this host. |
+
 ## 2026-09-29 — Main Screener S15 Futures CFTC Positioning Coverage
 
 | Field | Value |

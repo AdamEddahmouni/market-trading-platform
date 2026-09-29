@@ -78,6 +78,10 @@ const bondViews = {
   Treasuries: ["symbol", "security_type", "term", "coupon", "issue_date", "maturity", "tips", "frn", "auction_yield", "auction_real_yield",
     "auction_discount_margin", "bid_to_cover", "reference_tenor", "reference_rate"],
   "Rates & Curve": ["symbol", "security_type", "maturity", "years_to_maturity", "maturity_bucket", "reference_tenor", "reference_rate", "indicative_rate", "auction_yield"],
+  "Credit & Munis": ["symbol", "issuer", "category", "security_type", "coupon", "coupon_type", "maturity", "years_to_maturity",
+    "fund_count", "fund_par_held", "fund_value_pct", "report_date"],
+  Observed: ["symbol", "security_type", "maturity", "observed_price", "observed_yield", "benchmark_spread", "observed_date",
+    "reference_tenor", "reference_rate"],
   Custom: ["symbol", "security_type", "coupon", "maturity"],
 };
 const spec = (id: string, label: string, views: Record<string, string[]>, extra: Record<string, unknown>) => ({
@@ -100,8 +104,10 @@ const config = () => ({
     spec("BONDS", "Bonds", bondViews, { default_sort: "maturity", quote_capability: "NO_STREAMING_QUOTE", bars_capability: "NO_PRICE_HISTORY",
       panels: ["rates_curve"], tradability: "REFERENCE_ONLY", source: "US_TREASURY_FISCAL_DATA",
       fields: { ...caps(["symbol", "security_type", "term", "coupon", "issue_date", "maturity", "years_to_maturity", "maturity_bucket", "tips", "frn",
-        "auction_date", "auction_yield", "auction_real_yield", "auction_discount_margin", "bid_to_cover", "outstanding"]),
-      ...caps(["reference_tenor", "reference_rate", "indicative_rate"], "REFERENCE") } }),
+        "auction_date", "auction_yield", "auction_real_yield", "auction_discount_margin", "bid_to_cover", "outstanding",
+        "company", "category", "coupon_type", "fund_count", "fund_par_held", "fund_value_pct", "report_date"]),
+      ...caps(["reference_tenor", "reference_rate", "indicative_rate", "observed_price", "observed_yield", "benchmark_spread",
+        "observed_date"], "REFERENCE") } }),
   ],
 });
 
@@ -342,5 +348,132 @@ describe("bond formatting", () => {
     expect(() => BondPreviewSchema.parse({ ...bondPreview(), instrument: { ...bondPreview().instrument, tradability: "TRADABLE" } })).toThrow();
     expect(() => BondPreviewSchema.parse({ ...bondPreview(), bid: 99.5 })).toThrow();
     expect(() => RatesCurveSchema.parse({ ...ratesPayload(null), shape: { ...ratesPayload(null).shape, state: "RECESSION_GUARANTEED" } })).toThrow();
+  });
+});
+
+// ------------------------------------------------------------------ S16: categories, fund-held rows, observations
+const nport = (value: number | null, state = "FUND_REPORTED_REFERENCE", basis?: string) =>
+  ({ value, source: value === null ? "NONE" : "SEC_FORM_NPORT", state: value === null ? "UNAVAILABLE" : state,
+    as_of: value === null ? null : "2026-04-30", ...(basis ? { basis } : {}) });
+const MUNI = {
+  instrument: { instrument_id: "XA01:MUNI", venue_id: "US_OTC_FIXED_INCOME", asset_class: "BOND", instrument_kind: "BOND", tradability: "REFERENCE_ONLY" },
+  symbol: "13063DAB0", company: "CALIFORNIA ST 5.00% 2035", sector: null, industry: null, country: "US", earnings_date: null,
+  recommendation: null, exchange: null, cusip: "13063DAB0", isin: "US13063DAB04", isin_source: "DERIVED", identity_source: "CUSIP",
+  issuer: "State of California", category: "Municipal", security_type: "Municipal", term: null, issue_date: null,
+  maturity: "2035-08-01", maturity_bucket: "7-10Y", tips: "No", frn: "No", callable: null, coupon_type: "Fixed", in_default: "No",
+  convertible: "No", pik: "No", auction_date: null, series: null, report_date: "2026-04-30", reference_tenor: "10Y",
+  reference_date: "2026-09-25", reference_reason: null, observed_date: null,
+  fields: { coupon: nport(5), years_to_maturity: f(8.84, "DERIVED"), days_to_maturity: f(3230, "DERIVED"), maturity_year: nport(2035),
+    fund_count: nport(12, "FUND_REPORTED_REFERENCE", "REPORTING_FUND_SERIES"), fund_par_held: nport(48.25),
+    fund_value_pct: nport(101.42, "FUND_REPORTED_STALE", "MEDIAN_FUND_FAIR_VALUE_PCT_OF_PAR"), outstanding: nport(null),
+    auction_yield: nport(null), observed_price: nport(null), reference_rate: f(5.17, "REFERENCE", "NOMINAL_PAR_10Y", "2026-09-25") },
+};
+const OBSERVED_NOTE = bond("91282CRF0", "XA01:NOTE", "Note", "U.S. Treasury Note 4.625% Aug 2036", "2036-08-15", 4.625, 9.88, {
+  category: "Treasury", observed_date: "2026-09-24" });
+Object.assign(OBSERVED_NOTE.fields, {
+  observed_price: { value: 99.5, source: "US_TREASURY_FISCAL_DATA_BUYBACKS", state: "DATED_OBSERVATION", as_of: "2026-09-24", basis: "TREASURY_BUYBACK" },
+  observed_yield: { value: 4.689, source: "IMP_DERIVED", state: "DERIVED", as_of: "2026-09-24", basis: "YTM" },
+  benchmark_spread: { value: -44.2, source: "IMP_DERIVED", state: "DERIVED", as_of: "2026-09-24", basis: "NOMINAL_PAR_LINEAR_7Y_10Y" },
+});
+const s16Coverage = { TREASURY: { state: "CURRENT", count: 2 }, CORPORATE: { state: "FUND_HELD_REFERENCE", count: 23510 },
+  AGENCY: { state: "FUND_HELD_REFERENCE", count: 4477 }, MUNICIPAL: { state: "FUND_HELD_REFERENCE", count: 141445 },
+  SECURITIZED: { state: "FUND_HELD_REFERENCE", count: 158921 } };
+const fundItem = (id: string, label: string, value: number | string | null, unit: string, klass = "OBSERVED", note: string | null = null) =>
+  ({ id, label, value, unit, class: value === null ? "UNAVAILABLE" : klass, source: "SEC_FORM_NPORT", as_of: "2026-04-30", note });
+const muniPreview = () => ({
+  ...bondPreview("XA01:MUNI", "13063DAB0"),
+  instrument: { instrument_id: "XA01:MUNI", venue_id: "US_OTC_FIXED_INCOME", asset_class: "BOND", instrument_kind: "BOND",
+    tradability: "REFERENCE_ONLY", cusip: "13063DAB0", isin: "US13063DAB04", identity_source: "CUSIP", issuer: "State of California",
+    description: "CALIFORNIA ST 5.00% 2035", security_type: "Municipal", series: null, category: "Municipal" },
+  sections: [
+    { id: "identity", title: "Identity", items: [fundItem("cusip", "CUSIP", "13063DAB0", "text")] },
+    { id: "terms", title: "Terms (fund-reported)", items: [fundItem("coupon", "Coupon", 5, "percent"),
+      fundItem("frequency", "Coupon frequency", null, "text", "UNAVAILABLE", "Not reported in Form N-PORT")] },
+    { id: "market", title: "Market", items: [
+      fundItem("price", "Current price", null, "per_100_par", "UNAVAILABLE", "No permitted security-level price source is integrated"),
+      fundItem("latest_trade", "Latest trade", null, "per_100_par", "UNAVAILABLE", "MSRB EMMA trade data is not licensed for redistribution; not scraped"),
+      fundItem("fund_value", "Fund fair value (median, % of par)", 101.42, "per_100_par", "STALE", "The funds' own valuations at their report dates")] },
+    { id: "holdings", title: "Fund holdings · 2026-04-30", items: [fundItem("fund_count", "Reporting fund series", 12, "count"),
+      fundItem("par_held", "Principal reported held (sum)", 48.25, "USD_MILLIONS")] },
+    { id: "ratings", title: "Ratings", items: [fundItem("rating", "Credit ratings", null, "text", "UNAVAILABLE", "NRSRO ratings require a licensed feed (terms required); not scraped")] },
+  ],
+  sources: [{ id: "NPORT_CATALOG", label: "Fund-held bonds (Form N-PORT)", provider: "SEC EDGAR", clock: "QUARTERLY_PUBLICATION_60_DAY_LAG",
+    state: "CURRENT_AS_FILED", as_of: "2026-04-30", reason: null, licence: "Public SEC data; attribution" },
+    { id: "MSRB_EMMA", label: "Municipal trades & disclosures", provider: "MSRB EMMA", clock: "TRANSACTION", state: "TERMS_REQUIRED",
+      as_of: null, reason: "NOT_LICENSED_FOR_REDISTRIBUTION" }],
+});
+const observedSpread = { state: "DERIVED", reason: null, value: -44.2, unit: "bp", yield: 4.689, yield_basis: "YTM", price: 99.5,
+  price_kind: "TREASURY_BUYBACK", source: "US_TREASURY_FISCAL_DATA_BUYBACKS", operation_date: "2026-09-24", settlement_date: "2026-09-25",
+  curve: "NOMINAL_PAR", curve_date: "2026-09-24", par_yield: 5.131, tenors: ["7Y", "10Y"],
+  note: "Yield at a dated operation price minus the same-day par curve; an observation on the operation date, not a current spread." };
+
+describe("Bonds S16 categories", () => {
+  beforeEach(() => {
+    mocks.config.mockReset().mockResolvedValue(config());
+    mocks.fetch.mockReset().mockImplementation(async () => bondPage([OBSERVED_NOTE, MUNI] as never, { coverage: s16Coverage, unfiltered_count: 327355 }));
+    mocks.window.mockReset().mockResolvedValue({ quotes: {}, active: 0, cap: 32, market_session: "CLOSED" });
+    mocks.last.mockReset().mockResolvedValue({ result: {}, saved: [] });
+    mocks.layout.mockReset().mockResolvedValue({}); mocks.panelLayout.mockReset().mockResolvedValue({});
+    mocks.demand.mockReset().mockResolvedValue({ instrument_id: null, panels: {} }); mocks.releasePanels.mockReset().mockResolvedValue({});
+    mocks.bondPreview.mockReset().mockImplementation(async (id: string) => BondPreviewSchema.parse(id === "XA01:MUNI" ? muniPreview() : bondPreview(id)));
+    mocks.rates.mockReset().mockImplementation(async (id: string | null) => RatesCurveSchema.parse(ratesPayload(id, {
+      selected: id ? { ...ratesPayload(id).selected, category: "Treasury", spread: observedSpread } : null,
+      nyfed: { state: "PUBLICATION_CURRENT", reason: null, items: [{ id: "SOFR", label: "Secured Overnight Financing Rate", value: 4.31,
+        unit: "percent", effective_date: "2026-09-25", volume_billions: 2400, class: "OBSERVED", source: "NY_FED_REFERENCE_RATES" }] },
+      soma: { state: "PUBLICATION_CURRENT", as_of: "2026-09-23", counts: { MBS: 8387 } } })));
+    vi.stubGlobal("crypto", { randomUUID: () => "abc-123" });
+  });
+
+  it("lists fund-held categories inside Bonds with per-category counts and stale fund values", async () => {
+    mount("/screener?universe=BONDS&view=Credit+%26+Munis");
+    await screen.findByText("13063DAB0");
+    expect(headers()).toEqual(["Security · CUSIP", "Issuer", "Category", "Type", "Coupon", "Cpn Type", "Maturity", "Yrs", "Funds",
+      "Fund Par", "Fund Value", "Reported"]);
+    const row = screen.getByText("13063DAB0").closest("[role=row]") as HTMLElement;
+    expect(within(row).getAllByText("Municipal", { selector: "span" })).toHaveLength(2); // category and asset type
+    expect(within(row).getByText("101.420").getAttribute("title")).toContain("FUND_REPORTED_STALE");
+    expect(within(row).getByText("$48.3M")).toBeInTheDocument();
+    expect(screen.getByText("Treasury 2 · Corporate 23,510 · Agency 4,477 · Municipal 141,445 · Securitized 158,921")).toBeInTheDocument();
+  });
+
+  it("shows dated observations as reference columns that never sort", async () => {
+    mount("/screener?universe=BONDS&view=Observed");
+    await screen.findByText("91282CRF0");
+    expect(screen.getByText("99.500").getAttribute("title")).toContain("DATED_OBSERVATION");
+    expect(screen.getByText("-44.2 bp")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: /Obs\. Price/ })).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("previews a fund-held bond with its reported issuer, stale value, and licence-required sources", async () => {
+    mount();
+    await screen.findByText("13063DAB0");
+    fireEvent.click(within(screen.getByRole("grid")).getByText("13063DAB0"));
+    const preview = await screen.findByRole("complementary", { name: "Quick preview" });
+    await within(preview).findByText("Fund fair value (median, % of par)");
+    expect(within(preview).getByText("State of California")).toBeInTheDocument();
+    expect(within(preview).queryByText("U.S. Treasury")).not.toBeInTheDocument();
+    expect(within(preview).getByText("Fund value")).toBeInTheDocument();
+    expect(within(preview).getAllByText("Stale").length).toBeGreaterThan(0);
+    expect(within(preview).getByText(/MSRB EMMA trade data is not licensed/)).toBeInTheDocument();
+    expect(within(preview).getAllByText("Licence required").length).toBeGreaterThan(0);
+    expect(within(preview).getByText("$48.3M")).toBeInTheDocument();
+  });
+
+  it("places an observed Treasury price's dated spread and NY Fed rates in Rates & Curve", async () => {
+    mount();
+    await screen.findByText("91282CRF0");
+    fireEvent.click(within(screen.getByRole("grid")).getByText("91282CRF0"));
+    fireEvent.click(await screen.findByRole("button", { name: "Open Rates & Curve" }));
+    const panel = await screen.findByRole("region", { name: /Rates & Curve for 91282CRF0/ }, { timeout: 5000 });
+    await within(panel).findByText("-44.2 bp", undefined, { timeout: 5000 });
+    expect(within(panel).getByText(/dated, not current/)).toBeInTheDocument();
+    expect(within(panel).getByText("SOFR")).toBeInTheDocument();
+    expect(within(panel).getByText(/SOMA holdings as of Sep 23, 2026: 8,387 MBS/)).toBeInTheDocument();
+  });
+
+  it("accepts only the two spread shapes and the declared item classes", () => {
+    expect(() => RatesCurveSchema.parse(ratesPayload("X", { selected: { ...ratesPayload("X").selected, spread: { ...observedSpread, state: "CURRENT" } } }))).toThrow();
+    expect(() => BondPreviewSchema.parse({ ...muniPreview(), sections: [{ id: "m", title: "M", items: [{ ...fundItem("p", "Price", 99, "per_100_par"), class: "LIVE" }] }] })).toThrow();
+    expect(BondPreviewSchema.parse(muniPreview()).instrument.category).toBe("Municipal");
   });
 });

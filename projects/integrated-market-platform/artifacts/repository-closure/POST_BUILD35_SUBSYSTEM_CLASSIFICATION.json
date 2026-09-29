@@ -531,6 +531,7 @@
         "tools/discovery",
         "tools/eia",
         "tools/finviz",
+        "tools/fixed_income",
         "tools/fred",
         "tools/futures",
         "tools/historical_data",

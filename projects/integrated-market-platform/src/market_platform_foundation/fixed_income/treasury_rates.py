@@ -278,3 +278,30 @@ def match_reference(years: float, publication: CurvePublication | None) -> dict[
             "value": point.value, "distance_years": round(abs(point.years - years), 4),
             "curve": publication.kind, "publication_date": publication.date.isoformat(),
             "method": "NEAREST_PUBLISHED_TENOR"}
+
+
+def interpolate_par(years: float, publication: CurvePublication | None) -> dict[str, Any]:
+    """Par yield at ``years`` by linear interpolation between the two bracketing published tenors.
+
+    Never extrapolated: a maturity shorter than the first or longer than the last
+    published tenor has no benchmark. A par yield is a curve reference on one
+    publication date, not any security's own yield.
+    """
+
+    if publication is None or not publication.points:
+        return {"state": "UNAVAILABLE", "reason": "CURVE_UNAVAILABLE"}
+    points = sorted(publication.points, key=lambda point: point.years)
+    if years < points[0].years or years > points[-1].years:
+        return {"state": "UNAVAILABLE", "reason": "OUTSIDE_CURVE_RANGE"}
+    for low, high in zip(points, points[1:] or points):
+        if low.years <= years <= high.years:
+            weight = 0.0 if high.years == low.years else (years - low.years) / (high.years - low.years)
+            value = low.value + weight * (high.value - low.value)
+            return {"state": "DERIVED", "reason": None, "value": round(value, 6), "curve": publication.kind,
+                    "publication_date": publication.date.isoformat(), "lower_tenor": low.tenor, "upper_tenor": high.tenor,
+                    "weight": round(weight, 6), "method": "LINEAR_BETWEEN_PUBLISHED_TENORS"}
+    return {"state": "UNAVAILABLE", "reason": "OUTSIDE_CURVE_RANGE"}  # single-point curve
+
+
+def publication_on(publications: tuple[CurvePublication, ...], day: date) -> CurvePublication | None:
+    return next((item for item in publications if item.date == day), None)
