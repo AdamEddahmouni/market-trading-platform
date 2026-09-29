@@ -1,19 +1,50 @@
 # Screener S12 — Institutional, Whale, Congressional & Government Intelligence
 
-Status: **implementation handoff; validation and delivery pending (S12, 2026-09-28)** — built on `main` after
+Status: **implementation and local validation complete (S12, 2026-09-29)** — built on `main` after
 [Screener S11](SCREENER_S11_NEWS.md) (S1–S11 merged).
 
-## Handoff validation state
+## Validation
 
-The canonical `validate changed` run was interrupted and has **no final result**.
-Do not treat this branch as validated or S12 as complete. An earlier completed
-run reported one validation-manifest count failure (the new `public_records`
-test directory raised the expected count from 71 to 72) and one Windows
-temporary-file lock error in the detached-supervisor acceptance test. The
-manifest expectation was corrected and its focused test passed; the
-detached-supervisor test passed on two isolated reruns. Neither focused result
-replaces a completed changed-domain validation. The next owner must run that
-validation to a final exit code, review its report, then proceed with PR and CI.
+Final canonical changed validation, 2026-09-29, on commit `1071d39` (the
+handoff commit; no product code changed afterwards), Linux cloud container,
+Python 3.11.15, Node 22.22.2, live provider gates unset, no Moomoo OpenD, IBKR,
+or MongoDB:
+
+```
+python tools/imp.py validate changed --paths-file <git diff --name-only origin/main HEAD> --json <report>
+```
+
+The branch was fully committed, so the changed set came from the same
+base..head diff the GitHub workflows use (69 paths).
+
+| Gate | Result |
+|------|--------|
+| `validate changed` | **PASSED**, exit 0: 33 suites, 5,884 tests, 5,841 passed, 43 skipped, 0 failures, 0 errors, 208 s (02:30:45–02:34:14 UTC); `core_checkpoint_required=true` (a `validate full` closure was not run, as for S11) |
+| `validate fast` | passed, 23 tests |
+| `format`, `lint`, `tools/check_docs_links.py` | passed (276 governance markdown files) |
+| UI `npm test` | 154 files, 1,153 tests passed |
+| UI `npm run typecheck`, `npm run build` | passed; initial JS 201.40 KiB gzip (budget 203 KiB) |
+
+The 43 skips are environmental and none is an S12 test: 20 MongoDB
+integration tests (`IMP_TEST_MONGODB_URI` unset), 6 environment-unavailable,
+2 Windows job-object tests, local demo servers, run directories, and
+fixtures absent on this host.
+
+Earlier attempts and their classification:
+
+- A completed Windows run on the developer machine reported one failure and
+  one error. The validation-manifest directory count (71 → 72 for the new
+  `public_records` tests) was an S12 test expectation and was corrected before
+  the handoff commit. The detached-supervisor acceptance test's
+  `TemporaryDirectory` cleanup hit a Windows file lock (WinError 32); it passed
+  on two isolated reruns and passed in the cloud run above. Later Windows runs
+  were interrupted with no result.
+- The first cloud run (exit 1) failed three
+  `tests/intelligence/test_release_governance.py` tests with
+  `INCOMPATIBLE_EVIDENCE_LINEAGE`: the cloud clone was shallow, so the
+  BUILD34 evidence commit that the release SHA must descend from was absent.
+  After `git fetch --unshallow` the same three selectors passed with no code
+  change, and the complete rerun above passed. Environment, not S12.
 
 S12 is a cross-universe **intelligence layer**, never a universe. The registry
 still holds exactly five universes (`US_EQUITIES`, `US_ETFS`, `FUTURES`,
