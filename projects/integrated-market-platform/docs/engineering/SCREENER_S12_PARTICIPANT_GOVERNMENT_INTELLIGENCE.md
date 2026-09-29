@@ -288,6 +288,31 @@ The Quick Preview **Participants** tab could not be checked live: the preview
 payload depends on OpenD bars, which were unavailable after 00:40 UTC. Its
 behavior is covered by the UI tests below.
 
+**Owner-workstation follow-up (2026-09-29, OpenD running).** Participants was
+checked live for NVDA and MSFT. It showed OpenD 5m bars; 13D/13G, Form 4, and
+13F top holders (NVDA: 5,956 Q2 2026 managers, BlackRock 1.9B shares); the 13F
+"not a live position" wording; canonical House names; federal awards; and a
+per-chamber note. Rapid selection NVDA → AAPL → LMT → MSFT ended with every
+section owned by MSFT, with no hang and no stale payload. Both panels opened
+once each (re-pressing a launcher focuses the open panel) and were resizable.
+Three layout defects were found and fixed:
+
+- The seventh preview tab overflowed the default 400 px preview. Selecting it
+  scrolled the whole preview 46 px sideways and clipped every section's left
+  edge. The strip now scrolls itself, like the Screener's other tab strips.
+- As a scroll container in the preview's flex column, the strip then collapsed
+  to 1 px. It now keeps its height and uses the Screener's thin, themed
+  scrollbar.
+- The participant tables' visually hidden captions were anchored outside the
+  preview's scroller. They made the overflow-hidden page 293 px taller than the
+  viewport, and scrolling one into view (screen-reader table navigation)
+  shifted the page up with no way back. The preview now anchors its own
+  descendants.
+
+CSS contract tests in `QuickPreview.test.tsx` pin all three fixes. Checked in
+the browser at 1920×1080, 2560×1440, and 1100×800 (page height equals the
+viewport).
+
 Defects found and fixed during acceptance, each with a regression test:
 
 - congressional rows carried `member_key`, which the server's secret-leak audit
