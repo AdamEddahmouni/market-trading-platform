@@ -1,7 +1,7 @@
 # Main Screener S13 — Universe integrity, classification & catalog hardening
 
-Status: **implemented; live catalog acceptance pending on the owner workstation**
-(see [Acceptance](#acceptance)). Registry unchanged: exactly five universes
+Status: **implemented; live catalog acceptance passed on the owner workstation
+2026-09-29** (see [Acceptance](#acceptance)). Registry unchanged: exactly five universes
 ([architecture](SCREENER_UNIVERSE_ARCHITECTURE.md)).
 
 S13 answers one question for every row of every Screener universe: **why is
@@ -166,17 +166,17 @@ command exits non-zero on one.
 
 ## Counts
 
-"Before" figures are taken from earlier live acceptances. The "after" figures
-for US Equities and ETFs depend on the live providers and have not yet been
-measured (see [Acceptance](#acceptance)).
+"Before" figures are taken from earlier live acceptances. "After" is the live
+audit of 2026-09-29 05:07 UTC (see [Acceptance](#acceptance)); the provider and
+reference catalogs move daily, so these are a dated observation, not constants.
 
-| Universe | Before (recorded) | After |
-|----------|-------------------|-------|
-| `US_EQUITIES` | 4,291 (S12, 2026-09-28; `geo_usa,ind_stocksonly`) | expected to **increase** by the closed-end funds `ind_stocksonly` excluded (if any); ETFs still excluded — live count pending |
-| `US_ETFS` | 6,306 provider-typed rows (S5, 2026-09-27) | expected to **decrease** to the reference-confirmed ETFs; REITs, CEFs, other listed equities, and OTC/unresolved rows rejected with reasons — live count pending |
-| `FUTURES` | 178 lead contracts (S5) | unchanged rules |
-| `BONDS` | 463 CUSIPs (S9) | unchanged rules |
-| `CRYPTO` | 1,354–1,355 pairs (S10) | unchanged rules |
+| Universe | Before (recorded) | After (live, 2026-09-29) |
+|----------|-------------------|--------------------------|
+| `US_EQUITIES` | 4,291 (S12, 2026-09-28; `geo_usa,ind_stocksonly`) | **4,625** of 10,361 export rows; 5,736 rejected `ETF_BELONGS_TO_US_ETFS`; 0 ambiguous. The +334 is exactly Finviz's closed-end funds (195 Debt, 110 Equity, 29 Foreign), which `ind_stocksonly` had excluded |
+| `US_ETFS` | 6,306 provider-typed rows (S5, 2026-09-27) | **5,734** of 6,312 provider-typed rows; 578 rejected: `CLOSED_END_FUND` 331, `REIT` 145, `UNRESOLVED_SECURITY_TYPE` 73, `NOT_ETF` 29 |
+| `FUTURES` | 178 lead contracts (S5) | 178 (unchanged rules) |
+| `BONDS` | 463 CUSIPs (S9) | 463 (unchanged rules) |
+| `CRYPTO` | 1,354–1,355 pairs (S10) | 1,355 (unchanged rules) |
 
 Fixture impact (`test_screener_s13.py`): 17 provider-typed "ETFs" → 8
 admitted, 9 rejected (`REIT` 3, `NOT_ETF` 3, `UNRESOLVED_SECURITY_TYPE` 2,
@@ -236,11 +236,23 @@ classification fingerprint, trading date).
 | US Equities export parse + admission, 12,000 rows | ≈195 ms over the 250 ms simulated download |
 | Warm first page / warm search (ETFs, 3,000 rows) | 0.05 ms / 2.6 ms |
 
-The live cold/warm latencies come from the audit command on the owner workstation.
+Live, owner workstation (Windows 11, Python 3.11.15, OpenD 10.10.7008, Finviz Elite), 2026-09-29:
+
+| Universe | Cold catalog, all pages | Warm first page | Warm search |
+|----------|-------------------------|-----------------|-------------|
+| `US_EQUITIES` | 1,282 ms | 0.02 ms | 5.5 ms |
+| `US_ETFS` | 1,734 ms | 0.04 ms | 9.8 ms |
+| `FUTURES` | 3,428 ms | 0.06 ms | 0.21 ms |
+| `BONDS` | 7,417 ms | 0.09 ms | 2.2 ms |
+| `CRYPTO` | 817 ms | 5.4 ms | 6.3 ms |
+
+The whole audit, with five cold catalogs, ran in 17 s. Through the HTTP API
+(`/screener?universe=US_ETFS`), the ETF first page took 5.2 s cold (catalog
+plus snapshot) and 82 ms warm; ETF searches took 70–115 ms.
 
 ## Tests
 
-- `tests/platform/test_screener_s13.py` (28): category rules; EQIX, WY, AIO
+- `tests/platform/test_screener_s13.py` (29): category rules; EQIX, WY, AIO
   regression cases; generalization (mortgage REIT, BDC, royalty trust, SPAC);
   valid ETF structures (broad, bond, commodity trust, leveraged, inverse,
   active, spot-bitcoin trust); fail-closed unknown and unavailable reference;
@@ -252,8 +264,8 @@ The live cold/warm latencies come from the audit command on the owner workstatio
   (REIT, CEF, ETF, bond ETF, Treasury future, spot crypto, tokenized asset,
   cash Treasury, 10Y reference, common equity); misplaced-row and duplicate
   detection; futures type admission; News and Congress downstream behaviour;
-  saved screens; ETF filters; the audit command (clean run, samples, and the
-  missing-ETF-industry finding).
+  saved screens; ETF filters; the audit command (clean run, samples, the
+  missing-ETF-industry finding, and closing the OpenD transport so a live run exits).
 - `test_screener_s1.py` pins the new `geo_usa` export filter. S5/S6 ETF
   fixtures now supply explicit reference evidence (an ETF with no evidence is
   not admitted).
@@ -280,18 +292,74 @@ classification. It is now classified with the provider and lane tooling. An
 earlier attempt failed only because the container's symlinked venv resolved to
 the system interpreter, and passed after recreating the venv with `--copies`.
 
-**Live catalog acceptance has not been run.** The cloud container has no
-Moomoo OpenD and no Finviz Elite credentials, and its egress policy denies the
-provider hosts. The owner-workstation procedure:
+The cloud container had no Moomoo OpenD and no Finviz Elite credentials, and
+its egress policy denied the provider hosts, so live acceptance ran on the
+owner workstation.
 
-1. Start OpenD and set `IMP_FINVIZ_LIVE=1`, `IMP_TREASURY_LIVE=1`, `IMP_CRYPTO_LIVE=1`.
-2. `python tools/screener/universe_audit.py --sample EQIX,WY,AIO,SPY,AGG,GLD,TQQQ,SH,JEPI,TLT`
-   and record the five counts, the ETF rejection reasons, and the samples.
-   Expect EQIX/WY `REJECTED/REIT` and AIO `REJECTED/CLOSED_END_FUND` (or
-   `NOT_ETF` if Finviz files it under another industry). All three should be
-   in US Equities only, and the ETF controls `ADMITTED`. Exit 0.
-3. UI: ETF Overview count and rows; search `EQIX` in ETFs (none) and in US
-   Equities (found); a saved ETF screen; the ETF News and Congress views.
+**Owner-workstation live acceptance (2026-09-29, 05:07–11:10 UTC).** Real
+Moomoo OpenD catalog, real Finviz Elite export, live Treasury and Kraken; no
+fixtures.
+
+`universe_audit.py --sample EQIX,WY,AIO,SPY,AGG,GLD,TQQQ,SH,JEPI,TLT,IBIT`
+**exit 0**. Row-contract violations 0, cross-universe duplicates 0, no findings.
+Counts are in [Counts](#counts).
+
+| Symbol | Universe | ETF decision | Finviz industry (live) |
+|--------|----------|--------------|------------------------|
+| EQIX | US Equities only | `REJECTED/REIT` | `REIT - Specialty` |
+| WY | US Equities only | `REJECTED/REIT` | `REIT - Specialty` |
+| AIO | US Equities only | `REJECTED/CLOSED_END_FUND` | `Closed-End Fund - Equity` |
+| SPY, AGG, GLD, TQQQ, SH, JEPI, TLT, IBIT | ETFs only | `ADMITTED` | `Exchange Traded Fund` |
+
+**Live Finviz strings** (the spellings the rules match, now verified): normal,
+bond (AGG, TLT), commodity-trust (GLD), leveraged (TQQQ), inverse (SH), active
+(JEPI), and spot-bitcoin (IBIT) funds are all `Exchange Traded Fund`, 5,736
+listings. REITs are `REIT - <type>`: Mortgage (AGNC), Retail, Residential,
+Office, Specialty (EQIX, WY), Diversified, Healthcare Facilities, Hotel & Motel,
+and Industrial. CEFs are `Closed-End Fund - Debt` (PDI), `- Equity` (AIO), and
+`- Foreign`. SPAC shells are `Shell Companies` (287). BDCs (ARCC, MAIN) are
+`Asset Management`. Royalty trusts carry their operating industry (PBT:
+`Oil & Gas Midstream`). The ETN VXX is filed as `Exchange Traded Fund` (see
+[limitations](#known-limitations)). The export has 148 distinct industries. No
+classifier change was needed.
+
+**Every rejected provider "ETF" was inspected.** The 29 `NOT_ETF` rows are
+CEFs and interval funds filed under `Asset Management` (GUG, PDX, NMAI, RFM,
+WDI, …), BDCs (KBDC, MSDL), royalty trusts (CRT, PBT, SBR, SJT, MSB, …), and one
+mortgage-finance company. The 73 `UNRESOLVED_SECURITY_TYPE` rows are
+exchange-listed notes and baby bonds, OTC grantor trusts and foreign UCITS
+lines (17 on `US_PINK`), Sprott physical trusts (PHYS, PSLV, CEF, SPPP), and
+about 25 genuine ETFs that the Finviz export does not carry (newly listed or
+delisted). The last group is excluded by the designed fail-closed rule
+(positive evidence required), not misplaced. Two Finviz ETFs (ATTR, CBLS) are
+absent from the provider catalog. No provider fallback is shown as a
+classification.
+
+**UI** (in-app browser against the local API and Vite):
+
+- ETF Overview: 5,738 results. Finviz's export had refreshed since the audit.
+- Search `EQIX` in ETFs: "No instruments match this search", 0 results. In
+  US Equities it appears once, category `REIT`.
+- `SPY` (SPDR S&P 500 ETF) is in ETFs. All eight controls are present in
+  ETFs, and none of them is in US Equities (API exact-symbol check).
+- Saved screen "S13 ETF acceptance" (ETFs, `Exchange = US_NYSE`, Performance
+  view): reloaded from the menu with its filter chip and columns restored.
+  It showed 832 of 5,738 results; the NYSE-listed EQIX and WY are simply
+  absent. No migration ran.
+- ETF News: live (Finviz Elite 13, RSS 7), and every matched instrument is an
+  ETF (UNG, USO, IBIT, GLD, DIA, …).
+- ETF Congress: `NO_DISCLOSURES` over 60 and 90 days, with coverage "0 match
+  this universe · 677 name other tickers · 85 have no ticker". Every one of the
+  35 distinct tickers outside US Equities in the window was checked: foreign
+  issuers and ADRs (`geo_usa` excludes them), Litecoin, and Alphabet depositary
+  shares. None is an ETF. The 24 ETF matches S12 showed were the REIT/CEF
+  contamination S13 removed. In US Equities, Kevin Hern's AIO trades now
+  match.
+
+**Defect found and fixed:** the audit printed its report and then never exited.
+The OpenD quote context runs non-daemon SDK threads, and the command did not
+close the shared transport. The live entry point now closes it in a `finally`
+block (`0213799d`), with a regression test in `AuditCommandTests`.
 
 ## Known limitations
 
@@ -307,11 +375,13 @@ provider hosts. The owner-workstation procedure:
   membership. The last good classification is kept across failed refreshes
   while the process lives.
 - **Finviz industry names** are matched as documented above (`Exchange Traded
-  Fund`, `REIT - …`, `Closed-End Fund - …`, `Shell Companies`). These have not
-  been verified live in this session. A different REIT or CEF spelling cannot
-  admit a REIT or CEF to ETFs; such rows are rejected as `NOT_ETF`. A
-  different `Exchange Traded Fund` spelling would empty the ETF universe
-  (fail-closed) and would leave ETFs in US Equities. The audit command reports
-  that as the finding `REFERENCE_HAS_NO_ETF_INDUSTRY` and exits 1, and
-  acceptance step 2 must be clean before merge.
-- **Live counts are pending** (see [Acceptance](#acceptance)).
+  Fund`, `REIT - …`, `Closed-End Fund - …`, `Shell Companies`), and were
+  verified live on 2026-09-29. If Finviz renames them later, a different REIT
+  or CEF spelling still cannot admit a REIT or CEF to ETFs; such rows are
+  rejected as `NOT_ETF`. A different `Exchange Traded Fund` spelling would empty
+  the ETF universe (fail-closed) and leave ETFs in US Equities. The audit
+  reports that as the finding `REFERENCE_HAS_NO_ETF_INDUSTRY` and exits 1.
+- **ETFs absent from the Finviz export are excluded.** About 25 genuine
+  provider-typed ETFs (new or delisted listings) were rejected as
+  `UNRESOLVED_SECURITY_TYPE` on 2026-09-29. That is the fail-closed rule
+  working as designed; no fallback admits them.
