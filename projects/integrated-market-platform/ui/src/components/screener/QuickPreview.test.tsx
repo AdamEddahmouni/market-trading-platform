@@ -372,4 +372,11 @@ describe("Quick preview tab strip layout", () => {
     expect(css).toMatch(/\.screener-preview-tabs\{[^}]*flex:0 0 auto[^}]*overflow-x:auto/);
     expect(css).toMatch(/\.screener-preview-tabs button\{[^}]*flex:0 0 auto;white-space:nowrap/);
   });
+
+  it("anchors visually hidden captions inside the preview's own scroller", () => {
+    // Participant tables carry sr-only captions (position:absolute). Anchored outside the preview they
+    // made the overflow-hidden page 293 px taller; scrolling one into view shifted the whole page up.
+    const css = readFileSync(resolve(process.cwd(), "src/components/screener/screener.css"), "utf8");
+    expect(css).toMatch(/\.screener-preview\{position:relative;/);
+  });
 });
