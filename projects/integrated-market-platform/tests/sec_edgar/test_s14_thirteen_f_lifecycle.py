@@ -16,6 +16,7 @@ import tempfile
 import threading
 import time
 import unittest
+import unittest.mock
 import zipfile
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -338,6 +339,25 @@ class LifecycleTests(unittest.TestCase):
 
         result = h.lifecycle(smoke=failing_smoke).refresh(force=True)
         self.assert_failed_and_unchanged(h, result, first["generation"], "INDEX_SMOKE_QUERY_FAILED")
+
+    def test_real_smoke_closes_every_connection_before_publish(self):
+        # Windows cannot rename a directory holding an open SQLite file, so the smoke
+        # validator must not leave its connection to garbage collection (found live, S14).
+        opened: list[sqlite3.Connection] = []
+        real_connect = sqlite3.connect
+
+        def tracking_connect(*args, **kwargs):
+            connection = real_connect(*args, **kwargs)
+            opened.append(connection)
+            return connection
+
+        h = self.harness()
+        with unittest.mock.patch.object(lc.sqlite3, "connect", tracking_connect):
+            self.published(h)
+        self.assertTrue(opened)
+        for connection in opened:
+            with self.assertRaises(sqlite3.ProgrammingError):
+                connection.execute("SELECT 1")
 
     def test_real_smoke_rejects_an_index_without_positions(self):
         h = self.harness()

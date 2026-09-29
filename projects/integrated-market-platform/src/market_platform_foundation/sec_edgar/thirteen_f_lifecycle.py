@@ -43,6 +43,7 @@ import sqlite3
 import threading
 import time
 from collections.abc import Callable, Iterable
+from contextlib import closing
 from dataclasses import asdict, dataclass
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -417,7 +418,8 @@ class ThirteenFStore:
 def default_smoke(index_path: Path, manifest: dict[str, Any]) -> dict[str, Any]:
     """Open the candidate like the Screener does and query its most-held CUSIP after the newest window."""
 
-    with sqlite3.connect(index_path.resolve().as_uri() + "?mode=ro", uri=True) as db:
+    # closing(): sqlite3's own context manager only commits; an open handle blocks the publish rename on Windows.
+    with closing(sqlite3.connect(index_path.resolve().as_uri() + "?mode=ro", uri=True)) as db:
         if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
             raise RefreshError("INDEX_QUICK_CHECK_FAILED", "validate")
         top = db.execute("SELECT cusip FROM positions GROUP BY cusip ORDER BY COUNT(*) DESC LIMIT 1").fetchone()
