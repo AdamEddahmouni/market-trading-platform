@@ -362,3 +362,13 @@ describe("classifyZones", () => {
     expect(classifyZones(fixture.cases[0].zones, null, 20)).toEqual({ support: null, resistance: null, testing: null });
   });
 });
+
+describe("Quick preview tab strip layout", () => {
+  it("scrolls its own tabs instead of widening the preview", () => {
+    // Seven tabs overflow the default 400 px preview; an overflowing strip made the whole preview
+    // scroll sideways and clip every section when the last tab was selected (S12 live acceptance).
+    const css = readFileSync(resolve(process.cwd(), "src/components/screener/screener.css"), "utf8");
+    expect(css).toMatch(/\.screener-preview-tabs\{[^}]*overflow-x:auto/);
+    expect(css).toMatch(/\.screener-preview-tabs button\{[^}]*flex:0 0 auto;white-space:nowrap/);
+  });
+});
