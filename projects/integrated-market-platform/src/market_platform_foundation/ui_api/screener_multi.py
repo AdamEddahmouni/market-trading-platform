@@ -20,6 +20,10 @@ from ..futures.spec_registry import resolve_futures_spec
 from ..market_data.current_bars import current_bars_service
 from ..market_sessions import us_equity_session_label
 from ..xa01.compatibility import register_etf_fund, register_future_contract, register_future_contract_reference
+from .screener_admission import (
+    CLASSIFICATION_UNAVAILABLE, DUPLICATE_LISTING, REFERENCE_SOURCE, UNAVAILABLE_REFERENCE, Admission,
+    ClassificationReference, admission_summary, admit_etf,
+)
 from .screener_filters import apply_filters, field_value
 from .screener_futures_context import resolve_contract
 from .screener_projections import MAX_WINDOW, RESULT_CACHE_ENTRIES, SCHEMA_VERSION, screener_service
@@ -68,6 +72,10 @@ def _exchange(raw: Any) -> str | None:
 
 def _transport() -> Any | None:
     return current_bars_service().transport()
+
+
+def _classification_reference() -> ClassificationReference:
+    return screener_service().classification_reference()
 
 
 def _catalog_row_base(*, canonical_id: str, symbol: str, name: str, asset_class: str,
@@ -130,25 +138,45 @@ def project_futures_catalog(raw: list[dict[str, Any]], *, today: date, as_of: st
     return sorted(results.values(), key=lambda item: (item["root"], item["symbol"]))
 
 
-def project_etf_catalog(raw: list[dict[str, Any]], *, as_of: str) -> list[dict[str, Any]]:
-    """Only provider-classified ETFs; never infer fund status from a name/ticker."""
+def project_etf_admission(raw: list[dict[str, Any]], *, as_of: str,
+                          reference: ClassificationReference) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """S13: admitted ETF rows plus the admission summary (raw, accepted, rejected by reason).
+
+    A row is an ETF only when the provider security type is ``ETF`` and the
+    reference classifies the listing as an exchange-traded fund. Moomoo's ETF
+    type alone also returns REITs and closed-end funds; fund status is never
+    inferred from a name or ticker.
+    """
 
     results: dict[str, dict[str, Any]] = {}
+    decisions: list[Admission] = []
     for source in raw:
+        decision = admit_etf(source, reference)
+        decisions.append(decision)
+        if not decision.admitted:
+            continue
         code = str(source.get("code") or "")
-        if source.get("stock_type") != "ETF" or source.get("delisting") or not code.startswith("US."):
-            continue
         symbol = code[3:].upper()
-        if not symbol or not all(char.isalnum() or char in ".-" for char in symbol):
-            continue
         canonical = register_etf_fund(symbol=symbol)
+        if canonical in results:
+            decisions[-1] = Admission(False, decision.category, DUPLICATE_LISTING, decision.classification)
+            continue
         row = _catalog_row_base(canonical_id=canonical, symbol=symbol,
                                 name=str(source.get("name") or symbol), asset_class="ETF_FUND",
                                 venue=str(source.get("exchange_type") or "US_ETF"),
                                 as_of=as_of, numbers=_ETF_NUMBERS)
-        row.update({"provider_symbol": code, "market_data_id": symbol})
+        row.update({"provider_symbol": code, "market_data_id": symbol, "classification": decision.classification})
         results[canonical] = row
-    return sorted(results.values(), key=lambda item: item["symbol"])
+    summary = admission_summary(US_ETFS, decisions, reference_as_of=reference.as_of,
+                                reference_error=reference.error)
+    return sorted(results.values(), key=lambda item: item["symbol"]), summary
+
+
+def project_etf_catalog(raw: list[dict[str, Any]], *, as_of: str,
+                        reference: ClassificationReference = UNAVAILABLE_REFERENCE) -> list[dict[str, Any]]:
+    """Admitted ETF rows only; without a classification reference nothing is admitted (fail-closed)."""
+
+    return project_etf_admission(raw, as_of=as_of, reference=reference)[0]
 
 
 def _quote_from_futures_snapshot(source: dict[str, Any], now_s: float) -> dict[str, Any]:
@@ -223,11 +251,13 @@ def _with_snapshot(row: dict[str, Any], snapshot: MarketSnapshot) -> dict[str, A
 
 class MultiUniverseScreener:
     def __init__(self, *, transport_getter: Callable[[], Any | None] = _transport,
+                 reference_getter: Callable[[], ClassificationReference] = _classification_reference,
                  clock: Callable[[], float] = time.monotonic,
                  today: Callable[[], date] = lambda: datetime.now(ET).date(),
                  now: Callable[[], str] = _now, now_s: Callable[[], float] = time.time,
                  wall: Callable[[], datetime] = lambda: datetime.now(UTC)) -> None:
         self._transport_getter = transport_getter
+        self._reference_getter = reference_getter
         self._clock = clock
         self._today = today
         self._now = now
@@ -235,14 +265,32 @@ class MultiUniverseScreener:
         self._lock = threading.RLock()
         self._catalogs: dict[str, tuple[float, str, list[dict[str, Any]], str | None]] = {}
         # Current and previous projection per universe, so a pinned page chain
-        # finishes on the rows it started from.
+        # finishes on the rows it started from. The key is the catalog token
+        # (catalog as_of; for ETFs plus the classification reference as_of).
         self._projected: dict[str, OrderedDict[tuple[str, date], list[dict[str, Any]]]] = {}
+        self._admissions: dict[str, dict[str, Any]] = {}
+        self._reference_errors: dict[str, str | None] = {}
         self._ordered: OrderedDict[tuple[Any, ...], list[dict[str, Any]]] = OrderedDict()
         self._snapshots = EtfSnapshotSource(transport_getter=transport_getter, clock=clock, wall=wall)
         self._quote_refusal: tuple[float, str] | None = None
         self._market_states: tuple[float, frozenset[str], dict[str, str]] | None = None
 
+    def _reference(self) -> ClassificationReference:
+        try:
+            return self._reference_getter()
+        except Exception as exc:  # noqa: BLE001 — classification boundary fails closed
+            return ClassificationReference(None, {}, type(exc).__name__)
+
     def _catalog(self, universe: str, *, force: bool = False) -> tuple[list[dict[str, Any]], str | None, str | None]:
+        rows, as_of, error, _token = self._catalog_state(universe, force=force)
+        return rows, as_of, error
+
+    def _catalog_state(self, universe: str, *,
+                       force: bool = False) -> tuple[list[dict[str, Any]], str | None, str | None, str]:
+        """Admitted rows, provider as_of, provider error, and the projection token pages pin to."""
+
+        # The ETF reference is read outside this lock: it may refresh the equity export.
+        reference = self._reference() if universe == US_ETFS else None
         with self._lock:
             cached = self._catalogs.get(universe)
             if cached and not force and self._clock() - cached[0] < CATALOG_TTL_SECONDS:
@@ -265,20 +313,48 @@ class MultiUniverseScreener:
                     as_of = self._now()
                 self._catalogs[universe] = (self._clock(), as_of or "", raw, error)
             today = self._today()
+            token = as_of or ""
+            if reference is not None:
+                # A changed classification is a new result set, exactly like a new provider catalog;
+                # a refresh that classifies every listing the same way keeps in-flight page chains valid.
+                token = f"{token}~{reference.fingerprint if reference.available else ''}"
+                self._reference_errors[universe] = reference.error if not reference.available else None
             retained = self._projected.setdefault(universe, OrderedDict())
-            rows = retained.get((as_of or "", today))
+            rows = retained.get((token, today))
             if rows is None:
                 # Expiry and lead status are re-derived whenever the trading date changes.
-                rows = (project_futures_catalog(raw, today=today, as_of=as_of or "") if universe == FUTURES
-                        else project_etf_catalog(raw, as_of=as_of or ""))
-                retained[(as_of or "", today)] = rows
+                if universe == FUTURES:
+                    rows = project_futures_catalog(raw, today=today, as_of=as_of or "")
+                else:
+                    rows, summary = project_etf_admission(raw, as_of=as_of or "",
+                                                          reference=reference or UNAVAILABLE_REFERENCE)
+                    self._admissions[universe] = {**summary, "provider_raw_count": len(raw)}
+                retained[(token, today)] = rows
                 while len(retained) > CATALOG_RETAINED:
                     retained.popitem(last=False)
-            return rows, as_of or None, error
+            return rows, as_of or None, error, token
 
-    def _pinned_catalog(self, universe: str, as_of: str) -> list[dict[str, Any]] | None:
+    def admission_audit(self, universe: str) -> dict[str, Any] | None:
+        """The latest ETF admission summary (developer audit; see tools/screener/universe_audit.py)."""
+
+        if universe == US_ETFS:
+            self._catalog_state(universe)
         with self._lock:
-            return self._projected.get(universe, OrderedDict()).get((as_of, self._today()))
+            return self._admissions.get(universe)
+
+    def explain_etf(self, symbol: str) -> dict[str, Any] | None:
+        """Why a provider "ETF" row was admitted or rejected (developer audit), or None if the provider lacks it."""
+
+        self._catalog_state(US_ETFS)
+        reference = self._reference()
+        with self._lock:
+            raw = self._catalogs.get(US_ETFS, (0.0, "", [], None))[2]
+        source = next((row for row in raw if str(row.get("code") or "").upper() == f"US.{symbol.upper()}"), None)
+        return admit_etf(source, reference).classification if source is not None else None
+
+    def _pinned_catalog(self, universe: str, token: str) -> list[dict[str, Any]] | None:
+        with self._lock:
+            return self._projected.get(universe, OrderedDict()).get((token, self._today()))
 
     def read(self, *, universe: str, search: str = "", sort: str | None = None, descending: bool = True,
              offset: int = 0, limit: int = DEFAULT_PAGE_LIMIT, force_refresh: bool = False,
@@ -304,23 +380,29 @@ class MultiUniverseScreener:
         snapshot_error: str | None = None
         if query.result_set is not None:
             # A later page reads the exact catalog and snapshot its first page used.
-            catalog_as_of, _, snapshot_id = query.result_set.partition("|")
-            pinned = self._pinned_catalog(universe, catalog_as_of)
+            token, _, snapshot_id = query.result_set.partition("|")
+            pinned = self._pinned_catalog(universe, token)
             snapshot = self._snapshots.retained(snapshot_id) if snapshot_id else None
             if pinned is None or bool(snapshot_id) != query.uses_snapshot or (snapshot_id and snapshot is None):
                 raise ValueError("RESULT_SET_CHANGED")
-            rows, as_of, error = pinned, catalog_as_of, None
+            rows, as_of, error = pinned, token.partition("~")[0], None
         else:
-            rows, as_of, error = self._catalog(universe, force=force_refresh)
+            rows, as_of, error, token = self._catalog_state(universe, force=force_refresh)
             if query.uses_snapshot and rows:
-                snapshot, snapshot_error = self._snapshots.current(rows, catalog_as_of=as_of or "",
+                snapshot, snapshot_error = self._snapshots.current(rows, catalog_as_of=token,
                                                                    force=force_refresh)
+        with self._lock:
+            reference_error = self._reference_errors.get(universe) if universe == US_ETFS else None
+            admission = self._admissions.get(universe) if universe == US_ETFS else None
+        # Provider catalog loaded, but no row can be proven an ETF: say so, never an empty "healthy" universe.
+        empty_error = error or (CLASSIFICATION_UNAVAILABLE if reference_error else None)
         envelope = {"schema_version": SCHEMA_VERSION, "universe": universe, "generated_at": self._now(),
                     "market_session": "PROVIDER_SPECIFIC" if universe == FUTURES else us_equity_session_label(),
                     "universe_as_of": as_of, "screener_as_of": snapshot.as_of if snapshot else as_of,
                     "evaluation": "SNAPSHOT" if query.uses_snapshot else "CATALOG",
                     "snapshot": snapshot.summary() if snapshot else None,
                     "unfiltered_count": len(rows),
+                    **({"admission": admission} if universe == US_ETFS else {}),
                     "provider_health": [
                         {"provider": spec.source, "role": "IDENTITY_SOURCE",
                          "state": "DEGRADED" if error and rows else "UNAVAILABLE" if error else "HEALTHY",
@@ -328,6 +410,9 @@ class MultiUniverseScreener:
                         {"provider": "MOOMOO_OPEND", "role": "QUOTE_SOURCE",
                          "state": "UNAVAILABLE" if universe == FUTURES else "WINDOW_ONLY",
                          "reason": "NOT_ENTITLED_OR_UNVERIFIED" if universe == FUTURES else None},
+                        *([{"provider": REFERENCE_SOURCE, "role": "CLASSIFICATION_SOURCE",
+                            "state": "UNAVAILABLE" if reference_error else "HEALTHY", "reason": reference_error}]
+                          if universe == US_ETFS else []),
                         *([{"provider": SNAPSHOT_SOURCE, "role": "MARKET_SNAPSHOT",
                             "state": "UNAVAILABLE" if snapshot is None else "HEALTHY", "reason": snapshot_error}]
                           if query.uses_snapshot else []),
@@ -335,9 +420,9 @@ class MultiUniverseScreener:
         if query.uses_snapshot and snapshot is None:
             # Never evaluate a market filter or sort on a partial or visible-row subset.
             return {**envelope, "result_set_id": None,
-                    "source_error": error if not rows else snapshot_error or "MARKET_SNAPSHOT_UNAVAILABLE",
+                    "source_error": empty_error if not rows else snapshot_error or "MARKET_SNAPSHOT_UNAVAILABLE",
                     **page_payload(query, [])}
-        key = (universe, as_of, self._today(), snapshot.id if snapshot else None, query.identity)
+        key = (universe, token, self._today(), snapshot.id if snapshot else None, query.identity)
         with self._lock:
             ordered = self._ordered.get(key)
         if ordered is None:
@@ -354,8 +439,8 @@ class MultiUniverseScreener:
         page = page_payload(query, ordered)
         if snapshot is not None:
             page["rows"] = [_with_snapshot(row, snapshot) for row in page["rows"]]
-        return {**envelope, "result_set_id": f"{as_of}|{snapshot.id if snapshot else ''}" if rows else None,
-                "source_error": error if not rows else None, **page}
+        return {**envelope, "result_set_id": f"{token}|{snapshot.id if snapshot else ''}" if rows else None,
+                "source_error": empty_error if not rows else None, **page}
 
     def row_for(self, instrument_id: str, *, universe: str,
                 snapshot_id: str | None = None) -> tuple[dict[str, Any] | None, str | None]:

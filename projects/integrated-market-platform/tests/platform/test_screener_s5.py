@@ -6,6 +6,7 @@ import sys
 import unittest
 from datetime import date, datetime
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 from zoneinfo import ZoneInfo
 
@@ -18,6 +19,7 @@ from market_platform_foundation.ui_api.screener_config import (  # noqa: E402
 from market_platform_foundation.ui_api.screener_filters import (  # noqa: E402
     filter_catalog, validate_filters,
 )
+from market_platform_foundation.ui_api.screener_admission import ClassificationReference  # noqa: E402
 from market_platform_foundation.ui_api.screener_multi import (  # noqa: E402
     MultiUniverseScreener, _futures_session, _quote_from_futures_snapshot, project_etf_catalog, project_futures_catalog,
 )
@@ -42,6 +44,14 @@ def future_dated(root: str = "ES", year_month: str = "2612", expiry: str = "2026
 def etf(symbol: str = "SPY", *, stock_type: str = "ETF", delisting: bool = False) -> dict:
     return {"code": f"US.{symbol}", "name": f"{symbol} Fund", "stock_type": stock_type,
             "delisting": delisting, "exchange_type": "NYSE"}
+
+
+def etf_reference(*symbols: str) -> ClassificationReference:
+    """S13: Finviz evidence that each listing is an exchange-traded fund."""
+
+    return ClassificationReference.build(
+        [SimpleNamespace(ticker=symbol, sector="Financial", industry="Exchange Traded Fund", country="USA")
+         for symbol in symbols], as_of=AS_OF)
 
 
 def screen(universe: str, *, field: str = "symbol", view: str = "Overview") -> dict:
@@ -136,13 +146,15 @@ class CatalogProjectionTests(unittest.TestCase):
         self.assertEqual(project_futures_catalog([future_main(month="JUNK6"), future_dated()], today=TODAY, as_of=AS_OF), [])
 
     def test_etf_classification_and_duplicate_identity(self) -> None:
+        reference = etf_reference("SPY", "QQQ", "AAPL", "OLD", "NOVENUE")
         rows = project_etf_catalog([etf(), etf(), etf("QQQ"), etf("AAPL", stock_type="STOCK"),
-                                    etf("OLD", delisting=True)], as_of=AS_OF)
+                                    etf("OLD", delisting=True)], as_of=AS_OF, reference=reference)
         self.assertEqual([row["symbol"] for row in rows], ["QQQ", "SPY"])
         self.assertTrue(all(row["instrument"]["asset_class"] == "ETF_FUND" for row in rows))
         self.assertNotEqual(rows[1]["instrument"]["instrument_id"], "SPY")
         self.assertEqual(rows[1]["fields"]["price"]["state"], "UNAVAILABLE")
-        missing = project_etf_catalog([{**etf("NOVENUE"), "exchange_type": "N/A"}], as_of=AS_OF)[0]
+        missing = project_etf_catalog([{**etf("NOVENUE"), "exchange_type": "N/A"}], as_of=AS_OF,
+                                      reference=reference)[0]
         self.assertIsNone(missing["exchange"])
 
 
@@ -197,7 +209,8 @@ class LiveBoundaryTests(unittest.TestCase):
             def fetch_etf_catalog(self) -> dict:
                 return {"rows": [etf()], "reason_code": None}
 
-        service = MultiUniverseScreener(transport_getter=Transport, today=lambda: TODAY,
+        service = MultiUniverseScreener(transport_getter=Transport, reference_getter=lambda: etf_reference("SPY"),
+                                        today=lambda: TODAY,
                                         now=lambda: AS_OF, clock=lambda: 1.0)
         row = service.read(universe=US_ETFS)["rows"][0]
         with patch("market_platform_foundation.ui_api.screener_multi.screener_service") as equity:

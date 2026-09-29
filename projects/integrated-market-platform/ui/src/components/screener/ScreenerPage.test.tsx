@@ -225,6 +225,15 @@ describe("ScreenerPage", () => {
     await waitFor(() => expect(screen.getByText("AAPL")).toBeInTheDocument(), { timeout: 3_000 });
   });
 
+  it("names an unverifiable ETF classification instead of showing an empty ETF universe", async () => {
+    mockS5();
+    mocks.fetch.mockImplementation(async ({ universe }: { universe: string }) => ({ ...payload, universe, rows: [],
+      result_count: 0, unfiltered_count: 0, result_set_id: null, source_error: "CLASSIFICATION_UNAVAILABLE" }));
+    mount("/screener?universe=US_ETFS");
+    expect(await screen.findByRole("alert")).toHaveTextContent("ETF membership cannot be verified");
+    expect(screen.queryByText("SPY")).not.toBeInTheDocument();
+  });
+
   it("switches views without changing the result query or quote window", async () => {
     mount();
     await screen.findByText("AAPL");

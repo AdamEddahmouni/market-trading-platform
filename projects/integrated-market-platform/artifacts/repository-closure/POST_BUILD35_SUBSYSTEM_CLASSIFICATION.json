@@ -542,6 +542,7 @@
         "tools/options",
         "tools/order_flow",
         "tools/providers",
+        "tools/screener",
         "tools/sec_edgar",
         "tools/sec_ftd",
         "tools/short_intelligence",

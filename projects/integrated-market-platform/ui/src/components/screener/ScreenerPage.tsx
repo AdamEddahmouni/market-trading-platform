@@ -870,6 +870,8 @@ export function ScreenerPage() {
               ? "U.S. Treasury Fiscal Data is not enabled for this workstation (set IMP_TREASURY_LIVE=1)."
             : firstPage?.source_error === "CRYPTO_NOT_CONFIGURED"
               ? "Kraken public market data is not enabled for this workstation (set IMP_CRYPTO_LIVE=1)."
+            : firstPage?.source_error === "CLASSIFICATION_UNAVAILABLE"
+              ? "ETF membership cannot be verified: the Finviz classification that separates ETFs from REITs and closed-end funds is unavailable."
             : snapshotQuery && firstPage?.source_error
               ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>

@@ -60,8 +60,11 @@ falls back to fixtures.
 ## ETFs
 
 - **Identity.** `fetch_etf_catalog` calls OpenD `get_stock_basicinfo(US, ETF)`.
-  Only provider-classified, non-delisted `US.` rows are admitted; names and
-  tickers are never used to infer fund status. Each row registers an
+  Only provider-classified, non-delisted `US.` rows are candidates; names and
+  tickers are never used to infer fund status. Since S13 a candidate is
+  admitted only when the Finviz reference also classifies it as an
+  exchange-traded fund: the provider `ETF` type also returns REITs and
+  closed-end funds ([Screener S13](SCREENER_S13_UNIVERSE_INTEGRITY.md)). Each row registers an
   `ETF_FUND` canonical id (`register_etf_fund`); `market_data_id` carries the
   ticker for market data.
 - **Market data.** ETFs reuse the S1 quote window, S3 bars/levels, and S4
