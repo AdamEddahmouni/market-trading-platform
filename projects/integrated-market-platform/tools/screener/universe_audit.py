@@ -140,6 +140,21 @@ def main() -> int:
     args = parser.parse_args()
     sample = [item.strip().upper() for item in args.sample.split(",") if item.strip()]
     if args.synthetic:
+        return _run(args, sample)
+    from market_platform_foundation.market_data.current_bars import current_bars_service
+
+    try:
+        return _run(args, sample)
+    finally:
+        # The OpenD quote context runs non-daemon SDK threads: without close() the report
+        # prints and the process never exits (found in the S13 live acceptance).
+        close = getattr(current_bars_service().transport(), "close", None)
+        if callable(close):
+            close()
+
+
+def _run(args: argparse.Namespace, sample: list[str]) -> int:
+    if args.synthetic:
         equities, multi = _synthetic(args.synthetic)
 
         def read(**kwargs: Any) -> dict[str, Any]:

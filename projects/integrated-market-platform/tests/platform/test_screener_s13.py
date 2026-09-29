@@ -500,6 +500,26 @@ class AuditCommandTests(unittest.TestCase):
         self.assertEqual(report["findings"], ["REFERENCE_HAS_NO_ETF_INDUSTRY"])
         self.assertEqual(report["universes"][US_ETFS]["accepted"], 0)  # fail-closed, never admitted as unknown
 
+    def test_live_run_closes_the_opend_transport_so_the_process_exits(self):
+        # The OpenD SDK context keeps non-daemon threads alive; the live audit printed its
+        # report and then never exited until the command closed the shared transport.
+        from unittest import mock
+
+        from market_platform_foundation.market_data import current_bars
+
+        tool = _audit_tool()
+        transport = mock.Mock()
+        bars = mock.Mock(transport=mock.Mock(return_value=transport))
+        with mock.patch.object(current_bars, "current_bars_service", return_value=bars), \
+                mock.patch.object(sys, "argv", ["universe_audit.py", "--sample", "SPY"]):
+            with mock.patch.object(tool, "_run", return_value=0):
+                self.assertEqual(tool.main(), 0)
+            self.assertEqual(transport.close.call_count, 1)
+            with mock.patch.object(tool, "_run", side_effect=RuntimeError("provider blew up")):
+                with self.assertRaises(RuntimeError):
+                    tool.main()
+            self.assertEqual(transport.close.call_count, 2)
+
 
 if __name__ == "__main__":
     unittest.main()
