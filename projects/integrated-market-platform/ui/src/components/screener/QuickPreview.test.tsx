@@ -368,7 +368,8 @@ describe("Quick preview tab strip layout", () => {
     // Seven tabs overflow the default 400 px preview; an overflowing strip made the whole preview
     // scroll sideways and clip every section when the last tab was selected (S12 live acceptance).
     const css = readFileSync(resolve(process.cwd(), "src/components/screener/screener.css"), "utf8");
-    expect(css).toMatch(/\.screener-preview-tabs\{[^}]*overflow-x:auto/);
+    // A scroll container in the preview's flex column may shrink to nothing unless it keeps its height.
+    expect(css).toMatch(/\.screener-preview-tabs\{[^}]*flex:0 0 auto[^}]*overflow-x:auto/);
     expect(css).toMatch(/\.screener-preview-tabs button\{[^}]*flex:0 0 auto;white-space:nowrap/);
   });
 });
