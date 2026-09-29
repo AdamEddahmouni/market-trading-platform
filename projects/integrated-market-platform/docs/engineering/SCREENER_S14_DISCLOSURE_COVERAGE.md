@@ -1,7 +1,7 @@
 # Main Screener S14 — Disclosure coverage, identity & refresh automation
 
-Status: **cloud implementation complete; owner-workstation live acceptance
-pending** (see [Owner-workstation acceptance](#owner-workstation-acceptance)).
+Status: **complete; owner-workstation live acceptance passed 2026-09-29**
+(see [Owner-workstation acceptance](#owner-workstation-acceptance)).
 S14 is a data-integrity continuation of
 [S12](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md). It adds no universe,
 view, panel, or evaluative feature, and does not touch
@@ -453,10 +453,10 @@ import is rescanned at most every 5 minutes.
 
 | Suite | Tests |
 |-------|-------|
-| `tests/sec_edgar/test_s14_thirteen_f_lifecycle.py` | 36 — discovery, archive integrity, duplicate accessions, first build + manifest, no-op, one/two new data sets, dry run, corrupt ZIP, missing table, conflict, build failure, smoke failure, empty index, hash mismatch + recovery, discovery failure, crash at every stage, dead-process leftovers, atomic pointer, rollback (and refused rollback), stale manifest, pruning, half-written lock, lock contention, concurrent refreshes, PIT after refresh, exits during the filing window, coverage-short index, CLI |
+| `tests/sec_edgar/test_s14_thirteen_f_lifecycle.py` | 37 — connections closed before publish, discovery, archive integrity, duplicate accessions, first build + manifest, no-op, one/two new data sets, dry run, corrupt ZIP, missing table, conflict, build failure, smoke failure, empty index, hash mismatch + recovery, discovery failure, crash at every stage, dead-process leftovers, atomic pointer, rollback (and refused rollback), stale manifest, pruning, half-written lock, lock contention, concurrent refreshes, PIT after refresh, exits during the filing window, coverage-short index, CLI |
 | `tests/market_trackers/test_s14_house_ptr_coverage.py` | 20 — real text/scanned fixtures, page refs, row labels, metrics; synthetic PDFs for empty table, missing table, unrecognized rows, partial parse, page-break continuation, missing ticker, amended row + option description, invalid dates, mixed pages, malformed/unsupported; scanned extractor admission, withholding, failure |
 | `tests/market_trackers/test_s14_congress_identity.py` | 16 — names, seat evidence, honorifics, suffix variants, conflicting initials, same name/different seat, nicknames, unknown, Senate without registry, registry ids, successor in same seat, vacancy, chamber transition, Senate ambiguity, surname guard, env loading |
-| `tests/market_trackers/test_s14_senate_efd.py` | 15 — parser, owners/types/bands, amendment, paper, malformed, unknown type/bad band, header-driven columns, no-transactions, attestation gate, import states, duplicates/conflicts, sidecar retrieval, normalized contract, versions |
+| `tests/market_trackers/test_s14_senate_efd.py` | 16 — parser, filer courtesy titles, owners/types/bands, amendment, paper, malformed, unknown type/bad band, header-driven columns, no-transactions, attestation gate, import states, duplicates/conflicts, sidecar retrieval, normalized contract, versions |
 | `tests/platform/test_screener_s14.py` | 15 — Senate on the Congress view and panel, independent source failure, partial import, unattested directory, identity filter dedupe, filed-name provenance, House coverage metrics, managed 13F freshness, refresh-available, refreshing + switch, invalid index, no network on the request path, neutrality |
 | `tests/platform/test_screener_s14_pit.py` | 13 — House scenario A, ET bound, retrieval clock, House amended row, Senate minute precision, Senate amendment, 13F scenario B, 13F restatement, Form 4/13D acceptance clocks, cross-family invariants |
 | `ui/…/participants/ParticipantsS14.test.tsx` | 7 — 13F status line (full/compact/invalid), chamber coverage, compact chamber note, canonical name + filed-as provenance, S14 schema |
@@ -477,33 +477,158 @@ Everything above was proven with deterministic fixtures.
 
 ## Owner-workstation acceptance
 
-S14 only. The S13 ETF catalog acceptance is a **separate** pending gate
-([S13](SCREENER_S13_UNIVERSE_INTEGRITY.md#acceptance)).
+Run 2026-09-29, 10:51–13:15 UTC, on the owner workstation (Windows 11,
+Python 3.11.15, Moomoo OpenD 10.10.7008, Finviz Elite). The data sources were
+the live SEC, House Clerk, USAspending, LDA, and CFTC, plus three real eFD
+reports that the owner saved after accepting the terms personally. The 13F
+data, registry file, and Senate pages live outside the repository
+(`C:\Users\adame\imp-data`); none is committed. S13's gate is recorded
+separately ([S13](SCREENER_S13_UNIVERSE_INTEGRITY.md#acceptance)).
 
-**13F** (with `SEC_USER_AGENT` set):
+### 13F lifecycle (live SEC)
 
-1. `python tools/sec_edgar/thirteen_f_refresh.py --root <IMP_DATA>/13f --check` —
-   the newest listed data sets match the SEC page.
-2. `python tools/sec_edgar/thirteen_f_refresh.py --root <IMP_DATA>/13f --refresh` —
-   `PUBLISHED`; record `timings` and `manifest.line_count`.
-3. `--status` — `CURRENT_AS_FILED`, `indexed_through` = the newest window's end.
-4. Start the API with `IMP_13F_DATA_ROOT=<IMP_DATA>/13f`; NVDA Institutional &
-   Whale shows the 13F index status line and holders.
+| Step | Result |
+|------|--------|
+| `--status` on an empty root | `NOT_CONFIGURED · THIRTEEN_F_INDEX_NOT_BUILT` |
+| `--check` | 0.56 s. The SEC page lists 54 data sets; the newest is `01jun2026-31aug2026_form13f.zip` (coverage end 2026-08-31). The wanted two were both missing; nothing was mutated. |
+| `--refresh` | **`PUBLISHED`** in 52.3 s. Downloads: 99.4 MB + 100.7 MB (≈7 s). Build 45.1 s, validation 1.0 s, pointer swap under 1 ms. |
+| Generation | 19,616 13F-HR filings, 23,613 submissions, 7,653,159 lines → 5,401,302 positions, 0 duplicate accessions, 361,484,288-byte index. The smoke query found CUSIP 594918104 (MSFT) with 6,212 Q2 holders, `CURRENT_AS_FILED`. |
+| `--status` | 0.24 s: **`CURRENT_AS_FILED`**, indexed through 2026-08-31, latest source filing 2026-08-31, current for the published data sets |
+| `--refresh` again | `NO_CHANGE` (0.44 s) |
+| `--rollback` with no parent | refused: `NO_PARENT_GENERATION`; `CURRENT` unchanged |
+| `--refresh --force`, then `--rollback`, then `--refresh --force` | Generation 2 was built from the cached, hash-verified sources (53.6 s; parent = generation 1). The rollback re-pointed `CURRENT` to generation 1 after a deep hash check (0.47 s); status stayed `CURRENT_AS_FILED`. Generation 3 restored the newest data (parent = generation 1). All three generations show 5,401,302 positions and the same source hash. The index file hashes differ only because each index carries its own generation id. |
 
-**House** (with `IMP_PUBLIC_RECORDS_LIVE=1`): open the Congress view; record
-`coverage.house` (parsed / scanned_unparsed / partially_parsed / failed) and check
-one member with two index spellings appears once in the member filter.
+The first real refresh would have failed on Windows. Running the S14 suites on
+the workstation showed every publish failing with `WinError 32`: the smoke
+validator opened the candidate index through `sqlite3`'s context manager, which
+commits but does not close, and the open handle blocked the
+`.building` → generation rename. Linux CI cannot see that. Fixed with
+`contextlib.closing` and a platform-independent test that every connection is
+closed before publish (`9464f62d`).
 
-**Senate** (owner action): accept the eFD terms in your own browser; save one
-current electronic PTR page; place it with an `ACCESS_ATTESTATION.json` in a
-folder; set `IMP_SENATE_EFD_IMPORT_DIR`; confirm the Senate provider is
-`READY` and the page's transactions appear with the eFD filed time.
+**Request path** (API started with `IMP_13F_DATA_ROOT`): NVDA Institutional &
+Whale shows "13F data sets indexed through 2026-08-31 · current for published
+SEC data sets", quarter end 2026-06-30 compared with 2026-03-31, 5,956 managers,
+and top holders BlackRock 1.9B, Vanguard Capital Management 1.5B, and FMR 1B.
+It says "A quarter-end holding filed weeks later is not a live position".
+Nothing is labeled live.
+
+**Point in time on real filings.** Corient Private Wealth's Q2 2026 NVDA report
+(filed 2026-08-12, 10,497,476 shares) was restated twice: 10,215,688 shares
+(filed 08-17) and 9,069,030 shares (filed 08-27). Querying all holders:
+
+| Cutoff (UTC) | Corient shares shown | NVDA holders |
+|--------------|---------------------|--------------|
+| 2026-08-17 23:59:59 | 10,497,476 (filed 08-12) | 5,840 |
+| 2026-08-18 00:00:01 | 10,215,688 (filed 08-17) | 5,891 |
+| 2026-08-27 23:59:59 | 10,215,688 | 5,951 |
+| 2026-08-28 00:00:01 | 9,069,030 (filed 08-27) | 5,955 |
+
+Each restatement appears only once it is public. The holder count grows only as
+filings become available, so there is no lookahead. Full-holder queries took
+about 110 ms.
+
+### House (live Clerk)
+
+135 PTR filings (load 42 s): 116 machine-readable and 19 scanned. Parse states:
+114 `PARSED`, 2 `PARTIALLY_PARSED` (`SOME_ROW_FIELDS_UNPARSED`), and
+19 `SCANNED_UNPARSED` (`NO_TEXT_LAYER_SCANNED_FILING`). None was `PARSE_FAILED`
+or `NO_TRANSACTIONS`, there were no document errors, and there were 1,045
+transactions. No scan is presented as having no transactions.
+
+**Identity**, with the official registry (`congress-legislators`
+`legislators-current.json`, 539 members): 843 rows resolved `OFFICIAL_ID` and
+202 `SEAT_AND_NAME`. The 90-day member filter has 43 canonical entries, and
+every merge checked out:
+
+- "John J Mr McGuire III" and "John McGuire" → `BIOGUIDE:M001239` (VA-05).
+- "Richard W. Allen" → Rick W. Allen; "Daniel Crenshaw" → Dan Crenshaw.
+- "Scott Scott Franklin" → Scott Franklin; "Thomas H. Kean Jr" → Thomas H. Kean, Jr.
+
+Two members kept the no-registry seat identity rather than an official id:
+April McClain Delaney (MD-06; the compound surname does not match the parsed
+surname) and Richard McCormick (the index gives GA-06; the registry's current
+term is GA-07). Nothing was merged incorrectly. Filed spellings stay in
+`member.source_name` and in the "Filed as …" hover.
+
+**Clocks** (Kevin Hern, doc 20035491): transaction 2026-08-27, notification
+09-15, filed 2026-09-25, `available_at` 2026-09-26T03:59:59Z (end of the
+Eastern filing day), `retrieved_at`/`imp_known_at` 2026-09-29 (kept separate).
+Amounts are bands with `exact_value_disclosed: false`.
+
+### Senate (real eFD, owner operator step)
+
+The owner accepted the eFD terms in their own browser (attestation:
+`accepted_by` Adam Eddahmouni, `accepted_at` about 2026-09-29 09:03 ET) and
+saved three electronic PTR pages. IMP never contacted eFD.
+
+| Report | Filer as printed | Filed (ET) | Result |
+|--------|------------------|------------|--------|
+| `05f5d46b…` | The Honorable Lamar Alexander (Former Senator) | 06/27/2017 7:28 PM | `PARSED`, 10 spouse municipal-bond sales (`Sale (Full)`); identity `UNRESOLVED` (not in the current-legislators registry) |
+| `9e2ff733…` | The Honorable Richard Blumenthal | 09/28/2026 9:27 AM | `PARSED`, 33 spouse transactions (24 purchases, 9 partial sales), asset type `Other`, no tickers; `BIOGUIDE:B001277` |
+| `0a93a20c…` | **Mr.** James Conley Justice **II** (Justice II, James Conley) | 09/28/2026 2:13 PM | `PARSED` after the fix below: 1 self `Sale (Partial)` of non-public stock, band **Over $50,000,000** (open-ended, no point value); `BIOGUIDE:J000312` |
+
+Import: `READY`, 3 of 3 parsed, 44 transactions, no duplicates or conflicts,
+13 ms. Filed times convert correctly across DST (EDT). `available_at` is the
+filed minute (`SOURCE_TIMESTAMP_MINUTE`). Rows are invisible one minute before
+it on the publication clock and invisible on IMP's own clock until retrieval.
+Senate rows carry the House contract's common fields, and Senate-only fields
+are in `source_specific`.
+
+**Defect found by the real pages.** The parser located the filer only by
+"The Honorable …". eFD printed a sitting senator as "Mr. James Conley Justice II",
+and that report failed `PARSE_FAILED · FILER_NOT_FOUND`. The import stayed
+`PARTIAL · SOME_REPORTS_FAILED`, never zero transactions. The filer now comes
+from the heading eFD marks `class="filedReport"`, with standard courtesy titles
+removed and the old match kept as the fallback (`2a74bc76`). The test uses a
+synthetic variant of the fixture: courtesy titles, a multi-line filer with a
+suffix, an open-ended band, and a page saved without the class.
+
+None of the 44 Senate transactions carries a ticker, so none matches a
+Screener universe; they count as "no ticker" in the Congress coverage. The
+provider shows `READY`; the chamber lines read "House · Current publication · 114
+parsed · 2 partly parsed · 19 scanned/unparsed" and "Senate · Imported".
+
+### Other live checks
+
+- **Participants preview** (OpenD running): passed for NVDA and MSFT, including
+  rapid selection. See [S12](SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md#visual-acceptance)
+  for the three preview layout fixes.
+- **Government:** LMT, AAPL, and MSFT have USAspending award actions
+  (`PUBLICATION_CURRENT`); NVDA shows `NO_DISCLOSURES · NO_ACTIONS_IN_WINDOW`
+  from a healthy source. LDA returned 12 filings each.
+- **Futures positioning:** 32 of 178 roots are mapped to a CFTC market
+  (`PARTIAL · SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET`). CFTC is
+  `PUBLICATION_CURRENT` (165 items, released 2026-09-25 19:30 UTC). No mapping
+  was added.
+- **Controlled source failure:** a separate API with `IMP_PUBLIC_RECORDS_LIVE`
+  off reported `LIVE_DISABLED · IMP_PUBLIC_RECORDS_LIVE_NOT_SET` for House,
+  awards, and lobbying, never `NO_DISCLOSURES`.
+- **Visual:** the layout was checked at 1920×1080, 2560×1440, and 1100×800; the
+  page height equals the viewport.
+
+### Local timings
+
+| Operation | Time |
+|-----------|------|
+| 13F `--check` / `--status` / no-op refresh | 0.56 s / 0.24 s / 0.44 s |
+| 13F refresh (2 data sets, download + build + validate) | 52.3 s (build 45.1–53.6 s) |
+| 13F rollback | 0.47 s |
+| 13F all-holder query (NVDA) | ≈110 ms |
+| House load (135 PDFs, background) | 42 s |
+| Ownership view, 5 days, cold | 2.1 s |
+| Futures positioning, cold | 2.7 s |
+| Congress & Government panel, warm | 0.1 s |
+| Senate import scan (3 reports) | 13 ms |
 
 ## Limitations
 
-- Senate eFD live acceptance requires the owner to accept the terms; the parser
-  was written against synthetic fixtures modelled on the page layout, so its first
-  live page may reveal layout differences (it fails closed per report).
+- Senate eFD needs the owner to accept the terms and save report pages; IMP
+  never fetches them. The parser has been checked on three real reports
+  (2017 and 2026); other layouts still fail closed per report.
+- The Congress coverage sentence starts from the House filing count, but its
+  "have no ticker" figure also includes Senate transactions (the chamber lines
+  below it are separate and correct).
 - Scanned House and paper Senate filings remain `SCANNED_UNPARSED`; no extraction
   engine is approved.
 - Official ids need an operator-supplied registry; without one, only same-seat
@@ -511,5 +636,6 @@ folder; set `IMP_SENATE_EFD_IMPORT_DIR`; confirm the Senate provider is
 - House amended rows cannot be linked to the report they amend.
 - 13F discovery depends on the SEC page's link names; an unrecognised naming
   scheme yields `SEC_LISTING_HAS_NO_DATASETS` (fails closed; the index is kept).
-- The 13F build performance above is from synthetic data in the cloud; the
-  real-size figure is recorded at owner acceptance.
+- The 13F build figures in [Performance](#performance-cloud-synthetic-data)
+  are cloud and synthetic; the real-size figures are in
+  [Local timings](#local-timings).
