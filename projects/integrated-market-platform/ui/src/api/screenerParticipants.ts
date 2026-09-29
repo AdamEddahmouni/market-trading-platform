@@ -94,19 +94,39 @@ const Category = z.object({
   spreading: z.number().nullable(), change_long: z.number().nullable(), change_short: z.number().nullable(),
   net: z.number().nullable(), net_change: z.number().nullable(),
   traders_long: z.number().nullable(), traders_short: z.number().nullable(),
+  // S15: DERIVED share of the same report's open interest; null when either side is missing or OI is zero.
+  long_pct_oi: z.number().nullable().optional(), short_pct_oi: z.number().nullable().optional(),
 }).passthrough();
+// S15: how a root is associated with its CFTC market (evidence basis, never name similarity).
+const Mapping = z.object({ basis: z.string(), confidence: z.string(), note: z.string().nullable(),
+  cftc_exchange: z.string().nullable().optional(), provider_exchange: z.string().nullable().optional(),
+  former_names: z.array(z.string()).optional() }).passthrough();
 const PositioningReport = z.object({
   root: z.string(), report: z.string(), report_label: z.string(), cftc_contract_market_code: z.string(),
   market_name: z.string(), report_date: z.string(), publication_time: Iso, publication_basis: z.string(),
   open_interest: z.number().nullable(), change_open_interest: z.number().nullable(), categories: z.array(Category),
   net_method: z.string(), source_url: z.string(),
+  // S15 (optional so an S12-shaped payload still renders)
+  contract: z.string().nullable().optional(), coverage_state: z.string().optional(), quality_state: z.string().optional(),
+  quality_flags: z.array(z.string()).optional(), oi_method: z.string().optional(), mapping: Mapping.optional(),
+  latest_scheduled_report_date: z.string().nullable().optional(),
 }).passthrough();
 export type PositioningReport = z.infer<typeof PositioningReport>;
+/** S15: the recorded CFTC coverage decision for one Futures root (MAPPED, NO_CFTC_REPORT, AMBIGUOUS, UNCLASSIFIED). */
+const RootCoverage = z.object({ root: z.string(), status: z.string(), reason: z.string().nullable(), label: z.string(),
+  note: z.string().nullable(), provider_exchange: z.string().nullable(), candidate_code: z.string().nullable(),
+  contract: z.string().nullable().optional() }).passthrough();
+export type RootCoverage = z.infer<typeof RootCoverage>;
 export const PositioningViewSchema = z.object({
   schema_version: SCHEMA, generated_at: Iso, universe: Universe, view: z.literal("positioning"),
   state: State, reason: z.string().nullable(), providers: z.array(Provider),
   groups: z.array(z.object({ report: z.string(), label: z.string(), rows: z.array(PositioningReport) }).passthrough()),
-  coverage: z.object({ universe_roots: z.number(), mapped_roots: z.number(), unmapped_roots: z.array(z.string()) }).passthrough(),
+  coverage: z.object({ universe_roots: z.number(), mapped_roots: z.number(), unmapped_roots: z.array(z.string()),
+    by_status: z.record(z.number()).optional(),
+    breakdown: z.array(z.object({ id: z.string(), label: z.string(), count: z.number() })).optional(),
+    mapped_without_report: z.array(z.string()).optional(), reported_roots: z.number().optional(),
+    registry_verified: z.string().optional() }).passthrough(),
+  unmapped: z.array(RootCoverage).optional(), report_policy: z.string().optional(), oi_method: z.string().optional(),
   boundaries: z.array(z.string()), time_note: z.string(),
 }).passthrough();
 export type PositioningView = z.infer<typeof PositioningViewSchema>;

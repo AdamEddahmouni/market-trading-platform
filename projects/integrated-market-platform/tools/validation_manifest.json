@@ -1476,6 +1476,7 @@
       "source_globs": [
         "src/market_platform_foundation/cftc/**",
         "tools/cftc/**",
+        "tools/screener/cftc_coverage_audit.py",
         "tests/fixtures/cftc/**"
       ],
       "test_globs": [

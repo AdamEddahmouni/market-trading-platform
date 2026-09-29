@@ -1,0 +1,892 @@
+[
+ {
+  "root": "10Y",
+  "exchange": "US_CBOT",
+  "symbol": "10YV26"
+ },
+ {
+  "root": "1OZ",
+  "exchange": null,
+  "symbol": "1OZZ26"
+ },
+ {
+  "root": "2YY",
+  "exchange": "US_CBOT",
+  "symbol": "2YYV26"
+ },
+ {
+  "root": "30Y",
+  "exchange": "US_CBOT",
+  "symbol": "30YV26"
+ },
+ {
+  "root": "5YY",
+  "exchange": "US_CBOT",
+  "symbol": "5YYV26"
+ },
+ {
+  "root": "6A",
+  "exchange": "US_CME",
+  "symbol": "6AZ26"
+ },
+ {
+  "root": "6B",
+  "exchange": "US_CME",
+  "symbol": "6BZ26"
+ },
+ {
+  "root": "6C",
+  "exchange": "US_CME",
+  "symbol": "6CZ26"
+ },
+ {
+  "root": "6E",
+  "exchange": "US_CME",
+  "symbol": "6EZ26"
+ },
+ {
+  "root": "6J",
+  "exchange": "US_CME",
+  "symbol": "6JZ26"
+ },
+ {
+  "root": "6L",
+  "exchange": "US_CME",
+  "symbol": "6LX26"
+ },
+ {
+  "root": "6M",
+  "exchange": "US_CME",
+  "symbol": "6MZ26"
+ },
+ {
+  "root": "6N",
+  "exchange": "US_CME",
+  "symbol": "6NZ26"
+ },
+ {
+  "root": "6S",
+  "exchange": "US_CME",
+  "symbol": "6SZ26"
+ },
+ {
+  "root": "6Z",
+  "exchange": "US_CME",
+  "symbol": "6ZZ26"
+ },
+ {
+  "root": "ALI",
+  "exchange": "US_COMEX",
+  "symbol": "ALIZ26"
+ },
+ {
+  "root": "BTC",
+  "exchange": null,
+  "symbol": "BTCV26"
+ },
+ {
+  "root": "BZ",
+  "exchange": "US_NYMEX",
+  "symbol": "BZZ26"
+ },
+ {
+  "root": "CL",
+  "exchange": "US_NYMEX",
+  "symbol": "CLX26"
+ },
+ {
+  "root": "EMD",
+  "exchange": "US_CME",
+  "symbol": "EMDZ26"
+ },
+ {
+  "root": "ES",
+  "exchange": "US_CME",
+  "symbol": "ESZ26"
+ },
+ {
+  "root": "ETH",
+  "exchange": null,
+  "symbol": "ETHV26"
+ },
+ {
+  "root": "GC",
+  "exchange": "US_COMEX",
+  "symbol": "GCZ26"
+ },
+ {
+  "root": "GF",
+  "exchange": "US_CME",
+  "symbol": "GFX26"
+ },
+ {
+  "root": "HE",
+  "exchange": "US_CME",
+  "symbol": "HEZ26"
+ },
+ {
+  "root": "HG",
+  "exchange": "US_COMEX",
+  "symbol": "HGZ26"
+ },
+ {
+  "root": "HO",
+  "exchange": "US_NYMEX",
+  "symbol": "HOX26"
+ },
+ {
+  "root": "KE",
+  "exchange": "US_CBOT",
+  "symbol": "KEZ26"
+ },
+ {
+  "root": "LE",
+  "exchange": "US_CME",
+  "symbol": "LEZ26"
+ },
+ {
+  "root": "M2K",
+  "exchange": "US_CME",
+  "symbol": "M2KZ26"
+ },
+ {
+  "root": "M6A",
+  "exchange": "US_CME",
+  "symbol": "M6AZ26"
+ },
+ {
+  "root": "M6B",
+  "exchange": "US_CME",
+  "symbol": "M6BZ26"
+ },
+ {
+  "root": "M6E",
+  "exchange": "US_CME",
+  "symbol": "M6EZ26"
+ },
+ {
+  "root": "MBT",
+  "exchange": null,
+  "symbol": "MBTV26"
+ },
+ {
+  "root": "MCD",
+  "exchange": "US_CME",
+  "symbol": "MCDZ26"
+ },
+ {
+  "root": "MCL",
+  "exchange": "US_NYMEX",
+  "symbol": "MCLX26"
+ },
+ {
+  "root": "MES",
+  "exchange": "US_CME",
+  "symbol": "MESZ26"
+ },
+ {
+  "root": "METH",
+  "exchange": null,
+  "symbol": "METHV26"
+ },
+ {
+  "root": "MGC",
+  "exchange": "US_COMEX",
+  "symbol": "MGCZ26"
+ },
+ {
+  "root": "MHG",
+  "exchange": "US_COMEX",
+  "symbol": "MHGZ26"
+ },
+ {
+  "root": "MIR",
+  "exchange": "US_CME",
+  "symbol": "MIRV26"
+ },
+ {
+  "root": "MJY",
+  "exchange": "US_CME",
+  "symbol": "MJYZ26"
+ },
+ {
+  "root": "MNG",
+  "exchange": "US_NYMEX",
+  "symbol": "MNGX26"
+ },
+ {
+  "root": "MNI",
+  "exchange": null,
+  "symbol": "MNIZ26"
+ },
+ {
+  "root": "MNK",
+  "exchange": null,
+  "symbol": "MNKZ26"
+ },
+ {
+  "root": "MNQ",
+  "exchange": "US_CME",
+  "symbol": "MNQZ26"
+ },
+ {
+  "root": "MSF",
+  "exchange": "US_CME",
+  "symbol": "MSFZ26"
+ },
+ {
+  "root": "MSL",
+  "exchange": null,
+  "symbol": "MSLV26"
+ },
+ {
+  "root": "MTN",
+  "exchange": "US_CBOT",
+  "symbol": "MTNZ26"
+ },
+ {
+  "root": "MWN",
+  "exchange": "US_CBOT",
+  "symbol": "MWNZ26"
+ },
+ {
+  "root": "MXP",
+  "exchange": null,
+  "symbol": "MXPV26"
+ },
+ {
+  "root": "MYM",
+  "exchange": "US_CBOT",
+  "symbol": "MYMZ26"
+ },
+ {
+  "root": "MZC",
+  "exchange": "US_CBOT",
+  "symbol": "MZCZ26"
+ },
+ {
+  "root": "MZL",
+  "exchange": "US_CBOT",
+  "symbol": "MZLZ26"
+ },
+ {
+  "root": "MZM",
+  "exchange": "US_CBOT",
+  "symbol": "MZMZ26"
+ },
+ {
+  "root": "MZS",
+  "exchange": "US_CBOT",
+  "symbol": "MZSX26"
+ },
+ {
+  "root": "MZW",
+  "exchange": "US_CBOT",
+  "symbol": "MZWZ26"
+ },
+ {
+  "root": "NG",
+  "exchange": "US_NYMEX",
+  "symbol": "NGX26"
+ },
+ {
+  "root": "NIY",
+  "exchange": null,
+  "symbol": "NIYZ26"
+ },
+ {
+  "root": "NKD",
+  "exchange": null,
+  "symbol": "NKDZ26"
+ },
+ {
+  "root": "NQ",
+  "exchange": "US_CME",
+  "symbol": "NQZ26"
+ },
+ {
+  "root": "PA",
+  "exchange": "US_NYMEX",
+  "symbol": "PAZ26"
+ },
+ {
+  "root": "PJY",
+  "exchange": "US_CME",
+  "symbol": "PJYZ26"
+ },
+ {
+  "root": "PL",
+  "exchange": "US_NYMEX",
+  "symbol": "PLF27"
+ },
+ {
+  "root": "QC",
+  "exchange": "US_COMEX",
+  "symbol": "QCZ26"
+ },
+ {
+  "root": "QG",
+  "exchange": "US_NYMEX",
+  "symbol": "QGX26"
+ },
+ {
+  "root": "QI",
+  "exchange": "US_COMEX",
+  "symbol": "QIZ26"
+ },
+ {
+  "root": "QM",
+  "exchange": "US_NYMEX",
+  "symbol": "QMX26"
+ },
+ {
+  "root": "QO",
+  "exchange": "US_COMEX",
+  "symbol": "QOZ26"
+ },
+ {
+  "root": "RB",
+  "exchange": "US_NYMEX",
+  "symbol": "RBX26"
+ },
+ {
+  "root": "RP",
+  "exchange": "US_CME",
+  "symbol": "RPZ26"
+ },
+ {
+  "root": "RTY",
+  "exchange": "US_CME",
+  "symbol": "RTYZ26"
+ },
+ {
+  "root": "RY",
+  "exchange": "US_CME",
+  "symbol": "RYZ26"
+ },
+ {
+  "root": "SAAPL",
+  "exchange": null,
+  "symbol": "SAAPLZ26"
+ },
+ {
+  "root": "SABBV",
+  "exchange": null,
+  "symbol": "SABBVZ26"
+ },
+ {
+  "root": "SADBE",
+  "exchange": null,
+  "symbol": "SADBEZ26"
+ },
+ {
+  "root": "SAMAT",
+  "exchange": null,
+  "symbol": "SAMATZ26"
+ },
+ {
+  "root": "SAMD0",
+  "exchange": null,
+  "symbol": "SAMD0Z26"
+ },
+ {
+  "root": "SAMGN",
+  "exchange": null,
+  "symbol": "SAMGNZ26"
+ },
+ {
+  "root": "SAMZN",
+  "exchange": null,
+  "symbol": "SAMZNZ26"
+ },
+ {
+  "root": "SAVGO",
+  "exchange": null,
+  "symbol": "SAVGOZ26"
+ },
+ {
+  "root": "SBA00",
+  "exchange": null,
+  "symbol": "SBA00Z26"
+ },
+ {
+  "root": "SBAC0",
+  "exchange": null,
+  "symbol": "SBAC0Z26"
+ },
+ {
+  "root": "SBKNG",
+  "exchange": null,
+  "symbol": "SBKNGZ26"
+ },
+ {
+  "root": "SBRKB",
+  "exchange": null,
+  "symbol": "SBRKBZ26"
+ },
+ {
+  "root": "SCAT0",
+  "exchange": null,
+  "symbol": "SCAT0Z26"
+ },
+ {
+  "root": "SCMCS",
+  "exchange": null,
+  "symbol": "SCMCSZ26"
+ },
+ {
+  "root": "SCOP0",
+  "exchange": null,
+  "symbol": "SCOP0Z26"
+ },
+ {
+  "root": "SCOST",
+  "exchange": null,
+  "symbol": "SCOSTZ26"
+ },
+ {
+  "root": "SCRM0",
+  "exchange": null,
+  "symbol": "SCRM0Z26"
+ },
+ {
+  "root": "SCSCO",
+  "exchange": null,
+  "symbol": "SCSCOZ26"
+ },
+ {
+  "root": "SCVX0",
+  "exchange": null,
+  "symbol": "SCVX0Z26"
+ },
+ {
+  "root": "SDIS0",
+  "exchange": null,
+  "symbol": "SDIS0Z26"
+ },
+ {
+  "root": "SGOOG",
+  "exchange": null,
+  "symbol": "SGOOGZ26"
+ },
+ {
+  "root": "SGU",
+  "exchange": "US_CME",
+  "symbol": "SGUV26"
+ },
+ {
+  "root": "SHD00",
+  "exchange": null,
+  "symbol": "SHD00Z26"
+ },
+ {
+  "root": "SI",
+  "exchange": "US_COMEX",
+  "symbol": "SIZ26"
+ },
+ {
+  "root": "SIBM0",
+  "exchange": null,
+  "symbol": "SIBM0Z26"
+ },
+ {
+  "root": "SIC",
+  "exchange": null,
+  "symbol": "SICZ26"
+ },
+ {
+  "root": "SIL",
+  "exchange": "US_COMEX",
+  "symbol": "SILZ26"
+ },
+ {
+  "root": "SINTC",
+  "exchange": null,
+  "symbol": "SINTCZ26"
+ },
+ {
+  "root": "SIR",
+  "exchange": "US_CME",
+  "symbol": "SIRV26"
+ },
+ {
+  "root": "SJNJ0",
+  "exchange": null,
+  "symbol": "SJNJ0Z26"
+ },
+ {
+  "root": "SJPM0",
+  "exchange": null,
+  "symbol": "SJPM0Z26"
+ },
+ {
+  "root": "SKO00",
+  "exchange": null,
+  "symbol": "SKO00Z26"
+ },
+ {
+  "root": "SLLY0",
+  "exchange": null,
+  "symbol": "SLLY0Z26"
+ },
+ {
+  "root": "SLMT0",
+  "exchange": null,
+  "symbol": "SLMT0Z26"
+ },
+ {
+  "root": "SMA00",
+  "exchange": null,
+  "symbol": "SMA00Z26"
+ },
+ {
+  "root": "SMCD0",
+  "exchange": null,
+  "symbol": "SMCD0Z26"
+ },
+ {
+  "root": "SMETA",
+  "exchange": null,
+  "symbol": "SMETAZ26"
+ },
+ {
+  "root": "SMRK0",
+  "exchange": null,
+  "symbol": "SMRK0Z26"
+ },
+ {
+  "root": "SMSFT",
+  "exchange": null,
+  "symbol": "SMSFTZ26"
+ },
+ {
+  "root": "SMU00",
+  "exchange": null,
+  "symbol": "SMU00Z26"
+ },
+ {
+  "root": "SNEM0",
+  "exchange": null,
+  "symbol": "SNEM0Z26"
+ },
+ {
+  "root": "SNFLX",
+  "exchange": null,
+  "symbol": "SNFLXZ26"
+ },
+ {
+  "root": "SNVDA",
+  "exchange": null,
+  "symbol": "SNVDAZ26"
+ },
+ {
+  "root": "SOL",
+  "exchange": null,
+  "symbol": "SOLV26"
+ },
+ {
+  "root": "SORCL",
+  "exchange": null,
+  "symbol": "SORCLZ26"
+ },
+ {
+  "root": "SPANW",
+  "exchange": null,
+  "symbol": "SPANWZ26"
+ },
+ {
+  "root": "SPEP0",
+  "exchange": null,
+  "symbol": "SPEP0Z26"
+ },
+ {
+  "root": "SPFE0",
+  "exchange": null,
+  "symbol": "SPFE0Z26"
+ },
+ {
+  "root": "SPG00",
+  "exchange": null,
+  "symbol": "SPG00Z26"
+ },
+ {
+  "root": "SPLD0",
+  "exchange": null,
+  "symbol": "SPLD0Z26"
+ },
+ {
+  "root": "SPLTR",
+  "exchange": null,
+  "symbol": "SPLTRZ26"
+ },
+ {
+  "root": "SQCOM",
+  "exchange": null,
+  "symbol": "SQCOMZ26"
+ },
+ {
+  "root": "SR3",
+  "exchange": null,
+  "symbol": "SR3Z26"
+ },
+ {
+  "root": "SSBUX",
+  "exchange": null,
+  "symbol": "SSBUXZ26"
+ },
+ {
+  "root": "SSPCX",
+  "exchange": null,
+  "symbol": "SSPCXZ26"
+ },
+ {
+  "root": "STSLA",
+  "exchange": null,
+  "symbol": "STSLAZ26"
+ },
+ {
+  "root": "STXN0",
+  "exchange": null,
+  "symbol": "STXN0Z26"
+ },
+ {
+  "root": "SUNH0",
+  "exchange": null,
+  "symbol": "SUNH0Z26"
+ },
+ {
+  "root": "SV000",
+  "exchange": null,
+  "symbol": "SV000Z26"
+ },
+ {
+  "root": "SVZ00",
+  "exchange": null,
+  "symbol": "SVZ00Z26"
+ },
+ {
+  "root": "SWMT0",
+  "exchange": null,
+  "symbol": "SWMT0Z26"
+ },
+ {
+  "root": "SXOM0",
+  "exchange": null,
+  "symbol": "SXOM0Z26"
+ },
+ {
+  "root": "TN",
+  "exchange": "US_CBOT",
+  "symbol": "TNZ26"
+ },
+ {
+  "root": "TPD",
+  "exchange": null,
+  "symbol": "TPDZ26"
+ },
+ {
+  "root": "UB",
+  "exchange": "US_CBOT",
+  "symbol": "UBZ26"
+ },
+ {
+  "root": "VX",
+  "exchange": "US_CBOE",
+  "symbol": "VXV26"
+ },
+ {
+  "root": "VXM",
+  "exchange": "US_CBOE",
+  "symbol": "VXMV26"
+ },
+ {
+  "root": "XAAPL",
+  "exchange": null,
+  "symbol": "XAAPLZ26"
+ },
+ {
+  "root": "XAMD0",
+  "exchange": null,
+  "symbol": "XAMD0Z26"
+ },
+ {
+  "root": "XAMZN",
+  "exchange": null,
+  "symbol": "XAMZNZ26"
+ },
+ {
+  "root": "XAVGO",
+  "exchange": null,
+  "symbol": "XAVGOZ26"
+ },
+ {
+  "root": "XBA00",
+  "exchange": null,
+  "symbol": "XBA00Z26"
+ },
+ {
+  "root": "XBAC0",
+  "exchange": null,
+  "symbol": "XBAC0Z26"
+ },
+ {
+  "root": "XC",
+  "exchange": "US_CBOT",
+  "symbol": "XCZ26"
+ },
+ {
+  "root": "XCSCO",
+  "exchange": null,
+  "symbol": "XCSCOZ26"
+ },
+ {
+  "root": "XGOOG",
+  "exchange": null,
+  "symbol": "XGOOGZ26"
+ },
+ {
+  "root": "XINTC",
+  "exchange": null,
+  "symbol": "XINTCZ26"
+ },
+ {
+  "root": "XJPM0",
+  "exchange": null,
+  "symbol": "XJPM0Z26"
+ },
+ {
+  "root": "XK",
+  "exchange": "US_CBOT",
+  "symbol": "XKX26"
+ },
+ {
+  "root": "XMETA",
+  "exchange": null,
+  "symbol": "XMETAZ26"
+ },
+ {
+  "root": "XMSFT",
+  "exchange": null,
+  "symbol": "XMSFTZ26"
+ },
+ {
+  "root": "XMU00",
+  "exchange": null,
+  "symbol": "XMU00Z26"
+ },
+ {
+  "root": "XNEM0",
+  "exchange": null,
+  "symbol": "XNEM0Z26"
+ },
+ {
+  "root": "XNFLX",
+  "exchange": null,
+  "symbol": "XNFLXZ26"
+ },
+ {
+  "root": "XNVDA",
+  "exchange": null,
+  "symbol": "XNVDAZ26"
+ },
+ {
+  "root": "XPFE0",
+  "exchange": null,
+  "symbol": "XPFE0Z26"
+ },
+ {
+  "root": "XPLTR",
+  "exchange": null,
+  "symbol": "XPLTRZ26"
+ },
+ {
+  "root": "XRP",
+  "exchange": null,
+  "symbol": "XRPV26"
+ },
+ {
+  "root": "XSPCX",
+  "exchange": null,
+  "symbol": "XSPCXZ26"
+ },
+ {
+  "root": "XTSLA",
+  "exchange": null,
+  "symbol": "XTSLAZ26"
+ },
+ {
+  "root": "XW",
+  "exchange": "US_CBOT",
+  "symbol": "XWZ26"
+ },
+ {
+  "root": "XWMT0",
+  "exchange": null,
+  "symbol": "XWMT0Z26"
+ },
+ {
+  "root": "XXOM0",
+  "exchange": null,
+  "symbol": "XXOM0Z26"
+ },
+ {
+  "root": "YM",
+  "exchange": "US_CBOT",
+  "symbol": "YMZ26"
+ },
+ {
+  "root": "ZB",
+  "exchange": "US_CBOT",
+  "symbol": "ZBZ26"
+ },
+ {
+  "root": "ZC",
+  "exchange": "US_CBOT",
+  "symbol": "ZCZ26"
+ },
+ {
+  "root": "ZF",
+  "exchange": "US_CBOT",
+  "symbol": "ZFZ26"
+ },
+ {
+  "root": "ZL",
+  "exchange": "US_CBOT",
+  "symbol": "ZLZ26"
+ },
+ {
+  "root": "ZM",
+  "exchange": "US_CBOT",
+  "symbol": "ZMZ26"
+ },
+ {
+  "root": "ZN",
+  "exchange": "US_CBOT",
+  "symbol": "ZNZ26"
+ },
+ {
+  "root": "ZO",
+  "exchange": "US_CBOT",
+  "symbol": "ZOZ26"
+ },
+ {
+  "root": "ZR",
+  "exchange": "US_CBOT",
+  "symbol": "ZRX26"
+ },
+ {
+  "root": "ZS",
+  "exchange": "US_CBOT",
+  "symbol": "ZSX26"
+ },
+ {
+  "root": "ZT",
+  "exchange": "US_CBOT",
+  "symbol": "ZTZ26"
+ },
+ {
+  "root": "ZW",
+  "exchange": "US_CBOT",
+  "symbol": "ZWZ26"
+ }
+]

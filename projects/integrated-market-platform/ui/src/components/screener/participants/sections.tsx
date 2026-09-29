@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import type { CongressTransaction, ParticipantInstrument, ParticipantSection, PositioningReport } from "../../../api/screenerParticipants";
+import type { CongressTransaction, ParticipantInstrument, ParticipantSection, PositioningReport, PositioningView,
+  RootCoverage } from "../../../api/screenerParticipants";
 import { amountText, ClassTag, CongressTable, count, memberTitle, money, reasonText, short, signed, SourceLink, stamp, StateTag, stateText } from "./participantFormat";
 
 /** Section payload shapes (the API schema keeps sections open; these are what S12 sections carry). */
@@ -146,30 +147,118 @@ export function LargeActivity({ section, onOpenOrderFlow }: { section: Participa
   </Section>;
 }
 
+const pct = (value: number | null | undefined) => (value == null ? "—" : `${value.toFixed(1)}%`);
+const pair = (a: string, b: string) => (a === "—" && b === "—" ? "—" : `${a} / ${b}`);
+const tone = (value: number | null | undefined) => (value == null || value === 0 ? "" : value > 0 ? "participant-positive" : "participant-negative");
+const BASIS_TEXT: Record<string, string> = { EXCHANGE_PLUS_PRODUCT: "exchange + product", CURATED_OFFICIAL_ALIAS: "curated official alias" };
+/** Quick Preview shows the categories each report is read for; TFF and Disaggregated categories are never equated. */
+const PREVIEW_CATEGORIES: Record<string, string[]> = {
+  TFF: ["ASSET_MANAGER_INSTITUTIONAL", "LEVERAGED_FUNDS"], DISAGGREGATED: ["PRODUCER_MERCHANT", "MANAGED_MONEY"],
+};
+
+/** Full: every official category with published weekly changes and DERIVED net / % of OI. Compact: long, short, DERIVED net. */
 export function PositioningTable({ report, compact = false }: { report: PositioningReport; compact?: boolean }) {
   return <table className="news-table-plain participant-table"><caption className="sr-only">{report.report_label} categories for {report.root}</caption>
     <thead><tr><th scope="col">Category</th><th scope="col">Long</th><th scope="col">Short</th>{!compact && <th scope="col">Spreading</th>}
-      <th scope="col" title="DERIVED: long − short">Net</th><th scope="col" title="CFTC published weekly change (long − short)">Net chg</th>
+      {!compact && <th scope="col" title="CFTC published weekly change in long / short">Wk chg L / S</th>}
+      <th scope="col" title="DERIVED: long − short">Net (derived)</th>
+      <th scope="col" title="DERIVED: published change in long − published change in short">Net chg (derived)</th>
+      {!compact && <th scope="col" title="DERIVED: long ÷ open interest, short ÷ open interest">% OI L / S (derived)</th>}
       {!compact && <th scope="col">Traders L / S</th>}</tr></thead>
     <tbody>{report.categories.map((item) => <tr key={item.id}><th scope="row">{item.label}</th><td>{count(item.long)}</td><td>{count(item.short)}</td>
       {!compact && <td>{count(item.spreading)}</td>}
-      <td className={item.net == null ? "" : item.net > 0 ? "participant-positive" : item.net < 0 ? "participant-negative" : ""}>{signed(item.net)}</td>
+      {!compact && <td>{pair(signed(item.change_long), signed(item.change_short))}</td>}
+      <td className={tone(item.net)}>{signed(item.net)}</td>
       <td>{signed(item.net_change)}</td>
-      {!compact && <td>{item.traders_long == null && item.traders_short == null ? "—" : `${count(item.traders_long)} / ${count(item.traders_short)}`}</td>}</tr>)}</tbody></table>;
+      {!compact && <td>{pair(pct(item.long_pct_oi), pct(item.short_pct_oi))}</td>}
+      {!compact && <td>{pair(count(item.traders_long), count(item.traders_short))}</td>}</tr>)}</tbody></table>;
+}
+
+/** Quality flags as sentences; a flag never silently changes what is shown. */
+export function PositioningFlags({ report }: { report: PositioningReport }) {
+  const text: Record<string, string> = {
+    KNOWN_MARKET_NOT_IN_LATEST_RELEASE: `This market is not in the latest CFTC release${report.latest_scheduled_report_date
+      ? ` (as of ${report.latest_scheduled_report_date})` : ""}; its newest report is shown.`,
+    MARKET_NAME_DIFFERS_FROM_REFERENCE: "The CFTC market name differs from the verified reference; identity follows the market code.",
+    DUPLICATE_ROW_IGNORED: "An identical duplicate CFTC row was ignored.",
+    CONFLICTING_DUPLICATE_ROWS: "The CFTC returned conflicting rows for this market and date; values are withheld.",
+  };
+  const flags = (report.quality_flags ?? []).filter((flag) => text[flag]);
+  return flags.length ? <ul className="participant-list" aria-label={`CFTC data notes for ${report.root}`}>
+    {flags.map((flag) => <li key={flag}>{text[flag]}</li>)}</ul> : null;
+}
+
+/** Why a root has no CFTC positioning: a recorded decision, never zero positions. */
+export function CoverageNote({ coverage }: { coverage: RootCoverage }) {
+  return <p className="participant-note" role="status">CFTC positioning unavailable · {coverage.label}.{coverage.note ? ` ${coverage.note}` : ""}</p>;
+}
+
+function PositioningProvenance({ report, coverage }: { report: PositioningReport; coverage?: RootCoverage }) {
+  const mapping = report.mapping;
+  return <>
+    <h4>Provenance</h4>
+    {mapping && <p className="participant-note">Mapping: {BASIS_TEXT[mapping.basis] ?? mapping.basis} ({mapping.confidence.replace(/_/g, " ").toLowerCase()})
+      {" "}· CFTC exchange {mapping.cftc_exchange ?? "—"} · provider venue {mapping.provider_exchange ?? "not listed"}
+      {" "}· coverage {(coverage?.status ?? report.coverage_state ?? "MAPPED").toLowerCase()}{mapping.note ? `. ${mapping.note}` : ""}</p>}
+    {mapping?.former_names?.length ? <p className="participant-note">Earlier official name{mapping.former_names.length > 1 ? "s" : ""} of market
+      {" "}{report.cftc_contract_market_code}: {mapping.former_names.join("; ")}.</p> : null}
+    <p className="participant-note">Released per {report.publication_basis.replace(/_/g, " ").toLowerCase()} · <SourceLink href={report.source_url}>CFTC</SourceLink></p>
+  </>;
 }
 
 export function FuturesPositioning({ section, compact }: { section: ParticipantSection; compact: boolean }) {
-  const data = as<{ report?: PositioningReport; root?: string }>(section);
-  const report = data.report;
+  const data = as<{ report?: PositioningReport; root?: string; contract?: string | null; coverage?: RootCoverage }>(section);
+  const { report, coverage } = data;
+  const unmapped = coverage != null && coverage.status !== "MAPPED";
+  const known = data.reason === "KNOWN_MARKET_NOT_IN_RECENT_RELEASES";
+  const preview = PREVIEW_CATEGORIES[report?.report ?? ""];
   return <Section title="CFTC Commitments of Traders" state={data.state} reason={data.reason} cls="OBSERVED">
-    <StateNote section={data} empty="No public COT report for this root in the loaded window." />
-    {report && <>
-      <p className="participant-note">{report.market_name} · {report.report_label} · positions as of {report.report_date} · published {stamp(report.publication_time)}
-        {" "}· open interest {count(report.open_interest)} ({signed(report.change_open_interest)})</p>
-      <PositioningTable report={report} compact={compact} />
-      {!compact && <p className="participant-note">{report.net_method} · <SourceLink href={report.source_url}>CFTC</SourceLink></p>}
+    {unmapped ? <CoverageNote coverage={coverage} />
+      : <StateNote section={data} empty={known ? "A known CFTC market, but it has no public report in the loaded window (the CFTC omits markets "
+        + "below its reporting threshold). This is not an absence of a market." : "No public COT report for this root in the loaded window."} />}
+    {report && compact && <>
+      <p className="participant-note">{report.report_label} · as of {report.report_date} · released {stamp(report.publication_time)}</p>
+      <PositioningTable report={preview ? { ...report, categories: report.categories.filter((item) => preview.includes(item.id)) } : report} compact />
+      <PositioningFlags report={report} />
+    </>}
+    {report && !compact && <>
+      <h4>CFTC market</h4>
+      <p className="participant-note">{report.market_name} · code {report.cftc_contract_market_code} · {report.report_label}
+        {" "}· positions as of {report.report_date} · released {stamp(report.publication_time)}</p>
+      <PositioningFlags report={report} />
+      <h4>Positions &amp; weekly change</h4>
+      <PositioningTable report={report} />
+      <h4>Context</h4>
+      <p className="participant-note">Open interest {count(report.open_interest)} ({signed(report.change_open_interest)} published weekly change)</p>
+      <p className="participant-note">{report.net_method}{report.oi_method ? ` ${report.oi_method}` : ""}</p>
+      <PositioningProvenance report={report} coverage={coverage} />
     </>}
   </Section>;
+}
+
+/** Counts of the recorded coverage decisions for the current catalog; accounting, not a quality score. */
+export function CoverageSummary({ coverage }: { coverage: PositioningView["coverage"] }) {
+  const parts = (coverage.breakdown ?? [{ id: "MAPPED", label: "Mapped to a CFTC market", count: coverage.mapped_roots }])
+    .map((item) => `${count(item.count)} ${item.label.toLowerCase()}`);
+  const unclassified = coverage.by_status?.UNCLASSIFIED ?? 0;
+  return <p className="participant-note" aria-label="CFTC coverage by root">Coverage · {count(coverage.universe_roots)} roots: {parts.join(" · ")}
+    {" "}· {count(unclassified)} unclassified{coverage.registry_verified ? ` · decisions verified ${coverage.registry_verified}` : ""}.</p>;
+}
+
+/** Every root without CFTC positioning, grouped by its recorded reason; attention states open by default. */
+export function UnmappedRoots({ roots }: { roots: RootCoverage[] }) {
+  const groups = new Map<string, RootCoverage[]>();
+  for (const item of roots) groups.set(item.label, [...(groups.get(item.label) ?? []), item]);
+  return <section className="participant-section" aria-label="Roots without CFTC positioning">
+    <h3>Roots without CFTC positioning</h3>
+    {[...groups.entries()].map(([label, items]) => <details key={label} open={items.some((item) => item.status !== "NO_CFTC_REPORT")}>
+      <summary>{label} · {items.length}</summary>
+      <table className="news-table-plain participant-table"><caption className="sr-only">{label}</caption>
+        <thead><tr><th scope="col">Root</th><th scope="col">Contract</th><th scope="col">Venue</th><th scope="col">Why</th></tr></thead>
+        <tbody>{items.map((item) => <tr key={item.root}><th scope="row">{item.root}</th><td>{item.contract ?? "—"}</td>
+          <td>{item.provider_exchange ?? "—"}</td><td>{item.note ?? item.label}</td></tr>)}</tbody></table>
+    </details>)}
+  </section>;
 }
 
 type ChamberSource = { id: string; chamber: string; state: string; reason: string | null };

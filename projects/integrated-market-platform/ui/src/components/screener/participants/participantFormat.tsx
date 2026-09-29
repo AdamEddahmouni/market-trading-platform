@@ -32,6 +32,13 @@ const REASON_TEXT: Record<string, string> = {
   ROOT_NOT_MAPPED_TO_A_CFTC_MARKET: "Root not mapped to a CFTC market", ENTITY_NAME_TOO_GENERIC: "Company name too generic to match",
   NO_COMPANY_NAME: "No company name to match", COMPACT_VIEW: "Open the panel to load", FILING_WINDOW_OPEN: "13F filing window still open",
   SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET: "Some roots have no CFTC market",
+  // S15 coverage decisions and CFTC data quality
+  PRODUCT_NOT_COVERED: "Single-stock future; no COT market", NO_CFTC_MARKET_FOUND: "No CFTC market for this root",
+  AMBIGUOUS_MAPPING: "Ambiguous CFTC market", EXCHANGE_MISMATCH: "Provider venue contradicts the CFTC exchange",
+  ROOT_NOT_IN_COVERAGE_REGISTRY: "Root has no recorded CFTC coverage decision",
+  SOME_ROOTS_UNCLASSIFIED: "Some roots have no recorded CFTC coverage decision",
+  KNOWN_MARKET_NOT_IN_RECENT_RELEASES: "Known CFTC market; not in recent releases",
+  CONFLICTING_DUPLICATE_ROWS: "Conflicting CFTC rows; values withheld",
   LEGACY_TEXT_FILING_NOT_PARSED: "Legacy text filing; open the source",
   NO_TRADE_PRINTS_FOR_UNIVERSE: "No trade prints for this universe",
   LIVE_SUBSCRIPTION_PANEL: "Live panel; participant unknown",

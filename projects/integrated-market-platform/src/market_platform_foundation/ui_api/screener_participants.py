@@ -40,7 +40,9 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
-from ..cftc.screener_positioning import DATASETS, POSITIONING_MARKETS, build_positioning, where_clause
+from ..cftc.root_coverage import CoverageStatus, classify_root, coverage_summary
+from ..cftc.screener_positioning import (DATASETS, OI_METHOD, POSITIONING_MARKETS, REPORT_SELECTION_POLICY,
+                                         build_positioning, where_clause)
 from ..congressional_ptr import house, normalized
 from ..congressional_ptr import senate as senate_ptr
 from ..congressional_ptr.identity import REGISTRY_ENV, MemberResolver, registry_from_env
@@ -327,7 +329,8 @@ class ScreenerParticipantService:
             instrument_id = str((row.get("instrument") or {}).get("instrument_id") or row.get("instrument_id") or "")
             if symbol and instrument_id:
                 by_ticker.setdefault(_norm_ticker(symbol), {"instrument_id": instrument_id, "symbol": symbol,
-                                                            "company": row.get("company"), "root": row.get("root")})
+                                                            "company": row.get("company"), "root": row.get("root"),
+                                                            "exchange": row.get("exchange")})
         index = _Index(now, error, by_ticker)
         with self._lock:
             self._indexes[universe] = (entry.fetched_at, index)
@@ -516,27 +519,59 @@ class ScreenerParticipantService:
             return None
         return build_positioning(cot.get(market.report.value, []), market, now=self._now())
 
+    @staticmethod
+    def _futures_roots(index: _Index) -> dict[str, dict[str, Any]]:
+        """Root → its catalog row summary (the Futures catalog carries one lead contract per root)."""
+
+        roots: dict[str, dict[str, Any]] = {}
+        for item in index.by_ticker.values():
+            root = str(item.get("root") or "").strip().upper()
+            if root:
+                roots.setdefault(root, item)
+        return dict(sorted(roots.items()))
+
+    @staticmethod
+    def _with_mapping(report: dict[str, Any], decision: dict[str, Any]) -> dict[str, Any]:
+        market = decision["market"] or {}
+        return {**report, "mapping": {**report["mapping"], "cftc_exchange": market.get("cftc_exchange"),
+                                      "provider_exchange": decision["provider_exchange"],
+                                      "former_names": market.get("former_names") or []}}
+
     def positioning_view(self, *, universe: str) -> dict[str, Any]:
+        """S15: every catalog root with its coverage decision; a mapped root with its latest public report."""
+
         self._validate_view(universe, "positioning")
         now = self._now()
         index = self._index(universe)
-        roots = sorted({str(item.get("root") or "").upper() for item in index.by_ticker.values() if item.get("root")})
+        roots = self._futures_roots(index)
+        summary = coverage_summary((root, item.get("exchange")) for root, item in roots.items())
         cot, status = self._cot()
+        source_ok = status["state"] in ("PUBLICATION_CURRENT", "PARTIAL")
         groups: dict[str, list[dict[str, Any]]] = {"TFF": [], "DISAGGREGATED": []}
-        unmapped = []
-        for root in roots:
-            market = POSITIONING_MARKETS.get(root)
-            if market is None:
-                unmapped.append(root)
+        absent: list[str] = []
+        for root, item in roots.items():
+            decision = classify_root(root, exchange=item.get("exchange"))
+            if decision["status"] != CoverageStatus.MAPPED.value:
                 continue
             report = self._positioning_for_root(root, cot)
-            if report is not None:
-                groups[market.report.value].append(report)
+            if report is None:
+                if source_ok:
+                    absent.append(root)  # a known market with no public report in the window — not "no market"
+                continue
+            groups[report["report"]].append({**self._with_mapping(report, decision), "contract": item["symbol"],
+                                             "instrument_id": item["instrument_id"]})
+        unmapped = [{**decision, "contract": roots[decision["root"]]["symbol"],
+                     "instrument_id": roots[decision["root"]]["instrument_id"]} for decision in summary["unmapped"]]
+        unclassified = summary["by_status"][CoverageStatus.UNCLASSIFIED.value]
+        mismatched = summary["by_reason"].get("EXCHANGE_MISMATCH", 0)
         state = status["state"]
-        if state in ("PUBLICATION_CURRENT", "PARTIAL") and not any(groups.values()):
+        if source_ok and not any(groups.values()):
             state = "NO_DISCLOSURES"
-        reason = status["reason"] or ("SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET" if unmapped else None)
-        state = "PARTIAL" if state == "PUBLICATION_CURRENT" and unmapped else state
+        # Roots without a CFTC market are decided, not missing: only an undecided root or a venue
+        # contradiction leaves the view PARTIAL.
+        reason = status["reason"] or ("SOME_ROOTS_UNCLASSIFIED" if unclassified else
+                                      "EXCHANGE_MISMATCH" if mismatched else None)
+        state = "PARTIAL" if state == "PUBLICATION_CURRENT" and (unclassified or mismatched) else state
         if (override := self._index_override(index)) is not None:
             state, reason = override
         return {"schema_version": SCHEMA_VERSION, "generated_at": _iso(now), "universe": universe, "view": "positioning",
@@ -545,8 +580,13 @@ class ScreenerParticipantService:
                 "groups": [{"report": "TFF", "label": "Traders in Financial Futures (futures only)", "rows": groups["TFF"]},
                            {"report": "DISAGGREGATED", "label": "Disaggregated (futures only)",
                             "rows": groups["DISAGGREGATED"]}],
-                "coverage": {"universe_roots": len(roots), "mapped_roots": len(roots) - len(unmapped),
-                             "unmapped_roots": unmapped},
+                "coverage": {**{key: summary[key] for key in ("universe_roots", "mapped_roots", "mapped_percent", "by_status",
+                                                              "by_reason", "breakdown", "registry_verified")},
+                             "unmapped_roots": [item["root"] for item in unmapped],
+                             "reported_roots": sum(len(rows) for rows in groups.values()),
+                             "mapped_without_report": absent},
+                "unmapped": unmapped,
+                "report_policy": REPORT_SELECTION_POLICY, "oi_method": OI_METHOD,
                 "boundaries": [EVIDENCE_BOUNDARIES[4]],
                 "time_note": "Positions as of the report date (Tuesday); public from the official release time."}
 
@@ -938,16 +978,25 @@ class ScreenerParticipantService:
         if universe == FUTURES:
             cot, status = self._cot()
             providers.append(status)
-            root = str(row.get("root") or "").upper()
-            market = POSITIONING_MARKETS.get(root)
-            if market is None:
-                sections["futures_positioning"] = _section("NO_MATCH", "ROOT_NOT_MAPPED_TO_A_CFTC_MARKET", root=root)
+            root = str(row.get("root") or "").strip().upper()
+            # S15: every root carries its coverage decision; an unmapped root is explained, never shown as zero.
+            decision = classify_root(root, exchange=row.get("exchange"))
+            base = {"root": root, "contract": row.get("symbol"), "coverage": decision}
+            if decision["status"] != CoverageStatus.MAPPED.value:
+                sections["futures_positioning"] = _section("NO_MATCH", decision["reason"], **base)
             elif status["state"] not in ("PUBLICATION_CURRENT", "PARTIAL"):
-                sections["futures_positioning"] = _section(status["state"], status["reason"], root=root)
+                sections["futures_positioning"] = _section(status["state"], status["reason"], **base)
             else:
                 report = self._positioning_for_root(root, cot)
-                sections["futures_positioning"] = (_section("PUBLICATION_CURRENT", None, report=report, evidence_basis="CFTC_LARGE_TRADER_CONTEXT")
-                                                   if report else _section("NO_DISCLOSURES", "NO_PUBLIC_REPORT_IN_WINDOW", root=root))
+                if report is None:
+                    sections["futures_positioning"] = _section("NO_DISCLOSURES", "KNOWN_MARKET_NOT_IN_RECENT_RELEASES", **base)
+                elif report["quality_state"] != "OK":
+                    # Conflicting rows for one market and date: fail closed, values withheld.
+                    sections["futures_positioning"] = _section("UNAVAILABLE", report["quality_state"],
+                                                               report=self._with_mapping(report, decision), **base)
+                else:
+                    sections["futures_positioning"] = _section("PUBLICATION_CURRENT", None, report=self._with_mapping(report, decision),
+                                                               evidence_basis="CFTC_LARGE_TRADER_CONTEXT", **base)
             sections["large_activity"] = self._large_activity(universe)
             return {"state": sections["futures_positioning"]["state"], "providers": providers, "identity": identity,
                     "sections": sections, "boundaries": [EVIDENCE_BOUNDARIES[4], EVIDENCE_BOUNDARIES[3]]}

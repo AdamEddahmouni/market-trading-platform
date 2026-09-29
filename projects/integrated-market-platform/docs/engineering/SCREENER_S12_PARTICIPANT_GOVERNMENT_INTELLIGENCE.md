@@ -273,7 +273,7 @@ stopped responding at ~00:40 UTC).
 | Ownership view, US Equities, 5 business days | 2.2 s / 0.01 s | `CURRENT_AS_FILED`; 1,149 filings (Form 4 1,089 · 13D 38 · 13G 22); 4,252 of 4,291 instruments have an SEC CIK |
 | Congress view, US Equities, 60 days | 0.09 s (`PENDING`) / 0.02 s | background load ~44 s: 136 PTRs, 116 parsed, 20 scanned, 1 document error (isolated, `PARTIAL`); 764 transactions in window, 605 match the universe, 74 name other tickers, 85 have no ticker |
 | Congress view, ETFs, 60 days | 1.6 s / 0.01 s | 24 matched rows (see ETF catalog note below) |
-| Positioning view, Futures | 3.9 s / 0.01 s | 32 of 178 roots mapped to a CFTC market; `PARTIAL · SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET` |
+| Positioning view, Futures | 3.9 s / 0.01 s | 32 of 178 roots mapped to a CFTC market; `PARTIAL · SOME_ROOTS_NOT_MAPPED_TO_A_CFTC_MARKET` (historical; superseded by [S15](SCREENER_S15_CFTC_COVERAGE.md): every root now has a recorded decision, 67 mapped) |
 | Institutional & Whale, NVDA · AAPL · LMT · BRK-B · AMAT | 2.3–3.4 s / 0.03–0.2 s | `CURRENT_AS_FILED`; NVDA: 13D/13G, Form 4, 13F top holders of 5,956 Q2 2026 managers |
 | Congress & Government, same five | 5.5–8.0 s / 0.01–1.6 s | `PUBLICATION_CURRENT`; NVDA/AMAT no award actions in 90 days; LMT, AAPL, BRK-B, MSFT with awards; LDA filings for all |
 
