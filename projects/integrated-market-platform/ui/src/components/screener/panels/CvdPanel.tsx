@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchCvd, type CvdPayload } from "../../../api/screenerPanels";
 import { age, EntitlementNote, etClock, marketClock, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
+import { OpenDConnect } from "../setup/Remedy";
 import type { ScreenerUniverse } from "../../../api/screener";
 
 const CvdChart = lazy(() => import("./CvdChart"));
@@ -58,7 +59,7 @@ export default function CvdPanel({ api }: IDockviewPanelProps) {
   return <PanelFrame id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">CVD request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
-      : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}</PanelMessage>
+      : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
       : <>
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? "Session closed · last captured window" : reasonText(data.reason)}</PanelMessage>}
         {data.summary && data.summary.trade_count > 0 ? <Body data={data} clock={market.clock} unit={unit} zone={market.zone} universe={universe} />

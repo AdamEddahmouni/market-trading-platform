@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { ScreenerUniverse } from "../../../api/screener";
 import type { NewsMatch, NewsStory, ProviderStatus, StorySentiment } from "../../../api/screenerNews";
+import { RemedyHint } from "../setup/Remedy";
 
 const zoneOf = (universe: ScreenerUniverse) => universe === "CRYPTO" ? "UTC" : "America/New_York";
 const suffixOf = (universe: ScreenerUniverse) => universe === "CRYPTO" ? "UTC" : "ET";
@@ -49,6 +50,25 @@ export function termsText(provider: ProviderStatus): string | null {
 /** Providers that are expected to contribute but are not current. */
 export const degradedProviders = (providers: ProviderStatus[]) =>
   providers.filter((item) => item.state !== "CURRENT" && item.state !== "NOT_APPLICABLE");
+
+/** True while the local sentiment model is loading for any loaded page, so the view can re-poll until it is scored. */
+export const isModelLoading = (pages: ReadonlyArray<{ sentiment_model?: { reason: string | null }; stories: NewsStory[] }>) =>
+  pages.some((page) => page.sentiment_model?.reason === "MODEL_LOADING" || page.stories.some((story) => story.sentiment.reason === "MODEL_LOADING"));
+
+/** One fix per distinct cause among degraded providers (two providers blocked by one flag show one step). */
+export function ProviderFixes({ providers, skip }: { providers: ProviderStatus[]; skip?: string | null }) {
+  const seen = new Set<string>(skip ? [skip] : []);
+  const fixes = providers.flatMap((provider) => {
+    const remedy = provider.remedy;
+    if (!remedy || seen.has(remedy.reason)) return [];
+    seen.add(remedy.reason);
+    return [{ provider, remedy }];
+  });
+  if (!fixes.length) return null;
+  // Spans with list roles: this renders inside panel messages, which are paragraphs.
+  return <span className="news-fixes" role="list" aria-label="How to fix">{fixes.map(({ provider, remedy }) =>
+    <span role="listitem" key={remedy.reason}><span className="news-fix-provider">{provider.label}:</span> <RemedyHint remedy={remedy} compact /></span>)}</span>;
+}
 
 export function StoryTime({ story, universe }: { story: NewsStory; universe: ScreenerUniverse }) {
   if (!story.published_at) {

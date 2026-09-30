@@ -4,14 +4,18 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type { ScreenerUniverse } from "../../../api/screener";
 import { fetchScreenerNews, NEWS_PAGE_LIMIT, NEWS_SORTS, NEWS_WINDOWS, type NewsBrief, type NewsFeed, type NewsMatch,
   type NewsStory, type NewsWindowId, type ProviderStatus } from "../../../api/screenerNews";
-import { degradedProviders, Headline, humanize, MatchChip, newsDayTime, ProviderStrip, SentimentCell, stateText, StorySources,
-  StoryTime, TypeBadge } from "./newsFormat";
+import { degradedProviders, Headline, humanize, isModelLoading, MatchChip, newsDayTime, ProviderFixes, ProviderStrip, SentimentCell,
+  stateText, StorySources, StoryTime, TypeBadge } from "./newsFormat";
+import { RemedyHint } from "../setup/Remedy";
 import "./news.css";
 
 const WINDOW_LABELS: Record<NewsWindowId, string> = { "1h": "Last 1h", "4h": "Last 4h", "24h": "Last 24h", "72h": "Last 72h" };
 const SENTIMENTS = [{ id: "POSITIVE", label: "Positive" }, { id: "NEUTRAL", label: "Neutral" }, { id: "NEGATIVE", label: "Negative" }];
 const PREFETCH_ROWS = 30;
 const REFRESH_MS = 60_000;
+// While FinBERT loads, re-poll quickly so sentiment fills in without a reload; bounded in case the load hangs.
+const MODEL_LOADING_POLL_MS = 4_000;
+const MODEL_LOADING_POLL_LIMIT_MS = 180_000;
 // Dense rows: further matches stay available on hover and in the instrument filter.
 const MAX_CHIPS = 3;
 
@@ -35,18 +39,24 @@ function parse(search: string) {
   };
 }
 
-function Notice({ feed, universeLabel }: { feed: NewsFeed; universeLabel: string }) {
+function Notice({ feed, universeLabel, empty }: { feed: NewsFeed; universeLabel: string; empty: boolean }) {
   const degraded = degradedProviders(feed.providers);
   const list = (items: ProviderStatus[]) => items.map((item) => `${item.label} (${stateText(item.state)}${item.reason ? ` · ${item.reason}` : ""})`).join("; ");
+  // An empty feed shows the feed-level fix in its own empty state; the notice never repeats it.
+  const remedy = empty ? null : feed.remedy ?? null;
   if (feed.state === "NOT_CONFIGURED" || feed.state === "UNAVAILABLE") {
     return <div className="news-notice error" role="alert">
       <strong>{feed.state === "NOT_CONFIGURED" ? `News providers are not configured for ${universeLabel}` : `News is unavailable for ${universeLabel}`}</strong>
-      <span>{feed.reason ? `${humanize(feed.reason)}. ` : ""}This is a provider state, not an absence of news. {degraded.length ? `Missing: ${list(degraded)}.` : ""}</span>
+      {remedy ? <RemedyHint remedy={remedy} /> : !feed.remedy && feed.reason ? <span>{humanize(feed.reason)}.</span> : null}
+      <span>This is a provider state, not an absence of news. {degraded.length ? `Missing: ${list(degraded)}.` : ""}</span>
+      <ProviderFixes providers={degraded} skip={feed.remedy?.reason} />
     </div>;
   }
-  if (feed.state === "PARTIAL" && degraded.length) {
+  if (feed.state === "PARTIAL" && (degraded.length || remedy)) {
     return <div className="news-notice warn" role="status"><strong>Partial coverage</strong>
-      <span>Stories below come only from current providers. Not current: {list(degraded)}.</span></div>;
+      {remedy && <RemedyHint remedy={remedy} />}
+      {degraded.length > 0 && <span>Stories below come only from current providers. Not current: {list(degraded)}.</span>}
+      <ProviderFixes providers={degraded} skip={feed.remedy?.reason} /></div>;
   }
   if (feed.state === "PENDING") return <div className="news-notice" role="status"><strong>Providers pending</strong><span>Some providers have not reported yet; the feed will refresh.</span></div>;
   return null;
@@ -73,13 +83,19 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
   const state = parse(search);
   const scrollRef = useRef<HTMLDivElement>(null);
   const view = state.brief ? "brief" as const : "feed" as const;
+  const loadingSince = useRef<number | null>(null);
   const query = useInfiniteQuery({
     queryKey: ["screener-news", universe, state.window, state.sort, state.source, state.category, state.sentiment, state.instrument, view],
     initialPageParam: 0,
     queryFn: ({ pageParam, signal }) => fetchScreenerNews({ universe, window: state.window, sort: state.sort, source: state.source,
       category: state.category, sentiment: state.sentiment, instrument: state.instrument, offset: pageParam, limit: NEWS_PAGE_LIMIT, view }, signal),
     getNextPageParam: (last) => last.has_more ? last.offset + last.stories.length : undefined,
-    staleTime: 30_000, refetchInterval: REFRESH_MS,
+    staleTime: 30_000,
+    refetchInterval: (current) => {
+      if (!isModelLoading(current.state.data?.pages ?? [])) { loadingSince.current = null; return REFRESH_MS; }
+      loadingSince.current ??= Date.now();
+      return Date.now() - loadingSince.current < MODEL_LOADING_POLL_LIMIT_MS ? MODEL_LOADING_POLL_MS : REFRESH_MS;
+    },
     // Controls stay stable while a filter change loads; another universe's stories are never shown.
     placeholderData: (previous) => previous && previous.pages[0]?.universe === universe ? previous : undefined,
   });
@@ -142,9 +158,10 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
       <span className={`news-provider state-${first.sentiment_model.state.toLowerCase()}`}
         title={[first.sentiment_model.reason ? `Reason: ${first.sentiment_model.reason}` : null, first.sentiment_model.model_id,
           first.sentiment_model.model_revision ? `rev ${first.sentiment_model.model_revision}` : null].filter(Boolean).join(" · ") || undefined}>
-        <span>Sentiment model</span> <strong>{stateText(first.sentiment_model.state)}</strong>{first.sentiment_model.model_id ? <small> · {first.sentiment_model.model_id}</small> : null}</span>
+        <span>Sentiment model</span> <strong>{first.sentiment_model.reason === "MODEL_LOADING" ? "loading" : stateText(first.sentiment_model.state)}</strong>{first.sentiment_model.model_id ? <small> · {first.sentiment_model.model_id}</small> : null}</span>
+      {first.sentiment_model.remedy?.action && <RemedyHint remedy={first.sentiment_model.remedy} compact />}
     </div>}
-    {first && <Notice feed={first} universeLabel={universeLabel} />}
+    {first && <Notice feed={first} universeLabel={universeLabel} empty={view === "feed" && stories.length === 0 && !query.isPlaceholderData} />}
     {query.isPlaceholderData && <div className="news-notice" role="status">Updating for the new window or filters…</div>}
     {query.isPending ? <div className="news-message" role="status">Loading {universeLabel} news…</div>
       : query.isError && !first ? <div className="news-message error" role="alert"><strong>News request failed.</strong>
@@ -152,7 +169,10 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
       : !first ? null
       : view === "brief" ? (first.brief ? <Brief brief={first.brief} providers={first.providers} universe={universe} />
         : query.isPlaceholderData ? null : <div className="news-message" role="status">Brief unavailable for this window.</div>)
-      : stories.length === 0 ? (first.state === "NOT_CONFIGURED" || first.state === "UNAVAILABLE" ? null
+      : stories.length === 0 ? (first.remedy ? <div className="news-message news-empty-remedy" role="status">
+          <RemedyHint remedy={first.remedy} />
+          <span className="news-meta">No {universeLabel} stories can be shown until this is fixed; the feed refreshes on its own.</span></div>
+        : first.state === "NOT_CONFIGURED" || first.state === "UNAVAILABLE" ? null
         : <div className="news-message" role="status">No stories in this window from current providers.</div>)
       : <div className="news-feed" role="table" aria-label={`${universeLabel} news feed`} aria-rowcount={first.result_count + 1} ref={scrollRef} tabIndex={0}>
         <div className="news-row news-head" role="row">

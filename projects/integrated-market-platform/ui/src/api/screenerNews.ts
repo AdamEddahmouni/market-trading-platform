@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
+import { RemedySchema } from "./screenerSetup";
 import type { ScreenerUniverse } from "./screener";
 
 /**
@@ -25,6 +26,8 @@ const ProviderStatus = z.object({
   state: ProviderStateSchema, reason: z.string().nullable(), fetched_at: Iso.nullable(),
   item_count: z.number().nullable(), scope: z.enum(["UNIVERSE", "INSTRUMENT"]),
   terms: ProviderTerms.optional(),
+  /** Plain-language fix for a degraded state; absent when the provider works or needs no operator step. */
+  remedy: RemedySchema.nullable().optional(),
 }).passthrough();
 export type ProviderStatus = z.infer<typeof ProviderStatus>;
 const Category = z.object({ id: z.string(), label: z.string(),
@@ -62,6 +65,7 @@ export type NewsStory = z.infer<typeof Story>;
 const SentimentModelStatus = z.object({
   state: z.enum(["CURRENT", "NOT_CONFIGURED", "UNAVAILABLE", "ERROR"]), reason: z.string().nullable(),
   model_id: z.string().nullable(), model_revision: z.string().nullable(), loaded: z.boolean(),
+  remedy: RemedySchema.nullable().optional(),
 }).passthrough();
 export type SentimentModelStatus = z.infer<typeof SentimentModelStatus>;
 export const NEWS_WINDOWS = ["1h", "4h", "24h", "72h"] as const;
@@ -83,6 +87,8 @@ export type NewsBrief = z.infer<typeof Brief>;
 export const NewsFeedSchema = z.object({
   schema_version: z.literal("screener-news/1.0.0"),
   generated_at: Iso, universe: ScreenerUniverseSchema, window: Window, state: FeedState, reason: z.string().nullable(),
+  /** The one step behind the feed state (e.g. start OpenD when the ETF/Futures catalog is down). */
+  remedy: RemedySchema.nullable().optional(),
   providers: z.array(ProviderStatus), sentiment_model: SentimentModelStatus,
   filters: z.object({
     sources: z.array(z.object({ id: z.string(), label: z.string(), count: z.number() }).passthrough()),

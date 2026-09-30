@@ -51,6 +51,7 @@ from ..congressional_ptr.identity import REGISTRY_ENV, MemberResolver, registry_
 from ..public_records.http import PublicRecordsError, PublicRecordsHttp
 from ..public_records.http import live_state as public_live_state
 from ..sec_edgar import ownership as sec_ownership
+from .screener_remedies import with_remedy
 from .screener_squeeze_sources import BackgroundCache
 from .screener_universes import FUTURES, UNIVERSES, US_EQUITIES, US_ETFS
 
@@ -119,8 +120,8 @@ def _norm_ticker(value: str | None) -> str:
 def provider(pid: str, state: str, reason: str | None = None, *, fetched_at: str | None = None,
              published: str | None = None, items: int | None = None, scope: str = "INSTRUMENT") -> dict[str, Any]:
     label, family, cadence = PROVIDERS[pid]
-    return {"id": pid, "label": label, "family": family, "scope": scope, "state": state, "reason": reason,
-            "fetched_at": fetched_at, "published": published, "item_count": items, "cadence": cadence}
+    return with_remedy({"id": pid, "label": label, "family": family, "scope": scope, "state": state, "reason": reason,
+                        "fetched_at": fetched_at, "published": published, "item_count": items, "cadence": cadence})
 
 
 def _section(state: str, reason: str | None = None, **extra: Any) -> dict[str, Any]:

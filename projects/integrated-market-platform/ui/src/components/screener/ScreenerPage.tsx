@@ -10,7 +10,7 @@ import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type Screener
 import { QuickPreview } from "./QuickPreview";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { marketPrice } from "./panels/shared";
-import { clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
+import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
 import type { DockHandle } from "./panels/ScreenerDock";
 import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
@@ -263,7 +263,7 @@ export function ScreenerPage() {
   const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
     filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
-  const supportedPanels = new Set((activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])) as PanelId[]);
+  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
   // News is a view inside the active universe (URL `news=1`), never a universe.
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);

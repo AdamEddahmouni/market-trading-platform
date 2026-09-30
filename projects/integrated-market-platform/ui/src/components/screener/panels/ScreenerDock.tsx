@@ -29,6 +29,11 @@ const LazyInstitutionalPanel = lazy(() => import("./InstitutionalPanel"));
 function InstitutionalPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading Institutional &amp; Whale…</PanelMessage>}><LazyInstitutionalPanel {...props} /></Suspense>;
 }
+// Setup checklist: loads on first open.
+const LazySetupPanel = lazy(() => import("./SetupPanel"));
+function SetupPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading Setup…</PanelMessage>}><LazySetupPanel {...props} /></Suspense>;
+}
 const LazyCongressGovPanel = lazy(() => import("./CongressGovPanel"));
 function CongressGovPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading Congress &amp; Government…</PanelMessage>}><LazyCongressGovPanel {...props} /></Suspense>;
@@ -52,6 +57,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   news: contained("news", NewsAnalysisPanel),
   institutional: contained("institutional", InstitutionalPanel),
   congress_gov: contained("congress_gov", CongressGovPanel),
+  setup: contained("setup", SetupPanel),
 };
 
 export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };

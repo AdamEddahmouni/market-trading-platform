@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
@@ -6,11 +7,12 @@ import { ScreenerPage } from "../ScreenerPage";
 import ScreenerDock from "../panels/ScreenerDock";
 import { BondQuickPreview } from "../bonds/BondQuickPreview";
 import { PreviewNews } from "./PreviewNews";
+import { ConnectButton } from "../setup/Remedy";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
-  bondPreview: vi.fn(),
+  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -32,6 +34,10 @@ vi.mock("../../../api/screenerBonds", async (original) => ({
 vi.mock("../../../api/screenerNews", async (original) => ({
   ...(await original<typeof import("../../../api/screenerNews")>()),
   fetchScreenerNews: mocks.news, fetchInstrumentNews: mocks.instrumentNews, postNewsSynthesis: mocks.synthesis,
+}));
+vi.mock("../../../api/screenerSetup", async (original) => ({
+  ...(await original<typeof import("../../../api/screenerSetup")>()),
+  connectProvider: mocks.connect, fetchScreenerSetup: mocks.setup,
 }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -683,5 +689,135 @@ describe("S11 Quick Preview news", () => {
     expect(await screen.findByText("912828XX1 headline one")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Open News & Analysis" }));
     expect(onOpenNews).toHaveBeenCalledTimes(1);
+  });
+});
+
+const OPEND_REMEDY = { reason: "OPEND_UNAVAILABLE", title: "moomoo OpenD isn't running", step: "Start OpenD and log in to load ETFs.",
+  action: { kind: "CONNECT", provider: "opend", label: "Start OpenD" } };
+const AUTH = { kind: "COMMAND", command: "python tools/news/auth.py configure" };
+
+describe("Actionable degraded states", () => {
+  it("turns an empty ETF feed with OpenD down into a fix with a Start OpenD button", async () => {
+    mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => feed({ universe: params.universe, offset: params.offset ?? 0,
+      state: "PARTIAL", reason: "PROVIDER_UNAVAILABLE", remedy: OPEND_REMEDY, stories: [], result_count: 0, headline_count: 0,
+      providers: [provider("rss", "RSS (public feeds)", "CURRENT")] }));
+    mocks.connect.mockResolvedValue({ provider: "opend", state: "CONNECTED", reason: null, remedy: null });
+    await openNews("/screener?universe=US_ETFS");
+    const region = await screen.findByRole("region", { name: "ETFs news" });
+    expect(await within(region).findByText("moomoo OpenD isn't running.")).toBeInTheDocument();
+    expect(within(region).getByText("Start OpenD and log in to load ETFs.")).toBeInTheDocument();
+    expect(within(region).getByText("moomoo OpenD isn't running.").closest(".setup-remedy")).toHaveAttribute("title", "Reason: OPEND_UNAVAILABLE");
+    expect(within(region).queryByText(/No stories in this window/)).toBeNull();
+    // One fix, not repeated in the partial-coverage notice.
+    expect(within(region).getAllByRole("button", { name: "Start OpenD" })).toHaveLength(1);
+    const calls = mocks.news.mock.calls.length;
+    fireEvent.click(within(region).getByRole("button", { name: "Start OpenD" }));
+    await waitFor(() => expect(mocks.connect).toHaveBeenCalledWith("opend"));
+    expect(await within(region).findByText("Connected. Reloading…")).toBeInTheDocument();
+    await waitFor(() => expect(mocks.news.mock.calls.length).toBeGreaterThan(calls));
+  });
+
+  it("shows the connect result under StrictMode's double mount", async () => {
+    mocks.connect.mockResolvedValue({ provider: "finbert", state: "STARTING", reason: "MODEL_LOADING",
+      remedy: { reason: "MODEL_LOADING", title: "Sentiment model is loading", step: "Takes up to a minute; sentiment fills in automatically.", action: null } });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<StrictMode><QueryClientProvider client={client}><ConnectButton provider="finbert" label="Load model" /></QueryClientProvider></StrictMode>);
+    fireEvent.click(screen.getByRole("button", { name: "Load model" }));
+    expect(await screen.findByText("Takes up to a minute; sentiment fills in automatically.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Load model" })).toBeEnabled();
+  });
+
+  it("says OpenD is still starting when it launched but has not logged in", async () => {
+    mocks.news.mockImplementation(async (params: { universe: string }) => feed({ universe: params.universe, state: "PARTIAL",
+      reason: "PROVIDER_UNAVAILABLE", remedy: { ...OPEND_REMEDY, step: "Start OpenD and log in to load Futures." }, stories: [], result_count: 0 }));
+    mocks.connect.mockResolvedValue({ provider: "opend", state: "STARTING", reason: "PORT_UNREACHABLE",
+      remedy: { reason: "PORT_UNREACHABLE", title: "OpenD is starting or not logged in", step: "Finish the OpenD login; ETFs and Futures load once it accepts connections.",
+        action: { kind: "CONNECT", provider: "opend", label: "Retry OpenD" } } });
+    await openNews("/screener?universe=FUTURES");
+    fireEvent.click(await screen.findByRole("button", { name: "Start OpenD" }));
+    expect(await screen.findByText("Finish the OpenD login; ETFs and Futures load once it accepts connections.")).toBeInTheDocument();
+  });
+
+  it("names the one step for SEC User-Agent and live-disabled providers, once per cause", async () => {
+    const sec = { ...provider("sec_filings", "SEC EDGAR filings", "NOT_CONFIGURED", "SEC_USER_AGENT_NOT_SET", "OFFICIAL_FILING"),
+      remedy: { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact User-Agent",
+        step: "Set SEC_USER_AGENT to your name and email in the API environment, then restart the API.", action: null } };
+    const rss = { ...provider("rss", "RSS (public feeds)", "LIVE_DISABLED", "IMP_NEWS_RSS_LIVE_NOT_SET"),
+      remedy: { reason: "IMP_NEWS_RSS_LIVE_NOT_SET", title: "Public RSS feeds is switched off",
+        step: "Set IMP_NEWS_RSS_LIVE=1 in the API environment, then restart the API.", action: null } };
+    const newsapi = { ...provider("newsapi", "NewsAPI", "LIVE_DISABLED", "IMP_NEWSAPI_LIVE_NOT_SET"),
+      remedy: { reason: "IMP_NEWSAPI_LIVE_NOT_SET", title: "NewsAPI is switched off", step: "Store a NewsAPI key (this also enables it), then restart the API.", action: AUTH } };
+    mocks.news.mockImplementation(async (params: { universe: string }) => feed({ universe: params.universe,
+      providers: [provider("finviz", "Finviz Elite", "CURRENT"), sec, rss, newsapi, { ...newsapi, id: "newsapi2" }] }));
+    await openNews();
+    const fixes = await screen.findByRole("list", { name: "How to fix" });
+    expect(within(fixes).getAllByRole("listitem")).toHaveLength(3);
+    expect(fixes).toHaveTextContent("SEC EDGAR filings: SEC requires a contact User-Agent.");
+    expect(fixes).toHaveTextContent("IMP_NEWS_RSS_LIVE=1");
+    expect(within(fixes).getByText("python tools/news/auth.py configure")).toBeInTheDocument();
+    expect(within(fixes).getByRole("button", { name: "Copy command: python tools/news/auth.py configure" })).toBeInTheDocument();
+  });
+
+  it("fills in sentiment on its own once the model finishes loading", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const loading = { state: "NOT_SCORED", label: null, probabilities: null, model_id: null, reason: "MODEL_LOADING" };
+    let loaded = false;
+    mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => feed({ universe: params.universe, offset: params.offset ?? 0,
+      providers: [provider("finviz", "Finviz Elite", "CURRENT")], result_count: 1,
+      sentiment_model: loaded ? { state: "CURRENT", reason: null, model_id: "ProsusAI/finbert", model_revision: "abc", loaded: true }
+        : { state: "CURRENT", reason: "MODEL_LOADING", model_id: null, model_revision: null, loaded: false },
+      stories: [story("m1", "Model story", { sentiment: loaded ? scored("POSITIVE") : loading })] }));
+    await openNews();
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    expect(within(table).getByText("model loading")).toBeInTheDocument();
+    loaded = true;
+    const calls = mocks.news.mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(4_500); });
+    await waitFor(() => expect(mocks.news.mock.calls.length).toBeGreaterThan(calls));
+    expect(await within(table).findByText("Positive")).toBeInTheDocument();
+    // Loaded: back to the normal cadence, no further fast polls.
+    const settled = mocks.news.mock.calls.length;
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(mocks.news.mock.calls.length).toBe(settled);
+  });
+});
+
+describe("Setup panel", () => {
+  const row = (id: string, label: string, state: string, reason: string | null, remedy: unknown = null, connectable = false) =>
+    ({ id, label, kind: "NEWS", state, reason, remedy, connectable });
+
+  it("lists each free capability with its state and the one step to enable it", async () => {
+    mocks.setup.mockResolvedValue({ schema_version: "screener-setup/1.0.0", ready_count: 1, total: 4, rows: [
+      row("opend", "moomoo OpenD (ETFs, Futures, quotes)", "UNAVAILABLE", "OPEN_D_NOT_RUNNING",
+        { ...OPEND_REMEDY, reason: "OPEN_D_NOT_RUNNING", step: "Start OpenD and log in to load ETFs and Futures." }, true),
+      row("sec_filings", "SEC EDGAR (User-Agent)", "NOT_CONFIGURED", "SEC_USER_AGENT_NOT_SET",
+        { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact User-Agent", step: "Set SEC_USER_AGENT.", action: null }),
+      row("senate_efd", "Senate eFD pages (operator import)", "TERMS_ACCEPTANCE_REQUIRED", "SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE",
+        { reason: "SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE", title: "Senate eFD needs your terms acceptance", step: "Accept the terms.", action: null }),
+      row("rss", "Public RSS feeds", "CURRENT", null),
+    ] });
+    mocks.connect.mockResolvedValue({ provider: "opend", state: "CONNECTED", reason: null, remedy: null });
+    mount();
+    await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
+    fireEvent.click(launcher().getByRole("button", { name: "Setup" }));
+    const list = await screen.findByRole("list", { name: "Setup checklist" });
+    const items = within(list).getAllByRole("listitem");
+    expect(items.map((item) => item.querySelector(".setup-row-label")?.textContent)).toEqual(
+      ["moomoo OpenD (ETFs, Futures, quotes)", "SEC EDGAR (User-Agent)", "Senate eFD pages (operator import)", "Public RSS feeds"]);
+    expect(items[1]).toHaveTextContent("not configured");
+    expect(items[1]).toHaveTextContent("SEC requires a contact User-Agent.");
+    expect(items[2]).toHaveTextContent("needs terms");
+    expect(items[3]).toHaveTextContent("readyReady");
+    expect(screen.getByText("1 of 4 free capabilities ready.", { exact: false })).toBeInTheDocument();
+    fireEvent.click(within(items[0]).getByRole("button", { name: "Start OpenD" }));
+    await waitFor(() => expect(mocks.connect).toHaveBeenCalledWith("opend"));
+    await waitFor(() => expect(mocks.setup).toHaveBeenCalledTimes(2));
+  });
+
+  it("is offered in every universe", async () => {
+    mocks.setup.mockReturnValue(new Promise(() => undefined));
+    mount("/screener?universe=BONDS");
+    await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
+    expect(launcher().getByRole("button", { name: "Setup" })).toBeEnabled();
   });
 });

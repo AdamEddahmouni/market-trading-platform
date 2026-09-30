@@ -106,6 +106,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
     if method_upper == "POST":
         if path == "/screener/config":
             return RoutePolicy(capability="state.write")
+        if path.startswith("/screener/providers/") and path.endswith("/connect"):
+            # Operator-initiated start of an allowlisted local provider process; never a render-time read.
+            return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis":
             # Operator-initiated model call (paid API or on-demand local model); never a render-time read.
             return RoutePolicy(capability="state.write")
