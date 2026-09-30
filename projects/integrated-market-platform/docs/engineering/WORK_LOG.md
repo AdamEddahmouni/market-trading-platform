@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Screener News feed: tone sparkline, partial sentiment filter, new markers, j/k keys
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend` |
+| **Summary** | The sentiment filter now works on scored stories when scoring is partial and reports "N unscored hidden". The instrument payload adds an hourly tone timeline, drawn as a sparkline in the Quick Preview and the News & Analysis panel. The feed marks stories published since the last view, adds "Mark all read", and gives the News tab an "N new" badge (`since` / `new_count`). The News feed gains j/k/o/Enter keyboard navigation. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_news.py`, `ui_api/server.py`, `ui/src/api/screenerNews.ts`, `ui/src/components/screener/news/{NewsView,newsFormat,PreviewNews,SentimentSparkline,newsSeen}.tsx?`, `news.css`, `panels/NewsAnalysisPanel.tsx`, `ScreenerPage.tsx`, `screener.css`, `docs/engineering/SCREENER_S11_NEWS.md` |
+| **Tests** | `unittest tests.platform.test_screener_s11` plus the s13, free-capabilities, and bonds news-index suites pass. UI: vitest full suite, typecheck, and build (bundle budget) pass. |
+| **Related** | [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md); stacked on the Screener degraded-states and synthesis-UX changes |
+| **Notes** | Read state is per-browser `localStorage` only. "New" uses first publication time; stories with an unknown time are never flagged. The in-view new count covers loaded rows. The tab badge counts the whole 72h window before filters. |
+
+---
+
 ## 2026-09-30 — Screener: actionable degraded states, Setup panel, provider connect
 
 | Field | Value |

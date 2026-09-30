@@ -93,12 +93,18 @@ export const NewsFeedSchema = z.object({
   filters: z.object({
     sources: z.array(z.object({ id: z.string(), label: z.string(), count: z.number() }).passthrough()),
     categories: z.array(z.object({ id: z.string(), label: z.string(), group: z.string(), count: z.number() }).passthrough()),
-    sentiment: z.object({ enabled: z.boolean(), reason: z.string().nullable() }).passthrough(),
+    sentiment: z.object({ enabled: z.boolean(), reason: z.string().nullable(),
+      /** Partial filtering: scored/unscored over the window; unscored stories an applied filter hid. */
+      scored: z.number().optional(), unscored: z.number().optional(), hidden_unscored: z.number().optional(),
+      counts: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }).passthrough().optional(),
+    }).passthrough(),
     applied: z.object({ source: z.string().nullable(), category: z.string().nullable(), sentiment: z.string().nullable(),
       instrument: z.string().nullable() }).passthrough(),
   }).passthrough(),
   sorts: z.array(z.object({ id: z.enum(NEWS_SORTS), label: z.string() }).passthrough()),
   sort: z.string(), result_count: z.number(), headline_count: z.number(),
+  /** Stories published after `since`, before filters; null when `since` was not sent. */
+  new_count: z.number().nullable().optional(),
   offset: z.number(), limit: z.number(), has_more: z.boolean(),
   stories: z.array(Story), brief: Brief.nullable(),
 }).passthrough();
@@ -114,6 +120,9 @@ const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVA
   budget: Budget.nullable().optional() }).passthrough();
 export type AiStatus = z.infer<typeof AiStatus>;
 
+const TimelineBucket = z.object({ start: Iso, positive: z.number(), neutral: z.number(), negative: z.number(),
+  unscored: z.number() }).passthrough();
+export type SentimentTimelineBucket = z.infer<typeof TimelineBucket>;
 const AnalysisItem = z.object({ text: z.string(), source: z.string(), as_of: Iso.nullable(), story_id: z.string().nullable() }).passthrough();
 export type NewsAnalysisItem = z.infer<typeof AnalysisItem>;
 export const InstrumentNewsSchema = z.object({
@@ -134,6 +143,8 @@ export const InstrumentNewsSchema = z.object({
     dominant: z.enum(["POSITIVE", "NEUTRAL", "NEGATIVE", "MIXED"]).nullable(),
     latest: z.object({ story_id: z.string(), label: z.string(), published_at: Iso.nullable() }).passthrough().nullable(),
     method: z.string(),
+    /** Hourly story counts by headline tone over the instrument window, oldest first. */
+    timeline: z.array(TimelineBucket).optional(), timeline_untimed: z.number().optional(),
   }).passthrough(),
   catalysts: z.array(z.object({ category: Category, story_count: z.number(), latest_published_at: Iso.nullable(),
     story_ids: z.array(z.string()) }).passthrough()),
@@ -200,6 +211,8 @@ export type NewsFeedParams = {
   offset?: number;
   limit?: number;
   view?: "feed" | "brief";
+  /** Last-view time: the response counts stories published after it (`new_count`). */
+  since?: string | null;
 };
 export const NEWS_PAGE_LIMIT = 100;
 
@@ -212,6 +225,7 @@ export async function fetchScreenerNews(params: NewsFeedParams, signal?: AbortSi
   if (params.category) query.set("category", params.category);
   if (params.sentiment) query.set("sentiment", params.sentiment);
   if (params.instrument) query.set("instrument", params.instrument);
+  if (params.since) query.set("since", params.since);
   const feed = await fetchJson(`/screener/news?${query}`, NewsFeedSchema, signal ? { signal } : undefined);
   // Identity guard: a page for another universe or offset is never appended.
   if (feed.universe !== params.universe || feed.offset !== offset) throw new Error("SCREENER_NEWS_IDENTITY_MISMATCH");

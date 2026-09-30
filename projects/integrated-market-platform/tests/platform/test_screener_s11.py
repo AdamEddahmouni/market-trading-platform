@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import sys
 import unittest
+from unittest import mock
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from market_platform_foundation.platform.security.leak_audit import assert_no_se
 from market_platform_foundation.platform.security.route_policy import policy_for_route  # noqa: E402
 from market_platform_foundation.ui_api.screener_config import validate_panel_layout  # noqa: E402
 from market_platform_foundation.ui_api.screener_news import ScreenerNewsService, provider_status  # noqa: E402
+from market_platform_foundation.ui_api import screener_news  # noqa: E402
 from market_platform_foundation.ui_api.screener_squeeze_sources import BackgroundCache  # noqa: E402
 from market_platform_foundation.ui_api.screener_universes import UNIVERSES, universe_spec  # noqa: E402
 
@@ -241,9 +243,11 @@ class FeedTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             svc.feed(universe="NEWS")
 
-    def test_sentiment_filter_only_when_every_story_is_scored(self):
+    def test_sentiment_filter_needs_a_current_model_and_a_scored_story(self):
         unscored = service().feed(universe="US_EQUITIES", sentiment="POSITIVE")
         self.assertFalse(unscored["filters"]["sentiment"]["enabled"])
+        self.assertEqual((unscored["filters"]["sentiment"]["scored"], unscored["filters"]["sentiment"]["unscored"]), (0, 2))
+        self.assertEqual(unscored["filters"]["sentiment"]["hidden_unscored"], 0)
         self.assertIsNone(unscored["filters"]["applied"]["sentiment"])
         self.assertEqual(unscored["result_count"], 2)  # not silently filtered to zero
         self.assertEqual(unscored["stories"][0]["sentiment"]["state"], "NOT_CONFIGURED")
@@ -252,6 +256,31 @@ class FeedTests(unittest.TestCase):
         self.assertTrue(scored["filters"]["sentiment"]["enabled"])
         self.assertEqual([story["headline"] for story in scored["stories"]], ["Apple unveils M5 MacBook lineup"])
         self.assertEqual(scored["stories"][0]["sentiment"]["model_id"], "ProsusAI/finbert")
+        self.assertIsNone(scored["filters"]["sentiment"]["reason"])
+        self.assertEqual(scored["filters"]["sentiment"]["counts"], {"positive": 1, "neutral": 1, "negative": 0})
+
+    def test_partial_sentiment_filter_hides_and_counts_unscored_stories(self):
+        model = FinbertSentiment(model_path=str(ROOT / "tests"), loader=loader({"unveils": "positive"}))
+        with mock.patch.object(screener_news, "MAX_SCORED_STORIES", 1):
+            everything = service(sentiment=model).feed(universe="US_EQUITIES")
+            filtered = service(sentiment=model).feed(universe="US_EQUITIES", sentiment="POSITIVE")
+        sentiment = everything["filters"]["sentiment"]
+        self.assertTrue(sentiment["enabled"])
+        self.assertEqual(sentiment["reason"], "PARTIAL_SCORING")
+        self.assertEqual((sentiment["scored"], sentiment["unscored"], sentiment["hidden_unscored"]), (1, 1, 0))
+        self.assertEqual(everything["result_count"], 2)  # no filter applied: unscored stories stay visible
+        self.assertEqual(filtered["filters"]["applied"]["sentiment"], "POSITIVE")
+        self.assertEqual(filtered["filters"]["sentiment"]["hidden_unscored"], 1)
+        self.assertTrue(all(story["sentiment"]["state"] == "SCORED" for story in filtered["stories"]))
+
+    def test_new_count_since_last_view_uses_publication_time(self):
+        svc = service()
+        self.assertIsNone(svc.feed(universe="US_EQUITIES")["new_count"])
+        # Apple M5 published 13:30Z, Microsoft 12:00Z.
+        self.assertEqual(svc.feed(universe="US_EQUITIES", since="2026-09-28T12:30:00Z")["new_count"], 1)
+        self.assertEqual(svc.feed(universe="US_EQUITIES", since="2026-09-28T11:00:00Z", limit=1)["new_count"], 2)
+        with self.assertRaises(ValueError):
+            svc.feed(universe="US_EQUITIES", since="yesterday")
 
     def test_brief_is_deterministic_and_shows_coverage(self):
         brief = service().feed(universe="FUTURES", view="brief")["brief"]
@@ -286,6 +315,19 @@ class InstrumentTests(unittest.TestCase):
         self.assertTrue(any("No causal link" in text for text in texts))
         self.assertTrue(any("NewsAPI" in text for text in texts))
         assert_no_secrets_in_payload(payload)
+
+    def test_sentiment_timeline_is_hourly_by_tone(self):
+        sentiment = service().instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL", compact=True)["sentiment"]
+        timeline = sentiment["timeline"]
+        self.assertEqual(len(timeline), 72)
+        self.assertEqual((timeline[0]["start"], timeline[-1]["start"]), ("2026-09-25T15:00:00Z", "2026-09-28T14:00:00Z"))
+        self.assertEqual(timeline[70]["unscored"], 1)  # Apple M5, 13:30Z; model not configured
+        self.assertEqual(timeline[23]["unscored"], 1)  # supplier story, Sep 26 14:00Z
+        self.assertEqual(sum(sum(b[k] for k in ("positive", "neutral", "negative", "unscored")) for b in timeline), 2)
+        self.assertEqual(sentiment["timeline_untimed"], 0)
+        model = FinbertSentiment(model_path=str(ROOT / "tests"), loader=loader({"unveils": "positive"}))
+        scored = service(sentiment=model).instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["sentiment"]["timeline"]
+        self.assertEqual((scored[70]["positive"], scored[23]["neutral"]), (1, 1))
 
     def test_attention_windows_and_prior(self):
         attention = service().instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["attention"]

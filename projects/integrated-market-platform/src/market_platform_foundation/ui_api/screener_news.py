@@ -625,7 +625,7 @@ class ScreenerNewsService:
     # ---------------------------------------------------------------- feed
     def feed(self, *, universe: str, window: str = "24h", sort: str = "newest", source: str | None = None,
              category: str | None = None, sentiment: str | None = None, instrument: str | None = None,
-             offset: int = 0, limit: int = DEFAULT_LIMIT, view: str = "feed") -> dict[str, Any]:
+             offset: int = 0, limit: int = DEFAULT_LIMIT, view: str = "feed", since: str | None = None) -> dict[str, Any]:
         if universe not in UNIVERSES:
             raise ValueError("UNKNOWN_UNIVERSE")
         if window not in WINDOWS:
@@ -638,6 +638,9 @@ class ScreenerNewsService:
             raise ValueError("INVALID_VIEW")
         if not 0 <= offset <= 100_000 or not 1 <= limit <= MAX_LIMIT:
             raise ValueError("INVALID_PAGE")
+        since_at = parse_utc_iso(since) if since else None
+        if since and since_at is None:
+            raise ValueError("INVALID_SINCE")
         now = datetime.fromtimestamp(self._clock(), tz=UTC)
         index = self._index(universe)
         raw: list[tuple[str, dict[str, Any]]] = []
@@ -657,9 +660,17 @@ class ScreenerNewsService:
         stories = [story for story in self._stories(relevant) if self._in_window(story, start, now)]
         headline_count = sum(len(story.members) for story in stories)
         sentiments, model_status = self._score(stories)
-        sentiment_enabled = bool(stories) and all(sentiments[story.story_id]["state"] == "SCORED" for story in stories)
-        sentiment_reason = None if sentiment_enabled else (
-            model_status.get("reason") if model_status["state"] != "CURRENT" else "NOT_ALL_STORIES_SCORED" if stories else "NO_STORIES")
+        # Partial filtering: the filter works over scored stories as soon as any story is scored;
+        # unscored stories are hidden by an applied filter and counted, never silently dropped.
+        tone_counts = Counter(sentiments[story.story_id].get("label") for story in stories
+                              if sentiments[story.story_id]["state"] == "SCORED")
+        scored_count = sum(tone_counts.values())
+        unscored_count = len(stories) - scored_count
+        sentiment_enabled = model_status["state"] == "CURRENT" and scored_count > 0
+        sentiment_reason = ("PARTIAL_SCORING" if unscored_count else None) if sentiment_enabled else (
+            model_status.get("reason") if model_status["state"] != "CURRENT" else "NO_STORIES_SCORED" if stories else "NO_STORIES")
+        new_count = (sum(1 for story in stories if story.published and story.published > since_at)
+                     if since_at is not None else None)
         source_counts = Counter(provider for story in stories for provider in {record.provider_id for record in story.members})
         category_counts: Counter[str] = Counter()
         category_meta: dict[str, EventCategory] = {}
@@ -672,12 +683,14 @@ class ScreenerNewsService:
             filtered = [story for story in filtered if any(record.provider_id == source for record in story.members)]
         if category:
             filtered = [story for story in filtered if any(item.id == category for item in story.categories)]
-        applied_sentiment = sentiment if sentiment and sentiment_enabled else None
-        if applied_sentiment:
-            filtered = [story for story in filtered if sentiments[story.story_id].get("label") == applied_sentiment]
         if instrument:
             filtered = [story for story in filtered if any(match.instrument_id == instrument and match.confidence != AMBIGUOUS
                                                            for match in story.matches)]
+        applied_sentiment = sentiment if sentiment and sentiment_enabled else None
+        hidden_unscored = 0
+        if applied_sentiment:
+            hidden_unscored = sum(1 for story in filtered if sentiments[story.story_id]["state"] != "SCORED")
+            filtered = [story for story in filtered if sentiments[story.story_id].get("label") == applied_sentiment]
         filtered = self._sorted(filtered, sort)
         page = filtered[offset:offset + limit]
         states = {status["state"] for status in providers if status["scope"] == "UNIVERSE" and status["state"] != "NOT_APPLICABLE"}
@@ -696,11 +709,13 @@ class ScreenerNewsService:
                             for key, count in sorted(source_counts.items())],
                 "categories": [{**category_meta[key].to_dict(), "count": count}
                                for key, count in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))],
-                "sentiment": {"enabled": sentiment_enabled, "reason": sentiment_reason},
+                "sentiment": {"enabled": sentiment_enabled, "reason": sentiment_reason, "scored": scored_count,
+                              "unscored": unscored_count, "hidden_unscored": hidden_unscored,
+                              "counts": {label.lower(): tone_counts.get(label, 0) for label in SENTIMENT_FILTERS}},
                 "applied": {"source": source, "category": category, "sentiment": applied_sentiment, "instrument": instrument},
             },
             "sorts": [{"id": key, "label": label} for key, label in SORTS],
-            "sort": sort, "result_count": len(filtered), "headline_count": headline_count,
+            "sort": sort, "result_count": len(filtered), "headline_count": headline_count, "new_count": new_count,
             "offset": offset, "limit": limit, "has_more": offset + limit < len(filtered),
             "stories": [story.to_dict(sentiments[story.story_id]) for story in page],
             "brief": self._brief(stories, providers, now, window) if view == "brief" else None,
@@ -853,6 +868,7 @@ class ScreenerNewsService:
         latest_scored = next((story for story in stories if sentiments[story.story_id].get("state") == "SCORED"), None)
         summary["latest"] = ({"story_id": latest_scored.story_id, "label": sentiments[latest_scored.story_id]["label"],
                               "published_at": _iso(latest_scored.published)} if latest_scored else None)
+        summary["timeline"], summary["timeline_untimed"] = self._tone_timeline(stories, sentiments, now)
         providers.append({"id": "finbert", "label": PROVIDER_LABELS["finbert"], "kind": "SENTIMENT", "scope": "INSTRUMENT",
                           "state": model_status["state"], "reason": model_status.get("reason"), "fetched_at": None,
                           "item_count": summary["scored"], "terms": _provider_terms()["finbert"],
@@ -901,6 +917,32 @@ class ScreenerNewsService:
             "analysis": self._analysis(profile, stories, summary, attention, reaction, providers),
             "ai": ai,
         }
+
+    @staticmethod
+    def _tone_timeline(stories: list[Story], sentiments: dict[str, dict[str, Any]], now: datetime
+                       ) -> tuple[list[dict[str, Any]], int]:
+        """Hourly story counts by headline tone over the instrument window, oldest bucket first.
+
+        Stories without a known publication time are excluded and counted separately; the
+        retrieval time is not a publication time.
+        """
+
+        hours = WINDOWS[INSTRUMENT_WINDOW] // 3600
+        end = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+        start = end - timedelta(hours=hours)
+        buckets = [{"start": _iso(start + timedelta(hours=index)), "positive": 0, "neutral": 0, "negative": 0, "unscored": 0}
+                   for index in range(hours)]
+        untimed = 0
+        for story in stories:
+            published = story.published
+            if published is None or published < start:
+                untimed += published is None
+                continue
+            score = sentiments[story.story_id]
+            key = score["label"].lower() if score.get("state") == "SCORED" and score.get("label") else "unscored"
+            # Clock-skew allowance (``_in_window``) lands in the current hour.
+            buckets[min(hours - 1, int((published - start).total_seconds() // 3600))][key] += 1
+        return buckets, untimed
 
     def _attention(self, stories: list[Story], now: datetime, state: str) -> dict[str, Any]:
         if state in ("NOT_CONFIGURED", "UNAVAILABLE", "PENDING"):

@@ -411,6 +411,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                             offset=int((query.get("offset") or ["0"])[0]),
                             limit=int((query.get("limit") or ["100"])[0]),
                             view=(query.get("view") or ["feed"])[0],
+                            since=(query.get("since") or [None])[0] or None,
                         )
                     else:
                         payload = read_instrument_news(

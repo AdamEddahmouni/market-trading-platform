@@ -219,9 +219,20 @@ representative headline): positive / neutral / negative, scored / unscored,
 the latest scored label, and a dominant label (a tie for most frequent is
 `MIXED`). There is no composite score and no weighting. Sentiment describes
 headline language; it is never a forecast, and no UI text translates it into
-direction. The News view's sentiment filter is enabled only when every story in
-the window is scored; otherwise it is disabled with its reason, and the
-request is never silently filtered to zero.
+direction. The News view's sentiment filter is enabled when the model is
+current and at least one story in the window is scored. With partial scoring
+(reason `PARTIAL_SCORING`) an applied filter shows scored stories only and
+reports the unscored stories it hid (`filters.sentiment.hidden_unscored`, shown
+as "N unscored hidden"); unscored stories are never silently dropped. The feed
+also carries `scored`, `unscored`, and per-label `counts`. With no scored story
+or a non-current model the filter is disabled with its reason.
+
+The instrument read model adds `sentiment.timeline`: 72 hourly buckets over the
+72 h window (oldest first) of story counts by tone (`positive`, `neutral`,
+`negative`, `unscored`), keyed by known publication time; stories without one
+are excluded and counted in `timeline_untimed`. The Quick Preview and the
+News & Analysis panel draw it as a small stacked sparkline (24 h hourly or
+72 h in 3 h bins) with text totals and a screen-reader table.
 
 ## News view
 
@@ -236,6 +247,19 @@ prefetch; the footer shows stories · headlines · loaded separately. News state
 lives in its own URL parameters (`news`, `nwin`, `nsort`, `nsrc`, `ncat`,
 `nsent`, `ninst`, `nbrief`); saved screens and the existing URL contract are
 unchanged, and no headline, AI output, or secret is persisted.
+
+Read state is per viewer and kept only in this browser's `localStorage`
+(`imp.screener.news.lastSeen.<universe>`, `imp.screener.news.read.<universe>`,
+at most 500 opened story ids); storage failures degrade to a first visit.
+Stories whose first publication time is after the last view are marked
+**New** for the visit; the retrieval time is never used, because it falls back
+to the poll time. Leaving News records the feed's `generated_at` as the new
+mark; the footer offers **Mark all read**. The News tab shows "N new" from
+`GET /screener/news?…&since=<last view>` (`new_count`: window stories published
+after `since`, before filters; an invalid `since` is a 400). Keyboard: `j`/`k`
+move the active story (`aria-activedescendant`), `o` opens it in a new tab,
+`Enter` expands its sources; keys inside row controls and modified keys are
+left alone.
 
 ## News & Analysis panel
 

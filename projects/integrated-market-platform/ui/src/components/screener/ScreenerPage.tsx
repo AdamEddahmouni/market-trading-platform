@@ -13,6 +13,7 @@ import { marketPrice } from "./panels/shared";
 import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
 import type { DockHandle } from "./panels/ScreenerDock";
 import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
+import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
 import "./screener.css";
 
@@ -268,6 +269,17 @@ export function ScreenerPage() {
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);
   const newsMode = isNewsMode(location.search) && !intel;
+  // "N new" on the News tab: stories published since this viewer last left News for the universe.
+  // Re-read on leaving News (the view writes the mark on unmount); the first visit has no mark and no badge.
+  const newsLastSeen = useMemo(() => newsMode ? null : readLastSeen(universe), [universe, newsMode]);
+  const newsNew = useQuery({
+    queryKey: ["screener-news-new", universe, newsLastSeen],
+    // Dynamic import keeps the News contracts out of the Screener's first chunk.
+    queryFn: async ({ signal }) => (await import("../../api/screenerNews")).fetchScreenerNews(
+      { universe, window: "72h", limit: 1, since: newsLastSeen }, signal),
+    enabled: Boolean(newsLastSeen) && supportedPanels.has("news"), staleTime: 30_000, refetchInterval: 60_000, retry: false,
+  });
+  const newsNewCount = newsLastSeen && newsNew.data?.universe === universe ? newsNew.data.new_count ?? 0 : 0;
   // Universe capabilities come from the registry: a reference-only universe never hands off to a Workspace,
   // and a universe without streaming quotes never opens a quote window.
   const referenceOnly = activeSpec?.tradability === "REFERENCE_ONLY";
@@ -808,7 +820,9 @@ export function ScreenerPage() {
         <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
         <button type="button" className="screener-control" aria-pressed={previewOpen} onClick={togglePreview}>Preview</button></div></div>
     <div className="screener-tabs" role="tablist" aria-label="Screener views">{(activeSpec?.view_order ?? Object.keys(activeViews)).filter((name) => activeViews[name]).map((name) => <button key={name} type="button" role="tab" aria-selected={!newsMode && !intel && view === name} onClick={() => chooseView(name)}>{name}</button>)}
-      <button type="button" role="tab" aria-selected={newsMode} className="screener-news-tab" onClick={() => { if (!newsMode) urlUpdate({ news: "1", ...exitIntelUpdates() }); }}>News</button>
+      <button type="button" role="tab" aria-selected={newsMode} className="screener-news-tab" onClick={() => { if (!newsMode) urlUpdate({ news: "1", ...exitIntelUpdates() }); }}
+        aria-label={newsNewCount ? `News, ${newsNewCount} new ${newsNewCount === 1 ? "story" : "stories"} since last view` : undefined}>
+        News{newsNewCount > 0 && <span className="screener-news-count" aria-hidden="true">{newsNewCount > 99 ? "99+" : newsNewCount} new</span>}</button>
       {(activeSpec?.intelligence_views ?? []).map((id) => <button key={id} type="button" role="tab" aria-selected={intel === id}
         className="screener-news-tab screener-intel-tab" onClick={() => { if (intel !== id) urlUpdate({ intel: id, ...resetIntelUpdates(), ...exitNewsUpdates() }); }}>{INTEL_LABELS[id as IntelView] ?? id}</button>)}</div>
     {filterNotice && <div className="screener-filter-notice" role="status">{filterNotice}<button type="button" onClick={() => setFilterNotice("")} aria-label="Dismiss filter notice">×</button></div>}

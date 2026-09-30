@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import { fetchInstrumentNews } from "../../../api/screenerNews";
 import { degradedProviders, Headline, newsDayTime, sentimentWord, stateText, StoryTime } from "./newsFormat";
+import { SentimentSparkline } from "./SentimentSparkline";
 import "./news.css";
 
 type Props = {
@@ -37,6 +38,8 @@ export function PreviewNews({ row, settledId, universe, onOpenNews }: Props) {
       <p className="screener-preview-meta">Sentiment (language, not a forecast): {!s || s.state === "NOT_CONFIGURED" ? "model not configured"
         : s.state === "UNAVAILABLE" ? "unavailable" : s.state === "INSUFFICIENT_DATA" ? `insufficient data · ${s.scored} scored`
         : `${s.counts.positive} positive · ${s.counts.neutral} neutral · ${s.counts.negative} negative · ${s.unscored} unscored${s.dominant ? ` · dominant ${sentimentWord(s.dominant).toLowerCase()}` : ""}`}</p>
+      {s?.timeline && s.state !== "NOT_CONFIGURED" && s.state !== "UNAVAILABLE" &&
+        <SentimentSparkline timeline={s.timeline} untimed={s.timeline_untimed} universe={data.universe} symbol={data.instrument.symbol} />}
       <p className="screener-preview-meta">Latest catalyst: {catalyst ? `${catalyst.category.label} · ${newsDayTime(catalyst.latest_published_at, data.universe)}` : "none categorized"}</p>
       <p className="screener-preview-meta">Providers: {data.providers.map((item) => `${item.label} ${stateText(item.state)}`).join(" · ")}{degraded.length ? ` (${degraded.length} not current)` : ""}</p>
     </>}

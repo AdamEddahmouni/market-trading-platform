@@ -171,6 +171,8 @@ const lastNewsCall = () => mocks.news.mock.calls.at(-1)![0];
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // News read state lives in localStorage; each test starts as a first visit.
+  window.localStorage.clear();
   mocks.config.mockResolvedValue(config);
   mocks.fetch.mockResolvedValue(screenerPayload);
   mocks.window.mockResolvedValue({ schema_version: "screener/1.0.0", generated_at: T, market_session: "REGULAR", active: 0, cap: 32, quotes: {} });
@@ -948,5 +950,143 @@ describe("Setup panel", () => {
     mount("/screener?universe=BONDS");
     await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
     expect(launcher().getByRole("button", { name: "Setup" })).toBeEnabled();
+  });
+});
+
+describe("News feed: partial sentiment filter", () => {
+  const mockPartial = (applied: string | null, hidden: number) => mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => {
+    const base = feed({ universe: params.universe, offset: params.offset ?? 0 });
+    return { ...base, sentiment_model: { state: "CURRENT", reason: null, model_id: "ProsusAI/finbert", model_revision: null, loaded: true },
+      filters: { ...base.filters, sentiment: { enabled: true, reason: "PARTIAL_SCORING", scored: 3, unscored: 12, hidden_unscored: hidden,
+        counts: { positive: 2, neutral: 0, negative: 1 } }, applied: { ...base.filters.applied, sentiment: applied } } };
+  });
+
+  it("filters scored stories while some are unscored and says how many are hidden", async () => {
+    mockPartial("POSITIVE", 12);
+    mount("/screener?news=1&nsent=POSITIVE");
+    await screen.findByRole("table", { name: "US Equities news feed" });
+    const select = screen.getByRole("combobox", { name: "News sentiment" }) as HTMLSelectElement;
+    expect(select).not.toBeDisabled();
+    expect(select.value).toBe("POSITIVE");
+    expect([...select.options].map((option) => option.textContent)).toEqual(["Any language", "Positive (2)", "Neutral (0)", "Negative (1)"]);
+    expect(screen.getByText("12 unscored hidden")).toHaveAttribute("title", expect.stringContaining("hidden, not dropped"));
+    expect(screen.queryByText(/Sentiment filter unavailable/)).toBeNull();
+  });
+
+  it("states partial scoring before a filter is applied", async () => {
+    mockPartial(null, 0);
+    await openNews();
+    await screen.findByRole("table", { name: "US Equities news feed" });
+    expect(screen.getByText("3 of 15 scored")).toBeInTheDocument();
+    expect(screen.queryByText(/unscored hidden/)).toBeNull();
+  });
+});
+
+describe("News feed: new and read markers", () => {
+  const LAST = "imp.screener.news.lastSeen.US_EQUITIES";
+
+  it("marks stories published since the last view, badges the tab, and marks all read", async () => {
+    window.localStorage.setItem(LAST, "2026-09-28T13:00:00Z");
+    mocks.news.mockImplementation(async (params: { universe: string; offset?: number; since?: string | null }) =>
+      feed({ universe: params.universe, offset: params.offset ?? 0, new_count: params.since ? 5 : null }));
+    mount();
+    const tab = await screen.findByRole("tab", { name: "News, 5 new stories since last view" });
+    expect(tab).toHaveTextContent("News5 new");
+    expect(mocks.news).toHaveBeenCalledWith(expect.objectContaining({ window: "72h", limit: 1, since: "2026-09-28T13:00:00Z" }), expect.anything());
+    fireEvent.click(tab);
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    // s2 has no publication time: never "new".
+    expect(table.querySelectorAll(".news-row.news-new")).toHaveLength(3);
+    expect(within(table).getAllByText("since last view")).toHaveLength(3);
+    expect(newsTab()).not.toHaveTextContent("new");
+    const footer = screen.getByRole("contentinfo", { name: "News counts" });
+    expect(footer).toHaveTextContent("3 new since last view");
+    fireEvent.click(within(footer).getByRole("button", { name: "Mark all read" }));
+    expect(table.querySelectorAll(".news-row.news-new")).toHaveLength(0);
+    expect(window.localStorage.getItem(LAST)).toBe(T);
+  });
+
+  it("flags nothing on a first visit and records the view when News is left", async () => {
+    await openNews();
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    expect(table.querySelectorAll(".news-row.news-new")).toHaveLength(0);
+    expect(window.localStorage.getItem(LAST)).toBeNull();
+    fireEvent.click(screen.getByRole("tab", { name: "Overview" }));
+    await screen.findByRole("grid");
+    expect(window.localStorage.getItem(LAST)).toBe(T);
+  });
+});
+
+describe("News feed: keyboard navigation", () => {
+  const rowOf = (table: HTMLElement, id: string) =>
+    table.querySelector(`[data-index="${STORIES.findIndex((item) => item.story_id === id)}"]`) as HTMLElement;
+
+  it("moves with j/k, opens with o, and expands sources with Enter", async () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    await openNews();
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    expect(table).toHaveAttribute("aria-keyshortcuts", "j k o Enter");
+    fireEvent.keyDown(table, { key: "j" });
+    expect(rowOf(table, "s1")).toHaveAttribute("aria-current", "true");
+    expect(table).toHaveAttribute("aria-activedescendant", "news-story-0");
+    fireEvent.keyDown(table, { key: "j" });
+    fireEvent.keyDown(table, { key: "j" });
+    fireEvent.keyDown(table, { key: "k" });
+    expect(rowOf(table, "s2")).toHaveAttribute("aria-current", "true");
+    expect(rowOf(table, "s1")).not.toHaveAttribute("aria-current");
+    fireEvent.keyDown(table, { key: "o" });
+    expect(open).toHaveBeenCalledWith("https://news.example/s2", "_blank", "noopener,noreferrer");
+    expect(rowOf(table, "s2")).toHaveClass("news-read");
+    fireEvent.keyDown(table, { key: "j" });
+    const sources = within(rowOf(table, "s3")).getByRole("button", { name: "1 story · 3 sources" });
+    expect(sources).toHaveAttribute("aria-expanded", "false");
+    fireEvent.keyDown(table, { key: "Enter" });
+    expect(sources).toHaveAttribute("aria-expanded", "true");
+    expect(within(table).getByRole("list", { name: "Sources for Syndicated wire story on tech sector" })).toBeInTheDocument();
+    fireEvent.keyDown(table, { key: "Enter" });
+    expect(sources).toHaveAttribute("aria-expanded", "false");
+    open.mockRestore();
+  });
+
+  it("leaves keys to controls inside rows and to modified shortcuts", async () => {
+    await openNews();
+    const table = await screen.findByRole("table", { name: "US Equities news feed" });
+    fireEvent.keyDown(within(table).getByRole("button", { name: "1 story · 3 sources" }), { key: "j" });
+    fireEvent.keyDown(table, { key: "j", ctrlKey: true });
+    expect(table.querySelector('[aria-current="true"]')).toBeNull();
+    expect(screen.getByRole("contentinfo", { name: "News counts" })).toHaveTextContent("j/k move · o open · Enter sources");
+  });
+});
+
+describe("Sentiment over time", () => {
+  const timeline = Array.from({ length: 72 }, (_, index) => ({ start: new Date(Date.parse("2026-09-25T15:00:00Z") + index * 3_600_000).toISOString(),
+    positive: index === 71 ? 2 : 0, neutral: index === 40 ? 1 : 0, negative: index === 70 ? 1 : 0, unscored: index === 10 ? 1 : 0 }));
+  const renderPreview = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<QueryClientProvider client={client}><PreviewNews row={makeRow("AAPL") as never} settledId="AAPL" universe="US_EQUITIES" /></QueryClientProvider>);
+  };
+
+  it("draws hourly tone counts for the instrument with a 24h/72h toggle", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => {
+      const base = instrumentNews(id, universe);
+      return { ...base, sentiment: { ...base.sentiment, timeline, timeline_untimed: 1 } };
+    });
+    renderPreview();
+    const spark = await screen.findByRole("group", { name: "AAPL stories by headline tone, last 72h" });
+    expect(spark).toHaveTextContent("2 positive · 1 neutral · 1 negative · 1 unscored · 1 without a publication time not shown");
+    fireEvent.click(within(spark).getByRole("button", { name: "24h" }));
+    const day = screen.getByRole("group", { name: "AAPL stories by headline tone, last 24h" });
+    expect(day).toHaveTextContent("2 positive · 0 neutral · 1 negative · 0 unscored");
+    expect(within(day).getByRole("button", { name: "24h" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("is not drawn when the sentiment model is not configured", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => {
+      const base = instrumentNews(id, universe);
+      return { ...base, sentiment: { ...base.sentiment, state: "NOT_CONFIGURED", timeline } };
+    });
+    renderPreview();
+    expect(await screen.findByText(/model not configured/)).toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: /stories by headline tone/ })).toBeNull();
   });
 });
