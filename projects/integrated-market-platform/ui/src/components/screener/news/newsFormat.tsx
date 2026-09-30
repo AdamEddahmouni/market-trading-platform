@@ -125,13 +125,19 @@ export function Headline({ story }: { story: NewsStory }) {
     : <span className="news-headline" title={title}>{story.headline}</span>;
 }
 
-/** Publisher, plus the syndicated member list when one story came from several sources. */
-export function StorySources({ story, universe }: { story: NewsStory; universe: ScreenerUniverse }) {
-  const [open, setOpen] = useState(false);
+/**
+ * Publisher, plus the syndicated member list when one story came from several sources.
+ * Uncontrolled by default; the News feed controls `open` so Enter on a row can toggle it.
+ */
+export function StorySources({ story, universe, open: controlledOpen, onToggle }:
+  { story: NewsStory; universe: ScreenerUniverse; open?: boolean; onToggle?: () => void }) {
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
+  const toggle = onToggle ?? (() => setLocalOpen(!localOpen));
   const primary = story.sources[0];
   return <div className="news-sources">
     <span className="news-publisher" title={primary ? `${primary.publisher} via ${primary.provider_label}` : undefined}>{primary?.publisher ?? "—"}</span>
-    {story.source_count > 1 && <button type="button" className="news-cluster" aria-expanded={open} onClick={() => setOpen(!open)}>
+    {story.source_count > 1 && <button type="button" className="news-cluster" aria-expanded={open} onClick={toggle}>
       1 story · {story.source_count} sources</button>}
     {open && <ul className="news-source-list" aria-label={`Sources for ${story.headline}`}>{story.sources.map((source, index) =>
       <li key={`${source.provider_id}-${source.publisher}-${index}`}>

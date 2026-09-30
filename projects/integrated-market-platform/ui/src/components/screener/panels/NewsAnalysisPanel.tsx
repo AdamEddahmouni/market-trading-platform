@@ -7,6 +7,7 @@ import { degradedProviders, Headline, humanize, isModelLoading, newsDayTime, Pro
 import { RemedyHint } from "../setup/Remedy";
 import { SynthesisControl } from "../news/SynthesisControl";
 import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { SentimentSparkline } from "../news/SentimentSparkline";
 import "../news/news.css";
 
 const REFRESH_MS = 60_000;
@@ -47,7 +48,9 @@ function Sentiment({ data }: { data: InstrumentNews }) {
       <div><dt>Dominant language</dt><dd>{s.dominant ? sentimentWord(s.dominant) : "—"}</dd></div>
       <div><dt>Latest scored</dt><dd>{s.latest ? `${sentimentWord(s.latest.label)} · ${newsDayTime(s.latest.published_at, data.universe)}` : "—"}</dd></div>
       <div><dt>Model</dt><dd>{s.model_id ? `${s.model_id} (local, IMP-derived)` : "—"}</dd></div>
-    </dl>{note}</>;
+    </dl>
+    {s.timeline && <SentimentSparkline timeline={s.timeline} untimed={s.timeline_untimed} universe={data.universe} symbol={data.instrument.symbol} />}
+    {note}</>;
 }
 
 function Catalysts({ data }: { data: InstrumentNews }) {
