@@ -170,6 +170,36 @@ class SenateOnScreenerTests(unittest.TestCase):
                          ("TERMS_ACCEPTANCE_REQUIRED", "OPERATOR_ATTESTATION_MISSING"))
         self.assertFalse([row for row in view["rows"] if row["chamber"] == "SENATE"])
 
+    def test_automatic_download_runs_off_request_and_new_reports_appear_at_once(self):
+        # Owner decision 2026-09-30: with IMP_SENATE_EFD_LIVE=1 IMP downloads into the attested folder itself.
+        folder = self.root / "senate"
+        folder.mkdir()
+        (folder / senate.ATTESTATION_FILE).write_text(json.dumps(
+            {"accepted_by": "operator", "accepted_at": "2026-09-27T12:00:00Z", "automated_access": True}))
+        runs: list[Path] = []
+
+        def fake_sync(path: Path) -> dict:
+            runs.append(path)
+            text = (SENATE_FIXTURES / "ptr_electronic.html").read_text(encoding="utf-8")
+            (path / "ptr-downloaded.html").write_text(text.replace("Filed 01/30/2026", "Filed 09/20/2026"), encoding="utf-8")
+            return {"saved": 1, "listed": 1, "finished_at": "2026-09-30T16:00:00Z", "complete_through": "2026-09-30",
+                    "error": None}
+
+        svc = service(self.env(IMP_SENATE_EFD_IMPORT_DIR=str(folder), IMP_SENATE_EFD_LIVE="1"))
+        svc._senate_sync = fake_sync
+        view = svc.congress_view(universe="US_EQUITIES", window="60d")
+        provider = view["providers"][1]
+        self.assertEqual((provider["state"], provider["sync"]["state"], provider["sync"]["saved"]), ("READY", "SYNCED", 1))
+        self.assertIn("NVDA", {row["instrument"]["symbol"] for row in view["rows"] if row["chamber"] == "SENATE"})
+        svc.congress_view(universe="US_EQUITIES")
+        self.assertEqual(runs, [folder])                                  # one run per TTL, not per request
+
+    def test_no_download_without_the_live_gate(self):
+        svc = service(self.env(IMP_SENATE_EFD_IMPORT_DIR=str(senate_dir(self.root))))
+        svc._senate_sync = lambda path: self.fail("downloaded without IMP_SENATE_EFD_LIVE")
+        provider = svc.congress_view(universe="US_EQUITIES")["providers"][1]
+        self.assertEqual((provider["state"], provider["sync"]), ("READY", None))
+
 
 class IdentityOnScreenerTests(unittest.TestCase):
     def view(self):

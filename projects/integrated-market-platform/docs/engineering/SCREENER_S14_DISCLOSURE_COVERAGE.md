@@ -299,9 +299,12 @@ coverage counts, not quality scores.
   (5 U.S.C. § 13107(c): no unlawful purpose, no commercial purpose other than
   news-media dissemination, no credit rating, no solicitation).
 - There is no documented public API or bulk file.
-- Automating the acceptance, or replaying its session cookie, would automate
+- ~~Automating the acceptance, or replaying its session cookie, would automate
   around an access control. IMP does neither, stores no cookie or token, and
-  never contacts eFD.
+  never contacts eFD.~~ **Superseded 2026-09-30 by owner decision:** IMP may
+  accept the terms on the owner's behalf and download reports itself (see
+  [Automatic download](#automatic-download-2026-09-30)). It still stores no
+  cookie or token; the session lives in memory for one run.
 - The cloud environment cannot reach eFD at all (egress policy); no live page
   was fetched for S14.
 - Whether IMP's intended use is within those restrictions is the owner's
@@ -326,6 +329,32 @@ the terms. An optional `<file>.json` sidecar may give `source_url` and
 
 The House and Senate providers are independent: a House failure with a Senate
 import shows the Senate rows (`PARTIAL · HOUSE_SOURCE_ERROR`), and vice versa.
+
+### Automatic download (2026-09-30)
+
+Owner decision: IMP accepts the eFD terms for the owner and downloads Periodic
+Transaction Reports into the same import directory
+(`congressional_ptr/senate_efd_sync.py`). The parser, the attestation gate and the
+Screener read the directory exactly as they read hand-saved pages.
+
+| Item | Behavior |
+|------|----------|
+| Gate | `IMP_SENATE_EFD_LIVE=1` (on in the standard launcher) plus `IMP_SENATE_EFD_IMPORT_DIR` |
+| Authorization | `ACCESS_ATTESTATION.json` must also set `automated_access: true`; otherwise `AUTOMATED_ACCESS_NOT_AUTHORIZED` and no request is made |
+| Contact | `SEC_USER_AGENT` (name + email) is sent as the User-Agent; without it, `SEC_USER_AGENT_NOT_SET` |
+| Flow | GET `/search/home/` → POST its CSRF token with `prohibition_agreement=1` → POST `/search/report/data/` (report type 11, 100 per page) → GET each `/search/view/{ptr,paper}/<id>/` not yet saved |
+| Files | `<kind>-<id>.html` plus a sidecar (`source_url`, `retrieved_at`, `retrieved_by: IMP_AUTOMATED_EFD_SYNC`); the page is renamed into place only after its sidecar exists. `SYNC_STATE.json` records the last run |
+| Window | First run: 730 days back. Later runs: from the last complete run minus 14 days |
+| Limits | One request per second; at most 250 new reports per run (the next run resumes; `complete_through` advances only on a finished run) |
+| Stops | `SENATE_EFD_CAPTCHA`, `SENATE_EFD_FORM_CHANGED`, `SENATE_EFD_TERMS_NOT_ACCEPTED`, `SENATE_EFD_SESSION_EXPIRED`, `SENATE_EFD_RATE_LIMITED`, `SENATE_EFD_HTTP_<n>`, `SENATE_EFD_LIST_MALFORMED`. Nothing retries in a loop |
+| Schedule | The participants service starts one background run per 6 h. Requests never wait on eFD; a run that saved pages triggers an immediate rescan. The provider row carries `sync` (`SYNCING` / `SYNCED` / `SYNC_FAILED`, `saved`, `finished_at`) |
+| Manual | `python tools/congress/refresh_senate_efd.py` (or `--check`, no network) |
+
+First live run (2026-09-30): 330 reports listed for 2024-09-30 onward and
+downloaded in two runs (250 + 78; 348 s for the first), 331 reports in the
+folder, 296 `PARSED`, 35 `SCANNED_UNPARSED`, 0 failed. 2,811 transactions, of
+which 1,650 carry a matchable ticker (546 tickers, 27 filers). No CAPTCHA was
+served.
 
 ### Parser
 

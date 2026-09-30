@@ -125,6 +125,17 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertNotIn("IMP_LIVE_EXECUTION", env)
         self.assertNotIn("IMP_BROKER_LIVE_EXECUTION", env)
 
+    def test_backend_environment_enables_every_provider_source_unless_overridden(self) -> None:
+        env = build_backend_environment({"IMP_CRYPTO_LIVE": "0"})
+
+        for gate in ("IMP_NEWS_RSS_LIVE", "IMP_EDGAR_LIVE", "IMP_PUBLIC_RECORDS_LIVE", "IMP_TREASURY_LIVE",
+                     "IMP_NEWSAPI_LIVE", "IMP_FINNHUB_LIVE", "IMP_FINRA_LIVE", "IMP_SEC_FTD_LIVE"):
+            self.assertEqual(env[gate], "1", gate)
+        self.assertEqual(env["IMP_CRYPTO_LIVE"], "0")
+        # Broker transports and recorded replay are not data-source gates.
+        self.assertNotIn("IMP_IBKR_LIVE", env)
+        self.assertNotIn("IMP_ORDER_FLOW_LIVE", env)
+
     def test_controlled_replay_profile_strips_live_and_isolates_state(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = make_root(Path(tmp))

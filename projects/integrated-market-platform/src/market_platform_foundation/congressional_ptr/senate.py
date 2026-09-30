@@ -7,16 +7,13 @@ Access findings (see docs/engineering/SCREENER_S14_DISCLOSURE_COVERAGE.md):
   statement of the statutory restrictions on obtaining and using the reports
   (5 U.S.C. § 13107(c): no unlawful or commercial purpose other than news media
   dissemination, no credit rating, no solicitation).
-* There is no documented public API or bulk file. Automating that acceptance, or
-  replaying its session cookie, would be automating around an access control —
-  IMP does neither.
+* There is no documented public API or bulk file.
 
-The legitimate path this module implements: the **operator** accepts the terms in their
-own browser, saves the official report pages they want (the eFD "view" pages for
-electronic PTRs), and places them in a local import directory together with an
-``ACCESS_ATTESTATION.json`` recording that they — not IMP — accepted the terms. IMP
-never reads the directory without that attestation, never stores cookies or tokens,
-and never contacts eFD.
+This module reads a local import directory of eFD report pages together with an
+``ACCESS_ATTESTATION.json`` recording that the owner accepted the terms. Pages arrive
+either saved by hand or, since 2026-09-30 (owner decision), downloaded by
+``senate_efd_sync`` under that acceptance. This module itself never contacts eFD, never
+stores cookies or tokens, and never reads the directory without the attestation.
 
 The parser is header-driven (columns located by their header text, not position) and
 fails closed per report. Electronic PTR pages list: row number, transaction date,

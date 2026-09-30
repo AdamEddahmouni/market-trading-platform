@@ -15,6 +15,7 @@ from __future__ import annotations
 import os
 import threading
 import time
+from pathlib import Path
 from typing import Any, Callable
 
 AUTH_COMMAND = "python tools/news/auth.py configure"
@@ -66,6 +67,7 @@ REMEDIES: dict[str, dict[str, Any]] = {
     "FINVIZ_LIVE_DISABLED": _flag("IMP_FINVIZ_LIVE", "Finviz Elite"),
     "IMP_NEWS_RSS_LIVE_NOT_SET": _flag("IMP_NEWS_RSS_LIVE", "Public RSS feeds"),
     "IMP_PUBLIC_RECORDS_LIVE_NOT_SET": _flag("IMP_PUBLIC_RECORDS_LIVE", "Public records"),
+    "IMP_SENATE_EFD_LIVE_NOT_SET": _flag("IMP_SENATE_EFD_LIVE", "Automatic Senate eFD downloads"),
     "NO_NEWS_PROVIDER_CONFIGURED": _remedy("No news provider is switched on",
                                            f"Enable at least one source (RSS is free: IMP_NEWS_RSS_LIVE=1), {RESTART}."),
     # Keys
@@ -96,14 +98,22 @@ REMEDIES: dict[str, dict[str, Any]] = {
     "STARTS_ON_REQUEST": _remedy("Local AI model starts on request", "Start it now so the first synthesis is faster.",
                                  _connect("local_synthesis", "Start model")),
     "LOCAL_MODEL_PORT_IN_USE": _remedy("Another program holds the local AI port", "Close it, then start the model again."),
-    # Senate eFD (operator import)
+    # Senate eFD (attested import directory; IMP downloads into it when IMP_SENATE_EFD_LIVE=1)
     "SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE": _remedy(
-        "Senate eFD needs your terms acceptance",
-        "Accept the terms at efdsearch.senate.gov, save report pages to a folder, and set IMP_SENATE_EFD_IMPORT_DIR to it."),
+        "Senate eFD needs a folder and your terms acceptance",
+        "Set IMP_SENATE_EFD_IMPORT_DIR to a folder holding ACCESS_ATTESTATION.json (with automated_access: true). "
+        "IMP then downloads new reports itself."),
     "SENATE_EFD_IMPORT_DIR_MISSING": _remedy("Senate import folder not found",
-                                             "Point IMP_SENATE_EFD_IMPORT_DIR at an existing folder of saved eFD pages."),
+                                             "Point IMP_SENATE_EFD_IMPORT_DIR at an existing folder."),
     "OPERATOR_ATTESTATION_MISSING": _remedy("Senate import has no attestation",
                                             "Add the terms-acceptance attestation file to the import folder."),
+    "AUTOMATED_ACCESS_NOT_AUTHORIZED": _remedy(
+        "Automatic Senate downloads are not authorized",
+        "Add \"automated_access\": true to ACCESS_ATTESTATION.json to let IMP accept the eFD terms for you."),
+    "SENATE_EFD_CAPTCHA": _remedy("Senate eFD is asking for a CAPTCHA",
+                                  "Automatic downloads stopped. Save new report pages by hand for now."),
+    "SENATE_EFD_FORM_CHANGED": _remedy("Senate eFD changed its terms page",
+                                       "Automatic downloads stopped until the downloader is updated."),
 }
 
 
@@ -251,6 +261,7 @@ def setup_checklist(*, env: Callable[[str], str | None] = os.environ.get,
     """One row per free capability: its state and the single step that enables it."""
 
     from ..congressional_ptr import senate as senate_ptr
+    from ..congressional_ptr import senate_efd_sync
     from ..news.rss_feeds import LIVE_ENV as RSS_LIVE_ENV
     from ..news.sec_filings_news import live_state as sec_live_state
     from ..public_records.http import live_state as public_live_state
@@ -279,8 +290,15 @@ def setup_checklist(*, env: Callable[[str], str | None] = os.environ.get,
     rows.append(_row("public_records", "Public records (House, lobbying, contracts)", "GOVERNMENT", public_state, public_reason))
     senate = senate_ptr.scan_import(senate_ptr.import_root_from_env(env))
     senate_ok = senate.state in ("READY", "PARTIAL")
-    rows.append(_row("senate_efd", "Senate eFD pages (operator import)", "GOVERNMENT",
-                     "CURRENT" if senate_ok else senate.state, None if senate_ok else senate.reason))
+    senate_state, senate_reason = ("CURRENT", None) if senate_ok else (senate.state, senate.reason)
+    root = senate_ptr.import_root_from_env(env)
+    if senate_ok and (env(senate_efd_sync.LIVE_ENV) or "") != "1":
+        senate_state, senate_reason = "LIVE_DISABLED", f"{senate_efd_sync.LIVE_ENV}_NOT_SET"
+    elif senate_ok and root:
+        authorized, why = senate_efd_sync.automation_authorized(Path(root))
+        if not authorized:
+            senate_state, senate_reason = "PARTIAL", why
+    rows.append(_row("senate_efd", "Senate eFD (automatic download)", "GOVERNMENT", senate_state, senate_reason))
     if service is None:
         from .screener_news import news_service
 
