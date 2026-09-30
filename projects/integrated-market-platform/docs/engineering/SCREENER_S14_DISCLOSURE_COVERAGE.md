@@ -629,12 +629,17 @@ parsed · 2 partly parsed · 19 scanned/unparsed" and "Senate · Imported".
   (2017 and 2026); other layouts still fail closed per report.
 - The Congress coverage sentence starts from the House filing count, but its
   "have no ticker" figure also includes Senate transactions (the chamber lines
-  below it are separate and correct).
+  below it are separate and correct). *Superseded by [final closure](SCREENER_FINAL_CLOSURE.md): House filings and
+  transactions are now separate sentences, and each chamber is counted on its own.*
 - Scanned House and paper Senate filings remain `SCANNED_UNPARSED`; no extraction
-  engine is approved.
+  engine is approved. *Kept by decision in [final closure](SCREENER_FINAL_CLOSURE.md): OCR did not reach the 0.98
+  admission threshold on real scans.*
 - Official ids need an operator-supplied registry; without one, only same-seat
-  House spellings merge, and Senate identities stay `UNRESOLVED`.
-- House amended rows cannot be linked to the report they amend.
+  House spellings merge, and Senate identities stay `UNRESOLVED`. *Extended by
+  [final closure](SCREENER_FINAL_CLOSURE.md): compound surnames and prior-seat House filers now resolve to
+  official ids.*
+- House amended rows cannot be linked to the report they amend. *Kept by decision in
+  [final closure](SCREENER_FINAL_CLOSURE.md): neither the Clerk index nor the form names the amended report.*
 - 13F discovery depends on the SEC page's link names; an unrecognised naming
   scheme yields `SEC_LISTING_HAS_NO_DATASETS` (fails closed; the index is kept).
 - The 13F build figures in [Performance](#performance-cloud-synthetic-data)

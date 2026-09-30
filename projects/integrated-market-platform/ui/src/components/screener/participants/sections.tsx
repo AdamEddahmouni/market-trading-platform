@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CongressTransaction, ParticipantInstrument, ParticipantSection, PositioningReport, PositioningView,
+import type { CongressTransaction, LastReport, ParticipantInstrument, ParticipantSection, PositioningReport, PositioningView,
   RootCoverage } from "../../../api/screenerParticipants";
 import { amountText, ClassTag, CongressTable, count, memberTitle, money, reasonText, short, signed, SourceLink, stamp, StateTag, stateText } from "./participantFormat";
 
@@ -206,16 +206,34 @@ function PositioningProvenance({ report, coverage }: { report: PositioningReport
   </>;
 }
 
+// Lower-cases ordinary words only, so acronyms such as CFTC and COT keep their case.
+const sentenceCase = (label: string) => label.replace(/\b([A-Z])(?=[a-z])/g, (letter) => letter.toLowerCase());
+
+/** A known market absent from the recent window: its last public report, or why that date is not shown. */
+export function lastReportText(last: LastReport | null | undefined): string | null {
+  if (!last) return null;
+  if (last.state === "LAST_REPORT_FOUND" && last.report_date)
+    return `last reported ${last.report_date}${last.publication_time ? `, released ${stamp(last.publication_time)}` : ""}`
+      + (last.publication_time && last.publication_basis?.startsWith("PUBLICATION_TIME_INFERRED") ? " (release time inferred)" : "");
+  if (last.state === "PENDING") return "last report date loading";
+  if (last.state === "NO_REPORT_FOUND") return "no public report on record";
+  return "last report date unavailable (source error)";
+}
+
 export function FuturesPositioning({ section, compact }: { section: ParticipantSection; compact: boolean }) {
-  const data = as<{ report?: PositioningReport; root?: string; contract?: string | null; coverage?: RootCoverage }>(section);
+  const data = as<{ report?: PositioningReport; root?: string; contract?: string | null; coverage?: RootCoverage;
+    last_report?: LastReport; recent_window_days?: number }>(section);
   const { report, coverage } = data;
   const unmapped = coverage != null && coverage.status !== "MAPPED";
   const known = data.reason === "KNOWN_MARKET_NOT_IN_RECENT_RELEASES";
   const preview = PREVIEW_CATEGORIES[report?.report ?? ""];
   return <Section title="CFTC Commitments of Traders" state={data.state} reason={data.reason} cls="OBSERVED">
     {unmapped ? <CoverageNote coverage={coverage} />
-      : <StateNote section={data} empty={known ? "A known CFTC market, but it has no public report in the loaded window (the CFTC omits markets "
-        + "below its reporting threshold). This is not an absence of a market." : "No public COT report for this root in the loaded window."} />}
+      : <StateNote section={data} empty={known ? `A known CFTC market, but not in the CFTC releases of the last ${data.recent_window_days ?? 35} days`
+        + ` (the CFTC publishes a market only while it meets its reporting threshold). This is not an absence of a market.`
+        : "No public COT report for this root in the loaded window."} />}
+    {known && lastReportText(data.last_report) && <p className="participant-note">
+      CFTC market{data.last_report?.cftc_contract_market_code ? ` ${String(data.last_report.cftc_contract_market_code)}` : ""}: {lastReportText(data.last_report)}. Older reports are not shown as current positioning.</p>}
     {report && compact && <>
       <p className="participant-note">{report.report_label} · as of {report.report_date} · released {stamp(report.publication_time)}</p>
       <PositioningTable report={preview ? { ...report, categories: report.categories.filter((item) => preview.includes(item.id)) } : report} compact />
@@ -239,7 +257,7 @@ export function FuturesPositioning({ section, compact }: { section: ParticipantS
 /** Counts of the recorded coverage decisions for the current catalog; accounting, not a quality score. */
 export function CoverageSummary({ coverage }: { coverage: PositioningView["coverage"] }) {
   const parts = (coverage.breakdown ?? [{ id: "MAPPED", label: "Mapped to a CFTC market", count: coverage.mapped_roots }])
-    .map((item) => `${count(item.count)} ${item.label.toLowerCase()}`);
+    .map((item) => `${count(item.count)} ${sentenceCase(item.label)}`);
   const unclassified = coverage.by_status?.UNCLASSIFIED ?? 0;
   return <p className="participant-note" aria-label="CFTC coverage by root">Coverage · {count(coverage.universe_roots)} roots: {parts.join(" · ")}
     {" "}· {count(unclassified)} unclassified{coverage.registry_verified ? ` · decisions verified ${coverage.registry_verified}` : ""}.</p>;

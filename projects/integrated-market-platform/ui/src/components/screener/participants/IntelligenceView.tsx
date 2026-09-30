@@ -5,7 +5,7 @@ import { CONGRESS_WINDOWS, fetchCongressView, fetchOwnershipView, fetchPositioni
 import { CongressTable, count, FAMILY_TEXT, Providers, reasonText, signed, SourceLink, stamp, StateTag, TYPE_TEXT } from "./participantFormat";
 import { ChamberCoverage } from "./sections";
 import type { IntelView } from "./participantParams";
-import { CoverageSummary, PositioningFlags, PositioningTable, UnmappedRoots } from "./sections";
+import { CoverageSummary, lastReportText, PositioningFlags, PositioningTable, UnmappedRoots } from "./sections";
 import "../news/news.css";
 import "./participants.css";
 
@@ -92,6 +92,25 @@ function OwnershipPane({ universe, params, onUpdate }: { universe: ScreenerUnive
   </>;
 }
 
+type CongressWindowCounts = { house_filings: number; house_machine_readable: number; house_scanned: number; house_unreadable: number;
+  house_loading: number; house_transactions: number; senate_transactions: number; senate_in_view: boolean };
+
+/** House counts filings (documents); both chambers count transactions — never mixed in one figure. */
+function CongressCoverageNote({ coverage, days }: { coverage: Record<string, unknown>; days: number }) {
+  const w = coverage.window_counts as CongressWindowCounts | undefined;
+  const tail = <>{count(coverage.matched as number)} match this universe · {count(coverage.ticker_outside_universe as number)} name other tickers ·
+    {" "}{count(coverage.no_disclosed_ticker as number)} have no ticker.</>;
+  if (!w) return <p className="participant-note">Coverage: {count(coverage.filings as number)} House PTR filings loaded ·
+    {" "}{count(coverage.transactions_in_window as number)} transactions in the window: {tail}</p>;
+  return <>
+    <p className="participant-note">House filings in the last {days} days: {count(w.house_filings)} PTRs · {count(w.house_machine_readable)} machine-readable ·
+      {" "}{count(w.house_scanned)} scanned (open on the Clerk site){w.house_unreadable ? ` · ${count(w.house_unreadable)} unreadable` : ""}
+      {w.house_loading ? ` · ${count(w.house_loading)} still loading` : ""}.</p>
+    <p className="participant-note">Transactions filed in the last {days} days: {count(w.house_transactions)} House
+      {w.senate_in_view ? ` · ${count(w.senate_transactions)} Senate` : " (Senate not imported)"} — of these, {tail}</p>
+  </>;
+}
+
 function CongressPane({ universe, params, onUpdate }: { universe: ScreenerUniverse; params: URLSearchParams; onUpdate: Props["onUpdate"] }) {
   const windowId = params.get("iwin") ?? "60d";
   const type = params.get("itype");
@@ -129,10 +148,7 @@ function CongressPane({ universe, params, onUpdate }: { universe: ScreenerUniver
       <div className="participant-body" tabIndex={0} role="region" aria-label="Congressional disclosures">
         {data.rows.length ? <CongressTable rows={data.rows} caption={`Congressional transactions in this universe filed since ${data.window.since}`} />
           : ["PUBLICATION_CURRENT", "PARTIAL", "NO_DISCLOSURES"].includes(data.state) ? <p className="news-message">No disclosed transactions match this universe and these filters.</p> : null}
-        <p className="participant-note">Coverage: {count(coverage.filings as number)} House PTR filings in the window · {count(coverage.parsed as number)} machine-readable ·
-          {" "}{count(coverage.not_machine_readable as number)} scanned (open on the Clerk site){coverage.loading ? ` · ${coverage.loading} still loading` : ""} ·
-          {" "}{count(coverage.matched as number)} transactions match this universe · {count(coverage.ticker_outside_universe as number)} name other tickers ·
-          {" "}{count(coverage.no_disclosed_ticker as number)} have no ticker.</p>
+        <CongressCoverageNote coverage={coverage} days={data.window.days} />
         <ChamberCoverage sources={data.providers.filter((item) => item.family === "CONGRESSIONAL").map((item) => ({ id: item.id,
           chamber: item.id === "senate_efd" ? "SENATE" : "HOUSE", state: item.state, reason: item.reason }))}
           house={coverage.house as { parsed?: number } | undefined} />
@@ -167,8 +183,10 @@ function PositioningPane({ universe }: { universe: ScreenerUniverse }) {
             {" "}· OI weekly change {signed(report.change_open_interest)} (published)</p>}
           <PositioningFlags report={report} />
           <PositioningTable report={report} compact={!report.contract} /></div>)}</section>)}
-      {(data.coverage.mapped_without_report ?? []).length > 0 && <p className="participant-note">Known CFTC markets with no public report in the
-        {" "}loaded window (below the CFTC reporting threshold): {data.coverage.mapped_without_report?.join(", ")}.</p>}
+      {(data.coverage.mapped_without_report ?? []).length > 0 && <p className="participant-note">Known CFTC markets not in the releases of the
+        {" "}last {data.coverage.recent_window_days ?? 35} days: {data.coverage.mapped_without_report_detail
+          ? data.coverage.mapped_without_report_detail.map((item) => `${item.root}: ${lastReportText(item.last_report)}`).join("; ")
+          : data.coverage.mapped_without_report?.join(", ")}.</p>}
       {data.unmapped ? data.unmapped.length > 0 && <UnmappedRoots roots={data.unmapped} />
         : data.coverage.unmapped_roots.length > 0 && <p className="participant-note">No CFTC market mapped for: {data.coverage.unmapped_roots.join(", ")}.</p>}
       {data.report_policy && <p className="participant-note">{data.report_policy}</p>}

@@ -255,6 +255,12 @@ def _default_catalog(universe: str) -> tuple[list[dict[str, Any]], str | None]:
     from .screener_projections import read_screener
     from .screener_query import MAX_PAGE_LIMIT
 
+    if universe == BONDS:
+        # News keys BONDS on Treasury CUSIPs only; paging the whole universe (hundreds of thousands of fund-held
+        # rows since S16) truncated at 20,000 rows in maturity order and missed most Treasuries.
+        from .screener_bonds import bond_screener_service
+
+        return bond_screener_service().treasury_rows()
     rows: list[dict[str, Any]] = []
     offset, result_set = 0, None
     for _ in range(40):  # bounded: 20,000 rows

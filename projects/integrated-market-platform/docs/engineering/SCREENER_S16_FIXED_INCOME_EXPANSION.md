@@ -390,4 +390,5 @@ covers:
 - **Cold latency.** Cold unfiltered sorts over about 318k rows take 0.8–0.9 s.
   Cached pages take about 30 ms.
 - **Visual check.** The visual check used the built-in browser, with geometry probes
-  and partial screenshots: the pane captures an 800×450 crop.
+  and partial screenshots: the pane captures an 800×450 crop. *See [final closure](SCREENER_FINAL_CLOSURE.md)
+  for the five-universe pass, including Bonds News reading every Treasury.*

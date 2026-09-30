@@ -22,19 +22,17 @@ interest ratios are DERIVED; the weekly changes are the CFTC's own published
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from enum import StrEnum
 from typing import Any
 
 from .contracts import CotParticipantCategory, CotReportFamily
 from .datasets import CotDataset, dataset_spec
 from .parser import parse_cot_row
-from .release_schedule import (
-    OFFICIAL_2026_RELEASES,
-    is_visible_at,
-    publication_datetime_et,
-    release_for_position_date,
-)
+from .release_schedule import ReleaseCalendar
+
+#: Vendored official tables only; the Screener service swaps in a calendar extended from the live CFTC page.
+DEFAULT_CALENDAR = ReleaseCalendar.vendored()
 
 SOURCE_URL = "https://www.cftc.gov/MarketReports/CommitmentsofTraders/index.htm"
 DATASET_URL = "https://publicreporting.cftc.gov/resource/{dataset}.json"
@@ -197,24 +195,18 @@ REPORT_SELECTION_POLICY = ("Financial futures use Traders in Financial Futures; 
 _ROW_ID_KEYS = frozenset({":id", "id", ":created_at", ":updated_at"})
 
 
-def publication_for(report_date: date) -> tuple[datetime, str]:
-    """Official publication time for a position date; a date outside the loaded schedule is inferred and flagged."""
+def publication_for(report_date: date, calendar: ReleaseCalendar = DEFAULT_CALENDAR) -> tuple[datetime, str]:
+    """Official publication time for a position date; a date no official table covers is inferred and flagged
+    (holiday weeks conservatively: the next business day after Friday)."""
 
-    release = release_for_position_date(report_date)
-    if release is not None:
-        return publication_datetime_et(release.publication_date).astimezone(UTC), (
-            "CFTC_OFFICIAL_SCHEDULE_DELAYED" if release.delayed else "CFTC_OFFICIAL_SCHEDULE")
-    return publication_datetime_et(report_date + timedelta(days=3)).astimezone(UTC), "PUBLICATION_TIME_INFERRED_TUESDAY_PLUS_3"
+    published, basis = calendar.publication(report_date)
+    return published.astimezone(UTC), basis
 
 
-def latest_scheduled_report_date(now: datetime) -> date | None:
-    """The newest position date whose official release time has passed at ``now`` (None outside the schedule)."""
+def latest_scheduled_report_date(now: datetime, calendar: ReleaseCalendar = DEFAULT_CALENDAR) -> date | None:
+    """The newest position date whose release time has passed at ``now`` — any year, official or inferred."""
 
-    latest = None
-    for publication, position, _delayed in OFFICIAL_2026_RELEASES:
-        if is_visible_at(publication, now) and (latest is None or position > latest):
-            latest = position
-    return latest
+    return calendar.latest_visible_position(now)
 
 
 def where_clause(codes: list[str], since: date) -> str:
@@ -230,7 +222,8 @@ def _pct(part: int | None, whole: int | None) -> float | None:
     return round(100.0 * part / whole, 1) if part is not None and whole else None
 
 
-def build_positioning(rows: list[dict[str, Any]], market: PositioningMarket, *, now: datetime) -> dict[str, Any] | None:
+def build_positioning(rows: list[dict[str, Any]], market: PositioningMarket, *, now: datetime,
+                      calendar: ReleaseCalendar = DEFAULT_CALENDAR) -> dict[str, Any] | None:
     """The newest report for ``market`` that was public at ``now``; None when none is visible."""
 
     spec = dataset_spec(DATASETS[market.report])
@@ -244,10 +237,8 @@ def build_positioning(rows: list[dict[str, Any]], market: PositioningMarket, *, 
             continue
         by_date.setdefault(report_date, []).append(row)
     for report_date in sorted(by_date, reverse=True):
-        published, basis = publication_for(report_date)
-        release = release_for_position_date(report_date)
-        visible = is_visible_at(release.publication_date, now) if release else now >= published
-        if not visible:
+        published, basis = publication_for(report_date, calendar)
+        if now < published:
             continue  # not public yet at `now` — never shown early
         # Deterministic identity: the same (market code, report date) always resolves to the same row.
         candidates = sorted(by_date[report_date], key=lambda item: str(item.get("id") or item.get(":id") or ""))
@@ -279,7 +270,7 @@ def build_positioning(rows: list[dict[str, Any]], market: PositioningMarket, *, 
         live_name = " ".join(parsed.market_and_exchange_names.split())
         if live_name and live_name not in (market.market_name, *market.former_names):
             flags.append("MARKET_NAME_DIFFERS_FROM_REFERENCE")
-        latest = latest_scheduled_report_date(now)
+        latest = latest_scheduled_report_date(now, calendar)
         if latest is not None and report_date < latest:
             # The market exists (it has earlier rows) but is absent from the newest public release.
             # That is not "no CFTC market": the report shown is the newest one this market has.
@@ -311,5 +302,5 @@ def _int(value: Any) -> int | None:
 
 
 __all__ = ["CATEGORY_LABELS", "CONFIDENCE", "DATASETS", "MappingBasis", "NET_METHOD", "NOT_IN_LATEST_RELEASE", "OI_METHOD",
-           "POSITIONING_MARKETS", "PositioningMarket", "REPORT_SELECTION_POLICY", "SOURCE_URL", "build_positioning",
+           "DEFAULT_CALENDAR", "POSITIONING_MARKETS", "PositioningMarket", "REPORT_SELECTION_POLICY", "SOURCE_URL", "build_positioning",
            "latest_scheduled_report_date", "publication_for", "where_clause"]

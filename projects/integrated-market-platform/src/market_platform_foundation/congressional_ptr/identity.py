@@ -18,6 +18,16 @@ and only on evidence:
    one member. Conflicting middle initials make the whole group ``AMBIGUOUS``. A suffix
    present in one spelling and absent in another is *not* merged (a Jr. can succeed a
    parent in the same seat); it is noted as an unverified possible alias.
+
+   Final Screener closure adds two registry rules, each anchored on official term data
+   and the given name, never on similarity: a *compound surname* the House index splits
+   ("April McClain" / "Delaney" for the registry's "McClain Delaney") resolves when the
+   filer's trailing given-name tokens plus surname spell the registry surname exactly
+   and the given names agree; a *prior seat* (the index still stating a member's
+   pre-redistricting district) resolves when no member of that surname holds the stated
+   seat on the filing date and exactly one member with the same surname and given name
+   is serving in that state's House delegation and held the stated seat in an earlier
+   term.
 3. ``UNRESOLVED`` — everything else keeps an id derived from the exact source identity.
    Name similarity alone never merges two identities.
 """
@@ -187,6 +197,34 @@ class RegistryMember:
     def family_names(self) -> set[str]:
         return {self.name.family, *(item.family for item in self.other_names)} - {""}
 
+    def given_names(self) -> set[str]:
+        return {self.name.given, *(item.given for item in self.other_names)} - {""}
+
+    def held_seat_before(self, state: str, district: str, on: date) -> bool:
+        return any(term.chamber == "HOUSE" and term.state == state and term.district == district and term.end <= on
+                   for term in self.terms)
+
+
+def _compound_family(name: NameParts) -> set[str]:
+    """Surnames a source split could spell: the surname, or trailing given-name tokens joined to it."""
+
+    return {"".join(name.middles[-count:]) + name.family for count in range(1, len(name.middles) + 1)} if name.family else set()
+
+
+def _name_basis(identity_name: NameParts, member: RegistryMember) -> str | None:
+    """How a registry member's name agrees with the source name (exact surname, or exact compound + given)."""
+
+    if identity_name.family in member.family_names():
+        return "SURNAME"
+    compound = _compound_family(identity_name) & member.family_names()
+    if compound and identity_name.given in member.given_names():
+        return "COMPOUND_SURNAME_AND_GIVEN"
+    # The registry splits the compound instead: its trailing given tokens joined to its surname.
+    if (identity_name.family and identity_name.family in _compound_family(member.name)
+            and identity_name.given in member.given_names()):
+        return "COMPOUND_SURNAME_AND_GIVEN"
+    return None
+
 
 class OfficialRegistry:
     """Members keyed by Bioguide id with dated terms (``congress-legislators`` JSON layout)."""
@@ -223,6 +261,11 @@ class OfficialRegistry:
             nicknames = tuple(split_name(nick, name["last"], name.get("suffix") or "")
                               for nick in [name.get("nickname")] if nick)
             official = name.get("official_full") or parts.display
+            # The official full name's given name ("Richard" for a registry "Rich") is official evidence too.
+            if name.get("official_full"):
+                full = split_full_name(str(name["official_full"]))
+                if full.given and full.given != parts.given:
+                    nicknames = (*nicknames, split_name(full.given, name["last"], name.get("suffix") or ""))
             members.append(RegistryMember(bioguide, official, parts, tuple(terms), nicknames))
         return cls(members, source=source)
 
@@ -237,19 +280,37 @@ class OfficialRegistry:
         return cls.from_legislators(rows, source="congress-legislators:" + ",".join(names))
 
     def candidates(self, identity: SourceIdentity) -> list[RegistryMember]:
+        return self.match(identity)[0]
+
+    def match(self, identity: SourceIdentity) -> tuple[list[RegistryMember], str]:
+        """Registry candidates for a source identity and the evidence basis of the match."""
+
         if identity.filed_on is None:
-            return []
+            return [], "NO_FILING_DATE"
         if identity.chamber == "HOUSE":
-            if identity.seat is None:
-                return []
+            if identity.seat is None or identity.state is None or identity.district is None:
+                return [], "NO_SEAT"
             serving = [m for m in self.members if m.serving("HOUSE", identity.filed_on, identity.state, identity.district)]
-            return [m for m in serving if identity.name.family in m.family_names()]
+            exact = [m for m in serving if _name_basis(identity.name, m) == "SURNAME"]
+            if exact:
+                return exact, "REGISTRY_SEAT_TERM_AND_SURNAME"
+            compound = [m for m in serving if _name_basis(identity.name, m) == "COMPOUND_SURNAME_AND_GIVEN"]
+            if compound:
+                return compound, "REGISTRY_SEAT_TERM_AND_COMPOUND_SURNAME"
+            # The stated seat is held by someone else (or no one) on the filing date: the index may still carry
+            # a member's earlier district. Only a member serving in the same state who held that seat before,
+            # with the same surname and given name, is a candidate.
+            prior = [m for m in self.members
+                     if m.serving("HOUSE", identity.filed_on, identity.state)
+                     and m.held_seat_before(identity.state, identity.district, identity.filed_on)
+                     and _name_basis(identity.name, m) is not None and identity.name.given in m.given_names()]
+            return prior, "REGISTRY_PRIOR_SEAT_TERM_AND_NAME"
         serving = [m for m in self.members if m.serving("SENATE", identity.filed_on, identity.state)]
         by_family = [m for m in serving if identity.name.family in m.family_names()]
         if len(by_family) <= 1:
-            return by_family
+            return by_family, "REGISTRY_TERM_AND_NAME"
         # Two serving senators share the surname: the given name must also agree.
-        return [m for m in by_family if identity.name.given in {m.name.given, *(n.given for n in m.other_names)}]
+        return [m for m in by_family if identity.name.given in m.given_names()], "REGISTRY_TERM_AND_NAME"
 
 
 def registry_from_env(env: Mapping[str, str] | None = None) -> OfficialRegistry | None:
@@ -300,15 +361,17 @@ class MemberResolver:
         out: dict[str, MemberResolution] = {}
         official: dict[str, list[SourceIdentity]] = defaultdict(list)
         members: dict[str, RegistryMember] = {}
+        bases: dict[str, str] = {}
         leftovers: list[SourceIdentity] = []
         for identity in pending.values():
             if not identity.name.family:
                 out[identity.key] = _source_only(identity, "UNRESOLVED", "SOURCE_NAME_INCOMPLETE")
                 continue
-            found = self.registry.candidates(identity) if self.registry is not None else []
+            found, basis = self.registry.match(identity) if self.registry is not None else ([], "")
             if len(found) == 1:
                 official[found[0].bioguide].append(identity)
                 members[found[0].bioguide] = found[0]
+                bases[identity.key] = basis
             elif len(found) > 1:
                 out[identity.key] = _source_only(identity, "AMBIGUOUS", "REGISTRY_MULTIPLE_CANDIDATES",
                                                  tuple(sorted(f"CANDIDATE:{item.bioguide}" for item in found)))
@@ -317,11 +380,11 @@ class MemberResolver:
         for bioguide, group in official.items():
             member = members[bioguide]
             names = tuple(sorted({item.source_name for item in group}))
-            chambers = {item.chamber for item in group}
-            basis = "REGISTRY_SEAT_TERM_AND_SURNAME" if chambers == {"HOUSE"} else "REGISTRY_TERM_AND_NAME"
             for identity in group:
+                basis = bases[identity.key]
+                notes = ("SOURCE_SEAT_IS_AN_EARLIER_TERM",) if basis == "REGISTRY_PRIOR_SEAT_TERM_AND_NAME" else ()
                 out[identity.key] = MemberResolution(f"BIOGUIDE:{bioguide}", member.official_name, "OFFICIAL_ID", basis,
-                                                     identity.chamber, {"bioguide": bioguide}, names)
+                                                     identity.chamber, {"bioguide": bioguide}, names, notes)
         self._seat_groups([item for item in leftovers if item.chamber == "HOUSE" and item.seat], out)
         for identity in leftovers:
             if identity.key not in out:

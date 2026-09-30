@@ -148,6 +148,14 @@ def cot_query(dataset, where):
     return json.loads((FIX / "cftc" / name).read_text())
 
 
+#: Final closure: newest report date per market code (offline stand-in for the grouped CFTC query).
+LAST_REPORTS = {"004603": "2026-07-14T00:00:00.000"}   # ZO (oats): known market, no report in the recent window
+
+
+def cot_last_report(dataset, codes):
+    return [{"cftc_contract_market_code": code, "last_report": LAST_REPORTS[code]} for code in codes if code in LAST_REPORTS]
+
+
 class FakeThirteenF:
     def section(self, cusips, *, now):
         return {"state": "CURRENT_AS_FILED", "reason": None, "cusips": cusips, "holders": [], "period": "2026-06-30"}
@@ -162,7 +170,7 @@ def service(env=SEC_ENV, *, house_fail=False, thirteen_f=None, catalog=CATALOG):
     spending = FakeSpending()
     svc = ScreenerParticipantService(
         catalog=lambda universe: (catalog.get(universe, []), None), row_for=row_for, sec_transport_factory=lambda: sec,
-        public_http=public, cot_query=cot_query, house_loader=HousePtrLoader(http=public, clock=clock, spawn=sync),
+        public_http=public, cot_query=cot_query, cot_last_report=cot_last_report, house_loader=HousePtrLoader(http=public, clock=clock, spawn=sync),
         usaspending=spending, lobbying=FakeLobbying(), thirteen_f=thirteen_f,
         cache=BackgroundCache(clock=clock, spawn=sync), clock=clock, wait_s=0.0, env=env.get)
     svc.fakes = {"sec": sec, "house": requester, "spending": spending}

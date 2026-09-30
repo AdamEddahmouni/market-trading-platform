@@ -71,12 +71,15 @@ class CotTransport:
         order: str = "",
         limit: int = 1000,
         offset: int = 0,
+        group: str = "",
     ) -> list[dict[str, Any]]:
         params: dict[str, str] = {"$limit": str(limit), "$offset": str(offset)}
         if where:
             params["$where"] = where
         if select:
             params["$select"] = select
+        if group:
+            params["$group"] = group
         if order:
             params["$order"] = order
         query = urllib.parse.urlencode(params, quote_via=urllib.parse.quote)

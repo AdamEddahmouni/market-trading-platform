@@ -26,6 +26,8 @@ class EventCategory:
     label: str
     group: str  # CORPORATE | REGULATORY | MACRO | CRYPTO | FILING
     patterns: tuple[str, ...]
+    # When set, the text must also name the domain: "outage" or "SEC" alone is not a crypto story.
+    anchors: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, str]:
         return {"id": self.id, "label": self.label, "group": self.group}
@@ -92,25 +94,34 @@ MACRO: tuple[EventCategory, ...] = (
         "equity futures", "vix", "sell-off", "selloff", "record high")),
 )
 
+# Generic venue/regulator words ("hack", "outage", "listing", "sec", "upgrade") classify a story as
+# crypto only next to a crypto term (final closure: a streaming-app outage was crypto venue context).
+CRYPTO_ANCHORS = _words(
+    "crypto", "cryptocurrency", "cryptocurrencies", "bitcoin", "btc", "ether", "ethereum", "eth", "solana",
+    "xrp", "dogecoin", "stablecoin", "stablecoins", "token", "tokens", "blockchain", "defi", "digital asset",
+    "digital assets", "coinbase", "binance", "kraken", "grayscale", "mica", "genius act", "clarity act")
+
 CRYPTO: tuple[EventCategory, ...] = (
     EventCategory("crypto.regulation", "Crypto regulation", "CRYPTO", _words(
         "sec", "cftc", "stablecoin bill", "crypto bill", "crypto regulation", "mica", "enforcement action",
-        "wells notice", "genius act", "clarity act")),
+        "wells notice", "genius act", "clarity act"), CRYPTO_ANCHORS),
     EventCategory("crypto.etf", "Crypto ETF / fund flows", "CRYPTO", _words(
         "spot bitcoin etf", "bitcoin etf", "ether etf", "ethereum etf", "solana etf", "etf inflows",
         "etf outflows", "grayscale", "ibit")),
     EventCategory("crypto.exchange", "Exchange / venue event", "CRYPTO", _words(
         "exchange hack", "hack", "hacked", "exploit", "outage", "delisting", "delists", "listing",
-        "withdrawals halted", "insolvency", "kraken", "coinbase", "binance")),
+        "withdrawals halted", "insolvency", "kraken", "coinbase", "binance"), CRYPTO_ANCHORS),
     EventCategory("crypto.protocol", "Protocol / network", "CRYPTO", _words(
-        "halving", "hard fork", "upgrade", "mainnet", "staking", "validator", "network upgrade", "layer 2")),
+        "halving", "hard fork", "upgrade", "mainnet", "staking", "validator", "network upgrade", "layer 2"),
+        CRYPTO_ANCHORS),
 )
 
 FILING = EventCategory("filing.sec", "SEC filing", "FILING", ())
 
 CATEGORIES: tuple[EventCategory, ...] = (*_CORPORATE, *MACRO, *CRYPTO, FILING)
 _BY_ID = {category.id: category for category in CATEGORIES}
-_COMPILED = tuple((category, re.compile("|".join(category.patterns), re.IGNORECASE))
+_COMPILED = tuple((category, re.compile("|".join(category.patterns), re.IGNORECASE),
+                   re.compile("|".join(category.anchors), re.IGNORECASE) if category.anchors else None)
                   for category in CATEGORIES if category.patterns)
 
 
@@ -125,10 +136,10 @@ def classify_text(headline: str, summary: str = "", *, groups: frozenset[str] | 
     if not text.strip():
         return ()
     found = []
-    for item, pattern in _COMPILED:
+    for item, pattern, anchor in _COMPILED:
         if groups is not None and item.group not in groups:
             continue
-        if pattern.search(text):
+        if pattern.search(text) and (anchor is None or anchor.search(text)):
             found.append(item)
     return tuple(found)
 

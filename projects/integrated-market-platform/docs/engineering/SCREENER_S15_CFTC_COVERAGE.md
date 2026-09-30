@@ -393,8 +393,11 @@ field is optional in the schema.
 - 93 of 178 roots have no provider venue, so the exchange check cannot run for them.
   Their mappings rest on the recorded CME Group product codes (`CURATED_OFFICIAL_ALIAS`).
 - The Screener reads a 35-day CFTC window. A known market that has not reported in that
-  window shows "not in recent releases", not its older last report.
+  window shows "not in recent releases", not its older last report. *Superseded by
+  [final closure](SCREENER_FINAL_CLOSURE.md): the last report date and its release time are shown.*
 - The release schedule is loaded for 2026. A report date outside it uses the S12
-  fallback (Tuesday + 3 days, `PUBLICATION_TIME_INFERRED_TUESDAY_PLUS_3`).
+  fallback (Tuesday + 3 days, `PUBLICATION_TIME_INFERRED_TUESDAY_PLUS_3`). *Superseded
+  by [final closure](SCREENER_FINAL_CLOSURE.md): every year on the CFTC schedule page is loaded, with a
+  holiday-aware inference beyond it.*
 - The visual check was through component tests and live payloads. No browser screenshot
-  was taken in this session.
+  was taken in this session. *Superseded by [final closure](SCREENER_FINAL_CLOSURE.md): checked in the browser.*

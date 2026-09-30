@@ -104,10 +104,26 @@ describe("S15 Institutional & Whale Futures positioning", () => {
 
   it("distinguishes a known market with no recent report from a root with no market", () => {
     render(<FuturesPositioning compact={false} section={{ state: "NO_DISCLOSURES", reason: "KNOWN_MARKET_NOT_IN_RECENT_RELEASES",
-      root: "QG", coverage: MAPPED("QG") }} />);
+      root: "QG", coverage: MAPPED("QG"), recent_window_days: 35, last_report: { state: "LAST_REPORT_FOUND", reason: null,
+        report_date: "2024-08-27", publication_time: "2024-08-30T19:30:00Z", publication_basis: "PUBLICATION_TIME_INFERRED_TUESDAY_PLUS_3",
+        cftc_contract_market_code: "023655" } }} />);
     const section = screen.getByRole("region", { name: "CFTC Commitments of Traders" });
-    expect(section).toHaveTextContent("A known CFTC market, but it has no public report in the loaded window");
+    expect(section).toHaveTextContent("A known CFTC market, but not in the CFTC releases of the last 35 days");
+    // Final closure: the last public report is shown as a date, never as current positioning.
+    expect(section).toHaveTextContent("CFTC market 023655: last reported 2024-08-27, released 2024-08-30 19:30 UTC (release time inferred). Older reports are not shown as current positioning.");
     expect(section).not.toHaveTextContent("CFTC positioning unavailable");
+    expect(within(section).queryByRole("table")).toBeNull();
+  });
+
+  it("never invents a last report date", () => {
+    for (const [last, text] of [[{ state: "PENDING", reason: "FETCHING", report_date: null }, "last report date loading"],
+      [{ state: "NO_REPORT_FOUND", reason: "NO_ROWS_FOR_MARKET_CODE", report_date: null }, "no public report on record"],
+      [{ state: "SOURCE_ERROR", reason: "CFTC_HTTP_503", report_date: null }, "last report date unavailable (source error)"]] as const) {
+      const { unmount } = render(<FuturesPositioning compact section={{ state: "NO_DISCLOSURES", reason: "KNOWN_MARKET_NOT_IN_RECENT_RELEASES",
+        root: "QG", coverage: MAPPED("QG"), last_report: last }} />);
+      expect(screen.getByRole("region", { name: "CFTC Commitments of Traders" })).toHaveTextContent(text);
+      unmount();
+    }
   });
 
   it("states when a market is missing from the latest release and when rows conflict", () => {
@@ -170,12 +186,14 @@ describe("S15 Positioning view coverage", () => {
     breakdown: [{ id: "MAPPED", label: "Mapped to a CFTC market", count: 67 },
       { id: "PRODUCT_NOT_COVERED", label: "Single-stock future · no COT market", count: 77 },
       { id: "NO_CFTC_MARKET_FOUND", label: "No CFTC market", count: 33 }, { id: "AMBIGUOUS_MAPPING", label: "Ambiguous CFTC market", count: 1 }],
-    mapped_without_report: ["QG"] };
+    mapped_without_report: ["QG"], recent_window_days: 35,
+    mapped_without_report_detail: [{ root: "QG", last_report: { state: "LAST_REPORT_FOUND", reason: null, report_date: "2024-08-27",
+      publication_time: "2024-08-30T19:30:00Z" } }] };
 
   it("summarizes coverage from the payload, never from fixed prose", () => {
     render(<CoverageSummary coverage={coverage} />);
-    expect(screen.getByLabelText("CFTC coverage by root")).toHaveTextContent("Coverage · 178 roots: 67 mapped to a cftc market · "
-      + "77 single-stock future · no cot market · 33 no cftc market · 1 ambiguous cftc market · 0 unclassified · decisions verified 2026-09-29.");
+    expect(screen.getByLabelText("CFTC coverage by root")).toHaveTextContent("Coverage · 178 roots: 67 mapped to a CFTC market · "
+      + "77 single-stock future · no COT market · 33 no CFTC market · 1 ambiguous CFTC market · 0 unclassified · decisions verified 2026-09-29.");
   });
 
   it("groups unmapped roots by reason, with ambiguity open by default", () => {
@@ -207,7 +225,8 @@ describe("S15 Positioning view coverage", () => {
     expect(tffGroup).toHaveTextContent("ESZ26 · CFTC 13874A · mapped by exchange plus product · OI weekly change -1,500 (published)");
     expect(within(tffGroup).getByRole("columnheader", { name: "Net (derived)" })).toBeInTheDocument();
     expect(within(view).getByRole("region", { name: "Disaggregated (futures only)" })).toHaveTextContent("Managed money");
-    expect(view).toHaveTextContent("Known CFTC markets with no public report in the loaded window (below the CFTC reporting threshold): QG.");
+    expect(view).toHaveTextContent("Known CFTC markets not in the releases of the last 35 days: QG: last reported 2024-08-27, released 2024-08-30 19:30 UTC.");
+    expect(view.textContent).not.toMatch(/below the CFTC reporting threshold\)/);
     expect(within(view).getByRole("region", { name: "Roots without CFTC positioning" })).toHaveTextContent("Ambiguous CFTC market · 1");
     expect(view).toHaveTextContent("Legacy (commercial / non-commercial) is used only as mapping reference.");
     expect(view.textContent).not.toMatch(REALTIME);

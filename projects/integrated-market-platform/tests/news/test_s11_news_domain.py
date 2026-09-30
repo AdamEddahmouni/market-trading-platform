@@ -118,9 +118,21 @@ class TaxonomyTests(unittest.TestCase):
         self.assertNotIn("macro.fed_policy", {c.id for c in classify_text("Federated Hermes reports assets")})
 
     def test_group_filter_keeps_crypto_regulation_out_of_equities(self):
-        text = "SEC opens probe into exchange listing practices"
+        text = "SEC opens probe into crypto exchange listing practices"
         self.assertIn("crypto.regulation", {c.id for c in classify_text(text, groups=frozenset({"CRYPTO"}))})
         self.assertNotIn("crypto.regulation", {c.id for c in classify_text(text, groups=frozenset({"CORPORATE", "REGULATORY"}))})
+
+    def test_generic_venue_and_regulator_words_need_a_crypto_term(self):
+        # Final closure live pass: a streaming-app outage was shown as crypto venue context.
+        crypto = frozenset({"CRYPTO"})
+        for text in ("Spotify is down for tens of thousands of users amid widespread app outage",
+                     "SEC charges adviser with cherry-picking trades", "Analyst upgrade lifts Oracle shares",
+                     "Retailer hacked; card data exposed"):
+            with self.subTest(text):
+                self.assertEqual(classify_text(text, groups=crypto), ())
+        self.assertIn("crypto.exchange", {c.id for c in classify_text("Crypto exchange suffers outage", groups=crypto)})
+        self.assertIn("crypto.exchange", {c.id for c in classify_text("Coinbase delists three tokens", groups=crypto)})
+        self.assertIn("crypto.protocol", {c.id for c in classify_text("Ethereum network upgrade goes live", groups=crypto)})
 
     def test_empty_text_has_no_category(self):
         self.assertEqual(classify_text("", ""), ())
