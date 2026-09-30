@@ -58,6 +58,25 @@ panels; otherwise the open panels get the default arrangement. **Reset Panel
 Layout** rearranges the open panels into the default columns and restores the
 300 px height.
 
+**Per universe.** Each universe keeps its own layout, stored under
+`screener.s4.panels.by_universe` (`POST /screener/config` action `panel_layout`
+with `universe`). Each entry is validated exactly as above. `GET /screener/config`
+returns `panel_layouts` keyed by universe. A universe with no layout of its own
+reads the legacy global `screener.s4.panels` record (then the default), so an
+existing layout carries over to every universe until that universe saves one.
+Switching universe flushes the pending write under the previous universe and
+remounts the dock on the new universe's layout. The last-used screen (columns,
+view, sort) is kept per universe the same way (`screener.s2.last.by_universe`,
+returned as `last_by_universe`). Filters still clear on a universe switch.
+
+**Containment.** Each panel has an error boundary. A new selection or
+universe clears it, and Retry resets that panel's cached screener queries.
+The dock as a whole has one too, offering Retry and **Reset layout** (drops
+only this universe's saved arrangement). Lazily loaded panel code that fails
+to load is imported again on Retry, never in a loop. A response that fails
+schema validation (`SchemaMismatchError`) is shown as a UI/API version skew,
+not a provider outage.
+
 Saved screens are unchanged. A saved screen is a scanning configuration; the
 panel layout is not stored in it, so loading a screen never rearranges the
 workstation.

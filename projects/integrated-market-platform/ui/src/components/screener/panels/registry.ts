@@ -1,4 +1,4 @@
-import type { PanelId, PanelLayout } from "../../../api/screener";
+import type { PanelId, PanelLayout, ScreenerConfig, ScreenerUniverse } from "../../../api/screener";
 
 /** Specialist panels, in launcher and default-arrangement order. */
 export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
@@ -27,3 +27,13 @@ export const DEFAULT_PANEL_LAYOUT: PanelLayout = {
   version: 1, open_panels: [], active_panel: null, dock_height: DOCK_HEIGHT_DEFAULT, dockview_layout: null,
 };
 export const clampDockHeight = (height: number) => Math.round(Math.max(DOCK_HEIGHT_MIN, Math.min(DOCK_HEIGHT_MAX, height)));
+
+/** The saved dock layout for `universe`, or the legacy global one from a server without per-universe layouts. */
+export function panelLayoutFor(config: Pick<ScreenerConfig, "panel_layout" | "panel_layouts"> | undefined, universe: ScreenerUniverse) {
+  return config?.panel_layouts?.[universe] ?? config?.panel_layout;
+}
+
+/** The last screen used in `universe`, falling back to the single legacy `last` when it belongs to that universe. */
+export function lastScreenFor(config: Pick<ScreenerConfig, "last" | "last_by_universe"> | undefined, universe: ScreenerUniverse) {
+  return config?.last_by_universe?.[universe] ?? ((config?.last?.universe ?? "US_EQUITIES") === universe ? config?.last ?? null : null);
+}

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchChart } from "../../../api/screenerPanels";
 import { classifyZones } from "../srClassify";
-import { age, marketClock, marketPrice, pricePrecision, PanelFrame, PanelMessage, reasonText, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { Age, ErrorDetail, marketClock, marketPrice, PanelFrame, PanelMessage, pricePrecision, reasonText, selectionGate, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 
 const ExpandedChart = lazy(() => import("./ExpandedChart"));
@@ -48,7 +48,7 @@ export default function ChartsPanel({ api }: IDockviewPanelProps) {
     + `${classified?.resistance ? `; resistance ${money(classified.resistance.lower)} to ${money(classified.resistance.upper)}` : ""}` : "";
   return <PanelFrame id="charts" state={bars?.state === "UNAVAILABLE" ? "UNAVAILABLE" : bars?.state}
     detail={data ? `${timeframe} · ${scopeLabel} · ${crypto ? "Kraken public OHLC" : "Moomoo OpenD"}` : null}
-    clock={bars?.received_at ? `bars rcvd ${age(bars.received_at)} ago` : null}>
+    clock={bars?.received_at ? <>bars rcvd <Age iso={bars.received_at} staleMs={45_000} /> ago</> : null}>
     {gate ?? <>
       <div className="screener-panel-controls">
         <div role="group" aria-label="Chart timeframe" className="screener-segment">{TIMEFRAMES.map((item) =>
@@ -57,7 +57,7 @@ export default function ChartsPanel({ api }: IDockviewPanelProps) {
           <button key={item.id} type="button" aria-pressed={scope === item.id} onClick={() => setScope(item.id)}>{item.label}</button>)}</div>}
         <span className="screener-panel-price">{priceText}</span>
       </div>
-      {query.isError && !data ? <PanelMessage tone="error" role="alert">Chart request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+      {query.isError && !data ? <PanelMessage tone="error" role="alert">Chart request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
         : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
         : bars && bars.bars.length ? <Suspense fallback={<div className="screener-expanded-chart" />}>
           <ExpandedChart bars={bars.bars} forming={bars.forming} support={classified?.support ?? null} resistance={classified?.resistance ?? null} livePrice={livePrice} label={label} timeZone={zone}

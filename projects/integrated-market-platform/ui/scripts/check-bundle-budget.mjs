@@ -3,7 +3,8 @@ import { gzipSync } from "node:zlib";
 
 const DIST_DIR = new URL("../dist/", import.meta.url);
 const MANIFEST_URL = new URL(".vite/manifest.json", DIST_DIR);
-const MAX_INITIAL_GZIP_BYTES = 203 * 1024;
+// React is its own chunk (vite.config.ts), so charting never rides the entry: ~99 KiB today.
+const MAX_INITIAL_GZIP_BYTES = 130 * 1024;
 const MAX_CHUNK_RAW_BYTES = 500_000;
 /** Lane F: @luxalgo/vela lazy engine (~252 KiB gzip); must never join the entry graph. */
 const MAX_VELA_LAZY_CHUNK_RAW_BYTES = 950_000;
@@ -50,7 +51,7 @@ const failures = [];
 
 if (initialGzipBytes > MAX_INITIAL_GZIP_BYTES) {
   failures.push(
-    `Initial JavaScript is ${(initialGzipBytes / 1024).toFixed(2)} KiB gzip; budget is 203.00 KiB.`,
+    `Initial JavaScript is ${(initialGzipBytes / 1024).toFixed(2)} KiB gzip; budget is ${(MAX_INITIAL_GZIP_BYTES / 1024).toFixed(2)} KiB.`,
   );
 }
 for (const { name, rawBytes } of oversizedChunks) {
@@ -61,6 +62,11 @@ const velaChunk = chunkSizes.find(({ name }) => name.startsWith("vela-"));
 const velaOnInitialPath = [...initialFiles].some((relativePath) => relativePath.includes("/vela-"));
 if (velaOnInitialPath) {
   failures.push("@luxalgo/vela must stay off the Vite entry static import graph.");
+}
+for (const lazyOnly of ["recharts-", "chart-primitives-"]) {
+  if ([...initialFiles].some((relativePath) => relativePath.includes(`/${lazyOnly}`))) {
+    failures.push(`${lazyOnly.slice(0, -1)} must stay off the Vite entry static import graph.`);
+  }
 }
 
 const largestChunk = [...chunkSizes].sort((a, b) => b.rawBytes - a.rawBytes)[0];

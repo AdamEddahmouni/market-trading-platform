@@ -175,3 +175,9 @@
 .screener-preview-options .screener-key-data{margin-bottom:6px}
 .screener-preview-options-actions{display:flex;justify-content:flex-end;margin-top:6px}
 .screener-news-count{margin-left:5px;padding:0 4px;border-radius:7px;background:#7a5c24;color:#fbe7bd;font-size:9px;font-weight:700}
+/* Grid news badge: stories in 24h + headline tone. */
+.screener-news-badge{flex:none;display:inline-flex;align-items:center;gap:2px;min-width:18px;height:16px;padding:0 4px;border:1px solid #2c3d50;border-radius:8px;background:#16212d;color:#aebdcc;font:600 10px/1 inherit;font-variant-numeric:tabular-nums;cursor:pointer}
+.screener-news-badge:hover,.screener-news-badge:focus-visible{border-color:#5d86b3;color:#e8f1fc}
+.screener-news-badge.tone-positive span{color:#78d6ad}.screener-news-badge.tone-negative span{color:#f0a0a8}.screener-news-badge.tone-neutral span,.screener-news-badge.tone-mixed span{color:#c3d1df}
+.screener-news-badge.pending{min-width:0;border:0;background:none;color:#4b5b6c;cursor:default}
+.screener-truncated{color:#d9a45b}

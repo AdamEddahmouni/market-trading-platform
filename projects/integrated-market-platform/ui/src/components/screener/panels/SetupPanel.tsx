@@ -3,7 +3,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { fetchScreenerSetup, SETUP_QUERY_KEY, type SetupRow } from "../../../api/screenerSetup";
 import { stateText } from "../news/newsFormat";
 import { RemedyHint } from "../setup/Remedy";
-import { PanelFrame, PanelMessage, usePanelVisible } from "./shared";
+import { ErrorDetail, PanelFrame, PanelMessage, usePanelVisible } from "./shared";
 import "../setup/setup.css";
 
 const REFRESH_MS = 30_000;
@@ -27,7 +27,7 @@ export default function SetupPanel({ api }: IDockviewPanelProps) {
   const data = query.data;
   return <PanelFrame id="setup" instrumentScoped={false} state={data ? (data.ready_count === data.total ? "CURRENT" : "PARTIAL") : null}
     stateLabel={data ? `${data.ready_count}/${data.total} ready` : undefined}>
-    {query.isError && !data ? <PanelMessage tone="error" role="alert">Setup status request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {query.isError && !data ? <PanelMessage tone="error" role="alert">Setup status request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Checking capabilities…</PanelMessage>
       : <div className="setup-panel">
         <p className="setup-summary">{data.ready_count} of {data.total} free capabilities ready. Each row names the one step that enables it; keys and flags are never entered here.</p>

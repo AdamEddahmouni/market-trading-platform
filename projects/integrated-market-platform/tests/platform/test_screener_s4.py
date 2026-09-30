@@ -21,8 +21,10 @@ from market_platform_foundation.market_data.live_runtime import LiveObservationa
 from market_platform_foundation.market_data.provider_lifecycle import ProviderConnectionState  # noqa: E402
 from market_platform_foundation.platform.security.route_policy import policy_for_route  # noqa: E402
 from market_platform_foundation.ui_api.screener_config import (  # noqa: E402
-    DEFAULT_PANEL_LAYOUT, PANEL_KEY, ScreenerConfigRepository, validate_panel_layout,
+    DEFAULT_PANEL_LAYOUT, LAST_KEY, PANEL_BY_UNIVERSE_KEY, PANEL_KEY, ScreenerConfigRepository, validate_panel_layout,
+    validate_screen,
 )
+from market_platform_foundation.ui_api.screener_universes import universe_spec  # noqa: E402
 from market_platform_foundation.ui_api.screener_specialist import (  # noqa: E402
     MAX_SPECIALIST_INSTRUMENTS, PROVIDER_HOLD_SECONDS, ScreenerSpecialistService, aggressor_view,
 )
@@ -556,6 +558,65 @@ class PanelLayoutTests(unittest.TestCase):
         self.assertEqual(repository.get_panel_layout(), DEFAULT_PANEL_LAYOUT)
         store.values[PANEL_KEY] = "corrupt"
         self.assertEqual(repository.get_panel_layout(), DEFAULT_PANEL_LAYOUT)
+
+    def test_layouts_persist_per_universe_and_migrate_the_global_layout(self):
+        class Store:
+            def __init__(self):
+                self.values = {}
+
+            def get_preferences(self):
+                return dict(self.values)
+
+            def set_preference(self, key, value):
+                self.values[key] = value
+
+        store = Store()
+        repository = ScreenerConfigRepository(store)
+        # A pre-existing global layout is every universe's default until that universe saves its own.
+        repository.save_panel_layout(self.valid())
+        self.assertEqual(repository.get_panel_layout("CRYPTO")["open_panels"], ["cvd", "level2"])
+        crypto = self.valid(open_panels=["news"], active_panel="news", dockview_layout=None, dock_height=500)
+        repository.save_panel_layout(crypto, "CRYPTO")
+        layouts = repository.get_panel_layouts()
+        self.assertEqual(layouts["CRYPTO"]["open_panels"], ["news"])
+        self.assertEqual(layouts["CRYPTO"]["dock_height"], 500)
+        self.assertEqual(layouts["US_EQUITIES"]["open_panels"], ["cvd", "level2"])
+        self.assertEqual(store.values[PANEL_KEY]["open_panels"], ["cvd", "level2"])  # a universe save never rewrites the global
+        store.values[PANEL_BY_UNIVERSE_KEY]["CRYPTO"] = {"version": 99}
+        self.assertEqual(repository.get_panel_layout("CRYPTO")["open_panels"], ["cvd", "level2"])  # corrupt → global
+        with self.assertRaises(ValueError):
+            repository.save_panel_layout(crypto, "MARS")
+        with self.assertRaises(ValueError):
+            repository.get_panel_layout("MARS")
+
+    def test_last_screen_is_remembered_per_universe(self):
+        class Store:
+            def __init__(self):
+                self.values = {}
+
+            def get_preferences(self):
+                return dict(self.values)
+
+            def set_preference(self, key, value):
+                self.values[key] = value
+
+        store = Store()
+        repository = ScreenerConfigRepository(store)
+        us = {"name": "Last", "universe": "US_EQUITIES", "filters": [], "view": "Overview",
+              "sort": {"field": "volume", "descending": True},
+              "columns": {"visible": ["symbol", "price"], "order": ["symbol", "price"], "widths": {}, "pinned": ["symbol"]}}
+        # Legacy: only the single last screen exists; it is remembered for its own universe.
+        store.values[LAST_KEY] = validate_screen(us, identity="user-last")
+        self.assertEqual(set(repository.get_last_by_universe()), {"US_EQUITIES"})
+        crypto_spec = universe_spec("CRYPTO")
+        crypto_columns = ["symbol", *[column for column in crypto_spec.columns if column != "symbol"][:1]]
+        crypto = {**us, "universe": "CRYPTO", "sort": {"field": crypto_columns[-1], "descending": False},
+                  "columns": {"visible": crypto_columns, "order": crypto_columns, "widths": {}, "pinned": ["symbol"]}}
+        repository.save_last(crypto)
+        by_universe = repository.get_last_by_universe()
+        self.assertEqual(set(by_universe), {"US_EQUITIES", "CRYPTO"})
+        self.assertEqual(by_universe["US_EQUITIES"]["columns"]["visible"], ["symbol", "price"])
+        self.assertEqual(repository.get_last()["universe"], "CRYPTO")
 
 
 class ChartAndFuturesPanelTests(unittest.TestCase):

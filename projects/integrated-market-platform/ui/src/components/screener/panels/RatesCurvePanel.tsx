@@ -3,7 +3,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { fetchRatesCurve, type FredItem, type NyFedRate, type RatesCurvePayload } from "../../../api/screenerBonds";
 import { bondValue, isoDate, reasonLabel, sourceState } from "../bonds/bondFormat";
 import { CurveChart } from "../bonds/CurveChart";
-import { PanelFrame, PanelMessage, usePanelVisible, useSelection } from "./shared";
+import { ErrorDetail, PanelFrame, PanelMessage, usePanelVisible, useSelection } from "./shared";
 
 const SHAPES: Record<string, string> = { UPWARD_SLOPING: "Upward sloping", INVERTED: "Inverted", FLAT_OR_MIXED: "Flat or mixed", UNAVAILABLE: "Unavailable" };
 const SPREAD_LABELS: Record<string, string> = { "2s10s": "2s10s", "3m10y": "3m10y", "5s30s": "5s30s", "10s30s": "10s30s" };
@@ -70,7 +70,7 @@ export default function RatesCurvePanel({ api }: IDockviewPanelProps) {
   return <PanelFrame id="rates_curve" detail={nominal?.publication_date ? `U.S. Treasury par curves · ${isoDate(nominal.publication_date)}` : "U.S. Treasury par curves"}
     state={nominal ? (nominal.state === "PUBLICATION_CURRENT" ? "CURRENT" : nominal.state) : null}
     clock={nominal?.publication_date ? `Daily publication · ${isoDate(nominal.publication_date)}` : null}>
-    {query.isError && !data ? <PanelMessage tone="error" role="alert">Rates &amp; Curve request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {query.isError && !data ? <PanelMessage tone="error" role="alert">Rates &amp; Curve request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading Treasury curves…</PanelMessage>
       : <div className="bond-panel">
         <section className="bond-panel-chart" aria-label="Current curve">

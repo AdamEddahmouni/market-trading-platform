@@ -1,7 +1,9 @@
-import { Component, createContext, useContext, useEffect, useState, type ErrorInfo, type ReactNode } from "react";
+import { Component, createContext, createElement, Fragment, lazy, useCallback, useContext, useEffect, useState, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import type { PanelId, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
+import { SchemaMismatchError } from "../../../api/fetchJson";
 import { PANEL_TITLES } from "./registry";
 
 /** One canonical selection drives every panel; panels never pick their own ticker. */
@@ -85,6 +87,38 @@ export function age(iso: string | null | undefined, now = Date.now()) {
   return ms < 1000 ? `${ms}ms` : ms < 60_000 ? `${Math.round(ms / 1000)}s` : ms < 3_600_000 ? `${Math.round(ms / 60_000)}m` : `${Math.round(ms / 3_600_000)}h`;
 }
 
+/** Wall-clock time that re-reads every `interval` ms while `active`. */
+export function useNow(interval: number, active = true) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), interval);
+    return () => window.clearInterval(timer);
+  }, [interval, active]);
+  return now;
+}
+
+/**
+ * A data age that keeps counting between fetches ("12s", then "3m"). It re-renders only
+ * itself: every second for the first minute, then every 15 s. Past `staleMs` it dims, so a
+ * poll that has quietly stopped shows up on screen.
+ */
+export function Age({ iso, staleMs, title }: { iso: string | null | undefined; staleMs?: number; title?: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  const ms = iso ? Math.max(0, now - Date.parse(iso)) : null;
+  const fast = ms !== null && ms < 60_000;
+  useEffect(() => {
+    if (!iso) return;
+    setNow(Date.now());
+    const timer = window.setInterval(() => setNow(Date.now()), fast ? 1_000 : 15_000);
+    return () => window.clearInterval(timer);
+  }, [iso, fast]);
+  if (!iso || ms === null || Number.isNaN(ms)) return null;
+  const stale = staleMs !== undefined && ms > staleMs;
+  return <time className={`screener-age${stale ? " stale" : ""}`} dateTime={iso} title={title ?? `${etClock(iso)}${stale ? " · older than expected" : ""}`}>{age(iso, now)}</time>;
+}
+
 export const STATE_LABELS: Record<PanelState, string> = {
   CURRENT: "Current", SESSION_CLOSED: "Session closed", STALE: "Stale", PARTIAL: "Partial", INVALID: "Invalid",
   DISCONNECTED: "Disconnected", NOT_ENTITLED: "Not entitled", UNAVAILABLE: "Unavailable", CONNECTING: "Connecting",
@@ -160,22 +194,90 @@ export function PanelMessage({ children, tone = "muted", role }: { children: Rea
   return <p className={`screener-panel-message ${tone}`} role={role ?? "status"}>{children}</p>;
 }
 
-type BoundaryState = { error: Error | null };
-/** A failure inside one panel stays inside that panel. */
-export class PanelErrorBoundary extends Component<{ id: PanelId; children: ReactNode }, BoundaryState> {
-  state: BoundaryState = { error: null };
-  static getDerivedStateFromError(error: Error): BoundaryState {
+/** Names a UI/API format skew so it isn't mistaken for a provider outage. */
+export function ErrorDetail({ error }: { error: unknown }) {
+  if (!(error instanceof SchemaMismatchError)) return null;
+  const path = error.path.split("?")[0];
+  return <> The response from <code>{path}</code> did not match the format this build expects (UI and API versions differ).</>;
+}
+
+/** How many times the nearest boundary has been retried; `reloadableLazy` re-imports only on a new retry. */
+const RetryGeneration = createContext(0);
+
+type BoundaryState = { error: Error | null; generation: number };
+type BoundaryProps = {
+  /** Heading for the fallback, e.g. a panel title or "Specialist panels". */
+  label: string;
+  /** Anchor id so the dock's focus handling still finds a failed panel. */
+  anchorId?: string;
+  /** A change (e.g. a new selection or universe) clears a previous failure. */
+  resetKey?: string;
+  /** Called before Retry remounts the children, e.g. to drop cached data that made them throw. */
+  onRetry?: () => void;
+  /** Extra recovery actions shown beside Retry. */
+  actions?: ReactNode;
+  children: ReactNode;
+};
+/** A render failure stays inside this subtree: the table, preview, and sibling panels keep running. */
+export class ScreenerErrorBoundary extends Component<BoundaryProps, BoundaryState> {
+  state: BoundaryState = { error: null, generation: 0 };
+  static getDerivedStateFromError(error: Error): Partial<BoundaryState> {
     return { error };
   }
-  componentDidCatch(_error: Error, _info: ErrorInfo) {
-    // Contained: the table, preview, and other panels keep running.
+  componentDidUpdate(previous: BoundaryProps) {
+    if (this.state.error && previous.resetKey !== this.props.resetKey) this.setState({ error: null });
   }
+  componentDidCatch(_error: Error, _info: ErrorInfo) {
+    // Contained; the fallback below states the failure.
+  }
+  retry = () => {
+    this.props.onRetry?.();
+    this.setState((current) => ({ error: null, generation: current.generation + 1 }));
+  };
   render() {
-    if (!this.state.error) return this.props.children;
-    return <section className="screener-panel" id={`screener-panel-${this.props.id}`} tabIndex={-1}>
-      <PanelMessage tone="error" role="alert">{PANEL_TITLES[this.props.id]} failed to render. <button type="button" onClick={() => this.setState({ error: null })}>Retry</button></PanelMessage>
+    const { error, generation } = this.state;
+    if (!error) return <RetryGeneration.Provider value={generation}><Fragment key={generation}>{this.props.children}</Fragment></RetryGeneration.Provider>;
+    const chunk = /dynamically imported module|Loading chunk|Importing a module script failed/i.test(error.message);
+    return <section className="screener-panel" id={this.props.anchorId} tabIndex={-1}>
+      <PanelMessage tone="error" role="alert">{this.props.label} {chunk ? "could not load its code (network or a new deployment)." : "failed to render."}
+        {error instanceof SchemaMismatchError ? <ErrorDetail error={error} /> : null}
+        {" "}<button type="button" onClick={this.retry}>Retry</button>{this.props.actions}</PanelMessage>
     </section>;
   }
+}
+
+/** Per-panel boundary: Retry also resets this panel's cached queries so the retry refetches instead of re-rendering the bad data. */
+export function PanelErrorBoundary({ id, children }: { id: PanelId; children: ReactNode }) {
+  const { settledId, universe } = useSelection();
+  const queryClient = useQueryClient();
+  // The failed panel has unmounted, so its queries are the inactive screener ones; active queries of sibling panels are left alone.
+  const onRetry = useCallback(() => void queryClient.resetQueries({ type: "inactive",
+    predicate: (query) => typeof query.queryKey[0] === "string" && query.queryKey[0].startsWith("screener-") }), [queryClient]);
+  return <ScreenerErrorBoundary label={PANEL_TITLES[id]} anchorId={`screener-panel-${id}`} resetKey={`${universe}|${settledId ?? ""}`} onRetry={onRetry}>{children}</ScreenerErrorBoundary>;
+}
+
+/**
+ * `lazy()` caches a rejected import forever, so Retry would re-throw the same failure.
+ * After a failed load, a fresh `lazy()` is swapped in only once the nearest boundary's Retry
+ * has been pressed. React re-renders a suspended component from scratch, so tying the reload
+ * to anything per-render would re-import in a loop while the network is down.
+ */
+export function reloadableLazy<P extends object>(factory: () => Promise<{ default: ComponentType<P> }>): ComponentType<P> {
+  // Set when a load fails; `generation` is the boundary retry count the failure was shown under.
+  let failure: { generation: number | null } | null = null;
+  const load = () => factory().catch((error: unknown) => { failure = { generation: null }; throw error; });
+  // A lazy component renders with its inner component's props; generic P can't express that, hence the cast.
+  const reload = () => lazy(load) as unknown as ComponentType<P>;
+  let current = reload();
+  const Reloadable = (props: P) => {
+    const generation = useContext(RetryGeneration);
+    if (failure) {
+      if (failure.generation === null) failure.generation = generation;
+      else if (failure.generation !== generation) { failure = null; current = reload(); }
+    }
+    return createElement(current, props);
+  };
+  return Reloadable;
 }
 
 /** Shared gate for every panel: nothing is requested without a settled selection. */

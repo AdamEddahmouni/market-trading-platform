@@ -159,6 +159,8 @@ class LocalAiStatusTests(unittest.TestCase):
         self.assertGreater(preview["estimate"]["tokens"], 1_500)
         universe = svc.synthesis_preview(universe="US_EQUITIES", scope="UNIVERSE", window="72h")
         self.assertGreaterEqual(universe["estimate"]["story_count"], preview["estimate"]["story_count"])
+        # The pre-click estimate states how many matched stories exist beyond those it would send.
+        self.assertGreaterEqual(universe["estimate"]["available_story_count"], universe["estimate"]["story_count"])
         self.assertIsNone(svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:NOPE"))
         self.assertEqual((calls, budget.status()["requests"]), ([], 0))
 

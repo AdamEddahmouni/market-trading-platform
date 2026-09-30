@@ -60,6 +60,9 @@ INSTRUMENT_WINDOW = "72h"
 SORTS = (("newest", "Newest"), ("oldest", "Oldest"), ("sources", "Most sources"), ("relevance", "Match strength"))
 SENTIMENT_FILTERS = ("POSITIVE", "NEUTRAL", "NEGATIVE")
 DEFAULT_LIMIT, MAX_LIMIT = 100, 200
+# One grid page: the badge query asks only for the rows on screen.
+MAX_ACTIVITY_INSTRUMENTS = 200
+ACTIVITY_SCHEMA_VERSION = "screener-news-activity/1.0.0"
 MAX_INSTRUMENT_STORIES, COMPACT_STORIES = 50, 5
 MAX_SCORED_STORIES = 400
 PER_SYMBOL_TTL_S = {"newsapi": 900.0, "finnhub": 600.0, "sec_filings": 600.0}
@@ -622,6 +625,27 @@ class ScreenerNewsService:
         moment = story.moment
         return moment is not None and start <= moment <= end + timedelta(minutes=5)
 
+    def _window_stories(self, universe: str, window: str) -> tuple[datetime, _UniverseIndex, list[dict[str, Any]], list[Story]]:
+        """Universe-feed stories inside ``window``: (now, index, provider statuses, stories)."""
+
+        now = datetime.fromtimestamp(self._clock(), tz=UTC)
+        index = self._index(universe)
+        raw: list[tuple[str, dict[str, Any]]] = []
+        finviz_items, finviz_status = self._finviz_items()
+        rss_items, rss_status = self._rss_items(universe)
+        raw += [("finviz", item) for item in finviz_items]
+        raw += [("rss", item) for item in rss_items]
+        providers = [finviz_status, rss_status,
+                     {**provider_status("newsapi", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"},
+                     {**provider_status("finnhub", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"},
+                     {**provider_status("sec_filings", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"}]
+        records = self._records(raw, universe)
+        for record in records:
+            record.matches = self._universe_matches(record, universe, index)
+        relevant = [record for record in records if is_relevant(record.matches)]
+        start = now - timedelta(seconds=WINDOWS[window])
+        return now, index, providers, [story for story in self._stories(relevant) if self._in_window(story, start, now)]
+
     # ---------------------------------------------------------------- feed
     def feed(self, *, universe: str, window: str = "24h", sort: str = "newest", source: str | None = None,
              category: str | None = None, sentiment: str | None = None, instrument: str | None = None,
@@ -641,23 +665,7 @@ class ScreenerNewsService:
         since_at = parse_utc_iso(since) if since else None
         if since and since_at is None:
             raise ValueError("INVALID_SINCE")
-        now = datetime.fromtimestamp(self._clock(), tz=UTC)
-        index = self._index(universe)
-        raw: list[tuple[str, dict[str, Any]]] = []
-        finviz_items, finviz_status = self._finviz_items()
-        rss_items, rss_status = self._rss_items(universe)
-        raw += [("finviz", item) for item in finviz_items]
-        raw += [("rss", item) for item in rss_items]
-        providers = [finviz_status, rss_status,
-                     {**provider_status("newsapi", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"},
-                     {**provider_status("finnhub", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"},
-                     {**provider_status("sec_filings", None, scope="INSTRUMENT"), "reason": "INSTRUMENT_SCOPE_ONLY"}]
-        records = self._records(raw, universe)
-        for record in records:
-            record.matches = self._universe_matches(record, universe, index)
-        relevant = [record for record in records if is_relevant(record.matches)]
-        start = now - timedelta(seconds=WINDOWS[window])
-        stories = [story for story in self._stories(relevant) if self._in_window(story, start, now)]
+        now, index, providers, stories = self._window_stories(universe, window)
         headline_count = sum(len(story.members) for story in stories)
         sentiments, model_status = self._score(stories)
         # Partial filtering: the filter works over scored stories as soon as any story is scored;
@@ -711,6 +719,8 @@ class ScreenerNewsService:
                                for key, count in sorted(category_counts.items(), key=lambda item: (-item[1], item[0]))],
                 "sentiment": {"enabled": sentiment_enabled, "reason": sentiment_reason, "scored": scored_count,
                               "unscored": unscored_count, "hidden_unscored": hidden_unscored,
+                              # Stories past this many in a window are never scored (headline model cost bound).
+                              "scored_cap": MAX_SCORED_STORIES,
                               "counts": {label.lower(): tone_counts.get(label, 0) for label in SENTIMENT_FILTERS}},
                 "applied": {"source": source, "category": category, "sentiment": applied_sentiment, "instrument": instrument},
             },
@@ -722,6 +732,52 @@ class ScreenerNewsService:
             "methods": {"clusters": CLUSTER_METHOD, "categories": TAXONOMY_METHOD},
         }
         return payload
+
+    # ---------------------------------------------------------------- grid activity
+    def activity(self, *, universe: str, instrument_ids: list[str], window: str = "24h") -> dict[str, Any]:
+        """Per-instrument story counts and headline tone for the Screener grid badge.
+
+        Uses the same stories as the universe feed: a story counts for an instrument when it
+        has a non-ambiguous match to it. Tone counts only SCORED stories; the rest are
+        reported as ``unscored`` rather than folded into a tone.
+        """
+
+        if universe not in UNIVERSES:
+            raise ValueError("UNKNOWN_UNIVERSE")
+        if window not in WINDOWS:
+            raise ValueError("INVALID_WINDOW")
+        ids = list(dict.fromkeys(item.strip() for item in instrument_ids if item and item.strip()))
+        if not 1 <= len(ids) <= MAX_ACTIVITY_INSTRUMENTS:
+            raise ValueError("INVALID_PAGE")
+        now, index, providers, stories = self._window_stories(universe, window)
+        sentiments, model_status = self._score(stories)
+        wanted = set(ids)
+        rows: dict[str, dict[str, Any]] = {}
+        for story in stories:
+            matched = {match.instrument_id for match in story.matches if match.confidence != AMBIGUOUS} & wanted
+            if not matched:
+                continue
+            score = sentiments[story.story_id]
+            moment = story.moment
+            for instrument_id in matched:
+                row = rows.setdefault(instrument_id, {"count": 0, "tone": {label.lower(): 0 for label in SENTIMENT_FILTERS},
+                                                      "unscored": 0, "latest_at": None})
+                row["count"] += 1
+                if score["state"] == "SCORED" and score.get("label") in SENTIMENT_FILTERS:
+                    row["tone"][score["label"].lower()] += 1
+                else:
+                    row["unscored"] += 1
+                if moment is not None and (row["latest_at"] is None or moment > row["latest_at"]):
+                    row["latest_at"] = moment
+        states = {status["state"] for status in providers if status["scope"] == "UNIVERSE" and status["state"] != "NOT_APPLICABLE"}
+        state, reason = self._overall(states, index.error)
+        return {
+            "schema_version": ACTIVITY_SCHEMA_VERSION, "generated_at": _iso(now), "universe": universe,
+            "window": self._window(window, now), "state": state, "reason": reason,
+            "sentiment_state": model_status["state"],
+            # Absent instruments had no matching story in the window; they are not an error.
+            "instruments": {instrument_id: {**row, "latest_at": _iso(row["latest_at"])} for instrument_id, row in rows.items()},
+        }
 
     @staticmethod
     def _sorted(stories: list[Story], sort: str) -> list[Story]:
@@ -1149,9 +1205,10 @@ class ScreenerNewsService:
         # Usage after this call, so the UI's budget line moves with the click rather than on the next news refetch.
         provider = getattr(synthesizer, "_provider", None)
         budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
-        # story_count = matched stories; synthesized_story_count = those the model was given (capped).
+        # story_count = every matched story (the universe feed page is capped at MAX_LIMIT);
+        # synthesized_story_count = those the model was given (capped again by the synthesizer).
         return {**result, "budget": budget,
-                "coverage": {"story_count": len(stories), "synthesized_story_count": len(result["story_ids"]),
+                "coverage": {"story_count": self._matched_count(payload), "synthesized_story_count": len(result["story_ids"]),
                              "source_count": len(publishers), "window": payload["window"], "missing_providers": missing}}
 
     def synthesis_preview(self, *, universe: str, scope: str, instrument_id: str | None = None,
@@ -1164,9 +1221,21 @@ class ScreenerNewsService:
         inputs = self._synthesis_inputs(universe, scope, instrument_id, window)
         if inputs is None:
             return None
-        _, story_inputs, instruments = inputs
+        payload, story_inputs, instruments = inputs
         estimate = self._get_synthesizer().estimate(story_inputs, instruments=instruments, as_of=self._as_of())
-        return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai, "estimate": estimate}
+        return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai,
+                "estimate": {**estimate, "available_story_count": self._matched_count(payload)} if estimate else estimate}
+
+    @staticmethod
+    def _matched_count(payload: dict[str, Any]) -> int:
+        """Every story the scope matched, not only the page handed to the model."""
+
+        if isinstance(payload.get("result_count"), int):
+            return payload["result_count"]
+        coverage = payload.get("coverage")
+        if isinstance(coverage, dict) and isinstance(coverage.get("story_count"), int):
+            return max(coverage["story_count"], len(payload["stories"]))
+        return len(payload["stories"])
 
 
 _SERVICE: ScreenerNewsService | None = None
@@ -1199,5 +1268,9 @@ def read_synthesis_preview(**kwargs: Any) -> dict[str, Any] | None:
     return news_service().synthesis_preview(**kwargs)
 
 
+def read_news_activity(**kwargs: Any) -> dict[str, Any]:
+    return news_service().activity(**kwargs)
+
+
 __all__ = ["INSTRUMENT_SCHEMA_VERSION", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerNewsService", "news_service", "provider_status",
-           "read_instrument_news", "read_news_feed", "read_synthesis_preview", "request_news_synthesis"]
+           "read_instrument_news", "read_news_activity", "read_news_feed", "read_synthesis_preview", "request_news_synthesis"]

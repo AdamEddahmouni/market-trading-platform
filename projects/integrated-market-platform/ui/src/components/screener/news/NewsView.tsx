@@ -221,7 +221,9 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
       {hiddenUnscored > 0 ? <span className="news-meta" role="status"
         title="The sentiment filter shows scored stories only; stories the model has not scored are hidden, not dropped. Clear the filter to see them.">
         {hiddenUnscored.toLocaleString()} unscored hidden</span>
-        : partiallyScored && sentimentInfo ? <span className="news-meta" title="Some stories are not scored yet; a sentiment filter hides them.">
+        : partiallyScored && sentimentInfo ? <span className="news-meta" title={sentimentInfo.scored_cap != null && (sentimentInfo.scored ?? 0) >= sentimentInfo.scored_cap
+          ? `Only the first ${sentimentInfo.scored_cap.toLocaleString()} stories in a window are scored; a sentiment filter hides the rest.`
+          : "Some stories are not scored yet; a sentiment filter hides them."}>
           {(sentimentInfo.scored ?? 0).toLocaleString()} of {((sentimentInfo.scored ?? 0) + (sentimentInfo.unscored ?? 0)).toLocaleString()} scored</span> : null}
       <button type="button" className="screener-control" aria-pressed={state.brief} onClick={() => onUpdate({ nbrief: state.brief ? null : "1" })}>Brief</button>
       {state.instrument && <span className="screener-chip news-instrument-filter"><span className="news-chip-label">Instrument: {instrumentSymbol}</span>

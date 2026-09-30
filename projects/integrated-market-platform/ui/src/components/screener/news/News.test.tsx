@@ -12,7 +12,7 @@ import { ConnectButton } from "../setup/Remedy";
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
-  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(),
+  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -34,7 +34,7 @@ vi.mock("../../../api/screenerBonds", async (original) => ({
 vi.mock("../../../api/screenerNews", async (original) => ({
   ...(await original<typeof import("../../../api/screenerNews")>()),
   fetchScreenerNews: mocks.news, fetchInstrumentNews: mocks.instrumentNews, postNewsSynthesis: mocks.synthesis,
-  fetchSynthesisPreview: mocks.synthesisPreview,
+  fetchSynthesisPreview: mocks.synthesisPreview, fetchNewsActivity: mocks.activity,
 }));
 vi.mock("../../../api/screenerSetup", async (original) => ({
   ...(await original<typeof import("../../../api/screenerSetup")>()),
@@ -187,6 +187,10 @@ beforeEach(() => {
   mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => feed({ universe: params.universe, offset: params.offset ?? 0 }));
   mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe));
   mocks.bondPreview.mockReturnValue(new Promise(() => undefined));
+  // Grid badge: AAPL has stories in 24h, NVDA has none.
+  mocks.activity.mockImplementation(async (universe: string) => ({ schema_version: "screener-news-activity/1.0.0", generated_at: T, universe,
+    window: win(), state: "CURRENT", reason: null, sentiment_state: "CURRENT",
+    instruments: { AAPL: { count: 3, unscored: 1, latest_at: T, tone: { positive: 2, neutral: 0, negative: 0 } } } }));
   mocks.synthesisPreview.mockResolvedValue({ schema_version: "screener-news-synthesis-preview/1.0.0",
     ai: { state: "NOT_CONFIGURED", reason: "ANTHROPIC_API_KEY_NOT_SET", provider_id: null, model_id: null }, estimate: null });
 });
@@ -1088,5 +1092,28 @@ describe("Sentiment over time", () => {
     renderPreview();
     expect(await screen.findByText(/model not configured/)).toBeInTheDocument();
     expect(screen.queryByRole("group", { name: /stories by headline tone/ })).toBeNull();
+  });
+});
+
+describe("Grid news badge", () => {
+  it("shows stories in 24h and tone on each row, and opens News & Analysis for that row", async () => {
+    mount();
+    const badge = await screen.findByRole("button", { name: "AAPL: 3 stories in 24h · 2 positive, 1 unscored. Open News and Analysis" });
+    expect(badge).toHaveTextContent("3▲");
+    expect(mocks.activity).toHaveBeenCalledWith("US_EQUITIES", ["AAPL", "NVDA"], expect.anything());
+    const nvda = screen.getByText("NVDA", { selector: ".screener-symbol strong" }).closest("[role=row]") as HTMLElement;
+    expect(within(nvda).queryByRole("button", { name: /stories in 24h/ })).not.toBeInTheDocument(); // no stories → no badge, never "0"
+    fireEvent.click(badge);
+    expect(screen.getByText("AAPL", { selector: ".screener-symbol strong" }).closest("[role=row]")).toHaveAttribute("aria-selected", "true");
+    await waitFor(() => expect(document.getElementById("screener-panel-news")).not.toBeNull());
+    expect(screen.queryByText("elsewhere")).not.toBeInTheDocument(); // the row did not also open a Workspace
+  });
+
+  it("requests no badges for a universe without News", async () => {
+    mocks.config.mockResolvedValue({ ...config, universes: config.universes.map((item) => item.id === "US_EQUITIES" ? { ...item, panels: ["charts"] } : item) });
+    mount();
+    await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 20)); });
+    expect(mocks.activity).not.toHaveBeenCalled();
   });
 });

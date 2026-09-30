@@ -125,6 +125,29 @@ describe("Screener S6 server paging", () => {
     expect(screen.getAllByText("E0199")).toHaveLength(1);
   });
 
+  it("states a truncated view when the source stops paging short of its own count", async () => {
+    const all = symbols(200).map((symbol) => row(symbol));
+    // The source reports 4,625 matches but serves one page and no continuation.
+    mocks.fetch.mockImplementation(async (query: Query, requested: Page) => page(query, all, requested.offset, 4625, { has_more: false }));
+    mount();
+    await screen.findByText("E0000");
+    expect(footer()).toHaveTextContent("4,625 results · 200 loaded");
+    expect(within(footer() as HTMLElement).getByRole("status")).toHaveTextContent("Showing 200 of 4,625: the source returned no further pages");
+    expect(screen.queryByText("Loading more results…")).not.toBeInTheDocument();
+  });
+
+  it("does not call a view truncated while more pages can still load", async () => {
+    const all = symbols(300).map((symbol) => row(symbol));
+    mocks.fetch.mockImplementation(async (query: Query, requested: Page) => {
+      if (requested.offset > 0) await new Promise(() => undefined);
+      return page(query, all.slice(0, 200), requested.offset, 300);
+    });
+    mount();
+    await screen.findByText("E0000");
+    expect(footer()).toHaveTextContent("300 results · 200 loaded");
+    expect(document.querySelector(".screener-truncated")).toBeNull();
+  });
+
   it("keeps loaded rows when a later page fails, and retries that page", async () => {
     const all = symbols(300).map((symbol) => row(symbol));
     let failures = 1;
