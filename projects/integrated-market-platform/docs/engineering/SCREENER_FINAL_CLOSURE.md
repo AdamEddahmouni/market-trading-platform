@@ -47,6 +47,9 @@ Earlier documents: [S11 News](SCREENER_S11_NEWS.md),
   Each states its reason (`IMP_FINBERT_MODEL_PATH_NOT_SET`,
   `IMP_NEWSAPI_LIVE_NOT_SET`, `IMP_FINNHUB_LIVE_NOT_SET`,
   `ANTHROPIC_API_KEY_NOT_SET`). No model files are committed.
+  *Superseded 2026-09-30:* local FinBERT and local AI synthesis are active, and
+  NewsAPI (`DELAYED`) and Finnhub need only free owner keys. See
+  [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md).
 
 ## Live acceptance (2026-09-29)
 
@@ -138,4 +141,6 @@ then restarted by the owner. Both states were observed.
 - There are no current bond prices (licensing, S16), and futures quotes need a
   futures entitlement.
 - Registry-dependent: without `IMP_CONGRESS_LEGISLATORS_PATH`, Senate
-  identities stay `UNRESOLVED`.
+  identities stay `UNRESOLVED`. *Superseded 2026-09-30:* a cached CC0
+  registry refresh now resolves all 44 Senate transactions to official ids
+  ([SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md)).

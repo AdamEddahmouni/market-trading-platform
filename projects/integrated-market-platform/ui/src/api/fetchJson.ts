@@ -23,11 +23,12 @@ export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>, init?: 
   return schema.parse(await response.json());
 }
 
-export async function postJson<T>(path: string, body: unknown, schema: z.ZodSchema<T>): Promise<T> {
+export async function postJson<T>(path: string, body: unknown, schema: z.ZodSchema<T>, init?: { signal?: AbortSignal }): Promise<T> {
   const response = await fetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
+    ...(init?.signal ? { signal: init.signal } : {}),
   });
   if (!response.ok) {
     await parseError(response, path);

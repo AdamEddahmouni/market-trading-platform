@@ -9,7 +9,7 @@
 .news-provider{display:inline-flex;align-items:baseline;gap:4px;padding:2px 6px;border:1px solid #344355;border-radius:2px;color:#a9bbcd;font-size:10px;white-space:nowrap}
 .news-provider strong{font-weight:700;text-transform:uppercase;letter-spacing:.03em}
 .news-provider.state-current strong{color:#78d6ad}
-.news-provider.state-stale strong,.news-provider.state-pending strong,.news-provider.state-rate_limited strong{color:#f0c36b}
+.news-provider.state-stale strong,.news-provider.state-pending strong,.news-provider.state-rate_limited strong,.news-provider.state-delayed strong{color:#f0c36b}
 .news-provider.state-not_configured strong,.news-provider.state-live_disabled strong,.news-provider.state-not_applicable strong{color:#9fb2c6}
 .news-provider.state-error strong,.news-provider.state-auth_failed strong,.news-provider.state-unavailable strong{color:#f0a0a8}
 .news-notice{display:flex;flex-wrap:wrap;gap:8px;padding:5px 12px;border-bottom:1px solid #3a4b5e;background:#172231;color:#cfdbe8}

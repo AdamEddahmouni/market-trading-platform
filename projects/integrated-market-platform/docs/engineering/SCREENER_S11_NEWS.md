@@ -120,15 +120,18 @@ US Equities headlines); that S3 "Why it may be moving" path is unchanged.
 |----------|-------------|-------|-------------------|--------------|
 | Finviz Elite | Ticker-tagged headlines (latest export window) | Universe + instrument | Finviz Elite key (operator credential manager) | Request manager 180 s; S11 120 s |
 | RSS / Atom catalog | Fed releases & speeches, CNBC, MarketWatch, OilPrice, CoinDesk, Cointelegraph, SEC press releases | Universe + instrument | `IMP_NEWS_RSS_LIVE=1`; SEC feed needs `SEC_USER_AGENT` | 300 s per feed; 10 s timeout; 2 MB cap; 60 items/feed |
-| NewsAPI | Company/asset-name query | Instrument (Equities, ETFs, Crypto) | `IMP_NEWSAPI_LIVE`, `NEWSAPI_API_KEY` | 900 s per query; 90/day guard |
+| NewsAPI | Company/asset-name query (Developer plan: `DELAYED`, development only) | Instrument (Equities, ETFs, Crypto) | `IMP_NEWSAPI_LIVE`, `NEWSAPI_API_KEY` | 900 s per query; 90/day guard (persisted) |
 | Finnhub | Company news | Instrument (Equities, ETFs) | `IMP_FINNHUB_LIVE`, `FINNHUB_API_KEY` | 600 s per symbol |
 | SEC EDGAR | Recent event filings (8-K, 10-Q/K, S-1/3, 424B, 13D/G, 4, …) as `OFFICIAL_FILING` | Instrument (Equities) | `IMP_EDGAR_LIVE=1`, `SEC_USER_AGENT` | Ticker map 24 h; submissions 600 s; global Fair Access throttle |
-| FinBERT (local) | Headline language sentiment | Feed + instrument | `IMP_FINBERT_MODEL_PATH` (local directory) | Lazy load; LRU 4,096 |
-| AI synthesis | Grounded synthesis | Operator action | `ANTHROPIC_API_KEY` (canonical provider) | 30 min by input hash |
+| FinBERT (local) | Headline language sentiment (`IMP_DERIVED_FINBERT`) | Feed + instrument | `IMP_FINBERT_MODEL_PATH` or the setup manifest | Background load; LRU 4,096 |
+| AI synthesis | Grounded synthesis | Operator action | Local model (setup manifest) or `ANTHROPIC_API_KEY` | 30 min by input hash |
+
+Free-capability activation (2026-09-30) updated this table; see
+[SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md).
 
 Provider retrieval order is not a credibility ranking; no trust hierarchy is
 displayed. Each provider reports its own state — `CURRENT`, `STALE`,
-`PENDING`, `NOT_CONFIGURED`, `LIVE_DISABLED`, `RATE_LIMITED`, `AUTH_FAILED`,
+`DELAYED`, `PENDING`, `NOT_CONFIGURED`, `LIVE_DISABLED`, `RATE_LIMITED`, `AUTH_FAILED`,
 `ERROR`, `NOT_APPLICABLE` — with a stable reason code; News is never collapsed
 into one "available" flag, and `NOT_CONFIGURED` is never rendered as "no news".
 Provider fetches run off the request thread (`BackgroundCache`) with a bounded

@@ -5,7 +5,7 @@ import type { ScreenerUniverse } from "../../../api/screener";
 import { fetchInstrumentNews, postNewsSynthesis, type InstrumentNews, type NewsAnalysisItem, type NewsStory, type NewsSynthesis,
   type SynthesisRefItem } from "../../../api/screenerNews";
 import { degradedProviders, Headline, humanize, newsDayTime, ProviderStrip, SentimentCell, sentimentWord, stateText, StorySources,
-  StoryTime, TypeBadge } from "../news/newsFormat";
+  StoryTime, termsText, TypeBadge } from "../news/newsFormat";
 import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
 import "../news/news.css";
 
@@ -38,7 +38,7 @@ function Sentiment({ data }: { data: InstrumentNews }) {
       <div><dt>Scored / unscored</dt><dd>{s.scored} / {s.unscored}</dd></div>
       <div><dt>Dominant language</dt><dd>{s.dominant ? sentimentWord(s.dominant) : "—"}</dd></div>
       <div><dt>Latest scored</dt><dd>{s.latest ? `${sentimentWord(s.latest.label)} · ${newsDayTime(s.latest.published_at, data.universe)}` : "—"}</dd></div>
-      <div><dt>Model</dt><dd>{s.model_id ?? "—"}</dd></div>
+      <div><dt>Model</dt><dd>{s.model_id ? `${s.model_id} (local, IMP-derived)` : "—"}</dd></div>
     </dl>{note}</>;
 }
 
@@ -101,7 +101,7 @@ function Refs({ refs, stories }: { refs: string[]; stories: NewsStory[] }) {
 }
 
 function SynthesisBlock({ result, stories, universe }: { result: NewsSynthesis; stories: NewsStory[]; universe: ScreenerUniverse }) {
-  const label = `AI synthesis · model ${result.model_id ?? "unknown"} · generated ${newsDayTime(result.generated_at, universe)}`;
+  const label = `AI synthesis · model ${result.model_id ?? "unknown"}${result.runtime === "LOCAL_MODEL" ? " (local)" : ""} · generated ${newsDayTime(result.generated_at, universe)}`;
   if (result.state !== "CURRENT" || !result.synthesis) {
     return <p className="screener-panel-note" role="status">{label} · {humanize(result.state)}{result.reason ? ` · ${result.reason}` : ""}.</p>;
   }
@@ -118,7 +118,7 @@ function SynthesisBlock({ result, stories, universe }: { result: NewsSynthesis; 
       {s.uncertainties.length ? <ul>{s.uncertainties.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="screener-panel-note">None stated.</p>}</div>
     {refList("Conflicting evidence", s.conflicting_evidence)}
     {refList("Potential market relevance", s.potential_market_relevance)}
-    <p className="screener-panel-note">Coverage: {result.coverage.story_count} stories · {result.coverage.source_count} sources{result.coverage.missing_providers.length ? ` · missing ${result.coverage.missing_providers.join(", ")}` : ""} · prompt {result.prompt_id} v{result.prompt_version}{result.cache ? ` · cache ${result.cache.toLowerCase()}` : ""}. AI output is a synthesis of the listed headlines, not verified fact or advice.</p>
+    <p className="screener-panel-note">Coverage: {result.coverage.synthesized_story_count != null && result.coverage.synthesized_story_count < result.coverage.story_count ? `${result.coverage.synthesized_story_count} of ${result.coverage.story_count}` : result.coverage.story_count} stories · {result.coverage.source_count} sources{result.coverage.missing_providers.length ? ` · missing ${result.coverage.missing_providers.join(", ")}` : ""} · prompt {result.prompt_id} v{result.prompt_version}{result.cache ? ` · cache ${result.cache.toLowerCase()}` : ""}. AI output is a synthesis of the listed headlines, not verified fact or advice.</p>
   </div>;
 }
 
@@ -126,29 +126,39 @@ function Synthesis({ data }: { data: InstrumentNews }) {
   const key = `${data.universe}|${data.instrument.instrument_id}`;
   const current = useRef(key);
   current.current = key;
+  const inflight = useRef<AbortController | null>(null);
   const [result, setResult] = useState<{ key: string; value: NewsSynthesis } | null>(null);
   const [status, setStatus] = useState<{ key: string; state: "running" | "error" } | null>(null);
   useEffect(() => { setResult(null); setStatus(null); }, [key]);
-  useEffect(() => { current.current = key; return () => { current.current = ""; }; }, [key]);
+  // A selection change or unmount cancels an in-flight request; its result could only label the wrong instrument.
+  useEffect(() => { current.current = key; return () => { current.current = ""; inflight.current?.abort(); inflight.current = null; }; }, [key]);
   if (data.ai.state !== "AVAILABLE") {
     return <p className="screener-panel-note">AI synthesis {data.ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{data.ai.reason ? ` · ${data.ai.reason}` : ""}. Nothing is generated.</p>;
   }
+  const local = data.ai.runtime === "LOCAL_MODEL";
   const generate = async () => {
     const requested = key;
+    inflight.current?.abort();
+    const controller = new AbortController();
+    inflight.current = controller;
     setStatus({ key: requested, state: "running" });
     try {
-      const value = await postNewsSynthesis({ universe: data.universe, scope: "INSTRUMENT", instrument: data.instrument.instrument_id, window: "24h" });
+      const value = await postNewsSynthesis({ universe: data.universe, scope: "INSTRUMENT", instrument: data.instrument.instrument_id, window: "24h" },
+        controller.signal);
       // A result for a selection that has since changed is discarded.
       if (current.current !== requested) return;
       setResult({ key: requested, value }); setStatus(null);
     } catch {
-      if (current.current === requested) setStatus({ key: requested, state: "error" });
+      if (current.current === requested && !controller.signal.aborted) setStatus({ key: requested, state: "error" });
+    } finally {
+      if (inflight.current === controller) inflight.current = null;
     }
   };
   const running = status?.key === key && status.state === "running";
   return <>
     <button type="button" className="screener-control" disabled={running} onClick={() => void generate()}>{running ? "Generating…" : "Generate AI synthesis"}</button>
-    <span className="screener-panel-note"> {data.ai.model_id ? `Model ${data.ai.model_id}. ` : ""}Runs only when requested.</span>
+    <span className="screener-panel-note"> {data.ai.model_id ? `Model ${data.ai.model_id}${local ? " (local, no API cost)" : ""}. ` : ""}Runs only when requested.
+      {local && data.ai.reason === "STARTS_ON_REQUEST" ? " The local model starts on the first request (allow up to a minute)." : ""}</span>
     {status?.key === key && status.state === "error" && <p className="screener-panel-note" role="alert">AI synthesis request failed.</p>}
     {result?.key === key && <SynthesisBlock result={result.value} stories={data.stories} universe={data.universe} />}
   </>;
@@ -159,7 +169,8 @@ function Provenance({ data }: { data: InstrumentNews }) {
     <ul className="news-provenance">{data.providers.map((provider) => <li key={provider.id}>
       <span>{provider.label}</span> <strong>{stateText(provider.state)}</strong>
       <small>{provider.reason ? ` · ${provider.reason}` : ""} · {provider.fetched_at ? `fetched ${newsDayTime(provider.fetched_at, data.universe)}` : "not fetched"}
-        {provider.item_count != null ? ` · ${provider.item_count} items` : ""} · {provider.scope.toLowerCase()} scope</small></li>)}</ul>
+        {provider.item_count != null ? ` · ${provider.item_count} items` : ""} · {provider.scope.toLowerCase()} scope
+        {termsText(provider) ? ` · ${termsText(provider)}` : ""}</small></li>)}</ul>
     <p className="screener-panel-note">Matching capability {stateText(data.capability.state === "SUPPORTED" ? "CURRENT" : data.capability.state)}{data.capability.reason ? ` · ${data.capability.reason}` : ""}.
       Bases: {data.capability.match_bases.map(humanize).join(", ") || "none"}. Terms: {data.capability.terms.join(", ") || "none"}.</p>
   </>;

@@ -136,8 +136,18 @@ class _NewsClientBase:
             return None, self._unavailable("INVALID_JSON", received_at)
 
 
+#: NewsAPI's $0 Developer plan (newsapi.org/pricing): "for development and testing", articles have a 24-hour
+#: delay, search reaches one month back, 100 requests/day. Its output is never current trading news.
+NEWSAPI_PLAN_TERMS = {"plan": "DEVELOPER", "restriction": "DEVELOPMENT_ONLY", "timing": "DELAYED_24H",
+                      "quota": "100 requests/day", "cost_usd": 0}
+#: Finnhub free tier: Company News (North American companies, 1 year of history and new updates). The News
+#: Sentiment endpoint is premium and is never called; sentiment on Finnhub stories is IMP-derived (FinBERT).
+FINNHUB_PLAN_TERMS = {"plan": "FREE", "endpoint": "company-news", "coverage": "North American companies",
+                      "quota": "free-plan limit; HTTP 429 when exceeded; 30 calls/second cap", "cost_usd": 0}
+
+
 class NewsApiClient(_NewsClientBase):
-    """NewsAPI ``everything`` endpoint, limited to company-news discovery."""
+    """NewsAPI ``everything`` endpoint, limited to company-news discovery (Developer plan: delayed, dev-only)."""
 
     provider_id = "newsapi"
 
@@ -200,6 +210,9 @@ class NewsApiClient(_NewsClientBase):
             "items": items,
             "provider": self.provider_id,
             "received_at": received_at,
+            # A working Developer-plan response is delayed, development-only data — never CURRENT.
+            "state": "DELAYED",
+            "reason": "NEWSAPI_DEVELOPER_PLAN_24H_DELAY",
         }
 
 
@@ -278,6 +291,7 @@ def _normalize_newsapi_article(
     news_id = f"newsapi:{hashlib.sha256(url.encode('utf-8')).hexdigest()[:16]}"
     return {
         "headline": title,
+        "summary": str(article.get("description") or ""),
         "published_time": normalize_news_timestamp(str(article.get("publishedAt") or "")),
         "url": url,
         "tickers": _ticker_list(symbol),
@@ -311,6 +325,7 @@ def _normalize_finnhub_article(
     )
     return {
         "headline": title,
+        "summary": str(article.get("summary") or ""),
         "published_time": published,
         "url": url,
         "tickers": _ticker_list(symbol, article.get("related")),
@@ -323,4 +338,4 @@ def _normalize_finnhub_article(
     }
 
 
-__all__ = ["FinnhubNewsClient", "NewsApiClient"]
+__all__ = ["FINNHUB_PLAN_TERMS", "NEWSAPI_PLAN_TERMS", "FinnhubNewsClient", "NewsApiClient"]

@@ -34,6 +34,7 @@ import os
 import re
 import threading
 import time
+from pathlib import Path
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, timedelta
@@ -263,7 +264,8 @@ class ScreenerParticipantService:
                  house_loader: HousePtrLoader | None = None, usaspending: Any = None, lobbying: Any = None,
                  thirteen_f: Any = None, cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
                  wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
-                 member_resolver: MemberResolver | None = None) -> None:
+                 member_resolver: MemberResolver | None = None, registry_cache_dir: Path | None = None,
+                 registry_refresh: Callable[[Path], dict[str, Any]] | None = None) -> None:
         from ..public_records.lobbying import LobbyingClient
         from ..public_records.usaspending import UsaSpendingClient
 
@@ -288,7 +290,13 @@ class ScreenerParticipantService:
         self._tickers: tuple[float, dict[str, str]] | None = None
         self.provider_requests: Counter[str] = Counter()
         self._resolver = member_resolver
+        self._resolver_fixed = member_resolver is not None
         self._registry_error: str | None = None
+        # Cached public congress-legislators copy (production only; see participant_service()).
+        self._registry_dir = registry_cache_dir
+        self._registry_refresh = registry_refresh
+        self._registry_loaded: str | None = None      # retrieved_at of the copy behind the current resolver
+        self._registry_status: dict[str, Any] | None = None
         self._senate_scan: tuple[float, senate_ptr.SenateImportState] | None = None
 
     # -------------------------------------------------------------- clocks & gates
@@ -733,13 +741,58 @@ class ScreenerParticipantService:
                        "attested": state.attestation is not None}
 
     def _member_resolver(self) -> MemberResolver:
-        if self._resolver is None:
+        if self._resolver is not None and (self._resolver_fixed or self._registry_dir is None
+                                           or (self._env(REGISTRY_ENV) or "").strip()):
+            return self._resolver
+        if (self._env(REGISTRY_ENV) or "").strip() or self._registry_dir is None:
             try:
                 self._resolver = MemberResolver(registry_from_env({REGISTRY_ENV: self._env(REGISTRY_ENV) or ""}))
             except (OSError, ValueError):
                 # An unreadable registry never blocks disclosures: identities fall back to seat evidence.
                 self._registry_error = "MEMBER_REGISTRY_UNREADABLE"
                 self._resolver = MemberResolver()
+            return self._resolver
+        return self._cached_registry_resolver(self._registry_dir)
+
+    def _cached_registry_resolver(self, cache_dir: Path) -> MemberResolver:
+        """Resolver over the local congress-legislators copy. A missing or stale copy starts one bounded background
+        refresh (only when public-records live access is enabled); requests never wait on GitHub."""
+
+        from ..congressional_ptr import legislators_registry as legislators
+
+        manifest, state, reason = legislators.manifest_state(cache_dir, now=self._now)
+        refresh_state = None
+        if state != "CURRENT" and self._public_state()[0] == "CURRENT":
+            refresh = self._registry_refresh or legislators.refresh
+
+            def job() -> dict[str, Any]:
+                self.provider_requests["congress_registry"] += 1
+                try:
+                    return refresh(cache_dir)
+                except legislators.RegistryRefreshError as exc:
+                    return {"error": str(exc)}
+
+            entry = self._cache.get(("congress_registry",), job, ttl_s=6 * 3600)
+            if entry is None:
+                refresh_state = "REFRESHING"
+            elif entry.ok and entry.value.get("error"):
+                refresh_state = str(entry.value["error"])
+            elif entry.ok:
+                manifest, state, reason = legislators.manifest_state(cache_dir, now=self._now)
+        retrieved = (manifest or {}).get("retrieved_at")
+        if self._resolver is None or retrieved != self._registry_loaded:
+            cached = legislators.load(cache_dir, now=self._now) if manifest is not None else None
+            if cached is not None and cached.registry is not None:
+                self._resolver, self._registry_error = MemberResolver(cached.registry), None
+                state, reason = cached.state, cached.reason
+            else:
+                self._resolver = MemberResolver()
+                if cached is not None:
+                    state, reason = cached.state, cached.reason
+                    self._registry_error = "MEMBER_REGISTRY_UNREADABLE"
+            self._registry_loaded = retrieved
+        described = legislators.CachedRegistry(None, manifest, state, reason).describe()
+        self._registry_status = {**described, "refresh": refresh_state}
         return self._resolver
 
     def _congress(self, scope: str = "UNIVERSE") -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any],
@@ -761,6 +814,7 @@ class ScreenerParticipantService:
                     "identity": {"registry": registry.source if registry else None,
                                  "registry_members": len(registry.members) if registry else 0,
                                  "registry_error": self._registry_error,
+                                 "registry_status": self._registry_status,
                                  "resolutions": dict(Counter(row["member"].get("resolution") for row in rows))}}
         return rows, [house_status, senate_status], coverage, filing_states
 
@@ -1384,7 +1438,10 @@ def participant_service() -> ScreenerParticipantService:
                 thirteen_f = ManagedIndex(root)   # S14: managed generations + freshness (no network)
             elif path:
                 thirteen_f = UnmanagedThirteenF(path)
-            _SERVICE = ScreenerParticipantService(thirteen_f=thirteen_f)
+            from ..congressional_ptr.legislators_registry import CACHE_RELATIVE
+            from ..local_state.external_cache import imp_cache_dir
+
+            _SERVICE = ScreenerParticipantService(thirteen_f=thirteen_f, registry_cache_dir=imp_cache_dir() / CACHE_RELATIVE)
         return _SERVICE
 
 

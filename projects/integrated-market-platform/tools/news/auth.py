@@ -41,31 +41,40 @@ def write_provider_values(values: dict[str, str], *, path: Path | None = None) -
         return False
 
 
+def configured_values(newsapi_key: str, finnhub_key: str) -> dict[str, str]:
+    """Private-file values for the keys entered; storing a key is the operator's opt-in for that provider."""
+
+    values: dict[str, str] = {}
+    if newsapi_key:
+        values.update(NEWSAPI_API_KEY=newsapi_key, IMP_NEWSAPI_LIVE="1")
+    if finnhub_key:
+        values.update(FINNHUB_API_KEY=finnhub_key, IMP_FINNHUB_LIVE="1")
+    return values
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Configure read-only news providers")
     parser.add_argument(
         "command",
         choices=("configure",),
-        help="Store NewsAPI and Finnhub keys in the private provider file",
+        help="Store free NewsAPI (Developer) and/or Finnhub keys in the private provider file",
     )
     args = parser.parse_args(argv)
     if args.command != "configure":
         return 2
 
-    newsapi_key = getpass.getpass("NewsAPI key: ").strip()
-    finnhub_key = getpass.getpass("Finnhub key: ").strip()
-    if not newsapi_key or not finnhub_key:
-        print("ERROR: both provider keys are required")
+    # Input is hidden; leave a prompt blank to skip that provider. Values are never printed or logged.
+    newsapi_key = getpass.getpass("NewsAPI Developer key (blank to skip): ").strip()
+    finnhub_key = getpass.getpass("Finnhub key (blank to skip): ").strip()
+    values = configured_values(newsapi_key, finnhub_key)
+    if not values:
+        print("ERROR: no provider key entered")
         return 2
-    if not write_provider_values(
-        {
-            "NEWSAPI_API_KEY": newsapi_key,
-            "FINNHUB_API_KEY": finnhub_key,
-        }
-    ):
+    if not write_provider_values(values):
         print("ERROR: failed to store provider keys")
         return 2
-    print("Stored NewsAPI and Finnhub credentials in the private provider file")
+    stored = [name for name, key in (("NewsAPI", newsapi_key), ("Finnhub", finnhub_key)) if key]
+    print(f"Stored {' and '.join(stored)} credentials in the private provider file; restart the platform API")
     return 0
 
 

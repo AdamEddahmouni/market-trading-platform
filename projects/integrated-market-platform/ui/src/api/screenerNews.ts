@@ -10,14 +10,21 @@ import type { ScreenerUniverse } from "./screener";
 const Iso = z.string();
 // Local copy: this module must not depend on runtime values of ./screener (tests mock it wholesale).
 const ScreenerUniverseSchema = z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS", "CRYPTO"]);
-export const ProviderStateSchema = z.enum(["CURRENT", "STALE", "PENDING", "NOT_CONFIGURED", "LIVE_DISABLED",
+// DELAYED: a working source whose free plan delays articles (NewsAPI Developer) — usable, never current.
+export const ProviderStateSchema = z.enum(["CURRENT", "STALE", "DELAYED", "PENDING", "NOT_CONFIGURED", "LIVE_DISABLED",
   "RATE_LIMITED", "AUTH_FAILED", "ERROR", "NOT_APPLICABLE"]);
 export type ProviderState = z.infer<typeof ProviderStateSchema>;
+/** Plan terms the server states for a provider (cost, quota, timing, use restriction). */
+const ProviderTerms = z.object({
+  plan: z.string().optional(), restriction: z.string().optional(), timing: z.string().optional(),
+  quota: z.string().optional(), runtime: z.string().optional(), cost_usd: z.number().optional(),
+}).passthrough();
 const ProviderStatus = z.object({
   id: z.string(), label: z.string(),
   kind: z.enum(["NEWS", "OFFICIAL_RELEASE", "OFFICIAL_FILING", "SENTIMENT", "AI"]),
   state: ProviderStateSchema, reason: z.string().nullable(), fetched_at: Iso.nullable(),
   item_count: z.number().nullable(), scope: z.enum(["UNIVERSE", "INSTRUMENT"]),
+  terms: ProviderTerms.optional(),
 }).passthrough();
 export type ProviderStatus = z.infer<typeof ProviderStatus>;
 const Category = z.object({ id: z.string(), label: z.string(),
@@ -40,6 +47,8 @@ const StorySentiment = z.object({
   label: SentimentLabel.nullable(),
   probabilities: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }).passthrough().nullable(),
   model_id: z.string().nullable(),
+  /** IMP_DERIVED_FINBERT: classified locally by IMP, never supplied by a news source. */
+  basis: z.string().optional(), reason: z.string().optional(),
 }).passthrough();
 export type StorySentiment = z.infer<typeof StorySentiment>;
 const Story = z.object({
@@ -130,7 +139,8 @@ export const InstrumentNewsSchema = z.object({
   }).passthrough(),
   analysis: z.object({ observed: z.array(AnalysisItem), derived: z.array(AnalysisItem), insufficient: z.array(AnalysisItem) }).passthrough(),
   ai: z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
-    provider_id: z.string().nullable(), model_id: z.string().nullable() }).passthrough(),
+    provider_id: z.string().nullable(), model_id: z.string().nullable(),
+    runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional() }).passthrough(),
 }).passthrough();
 export type InstrumentNews = z.infer<typeof InstrumentNewsSchema>;
 
@@ -142,7 +152,9 @@ export const SynthesisSchema = z.object({
   reason: z.string().nullable(), epistemic_class: z.literal("AI_SYNTHESIS"), generated_at: Iso,
   provider_id: z.string().nullable(), model_id: z.string().nullable(), prompt_id: z.string(), prompt_version: z.string(),
   input_hash: z.string().nullable(), cache: z.enum(["HIT", "MISS"]).nullable(), story_ids: z.array(z.string()),
-  coverage: z.object({ story_count: z.number(), source_count: z.number(), window: Window, missing_providers: z.array(z.string()) }).passthrough(),
+  runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),
+  coverage: z.object({ story_count: z.number(), synthesized_story_count: z.number().optional(), source_count: z.number(), window: Window,
+    missing_providers: z.array(z.string()) }).passthrough(),
   synthesis: z.object({
     summary: z.string(), observed_facts: z.array(Ref), derived_context: z.array(Ref), uncertainties: z.array(z.string()),
     conflicting_evidence: z.array(Ref), potential_market_relevance: z.array(Ref),
@@ -190,7 +202,7 @@ export async function fetchInstrumentNews(universe: ScreenerUniverse, instrument
 
 export type SynthesisRequest = { universe: ScreenerUniverse; scope: "INSTRUMENT" | "UNIVERSE"; instrument?: string; window?: "24h" };
 
-/** Explicit operator action only; never called on render. */
-export function postNewsSynthesis(body: SynthesisRequest) {
-  return postJson("/screener/news/synthesis", body, SynthesisSchema);
+/** Explicit operator action only; never called on render. Aborted when the selection changes. */
+export function postNewsSynthesis(body: SynthesisRequest, signal?: AbortSignal) {
+  return postJson("/screener/news/synthesis", body, SynthesisSchema, signal ? { signal } : undefined);
 }

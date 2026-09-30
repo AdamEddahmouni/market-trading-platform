@@ -84,6 +84,25 @@ def _items(value: Any, story_ids: set[str], *, with_refs: bool) -> list[Any] | N
     return out
 
 
+def output_json_schema(story_ids: list[str]) -> dict[str, Any]:
+    """The JSON Schema ``parse_synthesis`` accepts, with refs limited to the packet's story ids.
+
+    Servers that support schema-constrained decoding (llama.cpp, LM Studio) use it to keep a small local model
+    on the contract. It constrains structure only: ``parse_synthesis`` still validates every output."""
+
+    ids = list(dict.fromkeys(story_ids)) or ["_"]
+    ref_item = {"type": "object", "additionalProperties": False, "required": ["text", "refs"],
+                "properties": {"text": {"type": "string"},
+                               "refs": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"enum": ids}}}}
+    ref_list = {"type": "array", "maxItems": 8, "items": ref_item}
+    return {"type": "object", "additionalProperties": False, "required": ["summary", *_LIST_FIELDS, "uncertainties"],
+            "properties": {"summary": {"type": "string"},
+                           "observed_facts": {**ref_list, "minItems": 1},
+                           "derived_context": ref_list, "conflicting_evidence": ref_list,
+                           "potential_market_relevance": ref_list,
+                           "uncertainties": {"type": "array", "maxItems": 8, "items": {"type": "string"}}}}
+
+
 def parse_synthesis(raw_text: str, story_ids: set[str]) -> tuple[dict[str, Any] | None, str | None]:
     """(synthesis, None) or (None, reason). Never repairs or invents content."""
 
@@ -118,9 +137,14 @@ class ScreenerSynthesizer:
     """Cached, validated synthesis over the canonical inference provider."""
 
     def __init__(self, *, provider: InferenceProvider | None, config: IntelligenceInferenceConfig | None = None,
-                 registry: PromptRegistry | None = None, clock=time.time) -> None:
+                 registry: PromptRegistry | None = None, clock=time.time,
+                 not_configured_reason: str = "ANTHROPIC_API_KEY_NOT_SET") -> None:
         self._provider = provider
-        self._config = config or IntelligenceInferenceConfig(max_tokens=1400, timeout_seconds=45.0, prompt_id=PROMPT_ID)
+        self.not_configured_reason = not_configured_reason
+        # A local CPU/iGPU model generates far slower than a hosted API; its budget includes an on-demand start.
+        local = getattr(provider, "runtime", None) == "LOCAL_MODEL"
+        self._config = config or IntelligenceInferenceConfig(max_tokens=1400, timeout_seconds=300.0 if local else 45.0,
+                                                             prompt_id=PROMPT_ID)
         self._registry = registry or PromptRegistry()
         self._clock = clock
         self._lock = threading.Lock()
@@ -138,16 +162,18 @@ class ScreenerSynthesizer:
 
     def synthesize(self, stories: list[SynthesisStory], *, instruments: tuple[str, ...], as_of: str) -> dict[str, Any]:
         prompt = self._registry.get_by_id(PROMPT_ID)
+        # story_ids names exactly what the model is given (at most MAX_STORIES), never stories it did not see.
+        stories = stories[:MAX_STORIES]
         base = {"schema_version": SCHEMA_VERSION, "epistemic_class": "AI_SYNTHESIS", "prompt_id": prompt.prompt_id,
                 "prompt_version": prompt.version, "generated_at": as_of, "story_ids": [story.story_id for story in stories],
+                "runtime": (getattr(self._provider, "runtime", None) or "PAID_API") if self._provider else None,
                 "provider_id": getattr(self._provider, "provider_id", None) if self._provider else None,
                 "model_id": getattr(self._provider, "model_id", None) if self._provider else None,
                 "input_hash": None, "cache": None, "synthesis": None}
         if self._provider is None:
-            return {**base, "state": "NOT_CONFIGURED", "reason": "ANTHROPIC_API_KEY_NOT_SET"}
+            return {**base, "state": "NOT_CONFIGURED", "reason": self.not_configured_reason}
         if not stories:
             return {**base, "state": "INSUFFICIENT_EVIDENCE", "reason": "NO_STORIES_IN_WINDOW"}
-        stories = stories[:MAX_STORIES]
         digest = self.input_hash(stories, instruments)
         now = self._clock()
         with self._lock:
@@ -180,7 +206,9 @@ class ScreenerSynthesizer:
         base = {**base, "input_hash": digest, "cache": "MISS", "provider_id": response.provider_id,
                 "model_id": response.model_id}
         if response.error_code is not None:
-            reason = response.error_message if response.error_message == "API_KEY_MISSING" else response.error_code.value
+            # Local-model reasons are stable codes (LOCAL_*); anything else reports the canonical error code.
+            reason = (response.error_message if response.error_message == "API_KEY_MISSING"
+                      or response.error_message.startswith("LOCAL_") else response.error_code.value)
             state = "NOT_CONFIGURED" if response.error_message == "API_KEY_MISSING" else "UNAVAILABLE"
             return {**base, "state": state, "reason": reason}
         synthesis, reason = parse_synthesis(response.raw_text, {story.story_id for story in stories})
@@ -195,5 +223,5 @@ class ScreenerSynthesizer:
         return result
 
 
-__all__ = ["PROMPT_ID", "SCHEMA_VERSION", "ScreenerSynthesizer", "SynthesisStory", "parse_synthesis",
-           "unsupported_certainty"]
+__all__ = ["PROMPT_ID", "SCHEMA_VERSION", "ScreenerSynthesizer", "SynthesisStory", "output_json_schema",
+           "parse_synthesis", "unsupported_certainty"]

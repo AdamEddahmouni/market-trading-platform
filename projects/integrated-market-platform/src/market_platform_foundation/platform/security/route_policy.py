@@ -107,7 +107,7 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/screener/config":
             return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis":
-            # Operator-initiated model call with external cost; never a render-time read.
+            # Operator-initiated model call (paid API or on-demand local model); never a render-time read.
             return RoutePolicy(capability="state.write")
         if path == "/paper/orders/preview":
             return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
