@@ -36,9 +36,13 @@ class _StubNewsSource:
         }
 
 
+# clear=True would otherwise fall back to the operator's .private/providers.env (its keys and live gates).
+NO_OPERATOR_FILE = {"IMP_PROVIDER_ENV": str(Path(__file__).with_name("no-operator-providers.env"))}
+
+
 class ObservationalIngressTests(unittest.TestCase):
     def test_default_gates_disabled(self) -> None:
-        with mock.patch.dict(os.environ, {}, clear=True):
+        with mock.patch.dict(os.environ, NO_OPERATOR_FILE, clear=True):
             result = fetch_observational_news_events("AAPL")
         self.assertFalse(result.enabled)
         self.assertEqual(result.reason, "INGRESS_DISABLED")
@@ -46,7 +50,7 @@ class ObservationalIngressTests(unittest.TestCase):
 
     def test_ingress_on_without_provider_gates(self) -> None:
         env = {"IMP_OBSERVATIONAL_NEWS_INGRESS": "1"}
-        with mock.patch.dict(os.environ, env, clear=True):
+        with mock.patch.dict(os.environ, {**NO_OPERATOR_FILE, **env}, clear=True):
             result = fetch_observational_news_events("AAPL")
         self.assertTrue(result.enabled)
         self.assertFalse(result.ready)
@@ -67,7 +71,7 @@ class ObservationalIngressTests(unittest.TestCase):
             "IMP_OBSERVATIONAL_NEWS_INGRESS": "1",
             "IMP_NEWSAPI_LIVE": "1",
         }
-        with mock.patch.dict(os.environ, env, clear=True):
+        with mock.patch.dict(os.environ, {**NO_OPERATOR_FILE, **env}, clear=True):
             self.assertTrue(observational_ingress_ready())
             result = fetch_observational_news_events("AAPL", aggregator=aggregator)
         self.assertTrue(result.ready)
@@ -77,7 +81,7 @@ class ObservationalIngressTests(unittest.TestCase):
 
     def test_build_aggregator_includes_only_live_gated_clients(self) -> None:
         env = {"IMP_NEWSAPI_LIVE": "1"}
-        with mock.patch.dict(os.environ, env, clear=True):
+        with mock.patch.dict(os.environ, {**NO_OPERATOR_FILE, **env}, clear=True):
             agg = build_observational_aggregator()
         self.assertEqual(len(agg._sources), 1)
         self.assertEqual(agg._sources[0].provider_id, "newsapi")

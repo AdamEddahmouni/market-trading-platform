@@ -75,6 +75,25 @@ PLACEHOLDER_VALUES: frozenset[str] = frozenset(
     {"", "CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"}
 )
 
+# Language-model usage counters (synthesis budget, per-call usage). Their names contain
+# ``token`` but they count tokens; only whole-number values are benign, so a string
+# (a live credential) under the same name is still blocked.
+_MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
+    normalize_key(name)
+    for name in (
+        "tokens",
+        "max_tokens",
+        "input_tokens",
+        "output_tokens",
+        "prompt_tokens",
+        "reserved_tokens",
+        "tokens_input",
+        "tokens_output",
+        "total_tokens_input",
+        "worst_case_tokens",
+    )
+)
+
 _FINGERPRINT_HEX_CHARS = 12
 
 
@@ -140,9 +159,21 @@ def _is_operator_config_field_descriptor_key(path: str, key: str, value: Any) ->
     return bool(_ENV_VAR_IDENTIFIER_RE.fullmatch(value.strip()))
 
 
+def _is_model_token_count(key: str, value: Any) -> bool:
+    """LLM token counters hold whole numbers; never strings, floats or booleans."""
+
+    return (
+        normalize_key(key) in _MODEL_TOKEN_COUNT_KEYS
+        and isinstance(value, int)
+        and not isinstance(value, bool)
+    )
+
+
 def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
     normalized = normalize_key(str(key))
     if normalized in BENIGN_SECRET_SHAPED_KEYS:
+        return True
+    if _is_model_token_count(str(key), value):
         return True
     if _is_public_credential_state_field(str(key), value):
         return True
