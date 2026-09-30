@@ -40,9 +40,10 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
+from ..cftc.release_schedule import SCHEDULE_URL, ReleaseCalendar, parse_official_schedule_html
 from ..cftc.root_coverage import CoverageStatus, classify_root, coverage_summary
-from ..cftc.screener_positioning import (DATASETS, OI_METHOD, POSITIONING_MARKETS, REPORT_SELECTION_POLICY,
-                                         build_positioning, where_clause)
+from ..cftc.screener_positioning import (DATASETS, DEFAULT_CALENDAR, OI_METHOD, POSITIONING_MARKETS,
+                                         REPORT_SELECTION_POLICY, build_positioning, where_clause)
 from ..congressional_ptr import house, normalized
 from ..congressional_ptr import senate as senate_ptr
 from ..congressional_ptr.identity import REGISTRY_ENV, MemberResolver, registry_from_env
@@ -67,10 +68,14 @@ DEFAULT_LIMIT, MAX_LIMIT = 100, 200
 MAX_PTR_DOCUMENTS = 160
 MAX_FORM4_DOCS, MAX_13DG_DOCS = 8, 6
 PROVIDER_WAIT_S = 6.0
+COT_RECENT_DAYS = 35                    # the current-view CFTC read; older reports only via the last-report lookup
 
 TTL = {"house_index": 6 * 3600.0, "sec_index_today": 1800.0, "sec_index_past": 24 * 3600.0,
        "submissions": 1800.0, "cot": 3 * 3600.0, "usaspending": 12 * 3600.0, "usaspending_updated": 6 * 3600.0,
-       "lobbying": 24 * 3600.0, "universe_index": 600.0}
+       "lobbying": 24 * 3600.0, "universe_index": 600.0,
+       # Final closure: the official CFTC release-schedule page and each mapped market's last report date
+       # (one grouped query per report family) change at most weekly.
+       "cot_schedule": 24 * 3600.0, "cot_last_report": 12 * 3600.0}
 AMOUNT_FLOORS = (1_001, 15_001, 50_001, 100_001, 250_001, 1_000_001)
 CONGRESS_TYPES = ("PURCHASE", "SALE", "SALE_PARTIAL", "EXCHANGE")
 OWNERSHIP_FAMILIES = {"INSIDER": sec_ownership.INSIDER_FORMS,
@@ -145,6 +150,17 @@ def _default_cot_query(dataset: Any, where: str) -> list[dict[str, Any]]:
     from ..cftc.live import transport_from_env
 
     return transport_from_env().query_dataset(dataset, where=where, order="report_date_as_yyyy_mm_dd DESC", limit=1000)
+
+
+def _default_cot_last_report(dataset: Any, codes: list[str]) -> list[dict[str, Any]]:
+    """One grouped query: the newest report date of every given market code, whatever its age."""
+
+    from ..cftc.live import transport_from_env
+
+    quoted = ", ".join(f"'{code}'" for code in sorted(set(codes)) if code.replace("+", "").isalnum())
+    return transport_from_env().query_dataset(
+        dataset, select="cftc_contract_market_code, max(report_date_as_yyyy_mm_dd) AS last_report",
+        where=f"cftc_contract_market_code in ({quoted})", group="cftc_contract_market_code", limit=1000)
 
 
 # ------------------------------------------------------------------ House PTR loader
@@ -243,6 +259,7 @@ class ScreenerParticipantService:
                  sec_transport_factory: Callable[[], Any] = _default_sec_transport,
                  public_http: PublicRecordsHttp | None = None,
                  cot_query: Callable[[Any, str], list[dict[str, Any]]] = _default_cot_query,
+                 cot_last_report: Callable[[Any, list[str]], list[dict[str, Any]]] = _default_cot_last_report,
                  house_loader: HousePtrLoader | None = None, usaspending: Any = None, lobbying: Any = None,
                  thirteen_f: Any = None, cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
                  wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
@@ -256,6 +273,7 @@ class ScreenerParticipantService:
         self._sec_transport: Any = None
         self._http = public_http or PublicRecordsHttp(min_interval_s=0.25)
         self._cot_query = cot_query
+        self._cot_last_report = cot_last_report
         self._house = house_loader or HousePtrLoader(http=self._http, clock=clock)
         self._spending = usaspending or UsaSpendingClient(PublicRecordsHttp(min_interval_s=0.5))
         self._lda = lobbying or LobbyingClient()
@@ -487,7 +505,7 @@ class ScreenerParticipantService:
         state, reason = self._public_state()
         if state != "CURRENT":
             return {}, provider("cftc_cot", state, reason, scope="UNIVERSE")
-        since = self._today() - timedelta(days=35)
+        since = self._today() - timedelta(days=COT_RECENT_DAYS)
         out: dict[str, list[dict[str, Any]]] = {}
         fetched, errors, pending = [], [], False
         for family, dataset in DATASETS.items():
@@ -513,11 +531,67 @@ class ScreenerParticipantService:
                              errors[0] if errors else None, fetched_at=max(fetched), scope="UNIVERSE",
                              items=sum(len(rows) for rows in out.values()))
 
-    def _positioning_for_root(self, root: str, cot: dict[str, list[dict[str, Any]]]) -> dict[str, Any] | None:
+    def _release_calendar(self) -> tuple[ReleaseCalendar, dict[str, Any]]:
+        """Vendored official tables, extended by every year on the live CFTC schedule page (never waits)."""
+
+        base = DEFAULT_CALENDAR
+        state, reason = self._public_state()
+        if state != "CURRENT":
+            return base, {**base.describe(), "state": "VENDORED_ONLY", "reason": reason}
+
+        def job() -> dict[int, Any]:
+            self.provider_requests["cftc_schedule"] += 1
+            page = self._http.get_bytes(SCHEDULE_URL, accept="text/html").decode("utf-8", "replace")
+            return parse_official_schedule_html(page)
+
+        entry = self._cache.get(("cot_schedule",), job, ttl_s=TTL["cot_schedule"])
+        if entry is None:
+            return base, {**base.describe(), "state": "PENDING", "reason": "FETCHING"}
+        if not entry.ok:
+            return base, {**base.describe(), "state": "SOURCE_ERROR", "reason": entry.reason}
+        calendar = base.with_official(entry.value, "CFTC_RELEASE_SCHEDULE_PAGE")
+        return calendar, {**calendar.describe(), "state": "CURRENT", "reason": None, "fetched_at": entry.fetched_at}
+
+    def _positioning_for_root(self, root: str, cot: dict[str, list[dict[str, Any]]],
+                              calendar: ReleaseCalendar | None = None) -> dict[str, Any] | None:
         market = POSITIONING_MARKETS.get(root.upper())
         if market is None:
             return None
-        return build_positioning(cot.get(market.report.value, []), market, now=self._now())
+        calendar = calendar or self._release_calendar()[0]
+        return build_positioning(cot.get(market.report.value, []), market, now=self._now(), calendar=calendar)
+
+    def _last_report(self, root: str, calendar: ReleaseCalendar) -> dict[str, Any]:
+        """A known market absent from the recent window: its last public report date, from a cached grouped query.
+
+        The recent view stays a 35-day read; this lookup runs only when a mapped root has no recent row, once per
+        report family per TTL, for all of that family's mapped codes. Only a report public at ``now`` is shown.
+        """
+
+        market = POSITIONING_MARKETS[root.upper()]
+        family = market.report
+        codes = [item.code for item in POSITIONING_MARKETS.values() if item.report == family]
+
+        def job() -> list[dict[str, Any]]:
+            self.provider_requests["cftc"] += 1
+            return self._cot_last_report(DATASETS[family], codes)
+
+        entry = self._await(("cot_last_report", family.value), job, TTL["cot_last_report"])
+        if entry is None:
+            return {"state": "PENDING", "reason": "FETCHING", "report_date": None}
+        if not entry.ok:
+            return {"state": "SOURCE_ERROR", "reason": entry.reason, "report_date": None}
+        found = {str(item.get("cftc_contract_market_code") or "").strip(): str(item.get("last_report") or "")[:10]
+                 for item in entry.value}
+        try:
+            report_date = date.fromisoformat(found.get(market.code, ""))
+        except ValueError:
+            return {"state": "NO_REPORT_FOUND", "reason": "NO_ROWS_FOR_MARKET_CODE", "report_date": None}
+        published, basis = calendar.publication(report_date)
+        if published > self._now():
+            return {"state": "NO_REPORT_FOUND", "reason": "NOT_YET_PUBLIC", "report_date": None}
+        return {"state": "LAST_REPORT_FOUND", "reason": None, "report_date": report_date.isoformat(),
+                "publication_time": _iso(published), "publication_basis": basis,
+                "cftc_contract_market_code": market.code, "retrieved_at": entry.fetched_at}
 
     @staticmethod
     def _futures_roots(index: _Index) -> dict[str, dict[str, Any]]:
@@ -546,17 +620,20 @@ class ScreenerParticipantService:
         roots = self._futures_roots(index)
         summary = coverage_summary((root, item.get("exchange")) for root, item in roots.items())
         cot, status = self._cot()
+        calendar, schedule = self._release_calendar()
         source_ok = status["state"] in ("PUBLICATION_CURRENT", "PARTIAL")
         groups: dict[str, list[dict[str, Any]]] = {"TFF": [], "DISAGGREGATED": []}
         absent: list[str] = []
+        absent_detail: list[dict[str, Any]] = []
         for root, item in roots.items():
             decision = classify_root(root, exchange=item.get("exchange"))
             if decision["status"] != CoverageStatus.MAPPED.value:
                 continue
-            report = self._positioning_for_root(root, cot)
+            report = self._positioning_for_root(root, cot, calendar)
             if report is None:
                 if source_ok:
                     absent.append(root)  # a known market with no public report in the window — not "no market"
+                    absent_detail.append({"root": root, "last_report": self._last_report(root, calendar)})
                 continue
             groups[report["report"]].append({**self._with_mapping(report, decision), "contract": item["symbol"],
                                              "instrument_id": item["instrument_id"]})
@@ -584,7 +661,9 @@ class ScreenerParticipantService:
                                                               "by_reason", "breakdown", "registry_verified")},
                              "unmapped_roots": [item["root"] for item in unmapped],
                              "reported_roots": sum(len(rows) for rows in groups.values()),
-                             "mapped_without_report": absent},
+                             "mapped_without_report": absent,
+                             "mapped_without_report_detail": absent_detail, "recent_window_days": COT_RECENT_DAYS},
+                "release_schedule": schedule,
                 "unmapped": unmapped,
                 "report_policy": REPORT_SELECTION_POLICY, "oi_method": OI_METHOD,
                 "boundaries": [EVIDENCE_BOUNDARIES[4]],
@@ -606,15 +685,20 @@ class ScreenerParticipantService:
         items: list[normalized.CongressionalDisclosure] = []
         loading = errors = 0
         documents = []
+        # Per-filing (filing date, state) so a view can count House filings in *its* window, not the loaded one.
+        filing_states: list[tuple[str, str]] = []
         for filing in snap["filings"]:
             document = snap["documents"].get(filing.doc_id)
             if document is None:
                 if filing.doc_id in snap["doc_errors"]:
                     errors += 1
+                    filing_states.append((filing.filing_date.isoformat(), "DOCUMENT_ERROR"))
                 else:
                     loading += 1
+                    filing_states.append((filing.filing_date.isoformat(), "LOADING"))
                 continue
             documents.append(document)
+            filing_states.append((filing.filing_date.isoformat(), document.state))
             retrieved = snap["retrieved"].get(filing.doc_id)
             items.extend(normalized.from_house(
                 filing, document, datetime.fromisoformat(retrieved.replace("Z", "+00:00")) if retrieved else None))
@@ -625,7 +709,7 @@ class ScreenerParticipantService:
         coverage = {"filings": len(snap["filings"]), "parsed": legacy["PARSED"],
                     "not_machine_readable": legacy["TRANSACTIONS_NOT_MACHINE_READABLE"], "parse_errors": legacy["PARSE_ERROR"],
                     "loading": loading, "document_errors": errors, "index_fetched_at": snap["index_fetched_at"],
-                    "max_documents": MAX_PTR_DOCUMENTS, "house": metrics}
+                    "max_documents": MAX_PTR_DOCUMENTS, "house": metrics, "house_filing_states": filing_states}
         status = provider("house_ptr", status_state, status_reason, fetched_at=snap["index_fetched_at"], items=len(items),
                           scope="UNIVERSE")
         return items, {**status, "coverage": metrics}, coverage
@@ -658,10 +742,14 @@ class ScreenerParticipantService:
                 self._resolver = MemberResolver()
         return self._resolver
 
-    def _congress(self, scope: str = "UNIVERSE") -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
-        """Both chambers as normalized rows (identity resolved over the whole batch), providers, and coverage."""
+    def _congress(self, scope: str = "UNIVERSE") -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any],
+                                                          list[tuple[str, str]]]:
+        """Both chambers as normalized rows (identity resolved over the whole batch), providers, coverage, and
+        per-House-filing (filing date, state) pairs."""
 
         house_items, house_status, coverage = self._house_disclosures()
+        coverage = dict(coverage)
+        filing_states = coverage.pop("house_filing_states", [])
         senate_items, senate_status = self._senate_disclosures(scope)
         if scope != "UNIVERSE":
             house_status = {**house_status, "scope": scope}
@@ -674,7 +762,7 @@ class ScreenerParticipantService:
                                  "registry_members": len(registry.members) if registry else 0,
                                  "registry_error": self._registry_error,
                                  "resolutions": dict(Counter(row["member"].get("resolution") for row in rows))}}
-        return rows, [house_status, senate_status], coverage
+        return rows, [house_status, senate_status], coverage, filing_states
 
     @staticmethod
     def _chamber_state(house_status: dict[str, Any], senate_status: dict[str, Any], matched: bool) -> tuple[str, str | None]:
@@ -734,10 +822,12 @@ class ScreenerParticipantService:
         self._validate_page(offset, limit)
         now = self._now()
         index = self._index(universe)
-        rows, providers, coverage = self._congress()
+        rows, providers, coverage, filing_states = self._congress()
         house_status, senate_status = providers
         since = self._today() - timedelta(days=CONGRESS_WINDOWS[window])
         in_window = [row for row in rows if row["filing_date"] >= since.isoformat()]
+        house_filings = Counter(state for filed, state in filing_states if filed >= since.isoformat())
+        by_chamber = Counter(row["chamber"] for row in in_window)
         matched, unmatched, outside = [], 0, 0
         for row in in_window:
             match = self._match_row(row, universe, index)
@@ -784,7 +874,18 @@ class ScreenerParticipantService:
             "has_more": offset + limit < len(filtered),
             "coverage": {**coverage, "transactions_in_window": len(in_window), "matched": len(matched),
                          "ticker_outside_universe": outside, "no_disclosed_ticker": unmatched,
-                         "universe_index_error": index.error},
+                         "universe_index_error": index.error,
+                         # Selected-window counts, split by chamber: House counts filings (documents); both chambers
+                         # count transactions. The loaded-window figures above stay for existing consumers.
+                         "window_counts": {
+                             "house_filings": sum(house_filings.values()),
+                             "house_machine_readable": house_filings["PARSED"],
+                             "house_scanned": house_filings["TRANSACTIONS_NOT_MACHINE_READABLE"],
+                             "house_unreadable": house_filings["PARSE_ERROR"] + house_filings["DOCUMENT_ERROR"],
+                             "house_loading": house_filings["LOADING"],
+                             "house_transactions": by_chamber["HOUSE"],
+                             "senate_transactions": by_chamber["SENATE"],
+                             "senate_in_view": senate_status["state"] in ("READY", "PARTIAL")}},
             "boundaries": [EVIDENCE_BOUNDARIES[1]],
             "time_note": ("Transaction date = when the trade happened; filing date = when the report was filed; "
                           "available = public availability: the Senate's filed time, or the end of the House filing "
@@ -987,9 +1088,12 @@ class ScreenerParticipantService:
             elif status["state"] not in ("PUBLICATION_CURRENT", "PARTIAL"):
                 sections["futures_positioning"] = _section(status["state"], status["reason"], **base)
             else:
-                report = self._positioning_for_root(root, cot)
+                calendar = self._release_calendar()[0]
+                report = self._positioning_for_root(root, cot, calendar)
                 if report is None:
-                    sections["futures_positioning"] = _section("NO_DISCLOSURES", "KNOWN_MARKET_NOT_IN_RECENT_RELEASES", **base)
+                    sections["futures_positioning"] = _section("NO_DISCLOSURES", "KNOWN_MARKET_NOT_IN_RECENT_RELEASES",
+                                                               last_report=self._last_report(root, calendar),
+                                                               recent_window_days=COT_RECENT_DAYS, **base)
                 elif report["quality_state"] != "OK":
                     # Conflicting rows for one market and date: fail closed, values withheld.
                     sections["futures_positioning"] = _section("UNAVAILABLE", report["quality_state"],
@@ -1146,7 +1250,7 @@ class ScreenerParticipantService:
         providers: list[dict[str, Any]] = []
         sections: dict[str, Any] = {}
         index = self._index(universe)
-        rows, chamber_providers, coverage = self._congress("INSTRUMENT")
+        rows, chamber_providers, coverage, _ = self._congress("INSTRUMENT")
         house_status, senate_status = chamber_providers
         providers.extend(chamber_providers)
         since = (self._today() - timedelta(days=INSTRUMENT_CONGRESS_DAYS)).isoformat()

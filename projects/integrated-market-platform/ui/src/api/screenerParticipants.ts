@@ -113,6 +113,11 @@ const PositioningReport = z.object({
 }).passthrough();
 export type PositioningReport = z.infer<typeof PositioningReport>;
 /** S15: the recorded CFTC coverage decision for one Futures root (MAPPED, NO_CFTC_REPORT, AMBIGUOUS, UNCLASSIFIED). */
+/** Final closure: the last public report of a known CFTC market that is absent from the recent window. */
+export const LastReport = z.object({ state: z.string(), reason: z.string().nullable().optional(),
+  report_date: z.string().nullable(), publication_time: z.string().nullable().optional(),
+  publication_basis: z.string().nullable().optional() }).passthrough();
+export type LastReport = z.infer<typeof LastReport>;
 const RootCoverage = z.object({ root: z.string(), status: z.string(), reason: z.string().nullable(), label: z.string(),
   note: z.string().nullable(), provider_exchange: z.string().nullable(), candidate_code: z.string().nullable(),
   contract: z.string().nullable().optional() }).passthrough();
@@ -125,7 +130,10 @@ export const PositioningViewSchema = z.object({
     by_status: z.record(z.number()).optional(),
     breakdown: z.array(z.object({ id: z.string(), label: z.string(), count: z.number() })).optional(),
     mapped_without_report: z.array(z.string()).optional(), reported_roots: z.number().optional(),
+    mapped_without_report_detail: z.array(z.object({ root: z.string(), last_report: LastReport }).passthrough()).optional(),
+    recent_window_days: z.number().optional(),
     registry_verified: z.string().optional() }).passthrough(),
+  release_schedule: z.object({ state: z.string(), official_years: z.array(z.number()) }).passthrough().optional(),
   unmapped: z.array(RootCoverage).optional(), report_policy: z.string().optional(), oi_method: z.string().optional(),
   boundaries: z.array(z.string()), time_note: z.string(),
 }).passthrough();

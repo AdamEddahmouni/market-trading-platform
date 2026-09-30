@@ -107,7 +107,9 @@ const congressView = (universe: string, overrides: Record<string, unknown> = {})
   rows: [congressRow("h1", "AAPL"), congressRow("h2", "NVDA", { transaction_type: "PURCHASE", owner: "SELF", transaction_date: null,
     amount: { min_amount: 50001, max_amount: 100000, display: "$50,001 – $100,000", exact_value_disclosed: false }, disclosure_lag_days: null })],
   result_count: 2, offset: 0, limit: 100, has_more: false,
-  coverage: { filings: 133, parsed: 114, not_machine_readable: 19, loading: 0, matched: 2, ticker_outside_universe: 30, no_disclosed_ticker: 12 },
+  coverage: { filings: 133, parsed: 114, not_machine_readable: 19, loading: 0, matched: 2, ticker_outside_universe: 30, no_disclosed_ticker: 12,
+    transactions_in_window: 44, window_counts: { house_filings: 120, house_machine_readable: 101, house_scanned: 19, house_unreadable: 0,
+      house_loading: 0, house_transactions: 44, senate_transactions: 0, senate_in_view: false } },
   boundaries: BOUNDARIES, time_note: "Rows are placed by filing date, the date they became public.",
   neutrality_note: "Members are listed as filed; no member is ranked or characterized.", ...overrides,
 });
@@ -290,7 +292,11 @@ describe("S12 intelligence views", () => {
     expect(within(second).getAllByText("—")).toHaveLength(2);
     expect(within(first).getByRole("link", { name: "PTR" })).toHaveAttribute("rel", "noopener noreferrer");
     expect(table.textContent).not.toMatch(SCORE_WORDS);
-    expect(within(view).getByText(/133 House PTR filings in the window · 114 machine-readable · 19 scanned/)).toBeInTheDocument();
+    // House filing (document) counts and both chambers' transaction counts are separate sentences, both over the selected window.
+    expect(within(view).getByText(/House filings in the last 60 days: 120 PTRs · 101 machine-readable · 19 scanned/)).toBeInTheDocument();
+    expect(within(view).getByText(/Transactions filed in the last 60 days: 44 House \(Senate not imported\) — of these, 2 match this universe · 30 name other tickers · 12 have no ticker/))
+      .toBeInTheDocument();
+    expect(view.textContent).not.toMatch(/House PTR filings in the window/);
     expect(within(view).getByRole("list", { name: "Evidence boundaries" })).toHaveTextContent("A transaction date is not a disclosure date.");
     const providers = within(screen.getByRole("list", { name: "Congressional sources" })).getAllByRole("listitem").map((item) => item.textContent);
     expect(providers).toEqual(["House Clerk PTR Current publication", "Senate eFD Not configured"]);

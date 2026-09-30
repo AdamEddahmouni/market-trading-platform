@@ -403,9 +403,11 @@ Defects found and fixed during acceptance, each with a regression test:
 - Finviz's export is its latest-headlines window (100 items at acceptance);
   older ticker news within 72 h depends on NewsAPI/Finnhub being configured.
 - Sentiment and AI synthesis were not exercised live: no local FinBERT model or
-  Anthropic credential is configured on this workstation.
+  Anthropic credential is configured on this workstation. *Unchanged in
+  [final closure](SCREENER_FINAL_CLOSURE.md); each reports its not-configured reason.*
 - SEC filings and the SEC press-release feed need `SEC_USER_AGENT` and
-  `IMP_EDGAR_LIVE=1`; they were not configured.
+  `IMP_EDGAR_LIVE=1`; they were not configured. *Superseded by [final closure](SCREENER_FINAL_CLOSURE.md):
+  both were exercised live (SEC press feed and NVDA filings `CURRENT`).*
 - Matching is keyword/identity based: a company name or asset name appearing
   in unrelated context can still match (`EXACT_ENTITY`), and ETF/futures theme
   maps cover widely held funds and mapped roots only.

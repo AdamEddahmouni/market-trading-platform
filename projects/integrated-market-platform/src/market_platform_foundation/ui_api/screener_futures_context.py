@@ -190,6 +190,10 @@ class FuturesContextService:
             if transport is None:
                 return {root: self._contracts.get(root, (0, {"state": "UNRESOLVED", "reason": "PROVIDER_UNAVAILABLE"}))[1] for root in roots}
             mains = transport.fetch_future_contracts([f"US.{root}main" for root in missing])
+            if mains.get("reason_code"):
+                # A provider outage is not cached, so the first read after OpenD returns resolves again.
+                unavailable = {"state": "UNRESOLVED", "reason": "PROVIDER_UNAVAILABLE", "provider_reason": mains["reason_code"]}
+                return {root: unavailable if root in missing else self._contracts[root][1] for root in roots}
             main_rows = {str(row.get("code")): row for row in mains.get("rows") or []}
             today = self._today()
             candidates: dict[str, str] = {}
@@ -200,10 +204,7 @@ class FuturesContextService:
             dated = transport.fetch_future_contracts(sorted(candidates.values())) if candidates else {"rows": []}
             dated_rows = {str(row.get("code")): row for row in dated.get("rows") or []}
             for root in missing:
-                reason = mains.get("reason_code")
-                result = ({"state": "UNRESOLVED", "reason": "PROVIDER_UNAVAILABLE", "provider_reason": reason} if reason
-                          else resolve_contract(root, main_rows.get(f"US.{root}main"), dated_rows, today))
-                self._contracts[root] = (now, result)
+                self._contracts[root] = (now, resolve_contract(root, main_rows.get(f"US.{root}main"), dated_rows, today))
         return {root: self._contracts[root][1] for root in roots}
 
     def _vendor_quotes(self, codes: list[str], transport: Any | None) -> tuple[dict[str, Any], str | None]:

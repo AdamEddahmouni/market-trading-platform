@@ -27,6 +27,7 @@ MOOMOO_SDK_MISSING = "MOOMOO_SDK_MISSING"
 MOOMOO_AUTH_FAILURE = "MOOMOO_AUTH_FAILURE"
 MOOMOO_PROTOCOL_ERROR = "MOOMOO_PROTOCOL_ERROR"
 OPEND_NON_LOOPBACK_BLOCKED = "OPEND_NON_LOOPBACK_BLOCKED"
+OPEND_UNAVAILABLE = "OPEND_UNAVAILABLE"
 MOOMOO_LAST_PRICE_MISSING = "MOOMOO_LAST_PRICE_MISSING"
 KLINE_PROTOCOL_UNCLASSIFIED = "protocol_unclassified"
 
@@ -512,12 +513,18 @@ class OpendCurrentKlineSession:
         sdk: Any | None = None,
         max_held: int = 12,
         monotonic: Any = time.monotonic,
+        reachable: Any | None = None,
     ) -> None:
         import threading
 
         self._host = host
         self._port = int(port)
         self._sdk = sdk
+        # The vendor context constructor retries a refused connection without
+        # returning, and every call is serialized, so a stopped OpenD must be
+        # detected before the SDK is touched. An injected SDK is a test double.
+        self._reachable = reachable if reachable is not None else (
+            (lambda: True) if sdk is not None else self._tcp_reachable)
         self._max_held = max(1, int(max_held))
         self._monotonic = monotonic
         self._lock = threading.RLock()
@@ -536,11 +543,28 @@ class OpendCurrentKlineSession:
         with self._lock:
             return sorted(self._held)
 
+    def _tcp_reachable(self) -> bool:
+        import socket
+
+        try:
+            with socket.create_connection((self._host, self._port), timeout=0.4):
+                return True
+        except OSError:
+            return False
+
     def _context(self) -> tuple[Any, Any] | str:
-        if self._ctx is not None and self._ft is not None:
-            return self._ctx, self._ft
         if self._host not in _LOOPBACK_HOSTS:
             return OPEND_NON_LOOPBACK_BLOCKED
+        if not self._reachable():
+            # Drop a context whose OpenD has gone so a restarted OpenD gets a fresh one.
+            if self._ctx is not None:
+                _close_quote_context(self._ctx)
+                self._ctx = None
+                self._ft = None
+                self._held.clear()
+            return OPEND_UNAVAILABLE
+        if self._ctx is not None and self._ft is not None:
+            return self._ctx, self._ft
         ft = self._sdk if self._sdk is not None else load_vendor_sdk()
         if ft is None or not hasattr(ft, "OpenQuoteContext"):
             return MOOMOO_SDK_MISSING

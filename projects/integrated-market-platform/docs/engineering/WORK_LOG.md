@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-29 — Main Screener final completion and closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` (implementation, local gates, and five-universe live acceptance done; awaiting PR CI and owner review/merge) |
+| **Area** | `cftc`, `congressional_ptr`, `news`, `ui_api`, `tools/moomoo`, `ui/screener`, `docs` |
+| **Summary** | Closes the Main Screener program. **Congress:** coverage now reports House filings and each chamber's transactions separately, in the selected window. Compound-surname and prior-seat House filers resolve to official ids. **CFTC:** the release calendar is extended from the official schedule page to any year, with holiday-aware inference beyond it. A known market with no recent report shows its last report date, from one grouped query per report family. **Bonds News:** now reads every Treasury, not a 20,000-row page. **Crypto news:** needs a crypto anchor term, so generic "exchange"/"outage"/"SEC" stories stay out. **OpenD:** a stopped OpenD no longer freezes Screener previews; the quote transport probes the port first and fails fast with `OPEND_UNAVAILABLE`. Records decisions on OCR, House amendment linkage, futures venue, and search-across-universe. |
+| **Key files** | `src/market_platform_foundation/cftc/{release_schedule,screener_positioning,transport}.py`, `congressional_ptr/identity.py`, `news/event_taxonomy.py`, `ui_api/{screener_participants,screener_bonds,screener_news,screener_futures_context}.py`, `tools/moomoo/opend_quote_transport.py`, `ui/src/api/screenerParticipants.ts`, `ui/src/components/screener/participants/{IntelligenceView,sections}.tsx` (+ tests), `tests/{cftc/test_final_closure_release_calendar,market_trackers/test_final_closure_congress_identity,fixed_income/test_final_closure_bonds_news_index,platform/test_screener_final_closure,platform/test_screener_final_closure_provider_outage}.py` (new), `tests/fixtures/cftc/release_schedule_page_20260929.html` (new), `docs/engineering/SCREENER_FINAL_CLOSURE.md` (new), S11/S14/S15/S16 docs (superseded lines annotated) |
+| **Tests** | Screener backend + final closure 481; `validate changed` 5,269 tests, 0 failures, 0 errors; `validate full` 7,588 tests, 0 failures, 0 errors; UI 1,182 passed; typecheck and build clean (initial 201.40 KiB gzip); see [SCREENER_FINAL_CLOSURE.md](SCREENER_FINAL_CLOSURE.md#validation). |
+| **Related** | [SCREENER_FINAL_CLOSURE.md](SCREENER_FINAL_CLOSURE.md), [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md), [SCREENER_S15_CFTC_COVERAGE.md](SCREENER_S15_CFTC_COVERAGE.md), [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md), [SCREENER_S16_FIXED_INCOME_EXPANSION.md](SCREENER_S16_FIXED_INCOME_EXPANSION.md) |
+| **Notes** | Live acceptance ran on the owner workstation, and OpenD was stopped for part of the session, so both disconnect and reconnect were observed. The SEC User-Agent stayed in the process environment only. Two live-runtime issues outside the Screener are tracked separately: equity quotes stuck at `AWAITING_QUOTE`, and `/provider/health` blocked by the UI secret guard. FinBERT, NewsAPI, Finnhub, and AI synthesis are not configured on this host. |
+
 ## 2026-09-29 — Main Screener S16 Fixed Income Coverage & Market Data Expansion
 
 | Field | Value |

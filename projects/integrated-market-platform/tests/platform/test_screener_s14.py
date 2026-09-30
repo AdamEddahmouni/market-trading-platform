@@ -81,7 +81,7 @@ def service(env: dict, *, requester=None, thirteen_f=None, house_fail=False):
     public = PublicRecordsHttp(requester=requester, min_interval_s=0.0)
     return ScreenerParticipantService(
         catalog=lambda universe: (s12.CATALOG.get(universe, []), None), row_for=s12.row_for,
-        sec_transport_factory=lambda: s12.FakeSec(), public_http=public, cot_query=s12.cot_query,
+        sec_transport_factory=lambda: s12.FakeSec(), public_http=public, cot_query=s12.cot_query, cot_last_report=s12.cot_last_report,
         house_loader=HousePtrLoader(http=public, clock=clock, spawn=sync), usaspending=s12.FakeSpending(),
         lobbying=s12.FakeLobbying(), thirteen_f=thirteen_f, cache=BackgroundCache(clock=clock, spawn=sync), clock=clock,
         wait_s=0.0, env=env.get)
@@ -126,6 +126,27 @@ class SenateOnScreenerTests(unittest.TestCase):
         self.assertEqual(section["chambers"], ["HOUSE", "SENATE"])
         self.assertEqual({row["chamber"] for row in section["transactions"]}, {"SENATE"})
 
+    def test_window_counts_separate_house_filings_from_each_chambers_transactions(self):
+        # Final closure: the coverage sentence used to start from the House *filing* count of the loaded window but
+        # count "no ticker" *transactions* of both chambers in the selected window. Counts are now per chamber and
+        # per selected window, and every transaction lands in exactly one bucket.
+        env = self.env(IMP_SENATE_EFD_IMPORT_DIR=str(senate_dir(self.root)))
+        view = service(env).congress_view(universe="US_EQUITIES", window="60d")
+        coverage, counts = view["coverage"], view["coverage"]["window_counts"]
+        self.assertTrue(counts["senate_in_view"])
+        self.assertGreater(counts["senate_transactions"], 0)
+        self.assertEqual(counts["house_transactions"] + counts["senate_transactions"], coverage["transactions_in_window"])
+        self.assertEqual(coverage["matched"] + coverage["ticker_outside_universe"] + coverage["no_disclosed_ticker"],
+                         coverage["transactions_in_window"])
+        self.assertEqual(counts["house_filings"], counts["house_machine_readable"] + counts["house_scanned"]
+                         + counts["house_unreadable"] + counts["house_loading"])
+        self.assertLessEqual(counts["house_filings"], coverage["filings"])
+        # A window after every fixture filing: the loaded House figure stays, the window figures are zero.
+        later = service(env)
+        later._clock = lambda: datetime(2027, 3, 1, tzinfo=UTC).timestamp()
+        empty = later.congress_view(universe="US_EQUITIES", window="30d")["coverage"]["window_counts"]
+        self.assertEqual((empty["house_filings"], empty["house_transactions"], empty["senate_transactions"]), (0, 0, 0))
+
     def test_one_failing_source_never_erases_the_other(self):
         svc = service(self.env(IMP_SENATE_EFD_IMPORT_DIR=str(senate_dir(self.root))), house_fail=True)
         view = svc.congress_view(universe="US_EQUITIES")
@@ -167,7 +188,7 @@ class IdentityOnScreenerTests(unittest.TestCase):
         self.assertEqual(len(nj05), 1)
         self.assertEqual(nj05[0]["filed_as"], ["Josh Gottheimer", "Josh Mr Gottheimer"])
         self.assertEqual(nj05[0]["resolution"], "SEAT_AND_NAME")
-        rows, _providers, _coverage = svc._congress()
+        rows, _providers, _coverage, _filing_states = svc._congress()
         suffix_variant = {row["member"]["canonical_member_id"] for row in rows if row["doc_id"] == "20035408"}
         self.assertEqual(suffix_variant, {"HOUSE-SEAT:NJ05:GOTTHEIMER:JOSH:JR"})   # a suffix variant stays apart
         only = svc.congress_view(universe="US_EQUITIES", member="HOUSE-SEAT:NJ05:GOTTHEIMER:JOSH", limit=200)

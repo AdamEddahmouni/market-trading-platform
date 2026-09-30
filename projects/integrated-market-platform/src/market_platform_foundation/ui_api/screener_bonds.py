@@ -529,6 +529,18 @@ class BondScreener:
         row, _catalog, error = self._find(instrument_id)
         return (to_page_row(row) if row is not None else None), error
 
+    def treasury_rows(self) -> tuple[list[dict[str, Any]], str | None]:
+        """Every outstanding Treasury row, from the same cached projection the Screener pages use.
+
+        Consumers that key on Treasury CUSIPs (News) need all of them, not a page of the whole
+        universe: fund-held rows outnumber Treasuries several hundred to one.
+        """
+
+        catalog, error = self._catalog()
+        funds, _status = self._fund_catalog()
+        rows = self._rows(catalog, funds)
+        return [to_page_row(row) for row in takewhile(lambda row: isinstance(row, dict), rows)], error
+
     def window(self, symbols: list[str]) -> dict[str, Any]:
         """Bonds have no streaming quotes; the window reports that per row."""
 
