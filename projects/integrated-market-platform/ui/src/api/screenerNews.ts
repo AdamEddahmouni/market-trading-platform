@@ -104,6 +104,16 @@ export const NewsFeedSchema = z.object({
 }).passthrough();
 export type NewsFeed = z.infer<typeof NewsFeedSchema>;
 
+/** Paid provider only: today's usage against the hard daily limits (UTC day). */
+const Budget = z.object({ day: z.string(), requests: z.number(), max_requests: z.number(), tokens: z.number(),
+  max_tokens: z.number() }).passthrough();
+export type SynthesisBudget = z.infer<typeof Budget>;
+const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
+  provider_id: z.string().nullable(), model_id: z.string().nullable(),
+  runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),
+  budget: Budget.nullable().optional() }).passthrough();
+export type AiStatus = z.infer<typeof AiStatus>;
+
 const AnalysisItem = z.object({ text: z.string(), source: z.string(), as_of: Iso.nullable(), story_id: z.string().nullable() }).passthrough();
 export type NewsAnalysisItem = z.infer<typeof AnalysisItem>;
 export const InstrumentNewsSchema = z.object({
@@ -144,12 +154,7 @@ export const InstrumentNewsSchema = z.object({
     }).passthrough()),
   }).passthrough(),
   analysis: z.object({ observed: z.array(AnalysisItem), derived: z.array(AnalysisItem), insufficient: z.array(AnalysisItem) }).passthrough(),
-  ai: z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
-    provider_id: z.string().nullable(), model_id: z.string().nullable(),
-    runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),
-    /** Paid provider only: today's usage against the hard daily limits (UTC day). */
-    budget: z.object({ day: z.string(), requests: z.number(), max_requests: z.number(), tokens: z.number(),
-      max_tokens: z.number() }).passthrough().nullable().optional() }).passthrough(),
+  ai: AiStatus,
 }).passthrough();
 export type InstrumentNews = z.infer<typeof InstrumentNewsSchema>;
 
@@ -168,8 +173,21 @@ export const SynthesisSchema = z.object({
     summary: z.string(), observed_facts: z.array(Ref), derived_context: z.array(Ref), uncertainties: z.array(z.string()),
     conflicting_evidence: z.array(Ref), potential_market_relevance: z.array(Ref),
   }).passthrough().nullable(),
+  /** The headlines the model was given, in order; every ref resolves here whatever feed the UI has loaded. */
+  stories: z.array(z.object({ story_id: z.string(), headline: z.string(), url: z.string().nullable(),
+    published_at: Iso.nullable() }).passthrough()).optional(),
+  /** Usage after this call, so the budget line moves with the click. */
+  budget: Budget.nullable().optional(),
 }).passthrough();
 export type NewsSynthesis = z.infer<typeof SynthesisSchema>;
+
+export const SynthesisPreviewSchema = z.object({
+  schema_version: z.literal("screener-news-synthesis-preview/1.0.0"),
+  ai: AiStatus,
+  /** Paid runtime only: the worst-case tokens a click reserves; a cached input costs nothing. */
+  estimate: z.object({ story_count: z.number(), tokens: z.number().nullable(), cached: z.boolean() }).passthrough().nullable(),
+}).passthrough();
+export type SynthesisPreview = z.infer<typeof SynthesisPreviewSchema>;
 
 export type NewsFeedParams = {
   universe: ScreenerUniverse;
@@ -209,9 +227,16 @@ export async function fetchInstrumentNews(universe: ScreenerUniverse, instrument
   return payload;
 }
 
-export type SynthesisRequest = { universe: ScreenerUniverse; scope: "INSTRUMENT" | "UNIVERSE"; instrument?: string; window?: "24h" };
+export type SynthesisRequest = { universe: ScreenerUniverse; scope: "INSTRUMENT" | "UNIVERSE"; instrument?: string; window?: NewsWindowId };
 
 /** Explicit operator action only; never called on render. Aborted when the selection changes. */
 export function postNewsSynthesis(body: SynthesisRequest, signal?: AbortSignal) {
   return postJson("/screener/news/synthesis", body, SynthesisSchema, signal ? { signal } : undefined);
+}
+
+/** AI status and pre-click cost; the server never calls a model for it. */
+export function fetchSynthesisPreview(request: SynthesisRequest, signal?: AbortSignal) {
+  const query = new URLSearchParams({ universe: request.universe, scope: request.scope, window: request.window ?? "24h" });
+  if (request.instrument) query.set("instrument", request.instrument);
+  return fetchJson(`/screener/news/synthesis/preview?${query}`, SynthesisPreviewSchema, signal ? { signal } : undefined);
 }

@@ -227,9 +227,14 @@ class BudgetedProvider:
     def budget_status(self) -> dict[str, Any]:
         return self.budget.status()
 
+    def worst_case_tokens(self, rendered_prompt: str, config: IntelligenceInferenceConfig) -> int:
+        """What a call reserves against the daily budget; the UI cost preview states this same number."""
+
+        return estimate_tokens(rendered_prompt) + 1_500 + int(config.max_tokens)   # + tool schema and system text
+
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
-        worst_case = estimate_tokens(rendered_prompt) + 1_500 + int(config.max_tokens)   # + tool schema and system text
+        worst_case = self.worst_case_tokens(rendered_prompt, config)
         reason = self.budget.reserve(worst_case)
         if reason is not None:
             return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id,

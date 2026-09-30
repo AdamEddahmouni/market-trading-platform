@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
-import type { ScreenerUniverse } from "../../../api/screener";
-import { fetchInstrumentNews, postNewsSynthesis, type InstrumentNews, type NewsAnalysisItem, type NewsStory, type NewsSynthesis,
-  type SynthesisRefItem } from "../../../api/screenerNews";
+import { fetchInstrumentNews, type InstrumentNews, type NewsAnalysisItem } from "../../../api/screenerNews";
 import { degradedProviders, Headline, humanize, isModelLoading, newsDayTime, ProviderFixes, ProviderStrip, SentimentCell, sentimentWord,
   stateText, StorySources, StoryTime, termsText, TypeBadge } from "../news/newsFormat";
 import { RemedyHint } from "../setup/Remedy";
+import { SynthesisControl } from "../news/SynthesisControl";
 import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
 import "../news/news.css";
 
@@ -23,10 +22,10 @@ function Section({ title, children, derived = false }: { title: string; children
     <h3>{title}{derived ? <span className="news-class">DERIVED</span> : null}</h3>{children}</section>;
 }
 
-function Headlines({ data }: { data: InstrumentNews }) {
+function Headlines({ data, citedId }: { data: InstrumentNews; citedId: string | null }) {
   if (!data.stories.length) return <p className="screener-panel-note">No stories matched {data.instrument.symbol} in the last {data.window.id} from current providers.</p>;
   return <ol className="news-panel-feed" aria-label={`Latest headlines for ${data.instrument.symbol}`}>{data.stories.map((story) =>
-    <li key={story.story_id}><StoryTime story={story} universe={data.universe} /><Headline story={story} /><TypeBadge type={story.source_type} />
+    <li key={story.story_id} data-story-id={story.story_id} className={story.story_id === citedId ? "cited" : undefined}><StoryTime story={story} universe={data.universe} /><Headline story={story} /><TypeBadge type={story.source_type} />
       <StorySources story={story} universe={data.universe} /><SentimentCell sentiment={story.sentiment} /></li>)}</ol>;
 }
 
@@ -100,85 +99,6 @@ function AnalysisGroup({ title, items }: { title: string; items: NewsAnalysisIte
   </div>;
 }
 
-function Refs({ refs, stories }: { refs: string[]; stories: NewsStory[] }) {
-  if (!refs.length) return null;
-  return <span className="news-refs">Sources: {refs.map((ref, index) => {
-    const story = stories.find((item) => item.story_id === ref);
-    return <span key={ref}>{index ? "; " : ""}{story ? story.url ? <a href={story.url} target="_blank" rel="noopener noreferrer">{story.headline}</a> : story.headline
-      : <span className="news-muted">story {ref} not in the loaded feed</span>}</span>;
-  })}</span>;
-}
-
-function SynthesisBlock({ result, stories, universe }: { result: NewsSynthesis; stories: NewsStory[]; universe: ScreenerUniverse }) {
-  const label = `AI synthesis · model ${result.model_id ?? "unknown"}${result.runtime === "LOCAL_MODEL" ? " (local)" : ""} · generated ${newsDayTime(result.generated_at, universe)}`;
-  if (result.state !== "CURRENT" || !result.synthesis) {
-    return <p className="screener-panel-note" role="status">{label} · {humanize(result.state)}{result.reason ? ` · ${result.reason}` : ""}.</p>;
-  }
-  const s = result.synthesis;
-  const refList = (title: string, items: SynthesisRefItem[]) => <div className="news-ai-block">
-    <p className="news-ai-label">{label}</p><h4>{title}</h4>
-    {items.length ? <ul>{items.map((item, index) => <li key={index}>{item.text} <Refs refs={item.refs} stories={stories} /></li>)}</ul>
-      : <p className="screener-panel-note">None stated.</p>}</div>;
-  return <div className="news-ai" aria-label="AI synthesis result">
-    <div className="news-ai-block"><p className="news-ai-label">{label}</p><h4>Summary</h4><p>{s.summary}</p></div>
-    {refList("Observed facts", s.observed_facts)}
-    {refList("Derived context", s.derived_context)}
-    <div className="news-ai-block"><p className="news-ai-label">{label}</p><h4>Uncertainties</h4>
-      {s.uncertainties.length ? <ul>{s.uncertainties.map((item, index) => <li key={index}>{item}</li>)}</ul> : <p className="screener-panel-note">None stated.</p>}</div>
-    {refList("Conflicting evidence", s.conflicting_evidence)}
-    {refList("Potential market relevance", s.potential_market_relevance)}
-    <p className="screener-panel-note">Coverage: {result.coverage.synthesized_story_count != null && result.coverage.synthesized_story_count < result.coverage.story_count ? `${result.coverage.synthesized_story_count} of ${result.coverage.story_count}` : result.coverage.story_count} stories · {result.coverage.source_count} sources{result.coverage.missing_providers.length ? ` · missing ${result.coverage.missing_providers.join(", ")}` : ""} · prompt {result.prompt_id} v{result.prompt_version}{result.cache ? ` · cache ${result.cache.toLowerCase()}` : ""}. AI output is a synthesis of the listed headlines, not verified fact or advice.</p>
-  </div>;
-}
-
-const compactTokens = (value: number) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value);
-
-function Synthesis({ data }: { data: InstrumentNews }) {
-  const key = `${data.universe}|${data.instrument.instrument_id}`;
-  const current = useRef(key);
-  current.current = key;
-  const inflight = useRef<AbortController | null>(null);
-  const [result, setResult] = useState<{ key: string; value: NewsSynthesis } | null>(null);
-  const [status, setStatus] = useState<{ key: string; state: "running" | "error" } | null>(null);
-  useEffect(() => { setResult(null); setStatus(null); }, [key]);
-  // A selection change or unmount cancels an in-flight request; its result could only label the wrong instrument.
-  useEffect(() => { current.current = key; return () => { current.current = ""; inflight.current?.abort(); inflight.current = null; }; }, [key]);
-  if (data.ai.state !== "AVAILABLE") {
-    const remedy = remedyOf(data, "ai");
-    return <><p className="screener-panel-note">AI synthesis {data.ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{data.ai.reason ? ` · ${data.ai.reason}` : ""}. Nothing is generated.</p>
-      {remedy && <p className="screener-panel-note"><RemedyHint remedy={remedy} compact /></p>}</>;
-  }
-  const local = data.ai.runtime === "LOCAL_MODEL";
-  const budget = data.ai.budget ?? null;
-  const generate = async () => {
-    const requested = key;
-    inflight.current?.abort();
-    const controller = new AbortController();
-    inflight.current = controller;
-    setStatus({ key: requested, state: "running" });
-    try {
-      const value = await postNewsSynthesis({ universe: data.universe, scope: "INSTRUMENT", instrument: data.instrument.instrument_id, window: "24h" },
-        controller.signal);
-      // A result for a selection that has since changed is discarded.
-      if (current.current !== requested) return;
-      setResult({ key: requested, value }); setStatus(null);
-    } catch {
-      if (current.current === requested && !controller.signal.aborted) setStatus({ key: requested, state: "error" });
-    } finally {
-      if (inflight.current === controller) inflight.current = null;
-    }
-  };
-  const running = status?.key === key && status.state === "running";
-  return <>
-    <button type="button" className="screener-control" disabled={running} onClick={() => void generate()}>{running ? "Generating…" : "Generate AI synthesis"}</button>
-    <span className="screener-panel-note"> {data.ai.model_id ? `Model ${data.ai.model_id}${local ? " (local, no API cost)" : ""}. ` : ""}Runs only when requested.
-      {local && data.ai.reason === "STARTS_ON_REQUEST" ? " The local model starts on the first request (allow up to a minute)." : ""}
-      {budget ? ` Paid API · today ${budget.requests}/${budget.max_requests} requests · ${compactTokens(budget.tokens)}/${compactTokens(budget.max_tokens)} tokens (hard daily limit).` : ""}</span>
-    {status?.key === key && status.state === "error" && <p className="screener-panel-note" role="alert">AI synthesis request failed.</p>}
-    {result?.key === key && <SynthesisBlock result={result.value} stories={data.stories} universe={data.universe} />}
-  </>;
-}
-
 function Provenance({ data }: { data: InstrumentNews }) {
   return <>
     <ul className="news-provenance">{data.providers.map((provider) => <li key={provider.id}>
@@ -213,6 +133,8 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
   const gate = selectionGate("news", row, settledId);
   const current = data ? data.providers.filter((item) => item.state === "CURRENT").length : 0;
   const degraded = data ? degradedProviders(data.providers) : [];
+  // The AI citation under the pointer or focus; its headline is highlighted so grounding is checkable at a glance.
+  const [citedId, setCitedId] = useState<string | null>(null);
   return <PanelFrame id="news" state={data?.state ?? null} clock={data ? `updated ${newsDayTime(data.generated_at, data.universe)}` : null}
     detail={data ? `${data.instrument.label} · ${data.window.id} · ${data.coverage.story_count} stories · ${current}/${data.providers.length} providers current` : null}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">News &amp; Analysis request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
@@ -223,7 +145,7 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
         {data.state === "PARTIAL" && degraded.length > 0 && <PanelMessage tone="warn">Partial coverage · not current: {degraded.map((item) => `${item.label} (${stateText(item.state)}${item.reason ? ` · ${item.reason}` : ""})`).join("; ")}.
           <ProviderFixes providers={degraded} /></PanelMessage>}
         <ProviderStrip providers={data.providers} label="News & Analysis providers" />
-        <Section title="Latest headlines"><Headlines data={data} /></Section>
+        <Section title="Latest headlines"><Headlines data={data} citedId={citedId} /></Section>
         <Section title="Sentiment" derived><Sentiment data={data} /></Section>
         <Section title="Catalysts / Events" derived><Catalysts data={data} /></Section>
         <Section title="Attention" derived><Attention data={data} /></Section>
@@ -233,7 +155,9 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
           <AnalysisGroup title="Derived" items={data.analysis.derived} />
           <AnalysisGroup title="Insufficient evidence" items={data.analysis.insufficient} />
         </Section>
-        <Section title="AI synthesis"><Synthesis key={`${data.universe}|${data.instrument.instrument_id}`} data={data} /></Section>
+        <Section title="AI synthesis"><SynthesisControl key={`${data.universe}|${data.instrument.instrument_id}`}
+          request={{ universe: data.universe, scope: "INSTRUMENT", instrument: data.instrument.instrument_id, window: "24h" }}
+          ai={data.ai} remedy={remedyOf(data, "ai")} stories={data.stories} onCite={setCitedId} visible={visible} /></Section>
         <Section title="Provenance"><Provenance data={data} /></Section>
       </div>)}
   </PanelFrame>;

@@ -12,7 +12,7 @@ import { ConnectButton } from "../setup/Remedy";
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
-  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(),
+  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -34,6 +34,7 @@ vi.mock("../../../api/screenerBonds", async (original) => ({
 vi.mock("../../../api/screenerNews", async (original) => ({
   ...(await original<typeof import("../../../api/screenerNews")>()),
   fetchScreenerNews: mocks.news, fetchInstrumentNews: mocks.instrumentNews, postNewsSynthesis: mocks.synthesis,
+  fetchSynthesisPreview: mocks.synthesisPreview,
 }));
 vi.mock("../../../api/screenerSetup", async (original) => ({
   ...(await original<typeof import("../../../api/screenerSetup")>()),
@@ -184,6 +185,8 @@ beforeEach(() => {
   mocks.news.mockImplementation(async (params: { universe: string; offset?: number }) => feed({ universe: params.universe, offset: params.offset ?? 0 }));
   mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe));
   mocks.bondPreview.mockReturnValue(new Promise(() => undefined));
+  mocks.synthesisPreview.mockResolvedValue({ schema_version: "screener-news-synthesis-preview/1.0.0",
+    ai: { state: "NOT_CONFIGURED", reason: "ANTHROPIC_API_KEY_NOT_SET", provider_id: null, model_id: null }, estimate: null });
 });
 afterEach(() => vi.useRealTimers());
 
@@ -370,6 +373,40 @@ describe("S11 Screener News view", () => {
     expect(await screen.findByRole("region", { name: "Crypto news" })).toBeInTheDocument();
   });
 
+  it("runs a universe-wide synthesis from the Brief over the current window", async () => {
+    const after = { day: "2026-09-30", requests: 1, max_requests: 30, tokens: 3900, max_tokens: 200000 };
+    let used = { day: "2026-09-30", requests: 0, max_requests: 30, tokens: 0, max_tokens: 200000 };
+    mocks.synthesisPreview.mockImplementation(async () => ({ schema_version: "screener-news-synthesis-preview/1.0.0",
+      ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API", budget: used },
+      estimate: { story_count: 12, tokens: 5200, cached: used.requests > 0 } }));
+    mocks.synthesis.mockImplementation(async () => { used = after; return {
+      schema_version: "screener-news-synthesis/1.0.0", state: "CURRENT", reason: null, epistemic_class: "AI_SYNTHESIS", generated_at: T,
+      provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", prompt_id: "p", prompt_version: "1", input_hash: "u", cache: "MISS",
+      story_ids: ["U-1"], coverage: { story_count: 30, synthesized_story_count: 12, source_count: 9, window: win("4h"), missing_providers: [] },
+      stories: [{ story_id: "U-1", headline: "Chipmakers lead the tape", url: null, published_at: T }],
+      synthesis: { summary: "Semis dominate today's flow.", observed_facts: [{ text: "Chip stories lead", refs: ["U-1"] }],
+        derived_context: [], uncertainties: [], conflicting_evidence: [], potential_market_relevance: [] },
+      budget: after,
+    }; });
+    await openNews();
+    await screen.findByRole("table", { name: "US Equities news feed" });
+    fireEvent.change(screen.getByRole("combobox", { name: "News window" }), { target: { value: "4h" } });
+    fireEvent.click(screen.getByRole("button", { name: "Brief" }));
+    const section = await screen.findByRole("region", { name: "Universe AI synthesis" });
+    expect(section).toHaveTextContent(/what's moving/i);
+    fireEvent.click(await within(section).findByRole("button", { name: "Generate AI synthesis · ≈ 5k tokens, 12 stories" }));
+    await waitFor(() => expect(mocks.synthesis).toHaveBeenCalledWith({ universe: "US_EQUITIES", scope: "UNIVERSE", window: "4h" },
+      expect.any(AbortSignal)));
+    const result = await within(section).findByLabelText("AI synthesis result");
+    expect(within(result).getByText("Semis dominate today's flow.")).toBeInTheDocument();
+    const inputs = within(result).getByRole("list", { name: "Headlines given to the model" });
+    fireEvent.mouseEnter(result.querySelector(".news-ref-chip")!);
+    expect(inputs.querySelector('li[data-story-id="U-1"]')).toHaveClass("cited");
+    expect(section).toHaveTextContent("Paid API · today 1/30 requests · 4k/200k tokens (hard daily limit).");
+    // The estimate follows the call: the same input is now cached.
+    expect(await within(section).findByRole("button", { name: "Generate AI synthesis · cached, no cost" })).toBeEnabled();
+  });
+
   it("renders a deterministic, labelled Brief", async () => {
     mocks.news.mockImplementation(async (params: { universe: string; view?: string }) => feed({ universe: params.universe,
       brief: params.view === "brief" ? { generated_at: T, window: win(), method: "CATEGORY_GROUPING_V1", story_count: 4, headline_count: 9, source_count: 3,
@@ -497,7 +534,7 @@ describe("S11 News & Analysis panel", () => {
     expect(within(result).getAllByText(/^AI synthesis · model claude-test · generated /)).toHaveLength(6);
     expect(within(result).getByText("Two stories discuss quarterly results.")).toBeInTheDocument();
     expect(within(result).getByRole("heading", { name: "Uncertainties" })).toBeInTheDocument();
-    expect(within(result).getAllByRole("link", { name: "AAPL headline one" }).length).toBeGreaterThan(0);
+    expect(within(result).getAllByRole("link", { name: "1 AAPL headline one" }).length).toBeGreaterThan(0);
   });
 
   it("discards a synthesis that arrives after the selection changed", async () => {
@@ -555,6 +592,98 @@ describe("S11 News & Analysis panel", () => {
     await within(panel).findByText("AAPL headline one");
     expect(within(panel).getByRole("region", { name: "AI synthesis" }))
       .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit).");
+  });
+
+  const PAID_AI = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
+    budget: { day: "2026-09-30", requests: 3, max_requests: 30, tokens: 12400, max_tokens: 200000 } };
+  const synthesisResult = (overrides: Record<string, unknown> = {}) => ({
+    schema_version: "screener-news-synthesis/1.0.0", state: "CURRENT", reason: null, epistemic_class: "AI_SYNTHESIS", generated_at: T,
+    provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", prompt_id: "p", prompt_version: "1", input_hash: "abc", cache: "MISS",
+    story_ids: ["AAPL-2", "AAPL-1"], coverage: { story_count: 2, source_count: 2, window: win(), missing_providers: [] },
+    stories: [{ story_id: "AAPL-2", headline: "AAPL second story", url: "https://news.example/AAPL-2", published_at: T },
+      { story_id: "AAPL-1", headline: "AAPL headline one", url: null, published_at: T }],
+    synthesis: { summary: "Results dominate coverage.", observed_facts: [{ text: "Results were reported", refs: ["AAPL-1"] }],
+      derived_context: [], uncertainties: [], conflicting_evidence: [], potential_market_relevance: [] },
+    ...overrides,
+  });
+  const openPanel = async () => {
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    return panel;
+  };
+
+  it("shows elapsed time while generating and how long the run took", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    let finish: (value: unknown) => void = () => undefined;
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: "Qwen/Qwen3-4B-GGUF:Q4_K_M", runtime: "LOCAL_MODEL" } }));
+    mocks.synthesis.mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
+    const panel = await openPanel();
+    const ai = within(panel).getByRole("region", { name: "AI synthesis" });
+    fireEvent.click(within(ai).getByRole("button", { name: "Generate AI synthesis" }));
+    expect(within(ai).getByRole("button", { name: "Generating…" })).toBeDisabled();
+    expect(within(ai).getByRole("status")).toHaveTextContent("Generating AI synthesis");
+    expect(ai).toHaveTextContent("local runs typically take 30–45 s");
+    await act(async () => { vi.advanceTimersByTime(12_000); });
+    expect(ai.querySelector(".news-ai-elapsed")).toHaveTextContent(/^1[23] s/);
+    await act(async () => { finish(synthesisResult({ runtime: "LOCAL_MODEL", budget: null })); });
+    expect(await within(ai).findByText(/took 1[23] s\./)).toBeInTheDocument();
+    expect(ai.querySelector(".news-ai-elapsed")).toBeNull();
+    // A local model states no cost and is never previewed.
+    expect(mocks.synthesisPreview).not.toHaveBeenCalled();
+  });
+
+  it("updates the budget line from the synthesis response without refetching news", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe, { ai: PAID_AI }));
+    mocks.synthesisPreview.mockResolvedValue({ schema_version: "screener-news-synthesis-preview/1.0.0", ai: PAID_AI,
+      estimate: { story_count: 2, tokens: 4120, cached: false } });
+    mocks.synthesis.mockResolvedValue(synthesisResult({ runtime: "PAID_API",
+      budget: { day: "2026-09-30", requests: 4, max_requests: 30, tokens: 15600, max_tokens: 200000 } }));
+    const panel = await openPanel();
+    const ai = within(panel).getByRole("region", { name: "AI synthesis" });
+    const newsCalls = mocks.instrumentNews.mock.calls.length;
+    fireEvent.click(await within(ai).findByRole("button", { name: "Generate AI synthesis · ≈ 4k tokens, 2 stories" }));
+    await within(ai).findByLabelText("AI synthesis result");
+    expect(ai).toHaveTextContent("Paid API · today 4/30 requests · 16k/200k tokens (hard daily limit).");
+    expect(mocks.instrumentNews.mock.calls.length).toBe(newsCalls);
+  });
+
+  it("previews the cost of a paid run and says when a cached result costs nothing", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe, { ai: PAID_AI }));
+    mocks.synthesisPreview.mockResolvedValue({ schema_version: "screener-news-synthesis-preview/1.0.0", ai: PAID_AI,
+      estimate: { story_count: 12, tokens: 4400, cached: true } });
+    const panel = await openPanel();
+    const ai = within(panel).getByRole("region", { name: "AI synthesis" });
+    expect(await within(ai).findByRole("button", { name: "Generate AI synthesis · cached, no cost" })).toBeEnabled();
+    expect(mocks.synthesisPreview).toHaveBeenCalledWith({ universe: "US_EQUITIES", scope: "INSTRUMENT", instrument: "AAPL", window: "24h" },
+      expect.anything());
+    expect(mocks.synthesis).not.toHaveBeenCalled();
+  });
+
+  it("highlights the cited headline while its citation chip is hovered or focused", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic", model_id: "claude-test" } }));
+    mocks.synthesis.mockResolvedValue(synthesisResult());
+    const panel = await openPanel();
+    fireEvent.click(within(panel).getByRole("button", { name: "Generate AI synthesis" }));
+    const result = await within(panel).findByLabelText("AI synthesis result");
+    // Numbered by the model's input order; AAPL-1 was the second story given, and has no link.
+    const chip = result.querySelector(".news-ref-chip") as HTMLElement;
+    expect(chip).toHaveTextContent("2");
+    expect(chip).toHaveAccessibleName("2 AAPL headline one");
+    expect(chip).toHaveAttribute("title", "AAPL headline one");
+    const feed = within(panel).getByRole("list", { name: "Latest headlines for AAPL" });
+    const row = (id: string) => feed.querySelector(`li[data-story-id="${id}"]`)!;
+    fireEvent.mouseEnter(chip);
+    expect(row("AAPL-1")).toHaveClass("cited");
+    expect(row("AAPL-2")).not.toHaveClass("cited");
+    fireEvent.mouseLeave(chip);
+    expect(row("AAPL-1")).not.toHaveClass("cited");
+    fireEvent.focus(chip);
+    expect(row("AAPL-1")).toHaveClass("cited");
   });
 
   it("labels a local-model synthesis as local", async () => {

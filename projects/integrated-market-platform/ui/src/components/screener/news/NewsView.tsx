@@ -7,6 +7,7 @@ import { fetchScreenerNews, NEWS_PAGE_LIMIT, NEWS_SORTS, NEWS_WINDOWS, type News
 import { degradedProviders, Headline, humanize, isModelLoading, MatchChip, newsDayTime, ProviderFixes, ProviderStrip, SentimentCell,
   stateText, StorySources, StoryTime, TypeBadge } from "./newsFormat";
 import { RemedyHint } from "../setup/Remedy";
+import { UniverseSynthesis } from "./SynthesisControl";
 import "./news.css";
 
 const WINDOW_LABELS: Record<NewsWindowId, string> = { "1h": "Last 1h", "4h": "Last 4h", "24h": "Last 24h", "72h": "Last 72h" };
@@ -167,8 +168,9 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
       : query.isError && !first ? <div className="news-message error" role="alert"><strong>News request failed.</strong>
         <button type="button" className="screener-control" onClick={() => void query.refetch()}>Retry</button></div>
       : !first ? null
-      : view === "brief" ? (first.brief ? <Brief brief={first.brief} providers={first.providers} universe={universe} />
-        : query.isPlaceholderData ? null : <div className="news-message" role="status">Brief unavailable for this window.</div>)
+      : view === "brief" ? <>{first.brief ? <Brief brief={first.brief} providers={first.providers} universe={universe} />
+        : query.isPlaceholderData ? null : <div className="news-message" role="status">Brief unavailable for this window.</div>}
+        <UniverseSynthesis universe={universe} universeLabel={universeLabel} window={state.window} /></>
       : stories.length === 0 ? (first.remedy ? <div className="news-message news-empty-remedy" role="status">
           <RemedyHint remedy={first.remedy} />
           <span className="news-meta">No {universeLabel} stories can be shown until this is fixed; the feed refreshes on its own.</span></div>
