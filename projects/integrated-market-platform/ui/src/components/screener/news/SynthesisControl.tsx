@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import type { ScreenerUniverse } from "../../../api/screener";
 import { SETUP_QUERY_KEY, type Remedy } from "../../../api/screenerSetup";
-import { fetchSynthesisPreview, postNewsSynthesis, type AiStatus, type NewsStory, type NewsSynthesis, type NewsWindowId,
-  type SynthesisBudget, type SynthesisRefItem, type SynthesisRequest } from "../../../api/screenerNews";
+import { fetchSynthesisPreview, postNewsSynthesis, postSynthesisEngine, type AiStatus, type NewsStory, type NewsSynthesis,
+  type NewsWindowId, type SynthesisBudget, type SynthesisEngine, type SynthesisRefItem, type SynthesisRequest } from "../../../api/screenerNews";
 import { humanize, newsDayTime } from "./newsFormat";
 import { RemedyHint } from "../setup/Remedy";
 
@@ -31,6 +31,64 @@ function applyBudget(client: QueryClient, universe: ScreenerUniverse, budget: Sy
   // The next estimate (and its cached flag) and the Setup checklist follow the call.
   void client.invalidateQueries({ queryKey: [PREVIEW_ROOT, universe] });
   void client.invalidateQueries({ queryKey: SETUP_QUERY_KEY });
+}
+
+/** An engine switch applies everywhere at once: every cached AI status takes the new one, then refetches. */
+function applyAiStatus(client: QueryClient, ai: AiStatus) {
+  const patch = <T extends { ai: AiStatus }>(old: T | undefined): T | undefined => old && { ...old, ai };
+  client.setQueriesData<{ ai: AiStatus }>({ queryKey: ["screener-news-instrument"] }, patch);
+  client.setQueriesData<{ ai: AiStatus }>({ queryKey: [PREVIEW_ROOT] }, patch);
+  void client.invalidateQueries({ queryKey: [PREVIEW_ROOT] });
+  void client.invalidateQueries({ queryKey: ["screener-news-instrument"] });
+  void client.invalidateQueries({ queryKey: SETUP_QUERY_KEY });
+}
+
+const AUTO = "auto";
+const optionValue = (engine: string, model: string | null) => `${engine}|${model ?? ""}`;
+/** "needs OPENAI_API_KEY" for a missing key; the reason code otherwise. */
+const needs = (engine: SynthesisEngine) => engine.reason?.endsWith("_NOT_SET") ? `needs ${engine.reason.slice(0, -"_NOT_SET".length)}`
+  : engine.runtime === "LOCAL_MODEL" ? "not installed" : humanize(engine.reason ?? "unavailable");
+
+/** Which engine and model synthesis runs on: free local model or a paid API. Saved on the server; calls no model. */
+function EngineSelect({ ai, disabled, onChanged }: { ai: AiStatus; disabled: boolean; onChanged: () => void }) {
+  const client = useQueryClient();
+  const [saving, setSaving] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const engines = ai.engines ?? [];
+  if (!engines.length) return null;
+  const chosen = engines.find((engine) => engine.id === ai.engine);
+  const value = chosen ? optionValue(chosen.id, ai.engine_model ?? chosen.default_model) : AUTO;
+  const change = async (next: string) => {
+    if (next === AUTO || next === value) return;
+    const split = next.indexOf("|");
+    setSaving(true); setFailed(false);
+    try {
+      const status = await postSynthesisEngine(next.slice(0, split), next.slice(split + 1) || null);
+      applyAiStatus(client, status);
+      onChanged();
+    } catch {
+      setFailed(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+  return <span className="news-ai-engine">
+    <label>AI engine <select value={value} disabled={disabled || saving} onChange={(event) => void change(event.target.value)}
+      title="Free local model or a paid API. Paid engines share one hard daily limit.">
+      {!chosen && <option value={AUTO}>Automatic{ai.model_id ? ` (now ${ai.model_id})` : ""}</option>}
+      {engines.map((engine) => {
+        const cost = engine.runtime === "LOCAL_MODEL" ? "free" : "paid";
+        const ready = engine.state === "AVAILABLE";
+        return <optgroup key={engine.id} label={ready ? `${engine.label} (${cost})` : `${engine.label}: ${needs(engine)}`}>
+          {engine.models.length ? engine.models.map((model) => <option key={model} value={optionValue(engine.id, model)} disabled={!ready}>
+            {engine.label} · {model} ({ready ? cost : needs(engine)})</option>)
+            : <option value={optionValue(engine.id, null)} disabled>{engine.label} ({needs(engine)})</option>}
+        </optgroup>;
+      })}
+    </select></label>
+    {saving && <span className="screener-panel-note" role="status"> Switching…</span>}
+    {failed && <span className="screener-panel-note" role="alert"> Could not switch the AI engine.</span>}
+  </span>;
 }
 
 type Cited = { story_id: string; headline: string; url: string | null };
@@ -123,8 +181,10 @@ export function SynthesisControl({ request, ai, remedy = null, stories, onCite, 
   const cited = useMemo<Cited[]>(() => result?.value.stories
     ?? (result?.value.story_ids ?? []).flatMap((id) => stories.filter((story) => story.story_id === id)), [result, stories]);
 
+  const clearResult = () => { setResult(null); setStatus(null); setCitedId(null); };
+  const engineSelect = <EngineSelect ai={ai} disabled={running} onChanged={clearResult} />;
   if (ai.state !== "AVAILABLE") {
-    return <><p className="screener-panel-note">AI synthesis {ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{ai.reason ? ` · ${ai.reason}` : ""}. Nothing is generated.</p>
+    return <>{engineSelect}<p className="screener-panel-note">AI synthesis {ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{ai.reason ? ` · ${ai.reason}` : ""}. Nothing is generated.</p>
       {remedy && <p className="screener-panel-note"><RemedyHint remedy={remedy} compact /></p>}</>;
   }
   const local = ai.runtime === "LOCAL_MODEL";
@@ -156,6 +216,7 @@ export function SynthesisControl({ request, ai, remedy = null, stories, onCite, 
     : estimate.tokens != null ? ` · ≈ ${compactTokens(estimate.tokens)} tokens, ${storyText}` : ` · ${storyText}`;
   const elapsed = running ? Math.max(0, Math.floor((now - (status?.startedAt ?? now)) / 1000)) : 0;
   return <>
+    {engineSelect}
     <button type="button" className="screener-control" disabled={running} onClick={() => void generate()}
       title={estimate && !estimate.cached && estimate.tokens != null ? "Worst case reserved against today's budget; actual usage is usually lower." : undefined}>
       {running ? "Generating…" : `Generate AI synthesis${cost}`}</button>
@@ -163,7 +224,7 @@ export function SynthesisControl({ request, ai, remedy = null, stories, onCite, 
       <span className="sr-only" role="status">Generating AI synthesis</span></span>}
     <span className="screener-panel-note"> {ai.model_id ? `Model ${ai.model_id}${local ? " (local, no API cost)" : ""}. ` : ""}Runs only when requested.
       {local && ai.reason === "STARTS_ON_REQUEST" ? " The local model starts on the first request (allow up to a minute)." : ""}
-      {budget ? ` Paid API · today ${budget.requests}/${budget.max_requests} requests · ${compactTokens(budget.tokens)}/${compactTokens(budget.max_tokens)} tokens (hard daily limit).` : ""}</span>
+      {budget ? ` Paid API · today ${budget.requests}/${budget.max_requests} requests · ${compactTokens(budget.tokens)}/${compactTokens(budget.max_tokens)} tokens (hard daily limit, shared by all paid engines).` : ""}</span>
     {status?.key === target && status.state === "error" && <p className="screener-panel-note" role="alert">AI synthesis request failed.</p>}
     {result?.key === target && <SynthesisBlock result={result.value} cited={cited} citedId={citedId} onCite={cite} universe={request.universe}
       tookS={result.tookS} showInputs={showInputs} />}

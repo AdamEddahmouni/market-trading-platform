@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Screener AI engine picker (local, Claude, OpenAI, Gemini)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend` |
+| **Summary** | News AI synthesis switched to paid Claude silently once an Anthropic key was saved. The Screener now has an **AI engine** dropdown beside Generate AI synthesis: the free local model, or a paid engine and model (Anthropic, OpenAI, Gemini). The choice is saved in the IMP cache, applies without a restart, accepts catalog models only, and all paid engines share the one hard daily budget. |
+| **Key files** | `intelligence/inference/synthesis_engines.py` (new), `intelligence/inference/hosted_synthesis.py` (new), `local_provider.py`, `anthropic_synthesis.py`, `ui_api/screener_news.py`, `ui_api/server.py`, `platform/security/route_policy.py`, `ui_api/operator_config.py`, `ui_api/screener_remedies.py`, `tools/news/auth.py`, `ui/src/api/screenerNews.ts`, `ui/src/components/screener/news/SynthesisControl.tsx`, `news.css` |
+| **Tests** | `tests/intelligence/test_hosted_synthesis.py` (new), `test_screener_free_capabilities.py` (EngineChoiceTests); ui: `News.test.tsx` engine picker |
+| **Related** | [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md#engine-picker), [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md) |
+| **Notes** | OpenAI/Gemini are covered by fake-transport tests only until keys are configured; model IDs follow the vendors' docs as of 2026-09-30. |
+
 ## 2026-09-30 — Automatic Senate eFD download
 
 | Field | Value |

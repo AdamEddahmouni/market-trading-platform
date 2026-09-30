@@ -27,6 +27,11 @@ PROVIDER_FIELDS: tuple[tuple[str, str, tuple[tuple[str, str, bool], ...]], ...] 
         ),
     ),
     (
+        "ai_synthesis",
+        "AI synthesis (Screener)",
+        (("OPENAI_API_KEY", "OpenAI API key", True), ("GEMINI_API_KEY", "Google Gemini API key", True)),
+    ),
+    (
         "news",
         "News providers",
         (("NEWSAPI_API_KEY", "NewsAPI key", True), ("FINNHUB_API_KEY", "Finnhub key", True)),

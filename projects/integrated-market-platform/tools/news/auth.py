@@ -1,4 +1,4 @@
-"""Secure setup for NewsAPI, Finnhub, and Anthropic (AI synthesis) credentials."""
+"""Secure setup for NewsAPI, Finnhub, and paid AI synthesis (Anthropic, OpenAI, Gemini) credentials."""
 
 from __future__ import annotations
 
@@ -41,11 +41,13 @@ def write_provider_values(values: dict[str, str], *, path: Path | None = None) -
         return False
 
 
-def configured_values(newsapi_key: str, finnhub_key: str, anthropic_key: str = "") -> dict[str, str]:
+def configured_values(newsapi_key: str, finnhub_key: str, anthropic_key: str = "", *, openai_key: str = "",
+                      gemini_key: str = "") -> dict[str, str]:
     """Private-file values for the keys entered; storing a key is the operator's opt-in for that provider.
 
-    The Anthropic key needs no live flag: synthesis runs only on an explicit operator request, behind the daily
-    budget (IMP_SYNTHESIS_DAILY_REQUESTS / IMP_SYNTHESIS_DAILY_TOKENS)."""
+    AI keys need no live flag: storing one only makes that engine selectable in the Screener. Synthesis runs on
+    the engine the operator picks, only on an explicit request, behind the shared daily budget
+    (IMP_SYNTHESIS_DAILY_REQUESTS / IMP_SYNTHESIS_DAILY_TOKENS)."""
 
     values: dict[str, str] = {}
     if newsapi_key:
@@ -54,6 +56,10 @@ def configured_values(newsapi_key: str, finnhub_key: str, anthropic_key: str = "
         values.update(FINNHUB_API_KEY=finnhub_key, IMP_FINNHUB_LIVE="1")
     if anthropic_key:
         values.update(ANTHROPIC_API_KEY=anthropic_key)
+    if openai_key:
+        values.update(OPENAI_API_KEY=openai_key)
+    if gemini_key:
+        values.update(GEMINI_API_KEY=gemini_key)
     return values
 
 
@@ -62,7 +68,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "command",
         choices=("configure",),
-        help="Store NewsAPI (Developer), Finnhub, and/or Anthropic keys in the private provider file",
+        help="Store NewsAPI (Developer), Finnhub, and/or AI synthesis keys in the private provider file",
     )
     args = parser.parse_args(argv)
     if args.command != "configure":
@@ -72,15 +78,20 @@ def main(argv: list[str] | None = None) -> int:
     newsapi_key = getpass.getpass("NewsAPI Developer key (blank to skip): ").strip()
     finnhub_key = getpass.getpass("Finnhub key (blank to skip): ").strip()
     anthropic_key = getpass.getpass("Anthropic API key for AI synthesis (blank to skip): ").strip()
-    values = configured_values(newsapi_key, finnhub_key, anthropic_key)
+    openai_key = getpass.getpass("OpenAI API key for AI synthesis (blank to skip): ").strip()
+    gemini_key = getpass.getpass("Google Gemini API key for AI synthesis (blank to skip): ").strip()
+    values = configured_values(newsapi_key, finnhub_key, anthropic_key, openai_key=openai_key, gemini_key=gemini_key)
     if not values:
         print("ERROR: no provider key entered")
         return 2
     if not write_provider_values(values):
         print("ERROR: failed to store provider keys")
         return 2
-    stored = [name for name, key in (("NewsAPI", newsapi_key), ("Finnhub", finnhub_key), ("Anthropic", anthropic_key)) if key]
-    print(f"Stored {' and '.join(stored)} credentials in the private provider file; restart the platform API")
+    stored = [name for name, key in (("NewsAPI", newsapi_key), ("Finnhub", finnhub_key), ("Anthropic", anthropic_key),
+                                     ("OpenAI", openai_key), ("Gemini", gemini_key)) if key]
+    print(f"Stored {', '.join(stored)} credentials in the private provider file; restart the platform API")
+    if anthropic_key or openai_key or gemini_key:
+        print("Pick the AI synthesis engine in the Screener (the engine menu beside Generate AI synthesis)")
     return 0
 
 

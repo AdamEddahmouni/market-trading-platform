@@ -112,6 +112,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/screener/news/synthesis":
             # Operator-initiated model call (paid API or on-demand local model); never a render-time read.
             return RoutePolicy(capability="state.write")
+        if path == "/screener/news/synthesis/engine":
+            # Operator choice of synthesis engine and model, saved in the IMP cache; calls no model.
+            return RoutePolicy(capability="state.write")
         if path == "/paper/orders/preview":
             return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/orders":

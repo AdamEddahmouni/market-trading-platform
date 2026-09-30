@@ -37,7 +37,7 @@ MAX_STORIES = 12
 CACHE_SIZE = 64
 CACHE_TTL_S = 30 * 60
 FAILURE_TTL_S = 60
-_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "SYNTHESIS_")
+_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "OPENAI_", "GEMINI_", "SYNTHESIS_")
 _LIST_FIELDS = ("observed_facts", "derived_context", "conflicting_evidence", "potential_market_relevance")
 # Recommendation/certainty forms only. Attributed analyst actions in prose ("upgraded to Buy") and
 # market vocabulary ("sell-off", "buyback") are not recommendations.
@@ -274,7 +274,7 @@ class ScreenerSynthesizer:
         base = {**base, "input_hash": digest, "cache": "MISS", "provider_id": response.provider_id,
                 "model_id": response.model_id}
         if response.error_code is not None:
-            # Provider reasons are stable codes (LOCAL_*, ANTHROPIC_*, SYNTHESIS_*); others report the canonical code.
+            # Provider reasons are stable codes (LOCAL_*, ANTHROPIC_*, OPENAI_*, GEMINI_*, SYNTHESIS_*); others report the canonical code.
             message = response.error_message or ""
             reason = (message if message == "API_KEY_MISSING" or message.startswith(_STABLE_REASON_PREFIXES)
                       else response.error_code.value)

@@ -1489,6 +1489,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 self._send_error_json("PROVIDER_NOT_CONNECTABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
+        if path == "/screener/news/synthesis/engine":
+            # Operator choice of synthesis engine and model (catalog only); calls no model.
+            from .screener_news import select_synthesis_engine
+
+            engine, model = body.get("engine"), body.get("model")
+            try:
+                if not isinstance(engine, str) or not (model is None or isinstance(model, str)):
+                    raise ValueError("SYNTHESIS_ENGINE_INVALID")
+                self._send_json(select_synthesis_engine(engine, model))
+            except ValueError as exc:
+                self._send_error_json("SYNTHESIS_ENGINE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
         if path == "/screener/news/synthesis":
             # S11: AI synthesis runs only on this explicit operator action, never on render.
             from .screener_news import request_news_synthesis

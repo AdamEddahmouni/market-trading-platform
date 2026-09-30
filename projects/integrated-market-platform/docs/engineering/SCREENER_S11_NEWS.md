@@ -16,6 +16,7 @@ three surfaces over the **active** universe:
 | **News & Analysis** dock panel (`news`) | Selected-instrument headlines, sentiment, catalysts, attention, post-headline reaction, analysis, AI synthesis, provenance | `GET /screener/news/instrument` |
 | Quick Preview **News** | Compact: 3–5 newest stories, sentiment line, latest catalyst, provider states, "Open News & Analysis" | `GET /screener/news/instrument?compact=1` |
 | AI synthesis | Explicit operator action only | `POST /screener/news/synthesis` |
+| AI engine picker | Operator choice of engine + model (calls no model) | `POST /screener/news/synthesis/engine` |
 
 ## Architecture
 
@@ -124,7 +125,7 @@ US Equities headlines); that S3 "Why it may be moving" path is unchanged.
 | Finnhub | Company news | Instrument (Equities, ETFs) | `IMP_FINNHUB_LIVE`, `FINNHUB_API_KEY` | 600 s per symbol |
 | SEC EDGAR | Recent event filings (8-K, 10-Q/K, S-1/3, 424B, 13D/G, 4, …) as `OFFICIAL_FILING` | Instrument (Equities) | `IMP_EDGAR_LIVE=1`, `SEC_USER_AGENT` | Ticker map 24 h; submissions 600 s; global Fair Access throttle |
 | FinBERT (local) | Headline language sentiment (`IMP_DERIVED_FINBERT`) | Feed + instrument | `IMP_FINBERT_MODEL_PATH` or the setup manifest | Background load; LRU 4,096 |
-| AI synthesis | Grounded synthesis | Operator action | Local model (setup manifest) or `ANTHROPIC_API_KEY` | 30 min by input hash |
+| AI synthesis | Grounded synthesis | Operator action | Operator-picked engine: local model (setup manifest), or `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` | 30 min by input hash |
 
 Free-capability activation (2026-09-30) updated this table; see
 [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md).
@@ -323,6 +324,29 @@ stories produce a new hash and a new call. No provider → `NOT_CONFIGURED`
 without a call; no stories → `INSUFFICIENT_EVIDENCE`. The UI shows no Generate
 button unless AI is available, and discards a result that arrives after the
 selection changed.
+
+### Engine picker
+
+Beside the Generate button, an **AI engine** dropdown picks the engine and model:
+the free local model, Anthropic Claude, OpenAI, or Google Gemini, one option per
+catalog model (`intelligence/inference/synthesis_engines.py`). An engine without
+its key (or a local model that isn't installed) is listed but disabled, with the
+reason (for example "needs OPENAI_API_KEY"). The dropdown shows in the not-configured
+state too, so the operator can always switch to an engine that works.
+
+- `POST /screener/news/synthesis/engine {engine, model}` (`state.write`) saves the
+  choice to `<IMP cache>/settings/synthesis-engine.json` and rebuilds the provider
+  on the next request (no restart). Only catalog engines and models are accepted
+  (`SYNTHESIS_ENGINE_INVALID` otherwise). It never calls a model.
+- Precedence: saved choice → `IMP_SYNTHESIS_PROVIDER` → automatic (Anthropic when
+  its key is set, else local). A chosen paid engine without its key is
+  `NOT_CONFIGURED · <KEY>_NOT_SET`; it is never silently replaced by another vendor.
+- Every AI status (`ai` in instrument news and the synthesis preview) carries
+  `engine` (`auto` until one is picked), `engine_model`, `engine_source`
+  (`OPERATOR` / `ENVIRONMENT` / `AUTOMATIC`), and `engines[]` (`id`, `label`,
+  `runtime`, `models`, `default_model`, `state`, `reason`).
+- All paid engines share one hard daily budget (`quota/anthropic-synthesis.json`),
+  so switching vendors never resets or multiplies the cap.
 
 ## Real acceptance (2026-09-28, 17:55–18:20 UTC)
 

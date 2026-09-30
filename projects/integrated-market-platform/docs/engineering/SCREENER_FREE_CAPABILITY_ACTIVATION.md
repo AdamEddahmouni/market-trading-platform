@@ -123,9 +123,10 @@ sets its `IMP_*_LIVE=1` opt-in. Restart the API afterwards.
 | Lifecycle | Started on the first synthesis request; stopped after 15 min idle and at API exit |
 | GPU | Vulkan0: Intel Arc 140V |
 
-Selection (`select_synthesis_provider`): `IMP_SYNTHESIS_PROVIDER`
-(`auto`/`anthropic`/`local`) is explicit. With `auto`, an Anthropic key selects the
-paid API. Otherwise `IMP_LOCAL_LLM_BASE_URL` + `IMP_LOCAL_LLM_MODEL` select an
+Selection (`select_synthesis_provider`): the engine picked in the Screener's
+**AI engine** dropdown wins (saved in `<IMP cache>/settings/synthesis-engine.json`),
+then `IMP_SYNTHESIS_PROVIDER` (`auto`/`local`/`anthropic`/`openai`/`gemini`). With
+`auto`, an Anthropic key selects the paid API. Otherwise `IMP_LOCAL_LLM_BASE_URL` + `IMP_LOCAL_LLM_MODEL` select an
 existing local server, and otherwise the setup manifest selects the managed server.
 With none of these, the reason is `NO_SYNTHESIS_PROVIDER_CONFIGURED`.
 
@@ -163,11 +164,13 @@ With none of these, the reason is `NO_SYNTHESIS_PROVIDER_CONFIGURED`.
 
 After the API stopped, no `llama-server` process remained.
 
-## Paid Claude synthesis (optional, budgeted)
+## Paid synthesis: Claude, OpenAI, Gemini (optional, budgeted)
 
-With an Anthropic key configured, `IMP_SYNTHESIS_PROVIDER=auto` (the default) uses
-Claude for synthesis, and the local model stays the fallback.
-`IMP_SYNTHESIS_PROVIDER=local` turns paid calls off entirely. Sentiment stays on
+The Screener's **AI engine** dropdown picks the free local model or a paid engine
+and model. With nothing picked and an Anthropic key configured,
+`IMP_SYNTHESIS_PROVIDER=auto` (the default) uses Claude, and the local model stays the
+fallback. Picking Local, or `IMP_SYNTHESIS_PROVIDER=local`, turns paid calls off
+entirely. Sentiment stays on
 FinBERT: it runs per headline on every feed load, where a paid model would add cost
 and latency for no better label.
 
@@ -175,8 +178,18 @@ and latency for no better label.
 |---|---|---|
 | `ANTHROPIC_API_KEY` | — | Entered with `python tools/news/auth.py configure` (hidden) or the operator config screen; stored in `.private/providers.env` |
 | `IMP_SYNTHESIS_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Synthesis model (independent of the assistant's `ANTHROPIC_MODEL`); `claude-haiku-4-5-20251001` is the cheaper option |
-| `IMP_SYNTHESIS_DAILY_REQUESTS` | 30 | Hard per-UTC-day request limit |
-| `IMP_SYNTHESIS_DAILY_TOKENS` | 200,000 | Hard per-UTC-day token limit (input + output) |
+| `OPENAI_API_KEY` | — | Enables the OpenAI engine (same entry paths as the Anthropic key) |
+| `IMP_SYNTHESIS_OPENAI_MODEL` | — | Adds a model to the OpenAI list as its default; the catalog offers `gpt-6-luna` (default, `reasoning_effort: none`), `gpt-6.1-sol`, `gpt-6-astra` |
+| `GEMINI_API_KEY` | — | Enables the Google Gemini engine (OpenAI-compatible endpoint) |
+| `IMP_SYNTHESIS_GEMINI_MODEL` | — | Adds a model to the Gemini list as its default; the catalog offers `gemini-3.8-flash` (default), `gemini-3.5-flash-lite` (`reasoning_effort: low`; Gemini 3 cannot turn thinking off) |
+| `IMP_SYNTHESIS_DAILY_REQUESTS` | 30 | Hard per-UTC-day request limit, shared by every paid engine |
+| `IMP_SYNTHESIS_DAILY_TOKENS` | 200,000 | Hard per-UTC-day token limit (input + output), shared by every paid engine |
+
+OpenAI and Gemini run through `intelligence/inference/hosted_synthesis.py` (Chat
+Completions, `response_format` json_schema from `output_json_schema`, no retries,
+stable `OPENAI_*` / `GEMINI_*` reason codes). For reasoning models the output cap and
+the budget reservation both add 2,048 tokens of thinking headroom, and the request
+carries no temperature.
 
 Safeguards (`intelligence/inference/anthropic_synthesis.py`):
 

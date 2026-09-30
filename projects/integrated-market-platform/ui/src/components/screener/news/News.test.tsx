@@ -12,7 +12,7 @@ import { ConnectButton } from "../setup/Remedy";
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
-  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(),
+  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(), engine: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -34,7 +34,7 @@ vi.mock("../../../api/screenerBonds", async (original) => ({
 vi.mock("../../../api/screenerNews", async (original) => ({
   ...(await original<typeof import("../../../api/screenerNews")>()),
   fetchScreenerNews: mocks.news, fetchInstrumentNews: mocks.instrumentNews, postNewsSynthesis: mocks.synthesis,
-  fetchSynthesisPreview: mocks.synthesisPreview, fetchNewsActivity: mocks.activity,
+  fetchSynthesisPreview: mocks.synthesisPreview, fetchNewsActivity: mocks.activity, postSynthesisEngine: mocks.engine,
 }));
 vi.mock("../../../api/screenerSetup", async (original) => ({
   ...(await original<typeof import("../../../api/screenerSetup")>()),
@@ -408,7 +408,7 @@ describe("S11 Screener News view", () => {
     const inputs = within(result).getByRole("list", { name: "Headlines given to the model" });
     fireEvent.mouseEnter(result.querySelector(".news-ref-chip")!);
     expect(inputs.querySelector('li[data-story-id="U-1"]')).toHaveClass("cited");
-    expect(section).toHaveTextContent("Paid API · today 1/30 requests · 4k/200k tokens (hard daily limit).");
+    expect(section).toHaveTextContent("Paid API · today 1/30 requests · 4k/200k tokens (hard daily limit, shared by all paid engines).");
     // The estimate follows the call: the same input is now cached.
     expect(await within(section).findByRole("button", { name: "Generate AI synthesis · cached, no cost" })).toBeEnabled();
   });
@@ -597,7 +597,57 @@ describe("S11 News & Analysis panel", () => {
     const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
     await within(panel).findByText("AAPL headline one");
     expect(within(panel).getByRole("region", { name: "AI synthesis" }))
-      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit).");
+      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit, shared by all paid engines).");
+  });
+
+  const ENGINES = [
+    { id: "local", label: "Local model", runtime: "LOCAL_MODEL", models: ["qwen-local"], default_model: "qwen-local", state: "AVAILABLE", reason: null },
+    { id: "anthropic", label: "Anthropic Claude", runtime: "PAID_API", models: ["claude-sonnet-5-5", "claude-haiku-4-5-20251001"],
+      default_model: "claude-sonnet-5-5", state: "AVAILABLE", reason: null },
+    { id: "openai", label: "OpenAI", runtime: "PAID_API", models: ["gpt-6-luna"], default_model: "gpt-6-luna",
+      state: "NOT_CONFIGURED", reason: "OPENAI_API_KEY_NOT_SET" },
+  ];
+
+  it("picks the synthesis engine and model from a dropdown", async () => {
+    let ai: Record<string, unknown> = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5",
+      runtime: "PAID_API", engine: "auto", engine_model: null, engine_source: "AUTOMATIC", engines: ENGINES };
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe, { ai }));
+    mocks.engine.mockImplementation(async (engine: string, model: string | null) => {
+      ai = { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: model, runtime: "LOCAL_MODEL",
+        engine, engine_model: model, engine_source: "OPERATOR", engines: ENGINES };
+      return ai;
+    });
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    const region = within(panel).getByRole("region", { name: "AI synthesis" });
+    const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
+    expect(select.value).toBe("auto");
+    expect(within(select).getByRole("option", { name: "Automatic (now claude-sonnet-5-5)" })).toBeInTheDocument();
+    expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5-20251001 (paid)" })).toBeEnabled();
+    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (needs OPENAI_API_KEY)" })).toBeDisabled();
+    fireEvent.change(select, { target: { value: "local|qwen-local" } });
+    await waitFor(() => expect(mocks.engine).toHaveBeenCalledWith("local", "qwen-local"));
+    await waitFor(() => expect(region).toHaveTextContent("Model qwen-local (local, no API cost)."));
+    expect((within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement).value).toBe("local|qwen-local");
+    expect(within(region).queryByRole("option", { name: /Automatic/ })).toBeNull();
+    expect(mocks.synthesis).not.toHaveBeenCalled();                  // switching never runs a model
+  });
+
+  it("offers the engine picker when synthesis is not configured", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "NOT_CONFIGURED", reason: "OPENAI_API_KEY_NOT_SET", provider_id: null, model_id: null, runtime: null,
+        engine: "openai", engine_model: null, engine_source: "OPERATOR", engines: ENGINES } }));
+    mocks.engine.mockRejectedValue(new Error("SYNTHESIS_ENGINE_INVALID"));
+    const panel = await openPanel();
+    const region = within(panel).getByRole("region", { name: "AI synthesis" });
+    expect(region).toHaveTextContent("AI synthesis not configured · OPENAI_API_KEY_NOT_SET");
+    const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
+    expect(select.value).toBe("openai|gpt-6-luna");
+    fireEvent.change(select, { target: { value: "anthropic|claude-sonnet-5-5" } });
+    expect(await within(region).findByRole("alert")).toHaveTextContent("Could not switch the AI engine.");
   });
 
   const PAID_AI = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
@@ -653,7 +703,7 @@ describe("S11 News & Analysis panel", () => {
     const newsCalls = mocks.instrumentNews.mock.calls.length;
     fireEvent.click(await within(ai).findByRole("button", { name: "Generate AI synthesis · ≈ 4k tokens, 2 stories" }));
     await within(ai).findByLabelText("AI synthesis result");
-    expect(ai).toHaveTextContent("Paid API · today 4/30 requests · 16k/200k tokens (hard daily limit).");
+    expect(ai).toHaveTextContent("Paid API · today 4/30 requests · 16k/200k tokens (hard daily limit, shared by all paid engines).");
     expect(mocks.instrumentNews.mock.calls.length).toBe(newsCalls);
   });
 

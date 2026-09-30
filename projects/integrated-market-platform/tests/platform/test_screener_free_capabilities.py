@@ -186,5 +186,62 @@ class LocalAiStatusTests(unittest.TestCase):
         self.assertTrue(svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["stories"])
 
 
+class EngineChoiceTests(unittest.TestCase):
+    """The operator's engine picker: listed in every AI status, switched without a restart, never a model call."""
+
+    def setUp(self):
+        from market_platform_foundation.intelligence.inference.synthesis_engines import SynthesisSettings
+        from market_platform_foundation.ui_api.screener_news import _default_synthesizer
+
+        self._directory = tempfile.TemporaryDirectory()
+        values = {"ANTHROPIC_API_KEY": "a", "OPENAI_API_KEY": "o"}
+        self.settings = SynthesisSettings(values.get, Path(self._directory.name))
+        self.svc = service()
+        self.svc._synthesis_settings = self.settings
+        self.svc._synthesizer_factory = lambda: _default_synthesizer(self.settings)
+
+    def tearDown(self):
+        self._directory.cleanup()
+
+    def test_status_lists_engines_and_the_automatic_choice(self):
+        ai = self.svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["ai"]
+        self.assertEqual((ai["engine"], ai["engine_source"], ai["model_id"]), ("auto", "AUTOMATIC", "claude-sonnet-5-5"))
+        self.assertEqual([item["id"] for item in ai["engines"]], ["local", "anthropic", "openai", "gemini"])
+        preview = self.svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")
+        self.assertEqual(preview["ai"]["engines"], ai["engines"])
+
+    def test_switching_rebuilds_the_provider_and_is_saved(self):
+        before = self.svc._get_synthesizer()
+        ai = self.svc.select_synthesis_engine("openai", "gpt-6.1-sol")
+        self.assertEqual((ai["engine"], ai["engine_model"], ai["engine_source"]), ("openai", "gpt-6.1-sol", "OPERATOR"))
+        self.assertEqual((ai["state"], ai["runtime"], ai["provider_id"], ai["model_id"]),
+                         ("AVAILABLE", "PAID_API", "openai.chat_completions", "gpt-6.1-sol"))
+        self.assertIsNot(self.svc._get_synthesizer(), before)
+        # A chosen engine without its key is stated, never silently replaced by another vendor.
+        ai = self.svc.select_synthesis_engine("gemini")
+        self.assertEqual((ai["state"], ai["reason"]), ("NOT_CONFIGURED", "GEMINI_API_KEY_NOT_SET"))
+
+    def test_invalid_choices_are_rejected_and_change_nothing(self):
+        for engine, model in (("nope", None), ("openai", "not-in-catalog")):
+            with self.subTest(engine=engine), self.assertRaises(ValueError):
+                self.svc.select_synthesis_engine(engine, model)
+        self.assertEqual(self.svc.ai_status()["engine"], "auto")
+        with self.assertRaisesRegex(ValueError, "SYNTHESIS_ENGINE_NOT_SELECTABLE"):
+            service().select_synthesis_engine("local")
+
+    def test_status_with_engines_passes_the_leak_audit(self):
+        from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
+
+        self.svc.select_synthesis_engine("anthropic", "claude-haiku-4-5-20251001")
+        assert_no_secrets_in_payload(self.svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL"))
+        assert_no_secrets_in_payload(self.svc.select_synthesis_engine("openai"))
+        self.assertNotIn('"a"', json.dumps(self.svc.ai_status()))              # key values never appear
+
+    def test_engine_route_is_an_operator_write(self):
+        from market_platform_foundation.platform.security.route_policy import policy_for_route
+
+        self.assertEqual(policy_for_route("POST", "/screener/news/synthesis/engine").capability, "state.write")
+
+
 if __name__ == "__main__":
     unittest.main()
