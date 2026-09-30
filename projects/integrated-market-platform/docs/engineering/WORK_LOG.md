@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Screener: actionable degraded states, Setup panel, provider connect
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui/screener` |
+| **Summary** | Degraded Screener states now carry a plain-language remedy (what is wrong and the one step to fix it) beside the unchanged reason code. A new Setup panel lists each free capability with its state and enabling step. An allowlisted connect action starts OpenD, the FinBERT load, or the local synthesis server from the UI. Failed OpenD catalogs retry after 30 s, and sentiment fills in automatically once FinBERT loads. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_remedies.py` (new); `ui_api/screener_news.py`, `screener_multi.py`, `screener_participants.py`, `server.py`, `errors.py`, `screener_config.py`; `platform/security/route_policy.py`; `news/finbert_sentiment.py`; `ui/src/api/screenerSetup.ts` (new); `ui/src/components/screener/setup/Remedy.tsx` (new); `panels/SetupPanel.tsx` (new); `news/NewsView.tsx`, `news/newsFormat.tsx`, `panels/NewsAnalysisPanel.tsx`, live panels; `tests/platform/test_screener_remedies.py` (new); `news/News.test.tsx` |
+| **Tests** | `unittest`: screener, news, ui1, market_trackers modules pass; `ui: vitest` full suite and `tsc` typecheck pass |
+| **Related** | [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md#actionable-degraded-states-and-setup) |
+| **Notes** | Connect never downloads, installs, or accepts credentials; keys and live flags remain operator steps. |
+
+---
+
 ## 2026-09-30 — Screener free-capability activation
 
 | Field | Value |

@@ -263,6 +263,36 @@ Congress identity with the cached registry:
    `IMP_CRYPTO_LIVE` by default. This is a policy choice and is not changed here.
 5. Start moomoo OpenD for the ETF and Futures catalogs.
 
+## Actionable degraded states and Setup
+
+Degraded states stay truthful: every reason code is still returned and shown on hover.
+Beside it, the server now attaches a `remedy` (`title`, `step`, optional `action`) from
+one table in `ui_api/screener_remedies.py`. The UI renders that instead of a bare code:
+
+- **Feed and empty state.** An ETF or Futures feed whose OpenD catalog is down
+  (`PROVIDER_UNAVAILABLE` / `OPEND_UNAVAILABLE`) reads "moomoo OpenD isn't running.
+  Start OpenD and log in to load ETFs." with a **Start OpenD** button. Provider rows
+  carry their own step (`SEC_USER_AGENT_NOT_SET`, the `*_LIVE_NOT_SET` gates, missing
+  keys, FinBERT and local-model install), shown once per distinct cause.
+- **Setup panel.** `GET /screener/setup` lists OpenD, NewsAPI, Finnhub, public RSS, SEC
+  EDGAR, public records, Senate eFD pages, FinBERT and AI synthesis with state and the
+  one enabling step. It reuses the existing gates and status builders; the only probe is
+  the OpenD check, cached for 15 s. The panel is offered in every universe.
+- **Connect.** `POST /screener/providers/{id}/connect` (`state.write`, operator click
+  only) is a strict allowlist: `opend` starts the installed
+  `%APPDATA%\moomoo_OpenD\moomoo_OpenD.exe` through the existing `diagnose_opend(start=True)`
+  and invalidates the cached ETF/Futures catalogs and news indexes; `finbert` starts
+  the background model load; `local_synthesis` starts the loopback model server off the
+  request thread. Anything else is `PROVIDER_NOT_CONNECTABLE`. It never downloads,
+  installs, or accepts keys or flags. Live panels (Order Flow, CVD, Level 2, Charts)
+  show the same Start OpenD button on `OPEND_UNAVAILABLE`.
+- **Recovery without a click.** A failed OpenD catalog is retried after 30 s instead of
+  15 min, and a news index built on a failed catalog after 30 s instead of 10 min, so
+  OpenD finishing its login shows up within a poll.
+- **Model loading resolves itself.** While the sentiment model reports `MODEL_LOADING`,
+  the News view and News & Analysis panel re-poll every 4 s (for at most 3 min), then
+  return to the 60 s cadence once stories are scored.
+
 ## Restrictions kept
 
 - No paid plans, trials or billing. NewsAPI Developer is labelled development-only

@@ -18,7 +18,7 @@ PREVIEW_WIDTH = (320, 720)
 DEFAULT_PREVIEW = {"version": 1, "open": True, "width": 400}
 PANEL_KEY = "screener.s4.panels"
 PANEL_IDS = ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
-             "institutional", "congress_gov")
+             "institutional", "congress_gov", "setup")
 PANEL_LAYOUT_VERSION = 1
 DOCK_HEIGHT = (140, 1200)
 DEFAULT_PANEL_LAYOUT = {"version": PANEL_LAYOUT_VERSION, "open_panels": [], "active_panel": None,

@@ -143,6 +143,8 @@ _REASON_CODE_TO_CATEGORY: dict[str, CanonicalErrorCategory] = {
     "OPERATOR_WORKSPACE_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_PREFERENCES_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "CAPTURE_REPLAY_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
+    # Screener connect: an id outside the allowlist is a bad request, not a provider outage.
+    "PROVIDER_NOT_CONNECTABLE": CanonicalErrorCategory.VALIDATION_ERROR,
 }
 
 _PREFIX_CATEGORY_RULES: tuple[tuple[str, CanonicalErrorCategory], ...] = (

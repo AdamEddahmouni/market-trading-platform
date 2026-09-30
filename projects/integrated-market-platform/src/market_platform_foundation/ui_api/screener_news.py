@@ -37,6 +37,7 @@ from ..news.dedupe import dedupe_events
 from ..news.event_taxonomy import METHOD as TAXONOMY_METHOD
 from ..news.event_taxonomy import EventCategory, classify_text
 from ..news.finbert_sentiment import FinbertSentiment, finbert_sentiment, summarize
+from .screener_remedies import remedy_for, with_remedy
 from ..news.instrument_matching import (
     AMBIGUOUS, CONTEXT, CRYPTO_CONTEXT_CATEGORIES, EXACT, InstrumentProfile, MatchResult, is_relevant, match_profile,
     profile_for_row,
@@ -63,6 +64,7 @@ MAX_SCORED_STORIES = 400
 PER_SYMBOL_TTL_S = {"newsapi": 900.0, "finnhub": 600.0, "sec_filings": 600.0}
 RSS_TTL_S = 300.0
 INDEX_TTL_S = 600.0
+INDEX_ERROR_TTL_S = 30.0   # an index built on a failed catalog (OpenD down) is rebuilt soon
 PROVIDER_WAIT_S = 8.0
 NEWSAPI_DAILY_GUARD = 90  # Donor quota discipline: the free NewsAPI tier allows 100 requests/day.
 REACTION_HORIZONS = (("+5m", 5), ("+15m", 15), ("+1h", 60))
@@ -504,7 +506,7 @@ class ScreenerNewsService:
         now = self._clock()
         with self._lock:
             cached = self._indexes.get(universe)
-        if cached is not None and cached.built_at + INDEX_TTL_S > now:
+        if cached is not None and cached.built_at + (INDEX_ERROR_TTL_S if cached.error else INDEX_TTL_S) > now:
             return cached
         rows, error = self._catalog(universe)
         by_ticker: dict[str, tuple[str, str]] = {}
@@ -679,11 +681,15 @@ class ScreenerNewsService:
         page = filtered[offset:offset + limit]
         states = {status["state"] for status in providers if status["scope"] == "UNIVERSE" and status["state"] != "NOT_APPLICABLE"}
         state, reason = self._overall(states, index.error)
+        scope = UNIVERSES[universe].label
+        providers = [with_remedy(status, scope=scope) for status in providers]
         payload = {
             "schema_version": SCHEMA_VERSION, "generated_at": _iso(now), "universe": universe,
             "window": self._window(window, now), "state": state, "reason": reason, "providers": providers,
-            "sentiment_model": {key: model_status.get(key) for key in ("state", "reason", "model_id", "model_revision", "loaded",
-                                                                       "runtime", "basis", "model_source")},
+            "remedy": self._feed_remedy(universe, reason, index.error),
+            "sentiment_model": {**{key: model_status.get(key) for key in ("state", "reason", "model_id", "model_revision", "loaded",
+                                                                          "runtime", "basis", "model_source")},
+                                "remedy": with_remedy(model_status).get("remedy")},
             "filters": {
                 "sources": [{"id": key, "label": PROVIDER_LABELS.get(key, key), "count": count}
                             for key, count in sorted(source_counts.items())],
@@ -711,6 +717,20 @@ class ScreenerNewsService:
         if sort == "relevance":
             return sorted(stories, key=lambda story: (story.strength, -(story.moment or epoch).timestamp(), story.story_id))
         return sorted(stories, key=lambda story: (-(story.moment or epoch).timestamp(), story.story_id))
+
+    @staticmethod
+    def _feed_remedy(universe: str, reason: str | None, index_error: str | None) -> dict[str, Any] | None:
+        """The one step behind the feed state. An OpenD-backed catalog error comes first: without the
+        catalog no story can match an instrument, whatever the news providers report."""
+
+        scope = UNIVERSES[universe].label
+        if index_error and universe in (US_ETFS, FUTURES):
+            # The catalog transport reports a generic PROVIDER_UNAVAILABLE when OpenD cannot be reached.
+            code = "OPEND_UNAVAILABLE" if index_error == "PROVIDER_UNAVAILABLE" else index_error
+            remedy = remedy_for(code, scope=scope)
+            if remedy:
+                return remedy
+        return remedy_for(index_error, scope=scope) or remedy_for(reason, scope=scope)
 
     @staticmethod
     def _overall(states: set[str], index_error: str | None) -> tuple[str, str | None]:
@@ -865,7 +885,8 @@ class ScreenerNewsService:
             "instrument": {"instrument_id": instrument_id, "symbol": profile.symbol, "label": profile.label},
             "capability": {"state": capability_state, "reason": capability_reason, "match_bases": profile.match_bases,
                            "terms": profile.terms[:24], "notes": list(profile.notes)},
-            "window": self._window(INSTRUMENT_WINDOW, now), "state": state, "reason": reason, "providers": providers,
+            "window": self._window(INSTRUMENT_WINDOW, now), "state": state, "reason": reason,
+            "providers": [with_remedy(status, scope=UNIVERSES[universe].label) for status in providers],
             "coverage": {"story_count": len(stories), "headline_count": sum(len(story.members) for story in stories),
                          "source_count": len({record.event.publisher_source.lower() for story in stories for record in story.members}),
                          "latest_published_at": _iso(max((story.published for story in stories if story.published), default=None))},
@@ -1007,6 +1028,21 @@ class ScreenerNewsService:
             if self._synthesizer is None:
                 self._synthesizer = self._synthesizer_factory()
             return self._synthesizer
+
+    def invalidate_indexes(self) -> None:
+        """Rebuild universe indexes on the next read (after OpenD comes back, not after the 10-minute TTL)."""
+
+        with self._lock:
+            self._indexes.clear()
+
+    def local_synthesis_server(self) -> Any:
+        """The managed loopback model server, when synthesis runs on one; else None."""
+
+        provider = getattr(self._get_synthesizer(), "_provider", None)
+        return getattr(provider, "_server", None)
+
+    def ai_status(self) -> dict[str, Any]:
+        return self._ai_status()
 
     def _ai_status(self) -> dict[str, Any]:
         synthesizer = self._get_synthesizer()

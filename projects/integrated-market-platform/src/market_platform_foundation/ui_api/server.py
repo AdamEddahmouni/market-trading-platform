@@ -361,6 +361,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path == "/screener/setup":
+                # Setup checklist: each free capability, its state, and the one step that enables it.
+                from .screener_remedies import setup_checklist
+
+                self._send_json(setup_checklist())
+                return
             if path in ("/screener/news", "/screener/news/instrument"):
                 # S11: News is a view/panel over the active universe, never a universe.
                 from .screener_news import read_instrument_news, read_news_feed
@@ -1430,6 +1436,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(write_config(body))
             except ValueError as exc:
                 self._send_error_json("SCREENER_CONFIG_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/screener/providers/") and path.endswith("/connect"):
+            # Operator click only: starts an allowlisted local provider (OpenD, FinBERT load, local model server).
+            from .screener_remedies import connect_provider
+
+            provider_id = path.removeprefix("/screener/providers/").removesuffix("/connect").strip("/")
+            try:
+                self._send_json(connect_provider(provider_id))
+            except ValueError as exc:
+                self._send_error_json("PROVIDER_NOT_CONNECTABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/screener/news/synthesis":
             # S11: AI synthesis runs only on this explicit operator action, never on render.

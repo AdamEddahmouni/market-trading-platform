@@ -4,12 +4,19 @@ import type { IDockviewPanelProps } from "dockview-react";
 import type { ScreenerUniverse } from "../../../api/screener";
 import { fetchInstrumentNews, postNewsSynthesis, type InstrumentNews, type NewsAnalysisItem, type NewsStory, type NewsSynthesis,
   type SynthesisRefItem } from "../../../api/screenerNews";
-import { degradedProviders, Headline, humanize, newsDayTime, ProviderStrip, SentimentCell, sentimentWord, stateText, StorySources,
-  StoryTime, termsText, TypeBadge } from "../news/newsFormat";
+import { degradedProviders, Headline, humanize, isModelLoading, newsDayTime, ProviderFixes, ProviderStrip, SentimentCell, sentimentWord,
+  stateText, StorySources, StoryTime, termsText, TypeBadge } from "../news/newsFormat";
+import { RemedyHint } from "../setup/Remedy";
 import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
 import "../news/news.css";
 
 const REFRESH_MS = 60_000;
+const MODEL_LOADING_POLL_MS = 4_000;
+const MODEL_LOADING_POLL_LIMIT_MS = 180_000;
+
+const remedyOf = (data: InstrumentNews, id: string) => data.providers.find((item) => item.id === id)?.remedy ?? null;
+const modelLoading = (data: InstrumentNews | undefined) => Boolean(data) &&
+  (data!.providers.some((item) => item.id === "finbert" && item.reason === "MODEL_LOADING") || isModelLoading([{ stories: data!.stories }]));
 
 function Section({ title, children, derived = false }: { title: string; children: React.ReactNode; derived?: boolean }) {
   return <section className="news-panel-section" aria-label={title}>
@@ -26,8 +33,10 @@ function Headlines({ data }: { data: InstrumentNews }) {
 function Sentiment({ data }: { data: InstrumentNews }) {
   const s = data.sentiment;
   const note = <p className="screener-panel-note">Describes the language of matched headlines; it is not a forecast of price direction. Method: {s.method.replace(/\.$/, "")}.</p>;
-  if (s.state === "NOT_CONFIGURED") return <><p className="screener-panel-note">Sentiment model not configured{s.reason ? ` · ${s.reason}` : ""}. Headlines are not scored.</p>{note}</>;
-  if (s.state === "UNAVAILABLE") return <><p className="screener-panel-note">Sentiment unavailable{s.reason ? ` · ${s.reason}` : ""}.</p>{note}</>;
+  const remedy = remedyOf(data, "finbert");
+  const fix = remedy ? <p className="screener-panel-note"><RemedyHint remedy={remedy} compact /></p> : null;
+  if (s.state === "NOT_CONFIGURED") return <><p className="screener-panel-note">Sentiment model not configured{s.reason ? ` · ${s.reason}` : ""}. Headlines are not scored.</p>{fix}{note}</>;
+  if (s.state === "UNAVAILABLE") return <><p className="screener-panel-note">Sentiment unavailable{s.reason === "MODEL_LOADING" ? " while the model loads; it fills in on its own" : s.reason ? ` · ${s.reason}` : ""}.</p>{s.reason === "MODEL_LOADING" ? null : fix}{note}</>;
   return <>
     {s.state === "INSUFFICIENT_DATA" && <p className="screener-panel-note">Insufficient data: too few scored headlines to summarize{s.reason ? ` · ${s.reason}` : ""}.</p>}
     {s.state === "PARTIAL" && <p className="screener-panel-note">Partial: some headlines are not scored{s.reason ? ` · ${s.reason}` : ""}.</p>}
@@ -135,7 +144,9 @@ function Synthesis({ data }: { data: InstrumentNews }) {
   // A selection change or unmount cancels an in-flight request; its result could only label the wrong instrument.
   useEffect(() => { current.current = key; return () => { current.current = ""; inflight.current?.abort(); inflight.current = null; }; }, [key]);
   if (data.ai.state !== "AVAILABLE") {
-    return <p className="screener-panel-note">AI synthesis {data.ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{data.ai.reason ? ` · ${data.ai.reason}` : ""}. Nothing is generated.</p>;
+    const remedy = remedyOf(data, "ai");
+    return <><p className="screener-panel-note">AI synthesis {data.ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{data.ai.reason ? ` · ${data.ai.reason}` : ""}. Nothing is generated.</p>
+      {remedy && <p className="screener-panel-note"><RemedyHint remedy={remedy} compact /></p>}</>;
   }
   const local = data.ai.runtime === "LOCAL_MODEL";
   const budget = data.ai.budget ?? null;
@@ -184,10 +195,18 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
   const { row, settledId, universe } = useSelection();
   const visible = usePanelVisible(api);
   const ready = Boolean(row) && settledId === row?.instrument.instrument_id;
+  const loadingSince = useRef<number | null>(null);
   const query = useQuery({
     queryKey: ["screener-news-instrument", universe, settledId, "full"],
     queryFn: ({ signal }) => fetchInstrumentNews(universe, settledId!, false, signal),
-    enabled: ready && visible, staleTime: 30_000, refetchInterval: visible ? REFRESH_MS : false, retry: 1,
+    enabled: ready && visible, staleTime: 30_000, retry: 1,
+    // While FinBERT loads, re-poll quickly so sentiment fills in without a reload.
+    refetchInterval: (current) => {
+      if (!visible) return false;
+      if (!modelLoading(current.state.data)) { loadingSince.current = null; return REFRESH_MS; }
+      loadingSince.current ??= Date.now();
+      return Date.now() - loadingSince.current < MODEL_LOADING_POLL_LIMIT_MS ? MODEL_LOADING_POLL_MS : REFRESH_MS;
+    },
   });
   // Stale-response guard: a payload for another instrument or universe never labels this selection.
   const data = query.data && query.data.instrument.instrument_id === settledId && query.data.universe === universe && ready ? query.data : undefined;
@@ -199,8 +218,10 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">News &amp; Analysis request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row?.symbol} news…</PanelMessage>
       : <div className="news-panel">
-        {(data.state === "NOT_CONFIGURED" || data.state === "UNAVAILABLE") && <PanelMessage tone="warn">News {data.state === "NOT_CONFIGURED" ? "providers are not configured" : "is unavailable"}{data.reason ? ` · ${data.reason}` : ""}. This is a provider state, not an absence of news.{degraded.length ? ` Missing: ${degraded.map((item) => `${item.label} (${stateText(item.state)})`).join(", ")}.` : ""}</PanelMessage>}
-        {data.state === "PARTIAL" && degraded.length > 0 && <PanelMessage tone="warn">Partial coverage · not current: {degraded.map((item) => `${item.label} (${stateText(item.state)}${item.reason ? ` · ${item.reason}` : ""})`).join("; ")}.</PanelMessage>}
+        {(data.state === "NOT_CONFIGURED" || data.state === "UNAVAILABLE") && <PanelMessage tone="warn">News {data.state === "NOT_CONFIGURED" ? "providers are not configured" : "is unavailable"}{data.reason ? ` · ${data.reason}` : ""}. This is a provider state, not an absence of news.{degraded.length ? ` Missing: ${degraded.map((item) => `${item.label} (${stateText(item.state)})`).join(", ")}.` : ""}
+          <ProviderFixes providers={degraded} /></PanelMessage>}
+        {data.state === "PARTIAL" && degraded.length > 0 && <PanelMessage tone="warn">Partial coverage · not current: {degraded.map((item) => `${item.label} (${stateText(item.state)}${item.reason ? ` · ${item.reason}` : ""})`).join("; ")}.
+          <ProviderFixes providers={degraded} /></PanelMessage>}
         <ProviderStrip providers={data.providers} label="News & Analysis providers" />
         <Section title="Latest headlines"><Headlines data={data} /></Section>
         <Section title="Sentiment" derived><Sentiment data={data} /></Section>

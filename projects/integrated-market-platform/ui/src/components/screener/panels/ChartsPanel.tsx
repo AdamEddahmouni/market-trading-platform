@@ -4,6 +4,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { fetchChart } from "../../../api/screenerPanels";
 import { classifyZones } from "../srClassify";
 import { age, marketClock, marketPrice, pricePrecision, PanelFrame, PanelMessage, reasonText, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { OpenDConnect } from "../setup/Remedy";
 
 const ExpandedChart = lazy(() => import("./ExpandedChart"));
 // The same timeframes and session scopes the S3 current-bar contract supports.
@@ -61,7 +62,7 @@ export default function ChartsPanel({ api }: IDockviewPanelProps) {
         : bars && bars.bars.length ? <Suspense fallback={<div className="screener-expanded-chart" />}>
           <ExpandedChart bars={bars.bars} forming={bars.forming} support={classified?.support ?? null} resistance={classified?.resistance ?? null} livePrice={livePrice} label={label} timeZone={zone}
             precision={crypto ? pricePrecision(row, markerPrice ?? last?.close ?? 1) : 2} />
-        </Suspense> : <PanelMessage tone="warn">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason) || "no bars"}</PanelMessage>}
+        </Suspense> : <PanelMessage tone="warn">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason) || "no bars"}<OpenDConnect reason={bars?.provider_reason ?? bars?.reason} /></PanelMessage>}
       {data && <p className="screener-panel-note">{BAR_STATES[bars!.state] ?? bars!.state}{bars!.latest_complete_bar_end ? ` · last bar ${marketDay(bars!.latest_complete_bar_end)}` : ""}
         {` · ${data.levels.method} `}{data.levels.state === "UNAVAILABLE" ? `levels unavailable (${reasonText(data.levels.reason)})` : `levels calculated ${marketTime(data.levels.calculated_at)}`}
         {classified?.testing ? " · price is inside a zone" : ""}</p>}

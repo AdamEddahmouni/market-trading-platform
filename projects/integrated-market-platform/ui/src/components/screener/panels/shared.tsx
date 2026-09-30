@@ -122,17 +122,20 @@ type FrameProps = {
   /** Plain-language label for a state outside the market-data vocabulary (e.g. S12 disclosure states). */
   stateLabel?: string;
   clock?: ReactNode;
+  /** False for a workstation-wide panel (Setup): the header names no instrument. */
+  instrumentScoped?: boolean;
   children: ReactNode;
 };
 
 /** Compact panel header: title, instrument · class · provider, state, and the panel's own clock. */
-export function PanelFrame({ id, detail, state, stateLabel, clock, children }: FrameProps) {
-  const { row, actions } = useSelection();
+export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentScoped = true, children }: FrameProps) {
+  const { row: selected, actions } = useSelection();
+  const row = instrumentScoped ? selected : null;
   const title = PANEL_TITLES[id];
   return <section className="screener-panel" id={`screener-panel-${id}`} tabIndex={-1} aria-label={`${title}${row ? ` for ${row.symbol}` : ""}`}>
     <header className="screener-panel-header">
       <div className="screener-panel-title"><h2>{title}</h2>
-        <span className="screener-panel-meta">{row ? row.symbol : "No selection"}{detail ? <> · {detail}</> : null}</span></div>
+        <span className="screener-panel-meta">{instrumentScoped ? (row ? row.symbol : "No selection") : "Workstation"}{detail ? <> · {detail}</> : null}</span></div>
       <div className="screener-panel-status">{state ? <StateBadge state={state} label={stateLabel} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
       <div className="screener-panel-actions" role="group" aria-label={`${title} layout`}>
         <button type="button" onClick={() => actions.move(id, "left")} aria-label={`Move ${title} to the previous group`} title="Move to previous group">‹</button>

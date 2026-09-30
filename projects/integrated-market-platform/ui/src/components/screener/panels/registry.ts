@@ -13,7 +13,10 @@ export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
   { id: "news", title: "News & Analysis" },
   { id: "institutional", title: "Institutional & Whale" },
   { id: "congress_gov", title: "Congress & Government" },
+  { id: "setup", title: "Setup" },
 ];
+/** Universe-agnostic panels: offered whatever the active universe lists. */
+export const ALWAYS_PANELS: ReadonlyArray<PanelId> = ["setup"];
 export const PANEL_TITLES = Object.fromEntries(PANELS.map((panel) => [panel.id, panel.title])) as Record<PanelId, string>;
 /** Panels that hold a live provider subscription while open. */
 export const LIVE_PANELS: ReadonlySet<PanelId> = new Set<PanelId>(["order_flow", "cvd", "level2", "short_squeeze"]);

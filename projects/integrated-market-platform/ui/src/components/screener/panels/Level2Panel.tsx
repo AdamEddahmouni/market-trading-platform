@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchDepth, type DepthPayload } from "../../../api/screenerPanels";
 import { age, EntitlementNote, marketClock, marketPrice, marketSize, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, spreadBps, usePanelVisible, useSelection } from "./shared";
+import { OpenDConnect } from "../setup/Remedy";
 
 // Ladder values are shown only for these states; STALE and SESSION_CLOSED are dimmed and labelled.
 const SHOWN = new Set(["CURRENT", "PARTIAL", "STALE", "SESSION_CLOSED"]);
@@ -62,7 +63,7 @@ export default function Level2Panel({ api }: IDockviewPanelProps) {
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Level 2 request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : !SHOWN.has(data.state) || (!data.bids.length && !data.asks.length) ? <>
-        <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{data.state === "SESSION_CLOSED" && !data.latest_received_at ? "Session closed · no book captured for this subscription" : reasonText(data.reason) || data.state}</PanelMessage>
+        <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{data.state === "SESSION_CLOSED" && !data.latest_received_at ? "Session closed · no book captured for this subscription" : reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
         <EntitlementNote entitlement={data.entitlement} /></>
       : <>
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? `Session closed · last captured book, received ${age(data.latest_received_at)} ago` : data.state === "STALE" ? `Stale · no book update for ${age(data.latest_received_at)}` : reasonText(data.reason)}</PanelMessage>}

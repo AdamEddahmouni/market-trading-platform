@@ -36,6 +36,8 @@ from .screener_universes import BONDS, CRYPTO, FUTURES, US_EQUITIES, US_ETFS, un
 
 ET = ZoneInfo("America/New_York")
 CATALOG_TTL_SECONDS = 900
+# A failed catalog fetch is retried soon, so OpenD coming back (or finishing its login) shows up within a poll.
+CATALOG_ERROR_TTL_SECONDS = 30
 CATALOG_RETAINED = 2
 QUOTE_REFUSAL_TTL_SECONDS = 300
 MARKET_STATE_TTL_SECONDS = 30
@@ -281,6 +283,14 @@ class MultiUniverseScreener:
         except Exception as exc:  # noqa: BLE001 — classification boundary fails closed
             return ClassificationReference(None, {}, type(exc).__name__)
 
+    def invalidate_catalogs(self) -> None:
+        """Refetch the OpenD catalogs on the next read, so a cached provider failure does not outlive a reconnect.
+        Retained projections stay, so page chains already pinned to a catalog finish on the rows they started from."""
+
+        with self._lock:
+            self._catalogs.clear()
+            self._quote_refusal = None
+
     def _catalog(self, universe: str, *, force: bool = False) -> tuple[list[dict[str, Any]], str | None, str | None]:
         rows, as_of, error, _token = self._catalog_state(universe, force=force)
         return rows, as_of, error
@@ -293,7 +303,8 @@ class MultiUniverseScreener:
         reference = self._reference() if universe == US_ETFS else None
         with self._lock:
             cached = self._catalogs.get(universe)
-            if cached and not force and self._clock() - cached[0] < CATALOG_TTL_SECONDS:
+            ttl = CATALOG_ERROR_TTL_SECONDS if cached and cached[3] else CATALOG_TTL_SECONDS
+            if cached and not force and self._clock() - cached[0] < ttl:
                 raw, as_of, error = cached[2], cached[1], cached[3]
             else:
                 transport = self._transport_getter()

@@ -3,6 +3,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { fetchOrderFlow, type OrderFlowPayload } from "../../../api/screenerPanels";
 import type { ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import { age, EntitlementNote, etClock, marketClock, marketPrice, marketSize, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
+import { OpenDConnect } from "../setup/Remedy";
 
 const METHOD_LABELS: Record<string, string> = {
   PROVIDER_TICKER_DIRECTION: "provider ticker direction", EXCHANGE_NATIVE: "exchange-native side", LEE_READY: "Lee-Ready",
@@ -81,7 +82,7 @@ export default function OrderFlowPanel({ api }: IDockviewPanelProps) {
   return <PanelFrame id="order_flow" state={data?.state} detail={data ? `Trades · ${providerLabel(data.provider)}` : null} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Order Flow request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
-      : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}</PanelMessage>
+      : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
       : <>
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? "Session closed · last captured flow" : reasonText(data.reason)}</PanelMessage>}
         {data.summary && data.summary.trade_count > 0 && <Summary data={data} market={market} />}

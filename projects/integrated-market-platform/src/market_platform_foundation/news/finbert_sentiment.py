@@ -196,6 +196,14 @@ class FinbertSentiment:
         self._load(path)
         return self._model
 
+    def start_load(self) -> None:
+        """Operator action: begin loading now instead of on the first scoring call. Never blocks when background
+        loading is on; a configured-but-missing model stays a status, never an error."""
+
+        if self.status()["state"] == NOT_CONFIGURED:
+            return
+        self._ensure_loaded()
+
     def score(self, texts: Sequence[str]) -> list[dict[str, Any]]:
         """One result per text: a SCORED dict, or an explicit non-scored state."""
 
