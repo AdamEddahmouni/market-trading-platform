@@ -36,6 +36,8 @@ SCHEMA_VERSION = "screener-news-synthesis/1.0.0"
 MAX_STORIES = 12
 CACHE_SIZE = 64
 CACHE_TTL_S = 30 * 60
+FAILURE_TTL_S = 60
+_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "SYNTHESIS_")
 _LIST_FIELDS = ("observed_facts", "derived_context", "conflicting_evidence", "potential_market_relevance")
 # Recommendation/certainty forms only. Attributed analyst actions in prose ("upgraded to Buy") and
 # market vocabulary ("sell-off", "buyback") are not recommendations.
@@ -84,6 +86,25 @@ def _items(value: Any, story_ids: set[str], *, with_refs: bool) -> list[Any] | N
     return out
 
 
+def output_json_schema(story_ids: list[str]) -> dict[str, Any]:
+    """The JSON Schema ``parse_synthesis`` accepts, with refs limited to the packet's story ids.
+
+    Servers that support schema-constrained decoding (llama.cpp, LM Studio) use it to keep a small local model
+    on the contract. It constrains structure only: ``parse_synthesis`` still validates every output."""
+
+    ids = list(dict.fromkeys(story_ids)) or ["_"]
+    ref_item = {"type": "object", "additionalProperties": False, "required": ["text", "refs"],
+                "properties": {"text": {"type": "string"},
+                               "refs": {"type": "array", "minItems": 1, "maxItems": 6, "items": {"enum": ids}}}}
+    ref_list = {"type": "array", "maxItems": 8, "items": ref_item}
+    return {"type": "object", "additionalProperties": False, "required": ["summary", *_LIST_FIELDS, "uncertainties"],
+            "properties": {"summary": {"type": "string"},
+                           "observed_facts": {**ref_list, "minItems": 1},
+                           "derived_context": ref_list, "conflicting_evidence": ref_list,
+                           "potential_market_relevance": ref_list,
+                           "uncertainties": {"type": "array", "maxItems": 8, "items": {"type": "string"}}}}
+
+
 def parse_synthesis(raw_text: str, story_ids: set[str]) -> tuple[dict[str, Any] | None, str | None]:
     """(synthesis, None) or (None, reason). Never repairs or invents content."""
 
@@ -118,13 +139,21 @@ class ScreenerSynthesizer:
     """Cached, validated synthesis over the canonical inference provider."""
 
     def __init__(self, *, provider: InferenceProvider | None, config: IntelligenceInferenceConfig | None = None,
-                 registry: PromptRegistry | None = None, clock=time.time) -> None:
+                 registry: PromptRegistry | None = None, clock=time.time,
+                 not_configured_reason: str = "ANTHROPIC_API_KEY_NOT_SET") -> None:
         self._provider = provider
-        self._config = config or IntelligenceInferenceConfig(max_tokens=1400, timeout_seconds=45.0, prompt_id=PROMPT_ID)
+        self.not_configured_reason = not_configured_reason
+        # A local CPU/iGPU model generates far slower than a hosted API; its budget includes an on-demand start.
+        local = getattr(provider, "runtime", None) == "LOCAL_MODEL"
+        # A paid call gets output headroom: a truncated answer would be billed and still rejected. max_tokens is a cap,
+        # not a charge; the daily budget reserves it as the worst case.
+        self._config = config or IntelligenceInferenceConfig(max_tokens=1400 if local else 2048,
+                                                             timeout_seconds=300.0 if local else 45.0, prompt_id=PROMPT_ID)
         self._registry = registry or PromptRegistry()
         self._clock = clock
         self._lock = threading.Lock()
         self._cache: OrderedDict[str, tuple[float, dict[str, Any]]] = OrderedDict()
+        self._inflight: dict[str, threading.Event] = {}
         self.calls = 0
 
     def input_hash(self, stories: list[SynthesisStory], instruments: tuple[str, ...]) -> str:
@@ -138,16 +167,18 @@ class ScreenerSynthesizer:
 
     def synthesize(self, stories: list[SynthesisStory], *, instruments: tuple[str, ...], as_of: str) -> dict[str, Any]:
         prompt = self._registry.get_by_id(PROMPT_ID)
+        # story_ids names exactly what the model is given (at most MAX_STORIES), never stories it did not see.
+        stories = stories[:MAX_STORIES]
         base = {"schema_version": SCHEMA_VERSION, "epistemic_class": "AI_SYNTHESIS", "prompt_id": prompt.prompt_id,
                 "prompt_version": prompt.version, "generated_at": as_of, "story_ids": [story.story_id for story in stories],
+                "runtime": (getattr(self._provider, "runtime", None) or "PAID_API") if self._provider else None,
                 "provider_id": getattr(self._provider, "provider_id", None) if self._provider else None,
                 "model_id": getattr(self._provider, "model_id", None) if self._provider else None,
                 "input_hash": None, "cache": None, "synthesis": None}
         if self._provider is None:
-            return {**base, "state": "NOT_CONFIGURED", "reason": "ANTHROPIC_API_KEY_NOT_SET"}
+            return {**base, "state": "NOT_CONFIGURED", "reason": self.not_configured_reason}
         if not stories:
             return {**base, "state": "INSUFFICIENT_EVIDENCE", "reason": "NO_STORIES_IN_WINDOW"}
-        stories = stories[:MAX_STORIES]
         digest = self.input_hash(stories, instruments)
         now = self._clock()
         with self._lock:
@@ -155,6 +186,36 @@ class ScreenerSynthesizer:
             if cached is not None and cached[0] > now:
                 self._cache.move_to_end(digest)
                 return {**cached[1], "cache": "HIT"}
+            # One model call per input: a concurrent identical request waits for it instead of paying again.
+            waiter = self._inflight.get(digest)
+            if waiter is None:
+                self._inflight[digest] = threading.Event()
+        if waiter is not None:
+            waiter.wait(self._config.timeout_seconds + 5)
+            with self._lock:
+                cached = self._cache.get(digest)
+            if cached is not None:
+                return {**cached[1], "cache": "HIT"}
+            return {**base, "state": "UNAVAILABLE", "reason": "SYNTHESIS_IN_PROGRESS"}
+        try:
+            result, ttl = self._generate(prompt, stories, instruments, as_of, digest, base)
+            if ttl:
+                with self._lock:
+                    self._cache[digest] = (now + ttl, result)
+                    if len(self._cache) > CACHE_SIZE:
+                        self._cache.popitem(last=False)
+            return result
+        finally:
+            with self._lock:
+                event = self._inflight.pop(digest, None)
+            if event is not None:
+                event.set()
+
+    def _generate(self, prompt: Any, stories: list[SynthesisStory], instruments: tuple[str, ...], as_of: str, digest: str,
+                  base: dict[str, Any]) -> tuple[dict[str, Any], float]:
+        """(result, cache TTL seconds; 0 = not cached)."""
+
+        paid = getattr(self._provider, "runtime", "PAID_API") == "PAID_API"
         articles = tuple(ArticleInputRef(event_id=story.story_id, source_id=",".join(story.publishers)[:120],
                                          provider_id=story.source_type, published_time=story.published_time,
                                          retrieved_time=story.retrieved_time, headline=story.headline,
@@ -180,20 +241,22 @@ class ScreenerSynthesizer:
         base = {**base, "input_hash": digest, "cache": "MISS", "provider_id": response.provider_id,
                 "model_id": response.model_id}
         if response.error_code is not None:
-            reason = response.error_message if response.error_message == "API_KEY_MISSING" else response.error_code.value
-            state = "NOT_CONFIGURED" if response.error_message == "API_KEY_MISSING" else "UNAVAILABLE"
-            return {**base, "state": state, "reason": reason}
+            # Provider reasons are stable codes (LOCAL_*, ANTHROPIC_*, SYNTHESIS_*); others report the canonical code.
+            message = response.error_message or ""
+            reason = (message if message == "API_KEY_MISSING" or message.startswith(_STABLE_REASON_PREFIXES)
+                      else response.error_code.value)
+            state = "NOT_CONFIGURED" if message == "API_KEY_MISSING" else "UNAVAILABLE"
+            # A paid failure is held briefly so repeated clicks do not re-bill; a budget refusal cost nothing.
+            ttl = FAILURE_TTL_S if paid and not message.startswith("SYNTHESIS_") else 0
+            return {**base, "state": state, "reason": reason}, ttl
         synthesis, reason = parse_synthesis(response.raw_text, {story.story_id for story in stories})
         if synthesis is None:
-            return {**base, "state": "INVALID_OUTPUT", "reason": reason}
+            # Temperature 0 on the same input repeats the same output: a paid retry would buy the same rejection.
+            return {**base, "state": "INVALID_OUTPUT", "reason": reason}, (CACHE_TTL_S if paid else 0)
         result = {**base, "state": "CURRENT", "reason": None, "synthesis": synthesis,
                   "generated_at": datetime.fromtimestamp(self._clock(), tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
-        with self._lock:
-            self._cache[digest] = (now + CACHE_TTL_S, result)
-            if len(self._cache) > CACHE_SIZE:
-                self._cache.popitem(last=False)
-        return result
+        return result, CACHE_TTL_S
 
 
-__all__ = ["PROMPT_ID", "SCHEMA_VERSION", "ScreenerSynthesizer", "SynthesisStory", "parse_synthesis",
-           "unsupported_certainty"]
+__all__ = ["PROMPT_ID", "SCHEMA_VERSION", "ScreenerSynthesizer", "SynthesisStory", "output_json_schema",
+           "parse_synthesis", "unsupported_certainty"]

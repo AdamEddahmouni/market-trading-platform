@@ -45,6 +45,12 @@ def _configured(name: str) -> str | None:
     return value if value.upper() not in PLACEHOLDERS else None
 
 
+def configured_value(name: str) -> str | None:
+    """A non-placeholder value from the process environment, ``.private/providers.env``, or ``.env``."""
+
+    return _configured(name)
+
+
 def newsapi_api_key() -> str | None:
     return _configured("NEWSAPI_API_KEY") or _configured("NEWSAPI_KEY")
 
@@ -121,6 +127,7 @@ def verify_news_config() -> dict[str, object]:
 __all__ = [
     "FINNHUB_URL",
     "NEWSAPI_URL",
+    "configured_value",
     "default_pipeline_config",
     "finnhub_api_key",
     "finnhub_live_enabled",

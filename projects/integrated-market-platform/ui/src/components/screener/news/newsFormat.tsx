@@ -25,11 +25,26 @@ export const newsDayTime = (iso: string | null | undefined, universe: ScreenerUn
 export const humanize = (code: string | null | undefined) => code ? code.replace(/_/g, " ").toLowerCase() : "";
 
 export const PROVIDER_STATE_TEXT: Record<string, string> = {
-  CURRENT: "current", STALE: "stale", PENDING: "pending", NOT_CONFIGURED: "not configured", LIVE_DISABLED: "live disabled",
-  RATE_LIMITED: "rate limited", AUTH_FAILED: "auth failed", ERROR: "error", NOT_APPLICABLE: "not applicable",
-  UNAVAILABLE: "unavailable", LOADED: "loaded",
+  CURRENT: "current", STALE: "stale", DELAYED: "delayed", PENDING: "pending", NOT_CONFIGURED: "not configured",
+  LIVE_DISABLED: "live disabled", RATE_LIMITED: "rate limited", AUTH_FAILED: "auth failed", ERROR: "error",
+  NOT_APPLICABLE: "not applicable", UNAVAILABLE: "unavailable", LOADED: "loaded",
 };
 export const stateText = (state: string) => PROVIDER_STATE_TEXT[state] ?? humanize(state);
+
+const TERM_TEXT: Record<string, string> = {
+  DEVELOPER: "Developer plan", FREE: "free plan", DEVELOPMENT_ONLY: "development and testing only",
+  DELAYED_24H: "articles delayed 24 h", LOCAL_MODEL: "local model",
+};
+/** Plain-language plan terms (cost, quota, timing, use restriction) stated by the server for a provider. */
+export function termsText(provider: ProviderStatus): string | null {
+  const t = provider.terms;
+  if (!t) return null;
+  const parts = [t.plan, t.runtime, t.restriction, t.timing].filter((item): item is string => Boolean(item))
+    .map((item) => TERM_TEXT[item] ?? humanize(item));
+  if (t.quota) parts.push(t.quota);
+  if (t.cost_usd === 0) parts.push("$0");
+  return parts.length ? parts.join(" · ") : null;
+}
 
 /** Providers that are expected to contribute but are not current. */
 export const degradedProviders = (providers: ProviderStatus[]) =>
@@ -54,7 +69,7 @@ export function SentimentCell({ sentiment }: { sentiment: StorySentiment }) {
   if (sentiment.state === "SCORED" && sentiment.label) {
     const p = sentiment.probabilities;
     return <span className={`news-sentiment ${sentiment.label.toLowerCase()}`}
-      title={`Headline language classified by ${sentiment.model_id ?? "unknown model"}${p ? ` · positive ${p.positive.toFixed(2)} · neutral ${p.neutral.toFixed(2)} · negative ${p.negative.toFixed(2)}` : ""}. Describes language, not a forecast.`}>
+      title={`Headline language classified by ${sentiment.model_id ?? "unknown model"}${sentiment.basis === "IMP_DERIVED_FINBERT" ? " (local model, derived by IMP; not supplied by the source)" : ""}${p ? ` · positive ${p.positive.toFixed(2)} · neutral ${p.neutral.toFixed(2)} · negative ${p.negative.toFixed(2)}` : ""}. Describes language, not a forecast.`}>
       {SENTIMENT_TEXT[sentiment.label]}</span>;
   }
   if (sentiment.state === "NOT_CONFIGURED" || sentiment.state === "UNAVAILABLE") {
@@ -62,7 +77,8 @@ export function SentimentCell({ sentiment }: { sentiment: StorySentiment }) {
     const text = sentiment.state === "NOT_CONFIGURED" ? "model not configured" : "unavailable";
     return <span className="news-sentiment none" title={`Sentiment ${text}`}><span aria-hidden="true">—</span><span className="sr-only">{text}</span></span>;
   }
-  const text = sentiment.state === "NOT_SCORED" ? "not scored" : sentiment.state === "ERROR" ? "scoring error" : "—";
+  const text = sentiment.state === "NOT_SCORED" ? (sentiment.reason === "MODEL_LOADING" ? "model loading" : "not scored")
+    : sentiment.state === "ERROR" ? "scoring error" : "—";
   return <span className="news-sentiment none" title={`Sentiment ${humanize(sentiment.state)}`}>{text}</span>;
 }
 
@@ -110,6 +126,6 @@ export function ProviderStrip({ providers, label = "News providers" }: { provide
   return <ul className="news-provider-strip" aria-label={label}>{providers.map((provider) =>
     <li key={provider.id} className={`news-provider state-${provider.state.toLowerCase()}`}
       title={[provider.reason ? `Reason: ${provider.reason}` : null, provider.fetched_at ? `Fetched ${provider.fetched_at}` : "Not fetched",
-        provider.item_count != null ? `${provider.item_count} items` : null].filter(Boolean).join(" · ")}>
+        provider.item_count != null ? `${provider.item_count} items` : null, termsText(provider)].filter(Boolean).join(" · ")}>
       <span>{provider.label}</span> <strong>{stateText(provider.state)}</strong></li>)}</ul>;
 }

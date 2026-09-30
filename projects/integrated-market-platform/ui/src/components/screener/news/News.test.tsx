@@ -278,6 +278,21 @@ describe("S11 Screener News view", () => {
     expect(notice).toHaveTextContent(/NewsAPI \(not configured · IMP_NEWSAPI_LIVE_NOT_SET\); Finnhub \(rate limited · HTTP_429\)/);
   });
 
+  it("names a delayed development-plan provider with its terms and a loading local model", async () => {
+    const delayed = { ...provider("newsapi", "NewsAPI", "DELAYED", "NEWSAPI_DEVELOPER_PLAN_24H_DELAY"),
+      terms: { plan: "DEVELOPER", restriction: "DEVELOPMENT_ONLY", timing: "DELAYED_24H", quota: "100 requests/day", cost_usd: 0 } };
+    mocks.news.mockImplementation(async (params: { universe: string }) => feed({ universe: params.universe,
+      providers: [provider("finviz", "Finviz Elite", "CURRENT"), delayed], result_count: 1,
+      stories: [story("l1", "Loading story", { sentiment: { state: "NOT_SCORED", label: null, probabilities: null, model_id: null, reason: "MODEL_LOADING" } })] }));
+    await openNews();
+    const strip = await screen.findByRole("list", { name: "News providers" });
+    const item = within(strip).getByText("NewsAPI").closest("li")!;
+    expect(item).toHaveTextContent("NewsAPI delayed");
+    expect(item).toHaveClass("state-delayed");
+    expect(item).toHaveAttribute("title", expect.stringContaining("development and testing only · articles delayed 24 h"));
+    expect(within(await screen.findByRole("table", { name: "US Equities news feed" })).getByText("model loading")).toBeInTheDocument();
+  });
+
   it("expands a syndicated story into its member sources", async () => {
     await openNews();
     const toggle = await screen.findByRole("button", { name: "1 story · 3 sources" });
@@ -470,7 +485,8 @@ describe("S11 News & Analysis panel", () => {
     await within(panel).findByText("AAPL headline one");
     expect(mocks.synthesis).not.toHaveBeenCalled();
     fireEvent.click(within(panel).getByRole("button", { name: "Generate AI synthesis" }));
-    await waitFor(() => expect(mocks.synthesis).toHaveBeenCalledWith({ universe: "US_EQUITIES", scope: "INSTRUMENT", instrument: "AAPL", window: "24h" }));
+    await waitFor(() => expect(mocks.synthesis).toHaveBeenCalledWith({ universe: "US_EQUITIES", scope: "INSTRUMENT", instrument: "AAPL", window: "24h" },
+      expect.any(AbortSignal)));
     const result = await within(panel).findByLabelText("AI synthesis result");
     expect(within(result).getAllByText(/^AI synthesis · model claude-test · generated /)).toHaveLength(6);
     expect(within(result).getByText("Two stories discuss quarterly results.")).toBeInTheDocument();
@@ -496,6 +512,83 @@ describe("S11 News & Analysis panel", () => {
       coverage: { story_count: 0, source_count: 0, window: win(), missing_providers: [] },
       synthesis: { summary: "Stale AAPL synthesis", observed_facts: [], derived_context: [], uncertainties: [], conflicting_evidence: [], potential_market_relevance: [] } }); });
     expect(screen.queryByText("Stale AAPL synthesis")).toBeNull();
+  });
+
+  it("aborts an in-flight synthesis when the selection changes and shows no error for it", async () => {
+    const signals: AbortSignal[] = [];
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: "STARTS_ON_REQUEST", provider_id: "local.openai_compatible", model_id: "Qwen/Qwen3-4B-GGUF:Q4_K_M", runtime: "LOCAL_MODEL" } }));
+    mocks.synthesis.mockImplementation((_body: unknown, signal: AbortSignal) => new Promise((_resolve, reject) => {
+      signals.push(signal);
+      signal.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
+    }));
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    const ai = within(panel).getByRole("region", { name: "AI synthesis" });
+    expect(ai).toHaveTextContent("Model Qwen/Qwen3-4B-GGUF:Q4_K_M (local, no API cost).");
+    expect(ai).toHaveTextContent("The local model starts on the first request");
+    fireEvent.click(within(panel).getByRole("button", { name: "Generate AI synthesis" }));
+    await waitFor(() => expect(signals).toHaveLength(1));
+    await selectRow("NVDA");
+    await screen.findByText("NVDA headline one");
+    await waitFor(() => expect(signals[0].aborted).toBe(true));
+    expect(screen.queryByText("AI synthesis request failed.")).toBeNull();
+  });
+
+  it("states today's paid usage against the hard daily limit", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
+        budget: { day: "2026-09-30", requests: 3, max_requests: 30, tokens: 12400, max_tokens: 200000 } } }));
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    expect(within(panel).getByRole("region", { name: "AI synthesis" }))
+      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit).");
+  });
+
+  it("labels a local-model synthesis as local", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: "qwen-local", runtime: "LOCAL_MODEL" } }));
+    mocks.synthesis.mockResolvedValue({
+      schema_version: "screener-news-synthesis/1.0.0", state: "CURRENT", reason: null, epistemic_class: "AI_SYNTHESIS", generated_at: T,
+      provider_id: "local.openai_compatible", model_id: "qwen-local", runtime: "LOCAL_MODEL", prompt_id: "news_synthesis", prompt_version: "1",
+      input_hash: "abc", cache: "MISS", story_ids: ["AAPL-1"],
+      coverage: { story_count: 2, synthesized_story_count: 1, source_count: 1, window: win(), missing_providers: [] },
+      synthesis: { summary: "One story on results.", observed_facts: [{ text: "Results were reported", refs: ["AAPL-1"] }],
+        derived_context: [], uncertainties: ["Single source"], conflicting_evidence: [], potential_market_relevance: [] },
+    });
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    fireEvent.click(within(panel).getByRole("button", { name: "Generate AI synthesis" }));
+    const result = await within(panel).findByLabelText("AI synthesis result");
+    expect(within(result).getAllByText(/^AI synthesis · model qwen-local \(local\) · generated /).length).toBeGreaterThan(0);
+    expect(within(panel).getByText(/^Coverage: 1 of 2 stories · 1 sources/)).toBeInTheDocument();
+  });
+
+  it("shows delayed development-plan terms and IMP-derived sentiment provenance", async () => {
+    const delayed = { ...provider("newsapi", "NewsAPI", "DELAYED", "NEWSAPI_DEVELOPER_PLAN_24H_DELAY"),
+      terms: { plan: "DEVELOPER", restriction: "DEVELOPMENT_ONLY", timing: "DELAYED_24H", quota: "100 requests/day", cost_usd: 0 } };
+    const finbert = { ...provider("finbert", "FinBERT (local)", "CURRENT", null, "SENTIMENT"), terms: { runtime: "LOCAL_MODEL", cost_usd: 0 } };
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { state: "PARTIAL", providers: [provider("finviz", "Finviz Elite", "CURRENT"), delayed, finbert] }));
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    const provenance = within(panel).getByRole("region", { name: "Provenance" });
+    expect(provenance).toHaveTextContent("NewsAPI delayed");
+    expect(provenance).toHaveTextContent("Developer plan · development and testing only · articles delayed 24 h · 100 requests/day · $0");
+    expect(provenance).toHaveTextContent("local model · $0");
+    expect(within(panel).getByRole("region", { name: "Sentiment" })).toHaveTextContent("ProsusAI/finbert (local, IMP-derived)");
   });
 
   it("states partial provider coverage and survives close and reopen", async () => {

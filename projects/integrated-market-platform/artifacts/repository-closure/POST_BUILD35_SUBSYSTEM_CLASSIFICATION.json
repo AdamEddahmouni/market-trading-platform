@@ -528,6 +528,7 @@
       "scope": [
         "tools/cboe_options",
         "tools/cftc",
+        "tools/congress",
         "tools/discovery",
         "tools/eia",
         "tools/finviz",

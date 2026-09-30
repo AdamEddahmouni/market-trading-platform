@@ -28,6 +28,7 @@ import time
 from collections import Counter
 from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -77,6 +78,16 @@ PROVIDER_LABELS = {"finviz": "Finviz Elite", "newsapi": "NewsAPI", "finnhub": "F
                    "sec_filings": "SEC EDGAR filings", "finbert": "FinBERT (local)", "ai": "AI synthesis"}
 PROVIDER_KINDS = {"finviz": "NEWS", "newsapi": "NEWS", "finnhub": "NEWS", "rss": "NEWS", "sec_filings": "OFFICIAL_FILING",
                   "finbert": "SENTIMENT", "ai": "AI"}
+# Usable states. DELAYED is a working provider whose plan delays articles (NewsAPI Developer): it contributes
+# stories and never makes the whole view PARTIAL, but it is never shown as CURRENT.
+USABLE_STATES = frozenset({"CURRENT", "STALE", "DELAYED"})
+
+
+def _provider_terms() -> dict[str, dict[str, Any]]:
+    from ..news.providers import FINNHUB_PLAN_TERMS, NEWSAPI_PLAN_TERMS
+
+    return {"newsapi": NEWSAPI_PLAN_TERMS, "finnhub": FINNHUB_PLAN_TERMS,
+            "finbert": {"runtime": "LOCAL_MODEL", "cost_usd": 0, "basis": "IMP_DERIVED_FINBERT"}}
 # Category families that are meaningful per universe (an equity "SEC" story is not crypto regulation).
 UNIVERSE_GROUPS = {
     US_EQUITIES: frozenset({"CORPORATE", "REGULATORY", "MACRO", "FILING"}),
@@ -214,6 +225,9 @@ def _finviz_published(item: dict[str, Any]) -> str:
 def provider_status(provider_id: str, result: dict[str, Any] | None, *, scope: str, pending: bool = False) -> dict[str, Any]:
     base = {"id": provider_id, "label": PROVIDER_LABELS.get(provider_id, provider_id),
             "kind": PROVIDER_KINDS.get(provider_id, "NEWS"), "scope": scope}
+    terms = _provider_terms().get(provider_id)
+    if terms:
+        base["terms"] = dict(terms)
     if pending:
         return {**base, "state": "PENDING", "reason": "FETCHING", "fetched_at": None, "item_count": None}
     if result is None:
@@ -289,11 +303,16 @@ def _default_chart(instrument_id: str, universe: str) -> dict[str, Any] | None:
 
 
 def _default_synthesizer():
-    from ..intelligence.inference.provider import AnthropicInferenceProvider
-    from ..intelligence.inference.screener_synthesis import ScreenerSynthesizer
+    """Production synthesis provider: Anthropic when its key is configured, else a configured local model."""
 
-    provider = AnthropicInferenceProvider() if os.environ.get("ANTHROPIC_API_KEY", "").strip() else None
-    return ScreenerSynthesizer(provider=provider)
+    from ..intelligence.inference.local_provider import select_synthesis_provider
+    from ..intelligence.inference.screener_synthesis import ScreenerSynthesizer
+    from ..local_state.external_cache import imp_cache_dir
+    from ..news.config import configured_value
+
+    selection = select_synthesis_provider(configured_value, cache_dir=imp_cache_dir())
+    return ScreenerSynthesizer(provider=selection.provider,
+                               not_configured_reason=selection.reason or "NO_SYNTHESIS_PROVIDER_CONFIGURED")
 
 
 @dataclass(slots=True)
@@ -316,7 +335,8 @@ class ScreenerNewsService:
                  chart: Callable[[str, str], dict[str, Any] | None] = _default_chart,
                  synthesizer_factory: Callable[[], Any] = _default_synthesizer,
                  cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
-                 wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get) -> None:
+                 wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
+                 newsapi_quota_path: Path | None = None) -> None:
         self._finviz = finviz
         self._rss = rss or RssNewsSource()
         self._newsapi_factory = newsapi_factory
@@ -335,6 +355,14 @@ class ScreenerNewsService:
         self._lock = threading.Lock()
         self._indexes: dict[str, _UniverseIndex] = {}
         self._newsapi_day: tuple[str, int] = ("", 0)
+        # Persisted so an API restart does not reset the Developer plan's 100 requests/day budget.
+        self._newsapi_quota_path = newsapi_quota_path
+        if newsapi_quota_path is not None:
+            from ..local_state.external_cache import read_manifest
+
+            saved = read_manifest(newsapi_quota_path) or {}
+            if isinstance(saved.get("day"), str) and isinstance(saved.get("count"), int):
+                self._newsapi_day = (saved["day"], saved["count"])
         self.provider_requests: Counter[str] = Counter()
 
     # -------------------------------------------------------------- providers
@@ -399,6 +427,13 @@ class ScreenerNewsService:
                 self._newsapi_day = (day, count)
                 return False
             self._newsapi_day = (day, count + 1)
+            if self._newsapi_quota_path is not None:
+                from ..local_state.external_cache import write_json_atomic
+
+                try:
+                    write_json_atomic(self._newsapi_quota_path, {"day": day, "count": count + 1, "limit": NEWSAPI_DAILY_GUARD})
+                except OSError:
+                    pass  # the in-memory guard still applies
             return True
 
     def _per_symbol(self, provider_id: str, query: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -647,7 +682,8 @@ class ScreenerNewsService:
         payload = {
             "schema_version": SCHEMA_VERSION, "generated_at": _iso(now), "universe": universe,
             "window": self._window(window, now), "state": state, "reason": reason, "providers": providers,
-            "sentiment_model": {key: model_status.get(key) for key in ("state", "reason", "model_id", "model_revision", "loaded")},
+            "sentiment_model": {key: model_status.get(key) for key in ("state", "reason", "model_id", "model_revision", "loaded",
+                                                                       "runtime", "basis", "model_source")},
             "filters": {
                 "sources": [{"id": key, "label": PROVIDER_LABELS.get(key, key), "count": count}
                             for key, count in sorted(source_counts.items())],
@@ -678,14 +714,17 @@ class ScreenerNewsService:
 
     @staticmethod
     def _overall(states: set[str], index_error: str | None) -> tuple[str, str | None]:
-        good = states & {"CURRENT", "STALE"}
+        good = states & USABLE_STATES
         if "PENDING" in states and not good:
             return "PENDING", "PROVIDERS_FETCHING"
         if not good:
             if states and states <= {"NOT_CONFIGURED", "LIVE_DISABLED"}:
                 return "NOT_CONFIGURED", "NO_NEWS_PROVIDER_CONFIGURED"
             return "UNAVAILABLE", "NO_CURRENT_NEWS_PROVIDER"
-        if states - {"CURRENT"} or index_error:
+        if good == {"DELAYED"}:
+            # Only delayed development data is available: usable, but never a current picture.
+            return "PARTIAL", "ONLY_DELAYED_PROVIDERS"
+        if states - {"CURRENT", "DELAYED"} or index_error:
             return "PARTIAL", index_error or "SOME_PROVIDERS_NOT_CURRENT"
         return "CURRENT", None
 
@@ -795,11 +834,13 @@ class ScreenerNewsService:
                               "published_at": _iso(latest_scored.published)} if latest_scored else None)
         providers.append({"id": "finbert", "label": PROVIDER_LABELS["finbert"], "kind": "SENTIMENT", "scope": "INSTRUMENT",
                           "state": model_status["state"], "reason": model_status.get("reason"), "fetched_at": None,
-                          "item_count": summary["scored"]})
+                          "item_count": summary["scored"], "terms": _provider_terms()["finbert"],
+                          "model_id": model_status.get("model_id")})
         ai = self._ai_status()
         providers.append({"id": "ai", "label": PROVIDER_LABELS["ai"], "kind": "AI", "scope": "INSTRUMENT",
                           "state": "CURRENT" if ai["state"] == "AVAILABLE" else ai["state"], "reason": ai["reason"],
-                          "fetched_at": None, "item_count": None})
+                          "fetched_at": None, "item_count": None, "runtime": ai.get("runtime"),
+                          "model_id": ai.get("model_id")})
         news_states = {status["state"] for status in providers if status["kind"] in ("NEWS", "OFFICIAL_FILING")
                        and status["state"] != "NOT_APPLICABLE"}
         state, reason = self._overall(news_states, None)
@@ -945,7 +986,11 @@ class ScreenerNewsService:
         insufficient.append({"text": "No causal link between any headline and price movement is established by this evidence.",
                              "source": "IMP", "as_of": None, "story_id": None})
         missing = [status["label"] for status in providers if status["kind"] in ("NEWS", "OFFICIAL_FILING")
-                   and status["state"] not in ("CURRENT", "NOT_APPLICABLE", "STALE")]
+                   and status["state"] not in ("CURRENT", "NOT_APPLICABLE", "STALE", "DELAYED")]
+        delayed = [status["label"] for status in providers if status["state"] == "DELAYED"]
+        if delayed:
+            insufficient.append({"text": "Delayed development-plan source (not current news): " + ", ".join(delayed) + ".",
+                                 "source": "IMP", "as_of": None, "story_id": None})
         if missing:
             insufficient.append({"text": "Coverage excludes: " + ", ".join(missing) + ". Absent stories may reflect missing providers.",
                                  "source": "IMP", "as_of": None, "story_id": None})
@@ -967,9 +1012,19 @@ class ScreenerNewsService:
         synthesizer = self._get_synthesizer()
         provider = getattr(synthesizer, "_provider", None)
         if provider is None:
-            return {"state": "NOT_CONFIGURED", "reason": "ANTHROPIC_API_KEY_NOT_SET", "provider_id": None, "model_id": None}
-        return {"state": "AVAILABLE", "reason": None, "provider_id": getattr(provider, "provider_id", None),
-                "model_id": getattr(provider, "model_id", None)}
+            return {"state": "NOT_CONFIGURED", "reason": getattr(synthesizer, "not_configured_reason", "ANTHROPIC_API_KEY_NOT_SET"),
+                    "provider_id": None, "model_id": None, "runtime": None}
+        runtime = getattr(provider, "runtime", None) or "PAID_API"
+        # A managed local model starts on the first request; say so rather than implying it is loaded.
+        server = getattr(provider, "_server", None)
+        reason = "STARTS_ON_REQUEST" if server is not None and not server.running() else None
+        # A paid provider states today's usage against its hard daily limits.
+        budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
+        state = "AVAILABLE"
+        if budget is not None and (budget["requests"] >= budget["max_requests"] or budget["tokens"] >= budget["max_tokens"]):
+            state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
+        return {"state": state, "reason": reason, "provider_id": getattr(provider, "provider_id", None),
+                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget}
 
     def synthesis(self, *, universe: str, scope: str, instrument_id: str | None = None, window: str = "24h") -> dict[str, Any] | None:
         from ..intelligence.inference.screener_synthesis import SynthesisStory
@@ -995,10 +1050,13 @@ class ScreenerNewsService:
         result = self._get_synthesizer().synthesize(story_inputs, instruments=instruments,
                                                     as_of=_iso(datetime.fromtimestamp(self._clock(), tz=UTC)) or "")
         missing = sorted(status["id"] for status in payload["providers"]
-                         if status["kind"] in ("NEWS", "OFFICIAL_FILING") and status["state"] not in ("CURRENT", "NOT_APPLICABLE"))
+                         if status["kind"] in ("NEWS", "OFFICIAL_FILING")
+                         and status["state"] not in ("CURRENT", "NOT_APPLICABLE", "DELAYED"))
         publishers = {source["publisher"].lower() for story in stories for source in story["sources"]}
-        return {**result, "coverage": {"story_count": len(stories), "source_count": len(publishers),
-                                       "window": payload["window"], "missing_providers": missing}}
+        # story_count = matched stories; synthesized_story_count = those the model was given (capped).
+        return {**result, "coverage": {"story_count": len(stories), "synthesized_story_count": len(result["story_ids"]),
+                                       "source_count": len(publishers), "window": payload["window"],
+                                       "missing_providers": missing}}
 
 
 _SERVICE: ScreenerNewsService | None = None
@@ -1009,7 +1067,9 @@ def news_service() -> ScreenerNewsService:
     global _SERVICE
     with _SERVICE_LOCK:
         if _SERVICE is None:
-            _SERVICE = ScreenerNewsService()
+            from ..local_state.external_cache import imp_cache_dir
+
+            _SERVICE = ScreenerNewsService(newsapi_quota_path=imp_cache_dir() / "quota" / "newsapi-developer.json")
         return _SERVICE
 
 
