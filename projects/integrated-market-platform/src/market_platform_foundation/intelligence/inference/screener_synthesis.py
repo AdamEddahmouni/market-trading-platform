@@ -36,6 +36,8 @@ SCHEMA_VERSION = "screener-news-synthesis/1.0.0"
 MAX_STORIES = 12
 CACHE_SIZE = 64
 CACHE_TTL_S = 30 * 60
+FAILURE_TTL_S = 60
+_STABLE_REASON_PREFIXES = ("LOCAL_", "ANTHROPIC_", "SYNTHESIS_")
 _LIST_FIELDS = ("observed_facts", "derived_context", "conflicting_evidence", "potential_market_relevance")
 # Recommendation/certainty forms only. Attributed analyst actions in prose ("upgraded to Buy") and
 # market vocabulary ("sell-off", "buyback") are not recommendations.
@@ -143,12 +145,15 @@ class ScreenerSynthesizer:
         self.not_configured_reason = not_configured_reason
         # A local CPU/iGPU model generates far slower than a hosted API; its budget includes an on-demand start.
         local = getattr(provider, "runtime", None) == "LOCAL_MODEL"
-        self._config = config or IntelligenceInferenceConfig(max_tokens=1400, timeout_seconds=300.0 if local else 45.0,
-                                                             prompt_id=PROMPT_ID)
+        # A paid call gets output headroom: a truncated answer would be billed and still rejected. max_tokens is a cap,
+        # not a charge; the daily budget reserves it as the worst case.
+        self._config = config or IntelligenceInferenceConfig(max_tokens=1400 if local else 2048,
+                                                             timeout_seconds=300.0 if local else 45.0, prompt_id=PROMPT_ID)
         self._registry = registry or PromptRegistry()
         self._clock = clock
         self._lock = threading.Lock()
         self._cache: OrderedDict[str, tuple[float, dict[str, Any]]] = OrderedDict()
+        self._inflight: dict[str, threading.Event] = {}
         self.calls = 0
 
     def input_hash(self, stories: list[SynthesisStory], instruments: tuple[str, ...]) -> str:
@@ -181,6 +186,36 @@ class ScreenerSynthesizer:
             if cached is not None and cached[0] > now:
                 self._cache.move_to_end(digest)
                 return {**cached[1], "cache": "HIT"}
+            # One model call per input: a concurrent identical request waits for it instead of paying again.
+            waiter = self._inflight.get(digest)
+            if waiter is None:
+                self._inflight[digest] = threading.Event()
+        if waiter is not None:
+            waiter.wait(self._config.timeout_seconds + 5)
+            with self._lock:
+                cached = self._cache.get(digest)
+            if cached is not None:
+                return {**cached[1], "cache": "HIT"}
+            return {**base, "state": "UNAVAILABLE", "reason": "SYNTHESIS_IN_PROGRESS"}
+        try:
+            result, ttl = self._generate(prompt, stories, instruments, as_of, digest, base)
+            if ttl:
+                with self._lock:
+                    self._cache[digest] = (now + ttl, result)
+                    if len(self._cache) > CACHE_SIZE:
+                        self._cache.popitem(last=False)
+            return result
+        finally:
+            with self._lock:
+                event = self._inflight.pop(digest, None)
+            if event is not None:
+                event.set()
+
+    def _generate(self, prompt: Any, stories: list[SynthesisStory], instruments: tuple[str, ...], as_of: str, digest: str,
+                  base: dict[str, Any]) -> tuple[dict[str, Any], float]:
+        """(result, cache TTL seconds; 0 = not cached)."""
+
+        paid = getattr(self._provider, "runtime", "PAID_API") == "PAID_API"
         articles = tuple(ArticleInputRef(event_id=story.story_id, source_id=",".join(story.publishers)[:120],
                                          provider_id=story.source_type, published_time=story.published_time,
                                          retrieved_time=story.retrieved_time, headline=story.headline,
@@ -206,21 +241,21 @@ class ScreenerSynthesizer:
         base = {**base, "input_hash": digest, "cache": "MISS", "provider_id": response.provider_id,
                 "model_id": response.model_id}
         if response.error_code is not None:
-            # Local-model reasons are stable codes (LOCAL_*); anything else reports the canonical error code.
-            reason = (response.error_message if response.error_message == "API_KEY_MISSING"
-                      or response.error_message.startswith("LOCAL_") else response.error_code.value)
-            state = "NOT_CONFIGURED" if response.error_message == "API_KEY_MISSING" else "UNAVAILABLE"
-            return {**base, "state": state, "reason": reason}
+            # Provider reasons are stable codes (LOCAL_*, ANTHROPIC_*, SYNTHESIS_*); others report the canonical code.
+            message = response.error_message or ""
+            reason = (message if message == "API_KEY_MISSING" or message.startswith(_STABLE_REASON_PREFIXES)
+                      else response.error_code.value)
+            state = "NOT_CONFIGURED" if message == "API_KEY_MISSING" else "UNAVAILABLE"
+            # A paid failure is held briefly so repeated clicks do not re-bill; a budget refusal cost nothing.
+            ttl = FAILURE_TTL_S if paid and not message.startswith("SYNTHESIS_") else 0
+            return {**base, "state": state, "reason": reason}, ttl
         synthesis, reason = parse_synthesis(response.raw_text, {story.story_id for story in stories})
         if synthesis is None:
-            return {**base, "state": "INVALID_OUTPUT", "reason": reason}
+            # Temperature 0 on the same input repeats the same output: a paid retry would buy the same rejection.
+            return {**base, "state": "INVALID_OUTPUT", "reason": reason}, (CACHE_TTL_S if paid else 0)
         result = {**base, "state": "CURRENT", "reason": None, "synthesis": synthesis,
                   "generated_at": datetime.fromtimestamp(self._clock(), tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}
-        with self._lock:
-            self._cache[digest] = (now + CACHE_TTL_S, result)
-            if len(self._cache) > CACHE_SIZE:
-                self._cache.popitem(last=False)
-        return result
+        return result, CACHE_TTL_S
 
 
 __all__ = ["PROMPT_ID", "SCHEMA_VERSION", "ScreenerSynthesizer", "SynthesisStory", "output_json_schema",

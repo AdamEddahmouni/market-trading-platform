@@ -163,6 +163,41 @@ With none of these, the reason is `NO_SYNTHESIS_PROVIDER_CONFIGURED`.
 
 After the API stopped, no `llama-server` process remained.
 
+## Paid Claude synthesis (optional, budgeted)
+
+With an Anthropic key configured, `IMP_SYNTHESIS_PROVIDER=auto` (the default) uses
+Claude for synthesis, and the local model stays the fallback.
+`IMP_SYNTHESIS_PROVIDER=local` turns paid calls off entirely. Sentiment stays on
+FinBERT: it runs per headline on every feed load, where a paid model would add cost
+and latency for no better label.
+
+| Setting | Default | Purpose |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | — | Entered with `python tools/news/auth.py configure` (hidden) or the operator config screen; stored in `.private/providers.env` |
+| `IMP_SYNTHESIS_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Synthesis model (independent of the assistant's `ANTHROPIC_MODEL`); `claude-haiku-4-5-20251001` is the cheaper option |
+| `IMP_SYNTHESIS_DAILY_REQUESTS` | 30 | Hard per-UTC-day request limit |
+| `IMP_SYNTHESIS_DAILY_TOKENS` | 200,000 | Hard per-UTC-day token limit (input + output) |
+
+Safeguards (`intelligence/inference/anthropic_synthesis.py`):
+
+- **Hard daily budget.** Before each call, the worst case (prompt estimate + tool
+  schema + `max_tokens`) is reserved. A call that could cross either limit is refused
+  before any request is sent (`SYNTHESIS_DAILY_REQUEST_LIMIT` /
+  `SYNTHESIS_DAILY_TOKEN_LIMIT`). The count persists in
+  `<IMP cache>/quota/anthropic-synthesis.json`, so a restart does not reset it. The
+  panel shows today's usage, and at the limit the AI status reads
+  `SYNTHESIS_DAILY_BUDGET_EXHAUSTED`.
+- **Accurate charging.** Reported usage replaces the reservation. Refusals (401/403,
+  400, overload) charge nothing, and a timeout keeps the worst case charged.
+- **No retries.** A 429, overload, timeout or truncated answer is shown once as a state
+  (`ANTHROPIC_*`), never retried automatically.
+- **No re-billing.** Identical concurrent requests share one call. A rejected answer is
+  cached for 30 minutes (temperature 0 would repeat it), and a transient failure for
+  60 s. A budget refusal is not cached, so raising a limit takes effect at once.
+- **Structure first.** A forced tool whose input schema limits `refs` to the packet's
+  story ids makes rejected-but-billed answers rare. `max_tokens` is 2,048 (a cap, not a
+  charge) so answers are not truncated, and the timeout is 45 s.
+
 ## Congress legislators registry
 
 | Field | Value |

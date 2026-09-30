@@ -317,9 +317,10 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
     has_key = bool((value("ANTHROPIC_API_KEY") or "").strip())
     if choice in ("auto", "anthropic") and has_key:
         if anthropic_factory is None:
-            from .provider import AnthropicInferenceProvider
+            from .anthropic_synthesis import build_paid_provider
 
-            anthropic_factory = AnthropicInferenceProvider
+            # Key from the same source that selected it (env or private provider file), behind the daily budget.
+            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir), None, "PAID_API")
         return SynthesisSelection(anthropic_factory(), None, "PAID_API")
     if choice == "anthropic":
         return SynthesisSelection(None, "ANTHROPIC_API_KEY_NOT_SET", None)

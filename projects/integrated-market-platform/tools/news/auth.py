@@ -1,4 +1,4 @@
-"""Secure setup for NewsAPI and Finnhub credentials."""
+"""Secure setup for NewsAPI, Finnhub, and Anthropic (AI synthesis) credentials."""
 
 from __future__ import annotations
 
@@ -41,14 +41,19 @@ def write_provider_values(values: dict[str, str], *, path: Path | None = None) -
         return False
 
 
-def configured_values(newsapi_key: str, finnhub_key: str) -> dict[str, str]:
-    """Private-file values for the keys entered; storing a key is the operator's opt-in for that provider."""
+def configured_values(newsapi_key: str, finnhub_key: str, anthropic_key: str = "") -> dict[str, str]:
+    """Private-file values for the keys entered; storing a key is the operator's opt-in for that provider.
+
+    The Anthropic key needs no live flag: synthesis runs only on an explicit operator request, behind the daily
+    budget (IMP_SYNTHESIS_DAILY_REQUESTS / IMP_SYNTHESIS_DAILY_TOKENS)."""
 
     values: dict[str, str] = {}
     if newsapi_key:
         values.update(NEWSAPI_API_KEY=newsapi_key, IMP_NEWSAPI_LIVE="1")
     if finnhub_key:
         values.update(FINNHUB_API_KEY=finnhub_key, IMP_FINNHUB_LIVE="1")
+    if anthropic_key:
+        values.update(ANTHROPIC_API_KEY=anthropic_key)
     return values
 
 
@@ -57,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "command",
         choices=("configure",),
-        help="Store free NewsAPI (Developer) and/or Finnhub keys in the private provider file",
+        help="Store NewsAPI (Developer), Finnhub, and/or Anthropic keys in the private provider file",
     )
     args = parser.parse_args(argv)
     if args.command != "configure":
@@ -66,14 +71,15 @@ def main(argv: list[str] | None = None) -> int:
     # Input is hidden; leave a prompt blank to skip that provider. Values are never printed or logged.
     newsapi_key = getpass.getpass("NewsAPI Developer key (blank to skip): ").strip()
     finnhub_key = getpass.getpass("Finnhub key (blank to skip): ").strip()
-    values = configured_values(newsapi_key, finnhub_key)
+    anthropic_key = getpass.getpass("Anthropic API key for AI synthesis (blank to skip): ").strip()
+    values = configured_values(newsapi_key, finnhub_key, anthropic_key)
     if not values:
         print("ERROR: no provider key entered")
         return 2
     if not write_provider_values(values):
         print("ERROR: failed to store provider keys")
         return 2
-    stored = [name for name, key in (("NewsAPI", newsapi_key), ("Finnhub", finnhub_key)) if key]
+    stored = [name for name, key in (("NewsAPI", newsapi_key), ("Finnhub", finnhub_key), ("Anthropic", anthropic_key)) if key]
     print(f"Stored {' and '.join(stored)} credentials in the private provider file; restart the platform API")
     return 0
 

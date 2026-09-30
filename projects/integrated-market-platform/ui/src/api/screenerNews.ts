@@ -140,7 +140,10 @@ export const InstrumentNewsSchema = z.object({
   analysis: z.object({ observed: z.array(AnalysisItem), derived: z.array(AnalysisItem), insufficient: z.array(AnalysisItem) }).passthrough(),
   ai: z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
     provider_id: z.string().nullable(), model_id: z.string().nullable(),
-    runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional() }).passthrough(),
+    runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),
+    /** Paid provider only: today's usage against the hard daily limits (UTC day). */
+    budget: z.object({ day: z.string(), requests: z.number(), max_requests: z.number(), tokens: z.number(),
+      max_tokens: z.number() }).passthrough().nullable().optional() }).passthrough(),
 }).passthrough();
 export type InstrumentNews = z.infer<typeof InstrumentNewsSchema>;
 

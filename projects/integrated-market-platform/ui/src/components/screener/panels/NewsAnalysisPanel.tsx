@@ -122,6 +122,8 @@ function SynthesisBlock({ result, stories, universe }: { result: NewsSynthesis; 
   </div>;
 }
 
+const compactTokens = (value: number) => value >= 1000 ? `${Math.round(value / 1000)}k` : String(value);
+
 function Synthesis({ data }: { data: InstrumentNews }) {
   const key = `${data.universe}|${data.instrument.instrument_id}`;
   const current = useRef(key);
@@ -136,6 +138,7 @@ function Synthesis({ data }: { data: InstrumentNews }) {
     return <p className="screener-panel-note">AI synthesis {data.ai.state === "NOT_CONFIGURED" ? "not configured" : "unavailable"}{data.ai.reason ? ` · ${data.ai.reason}` : ""}. Nothing is generated.</p>;
   }
   const local = data.ai.runtime === "LOCAL_MODEL";
+  const budget = data.ai.budget ?? null;
   const generate = async () => {
     const requested = key;
     inflight.current?.abort();
@@ -158,7 +161,8 @@ function Synthesis({ data }: { data: InstrumentNews }) {
   return <>
     <button type="button" className="screener-control" disabled={running} onClick={() => void generate()}>{running ? "Generating…" : "Generate AI synthesis"}</button>
     <span className="screener-panel-note"> {data.ai.model_id ? `Model ${data.ai.model_id}${local ? " (local, no API cost)" : ""}. ` : ""}Runs only when requested.
-      {local && data.ai.reason === "STARTS_ON_REQUEST" ? " The local model starts on the first request (allow up to a minute)." : ""}</span>
+      {local && data.ai.reason === "STARTS_ON_REQUEST" ? " The local model starts on the first request (allow up to a minute)." : ""}
+      {budget ? ` Paid API · today ${budget.requests}/${budget.max_requests} requests · ${compactTokens(budget.tokens)}/${compactTokens(budget.max_tokens)} tokens (hard daily limit).` : ""}</span>
     {status?.key === key && status.state === "error" && <p className="screener-panel-note" role="alert">AI synthesis request failed.</p>}
     {result?.key === key && <SynthesisBlock result={result.value} stories={data.stories} universe={data.universe} />}
   </>;

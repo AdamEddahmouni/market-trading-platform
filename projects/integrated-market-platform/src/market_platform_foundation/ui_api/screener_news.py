@@ -1018,8 +1018,13 @@ class ScreenerNewsService:
         # A managed local model starts on the first request; say so rather than implying it is loaded.
         server = getattr(provider, "_server", None)
         reason = "STARTS_ON_REQUEST" if server is not None and not server.running() else None
-        return {"state": "AVAILABLE", "reason": reason, "provider_id": getattr(provider, "provider_id", None),
-                "model_id": getattr(provider, "model_id", None), "runtime": runtime}
+        # A paid provider states today's usage against its hard daily limits.
+        budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
+        state = "AVAILABLE"
+        if budget is not None and (budget["requests"] >= budget["max_requests"] or budget["tokens"] >= budget["max_tokens"]):
+            state, reason = "UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"
+        return {"state": state, "reason": reason, "provider_id": getattr(provider, "provider_id", None),
+                "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget}
 
     def synthesis(self, *, universe: str, scope: str, instrument_id: str | None = None, window: str = "24h") -> dict[str, Any] | None:
         from ..intelligence.inference.screener_synthesis import SynthesisStory

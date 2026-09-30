@@ -109,6 +109,23 @@ class LocalAiStatusTests(unittest.TestCase):
         self.assertGreater(seen[0], 1)
         self.assertEqual((coverage["story_count"], coverage["synthesized_story_count"]), (seen[0], 1))
 
+    def test_paid_provider_states_its_daily_budget_and_exhaustion(self):
+        from market_platform_foundation.intelligence.inference.anthropic_synthesis import (
+            AnthropicSynthesisProvider, BudgetedProvider, DailyBudget,
+        )
+
+        budget = DailyBudget(None, max_requests=2, max_tokens=100_000, clock=lambda: NOW)
+        svc = service()
+        svc._synthesizer = ScreenerSynthesizer(provider=BudgetedProvider(AnthropicSynthesisProvider(
+            api_key="k", poster=lambda *args: (500, b"")), budget))
+        ai = svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["ai"]
+        self.assertEqual((ai["state"], ai["runtime"], ai["budget"]["requests"], ai["budget"]["max_requests"]),
+                         ("AVAILABLE", "PAID_API", 0, 2))
+        budget.reserve(10)
+        budget.reserve(10)
+        ai = svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["ai"]
+        self.assertEqual((ai["state"], ai["reason"]), ("UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"))
+
     def test_no_provider_reason_is_explicit(self):
         svc = service()
         svc._synthesizer = ScreenerSynthesizer(provider=None, not_configured_reason="NO_SYNTHESIS_PROVIDER_CONFIGURED")

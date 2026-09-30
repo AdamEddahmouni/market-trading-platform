@@ -538,6 +538,19 @@ describe("S11 News & Analysis panel", () => {
     expect(screen.queryByText("AI synthesis request failed.")).toBeNull();
   });
 
+  it("states today's paid usage against the hard daily limit", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
+        budget: { day: "2026-09-30", requests: 3, max_requests: 30, tokens: 12400, max_tokens: 200000 } } }));
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    expect(within(panel).getByRole("region", { name: "AI synthesis" }))
+      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit).");
+  });
+
   it("labels a local-model synthesis as local", async () => {
     mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
       { ai: { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: "qwen-local", runtime: "LOCAL_MODEL" } }));

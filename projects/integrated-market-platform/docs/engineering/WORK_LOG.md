@@ -44,7 +44,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `src/market_platform_foundation/local_state/external_cache.py`; `news/finbert_sentiment.py`, `news/providers.py`, `news/config.py`; `intelligence/inference/local_provider.py`, `screener_synthesis.py`; `congressional_ptr/legislators_registry.py`; `ui_api/screener_news.py`, `screener_participants.py`; `tools/news/setup_finbert.py`, `setup_local_synthesis.py`, `auth.py`; `tools/congress/refresh_legislators.py`; UI `screenerNews.ts`, `fetchJson.ts`, `newsFormat.tsx`, `NewsAnalysisPanel.tsx`, `News.test.tsx` |
 | **Tests** | New backend suites (free capability, local synthesis, registry, Screener free capabilities); Screener regression; UI News 29 passed; typecheck; build; `validate changed` |
 | **Related** | [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md), [SCREENER_FINAL_CLOSURE.md](SCREENER_FINAL_CLOSURE.md) |
-| **Notes** | Owner actions: free Finnhub/NewsAPI keys via `tools/news/auth.py configure`, `SEC_USER_AGENT`, Senate eFD saved pages, launcher default live gates (policy), OpenD for ETF/Futures catalogs. |
+| **Notes** | Owner actions: free Finnhub/NewsAPI keys via `tools/news/auth.py configure`, `SEC_USER_AGENT`, Senate eFD saved pages, launcher default live gates (policy), OpenD for ETF/Futures catalogs. Optional paid Claude synthesis (`claude-sonnet-5-5`) now honours the private-file key and sits behind a persisted daily request/token budget, with no retries, single-flight calls, and failure caching so clicks cannot re-bill. |
 
 ## 2026-09-29 — Main Screener final completion and closure
 
