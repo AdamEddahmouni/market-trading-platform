@@ -126,6 +126,55 @@ class LocalAiStatusTests(unittest.TestCase):
         ai = svc.instrument(universe="US_EQUITIES", instrument_id="EQ:AAPL")["ai"]
         self.assertEqual((ai["state"], ai["reason"]), ("UNAVAILABLE", "SYNTHESIS_DAILY_BUDGET_EXHAUSTED"))
 
+    def test_synthesis_response_carries_budget_after_the_call(self):
+        from market_platform_foundation.intelligence.inference.anthropic_synthesis import (
+            AnthropicSynthesisProvider, BudgetedProvider, DailyBudget,
+        )
+
+        budget = DailyBudget(None, max_requests=5, max_tokens=100_000, clock=lambda: NOW)
+        svc = service()
+        svc._synthesizer = ScreenerSynthesizer(provider=BudgetedProvider(AnthropicSynthesisProvider(
+            api_key="k", poster=lambda *args: (500, b"")), budget), clock=lambda: NOW)
+        result = svc.synthesis(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")
+        self.assertEqual((result["budget"]["requests"], result["budget"]["max_requests"]), (1, 5))
+        self.assertEqual([item["story_id"] for item in result["stories"]], result["story_ids"])
+        self.assertTrue(all("headline" in item and "url" in item for item in result["stories"]))
+        # A local model states no budget.
+        local = service(provider=None)
+        self.assertIsNone(local.synthesis(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")["budget"])
+
+    def test_preview_states_paid_cost_without_calling_the_model(self):
+        from market_platform_foundation.intelligence.inference.anthropic_synthesis import (
+            AnthropicSynthesisProvider, BudgetedProvider, DailyBudget,
+        )
+
+        calls = []
+        budget = DailyBudget(None, clock=lambda: NOW)
+        svc = service()
+        svc._synthesizer = ScreenerSynthesizer(provider=BudgetedProvider(AnthropicSynthesisProvider(
+            api_key="k", poster=lambda *args: calls.append(args) or (500, b"")), budget), clock=lambda: NOW)
+        preview = svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")
+        self.assertEqual((preview["ai"]["runtime"], preview["estimate"]["cached"]), ("PAID_API", False))
+        self.assertGreater(preview["estimate"]["story_count"], 0)
+        self.assertGreater(preview["estimate"]["tokens"], 1_500)
+        universe = svc.synthesis_preview(universe="US_EQUITIES", scope="UNIVERSE", window="72h")
+        self.assertGreaterEqual(universe["estimate"]["story_count"], preview["estimate"]["story_count"])
+        self.assertIsNone(svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:NOPE"))
+        self.assertEqual((calls, budget.status()["requests"]), ([], 0))
+
+    def test_preview_has_no_estimate_for_a_local_model(self):
+        provider = LocalChatInferenceProvider(base_url="http://127.0.0.1:1", model_id="Qwen/Qwen3-4B-GGUF:Q4_K_M",
+                                              poster=lambda url, body, timeout: (500, b""))
+        svc = service()
+        svc._synthesizer = ScreenerSynthesizer(provider=provider)
+        preview = svc.synthesis_preview(universe="US_EQUITIES", scope="INSTRUMENT", instrument_id="EQ:AAPL")
+        self.assertEqual((preview["ai"]["runtime"], preview["estimate"]), ("LOCAL_MODEL", None))
+
+    def test_preview_route_is_a_read(self):
+        from market_platform_foundation.platform.security.route_policy import policy_for_route
+
+        self.assertEqual(policy_for_route("GET", "/screener/news/synthesis/preview").capability, "state.read")
+
     def test_no_provider_reason_is_explicit(self):
         svc = service()
         svc._synthesizer = ScreenerSynthesizer(provider=None, not_configured_reason="NO_SYNTHESIS_PROVIDER_CONFIGURED")

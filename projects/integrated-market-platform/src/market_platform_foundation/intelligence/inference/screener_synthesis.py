@@ -59,6 +59,7 @@ class SynthesisStory:
     source_count: int
     publishers: tuple[str, ...]
     categories: tuple[str, ...]
+    url: str | None = None
 
 
 def unsupported_certainty(text: str) -> bool:
@@ -165,12 +166,33 @@ class ScreenerSynthesizer:
                         for story in stories],
         })
 
+    def estimate(self, stories: list[SynthesisStory], *, instruments: tuple[str, ...], as_of: str) -> dict[str, Any] | None:
+        """Pre-click cost of ``synthesize`` on these inputs; never calls a model.
+
+        ``tokens`` is the provider's worst-case reservation (None when the provider states none); a live cache
+        entry for the same input costs nothing, which ``cached`` says."""
+
+        stories = stories[:MAX_STORIES]
+        if self._provider is None or not stories:
+            return None
+        worst_case = getattr(self._provider, "worst_case_tokens", None)
+        tokens = worst_case(self._render(self._registry.get_by_id(PROMPT_ID), self._articles(stories, instruments),
+                                         instruments, as_of), self._config) if callable(worst_case) else None
+        digest = self.input_hash(stories, instruments)
+        with self._lock:
+            cached = self._cache.get(digest)
+            hit = cached is not None and cached[0] > self._clock()
+        return {"story_count": len(stories), "tokens": tokens, "cached": hit}
+
     def synthesize(self, stories: list[SynthesisStory], *, instruments: tuple[str, ...], as_of: str) -> dict[str, Any]:
         prompt = self._registry.get_by_id(PROMPT_ID)
         # story_ids names exactly what the model is given (at most MAX_STORIES), never stories it did not see.
         stories = stories[:MAX_STORIES]
         base = {"schema_version": SCHEMA_VERSION, "epistemic_class": "AI_SYNTHESIS", "prompt_id": prompt.prompt_id,
                 "prompt_version": prompt.version, "generated_at": as_of, "story_ids": [story.story_id for story in stories],
+                # The model's inputs, so every citation resolves to a headline whatever feed the UI has loaded.
+                "stories": [{"story_id": story.story_id, "headline": story.headline, "url": story.url,
+                             "published_at": story.published_time or None} for story in stories],
                 "runtime": (getattr(self._provider, "runtime", None) or "PAID_API") if self._provider else None,
                 "provider_id": getattr(self._provider, "provider_id", None) if self._provider else None,
                 "model_id": getattr(self._provider, "model_id", None) if self._provider else None,
@@ -216,28 +238,39 @@ class ScreenerSynthesizer:
         """(result, cache TTL seconds; 0 = not cached)."""
 
         paid = getattr(self._provider, "runtime", "PAID_API") == "PAID_API"
-        articles = tuple(ArticleInputRef(event_id=story.story_id, source_id=",".join(story.publishers)[:120],
-                                         provider_id=story.source_type, published_time=story.published_time,
-                                         retrieved_time=story.retrieved_time, headline=story.headline,
-                                         summary=story.summary, instrument_ids=instruments,
-                                         deterministic_catalyst_ids=story.categories,
-                                         source_trust_tier=f"{story.source_count} source(s)",
-                                         publication_time_quality="KNOWN" if story.published_time else "UNKNOWN")
-                         for story in stories)
+        articles = self._articles(stories, instruments)
         packet = IntelligenceInputPacket(
             input_id=uuid.uuid4().hex, task_type=IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS, as_of=as_of,
             articles=articles, instrument_ids=instruments, prompt_id=prompt.prompt_id, prompt_version=prompt.version,
             prompt_hash=prompt.content_hash, output_schema_version=prompt.output_schema_version,
             model_policy_id="screener-news-synthesis", candidate_article_count=len(stories),
             supplied_article_count=len(stories), input_hash=digest)
+        rendered = self._render(prompt, articles, instruments, as_of)
+        self.calls += 1
+        response = self._provider.infer(packet, rendered_prompt=rendered, config=self._config)
+        return self._finish(response, stories, digest, base, paid)
+
+    @staticmethod
+    def _articles(stories: list[SynthesisStory], instruments: tuple[str, ...]) -> tuple[ArticleInputRef, ...]:
+        return tuple(ArticleInputRef(event_id=story.story_id, source_id=",".join(story.publishers)[:120],
+                                     provider_id=story.source_type, published_time=story.published_time,
+                                     retrieved_time=story.retrieved_time, headline=story.headline,
+                                     summary=story.summary, instrument_ids=instruments,
+                                     deterministic_catalyst_ids=story.categories,
+                                     source_trust_tier=f"{story.source_count} source(s)",
+                                     publication_time_quality="KNOWN" if story.published_time else "UNKNOWN")
+                 for story in stories)
+
+    def _render(self, prompt: Any, articles: tuple[ArticleInputRef, ...], instruments: tuple[str, ...], as_of: str) -> str:
         articles_json = json.dumps([{**{key: getattr(article, key) for key in ("event_id", "headline", "summary",
                                                                                  "published_time", "provider_id",
                                                                                  "source_trust_tier")},
                                      "categories": list(article.deterministic_catalyst_ids)} for article in articles],
                                    ensure_ascii=False)
-        rendered = self._registry.render(prompt, as_of=as_of, instrument_ids=instruments, articles_json=articles_json)
-        self.calls += 1
-        response = self._provider.infer(packet, rendered_prompt=rendered, config=self._config)
+        return self._registry.render(prompt, as_of=as_of, instrument_ids=instruments, articles_json=articles_json)
+
+    def _finish(self, response: Any, stories: list[SynthesisStory], digest: str, base: dict[str, Any],
+                paid: bool) -> tuple[dict[str, Any], float]:
         base = {**base, "input_hash": digest, "cache": "MISS", "provider_id": response.provider_id,
                 "model_id": response.model_id}
         if response.error_code is not None:

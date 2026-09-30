@@ -208,6 +208,37 @@ class NoRebillTests(unittest.TestCase):
         self.assertEqual({result["state"] for result in results}, {"CURRENT"})
 
 
+class PreviewTests(unittest.TestCase):
+    def test_estimate_is_the_reservation_the_call_makes(self):
+        claude = FakeClaude(tool_input=lambda ids: grounded(ids))
+        reserved = []
+        clock = Clock()
+        budget = DailyBudget(None, clock=clock)
+
+        def transport(*args):
+            reserved.append(budget.status()["tokens"])
+            return claude(*args)
+        _, synth = paid(transport, budget=budget, clock=clock)
+        estimate = synth.estimate(STORIES, instruments=("ACME",), as_of="t")
+        self.assertEqual((estimate["story_count"], estimate["cached"]), (len(STORIES), False))
+        run(synth)
+        self.assertEqual(reserved, [estimate["tokens"]])
+        # The same input is now cached: a click would cost nothing, and the estimate never called the model.
+        again = synth.estimate(STORIES, instruments=("ACME",), as_of="t")
+        self.assertEqual((again["cached"], len(claude.requests)), (True, 1))
+
+    def test_result_names_the_headlines_the_model_was_given(self):
+        _, synth = paid(FakeClaude(tool_input=lambda ids: grounded(ids)))
+        result = run(synth)
+        self.assertEqual([item["story_id"] for item in result["stories"]], result["story_ids"])
+        self.assertEqual([item["headline"] for item in result["stories"]], [story.headline for story in STORIES])
+
+    def test_no_estimate_without_a_provider_or_stories(self):
+        self.assertIsNone(ScreenerSynthesizer(provider=None).estimate(STORIES, instruments=("ACME",), as_of="t"))
+        _, synth = paid(FakeClaude())
+        self.assertIsNone(synth.estimate([], instruments=("ACME",), as_of="t"))
+
+
 class PaidStatusTests(unittest.TestCase):
     def test_build_paid_provider_budget_file_lives_in_the_cache(self):
         with tempfile.TemporaryDirectory() as directory:

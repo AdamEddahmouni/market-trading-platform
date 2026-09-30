@@ -53,6 +53,7 @@ from .screener_universes import BONDS, CRYPTO, FUTURES, UNIVERSES, US_EQUITIES, 
 
 SCHEMA_VERSION = "screener-news/1.0.0"
 INSTRUMENT_SCHEMA_VERSION = "screener-news-instrument/1.0.0"
+PREVIEW_SCHEMA_VERSION = "screener-news-synthesis-preview/1.0.0"
 ET = ZoneInfo("America/New_York")
 WINDOWS = {"1h": 3600, "4h": 4 * 3600, "24h": 24 * 3600, "72h": 72 * 3600}
 INSTRUMENT_WINDOW = "72h"
@@ -1062,7 +1063,10 @@ class ScreenerNewsService:
         return {"state": state, "reason": reason, "provider_id": getattr(provider, "provider_id", None),
                 "model_id": getattr(provider, "model_id", None), "runtime": runtime, "budget": budget}
 
-    def synthesis(self, *, universe: str, scope: str, instrument_id: str | None = None, window: str = "24h") -> dict[str, Any] | None:
+    def _synthesis_inputs(self, universe: str, scope: str, instrument_id: str | None, window: str
+                          ) -> tuple[dict[str, Any], list[Any], tuple[str, ...]] | None:
+        """(news payload, model inputs in synthesis order, instrument labels), or None for an unknown instrument."""
+
         from ..intelligence.inference.screener_synthesis import SynthesisStory
 
         if scope not in ("INSTRUMENT", "UNIVERSE"):
@@ -1075,24 +1079,52 @@ class ScreenerNewsService:
         else:
             payload = self.feed(universe=universe, window=window, sort="sources", limit=MAX_LIMIT)
             instruments = (UNIVERSES[universe].label,)
-        stories = payload["stories"]
         story_inputs = [SynthesisStory(story_id=item["story_id"], headline=item["headline"], summary=item["summary"] or "",
                                        published_time=item["published_at"] or "", retrieved_time=item["first_retrieved_at"],
                                        source_type=item["source_type"], source_count=item["source_count"],
                                        publishers=tuple(dict.fromkeys(source["publisher"] for source in item["sources"])),
-                                       categories=tuple(category["id"] for category in item["categories"]))
-                        for item in sorted(stories, key=lambda story: (story["source_type"] == "NEWS", -story["source_count"],
-                                                                        story["published_at"] or ""))]
-        result = self._get_synthesizer().synthesize(story_inputs, instruments=instruments,
-                                                    as_of=_iso(datetime.fromtimestamp(self._clock(), tz=UTC)) or "")
+                                       categories=tuple(category["id"] for category in item["categories"]), url=item["url"])
+                        for item in sorted(payload["stories"], key=lambda story: (story["source_type"] == "NEWS",
+                                                                                   -story["source_count"],
+                                                                                   story["published_at"] or ""))]
+        return payload, story_inputs, instruments
+
+    def _as_of(self) -> str:
+        return _iso(datetime.fromtimestamp(self._clock(), tz=UTC)) or ""
+
+    def synthesis(self, *, universe: str, scope: str, instrument_id: str | None = None, window: str = "24h") -> dict[str, Any] | None:
+        inputs = self._synthesis_inputs(universe, scope, instrument_id, window)
+        if inputs is None:
+            return None
+        payload, story_inputs, instruments = inputs
+        synthesizer = self._get_synthesizer()
+        result = synthesizer.synthesize(story_inputs, instruments=instruments, as_of=self._as_of())
+        stories = payload["stories"]
         missing = sorted(status["id"] for status in payload["providers"]
                          if status["kind"] in ("NEWS", "OFFICIAL_FILING")
                          and status["state"] not in ("CURRENT", "NOT_APPLICABLE", "DELAYED"))
         publishers = {source["publisher"].lower() for story in stories for source in story["sources"]}
+        # Usage after this call, so the UI's budget line moves with the click rather than on the next news refetch.
+        provider = getattr(synthesizer, "_provider", None)
+        budget = provider.budget_status() if callable(getattr(provider, "budget_status", None)) else None
         # story_count = matched stories; synthesized_story_count = those the model was given (capped).
-        return {**result, "coverage": {"story_count": len(stories), "synthesized_story_count": len(result["story_ids"]),
-                                       "source_count": len(publishers), "window": payload["window"],
-                                       "missing_providers": missing}}
+        return {**result, "budget": budget,
+                "coverage": {"story_count": len(stories), "synthesized_story_count": len(result["story_ids"]),
+                             "source_count": len(publishers), "window": payload["window"], "missing_providers": missing}}
+
+    def synthesis_preview(self, *, universe: str, scope: str, instrument_id: str | None = None,
+                          window: str = "24h") -> dict[str, Any] | None:
+        """AI status plus the pre-click cost of a paid synthesis on the current inputs. Never calls a model."""
+
+        ai = self._ai_status()
+        if ai["state"] != "AVAILABLE" or ai["runtime"] != "PAID_API":
+            return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai, "estimate": None}
+        inputs = self._synthesis_inputs(universe, scope, instrument_id, window)
+        if inputs is None:
+            return None
+        _, story_inputs, instruments = inputs
+        estimate = self._get_synthesizer().estimate(story_inputs, instruments=instruments, as_of=self._as_of())
+        return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai, "estimate": estimate}
 
 
 _SERVICE: ScreenerNewsService | None = None
@@ -1121,5 +1153,9 @@ def request_news_synthesis(**kwargs: Any) -> dict[str, Any] | None:
     return news_service().synthesis(**kwargs)
 
 
-__all__ = ["INSTRUMENT_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerNewsService", "news_service", "provider_status",
-           "read_instrument_news", "read_news_feed", "request_news_synthesis"]
+def read_synthesis_preview(**kwargs: Any) -> dict[str, Any] | None:
+    return news_service().synthesis_preview(**kwargs)
+
+
+__all__ = ["INSTRUMENT_SCHEMA_VERSION", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerNewsService", "news_service", "provider_status",
+           "read_instrument_news", "read_news_feed", "read_synthesis_preview", "request_news_synthesis"]

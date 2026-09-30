@@ -367,6 +367,29 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path == "/screener/news/synthesis/preview":
+                # AI status and the pre-click cost of a paid synthesis; a read that never calls a model.
+                from .screener_news import read_synthesis_preview
+                from .screener_universes import universe_spec
+
+                universe = (query.get("universe") or [""])[0]
+                window = (query.get("window") or ["24h"])[0]
+                try:
+                    if "news" not in universe_spec(universe).panels:
+                        raise ValueError("NEWS_UNAVAILABLE_FOR_UNIVERSE")
+                    if window not in ("1h", "4h", "24h", "72h"):
+                        raise ValueError("INVALID_WINDOW")
+                    payload = read_synthesis_preview(universe=universe, scope=(query.get("scope") or ["INSTRUMENT"])[0],
+                                                     instrument_id=(query.get("instrument") or [None])[0] or None,
+                                                     window=window)
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_NEWS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path in ("/screener/news", "/screener/news/instrument"):
                 # S11: News is a view/panel over the active universe, never a universe.
                 from .screener_news import read_instrument_news, read_news_feed
