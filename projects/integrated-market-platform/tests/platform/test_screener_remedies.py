@@ -35,14 +35,28 @@ class RemedyTextTests(unittest.TestCase):
         self.assertEqual(remedy["reason"], "OPEND_UNAVAILABLE")
 
     def test_sec_user_agent_and_live_gates_have_one_step(self):
+        # The SEC identity and keys are entered in Setup (a registered provider), never as an env-var instruction.
         sec = remedy_for("SEC_USER_AGENT_NOT_SET")
-        self.assertIn("SEC_USER_AGENT", sec["step"])
-        for code, flag in (("IMP_EDGAR_LIVE_NOT_SET", "IMP_EDGAR_LIVE=1"), ("IMP_NEWS_RSS_LIVE_NOT_SET", "IMP_NEWS_RSS_LIVE=1"),
-                           ("FINVIZ_LIVE_DISABLED", "IMP_FINVIZ_LIVE=1"),
+        self.assertIn("contact email", sec["step"])
+        self.assertEqual(sec["action"], {"kind": "CONFIGURE", "provider": "sec", "label": "Set SEC identity"})
+        self.assertEqual(remedy_for("IMP_EDGAR_LIVE_NOT_SET")["action"]["provider"], "sec")
+        for code, flag in (("IMP_NEWS_RSS_LIVE_NOT_SET", "IMP_NEWS_RSS_LIVE=1"), ("FINVIZ_LIVE_DISABLED", "IMP_FINVIZ_LIVE=1"),
                            ("IMP_PUBLIC_RECORDS_LIVE_NOT_SET", "IMP_PUBLIC_RECORDS_LIVE=1")):
             self.assertIn(flag, remedy_for(code)["step"], code)
         self.assertEqual(remedy_for("IMP_NEWSAPI_LIVE_NOT_SET")["action"],
-                         {"kind": "COMMAND", "command": "python tools/news/auth.py configure"})
+                         {"kind": "CONFIGURE", "provider": "newsapi", "label": "Enter key"})
+
+    def test_every_configure_action_names_a_configurable_registered_provider(self):
+        from market_platform_foundation.ui_api.operator_config import PROVIDERS_BY_ID
+        from market_platform_foundation.ui_api.screener_remedies import REMEDIES
+
+        configure = {code: remedy["action"]["provider"] for code, remedy in REMEDIES.items()
+                     if (remedy.get("action") or {}).get("kind") == "CONFIGURE"}
+        self.assertGreaterEqual(set(configure), {"SEC_USER_AGENT_NOT_SET", "NEWSAPI_API_KEY_NOT_SET", "FINNHUB_API_KEY_NOT_SET",
+                                                 "OPENAI_API_KEY_NOT_SET", "GEMINI_API_KEY_NOT_SET",
+                                                 "ANTHROPIC_API_KEY_NOT_SET", "FINRA_CREDENTIALS_MISSING"})
+        for code, provider in configure.items():
+            self.assertTrue(PROVIDERS_BY_ID[provider].configurable, code)
 
     def test_unknown_or_empty_reason_has_no_remedy(self):
         self.assertIsNone(remedy_for(None))

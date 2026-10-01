@@ -138,7 +138,9 @@ _REASON_CODE_TO_CATEGORY: dict[str, CanonicalErrorCategory] = {
     "FORWARD_TEST_OBSERVE_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "FORWARD_TEST_EVALUATE_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_WATCHLIST_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
-    "OPERATOR_CONFIG_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
+    # Provider setup rejects only invalid or environment-overridden settings (400/409), never a server fault.
+    "OPERATOR_CONFIG_FAILED": CanonicalErrorCategory.VALIDATION_ERROR,
+    "OPERATOR_CONFIG_ORIGIN_REJECTED": CanonicalErrorCategory.AUTH_ERROR,
     "OPERATOR_RECENT_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_WORKSPACE_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,
     "OPERATOR_PREFERENCES_FAILED": CanonicalErrorCategory.INTERNAL_ERROR,

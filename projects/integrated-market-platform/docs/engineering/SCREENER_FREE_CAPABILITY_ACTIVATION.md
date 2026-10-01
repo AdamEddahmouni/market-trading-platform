@@ -31,8 +31,10 @@ Only the production singletons (`finbert_sentiment()`, `news_service()`,
 `participant_service()`, the default synthesizer) resolve settings, in this order:
 
 1. process environment;
-2. `.private/providers.env` (`news.config.configured_value`), written by
-   `python tools/news/auth.py configure` with hidden prompts;
+2. `.private/providers.env` (`news.config.configured_value`), written by the Setup
+   panel's provider settings or `python tools/news/auth.py configure`; at API start the
+   registered values are also copied into the process environment
+   ([Provider configuration](PROVIDER_CONFIGURATION.md));
 3. setup manifests in the external IMP cache.
 
 Injected constructors (all tests) never read any of these.
@@ -264,11 +266,11 @@ Congress identity with the cached registry:
 
 ## Owner actions (all free)
 
-1. Create a free Finnhub key and, optionally, a NewsAPI Developer key. Then run
-   `python tools/news/auth.py configure` and restart the API. Never paste keys in
-   chat or commit them.
-2. Set `SEC_USER_AGENT` (name + contact) in the API process environment for
-   instrument SEC filings.
+1. Create a free Finnhub key and, optionally, a NewsAPI Developer key. Enter them in
+   Screener → Setup → Provider settings (no restart), or run
+   `python tools/news/auth.py configure`. Never paste keys in chat or commit them.
+2. Enter the SEC contact identity (name + email) in Setup → Provider settings → SEC
+   EDGAR. See [Provider configuration](PROVIDER_CONFIGURATION.md).
 3. ~~Senate eFD: accept the terms in a browser and save more PTR report pages into
    the import directory.~~ Automated 2026-09-30 (owner decision): with
    `IMP_SENATE_EFD_LIVE=1`, IMP accepts the terms and downloads new reports every

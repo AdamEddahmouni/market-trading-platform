@@ -18,7 +18,7 @@ from ..market_data.live_config import (
     moomoo_live_enabled,
 )
 from ..operating_modes import live_execution_env_enabled, paper_execution_env_enabled
-from .operator_config import PROVIDER_FIELDS, build_config_payload, provider_env_path, write_provider_values
+from .operator_config import PROVIDERS_BY_ID, default_store
 from .store import ReplayStore
 
 
@@ -143,28 +143,41 @@ def build_operator_readiness_payload(store: ReplayStore) -> dict[str, Any]:
 
 
 def build_operator_config_payload() -> dict[str, Any]:
-    root = Path(__file__).resolve().parents[3]
-    return build_config_payload(
-        path=provider_env_path(root=root),
-        environment=os.environ,
-        environment_path=root / ".env",
-    )
+    """Value-blind provider setup status: configured, source, and what each provider unlocks."""
+
+    return default_store().payload()
+
+
+def _refresh_services(names: list[str]) -> None:
+    """Drop clients built with the old value, only in services that already exist; never builds one."""
+
+    from . import screener_news, screener_participants
+
+    if "news" in names and screener_news._SERVICE is not None:
+        screener_news._SERVICE.credentials_changed()
+    if "participants" in names and screener_participants._SERVICE is not None:
+        screener_participants._SERVICE.credentials_changed()
 
 
 def save_provider_config(body: dict[str, Any]) -> dict[str, Any]:
+    """One provider's settings: set ``values`` (blank = keep) and/or ``clear`` names. Echoes names, never values."""
+
     provider = str(body.get("provider") or "").strip().lower()
-    values = body.get("values")
-    if not provider or not isinstance(values, dict):
+    values = body.get("values") or {}
+    clear = body.get("clear") or []
+    if not provider or not isinstance(values, dict) or not isinstance(clear, list):
         raise ValueError("PROVIDER_AND_VALUES_REQUIRED")
-    root = Path(__file__).resolve().parents[3]
-    destination = root / ".env" if provider == "anthropic" else provider_env_path(root=root)
-    write_provider_values(provider, {str(key): str(value) for key, value in values.items()}, path=destination)
-    return build_operator_config_payload()
+    result = default_store().write(provider, values, clear)
+    try:
+        _refresh_services(result["refresh"])
+    except Exception:  # noqa: BLE001 — the value is saved; a failed refresh only delays it to the next rebuild
+        result["refresh_failed"] = True
+    return {**build_operator_config_payload(), "result": result}
 
 
 def queue_provider_refresh(provider: str) -> dict[str, Any]:
     normalized = str(provider or "").strip().lower()
-    if normalized not in {provider_id for provider_id, _, _ in PROVIDER_FIELDS}:
+    if normalized not in PROVIDERS_BY_ID:
         raise ValueError("PROVIDER_NOT_SUPPORTED")
     operation = {
         "operation_id": f"provider-refresh-{normalized}-{os.getpid()}-{int(time.time() * 1000)}",

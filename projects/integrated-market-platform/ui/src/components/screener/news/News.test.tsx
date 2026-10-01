@@ -8,11 +8,17 @@ import ScreenerDock from "../panels/ScreenerDock";
 import { BondQuickPreview } from "../bonds/BondQuickPreview";
 import { PreviewNews } from "./PreviewNews";
 import { ConnectButton } from "../setup/Remedy";
+import { providerConfigPayload } from "../setup/providerConfig.fixture";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
   bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(), engine: vi.fn(),
+  providerConfig: vi.fn(), saveProvider: vi.fn(),
+}));
+vi.mock("../../../api/providerConfig", async (original) => ({
+  ...(await original<typeof import("../../../api/providerConfig")>()),
+  fetchProviderConfig: mocks.providerConfig, saveProviderSettings: mocks.saveProvider,
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -174,6 +180,7 @@ beforeEach(() => {
   // News read state lives in localStorage; each test starts as a first visit.
   window.localStorage.clear();
   mocks.config.mockResolvedValue(config);
+  mocks.providerConfig.mockReturnValue(new Promise(() => undefined));
   mocks.fetch.mockResolvedValue(screenerPayload);
   mocks.window.mockResolvedValue({ schema_version: "screener/1.0.0", generated_at: T, market_session: "REGULAR", active: 0, cap: 32, quotes: {} });
   mocks.release.mockResolvedValue({ released: true });
@@ -925,8 +932,9 @@ describe("Actionable degraded states", () => {
 
   it("names the one step for SEC User-Agent and live-disabled providers, once per cause", async () => {
     const sec = { ...provider("sec_filings", "SEC EDGAR filings", "NOT_CONFIGURED", "SEC_USER_AGENT_NOT_SET", "OFFICIAL_FILING"),
-      remedy: { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact User-Agent",
-        step: "Set SEC_USER_AGENT to your name and email in the API environment, then restart the API.", action: null } };
+      remedy: { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact identity",
+        step: "Enter your name and a contact email once; SEC EDGAR switches on when it is saved.",
+        action: { kind: "CONFIGURE", provider: "sec", label: "Set SEC identity" } } };
     const rss = { ...provider("rss", "RSS (public feeds)", "LIVE_DISABLED", "IMP_NEWS_RSS_LIVE_NOT_SET"),
       remedy: { reason: "IMP_NEWS_RSS_LIVE_NOT_SET", title: "Public RSS feeds is switched off",
         step: "Set IMP_NEWS_RSS_LIVE=1 in the API environment, then restart the API.", action: null } };
@@ -937,10 +945,16 @@ describe("Actionable degraded states", () => {
     await openNews();
     const fixes = await screen.findByRole("list", { name: "How to fix" });
     expect(within(fixes).getAllByRole("listitem")).toHaveLength(3);
-    expect(fixes).toHaveTextContent("SEC EDGAR filings: SEC requires a contact User-Agent.");
+    expect(fixes).toHaveTextContent("SEC EDGAR filings: SEC requires a contact identity.");
     expect(fixes).toHaveTextContent("IMP_NEWS_RSS_LIVE=1");
     expect(within(fixes).getByText("python tools/news/auth.py configure")).toBeInTheDocument();
     expect(within(fixes).getByRole("button", { name: "Copy command: python tools/news/auth.py configure" })).toBeInTheDocument();
+    // The SEC fix opens the Setup form right from the News panel.
+    mocks.providerConfig.mockResolvedValue(providerConfigPayload());
+    fireEvent.click(within(fixes).getByRole("button", { name: "Set SEC identity" }));
+    const dialog = await screen.findByRole("dialog", { name: "SEC EDGAR" });
+    expect(within(dialog).getByText("Fail-to-deliver data (Short Squeeze)")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Contact identity")).toHaveAttribute("type", "text");
   });
 
   it("fills in sentiment on its own once the model finishes loading", async () => {

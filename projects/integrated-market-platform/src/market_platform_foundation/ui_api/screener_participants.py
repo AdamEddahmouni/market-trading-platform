@@ -333,6 +333,11 @@ class ScreenerParticipantService:
             entry = self._cache.get(key, job, ttl_s=ttl_s)
         return entry
 
+    def credentials_changed(self) -> None:
+        """The SEC identity changed: the next SEC request builds a transport that sends the new one."""
+
+        self._sec_transport = None
+
     def _sec(self) -> Any:
         if self._sec_transport is None:
             self._sec_transport = self._sec_transport_factory()

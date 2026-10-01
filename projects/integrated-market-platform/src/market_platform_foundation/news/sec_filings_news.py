@@ -101,6 +101,12 @@ class SecFilingNews:
                 self._transport = SecTransport(user_agent=self._env("SEC_USER_AGENT") or "")
         return self._transport
 
+    def reset_transport(self) -> None:
+        """Build the next transport from the current SEC_USER_AGENT (after the operator changes it)."""
+
+        with self._lock:
+            self._transport = None
+
     def cik_for(self, ticker: str) -> str | None:
         now = self._clock()
         with self._lock:
