@@ -68,6 +68,8 @@
 .screener-cell.screener-left{justify-content:flex-start}
 .screener-symbol{display:flex;align-items:baseline;gap:8px;overflow:hidden}
 .screener-symbol strong{color:#e8f1fc;font-weight:700}
+.screener-fresh{flex:none;align-self:center;width:6px;height:6px;border-radius:50%;background:#4a5767}
+.screener-fresh.live{background:#3fcf8e}.screener-fresh.delayed{background:#e6c77a}.screener-fresh.snapshot{background:#6aa9e9}.screener-fresh.stale{background:#c9803f}
 .screener-symbol small{overflow:hidden;color:#8494a7;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
 .screener-positive{color:#63cfa4}.screener-negative{color:#ee838d}
 .screener-message{padding:38px 20px;color:#abbaca}

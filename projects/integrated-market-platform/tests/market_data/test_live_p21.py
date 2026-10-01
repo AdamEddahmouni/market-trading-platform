@@ -281,6 +281,32 @@ class SnapshotQuotePollTests(unittest.TestCase):
         self.assertEqual(at("11:00"), 333.02)
         self.assertEqual(_session_last_price({"last_price": 333.02, "update_time": "2026-09-30 21:44:00"}), 333.02)
 
+    def test_quote_push_keeps_the_recent_snapshot_book(self) -> None:
+        from market_platform_foundation.market_data.observational_state import BOOK_CARRY_NS, ObservationalStateStore
+
+        state = ObservationalStateStore()
+        second = 1_000_000_000
+
+        def l1(payload: dict, at_ns: int) -> None:
+            state.apply_admitted({
+                "admission": {"display": "DISPLAY_ADMITTED"},
+                "envelope": {"instrument_id": "NVDA", "event_time": at_ns, "available_time": at_ns},
+                "record": {"capability": "US_EQUITY_L1", "raw_payload": payload,
+                           "clocks": {"received_time_ns": at_ns}},
+            })
+
+        book = {"bid_price": 230.2, "ask_price": 230.3, "bid_vol": 100.0, "ask_vol": 200.0}
+        l1({"last_price": 230.24, "overnight_price": 0.0, "update_time": "2026-10-01 12:17:00.000", **book}, 10 * second)
+        # Live OpenD, regular session: the QUOTE push has no bid/ask and used to blank the book.
+        l1({"last_price": 230.3}, 11 * second)
+        quote = state.quote_for("NVDA")
+        self.assertEqual((quote.last_price, quote.bid_price, quote.ask_price, quote.ask_size), (230.3, 230.2, 230.3, 200.0))
+        self.assertEqual(quote.book_received_ns, 10 * second)
+        # Snapshot polling stopped: the book is dropped, never carried indefinitely.
+        l1({"last_price": 230.4}, 10 * second + BOOK_CARRY_NS + 1)
+        quote = state.quote_for("NVDA")
+        self.assertEqual((quote.last_price, quote.bid_price, quote.ask_price), (230.4, None, None))
+
     def test_overnight_snapshot_drops_the_frozen_after_hours_book(self) -> None:
         from market_platform_foundation.market_data.observational_state import _overnight_snapshot
 

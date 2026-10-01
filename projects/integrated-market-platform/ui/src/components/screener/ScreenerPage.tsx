@@ -185,6 +185,14 @@ function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT") && current.value !== null) return current;
   return row.fields[key];
 }
+const FRESHNESS: Record<string, string> = { LIVE: "Live quote", DELAYED: "Delayed quote", SNAPSHOT: "Snapshot quote", STALE: "Stale quote" };
+/** Quote freshness for a row in the visible window; rows outside it have no quote and show no dot. */
+function FreshnessDot({ quote }: { quote?: ScreenerQuote }) {
+  if (!quote) return null;
+  const label = FRESHNESS[quote.state] ?? "Quote unavailable";
+  const detail = [label, quote.reason?.replace(/_/g, " ").toLowerCase(), quote.age_ms != null ? `${Math.round(quote.age_ms / 1000)}s old` : null].filter(Boolean).join(" · ");
+  return <i className={`screener-fresh ${FRESHNESS[quote.state] ? quote.state.toLowerCase() : "unavailable"}`} role="img" aria-label={label} title={detail} />;
+}
 function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false) {
   if (!field || field.value === null) return "—";
   if (format === "price") return field.value.toFixed(2);
@@ -611,7 +619,7 @@ export function ScreenerPage() {
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
-      if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong>
+      if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
           symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
       if (textColumns.has(definition.key)) {

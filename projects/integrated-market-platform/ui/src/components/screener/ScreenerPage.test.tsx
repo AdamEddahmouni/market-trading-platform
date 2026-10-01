@@ -201,6 +201,9 @@ describe("ScreenerPage", () => {
     expect(screen.getByRole("row", { name: /AAPL/ })).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByText("11.90")).not.toBeInTheDocument();
     expect(screen.queryByText("12.10")).not.toBeInTheDocument();
+    // The row says its quote is stale; rows without a quote carry no dot.
+    expect(await screen.findByRole("img", { name: "Stale quote" })).toHaveAttribute("title", "Stale quote · 10s old");
+    expect(screen.getAllByRole("img", { name: /quote/ })).toHaveLength(1);
   });
 
   it("releases subscriptions after an in-flight window request on unmount", async () => {
