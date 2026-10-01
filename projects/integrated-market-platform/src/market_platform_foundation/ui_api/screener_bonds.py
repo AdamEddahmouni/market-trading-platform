@@ -71,7 +71,7 @@ from ..xa01.errors import Xa01Error
 from ..xa01.identity import derive_canonical_id, sovereign_identity_key
 from .screener_bonds_fund import FundHeldRow, _figi_item, fund_sections, haystack, to_page_row
 from .screener_filters import apply_filters, field_value
-from .screener_query import ScreenerQuery, order_rows, page_payload
+from .screener_query import ScreenerQuery, exact_matches_first, order_rows, page_payload
 
 ET = ZoneInfo("America/New_York")
 SCHEMA_VERSION = "screener/1.0.0"
@@ -498,7 +498,8 @@ class BondScreener:
             needle = query.search.casefold()
             matched = [row for row in apply_filters(rows, list(query.filters))
                        if not needle or needle in haystack(row, SEARCH_KEYS)]
-            ordered = order_rows(matched, query.sort, query.descending, field_value)
+            ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, field_value), needle,
+                                          ("symbol", "isin"))
             with self._lock:
                 self._ordered[key] = ordered
                 while len(self._ordered) > RESULT_CACHE_ENTRIES:

@@ -64,6 +64,20 @@ class ScreenerS1Tests(unittest.TestCase):
         self.assertEqual(service.read(sort="price", descending=False)["rows"][0]["symbol"], "T0000")
         self.assertEqual(source.calls, 1)
 
+    def test_exact_ticker_search_lists_that_ticker_first(self):
+        class TickerSource(Source):
+            def fetch_export(self, *, filter_expr: str, columns: str):
+                export = super().fetch_export(filter_expr=filter_expr, columns=columns)
+                export["rows"] = [FinvizScreenerRow(ticker=ticker, company=f"{ticker} Inc", price=1.0, volume=volume,
+                                                    short_float_pct=None)
+                                  for ticker, volume in (("SPYG", 900), ("SPY", 100), ("SPYV", 500), ("ASPY", 700))]
+                return export
+
+        service = ScreenerService(source_factory=TickerSource, runtime_getter=lambda **_: None)
+        # Volume descending would put SPY last; the exact match goes first, the rest keep the sort.
+        self.assertEqual([row["symbol"] for row in service.read(search="spy")["rows"]], ["SPY", "SPYG", "ASPY", "SPYV"])
+        self.assertEqual([row["symbol"] for row in service.read(search="SP")["rows"]], ["SPYG", "ASPY", "SPYV", "SPY"])
+
     def test_no_capture_or_fixture_fallback(self):
         service = ScreenerService(source_factory=lambda: Source(False), runtime_getter=lambda **_: None)
         result = service.read()

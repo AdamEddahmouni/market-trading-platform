@@ -34,6 +34,9 @@ CONTROL_URL = f"http://{CONTROL_HOST}:{CONTROL_PORT}/control/status"
 OPERATOR_URL = UI_URL
 STATE_RELATIVE_PATH = Path(".local/platform-launcher.json")
 BACKEND_RUNTIME_IMPORT = "import sklearn"
+PLATFORM_PORTS = ((API_HOST, API_PORT), (UI_HOST, UI_PORT), (CONTROL_HOST, CONTROL_PORT))
+PORT_RELEASE_ATTEMPTS = 40
+PORT_RELEASE_INTERVAL_SECONDS = 0.25
 
 
 class LauncherError(RuntimeError):
@@ -533,6 +536,12 @@ class PlatformController:
     def restart(self, *, open_browser: bool = False) -> int:
         """Stop launcher-owned services and start a fresh platform stack."""
         self.stop()
+        # taskkill returns before Windows releases the listening sockets; starting at once
+        # reported "port already in use by a process not owned by this launcher".
+        for _ in range(PORT_RELEASE_ATTEMPTS):
+            if not any(self.system.port_is_open(host, port) for host, port in PLATFORM_PORTS):
+                break
+            self.system.sleep(PORT_RELEASE_INTERVAL_SECONDS)
         return self.start(open_browser=open_browser)
 
     def stop(self) -> int:

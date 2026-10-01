@@ -185,6 +185,25 @@ def order_rows(rows: Iterable[dict[str, Any]], sort: str, descending: bool,
     return [item[2] for item in present] + [item[1] for item in missing]
 
 
+def exact_matches_first(ordered: list[dict[str, Any]], needle: str,
+                        keys: Iterable[str] = ("symbol",)) -> list[dict[str, Any]]:
+    """A search for a ticker lists that ticker first.
+
+    Searching SPY in the ETF universe matched SPY, SPYG, SPYV... and the volume (or symbol
+    descending) sort put SPY far down. Rows whose key equals the search, ignoring case, move
+    to the top; every other row, and the exact matches among themselves, keep the requested order.
+    """
+    if not needle:
+        return ordered
+    target = needle.casefold()
+    names = tuple(keys)
+    exact = [row for row in ordered if any(str(row.get(key) or "").casefold() == target for key in names)]
+    if not exact:
+        return ordered
+    chosen = {id(row) for row in exact}
+    return exact + [row for row in ordered if id(row) not in chosen]
+
+
 def page_payload(query: ScreenerQuery, ordered: list[dict[str, Any]]) -> dict[str, Any]:
     """Page window, truthful counts, and the position of a requested selection."""
 

@@ -281,6 +281,40 @@ class SnapshotQuotePollTests(unittest.TestCase):
         self.assertEqual(at("11:00"), 333.02)
         self.assertEqual(_session_last_price({"last_price": 333.02, "update_time": "2026-09-30 21:44:00"}), 333.02)
 
+    def test_overnight_snapshot_drops_the_frozen_after_hours_book(self) -> None:
+        from market_platform_foundation.market_data.observational_state import _overnight_snapshot
+
+        # Live OpenD, 02:26 ET: overnight trades at 231.99, bid/ask still the 20:00 after-hours book.
+        snapshot = {"last_price": 228.38, "after_price": 229.6092, "overnight_price": 231.99,
+                    "bid_price": 229.61, "ask_price": 229.62, "bid_vol": 100.0, "ask_vol": 1900.0}
+        self.assertTrue(_overnight_snapshot({**snapshot, "update_time": "2026-10-01 02:26:22.047"}))
+        self.assertTrue(_overnight_snapshot({**snapshot, "update_time": "2026-09-30 20:00:01.000"}))
+        self.assertFalse(_overnight_snapshot({**snapshot, "update_time": "2026-09-30 17:05:00.000"}))
+        self.assertFalse(_overnight_snapshot({**snapshot, "update_time": "2026-10-01 04:00:00.000"}))
+        # A push quote (no overnight_price field) keeps its book.
+        self.assertFalse(_overnight_snapshot({"bid_price": 1.0, "update_time": "2026-10-01 02:26:22.047"}))
+
+        import time as _time
+
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        import push_feed
+
+        runtime = LiveObservationalRuntime()
+        feed = push_feed.MoomooPushFeed(subscriptions=runtime.subscriptions, on_record=runtime._on_feed_record)
+        feed._connection_loop = lambda: None
+        feed.start()
+        try:
+            feed._enqueue_from_payload(capability="US_EQUITY_L1", generation=1,
+                                       payload={"code": "US.NVDA", **snapshot, "update_time": "2026-10-01 02:26:22.047"})
+            deadline = _time.monotonic() + 5
+            while runtime.state.quote_for("NVDA") is None and _time.monotonic() < deadline:
+                _time.sleep(0.02)
+        finally:
+            feed.stop()
+        quote = runtime.state.quote_for("NVDA")
+        self.assertEqual(quote.last_price, 231.99)
+        self.assertEqual((quote.bid_price, quote.ask_price, quote.bid_size, quote.ask_size), (None, None, None, None))
+
 
 class QuoteContextOpenTests(unittest.TestCase):
     """OpenD accepting TCP but not answering InitConnect must not accumulate SDK connections."""
