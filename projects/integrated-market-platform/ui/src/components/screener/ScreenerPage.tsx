@@ -894,7 +894,7 @@ export function ScreenerPage() {
     quoteStates.includes("SNAPSHOT") ? "REST snapshot for visible rows" :
     quoteStates.includes("STALE") ? "stale" : "unavailable";
   return <section className="screener-page" aria-label="Screener">
-    <header className="screener-topline"><div className="screener-brand"><Link to="/" aria-label="IMP home">IMP</Link><span className="screener-brand-divider" /><h1>Screener</h1></div>
+    <header className="screener-topline"><div className="screener-brand"><Link to="/screener" aria-label="IMP home">IMP</Link><span className="screener-brand-divider" /><h1>Screener</h1></div>
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
