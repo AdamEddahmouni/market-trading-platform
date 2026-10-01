@@ -17,6 +17,7 @@ import type { DockHandle } from "./panels/ScreenerDock";
 import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
 import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
+import { ExitPlatformButton } from "../shared/ExitPlatformButton";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
@@ -897,7 +898,8 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span></header>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span>
+      <ExitPlatformButton className="screener-control" /></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");

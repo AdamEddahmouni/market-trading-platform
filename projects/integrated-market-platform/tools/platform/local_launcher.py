@@ -269,6 +269,50 @@ def build_backend_environment(
     return result
 
 
+SHORTCUT_NAME = "Market Platform.lnk"
+
+
+def desktop_folder() -> Path:
+    """The signed-in user's desktop, following OneDrive or a moved Desktop folder."""
+    try:
+        result = subprocess.run(
+            ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", "[Environment]::GetFolderPath('Desktop')"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        folder = result.stdout.strip()
+        if folder:
+            return Path(folder)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return Path(os.environ.get("USERPROFILE") or Path.home()) / "Desktop"
+
+
+def _powershell_literal(value: object) -> str:
+    return "'" + str(value).replace("'", "''") + "'"
+
+
+def shortcut_script(*, shortcut: Path, target: Path, working_directory: Path) -> str:
+    """PowerShell that writes the .lnk.
+
+    The console opens normally, not minimized: it closes by itself once the platform is
+    ready, and on failure it stays open with the error and waits for a key.
+    """
+    return "; ".join(
+        (
+            "$shell = New-Object -ComObject WScript.Shell",
+            f"$link = $shell.CreateShortcut({_powershell_literal(shortcut)})",
+            f"$link.TargetPath = {_powershell_literal(target)}",
+            f"$link.WorkingDirectory = {_powershell_literal(working_directory)}",
+            "$link.Description = 'Start the Integrated Market Platform and open it in the browser'",
+            f"$link.IconLocation = {_powershell_literal(str(Path(os.environ.get('SystemRoot') or 'C:/Windows') / 'System32/imageres.dll') + ',109')}",
+            "$link.Save()",
+        )
+    )
+
+
 def command_identity_matches(command_line: str | None, identity: Sequence[str]) -> bool:
     if not command_line:
         return False
@@ -608,6 +652,39 @@ class PlatformController:
             return 1
         return self.start(open_browser=True)
 
+    def install_shortcut(self, desktop: Path | None = None) -> int:
+        """Put a "Market Platform" shortcut on the desktop that runs START_PLATFORM.cmd.
+
+        Starting when the platform already runs only opens the browser, so the one icon
+        both starts and reopens it. Stop is in the app's top bar, or STOP_PLATFORM.cmd.
+        """
+        if os.name != "nt":
+            print("ERROR: desktop shortcuts are created on Windows only.")
+            return 1
+        target = self.root / "START_PLATFORM.cmd"
+        if not target.is_file():
+            print(f"ERROR: {target} is missing.")
+            return 1
+        folder = desktop or desktop_folder()
+        shortcut = folder / SHORTCUT_NAME
+        script = shortcut_script(shortcut=shortcut, target=target, working_directory=self.root)
+        try:
+            result = subprocess.run(
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            print(f"ERROR: shortcut could not be created: {exc}")
+            return 1
+        if result.returncode != 0 or not shortcut.is_file():
+            print("ERROR: shortcut could not be created.")
+            return 1
+        print(f"Desktop shortcut ready: {shortcut}")
+        return 0
+
     def menu(self) -> int:
         while True:
             print()
@@ -660,6 +737,7 @@ def build_parser() -> argparse.ArgumentParser:
     subcommands.add_parser("finviz-status", help="Show sanitized Finviz credential status")
     subcommands.add_parser("menu", help="Show interactive local control menu")
     subcommands.add_parser("setup", help="Create or repair project-local dependencies")
+    subcommands.add_parser("install-shortcut", help="Create a desktop shortcut that starts and opens the platform")
     subcommands.add_parser("check-update", help="Check for a safe fast-forward application update")
     subcommands.add_parser("apply-update", help="Apply a confirmed safe fast-forward update")
     return parser
@@ -686,6 +764,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         result = controller.menu()
     elif args.command == "setup":
         result = controller.setup()
+    elif args.command == "install-shortcut":
+        result = controller.install_shortcut()
     elif args.command == "check-update":
         result = controller.check_update()
     elif args.command == "apply-update":

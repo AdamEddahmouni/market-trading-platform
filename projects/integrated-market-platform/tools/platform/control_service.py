@@ -234,8 +234,22 @@ def _spawn_action(root: Path, action: str) -> dict[str, Any]:
     environment["IMP_OPERATOR_OPERATION_ID"] = operation_id
     with log_path.open("ab") as log_handle:
         flags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0)
-        subprocess.Popen(command, cwd=str(root), env=environment, stdin=subprocess.DEVNULL, stdout=log_handle, stderr=subprocess.STDOUT, creationflags=flags, close_fds=True)
+        subprocess.Popen(detached_action_command(command), cwd=str(root), env=environment, stdin=subprocess.DEVNULL, stdout=log_handle, stderr=subprocess.STDOUT, creationflags=flags, close_fds=True)
     return operation
+
+
+def detached_action_command(command: list[str]) -> list[str] | str:
+    """Run a lifecycle action outside the requesting process tree.
+
+    The API or control service spawns the action, and stop/restart terminate the API
+    process tree. A direct child would be killed with it, so restart never started the
+    new stack. ``start /b`` from a short-lived ``cmd.exe`` leaves the launcher parented to
+    an exited process, which ``taskkill /T`` on the API does not reach.
+    """
+    if os.name != "nt":
+        return command
+    # A string, because list quoting would escape the empty window title that start needs.
+    return 'cmd.exe /d /c start "" /b ' + subprocess.list2cmdline(command)
 
 
 class ControlHandler(BaseHTTPRequestHandler):

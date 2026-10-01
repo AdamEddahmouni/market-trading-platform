@@ -77,6 +77,12 @@ the launcher-owned API/UI process trees. [PLATFORM_CONTROL.cmd](PLATFORM_CONTROL
 provides Start/Open, Open Browser, Status, Finviz Status, Stop/Exit, and
 leave-running choices in one menu.
 
+For a one-icon start, run `.venv\Scripts\python.exe tools\platform\local_launcher.py install-shortcut`
+once. It puts **Market Platform** on the desktop; opening it starts the platform, or only
+opens the browser when it is already running. **Exit** in the app's top bar (and in the
+Screener header) stops the launcher-owned services after one confirmation. Stop and
+restart run outside the API process tree, so a restart from the app does start the new stack.
+
 The platform binds only to `127.0.0.1`: API port `8766`, UI port `5173`. The
 browser control center is `/control`, and the launcher-owned loopback
 supervisor is `127.0.0.1:8767`. Child output is retained in

@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Desktop shortcut and in-app Exit
+
+- `local_launcher.py install-shortcut` writes a desktop **Market Platform** shortcut that runs
+  `START_PLATFORM.cmd` (start, or open the browser when already running). The console opens
+  normally so a failed start stays visible.
+- **Exit** in the product top bar and the Screener header asks once, posts `stop` to
+  `/operator/lifecycle/actions`, and replaces the page with a "Platform stopped" notice.
+- Bug fixed: lifecycle actions were spawned as children of the API or control service. Stop
+  and restart kill the API tree with `taskkill /T`, which killed the action itself; restart
+  from the app never started the new stack. `detached_action_command` now launches the action
+  through `cmd /c start "" /b`, leaving it outside the requesting tree.
+- Tests: `tests/platform/test_local_launcher.py` (shortcut script quoting, detached action
+  command); `ExitPlatformButton.test.tsx` (confirm, stop request, cancel, failure retry).
+
 ## 2026-09-30 — Screener quotes recover when OpenD comes up; truthful no-quote reasons
 
 | Field | Value |
