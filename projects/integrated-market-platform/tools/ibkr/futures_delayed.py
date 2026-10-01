@@ -197,10 +197,11 @@ class IbkrDelayedFutures:
             del self._tickers[key]
         published = {}
         for key, ticker in self._tickers.items():
-            values = {"last": _finite(getattr(ticker, "last", None)), "bid": _finite(getattr(ticker, "bid", None)),
-                      "ask": _finite(getattr(ticker, "ask", None)), "prev_close": _finite(getattr(ticker, "close", None)),
-                      "volume": _finite(getattr(ticker, "volume", None))}
-            if all(value is None for value in values.values()):
+            # IBKR reports 0 (or -1) for a price it does not have; only a positive price is a price.
+            values = {name: (_finite(getattr(ticker, attr, None)) or None)
+                      for name, attr in (("last", "last"), ("bid", "bid"), ("ask", "ask"), ("prev_close", "close"))}
+            values["volume"] = _finite(getattr(ticker, "volume", None))
+            if all(values[name] is None for name in ("last", "bid", "ask")):
                 continue
             stamp = getattr(ticker, "time", None)
             values["updated_s"] = stamp.timestamp() if isinstance(stamp, datetime) else now

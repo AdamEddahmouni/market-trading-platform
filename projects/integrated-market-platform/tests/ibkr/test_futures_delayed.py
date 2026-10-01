@@ -73,6 +73,13 @@ class ContractIdentityTests(unittest.TestCase):
 
 
 class SubscriptionTests(unittest.TestCase):
+    def test_a_zero_price_is_no_price(self):
+        ib, item = FakeIb([contract(1)]), source([contract(1)], lambda: NOW)
+        ib.reqMktData = lambda *_args: SimpleNamespace(last=0.0, bid=-1.0, ask=float("nan"), close=5.2, volume=0.0, time=None)
+        item.quotes([ES])
+        item._step(ib)
+        self.assertEqual(item.quotes([ES]), {})               # nothing tradeable was reported, so nothing is published
+
     def test_an_unrequested_contract_is_unsubscribed_and_no_longer_published(self):
         clock = {"now": NOW}
         ib, item = FakeIb([contract(1)]), source([contract(1)], lambda: clock["now"])
