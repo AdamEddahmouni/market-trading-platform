@@ -190,6 +190,12 @@ class RssNewsSource:
     def enabled(self) -> bool:
         return (self._env(LIVE_ENV) or "").strip().lower() in {"1", "true", "yes"}
 
+    def clear_cache(self) -> None:
+        """Forget cached feed results, including a cached NOT_CONFIGURED, so the next read refetches."""
+
+        with self._lock:
+            self._cache.clear()
+
     def feeds_for(self, universe: str) -> tuple[Feed, ...]:
         return tuple(feed for feed in self._feeds if universe in feed.universes)
 

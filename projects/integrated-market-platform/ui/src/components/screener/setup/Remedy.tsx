@@ -1,21 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { connectProvider, type ConnectResult, type Remedy } from "../../../api/screenerSetup";
+import { ConfigureButton } from "./ProviderConfig";
+import { refreshProviderQueries } from "./refresh";
 import "./setup.css";
 
-// Queries whose answers depend on a provider the operator can connect.
-const PROVIDER_BACKED = ["screener-setup", "screener-news", "screener-news-instrument", "main-screener", "screener-participants"];
+export { refreshProviderQueries };
+
 // OpenD needs its login after launch; re-read at these offsets instead of waiting for the next minute poll.
 const FOLLOW_UP_MS = [8_000, 20_000, 45_000];
-
-export function refreshProviderQueries(queryClient: QueryClient) {
-  void queryClient.invalidateQueries({
-    predicate: (query) => {
-      const head = query.queryKey[0];
-      return typeof head === "string" && PROVIDER_BACKED.some((prefix) => head === prefix || head.startsWith(`${prefix}-`));
-    },
-  });
-}
 
 type Status = { state: "pending" } | { state: "done"; result: ConnectResult } | { state: "error" };
 
@@ -89,5 +82,6 @@ export function RemedyHint({ remedy, compact = false }: { remedy: Remedy; compac
     <strong>{remedy.title}.</strong> <span>{remedy.step}</span>
     {action?.kind === "CONNECT" && <ConnectButton provider={action.provider} label={action.label} />}
     {action?.kind === "COMMAND" && <CopyCommand command={action.command} />}
+    {action?.kind === "CONFIGURE" && <ConfigureButton provider={action.provider} label={action.label} />}
   </span>;
 }

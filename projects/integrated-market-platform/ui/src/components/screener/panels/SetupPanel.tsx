@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchScreenerSetup, SETUP_QUERY_KEY, type SetupRow } from "../../../api/screenerSetup";
 import { stateText } from "../news/newsFormat";
+import { ProviderSetupList } from "../setup/ProviderConfig";
 import { RemedyHint } from "../setup/Remedy";
 import { ErrorDetail, PanelFrame, PanelMessage, usePanelVisible } from "./shared";
 import "../setup/setup.css";
@@ -17,7 +18,10 @@ function pill(row: SetupRow) {
   return { tone: "down", text: stateText(row.state) };
 }
 
-/** Each free capability, its state, and the single step that enables it. Built from existing provider states. */
+/**
+ * Each free capability, its state, and the single step that enables it (built from existing provider
+ * states), then every provider setting IMP accepts: keys, tokens, and the SEC contact identity.
+ */
 export default function SetupPanel({ api }: IDockviewPanelProps) {
   const visible = usePanelVisible(api);
   const query = useQuery({
@@ -30,7 +34,7 @@ export default function SetupPanel({ api }: IDockviewPanelProps) {
     {query.isError && !data ? <PanelMessage tone="error" role="alert">Setup status request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Checking capabilities…</PanelMessage>
       : <div className="setup-panel">
-        <p className="setup-summary">{data.ready_count} of {data.total} free capabilities ready. Each row names the one step that enables it; keys and flags are never entered here.</p>
+        <p className="setup-summary">{data.ready_count} of {data.total} free capabilities ready. Each row names the one step that enables it. Keys and the SEC contact identity are entered below; they stay on this computer and are never shown again.</p>
         <ul className="setup-list" aria-label="Setup checklist">{data.rows.map((row) => {
           const status = pill(row);
           return <li key={row.id} className="setup-row">
@@ -41,6 +45,7 @@ export default function SetupPanel({ api }: IDockviewPanelProps) {
               : <span title={row.reason ?? undefined}>{row.reason ? row.reason.replace(/_/g, " ").toLowerCase() : "—"}</span>}</span>
           </li>;
         })}</ul>
+        <ProviderSetupList enabled={visible} />
       </div>}
   </PanelFrame>;
 }

@@ -9,6 +9,8 @@ import { fetchJson, postJson } from "./fetchJson";
 const RemedyAction = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("CONNECT"), provider: z.string(), label: z.string() }).passthrough(),
   z.object({ kind: z.literal("COMMAND"), command: z.string() }).passthrough(),
+  // Opens the Setup form for one registered provider (a key, token, or the SEC contact identity).
+  z.object({ kind: z.literal("CONFIGURE"), provider: z.string(), label: z.string() }).passthrough(),
 ]);
 export const RemedySchema = z.object({
   reason: z.string(), title: z.string(), step: z.string(), action: RemedyAction.nullable(),

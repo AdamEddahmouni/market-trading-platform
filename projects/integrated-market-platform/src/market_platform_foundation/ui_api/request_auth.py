@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from http import HTTPStatus
 from typing import Any, Mapping
+from urllib.parse import urlparse
 
 from ..operational_identity import OperationalIdentityError
 from ..platform.security.access_control import (
@@ -92,6 +93,27 @@ def authorize_http_request(
                     return failure
 
     return principal
+
+
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
+
+
+def loopback_request_origin(headers: Mapping[str, str]) -> bool:
+    """False when a browser says the request comes from a page on another site.
+
+    Browsers send ``Origin`` on every cross-origin POST and ``Sec-Fetch-Site`` on modern engines. A
+    request without either (curl, tests, the CLI) is not a browser page and is left to the normal
+    capability check."""
+
+    lowered = {str(key).lower(): str(value) for key, value in headers.items()}
+    if lowered.get("sec-fetch-site", "").strip().lower() == "cross-site":
+        return False
+    origin = lowered.get("origin", "").strip()
+    if not origin:
+        return True
+    parsed = urlparse(origin)
+    host = (parsed.hostname or "").lower()
+    return parsed.scheme in {"http", "https"} and (host in _LOOPBACK_HOSTS or host.endswith(".localhost"))
 
 
 def authorization_http_status(failure: AuthorizationFailure) -> HTTPStatus:

@@ -1144,6 +1144,16 @@ class ScreenerNewsService:
         with self._lock:
             self._indexes.clear()
 
+    def credentials_changed(self) -> None:
+        """A provider key or the SEC identity changed: rebuild the clients that captured the old value."""
+
+        for reset in (getattr(self._sec, "reset_transport", None), getattr(self._rss, "clear_cache", None)):
+            if callable(reset):
+                reset()
+        with self._lock:
+            self._synthesizer = None
+            self._indexes.clear()
+
     def local_synthesis_server(self) -> Any:
         """The managed loopback model server, when synthesis runs on one; else None."""
 
