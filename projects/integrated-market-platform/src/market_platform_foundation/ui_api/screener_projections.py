@@ -16,12 +16,14 @@ from typing import Any, Callable
 from ..finviz.screener import FinvizScreenerClient, FinvizScreenerRow
 from ..finviz.config import DEFAULT_SCREENER_COLUMNS
 from ..finviz.symbols import finviz_to_canonical
-from ..market_data.live_runtime import get_live_runtime
+from ..market_data.live_runtime import get_live_runtime, provider_symbol_for
 from ..market_data.subscription_manager import SubscriptionPriority
 from ..market_sessions import us_equity_screener_session
 from .screener_admission import UNAVAILABLE_REFERENCE, ClassificationReference, admission_summary, admit_equity
 from .screener_filters import apply_filters, field_value
 from .screener_query import DEFAULT_PAGE_LIMIT, exact_matches_first, order_rows, page_payload, parse_query
+from .screener_snapshot import SOURCE as QUOTE_SNAPSHOT_SOURCE
+from .screener_snapshot import EtfSnapshotSource, MarketSnapshot
 
 SCHEMA_VERSION = "screener/1.0.0"
 UNIVERSE = "US_EQUITIES"
@@ -34,6 +36,8 @@ FILTER = "geo_usa"
 # short float, short ratio, RSI, RVOL, price, change, and volume.
 SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
 MAX_WINDOW = 32
+# Finviz carries no bid/ask; these filter and sort through one OpenD snapshot of the universe.
+QUOTE_SNAPSHOT_FIELDS = ("bid", "ask", "spread_pct")
 QUOTE_EVENT_STALE_MS = 60_000  # no provider quote update for a minute is stale, however often it is polled
 RESULT_CACHE_ENTRIES = 16  # ordered result references per query identity, never row copies
 SNAPSHOT_TTL_SECONDS = 120
@@ -152,6 +156,26 @@ def _snapshot_row(row: FinvizScreenerRow, as_of: str, classification: dict[str, 
     }
 
 
+def _quote_transport() -> Any | None:
+    from ..market_data.current_bars import current_bars_service
+
+    return current_bars_service().transport()
+
+
+def _with_quote_snapshot(row: dict[str, Any], snapshot: MarketSnapshot) -> dict[str, Any]:
+    """A page row carrying the bid/ask/spread it was filtered and ordered by."""
+
+    identity = row["instrument"]["instrument_id"]
+    as_of = snapshot.row_as_of.get(identity)
+    fields = dict(row["fields"])
+    for name in QUOTE_SNAPSHOT_FIELDS:
+        value = snapshot.value(identity, name)
+        fields[name] = {"value": value, "source": QUOTE_SNAPSHOT_SOURCE,
+                        "state": "SNAPSHOT" if value is not None else "UNAVAILABLE",
+                        "as_of": as_of if value is not None else None}
+    return {**row, "fields": fields}
+
+
 class ScreenerService:
     """Own one snapshot cache and independent, expiring viewport subscriptions."""
 
@@ -162,7 +186,10 @@ class ScreenerService:
         runtime_getter: Callable[..., Any | None] = get_live_runtime,
         monotonic: Callable[[], float] = time.monotonic,
         now: Callable[[], str] = _iso_now,
+        quote_transport_getter: Callable[[], Any | None] = _quote_transport,
     ) -> None:
+        self._quotes = EtfSnapshotSource(transport_getter=quote_transport_getter, clock=monotonic,
+                                         prefix="eq", require_complete=False)
         self._source_factory = source_factory
         self._runtime_getter = runtime_getter
         self._monotonic = monotonic
@@ -175,7 +202,7 @@ class ScreenerService:
         self._reference: ClassificationReference = UNAVAILABLE_REFERENCE
         self._admission: dict[str, Any] | None = None
         self._previous: tuple[str | None, list[dict[str, Any]]] = (None, [])
-        self._ordered: OrderedDict[tuple[str | None, str], list[dict[str, Any]]] = OrderedDict()
+        self._ordered: OrderedDict[tuple[str | None, str | None, str], list[dict[str, Any]]] = OrderedDict()
         self._clients: dict[str, tuple[set[str], float, Any]] = {}
         self._expiry_timer: threading.Timer | None = None
 
@@ -231,47 +258,77 @@ class ScreenerService:
             raise ValueError("UNSUPPORTED_UNIVERSE")
         query = parse_query(universe=universe, search=search, sort=sort, descending=descending,
                             offset=offset, limit=limit, filters=filters, result_set=result_set, selected=selected)
+        uses_quotes = query.sort in QUOTE_SNAPSHOT_FIELDS or any(
+            rule["field"] in QUOTE_SNAPSHOT_FIELDS for rule in query.filters)
+        snapshot: MarketSnapshot | None = None
+        snapshot_error: str | None = None
         with self._lock:
             if query.result_set is not None:
                 # A later page reads the exact snapshot its first page was ordered from.
+                token, _, snapshot_id = query.result_set.partition("|")
                 pinned = next(((as_of, rows) for as_of, rows in ((self._as_of, self._rows), self._previous)
-                               if as_of is not None and as_of == query.result_set), None)
-                if pinned is None:
+                               if as_of is not None and as_of == token), None)
+                snapshot = self._quotes.retained(snapshot_id) if snapshot_id else None
+                if pinned is None or bool(snapshot_id) != uses_quotes or (snapshot_id and snapshot is None):
                     raise ValueError("RESULT_SET_CHANGED")
                 as_of, source_rows = pinned
             else:
                 self._refresh(force=force_refresh)
                 as_of, source_rows = self._as_of, self._rows
-            key = (as_of, query.identity)
+            admission, error = self._admission, self._error
+        if uses_quotes and query.result_set is None and source_rows:
+            # Outside the lock: the snapshot is a dozen provider calls and must not stall quote windows.
+            snapshot, snapshot_error = self._quotes.current(
+                [{"provider_symbol": provider_symbol_for(row["instrument"]["instrument_id"]),
+                  "instrument": row["instrument"]} for row in source_rows],
+                catalog_as_of=str(as_of), force=force_refresh)
+        envelope = {
+            "schema_version": SCHEMA_VERSION,
+            "universe": UNIVERSE,
+            "generated_at": self._now(),
+            "market_session": us_equity_screener_session(),
+            "universe_as_of": as_of,
+            "screener_as_of": as_of,
+            "evaluation": "SNAPSHOT",
+            "snapshot": snapshot.summary() if snapshot else None,
+            "unfiltered_count": len(source_rows),
+            "admission": admission,
+            "provider_health": [{
+                "provider": "FINVIZ_ELITE",
+                "state": "DEGRADED" if error and source_rows else "UNAVAILABLE" if error else "HEALTHY",
+                "reason": error,
+            }, *([{"provider": QUOTE_SNAPSHOT_SOURCE, "role": "MARKET_SNAPSHOT",
+                   "state": "UNAVAILABLE" if snapshot is None else "HEALTHY", "reason": snapshot_error}]
+                 if uses_quotes else [])],
+        }
+        if uses_quotes and snapshot is None:
+            # No universe-wide bid/ask: say so rather than filter on the few rows that are live.
+            return {**envelope, "result_set_id": None,
+                    "source_error": (error if not source_rows else None) or snapshot_error or "MARKET_SNAPSHOT_UNAVAILABLE",
+                    **page_payload(query, [])}
+
+        def observe(row: dict[str, Any], name: str) -> Any:
+            if snapshot is not None and name in QUOTE_SNAPSHOT_FIELDS:
+                return snapshot.value(row["instrument"]["instrument_id"], name)
+            return field_value(row, name)
+
+        key = (as_of, snapshot.id if snapshot else None, query.identity)
+        with self._lock:
             ordered = self._ordered.get(key)
-            if ordered is None:
-                needle = query.search.casefold()
-                matched = [row for row in apply_filters(source_rows, list(query.filters))
-                           if not needle or needle in row["symbol"].casefold() or needle in row["company"].casefold()]
-                ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, field_value), needle)
+        if ordered is None:
+            needle = query.search.casefold()
+            matched = [row for row in apply_filters(source_rows, list(query.filters), observe)
+                       if not needle or needle in row["symbol"].casefold() or needle in row["company"].casefold()]
+            ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, observe), needle)
+            with self._lock:
                 self._ordered[key] = ordered
                 while len(self._ordered) > RESULT_CACHE_ENTRIES:
                     self._ordered.popitem(last=False)
-            return {
-                "schema_version": SCHEMA_VERSION,
-                "universe": UNIVERSE,
-                "generated_at": self._now(),
-                "market_session": us_equity_screener_session(),
-                "universe_as_of": as_of,
-                "screener_as_of": as_of,
-                "evaluation": "SNAPSHOT",
-                "snapshot": None,
-                "result_set_id": as_of,
-                "unfiltered_count": len(source_rows),
-                "admission": self._admission,
-                "provider_health": [{
-                    "provider": "FINVIZ_ELITE",
-                    "state": "DEGRADED" if self._error and self._rows else "UNAVAILABLE" if self._error else "HEALTHY",
-                    "reason": self._error,
-                }],
-                "source_error": self._error if not self._rows else None,
-                **page_payload(query, ordered),
-            }
+        page = page_payload(query, ordered)
+        if snapshot is not None:
+            page["rows"] = [_with_quote_snapshot(row, snapshot) for row in page["rows"]]
+        return {**envelope, "result_set_id": f"{as_of}|{snapshot.id}" if snapshot else as_of,
+                "source_error": error if not source_rows else None, **page}
 
     def classification_reference(self) -> ClassificationReference:
         """The current export's classification of every US listing (the ETF admission reference)."""

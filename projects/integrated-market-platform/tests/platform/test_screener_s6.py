@@ -115,14 +115,13 @@ class QueryContractTests(unittest.TestCase):
             parse_query(universe=US_ETFS, search="x" * 81)
 
     def test_live_window_fields_neither_sort_nor_filter_a_universe(self) -> None:
-        with self.assertRaisesRegex(ValueError, "UNSUPPORTED_SORT"):
-            parse_query(universe=US_EQUITIES, sort="bid")
+        self.assertEqual(parse_query(universe=US_EQUITIES, sort="bid").sort, "bid")
         with self.assertRaisesRegex(ValueError, "UNSUPPORTED_SORT"):
             parse_query(universe=FUTURES, sort="price")
         with self.assertRaisesRegex(ValueError, "FILTER_UNIVERSE_MISMATCH"):
             parse_query(universe=FUTURES, filters=[{"id": "a", "field": "price", "operator": "gt", "value": 1}])
-        with self.assertRaisesRegex(ValueError, "FILTER_UNIVERSE_MISMATCH"):
-            parse_query(universe=US_EQUITIES, filters=[{"id": "a", "field": "spread_pct", "operator": "lt", "value": 1}])
+        self.assertEqual(len(parse_query(universe=US_EQUITIES, filters=[
+            {"id": "a", "field": "spread_pct", "operator": "lt", "value": 1}]).filters), 1)
         with self.assertRaisesRegex(ValueError, "FILTER_UNIVERSE_MISMATCH"):
             parse_query(universe=US_ETFS, filters=[{"id": "a", "field": "short_float_pct", "operator": "gt", "value": 1}])
 
@@ -133,7 +132,7 @@ class QueryContractTests(unittest.TestCase):
         self.assertNotIn("rel_volume", etfs)
         self.assertEqual(futures["price"], {"execution": LIVE_WINDOW, "sortable": False, "filterable": False})
         self.assertEqual(futures["dte"], {"execution": CATALOG, "sortable": True, "filterable": True})
-        self.assertEqual(equities["bid"], {"execution": LIVE_WINDOW, "sortable": False, "filterable": False})
+        self.assertEqual(equities["bid"], {"execution": SNAPSHOT, "sortable": True, "filterable": True})
         self.assertFalse(equities["sector"]["sortable"])
         for universe in (US_EQUITIES, FUTURES, US_ETFS):
             for entry in filter_catalog(universe):
@@ -390,6 +389,10 @@ class TransportSnapshotTests(unittest.TestCase):
             "vendor_ret_msg": "US OTC market quote is not available for BCHG."}
         refused = session.fetch_market_snapshot(["US.SPY", "US.BCHG"])
         self.assertEqual((refused["reason_code"], refused["refused_codes"]), ("MOOMOO_QUOTE_NOT_ENTITLED", ["US.BCHG"]))
+        # Live OpenD, equity list from Finviz: a code the vendor does not carry fails the batch by name.
+        session.fetch_future_quotes = lambda codes: {  # type: ignore[method-assign]
+            "reason_code": "MOOMOO_PROTOCOL_ERROR", "rows": None, "vendor_ret_msg": "Unknown stock. BF-A"}
+        self.assertEqual(session.fetch_market_snapshot(["US.SPY", "US.BF-A"])["refused_codes"], ["US.BF-A"])
         session.fetch_future_quotes = lambda codes: {  # type: ignore[method-assign]
             "reason_code": "MOOMOO_PROTOCOL_ERROR", "rows": None, "vendor_ret_msg": "disconnected"}
         self.assertNotIn("refused_codes", session.fetch_market_snapshot(["US.SPY"]))

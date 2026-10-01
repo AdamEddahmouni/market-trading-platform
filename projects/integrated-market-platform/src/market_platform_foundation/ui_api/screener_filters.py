@@ -47,11 +47,11 @@ _CATALOG = {
 for field in ("symbol", "company"):
     _CATALOG[field]["universes"] = [US_EQUITIES, FUTURES, US_ETFS]
 # ETF market fields filter only through the universe-wide OpenD market snapshot
-# (S6); bid/ask/spread have no universe-wide equity source, so equities omit them.
+# (S6); equities take bid/ask/spread from the same kind of snapshot (Finviz has none).
 for field in ("price", "change_pct", "volume"):
     _CATALOG[field]["universes"] = [US_EQUITIES, US_ETFS]
 for field in ("bid", "ask", "spread_pct"):
-    _CATALOG[field]["universes"] = [US_ETFS, CRYPTO]
+    _CATALOG[field]["universes"] = [US_EQUITIES, US_ETFS, CRYPTO]
 for field in ("symbol", "price", "change_pct"):
     _CATALOG[field]["universes"].append(CRYPTO)
 _CATALOG.update({

@@ -34,6 +34,26 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — US equities filter and sort by Bid, Ask, Spread %
+
+- Owner report: rows could not be filtered by bid, ask or spread. Equities marked those fields
+  `LIVE_WINDOW` (visible rows only) because the Finviz export has no bid/ask.
+- A query that filters or sorts on them now takes one OpenD market snapshot of the whole equity
+  universe (the ETF snapshot source, reused with `prefix="eq"`, `require_complete=False`), pins it
+  in `result_set_id` (`<as_of>|<snapshot id>`) for later pages, and overlays the values on the
+  page rows. Queries that do not use those fields take no snapshot. With no snapshot the query
+  returns `source_error` instead of filtering on the few live rows.
+- OpenD fails a whole batch on a code it does not carry ("Unknown stock. BF-A"); the transport now
+  names that code as refused so the batch is retried without it. Refusals learned on an attempt
+  that ran out of calls are kept for the next one.
+- Overnight the snapshot's bid/ask are blanked (frozen after-hours book), for ETFs as well.
+- Live, regular session: 4,605 of 4,629 equities returned, 36 calls first time (24 unknown codes,
+  mostly class shares such as BRK-B), 2.6 s; `spread_pct < 0.05 and bid > 100` gave 85 names.
+- Open: class-share symbols (BRK-B, BF-A) are not mapped to the vendor's form, so they have no
+  OpenD quote in the snapshot or the live window.
+- Tests: `test_bid_ask_spread_filter_and_sort_through_one_universe_snapshot`; S2/S6/S8 capability
+  tests updated to the new contract.
+
 ## 2026-10-01 — Order Flow, CVD and Level 2 stuck on "Connecting"
 
 - Owner report: the live panels showed CONNECTING / "Acquiring subscription" forever. The backend

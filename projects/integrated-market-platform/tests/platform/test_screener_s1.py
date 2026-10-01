@@ -64,6 +64,56 @@ class ScreenerS1Tests(unittest.TestCase):
         self.assertEqual(service.read(sort="price", descending=False)["rows"][0]["symbol"], "T0000")
         self.assertEqual(source.calls, 1)
 
+    def test_bid_ask_spread_filter_and_sort_through_one_universe_snapshot(self):
+        class Transport:
+            def __init__(self):
+                self.calls: list[int] = []
+                self.available = True
+
+            def fetch_market_snapshot(self, codes):
+                self.calls.append(len(codes))
+                if not self.available:
+                    return {"reason_code": "OPEND_UNAVAILABLE", "rows": None}
+                # T0005 is a listing the vendor does not carry: it is simply absent.
+                return {"reason_code": None, "rows": [
+                    {"code": code, "update_time": "2026-10-01 12:00:00", "last_price": 10.0,
+                     "bid_price": float(code[4:]) or 0.5, "ask_price": (float(code[4:]) or 0.5) * 1.01,
+                     "overnight_price": 0.0} for code in codes if code != "US.T0005"]}
+
+        transport = Transport()
+        clock = [1000.0]
+        service = ScreenerService(source_factory=Source, runtime_getter=lambda **_: None,
+                                  quote_transport_getter=lambda: transport, monotonic=lambda: clock[0])
+        self.assertEqual(service.read()["snapshot"], None)
+        self.assertEqual(transport.calls, [])  # no bid/ask in the query: no snapshot is taken
+
+        rule = [{"id": "a", "field": "bid", "operator": "gte", "value": 200}]
+        result = service.read(filters=rule, sort="bid", descending=False, limit=10)
+        self.assertEqual(transport.calls, [240])
+        self.assertEqual(result["result_count"], 40)
+        self.assertEqual([row["symbol"] for row in result["rows"][:2]], ["T0200", "T0201"])
+        field = result["rows"][0]["fields"]["bid"]
+        self.assertEqual((field["value"], field["source"], field["state"]), (200.0, "MOOMOO_OPEND_SNAPSHOT", "SNAPSHOT"))
+        self.assertEqual((result["snapshot"]["total"], result["snapshot"]["returned"]), (240, 239))
+        # A later page reads the snapshot its first page was ordered from, without a new one.
+        later = service.read(filters=rule, sort="bid", descending=False, limit=10, offset=10,
+                             result_set=result["result_set_id"])
+        self.assertEqual(later["rows"][0]["symbol"], "T0210")
+        self.assertEqual(transport.calls, [240])
+        with self.assertRaisesRegex(ValueError, "RESULT_SET_CHANGED"):
+            service.read(limit=10, offset=10, result_set=result["result_set_id"])
+        # The unlisted row has no bid, so no bid rule matches it and it sorts last.
+        self.assertEqual(service.read(sort="bid", descending=False, limit=240)["rows"][-1]["symbol"], "T0005")
+
+        # No snapshot: the query says so instead of filtering on the few live rows.
+        transport.available = False
+        clock[0] += 61
+        down = service.read(filters=rule)
+        self.assertEqual((down["result_count"], down["source_error"]), (0, "OPEND_UNAVAILABLE"))
+        self.assertEqual(down["provider_health"][1], {"provider": "MOOMOO_OPEND_SNAPSHOT", "role": "MARKET_SNAPSHOT",
+                                                     "state": "UNAVAILABLE", "reason": "OPEND_UNAVAILABLE"})
+        self.assertEqual(service.read()["result_count"], 240)  # everything else still works
+
     def test_exact_ticker_search_lists_that_ticker_first(self):
         class TickerSource(Source):
             def fetch_export(self, *, filter_expr: str, columns: str):
