@@ -11,7 +11,7 @@ import tempfile
 import time
 import uuid
 from http import HTTPStatus
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -31,6 +31,7 @@ from tools.platform.local_launcher import (
     command_identity_matches,
 )
 from tools.platform.service_health import aggregate_platform_health, evaluate_service_health
+from tools.platform.single_bind import SingleBindHTTPServer
 
 
 CONTROL_HOST = "127.0.0.1"
@@ -348,7 +349,7 @@ class ControlHandler(BaseHTTPRequestHandler):
 
 def serve(*, root: Path, host: str, port: int) -> None:
     handler = type("BoundControlHandler", (ControlHandler,), {"root": root.resolve()})
-    server = ThreadingHTTPServer((host, port), handler)
+    server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "port": port, "status": "serving"}), flush=True)
     server.serve_forever()
 

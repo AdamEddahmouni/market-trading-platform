@@ -34,6 +34,14 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — One process per platform port on Windows
+
+- `ThreadingHTTPServer` sets `SO_REUSEADDR`, which on Windows lets a second process bind a port
+  that is already served, so a stray second API could split requests with the launcher's one.
+- `tools/platform/single_bind.py` `SingleBindHTTPServer` binds with `SO_EXCLUSIVEADDRUSE` on
+  Windows (unchanged elsewhere); the UI API and the control service use it.
+- Tests: `tests/platform/test_single_bind.py`.
+
 ## 2026-10-01 — Screener CSV export
 
 - Toolbar **Export** downloads the loaded rows and the visible columns, in grid order, as

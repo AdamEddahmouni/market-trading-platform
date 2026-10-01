@@ -8,7 +8,6 @@ import os
 import sys
 import threading
 import time
-from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +37,7 @@ from market_platform_foundation.ui_api.store import (
     ReplayStore,
 )
 from tools.finviz.login_transport import configure_login_transport
+from tools.platform.single_bind import SingleBindHTTPServer
 
 
 def _load_local_env() -> None:
@@ -368,7 +368,7 @@ def serve(*, host: str, port: int) -> None:
     _install_process_diagnostics()
     store = _load_store()
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
-    server = ThreadingHTTPServer((host, port), handler)
+    server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
     start_screener_warmup()
     server.serve_forever()
