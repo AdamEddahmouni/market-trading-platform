@@ -34,6 +34,16 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Opening the platform lands on the Screener
+
+- Operator decision: the Demo/Paper/Live chooser ("Choose how you enter the market") and the
+  older workstation are archived. A fresh page load of `/` (desktop shortcut, launcher,
+  bookmark) now replaces the address with `/screener`, keeping the query (`ui/src/startPath.ts`,
+  called from `main.tsx`). Nothing was deleted: the workstation routes still work when opened
+  by their own paths, and in-app navigation inside them is unchanged.
+- The Screener's IMP mark links to `/screener` instead of the chooser.
+- Tests: `startPath.test.ts`; `App.test.tsx` unchanged and passing.
+
 ## 2026-10-01 — Overnight quotes tell the truth; exact ticker search first
 
 - Overnight book: OpenD's market snapshot keeps `bid_price`/`ask_price` at the after-hours
