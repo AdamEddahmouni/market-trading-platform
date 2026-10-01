@@ -308,17 +308,23 @@ def _default_chart(instrument_id: str, universe: str) -> dict[str, Any] | None:
     return preview_service().chart(instrument_id, timeframe="5m", scope="EXTENDED", universe=universe)
 
 
-def _default_synthesizer():
-    """Production synthesis provider: Anthropic when its key is configured, else a configured local model."""
+def _default_synthesizer(settings: Any = None):
+    """Production synthesis provider: the operator's saved engine and model, else automatic (Anthropic when its key
+    is configured, else a configured local model)."""
 
-    from ..intelligence.inference.local_provider import select_synthesis_provider
     from ..intelligence.inference.screener_synthesis import ScreenerSynthesizer
+
+    selection = (settings or _default_synthesis_settings()).build()
+    return ScreenerSynthesizer(provider=selection.provider,
+                               not_configured_reason=selection.reason or "NO_SYNTHESIS_PROVIDER_CONFIGURED")
+
+
+def _default_synthesis_settings() -> Any:
+    from ..intelligence.inference.synthesis_engines import SynthesisSettings
     from ..local_state.external_cache import imp_cache_dir
     from ..news.config import configured_value
 
-    selection = select_synthesis_provider(configured_value, cache_dir=imp_cache_dir())
-    return ScreenerSynthesizer(provider=selection.provider,
-                               not_configured_reason=selection.reason or "NO_SYNTHESIS_PROVIDER_CONFIGURED")
+    return SynthesisSettings(configured_value, imp_cache_dir())
 
 
 @dataclass(slots=True)
@@ -342,7 +348,7 @@ class ScreenerNewsService:
                  synthesizer_factory: Callable[[], Any] = _default_synthesizer,
                  cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
                  wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
-                 newsapi_quota_path: Path | None = None) -> None:
+                 newsapi_quota_path: Path | None = None, synthesis_settings: Any = None) -> None:
         self._finviz = finviz
         self._rss = rss or RssNewsSource()
         self._newsapi_factory = newsapi_factory
@@ -352,6 +358,10 @@ class ScreenerNewsService:
         self._catalog = catalog
         self._row_for = row_for
         self._chart = chart
+        # The operator's engine picker (None: fixed provider, no picker — tests and embedded services).
+        self._synthesis_settings = synthesis_settings
+        if synthesis_settings is not None and synthesizer_factory is _default_synthesizer:
+            synthesizer_factory = lambda: _default_synthesizer(synthesis_settings)  # noqa: E731
         self._synthesizer_factory = synthesizer_factory
         self._synthesizer: Any = None
         self._cache = cache or BackgroundCache(clock=clock)
@@ -1134,6 +1144,16 @@ class ScreenerNewsService:
         with self._lock:
             self._indexes.clear()
 
+    def credentials_changed(self) -> None:
+        """A provider key or the SEC identity changed: rebuild the clients that captured the old value."""
+
+        for reset in (getattr(self._sec, "reset_transport", None), getattr(self._rss, "clear_cache", None)):
+            if callable(reset):
+                reset()
+        with self._lock:
+            self._synthesizer = None
+            self._indexes.clear()
+
     def local_synthesis_server(self) -> Any:
         """The managed loopback model server, when synthesis runs on one; else None."""
 
@@ -1143,7 +1163,30 @@ class ScreenerNewsService:
     def ai_status(self) -> dict[str, Any]:
         return self._ai_status()
 
+    def select_synthesis_engine(self, engine: str, model: str | None = None) -> dict[str, Any]:
+        """Save the operator's engine and model (catalog only; ValueError otherwise) and switch to it."""
+
+        if self._synthesis_settings is None:
+            raise ValueError("SYNTHESIS_ENGINE_NOT_SELECTABLE")
+        self._synthesis_settings.select(engine, model)
+        with self._lock:
+            # The next request builds the new provider; an in-flight call finishes on the old one.
+            self._synthesizer = None
+        return self._ai_status()
+
+    def _engine_fields(self) -> dict[str, Any]:
+        """The picker's choices; absent when this service has no operator-selectable engine."""
+
+        if self._synthesis_settings is None:
+            return {}
+        current = self._synthesis_settings.current()
+        return {"engine": current["engine"], "engine_model": current["model"], "engine_source": current["source"],
+                "engines": self._synthesis_settings.options()}
+
     def _ai_status(self) -> dict[str, Any]:
+        return {**self._provider_status(), **self._engine_fields()}
+
+    def _provider_status(self) -> dict[str, Any]:
         synthesizer = self._get_synthesizer()
         provider = getattr(synthesizer, "_provider", None)
         if provider is None:
@@ -1248,7 +1291,8 @@ def news_service() -> ScreenerNewsService:
         if _SERVICE is None:
             from ..local_state.external_cache import imp_cache_dir
 
-            _SERVICE = ScreenerNewsService(newsapi_quota_path=imp_cache_dir() / "quota" / "newsapi-developer.json")
+            _SERVICE = ScreenerNewsService(newsapi_quota_path=imp_cache_dir() / "quota" / "newsapi-developer.json",
+                                           synthesis_settings=_default_synthesis_settings())
         return _SERVICE
 
 
@@ -1268,9 +1312,14 @@ def read_synthesis_preview(**kwargs: Any) -> dict[str, Any] | None:
     return news_service().synthesis_preview(**kwargs)
 
 
+def select_synthesis_engine(engine: str, model: str | None = None) -> dict[str, Any]:
+    return news_service().select_synthesis_engine(engine, model)
+
+
 def read_news_activity(**kwargs: Any) -> dict[str, Any]:
     return news_service().activity(**kwargs)
 
 
 __all__ = ["INSTRUMENT_SCHEMA_VERSION", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerNewsService", "news_service", "provider_status",
-           "read_instrument_news", "read_news_activity", "read_news_feed", "read_synthesis_preview", "request_news_synthesis"]
+           "read_instrument_news", "read_news_activity", "read_news_feed", "read_synthesis_preview", "request_news_synthesis",
+           "select_synthesis_engine"]

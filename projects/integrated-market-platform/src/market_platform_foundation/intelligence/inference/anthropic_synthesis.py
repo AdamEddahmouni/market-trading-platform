@@ -10,7 +10,7 @@ still validates every result.
 limit on requests and tokens. Before each call it reserves the worst case (the prompt
 estimate plus ``max_tokens``). A call that could cross either limit is refused before
 any network request, with a stable reason. The file lives in the external IMP cache
-(``quota/anthropic-synthesis.json``), so a restart cannot reset the count.
+(``quota/anthropic-synthesis.json``, shared by every paid engine), so a restart cannot reset the count.
 
 No retries anywhere: a 429, overload, timeout, or truncated answer is a state the
 operator sees, never a loop that keeps billing.
@@ -230,7 +230,9 @@ class BudgetedProvider:
     def worst_case_tokens(self, rendered_prompt: str, config: IntelligenceInferenceConfig) -> int:
         """What a call reserves against the daily budget; the UI cost preview states this same number."""
 
-        return estimate_tokens(rendered_prompt) + 1_500 + int(config.max_tokens)   # + tool schema and system text
+        # + tool schema and system text; + a reasoning model's thinking room (hosted providers)
+        headroom = int(getattr(self._provider, "reasoning_headroom", 0) or 0)
+        return estimate_tokens(rendered_prompt) + 1_500 + int(config.max_tokens) + headroom
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
@@ -262,13 +264,18 @@ def _int_setting(value: Callable[[str], str | None], name: str, default: int) ->
         return default
 
 
-def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path | None) -> BudgetedProvider:
-    """The production paid provider: key and limits from process env / private provider file, budget in the cache."""
+def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path | None, provider: Any = None,
+                        model: str | None = None) -> BudgetedProvider:
+    """A production paid provider behind the daily budget: limits from process env / private provider file.
+
+    Every paid engine (Anthropic, OpenAI, Gemini) shares one budget file, so switching vendors never resets or
+    multiplies the cap. ``provider`` defaults to Claude with the key from ``value``."""
 
     budget = DailyBudget(cache_dir / BUDGET_RELATIVE if cache_dir is not None else None,
                          max_requests=_int_setting(value, DAILY_REQUESTS_ENV, DEFAULT_DAILY_REQUESTS),
                          max_tokens=_int_setting(value, DAILY_TOKENS_ENV, DEFAULT_DAILY_TOKENS))
-    provider = AnthropicSynthesisProvider(api_key=value("ANTHROPIC_API_KEY") or "", model=value(MODEL_ENV))
+    if provider is None:
+        provider = AnthropicSynthesisProvider(api_key=value("ANTHROPIC_API_KEY") or "", model=model or value(MODEL_ENV))
     return BudgetedProvider(provider, budget)
 
 

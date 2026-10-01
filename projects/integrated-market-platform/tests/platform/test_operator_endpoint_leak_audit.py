@@ -56,7 +56,7 @@ class OperatorEndpointLeakAuditTests(unittest.TestCase):
     def test_operator_config_returns_200_not_leak_blocked(self) -> None:
         status, payload = self._get_json("/operator/config")
         self.assertEqual(status, 200)
-        self.assertEqual(payload.get("schema_version"), "operator-config/1.0")
+        self.assertEqual(payload.get("schema_version"), "operator-config/1.1")
         self.assertNotEqual(payload.get("code"), "UI_SECRET_LEAK_BLOCKED")
         providers = payload.get("providers")
         self.assertIsInstance(providers, list)

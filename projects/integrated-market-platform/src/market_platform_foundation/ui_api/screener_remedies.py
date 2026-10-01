@@ -7,7 +7,9 @@ builders the Screener already uses. No new probes run on render.
 ``connect_provider`` is the only mutating entry point. It is a strict allowlist of
 local processes IMP may start on the operator's click: moomoo OpenD (the installed
 Windows executable), the local FinBERT load, and the loopback synthesis server. It
-never downloads, installs, or accepts credentials; keys and flags stay operator steps.
+never downloads, installs, or accepts credentials. A missing key or SEC identity gets a
+``CONFIGURE`` action naming a provider in the ``operator_config`` registry; the value is
+entered in Setup and written through ``POST /operator/config/provider``, never here.
 """
 
 from __future__ import annotations
@@ -18,7 +20,6 @@ import time
 from pathlib import Path
 from typing import Any, Callable
 
-AUTH_COMMAND = "python tools/news/auth.py configure"
 RESTART = "then restart the API"
 
 
@@ -34,13 +35,25 @@ def _command(command: str) -> dict[str, Any]:
     return {"kind": "COMMAND", "command": command}
 
 
+def _configure(provider: str, label: str = "Configure") -> dict[str, Any]:
+    """Opens the Setup form for one registered provider (``operator_config.PROVIDERS``)."""
+
+    return {"kind": "CONFIGURE", "provider": provider, "label": label}
+
+
 def _flag(flag: str, what: str) -> dict[str, Any]:
     return _remedy(f"{what} is switched off", f"Set {flag}=1 in the API environment, {RESTART}.")
 
 
+def _key(title: str, step: str, provider: str, label: str = "Enter key") -> dict[str, Any]:
+    return _remedy(title, step, _configure(provider, label))
+
+
 _OPEND_DOWN = _remedy("moomoo OpenD isn't running",
                       "Start OpenD and log in to load {scope}.", _connect("opend", "Start OpenD"))
-_KEYS = _command(AUTH_COMMAND)
+_SEC_IDENTITY = _remedy("SEC requires a contact identity",
+                        "Enter your name and a contact email once; SEC EDGAR switches on when it is saved.",
+                        _configure("sec", "Set SEC identity"))
 
 REMEDIES: dict[str, dict[str, Any]] = {
     # moomoo OpenD (ETF and Futures catalogs, live quotes)
@@ -57,13 +70,15 @@ REMEDIES: dict[str, dict[str, Any]] = {
                                 _command("python tools/imp.py env install-opend")),
     "QUOTE_CONTEXT_FAILED": _remedy("OpenD is up but refuses quotes", "Check the OpenD login and market-data entitlements."),
     # SEC (EDGAR filings, SEC press RSS)
-    "SEC_USER_AGENT_NOT_SET": _remedy("SEC requires a contact User-Agent",
-                                      "Set SEC_USER_AGENT to your name and email (e.g. \"Jane Doe jane@example.com\") "
-                                      f"in the API environment, {RESTART}."),
-    "IMP_EDGAR_LIVE_NOT_SET": _flag("IMP_EDGAR_LIVE", "SEC EDGAR"),
+    "SEC_USER_AGENT_NOT_SET": _SEC_IDENTITY,
+    "IMP_EDGAR_LIVE_NOT_SET": _remedy("SEC EDGAR is switched off",
+                                      "Save the SEC contact identity in Setup; saving it switches SEC EDGAR on.",
+                                      _configure("sec", "Set SEC identity")),
     # Live gates
-    "IMP_NEWSAPI_LIVE_NOT_SET": _remedy("NewsAPI is switched off", f"Store a NewsAPI key (this also enables it), {RESTART}.", _KEYS),
-    "IMP_FINNHUB_LIVE_NOT_SET": _remedy("Finnhub is switched off", f"Store a Finnhub key (this also enables it), {RESTART}.", _KEYS),
+    "IMP_NEWSAPI_LIVE_NOT_SET": _key("NewsAPI is switched off", "Save a NewsAPI key in Setup; saving it switches NewsAPI on.",
+                                     "newsapi"),
+    "IMP_FINNHUB_LIVE_NOT_SET": _key("Finnhub is switched off", "Save a Finnhub key in Setup; saving it switches Finnhub on.",
+                                     "finnhub"),
     "FINVIZ_LIVE_DISABLED": _flag("IMP_FINVIZ_LIVE", "Finviz Elite"),
     "IMP_NEWS_RSS_LIVE_NOT_SET": _flag("IMP_NEWS_RSS_LIVE", "Public RSS feeds"),
     "IMP_PUBLIC_RECORDS_LIVE_NOT_SET": _flag("IMP_PUBLIC_RECORDS_LIVE", "Public records"),
@@ -71,11 +86,20 @@ REMEDIES: dict[str, dict[str, Any]] = {
     "NO_NEWS_PROVIDER_CONFIGURED": _remedy("No news provider is switched on",
                                            f"Enable at least one source (RSS is free: IMP_NEWS_RSS_LIVE=1), {RESTART}."),
     # Keys
-    "NEWSAPI_API_KEY_NOT_SET": _remedy("NewsAPI has no key", f"Store a free Developer key, {RESTART}.", _KEYS),
-    "FINNHUB_API_KEY_NOT_SET": _remedy("Finnhub has no key", f"Store a free account key, {RESTART}.", _KEYS),
-    "FINVIZ_API_KEY_NOT_SET": _remedy("Finviz Elite has no key", f"Set FINVIZ_API_KEY in .private/providers.env, {RESTART}."),
-    "ANTHROPIC_API_KEY_NOT_SET": _remedy("AI synthesis has no provider",
-                                         f"Store an Anthropic key, or install the free local model, {RESTART}.", _KEYS),
+    "NEWSAPI_API_KEY_NOT_SET": _key("NewsAPI has no key", "Save a free Developer key in Setup.", "newsapi"),
+    "FINNHUB_API_KEY_NOT_SET": _key("Finnhub has no key", "Save a free account key in Setup.", "finnhub"),
+    "FINVIZ_API_KEY_NOT_SET": _key("Finviz Elite has no token",
+                                   f"Save your existing Elite API token in Setup, {RESTART}.", "finviz", "Enter token"),
+    "FINRA_CREDENTIALS_MISSING": _key("FINRA API has no credentials",
+                                      "Save the client ID and secret from your free FINRA API account in Setup.", "finra",
+                                      "Enter credentials"),
+    "FRED_API_KEY_MISSING": _key("FRED has no key", "Save a free FRED key in Setup.", "fred"),
+    "ANTHROPIC_API_KEY_NOT_SET": _key("AI synthesis has no provider",
+                                      f"Save an Anthropic key in Setup, or install the free local model ({RESTART}).",
+                                      "anthropic"),
+    "OPENAI_API_KEY_NOT_SET": _key("OpenAI has no key", "Save an OpenAI key in Setup, or pick another AI engine.", "openai"),
+    "GEMINI_API_KEY_NOT_SET": _key("Google Gemini has no key", "Save a Gemini key in Setup, or pick another AI engine.",
+                                   "gemini"),
     "NO_SYNTHESIS_PROVIDER_CONFIGURED": _remedy("AI synthesis has no provider",
                                                 f"Install the free local model, {RESTART}.",
                                                 _command("python tools/news/setup_local_synthesis.py")),

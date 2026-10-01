@@ -116,10 +116,19 @@ export type NewsFeed = z.infer<typeof NewsFeedSchema>;
 const Budget = z.object({ day: z.string(), requests: z.number(), max_requests: z.number(), tokens: z.number(),
   max_tokens: z.number() }).passthrough();
 export type SynthesisBudget = z.infer<typeof Budget>;
+/** One operator-selectable synthesis engine: its models (first = default) and whether it can run now. */
+const Engine = z.object({ id: z.string(), label: z.string(), runtime: z.enum(["LOCAL_MODEL", "PAID_API"]),
+  models: z.array(z.string()), default_model: z.string().nullable(),
+  state: z.enum(["AVAILABLE", "NOT_CONFIGURED"]), reason: z.string().nullable() }).passthrough();
+export type SynthesisEngine = z.infer<typeof Engine>;
 const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
   provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.enum(["LOCAL_MODEL", "PAID_API"]).nullable().optional(),
-  budget: Budget.nullable().optional() }).passthrough();
+  budget: Budget.nullable().optional(),
+  /** The operator's choice ("auto" until one is picked) and every engine the picker offers. */
+  engine: z.string().optional(), engine_model: z.string().nullable().optional(),
+  engine_source: z.enum(["OPERATOR", "ENVIRONMENT", "AUTOMATIC"]).optional(),
+  engines: z.array(Engine).optional() }).passthrough();
 export type AiStatus = z.infer<typeof AiStatus>;
 
 const TimelineBucket = z.object({ start: Iso, positive: z.number(), neutral: z.number(), negative: z.number(),
@@ -250,6 +259,11 @@ export type SynthesisRequest = { universe: ScreenerUniverse; scope: "INSTRUMENT"
 /** Explicit operator action only; never called on render. Aborted when the selection changes. */
 export function postNewsSynthesis(body: SynthesisRequest, signal?: AbortSignal) {
   return postJson("/screener/news/synthesis", body, SynthesisSchema, signal ? { signal } : undefined);
+}
+
+/** Operator choice of synthesis engine and model (server catalog only); returns the new AI status. Calls no model. */
+export function postSynthesisEngine(engine: string, model: string | null) {
+  return postJson("/screener/news/synthesis/engine", { engine, model }, AiStatus);
 }
 
 /** AI status and pre-click cost; the server never calls a model for it. */

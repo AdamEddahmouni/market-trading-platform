@@ -34,7 +34,8 @@ class OperatorConfigurationTests(unittest.TestCase):
             payload = build_config_payload(path=path)
 
             self.assertFalse(payload["secrets_included"])
-            self.assertTrue(payload["providers"][0]["fields"][0]["configured"])
+            finviz = next(row for row in payload["providers"] if row["provider"] == "finviz")
+            self.assertTrue(finviz["fields"][0]["configured"])
             self.assertNotIn("secret-value", str(payload))
 
     def test_config_payload_reads_repository_env_without_returning_values(self) -> None:

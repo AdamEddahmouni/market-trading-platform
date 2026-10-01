@@ -53,6 +53,7 @@ from .request_auth import (
     authorize_http_request,
     extract_session_token,
     log_server_event,
+    loopback_request_origin,
 )
 from .store import ReplayStore
 
@@ -1489,6 +1490,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
             except ValueError as exc:
                 self._send_error_json("PROVIDER_NOT_CONNECTABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
+        if path == "/screener/news/synthesis/engine":
+            # Operator choice of synthesis engine and model (catalog only); calls no model.
+            from .screener_news import select_synthesis_engine
+
+            engine, model = body.get("engine"), body.get("model")
+            try:
+                if not isinstance(engine, str) or not (model is None or isinstance(model, str)):
+                    raise ValueError("SYNTHESIS_ENGINE_INVALID")
+                self._send_json(select_synthesis_engine(engine, model))
+            except ValueError as exc:
+                self._send_error_json("SYNTHESIS_ENGINE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
         if path == "/screener/news/synthesis":
             # S11: AI synthesis runs only on this explicit operator action, never on render.
             from .screener_news import request_news_synthesis
@@ -1783,10 +1796,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("OPERATOR_WATCHLIST_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/operator/config/provider":
+            # Credentials are written only from an IMP page on this computer: the API answers every
+            # origin (CORS *), so a page on any other site must not be able to replace a key.
+            if not loopback_request_origin(dict(self.headers.items())):
+                self._send_error_json("OPERATOR_CONFIG_ORIGIN_REJECTED", "Provider settings can only be changed from IMP "
+                                      "on this computer", status=HTTPStatus.FORBIDDEN)
+                return
             try:
                 self._send_json(operator_projections.save_provider_config(body))
             except ValueError as exc:
-                self._send_error_json("OPERATOR_CONFIG_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+                overridden = str(exc).startswith("SETTING_OVERRIDDEN_BY_ENVIRONMENT")
+                self._send_error_json("OPERATOR_CONFIG_FAILED", str(exc),
+                                      status=HTTPStatus.CONFLICT if overridden else HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/operator/providers/") and path.endswith("/refresh"):
             provider = path.removeprefix("/operator/providers/").removesuffix("/refresh").strip("/")

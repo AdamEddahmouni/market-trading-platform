@@ -8,11 +8,17 @@ import ScreenerDock from "../panels/ScreenerDock";
 import { BondQuickPreview } from "../bonds/BondQuickPreview";
 import { PreviewNews } from "./PreviewNews";
 import { ConnectButton } from "../setup/Remedy";
+import { providerConfigPayload } from "../setup/providerConfig.fixture";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), last: vi.fn(), preview: vi.fn(), layout: vi.fn(),
   panelLayout: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(), news: vi.fn(), instrumentNews: vi.fn(), synthesis: vi.fn(),
-  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(),
+  bondPreview: vi.fn(), connect: vi.fn(), setup: vi.fn(), synthesisPreview: vi.fn(), activity: vi.fn(), engine: vi.fn(),
+  providerConfig: vi.fn(), saveProvider: vi.fn(),
+}));
+vi.mock("../../../api/providerConfig", async (original) => ({
+  ...(await original<typeof import("../../../api/providerConfig")>()),
+  fetchProviderConfig: mocks.providerConfig, saveProviderSettings: mocks.saveProvider,
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -34,7 +40,7 @@ vi.mock("../../../api/screenerBonds", async (original) => ({
 vi.mock("../../../api/screenerNews", async (original) => ({
   ...(await original<typeof import("../../../api/screenerNews")>()),
   fetchScreenerNews: mocks.news, fetchInstrumentNews: mocks.instrumentNews, postNewsSynthesis: mocks.synthesis,
-  fetchSynthesisPreview: mocks.synthesisPreview, fetchNewsActivity: mocks.activity,
+  fetchSynthesisPreview: mocks.synthesisPreview, fetchNewsActivity: mocks.activity, postSynthesisEngine: mocks.engine,
 }));
 vi.mock("../../../api/screenerSetup", async (original) => ({
   ...(await original<typeof import("../../../api/screenerSetup")>()),
@@ -174,6 +180,7 @@ beforeEach(() => {
   // News read state lives in localStorage; each test starts as a first visit.
   window.localStorage.clear();
   mocks.config.mockResolvedValue(config);
+  mocks.providerConfig.mockReturnValue(new Promise(() => undefined));
   mocks.fetch.mockResolvedValue(screenerPayload);
   mocks.window.mockResolvedValue({ schema_version: "screener/1.0.0", generated_at: T, market_session: "REGULAR", active: 0, cap: 32, quotes: {} });
   mocks.release.mockResolvedValue({ released: true });
@@ -408,7 +415,7 @@ describe("S11 Screener News view", () => {
     const inputs = within(result).getByRole("list", { name: "Headlines given to the model" });
     fireEvent.mouseEnter(result.querySelector(".news-ref-chip")!);
     expect(inputs.querySelector('li[data-story-id="U-1"]')).toHaveClass("cited");
-    expect(section).toHaveTextContent("Paid API · today 1/30 requests · 4k/200k tokens (hard daily limit).");
+    expect(section).toHaveTextContent("Paid API · today 1/30 requests · 4k/200k tokens (hard daily limit, shared by all paid engines).");
     // The estimate follows the call: the same input is now cached.
     expect(await within(section).findByRole("button", { name: "Generate AI synthesis · cached, no cost" })).toBeEnabled();
   });
@@ -597,7 +604,57 @@ describe("S11 News & Analysis panel", () => {
     const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
     await within(panel).findByText("AAPL headline one");
     expect(within(panel).getByRole("region", { name: "AI synthesis" }))
-      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit).");
+      .toHaveTextContent("Paid API · today 3/30 requests · 12k/200k tokens (hard daily limit, shared by all paid engines).");
+  });
+
+  const ENGINES = [
+    { id: "local", label: "Local model", runtime: "LOCAL_MODEL", models: ["qwen-local"], default_model: "qwen-local", state: "AVAILABLE", reason: null },
+    { id: "anthropic", label: "Anthropic Claude", runtime: "PAID_API", models: ["claude-sonnet-5-5", "claude-haiku-4-5-20251001"],
+      default_model: "claude-sonnet-5-5", state: "AVAILABLE", reason: null },
+    { id: "openai", label: "OpenAI", runtime: "PAID_API", models: ["gpt-6-luna"], default_model: "gpt-6-luna",
+      state: "NOT_CONFIGURED", reason: "OPENAI_API_KEY_NOT_SET" },
+  ];
+
+  it("picks the synthesis engine and model from a dropdown", async () => {
+    let ai: Record<string, unknown> = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5",
+      runtime: "PAID_API", engine: "auto", engine_model: null, engine_source: "AUTOMATIC", engines: ENGINES };
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe, { ai }));
+    mocks.engine.mockImplementation(async (engine: string, model: string | null) => {
+      ai = { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: model, runtime: "LOCAL_MODEL",
+        engine, engine_model: model, engine_source: "OPERATOR", engines: ENGINES };
+      return ai;
+    });
+    mount();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
+    const panel = await screen.findByRole("region", { name: "News & Analysis for AAPL" });
+    await within(panel).findByText("AAPL headline one");
+    const region = within(panel).getByRole("region", { name: "AI synthesis" });
+    const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
+    expect(select.value).toBe("auto");
+    expect(within(select).getByRole("option", { name: "Automatic (now claude-sonnet-5-5)" })).toBeInTheDocument();
+    expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5-20251001 (paid)" })).toBeEnabled();
+    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (needs OPENAI_API_KEY)" })).toBeDisabled();
+    fireEvent.change(select, { target: { value: "local|qwen-local" } });
+    await waitFor(() => expect(mocks.engine).toHaveBeenCalledWith("local", "qwen-local"));
+    await waitFor(() => expect(region).toHaveTextContent("Model qwen-local (local, no API cost)."));
+    expect((within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement).value).toBe("local|qwen-local");
+    expect(within(region).queryByRole("option", { name: /Automatic/ })).toBeNull();
+    expect(mocks.synthesis).not.toHaveBeenCalled();                  // switching never runs a model
+  });
+
+  it("offers the engine picker when synthesis is not configured", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "NOT_CONFIGURED", reason: "OPENAI_API_KEY_NOT_SET", provider_id: null, model_id: null, runtime: null,
+        engine: "openai", engine_model: null, engine_source: "OPERATOR", engines: ENGINES } }));
+    mocks.engine.mockRejectedValue(new Error("SYNTHESIS_ENGINE_INVALID"));
+    const panel = await openPanel();
+    const region = within(panel).getByRole("region", { name: "AI synthesis" });
+    expect(region).toHaveTextContent("AI synthesis not configured · OPENAI_API_KEY_NOT_SET");
+    const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
+    expect(select.value).toBe("openai|gpt-6-luna");
+    fireEvent.change(select, { target: { value: "anthropic|claude-sonnet-5-5" } });
+    expect(await within(region).findByRole("alert")).toHaveTextContent("Could not switch the AI engine.");
   });
 
   const PAID_AI = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
@@ -653,7 +710,7 @@ describe("S11 News & Analysis panel", () => {
     const newsCalls = mocks.instrumentNews.mock.calls.length;
     fireEvent.click(await within(ai).findByRole("button", { name: "Generate AI synthesis · ≈ 4k tokens, 2 stories" }));
     await within(ai).findByLabelText("AI synthesis result");
-    expect(ai).toHaveTextContent("Paid API · today 4/30 requests · 16k/200k tokens (hard daily limit).");
+    expect(ai).toHaveTextContent("Paid API · today 4/30 requests · 16k/200k tokens (hard daily limit, shared by all paid engines).");
     expect(mocks.instrumentNews.mock.calls.length).toBe(newsCalls);
   });
 
@@ -875,8 +932,9 @@ describe("Actionable degraded states", () => {
 
   it("names the one step for SEC User-Agent and live-disabled providers, once per cause", async () => {
     const sec = { ...provider("sec_filings", "SEC EDGAR filings", "NOT_CONFIGURED", "SEC_USER_AGENT_NOT_SET", "OFFICIAL_FILING"),
-      remedy: { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact User-Agent",
-        step: "Set SEC_USER_AGENT to your name and email in the API environment, then restart the API.", action: null } };
+      remedy: { reason: "SEC_USER_AGENT_NOT_SET", title: "SEC requires a contact identity",
+        step: "Enter your name and a contact email once; SEC EDGAR switches on when it is saved.",
+        action: { kind: "CONFIGURE", provider: "sec", label: "Set SEC identity" } } };
     const rss = { ...provider("rss", "RSS (public feeds)", "LIVE_DISABLED", "IMP_NEWS_RSS_LIVE_NOT_SET"),
       remedy: { reason: "IMP_NEWS_RSS_LIVE_NOT_SET", title: "Public RSS feeds is switched off",
         step: "Set IMP_NEWS_RSS_LIVE=1 in the API environment, then restart the API.", action: null } };
@@ -887,10 +945,16 @@ describe("Actionable degraded states", () => {
     await openNews();
     const fixes = await screen.findByRole("list", { name: "How to fix" });
     expect(within(fixes).getAllByRole("listitem")).toHaveLength(3);
-    expect(fixes).toHaveTextContent("SEC EDGAR filings: SEC requires a contact User-Agent.");
+    expect(fixes).toHaveTextContent("SEC EDGAR filings: SEC requires a contact identity.");
     expect(fixes).toHaveTextContent("IMP_NEWS_RSS_LIVE=1");
     expect(within(fixes).getByText("python tools/news/auth.py configure")).toBeInTheDocument();
     expect(within(fixes).getByRole("button", { name: "Copy command: python tools/news/auth.py configure" })).toBeInTheDocument();
+    // The SEC fix opens the Setup form right from the News panel.
+    mocks.providerConfig.mockResolvedValue(providerConfigPayload());
+    fireEvent.click(within(fixes).getByRole("button", { name: "Set SEC identity" }));
+    const dialog = await screen.findByRole("dialog", { name: "SEC EDGAR" });
+    expect(within(dialog).getByText("Fail-to-deliver data (Short Squeeze)")).toBeInTheDocument();
+    expect(within(dialog).getByLabelText("Contact identity")).toHaveAttribute("type", "text");
   });
 
   it("fills in sentiment on its own once the model finishes loading", async () => {

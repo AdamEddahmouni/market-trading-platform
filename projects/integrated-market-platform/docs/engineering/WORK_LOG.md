@@ -34,6 +34,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Provider settings in Setup (SEC contact identity, keys, tokens)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend`, `security` |
+| **Summary** | `SEC_USER_AGENT` could only be set in the API's environment, and most keys saved from the Control page were written to `.private/providers.env`, a file only the News/AI readers consulted (FRED, EIA, FINRA, SEC, Tradier, and Finviz never saw them). `operator_config.py` is now the one provider-setup registry: typed settings, validation (the SEC identity uses the SEC transport's own rule), what each provider unlocks, observational gates switched on when a provider is complete, precedence (environment > private file > `.env`; environment-set values are read-only, never shadowed), and an API-start bootstrap plus live update of the process environment so saves apply without a restart where consumers read per request. Screener → Setup gains grouped **Provider settings** with a Configure form, also opened from any `CONFIGURE` remedy (for example **Set SEC identity** in News). IBKR password/TOTP fields and the Assistant-only Anthropic settings were withdrawn (no consumer of the former; the latter would be shadow config). Paid AI keys are never mirrored into the process environment, so storing one cannot silently move the Assistant onto a paid API. Credential writes are refused from other sites' pages. |
+| **Key files** | `ui_api/operator_config.py`, `ui_api/operator_projections.py`, `ui_api/request_auth.py`, `ui_api/server.py`, `ui_api/errors.py`, `ui_api/screener_remedies.py`, `ui_api/screener_news.py`, `ui_api/screener_participants.py`, `news/sec_filings_news.py`, `news/rss_feeds.py`, `tools/ui1/run_ui_api.py`, `tools/news/auth.py`, `ui/src/api/providerConfig.ts` (new), `ui/src/api/screenerSetup.ts`, `ui/src/components/screener/setup/ProviderConfig.tsx` (new), `setup/refresh.ts` (new), `setup/Remedy.tsx`, `setup/setup.css`, `panels/SetupPanel.tsx`, `control/OperatorControlCenterPage.tsx`, `docs/engineering/PROVIDER_CONFIGURATION.md` (new) |
+| **Tests** | `tests/platform/test_provider_setup_config.py` (new, 28); updated `test_operator_configuration.py`, `test_operator_endpoint_leak_audit.py`, `test_screener_remedies.py`; backend targeted 415 OK; ui: `setup/ProviderConfig.test.tsx` (new, 8), `News.test.tsx` Configure-from-News; typecheck, build pass |
+| **Related** | [PROVIDER_CONFIGURATION.md](PROVIDER_CONFIGURATION.md), [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md) |
+| **Notes** | No provider is probed on save (paid keys must not spend money to prove themselves); Setup says "checked the first time IMP uses it". Finviz and Tradier still need an API restart and say so. Stacked on PR #445 (which stacks on #444). |
+
+## 2026-09-30 — Screener AI engine picker (local, Claude, OpenAI, Gemini)
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend` |
+| **Summary** | News AI synthesis switched to paid Claude silently once an Anthropic key was saved. The Screener now has an **AI engine** dropdown beside Generate AI synthesis: the free local model, or a paid engine and model (Anthropic, OpenAI, Gemini). The choice is saved in the IMP cache, applies without a restart, accepts catalog models only, and all paid engines share the one hard daily budget. |
+| **Key files** | `intelligence/inference/synthesis_engines.py` (new), `intelligence/inference/hosted_synthesis.py` (new), `local_provider.py`, `anthropic_synthesis.py`, `ui_api/screener_news.py`, `ui_api/server.py`, `platform/security/route_policy.py`, `ui_api/operator_config.py`, `ui_api/screener_remedies.py`, `tools/news/auth.py`, `ui/src/api/screenerNews.ts`, `ui/src/components/screener/news/SynthesisControl.tsx`, `news.css` |
+| **Tests** | `tests/intelligence/test_hosted_synthesis.py` (new), `test_screener_free_capabilities.py` (EngineChoiceTests); ui: `News.test.tsx` engine picker |
+| **Related** | [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md#engine-picker), [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md) |
+| **Notes** | OpenAI/Gemini are covered by fake-transport tests only until keys are configured; model IDs follow the vendors' docs as of 2026-09-30. |
+
 ## 2026-09-30 — Automatic Senate eFD download
 
 | Field | Value |

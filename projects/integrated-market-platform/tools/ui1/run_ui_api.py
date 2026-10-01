@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.canonical import canonical_bytes, load_json_strict, sha256_bytes, write_canonical_json
 from market_platform_foundation.offline_guard import install_guard
+from market_platform_foundation.ui_api.operator_config import bootstrap_process_environment
 from market_platform_foundation.ui1_assertions import aggregate_status, build_registry, create_run_manifest, evaluate_run
 from market_platform_foundation.ui_api.projections import (
     build_attention_page,
@@ -380,9 +381,13 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
+    args = parse_args()
+    if args.serve:
+        # Before .env: records which provider settings the real environment sets (those stay read-only
+        # in Setup), then applies the private provider file the Setup panel and CLI write.
+        bootstrap_process_environment()
     _load_local_env()
     configure_login_transport()
-    args = parse_args()
     if not args.serve:
         install_guard([])
     if args.serve:

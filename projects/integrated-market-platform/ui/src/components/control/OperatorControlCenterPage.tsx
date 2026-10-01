@@ -904,7 +904,8 @@ export function OperatorControlCenterPage({ mode }: Props) {
           />
         ) : (
           <div className="control-config-grid">
-            {(configQuery.data?.providers ?? []).map((provider) => (
+            {/* Providers set up outside IMP (OpenD, IB Gateway, Senate attestation) have no fields to edit. */}
+            {(configQuery.data?.providers ?? []).filter((provider) => provider.fields.length > 0).map((provider) => (
               <ProviderConfigCard
                 key={provider.provider}
                 provider={provider}

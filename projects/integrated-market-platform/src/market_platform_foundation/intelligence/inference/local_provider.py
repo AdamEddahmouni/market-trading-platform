@@ -307,23 +307,44 @@ class SynthesisSelection:
 
 
 def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: Path,
-                              anthropic_factory: Callable[[], Any] | None = None) -> SynthesisSelection:
-    """Provider priority: explicit ``IMP_SYNTHESIS_PROVIDER`` (anthropic | local), else Anthropic when its key is
-    configured, else a configured local model. A missing paid key never disables local synthesis."""
+                              anthropic_factory: Callable[[], Any] | None = None, engine: str | None = None,
+                              model: str | None = None) -> SynthesisSelection:
+    """Provider priority: the operator's ``engine`` (UI choice), else ``IMP_SYNTHESIS_PROVIDER``
+    (local | anthropic | openai | gemini), else Anthropic when its key is configured, else a configured local model.
+    A missing paid key never disables local synthesis in automatic mode. ``model`` must be in the engine's catalog
+    (``synthesis_engines``); anything else falls back to the engine's default."""
 
     from ...local_state.external_cache import read_manifest
+    from .synthesis_engines import engine_models
 
-    choice = (value(PROVIDER_ENV) or "auto").strip().lower()
+    choice = (engine or value(PROVIDER_ENV) or "auto").strip().lower()
     has_key = bool((value("ANTHROPIC_API_KEY") or "").strip())
     if choice in ("auto", "anthropic") and has_key:
         if anthropic_factory is None:
             from .anthropic_synthesis import build_paid_provider
 
+            offered = [item[0] for item in engine_models("anthropic", value)]
             # Key from the same source that selected it (env or private provider file), behind the daily budget.
-            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir), None, "PAID_API")
+            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir,
+                                                          model=model if model in offered else None), None, "PAID_API")
         return SynthesisSelection(anthropic_factory(), None, "PAID_API")
     if choice == "anthropic":
         return SynthesisSelection(None, "ANTHROPIC_API_KEY_NOT_SET", None)
+    if choice in ("openai", "gemini"):
+        from .anthropic_synthesis import build_paid_provider
+        from .hosted_synthesis import VENDORS, HostedChatSynthesisProvider
+        from .synthesis_engines import ENGINE_SPECS
+
+        credential_env = ENGINE_SPECS[choice].credential_env or ""
+        credential = (value(credential_env) or "").strip()
+        if not credential:
+            return SynthesisSelection(None, f"{credential_env}_NOT_SET", None)
+        offered = dict(engine_models(choice, value))
+        chosen = model if model in offered else next(iter(offered))
+        provider = HostedChatSynthesisProvider(vendor=VENDORS[choice], api_key=credential, model=chosen,
+                                               reasoning_effort=offered[chosen])
+        # One daily budget for every paid engine.
+        return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir, provider=provider), None, "PAID_API")
     base_url, model = (value(BASE_URL_ENV) or "").strip(), (value(MODEL_ENV) or "").strip()
     if base_url:
         if not is_loopback_url(base_url):
