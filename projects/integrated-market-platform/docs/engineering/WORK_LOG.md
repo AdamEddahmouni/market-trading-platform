@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener warms at API start
+
+- Measured cold (fresh process, live providers): imports 3.9 s, US equities 1.4 s, ETFs 3.6 s,
+  futures 1.0 s; every later read under 0.1 s. The first Screener visit after a restart paid
+  all of it.
+- `run_ui_api.serve` now starts a daemon `screener-warmup` thread that reads each universe once
+  (limit 1) and logs `ui_api.screener_warmup` timings. Only a live launch warms
+  (`IMP_FINVIZ_LIVE` or `IMP_MOOMOO_LIVE` = 1); `IMP_SCREENER_WARMUP=0` turns it off. A failing
+  universe just loads on first visit.
+- Tests: `tests/ui1/test_screener_warmup.py`.
+
 ## 2026-10-01 — Opening the platform lands on the Screener
 
 - Operator decision: the Demo/Paper/Live chooser ("Choose how you enter the market") and the
