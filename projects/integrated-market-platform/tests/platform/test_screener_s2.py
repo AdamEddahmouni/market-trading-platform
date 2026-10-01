@@ -21,13 +21,12 @@ from market_platform_foundation.local_state.repository import LocalStateReposito
 
 
 class ScreenerFilterTests(unittest.TestCase):
-    def test_catalog_excludes_window_only_quotes(self):
+    def test_catalog_offers_quote_fields_through_the_market_snapshot(self):
         fields = {item["field"] for item in filter_catalog()}
         self.assertIn("price", fields)
         self.assertIn("sector", fields)
-        self.assertNotIn("bid", fields)
-        self.assertNotIn("ask", fields)
-        self.assertNotIn("spread_pct", fields)
+        # Finviz has no bid/ask; equities filter them through the universe-wide OpenD snapshot.
+        self.assertLessEqual({"bid", "ask", "spread_pct"}, fields)
 
     def test_saved_screen_write_requires_state_write_capability(self):
         self.assertEqual(policy_for_route("POST", "/screener/config").capability, "state.write")

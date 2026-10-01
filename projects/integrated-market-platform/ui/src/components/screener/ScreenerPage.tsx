@@ -277,8 +277,10 @@ export function ScreenerPage() {
     .map((item) => catalogEntry(item.field) ?? item) ?? [];
   const isSortable = (key: string) => Boolean(fieldCaps?.[key]?.sortable);
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
-  const snapshotQuery = Boolean(fieldCaps) && (fieldCaps?.[effectiveSort]?.execution === "SNAPSHOT" && universe !== "US_EQUITIES" ||
-    filters.some((rule) => universe !== "US_EQUITIES" && fieldCaps?.[rule.field]?.execution === "SNAPSHOT"));
+  // Equities are one Finviz export; only their bid/ask/spread come from an OpenD market snapshot.
+  const fromMarketSnapshot = (field: string) => fieldCaps?.[field]?.execution === "SNAPSHOT" &&
+    (universe !== "US_EQUITIES" || field === "bid" || field === "ask" || field === "spread_pct");
+  const snapshotQuery = Boolean(fieldCaps) && (fromMarketSnapshot(effectiveSort) || filters.some((rule) => fromMarketSnapshot(rule.field)));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
   const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
   // News is a view inside the active universe (URL `news=1`), never a universe.

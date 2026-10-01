@@ -47,7 +47,8 @@ FIELD_EXECUTION: dict[str, dict[str, str]] = {
     US_EQUITIES: {
         **{field: CATALOG for field in ("symbol", "company", *_UNSORTED_TEXT)},
         **{field: SNAPSHOT for field in _EQUITY_SNAPSHOT},  # one Finviz universe export
-        **{field: LIVE_WINDOW for field in _QUOTE_WINDOW},
+        # Filtered and sorted through one universe-wide OpenD snapshot; visible rows then go live.
+        **{field: SNAPSHOT for field in _QUOTE_WINDOW},
     },
     FUTURES: {
         **{field: CATALOG for field in ("symbol", "company", "root", "exchange", "contract_month",

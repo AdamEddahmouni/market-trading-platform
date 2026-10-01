@@ -614,7 +614,7 @@ class ScopeTests(unittest.TestCase):
         for field in ("short_float_pct", "short_ratio", "float_shares", "rel_volume", "change_pct"):
             self.assertEqual((caps[field]["execution"], caps[field]["sortable"], caps[field]["filterable"]), ("SNAPSHOT", True, True), field)
         for field in ("bid", "ask", "spread_pct"):
-            self.assertEqual((caps[field]["execution"], caps[field]["sortable"], caps[field]["filterable"]), ("LIVE_WINDOW", False, False), field)
+            self.assertEqual((caps[field]["execution"], caps[field]["sortable"], caps[field]["filterable"]), ("SNAPSHOT", True, True), field)
         self.assertEqual(parse_query(universe=US_EQUITIES, sort="short_float_pct").sort, "short_float_pct")
 
     def test_selected_only_evidence_is_never_a_filter_sort_or_column(self):

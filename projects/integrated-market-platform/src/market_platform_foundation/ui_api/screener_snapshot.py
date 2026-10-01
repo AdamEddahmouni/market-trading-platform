@@ -21,6 +21,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
+from ..market_data.observational_state import _overnight_snapshot
+
 ET = ZoneInfo("America/New_York")
 SOURCE = "MOOMOO_OPEND_SNAPSHOT"
 SNAPSHOT_TTL_SECONDS = 60          # a new result chain re-snapshots after this age
@@ -58,6 +60,9 @@ def snapshot_values(source: dict[str, Any], taken_at: datetime) -> tuple[dict[st
     price = price if price is not None and price > 0 else None
     previous = _finite(source.get("prev_close_price"))
     bid, ask = _finite(source.get("bid_price")), _finite(source.get("ask_price"))
+    if _overnight_snapshot(source):
+        # Overnight the vendor book is the frozen after-hours close, not a current market.
+        bid = ask = None
     bid = bid if bid is not None and bid > 0 else None
     ask = ask if ask is not None and ask > 0 else None
     spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid else None
@@ -101,8 +106,14 @@ class EtfSnapshotSource:
 
     def __init__(self, *, transport_getter: Callable[[], Any | None],
                  clock: Callable[[], float] = time.monotonic,
-                 wall: Callable[[], datetime] = lambda: datetime.now(UTC)) -> None:
+                 wall: Callable[[], datetime] = lambda: datetime.now(UTC),
+                 prefix: str = "etf", require_complete: bool = True) -> None:
         self._transport_getter = transport_getter
+        self._prefix = prefix
+        # The ETF catalog is the vendor's own list, so a code it does not return is a failed
+        # snapshot. An equity list from another source may name codes the vendor does not carry;
+        # those rows simply have no value.
+        self._require_complete = require_complete
         self._clock = clock
         self._wall = wall
         self._build_lock = threading.Lock()
@@ -161,6 +172,9 @@ class EtfSnapshotSource:
             batch = pending[index:index + SNAPSHOT_BATCH]
             while batch:
                 if calls >= SNAPSHOT_MAX_CALLS:
+                    with self._lock:
+                        # Keep what this attempt learned so the next one spends no calls on it.
+                        self._known_refused |= refused
                     return None, "MARKET_SNAPSHOT_CALL_BUDGET"
                 calls += 1
                 try:
@@ -179,7 +193,7 @@ class EtfSnapshotSource:
                 break
         # Complete means every catalog code was returned or refused by name.
         missing = [code for code in pending if code not in vendor and code not in refused]
-        if missing:
+        if missing and self._require_complete:
             return None, "MARKET_SNAPSHOT_INCOMPLETE"
         taken = self._wall()
         values: dict[str, dict[str, float | None]] = {}
@@ -192,7 +206,7 @@ class EtfSnapshotSource:
             self._sequence += 1
             sequence = self._sequence
         as_of = taken.isoformat().replace("+00:00", "Z")
-        return MarketSnapshot(id=f"etf-{sequence}-{int(taken.timestamp())}", as_of=as_of, total=len(by_code),
+        return MarketSnapshot(id=f"{self._prefix}-{sequence}-{int(taken.timestamp())}", as_of=as_of, total=len(by_code),
                               values=values, row_as_of=row_as_of,
                               refused=frozenset(by_code[code] for code in refused),
                               calls=calls, duration_ms=(self._clock() - started) * 1000,

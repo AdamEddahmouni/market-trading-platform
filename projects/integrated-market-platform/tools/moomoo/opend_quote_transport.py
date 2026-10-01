@@ -520,6 +520,8 @@ MOOMOO_SUBSCRIPTION_BUSY = "MOOMOO_SUBSCRIPTION_BUSY"
 # Vendor ``get_market_snapshot`` accepts at most 400 codes per request.
 MARKET_SNAPSHOT_MAX_CODES = 400
 _SNAPSHOT_REFUSED_CODE = re.compile(r"quote is not available for ([A-Za-z0-9.\-]+)", re.IGNORECASE)
+# A code the vendor does not carry also fails its whole batch: "Unknown stock. BF-A".
+_SNAPSHOT_UNKNOWN_CODE = re.compile(r"unknown stock\.?\s*([A-Za-z0-9.\-]+)", re.IGNORECASE)
 # The vendor refuses to unsubscribe a code within one minute of subscribing it.
 CURRENT_KLINE_MIN_HOLD_SECONDS = 60.0
 CURRENT_KLINE_MAX_COUNT = 1000
@@ -723,7 +725,8 @@ class OpendCurrentKlineSession:
             return {"reason_code": MOOMOO_PROTOCOL_ERROR, "rows": None}
         result = self.fetch_future_quotes(codes)
         if result.get("reason_code") and result["reason_code"] != MOOMOO_QUOTE_NOT_ENTITLED:
-            match = _SNAPSHOT_REFUSED_CODE.search(str(result.get("vendor_ret_msg") or ""))
+            message = str(result.get("vendor_ret_msg") or "")
+            match = _SNAPSHOT_REFUSED_CODE.search(message) or _SNAPSHOT_UNKNOWN_CODE.search(message)
             code = f"US.{match.group(1).rstrip('.')}" if match else None
             if code in codes:
                 return {**result, "reason_code": MOOMOO_QUOTE_NOT_ENTITLED, "refused_codes": [code]}
