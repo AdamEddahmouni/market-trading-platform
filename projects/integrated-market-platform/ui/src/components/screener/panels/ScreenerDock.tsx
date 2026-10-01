@@ -143,8 +143,10 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
   callbacks.current = { onOpenChange, onLayout };
   // The dock remounts per universe. Dockview's teardown can emit panel removals; they must not
   // be reported as the user closing panels (that would overwrite the next universe's layout).
+  // Set on every mount: StrictMode mounts, unmounts and mounts again, and a flag that is only
+  // cleared would leave the dock deaf (no open panels recorded, so no live subscription demanded).
   const mounted = useRef(true);
-  useEffect(() => () => { mounted.current = false; }, []);
+  useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
   const settled = useSettled(row?.instrument.instrument_id ?? null, PANEL_SETTLE_MS);
   // A cleared selection (e.g. a universe switch) must not lend the previous
   // universe's instrument to this render's demand or panel queries.
