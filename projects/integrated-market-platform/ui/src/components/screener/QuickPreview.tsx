@@ -52,7 +52,7 @@ function keyValue(unit: string, field: string, value: number | null) {
   return value.toFixed(field === "rsi_14" ? 1 : 2);
 }
 function barStateLabel(state: string) {
-  return ({ CURRENT: "Current", SESSION_CLOSED: "Session closed · last session", STALE: "Stale", UNAVAILABLE: "Unavailable" } as Record<string, string>)[state] ?? state;
+  return ({ CURRENT: "Current", DELAYED: "Delayed", SESSION_CLOSED: "Session closed · last session", STALE: "Stale", UNAVAILABLE: "Unavailable" } as Record<string, string>)[state] ?? state;
 }
 
 export type QuickPreviewProps = {
@@ -177,7 +177,7 @@ function Futures({ preview }: { preview: ScreenerPreview }) {
       <p>{item.relationship_reason}</p>
       {item.quote ? <div className="screener-futures-quote"><span>{item.quote.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>
         {item.quote.change_pct != null && <span className={item.quote.change_pct >= 0 ? "screener-positive" : "screener-negative"}>{pct(item.quote.change_pct, true)}</span>}
-        <span className={`screener-state ${item.quote.state.toLowerCase()}`}>{item.quote.state === "LIVE" ? "Live" : "Stale"} · {item.quote.price_basis === "MID" ? "mid · " : ""}{item.quote.provider}{item.quote.age_ms != null ? ` · ${item.quote.age_ms < 1000 ? `${item.quote.age_ms}ms` : `${Math.round(item.quote.age_ms / 1000)}s`}` : ""}</span></div>
+        <span className={`screener-state ${item.quote.state.toLowerCase()}`}>{item.quote.state === "LIVE" ? "Live" : item.quote.state === "DELAYED" ? "Delayed" : "Stale"} · {item.quote.price_basis === "MID" ? "mid · " : ""}{item.quote.provider === "IBKR_DELAYED" ? "IBKR delayed data" : item.quote.provider}{item.quote.age_ms != null ? ` · ${item.quote.age_ms < 1000 ? `${item.quote.age_ms}ms` : `${Math.round(item.quote.age_ms / 1000)}s`}` : ""}</span></div>
         : <div className="screener-futures-quote"><span className="screener-state unavailable">Price unavailable · {reasonText(item.unavailable_reason)}</span></div>}
       {item.contract.state === "CURRENT" && <span className="screener-preview-meta">Last trade {item.contract.last_trade_date}</span>}
     </li>)}</ul>
@@ -263,7 +263,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
             {bars && bars.bars.length ? <Suspense fallback={<div className="screener-preview-chart" />}>
               <PreviewChart bars={bars.bars} forming={bars.forming} support={classified?.support ?? null} resistance={classified?.resistance ?? null} label={chartLabel} />
             </Suspense> : <div className="screener-preview-chart unavailable" role="status">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason)}</div>}
-            <p className="screener-preview-meta">{bars?.timeframe} · {bars?.session_scope === "RTH" ? "RTH" : bars?.session_scope === "PROVIDER_SPECIFIC" ? "Futures session" : "Extended"} · {barStateLabel(bars?.state ?? "UNAVAILABLE")}{universe !== "FUTURES" ? " · Moomoo OpenD" : ""}{bars?.latest_complete_bar_end ? ` · last bar ${time(bars.latest_complete_bar_end, true)}` : ""}</p>
+            <p className="screener-preview-meta">{bars?.timeframe} · {bars?.session_scope === "RTH" ? "RTH" : bars?.session_scope === "PROVIDER_SPECIFIC" ? "Futures session" : "Extended"} · {barStateLabel(bars?.state ?? "UNAVAILABLE")}{universe !== "FUTURES" ? " · Moomoo OpenD" : bars?.provider === "IBKR" ? " · IBKR delayed data" : ""}{bars?.latest_complete_bar_end ? ` · last bar ${time(bars.latest_complete_bar_end, true)}` : ""}</p>
           </section>
           <Levels preview={data} price={price} priceSource={priceSource} />
           <div className="screener-preview-tabs" role="tablist" aria-label="Preview details" onKeyDown={onTabKey}>

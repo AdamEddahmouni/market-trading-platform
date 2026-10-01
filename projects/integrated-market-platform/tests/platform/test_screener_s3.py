@@ -689,6 +689,31 @@ class ContextualFuturesTests(unittest.TestCase):
         self.assertTrue(all(item["contract"]["state"] == "EXPIRED" for item in result["items"]))
         self.assertTrue(all(item["quote"] is None and item["unavailable_reason"] == "CONTRACT_EXPIRED" for item in result["items"]))
 
+    def test_a_delayed_second_source_prices_unentitled_contracts_and_is_never_live(self):
+        now = datetime(2026, 9, 25, 11, 0, tzinfo=ET).timestamp()
+        asked = []
+
+        class Delayed:
+            def quotes(self, refs):
+                asked.extend(refs)
+                return {ref.key: {"last": 100.0, "prev_close": 99.0, "updated_s": now - 3} for ref in refs if ref.root == "NQ"}
+
+        service = FuturesContextService(transport_getter=lambda: FuturesTransport(), bridge=lambda: None,
+                                        today=lambda: date(2026, 9, 25), now_s=lambda: now, delayed_source=Delayed)
+        nq, es = service.read(sector="Technology", industry="Software", market_cap=5e10)["items"]
+        self.assertEqual([(ref.key, ref.root, ref.contract_month, ref.expiry) for ref in asked],
+                         [("NQZ26", "NQ", "202612", "2026-12-18"), ("ESZ26", "ES", "202612", "2026-12-18")])
+        self.assertEqual((nq["availability"], nq["quote"]["state"], nq["quote"]["provider"], nq["quote"]["price"]),
+                         ("AVAILABLE", "DELAYED", "IBKR_DELAYED", 100.0))
+        self.assertEqual((es["availability"], es["unavailable_reason"], es["quote"]), ("UNAVAILABLE", "NOT_ENTITLED", None))
+        # An entitled primary quote is used as is; the second source is not asked about it.
+        asked.clear()
+        entitled = FuturesContextService(transport_getter=lambda: FuturesTransport(entitled=True), bridge=lambda: None,
+                                         today=lambda: date(2026, 9, 25), now_s=lambda: now, delayed_source=Delayed)
+        items = {item["root"]: item for item in entitled.read(sector="Technology", industry="Software", market_cap=5e10)["items"]}
+        self.assertEqual(items["ES"]["quote"]["provider"], "MOOMOO_OPEND")
+        self.assertEqual([ref.root for ref in asked], ["NQ"])
+
     def test_not_entitled_is_truthful_and_cached(self):
         transport = FuturesTransport()
         service = futures_service(transport)
