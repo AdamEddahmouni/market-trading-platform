@@ -131,6 +131,9 @@ class LiveObservationalRuntime:
                     "Replay mode remains available."
                 )
                 self.admission.on_disconnect()
+                # The feed's connection loop retries with backoff, so OpenD started (or recovered)
+                # after the API still connects without a platform restart.
+                self._start_moomoo_push_feed()
                 return
             self.lifecycle.sdk_version = self.capability_registry.sdk_version
             self.lifecycle.opend_version = self.capability_registry.opend_version

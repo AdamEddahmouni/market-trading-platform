@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Screener quotes recover when OpenD comes up; truthful no-quote reasons
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `market_data` |
+| **Summary** | Root cause of grid quotes stuck at `AWAITING_QUOTE`: when OpenD was not accepting connections at the moment the live runtime was created, `LiveObservationalRuntime.configure()` returned without starting the push feed, so the runtime stayed dead until an API restart while the Screener window still accepted subscriptions and reported `AWAITING_QUOTE`. `configure()` now starts the push feed in that case too; its connection loop already owns retry/backoff, so quotes arrive once OpenD accepts connections. The grid window and `quote_for` now report the feed's real state (`OPEND_UNAVAILABLE`, `ENTITLEMENT_MISSING`, `PROVIDER_QUOTA_EXHAUSTED`, `PROVIDER_SUBSCRIBE_REFUSED`) and keep `AWAITING_QUOTE` only for a connected feed with no first quote yet. |
+| **Key files** | `market_data/live_runtime.py`, `ui_api/screener_projections.py` (`pending_quote_reason`) |
+| **Tests** | `tests/market_data/test_live_p21.py` (`OpenDStartupRecoveryTests`), `tests/platform/test_screener_s1.py` (missing-quote reasons) |
+| **Notes** | Observed live 2026-09-30 20:30 ET: `moomoo_OpenD` listening on 127.0.0.1:11111 but not completing TCP connects (from Python and `Test-NetConnection`), crash report at 19:58; OpenD itself needs a restart/login. Also observed: two `run_ui_api.py` servers bound 8766 at once (Windows `SO_REUSEADDR`), tracked with the test/tooling work. |
+
 ## 2026-09-30 — Provider settings in Setup (SEC contact identity, keys, tokens)
 
 | Field | Value |

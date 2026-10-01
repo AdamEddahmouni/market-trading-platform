@@ -176,6 +176,22 @@ class MoomooSafetyRegressionTests(unittest.TestCase):
         )
 
 
+class OpenDStartupRecoveryTests(unittest.TestCase):
+    def test_unreachable_opend_at_startup_still_starts_the_reconnecting_feed(self) -> None:
+        # OpenD down (or not yet accepting) when the API starts must not leave the runtime dead until a
+        # restart: the push feed's connection loop owns retry/backoff and connects once OpenD is up.
+        env = {"IMP_LIVE_OBSERVATIONAL": "1", "IMP_MOOMOO_LIVE": "1", "IMP_IBKR_LIVE": "0"}
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch("market_platform_foundation.market_data.live_runtime.opend_reachable", return_value=False), \
+                mock.patch.object(LiveObservationalRuntime, "_start_moomoo_push_feed") as start_feed:
+            runtime = LiveObservationalRuntime()
+            runtime.configure()
+        start_feed.assert_called_once_with()
+        self.assertEqual(str(getattr(runtime.lifecycle.connection_state, "value", runtime.lifecycle.connection_state)),
+                         "DISCONNECTED")
+        self.assertIn("OpenD is not reachable", runtime.lifecycle.last_error or "")
+
+
 class ProviderNeutralityTests(unittest.TestCase):
     def test_live_state_payload_has_no_vendor_classes(self) -> None:
         runtime = LiveObservationalRuntime()

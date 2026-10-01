@@ -56,6 +56,29 @@ def _number(value: Any) -> float | None:
     return result if math.isfinite(result) else None
 
 
+def pending_quote_reason(runtime: Any, instrument_id: str) -> str:
+    """Why an accepted quote subscription has no quote yet: the feed's real state, not a blanket wait."""
+
+    from .screener_specialist import _PERMISSION_WORDS, _QUOTA_WORDS, DISCONNECTED_STATES
+
+    lifecycle = getattr(runtime, "lifecycle", None)
+    connection = str(getattr(getattr(lifecycle, "connection_state", None), "value",
+                             getattr(lifecycle, "connection_state", ""))).upper()
+    if getattr(runtime, "feed", None) is None or connection in DISCONNECTED_STATES - {"CONNECTING"}:
+        return "OPEND_UNAVAILABLE"
+    errors = getattr(runtime.feed, "subscription_errors", {}) or {}
+    refusal = next((value for (code, name), value in errors.items()
+                    if name == "QUOTE" and code.split(".")[-1].upper() == instrument_id.upper()), None)
+    if refusal is not None:
+        message = str(refusal.get("message") or "").lower()
+        if any(word in message for word in _PERMISSION_WORDS):
+            return "ENTITLEMENT_MISSING"
+        if any(word in message for word in _QUOTA_WORDS):
+            return "PROVIDER_QUOTA_EXHAUSTED"
+        return "PROVIDER_SUBSCRIBE_REFUSED"
+    return "AWAITING_QUOTE"
+
+
 def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     """Current L1 quote with its own state/age; stale quotes are never labelled LIVE."""
 
@@ -266,7 +289,8 @@ class ScreenerService:
         runtime = self._runtime_getter(create=False)
         quote = runtime.state.quote_for(instrument_id) if runtime is not None else None
         if quote is None:
-            return {"state": "UNAVAILABLE", "reason": "RUNTIME_UNAVAILABLE" if runtime is None else "AWAITING_QUOTE", "fields": {}}
+            return {"state": "UNAVAILABLE", "fields": {},
+                    "reason": "RUNTIME_UNAVAILABLE" if runtime is None else pending_quote_reason(runtime, instrument_id)}
         return quote_view(runtime, quote)
 
     @staticmethod
@@ -337,7 +361,9 @@ class ScreenerService:
                 symbol = admitted[requested]
                 quote = runtime.state.quote_for(symbol) if runtime is not None and symbol in active else None
                 if quote is None:
-                    quotes[requested] = {"state": "UNAVAILABLE", "reason": rejected.get(symbol, "AWAITING_QUOTE" if symbol in active else "RUNTIME_UNAVAILABLE"), "fields": {}}
+                    reason = (rejected.get(symbol) or (pending_quote_reason(runtime, symbol) if symbol in active
+                                                       else "RUNTIME_UNAVAILABLE"))
+                    quotes[requested] = {"state": "UNAVAILABLE", "reason": reason, "fields": {}}
                     continue
                 quotes[requested] = quote_view(runtime, quote)
             return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),
