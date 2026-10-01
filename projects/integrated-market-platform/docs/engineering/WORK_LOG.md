@@ -34,6 +34,23 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener CSV export
+
+- Toolbar **Export** downloads the loaded rows and the visible columns, in grid order, as
+  `screener-<universe>-<UTC minute>Z.csv`. Numbers are raw values (not the grid's compact text),
+  missing values are blank, and live quote overlays are used where the grid shows them.
+- Text starting with `=`, `+`, `-`, `@` is prefixed with `'` so a spreadsheet does not run it.
+- Tests: `ui/src/components/screener/screenerCsv.test.ts`.
+- **Freshness dots**: each row in the visible quote window carries a dot for its quote state
+  (live, delayed, snapshot, stale, unavailable) with the reason and age in the tooltip. Rows
+  outside the window have no quote and no dot.
+- **Bid/Ask blank in the regular session (found while verifying the export)**: the OpenD QUOTE
+  push has no bid/ask, and each push replaced the quote the 2 s snapshot poll had just filled, so
+  most rows showed "—". `ObservationalStateStore` now keeps the prior book across a push that
+  carries none, tracked by `book_received_ns`, and drops it once it is older than
+  `BOOK_CARRY_NS` (10 s, five missed polls). Overnight snapshots still blank the frozen book.
+  Test: `test_quote_push_keeps_the_recent_snapshot_book`.
+
 ## 2026-10-01 — Screener warms at API start
 
 - Measured cold (fresh process, live providers): imports 3.9 s, US equities 1.4 s, ETFs 3.6 s,

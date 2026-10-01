@@ -17,6 +17,10 @@ from .normalization import classified_trade_from_ticker, levels_from_order_book,
 from .live_admission import ADMISSION_BLOCKED, ADMISSION_DISPLAY
 
 
+# The snapshot poll refreshes the book every 2 s; a book that missed five polls is dropped, not carried.
+BOOK_CARRY_NS = 10_000_000_000
+
+
 @dataclass
 class QuoteSnapshot:
     instrument_id: str
@@ -33,6 +37,8 @@ class QuoteSnapshot:
     quality: str = "PASS"
     provider: str = ""
     admission: str = ADMISSION_DISPLAY
+    # When the bid/ask last came from the provider; a quote push carries none and keeps the prior book.
+    book_received_ns: int = 0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -118,6 +124,20 @@ class ObservationalStateStore:
                 # 229.61/229.62 at 02:26 ET with overnight trades at 231.99). No overnight
                 # book is better than a stale one labelled live.
                 bid = ask = bid_size = ask_size = None
+            book_received_ns = received_ns
+            prior = self.quotes.get(instrument_id)
+            if (
+                bid is None
+                and ask is None
+                and "overnight_price" not in payload
+                and prior is not None
+                and prior.book_received_ns
+                and 0 <= received_ns - prior.book_received_ns <= BOOK_CARRY_NS
+            ):
+                # The QUOTE push has no bid/ask; without this each push blanks the book the
+                # snapshot poll just delivered.
+                bid, ask, bid_size, ask_size = prior.bid_price, prior.ask_price, prior.bid_size, prior.ask_size
+                book_received_ns = prior.book_received_ns
             self.quotes[instrument_id] = QuoteSnapshot(
                 instrument_id=instrument_id,
                 bid_price=bid,
@@ -132,6 +152,7 @@ class ObservationalStateStore:
                 quality=quality,
                 provider=provider,
                 admission=admission,
+                book_received_ns=book_received_ns,
             )
         elif "TICK" in capability:
             trade = classified_trade_from_ticker(payload, provider=provider)
