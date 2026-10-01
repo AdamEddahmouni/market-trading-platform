@@ -119,7 +119,8 @@ class ObservationalStateStore:
                 ask = _optional_float(payload, "ask_price", "best_ask")
             bid_size = _optional_float(payload, "bid_vol", "bid_size")
             ask_size = _optional_float(payload, "ask_vol", "ask_size")
-            if _overnight_snapshot(payload):
+            overnight = _overnight_snapshot(payload)
+            if overnight:
                 # The snapshot's book is the after-hours close, frozen all night (NVDA bid/ask
                 # 229.61/229.62 at 02:26 ET with overnight trades at 231.99). No overnight
                 # book is better than a stale one labelled live.
@@ -129,7 +130,7 @@ class ObservationalStateStore:
             if (
                 bid is None
                 and ask is None
-                and "overnight_price" not in payload
+                and not overnight
                 and prior is not None
                 and prior.book_received_ns
                 and 0 <= received_ns - prior.book_received_ns <= BOOK_CARRY_NS

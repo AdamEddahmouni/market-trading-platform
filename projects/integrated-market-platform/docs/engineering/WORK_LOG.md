@@ -50,6 +50,8 @@ For large features, also add or update a completion note under `docs/superpowers
   carries none, tracked by `book_received_ns`, and drops it once it is older than
   `BOOK_CARRY_NS` (10 s, five missed polls). Overnight snapshots still blank the frozen book.
   Test: `test_quote_push_keeps_the_recent_snapshot_book`.
+  Follow-up after live check: the QUOTE push also carries `overnight_price`, so the carry is
+  gated on the overnight-snapshot test, not on that field's absence.
 
 ## 2026-10-01 — Screener warms at API start
 

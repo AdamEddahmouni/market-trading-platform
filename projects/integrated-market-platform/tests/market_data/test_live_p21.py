@@ -298,12 +298,13 @@ class SnapshotQuotePollTests(unittest.TestCase):
         book = {"bid_price": 230.2, "ask_price": 230.3, "bid_vol": 100.0, "ask_vol": 200.0}
         l1({"last_price": 230.24, "overnight_price": 0.0, "update_time": "2026-10-01 12:17:00.000", **book}, 10 * second)
         # Live OpenD, regular session: the QUOTE push has no bid/ask and used to blank the book.
-        l1({"last_price": 230.3}, 11 * second)
+        # It does carry overnight_price (0 by day), so that field alone does not mark a snapshot.
+        l1({"last_price": 230.3, "overnight_price": 0.0, "data_time": "12:17:01"}, 11 * second)
         quote = state.quote_for("NVDA")
         self.assertEqual((quote.last_price, quote.bid_price, quote.ask_price, quote.ask_size), (230.3, 230.2, 230.3, 200.0))
         self.assertEqual(quote.book_received_ns, 10 * second)
         # Snapshot polling stopped: the book is dropped, never carried indefinitely.
-        l1({"last_price": 230.4}, 10 * second + BOOK_CARRY_NS + 1)
+        l1({"last_price": 230.4, "overnight_price": 0.0}, 10 * second + BOOK_CARRY_NS + 1)
         quote = state.quote_for("NVDA")
         self.assertEqual((quote.last_price, quote.bid_price, quote.ask_price), (230.4, None, None))
 
