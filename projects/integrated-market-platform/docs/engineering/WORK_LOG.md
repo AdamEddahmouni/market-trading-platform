@@ -34,6 +34,34 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Desktop shortcut and in-app Exit
+
+- `local_launcher.py install-shortcut` writes a desktop **Market Platform** shortcut that runs
+  `START_PLATFORM.cmd` (start, or open the browser when already running). The console opens
+  normally so a failed start stays visible.
+- **Exit** in the product top bar and the Screener header asks once, posts `stop` to
+  `/operator/lifecycle/actions`, and replaces the page with a "Platform stopped" notice.
+- Bug fixed: lifecycle actions were spawned as children of the API or control service. Stop
+  and restart kill the API tree with `taskkill /T`, which killed the action itself; restart
+  from the app never started the new stack. `detached_action_command` now launches the action
+  through `cmd /c start "" /b`, leaving it outside the requesting tree.
+- Tests: `tests/platform/test_local_launcher.py` (shortcut script quoting, detached action
+  command); `ExitPlatformButton.test.tsx` (confirm, stop request, cancel, failure retry).
+- Tooling: `imp.py` changed-file discovery passes `--relative` to `git diff`. Inside the
+  monorepo it returned `projects/integrated-market-platform/ui/...`, so `lint` and `closure`
+  never saw a UI change and skipped the UI typecheck, tests, and build.
+
+## 2026-09-30 — Screener quotes recover when OpenD comes up; truthful no-quote reasons
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `market_data` |
+| **Summary** | Grid quotes stuck at `AWAITING_QUOTE` had two causes. (1) Every live quote was dropped: RT-01's provider-receive and queue spans bound a contextvar on the OpenD callback thread and reset it on the ingest thread, `ContextVar.reset` raised `ValueError` ("created in a different Context"), and the queue worker swallowed it before ingestion. Those spans no longer bind (the carrier already propagates them), and `SpanHandle.end` tolerates a cross-context token so tracing cannot drop data. (2) If OpenD was not accepting connections when the runtime was created, `configure()` never started the push feed; it now starts it anyway and the feed's loop reconnects. Bid/ask/spread were always empty because the OpenD `QUOTE` push and `get_stock_quote` carry none: the feed now polls `get_market_snapshot` every 2 s (under OpenD's 60/30 s limit, `get_stock_quote` fallback), which also supplies a provider `update_time`. Quote age is now measured from that provider time (STALE `NO_QUOTE_UPDATE_WITHIN_TTL` after 60 s without an update, `FEED_SILENT` when polling stops), the session price follows `update_time` (overnight/after-hours/pre-market), and missing quotes report the real cause (`OPEND_UNAVAILABLE`, `ENTITLEMENT_MISSING`, `PROVIDER_QUOTA_EXHAUSTED`, `PROVIDER_SUBSCRIBE_REFUSED`). Grid spread shows three decimals. |
+| **Key files** | `rt01/instrumentation/live.py`, `rt01/tracer.py`, `market_data/live_runtime.py`, `market_data/observational_state.py` (`_session_last_price`), `tools/moomoo/push_feed.py`, `ui_api/screener_projections.py` (`pending_quote_reason`, `quote_view`), `ui/src/components/screener/ScreenerPage.tsx`, `panels/shared.tsx` |
+| **Tests** | `tests/market_data/test_live_p21.py` (`CrossThreadIngestTests` fails without the RT-01 fix, `OpenDStartupRecoveryTests`, `SnapshotQuotePollTests`), `tests/platform/test_screener_s1.py` (missing-quote reasons, provider-time staleness); market_data 145+, rt01 41, Screener UI 214 |
+| **Notes** | Live 2026-09-30 ~21:00–22:00 ET (overnight session): NVDA/AAPL/MSFT/AMD/TSLA and SPY/QQQ/IWM show price, bid, ask, spread from OpenD; illiquid overnight names correctly STALE. Earlier that evening `moomoo_OpenD` listened on 11111 without completing TCP connects (crash report 19:58) until restarted; the API recovered without a restart. Also observed: two `run_ui_api.py` servers bound 8766 at once (Windows `SO_REUSEADDR`), tracked with the test/tooling work. |
+
 ## 2026-09-30 — Provider settings in Setup (SEC contact identity, keys, tokens)
 
 | Field | Value |

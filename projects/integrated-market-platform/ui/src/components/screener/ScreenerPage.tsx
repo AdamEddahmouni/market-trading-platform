@@ -17,6 +17,7 @@ import type { DockHandle } from "./panels/ScreenerDock";
 import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
 import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
+import { ExitPlatformButton } from "../shared/ExitPlatformButton";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
@@ -78,7 +79,8 @@ const definitions: ColumnDefinition[] = [
   { key: "short_ratio", label: "Short Ratio", width: 100, format: "decimal" },
   { key: "bid", label: "Bid", width: 90, format: "price" },
   { key: "ask", label: "Ask", width: 90, format: "price" },
-  { key: "spread_pct", label: "Spread %", width: 97, format: "percent" },
+  // Liquid names quote spreads of a few thousandths of a percent; two decimals would show 0.00%.
+  { key: "spread_pct", label: "Spread %", width: 97, format: "rate" },
   { key: "rsi_14", label: "RSI (14)", width: 84, format: "decimal" },
   { key: "eps_ttm", label: "EPS TTM", width: 90, format: "price" },
   { key: "pe", label: "P/E", width: 72, format: "decimal" },
@@ -896,7 +898,8 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span></header>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span>
+      <ExitPlatformButton className="screener-control" /></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");

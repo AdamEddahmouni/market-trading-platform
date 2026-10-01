@@ -99,6 +99,28 @@ class ScreenerS1Tests(unittest.TestCase):
         service.release("client_1")
         self.assertEqual(runtime.active, {("another-consumer", "T0001")})
 
+    def test_missing_quote_reports_the_feed_state_not_a_blanket_wait(self):
+        runtime = Runtime()
+        service = ScreenerService(source_factory=Source, runtime_getter=lambda **_: runtime)
+        service.read()
+
+        def reason() -> str:
+            return service.window("client_1", ["T0001"])["quotes"]["T0001"]["reason"]
+
+        # No feed at all (OpenD was down when the runtime started) is not "awaiting a quote".
+        self.assertEqual(reason(), "OPEND_UNAVAILABLE")
+        runtime.feed = SimpleNamespace(subscription_errors={})
+        runtime.lifecycle = SimpleNamespace(connection_state="DISCONNECTED")
+        self.assertEqual(reason(), "OPEND_UNAVAILABLE")
+        runtime.lifecycle.connection_state = "CONNECTED"
+        self.assertEqual(reason(), "AWAITING_QUOTE")
+        runtime.feed.subscription_errors[("US.T0001", "QUOTE")] = {"message": "No permission: quote card required"}
+        self.assertEqual(reason(), "ENTITLEMENT_MISSING")
+        runtime.feed.subscription_errors[("US.T0001", "QUOTE")] = {"message": "Subscription quota exceeded"}
+        self.assertEqual(reason(), "PROVIDER_QUOTA_EXHAUSTED")
+        self.assertEqual(service.quote_for("T0001")["reason"], "PROVIDER_QUOTA_EXHAUSTED")
+        service.release("client_1")
+
     def test_quote_states_and_field_provenance_are_separate_from_snapshot(self):
         runtime = Runtime()
         quote = SimpleNamespace(
@@ -118,6 +140,15 @@ class ScreenerS1Tests(unittest.TestCase):
         quote.quality = "PASS"
         quote.received_ns -= 10_000_000_000
         self.assertEqual(service.window("client_1", ["T0000"])["quotes"]["T0000"]["state"], "STALE")
+        # Polled every second but not updated by the provider for two minutes: stale, aged by the provider.
+        quote.received_ns = time.time_ns()
+        quote.event_time_ns = quote.received_ns - 120_000_000_000
+        aged = service.window("client_1", ["T0000"])["quotes"]["T0000"]
+        self.assertEqual(aged["state"], "STALE")
+        self.assertEqual(aged["reason"], "NO_QUOTE_UPDATE_WITHIN_TTL")
+        self.assertGreaterEqual(aged["age_ms"], 120_000)
+        quote.event_time_ns = quote.received_ns - 2_000_000_000
+        self.assertEqual(service.window("client_1", ["T0000"])["quotes"]["T0000"]["state"], "LIVE")
         service.release("client_1")
 
     def test_failed_refresh_retains_aged_snapshot_and_expiry_releases(self):

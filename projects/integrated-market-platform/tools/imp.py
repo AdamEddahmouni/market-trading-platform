@@ -248,13 +248,13 @@ def build_closure_report(
 
 def _git_changed_files(root: Path) -> tuple[str, ...]:
     completed = subprocess.run(
-        ["git", "diff", "--name-only", "-z"],
+        ["git", "diff", "--relative", "--name-only", "-z"],
         cwd=str(root),
         capture_output=True,
         check=False,
     )
     staged = subprocess.run(
-        ["git", "diff", "--cached", "--name-only", "-z"],
+        ["git", "diff", "--cached", "--relative", "--name-only", "-z"],
         cwd=str(root),
         capture_output=True,
         check=False,

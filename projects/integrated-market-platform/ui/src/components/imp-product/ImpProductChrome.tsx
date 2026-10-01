@@ -5,6 +5,7 @@ import { ImpExecutionPosture } from "./ImpExecutionPosture";
 import { ImpKeyboardShortcuts } from "./ImpKeyboardShortcuts";
 import { NavShell } from "../NavShell";
 import { isTypingTarget } from "../../lib/isTypingTarget";
+import { ExitPlatformButton } from "../shared/ExitPlatformButton";
 import { useFocusTrap } from "../../lib/useFocusTrap";
 import type { Mode } from "../mode-session/types";
 
@@ -200,6 +201,7 @@ export function ImpProductChrome({ mode, onSwitchMode, onToggleAssistant, childr
           <button type="button" className="imp-switch-mode" onClick={onSwitchMode}>
             Switch mode
           </button>
+          <ExitPlatformButton className="imp-switch-mode imp-exit-button" />
         </header>
         {topStack}
         {children}

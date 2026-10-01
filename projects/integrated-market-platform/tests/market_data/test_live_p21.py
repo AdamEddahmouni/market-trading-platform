@@ -176,6 +176,153 @@ class MoomooSafetyRegressionTests(unittest.TestCase):
         )
 
 
+class OpenDStartupRecoveryTests(unittest.TestCase):
+    def test_unreachable_opend_at_startup_still_starts_the_reconnecting_feed(self) -> None:
+        # OpenD down (or not yet accepting) when the API starts must not leave the runtime dead until a
+        # restart: the push feed's connection loop owns retry/backoff and connects once OpenD is up.
+        env = {"IMP_LIVE_OBSERVATIONAL": "1", "IMP_MOOMOO_LIVE": "1", "IMP_IBKR_LIVE": "0"}
+        with mock.patch.dict(os.environ, env, clear=False), \
+                mock.patch("market_platform_foundation.market_data.live_runtime.opend_reachable", return_value=False), \
+                mock.patch.object(LiveObservationalRuntime, "_start_moomoo_push_feed") as start_feed:
+            runtime = LiveObservationalRuntime()
+            runtime.configure()
+        start_feed.assert_called_once_with()
+        self.assertEqual(str(getattr(runtime.lifecycle.connection_state, "value", runtime.lifecycle.connection_state)),
+                         "DISCONNECTED")
+        self.assertIn("OpenD is not reachable", runtime.lifecycle.last_error or "")
+
+
+class CrossThreadIngestTests(unittest.TestCase):
+    def test_quote_enqueued_on_callback_thread_reaches_state_through_processor_thread(self) -> None:
+        # Regression: RT-01 queue/receive spans bound a contextvar on the OpenD callback thread and
+        # reset it on the processor thread; the ValueError was swallowed by the queue worker and every
+        # live quote was dropped before ingestion (grid stuck at AWAITING_QUOTE).
+        import threading
+        import time as _time
+
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        import push_feed
+
+        runtime = LiveObservationalRuntime()
+        feed = push_feed.MoomooPushFeed(subscriptions=runtime.subscriptions, on_record=runtime._on_feed_record)
+        feed._connection_loop = lambda: None  # no OpenD: drive the queue only
+        feed.start()
+        try:
+            payload = {"code": "US.MSFT", "data_date": "2026-09-30", "data_time": "16:00:00",
+                       "last_price": 512.9, "bid_price": 512.5, "ask_price": 513.0, "volume": 27223264.0}
+            callback = threading.Thread(target=lambda: feed._enqueue_from_payload(
+                capability="US_EQUITY_L1", payload=payload, generation=1))
+            callback.start()
+            callback.join()
+            deadline = _time.monotonic() + 5
+            while runtime.state.quote_for("MSFT") is None and _time.monotonic() < deadline:
+                _time.sleep(0.02)
+        finally:
+            feed.stop()
+        quote = runtime.state.quote_for("MSFT")
+        self.assertIsNotNone(quote)
+        assert quote is not None
+        self.assertEqual((quote.bid_price, quote.ask_price, quote.last_price), (512.5, 513.0, 512.9))
+        self.assertEqual(feed.metrics()["handler_errors"], 0)
+
+
+class SnapshotQuotePollTests(unittest.TestCase):
+    def _feed(self):
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        import push_feed
+
+        runtime = LiveObservationalRuntime()
+        runtime.subscribe(instrument_id="AAPL", capabilities=["BASIC_QUOTE"], consumer_id="t")
+        clock = [10_000_000_000]
+        feed = push_feed.MoomooPushFeed(subscriptions=runtime.subscriptions, on_record=runtime._on_feed_record,
+                                        clock=lambda: clock[0])
+        enqueued: list[dict] = []
+        feed._enqueue_from_payload = lambda **kw: enqueued.append(kw)
+        return push_feed, feed, clock, enqueued
+
+    def _ctx(self, snapshot_ok: bool):
+        calls: list[str] = []
+        ft = mock.Mock(RET_OK=0)
+        ft.SubType.QUOTE, ft.SubType.TICKER, ft.SubType.ORDER_BOOK = "Q", "T", "B"
+        ctx = mock.Mock()
+        ctx.subscribe.return_value = (0, "")
+        snap = [{"code": "US.AAPL", "update_time": "2026-09-30 21:44:48.564", "bid_price": 334.25, "ask_price": 334.3}]
+        ctx.get_market_snapshot.side_effect = lambda codes: (calls.append("snapshot"), (0 if snapshot_ok else -1, snap if snapshot_ok else "limit"))[1]
+        ctx.get_stock_quote.side_effect = lambda codes: (calls.append("quote"), (0, [{"code": "US.AAPL", "last_price": 333.0}]))[1]
+        return ft, ctx, calls
+
+    def test_snapshot_supplies_bid_ask_on_a_rate_limited_cadence(self) -> None:
+        push_feed, feed, clock, enqueued = self._feed()
+        ft, ctx, calls = self._ctx(snapshot_ok=True)
+        feed._sync_subscriptions(ctx, ft)
+        feed._sync_subscriptions(ctx, ft)  # same instant: no second snapshot call
+        self.assertEqual(calls, ["snapshot"])
+        self.assertEqual(enqueued[0]["payload"]["bid_price"], 334.25)
+        clock[0] += push_feed.SNAPSHOT_INTERVAL_NS
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(calls, ["snapshot", "snapshot"])
+
+    def test_snapshot_refusal_falls_back_to_stock_quote(self) -> None:
+        _, feed, _, enqueued = self._feed()
+        ft, ctx, calls = self._ctx(snapshot_ok=False)
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(calls, ["snapshot", "quote"])
+        self.assertEqual(enqueued[0]["payload"]["last_price"], 333.0)
+
+    def test_session_price_follows_the_snapshot_update_time(self) -> None:
+        from market_platform_foundation.market_data.observational_state import _session_last_price
+
+        prices = {"last_price": 333.02, "pre_price": 330.43, "after_price": 334.25, "overnight_price": 334.16}
+        at = lambda clock: _session_last_price({**prices, "update_time": f"2026-09-30 {clock}:00.000"})
+        self.assertEqual(at("21:44"), 334.16)
+        self.assertEqual(at("02:10"), 334.16)
+        self.assertEqual(at("17:05"), 334.25)
+        self.assertEqual(at("07:15"), 330.43)
+        self.assertEqual(at("11:00"), 333.02)
+        self.assertEqual(_session_last_price({"last_price": 333.02, "update_time": "2026-09-30 21:44:00"}), 333.02)
+
+
+class QuoteContextOpenTests(unittest.TestCase):
+    """OpenD accepting TCP but not answering InitConnect must not accumulate SDK connections."""
+
+    class _Ctx:
+        instances: list = []
+
+        def __init__(self, *, host, port, is_async_connect=False, ready=True):
+            self.is_async_connect, self.closed, self._ready = is_async_connect, False, ready
+            type(self).instances.append(self)
+
+        @property
+        def status(self):
+            return "READY" if self._ready else "WAIT_RECONNECT"
+
+        def close(self):
+            self.closed = True
+
+    def _ft(self, ready: bool):
+        ctx_type = self._Ctx
+        ctx_type.instances = []
+        return mock.Mock(OpenQuoteContext=lambda **kw: ctx_type(ready=ready, **kw)), ctx_type
+
+    def test_ready_context_is_returned_and_constructed_async(self) -> None:
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        from opend_quote_transport import open_quote_context
+
+        ft, ctx_type = self._ft(ready=True)
+        ctx = open_quote_context(ft, host="127.0.0.1", port=11111, ready_timeout=0.2)
+        self.assertIs(ctx, ctx_type.instances[0])
+        self.assertTrue(ctx.is_async_connect)  # the sync constructor leaks a socket per failed retry
+        self.assertFalse(ctx.closed)
+
+    def test_context_that_never_becomes_ready_is_closed(self) -> None:
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        from opend_quote_transport import open_quote_context
+
+        ft, ctx_type = self._ft(ready=False)
+        self.assertIsNone(open_quote_context(ft, host="127.0.0.1", port=11111, ready_timeout=0.1))
+        self.assertTrue(ctx_type.instances[0].closed)
+
+
 class ProviderNeutralityTests(unittest.TestCase):
     def test_live_state_payload_has_no_vendor_classes(self) -> None:
         runtime = LiveObservationalRuntime()

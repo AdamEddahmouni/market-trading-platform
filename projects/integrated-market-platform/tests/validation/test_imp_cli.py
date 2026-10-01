@@ -68,6 +68,40 @@ class ImpCliTests(unittest.TestCase):
         self.assertEqual(classify_changed_area("fixtures/sample.json"), "fixtures")
         self.assertEqual(classify_changed_area("unknown.txt"), "other")
 
+    def test_changed_files_are_relative_to_the_project_inside_a_monorepo(self) -> None:
+        import shutil
+        import subprocess
+
+        from tools.imp import _git_changed_files
+
+        if shutil.which("git") is None:
+            self.skipTest("git is not installed")
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            project = repo / "projects" / "imp"
+            (project / "ui").mkdir(parents=True)
+            (project / "ui" / "tracked.ts").write_text("a\n", encoding="utf-8")
+            (project / "ui" / "staged.ts").write_text("a\n", encoding="utf-8")
+            (repo / "outside.md").write_text("a\n", encoding="utf-8")
+
+            def git(*args: str) -> None:
+                subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+            git("init", "-q")
+            git("add", ".")
+            git("-c", "user.name=t", "-c", "user.email=t@example.invalid", "commit", "-q", "-m", "seed")
+            (project / "ui" / "tracked.ts").write_text("b\n", encoding="utf-8")
+            (project / "ui" / "staged.ts").write_text("b\n", encoding="utf-8")
+            git("add", "projects/imp/ui/staged.ts")
+            (project / "ui" / "new.ts").write_text("a\n", encoding="utf-8")
+            (repo / "outside.md").write_text("b\n", encoding="utf-8")
+
+            changed = _git_changed_files(project)
+
+        # Closure and lint gate UI checks on a "ui/" prefix; repo-root paths never matched it.
+        self.assertEqual(changed, ("ui/new.ts", "ui/staged.ts", "ui/tracked.ts"))
+        self.assertEqual({classify_changed_area(path) for path in changed}, {"ui"})
+
     def test_closure_report_preserves_baseline_failures_and_risk_status(self) -> None:
         report = build_closure_report(
             repository_root=Path("C:/repo"),

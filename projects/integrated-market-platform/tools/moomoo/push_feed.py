@@ -44,6 +44,8 @@ KNOWN_INSTRUMENTS: dict[str, dict[str, str]] = {
 
 SUBSCRIBE_RETRY_NS = 15_000_000_000
 UNSUBSCRIBE_RETRY_NS = 5_000_000_000
+SNAPSHOT_INTERVAL_NS = 2_000_000_000  # 15 calls / 30 s, under OpenD's 60 / 30 s snapshot limit
+SNAPSHOT_MAX_CODES = 400  # OpenD's per-call snapshot code limit
 
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
@@ -107,6 +109,7 @@ class MoomooPushFeed:
     #: Read by projections to report entitlement or quota refusals truthfully.
     subscription_errors: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict, repr=False)
     _retry_after_ns: dict[tuple[str, str], int] = field(default_factory=dict, repr=False)
+    _next_snapshot_ns: int = field(default=0, repr=False)
     clock: Callable[[], int] = field(default=time.time_ns, repr=False)
     trade_api_counters: dict[str, int] = field(
         default_factory=lambda: {
@@ -198,9 +201,14 @@ class MoomooPushFeed:
         self.provider_generation += 1
         self._subscribed_subtypes.clear()
         self._retry_after_ns.clear()
+        self._next_snapshot_ns = 0
         self._first_push_seen.clear()
         self._last_sequence.clear()
-        quote_ctx = ft.OpenQuoteContext(host=moomoo_host(), port=moomoo_port())
+        from opend_quote_transport import open_quote_context  # same directory; never the leaking sync ctor
+
+        quote_ctx = open_quote_context(ft, host=moomoo_host(), port=moomoo_port())
+        if quote_ctx is None:
+            raise RuntimeError("OPEND_INIT_TIMEOUT: OpenD accepted TCP but did not complete InitConnect")
         generation = self.provider_generation
         seen_ids: set[str] = set()
         self_outer = self
@@ -314,15 +322,22 @@ class MoomooPushFeed:
                 self.subscription_errors.pop(key, None)
                 self._retry_after_ns.pop(key, None)
         quote_codes = sorted({code for code, subtype in self._subscribed_subtypes if subtype == "QUOTE"})
-        if quote_codes:
-            ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
-            if ret_q == ft.RET_OK:
-                for payload in payload_rows(quote_data):
-                    self._enqueue_from_payload(
-                        capability="US_EQUITY_L1",
-                        payload=payload,
-                        generation=self.provider_generation,
-                    )
+        if quote_codes and now >= self._next_snapshot_ns:
+            # The QUOTE push and get_stock_quote carry no bid/ask; the market snapshot does, with a real
+            # provider update_time. OpenD allows 60 snapshot calls per 30 s, so poll on a fixed cadence.
+            self._next_snapshot_ns = now + SNAPSHOT_INTERVAL_NS
+            ret_s, snapshot = quote_ctx.get_market_snapshot(quote_codes[:SNAPSHOT_MAX_CODES])
+            if ret_s == ft.RET_OK:
+                rows = payload_rows(snapshot)
+            else:
+                ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
+                rows = payload_rows(quote_data) if ret_q == ft.RET_OK else []
+            for payload in rows:
+                self._enqueue_from_payload(
+                    capability="US_EQUITY_L1",
+                    payload=payload,
+                    generation=self.provider_generation,
+                )
         for key in sorted(self._subscribed_subtypes - desired):
             code, subtype_name = key
             if self._retry_after_ns.get(key, 0) > now:

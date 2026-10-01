@@ -1089,3 +1089,43 @@
     min-width: 0;
   }
 }
+
+/* Exit: stop the local platform from inside the app (shared by the top bar and Screener). */
+.imp-switch-mode.imp-exit-button {
+  margin-left: 0;
+}
+
+.imp-exit-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.imp-exit-question {
+  font-size: 0.8rem;
+  color: var(--text-secondary, #b8c4d0);
+  white-space: nowrap;
+}
+
+.imp-exit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(5, 10, 16, 0.92);
+}
+
+.imp-exit-card {
+  max-width: 28rem;
+  padding: 1.5rem;
+  border: 1px solid var(--border-subtle, #2b3a4a);
+  border-radius: var(--radius-md, 6px);
+  background: var(--surface-2, #111b26);
+  color: var(--text-primary, #e6edf3);
+}
+
+.imp-exit-card h2 {
+  margin: 0 0 0.5rem;
+}

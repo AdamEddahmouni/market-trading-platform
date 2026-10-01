@@ -34,6 +34,7 @@ FILTER = "geo_usa"
 # short float, short ratio, RSI, RVOL, price, change, and volume.
 SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
 MAX_WINDOW = 32
+QUOTE_EVENT_STALE_MS = 60_000  # no provider quote update for a minute is stale, however often it is polled
 RESULT_CACHE_ENTRIES = 16  # ordered result references per query identity, never row copies
 SNAPSHOT_TTL_SECONDS = 120
 CLIENT_TTL_SECONDS = 45
@@ -56,15 +57,49 @@ def _number(value: Any) -> float | None:
     return result if math.isfinite(result) else None
 
 
+def pending_quote_reason(runtime: Any, instrument_id: str) -> str:
+    """Why an accepted quote subscription has no quote yet: the feed's real state, not a blanket wait."""
+
+    from .screener_specialist import _PERMISSION_WORDS, _QUOTA_WORDS, DISCONNECTED_STATES
+
+    lifecycle = getattr(runtime, "lifecycle", None)
+    connection = str(getattr(getattr(lifecycle, "connection_state", None), "value",
+                             getattr(lifecycle, "connection_state", ""))).upper()
+    if getattr(runtime, "feed", None) is None or connection in DISCONNECTED_STATES - {"CONNECTING"}:
+        return "OPEND_UNAVAILABLE"
+    errors = getattr(runtime.feed, "subscription_errors", {}) or {}
+    refusal = next((value for (code, name), value in errors.items()
+                    if name == "QUOTE" and code.split(".")[-1].upper() == instrument_id.upper()), None)
+    if refusal is not None:
+        message = str(refusal.get("message") or "").lower()
+        if any(word in message for word in _PERMISSION_WORDS):
+            return "ENTITLEMENT_MISSING"
+        if any(word in message for word in _QUOTA_WORDS):
+            return "PROVIDER_QUOTA_EXHAUSTED"
+        return "PROVIDER_SUBSCRIBE_REFUSED"
+    return "AWAITING_QUOTE"
+
+
 def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     """Current L1 quote with its own state/age; stale quotes are never labelled LIVE."""
 
-    age_ms = max(0, (time.time_ns() - int(quote.received_ns)) // 1_000_000)
+    now_ns = time.time_ns()
+    received_age_ms = max(0, (now_ns - int(quote.received_ns)) // 1_000_000)
+    # A provider event time (snapshot update_time) dates the quote itself; receipt only proves the feed
+    # is polling. Without one, receipt age is the only clock available.
+    event_ns = int(getattr(quote, "event_time_ns", 0) or 0)
+    has_event_time = bool(event_ns) and event_ns != int(quote.received_ns)
+    age_ms = max(0, (now_ns - event_ns) // 1_000_000) if has_event_time else received_age_ms
     quality = str(quote.quality or "UNKNOWN").upper()
     admission = str(quote.admission or "UNKNOWN").upper()
     connection = str(getattr(getattr(runtime, "lifecycle", None), "connection_state", "AVAILABLE")).upper()
-    if age_ms > 5_000 or "DISCONNECTED" in connection or "RECONNECTING" in connection:
-        state = "STALE"
+    reason: str | None = quality
+    if "DISCONNECTED" in connection or "RECONNECTING" in connection:
+        state, reason = "STALE", connection.rsplit(".", 1)[-1]
+    elif received_age_ms > 5_000:
+        state, reason = "STALE", "FEED_SILENT"
+    elif has_event_time and age_ms > QUOTE_EVENT_STALE_MS:
+        state, reason = "STALE", "NO_QUOTE_UPDATE_WITHIN_TTL"
     elif "DELAY" in quality:
         state = "DELAYED"
     elif admission in ("BLOCKED", "DEGRADED") or quality not in ("PASS", "GOOD"):
@@ -75,7 +110,7 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
     values = {"price": _number(quote.last_price), "volume": _number(quote.volume), "bid": bid, "ask": ask, "spread_pct": spread}
     return {
-        "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else quality,
+        "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else reason,
         "quality": quality, "admission": admission,
         "fields": {
             name: {"value": value, "source": str(quote.provider or "MOOMOO"),
@@ -266,7 +301,8 @@ class ScreenerService:
         runtime = self._runtime_getter(create=False)
         quote = runtime.state.quote_for(instrument_id) if runtime is not None else None
         if quote is None:
-            return {"state": "UNAVAILABLE", "reason": "RUNTIME_UNAVAILABLE" if runtime is None else "AWAITING_QUOTE", "fields": {}}
+            return {"state": "UNAVAILABLE", "fields": {},
+                    "reason": "RUNTIME_UNAVAILABLE" if runtime is None else pending_quote_reason(runtime, instrument_id)}
         return quote_view(runtime, quote)
 
     @staticmethod
@@ -337,7 +373,9 @@ class ScreenerService:
                 symbol = admitted[requested]
                 quote = runtime.state.quote_for(symbol) if runtime is not None and symbol in active else None
                 if quote is None:
-                    quotes[requested] = {"state": "UNAVAILABLE", "reason": rejected.get(symbol, "AWAITING_QUOTE" if symbol in active else "RUNTIME_UNAVAILABLE"), "fields": {}}
+                    reason = (rejected.get(symbol) or (pending_quote_reason(runtime, symbol) if symbol in active
+                                                       else "RUNTIME_UNAVAILABLE"))
+                    quotes[requested] = {"state": "UNAVAILABLE", "reason": reason, "fields": {}}
                     continue
                 quotes[requested] = quote_view(runtime, quote)
             return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),

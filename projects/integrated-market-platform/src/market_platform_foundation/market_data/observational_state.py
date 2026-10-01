@@ -486,6 +486,17 @@ def _session_last_price(payload: dict[str, Any]) -> float | None:
     after = _optional_float(payload, "after_price")
     overnight = _optional_float(payload, "overnight_price")
     pre = _optional_float(payload, "pre_price")
+    update_time = str(payload.get("update_time") or "")
+    if len(update_time) >= 16:
+        # A snapshot's update_time (ET wall clock) says which session the quote belongs to.
+        clock = update_time[11:16]
+        if clock >= "20:00" or clock < "04:00":
+            return overnight or after or last
+        if clock >= "16:00":
+            return after or last
+        if clock < "09:30":
+            return pre or last
+        return last if last is not None else after or overnight or pre
     data_time = str(payload.get("data_time") or "")
     if after is not None and data_time.startswith("16:00"):
         return after

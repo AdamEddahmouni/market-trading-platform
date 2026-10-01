@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -447,6 +447,37 @@ class LocalLauncherTests(unittest.TestCase):
             self.assertEqual(controller.restart(open_browser=False), 0)
             self.assertEqual(len(fake.spawn_calls), 6)
             self.assertEqual(fake.terminated, [1002, 1001, 1000])
+
+    def test_shortcut_runs_start_platform_from_the_checkout(self) -> None:
+        from tools.platform.local_launcher import shortcut_script
+
+        # Windows paths on every host: only Windows PowerShell ever runs the script.
+        root = PureWindowsPath(r"C:\Users\o'neil\market platform")
+        script = shortcut_script(
+            shortcut=PureWindowsPath(r"C:\Users\o'neil\Desktop\Market Platform.lnk"),
+            target=root / "START_PLATFORM.cmd",
+            working_directory=root,
+        )
+        self.assertIn("WScript.Shell", script)
+        # Single quotes are doubled so a path with an apostrophe stays one literal.
+        self.assertIn(r"$link.TargetPath = 'C:\Users\o''neil\market platform\START_PLATFORM.cmd'", script)
+        self.assertIn(r"$link.WorkingDirectory = 'C:\Users\o''neil\market platform'", script)
+        self.assertIn("$link.Save()", script)
+        # Minimized would hide a start failure, which waits for a key press.
+        self.assertNotIn("WindowStyle = 7", script)
+
+    def test_lifecycle_actions_run_outside_the_requesting_process_tree(self) -> None:
+        from tools.platform import control_service
+
+        command = [r"C:\repo\.venv\Scripts\python.exe", r"C:\repo\tools\platform\local_launcher.py", "restart"]
+        detached = control_service.detached_action_command(command)
+        if os.name == "nt":
+            # Restart kills the API tree; a direct child of the API would die before it starts the new stack.
+            self.assertIsInstance(detached, str)
+            self.assertTrue(str(detached).startswith('cmd.exe /d /c start "" /b '))
+            self.assertTrue(str(detached).endswith(subprocess.list2cmdline(command)))
+        else:
+            self.assertEqual(detached, command)
 
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
