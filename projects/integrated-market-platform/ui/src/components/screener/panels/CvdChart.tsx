@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
+import { zoneSuffix } from "../localZone";
 
 const et = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
 
@@ -10,7 +11,7 @@ export function perSecond(points: ReadonlyArray<{ time_ms: number; cvd: number }
   return [...byTime].sort((a, b) => a[0] - b[0]).map(([time, value]) => ({ time: time as Time, value }));
 }
 
-type Props = { points: ReadonlyArray<{ time_ms: number; cvd: number }>; label: string; timeZone?: "UTC" | "America/New_York";
+type Props = { points: ReadonlyArray<{ time_ms: number; cvd: number }>; label: string; timeZone?: string;
   /** Axis/crosshair value format; omitted keeps the chart default (US share volume). */
   formatValue?: (value: number) => string };
 
@@ -21,8 +22,9 @@ export default function CvdChart({ points, label, timeZone = "America/New_York",
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
-    const utc = timeZone === "UTC";
-    const time = utc ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : et;
+    const eastern = timeZone === "America/New_York";
+    const time = eastern ? et : new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    const suffix = zoneSuffix(timeZone);
     const chart = createChart(element, {
       autoSize: true,
       layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
@@ -30,7 +32,7 @@ export default function CvdChart({ points, label, timeZone = "America/New_York",
       rightPriceScale: { borderColor: "#27323f" },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: true,
         tickMarkFormatter: (value: Time) => time.format(new Date(Number(value) * 1000)) },
-      localization: { timeFormatter: (value: Time) => `${time.format(new Date(Number(value) * 1000))} ${utc ? "UTC" : "ET"}`,
+      localization: { timeFormatter: (value: Time) => `${time.format(new Date(Number(value) * 1000))} ${suffix}`,
         ...(formatValue ? { priceFormatter: formatValue } : {}) },
       crosshair: { mode: 0 }, handleScroll: false, handleScale: false,
     });

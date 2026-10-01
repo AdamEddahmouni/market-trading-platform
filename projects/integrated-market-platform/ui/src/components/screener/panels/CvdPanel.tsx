@@ -18,7 +18,7 @@ export function anchorLabel(window: CvdPayload["window"], clock: (iso: string | 
   return window.basis === "LAST_N_CAPTURED" ? `CVD over last ${window.max_records} captured trades` : `CVD since subscription ${clock(window.anchor_at)}`;
 }
 
-type BodyProps = { data: CvdPayload; clock: (iso: string | null | undefined) => string; unit: string; zone: "UTC" | "America/New_York"; universe: ScreenerUniverse };
+type BodyProps = { data: CvdPayload; clock: (iso: string | null | undefined) => string; unit: string; zone: string; universe: ScreenerUniverse };
 
 function Body({ data, clock, unit, zone, universe }: BodyProps) {
   const signed = (value: number) => signedMarketVolume(value, universe);

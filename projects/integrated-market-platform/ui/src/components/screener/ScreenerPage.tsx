@@ -179,9 +179,8 @@ const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct", "base_
 // Load the next server page this many rows before the loaded end is scrolled into view.
 const PREFETCH_ROWS = 60;
 const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
-// Crypto reads venue UTC everywhere (panels, preview); US universes keep the local wall clock.
-const clock = (value: string, universe?: ScreenerUniverse) => universe === "CRYPTO"
-  ? `${new Date(value).toISOString().slice(11, 19)} UTC` : new Date(value).toLocaleTimeString();
+// Every universe reads the machine's own wall clock here.
+const clock = (value: string, _universe?: ScreenerUniverse) => new Date(value).toLocaleTimeString();
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {

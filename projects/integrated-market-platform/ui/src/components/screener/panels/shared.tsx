@@ -5,6 +5,7 @@ import type { PanelId, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUnive
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { PANEL_TITLES } from "./registry";
+import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 
 /** One canonical selection drives every panel; panels never pick their own ticker. */
 export type SpecialistSelection = {
@@ -51,14 +52,15 @@ export const etDay = (iso: string | null | undefined) => iso ? `${etShort.format
 export const compact = (value: number) => compactFormat.format(value);
 export const signedCompact = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${compactFormat.format(Math.abs(value))}`;
 export const money = (value: number) => value >= 1 ? value.toFixed(2) : value.toFixed(4);
-const utcTime = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-const utcShort = new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
-export const utcClock = (iso: string | null | undefined) => iso ? `${utcTime.format(new Date(iso))} UTC` : "—";
-export const utcDay = (iso: string | null | undefined) => iso ? `${utcShort.format(new Date(iso))} UTC` : "—";
-/** Crypto trades 24/7 on venue clocks: its panels read UTC; US markets read ET. */
-export const marketClock = (universe: ScreenerUniverse) => universe === "CRYPTO"
-  ? { clock: utcClock, day: utcDay, suffix: " UTC", zone: "UTC" as const }
-  : { clock: etClock, day: etDay, suffix: " ET", zone: "America/New_York" as const };
+const localTime = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const localShort = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
+export const localClock = (iso: string | null | undefined) => iso ? `${localTime.format(new Date(iso))} ${LOCAL_SUFFIX}` : "—";
+export const localDay = (iso: string | null | undefined) => iso ? `${localShort.format(new Date(iso))} ${LOCAL_SUFFIX}` : "—";
+/** Crypto trades 24/7 with no market session: its panels read the machine's own clock; US markets read ET. */
+export const marketClock = (universe: ScreenerUniverse): { clock: typeof etClock; day: typeof etDay; suffix: string; zone: string } =>
+  universe === "CRYPTO"
+    ? { clock: localClock, day: localDay, suffix: ` ${LOCAL_SUFFIX}`, zone: LOCAL_ZONE }
+    : { clock: etClock, day: etDay, suffix: " ET", zone: "America/New_York" };
 const PROVIDER_LABELS: Record<string, string> = { MOOMOO: "Moomoo", IBKR: "IBKR", KRAKEN: "Kraken" };
 export const providerLabel = (provider: string | null | undefined) => provider ? PROVIDER_LABELS[provider] ?? provider : "No provider";
 /** Pair prices keep the venue's price increment (sub-cent assets included); US prices keep the dollar format. */
