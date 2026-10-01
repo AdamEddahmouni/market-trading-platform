@@ -47,6 +47,9 @@ For large features, also add or update a completion note under `docs/superpowers
   through `cmd /c start "" /b`, leaving it outside the requesting tree.
 - Tests: `tests/platform/test_local_launcher.py` (shortcut script quoting, detached action
   command); `ExitPlatformButton.test.tsx` (confirm, stop request, cancel, failure retry).
+- Tooling: `imp.py` changed-file discovery passes `--relative` to `git diff`. Inside the
+  monorepo it returned `projects/integrated-market-platform/ui/...`, so `lint` and `closure`
+  never saw a UI change and skipped the UI typecheck, tests, and build.
 
 ## 2026-09-30 — Screener quotes recover when OpenD comes up; truthful no-quote reasons
 
