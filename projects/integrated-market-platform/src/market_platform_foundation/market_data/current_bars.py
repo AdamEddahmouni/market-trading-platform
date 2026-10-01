@@ -324,8 +324,8 @@ class CurrentBarsService:
                 result: tuple[int, list[Bar], Bar | None, str | None] = (received, [], None, "OPEND_UNAVAILABLE")
             else:
                 transport = self.transport()
-                # Same US-equity provider code rule as the live runtime's L1 subscriptions.
-                code = f"US.{instrument_id.strip().upper()}"
+                # Share classes are written with a dash here (BRK-A) and a dot by OpenD (US.BRK.A).
+                code = f"US.{instrument_id.strip().upper().replace('-', '.')}"
                 payload = transport.fetch_current_kline_1m(code) if transport is not None else {
                     "reason_code": "MOOMOO_TRANSPORT_NOT_IMPLEMENTED", "rows": None}
                 received = self._now_ns()

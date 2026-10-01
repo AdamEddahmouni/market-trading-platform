@@ -34,6 +34,34 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener provider follow-ups: FINRA window, IBKR delayed futures, machine-zone clocks
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/finra`, `backend/market-data`, `tools/ibkr`, `ui/screener` |
+| **Summary** | Found while exercising newly configured providers (FINRA, FRED, OpenFIGI, IB Gateway) on the live Screener. |
+| **Key files** | `finra/query.py`, `finra/live.py`, `market_data/delayed_futures_bridge.py`, `tools/ibkr/futures_delayed.py`, `ui_api/screener_multi.py`, `ui_api/screener_preview.py`, `ui_api/screener_futures_context.py`, `market_data/current_bars.py`, `ui/src/components/screener/localZone.ts` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: typecheck pass`, `tests.ibkr.test_futures_delayed` 11 passed, `tests.platform.test_screener_s3/s5/s6/s8/s9` pass, `tests/short_intelligence` 37 passed |
+
+- **FINRA short data read its oldest rows as the latest publication.** FINRA answers an unbounded query oldest-first and
+  refuses to sort without the date partition key, so short interest came from 2019-2020 and short-sale volume from
+  January. The probes now pass a date window (75 days / 10 days).
+- **IBKR delayed futures.** `tools/ibkr/futures_delayed.py` holds one read-only IB Gateway connection requesting delayed
+  data only and is injected through `market_data/delayed_futures_bridge.py`. It fills Futures grid quotes, the Futures
+  preview chart and the Futures Context panel only where OpenD supplies nothing; values are `DELAYED` with source
+  `IBKR_DELAYED`, never live. A contract is used only on a unique USD match of root, month and expiry. Off unless
+  `IMP_IBKR_LIVE=1` and `IMP_IBKR_TRANSPORT=tws` (local `.env`); Moomoo remains primary and execution authority is unchanged.
+- **Share-class bars.** `BRK-A` was sent to OpenD as `US.BRK-A`; bars now use the provider's dot form. The live L1
+  subscription still uses the dash form, so such symbols show a snapshot quote, not a streaming one (open).
+- **Clocks.** Crypto panels, charts and news, and Institutional/Congress timestamps read the machine's time zone
+  instead of UTC. Calendar dates and the UTC-day-change definition are unchanged. UI tests pin `TZ=UTC`.
+- **Row clicks** select and preview only; a repeated or double click no longer leaves the Screener.
+- **Open:** the launcher's `restart` refuses to stop processes it started ("no longer matches launcher-owned"); stop and
+  start by hand works. EIA has a saved key but no Screener surface reads it.
+
+---
+
 ## 2026-10-01 — Screener demo-readiness polish
 
 | Field | Value |

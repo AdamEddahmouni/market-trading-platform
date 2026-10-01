@@ -326,6 +326,12 @@ class CurrentBarsServiceTests(unittest.TestCase):
         unreachable = CurrentBarsService(transport_factory=lambda: None, reachable=lambda: False, now_ns=lambda: ns(2026, 9, 25, 11, 0))
         self.assertEqual(unreachable.read("AAPL").provider_reason, "OPEND_UNAVAILABLE")
 
+    def test_share_class_symbols_use_the_provider_dot_form(self):
+        transport = FakeKline()
+        service, _ = self.make(transport, ns(2026, 9, 25, 11, 0))
+        service.read("BRK-A")
+        self.assertEqual(transport.calls, ["US.BRK.A"])
+
     def test_current_series_timeframes_and_instrument_isolation(self):
         now = ns(2026, 9, 25, 11, 0) + 5 * 1_000_000_000
         rows = {"US.AAPL": session_rows(datetime(2026, 9, 25, 9, 30, tzinfo=ET), 90),
