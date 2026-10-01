@@ -317,6 +317,31 @@ class FinraAndFtdTests(unittest.TestCase):
         jobs.run()
         self.assertEqual(down.status("GME")["state"], "PROVIDER_UNAVAILABLE")
 
+    def test_finra_probes_ask_for_a_recent_window(self):
+        # FINRA answers an unbounded query with its oldest rows, which then read as the "latest" publication.
+        from market_platform_foundation.finra import live as finra_live
+        from market_platform_foundation.finra.transport import FinraResponse
+
+        class Transport:
+            def __init__(self):
+                self.payloads = []
+
+            def post(self, path, payload, **_):
+                self.payloads.append(payload)
+                return FinraResponse(200, {}, b"[]", "request", ())
+
+        transport = Transport()
+        finra_live.probe_short_interest(transport, None, "GME")
+        finra_live.probe_short_sale_volume(transport, None, "GME")
+        today = datetime.now(UTC).date().isoformat()
+        for payload, field in zip(transport.payloads, ("settlementDate", "tradeReportDate")):
+            (window,) = payload["dateRangeFilters"]
+            self.assertEqual((window["fieldName"], window["endDate"]), (field, today))
+            self.assertLess(window["startDate"], today)
+        transport.payloads.clear()
+        finra_live.probe_short_interest(transport, None, "GME", settlement_date="2026-07-15")   # an exact date is not widened
+        self.assertNotIn("dateRangeFilters", transport.payloads[0])
+
     def test_finra_values_keep_interest_and_flow_separate(self):
         payload = {"short_interest": {"settlement_date": "2026-09-15", "publication_date": "2026-09-24", "current": 60_000_000,
                                       "previous": 50_000_000, "change": 10_000_000, "change_pct": 20.0, "days_to_cover": 3.5,
