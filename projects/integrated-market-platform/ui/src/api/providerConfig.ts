@@ -13,7 +13,7 @@ const FieldSchema = z.object({
   sensitive: z.boolean(),
   required: z.boolean(),
   configured: z.boolean(),
-  source: z.enum(["ENVIRONMENT", "PRIVATE_FILE", "ENV_FILE", "NONE"]),
+  source: z.enum(["ENVIRONMENT", "PRIVATE_FILE", "ENV_FILE", "PROVIDER_STORE", "NONE"]),
   editable: z.boolean(),
   removable: z.boolean(),
   help: z.string().nullable(),

@@ -72,6 +72,23 @@ class DelayedNewsApiTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
 
 
+class InstrumentRelevanceTests(unittest.TestCase):
+    def test_provider_tag_without_the_instrument_in_the_text_is_not_instrument_news(self):
+        from types import SimpleNamespace
+
+        from market_platform_foundation.news.provider_linkage_quality import FLAG_TICKER_NOT_IN_TEXT
+        from market_platform_foundation.ui_api.screener_news import _tag_only_unnamed
+
+        def record(flags, *bases):
+            return SimpleNamespace(event=SimpleNamespace(quality_flags=tuple(flags)),
+                                   matches=[SimpleNamespace(basis=basis) for basis in bases])
+        # A broad market piece the provider tagged with the ticker, never naming the company: dropped.
+        self.assertTrue(_tag_only_unnamed(record([FLAG_TICKER_NOT_IN_TEXT], "PROVIDER_TICKER")))
+        # The text itself names the instrument, or the tag is corroborated: kept.
+        self.assertFalse(_tag_only_unnamed(record([FLAG_TICKER_NOT_IN_TEXT], "PROVIDER_TICKER", "EXACT_ENTITY")))
+        self.assertFalse(_tag_only_unnamed(record([], "PROVIDER_TICKER")))
+
+
 class DerivedSentimentTests(unittest.TestCase):
     def test_scores_are_imp_derived_and_status_names_the_local_runtime(self):
         model = FinbertSentiment(model_path=str(ROOT / "tests"), loader=loader({"M5": "positive"}), model_source="SETUP_MANIFEST")

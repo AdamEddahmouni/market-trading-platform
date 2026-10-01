@@ -634,7 +634,7 @@ describe("S11 News & Analysis panel", () => {
     expect(select.value).toBe("auto");
     expect(within(select).getByRole("option", { name: "Automatic (now claude-sonnet-5-5)" })).toBeInTheDocument();
     expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5-20251001 (paid)" })).toBeEnabled();
-    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (needs OPENAI_API_KEY)" })).toBeDisabled();
+    expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (add a key in Setup)" })).toBeDisabled();
     fireEvent.change(select, { target: { value: "local|qwen-local" } });
     await waitFor(() => expect(mocks.engine).toHaveBeenCalledWith("local", "qwen-local"));
     await waitFor(() => expect(region).toHaveTextContent("Model qwen-local (local, no API cost)."));

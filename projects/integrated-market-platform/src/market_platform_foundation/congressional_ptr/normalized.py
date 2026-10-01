@@ -211,7 +211,8 @@ def to_rows(items: list[CongressionalDisclosure], *, resolver: MemberResolver | 
         row = item.to_row(resolutions.get(item.identity.key))
         if item.version_key and item.version_key in versions:
             state = versions[item.version_key]
-            row["version"] = {"key": item.version_key, "versions_known": state["versions"],
+            # "report", not "key": the API's secret-leak audit blocks any response field named like a credential.
+            row["version"] = {"report": item.version_key, "versions_known": state["versions"],
                               "superseded": item.source_document in state["superseded"],
                               "current_document": state["current"]}
         rows.append(row)

@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchChart } from "../../../api/screenerPanels";
 import { classifyZones } from "../srClassify";
-import { Age, ErrorDetail, marketClock, marketPrice, PanelFrame, PanelMessage, pricePrecision, reasonText, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { Age, ErrorDetail, marketClock, marketPrice, methodText, PanelFrame, PanelMessage, pricePrecision, reasonText, selectionGate, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 
 const ExpandedChart = lazy(() => import("./ExpandedChart"));
@@ -64,7 +64,7 @@ export default function ChartsPanel({ api }: IDockviewPanelProps) {
             precision={crypto ? pricePrecision(row, markerPrice ?? last?.close ?? 1) : 2} />
         </Suspense> : <PanelMessage tone="warn">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason) || "no bars"}<OpenDConnect reason={bars?.provider_reason ?? bars?.reason} /></PanelMessage>}
       {data && <p className="screener-panel-note">{BAR_STATES[bars!.state] ?? bars!.state}{bars!.latest_complete_bar_end ? ` · last bar ${marketDay(bars!.latest_complete_bar_end)}` : ""}
-        {` · ${data.levels.method} `}{data.levels.state === "UNAVAILABLE" ? `levels unavailable (${reasonText(data.levels.reason)})` : `levels calculated ${marketTime(data.levels.calculated_at)}`}
+        {` · ${methodText(data.levels.method)} `}{data.levels.state === "UNAVAILABLE" ? `levels unavailable (${reasonText(data.levels.reason)})` : `levels calculated ${marketTime(data.levels.calculated_at)}`}
         {classified?.testing ? " · price is inside a zone" : ""}</p>}
       <p className="sr-only">{label}</p>
     </>}

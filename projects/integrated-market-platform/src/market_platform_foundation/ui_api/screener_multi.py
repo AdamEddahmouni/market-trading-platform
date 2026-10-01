@@ -18,6 +18,8 @@ from zoneinfo import ZoneInfo
 
 from ..futures.spec_registry import resolve_futures_spec
 from ..market_data.current_bars import current_bars_service
+from ..market_data.delayed_futures_bridge import SOURCE_ID as DELAYED_FUTURES_SOURCE
+from ..market_data.delayed_futures_bridge import DelayedFuturesSource, FuturesContractRef, delayed_futures_source
 from ..market_sessions import us_equity_screener_session
 from ..xa01.compatibility import register_etf_fund, register_future_contract, register_future_contract_reference
 from .screener_admission import (
@@ -211,6 +213,29 @@ def _quote_from_futures_snapshot(source: dict[str, Any], now_s: float) -> dict[s
                                 "as_of": as_of} for field, value in values.items()}}
 
 
+def futures_contract_ref(row: dict[str, Any]) -> FuturesContractRef:
+    return FuturesContractRef(key=row["instrument"]["instrument_id"], root=str(row["root"]),
+                              contract_month=str(row["contract_month"]), expiry=str(row["expiry"]))
+
+
+def _quote_from_delayed_source(values: dict[str, Any], now_s: float) -> dict[str, Any] | None:
+    """A second source's delayed quote. It is always DELAYED, never LIVE, whatever its age."""
+
+    price, previous = _finite(values.get("last")), _finite(values.get("prev_close"))
+    bid, ask = _finite(values.get("bid")), _finite(values.get("ask"))
+    updated = _finite(values.get("updated_s"))
+    if updated is None or all(item is None for item in (price, bid, ask)):
+        return None
+    as_of = datetime.fromtimestamp(updated, tz=UTC).isoformat().replace("+00:00", "Z")
+    spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
+    fields = {"price": price, "change_pct": (price - previous) / previous * 100 if price is not None and previous and previous > 0 else None,
+              "volume": _finite(values.get("volume")), "open_interest": None, "bid": bid, "ask": ask, "spread_pct": spread}
+    return {"state": "DELAYED", "reason": "DELAYED_PROVIDER", "age_ms": max(0, int((now_s - updated) * 1000)),
+            "fields": {field: {"value": value, "source": DELAYED_FUTURES_SOURCE,
+                               "state": "DELAYED" if value is not None else "UNAVAILABLE", "as_of": as_of}
+                       for field, value in fields.items()}}
+
+
 def _futures_session(raw: Any) -> str:
     """Only classify states whose provider meaning is unambiguous."""
 
@@ -257,8 +282,10 @@ class MultiUniverseScreener:
                  clock: Callable[[], float] = time.monotonic,
                  today: Callable[[], date] = lambda: datetime.now(ET).date(),
                  now: Callable[[], str] = _now, now_s: Callable[[], float] = time.time,
-                 wall: Callable[[], datetime] = lambda: datetime.now(UTC)) -> None:
+                 wall: Callable[[], datetime] = lambda: datetime.now(UTC),
+                 delayed_futures_getter: Callable[[], DelayedFuturesSource | None] = delayed_futures_source) -> None:
         self._transport_getter = transport_getter
+        self._delayed_futures_getter = delayed_futures_getter
         self._reference_getter = reference_getter
         self._clock = clock
         self._today = today
@@ -535,6 +562,7 @@ class MultiUniverseScreener:
                         if by_id[key]["provider_symbol"] in vendor else
                         {"state": "UNAVAILABLE", "reason": reason or error or "AWAITING_QUOTE", "fields": {}})
                   for key in symbols}
+        self._fill_from_delayed_source(quotes, by_id)
         codes = frozenset(by_id[key]["provider_symbol"] for key in symbols)
         with self._lock:
             cached_states = self._market_states
@@ -556,6 +584,23 @@ class MultiUniverseScreener:
         market_session = next(iter(sessions)) if len(sessions) == 1 else "MIXED" if sessions else "UNAVAILABLE"
         return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),
                 "market_session": market_session, "active": 0, "cap": MAX_WINDOW, "quotes": quotes}
+
+    def _fill_from_delayed_source(self, quotes: dict[str, dict[str, Any]], by_id: dict[str, dict[str, Any]]) -> None:
+        """Contracts the primary source left without a quote take a second source's delayed one, labeled as such."""
+
+        missing = [key for key, quote in quotes.items() if quote["state"] not in {"LIVE", "DELAYED"}]
+        source = self._delayed_futures_getter() if missing else None
+        if source is None:
+            return
+        try:
+            delayed = source.quotes([futures_contract_ref(by_id[key]) for key in missing])
+        except Exception:  # noqa: BLE001 — provider boundary fails closed
+            return
+        now_s = self._now_s()
+        for key in missing:
+            quote = _quote_from_delayed_source(delayed[key], now_s) if key in delayed else None
+            if quote is not None:
+                quotes[key] = quote
 
     def release(self, client_id: str) -> dict[str, Any]:
         return screener_service().release(client_id)

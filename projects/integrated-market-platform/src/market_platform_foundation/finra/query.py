@@ -33,10 +33,16 @@ def query_dataset(
     fields: list[str] | None = None,
     limit: int = SYNC_RECORD_LIMIT,
     offset: int = 0,
+    date_range: tuple[str, str, str] | None = None,
 ) -> FinraResponse:
     payload: dict[str, Any] = {"limit": min(int(limit), 5000), "offset": int(offset)}
     if filters:
         payload["compareFilters"] = filters
+    if date_range:
+        # FINRA returns rows oldest-first and refuses to sort without the date partition key,
+        # so "the latest rows" is asked for as a date window: (field, start, end).
+        field_name, start, end = date_range
+        payload["dateRangeFilters"] = [{"fieldName": field_name, "startDate": start[:10], "endDate": end[:10]}]
     if fields:
         payload["fields"] = fields
     return transport.post(dataset_path(group, dataset), payload)
@@ -48,6 +54,8 @@ def query_short_interest(
     symbol: str | None = None,
     settlement_date: str | None = None,
     limit: int = SYNC_RECORD_LIMIT,
+    since: str | None = None,
+    until: str | None = None,
 ) -> FinraResponse:
     filters: list[dict[str, str]] = []
     if symbol:
@@ -60,6 +68,7 @@ def query_short_interest(
         dataset=DATASET_SHORT_INTEREST,
         filters=filters or None,
         limit=limit,
+        date_range=("settlementDate", since, until) if since and until and not settlement_date else None,
     )
 
 
@@ -90,6 +99,8 @@ def query_reg_sho_daily(
     symbol: str | None = None,
     trade_report_date: str | None = None,
     limit: int = SYNC_RECORD_LIMIT,
+    since: str | None = None,
+    until: str | None = None,
 ) -> FinraResponse:
     filters: list[dict[str, str]] = []
     if symbol:
@@ -102,4 +113,5 @@ def query_reg_sho_daily(
         dataset=DATASET_REG_SHO_DAILY,
         filters=filters or None,
         limit=limit,
+        date_range=("tradeReportDate", since, until) if since and until and not trade_report_date else None,
     )

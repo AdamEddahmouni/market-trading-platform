@@ -39,7 +39,7 @@ function Sentiment({ data }: { data: InstrumentNews }) {
   if (s.state === "UNAVAILABLE") return <><p className="screener-panel-note">Sentiment unavailable{s.reason === "MODEL_LOADING" ? " while the model loads; it fills in on its own" : s.reason ? ` · ${s.reason}` : ""}.</p>{s.reason === "MODEL_LOADING" ? null : fix}{note}</>;
   return <>
     {s.state === "INSUFFICIENT_DATA" && <p className="screener-panel-note">Insufficient data: too few scored headlines to summarize{s.reason ? ` · ${s.reason}` : ""}.</p>}
-    {s.state === "PARTIAL" && <p className="screener-panel-note">Partial: some headlines are not scored{s.reason ? ` · ${s.reason}` : ""}.</p>}
+    {s.state === "PARTIAL" && <p className="screener-panel-note" title={s.reason ?? undefined}>Partial: the newest headlines are scored; the older ones in this window are not.</p>}
     <dl className="news-panel-list">
       <div><dt>Positive</dt><dd>{s.counts.positive}</dd></div>
       <div><dt>Neutral</dt><dd>{s.counts.neutral}</dd></div>

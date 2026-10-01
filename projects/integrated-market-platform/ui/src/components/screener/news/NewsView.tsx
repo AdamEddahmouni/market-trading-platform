@@ -268,15 +268,17 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
             if (!story) return null;
             const isActive = virtual.index === active;
             const isNew = isNewSince(story, baseline);
+            // One chip per instrument: a story can match the same instrument on several grounds.
+            const chips = story.matches.filter((match, index, all) => all.findIndex((other) => other.symbol === match.symbol) === index);
             return <div key={story.story_id} id={`news-story-${virtual.index}`} role="row" data-index={virtual.index} ref={virtualizer.measureElement}
               aria-rowindex={virtual.index + 2} aria-current={isActive ? "true" : undefined} onClick={onRowClick(virtual.index, story.story_id)}
               className={`news-row${isActive ? " news-active" : ""}${isNew ? " news-new" : ""}${opened.has(story.story_id) ? " news-read" : ""}`}
               style={{ transform: `translateY(${virtual.start}px)` }}>
               <span role="cell"><StoryTime story={story} universe={universe} /></span>
-              <span role="cell" className="news-matches">{story.matches.length ? <>{story.matches.slice(0, MAX_CHIPS).map((match, index) =>
+              <span role="cell" className="news-matches">{chips.length ? <>{chips.slice(0, MAX_CHIPS).map((match, index) =>
                 <MatchChip key={`${match.symbol}-${index}`} match={match} onFilter={filterInstrument} />)}
-                {story.matches.length > MAX_CHIPS && <span className="news-chip more" title={story.matches.slice(MAX_CHIPS).map((match) => `${match.symbol} (${match.confidence.toLowerCase()})`).join(", ")}>
-                  +{story.matches.length - MAX_CHIPS}</span>}</> : <span className="news-muted">—</span>}</span>
+                {chips.length > MAX_CHIPS && <span className="news-chip more" title={chips.slice(MAX_CHIPS).map((match) => `${match.symbol} (${match.confidence.toLowerCase()})`).join(", ")}>
+                  +{chips.length - MAX_CHIPS}</span>}</> : <span className="news-muted">—</span>}</span>
               <span role="cell" className="news-headline-cell"><span className="news-headline-line">
                 {isNew && <span className="news-new-tag">New<span className="sr-only"> since last view</span></span>}<Headline story={story} /></span></span>
               <span role="cell"><StorySources story={story} universe={universe} open={expanded.has(story.story_id)}

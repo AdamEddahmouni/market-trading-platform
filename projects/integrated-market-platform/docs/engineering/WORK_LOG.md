@@ -34,6 +34,76 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener provider follow-ups: FINRA window, IBKR delayed futures, machine-zone clocks
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend/finra`, `backend/market-data`, `tools/ibkr`, `ui/screener` |
+| **Summary** | Found while exercising newly configured providers (FINRA, FRED, OpenFIGI, IB Gateway) on the live Screener. |
+| **Key files** | `finra/query.py`, `finra/live.py`, `market_data/delayed_futures_bridge.py`, `tools/ibkr/futures_delayed.py`, `ui_api/screener_multi.py`, `ui_api/screener_preview.py`, `ui_api/screener_futures_context.py`, `market_data/current_bars.py`, `ui/src/components/screener/localZone.ts` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: typecheck pass`, `tests.ibkr.test_futures_delayed` 11 passed, `tests.platform.test_screener_s3/s5/s6/s8/s9` pass, `tests/short_intelligence` 37 passed |
+
+- **FINRA short data read its oldest rows as the latest publication.** FINRA answers an unbounded query oldest-first and
+  refuses to sort without the date partition key, so short interest came from 2019-2020 and short-sale volume from
+  January. The probes now pass a date window (75 days / 10 days).
+- **IBKR delayed futures.** `tools/ibkr/futures_delayed.py` holds one read-only IB Gateway connection requesting delayed
+  data only and is injected through `market_data/delayed_futures_bridge.py`. It fills Futures grid quotes, the Futures
+  preview chart and the Futures Context panel only where OpenD supplies nothing; values are `DELAYED` with source
+  `IBKR_DELAYED`, never live. A contract is used only on a unique USD match of root, month and expiry. Off unless
+  `IMP_IBKR_LIVE=1` and `IMP_IBKR_TRANSPORT=tws` (local `.env`); Moomoo remains primary and execution authority is unchanged.
+- **Share-class bars.** `BRK-A` was sent to OpenD as `US.BRK-A`; bars now use the provider's dot form. The live L1
+  subscription still uses the dash form, so such symbols show a snapshot quote, not a streaming one (open).
+- **Clocks.** Crypto panels, charts and news, and Institutional/Congress timestamps read the machine's time zone
+  instead of UTC. Calendar dates and the UTC-day-change definition are unchanged. UI tests pin `TZ=UTC`.
+- **Row clicks** select and preview only; a repeated or double click no longer leaves the Screener.
+- **Open:** the launcher's `restart` refuses to stop processes it started ("no longer matches launcher-owned"); stop and
+  start by hand works. EIA has a saved key but no Screener surface reads it.
+
+---
+
+## 2026-10-01 — Screener demo-readiness polish
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend/news`, `backend/participants`, `backend/operator-config` |
+| **Summary** | Live five-universe walkthrough before the professor meeting; fixed what it found. No new product scope. |
+| **Key files** | `news/story_clusters.py`, `news/providers.py`, `ui_api/screener_news.py`, `congressional_ptr/normalized.py`, `ui_api/operator_config.py`, `ui/src/components/screener/**` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: build pass`, `imp.py lint: pass`, affected backend unittest modules 159 passed |
+
+**Defects fixed**
+
+- **Congress & Government panel returned HTTP 500 for any instrument with amended disclosures.** Versioned rows carried
+  `version.key`; the response secret-leak audit blocks every field named like a credential. The field is now
+  `version.report` (nothing read the old name). The audit itself is unchanged.
+- **Every Finnhub story for an instrument collapsed into one "story".** Finnhub addresses articles as
+  `/api/news?id=<hash>`; story clustering dropped the whole query string, so ~250 articles shared one canonical URL and
+  the panel showed only delayed NewsAPI headlines. Canonical URLs now keep an article-id parameter and still drop
+  tracking parameters. Cluster ids are unchanged (they derive from headline and date).
+- **Instrument news relevance.** A provider ticker tag on an article whose text never names the instrument (the existing
+  `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT` flag) no longer enters that instrument's panel; NewsAPI is asked to match
+  title and description only, not article bodies.
+- **First selection latency.** One instrument's panel scores the newest 120 stories; older ones in the 72h window are
+  reported as not scored instead of being waited for.
+- **Setup said Finviz Elite was "not set" while Finviz was feeding the grid.** Finviz keeps its validated token in its own
+  private store; the provider registry now reports that as `PROVIDER_STORE` (presence only, never the value).
+- **A numeric filter defaulted to "Equals"** (Short Float = 20 matched nothing); it now defaults to "At least".
+- **Browser Back from an opened instrument lost the selected row**; the selection now rides on the history entry.
+
+**Presentation**
+
+- Raw codes replaced with words where they reached the screen: market session badge, catalog source in the footer,
+  exchange codes, the S/R method id, trade conditions, Short Squeeze reasons and its duplicated "snapshot · snapshot".
+- The name under a symbol is dropped when its own column is visible (ETFs showed it twice); one news chip per instrument.
+- AI synthesis: a missing paid key points at Setup instead of naming an environment variable; cache state reads
+  "served from cache" / "newly generated".
+
+**Notes**
+
+- Launcher chips still read "· unavailable" for panels a universe does not offer; left as is (pinned by tests).
+- Futures quotes and bars remain unavailable without a futures quote entitlement; the state is shown, not hidden.
+
 ## 2026-10-01 — US equities filter and sort by Bid, Ask, Spread %
 
 - Owner report: rows could not be filtered by bid, ask or spread. Equities marked those fields

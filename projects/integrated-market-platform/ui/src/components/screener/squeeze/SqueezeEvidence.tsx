@@ -7,6 +7,11 @@ const date = (value: string | null) => {
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${new Date(`${value}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", dateStyle: "medium" })} trade date`;
   return `${new Date(value).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" })} ET`;
 };
+const words = (code: string) => code.replace(/_/g, " ").toLowerCase();
+/** Reasons the operator can act on are spelled out; the rest read as words. */
+const REASONS: Record<string, string> = { FINRA_CREDENTIALS_MISSING: "FINRA credentials not configured; add them in Setup",
+  NO_BOOK_UPDATE_WITHIN_TTL: "no book update within the freshness limit" };
+export const squeezeReason = (code: string) => REASONS[code] ?? words(code);
 export function metricValue(metric: SqueezeMetric) {
   if (metric.value == null) return ({ NO_RECORD: "No record", NOT_CONFIGURED: "Not configured", NOT_REQUESTED: "Not requested",
     NOT_SUBSCRIBED: "Not subscribed", PENDING: "Pending", STALE: "Stale" } as Record<string, string>)[metric.quality] ?? "Unavailable";
@@ -23,7 +28,7 @@ export function MetricList({ title, items, compactMode = false }: { title: strin
   return <section className="screener-squeeze-section" aria-label={title}><h3>{title}</h3>
     <dl>{items.map((item) => <div key={item.id} className={item.value == null ? "unavailable" : undefined}>
       <dt>{item.label}</dt><dd><strong>{metricValue(item)}</strong>
-        {!compactMode && <small>{item.source_label} · {item.clock.kind.toLowerCase().replace(/_/g, " ")} · {item.quality.toLowerCase().replace(/_/g, " ")} · {date(item.clock.as_of)}{item.reason ? ` · ${item.reason.replace(/_/g, " ").toLowerCase()}` : ""}</small>}
+        {!compactMode && <small>{[...new Set([item.source_label, words(item.clock.kind), words(item.quality)])].join(" · ")} · {date(item.clock.as_of)}{item.reason ? ` · ${squeezeReason(item.reason)}` : ""}</small>}
       </dd></div>)}</dl></section>;
 }
 export function Coverage({ data }: { data: SqueezePayload }) {

@@ -43,6 +43,7 @@ from ..news.instrument_matching import (
     profile_for_row,
 )
 from ..news.normalize import normalize_raw_item
+from ..news.provider_linkage_quality import FLAG_TICKER_NOT_IN_TEXT
 from ..news.rss_feeds import RssNewsSource, aggregate_state
 from ..news.sec_filings_news import SecFilingNews
 from ..news.story_clusters import METHOD as CLUSTER_METHOD
@@ -65,6 +66,9 @@ MAX_ACTIVITY_INSTRUMENTS = 200
 ACTIVITY_SCHEMA_VERSION = "screener-news-activity/1.0.0"
 MAX_INSTRUMENT_STORIES, COMPACT_STORIES = 50, 5
 MAX_SCORED_STORIES = 400
+# One instrument's panel is opened by a click and must answer promptly: the newest stories are scored
+# (local CPU inference), older ones in the 72h window are reported as not scored rather than waited for.
+MAX_INSTRUMENT_SCORED_STORIES = 120
 PER_SYMBOL_TTL_S = {"newsapi": 900.0, "finnhub": 600.0, "sec_filings": 600.0}
 RSS_TTL_S = 300.0
 INDEX_TTL_S = 600.0
@@ -336,6 +340,17 @@ class _UniverseIndex:
     cusips: dict[str, tuple[str, str]]
     # Matches depend only on the event and this index, so they are computed once per event per index build.
     matches: dict[str, list[MatchResult]] = field(default_factory=dict)
+
+
+def _tag_only_unnamed(record: "NewsRecord") -> bool:
+    """A provider's ticker tag on an article whose text never names the instrument is not that instrument's news.
+
+    Company-news endpoints tag broad market pieces with many tickers. The linkage-quality flag already
+    records that the text does not corroborate the tag; such a record stays out of the instrument panel
+    unless some match rests on the text itself."""
+
+    return (FLAG_TICKER_NOT_IN_TEXT in record.event.quality_flags
+            and all(match.basis == "PROVIDER_TICKER" for match in record.matches))
 
 
 class ScreenerNewsService:
@@ -612,17 +627,18 @@ class ScreenerNewsService:
                                     for record in records])
         return [Story(cluster.cluster_id, [by_key[key] for key in cluster.member_keys]) for cluster in clusters]
 
-    def _score(self, stories: list[Story]) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    def _score(self, stories: list[Story], *, limit: int | None = None) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
         model = self.sentiment_model()
         status = model.status()
         if status["state"] == "NOT_CONFIGURED" or not stories:
             state = {"state": status["state"] if status["state"] != "CURRENT" else "NOT_SCORED", "label": None,
                      "probabilities": None, "model_id": None}
             return {story.story_id: dict(state) for story in stories}, status
-        bounded = stories[:MAX_SCORED_STORIES]
+        limit = MAX_SCORED_STORIES if limit is None else limit
+        bounded = stories[:limit]
         scores = model.score([story.representative.event.headline for story in bounded])
         result = {story.story_id: score for story, score in zip(bounded, scores)}
-        for story in stories[MAX_SCORED_STORIES:]:
+        for story in stories[limit:]:
             result[story.story_id] = {"state": "NOT_SCORED", "label": None, "probabilities": None, "model_id": None}
         return result, model.status()
 
@@ -925,11 +941,11 @@ class ScreenerNewsService:
             if record.source_type == "OFFICIAL_FILING" and profile.symbol.upper() in record.tickers:
                 record.matches = [MatchResult(profile.instrument_id, profile.symbol, "EXACT_ENTITY", EXACT,
                                               f"CIK {record.cik}" if record.cik else profile.symbol), *record.matches]
-        relevant = [record for record in records if is_relevant(record.matches)]
+        relevant = [record for record in records if is_relevant(record.matches) and not _tag_only_unnamed(record)]
         start = now - timedelta(seconds=WINDOWS[INSTRUMENT_WINDOW])
         stories = self._sorted([story for story in self._stories(relevant) if self._in_window(story, start, now)], "newest")
         shown = stories[:COMPACT_STORIES if compact else MAX_INSTRUMENT_STORIES]
-        sentiments, model_status = self._score(stories)
+        sentiments, model_status = self._score(stories, limit=MAX_INSTRUMENT_SCORED_STORIES)
         summary = summarize([sentiments[story.story_id] for story in stories], model_status=model_status)
         latest_scored = next((story for story in stories if sentiments[story.story_id].get("state") == "SCORED"), None)
         summary["latest"] = ({"story_id": latest_scored.story_id, "label": sentiments[latest_scored.story_id]["label"],

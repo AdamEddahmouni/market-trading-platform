@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createChart, LineStyle, type IChartApi, type IPriceLine, type ISeriesApi, type Time } from "lightweight-charts";
 import type { ChartPayload } from "../../../api/screenerPanels";
 import type { ClassifiedZone } from "../srClassify";
+import { zoneSuffix } from "../localZone";
 
 const et = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", minute: "2-digit", hour12: false });
 const etDay = new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", month: "short", day: "numeric" });
@@ -18,7 +19,7 @@ export type ExpandedChartProps = {
   /** Only a live L1 price; a bar close is never drawn as the current price. */
   livePrice: number | null;
   label: string;
-  timeZone?: "UTC" | "America/New_York";
+  timeZone?: string;
   /** Decimal places for the price axis (sub-cent crypto pairs need more than two). */
   precision?: number;
 };
@@ -33,9 +34,10 @@ export default function ExpandedChart({ bars, forming, support, resistance, live
   useEffect(() => {
     const element = containerRef.current;
     if (!element) return;
-    const utc = timeZone === "UTC";
-    const time = utc ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", hour: "2-digit", minute: "2-digit", hour12: false }) : et;
-    const day = utc ? new Intl.DateTimeFormat("en-US", { timeZone: "UTC", month: "short", day: "numeric" }) : etDay;
+    const eastern = !timeZone || timeZone === "America/New_York";
+    const time = eastern ? et : new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", hour12: false });
+    const day = eastern ? etDay : new Intl.DateTimeFormat("en-US", { timeZone, month: "short", day: "numeric" });
+    const suffix = zoneSuffix(timeZone || "America/New_York");
     const chart = createChart(element, {
       autoSize: true,
       layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
@@ -43,7 +45,7 @@ export default function ExpandedChart({ bars, forming, support, resistance, live
       rightPriceScale: { borderColor: "#27323f", scaleMargins: { top: 0.08, bottom: 0.24 } },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: false, rightOffset: 3,
         tickMarkFormatter: (value: Time) => time.format(new Date(Number(value) * 1000)) },
-      localization: { timeFormatter: (value: Time) => `${day.format(new Date(Number(value) * 1000))} ${time.format(new Date(Number(value) * 1000))} ${utc ? "UTC" : "ET"}` },
+      localization: { timeFormatter: (value: Time) => `${day.format(new Date(Number(value) * 1000))} ${time.format(new Date(Number(value) * 1000))} ${suffix}` },
       crosshair: { mode: 0 },
     });
     candlesRef.current = chart.addCandlestickSeries({ upColor: "#57c79a", downColor: "#e27d86", borderVisible: false,

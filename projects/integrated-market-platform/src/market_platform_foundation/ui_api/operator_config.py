@@ -11,6 +11,10 @@ Storage and precedence (highest first):
    ("PRIVATE_FILE").
 3. The repository ``.env`` ("ENV_FILE"), loaded by the API launcher.
 
+A provider that keeps a validated credential in its own private store (Finviz) is reported as
+"PROVIDER_STORE" when none of the three holds the setting, so Setup never calls a working provider
+"not set". Only presence is read from that store.
+
 Most provider code reads ``os.environ``. At API start :func:`bootstrap_process_environment` copies
 registered settings from the private file into the process environment without overriding it, and
 every UI write updates that copy, so a saved value reaches the next request without a restart. The
@@ -40,6 +44,7 @@ PLACEHOLDERS = frozenset({"CHANGEME", "EXAMPLE", "PLACEHOLDER", "NOT_A_SECRET"})
 SOURCE_ENVIRONMENT = "ENVIRONMENT"
 SOURCE_PRIVATE_FILE = "PRIVATE_FILE"
 SOURCE_ENV_FILE = "ENV_FILE"
+SOURCE_PROVIDER_STORE = "PROVIDER_STORE"
 SOURCE_NONE = "NONE"
 
 
@@ -369,6 +374,8 @@ class ProviderConfigStore:
     env_file_path: Path | None = None
     environ: MutableMapping[str, str] = field(default_factory=lambda: os.environ)
     external: frozenset[str] | None = None
+    # Setting name -> "the provider's own private store holds a value". Presence only, never the value.
+    provider_stores: Mapping[str, Callable[[], bool]] = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def _external(self) -> frozenset[str]:
@@ -395,6 +402,9 @@ class ProviderConfigStore:
             return SOURCE_PRIVATE_FILE
         if _present(env_file.get(name)):
             return SOURCE_ENV_FILE
+        held = self.provider_stores.get(name)
+        if held is not None and held():
+            return SOURCE_PROVIDER_STORE
         return SOURCE_NONE
 
     def _effective(self, name: str, private: Mapping[str, str], env_file: Mapping[str, str]) -> str | None:
@@ -555,11 +565,23 @@ _STORE: ProviderConfigStore | None = None
 _STORE_LOCK = threading.Lock()
 
 
+def _finviz_store_has_token() -> bool:
+    """Finviz keeps the token it last validated (or recovered) in its own private store."""
+
+    try:
+        from ..finviz.secure_store import read_secure_token
+
+        return bool(read_secure_token())
+    except Exception:
+        return False
+
+
 def default_store() -> ProviderConfigStore:
     global _STORE
     with _STORE_LOCK:
         if _STORE is None:
-            _STORE = ProviderConfigStore(private_path=provider_env_path(), env_file_path=REPO_ROOT / ".env")
+            _STORE = ProviderConfigStore(private_path=provider_env_path(), env_file_path=REPO_ROOT / ".env",
+                                         provider_stores={"FINVIZ_API_KEY": _finviz_store_has_token})
         return _STORE
 
 
