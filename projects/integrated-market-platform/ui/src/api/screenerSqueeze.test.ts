@@ -89,7 +89,7 @@ describe("S8 selected-instrument presentation", () => {
       { value: selection() }, createElement(ShortSqueezePanel, { api: panelApi } as never))));
     expect(await screen.findByText("Short Float 24.8% is above 20%")).toBeInTheDocument();
     expect(screen.getByText("Borrow fee")).toBeInTheDocument();
-    expect(screen.getAllByText(/Finviz · snapshot · snapshot/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Finviz · snapshot · /).length).toBeGreaterThan(0);
     expect(screen.getByRole("region", { name: "Short Squeeze for AAPL" })).toBeInTheDocument();
     expect(screen.getByText("Borrow fee / availability · no lending source")).toBeInTheDocument();
   });

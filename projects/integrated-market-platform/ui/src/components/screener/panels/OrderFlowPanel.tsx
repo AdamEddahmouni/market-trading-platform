@@ -60,7 +60,7 @@ function Tape({ data, market }: { data: OrderFlowPayload; market: Market }) {
         <td>{clock(trade.event_time).replace(suffix, "")}</td><td>{marketPrice(trade.price, market.row, market.universe)}</td>
         <td>{trade.large ? <abbr title="Large print">L </abbr> : null}{marketSize(trade.size, market.universe)}</td>
         <td title={`${trade.aggressor.state} · ${METHOD_LABELS[trade.aggressor.method] ?? trade.aggressor.method}`}>{sideLabel(trade.aggressor)}</td>
-        <td>{trade.condition ?? ""}</td></tr>)}</tbody>
+        <td title={trade.condition ?? undefined}>{trade.condition?.replace(/_/g, " ").toLowerCase() ?? ""}</td></tr>)}</tbody>
     </table>
   </div>;
 }

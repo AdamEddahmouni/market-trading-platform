@@ -34,6 +34,48 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener demo-readiness polish
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `backend/news`, `backend/participants`, `backend/operator-config` |
+| **Summary** | Live five-universe walkthrough before the professor meeting; fixed what it found. No new product scope. |
+| **Key files** | `news/story_clusters.py`, `news/providers.py`, `ui_api/screener_news.py`, `congressional_ptr/normalized.py`, `ui_api/operator_config.py`, `ui/src/components/screener/**` |
+| **Tests** | `ui: vitest 1240 passed`, `ui: build pass`, `imp.py lint: pass`, affected backend unittest modules 159 passed |
+
+**Defects fixed**
+
+- **Congress & Government panel returned HTTP 500 for any instrument with amended disclosures.** Versioned rows carried
+  `version.key`; the response secret-leak audit blocks every field named like a credential. The field is now
+  `version.report` (nothing read the old name). The audit itself is unchanged.
+- **Every Finnhub story for an instrument collapsed into one "story".** Finnhub addresses articles as
+  `/api/news?id=<hash>`; story clustering dropped the whole query string, so ~250 articles shared one canonical URL and
+  the panel showed only delayed NewsAPI headlines. Canonical URLs now keep an article-id parameter and still drop
+  tracking parameters. Cluster ids are unchanged (they derive from headline and date).
+- **Instrument news relevance.** A provider ticker tag on an article whose text never names the instrument (the existing
+  `PROVIDER_LINKAGE_TICKER_NOT_IN_TEXT` flag) no longer enters that instrument's panel; NewsAPI is asked to match
+  title and description only, not article bodies.
+- **First selection latency.** One instrument's panel scores the newest 120 stories; older ones in the 72h window are
+  reported as not scored instead of being waited for.
+- **Setup said Finviz Elite was "not set" while Finviz was feeding the grid.** Finviz keeps its validated token in its own
+  private store; the provider registry now reports that as `PROVIDER_STORE` (presence only, never the value).
+- **A numeric filter defaulted to "Equals"** (Short Float = 20 matched nothing); it now defaults to "At least".
+- **Browser Back from an opened instrument lost the selected row**; the selection now rides on the history entry.
+
+**Presentation**
+
+- Raw codes replaced with words where they reached the screen: market session badge, catalog source in the footer,
+  exchange codes, the S/R method id, trade conditions, Short Squeeze reasons and its duplicated "snapshot · snapshot".
+- The name under a symbol is dropped when its own column is visible (ETFs showed it twice); one news chip per instrument.
+- AI synthesis: a missing paid key points at Setup instead of naming an environment variable; cache state reads
+  "served from cache" / "newly generated".
+
+**Notes**
+
+- Launcher chips still read "· unavailable" for panels a universe does not offer; left as is (pinned by tests).
+- Futures quotes and bars remain unavailable without a futures quote entitlement; the state is shown, not hidden.
+
 ## 2026-10-01 — US equities filter and sort by Bid, Ask, Spread %
 
 - Owner report: rows could not be filtered by bid, ask or spread. Equities marked those fields

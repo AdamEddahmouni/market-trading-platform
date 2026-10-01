@@ -45,8 +45,8 @@ function applyAiStatus(client: QueryClient, ai: AiStatus) {
 
 const AUTO = "auto";
 const optionValue = (engine: string, model: string | null) => `${engine}|${model ?? ""}`;
-/** "needs OPENAI_API_KEY" for a missing key; the reason code otherwise. */
-const needs = (engine: SynthesisEngine) => engine.reason?.endsWith("_NOT_SET") ? `needs ${engine.reason.slice(0, -"_NOT_SET".length)}`
+/** A missing key points at Setup, where it is entered; the reason code otherwise. */
+const needs = (engine: SynthesisEngine) => engine.reason?.endsWith("_NOT_SET") ? "add a key in Setup"
   : engine.runtime === "LOCAL_MODEL" ? "not installed" : humanize(engine.reason ?? "unavailable");
 
 /** Which engine and model synthesis runs on: free local model or a paid API. Saved on the server; calls no model. */
@@ -135,7 +135,7 @@ function SynthesisBlock({ result, cited, citedId, onCite, universe, tookS, showI
         <li key={item.story_id} data-story-id={item.story_id} className={item.story_id === citedId ? "cited" : undefined}>
           {item.url ? <a className="news-headline" href={item.url} target="_blank" rel="noopener noreferrer">{item.headline}</a>
             : <span className="news-headline">{item.headline}</span>}</li>)}</ol></div>}
-    <p className="screener-panel-note">Coverage: {result.coverage.synthesized_story_count != null && result.coverage.synthesized_story_count < result.coverage.story_count ? `${result.coverage.synthesized_story_count} of ${result.coverage.story_count}` : result.coverage.story_count} stories · {result.coverage.source_count} sources{result.coverage.missing_providers.length ? ` · missing ${result.coverage.missing_providers.join(", ")}` : ""} · prompt {result.prompt_id} v{result.prompt_version}{result.cache ? ` · cache ${result.cache.toLowerCase()}` : ""}{took}. AI output is a synthesis of the listed headlines, not verified fact or advice.</p>
+    <p className="screener-panel-note">Coverage: {result.coverage.synthesized_story_count != null && result.coverage.synthesized_story_count < result.coverage.story_count ? `${result.coverage.synthesized_story_count} of ${result.coverage.story_count}` : result.coverage.story_count} stories · {result.coverage.source_count} sources{result.coverage.missing_providers.length ? ` · missing ${result.coverage.missing_providers.join(", ")}` : ""} · prompt {result.prompt_id} v{result.prompt_version}{result.cache ? ` · ${result.cache === "HIT" ? "served from cache" : "newly generated"}` : ""}{took}. AI output is a synthesis of the listed headlines, not verified fact or advice.</p>
   </div>;
 }
 

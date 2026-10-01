@@ -29,6 +29,10 @@ const NewsView = reloadableLazy(() => import("./news/NewsView"));
 // S12: the intelligence views (Institutional, Congress, Positioning) load only when first entered.
 const IntelligenceView = reloadableLazy(() => import("./participants/IntelligenceView"));
 const UNIVERSE_LABELS: Record<ScreenerUniverse, string> = { US_EQUITIES: "US Equities", FUTURES: "Futures", US_ETFS: "ETFs", BONDS: "Bonds", CRYPTO: "Crypto" };
+/** Catalog source ids as the operator knows them; an unlisted id is shown as words, never as a raw code. */
+const SOURCE_LABELS: Record<string, string> = { FINVIZ_ELITE: "Finviz Elite", MOOMOO_OPEND_CONTRACT_CATALOG: "moomoo OpenD contract catalog",
+  MOOMOO_OPEND_ETF_CATALOG: "moomoo OpenD ETF catalog", US_TREASURY_FISCAL_DATA: "U.S. Treasury Fiscal Data", KRAKEN_SPOT_PUBLIC: "Kraken public spot" };
+const sourceLabel = (id: string | undefined) => id ? SOURCE_LABELS[id] ?? id.replace(/_/g, " ").toLowerCase() : "Finviz Elite";
 const DOCK_TABLE_RESERVE = 420;
 /** Best-effort layout write: never throws, even if the client call does not return a promise. */
 const flushPanelLayout = (layout: PanelLayout, universe: ScreenerUniverse) => { void Promise.resolve().then(() => persistScreenerPanelLayout(layout, universe)).catch(() => undefined); };
@@ -243,7 +247,11 @@ export function ScreenerPage() {
   const [configError, setConfigError] = useState("");
   const [filterNotice, setFilterNotice] = useState("");
   const [restored, setRestored] = useState(false);
-  const [selected, setSelected] = useState<string | null>(null);
+  // Coming back from an opened instrument (browser Back) returns to the row it was opened from.
+  const [selected, setSelected] = useState<string | null>(() => {
+    const returned = (location.state as { screenerSelected?: unknown } | null)?.screenerSelected;
+    return typeof returned === "string" ? returned : null;
+  });
   // The selected row survives page boundaries: Preview and panels never depend on page presence.
   const [selectedCache, setSelectedCache] = useState<ScreenerRow | null>(null);
   const selectedRef = useRef<string | null>(null);
@@ -617,15 +625,19 @@ export function ScreenerPage() {
     // The query results array is new each render; its data identities are what matter.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
+  // The name under the symbol is dropped when its own column is already on screen.
+  const inlineName = columnVisibility[universe === "CRYPTO" ? "venue" : "company"] !== true;
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
-          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
-        const value = item[definition.key as TextKey] ?? null;
+        const raw = item[definition.key as TextKey] ?? null;
+        // Venue codes arrive market-prefixed ("US_NASDAQ"); the universe already says the market.
+        const value = definition.key === "exchange" && raw ? raw.replace(/^US_/, "") : raw;
         const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
         return <span title={reason ?? definition.title ?? value ?? "Unavailable"}>{value || "—"}</span>;
       }
@@ -637,7 +649,7 @@ export function ScreenerPage() {
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes, referenceOnly, universe, newsBadges, newsActivity]);
+  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -755,8 +767,10 @@ export function ScreenerPage() {
       setSelected(row.instrument.instrument_id); setPreviewOpen(true);
       return;
     }
+    // Leave the selection on this history entry so Back lands on the same row and preview.
+    navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: { screenerSelected: row.instrument.instrument_id } });
     navigate(workspacePathForInstrument(row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : ""));
-  }, [navigate, referenceOnly]);
+  }, [navigate, referenceOnly, location.pathname, location.search]);
   const closePreview = useCallback(() => {
     setPreviewOpen(false); persistLayout(false, previewWidth);
     scrollRef.current?.focus();
@@ -811,7 +825,9 @@ export function ScreenerPage() {
     const definition = catalogEntry(field);
     if (!definition) return;
     setDraftField(field);
-    setDraftOperator(existing?.operator ?? definition.operators[0]);
+    // A number is screened by a threshold far more often than by an exact value ("Short Float at least 20").
+    const threshold = definition.type === "number" ? definition.operators.find((operator) => operator === "gte" || operator === "gt") : undefined;
+    setDraftOperator(existing?.operator ?? threshold ?? definition.operators[0]);
     setDraftValue(existing ? String(Array.isArray(existing.value) ? existing.value[0] : existing.value) : "");
     setDraftSecond(existing && Array.isArray(existing.value) ? String(existing.value[1]) : "");
     setEditFilterId(existing?.id ?? null);
@@ -918,7 +934,7 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge">{rawSession === "24_7" ? "24/7" : rawSession ?? "MARKET"}</span>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
       <ExitPlatformButton className="screener-control" /></header>
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
@@ -1096,6 +1112,6 @@ export function ScreenerPage() {
       <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
       <span>Market {session}</span>
       <span>Universe {firstPage?.universe_as_of ? <>as of {clock(firstPage.universe_as_of, universe)} (<Age iso={firstPage.universe_as_of} /> ago)</> : "unavailable"}</span>
-      <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
+      <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {sourceLabel(activeSpec?.source)}</span></footer>
   </section>;
 }

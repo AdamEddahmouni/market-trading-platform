@@ -145,6 +145,8 @@ const REASONS: Record<string, string> = {
   MAINTENANCE: "Venue is in maintenance; market data paused", CHECKSUM_MISMATCH: "Book failed the venue checksum; resyncing",
   CRYPTO_BARS_UNAVAILABLE: "Venue bars unavailable", CRYPTO_NOT_CONFIGURED: "Crypto market data is not enabled",
 };
+/** Level-method ids ("AUTO_SR_V1") read as a name wherever they are shown, including inside server-written sentences. */
+export const methodText = (text: string) => text.replace(/AUTO_SR_V(\d+)/g, "Auto S/R v$1");
 export const reasonText = (code: string | null | undefined) => (code && (REASONS[code] ?? code.replace(/_/g, " ").toLowerCase())) || "";
 
 export function StateBadge({ state, label }: { state: PanelState | string; label?: string }) {

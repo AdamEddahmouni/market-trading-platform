@@ -7,6 +7,7 @@ import { PreviewOptions } from "./options/PreviewOptions";
 import { PreviewSqueeze } from "./squeeze/PreviewSqueeze";
 import { PreviewNews } from "./news/PreviewNews";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
+import { methodText } from "./panels/shared";
 
 const PreviewChart = lazy(() => import("./PreviewChart"));
 // S12: loaded only when the Participants tab is opened.
@@ -30,6 +31,7 @@ const REASONS: Record<string, string> = {
   MARKET_DATA_UNAVAILABLE: "Market data unavailable", MOOMOO_SUBSCRIPTION_BUSY: "Chart data slots busy; retrying shortly",
   MOOMOO_QUOTE_NOT_ENTITLED: "No quote entitlement for bars", MOOMOO_SDK_MISSING: "Moomoo SDK missing",
   MOOMOO_AUTH_FAILURE: "Moomoo quote login required", MOOMOO_PROTOCOL_ERROR: "Provider request failed",
+  FUTURES_BARS_UNVERIFIED: "No verified futures bar source is connected",
 };
 const reasonText = (code: string | null | undefined) => (code && (REASONS[code] ?? code.replace(/_/g, " ").toLowerCase())) || "Unavailable";
 const CLASS_LABELS: Record<string, string> = { OBSERVED: "Observed", DERIVED: "Derived", UNAVAILABLE: "Unavailable",
@@ -112,7 +114,7 @@ function Levels({ preview, price, priceSource }: { preview: ScreenerPreview; pri
   const scope = levels.session_scope === "RTH" ? "RTH" : "Extended";
   const classified = useMemo(() => classifyZones(levels.zones, price, levels.min_strength), [levels.zones, price, levels.min_strength]);
   const header = <div className="screener-preview-subhead"><span>Auto S/R · {levels.timeframe} · {scope}</span>
-    <span className="screener-muted" title={`${levels.method}. ${levels.strength_semantics}`}>{levels.method}</span></div>;
+    <span className="screener-muted" title={`${levels.method}. ${levels.strength_semantics}`}>{methodText(levels.method)}</span></div>;
   if (levels.state === "UNAVAILABLE") {
     return <section className="screener-sr" aria-label="Automatic support and resistance">{header}
       <p className="screener-preview-note">Levels unavailable · {reasonText(levels.reason)}</p></section>;
@@ -147,7 +149,7 @@ function WhyPanel({ preview, screenLabel, universe }: { preview: ScreenerPreview
     <h3>Why it may be moving</h3>
     {groups.map(([name, items]) => <div key={name} className={`screener-evidence ${name.toLowerCase()}`}>
       <h4>{CLASS_LABELS[name]}</h4>
-      <ul>{items.map((item, index) => <li key={`${item.kind}-${index}`} title={`${item.source}${item.as_of ? ` · ${time(item.as_of, true)}` : ""}`}>{item.text}</li>)}</ul>
+      <ul>{items.map((item, index) => <li key={`${item.kind}-${index}`} title={`${item.source}${item.as_of ? ` · ${time(item.as_of, true)}` : ""}`}>{methodText(item.text)}</li>)}</ul>
     </div>)}
     <p className="screener-preview-meta">Observed and derived items are context, not causal attribution.{universe === "US_EQUITIES" ? ` Headlines since ${time(preview.why.moving.headline_window_start, true)}.` : ""}</p>
   </div>;
@@ -248,7 +250,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
           <span className={`screener-state ${livePrice != null ? "live" : delayedPrice != null ? "delayed" : "snapshot"}`}>{livePrice != null ? "L1 live" : delayedPrice != null ? "Delayed" : quote?.state === "STALE" ? "L1 stale" : universe === "FUTURES" ? "Quote unavailable" : universe === "US_ETFS" && data?.market_session === "CLOSED" ? "Session closed · no current quote" : universe === "US_ETFS" ? "Quote awaiting provider" : "Snapshot"}</span>
         </div>
       </div>
-      {universe === "FUTURES" && <p className="screener-preview-meta">Root {row.root ?? "—"} · {row.exchange ?? "Exchange unavailable"} · expires {row.expiry ?? "unknown"}</p>}
+      {universe === "FUTURES" && <p className="screener-preview-meta">Root {row.root ?? "—"} · {row.exchange?.replace(/^US_/, "") ?? "Exchange unavailable"} · expires {row.expiry ?? "unknown"}</p>}
       <div className="screener-preview-controls">
         {universe !== "FUTURES" && <><div role="group" aria-label="Chart timeframe" className="screener-segment">{TIMEFRAMES.map((item) =>
           <button key={item} type="button" aria-pressed={timeframe === item} onClick={() => setTimeframe(item)}>{item}</button>)}</div>
