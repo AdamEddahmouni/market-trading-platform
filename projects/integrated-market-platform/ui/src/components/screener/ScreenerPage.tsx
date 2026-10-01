@@ -78,7 +78,8 @@ const definitions: ColumnDefinition[] = [
   { key: "short_ratio", label: "Short Ratio", width: 100, format: "decimal" },
   { key: "bid", label: "Bid", width: 90, format: "price" },
   { key: "ask", label: "Ask", width: 90, format: "price" },
-  { key: "spread_pct", label: "Spread %", width: 97, format: "percent" },
+  // Liquid names quote spreads of a few thousandths of a percent; two decimals would show 0.00%.
+  { key: "spread_pct", label: "Spread %", width: 97, format: "rate" },
   { key: "rsi_14", label: "RSI (14)", width: 84, format: "decimal" },
   { key: "eps_ttm", label: "EPS TTM", width: 90, format: "price" },
   { key: "pe", label: "P/E", width: 72, format: "decimal" },

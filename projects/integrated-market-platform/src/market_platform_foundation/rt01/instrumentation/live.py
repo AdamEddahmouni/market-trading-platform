@@ -27,6 +27,9 @@ def instrument_provider_receive(
         input_ref=str(envelope.get("instrument_id") or envelope.get("capability") or ""),
         provider_event_time_ns=int(event_ns) if event_ns is not None else None,
         provider_received_time_ns=int(recv_ns),
+        # Started on the provider callback thread and ended on the ingest thread: the carrier
+        # propagates it, so it must not bind (and later reset) the callback thread's context.
+        bind=False,
     )
     out = inject_carrier(envelope, span.context if span else parent)
     if span:
@@ -49,6 +52,7 @@ def instrument_queue_enqueue(item: dict[str, Any]) -> dict[str, Any]:
         "enqueue",
         parent=parent,
         queue_enqueue_mono_ns=enqueue_mono,
+        bind=False,  # ended by the dequeuing thread; propagated through the carrier
     )
     out = inject_carrier(item, span.context if span else parent)
     out["_rt01_enqueue_mono_ns"] = enqueue_mono

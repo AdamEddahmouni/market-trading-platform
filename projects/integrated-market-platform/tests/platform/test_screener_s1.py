@@ -140,6 +140,15 @@ class ScreenerS1Tests(unittest.TestCase):
         quote.quality = "PASS"
         quote.received_ns -= 10_000_000_000
         self.assertEqual(service.window("client_1", ["T0000"])["quotes"]["T0000"]["state"], "STALE")
+        # Polled every second but not updated by the provider for two minutes: stale, aged by the provider.
+        quote.received_ns = time.time_ns()
+        quote.event_time_ns = quote.received_ns - 120_000_000_000
+        aged = service.window("client_1", ["T0000"])["quotes"]["T0000"]
+        self.assertEqual(aged["state"], "STALE")
+        self.assertEqual(aged["reason"], "NO_QUOTE_UPDATE_WITHIN_TTL")
+        self.assertGreaterEqual(aged["age_ms"], 120_000)
+        quote.event_time_ns = quote.received_ns - 2_000_000_000
+        self.assertEqual(service.window("client_1", ["T0000"])["quotes"]["T0000"]["state"], "LIVE")
         service.release("client_1")
 
     def test_failed_refresh_retains_aged_snapshot_and_expiry_releases(self):

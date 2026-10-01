@@ -48,7 +48,12 @@ class SpanHandle:
             return None
         self._ended = True
         if self._token is not None:
-            reset_context(self._token)
+            try:
+                reset_context(self._token)
+            except ValueError:
+                # Ended in a different context (another thread) than it was bound in. Tracing must
+                # never fail the operation it observes; the span is still recorded below.
+                pass
         if not self.context.sampled or self.tracer.mode == SamplingMode.OFF:
             return None
         end_wall = wall_time_ns()

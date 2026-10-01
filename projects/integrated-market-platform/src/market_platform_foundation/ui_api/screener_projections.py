@@ -34,6 +34,7 @@ FILTER = "geo_usa"
 # short float, short ratio, RSI, RVOL, price, change, and volume.
 SCREENER_COLUMNS = ",".join(dict.fromkeys(("1,2,3,4,5,6,25,30,31,59,64,65,66,67," + DEFAULT_SCREENER_COLUMNS).split(",")))
 MAX_WINDOW = 32
+QUOTE_EVENT_STALE_MS = 60_000  # no provider quote update for a minute is stale, however often it is polled
 RESULT_CACHE_ENTRIES = 16  # ordered result references per query identity, never row copies
 SNAPSHOT_TTL_SECONDS = 120
 CLIENT_TTL_SECONDS = 45
@@ -82,12 +83,23 @@ def pending_quote_reason(runtime: Any, instrument_id: str) -> str:
 def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     """Current L1 quote with its own state/age; stale quotes are never labelled LIVE."""
 
-    age_ms = max(0, (time.time_ns() - int(quote.received_ns)) // 1_000_000)
+    now_ns = time.time_ns()
+    received_age_ms = max(0, (now_ns - int(quote.received_ns)) // 1_000_000)
+    # A provider event time (snapshot update_time) dates the quote itself; receipt only proves the feed
+    # is polling. Without one, receipt age is the only clock available.
+    event_ns = int(getattr(quote, "event_time_ns", 0) or 0)
+    has_event_time = bool(event_ns) and event_ns != int(quote.received_ns)
+    age_ms = max(0, (now_ns - event_ns) // 1_000_000) if has_event_time else received_age_ms
     quality = str(quote.quality or "UNKNOWN").upper()
     admission = str(quote.admission or "UNKNOWN").upper()
     connection = str(getattr(getattr(runtime, "lifecycle", None), "connection_state", "AVAILABLE")).upper()
-    if age_ms > 5_000 or "DISCONNECTED" in connection or "RECONNECTING" in connection:
-        state = "STALE"
+    reason: str | None = quality
+    if "DISCONNECTED" in connection or "RECONNECTING" in connection:
+        state, reason = "STALE", connection.rsplit(".", 1)[-1]
+    elif received_age_ms > 5_000:
+        state, reason = "STALE", "FEED_SILENT"
+    elif has_event_time and age_ms > QUOTE_EVENT_STALE_MS:
+        state, reason = "STALE", "NO_QUOTE_UPDATE_WITHIN_TTL"
     elif "DELAY" in quality:
         state = "DELAYED"
     elif admission in ("BLOCKED", "DEGRADED") or quality not in ("PASS", "GOOD"):
@@ -98,7 +110,7 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
     values = {"price": _number(quote.last_price), "volume": _number(quote.volume), "bid": bid, "ask": ask, "spread_pct": spread}
     return {
-        "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else quality,
+        "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else reason,
         "quality": quality, "admission": admission,
         "fields": {
             name: {"value": value, "source": str(quote.provider or "MOOMOO"),
