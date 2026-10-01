@@ -117,7 +117,14 @@ def _quote_context_check(host: str, port: int) -> dict[str, Any]:
         return {"ok": False, "error": str(exc)}
     if not hasattr(ft, "OpenQuoteContext"):
         return {"ok": False, "error": "OpenQuoteContext unavailable"}
-    ctx = ft.OpenQuoteContext(host=host, port=port)
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    from opend_quote_transport import open_quote_context  # bounded; never the leaking sync ctor
+
+    ctx = open_quote_context(ft, host=host, port=port)
+    if ctx is None:
+        return {"ok": False, "error": "OPEND_INIT_TIMEOUT"}
     try:
         ret, state = ctx.get_global_state()
         return {

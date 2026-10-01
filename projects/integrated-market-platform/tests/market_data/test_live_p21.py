@@ -282,6 +282,47 @@ class SnapshotQuotePollTests(unittest.TestCase):
         self.assertEqual(_session_last_price({"last_price": 333.02, "update_time": "2026-09-30 21:44:00"}), 333.02)
 
 
+class QuoteContextOpenTests(unittest.TestCase):
+    """OpenD accepting TCP but not answering InitConnect must not accumulate SDK connections."""
+
+    class _Ctx:
+        instances: list = []
+
+        def __init__(self, *, host, port, is_async_connect=False, ready=True):
+            self.is_async_connect, self.closed, self._ready = is_async_connect, False, ready
+            type(self).instances.append(self)
+
+        @property
+        def status(self):
+            return "READY" if self._ready else "WAIT_RECONNECT"
+
+        def close(self):
+            self.closed = True
+
+    def _ft(self, ready: bool):
+        ctx_type = self._Ctx
+        ctx_type.instances = []
+        return mock.Mock(OpenQuoteContext=lambda **kw: ctx_type(ready=ready, **kw)), ctx_type
+
+    def test_ready_context_is_returned_and_constructed_async(self) -> None:
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        from opend_quote_transport import open_quote_context
+
+        ft, ctx_type = self._ft(ready=True)
+        ctx = open_quote_context(ft, host="127.0.0.1", port=11111, ready_timeout=0.2)
+        self.assertIs(ctx, ctx_type.instances[0])
+        self.assertTrue(ctx.is_async_connect)  # the sync constructor leaks a socket per failed retry
+        self.assertFalse(ctx.closed)
+
+    def test_context_that_never_becomes_ready_is_closed(self) -> None:
+        sys.path.insert(0, str(ROOT / "tools" / "moomoo"))
+        from opend_quote_transport import open_quote_context
+
+        ft, ctx_type = self._ft(ready=False)
+        self.assertIsNone(open_quote_context(ft, host="127.0.0.1", port=11111, ready_timeout=0.1))
+        self.assertTrue(ctx_type.instances[0].closed)
+
+
 class ProviderNeutralityTests(unittest.TestCase):
     def test_live_state_payload_has_no_vendor_classes(self) -> None:
         runtime = LiveObservationalRuntime()

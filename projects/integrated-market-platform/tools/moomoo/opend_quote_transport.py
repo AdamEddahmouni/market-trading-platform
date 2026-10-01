@@ -192,6 +192,36 @@ def _close_quote_context(ctx: Any) -> None:
             pass
 
 
+QUOTE_CONTEXT_READY_TIMEOUT_SECONDS = 15.0
+
+
+def open_quote_context(ft: Any, *, host: str, port: int,
+                       ready_timeout: float = QUOTE_CONTEXT_READY_TIMEOUT_SECONDS) -> Any | None:
+    """A READY quote context, or None (closed) when OpenD does not complete InitConnect in time.
+
+    The SDK's synchronous constructor retries a failed InitConnect forever without closing the socket
+    it just connected, so an OpenD that accepts TCP but stops answering accumulates one dead
+    connection per retry per context (observed: 98 in three minutes), which wedges OpenD for every
+    client. Async construction closes the socket on each failed attempt, and closing the context
+    here stops its reconnect timer.
+    """
+
+    try:
+        ctx = ft.OpenQuoteContext(host=host, port=port, is_async_connect=True)
+    except TypeError:  # test doubles without the vendor keyword
+        return ft.OpenQuoteContext(host=host, port=port)
+    status = getattr(type(ctx), "status", None)
+    if not isinstance(status, property):
+        return ctx  # not the vendor SDK: no connection state to wait on
+    deadline = time.monotonic() + ready_timeout
+    while time.monotonic() < deadline:
+        if str(ctx.status) == "READY":
+            return ctx
+        time.sleep(0.05)
+    _close_quote_context(ctx)
+    return None
+
+
 class OpendQuoteKlineSession:
     """Reuse one loopback OpenD quote context across bounded Mode B poll steps."""
 
@@ -227,8 +257,10 @@ class OpendQuoteKlineSession:
         if not hasattr(ft, "RET_OK") or not hasattr(ft, "KLType"):
             return None
         try:
-            ctx = ft.OpenQuoteContext(host=self._host, port=self._port)
+            ctx = open_quote_context(ft, host=self._host, port=self._port)
         except Exception:  # noqa: BLE001
+            return None
+        if ctx is None:
             return None
         self._ft = ft
         self._ctx = ctx
@@ -383,7 +415,9 @@ def fetch_history_kline_1m(
     else:
         owns_context = True
         try:
-            ctx = ft.OpenQuoteContext(host=host, port=port)
+            ctx = open_quote_context(ft, host=host, port=port)
+            if ctx is None:
+                raise TimeoutError("OpenD did not complete InitConnect")
         except Exception as exc:  # noqa: BLE001
             return _finish(
                 reason_code=MOOMOO_PROTOCOL_ERROR,
@@ -452,7 +486,9 @@ def fetch_snapshot(
 
     ctx = None
     try:
-        ctx = ft.OpenQuoteContext(host=host, port=port)
+        ctx = open_quote_context(ft, host=host, port=port)
+        if ctx is None:
+            return _unavailable(OPEND_UNAVAILABLE)
         ret, state = ctx.get_global_state()
         if ret != ft.RET_OK:
             return _unavailable(MOOMOO_PROTOCOL_ERROR)
@@ -568,10 +604,14 @@ class OpendCurrentKlineSession:
         ft = self._sdk if self._sdk is not None else load_vendor_sdk()
         if ft is None or not hasattr(ft, "OpenQuoteContext"):
             return MOOMOO_SDK_MISSING
+        ctx = None
         try:
-            ctx = ft.OpenQuoteContext(host=self._host, port=self._port)
+            ctx = open_quote_context(ft, host=self._host, port=self._port)
+            if ctx is None:
+                return OPEND_UNAVAILABLE
             ret, state = ctx.get_global_state()
         except Exception:  # noqa: BLE001
+            _close_quote_context(ctx)
             return MOOMOO_PROTOCOL_ERROR
         if ret != ft.RET_OK:
             _close_quote_context(ctx)
@@ -816,7 +856,10 @@ def probe_quote_login(*, host: str, port: int) -> dict[str, Any]:
 
     ctx = None
     try:
-        ctx = ft.OpenQuoteContext(host=host, port=port)
+        ctx = open_quote_context(ft, host=host, port=port)
+        if ctx is None:
+            return {"sdk": "PRESENT", "quote_login": "UNAVAILABLE", "qot_entitled": False,
+                    "reason": "OPEND_INIT_TIMEOUT"}
         ret, state = ctx.get_global_state()
         if ret != ft.RET_OK or not isinstance(state, dict):
             return {

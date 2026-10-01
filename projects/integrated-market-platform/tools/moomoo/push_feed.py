@@ -204,7 +204,11 @@ class MoomooPushFeed:
         self._next_snapshot_ns = 0
         self._first_push_seen.clear()
         self._last_sequence.clear()
-        quote_ctx = ft.OpenQuoteContext(host=moomoo_host(), port=moomoo_port())
+        from opend_quote_transport import open_quote_context  # same directory; never the leaking sync ctor
+
+        quote_ctx = open_quote_context(ft, host=moomoo_host(), port=moomoo_port())
+        if quote_ctx is None:
+            raise RuntimeError("OPEND_INIT_TIMEOUT: OpenD accepted TCP but did not complete InitConnect")
         generation = self.provider_generation
         seen_ids: set[str] = set()
         self_outer = self
