@@ -18,7 +18,7 @@ from zoneinfo import ZoneInfo
 
 from ..futures.spec_registry import resolve_futures_spec
 from ..market_data.current_bars import current_bars_service
-from ..market_sessions import us_equity_session_label
+from ..market_sessions import us_equity_screener_session
 from ..xa01.compatibility import register_etf_fund, register_future_contract, register_future_contract_reference
 from .screener_admission import (
     CLASSIFICATION_UNAVAILABLE, DUPLICATE_LISTING, REFERENCE_SOURCE, UNAVAILABLE_REFERENCE, Admission,
@@ -27,7 +27,7 @@ from .screener_admission import (
 from .screener_filters import apply_filters, field_value
 from .screener_futures_context import resolve_contract
 from .screener_projections import MAX_WINDOW, RESULT_CACHE_ENTRIES, SCHEMA_VERSION, screener_service
-from .screener_query import DEFAULT_PAGE_LIMIT, ScreenerQuery, order_rows, page_payload, parse_query, snapshot_fields
+from .screener_query import DEFAULT_PAGE_LIMIT, ScreenerQuery, exact_matches_first, order_rows, page_payload, parse_query, snapshot_fields
 from .screener_snapshot import SOURCE as SNAPSHOT_SOURCE
 from .screener_snapshot import EtfSnapshotSource, MarketSnapshot
 from .screener_bonds import bond_screener_service
@@ -408,7 +408,7 @@ class MultiUniverseScreener:
         # Provider catalog loaded, but no row can be proven an ETF: say so, never an empty "healthy" universe.
         empty_error = error or (CLASSIFICATION_UNAVAILABLE if reference_error else None)
         envelope = {"schema_version": SCHEMA_VERSION, "universe": universe, "generated_at": self._now(),
-                    "market_session": "PROVIDER_SPECIFIC" if universe == FUTURES else us_equity_session_label(),
+                    "market_session": "PROVIDER_SPECIFIC" if universe == FUTURES else us_equity_screener_session(),
                     "universe_as_of": as_of, "screener_as_of": snapshot.as_of if snapshot else as_of,
                     "evaluation": "SNAPSHOT" if query.uses_snapshot else "CATALOG",
                     "snapshot": snapshot.summary() if snapshot else None,
@@ -442,7 +442,8 @@ class MultiUniverseScreener:
             keys = ("symbol", "company", "root") if universe == FUTURES else ("symbol", "company")
             matched = [row for row in apply_filters(rows, list(query.filters), observe)
                        if not needle or any(needle in str(row.get(key) or "").casefold() for key in keys)]
-            ordered = order_rows(matched, query.sort, query.descending, observe)
+            ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, observe), needle,
+                                          ("symbol", "root") if universe == FUTURES else ("symbol",))
             with self._lock:
                 self._ordered[key] = ordered
                 while len(self._ordered) > RESULT_CACHE_ENTRIES:
@@ -513,7 +514,7 @@ class MultiUniverseScreener:
         if universe == US_ETFS:
             return screener_service().window(client_id, symbols,
                                              known={key: by_id[key]["market_data_id"] for key in symbols},
-                                             market_session=us_equity_session_label())
+                                             market_session=us_equity_screener_session())
         screener_service().release(client_id)
         with self._lock:
             refusal = self._quote_refusal

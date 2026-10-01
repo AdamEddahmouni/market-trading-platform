@@ -34,6 +34,24 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Overnight quotes tell the truth; exact ticker search first
+
+- Overnight book: OpenD's market snapshot keeps `bid_price`/`ask_price` at the after-hours
+  close all night. Live check at 02:26 ET: NVDA overnight trades at 231.99 while bid/ask
+  stayed 229.61/229.62, and the Screener showed that book and its spread as LIVE (the
+  2026-09-30 overnight "bid/ask verified" note saw the same frozen book). Snapshots stamped
+  20:00-04:00 ET now carry no bid, ask or sizes; price stays the overnight trade.
+- Session: the Screener said "closed" beside live overnight prices. `us_equity_screener_session`
+  reports OVERNIGHT (Sunday 20:00 through Friday 04:00 ET); gating code keeps
+  `us_equity_session_label`, where that window is still CLOSED.
+- Search: an exact symbol match is listed first (SPY above SPYG/SPYV under a volume sort) in
+  US equities, ETFs, Futures (symbol or root), Crypto (symbol or base) and Bonds; all other
+  rows keep the requested order (`exact_matches_first`).
+- Launcher: `restart` waits up to 10 s for the stopped services to release their ports.
+  Starting at once failed with "API port 8766 is already in use by a process not owned".
+- Tests: `test_live_p21` (overnight snapshot book), `test_market_sessions` (overnight window),
+  `test_screener_s1` (exact match ranking), `test_local_launcher` (port release wait).
+
 ## 2026-10-01 — Desktop shortcut and in-app Exit
 
 - `local_launcher.py install-shortcut` writes a desktop **Market Platform** shortcut that runs

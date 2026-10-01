@@ -18,10 +18,10 @@ from ..finviz.config import DEFAULT_SCREENER_COLUMNS
 from ..finviz.symbols import finviz_to_canonical
 from ..market_data.live_runtime import get_live_runtime
 from ..market_data.subscription_manager import SubscriptionPriority
-from ..market_sessions import us_equity_session_label
+from ..market_sessions import us_equity_screener_session
 from .screener_admission import UNAVAILABLE_REFERENCE, ClassificationReference, admission_summary, admit_equity
 from .screener_filters import apply_filters, field_value
-from .screener_query import DEFAULT_PAGE_LIMIT, order_rows, page_payload, parse_query
+from .screener_query import DEFAULT_PAGE_LIMIT, exact_matches_first, order_rows, page_payload, parse_query
 
 SCHEMA_VERSION = "screener/1.0.0"
 UNIVERSE = "US_EQUITIES"
@@ -248,7 +248,7 @@ class ScreenerService:
                 needle = query.search.casefold()
                 matched = [row for row in apply_filters(source_rows, list(query.filters))
                            if not needle or needle in row["symbol"].casefold() or needle in row["company"].casefold()]
-                ordered = order_rows(matched, query.sort, query.descending, field_value)
+                ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, field_value), needle)
                 self._ordered[key] = ordered
                 while len(self._ordered) > RESULT_CACHE_ENTRIES:
                     self._ordered.popitem(last=False)
@@ -256,7 +256,7 @@ class ScreenerService:
                 "schema_version": SCHEMA_VERSION,
                 "universe": UNIVERSE,
                 "generated_at": self._now(),
-                "market_session": us_equity_session_label(),
+                "market_session": us_equity_screener_session(),
                 "universe_as_of": as_of,
                 "screener_as_of": as_of,
                 "evaluation": "SNAPSHOT",
@@ -379,7 +379,7 @@ class ScreenerService:
                     continue
                 quotes[requested] = quote_view(runtime, quote)
             return {"schema_version": SCHEMA_VERSION, "generated_at": self._now(),
-                    "market_session": market_session or us_equity_session_label(), "active": len(active),
+                    "market_session": market_session or us_equity_screener_session(), "active": len(active),
                     "cap": MAX_WINDOW, "quotes": quotes}
 
 

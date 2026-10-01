@@ -479,6 +479,28 @@ class LocalLauncherTests(unittest.TestCase):
         else:
             self.assertEqual(detached, command)
 
+    def test_restart_waits_for_stopped_services_to_release_their_ports(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+            controller = PlatformController(root=root, system=fake, environ={"USERPROFILE": str(Path(tmp) / "profile")},
+                                            python_runtime_probe=always_usable)
+            self.assertEqual(controller.start(open_browser=False), 0)
+            # The old API socket lingers for two polls after taskkill returns.
+            fake.open_ports.add(8766)
+            sleeps: list[float] = []
+
+            def sleep(seconds: float) -> None:
+                sleeps.append(seconds)
+                if len(sleeps) == 2:
+                    fake.open_ports.discard(8766)
+
+            fake.sleep = sleep  # type: ignore[method-assign]
+            self.assertEqual(controller.restart(open_browser=False), 0)
+            self.assertEqual(len(sleeps), 2)
+            self.assertEqual(len(fake.spawn_calls), 6)
+
     def test_operator_docs_name_one_click_start_logs_and_safe_stop(self) -> None:
         repository = Path(__file__).resolve().parents[2]
         docs = (repository / "README.md").read_text(encoding="utf-8") + (repository / "ui/README.md").read_text(

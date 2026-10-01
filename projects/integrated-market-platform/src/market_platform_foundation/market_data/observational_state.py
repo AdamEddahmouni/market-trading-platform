@@ -111,12 +111,19 @@ class ObservationalStateStore:
                 bid = _optional_float(payload, "bid_price", "best_bid")
             if ask is None:
                 ask = _optional_float(payload, "ask_price", "best_ask")
+            bid_size = _optional_float(payload, "bid_vol", "bid_size")
+            ask_size = _optional_float(payload, "ask_vol", "ask_size")
+            if _overnight_snapshot(payload):
+                # The snapshot's book is the after-hours close, frozen all night (NVDA bid/ask
+                # 229.61/229.62 at 02:26 ET with overnight trades at 231.99). No overnight
+                # book is better than a stale one labelled live.
+                bid = ask = bid_size = ask_size = None
             self.quotes[instrument_id] = QuoteSnapshot(
                 instrument_id=instrument_id,
                 bid_price=bid,
                 ask_price=ask,
-                bid_size=_optional_float(payload, "bid_vol", "bid_size"),
-                ask_size=_optional_float(payload, "ask_vol", "ask_size"),
+                bid_size=bid_size,
+                ask_size=ask_size,
                 last_price=last_price,
                 volume=_optional_float(payload, "volume", "after_volume"),
                 event_time_ns=event_time_ns,
@@ -479,6 +486,18 @@ class ObservationalStateStore:
         elif provenance in {"LEE_READY", "QUOTE_MATCH", "TICK_RULE", "BVC", "OTHER_INFERENCE"}:
             self.metrics["inferred"] += 1
         return True
+
+
+def _overnight_snapshot(payload: dict[str, Any]) -> bool:
+    """A market snapshot (it carries overnight_price) stamped in the 20:00-04:00 ET window."""
+
+    if "overnight_price" not in payload:
+        return False
+    update_time = str(payload.get("update_time") or "")
+    if len(update_time) < 16:
+        return False
+    clock = update_time[11:16]
+    return clock >= "20:00" or clock < "04:00"
 
 
 def _session_last_price(payload: dict[str, Any]) -> float | None:

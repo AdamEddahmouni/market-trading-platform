@@ -20,7 +20,7 @@ from ..xa01.enums import InstrumentKind, XaAssetClass
 from ..xa01.errors import Xa01Error
 from ..xa01.identity import crypto_pair_identity_key, derive_canonical_id
 from .screener_filters import apply_filters, field_value
-from .screener_query import ScreenerQuery, order_rows, page_payload
+from .screener_query import ScreenerQuery, exact_matches_first, order_rows, page_payload
 
 VENUE = "KRAKEN"
 SOURCE = "KRAKEN_SPOT_PUBLIC"
@@ -283,7 +283,8 @@ class CryptoScreener:
         matched = [row for row in apply_filters(decorated, list(query.filters), field_value)
                    if not needle or any(needle in str(row.get(field) or "").casefold()
                                         for field in ("symbol", "base_asset", "quote_asset", "venue", "provider_symbol"))]
-        ordered = order_rows(matched, query.sort, query.descending, field_value)
+        ordered = exact_matches_first(order_rows(matched, query.sort, query.descending, field_value), needle,
+                                      ("symbol", "base_asset"))
         envelope = self._envelope(rows, catalog_as_of, catalog_error, snapshot_error, summary)
         with self._lock:
             self._sequence += 1
