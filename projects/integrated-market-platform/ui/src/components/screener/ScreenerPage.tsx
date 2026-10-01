@@ -1061,11 +1061,11 @@ export function ScreenerPage() {
               className={`screener-row${row.id === selected ? " selected" : ""}`}
               style={{ transform: `translateY(${virtual.start}px)`, width: table.getTotalSize() }}
               onClick={() => {
-                if (row.id === selected) { open(row.original); return; }
+                // A row click only selects and previews. Leaving the Screener takes a deliberate
+                // action (Enter, or Open Instrument in the preview), never a repeated click.
                 setSelected(row.id);
                 if (!previewOpen) { setPreviewOpen(true); persistLayout(true, previewWidth); }
-              }}
-              onDoubleClick={() => open(row.original)}>
+              }}>
               {row.getVisibleCells().map((cell) => <div role="gridcell" key={cell.id}
                 className={leftAligned.has(cell.column.id) ? "screener-cell screener-left" : "screener-cell"}
                 style={{ width: cell.column.getSize(), ...(cell.column.getIsPinned() === "left" ? { position: "sticky", left: cell.column.getStart("left"), zIndex: 1, background: row.id === selected ? "#1c3652" : "#111820" } : {}) }}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</div>)}
