@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Order Flow, CVD and Level 2 stuck on "Connecting"
+
+- Owner report: the live panels showed CONNECTING / "Acquiring subscription" forever. The backend
+  answered `NOT_SUBSCRIBED` because the UI never posted `/screener/panels`; a hand-sent demand
+  filled Level 2 within 5 s.
+- Cause: `ScreenerDock`'s `mounted` ref was only ever cleared. The dev app runs under StrictMode,
+  which mounts, unmounts and mounts again, so every later panel add/remove/layout event was
+  ignored: no open panels recorded, no subscription demand, no layout persisted.
+- Fix: the effect sets `mounted.current = true` on mount. Checked live: Level 2 shows the book.
+- Test: `ScreenerPanels.test.tsx` opens a panel after a StrictMode mount (fails without the fix).
+
 ## 2026-10-01 — One process per platform port on Windows
 
 - `ThreadingHTTPServer` sets `SO_REUSEADDR`, which on Windows lets a second process bind a port

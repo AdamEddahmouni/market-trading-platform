@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
@@ -6,7 +7,7 @@ import { ScreenerPage } from "../ScreenerPage";
 import { sideLabel, windowLabel } from "./OrderFlowPanel";
 import { anchorLabel } from "./CvdPanel";
 import { perSecond } from "./CvdChart";
-import ScreenerDock, { serializeLayout } from "./ScreenerDock";
+import ScreenerDock, { serializeLayout, type DockHandle } from "./ScreenerDock";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -168,6 +169,18 @@ describe("S5 universe capability", () => {
     view.rerender(<QueryClientProvider client={client}><ScreenerDock {...props} universe="FUTURES" supportedPanels={new Set()} /></QueryClientProvider>);
     await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith("dock-s5", null, [], "FUTURES"));
     expect(screen.getByText("Order Flow is unavailable for this universe. The layout is retained.")).toBeInTheDocument();
+  });
+
+  it("demands a panel opened after a StrictMode mount, as the dev app mounts the dock", async () => {
+    const handleRef: { current: DockHandle | null } = { current: null };
+    const props = { layout: { version: 1, open_panels: ["charts" as const], active_panel: "charts" as const, dock_height: 300, dockview_layout: null },
+      row: makeRow("NVDA"), quote: undefined, clientId: "dock-strict", pending: null, handleRef,
+      onOpenChange: () => undefined, onLayout: () => undefined };
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(<StrictMode><QueryClientProvider client={client}><ScreenerDock {...props} /></QueryClientProvider></StrictMode>);
+    await waitFor(() => expect(handleRef.current).not.toBeNull());
+    act(() => handleRef.current!.openOrFocus("level2"));
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith("dock-strict", "NVDA", ["level2"]));
   });
 });
 
