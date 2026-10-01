@@ -157,8 +157,12 @@ const ScreenerConfigSchema = z.object({
     filters: z.array(ScreenerFilterSchema) })),
   saved: z.array(ScreenerScreenSchema),
   last: ScreenerScreenSchema.nullable(),
+  /** Last screen per universe; the single `last` is the most recent in any universe. */
+  last_by_universe: z.record(ScreenerScreenSchema).optional(),
   preview_layout: z.object({ version: z.number(), open: z.boolean(), width: z.number() }).optional(),
   panel_layout: z.lazy(() => PanelLayoutSchema).optional(),
+  /** Dock layout per universe (the server fills gaps from the legacy global layout). */
+  panel_layouts: z.record(z.lazy(() => PanelLayoutSchema)).optional(),
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
 export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
@@ -175,8 +179,8 @@ const PanelLayoutSchema = z.object({
 });
 export type PanelLayout = z.infer<typeof PanelLayoutSchema>;
 
-export function persistScreenerPanelLayout(layout: PanelLayout) {
-  return postJson("/screener/config", { action: "panel_layout", layout }, z.object({ result: PanelLayoutSchema }).passthrough());
+export function persistScreenerPanelLayout(layout: PanelLayout, universe: ScreenerUniverse) {
+  return postJson("/screener/config", { action: "panel_layout", layout, universe }, z.object({ result: PanelLayoutSchema }).passthrough());
 }
 
 /** The canonical Screener query. Pages never change it; any change starts a new result chain. */

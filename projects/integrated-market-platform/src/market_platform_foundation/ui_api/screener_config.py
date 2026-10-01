@@ -17,6 +17,10 @@ PREVIEW_KEY = "screener.s3.preview"
 PREVIEW_WIDTH = (320, 720)
 DEFAULT_PREVIEW = {"version": 1, "open": True, "width": 400}
 PANEL_KEY = "screener.s4.panels"
+# Per-universe dock layouts and last screens. The global keys above stay readable:
+# a pre-existing global layout is the default for any universe without its own.
+PANEL_BY_UNIVERSE_KEY = "screener.s4.panels.by_universe"
+LAST_BY_UNIVERSE_KEY = "screener.s2.last.by_universe"
 PANEL_IDS = ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
              "institutional", "congress_gov", "setup")
 PANEL_LAYOUT_VERSION = 1
@@ -160,15 +164,45 @@ class ScreenerConfigRepository:
         return next((screen for screen in self.list_saved() if screen["id"] == screen_id), None)
 
     def get_last(self) -> dict[str, Any] | None:
+        """The most recently used screen in any universe."""
+
         raw = self._store.get_preferences().get(LAST_KEY)
         try:
             return validate_screen(raw, identity="user-last")
         except ValueError:
             return None
 
+    def _by_universe(self, key: str) -> dict[str, Any]:
+        raw = self._store.get_preferences().get(key)
+        return dict(raw) if isinstance(raw, dict) else {}
+
+    def get_last_by_universe(self) -> dict[str, dict[str, Any]]:
+        """Last screen per universe. Invalid entries are dropped; the legacy single last
+        screen fills in for its own universe."""
+
+        result: dict[str, dict[str, Any]] = {}
+        legacy = self.get_last()
+        if legacy is not None:
+            result[legacy["universe"]] = legacy
+        for universe, raw in self._by_universe(LAST_BY_UNIVERSE_KEY).items():
+            try:
+                screen = validate_screen(raw, identity="user-last")
+            except ValueError:
+                continue
+            if screen["universe"] == universe:
+                result[universe] = screen
+        return deepcopy(result)
+
     def save_last(self, raw: Any) -> dict[str, Any]:
         screen = validate_screen(raw, identity="user-last")
+        by_universe = self._by_universe(LAST_BY_UNIVERSE_KEY)
+        # Migration: carry the legacy single last screen into the map before LAST_KEY is overwritten.
+        legacy = self.get_last()
+        if legacy is not None:
+            by_universe.setdefault(legacy["universe"], legacy)
         self._store.set_preference(LAST_KEY, screen)
+        by_universe[screen["universe"]] = screen
+        self._store.set_preference(LAST_BY_UNIVERSE_KEY, by_universe)
         return screen
 
     def get_preview_layout(self) -> dict[str, Any]:
@@ -182,17 +216,37 @@ class ScreenerConfigRepository:
         self._store.set_preference(PREVIEW_KEY, layout)
         return layout
 
-    def get_panel_layout(self) -> dict[str, Any]:
-        """Stored dock layout, or the default when missing, corrupt, or another version."""
+    def get_panel_layout(self, universe: str | None = None) -> dict[str, Any]:
+        """Stored dock layout for ``universe`` (or the legacy global one), falling back to the
+        global layout, then the default, when missing, corrupt, or another version."""
 
+        if universe is not None:
+            universe_spec(universe)
+            raw = self._by_universe(PANEL_BY_UNIVERSE_KEY).get(universe)
+            if raw is not None:
+                try:
+                    return validate_panel_layout(raw)
+                except ValueError:
+                    pass
         try:
             return validate_panel_layout(self._store.get_preferences().get(PANEL_KEY))
         except ValueError:
             return deepcopy(DEFAULT_PANEL_LAYOUT)
 
-    def save_panel_layout(self, raw: Any) -> dict[str, Any]:
+    def get_panel_layouts(self) -> dict[str, dict[str, Any]]:
+        return {str(spec["id"]): self.get_panel_layout(str(spec["id"])) for spec in universe_payload()}
+
+    def save_panel_layout(self, raw: Any, universe: str | None = None) -> dict[str, Any]:
+        """Writes one universe's layout (the legacy global key when ``universe`` is None)."""
+
         layout = validate_panel_layout(raw)
-        self._store.set_preference(PANEL_KEY, layout)
+        if universe is None:
+            self._store.set_preference(PANEL_KEY, layout)
+            return layout
+        universe_spec(universe)
+        by_universe = self._by_universe(PANEL_BY_UNIVERSE_KEY)
+        by_universe[universe] = layout
+        self._store.set_preference(PANEL_BY_UNIVERSE_KEY, by_universe)
         return layout
 
     def save(self, raw: Any) -> dict[str, Any]:
@@ -225,14 +279,18 @@ def read_config() -> dict[str, Any]:
     from .screener_query import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT, field_capabilities
 
     store = open_local_state()
+    repository = ScreenerConfigRepository(store) if store else None
     # Field capabilities come from the server so the UI never invents sort/filter support.
     universes = [{**spec, "fields": field_capabilities(str(spec["id"]))} for spec in universe_payload()]
     return {"schema_version": SCHEMA_VERSION, "catalog": filter_catalog(None), "universes": universes,
             "query": {"default_limit": DEFAULT_PAGE_LIMIT, "max_limit": MAX_PAGE_LIMIT},
             "presets": builtin_presets(), "saved": ScreenerConfigRepository(store).list_saved() if store else [],
-            "last": ScreenerConfigRepository(store).get_last() if store else None,
-            "preview_layout": ScreenerConfigRepository(store).get_preview_layout() if store else dict(DEFAULT_PREVIEW),
-            "panel_layout": ScreenerConfigRepository(store).get_panel_layout() if store else deepcopy(DEFAULT_PANEL_LAYOUT),
+            "last": repository.get_last() if repository else None,
+            "last_by_universe": repository.get_last_by_universe() if repository else {},
+            "preview_layout": repository.get_preview_layout() if repository else dict(DEFAULT_PREVIEW),
+            "panel_layout": repository.get_panel_layout(US_EQUITIES) if repository else deepcopy(DEFAULT_PANEL_LAYOUT),
+            "panel_layouts": repository.get_panel_layouts() if repository else {
+                str(spec["id"]): deepcopy(DEFAULT_PANEL_LAYOUT) for spec in universe_payload()},
             "persistence_available": store is not None}
 
 
@@ -256,7 +314,10 @@ def write_config(body: dict[str, Any]) -> dict[str, Any]:
     elif action == "preview_layout":
         result = repository.save_preview_layout(body.get("layout"))
     elif action == "panel_layout":
-        result = repository.save_panel_layout(body.get("layout"))
+        universe = body.get("universe")
+        if universe is not None and not isinstance(universe, str):
+            raise ValueError("UNSUPPORTED_UNIVERSE")
+        result = repository.save_panel_layout(body.get("layout"), universe)
     else:
         raise ValueError("INVALID_SCREEN_ACTION")
     return {"result": result, "saved": repository.list_saved()}

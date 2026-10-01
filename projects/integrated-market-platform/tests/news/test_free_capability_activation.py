@@ -163,6 +163,20 @@ class NewsApiDeveloperTests(unittest.TestCase):
         self.assertEqual(NewsApiClient(api_key="", live_enabled=True, http_getter=getter).fetch_news("A")["error"], "NOT_CONFIGURED")
         self.assertEqual(calls, [])
 
+    def test_explicit_empty_key_never_falls_back_to_the_operators_key(self):
+        # Regression: api_key="" used to resolve the configured key, so test services built "live, no key"
+        # clients that called the real providers with the operator's keys.
+        calls = []
+        getter = lambda url, **kw: calls.append(url) or _response(200, [])  # noqa: E731
+        with mock.patch.dict(os.environ, {"NEWSAPI_API_KEY": "operator-key", "FINNHUB_API_KEY": "operator-key"}):
+            self.assertEqual(NewsApiClient(api_key="", live_enabled=True, http_getter=getter).fetch_news("A")["error"],
+                             "NOT_CONFIGURED")
+            self.assertEqual(FinnhubNewsClient(api_key="", live_enabled=True, http_getter=getter).fetch_news("A")["error"],
+                             "NOT_CONFIGURED")
+            self.assertEqual(FinnhubNewsClient(live_enabled=True, http_getter=getter, min_interval_s=0).fetch_news("A")["success"],
+                             True)                                   # no key argument still resolves the configured one
+        self.assertEqual(len(calls), 1)
+
 
 class FinnhubFreeTierTests(unittest.TestCase):
     def test_company_news_only_with_summary_and_identity(self):

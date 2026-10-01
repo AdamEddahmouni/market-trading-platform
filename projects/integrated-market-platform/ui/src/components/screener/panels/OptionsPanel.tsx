@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchScreenerOptions, type OptionContractRow, type OptionsFields, type OptionsPayload } from "../../../api/screenerOptions";
 import { ago, count, DASH, etTime, expiry, greek, hasChain, iv, OPTIONS_BADGE, OPTIONS_STATE_LABELS, pct, price, ratio, snapshotAge, stateMessage } from "../options/optionsFormat";
-import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { ErrorDetail, PanelFrame, PanelMessage, selectionGate, useNow, usePanelVisible, useSelection } from "./shared";
 
 /** The chain is a provider snapshot: re-read the endpoint once a minute; the backend refreshes Finviz at its cache TTL. */
 export const OPTIONS_POLL_MS = 60_000;
@@ -50,16 +50,6 @@ function byStrike(rows: OptionContractRow[]): StrikeRow[] {
     map.set(row.strike, entry);
   }
   return [...map.values()].sort((a, b) => a.strike - b.strike);
-}
-
-function useNow(interval: number, active: boolean) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!active) return;
-    const timer = window.setInterval(() => setNow(Date.now()), interval);
-    return () => window.clearInterval(timer);
-  }, [interval, active]);
-  return now;
 }
 
 function Summary({ data }: { data: OptionsPayload }) {
@@ -174,7 +164,7 @@ export default function OptionsPanel({ api }: IDockviewPanelProps) {
     {age != null ? <span title={`Fetched ${etTime(data.clock?.fetched_at)}`}>Updated {ago(age)} ago</span> : null}</> : null;
   const chain = data && hasChain(data.state) && data.summary ? data : undefined;
   return <PanelFrame id="options" detail={data?.provider ? `${data.provider.label} · snapshot` : null} clock={status}>
-    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Current option chain unavailable. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Current option chain unavailable.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol} options…</PanelMessage>
       : !chain ? <PanelMessage tone={data.state === "NO_CHAIN" ? "muted" : "warn"}>{stateMessage(data)}</PanelMessage>
       : <>

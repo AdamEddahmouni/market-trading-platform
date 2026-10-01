@@ -17,9 +17,16 @@ export default defineConfig({
   plugins: [react()],
   build: {
     manifest: true,
+    // The largest chunk is `vela` (~890 kB), reached only through the dynamic import in
+    // components/charts/velaDynamicLoader.ts. It never loads on first paint, so it is exempt
+    // from the size warning; scripts/check-bundle-budget.mjs fails the build if the entry imports it.
+    chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // React gets its own chunk. Otherwise Rollup folds it into the first manual chunk
+          // that uses it (recharts), and the entry has to preload all of recharts just to get React.
+          if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id)) return "react-vendor";
           if (id.includes("/node_modules/victory-vendor/")) return "chart-primitives";
           if (id.includes("/node_modules/recharts/")) return "recharts";
           if (id.includes("/node_modules/@luxalgo/vela")) return "vela";

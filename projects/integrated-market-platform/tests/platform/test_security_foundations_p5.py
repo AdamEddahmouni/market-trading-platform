@@ -251,6 +251,16 @@ class SecretAuditTest(unittest.TestCase):
             self.assertNotIn("sb-token", str(finding))
         self.assertEqual(findings[0].reason, "SECRET_SHAPED_KEY_WITH_LIVE_VALUE")
 
+    def test_model_token_counts_pass_but_token_strings_do_not(self) -> None:
+        # Regression: the AI synthesis budget (ai.budget.tokens / max_tokens) blocked every
+        # instrument News response once an Anthropic key was configured.
+        budget = {"ai": {"budget": {"requests": 3, "max_requests": 30, "tokens": 1200, "max_tokens": 200000},
+                         "usage": {"input_tokens": 900, "output_tokens": 300}}}
+        self.assertEqual(scan_snapshot(budget), ())
+        leaked = scan_snapshot({"ai": {"budget": {"tokens": "sk-live-value", "max_tokens": 1.5},
+                                       "session_token": 1234}})
+        self.assertEqual({f.path for f in leaked}, {"ai.budget.tokens", "ai.budget.max_tokens", "ai.session_token"})
+
     def test_scan_snapshot_env_style_flat_mapping(self) -> None:
         findings = scan_snapshot(dict(os.environ)) if any(
             k.endswith("_TOKEN") and os.environ.get(k) for k in os.environ

@@ -390,6 +390,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path == "/screener/news/activity":
+                # Grid badge: story counts and tone for the rows on screen.
+                from .screener_news import read_news_activity
+                from .screener_universes import universe_spec
+
+                universe = (query.get("universe") or [""])[0]
+                try:
+                    if "news" not in universe_spec(universe).panels:
+                        raise ValueError("NEWS_UNAVAILABLE_FOR_UNIVERSE")
+                    payload = read_news_activity(
+                        universe=universe, window=(query.get("window") or ["24h"])[0],
+                        instrument_ids=",".join(query.get("ids") or []).split(","),
+                    )
+                except (ValueError, TypeError) as exc:
+                    self._send_error_json("SCREENER_NEWS_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path in ("/screener/news", "/screener/news/instrument"):
                 # S11: News is a view/panel over the active universe, never a universe.
                 from .screener_news import read_instrument_news, read_news_feed

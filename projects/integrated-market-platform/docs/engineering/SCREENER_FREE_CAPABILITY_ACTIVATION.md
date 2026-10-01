@@ -256,11 +256,18 @@ Congress identity with the cached registry:
    chat or commit them.
 2. Set `SEC_USER_AGENT` (name + contact) in the API process environment for
    instrument SEC filings.
-3. Senate eFD: accept the terms in a browser and save more PTR report pages into the
-   import directory.
-4. Decide whether the standard launcher should enable `IMP_NEWS_RSS_LIVE`,
-   `IMP_EDGAR_LIVE`, `IMP_PUBLIC_RECORDS_LIVE`, `IMP_TREASURY_LIVE` and
-   `IMP_CRYPTO_LIVE` by default. This is a policy choice and is not changed here.
+3. ~~Senate eFD: accept the terms in a browser and save more PTR report pages into
+   the import directory.~~ Automated 2026-09-30 (owner decision): with
+   `IMP_SENATE_EFD_LIVE=1`, IMP accepts the terms and downloads new reports every
+   6 h ([S14 automatic download](SCREENER_S14_DISCLOSURE_COVERAGE.md#automatic-download-2026-09-30)).
+   Owner steps left: set `IMP_SENATE_EFD_IMPORT_DIR` and `SEC_USER_AGENT`.
+4. ~~Decide whether the standard launcher should enable the source gates by
+   default.~~ Decided 2026-09-30 (owner): `tools/platform/local_launcher.py` turns on
+   every observational data-source gate (`PROVIDER_SOURCE_GATES`) at launch. An
+   explicit value in the environment still wins. The gates only permit reads. A
+   source that also needs a key, a `SEC_USER_AGENT` or saved pages keeps reporting
+   `NOT_CONFIGURED` without it. IBKR and recorded order-flow replay are not
+   data-source gates and stay off.
 5. Start moomoo OpenD for the ETF and Futures catalogs.
 
 ## Actionable degraded states and Setup
@@ -301,4 +308,5 @@ one table in `ui_api/screener_remedies.py`. The UI renders that instead of a bar
 - No model weights, runtimes or registry data in Git; all go to the external cache.
 - No silent downloads: model setup is explicit, and runtime is `local_files_only`.
 - The local model endpoint is loopback only.
-- No automated Senate eFD access in IMP.
+- ~~No automated Senate eFD access in IMP.~~ Superseded 2026-09-30: automated,
+  throttled and attestation-gated (see item 3 above).

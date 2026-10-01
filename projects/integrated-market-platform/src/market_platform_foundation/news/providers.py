@@ -160,7 +160,8 @@ class NewsApiClient(_NewsClientBase):
         min_interval_s: float = 1.0,
     ) -> None:
         super().__init__(
-            api_key=api_key or newsapi_api_key(),
+            # None resolves the configured key; an explicit "" means "no key" (never the operator's).
+            api_key=newsapi_api_key() if api_key is None else api_key,
             http_getter=http_getter,
             live_enabled=(
                 newsapi_live_enabled() if live_enabled is None else live_enabled
@@ -230,7 +231,7 @@ class FinnhubNewsClient(_NewsClientBase):
         min_interval_s: float = 1.0,
     ) -> None:
         super().__init__(
-            api_key=api_key or finnhub_api_key(),
+            api_key=finnhub_api_key() if api_key is None else api_key,
             http_getter=http_getter,
             live_enabled=(
                 finnhub_live_enabled() if live_enabled is None else live_enabled

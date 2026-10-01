@@ -1,5 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 import type { ColumnPinningState, ColumnSizingState, VisibilityState } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
@@ -9,8 +9,10 @@ import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
 import { QuickPreview } from "./QuickPreview";
 import { PanelLauncher } from "./panels/PanelLauncher";
-import { marketPrice } from "./panels/shared";
-import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT } from "./panels/registry";
+import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
+import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
+import { NewsBadge } from "./news/NewsBadge";
+import type { NewsActivityRow } from "../../api/screenerNews";
 import type { DockHandle } from "./panels/ScreenerDock";
 import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/newsParams";
 import { readLastSeen } from "./news/newsSeen";
@@ -18,15 +20,18 @@ import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type Inte
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
-const ScreenerDock = lazy(() => import("./panels/ScreenerDock"));
+// Reloadable: after a failed chunk load (network, new deployment) Retry imports it again.
+const ScreenerDock = reloadableLazy(() => import("./panels/ScreenerDock"));
 // S11: the News view loads only when News mode is first entered.
-const NewsView = lazy(() => import("./news/NewsView"));
+const NewsView = reloadableLazy(() => import("./news/NewsView"));
 // S12: the intelligence views (Institutional, Congress, Positioning) load only when first entered.
-const IntelligenceView = lazy(() => import("./participants/IntelligenceView"));
+const IntelligenceView = reloadableLazy(() => import("./participants/IntelligenceView"));
 const UNIVERSE_LABELS: Record<ScreenerUniverse, string> = { US_EQUITIES: "US Equities", FUTURES: "Futures", US_ETFS: "ETFs", BONDS: "Bonds", CRYPTO: "Crypto" };
 const DOCK_TABLE_RESERVE = 420;
 /** Best-effort layout write: never throws, even if the client call does not return a promise. */
-const flushPanelLayout = (layout: PanelLayout) => { void Promise.resolve().then(() => persistScreenerPanelLayout(layout)).catch(() => undefined); };
+const flushPanelLayout = (layout: PanelLayout, universe: ScreenerUniverse) => { void Promise.resolve().then(() => persistScreenerPanelLayout(layout, universe)).catch(() => undefined); };
+/** One news-activity request per grid page: its row ids are stable while the page is loaded. */
+const ACTIVITY_BUCKET = 200;
 
 const PREVIEW_MIN = 320;
 const PREVIEW_MAX = 720;
@@ -308,35 +313,64 @@ export function ScreenerPage() {
   const [dockHeight, setDockHeight] = useState(DOCK_HEIGHT_DEFAULT);
   const dockHeightRef = useRef(DOCK_HEIGHT_DEFAULT);
   const panelLayout = useRef<PanelLayout>({ ...DEFAULT_PANEL_LAYOUT });
-  const panelRestored = useRef(false);
+  // The universe whose layout `panelLayout` holds. Each universe keeps its own dock arrangement.
+  const panelUniverse = useRef<ScreenerUniverse | null>(null);
+  // The dock mounts only once its universe's layout is loaded (it reads the layout on mount).
+  const [dockUniverse, setDockUniverse] = useState<ScreenerUniverse | null>(null);
+  // Bumped by the dock boundary's "Reset layout" to remount the dock on a default arrangement.
+  const [dockGeneration, setDockGeneration] = useState(0);
   const panelTimer = useRef<number | undefined>(undefined);
   const dockHandle = useRef<DockHandle | null>(null);
   const dockRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const saved = config.data?.panel_layout;
-    if (!config.data || panelRestored.current) return;
-    panelRestored.current = true;
-    if (!saved) return;
-    panelLayout.current = { ...saved, dock_height: clampDockHeight(saved.dock_height) };
-    setOpenPanels(saved.open_panels); setDockHeight(panelLayout.current.dock_height);
+    if (config.isPending || panelUniverse.current === universe) return;
+    const previous = panelUniverse.current;
+    // Write the previous universe's pending change under its own universe before switching.
+    if (previous !== null && panelTimer.current !== undefined) {
+      window.clearTimeout(panelTimer.current);
+      panelTimer.current = undefined;
+      flushPanelLayout(panelLayout.current, previous);
+    }
+    panelUniverse.current = universe;
+    const saved = panelLayoutFor(config.data, universe);
+    if (saved) {
+      panelLayout.current = { ...saved, dock_height: clampDockHeight(saved.dock_height) };
+      setOpenPanels(saved.open_panels);
+    } else if (previous !== null) {
+      panelLayout.current = { ...DEFAULT_PANEL_LAYOUT };
+      setOpenPanels([]);
+    }
+    // A panel launched before the first layout arrived stays pending; a switch drops the old universe's request.
+    if (previous !== null) setPendingPanel(null);
+    setDockHeight(panelLayout.current.dock_height);
     dockHeightRef.current = panelLayout.current.dock_height;
-  }, [config.data]);
+    setDockUniverse(universe);
+  }, [config.isPending, config.data, universe]);
   const persistPanels = useCallback(() => {
-    // Keep the cached config current: returning to the Screener within this session
-    // must restore the latest arrangement, never the one fetched at first load.
+    const target = panelUniverse.current;
+    if (target === null) return;
+    // Keep the cached config current: returning to the Screener (or to this universe) within
+    // this session must restore the latest arrangement, never the one fetched at first load.
     const latest = panelLayout.current;
-    queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old ? { ...old, panel_layout: latest } : old);
+    queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old
+      ? { ...old, panel_layouts: { ...old.panel_layouts, [target]: latest } } : old);
     if (!config.data?.persistence_available) return;
     window.clearTimeout(panelTimer.current);
-    panelTimer.current = window.setTimeout(() => { panelTimer.current = undefined; flushPanelLayout(panelLayout.current); }, 500);
+    panelTimer.current = window.setTimeout(() => { panelTimer.current = undefined; flushPanelLayout(panelLayout.current, target); }, 500);
   }, [config.data?.persistence_available]);
   // A layout change still waiting on the debounce is written once on unmount, never by a timer that outlives the page.
   useEffect(() => () => {
-    if (panelTimer.current === undefined) return;
+    if (panelTimer.current === undefined || panelUniverse.current === null) return;
     window.clearTimeout(panelTimer.current);
     panelTimer.current = undefined;
-    flushPanelLayout(panelLayout.current);
+    flushPanelLayout(panelLayout.current, panelUniverse.current);
   }, []);
+  // The dock boundary's recovery: drop only this universe's saved arrangement, keep the open panels.
+  const resetDockAfterError = useCallback(() => {
+    panelLayout.current = { ...panelLayout.current, dockview_layout: null };
+    persistPanels();
+    setDockGeneration((current) => current + 1);
+  }, [persistPanels]);
   const onPanelLayout = useCallback((next: Pick<PanelLayout, "open_panels" | "active_panel" | "dockview_layout">) => {
     panelLayout.current = { ...panelLayout.current, ...next };
     persistPanels();
@@ -354,6 +388,7 @@ export function ScreenerPage() {
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
   const openNewsPanel = useCallback(() => launchPanel("news"), [launchPanel]);
+  const openNewsFor = useCallback((instrumentId: string) => { setSelected(instrumentId); launchPanel("news"); }, [launchPanel]);
   const openParticipantPanel = useCallback((lens: "institutional" | "congress_gov") => launchPanel(lens), [launchPanel]);
   const resetPanels = useCallback(() => {
     dockHandle.current?.reset();
@@ -389,7 +424,7 @@ export function ScreenerPage() {
     event.preventDefault();
     commitDockHeight(event.key === "Home" ? 1200 : event.key === "End" ? 0 : dockHeightRef.current + steps[event.key]);
   };
-  const dockVisible = openPanels.length > 0 || pendingPanel !== null;
+  const dockVisible = (openPanels.length > 0 || pendingPanel !== null) && dockUniverse === universe;
   useEffect(() => {
     const layout = config.data?.preview_layout;
     if (!layout || layoutRestored.current) return;
@@ -409,14 +444,25 @@ export function ScreenerPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const nextUniverse = universeFromUrl(params.get("universe"));
+    // Columns, view, and sort come back as this universe last had them; filters never carry across.
+    const remembered = nextUniverse !== universe && !params.get("screen") ? lastScreenFor(config.data, nextUniverse) : null;
     if (nextUniverse !== universe) {
       const spec = config.data?.universes?.find((item) => item.id === nextUniverse);
       setUniverse(nextUniverse); setSelected(null); setSelectedCache(null); setQuotes({}); setQuoteError(false);
       if (filters.length) setFilterNotice("Filters were cleared when the universe changed.");
-      setFilters([]); setView("Overview"); setSort((spec?.default_sort ?? DEFAULT_SORT[nextUniverse]) as SortKey);
-      setColumnVisibility(viewVisibility("Overview", spec?.views ?? views));
-      setColumnOrder(spec ? [...spec.default_columns, ...allKeys.filter((key) => !spec.default_columns.includes(key))] : allKeys);
-      setColumnSizing({}); setColumnPinning({ left: ["symbol"], right: [] });
+      setFilters([]);
+      const rememberedView = remembered ? canonicalScreenerView(remembered.view, nextUniverse, spec?.view_aliases) : null;
+      if (remembered && rememberedView) {
+        setView(rememberedView); setSort(remembered.sort.field as SortKey);
+        setColumnVisibility(Object.fromEntries(allKeys.map((key) => [key, remembered.columns.visible.includes(key)])));
+        setColumnOrder([...remembered.columns.order, ...allKeys.filter((key) => !remembered.columns.order.includes(key))]);
+        setColumnSizing(remembered.columns.widths); setColumnPinning({ left: remembered.columns.pinned, right: [] });
+      } else {
+        setView("Overview"); setSort((spec?.default_sort ?? DEFAULT_SORT[nextUniverse]) as SortKey);
+        setColumnVisibility(viewVisibility("Overview", spec?.views ?? views));
+        setColumnOrder(spec ? [...spec.default_columns, ...allKeys.filter((key) => !spec.default_columns.includes(key))] : allKeys);
+        setColumnSizing({}); setColumnPinning({ left: ["symbol"], right: [] });
+      }
     }
     setSearch(params.get("q") ?? "");
     setSelectedScreenId(params.get("screen") ?? "");
@@ -424,7 +470,7 @@ export function ScreenerPage() {
     const urlSort = sortFromUrl(key);
     if (urlSort && (!config.data?.universes || (config.data.universes.find((item) => item.id === nextUniverse)?.views &&
       Object.values(config.data.universes.find((item) => item.id === nextUniverse)!.views).some((fields) => fields.includes(urlSort))))) setSort(urlSort);
-    setDescending(params.has("dir") ? params.get("dir") !== "asc" : nextUniverse === "US_EQUITIES");
+    setDescending(params.has("dir") ? params.get("dir") !== "asc" : remembered?.sort.descending ?? nextUniverse === "US_EQUITIES");
     const nextSpec = config.data?.universes?.find((item) => item.id === nextUniverse);
     const nextView = canonicalScreenerView(params.get("view"), nextUniverse, nextSpec?.view_aliases);
     const nextViews = nextSpec?.views ?? views;
@@ -466,8 +512,8 @@ export function ScreenerPage() {
       setColumnPinning({ left: source.columns.pinned, right: [] });
       setSavedBase(JSON.stringify(snapshotOf({ ...source, view: sourceView } as ScreenerScreen)));
       loadedScreen.current = id;
-    } else if (!id && (!initialized.current || loadedScreen.current !== null) && (config.data.last?.universe ?? "US_EQUITIES") === universe && config.data.last) {
-      const last = config.data.last;
+    } else if (!id && (!initialized.current || loadedScreen.current !== null) && lastScreenFor(config.data, universe)) {
+      const last = lastScreenFor(config.data, universe)!;
       setFilters(last.filters);
       const requestedView = canonicalScreenerView(params.get("view"), universe, activeSpec?.view_aliases);
       const lastView = canonicalScreenerView(last.view, universe, activeSpec?.view_aliases) ?? "Overview";
@@ -524,15 +570,47 @@ export function ScreenerPage() {
     return merged;
   }, [query.data]);
   const resultCount = firstPage?.source_error ? null : firstPage?.result_count ?? null;
+  // First and last grid page on screen (as row offsets), set from the virtualizer below.
+  const [visibleRange, setVisibleRange] = useState<[number, number]>([0, 0]);
   // A later page whose pinned snapshot is gone restarts the chain at page 1; loaded rows stay until it lands.
   useEffect(() => {
     if (query.isFetchNextPageError && resultSetChanged(query.error)) void query.refetch();
   }, [query.isFetchNextPageError, query.error]);
+  // News badge: story counts for the grid pages on screen, fetched per page so scrolling within a page reuses one request.
+  const newsBadges = supportedPanels.has("news") && !newsMode && !intel;
+  const [firstVisible, lastVisibleIndex] = visibleRange;
+  const activityBuckets = useMemo(() => {
+    if (!newsBadges || !rows.length) return [];
+    const buckets: string[][] = [];
+    for (let bucket = Math.floor(firstVisible / ACTIVITY_BUCKET); bucket <= Math.floor(Math.min(lastVisibleIndex, rows.length - 1) / ACTIVITY_BUCKET); bucket += 1) {
+      buckets.push(rows.slice(bucket * ACTIVITY_BUCKET, (bucket + 1) * ACTIVITY_BUCKET).map((row) => row.instrument.instrument_id));
+    }
+    return buckets;
+  }, [newsBadges, rows, firstVisible, lastVisibleIndex]);
+  const activityQueries = useQueries({ queries: activityBuckets.map((ids) => ({
+    queryKey: ["screener-news-activity", universe, ids.join(",")],
+    // Dynamic import keeps the News contracts out of the Screener's first chunk.
+    queryFn: async ({ signal }: { signal: AbortSignal }) => (await import("../../api/screenerNews")).fetchNewsActivity(universe, ids, signal),
+    staleTime: 60_000, refetchInterval: 120_000, retry: false,
+  })) });
+  const newsActivity = useMemo(() => {
+    const merged: Record<string, NewsActivityRow> = {};
+    const pending = new Set<string>();
+    activityQueries.forEach((item, index) => {
+      if (item.data?.universe === universe) Object.assign(merged, item.data.instruments);
+      else if (item.isPending) for (const id of activityBuckets[index] ?? []) pending.add(id);
+    });
+    return { rows: merged, pending };
+    // The query results array is new each render; its data identities are what matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
-      if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong><small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
+      if (definition.key === "symbol") return <span className="screener-symbol"><strong>{item.symbol}</strong>
+        {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
       if (textColumns.has(definition.key)) {
         const value = item[definition.key as TextKey] ?? null;
         const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
@@ -546,17 +624,29 @@ export function ScreenerPage() {
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes, referenceOnly, universe]);
+  })), [quotes, referenceOnly, universe, newsBadges, newsActivity]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing, onColumnPinningChange: setColumnPinning,
     columnResizeMode: "onChange" });
   const loaderRow = query.hasNextPage ? 1 : 0;
+  // Rows the grid can never reach: the source stopped paging short of its own count, or paging failed.
+  const unreachable = resultCount !== null && rows.length < resultCount;
+  const truncated = !unreachable || query.isPending ? null
+    : query.isFetchNextPageError ? `Showing ${rows.length.toLocaleString()} of ${resultCount!.toLocaleString()}: loading more failed`
+    : !query.hasNextPage ? `Showing ${rows.length.toLocaleString()} of ${resultCount!.toLocaleString()}: the source returned no further pages`
+    : null;
   const virtualizer = useVirtualizer({ count: rows.length + loaderRow, getScrollElement: () => scrollRef.current, estimateSize: () => 34, overscan: 5 });
   const virtualRows = virtualizer.getVirtualItems();
   const indices = virtualRows.map((item) => item.index).join(",");
   const lastVirtual = virtualRows.length ? virtualRows[virtualRows.length - 1].index : -1;
+  const firstVirtual = virtualRows.length ? virtualRows[0].index : 0;
+  // Page granularity is enough: only a scroll into another 200-row page changes the badge request.
+  useEffect(() => {
+    const next: [number, number] = [Math.floor(firstVirtual / ACTIVITY_BUCKET) * ACTIVITY_BUCKET, Math.floor(Math.max(lastVirtual, 0) / ACTIVITY_BUCKET) * ACTIVITY_BUCKET];
+    setVisibleRange((current) => current[0] === next[0] && current[1] === next[1] ? current : next);
+  }, [firstVirtual, lastVirtual]);
   useEffect(() => {
     if (!query.hasNextPage || query.isFetchingNextPage || query.isFetchNextPageError || query.isRefetching) return;
     if (lastVirtual >= rows.length - PREFETCH_ROWS) void query.fetchNextPage();
@@ -746,7 +836,11 @@ export function ScreenerPage() {
     if (!restored || !config.data?.persistence_available) return;
     const timer = window.setTimeout(() => {
       const snapshot = JSON.parse(lastSerialized) as ReturnType<typeof currentSnapshot>;
-      void persistLastScreenerConfig({ name: "Last Used", universe, ...snapshot }).catch(() => undefined);
+      const screen = { name: "Last Used", universe, ...snapshot };
+      // Cache it per universe so switching back within this session restores these columns.
+      queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old
+        ? { ...old, last_by_universe: { ...old.last_by_universe, [universe]: { ...screen, id: "user-last", version: 2 } } } : old);
+      void persistLastScreenerConfig(screen).catch(() => undefined);
     }, 600);
     return () => window.clearTimeout(timer);
   }, [lastSerialized, restored, config.data?.persistence_available, universe]);
@@ -866,11 +960,11 @@ export function ScreenerPage() {
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
     <div className="screener-body" ref={bodyRef}>
-    {intel ? <Suspense fallback={<div className="screener-message" role="status">Loading {INTEL_LABELS[intel].toLowerCase()} view…</div>}>
+    {intel ? <ScreenerErrorBoundary label={`The ${INTEL_LABELS[intel]} view`} resetKey={`${universe}|${intel}`}><Suspense fallback={<div className="screener-message" role="status">Loading {INTEL_LABELS[intel].toLowerCase()} view…</div>}>
       <IntelligenceView universe={universe} universeLabel={activeSpec?.label ?? UNIVERSE_LABELS[universe]} view={intel} search={location.search} onUpdate={(updates) => urlUpdate(updates)} />
-    </Suspense> : newsMode ? <Suspense fallback={<div className="screener-message" role="status">Loading news view…</div>}>
+    </Suspense></ScreenerErrorBoundary> : newsMode ? <ScreenerErrorBoundary label="The News view" resetKey={universe}><Suspense fallback={<div className="screener-message" role="status">Loading news view…</div>}>
       <NewsView universe={universe} universeLabel={activeSpec?.label ?? UNIVERSE_LABELS[universe]} search={location.search} onUpdate={(updates) => urlUpdate(updates)} />
-    </Suspense> :
+    </Suspense></ScreenerErrorBoundary> :
     <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={(resultCount ?? rows.length) + 1} aria-busy={query.isFetching} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
@@ -957,21 +1051,27 @@ export function ScreenerPage() {
         aria-valuemin={140} aria-valuemax={1200} aria-valuenow={dockHeight} tabIndex={0}
         onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />
       <section className="screener-dock" aria-label="Specialist panels" ref={dockRef} style={{ height: dockHeight }}>
-        <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-          <ScreenerDock layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels}
-            clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
-            onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
-        </Suspense>
+        {/* The dock as a whole is contained too: a failure outside any one panel (e.g. a saved arrangement
+            the dock cannot restore) never blanks the table, and the layout can be reset from here. */}
+        <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
+          actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
+          <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels}
+              clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
+              onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
+          </Suspense>
+        </ScreenerErrorBoundary>
       </section>
     </>}
     <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
-      {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
+      {truncated && <span className="screener-truncated" role="status">{truncated}</span>}
+      {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} (<Age iso={firstPage.snapshot.as_of} staleMs={300_000} /> ago) · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
       {firstPage?.coverage && <span title="Categories without a permitted source are reported, never counted">{Object.entries(firstPage.coverage).sort(([a], [b]) => coverageRank(a) - coverageRank(b)).map(([category, item]) =>
         `${category.charAt(0) + category.slice(1).toLowerCase()} ${item.count != null ? item.count.toLocaleString() : "unavailable"}`).join(" · ")}</span>}
       <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
       <span>Market {session}</span>
-      <span>Universe {firstPage?.universe_as_of ? `as of ${clock(firstPage.universe_as_of, universe)}` : "unavailable"}</span>
+      <span>Universe {firstPage?.universe_as_of ? <>as of {clock(firstPage.universe_as_of, universe)} (<Age iso={firstPage.universe_as_of} /> ago)</> : "unavailable"}</span>
       <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {activeSpec?.source ?? "Finviz"}</span></footer>
   </section>;
 }

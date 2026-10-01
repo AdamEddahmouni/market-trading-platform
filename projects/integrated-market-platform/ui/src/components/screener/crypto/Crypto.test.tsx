@@ -186,7 +186,7 @@ describe("Crypto universe", () => {
     expect(screen.getAllByText("24/7").length).toBeGreaterThan(0);
     expect(screen.queryByText(/RTH|Pre-market|After hours|Market Cap|Float|Sector/)).not.toBeInTheDocument();
     expect(screen.getAllByText("KRAKEN").length).toBeGreaterThan(0);
-    expect(screen.getByText(/^Universe as of \d{2}:\d{2}:\d{2} UTC$/)).toBeInTheDocument(); // venue UTC, like every Crypto clock
+    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && /^Universe as of \d{2}:\d{2}:\d{2} UTC \(\S+ ago\)$/.test(element.textContent ?? ""))).toBeInTheDocument(); // venue UTC, like every Crypto clock
   });
 
   it("labels visible-row venue REST quotes as snapshots, never as live or unavailable", async () => {
@@ -244,6 +244,35 @@ describe("Crypto universe", () => {
     expect(await screen.findByText(/Kraken public market data is not enabled/)).toBeInTheDocument();
     expect(screen.queryByText(/could not be refreshed/)).not.toBeInTheDocument();
     expect(screen.queryByText("BTC/USD", { selector: ".screener-symbol strong" })).not.toBeInTheDocument();
+  });
+
+  it("keeps a separate dock layout and column set per universe", async () => {
+    const layout = (open: string[]) => ({ version: 1, open_panels: open, active_panel: open[0], dock_height: 320, dockview_layout: null });
+    const usLast = { id: "user-last", version: 2, name: "Last Used", universe: "US_EQUITIES", filters: [], view: "Custom",
+      sort: { field: "price", descending: true },
+      columns: { visible: ["symbol"], order: ["symbol", "price"], widths: {}, pinned: ["symbol"] } };
+    mocks.config.mockResolvedValue({ ...config(), last_by_universe: { US_EQUITIES: usLast },
+      panel_layouts: { CRYPTO: layout(["order_flow"]), US_EQUITIES: layout(["charts"]) } });
+    // Dockview's group containers are regions too; the panel body is the section with the panel's id.
+    const panel = (id: string) => document.getElementById(`screener-panel-${id}`);
+    mount();
+    await screen.findByText("BTC/USD", { selector: ".screener-symbol strong" });
+    await waitFor(() => expect(panel("order_flow")).not.toBeNull());
+    expect(panel("charts")).toBeNull();
+    expect(headers()).toEqual(["Pair", "Price", "UTC day %", "24h Quote Vol", "Bid", "Ask", "Spread %", "Venue"]);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "Screener universe" }), { target: { value: "US_EQUITIES" } });
+    // US Equities comes back with its own dock and its own last columns.
+    await waitFor(() => expect(panel("charts")).not.toBeNull());
+    expect(panel("order_flow")).toBeNull();
+    await waitFor(() => expect(headers()).toEqual(["Symbol"]));
+
+    // Closing US Charts is saved under US Equities only; Crypto keeps Order Flow.
+    fireEvent.click(within(panel("charts")!).getByRole("button", { name: "Close Charts" }));
+    await waitFor(() => expect(mocks.panelLayout).toHaveBeenCalledWith(expect.objectContaining({ open_panels: [] }), "US_EQUITIES"), { timeout: 2000 });
+    expect(mocks.panelLayout.mock.calls.filter((call) => call[1] === "CRYPTO" && !call[0].open_panels.includes("order_flow"))).toEqual([]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Screener universe" }), { target: { value: "CRYPTO" } });
+    await waitFor(() => expect(panel("order_flow")).not.toBeNull());
   });
 
   it("offers only the venue-backed panels", async () => {

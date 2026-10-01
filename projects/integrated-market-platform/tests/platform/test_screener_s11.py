@@ -273,6 +273,30 @@ class FeedTests(unittest.TestCase):
         self.assertEqual(filtered["filters"]["sentiment"]["hidden_unscored"], 1)
         self.assertTrue(all(story["sentiment"]["state"] == "SCORED" for story in filtered["stories"]))
 
+    def test_grid_activity_counts_stories_and_tone_per_instrument(self):
+        model = FinbertSentiment(model_path=str(ROOT / "tests"), loader=loader({"unveils": "positive"}))
+        svc = service(sentiment=model)
+        activity = svc.activity(universe="US_EQUITIES", instrument_ids=["EQ:AAPL", "EQ:MSFT", "EQ:NOPE", "EQ:AAPL"])
+        self.assertEqual(activity["schema_version"], "screener-news-activity/1.0.0")
+        self.assertEqual(activity["window"]["id"], "24h")
+        instruments = activity["instruments"]
+        self.assertEqual(set(instruments), {"EQ:AAPL", "EQ:MSFT"})  # no story → absent, never a zero row invented
+        self.assertEqual(instruments["EQ:MSFT"]["count"], 1)
+        self.assertEqual(instruments["EQ:AAPL"]["tone"]["positive"], 1)
+        # The counts agree with the feed's own instrument filter.
+        for instrument_id, row in instruments.items():
+            self.assertEqual(row["count"], svc.feed(universe="US_EQUITIES", instrument=instrument_id)["result_count"])
+            self.assertEqual(row["count"], sum(row["tone"].values()) + row["unscored"])
+        wide = svc.activity(universe="US_EQUITIES", instrument_ids=["EQ:AAPL"], window="72h")
+        self.assertGreaterEqual(wide["instruments"]["EQ:AAPL"]["count"], instruments["EQ:AAPL"]["count"])
+        unscored = service().activity(universe="US_EQUITIES", instrument_ids=["EQ:MSFT"])["instruments"]["EQ:MSFT"]
+        self.assertEqual((unscored["unscored"], sum(unscored["tone"].values())), (1, 0))
+        for bad in ({"instrument_ids": []}, {"instrument_ids": [f"EQ:X{i}" for i in range(201)]}, {"instrument_ids": ["EQ:AAPL"], "window": "2d"}):
+            with self.assertRaises(ValueError):
+                svc.activity(universe="US_EQUITIES", **bad)
+        with self.assertRaises(ValueError):
+            svc.activity(universe="NEWS", instrument_ids=["EQ:AAPL"])
+
     def test_new_count_since_last_view_uses_publication_time(self):
         svc = service()
         self.assertIsNone(svc.feed(universe="US_EQUITIES")["new_count"])
@@ -452,6 +476,12 @@ class SynthesisTests(unittest.TestCase):
         self.assertEqual(empty["state"], "INSUFFICIENT_EVIDENCE")
         universe = service(provider=FakeProvider()).synthesis(universe="FUTURES", scope="UNIVERSE")
         self.assertEqual(universe["state"], "CURRENT")
+        # A universe synthesis reads one capped feed page; coverage still counts every matched story.
+        with mock.patch.object(screener_news, "MAX_LIMIT", 1):
+            capped = service(provider=FakeProvider()).synthesis(universe="FUTURES", scope="UNIVERSE")
+        self.assertGreater(capped["coverage"]["story_count"], 1)
+        self.assertLessEqual(capped["coverage"]["synthesized_story_count"], 1)
+        self.assertEqual(service().feed(universe="FUTURES")["filters"]["sentiment"]["scored_cap"], screener_news.MAX_SCORED_STORIES)
 
     def test_certainty_guard(self):
         self.assertFalse(unsupported_certainty("Analysts upgraded Apple to Buy after the launch."))

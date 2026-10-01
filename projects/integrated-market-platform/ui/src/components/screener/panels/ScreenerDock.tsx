@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type FunctionComponent, type MutableRefObject } from "react";
 import { DockviewReact, themeDark, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import type { PanelId, PanelLayout, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
@@ -12,7 +12,7 @@ import RatesCurvePanel from "./RatesCurvePanel";
 import ShortSqueezePanel from "./ShortSqueezePanel";
 import OrderFlowPanel from "./OrderFlowPanel";
 import { LIVE_PANELS, PANEL_TITLES, PANELS } from "./registry";
-import { PanelErrorBoundary, PanelFrame, PanelMessage, SpecialistContext, useSelection, type PanelActions, type SpecialistSelection } from "./shared";
+import { PanelErrorBoundary, PanelFrame, PanelMessage, reloadableLazy, SpecialistContext, useSelection, type PanelActions, type SpecialistSelection } from "./shared";
 import "./dock.css";
 
 /** Arrowing past rows must not open provider subscriptions for each row. */
@@ -20,21 +20,21 @@ export const PANEL_SETTLE_MS = 250;
 const HEARTBEAT_MS = 15_000;
 const ORDER = PANELS.map((panel) => panel.id);
 // S11: News & Analysis loads on first open, keeping the dock chunk within budget.
-const LazyNewsAnalysisPanel = lazy(() => import("./NewsAnalysisPanel"));
+const LazyNewsAnalysisPanel = reloadableLazy(() => import("./NewsAnalysisPanel"));
 function NewsAnalysisPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading News &amp; Analysis…</PanelMessage>}><LazyNewsAnalysisPanel {...props} /></Suspense>;
 }
 // S12: the participant and government lenses load on first open as well.
-const LazyInstitutionalPanel = lazy(() => import("./InstitutionalPanel"));
+const LazyInstitutionalPanel = reloadableLazy(() => import("./InstitutionalPanel"));
 function InstitutionalPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading Institutional &amp; Whale…</PanelMessage>}><LazyInstitutionalPanel {...props} /></Suspense>;
 }
 // Setup checklist: loads on first open.
-const LazySetupPanel = lazy(() => import("./SetupPanel"));
+const LazySetupPanel = reloadableLazy(() => import("./SetupPanel"));
 function SetupPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading Setup…</PanelMessage>}><LazySetupPanel {...props} /></Suspense>;
 }
-const LazyCongressGovPanel = lazy(() => import("./CongressGovPanel"));
+const LazyCongressGovPanel = reloadableLazy(() => import("./CongressGovPanel"));
 function CongressGovPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading Congress &amp; Government…</PanelMessage>}><LazyCongressGovPanel {...props} /></Suspense>;
 }
@@ -141,6 +141,10 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
   const [open, setOpen] = useState<PanelId[]>([]);
   const callbacks = useRef({ onOpenChange, onLayout });
   callbacks.current = { onOpenChange, onLayout };
+  // The dock remounts per universe. Dockview's teardown can emit panel removals; they must not
+  // be reported as the user closing panels (that would overwrite the next universe's layout).
+  const mounted = useRef(true);
+  useEffect(() => () => { mounted.current = false; }, []);
   const settled = useSettled(row?.instrument.instrument_id ?? null, PANEL_SETTLE_MS);
   // A cleared selection (e.g. a universe switch) must not lend the previous
   // universe's instrument to this render's demand or panel queries.
@@ -191,11 +195,12 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
     const api = event.api;
     apiRef.current = api;
     const emit = () => {
+      if (!mounted.current) return;
       const ids = ordered(api.panels.map((panel) => panel.id));
       setOpen((current) => current.join() === ids.join() ? current : ids);
       callbacks.current.onOpenChange(ids);
     };
-    const persist = () => callbacks.current.onLayout({ open_panels: ordered(api.panels.map((panel) => panel.id)),
+    const persist = () => mounted.current && callbacks.current.onLayout({ open_panels: ordered(api.panels.map((panel) => panel.id)),
       active_panel: (api.activePanel?.id as PanelId | undefined) ?? null, dockview_layout: serializeLayout(api) });
     api.onDidAddPanel(emit);
     api.onDidRemovePanel(() => { emit(); persist(); });

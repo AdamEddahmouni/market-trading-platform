@@ -2,7 +2,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { Providers, stamp, stateText } from "../participants/participantFormat";
 import { Awards, Congressional, Lobbying, Provenance } from "../participants/sections";
 import { useParticipantInstrument } from "../participants/useParticipantInstrument";
-import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { Age, ErrorDetail, PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
 import "../news/news.css";
 import "../participants/participants.css";
 
@@ -14,9 +14,9 @@ export default function CongressGovPanel({ api }: IDockviewPanelProps) {
     lens: "congress_gov", compact: false, enabled: visible });
   const gate = selectionGate("congress_gov", row, settledId);
   const sections = data?.sections ?? {};
-  return <PanelFrame id="congress_gov" state={data?.state ?? null} stateLabel={data ? stateText(data.state) : undefined} clock={data ? `updated ${stamp(data.generated_at)}` : null}
+  return <PanelFrame id="congress_gov" state={data?.state ?? null} stateLabel={data ? stateText(data.state) : undefined} clock={data ? <>updated {stamp(data.generated_at)} (<Age iso={data.generated_at} /> ago)</> : null}
     detail={data ? data.instrument.label : null}>
-    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Congress &amp; Government request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Congress &amp; Government request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row?.symbol} public records…</PanelMessage>
       : <div className="news-panel participant-panel">
         <Providers providers={data.providers} label="Congress & Government sources" />

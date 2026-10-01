@@ -10,7 +10,8 @@ separate and are never blended into a score:
   UNKNOWN (the Order Flow panel's evidence; never attributed to an institution);
 * CONGRESSIONAL — House Periodic Transaction Reports from the House Clerk (official
   PDFs; transaction rows only where the filer disclosed a ticker) and, since S14, Senate
-  eFD reports the operator imported after accepting eFD's terms themselves; members
+  eFD reports in the attested import directory (downloaded by ``senate_efd_sync`` under
+  the owner's terms acceptance when ``IMP_SENATE_EFD_LIVE=1``, or saved by hand); members
   carry an evidence-based canonical identity beside the filed spelling;
 * GOVERNMENT — USAspending federal award transactions (contracts, grants kept
   separate) and Lobbying Disclosure Act filings.
@@ -86,6 +87,7 @@ OWNERSHIP_FAMILIES = {"INSIDER": sec_ownership.INSIDER_FORMS,
 SENATE_REASON = senate_ptr.TERMS_REASON
 SENATE_URL = senate_ptr.SEARCH_URL
 SENATE_RESCAN_S = 300.0
+SENATE_SYNC_TTL_S = 6 * 3600.0
 HOUSE_SEARCH_URL = "https://disclosures-clerk.house.gov/FinancialDisclosure"
 
 PROVIDERS = {
@@ -95,7 +97,8 @@ PROVIDERS = {
     "cftc_cot": ("CFTC Commitments of Traders", "WHALE", "Weekly; Tuesday positions, Friday 15:30 ET release"),
     "order_flow": ("Large prints (Order Flow panel)", "WHALE", "Live session; participant unknown"),
     "house_ptr": ("House Clerk financial disclosures", "CONGRESSIONAL", "Filing-driven; index refreshed by the Clerk"),
-    "senate_efd": ("Senate eFD (operator import)", "CONGRESSIONAL", "Filing-driven; imported by the operator after eFD terms acceptance"),
+    "senate_efd": ("Senate eFD", "CONGRESSIONAL",
+                   "Filing-driven; downloaded by IMP under the owner's terms acceptance, or saved by the operator"),
     "usaspending": ("USAspending.gov", "GOVERNMENT", "Daily loads; FPDS contract actions lag several days"),
     "lobbying": ("Lobbying Disclosure Act (lda.gov)", "GOVERNMENT", "Quarterly LD-2 reports; posted when filed"),
 }
@@ -266,7 +269,8 @@ class ScreenerParticipantService:
                  thirteen_f: Any = None, cache: BackgroundCache | None = None, clock: Callable[[], float] = time.time,
                  wait_s: float = PROVIDER_WAIT_S, env: Callable[[str], str | None] = os.environ.get,
                  member_resolver: MemberResolver | None = None, registry_cache_dir: Path | None = None,
-                 registry_refresh: Callable[[Path], dict[str, Any]] | None = None) -> None:
+                 registry_refresh: Callable[[Path], dict[str, Any]] | None = None,
+                 senate_sync: Callable[[Path], dict[str, Any]] | None = None) -> None:
         from ..public_records.lobbying import LobbyingClient
         from ..public_records.usaspending import UsaSpendingClient
 
@@ -299,6 +303,9 @@ class ScreenerParticipantService:
         self._registry_loaded: str | None = None      # retrieved_at of the copy behind the current resolver
         self._registry_status: dict[str, Any] | None = None
         self._senate_scan: tuple[float, senate_ptr.SenateImportState] | None = None
+        self._senate_sync = senate_sync
+        self._senate_synced: str | None = None       # finished_at of the last sync run already acted on
+        self._senate_sync_state: dict[str, Any] | None = None
 
     # -------------------------------------------------------------- clocks & gates
     def _now(self) -> datetime:
@@ -723,7 +730,39 @@ class ScreenerParticipantService:
                           scope="UNIVERSE")
         return items, {**status, "coverage": metrics}, coverage
 
+    def _senate_sync_status(self) -> dict[str, Any] | None:
+        """With IMP_SENATE_EFD_LIVE=1, one background eFD download per SENATE_SYNC_TTL_S into the import directory.
+        Requests never wait on eFD; a finished run that saved reports triggers a rescan."""
+
+        from ..congressional_ptr import senate_efd_sync
+
+        root = senate_ptr.import_root_from_env(self._env)
+        if (self._env(senate_efd_sync.LIVE_ENV) or "") != "1" or not root:
+            return None
+        run = self._senate_sync or (lambda path: senate_efd_sync.sync(path, user_agent=self._env("SEC_USER_AGENT") or ""))
+
+        def job() -> dict[str, Any]:
+            self.provider_requests["senate_efd_sync"] += 1
+            try:
+                return run(Path(root))
+            except senate_efd_sync.SenateSyncError as exc:
+                return {"error": str(exc), "saved": 0}
+
+        entry = self._cache.get(("senate_efd_sync", root), job, ttl_s=SENATE_SYNC_TTL_S)
+        if entry is None:
+            return {"state": "SYNCING", "reason": None}
+        if not entry.ok:
+            return {"state": "SYNC_FAILED", "reason": entry.reason}
+        summary = entry.value
+        if summary.get("finished_at", entry.fetched_at) != self._senate_synced:
+            self._senate_synced = summary.get("finished_at", entry.fetched_at)
+            if summary.get("saved"):
+                self._senate_scan = None          # new pages: rescan now instead of waiting SENATE_RESCAN_S
+        return {"state": "SYNC_FAILED" if summary.get("error") else "SYNCED", "reason": summary.get("error"),
+                **{key: summary.get(key) for key in ("finished_at", "saved", "listed", "complete_through")}}
+
     def _senate_state(self) -> senate_ptr.SenateImportState:
+        self._senate_sync_state = self._senate_sync_status()
         now = self._clock()
         cached = self._senate_scan
         if cached is not None and cached[0] > now:
@@ -739,7 +778,7 @@ class ScreenerParticipantService:
         status = provider("senate_efd", state.state, state.reason, fetched_at=state.scanned_at,
                           items=len(items) if state.state in ("READY", "PARTIAL") else None, scope=scope)
         return items, {**status, "source_url": SENATE_URL, "coverage": coverage,
-                       "attested": state.attestation is not None}
+                       "attested": state.attestation is not None, "sync": self._senate_sync_state}
 
     def _member_resolver(self) -> MemberResolver:
         if self._resolver is not None and (self._resolver_fixed or self._registry_dir is None

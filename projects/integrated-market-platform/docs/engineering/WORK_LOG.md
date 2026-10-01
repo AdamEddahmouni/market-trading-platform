@@ -34,6 +34,42 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-09-30 — Automatic Senate eFD download
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `tools/congress`, `docs` |
+| **Summary** | Owner decision: IMP now accepts the eFD terms for the owner and downloads Periodic Transaction Reports into the attested import directory (`senate_efd_sync`). It is gated by `IMP_SENATE_EFD_LIVE` (on in the launcher), `automated_access: true` in the attestation, and `SEC_USER_AGENT`. Requests are throttled to 1/s, capped at 250 new reports per run, and stop on a CAPTCHA or a changed form. The participants service runs it in the background every 6 h and rescans at once when pages arrive. Supersedes the S14 "IMP never contacts eFD" boundary. First live run: 331 reports, 2,811 transactions (1,650 with a matchable ticker), 0 parse failures. |
+| **Key files** | `congressional_ptr/senate_efd_sync.py` (new), `congressional_ptr/senate.py` (docstring), `ui_api/screener_participants.py`, `ui_api/screener_remedies.py`, `tools/congress/refresh_senate_efd.py` (new), `tools/platform/local_launcher.py`, `tests/market_trackers/test_s14_senate_efd_sync.py` (new), `tests/platform/test_screener_s14.py`, `docs/engineering/SCREENER_S14_DISCLOSURE_COVERAGE.md`, `docs/engineering/SCREENER_FREE_CAPABILITY_ACTIVATION.md` |
+| **Tests** | unittest: `test_s14_senate_efd_sync`, `test_s14_senate_efd`, `test_screener_s14`, `test_screener_remedies`, `test_screener_s12`, `test_local_launcher`: 114 passed |
+| **Related** | [SCREENER_S14_DISCLOSURE_COVERAGE.md](SCREENER_S14_DISCLOSURE_COVERAGE.md#automatic-download-2026-09-30) |
+
+## 2026-09-30 — Launcher turns on every provider source gate
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `tools/platform`, `docs` |
+| **Summary** | Owner decision: the standard launcher (`build_backend_environment`) now defaults every observational data-source gate to `1` (`PROVIDER_SOURCE_GATES`: RSS, EDGAR, public records, Treasury, crypto, NewsAPI, Finnhub, FINRA, SEC FTD, Reg SHO lists, Cboe options, OpenFIGI, FRED, EIA, weather). An explicit environment value still wins. Sources that also need a key, `SEC_USER_AGENT` or saved Senate pages stay `NOT_CONFIGURED` without them. IBKR and recorded order-flow replay stay off. |
+| **Key files** | `tools/platform/local_launcher.py`, `tests/platform/test_local_launcher.py`, `docs/engineering/SCREENER_FREE_CAPABILITY_ACTIVATION.md` |
+| **Tests** | `unittest tests.platform.test_local_launcher`: 22 passed |
+| **Related** | [SCREENER_FREE_CAPABILITY_ACTIVATION.md](SCREENER_FREE_CAPABILITY_ACTIVATION.md) owner action 4 |
+
+## 2026-09-30 — Screener grid news badge, per-universe layouts, truncation notes, live ages, containment, bundle split
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `ui/screener`, `ui/build`, `backend` |
+| **Summary** | Grid rows show a news badge ("N stories in 24h · tone") from a new `GET /screener/news/activity`, fetched per 200-row grid page. The dock layout and the last columns/view/sort are saved per universe, and the old global layout is migrated. The grid states when a view is truncated ("Showing 200 of 4,625: the source returned no further pages"). Universe synthesis coverage and the pre-click estimate now count every matched story, not just the 200-story feed page, and the feed reports the sentiment scoring cap. Panel and footer ages now update live (`Age`) and dim once stale. A dock-level error boundary (Retry / Reset layout) sits above the per-panel boundaries, and the per-panel boundary now resets on a new selection and clears cached queries on Retry. Lazy chunks can be retried with `reloadableLazy`. `fetchJson` throws a typed `SchemaMismatchError`. Build: React moved into its own `react-vendor` chunk. Rollup had folded it into `recharts`, so the entry preloaded recharts + chart-primitives. vela was already lazy. |
+| **Key files** | `ui_api/screener_news.py` (`activity`, `_window_stories`, `_matched_count`), `ui_api/screener_config.py`, `ui_api/server.py`, `ui/vite.config.ts`, `ui/scripts/check-bundle-budget.mjs`, `ui/src/api/{fetchJson,screener,screenerNews}.ts`, `ui/src/components/screener/{ScreenerPage.tsx,screener.css}`, `screener/news/{NewsBadge,NewsView,SynthesisControl}.tsx`, `screener/panels/{shared.tsx,registry.ts,ScreenerDock.tsx,dock.css,*Panel.tsx}`, `docs/engineering/SCREENER_S4.md` |
+| **Tests** | Python: all 463 `tests/platform/test_screener*` pass, including new activity, per-universe layout/last-screen migration, and synthesis-coverage tests. UI: vitest 157 files / 1219 tests pass, with new `panels/Robustness.test.tsx`, the badge tests in `News.test.tsx`, the truncation tests in `ScreenerPaging.test.tsx`, and a per-universe layout test in `Crypto.test.tsx`. Typecheck passes. `npm run build` passes with no chunk-size warning; initial JS is 99.6 KiB gzip against a new 130 KiB budget. `imp.py lint` passes. `imp.py validate changed`: every domain passes except 5 FTEP tests in `intelligence` (`test_ftep_empirical_not_ready_fail_closed`, `test_ftep_prospective_lock`), which read this machine's live FTEP-V1-002 durable state (`governed_session_count: 2`) and are unrelated to this change. |
+| **Related** | [SCREENER_S4.md](SCREENER_S4.md), [SCREENER_S11_NEWS.md](SCREENER_S11_NEWS.md) |
+| **Notes** | Badges cover the grid pages on screen only. An instrument with no story in the window has no badge (never "0"). Tone is FinBERT headline tone, not a price signal. The per-universe cache keeps switching instant within a session. The legacy `panel_layout`/`last` fields remain for older clients. |
+
+---
+
 ## 2026-09-30 — Screener News feed: tone sparkline, partial sentiment filter, new markers, j/k keys
 
 | Field | Value |

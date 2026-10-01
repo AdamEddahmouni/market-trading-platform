@@ -217,6 +217,28 @@ def backend_python_has_runtime(python: Path) -> bool:
     return result.returncode == 0
 
 
+PROVIDER_SOURCE_GATES = (
+    "IMP_NEWS_RSS_LIVE",
+    "IMP_EDGAR_LIVE",
+    "IMP_PUBLIC_RECORDS_LIVE",
+    "IMP_SENATE_EFD_LIVE",
+    "IMP_TREASURY_LIVE",
+    "IMP_CRYPTO_LIVE",
+    "IMP_NEWSAPI_LIVE",
+    "IMP_FINNHUB_LIVE",
+    "IMP_FINRA_LIVE",
+    "IMP_SEC_FTD_LIVE",
+    "IMP_NYSE_REGSHO_LIVE",
+    "IMP_NASDAQ_REGSHO_LIVE",
+    "IMP_CBOE_REGSHO_LIVE",
+    "IMP_CBOE_OPTIONS_LIVE",
+    "IMP_OPENFIGI_LIVE",
+    "IMP_FRED_LIVE",
+    "IMP_EIA_LIVE",
+    "IMP_WEATHER_LIVE",
+)
+
+
 def build_backend_environment(
     environ: Mapping[str, str],
     *,
@@ -239,6 +261,9 @@ def build_backend_environment(
         "IMP_PERSIST_STATE": "1",
         "PYTHONUNBUFFERED": "1",
     }
+    # Every observational data source is on at launch. A gate only permits reads; a
+    # source that also needs a key or saved pages still reports NOT_CONFIGURED without them.
+    defaults.update({gate: "1" for gate in PROVIDER_SOURCE_GATES})
     for key, value in defaults.items():
         result.setdefault(key, value)
     return result

@@ -149,8 +149,11 @@ export function SynthesisControl({ request, ai, remedy = null, stories, onCite, 
     }
   };
   const estimate = paid ? preview.data?.estimate ?? null : null;
+  // "30 of 340 stories" when the model would see only part of what the scope matched.
+  const storyText = !estimate ? "" : estimate.available_story_count != null && estimate.available_story_count > estimate.story_count
+    ? `${estimate.story_count} of ${estimate.available_story_count} stories` : `${estimate.story_count} stories`;
   const cost = !estimate ? "" : estimate.cached ? " · cached, no cost"
-    : estimate.tokens != null ? ` · ≈ ${compactTokens(estimate.tokens)} tokens, ${estimate.story_count} stories` : ` · ${estimate.story_count} stories`;
+    : estimate.tokens != null ? ` · ≈ ${compactTokens(estimate.tokens)} tokens, ${storyText}` : ` · ${storyText}`;
   const elapsed = running ? Math.max(0, Math.floor((now - (status?.startedAt ?? now)) / 1000)) : 0;
   return <>
     <button type="button" className="screener-control" disabled={running} onClick={() => void generate()}

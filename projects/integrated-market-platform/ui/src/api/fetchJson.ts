@@ -1,6 +1,24 @@
 import type { z } from "zod";
 import { authHeaders } from "../auth/session";
 
+/** The server answered, but not in the shape this client build expects (a UI/API version skew). */
+export class SchemaMismatchError extends Error {
+  readonly path: string;
+  readonly issues: z.ZodIssue[];
+  constructor(path: string, issues: z.ZodIssue[]) {
+    super(`Response did not match the expected schema: ${path}`);
+    this.name = "SchemaMismatchError";
+    this.path = path;
+    this.issues = issues;
+  }
+}
+
+function parseBody<T>(schema: z.ZodSchema<T>, payload: unknown, path: string): T {
+  const result = schema.safeParse(payload);
+  if (!result.success) throw new SchemaMismatchError(path, result.error.issues);
+  return result.data;
+}
+
 async function parseError(response: Response, path: string): Promise<never> {
   try {
     const payload = await response.json();
@@ -20,7 +38,7 @@ export async function fetchJson<T>(path: string, schema: z.ZodSchema<T>, init?: 
   if (!response.ok) {
     await parseError(response, path);
   }
-  return schema.parse(await response.json());
+  return parseBody(schema, await response.json(), path);
 }
 
 export async function postJson<T>(path: string, body: unknown, schema: z.ZodSchema<T>, init?: { signal?: AbortSignal }): Promise<T> {
@@ -33,7 +51,7 @@ export async function postJson<T>(path: string, body: unknown, schema: z.ZodSche
   if (!response.ok) {
     await parseError(response, path);
   }
-  return schema.parse(await response.json());
+  return parseBody(schema, await response.json(), path);
 }
 
 export async function fetchRawJson(path: string): Promise<Record<string, unknown>> {

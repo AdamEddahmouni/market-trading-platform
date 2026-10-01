@@ -96,6 +96,8 @@ export const NewsFeedSchema = z.object({
     sentiment: z.object({ enabled: z.boolean(), reason: z.string().nullable(),
       /** Partial filtering: scored/unscored over the window; unscored stories an applied filter hid. */
       scored: z.number().optional(), unscored: z.number().optional(), hidden_unscored: z.number().optional(),
+      /** Stories past this many in a window are never scored. */
+      scored_cap: z.number().optional(),
       counts: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }).passthrough().optional(),
     }).passthrough(),
     applied: z.object({ source: z.string().nullable(), category: z.string().nullable(), sentiment: z.string().nullable(),
@@ -196,7 +198,9 @@ export const SynthesisPreviewSchema = z.object({
   schema_version: z.literal("screener-news-synthesis-preview/1.0.0"),
   ai: AiStatus,
   /** Paid runtime only: the worst-case tokens a click reserves; a cached input costs nothing. */
-  estimate: z.object({ story_count: z.number(), tokens: z.number().nullable(), cached: z.boolean() }).passthrough().nullable(),
+  estimate: z.object({ story_count: z.number(), tokens: z.number().nullable(), cached: z.boolean(),
+    /** Every story the scope matched; more than `story_count` means the synthesis input is capped. */
+    available_story_count: z.number().optional() }).passthrough().nullable(),
 }).passthrough();
 export type SynthesisPreview = z.infer<typeof SynthesisPreviewSchema>;
 
@@ -253,4 +257,24 @@ export function fetchSynthesisPreview(request: SynthesisRequest, signal?: AbortS
   const query = new URLSearchParams({ universe: request.universe, scope: request.scope, window: request.window ?? "24h" });
   if (request.instrument) query.set("instrument", request.instrument);
   return fetchJson(`/screener/news/synthesis/preview?${query}`, SynthesisPreviewSchema, signal ? { signal } : undefined);
+}
+
+const ActivityRow = z.object({
+  count: z.number(), unscored: z.number(), latest_at: Iso.nullable(),
+  tone: z.object({ positive: z.number(), neutral: z.number(), negative: z.number() }),
+});
+export type NewsActivityRow = z.infer<typeof ActivityRow>;
+export const NewsActivitySchema = z.object({
+  schema_version: z.literal("screener-news-activity/1.0.0"), generated_at: Iso, universe: z.string(),
+  window: Window, state: FeedState, reason: z.string().nullable(), sentiment_state: z.string(),
+  /** Only instruments with at least one story in the window are present. */
+  instruments: z.record(ActivityRow),
+});
+export type NewsActivity = z.infer<typeof NewsActivitySchema>;
+/** The server caps one badge request at a grid page. */
+export const NEWS_ACTIVITY_MAX_IDS = 200;
+
+export function fetchNewsActivity(universe: ScreenerUniverse, instrumentIds: string[], signal?: AbortSignal) {
+  const params = new URLSearchParams({ universe, window: "24h", ids: instrumentIds.slice(0, NEWS_ACTIVITY_MAX_IDS).join(",") });
+  return fetchJson(`/screener/news/activity?${params}`, NewsActivitySchema, signal ? { signal } : undefined);
 }

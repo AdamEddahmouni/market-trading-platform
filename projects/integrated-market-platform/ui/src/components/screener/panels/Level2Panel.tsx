@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchDepth, type DepthPayload } from "../../../api/screenerPanels";
-import { age, EntitlementNote, marketClock, marketPrice, marketSize, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, spreadBps, usePanelVisible, useSelection } from "./shared";
+import { age, Age, EntitlementNote, ErrorDetail, marketClock, marketPrice, marketSize, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, spreadBps, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 
 // Ladder values are shown only for these states; STALE and SESSION_CLOSED are dimmed and labelled.
@@ -58,9 +58,9 @@ export default function Level2Panel({ api }: IDockviewPanelProps) {
   const venueBook = data?.completeness?.venue_scope === "SINGLE_VENUE_KRAKEN";
   const completeness = data?.completeness ? `${venueBook ? "Venue book" : "MBP"} ${data.completeness.bid_levels}×${data.completeness.ask_levels} levels` : "MBP";
   const money = (value: number) => marketPrice(value, row, universe);
-  const clock = data?.latest_received_at ? `book ${marketClock(universe).clock(data.latest_event_at)} · rcvd ${age(data.latest_received_at)} ago${data.freshness ? ` · TTL ${data.freshness.ttl_ms / 1000}s` : ""}` : null;
+  const clock = data?.latest_received_at ? <>book {marketClock(universe).clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={data.freshness?.ttl_ms ?? 10_000} /> ago{data.freshness ? ` · TTL ${data.freshness.ttl_ms / 1000}s` : ""}</> : null;
   return <PanelFrame id="level2" state={data?.state} detail={data ? `${completeness} · ${providerLabel(data.provider)}` : null} clock={clock}>
-    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Level 2 request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Level 2 request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : !SHOWN.has(data.state) || (!data.bids.length && !data.asks.length) ? <>
         <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{data.state === "SESSION_CLOSED" && !data.latest_received_at ? "Session closed · no book captured for this subscription" : reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>

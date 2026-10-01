@@ -6,7 +6,7 @@ import { degradedProviders, Headline, humanize, isModelLoading, newsDayTime, Pro
   stateText, StorySources, StoryTime, termsText, TypeBadge } from "../news/newsFormat";
 import { RemedyHint } from "../setup/Remedy";
 import { SynthesisControl } from "../news/SynthesisControl";
-import { PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
+import { Age, ErrorDetail, PanelFrame, PanelMessage, selectionGate, usePanelVisible, useSelection } from "./shared";
 import { SentimentSparkline } from "../news/SentimentSparkline";
 import "../news/news.css";
 
@@ -138,9 +138,9 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
   const degraded = data ? degradedProviders(data.providers) : [];
   // The AI citation under the pointer or focus; its headline is highlighted so grounding is checkable at a glance.
   const [citedId, setCitedId] = useState<string | null>(null);
-  return <PanelFrame id="news" state={data?.state ?? null} clock={data ? `updated ${newsDayTime(data.generated_at, data.universe)}` : null}
+  return <PanelFrame id="news" state={data?.state ?? null} clock={data ? <>updated {newsDayTime(data.generated_at, data.universe)} (<Age iso={data.generated_at} /> ago)</> : null}
     detail={data ? `${data.instrument.label} · ${data.window.id} · ${data.coverage.story_count} stories · ${current}/${data.providers.length} providers current` : null}>
-    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">News &amp; Analysis request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">News &amp; Analysis request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row?.symbol} news…</PanelMessage>
       : <div className="news-panel">
         {(data.state === "NOT_CONFIGURED" || data.state === "UNAVAILABLE") && <PanelMessage tone="warn">News {data.state === "NOT_CONFIGURED" ? "providers are not configured" : "is unavailable"}{data.reason ? ` · ${data.reason}` : ""}. This is a provider state, not an absence of news.{degraded.length ? ` Missing: ${degraded.map((item) => `${item.label} (${stateText(item.state)})`).join(", ")}.` : ""}

@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchCvd, type CvdPayload } from "../../../api/screenerPanels";
-import { age, EntitlementNote, etClock, marketClock, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
+import { Age, EntitlementNote, ErrorDetail, etClock, marketClock, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 import type { ScreenerUniverse } from "../../../api/screener";
 
@@ -55,9 +55,9 @@ export default function CvdPanel({ api }: IDockviewPanelProps) {
   const data = query.data && query.data.instrument_id === row?.instrument.instrument_id ? query.data : undefined;
   const market = marketClock(universe);
   const unit = universe === "CRYPTO" ? row?.base_asset ?? "base units" : "shares";
-  const clock = data?.latest_received_at ? `latest trade ${market.clock(data.latest_event_at)} · rcvd ${age(data.latest_received_at)} ago` : null;
+  const clock = data?.latest_received_at ? <>latest trade {market.clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={10_000} /> ago</> : null;
   return <PanelFrame id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
-    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">CVD request failed. <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
+    {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">CVD request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
       : <>
