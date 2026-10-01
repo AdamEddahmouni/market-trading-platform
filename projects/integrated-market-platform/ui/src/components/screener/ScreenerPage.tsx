@@ -18,6 +18,7 @@ import { exitNewsUpdates, isNewsMode, resetNewsFilterUpdates } from "./news/news
 import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
 import { ExitPlatformButton } from "../shared/ExitPlatformButton";
+import { csvFileName, csvText, downloadCsv } from "./screenerCsv";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
@@ -632,6 +633,15 @@ export function ScreenerPage() {
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
     onColumnSizingChange: setColumnSizing, onColumnPinningChange: setColumnPinning,
     columnResizeMode: "onChange" });
+  const exportCsv = () => {
+    const shown = table.getVisibleLeafColumns().map((column) => definitions.find((definition) => definition.key === column.id)!);
+    downloadCsv(csvFileName(universe), csvText(shown.map((definition) => definition.label), rows.map((item) => shown.map((definition) => {
+      if (definition.key === "symbol") return item.symbol;
+      if (textColumns.has(definition.key)) return item[definition.key as TextKey] ?? null;
+      if (definition.key === "lead") return item.lead ? "Lead" : null;
+      return fieldFor(item, definition.key, quotes[item.instrument.instrument_id])?.value ?? null;
+    }))));
+  };
   const loaderRow = query.hasNextPage ? 1 : 0;
   // Rows the grid can never reach: the source stopped paging short of its own count, or paging failed.
   const unreachable = resultCount !== null && rows.length < resultCount;
@@ -915,6 +925,7 @@ export function ScreenerPage() {
       <div className="screener-toolbar-end"><button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setScreenOpen(!screenOpen); setColumnOpen(false); setFilterOpen(false); }} aria-expanded={screenOpen} aria-haspopup="dialog">{selectedName}{changed ? " *" : ""} ▾</button>
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
         <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
+        <button type="button" className="screener-control" disabled={!rows.length} title={rows.length ? `Export the ${rows.length} loaded rows and visible columns as CSV` : "No rows to export"} onClick={exportCsv}>Export</button>
         <button type="button" className="screener-control" aria-pressed={previewOpen} onClick={togglePreview}>Preview</button></div></div>
     <div className="screener-tabs" role="tablist" aria-label="Screener views">{(activeSpec?.view_order ?? Object.keys(activeViews)).filter((name) => activeViews[name]).map((name) => <button key={name} type="button" role="tab" aria-selected={!newsMode && !intel && view === name} onClick={() => chooseView(name)}>{name}</button>)}
       <button type="button" role="tab" aria-selected={newsMode} className="screener-news-tab" onClick={() => { if (!newsMode) urlUpdate({ news: "1", ...exitIntelUpdates() }); }}

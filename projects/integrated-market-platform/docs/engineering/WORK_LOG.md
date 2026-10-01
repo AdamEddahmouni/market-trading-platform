@@ -34,6 +34,14 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — Screener CSV export
+
+- Toolbar **Export** downloads the loaded rows and the visible columns, in grid order, as
+  `screener-<universe>-<UTC minute>Z.csv`. Numbers are raw values (not the grid's compact text),
+  missing values are blank, and live quote overlays are used where the grid shows them.
+- Text starting with `=`, `+`, `-`, `@` is prefixed with `'` so a spreadsheet does not run it.
+- Tests: `ui/src/components/screener/screenerCsv.test.ts`.
+
 ## 2026-10-01 — Screener warms at API start
 
 - Measured cold (fresh process, live providers): imports 3.9 s, US equities 1.4 s, ETFs 3.6 s,
