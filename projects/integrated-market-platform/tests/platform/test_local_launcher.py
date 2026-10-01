@@ -8,7 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -451,9 +451,10 @@ class LocalLauncherTests(unittest.TestCase):
     def test_shortcut_runs_start_platform_from_the_checkout(self) -> None:
         from tools.platform.local_launcher import shortcut_script
 
-        root = Path(r"C:\Users\o'neil\market platform")
+        # Windows paths on every host: only Windows PowerShell ever runs the script.
+        root = PureWindowsPath(r"C:\Users\o'neil\market platform")
         script = shortcut_script(
-            shortcut=Path(r"C:\Users\o'neil\Desktop\Market Platform.lnk"),
+            shortcut=PureWindowsPath(r"C:\Users\o'neil\Desktop\Market Platform.lnk"),
             target=root / "START_PLATFORM.cmd",
             working_directory=root,
         )

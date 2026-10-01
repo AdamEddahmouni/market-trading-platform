@@ -15,7 +15,7 @@ import urllib.error
 import urllib.request
 import webbrowser
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePath
 from typing import Callable, Mapping, Protocol, Sequence
 
 
@@ -294,7 +294,7 @@ def _powershell_literal(value: object) -> str:
     return "'" + str(value).replace("'", "''") + "'"
 
 
-def shortcut_script(*, shortcut: Path, target: Path, working_directory: Path) -> str:
+def shortcut_script(*, shortcut: PurePath, target: PurePath, working_directory: PurePath) -> str:
     """PowerShell that writes the .lnk.
 
     The console opens normally, not minimized: it closes by itself once the platform is
