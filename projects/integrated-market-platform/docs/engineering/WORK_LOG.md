@@ -34,6 +34,32 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-01 — OCT1-01 retained flow history and final audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — `OCT1_01_MERGE_READY`; baseline failures retained |
+| **Area** | `backend/order-flow`, `ui/screener`, `docs` |
+| **Summary** | Order Flow and CVD share bounded runtime-local temporal aggregates independent of the recent 500-print tape. Range/resolution controls, progressive detail, pan/zoom, Fit and Go Live preserve historical viewports and disclose partial capture, gaps, sources and classification coverage. Current context continues refreshing during historical inspection; historical gap notices use inspected coverage and fresh blocked authority hides cached detail. |
+| **Key files** | `order_flow/history.py`, equity/Kraken admission paths, `ui_api/screener_specialist.py`, `ui_api/server.py`, shared `FlowHistory.tsx`, `CvdChart.tsx`, `FlowTimeControls.tsx`, `flowDetailWindow.ts` and regression tests; all 23 paths listed in closure notes |
+| **Tests** | Final S4 57/57; focused UI 27/27; complete UI 1,251/1,251 (164 files); typecheck, production build, bundle budget, format and lint pass. Initial gzip 99.69 KiB. Controlled actual `/screener` browser repeat passes. FULL inventory: 71/71 suites, 7,786 tests, 7,732 pass, 52 existing skips, two confirmed baseline IBKR failures, zero errors; acceptance 79/79 under Windows process isolation. Interrupted commands remain non-green and separately recorded. |
+| **Related** | [Temporal contract](../architecture/ORDER_FLOW_TEMPORAL_HISTORY.md), [final audit and closure](../superpowers/plans/2026-10-01-oct1-01-flow-history.md) |
+| **Notes** | Branch `codex/oct1-01-flow-history`, exact base `cbfc40b37b0444a3362fccfe87892112aef92686`; isolated worktree excludes original checkout changes. Two IBKR structural violations match exact base. Boundary timing/file-lock failures reproduce on base in ten repeated runs. Resource-sensitive UI failures subsequently pass all four affected files (161/161) and full UI. No campaign, provider/execution authority or live evidence changed; no main merge. |
+
+Final read-only review found no remaining actionable OCT1 regression. Browser
+acceptance covers seconds to Session, zoom, historical drag, stable refresh with
+advancing current context, Go Live, Fit, explicit 09:30 requested/10:42 available
+capture and an injected gap, Order Flow histogram and symbol change. This uses
+synthetic admitted prints and is SOFTWARE_CONTROLLED evidence only. Ignored
+`.local/oct1-01-closeout-*` holds raw logs, comparisons, screenshots and results.
+The 234,000-print fixture retains 23,400 observed seconds, projects 390 minute
+points in 0.397 seconds and uses 33.5 MiB traced peak memory. Runtime restart,
+calendar-day rollover or instrument eviction starts a new capture; complete
+morning/restart history is not promised. Coarse visible totals include whole
+intersecting buckets. No unrelated persistence or baseline fixes were added.
+
+---
+
 ## 2026-10-01 — US equities filter and sort by Bid, Ask, Spread %
 
 - Owner report: rows could not be filtered by bid, ask or spread. Equities marked those fields

@@ -65,6 +65,9 @@ it in the authoritative doc — do not silently choose.
 
 ## Architecture
 
+Order-flow chart navigation and captured-history contract:
+[ORDER_FLOW_TEMPORAL_HISTORY.md](architecture/ORDER_FLOW_TEMPORAL_HISTORY.md).
+
 | Topic | Document |
 |-------|----------|
 | System overview | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
