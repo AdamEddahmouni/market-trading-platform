@@ -245,7 +245,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(preview)
                 return
-            if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth"):
+            if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth", "/screener/order-flow-series"):
                 from .screener_specialist import specialist_service
                 from .screener_multi import multi_screener_service
                 from .screener_universes import US_EQUITIES, universe_spec
@@ -258,7 +258,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     row = None
                     spec = None
-                panel = {"/screener/order-flow": "order_flow", "/screener/cvd": "cvd", "/screener/depth": "level2"}[path]
+                panel = {"/screener/order-flow": "order_flow", "/screener/cvd": "cvd", "/screener/depth": "level2",
+                         "/screener/order-flow-series": "order_flow"}[path]
                 if row is None or spec is None or panel not in spec.panels:
                     self._send_error_json("SCREENER_PANEL_INVALID", "A valid instrument is required", status=HTTPStatus.BAD_REQUEST)
                     return
@@ -270,9 +271,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     service = crypto_specialist_service()
                 else:
                     service = specialist_service()
-                builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
-                           "/screener/depth": service.depth}[path]
-                payload = builder(instrument)
+                if path == "/screener/order-flow-series":
+                    try:
+                        if any(len(query.get(name, [])) > 1 for name in ("range", "resolution", "start", "end")):
+                            raise ValueError("DUPLICATE_FLOW_PARAMETER")
+                        payload = service.order_flow_series(instrument,
+                            range_name=(query.get("range") or ["5m"])[0],
+                            resolution=(query.get("resolution") or ["auto"])[0],
+                            start_ms=int(query["start"][0]) if "start" in query else None,
+                            end_ms=int(query["end"][0]) if "end" in query else None)
+                    except (ValueError, OverflowError):
+                        self._send_error_json("SCREENER_FLOW_RANGE_INVALID", "Invalid flow range or resolution",
+                                              status=HTTPStatus.BAD_REQUEST)
+                        return
+                else:
+                    builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
+                               "/screener/depth": service.depth}[path]
+                    payload = builder(instrument)
                 payload["instrument_id"] = canonical_instrument
                 self._send_json(payload)
                 return

@@ -115,3 +115,12 @@
 .screener-options-legend[open]{flex-basis:100%}
 .screener-age{font-variant-numeric:tabular-nums}
 .screener-age.stale{color:#d9a45b}
+.screener-flow-history { margin: 10px 0; border-top: 1px solid #27323f; padding-top: 8px; }
+.screener-flow-controls, .screener-flow-controls [role="group"], .screener-flow-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.screener-flow-controls { justify-content: space-between; margin-bottom: 6px; }
+.screener-flow-controls button, .screener-flow-actions button, .screener-flow-controls select { color: #d7e2ec; background: #18212b; border: 1px solid #405164; border-radius: 3px; padding: 4px 8px; min-height: 28px; }
+.screener-flow-controls button[aria-pressed="true"] { background: #2b435b; border-color: #8badcf; }
+.screener-flow-controls button:focus-visible, .screener-flow-actions button:focus-visible, .screener-flow-controls select:focus-visible { outline: 2px solid #a2c8ed; outline-offset: 2px; }
+.screener-flow-actions { margin: 6px 0; }
+.screener-flow-actions [role="status"] { margin-right: auto; color: #aabdd1; font-size: 11px; }
+.screener-flow-coverage { color: #e2bc7d; font-size: 11px; line-height: 1.5; margin: 5px 0; }

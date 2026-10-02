@@ -4,6 +4,7 @@ import { fetchOrderFlow, type OrderFlowPayload } from "../../../api/screenerPane
 import type { ScreenerRow, ScreenerUniverse } from "../../../api/screener";
 import { Age, EntitlementNote, ErrorDetail, etClock, marketClock, marketPrice, marketSize, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
+import FlowHistory from "./FlowHistory";
 
 const METHOD_LABELS: Record<string, string> = {
   PROVIDER_TICKER_DIRECTION: "provider ticker direction", EXCHANGE_NATIVE: "exchange-native side", LEE_READY: "Lee-Ready",
@@ -86,6 +87,7 @@ export default function OrderFlowPanel({ api }: IDockviewPanelProps) {
       : <>
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? "Session closed · last captured flow" : reasonText(data.reason)}</PanelMessage>}
         {data.summary && data.summary.trade_count > 0 && <Summary data={data} market={market} />}
+        <FlowHistory key={`${universe}:${settledId}`} instrument={settledId!} universe={universe} visible={visible} mode="delta" />
         <Tape data={data} market={market} />
         <EntitlementNote entitlement={data.entitlement} />
       </>)}

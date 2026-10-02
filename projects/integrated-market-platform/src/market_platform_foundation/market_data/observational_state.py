@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..clock import monotonic_wall_ns
+from ..order_flow.history import FlowHistoryStore
 from ..order_flow.order_book.engine import IncrementalOrderBook
 from ..order_flow.order_book.freshness import FreshnessPolicy, evaluate_book_freshness
 from ..order_flow.order_book.projection import project_book_snapshot
@@ -64,6 +65,7 @@ class ObservationalStateStore:
     max_trades: int = 500
     quotes: dict[str, QuoteSnapshot] = field(default_factory=dict)
     trades: dict[str, deque[dict[str, Any]]] = field(default_factory=dict)
+    flow_history: FlowHistoryStore = field(default_factory=FlowHistoryStore)
     books: dict[str, dict[str, Any]] = field(default_factory=dict)
     #: Canonical provider-neutral incremental book engines (G5 / ARCH-003).
     #: The engine is the authoritative book state; ``books`` holds the
@@ -158,12 +160,12 @@ class ObservationalStateStore:
         elif "TICK" in capability:
             trade = classified_trade_from_ticker(payload, provider=provider)
             tape = self.trades.setdefault(instrument_id, deque(maxlen=self.max_trades))
-            tape.append(
-                {
+            row = {
                     "admission": admission,
                     "aggressor_provenance": trade.aggressor_source.value,
                     "aggressor_side": trade.aggressor_side.value.upper(),
                     "available_time_ns": available_ns,
+                    "received_ns": received_ns,
                     "classification_method": trade.classification_method,
                     "condition": str(payload.get("type") or "") or None,
                     "event_time_ns": event_time_ns,
@@ -173,7 +175,8 @@ class ObservationalStateStore:
                     "quantity": trade.quantity,
                     "trade_id": trade.trade_id,
                 }
-            )
+            self.flow_history.append(instrument_id, row)
+            tape.append(row)
             if trade.aggressor_side.value.upper() == "UNKNOWN":
                 self.metrics["unknown_aggressor"] += 1
             else:
@@ -479,12 +482,12 @@ class ObservationalStateStore:
             return False
         event_ns = event_time_ns if event_time_ns is not None else now_ns
         available_ns = available_time_ns if available_time_ns is not None else now_ns
-        tape.append(
-            {
+        row = {
                 "admission": admission,
                 "aggressor_provenance": trade.aggressor_source.value,
                 "aggressor_side": trade.aggressor_side.value.upper(),
                 "available_time_ns": available_ns,
+                "received_ns": now_ns,
                 "classification_confidence": trade.classification_confidence,
                 "classification_method": trade.classification_method,
                 "event_time_ns": event_ns,
@@ -495,7 +498,8 @@ class ObservationalStateStore:
                 "signed_volume": trade.signed_volume,
                 "trade_id": trade.trade_id,
             }
-        )
+        self.flow_history.append(key, row)
+        tape.append(row)
         self.metrics["events_received"] += 1
         self.metrics["events_admitted"] += 1
         if trade.aggressor_side.value.upper() == "UNKNOWN":

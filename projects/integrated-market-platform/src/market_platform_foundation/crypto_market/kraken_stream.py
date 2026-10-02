@@ -78,6 +78,9 @@ class _State:
     def __init__(self, runtime: "KrakenStreamRuntime") -> None:
         self._runtime = runtime
         self.max_trades = runtime.max_trades
+        from ..order_flow.history import FlowHistoryStore
+
+        self.flow_history = FlowHistoryStore(time_zone="UTC")
 
     def trades_for(self, instrument_id: str) -> list[dict[str, Any]]:
         with self._runtime._lock:
@@ -282,6 +285,7 @@ class KrakenStreamRuntime:
 
     def _disconnect(self, state: str, *, error: str | None = None) -> None:
         with self._lock:
+            self.state.flow_history.interrupt(self._now_ns())
             connection, self._connection = self._connection, None
             self._sent.clear()
             self._acked.clear()
@@ -408,13 +412,15 @@ class KrakenStreamRuntime:
                 continue
             if event_ns is None or price <= 0 or qty <= 0 or not isinstance(item.get("trade_id"), int):
                 continue
-            self._trades.setdefault(instrument, deque(maxlen=self.max_trades)).append({
+            row = {
                 "trade_id": str(item["trade_id"]), "event_time_ns": event_ns, "available_time_ns": received_ns,
-                "price": price, "quantity": qty,
+                "price": price, "quantity": qty, "received_ns": received_ns, "provider": "KRAKEN",
                 "aggressor_side": {"buy": "BUY", "sell": "SELL"}.get(side, "UNKNOWN"),
                 "aggressor_provenance": "EXCHANGE_NATIVE" if side in ("buy", "sell") else "UNKNOWN",
                 "condition": item.get("ord_type") if isinstance(item.get("ord_type"), str) else None,
-            })
+            }
+            self.state.flow_history.append(instrument, row)
+            self._trades.setdefault(instrument, deque(maxlen=self.max_trades)).append(row)
 
     def _handle_book(self, message: dict[str, Any], received_ns: int) -> None:
         kind = message.get("type")

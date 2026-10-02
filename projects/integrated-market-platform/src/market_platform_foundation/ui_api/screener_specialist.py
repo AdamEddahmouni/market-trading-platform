@@ -27,6 +27,7 @@ from ..market_data.live_runtime import get_live_runtime
 from ..market_data.subscription_manager import SubscriptionPriority
 from ..market_sessions import us_equity_session_label
 from ..order_flow.cvd import compute_cvd_series
+from ..order_flow.history import request_window
 from ..order_flow.order_book.contracts import BookValidity, FreshnessStatus
 from ..order_flow.order_book.freshness import evaluate_book_freshness
 
@@ -183,6 +184,10 @@ class ScreenerSpecialistService:
             for panel, capability in sorted(pairs):
                 runtime.unsubscribe(instrument_id=instrument, capabilities=[capability],
                                     consumer_id=self.consumer_id(client_id, panel))
+                history = getattr(runtime.state, "flow_history", None)
+                if capability == self._trades and history is not None and runtime.subscriptions.ref_count(
+                        instrument_id=instrument, capability=capability) == 0:
+                    history.end(instrument, self._now_ns())
         # The caller has already removed ``pairs`` from this client's record.
         if self._provider_hold > 0 and instrument not in self._held_instruments():
             self._released[instrument] = self._monotonic()
@@ -272,6 +277,10 @@ class ScreenerSpecialistService:
                 if instrument_id is not None:
                     if result["accepted"]:
                         self._rejected.pop((instrument_id, capability), None)
+                        history = getattr(runtime.state, "flow_history", None)
+                        if capability == self._trades and history is not None:
+                            history.begin(instrument_id, runtime.subscriptions.activated_at(
+                                instrument_id=instrument_id, capability=capability) or self._now_ns())
                     elif result["reason"]:
                         self._rejected[(instrument_id, capability)] = str(result["reason"])
                 results.append(result)
@@ -459,6 +468,24 @@ class ScreenerSpecialistService:
                     "methods": sorted({view["method"] for view in views if view["state"] != "UNKNOWN"}),
                 },
                 "points": points}
+
+    def order_flow_series(self, instrument_id: str, *, range_name: str = "5m",
+                          resolution: str = "auto", start_ms: int | None = None,
+                          end_ms: int | None = None) -> dict[str, Any]:
+        now = self._now_ns()
+        start, end, seconds = request_window(now, self._session(), range_name, start_ms, end_ms, resolution)
+        payload = self._base("order_flow_series", instrument_id, self._trades)
+        runtime = self._runtime_getter()
+        blocked, reason, _anchor = self._gate(runtime, instrument_id, self._trades)
+        payload.update(provider=self._provider(runtime) if runtime is not None else None,
+                       entitlement=self._entitlement(runtime, self._trades), range=range_name)
+        history = getattr(runtime.state, "flow_history", None) if runtime is not None else None
+        empty = {"points": [], "coverage": None, "latest": None, "resolution_seconds": seconds}
+        if blocked is not None or history is None:
+            return {**payload, **empty, "state": blocked or "UNAVAILABLE", "reason": reason or "FLOW_HISTORY_UNAVAILABLE"}
+        series = history.project(instrument_id, start=start, end=end, seconds=seconds, now_ns=now)
+        state, reason = self._live_state(runtime, bool(series["points"]))
+        return {**payload, **series, "state": state, "reason": reason}
 
     def depth(self, instrument_id: str) -> dict[str, Any]:
         payload = self._base("level2", instrument_id, self._depth)
