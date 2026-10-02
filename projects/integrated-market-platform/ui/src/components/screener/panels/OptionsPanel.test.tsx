@@ -170,7 +170,7 @@ describe("S7 Options panel", () => {
     await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
     expect(screen.getAllByRole("navigation", { name: "Open panels" })).toHaveLength(1);
     expect(launcher().getAllByRole("button").map((button) => button.textContent)).toEqual(
-      ["Order Flow", "CVD", "Level 2", "Charts", "Futures Context", "Options", "Short Squeeze", "Rates & Curve · unavailable", "News & Analysis",
+      ["Cross-Asset", "Order Flow", "CVD", "Level 2", "Charts", "Futures Context", "Options", "Short Squeeze", "Rates & Curve · unavailable", "News & Analysis",
       "Institutional & Whale · unavailable", "Congress & Government · unavailable", "Setup", "Reset Panel Layout"]);
     await selectRow("AAPL");
     const grid = screen.getByRole("grid");

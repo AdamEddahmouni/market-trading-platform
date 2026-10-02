@@ -87,6 +87,22 @@ class CatalogRepositoryConformanceTests(unittest.TestCase):
     def test_not_found_returns_none(self) -> None:
         self.assertIsNone(self.repo.get_instrument("missing"))
 
+    def test_latest_scalar_preserves_pit_and_skips_missing_values(self) -> None:
+        from dataclasses import replace
+        observation_id = self.state["fred"]["observation_ids"][0]
+        original = self.repo.get_scalar_observation(observation_id)
+        self.repo.put_scalar_observation(replace(original, observation_id="latest-controlled",
+            available_time="2026-10-01T00:00:00Z"))
+        self.repo.put_scalar_observation(replace(original, observation_id="missing-controlled",
+            available_time="2026-10-02T00:00:00Z", normalized_value=None))
+        self.repo.put_scalar_observation(replace(original, observation_id="future-controlled",
+            available_time="2026-10-04T00:00:00Z"))
+        latest = self.repo.latest_scalar_observation_as_of("2026-10-03T00:00:00Z",
+            canonical_indicator_id=original.canonical_indicator_id)
+        self.assertEqual(latest.observation_id, "latest-controlled")
+        self.assertIsNone(self.repo.latest_scalar_observation_as_of("2020-01-01T00:00:00Z",
+            canonical_indicator_id=original.canonical_indicator_id))
+
     def test_health(self) -> None:
         health = self.repo.check_health()
         self.assertTrue(health["available"])

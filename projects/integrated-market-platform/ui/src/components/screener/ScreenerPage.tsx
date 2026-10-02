@@ -282,7 +282,7 @@ export function ScreenerPage() {
     (universe !== "US_EQUITIES" || field === "bid" || field === "ask" || field === "spread_pct");
   const snapshotQuery = Boolean(fieldCaps) && (fromMarketSnapshot(effectiveSort) || filters.some((rule) => fromMarketSnapshot(rule.field)));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
-  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
+  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
   // News is a view inside the active universe (URL `news=1`), never a universe.
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);

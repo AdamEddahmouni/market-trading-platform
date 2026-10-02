@@ -19,6 +19,10 @@ import "./dock.css";
 export const PANEL_SETTLE_MS = 250;
 const HEARTBEAT_MS = 15_000;
 const ORDER = PANELS.map((panel) => panel.id);
+const LazyConnectivityPanel = reloadableLazy(() => import("./ConnectivityPanel"));
+function ConnectivityPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading Cross-Asset…</PanelMessage>}><LazyConnectivityPanel {...props} /></Suspense>;
+}
 // S11: News & Analysis loads on first open, keeping the dock chunk within budget.
 const LazyNewsAnalysisPanel = reloadableLazy(() => import("./NewsAnalysisPanel"));
 function NewsAnalysisPanel(props: IDockviewPanelProps) {
@@ -49,6 +53,7 @@ function contained(id: PanelId, Panel: FunctionComponent<IDockviewPanelProps>) {
   return Wrapped;
 }
 const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
+  connectivity: contained("connectivity", ConnectivityPanel),
   order_flow: contained("order_flow", OrderFlowPanel), cvd: contained("cvd", CvdPanel), level2: contained("level2", Level2Panel),
   charts: contained("charts", ChartsPanel), futures: contained("futures", FuturesContextPanel),
   options: contained("options", OptionsPanel),
