@@ -1,5 +1,8 @@
 # OCT1-01 final audit and closure
 
+The original lane audit below is a historical snapshot. The canonical integration
+addendum at the end records the subsequent OCT1-only reconciliation and landing.
+
 ## Scope and repository state
 
 OCT1-01 adds retained temporal navigation for Order Flow and CVD only.
@@ -172,3 +175,58 @@ No related feature, persistence project or baseline repair is part of OCT1-01.
 
 See [temporal contract](../../architecture/ORDER_FLOW_TEMPORAL_HISTORY.md) and
 [work log](../../engineering/WORK_LOG.md).
+
+## Canonical integration — 2026-10-02
+
+- Original lane commit: `17ca93fc20e26cd5b748f06da54c2534b1ad93fd`.
+- Recovered candidate branch: `codex/oct1-01-integration` in
+  `<monorepo>/.worktrees/oct1-01-integration`; its pre-commit HEAD and canonical
+  remote base were `f4ec0bb4aee872de721551fbb34891de8ab580c5`.
+- Reconciled OCT1 code commit: `9d184619292871258a36ec48cf75e2624b957cd7`.
+- Old local main: `7533d1a64b127b86ba9672fdea0af7416e0b14b4`.
+- Main fast-forwarded to the reconciled code commit without changing its tree.
+  This documentation-only closeout follows that commit. The final canonical
+  main SHA is the commit containing this addendum, resolved with
+  `git log -1 --format=%H -- projects/integrated-market-platform/docs/superpowers/plans/2026-10-01-oct1-01-flow-history.md`.
+  Literal local/remote SHAs and push verification are recorded separately in
+  the final integration report and OCT1-01 tracker after publication.
+
+The interrupted candidate and its resolutions survived. Only the chart's
+inherited timezone-helper dependency was adapted to canonical UTC/ET display.
+All other source/test changes match the original OCT1 lane. The 23-path diff
+was reviewed against current main. The seven committed and pushed Screener
+commits ending at `cbfc40b3` remain excluded; their branch was not merged.
+
+Validation applies to the exact code tree at `9d184619`:
+
+| Check | Evidence |
+| --- | --- |
+| Focused backend | Recovered 57/57; post-main `tools/imp.py test focused` with the same 57 selectors: 57/57. |
+| Focused UI | Recovered 27/27; resume including ScreenerPage: 48/48; post-main four OCT1 files: 27/27. |
+| Complete UI | `node scripts/run-vitest.mjs --maxWorkers=1 --minWorkers=1`: 1,251/1,251 across 164 files. |
+| TypeScript | `npm run typecheck`: PASS. |
+| Production build / budget | Recovered `npm run build` completed successfully, including budget: initial 99.69 KiB gzip; lazy Vela 246.08 KiB. |
+| Additional acceptance | Recovered 77/79 with two Windows file-lock cleanup errors; both exact failing selectors subsequently pass 2/2 with normal process access. |
+| Documentation / format | `tools/check_docs_links.py`: 284 governance files; final `git diff --check`: PASS. |
+
+The interrupted full UI run (1,250 pass / one Screener history failure) and
+the first resume run (1,247 pass / four App failures) remain preserved as
+non-green logs. The affected files and complete serial run subsequently pass;
+no product code or tests were changed to obtain the passing result. The
+original lane's repository-wide IBKR baseline failures remain documented above;
+repository-wide FULL was not repeated for this unchanged narrow integration.
+Original controlled-browser evidence remains SOFTWARE_CONTROLLED, not a fresh
+live-provider or empirical acceptance claim.
+
+The dirty older main checkout remains at its original SHA on
+`codex/hold-main-pre-oct1-01-20261002`. Its work-log edit and untracked Finviz
+audit remain in place; preservation hashes match. Desktop artifact edits and
+all other unrelated worktrees were excluded and left intact.
+
+Ranges, resolutions, pan/zoom, Fit, Go Live, stable historical viewports,
+advancing current context, explicit partial capture/gaps, independent one-second
+aggregates, the 2,000-point cap, cumulative CVD anchor, classification semantics,
+authority blocking, instrument reset and late-response rejection are preserved.
+Runtime-local history, restart/day/eviction resets, one-day/32-instrument bounds,
+whole-intersecting-bucket totals and unverified receive silence remain accepted
+limitations. OCT1-02 was not started.

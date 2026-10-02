@@ -34,6 +34,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-02 — OCT1-01 canonical integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — code integrated into local canonical main; remote publication verified separately in the final integration report/tracker |
+| **Area** | `backend/order-flow`, `ui/screener`, `docs` |
+| **Summary** | Recovered the interrupted OCT1-only candidate on `f4ec0bb4`; committed it as `9d184619292871258a36ec48cf75e2624b957cd7` and fast-forwarded main. Original lane `17ca93fc20e26cd5b748f06da54c2534b1ad93fd` remains distinct. UTC/ET compatibility reconciled; seven inherited Screener commits excluded. |
+| **Tests** | Backend 57/57 before and after landing; UI focused 27/27 and resume 48/48; complete serial UI 1,251/1,251; typecheck PASS; recovered build/budget PASS (99.69 KiB initial gzip); two Windows cleanup selectors pass on rerun. Original failed logs retained. |
+| **Related** | [Canonical integration addendum](../superpowers/plans/2026-10-01-oct1-01-flow-history.md#canonical-integration--2026-10-02) |
+| **Notes** | Dirty older main preserved on `codex/hold-main-pre-oct1-01-20261002`; local files verified unchanged. Runtime-local history limitations accepted. No new empirical or execution authority. OCT1-02 not started. |
+
+---
+
 ## 2026-10-01 — OCT1-01 retained flow history and final audit
 
 | Field | Value |
