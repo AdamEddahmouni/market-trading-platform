@@ -1,0 +1,14 @@
+.connectivity { padding: 8px 12px; }
+.connectivity-graph { width: min(100%, 600px); height: 420px; position: relative; margin: 12px auto; }
+.connectivity-graph svg { position: absolute; width: 100%; height: 100%; }
+.connectivity-graph line { stroke: var(--text-secondary, #8d99a8); stroke-width: 1.3; }
+.connectivity-graph line.reference { stroke-dasharray: 5 3; }
+.connectivity-graph line.contextual_mapping { stroke-dasharray: 1 3; }
+.connectivity-graph button { position: absolute; transform: translate(-50%, -50%); max-width: 130px; font-size: 11px; padding: 6px; background: var(--bg-panel, #18212d); color: inherit; border: 1px solid #718096; border-radius: 6px; overflow-wrap: anywhere; }
+.connectivity-graph button[aria-pressed=true] { outline: 2px solid #64b5f6; }
+.connectivity small { display: block; }
+.connectivity-table { overflow-x: auto; }
+.connectivity table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.connectivity th, .connectivity td { text-align: left; vertical-align: top; padding: 6px; border-bottom: 1px solid #435164; }
+.connectivity pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; }
+@media (max-width: 450px) { .connectivity-graph { height: 360px; } .connectivity-graph button { max-width: 90px; font-size: 10px; } }

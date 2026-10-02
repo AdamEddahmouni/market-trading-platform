@@ -314,6 +314,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path == "/screener/connectivity":
+                from .screener_connectivity import ConnectivityService
+
+                try:
+                    payload = ConnectivityService().read(
+                        (query.get("instrument") or [""])[0],
+                        (query.get("universe") or ["US_EQUITIES"])[0])
+                except ValueError as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
             if path == "/screener/options":
                 from .screener_options import read_options
                 from .screener_universes import US_EQUITIES, universe_spec

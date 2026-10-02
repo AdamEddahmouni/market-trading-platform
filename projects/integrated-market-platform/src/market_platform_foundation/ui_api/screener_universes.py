@@ -69,7 +69,7 @@ UNIVERSES: dict[str, Universe] = {
         # S12: Institutional & Whale and Congress & Government are panels (intelligence
         # lenses), never universes; see SCREENER_S12_PARTICIPANT_GOVERNMENT_INTELLIGENCE.md.
         ("order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "institutional",
-         "congress_gov"),
+         "congress_gov", "connectivity"),
         intelligence_views=("ownership", "congress"),
     ),
     FUTURES: Universe(
@@ -83,7 +83,7 @@ UNIVERSES: dict[str, Universe] = {
             "Custom": ("symbol", "root", "expiry", "dte"),
         },
         # S12: CFTC positioning only; congressional securities disclosures do not map to futures.
-        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", ("news", "institutional"),
+        "US_FUTURES_QUOTE", "FUTURES_CURRENT_KLINE_UNVERIFIED", ("news", "institutional", "connectivity"),
         intelligence_views=("positioning",),
     ),
     US_ETFS: Universe(
@@ -96,7 +96,7 @@ UNIVERSES: dict[str, Universe] = {
             "Custom": ("symbol", "company", "exchange", "price"),
         },
         "US_EQUITY_L1", "US_EQUITY_CURRENT_KLINE",
-        ("order_flow", "cvd", "level2", "charts", "options", "news", "institutional", "congress_gov"),
+        ("order_flow", "cvd", "level2", "charts", "options", "news", "institutional", "congress_gov", "connectivity"),
         intelligence_views=("congress",),
     ),
     # S9: one Bonds / Fixed Income universe. Categories (Treasury, corporate,
@@ -126,7 +126,7 @@ UNIVERSES: dict[str, Universe] = {
                          "observed_date", "reference_tenor", "reference_rate"),
             "Custom": ("symbol", "security_type", "coupon", "maturity"),
         },
-        "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve", "news"),
+        "NO_STREAMING_QUOTE", "NO_PRICE_HISTORY", ("rates_curve", "news", "connectivity"),
         admitted_asset_classes=("SOVEREIGN_DEBT", "BOND"),
         admitted_instrument_kinds=("SOVEREIGN_SECURITY", "BOND"),
         identity_fields=("cusip", "isin"),

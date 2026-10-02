@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-02 — OCT1-02 cross-asset connectivity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — validation complete; canonical PR/check/merge ledger is recorded in the OCT1-02 tracker |
+| **Area** | `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added a bounded selected-instrument projection over existing XA identity/reference catalog and Options/Futures/Bonds services, with inspectable graph, relationship table and source clocks. Unsupported relationships remain absent; comparison requires explicit compatible observed-return windows. |
+| **Key files** | `screener_connectivity.py`, `screenerConnectivity.ts`, `ConnectivityPanel.tsx`, existing Screener route/capability/dock wiring |
+| **Tests** | Backend connectivity 14 PASS and repository review regressions PASS; canonical full closure 7,786 tests (7,733 passed, 53 skipped, zero failures/errors); complete UI 1,258 PASS; typecheck/build/budget/docs PASS; controlled browser PASS |
+| **Related** | [OCT1-02 implementation and validation](../superpowers/plans/2026-10-02-oct1-02-cross-asset-connectivity.md) |
+| **Notes** | Base `d8d8d998`; dedicated `codex/oct1-02-cross-asset-connectivity`. Console closure attempts interrupted; detached closure completed. Timing telemetry reported SEVERE_REGRESSION (467.313 s vs 198.882 s baseline), an observe-only finding. No OCT1-03, AI synthesis or execution-authority changes. |
+
 ## 2026-10-02 — OCT1-01 canonical integration
 
 | Field | Value |

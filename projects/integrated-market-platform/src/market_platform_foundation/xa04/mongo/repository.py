@@ -136,6 +136,20 @@ class MongoCrossAssetCatalogRepository:
     def put_admission_envelope(self, envelope: AdmissionEnvelope) -> RepositoryPutResult:
         return self._put(envelope)
 
+    def latest_scalar_observation_as_of(
+        self, decision_time: str, *, canonical_indicator_id: str
+    ) -> AdmittedObservation | None:
+        codec = _CODEC_BY_COLLECTION["xa_scalar_observations"]
+        cursor = (
+            self._database["xa_scalar_observations"]
+            .find({"canonical_indicator_id": canonical_indicator_id,
+                   "available_time": {"$ne": "", "$lte": decision_time},
+                   "admission_status": "ADMITTED", "normalized_value": {"$ne": None}})
+            .sort([("available_time", -1), ("observation_id", -1)])
+            .limit(1)
+        )
+        return next((decode_document(document, codec) for document in cursor), None)
+
     def get_admission_envelope(self, observation_id: str) -> AdmissionEnvelope | None:
         return self._get("xa_admission_envelopes", observation_id, AdmissionEnvelope)
 

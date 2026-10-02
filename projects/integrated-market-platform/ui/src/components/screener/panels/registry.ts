@@ -2,6 +2,7 @@ import type { PanelId, PanelLayout, ScreenerConfig, ScreenerUniverse } from "../
 
 /** Specialist panels, in launcher and default-arrangement order. */
 export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
+  { id: "connectivity", title: "Cross-Asset" },
   { id: "order_flow", title: "Order Flow" },
   { id: "cvd", title: "CVD" },
   { id: "level2", title: "Level 2" },
