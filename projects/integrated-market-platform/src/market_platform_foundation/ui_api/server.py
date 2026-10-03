@@ -91,6 +91,11 @@ class UiApiHandler(BaseHTTPRequestHandler):
         status: HTTPStatus = HTTPStatus.OK,
         deprecated_successor: str | None = None,
     ) -> None:
+        if status == HTTPStatus.OK and self.path.split("?")[0].startswith("/screener"):
+            from .screener_freshness import project_screener_response
+            from datetime import UTC, datetime
+
+            payload = project_screener_response(self.path, payload, now=datetime.now(UTC).isoformat().replace("+00:00", "Z"))
         try:
             assert_no_secrets_in_payload(payload)
         except Exception as exc:

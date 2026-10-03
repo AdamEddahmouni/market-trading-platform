@@ -18,7 +18,7 @@ export default function ShortSqueezePanel({ api }: IDockviewPanelProps) {
   });
   const data = query.data?.instrument_id === row?.instrument.instrument_id && query.data?.universe === universe ? query.data : undefined;
   const gate = selectionGate("short_squeeze", row, settledId);
-  return <PanelFrame id="short_squeeze" detail={data ? `${data.market_session} · source clocks below` : null}
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="short_squeeze" detail={data ? `${data.market_session} · source clocks below` : null}
     clock={data?.generated_at ? <>Assessed {new Date(data.generated_at).toLocaleTimeString()} (<Age iso={data.generated_at} staleMs={75_000} /> ago)</> : null}>
     {universe !== "US_EQUITIES" ? <PanelMessage>Short Squeeze evidence is available for US equities only.</PanelMessage> : gate ??
       (query.isError && !data ? <PanelMessage tone="error" role="alert">Squeeze evidence unavailable.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>

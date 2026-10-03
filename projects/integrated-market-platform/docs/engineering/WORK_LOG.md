@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-02 — OCT1-03 Screener decision freshness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — canonical integration/check/SHA ledger recorded in the OCT1-03 PR and Notion task |
+| **Area** | `market-data`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added source/clock/policy-aware per-capability freshness, independent delivery mode and current/reference eligibility. Corrected symbol-silence flow, timeframe-aware cached bars, directional freshness, Treasury observation labels and client deadline withdrawal. The deterministic consumer gate excludes stale critical inputs at decision cutoff. |
+| **Key files** | `market_data/freshness_contract.py`, `ui_api/screener_freshness.py`, Screener API projection boundary, shared DecisionFreshness indicator and schemas, preview/panels/row labels |
+| **Tests** | Focused backend 44 + 125 passed; complete UI 1268/1268 (166 files); Screener UI/API 259/259; final indicator/connectivity 17/17; lint/typecheck/build/budget passed; controlled Edge acceptance 15 assertions, zero page errors. FULL ledger in linked plan. |
+| **Related** | [OCT1-03 audit and validation](../superpowers/plans/2026-10-02-oct1-03-decision-freshness.md), [canonical consumer contract](../architecture/SCREENER_DECISION_FRESHNESS.md) |
+| **Notes** | SOFTWARE_CONTROLLED; no provider freshness empirical claim. Unknown cadence remains explicit. Initial bundle 99.70 KiB gzip (+0.01 KiB); projection 80-row p95 2.172ms, 500-row p95 9.723ms. No AI synthesis, new providers, trading changes or OCT1-04. |
+
 ## 2026-10-02 — OCT1-02 cross-asset connectivity
 
 | Field | Value |

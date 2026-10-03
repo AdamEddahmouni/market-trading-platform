@@ -67,7 +67,7 @@ export default function RatesCurvePanel({ api }: IDockviewPanelProps) {
   const pending = Boolean(row) && settledId !== row?.instrument.instrument_id;
   const nominal = data?.nominal;
   const reference = data?.selected?.reference;
-  return <PanelFrame id="rates_curve" detail={nominal?.publication_date ? `U.S. Treasury par curves · ${isoDate(nominal.publication_date)}` : "U.S. Treasury par curves"}
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="rates_curve" detail={nominal?.publication_date ? `U.S. Treasury par curves · ${isoDate(nominal.publication_date)}` : "U.S. Treasury par curves"}
     state={nominal ? (nominal.state === "PUBLICATION_CURRENT" ? "CURRENT" : nominal.state) : null}
     clock={nominal?.publication_date ? `Daily publication · ${isoDate(nominal.publication_date)}` : null}>
     {query.isError && !data ? <PanelMessage tone="error" role="alert">Rates &amp; Curve request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>

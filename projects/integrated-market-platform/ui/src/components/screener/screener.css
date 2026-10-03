@@ -183,3 +183,12 @@
 .screener-news-badge.tone-positive span{color:#78d6ad}.screener-news-badge.tone-negative span{color:#f0a0a8}.screener-news-badge.tone-neutral span,.screener-news-badge.tone-mixed span{color:#c3d1df}
 .screener-news-badge.pending{min-width:0;border:0;background:none;color:#4b5b6c;cursor:default}
 .screener-truncated{color:#d9a45b}
+
+/* Temporal authority is textual and inspectable, independent of color. */
+.decision-freshness { margin: 8px 0; font-size: 11px; }
+.decision-freshness details { border-bottom: 1px solid var(--border, #394354); padding: 4px 0; }
+.decision-freshness summary { cursor: pointer; overflow-wrap: anywhere; }
+.decision-freshness dl { margin: 6px 0; }
+.decision-freshness dl div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; }
+.decision-freshness dd { margin: 0; overflow-wrap: anywhere; }
+.screener-row-freshness { font-size: 9px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }

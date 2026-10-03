@@ -1,3 +1,4 @@
+import { DecisionEvidenceSchema, DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
 import { authHeaders } from "../auth/session";
@@ -12,6 +13,7 @@ const FieldSchema = z.object({
   basis: z.string().optional(),
 });
 const RowSchema = z.object({
+  decision_inputs: DecisionInputs,
   instrument: z.object({
     instrument_id: z.string(),
     venue_id: z.string(),
@@ -102,6 +104,7 @@ const ScreenerSchema = z.object({
   rows: z.array(RowSchema),
 });
 const QuoteSchema = z.object({
+  decision_inputs: DecisionInputs,
   state: z.string(),
   session_state: z.string().optional(),
   reason: z.string().nullable().optional(),
@@ -240,10 +243,12 @@ const ZoneSchema = z.object({
 });
 const SideSchema = ZoneSchema.extend({ distance_pct: z.number() }).nullable();
 const EvidenceSchema = z.object({
+  decision_evidence: DecisionEvidenceSchema.optional(),
   class: z.enum(["OBSERVED", "DERIVED", "AI_SYNTHESIS", "UNAVAILABLE", "INSUFFICIENT_EVIDENCE"]),
   kind: z.string(), text: z.string(), source: z.string(), as_of: z.string().nullable(),
 });
 const PreviewSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-preview/1.0.0"),
   generated_at: z.string(),
   market_session: ScreenerSchema.shape.market_session,

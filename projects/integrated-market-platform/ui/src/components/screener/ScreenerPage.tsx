@@ -1,3 +1,4 @@
+import { currentFreshness, useDecisionNow } from "./DecisionFreshness";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -187,7 +188,13 @@ function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
 }
 const FRESHNESS: Record<string, string> = { LIVE: "Live quote", DELAYED: "Delayed quote", SNAPSHOT: "Snapshot quote", STALE: "Stale quote" };
 /** Quote freshness for a row in the visible window; rows outside it have no quote and show no dot. */
-function FreshnessDot({ quote }: { quote?: ScreenerQuote }) {
+function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow }) {
+  const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.[0];
+  const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
+  if (evidence) {
+    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${currentFreshness(evidence, now).replace(/_/g, " ")}`;
+    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{label}</span>;
+  }
   if (!quote) return null;
   const label = FRESHNESS[quote.state] ?? "Quote unavailable";
   const detail = [label, quote.reason?.replace(/_/g, " ").toLowerCase(), quote.age_ms != null ? `${Math.round(quote.age_ms / 1000)}s old` : null].filter(Boolean).join(" · ");
@@ -621,7 +628,7 @@ export function ScreenerPage() {
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
-      if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} /><strong>{item.symbol}</strong>
+      if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
           symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<small>{universe === "CRYPTO" ? item.venue : item.company}</small></span>;
       if (textColumns.has(definition.key)) {

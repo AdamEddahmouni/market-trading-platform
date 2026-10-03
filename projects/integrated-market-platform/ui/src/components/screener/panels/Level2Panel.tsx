@@ -59,7 +59,7 @@ export default function Level2Panel({ api }: IDockviewPanelProps) {
   const completeness = data?.completeness ? `${venueBook ? "Venue book" : "MBP"} ${data.completeness.bid_levels}×${data.completeness.ask_levels} levels` : "MBP";
   const money = (value: number) => marketPrice(value, row, universe);
   const clock = data?.latest_received_at ? <>book {marketClock(universe).clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={data.freshness?.ttl_ms ?? 10_000} /> ago{data.freshness ? ` · TTL ${data.freshness.ttl_ms / 1000}s` : ""}</> : null;
-  return <PanelFrame id="level2" state={data?.state} detail={data ? `${completeness} · ${providerLabel(data.provider)}` : null} clock={clock}>
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="level2" state={data?.state} detail={data ? `${completeness} · ${providerLabel(data.provider)}` : null} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Level 2 request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : !SHOWN.has(data.state) || (!data.bids.length && !data.asks.length) ? <>

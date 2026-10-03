@@ -119,7 +119,10 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
         "fields": {
             name: {"value": value, "source": str(quote.provider or "MOOMOO"),
                    "state": state if value is not None else "UNAVAILABLE",
-                   "as_of_ns": int(quote.available_time_ns)}
+                   "as_of_ns": event_ns if has_event_time else int(quote.available_time_ns),
+                   "event_time_ns": event_ns if has_event_time else None,
+                   "provider_as_of": datetime.fromtimestamp(event_ns / 1e9, UTC).isoformat().replace("+00:00", "Z") if has_event_time else None,
+                   "received_ns": int(quote.received_ns)}
             for name, value in values.items()
         },
     }

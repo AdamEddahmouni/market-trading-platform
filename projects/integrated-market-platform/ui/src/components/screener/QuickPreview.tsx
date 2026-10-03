@@ -1,3 +1,4 @@
+import { DecisionFreshness, currentFreshness, useDecisionNow } from "./DecisionFreshness";
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScreenerPreview, type ScreenerFilter, type ScreenerPreview, type ScreenerQuote, type ScreenerRow, type ScreenerUniverse } from "../../api/screener";
@@ -125,7 +126,7 @@ function Levels({ preview, price, priceSource }: { preview: ScreenerPreview; pri
     <SrBar price={price} {...classified} />
     <div className="screener-sr-sides">
       <SrSide kind="support" zone={classified.support} />
-      <div className="screener-sr-side current"><span className="screener-sr-label">{priceSource.startsWith("Last bar close") ? "Last bar close" : "Current"}</span>
+      <div className="screener-sr-side current"><span className="screener-sr-label">{priceSource.startsWith("Last bar close") ? "Last bar close" : priceSource.startsWith("Reference") ? "Reference" : "Current"}</span>
         <strong>{price == null ? "—" : `$${money(price)}`}</strong><span className="screener-muted">{priceSource}</span>
         {classified.testing && <span className="screener-sr-testing">Testing zone</span>}</div>
       <SrSide kind="resistance" zone={classified.resistance} />
@@ -209,13 +210,17 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
   });
   const data = preview.data && preview.data.instrument.instrument_id === id &&
     (preview.data.universe ?? "US_EQUITIES") === universe ? preview.data : undefined;
-  const livePrice = quote?.state === "LIVE" ? quote.fields.price?.value ?? null : null;
-  const delayedPrice = quote?.state === "DELAYED" ? quote.fields.price?.value ?? null : null;
+  const quoteEvidence = quote?.decision_inputs?.[0];
+  const decisionNow = useDecisionNow(quote?.decision_inputs);
+  const quoteFreshness = quoteEvidence ? currentFreshness(quoteEvidence, decisionNow) : undefined;
+  const quoteEligible = !quoteEvidence || quoteFreshness === "CURRENT" && quoteEvidence.eligible_for_current_decision;
+  const livePrice = quote?.state === "LIVE" && quoteEligible ? quote.fields.price?.value ?? null : null;
+  const delayedPrice = quote?.state === "DELAYED" && (!quoteEvidence || quoteFreshness === "CURRENT") ? quote.fields.price?.value ?? null : null;
   // Quote clock (header) and bar clock (S/R marker) stay separate: the header
   // never shows a bar close as if it were the snapshot price.
   const headerPrice = livePrice ?? delayedPrice ?? row?.fields.price?.value ?? null;
   const price = livePrice ?? data?.levels.price?.value ?? row?.fields.price?.value ?? null;
-  const priceSource = livePrice != null ? `L1 live${quote?.age_ms != null ? ` · ${quote.age_ms}ms` : ""}` : data?.levels.price?.source === "LAST_BAR_CLOSE" ? `Last bar close · ${time(data.levels.price.as_of, true)}` : "Snapshot";
+  const priceSource = livePrice != null ? `L1 live${quote?.age_ms != null ? ` · ${quote.age_ms}ms` : ""}` : data?.levels.price?.source === "LAST_BAR_CLOSE" ? `Last bar close · ${time(data.levels.price.as_of, true)}` : quoteEvidence && !quoteEligible ? "Reference snapshot" : "Snapshot";
   const classified = useMemo(() => data ? classifyZones(data.levels.zones, price, data.levels.min_strength) : null, [data, price]);
   const change = quote?.state === "LIVE" || quote?.state === "DELAYED" ? quote.fields.change_pct?.value ?? row?.fields.change_pct?.value ?? null : row?.fields.change_pct?.value ?? null;
   const tabs = TABS.filter((item) => (item.id !== "futures" || universe === "US_EQUITIES") && (item.id !== "options" || optionsSupported) && (item.id !== "squeeze" || squeezeSupported) && (item.id !== "news" || newsSupported) && (item.id !== "participants" || institutionalSupported || governmentSupported));
@@ -245,7 +250,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
         <div className="screener-preview-quote">
           <strong>{headerPrice == null ? "—" : `${universe === "FUTURES" ? "" : "$"}${money(headerPrice)}`}</strong>
           {change != null && <span className={change > 0 ? "screener-positive" : change < 0 ? "screener-negative" : ""} title={universe === "US_EQUITIES" ? "Finviz snapshot change" : "Provider quote change"}>{pct(change, true)}</span>}
-          <span className={`screener-state ${livePrice != null ? "live" : delayedPrice != null ? "delayed" : "snapshot"}`}>{livePrice != null ? "L1 live" : delayedPrice != null ? "Delayed" : quote?.state === "STALE" ? "L1 stale" : universe === "FUTURES" ? "Quote unavailable" : universe === "US_ETFS" && data?.market_session === "CLOSED" ? "Session closed · no current quote" : universe === "US_ETFS" ? "Quote awaiting provider" : "Snapshot"}</span>
+          <span className={`screener-state ${livePrice != null ? "live" : delayedPrice != null ? "delayed" : "snapshot"}`}>{livePrice != null ? "L1 live" : delayedPrice != null ? "Delayed" : quoteFreshness === "STALE" || quote?.state === "STALE" ? "L1 stale" : quoteEvidence ? `L1 ${quoteFreshness?.replace(/_/g, " ").toLowerCase()} · decision blocked` : universe === "FUTURES" ? "Quote unavailable" : universe === "US_ETFS" && data?.market_session === "CLOSED" ? "Session closed · no current quote" : universe === "US_ETFS" ? "Quote awaiting provider" : "Snapshot"}</span>
         </div>
       </div>
       {universe === "FUTURES" && <p className="screener-preview-meta">Root {row.root ?? "—"} · {row.exchange ?? "Exchange unavailable"} · expires {row.expiry ?? "unknown"}</p>}
@@ -263,6 +268,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
             </Suspense> : <div className="screener-preview-chart unavailable" role="status">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason)}</div>}
             <p className="screener-preview-meta">{bars?.timeframe} · {bars?.session_scope === "RTH" ? "RTH" : bars?.session_scope === "PROVIDER_SPECIFIC" ? "Futures session" : "Extended"} · {barStateLabel(bars?.state ?? "UNAVAILABLE")}{universe !== "FUTURES" ? " · Moomoo OpenD" : ""}{bars?.latest_complete_bar_end ? ` · last bar ${time(bars.latest_complete_bar_end, true)}` : ""}</p>
           </section>
+          <DecisionFreshness inputs={[...(quote?.decision_inputs ?? []), ...(data.decision_inputs ?? []).filter(item => item.capability !== "quote")]} />
           <Levels preview={data} price={price} priceSource={priceSource} />
           <div className="screener-preview-tabs" role="tablist" aria-label="Preview details" onKeyDown={onTabKey}>
             {tabs.map((item) => <button key={item.id} ref={(element) => { tabRefs.current[item.id] = element; }} type="button" role="tab"

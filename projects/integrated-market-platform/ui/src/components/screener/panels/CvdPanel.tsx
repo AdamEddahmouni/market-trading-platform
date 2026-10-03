@@ -52,7 +52,7 @@ export default function CvdPanel({ api }: IDockviewPanelProps) {
   const market = marketClock(universe);
   const unit = universe === "CRYPTO" ? row?.base_asset ?? "base units" : "shares";
   const clock = data?.latest_received_at ? <>latest trade {market.clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={10_000} /> ago</> : null;
-  return <PanelFrame id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">CVD request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
