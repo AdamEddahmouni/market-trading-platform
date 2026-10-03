@@ -26,6 +26,7 @@ links to evidence; it does not redefine architecture or executable behavior.
 
 | Subject | Current state | Truth class | Controlling evidence |
 |---|---|---|---|
+| OCT1-03 Screener decision freshness | Software contract implemented: independent clocks, domain policies, machine eligibility and Treasury date semantics. Integration SHA/checks are recorded in the OCT1-03 PR and task ledger; no empirical or execution authority. | `CURRENT_CANONICAL_TRUTH` | [Freshness contract](../architecture/SCREENER_DECISION_FRESHNESS.md), [OCT1-03 validation](../superpowers/plans/2026-10-02-oct1-03-decision-freshness.md) |
 | BUILD01-35 core campaign | Historical disposition `FULL_SYSTEM_ACCEPTED_WITH_LIMITATIONS` for the recorded BUILD35 candidate | `HISTORICAL_TRUTH` | [BUILD35 acceptance report](../../artifacts/full-system-acceptance/BUILD35_FULL_ACCEPTANCE_REPORT.json) and [known limitations](../../artifacts/full-system-acceptance/BUILD35_KNOWN_LIMITATIONS.md) |
 | Repository closure | `COMPLETE` for its recorded source; the audit passed with no classification-time changes | `HISTORICAL_TRUTH` | [Closure audit](../engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md) and [classification](../../artifacts/repository-closure/POST_BUILD35_SUBSYSTEM_CLASSIFICATION.json) |
 | EVIDENCE-01 | `COMPLETE` policy and assessment machinery; evidence sufficiency only | `HISTORICAL_TRUTH` / `CURRENT_CANONICAL_TRUTH` | [EVIDENCE-01](../engineering/EVIDENCE_01_LONGER_FORWARD_QUALIFICATION.md) |

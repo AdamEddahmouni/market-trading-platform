@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
 import { RemedySchema } from "./screenerSetup";
@@ -85,6 +86,7 @@ const Brief = z.object({
 export type NewsBrief = z.infer<typeof Brief>;
 
 export const NewsFeedSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-news/1.0.0"),
   generated_at: Iso, universe: ScreenerUniverseSchema, window: Window, state: FeedState, reason: z.string().nullable(),
   /** The one step behind the feed state (e.g. start OpenD when the ETF/Futures catalog is down). */
@@ -137,6 +139,7 @@ export type SentimentTimelineBucket = z.infer<typeof TimelineBucket>;
 const AnalysisItem = z.object({ text: z.string(), source: z.string(), as_of: Iso.nullable(), story_id: z.string().nullable() }).passthrough();
 export type NewsAnalysisItem = z.infer<typeof AnalysisItem>;
 export const InstrumentNewsSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-news-instrument/1.0.0"),
   generated_at: Iso, universe: ScreenerUniverseSchema,
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), label: z.string() }).passthrough(),

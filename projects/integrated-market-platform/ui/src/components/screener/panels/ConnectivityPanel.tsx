@@ -1,3 +1,4 @@
+import { DecisionFreshness, currentFreshness, useDecisionNow } from "../DecisionFreshness";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
@@ -8,6 +9,7 @@ import "./connectivity.css";
 
 export function ConnectivityView({ data, open, supportedPanels }: { data: ConnectivityPayload; open?: (id: PanelId) => void; supportedPanels?: ReadonlySet<PanelId> }) {
   const [inspected, setInspected] = useState<string | null>(null);
+  const now = useDecisionNow(data.decision_inputs);
   const selected = data.selected_instrument.node_id;
   const others = data.nodes.filter(n => n.node_id !== selected);
   const focused = data.nodes.find(n => n.node_id === inspected);
@@ -31,7 +33,7 @@ export function ConnectivityView({ data, open, supportedPanels }: { data: Connec
         const relation = data.edges.find(e => e.from_node === n.node_id || e.to_node === n.node_id);
         return <button key={n.node_id} type="button" style={{ left: `${position[0] / 3}%`, top: `${position[1] / 3}%` }}
           aria-label={`Inspect ${n.label} · ${n.state}`} aria-pressed={inspected === n.node_id} onClick={() => setInspected(n.node_id)}>
-          <strong>{n.label}</strong><small>{n.instrument_kind}</small><small>{n.state}</small>
+          <strong>{n.label}</strong><small>{n.instrument_kind}</small><small>{n.decision_evidence ? `${n.decision_evidence.delivery_mode} · ${currentFreshness(n.decision_evidence, now)}` : n.state}</small>
           {relation && <small>{relation.evidence_state}</small>}
         </button>;
       })}
@@ -52,6 +54,7 @@ export function ConnectivityView({ data, open, supportedPanels }: { data: Connec
     {focused && <section aria-label="Connectivity detail inspector"><h3>Why connected</h3>
       <p><strong>{focused.label}</strong> · {focused.asset_class} · {focused.instrument_kind}</p>
       <p>Canonical identity: {focused.canonical_instrument_id ?? "Aggregate reference context; no instrument identity"}</p>
+      <DecisionFreshness inputs={focused.decision_evidence ? [focused.decision_evidence] : undefined} />
       <p>{focused.state} · {focused.source ?? "Source unavailable"} · As-of {focused.as_of ?? "unavailable"} · Retrieved {focused.received_at ?? "unavailable"}</p>
       {links.map(e => <p key={e.edge_id}>{e.relationship_type} · {e.relationship_class} · {e.evidence_state} · {e.basis} · {e.explanation}</p>)}
       <details><summary>Facts and provenance</summary><pre>{JSON.stringify({ facts: focused.facts, relationships: links }, null, 2)}</pre></details>

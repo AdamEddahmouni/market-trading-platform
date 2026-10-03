@@ -46,7 +46,7 @@ export default function ChartsPanel({ api }: IDockviewPanelProps) {
   const label = data && last ? `${data.instrument.symbol} ${bars!.timeframe} ${scopeLabel} candles, ${bars!.bar_count} completed bars to ${marketDay(bars!.latest_complete_bar_end)}; ${priceText}`
     + `${classified?.support ? `; support ${money(classified.support.lower)} to ${money(classified.support.upper)}` : ""}`
     + `${classified?.resistance ? `; resistance ${money(classified.resistance.lower)} to ${money(classified.resistance.upper)}` : ""}` : "";
-  return <PanelFrame id="charts" state={bars?.state === "UNAVAILABLE" ? "UNAVAILABLE" : bars?.state}
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="charts" state={bars?.state === "UNAVAILABLE" ? "UNAVAILABLE" : bars?.state}
     detail={data ? `${timeframe} · ${scopeLabel} · ${crypto ? "Kraken public OHLC" : "Moomoo OpenD"}` : null}
     clock={bars?.received_at ? <>bars rcvd <Age iso={bars.received_at} staleMs={45_000} /> ago</> : null}>
     {gate ?? <>

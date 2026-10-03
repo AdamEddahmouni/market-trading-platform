@@ -138,7 +138,7 @@ export default function NewsAnalysisPanel({ api }: IDockviewPanelProps) {
   const degraded = data ? degradedProviders(data.providers) : [];
   // The AI citation under the pointer or focus; its headline is highlighted so grounding is checkable at a glance.
   const [citedId, setCitedId] = useState<string | null>(null);
-  return <PanelFrame id="news" state={data?.state ?? null} clock={data ? <>updated {newsDayTime(data.generated_at, data.universe)} (<Age iso={data.generated_at} /> ago)</> : null}
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="news" state={data?.state ?? null} clock={data ? <>updated {newsDayTime(data.generated_at, data.universe)} (<Age iso={data.generated_at} /> ago)</> : null}
     detail={data ? `${data.instrument.label} · ${data.window.id} · ${data.coverage.story_count} stories · ${current}/${data.providers.length} providers current` : null}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">News &amp; Analysis request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row?.symbol} news…</PanelMessage>

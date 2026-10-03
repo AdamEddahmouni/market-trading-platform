@@ -380,11 +380,13 @@ class ScreenerSpecialistService:
         }
         return trades, window
 
-    def _live_state(self, runtime: Any, has_data: bool) -> tuple[str, str | None]:
+    def _live_state(self, runtime: Any, has_data: bool, *, latest_event_ns: int | None = None) -> tuple[str, str | None]:
         if self._session() == "CLOSED":
             return "SESSION_CLOSED", None if has_data else "NO_CAPTURED_DATA"
         if self._feed_silent(runtime):
             return "STALE", "FEED_SILENT"
+        if latest_event_ns is not None and (latest_event_ns > self._now_ns() or self._now_ns() - latest_event_ns > FEED_SILENT_SECONDS * 1_000_000_000):
+            return "STALE", "SYMBOL_EVENT_OUTSIDE_POLICY"
         return "CURRENT", None if has_data else "AWAITING_DATA"
 
     def order_flow(self, instrument_id: str) -> dict[str, Any]:
@@ -396,7 +398,7 @@ class ScreenerSpecialistService:
         if blocked is not None:
             return {**payload, "state": blocked, "reason": reason, "summary": None, "tape": [], "window": None}
         trades, window = self._trade_window(runtime, instrument_id, anchor or 0)
-        state, reason = self._live_state(runtime, bool(trades))
+        state, reason = self._live_state(runtime, bool(trades), latest_event_ns=int(trades[-1]["event_time_ns"]) if trades else None)
         views = [aggressor_view(trade) for trade in trades]
         sizes = [abs(float(trade.get("quantity") or 0)) for trade in trades]
         buy = sum(size for size, view in zip(sizes, views) if view["side"] == "BUY")
@@ -442,7 +444,7 @@ class ScreenerSpecialistService:
         if blocked is not None:
             return {**payload, "state": blocked, "reason": reason, "summary": None, "points": [], "window": None}
         trades, window = self._trade_window(runtime, instrument_id, anchor or 0)
-        state, reason = self._live_state(runtime, bool(trades))
+        state, reason = self._live_state(runtime, bool(trades), latest_event_ns=int(trades[-1]["event_time_ns"]) if trades else None)
         views = [aggressor_view(trade) for trade in trades]
         deltas = [_signed(trade, view) for trade, view in zip(trades, views)]
         series = compute_cvd_series(deltas)

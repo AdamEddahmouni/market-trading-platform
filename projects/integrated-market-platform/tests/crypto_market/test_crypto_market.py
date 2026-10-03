@@ -250,7 +250,7 @@ class FakeConnection:
 
 class StreamHarness:
     def __init__(self) -> None:
-        self.now = 1_000_000_000_000
+        self.now = iso_ns("2026-09-28T12:00:00Z")
         self.mono = 0.0
         self.connections: list[FakeConnection] = []
         self.waits: list[float] = []
@@ -445,7 +445,7 @@ class CryptoSpecialistProjectionTests(unittest.TestCase):
         self.h.step()
         self.h.step()
         self.h.ack_all()
-        self.h.now += 1
+        self.h.now += 1_000_000
         self.h.step(trade_message(1, "buy", "0.5"), trade_message(2, "sell", "0.2"),
                     fixture_lines("kraken_book_btcusd_depth10.jsonl")[0])
         flow = self.service.order_flow("XA01:BTC")

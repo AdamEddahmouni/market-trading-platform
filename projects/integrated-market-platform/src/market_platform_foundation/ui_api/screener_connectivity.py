@@ -29,6 +29,8 @@ def compare_direction(left: dict | None, right: dict | None, *, cutoff: str | No
     if left is None or right is None:
         return {**result, "state": "UNAVAILABLE"}
     for observation in (left, right):
+        if observation.get("decision_evidence", {}).get("eligible_for_current_decision") is False:
+            return result
         if observation.get("state") not in ("CURRENT", "LIVE"):
             return result
         if not all(observation.get(key) for key in ("source", "as_of", "window_start", "window_end", "basis")):
@@ -43,7 +45,7 @@ def compare_direction(left: dict | None, right: dict | None, *, cutoff: str | No
                 return result
             if cutoff:
                 decision = datetime.fromisoformat(cutoff.replace("Z", "+00:00"))
-                if not 0 <= (decision - end).total_seconds() <= 60:
+                if not 0 <= (decision - end).total_seconds() <= observation.get("stale_after_ms", 60_000) / 1000:
                     return result
         except (ValueError, TypeError):
             return result
@@ -97,12 +99,12 @@ class ConnectivityService:
         edges: list[dict] = []
 
         def node(identifier, label, domain, asset, kind, *, state="UNAVAILABLE", source=None,
-                 as_of=None, received_at=None, facts=None, canonical=None):
+                 as_of=None, received_at=None, facts=None, canonical=None, decision_evidence=None):
             if identifier not in nodes and len(nodes) < MAX_NODES:
                 nodes[identifier] = dict(node_id=identifier, canonical_instrument_id=canonical,
                     label=label, domain=domain, asset_class=asset, instrument_kind=kind, state=state,
                     source=source, as_of=as_of, received_at=received_at, facts=facts or {},
-                    executable=False, role="SELECTED" if identifier == selected_id else "CONTEXT")
+                    decision_evidence=decision_evidence, executable=False, role="SELECTED" if identifier == selected_id else "CONTEXT")
             return identifier
 
         def edge(origin, target, relation, classification, basis, explanation, state="CONTEXT_ONLY",
@@ -139,11 +141,13 @@ class ConnectivityService:
                                   "reason": options.get("reason") if valid else options.get("reason") or "OPTIONS_IDENTITY_MISMATCH"}
             if valid:
                 option_id = f"context:options:{selected_id}"
+                from .screener_freshness import project_screener_response
+                option_evidence = project_screener_response("/screener/options", options, now=generated)["decision_inputs"][0]
                 clock = options.get("clock") or {}
                 node(option_id, f'{row["symbol"]} options', "OPTIONS", "OPTION", "OPTIONS_CONTEXT",
                      state=options.get("state", "UNAVAILABLE"), source=(options.get("provider") or {}).get("id"),
                      as_of=clock.get("provider_as_of") or clock.get("latest_contract_trade_at"),
-                     received_at=clock.get("fetched_at"), facts={"nearest_expiry": options.get("selected_expiration"),
+                     decision_evidence=option_evidence, received_at=clock.get("fetched_at"), facts={"nearest_expiry": options.get("selected_expiration"),
                      "summary": options.get("summary")})
                 edge(option_id, selected_id, "UNDERLYING", "STRUCTURAL", "SELECTED_UNDERLYING",
                      "Option-chain context belongs to the selected underlying. No directional inference.",
@@ -168,7 +172,12 @@ class ConnectivityService:
                      state="REFERENCE_METADATA",
                      facts={"matched_sector": row.get("sector"), "matched_industry": row.get("industry"),
                             "matched_market_cap": (row.get("fields", {}).get("market_cap") or {}).get("value")})
-                comparison = compare_direction(quote.get("return_observation"), fq.get("return_observation"), cutoff=generated) if fq else None
+                future_observation = fq.get("return_observation")
+                if future_observation:
+                    future_observation = {**future_observation, "stale_after_ms": 15_000}
+                comparison = compare_direction(quote.get("return_observation"), future_observation, cutoff=generated) if fq else None
+                if comparison and (quote.get("state") in ("STALE", "UNAVAILABLE", "DELAYED", "SESSION_CLOSED") or fq.get("state") not in ("LIVE", "CURRENT")):
+                    comparison = {**comparison, "state": "UNKNOWN"}
                 assessment = comparison["state"] if comparison and quote.get("return_observation") and fq.get("return_observation") else "UNKNOWN" if fq else "UNAVAILABLE"
                 explanation = expected[root].reason + " Contextual relevance alone implies no directional conclusion."
                 edge(selected_id, family, "REFERENCE_RELEVANT_TO", "CONTEXTUAL_MAPPING", MAPPING_VERSION,

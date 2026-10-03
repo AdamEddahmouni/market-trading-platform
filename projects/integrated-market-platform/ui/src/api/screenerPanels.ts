@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { authHeaders } from "../auth/session";
 import { fetchJson, postJson } from "./fetchJson";
@@ -9,6 +10,7 @@ const PanelState = z.enum(["CURRENT", "SESSION_CLOSED", "STALE", "PARTIAL", "INV
   "UNAVAILABLE", "CONNECTING", "SUBSCRIPTION_BUSY"]);
 export type PanelState = z.infer<typeof PanelState>;
 const Base = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-specialist/1.0.0"),
   instrument_id: z.string(), provider: z.string().nullable(), generated_at: z.string().nullable(),
   market_session: z.string(), state: PanelState, reason: z.string().nullable(),
@@ -59,6 +61,7 @@ const Zone = z.object({ lower: z.number(), upper: z.number(), center: z.number()
   last_touch_end_ns: z.number(), kinds: z.array(z.string()) });
 const QuoteField = z.object({ value: z.number().nullable(), source: z.string(), state: z.string(), as_of_ns: z.number().optional() });
 const ChartSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-chart/1.0.0"), generated_at: z.string(), market_session: z.string(),
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), company: z.string() }),
   quote: z.object({ state: z.string(), age_ms: z.number().optional(), fields: z.record(QuoteField) }),
@@ -70,6 +73,7 @@ const ChartSchema = z.object({
     price: z.object({ value: z.number(), source: z.string(), state: z.string(), as_of: z.string() }).nullable() }),
 });
 const FuturesSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-futures-context/1.0.0"), generated_at: z.string(),
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), company: z.string(), sector: z.string().nullable(), industry: z.string().nullable() }),
   futures: z.object({ mapping_version: z.string(), causal_note: z.string(), items: z.array(z.object({

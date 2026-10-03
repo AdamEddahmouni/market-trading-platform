@@ -1,14 +1,17 @@
+import { DecisionEvidenceSchema, DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson } from "./fetchJson";
 import type { ScreenerUniverse } from "./screener";
 
 const Node = z.object({
+  decision_evidence: DecisionEvidenceSchema.optional(),
   node_id: z.string(), canonical_instrument_id: z.string().nullable(), label: z.string(),
   domain: z.string(), asset_class: z.string(), instrument_kind: z.string(), state: z.string(),
   source: z.string().nullable(), as_of: z.string().nullable(), received_at: z.string().nullable(),
   facts: z.record(z.unknown()), executable: z.literal(false), role: z.string(),
 });
 export const ConnectivitySchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-connectivity/1.0.0"), instrument_id: z.string(), universe: z.string(),
   selected_instrument: Node, nodes: z.array(Node).max(20),
   edges: z.array(z.object({ edge_id: z.string(), from_node: z.string(), to_node: z.string(),
