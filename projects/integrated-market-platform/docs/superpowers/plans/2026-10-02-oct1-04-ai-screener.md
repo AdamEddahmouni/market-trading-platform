@@ -1,5 +1,8 @@
 # OCT1-04 implementation plan
 
+Subsequent implementation: [OCT1-05 News and sentiment evidence](2026-10-03-oct1-05-news-evidence-integration.md)
+extends the canonical packet and UI. The OCT1-04 receipts below remain historical.
+
 **Goal:** Explicit operator-initiated reduction of the active Screener to at most five grounded candidates.
 **Base:** `a3496d0af1ea41d34585469ec70f5f36a5dbcc08`, branch `codex/oct1-04-ai-screener`.
 **Architecture:** Sibling structured market packet on the existing inference provider boundary. Reuse the News service's selected provider instance, catalog, launcher, secrets and shared budget. Server reconstructs the pinned query, takes its first 20 rows, projects bounded existing domain facts, then rechecks current/reference gates at the final cutoff. Unknown candidates/refs, weak support, malformed output and trade/forecast language fail closed.

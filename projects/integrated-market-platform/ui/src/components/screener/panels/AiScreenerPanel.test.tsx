@@ -34,6 +34,34 @@ const renderPanel = (value = selection()) => render(<QueryClientProvider client=
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
+  it.each(["CONFLICTING", "CONFIRMING", "MIXED", "UNKNOWN", "CONTEXT_ONLY"] as const)("displays deterministic %s independently of model prose and drills into News", async (alignment) => {
+    mocks.preview.mockResolvedValue(preview);
+    const openInstrument = vi.fn(); const openPanel = vi.fn(); const openNews = vi.fn();
+    mocks.run.mockResolvedValue({ ...result, valid_until: "2099-01-01T00:00:00Z", evidence: [{
+      instrument: { instrument_id: "EQ:A" }, current_market_evidence: [], blocked: [], missing: [], weak: [], sufficient: true,
+      reference_evidence: [{ evidence_id: "EV:NEWS", capability: "NEWS", source: "finviz", role: "REFERENCE_CONTEXT", freshness_status: "CURRENT", valid_until: "2099-01-01T00:00:00Z", facts: {
+        headline: "Apple warns on margins", story_id: "story-1", published_at: "2026-10-02T14:42:00Z", latest_published_at: "2026-10-02T14:42:00Z", source_count: 2, provider_count: 1,
+        sources: [{ provider_id: "finviz", publisher: "Reuters", retrieved_at: "2026-10-02T14:43:00Z" }], match_confidence: "EXACT", match_basis: "PROVIDER_TICKER", categories: [{ label: "Earnings" }], window: "4h", coverage_state: "DELAYED",
+        sentiment: { state: "SCORED", label: "NEGATIVE", model_id: "ProsusAI/finbert", model_revision: "rev001", sentiment_version: "news/finbert-sentiment/1.0.0", basis: "IMP_DERIVED_FINBERT", probabilities: { positive: .05, neutral: .05, negative: .9 } },
+      } }],
+      news: { state: "AVAILABLE", story_count: 1, window: "4h", snapshot_at: "2026-10-02T15:00:00Z", providers: [{ id: "newsapi", state: "DELAYED", reason: null }],
+        sentiment: { dominant: alignment === "UNKNOWN" ? null : "NEGATIVE", state: alignment === "UNKNOWN" ? "UNAVAILABLE" : "CURRENT", reason: alignment === "UNKNOWN" ? "MODEL_LOADING" : null, scored: alignment === "UNKNOWN" ? 0 : 1, unscored: alignment === "UNKNOWN" ? 1 : 0,
+          model_id: "ProsusAI/finbert", model_revision: "rev001", sentiment_version: "news/finbert-sentiment/1.0.0", basis: "IMP_DERIVED_FINBERT", method: "Counts of story top labels", counts: { negative: 1 } } },
+      alignments: [{ alignment_id: "AL:1", kind: "NEWS_SENTIMENT_VS_PRICE", result: alignment, observed_direction: "POSITIVE", method: "headline-language-vs-observed-direction/1.0.0", cutoff: "2026-10-02T15:00:00Z", news_refs: ["EV:NEWS"], sentiment_refs: ["EV:TONE"], comparator_ref: "EV:PRICE", limitations: [] }],
+    }], candidates: [{ instrument_id: "EQ:A", rank: 1, rationale: "Review admitted observations.", supporting_refs: [], conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }] });
+    renderPanel(selection({ openInstrument, openNews, actions: { close: vi.fn(), move: vi.fn(), resize: vi.fn(), open: openPanel } }));
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    expect(await screen.findByText(`Evidence alignment: ${alignment} · sentiment vs observed price direction`)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Apple warns on margins · NEWS"));
+    expect(screen.getByText(/finviz: Reuters/)).toBeInTheDocument();
+    expect(screen.getByText(/EXACT · PROVIDER_TICKER/)).toBeInTheDocument();
+    expect(screen.getByText(/Published/)).toBeInTheDocument();
+    expect(screen.getByText(/probabilities.*negative/)).toBeInTheDocument();
+    expect(screen.getByText(/Coverage: newsapi: DELAYED/)).toBeInTheDocument();
+    if (alignment === "UNKNOWN") expect(screen.getByText(/Headline language: NOT_SCORED.*MODEL_LOADING/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open News & Analysis" }));
+    expect(openNews).toHaveBeenCalledWith("EQ:A", { instrument_id: "EQ:A" }); expect(openInstrument).not.toHaveBeenCalled();
+  });
   it("previews the bounded scope but never runs inference on open", async () => {
     mocks.preview.mockResolvedValue(preview);
     renderPanel();

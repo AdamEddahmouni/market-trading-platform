@@ -73,6 +73,13 @@ class BackgroundCache:
         self._running: set[Any] = set()
         self.jobs_started = 0
 
+    def peek(self, key: Any) -> _Entry | None:
+        """Read a detached receipt without refreshing or starting provider work."""
+        import copy
+
+        with self._lock:
+            return copy.deepcopy(self._entries.get(key))
+
     def get(self, key: Any, job: Callable[[], Any], *, ttl_s: float) -> _Entry | None:
         """The cached entry (possibly expired, still shown while refreshing) or None while pending."""
 

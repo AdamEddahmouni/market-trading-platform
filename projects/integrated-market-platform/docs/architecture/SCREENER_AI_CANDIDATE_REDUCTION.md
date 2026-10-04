@@ -76,8 +76,9 @@ or source retrieval is introduced.
 Packets are content-hashed for cache/deduplication and expire conservatively;
 expired current evidence withdraws rather than being reused. The hash includes
 scope/result-set/snapshot identity, admitted evidence and deadlines, prompt
-content hash, provider and model. Only the volatile decision cutoff is excluded
-from cache identity. Expiry is the earliest admitted evidence deadline or the
+content hash, provider and model. Volatile cutoff, snapshot/evaluation display
+clocks and age are excluded from cache identity; material source clocks and
+evidence deadlines remain bound. Expiry is the earliest admitted evidence deadline or the
 30-minute cap, whichever comes first. Inflight requests deduplicate; failures
 are also cached to avoid automatic rebilling. Scope changes withdraw results
 and discard late responses. No expiry or scope event automatically runs a model.
@@ -92,4 +93,9 @@ table page. Controlled browser evidence is recorded in the existing
 This contract is SOFTWARE_CONTROLLED and remains subject to provider
 availability, source clocks, unknown publication cadence and workstation
 clock limitations. No empirical claim is made by a passing fixture or local
-provider test. OCT1-05 and OCT1-06 are outside this implementation.
+provider test. [OCT1-05](../superpowers/plans/2026-10-03-oct1-05-news-evidence-integration.md)
+adds bounded canonical NEWS/SENTIMENT references and deterministic comparisons,
+with prompt `screener.ai_candidate_reduction.v2` and mandatory grounded conflict
+disclosure. Cached coverage and story/model provenance are inspectable; News
+drilldown selects the candidate in Screener even outside the loaded page.
+OCT1-06 remains outside this implementation.

@@ -20,6 +20,7 @@ export type SpecialistSelection = {
   filters: ScreenerFilter[];
   screenerScope: AiScreenerScope;
   openInstrument: (instrumentId: string) => void;
+  openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   demand: PanelDemand | null;
   actions: PanelActions;
 };

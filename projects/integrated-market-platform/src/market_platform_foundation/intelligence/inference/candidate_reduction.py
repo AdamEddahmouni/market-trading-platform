@@ -19,7 +19,7 @@ from .hashing import input_hash_from_dict
 from .prompts import PromptRegistry
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.ai_candidate_reduction.v1'
+PROMPT_ID = 'screener.ai_candidate_reduction.v2'
 SCHEMA_VERSION = 'ai-screener-output/1.0.0'
 MAX_INTAKE = 20
 MAX_SELECTED = 5
@@ -28,9 +28,14 @@ CAPABILITIES = ('QUOTE', 'TECHNICALS', 'ORDER_FLOW', 'CVD', 'LEVEL2', 'OPTIONS',
 _PROHIBITED = re.compile(r'\b(?:buy|sell|enter|exit|hold|close|reduce|target|stop|guaranteed|certain|obvious winner)\b|price target|expected returns?|profit|will (?:rise|fall|rally|crash)|can.t lose', re.I)
 
 
+def packet_candidates(candidates: list[dict]) -> list[dict]:
+    """API compatibility aliases must not duplicate packet data."""
+    return [{k:v for k,v in c.items() if k not in ('blocked_evidence','missing_evidence','weak_evidence')} for c in candidates]
+
+
 def bounded_facts(value: Any, *, depth: int = 0) -> Any:
     """Bound whitelisted facts; reject non-finite numbers; never serialize objects."""
-    if depth > 3:
+    if depth > 5:
         return None
     if value is None or isinstance(value, bool):
         return value
@@ -51,7 +56,7 @@ def build_candidate(instrument: dict, observations: list[tuple], *, now: str) ->
     Observations are server-whitelisted (family, OCT1-03 status, facts, quality reasons).
     Blocked facts are discarded before any packet or identity hash is constructed.
     """
-    identity = {key: str(instrument[key])[:120] for key in ('instrument_id', 'symbol', 'universe', 'asset_class') if key in instrument}
+    identity = {key: str(instrument[key])[:120] for key in ('instrument_id', 'symbol', 'universe', 'asset_class', 'venue_id', 'company') if key in instrument and instrument[key] is not None}
     result = dict(instrument=identity, current_market_evidence=[], reference_evidence=[], blocked=[], missing=[], weak=[])
     seen = set()
     for family, status, facts, quality in observations[:40]:
@@ -154,6 +159,12 @@ def parse_reduction(raw: str, candidates: list[dict]) -> tuple[dict | None, str 
         missing = {x['capability'] for x in c['missing']}
         if set(pick['missing_capabilities']) != missing:
             return None, 'MISSING_EVIDENCE_MISMATCH'
+        for family, pattern in [('NEWS', r'\b(?:news|headline|story|stories)\b'), ('SENTIMENT', r'\b(?:sentiment|FinBERT)\b')]:
+            if re.search(pattern, pick['rationale'], re.I) and not any(refs[r]['capability'] == family for r in (*pick['supporting_refs'], *pick['conflicting_refs'], *pick['weak_refs'])):
+                return None, 'UNGROUNDED_NEWS_CLAIM'
+        required_conflicts = {ref for item in c.get('alignments', []) if item['result'] == 'CONFLICTING' for ref in item['sentiment_refs']}
+        if not required_conflicts <= set(pick['conflicting_refs']):
+            return None, 'NEWS_CONFLICT_NOT_DISCLOSED'
         texts.extend([pick['rationale'], *pick['uncertainties']])
     if any(unsupported_certainty(t) or _PROHIBITED.search(t) for t in texts):
         return None, 'UNSUPPORTED_CERTAINTY_OR_ACTION'
@@ -188,11 +199,18 @@ class CandidateReducer:
         if len(candidates) > MAX_INTAKE:
             raise ValueError('INTAKE_BOUND_EXCEEDED')
         prompt = self.registry.get_by_id(PROMPT_ID)
-        material = dict(scope=scope, candidates=candidates, prompt_hash=prompt.content_hash,
+        # Evaluation clocks are recorded in the receipt, not volatile cache identity.
+        def stable(value):
+            if isinstance(value, dict):
+                return {k:stable(v) for k,v in value.items() if k not in ('cutoff','snapshot_at','evaluated_at','age_ms')}
+            if isinstance(value, list):
+                return [stable(v) for v in value]
+            return value
+        material = dict(scope=scope, candidates=stable(candidates), prompt_hash=prompt.content_hash,
                         provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None))
         digest = input_hash_from_dict(material)
         # cutoff is recorded but not used as a volatile cache key: admitted facts and deadlines are hashed.
-        encoded = json.dumps(dict(scope=scope, decision_cutoff=now, candidates=candidates), ensure_ascii=False, sort_keys=True)
+        encoded = json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True)
         if len(encoded.encode('utf-8')) > MAX_PACKET_BYTES:
             raise ValueError('EVIDENCE_PACKET_BOUND_EXCEEDED')
         rendered = prompt.template.replace('{{evidence_json}}', encoded).replace('{{output_schema}}', json.dumps(output_schema(candidates)))

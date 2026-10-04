@@ -451,6 +451,17 @@ Defects found and fixed during acceptance, each with a regression test:
 
 ## Known limitations
 
+### OCT1-05 candidate evidence projection
+
+The AI Screener projects these canonical receipts and FinBERT scores as bounded
+NEWS/SENTIMENT reference evidence, with provider coverage, independent clocks
+and deterministic language-versus-observed-price/flow comparisons. Preview is
+cache-only; explicit Run refreshes shared sources once and reads instrument
+caches without acquisition. See the
+[OCT1-05 implementation and acceptance report](../superpowers/plans/2026-10-03-oct1-05-news-evidence-integration.md).
+
+The following S11 acceptance-era limitations retain their historical meaning.
+
 - Finviz's export is its latest-headlines window (100 items at acceptance);
   older ticker news within 72 h depends on NewsAPI/Finnhub being configured.
 - Sentiment and AI synthesis were not exercised live: no local FinBERT model or
