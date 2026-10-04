@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-03 — OCT1-04 AI Screener candidate reduction and resumed closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — validation complete; canonical integration/check/SHA ledger belongs to [PR #460](https://github.com/AdamEddahmouni/market-trading-platform/pull/460) and the OCT1-04 Notion task |
+| **Area** | `intelligence`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added an explicit operator-triggered AI Screener that reads at most the first 20 active Screener rows, projects allowlisted evidence, rechecks freshness at one cutoff, and returns at most five validated grounded candidates. Preview is provider-free; POST is the only inference trigger and reuses the News provider and shared budget. |
+| **Key files** | `intelligence/inference/candidate_reduction.py`, `intelligence/inference/schema_dispatch.py`, `ui_api/screener_ai.py`, `ui_api/server.py`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | Recovered backend 13/13 + 139/139 retained; current AI backend 18/18; registry 67/67; complete FULL 7,822 tests, 7,769 passes, 53 skips, zero failures/errors (71 suites); CI CHANGED 5,677 tests, 37 skips, zero failures/errors. Isolated UI 92/92; Screener/App/API 331/331; complete final UI 1,276/1,276 (168 files). Lint/typecheck and production build/budget PASS (99.70 KiB initial gzip). Prior launcher assertion fixed; seven App async failures classified INTERMITTENT after repeated isolation and complete-suite passes. Controlled actual UI/HTTP acceptance PASS. Initial non-green FULL/CHANGED and 22-selector environment/transient rerun retained. FULL timing 542.343s remains SEVERE_REGRESSION versus 198.882s baseline. |
+| **Related** | [OCT1-04 plan](../superpowers/plans/2026-10-02-oct1-04-ai-screener.md), [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md), [freshness contract](../architecture/SCREENER_DECISION_FRESHNESS.md) |
+| **Notes** | SOFTWARE_CONTROLLED only. Exact covered-fields clocks gate quote/technical/rates row facts; unconsumed specialist capabilities remain missing. Existing local model is not configured; hosted acceptance was not executed. No retrieval, execution, portfolio, target, forecast, new provider, model download, separate budget or autonomous loop. Notion OCT1-04 task was verified and moved to In progress; Done requires remote-main integration verification. OCT1-05/06 were not started. |
+
+---
+
 ## 2026-10-02 — OCT1-03 Screener decision freshness
 
 | Field | Value |
