@@ -63,6 +63,36 @@ def observations_for_row(row: dict[str, Any], *, now: str) -> list[tuple[str, di
     return observations
 
 
+def flow_observation(row: dict, universe: str, *, now: str) -> list[tuple]:
+    """Read only already-owned specialist state; never request subscriptions."""
+    if universe not in ('US_EQUITIES', 'US_ETFS', 'CRYPTO'):
+        return []
+    if universe == 'CRYPTO':
+        from . import screener_crypto as module
+        service = getattr(module, '_SPECIALIST', None)
+    else:
+        from . import screener_specialist as module
+        service = module._SERVICE
+    if service is None:
+        return []
+    identifier = row.get('market_data_id') or row['instrument']['instrument_id']
+    payload = service.order_flow(identifier)
+    projected = project_screener_response('/screener/order-flow', payload, now=now)
+    summary, window = payload.get('summary') or {}, payload.get('window') or {}
+    count = summary.get('trade_count', 0)
+    # Conservative observation: complete exchange-native classification only.
+    native = bool(count and summary.get('native_count') == count and not summary.get('unknown_count')
+                  and not summary.get('inferred_count') and not window.get('truncated'))
+    from ..market_data.freshness_contract import timestamp
+    cutoff, start, end = timestamp(now), timestamp(window.get('start')), timestamp(window.get('end'))
+    compatible = bool(start and end and cutoff and start <= end <= cutoff and (cutoff-start).total_seconds() <= 4*3600)
+    facts = {key: summary.get(key) for key in ('net_signed_volume','native_count','inferred_count','unknown_count','classified_volume_pct')}
+    facts['window'] = window
+    usable = native and compatible and _finite(summary.get('net_signed_volume'))
+    return [('ORDER_FLOW', status, facts if usable else {}, [] if usable else ['FLOW_QUALITY_OR_WINDOW_INSUFFICIENT'])
+            for status in projected['decision_inputs']]
+
+
 class ScreenerAiService:
     """Explicit preview/run boundary for the trader-facing AI Screener."""
 
@@ -116,11 +146,14 @@ class ScreenerAiService:
         return {"universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
                 "descending": descending, "filters": copy.deepcopy(filters), "result_set": result_set}
 
-    def _packet(self, body: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
+    def _packet(self, body: dict[str, Any], *, refresh_news: bool = False) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
         query = self._query(body)
         page = self._reader.read(universe=query["universe"], search=query["search"], sort=query["sort"],
                                  descending=query["descending"], offset=0, limit=MAX_INTAKE,
                                  filters=query["filters"], result_set=query["result_set"])
+        raw_rows = list(page.get('rows') or [])[:MAX_INTAKE]
+        news_reader = getattr(self._news_service(), 'candidate_evidence', None)
+        news = news_reader(universe=query['universe'], rows=raw_rows, refresh=refresh_news) if news_reader else {}
         now = _iso(self._clock)
         projected = project_screener_response("/screener", {**page, "rows": list(page.get("rows") or [])[:MAX_INTAKE]}, now=now)
         rows = projected["rows"]
@@ -128,8 +161,17 @@ class ScreenerAiService:
         scope.update(result_set=page.get("result_set_id"), matched_count=int(page.get("result_count") or 0),
                      universe_as_of=page.get("universe_as_of"), screener_as_of=page.get("screener_as_of"),
                      view=query["view"], screen=query["screen"])
-        candidates = [build_candidate(row.get("instrument", {}), observations_for_row(row, now=now), now=now)
+        candidates = [build_candidate(row.get("instrument", {}), observations_for_row(row, now=now) +
+                      (flow_observation(row, query['universe'], now=now) if refresh_news else []), now=now)
                       for row in rows]
+        from .screener_news_evidence import attach_news, fit_news
+
+        for candidate, row in zip(candidates, rows):
+            candidate['instrument']['company'] = str(row.get('company') or '')[:120]
+            identifier = candidate['instrument']['instrument_id']
+            if identifier in news:
+                attach_news(candidate, news[identifier], now=now)
+        fit_news(scope, candidates, news, now=now)
         return scope, candidates, now, {"matched_count": int(page.get("result_count") or 0),
                                        "result_set": page.get("result_set_id"),
                                        "universe_as_of": page.get("universe_as_of"),
@@ -150,10 +192,11 @@ class ScreenerAiService:
                                       "blocked": sum(len(item["blocked"]) for item in candidates),
                                       "missing": sum(len(item["missing"]) for item in candidates),
                                       "weak": sum(len(item["weak"]) for item in candidates)},
+                "news_coverage": [{"instrument_id": c['instrument']['instrument_id'], **c.get('news', {})} for c in candidates],
                 "decision_cutoff": now, "result_set": page_meta["result_set"]}
 
     def run(self, body: dict[str, Any]) -> dict[str, Any]:
-        scope, candidates, now, page_meta = self._packet(body)
+        scope, candidates, now, page_meta = self._packet(body, refresh_news=True)
         reducer = self._provider_reducer()
         result = reducer.reduce(scope, candidates, now)
         return {**result, "schema_version": SCHEMA_VERSION, "scope": scope,

@@ -254,6 +254,7 @@ export function ScreenerPage() {
   const [selected, setSelected] = useState<string | null>(null);
   // The selected row survives page boundaries: Preview and panels never depend on page presence.
   const [selectedCache, setSelectedCache] = useState<ScreenerRow | null>(null);
+  const aiNewsSelection = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selected;
   const [quotes, setQuotes] = useState<Record<string, ScreenerQuote>>({});
@@ -740,6 +741,7 @@ export function ScreenerPage() {
   // position) stays selected.
   useEffect(() => {
     if (!selected || !query.isSuccess || query.isFetching || rows.some((row) => row.instrument.instrument_id === selected)) return;
+    if (aiNewsSelection.current === selected) return;
     if (firstPage?.selected_id === selected && firstPage.selected_index != null) return;
     setSelected(null);
   }, [rows, selected, query.isSuccess, query.isFetching, firstPage]);
@@ -771,6 +773,17 @@ export function ScreenerPage() {
     if (referenceOnly) { setSelected(instrumentId); setPreviewOpen(true); return; }
     navigate(workspacePathForInstrument(instrumentId));
   }, [navigate, open, referenceOnly, rows]);
+  const openAiNews = useCallback((instrumentId: string, identity: Record<string, string>) => {
+    if (identity.instrument_id !== instrumentId || identity.universe !== universe) return;
+    const row = rows.find((item) => item.instrument.instrument_id === instrumentId);
+    if (!row && (!identity.venue_id || !identity.asset_class || !identity.symbol)) return;
+    // Canonical evidence identity can select an outside-page candidate. No market values are invented.
+    setSelectedCache(row ?? { instrument: { instrument_id: instrumentId, venue_id: identity.venue_id, asset_class: identity.asset_class },
+      symbol: identity.symbol, company: identity.company ?? "", sector: null, industry: null, fields: {}, decision_inputs: [] });
+    aiNewsSelection.current = instrumentId;
+    openNewsFor(instrumentId);
+  }, [rows, universe, openNewsFor]);
+  useEffect(() => { aiNewsSelection.current = null; }, [universe, search, sort, descending, filters]);
   const closePreview = useCallback(() => {
     setPreviewOpen(false); persistLayout(false, previewWidth);
     scrollRef.current?.focus();
@@ -1098,7 +1111,7 @@ export function ScreenerPage() {
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
           actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
           <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument}
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews}
               clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
               onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
           </Suspense>

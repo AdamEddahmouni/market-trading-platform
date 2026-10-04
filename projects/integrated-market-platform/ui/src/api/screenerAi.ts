@@ -27,9 +27,20 @@ const EvidenceSchema = z.object({ evidence_id: z.string(), capability: z.string(
   source: z.string().nullable(), as_of: z.string().nullable(), delivery_mode: z.string(), freshness_status: z.string(),
   decision_admissibility: z.string(), valid_until: z.string().nullable(), weak_reasons: z.array(z.string()), facts: z.record(z.unknown()),
 }).passthrough();
+const NewsCoverageSchema = z.object({ state: z.string(), window: z.string(), story_count: z.number(), snapshot_at: z.string(),
+  providers: z.array(z.object({ id: z.string(), state: z.string(), reason: z.string().nullable(), fetched_at: z.string().nullable().optional() }).passthrough()),
+  sentiment: z.object({ state: z.string(), reason: z.string().nullable(), dominant: z.string().nullable(), model_id: z.string().nullable(),
+    model_revision: z.string().nullable(), sentiment_version: z.string(), basis: z.string(), method: z.string(),
+    counts: z.record(z.number()), scored: z.number(), unscored: z.number(), window: z.string() }).passthrough(),
+  limitations: z.array(z.string()),
+}).passthrough();
+const AlignmentSchema = z.object({ kind: z.string(), method: z.string(), result: z.enum(["CONFIRMING", "CONFLICTING", "MIXED", "CONTEXT_ONLY", "UNKNOWN"]),
+  observed_direction: z.string().nullable(), sentiment_refs: z.array(z.string()), news_refs: z.array(z.string()),
+  comparator_ref: z.string().nullable(), cutoff: z.string(), alignment_id: z.string(), limitations: z.array(z.string()),
+});
 const CandidateEvidenceSchema = z.object({ instrument: z.record(z.string()), current_market_evidence: z.array(EvidenceSchema),
   reference_evidence: z.array(EvidenceSchema), blocked: z.array(z.record(z.unknown())), missing: z.array(z.object({ capability: z.string(), reason: z.string() }).passthrough()),
-  weak: z.array(z.record(z.unknown())), sufficient: z.boolean(),
+  weak: z.array(z.record(z.unknown())), sufficient: z.boolean(), news: NewsCoverageSchema.optional(), alignments: z.array(AlignmentSchema).optional(),
 }).passthrough();
 const SelectionSchema = z.object({ instrument_id: z.string(), rank: z.number(), rationale: z.string(), supporting_refs: z.array(z.string()),
   conflicting_refs: z.array(z.string()), weak_refs: z.array(z.string()), missing_capabilities: z.array(z.string()), uncertainties: z.array(z.string()),
@@ -37,7 +48,7 @@ const SelectionSchema = z.object({ instrument_id: z.string(), rank: z.number(), 
 const EvidenceSummarySchema = z.object({ sufficient: z.number(), blocked: z.number(), missing: z.number(), weak: z.number() }).passthrough();
 export const AiScreenerPreviewSchema = z.object({ schema_version: z.literal("screener-ai-screener-preview/1.0.0"), ai: AiStatusSchema,
   scope: ScopeSchema, matched_count: z.number(), intake_count: z.number(), max_intake: z.number(), estimate: EstimateSchema.nullable(),
-  evidence_summary: EvidenceSummarySchema, decision_cutoff: z.string(), result_set: z.string().nullable().optional(),
+  evidence_summary: EvidenceSummarySchema, news_coverage: z.array(NewsCoverageSchema.extend({ instrument_id: z.string() })).optional(), decision_cutoff: z.string(), result_set: z.string().nullable().optional(),
 }).passthrough();
 export type AiScreenerPreview = z.infer<typeof AiScreenerPreviewSchema>;
 

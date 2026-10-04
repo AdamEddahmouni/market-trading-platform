@@ -4,11 +4,23 @@ import type { AiScreenerResult, AiScreenerScope } from "../../../api/screenerAi"
 import { fetchAiScreenerPreview, postAiScreener } from "../../../api/screenerAi";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
 import { compactTokens } from "../news/SynthesisControl";
-import { PanelFrame, PanelMessage, useNow, usePanelVisible, useSelection } from "./shared";
+import { age, PanelFrame, PanelMessage, useNow, usePanelVisible, useSelection } from "./shared";
 
 const keyFor = (scope: AiScreenerScope) => JSON.stringify(scope);
 
 function EvidenceCard({ title, evidence }: { title: string; evidence: Record<string, any> }) {
+  if (evidence.capability === "NEWS") {
+    const story = evidence.facts;
+    return <details className="ai-screener-evidence"><summary>{story.headline} · NEWS</summary><dl>
+      <div><dt>Evidence</dt><dd>{title} · story {story.story_id}</dd></div>
+      <div><dt>Source / publisher</dt><dd>{story.sources?.map((source: Record<string, any>) => `${source.provider_id}: ${source.publisher}`).join(" · ")} · {story.source_count} sources / {story.provider_count} providers (syndication)</dd></div>
+      <div><dt>Published</dt><dd>{story.published_at ? `${story.published_at} · ${age(story.published_at)} ago` : `Publication time unknown · retrieval proxy ${story.first_retrieved_at}`}; latest publication {story.latest_published_at ?? "unknown"}</dd></div>
+      <div><dt>Component clocks</dt><dd>{story.sources?.map((source: Record<string, any>) => `${source.provider_id}: available ${source.available_at ?? "unknown"}, retrieved ${source.retrieved_at ?? "unknown"}, ingested ${source.ingested_at ?? "unknown"}`).join(" · ")}</dd></div>
+      <div><dt>Relevance</dt><dd>{story.match_confidence} · {story.match_basis} · {story.categories?.map((category: Record<string, any>) => category.label ?? category.id).join(", ") || "Uncategorized"} · window {story.window}</dd></div>
+      <div><dt>Sentiment</dt><dd>{story.sentiment?.label ?? "NOT_SCORED"} · state {story.sentiment?.state} · {story.sentiment?.model_id ?? "FinBERT unavailable"} · revision {story.sentiment?.model_revision ?? "unknown"} · {story.sentiment?.sentiment_version} · {story.sentiment?.basis}; probabilities {JSON.stringify(story.sentiment?.probabilities)}</dd></div>
+      <div><dt>Freshness</dt><dd>{story.coverage_state} · {evidence.freshness_status} · {evidence.role} · valid until {evidence.valid_until}</dd></div>
+    </dl></details>;
+  }
   return <details className="ai-screener-evidence"><summary>{title} · {evidence.capability}</summary>
     <dl><div><dt>Facts</dt><dd><code>{JSON.stringify(evidence.facts)}</code></dd></div>
       <div><dt>Source</dt><dd>{evidence.source ?? "unavailable"}</dd></div>
@@ -41,7 +53,7 @@ function refsFor(selection: { supporting_refs: string[]; conflicting_refs: strin
 
 export default function AiScreenerPanel({ api }: { api: any }) {
   const visible = usePanelVisible(api);
-  const { screenerScope, openInstrument } = useSelection();
+  const { screenerScope, openInstrument, openNews, actions } = useSelection();
   const scopeKey = keyFor(screenerScope);
   const current = useRef(scopeKey); current.current = scopeKey;
   const abort = useRef<AbortController | null>(null);
@@ -80,6 +92,9 @@ export default function AiScreenerPanel({ api }: { api: any }) {
     {ai && <p className="ai-screener-meta">Provider {ai.provider_id ?? "none"} · model {ai.model_id ?? "none"} · runtime {ai.runtime ?? "not configured"} · {ai.runtime === "PAID_API" ? "shared paid budget" : "no API cost"}.</p>}
     {ai?.budget && <p className="ai-screener-meta">Daily shared budget: {ai.budget.requests}/{ai.budget.max_requests} requests · {ai.budget.tokens}/{ai.budget.max_tokens} tokens · UTC day {ai.budget.day}.</p>}
     {estimate && <p className="ai-screener-meta">Server intake {estimate.intake_count} · {estimate.sufficient_count} sufficiently grounded · packet {estimate.packet_bytes.toLocaleString()} bytes · {estimate.cached ? "cached, no model cost" : estimate.tokens != null ? `worst-case ≈ ${compactTokens(estimate.tokens)} tokens` : "cost estimate unavailable"}.</p>}
+    {preview.data?.news_coverage && <details><summary>News coverage · cached preview · no acquisition or scoring</summary>
+      {preview.data.news_coverage.map((item) => <p key={item.instrument_id}>{item.instrument_id} · {item.state} · {item.story_count} stories · {item.window} · sentiment {item.sentiment.state} · {item.providers.map((p) => `${p.id}: ${p.state}`).join(" · ")}</p>)}
+    </details>}
     {status !== "AVAILABLE" && ai && <PanelMessage>{status === "NOT_CONFIGURED" ? "AI Screener is not configured; no inference was attempted." : `AI Screener unavailable${ai.reason ? ` · ${ai.reason}` : ""}.`}</PanelMessage>}
     {status === "AVAILABLE" && <button type="button" className="screener-primary ai-screener-run" onClick={run} disabled={running || preview.isPending || preview.isError || screenerScope.settled === false}>
       {running ? "Running AI Screener…" : "Run AI Screener"}
@@ -91,6 +106,25 @@ export default function AiScreenerPanel({ api }: { api: any }) {
         {result.value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {result.value.limitations.join(" ")}</PanelMessage>}
         {result.value.candidates.map((selection) => <article className="ai-screener-candidate" key={selection.instrument_id}>
           <header><h3>#{selection.rank} {selection.instrument_id}</h3><button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button></header>
+          {(() => {
+            const candidate = result.value.evidence.find((item) => item.instrument.instrument_id === selection.instrument_id);
+            const news = candidate?.news;
+            return <section aria-label={`News and sentiment for ${selection.instrument_id}`}>
+              <h4>News / Sentiment</h4>
+              <p>{news ? `${news.state} · ${news.story_count} stories · ${news.window} · snapshot ${news.snapshot_at}` : "NEWS missing · SENTIMENT unavailable"}</p>
+              {news && <><p>Coverage: {news.providers.map((p) => `${p.id}: ${p.state}${p.reason ? ` (${p.reason})` : ""}`).join(" · ")}</p>
+                <p>Headline language: {news.sentiment.dominant ?? "NOT_SCORED"} · {news.sentiment.state} · {news.sentiment.reason} · scored {news.sentiment.scored}, unscored {news.sentiment.unscored}</p>
+                <details><summary>FinBERT model and aggregation</summary><p>{news.sentiment.model_id ?? "Model unavailable"} · revision {news.sentiment.model_revision ?? "unknown"} · {news.sentiment.sentiment_version} · {news.sentiment.basis}</p><p>{news.sentiment.method}</p><p>{JSON.stringify(news.sentiment.counts)}</p></details>
+              </>}
+              {candidate?.reference_evidence.filter((item) => item.capability === "NEWS").map((item) => <EvidenceCard key={item.evidence_id} title={item.evidence_id} evidence={item} />)}
+              {candidate?.alignments?.map((item) => <details key={item.alignment_id}><summary>Evidence alignment: {item.result} · sentiment vs {item.kind.endsWith("FLOW") ? "observed signed flow" : "observed price direction"}</summary>
+                <p>Observed direction {item.observed_direction ?? "UNKNOWN"} · {item.method} · cutoff {item.cutoff}</p>
+                <p>News refs {item.news_refs.join(", ")} · sentiment refs {item.sentiment_refs.join(", ")} · comparator {item.comparator_ref ?? "unavailable"}</p><p>{item.limitations.join(" ")}</p>
+              </details>)}
+              <p>Sentiment describes headline language. It is not a forecast, trading signal, or future-return claim.</p>
+              <button type="button" onClick={() => { if (openNews && candidate) openNews(selection.instrument_id, candidate.instrument); else actions.open?.("news"); }}>Open News &amp; Analysis</button>
+            </section>;
+          })()}
           <p>{selection.rationale}</p>
           {(["supporting_refs", "conflicting_refs", "weak_refs"] as const).map((name) => <div key={name}>
             <h4>{name === "supporting_refs" ? "Supporting evidence" : name === "conflicting_refs" ? "Conflicting evidence" : "Weak evidence"}</h4>

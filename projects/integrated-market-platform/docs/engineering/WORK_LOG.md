@@ -34,6 +34,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-03 — OCT1-05 News and sentiment evidence integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented and locally validated` — canonical integration/check/SHA evidence belongs to the OCT1-05 PR/task ledger |
+| **Area** | `intelligence`, `news`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Reused S11 receipts/clustering/matching/caches/FinBERT as bounded NEWS/SENTIMENT evidence in OCT1-04. Explicit 4h references, provenance, native-flow gates, deterministic pairwise states and mandatory conflict refs; human-readable evidence and existing News drilldown. Preview performs no provider/scorer work, instrument acquisition is cache-only. |
+| **Tests** | Expanded backend 133/133, FAST 23/23, UI 1,281/1,281 plus final focused 31/31, lint/typecheck/build/budget and controlled Chromium acceptance passed. Initial FULL 7,835 tests had one MATLAB transient failure and one HTTP WinError10053; both passed isolation. Final corrected-source FULL: 7,838 tests, 53 skips, zero failures/errors in 394.232367s; complete one-worker UI 1,281/1,281 (168 files), unchanged assertions/timeouts. Final clock regressions passed. Failed sandboxed CHANGED retained. |
+| **Related** | [OCT1-05 acceptance](../superpowers/plans/2026-10-03-oct1-05-news-evidence-integration.md), [S11 News authority](SCREENER_S11_NEWS.md) |
+| **Notes** | Existing real local FinBERT revision f6449ddda85e scored three sentences; guarded NewsAPI DELAYED and Finnhub CURRENT reads/cache hits verified independently. Finviz/RSS live gates OFF, SEC unconfigured. SOFTWARE_CONTROLLED acceptance confers no empirical, forecast or execution authority. OCT1-06 was not started. |
+
+---
+
 ## 2026-10-03 — OCT1-04 AI Screener candidate reduction and resumed closure
 
 | Field | Value |

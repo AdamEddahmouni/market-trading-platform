@@ -80,6 +80,7 @@ type Props = {
   filters?: ScreenerFilter[];
   screenerScope?: AiScreenerScope;
   openInstrument?: (instrumentId: string) => void;
+  openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   universe?: ScreenerUniverse;
   supportedPanels?: ReadonlySet<PanelId>;
   clientId: string;
@@ -148,7 +149,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, filters = [], screenerScope, openInstrument = () => undefined, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, filters = [], screenerScope, openInstrument = () => undefined, openNews, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);
@@ -255,8 +256,8 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     open: openOrFocus,
   }), [focusPanel, openOrFocus]);
   const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters,
-    screenerScope: screenerScope ?? { universe, search: "", sort: "", descending: true, filters }, openInstrument, demand, actions }),
-  [row, universe, supportedPanels, settledId, quote, filters, screenerScope, openInstrument, demand, actions]);
+    screenerScope: screenerScope ?? { universe, search: "", sort: "", descending: true, filters }, openInstrument, openNews, demand, actions }),
+  [row, universe, supportedPanels, settledId, quote, filters, screenerScope, openInstrument, openNews, demand, actions]);
 
   return <SpecialistContext.Provider value={selection}>
     <div className="screener-dock-host" ref={hostRef}>
