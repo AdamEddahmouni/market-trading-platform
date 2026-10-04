@@ -33,7 +33,12 @@ Each status retains capability, source, timestamp basis, observation/publication
 
 Future synthesis must call `eligible_evidence(inputs, now=decision_cutoff, reference=False)` immediately before using current-market evidence. The helper recomputes source status and age, ignores cached eligibility booleans, rejects an earlier-than-evaluation cutoff, and excludes stale, unavailable, unknown-policy, delayed, historical/replay and reference-only inputs from current use. Reference use requires a separate `reference=True` call and explicit reference-role inputs; stale sources are still excluded. Join row values through `covered_fields` and instrument identity, not a table-wide boolean. Required capabilities must each be present in the admitted vector; absence blocks that reasoning mode rather than being filled with unrelated reference evidence.
 
-This gate is the required OCT1-04 handoff, not an AI Screener implementation. No new model calls, action paths, synthesis endpoints, executions, providers or subscriptions are introduced.
+This gate is the required OCT1-04 handoff. The AI Screener invokes it on the
+bounded packet immediately before candidate reduction; see [Screener AI
+candidate reduction](SCREENER_AI_CANDIDATE_REDUCTION.md). The AI Screener adds
+an explicit, read-only synthesis endpoint and reuses the existing News
+provider boundary, but introduces no execution path, provider, subscription or
+autonomous action loop.
 
 ## Bond dates
 

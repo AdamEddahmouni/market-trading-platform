@@ -153,7 +153,7 @@ def full_service():
 class CryptoRegistryTests(unittest.TestCase):
     def test_panel_matrix_is_backed_by_venue_evidence_only(self):
         spec = UNIVERSES["CRYPTO"]
-        self.assertEqual(spec.panels, ("order_flow", "cvd", "level2", "charts", "news"))  # S11 News & Analysis
+        self.assertEqual(spec.panels, ("order_flow", "cvd", "level2", "charts", "news", "ai_screener"))
         for equity_only in ("futures", "options", "short_squeeze", "rates_curve"):
             self.assertNotIn(equity_only, spec.panels)
         self.assertEqual(spec.session_model, "24_7")

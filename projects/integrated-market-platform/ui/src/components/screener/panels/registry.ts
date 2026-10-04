@@ -12,6 +12,7 @@ export const PANELS: ReadonlyArray<{ id: PanelId; title: string }> = [
   { id: "short_squeeze", title: "Short Squeeze" },
   { id: "rates_curve", title: "Rates & Curve" },
   { id: "news", title: "News & Analysis" },
+  { id: "ai_screener", title: "AI Screener" },
   { id: "institutional", title: "Institutional & Whale" },
   { id: "congress_gov", title: "Congress & Government" },
   { id: "setup", title: "Setup" },

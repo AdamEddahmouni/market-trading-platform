@@ -116,7 +116,7 @@ class UniverseArchitectureTests(unittest.TestCase):
         self.assertEqual(spec.tradability, "REFERENCE_ONLY")
         # S16 adds the fund-held (Credit & Munis) and dated-observation views.
         self.assertEqual(list(spec.views), ["Overview", "Treasuries", "Rates & Curve", "Credit & Munis", "Observed", "Custom"])
-        self.assertEqual(spec.panels, ("rates_curve", "news", "connectivity"))
+        self.assertEqual(spec.panels, ("rates_curve", "news", "connectivity", "ai_screener"))
         payload = next(item for item in universe_payload() if item["id"] == BONDS)
         self.assertEqual(payload["view_order"], ["Overview", "Treasuries", "Rates & Curve", "Credit & Munis", "Observed", "Custom"])
         self.assertEqual(payload["quote_capability"], "NO_STREAMING_QUOTE")

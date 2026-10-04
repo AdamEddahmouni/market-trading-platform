@@ -257,13 +257,13 @@ class LocalChatInferenceProvider:
             if reason is not None:
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, reason, ParsingStatus.PROVIDER_ERROR, started)
         response_format: dict[str, Any] = {"type": "json_object"}
-        if packet.task_type == IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS:
-            from .screener_synthesis import output_json_schema
+        if packet.task_type in (IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS, IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION):
+            from .schema_dispatch import schema_for_packet
 
             # Grammar-constrained structure (refs limited to the packet's story ids); content is still validated.
             response_format = {"type": "json_schema", "json_schema": {
                 "name": "screener_synthesis", "strict": True,
-                "schema": output_json_schema([article.event_id for article in packet.articles])}}
+                "schema": schema_for_packet(packet)}}
         body = {"model": self._request_model, "temperature": 0, "max_tokens": config.max_tokens,
                 "response_format": response_format,
                 # Qwen3-family reasoning models: answer directly; servers without the option ignore it.

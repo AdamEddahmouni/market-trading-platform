@@ -2,6 +2,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type Funct
 import { DockviewReact, themeDark, type DockviewApi, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import type { PanelId, PanelLayout, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
+import type { AiScreenerScope } from "../../../api/screenerAi";
 import { demandPanels, releasePanels, releasePanelsOnUnload, type PanelDemand } from "../../../api/screenerPanels";
 import ChartsPanel from "./ChartsPanel";
 import CvdPanel from "./CvdPanel";
@@ -27,6 +28,10 @@ function ConnectivityPanel(props: IDockviewPanelProps) {
 const LazyNewsAnalysisPanel = reloadableLazy(() => import("./NewsAnalysisPanel"));
 function NewsAnalysisPanel(props: IDockviewPanelProps) {
   return <Suspense fallback={<PanelMessage>Loading News &amp; Analysis…</PanelMessage>}><LazyNewsAnalysisPanel {...props} /></Suspense>;
+}
+const LazyAiScreenerPanel = reloadableLazy(() => import("./AiScreenerPanel"));
+function AiScreenerPanel(props: IDockviewPanelProps) {
+  return <Suspense fallback={<PanelMessage>Loading AI Screener…</PanelMessage>}><LazyAiScreenerPanel {...props} /></Suspense>;
 }
 // S12: the participant and government lenses load on first open as well.
 const LazyInstitutionalPanel = reloadableLazy(() => import("./InstitutionalPanel"));
@@ -60,6 +65,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   short_squeeze: contained("short_squeeze", ShortSqueezePanel),
   rates_curve: contained("rates_curve", RatesCurvePanel),
   news: contained("news", NewsAnalysisPanel),
+  ai_screener: contained("ai_screener", AiScreenerPanel),
   institutional: contained("institutional", InstitutionalPanel),
   congress_gov: contained("congress_gov", CongressGovPanel),
   setup: contained("setup", SetupPanel),
@@ -72,6 +78,8 @@ type Props = {
   row: ScreenerRow | null;
   quote: ScreenerQuote | undefined;
   filters?: ScreenerFilter[];
+  screenerScope?: AiScreenerScope;
+  openInstrument?: (instrumentId: string) => void;
   universe?: ScreenerUniverse;
   supportedPanels?: ReadonlySet<PanelId>;
   clientId: string;
@@ -140,7 +148,7 @@ function usePanelDemand(clientId: string, instrumentId: string | null, livePanel
   return demand;
 }
 
-export default function ScreenerDock({ layout, row, quote, filters = [], universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
+export default function ScreenerDock({ layout, row, quote, filters = [], screenerScope, openInstrument = () => undefined, universe = "US_EQUITIES", supportedPanels = new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"]), clientId, pending, handleRef, onOpenChange, onLayout }: Props) {
   const apiRef = useRef<DockviewApi | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [open, setOpen] = useState<PanelId[]>([]);
@@ -246,7 +254,9 @@ export default function ScreenerDock({ layout, row, quote, filters = [], univers
     },
     open: openOrFocus,
   }), [focusPanel, openOrFocus]);
-  const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters, demand, actions }), [row, universe, supportedPanels, settledId, quote, filters, demand, actions]);
+  const selection = useMemo<SpecialistSelection>(() => ({ row, universe, supportedPanels, settledId, quote, filters,
+    screenerScope: screenerScope ?? { universe, search: "", sort: "", descending: true, filters }, openInstrument, demand, actions }),
+  [row, universe, supportedPanels, settledId, quote, filters, screenerScope, openInstrument, demand, actions]);
 
   return <SpecialistContext.Provider value={selection}>
     <div className="screener-dock-host" ref={hostRef}>

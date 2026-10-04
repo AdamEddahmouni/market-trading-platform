@@ -1,0 +1,107 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { AiScreenerResult, AiScreenerScope } from "../../../api/screenerAi";
+import { fetchAiScreenerPreview, postAiScreener } from "../../../api/screenerAi";
+import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
+import { compactTokens } from "../news/SynthesisControl";
+import { PanelFrame, PanelMessage, useNow, usePanelVisible, useSelection } from "./shared";
+
+const keyFor = (scope: AiScreenerScope) => JSON.stringify(scope);
+
+function EvidenceCard({ title, evidence }: { title: string; evidence: Record<string, any> }) {
+  return <details className="ai-screener-evidence"><summary>{title} · {evidence.capability}</summary>
+    <dl><div><dt>Facts</dt><dd><code>{JSON.stringify(evidence.facts)}</code></dd></div>
+      <div><dt>Source</dt><dd>{evidence.source ?? "unavailable"}</dd></div>
+      <div><dt>As of</dt><dd>{evidence.as_of ?? "unknown"}</dd></div>
+      <div><dt>Freshness</dt><dd>{evidence.freshness_status} · {evidence.decision_admissibility} · {evidence.role}</dd></div>
+    </dl></details>;
+}
+
+function EngineChoice({ ai, onChanged }: { ai: AiStatus; onChanged: (next: AiStatus) => void }) {
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const selected = ai.engines?.find((engine) => engine.id === ai.engine);
+  if (!ai.engines?.length) return <span className="ai-screener-meta">Engine {ai.provider_id ?? "unconfigured"}</span>;
+  const value = `${ai.engine ?? "auto"}|${ai.engine_model ?? selected?.default_model ?? ""}`;
+  return <label className="ai-screener-engine">Engine/model <select value={value} disabled={busy} onChange={(event) => {
+    const separator = event.target.value.indexOf("|");
+    setBusy(true); setFailed(false);
+    void postSynthesisEngine(event.target.value.slice(0, separator), event.target.value.slice(separator + 1) || null)
+      .then(onChanged).catch(() => setFailed(true)).finally(() => setBusy(false));
+  }}>
+    {ai.engines.map((engine) => engine.models.map((model) => <option key={`${engine.id}|${model}`} value={`${engine.id}|${model}`} disabled={engine.state !== "AVAILABLE"}>
+      {engine.label} · {model} · {engine.runtime === "LOCAL_MODEL" ? "local" : "paid"}
+    </option>))}
+  </select>{failed && <span role="alert"> Could not switch engine.</span>}</label>;
+}
+
+function refsFor(selection: { supporting_refs: string[]; conflicting_refs: string[]; weak_refs: string[] }, name: keyof typeof selection) {
+  return selection[name];
+}
+
+export default function AiScreenerPanel({ api }: { api: any }) {
+  const visible = usePanelVisible(api);
+  const { screenerScope, openInstrument } = useSelection();
+  const scopeKey = keyFor(screenerScope);
+  const current = useRef(scopeKey); current.current = scopeKey;
+  const abort = useRef<AbortController | null>(null);
+  const [aiOverride, setAiOverride] = useState<AiStatus | null>(null);
+  const [result, setResult] = useState<{ key: string; value: AiScreenerResult } | null>(null);
+  const [running, setRunning] = useState(false);
+  const [runFailed, setRunFailed] = useState(false);
+  const preview = useQuery({ queryKey: ["screener-ai-screener-preview", scopeKey], queryFn: ({ signal }) => fetchAiScreenerPreview(screenerScope, signal), enabled: visible && screenerScope.settled !== false,
+    staleTime: 30_000, retry: false });
+  const ai = aiOverride ?? preview.data?.ai;
+  const now = useNow(1_000, Boolean(result));
+  const expired = result?.key === scopeKey && Date.parse(result.value.valid_until) <= now;
+  useEffect(() => { setResult(null); setAiOverride(null); setRunFailed(false); abort.current?.abort(); setRunning(false); }, [scopeKey]);
+  useEffect(() => () => { abort.current?.abort(); }, []);
+  const estimate = preview.data?.estimate;
+  const status = ai?.state ?? "UNAVAILABLE";
+  const evidence = useMemo(() => new Map((result?.value.evidence ?? []).flatMap((candidate) => [
+    ...candidate.current_market_evidence, ...candidate.reference_evidence,
+  ].map((item) => [item.evidence_id, item] as const))), [result]);
+  const run = () => {
+    const requested = scopeKey;
+    abort.current?.abort(); const controller = new AbortController(); abort.current = controller; setRunning(true); setRunFailed(false);
+    void postAiScreener(screenerScope, controller.signal).then((value) => {
+      if (current.current === requested) setResult({ key: requested, value });
+    }).catch(() => { if (current.current === requested && !controller.signal.aborted) setRunFailed(true); }).finally(() => { if (current.current === requested) setRunning(false); });
+  };
+  return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
+    <div className="ai-screener-toolbar">
+      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · intake capped at {preview.data?.max_intake ?? 20}</p></div>
+      {ai && <EngineChoice ai={ai} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
+    </div>
+    <p className="ai-screener-meta">View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "Unsaved"} · search {screenerScope.search || "all"} · sort {screenerScope.sort} {screenerScope.descending ? "descending" : "ascending"} · result set {screenerScope.result_set ?? "unavailable"} · filters {JSON.stringify(screenerScope.filters)}</p>
+    {runFailed && <PanelMessage tone="error" role="alert">AI Screener run failed. Retry explicitly.</PanelMessage>}
+    {preview.isPending && <PanelMessage>Preparing the bounded internal evidence scope…</PanelMessage>}
+    {preview.isError && <PanelMessage tone="error" role="alert">AI Screener status unavailable. Retry by reopening the panel.</PanelMessage>}
+    {ai && <p className="ai-screener-meta">Provider {ai.provider_id ?? "none"} · model {ai.model_id ?? "none"} · runtime {ai.runtime ?? "not configured"} · {ai.runtime === "PAID_API" ? "shared paid budget" : "no API cost"}.</p>}
+    {ai?.budget && <p className="ai-screener-meta">Daily shared budget: {ai.budget.requests}/{ai.budget.max_requests} requests · {ai.budget.tokens}/{ai.budget.max_tokens} tokens · UTC day {ai.budget.day}.</p>}
+    {estimate && <p className="ai-screener-meta">Server intake {estimate.intake_count} · {estimate.sufficient_count} sufficiently grounded · packet {estimate.packet_bytes.toLocaleString()} bytes · {estimate.cached ? "cached, no model cost" : estimate.tokens != null ? `worst-case ≈ ${compactTokens(estimate.tokens)} tokens` : "cost estimate unavailable"}.</p>}
+    {status !== "AVAILABLE" && ai && <PanelMessage>{status === "NOT_CONFIGURED" ? "AI Screener is not configured; no inference was attempted." : `AI Screener unavailable${ai.reason ? ` · ${ai.reason}` : ""}.`}</PanelMessage>}
+    {status === "AVAILABLE" && <button type="button" className="screener-primary ai-screener-run" onClick={run} disabled={running || preview.isPending || preview.isError || screenerScope.settled === false}>
+      {running ? "Running AI Screener…" : "Run AI Screener"}
+    </button>}
+    {result?.key === scopeKey && <section className="ai-screener-result" aria-label="AI Screener result">
+      <p className="ai-screener-meta">Selected {result.value.candidates.length} of {result.value.intake_count} intake candidates · {result.value.simulated ? "SOFTWARE_CONTROLLED fixture" : result.value.runtime} · valid until {result.value.valid_until}</p>
+      <p className="ai-screener-meta">{result.value.state} · {result.value.provider_id} · {result.value.model_id} · prompt {result.value.prompt_id} v{result.value.prompt_version} · cutoff {result.value.decision_cutoff} · {result.value.cache === "HIT" ? "cache hit" : `${result.value.latency_ms ?? "—"} ms`}</p>
+      {expired ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : result.value.state !== "CURRENT" && result.value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{result.value.reason ? ` · ${result.value.reason}` : ""}.</PanelMessage> : <>
+        {result.value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {result.value.limitations.join(" ")}</PanelMessage>}
+        {result.value.candidates.map((selection) => <article className="ai-screener-candidate" key={selection.instrument_id}>
+          <header><h3>#{selection.rank} {selection.instrument_id}</h3><button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button></header>
+          <p>{selection.rationale}</p>
+          {(["supporting_refs", "conflicting_refs", "weak_refs"] as const).map((name) => <div key={name}>
+            <h4>{name === "supporting_refs" ? "Supporting evidence" : name === "conflicting_refs" ? "Conflicting evidence" : "Weak evidence"}</h4>
+            {refsFor(selection, name).length ? refsFor(selection, name).map((ref) => evidence.get(ref) ? <EvidenceCard key={ref} title={ref} evidence={evidence.get(ref)!} /> : <p key={ref}>Unknown evidence ref rejected by server.</p>) : <p className="ai-screener-empty">None cited.</p>}
+          </div>)}
+          <h4>Missing evidence</h4><p>{selection.missing_capabilities.length ? selection.missing_capabilities.join(", ") : "None recorded."}</p>
+          <h4>Blocked evidence</h4>{(result.value.evidence.find((item) => item.instrument.instrument_id === selection.instrument_id)?.blocked ?? []).map((item, index) =>
+            <p key={index}>{String(item.capability)} · {Array.isArray(item.reason_codes) ? item.reason_codes.join(", ") : "Unavailable"}</p>)}
+          <h4>Uncertainties</h4><ul>{selection.uncertainties.map((item) => <li key={item}>{item}</li>)}</ul>
+        </article>)}
+      </>}
+    </section>}
+  </PanelFrame>;
+}
