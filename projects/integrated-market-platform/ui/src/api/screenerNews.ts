@@ -131,6 +131,7 @@ const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVA
   engine: z.string().optional(), engine_model: z.string().nullable().optional(),
   engine_source: z.enum(["OPERATOR", "ENVIRONMENT", "AUTOMATIC"]).optional(),
   engines: z.array(Engine).optional() }).passthrough();
+export const AiStatusSchema = AiStatus;
 export type AiStatus = z.infer<typeof AiStatus>;
 
 const TimelineBucket = z.object({ start: Iso, positive: z.number(), neutral: z.number(), negative: z.number(),

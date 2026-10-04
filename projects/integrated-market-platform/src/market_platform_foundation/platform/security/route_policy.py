@@ -96,6 +96,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="audit.read")
         if path.startswith("/assistant/conversations"):
             return RoutePolicy(capability="state.read")
+        if path == "/screener/ai-screener/preview":
+            return RoutePolicy(capability="state.read")
         if path == "/canary/snapshot" or path == "/canary/reconciliation":
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.QUERY_ACCOUNT_ID)
         if path.startswith("/canary/"):
@@ -111,6 +113,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis":
             # Operator-initiated model call (paid API or on-demand local model); never a render-time read.
+            return RoutePolicy(capability="state.write")
+        if path == "/screener/ai-screener":
+            # Explicit candidate reduction is a bounded inference action, never a render-time read.
             return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis/engine":
             # Operator choice of synthesis engine and model, saved in the IMP cache; calls no model.

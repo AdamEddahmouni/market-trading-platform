@@ -4,6 +4,7 @@ import { Component, createContext, createElement, Fragment, lazy, useCallback, u
 import { useQueryClient } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import type { PanelId, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
+import type { AiScreenerScope } from "../../../api/screenerAi";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { PANEL_TITLES } from "./registry";
@@ -17,6 +18,8 @@ export type SpecialistSelection = {
   settledId: string | null;
   quote: ScreenerQuote | undefined;
   filters: ScreenerFilter[];
+  screenerScope: AiScreenerScope;
+  openInstrument: (instrumentId: string) => void;
   demand: PanelDemand | null;
   actions: PanelActions;
 };
@@ -30,7 +33,8 @@ export type PanelActions = {
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
   row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]),
-  settledId: null, quote: undefined, filters: [], demand: null, actions: { close: noop, move: noop, resize: noop },
+  settledId: null, quote: undefined, filters: [], screenerScope: { universe: "US_EQUITIES", search: "", sort: "volume", descending: true, filters: [] },
+  openInstrument: noop, demand: null, actions: { close: noop, move: noop, resize: noop },
 });
 export const useSelection = () => useContext(SpecialistContext);
 

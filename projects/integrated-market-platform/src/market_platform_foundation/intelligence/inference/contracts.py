@@ -16,6 +16,7 @@ class IntelligenceTaskType(StrEnum):
     NEWS_MARKET_IMPACT = "NEWS_MARKET_IMPACT"
     # S11: grounded multi-story synthesis for the Screener News & Analysis panel.
     NEWS_SCREENER_SYNTHESIS = "NEWS_SCREENER_SYNTHESIS"
+    SCREENER_CANDIDATE_REDUCTION = "SCREENER_CANDIDATE_REDUCTION"
 
 
 class SentimentLabel(StrEnum):

@@ -169,7 +169,7 @@ const ScreenerConfigSchema = z.object({
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
 export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
-  "institutional", "congress_gov", "setup", "connectivity"] as const;
+  "institutional", "congress_gov", "setup", "connectivity", "ai_screener"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.

@@ -124,3 +124,27 @@
 .screener-flow-actions { margin: 6px 0; }
 .screener-flow-actions [role="status"] { margin-right: auto; color: #aabdd1; font-size: 11px; }
 .screener-flow-coverage { color: #e2bc7d; font-size: 11px; line-height: 1.5; margin: 5px 0; }
+.ai-screener-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.ai-screener-toolbar strong{color:#e8f1fc;font-size:12px}
+.ai-screener-toolbar p{margin:3px 0 0}
+.ai-screener-engine{display:flex;align-items:center;gap:5px;color:#8ea0b3;font-size:10px}
+.ai-screener-engine select{max-width:220px;border:1px solid #33475c;border-radius:2px;padding:3px 4px;background:#141c26;color:#dce8f3;font:inherit}
+.ai-screener-engine select:focus-visible,.ai-screener-run:focus-visible,.ai-screener-candidate button:focus-visible{outline:2px solid #70afff;outline-offset:1px}
+.ai-screener-meta{color:#8ea0b3;font-size:10px;line-height:1.4}
+.ai-screener-run{align-self:flex-start;padding:5px 9px}
+.ai-screener-result{display:flex;flex-direction:column;gap:5px;border-top:1px solid #273342;padding-top:5px}
+.ai-screener-candidate{padding:6px 7px;border:1px solid #263747;background:#121a23}
+.ai-screener-candidate header{display:flex;align-items:baseline;justify-content:space-between;gap:7px}
+.ai-screener-candidate h3{margin:0;color:#e8f1fc;font-size:12px}
+.ai-screener-candidate h4{margin:7px 0 2px;color:#7f93a8;font-size:10px;letter-spacing:.05em;text-transform:uppercase}
+.ai-screener-candidate p{margin:4px 0;color:#c7d4e1;line-height:1.4}
+.ai-screener-candidate button{border:1px solid #3d6388;border-radius:3px;padding:3px 6px;background:#172a3d;color:#b9d9fc;font:inherit;font-size:10px;cursor:pointer}
+.ai-screener-evidence{margin:3px 0;border-top:1px solid #1f2b38;color:#b8c8d8}
+.ai-screener-evidence summary{padding:3px 0;color:#9fc9ff;cursor:pointer}
+.ai-screener-evidence dl{margin:0 0 4px}
+.ai-screener-evidence dl div{display:grid;grid-template-columns:62px 1fr;gap:6px;padding:2px 0}
+.ai-screener-evidence dt{color:#7f91a4}
+.ai-screener-evidence dd{margin:0;overflow-wrap:anywhere}
+.ai-screener-evidence code{color:#c8d8e8;font:inherit}
+.ai-screener-empty{color:#7f91a4!important;font-size:10px}
+.ai-screener-candidate ul{margin:2px 0 0;padding-left:18px;color:#aebdcc}

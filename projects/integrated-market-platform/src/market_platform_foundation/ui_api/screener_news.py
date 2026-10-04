@@ -1160,6 +1160,11 @@ class ScreenerNewsService:
         provider = getattr(self._get_synthesizer(), "_provider", None)
         return getattr(provider, "_server", None)
 
+    def synthesis_provider(self) -> Any:
+        """Return the selected provider instance for sibling governed inference tasks."""
+
+        return getattr(self._get_synthesizer(), "_provider", None)
+
     def ai_status(self) -> dict[str, Any]:
         return self._ai_status()
 

@@ -8,6 +8,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
+import type { AiScreenerScope } from "../../api/screenerAi";
 import { QuickPreview } from "./QuickPreview";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
@@ -289,7 +290,7 @@ export function ScreenerPage() {
     (universe !== "US_EQUITIES" || field === "bid" || field === "ask" || field === "spread_pct");
   const snapshotQuery = Boolean(fieldCaps) && (fromMarketSnapshot(effectiveSort) || filters.some((rule) => fromMarketSnapshot(rule.field)));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
-  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
+  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"] : ["news", "ai_screener"])), ...ALWAYS_PANELS] as PanelId[]);
   // News is a view inside the active universe (URL `news=1`), never a universe.
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);
@@ -764,6 +765,12 @@ export function ScreenerPage() {
     }
     navigate(workspacePathForInstrument(row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : ""));
   }, [navigate, referenceOnly]);
+  const openAiInstrument = useCallback((instrumentId: string) => {
+    const row = rows.find((item) => item.instrument.instrument_id === instrumentId);
+    if (row) { open(row); return; }
+    if (referenceOnly) { setSelected(instrumentId); setPreviewOpen(true); return; }
+    navigate(workspacePathForInstrument(instrumentId));
+  }, [navigate, open, referenceOnly, rows]);
   const closePreview = useCallback(() => {
     setPreviewOpen(false); persistLayout(false, previewWidth);
     scrollRef.current?.focus();
@@ -910,6 +917,10 @@ export function ScreenerPage() {
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
   const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
+  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
+    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
+    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
+  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
   // Crypto is continuous: "24/7", never an equity session label.
   const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
@@ -1087,7 +1098,7 @@ export function ScreenerPage() {
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
           actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
           <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels}
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument}
               clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
               onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
           </Suspense>

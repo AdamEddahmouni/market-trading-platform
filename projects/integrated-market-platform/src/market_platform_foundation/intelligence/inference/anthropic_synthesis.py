@@ -158,17 +158,17 @@ class AnthropicSynthesisProvider:
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
-        from .screener_synthesis import output_json_schema
+        from .schema_dispatch import schema_for_packet
 
         started = time.perf_counter()
         if not self._api_key:
             return self._error(InferenceErrorCode.PROVIDER_AUTH_FAILURE, "API_KEY_MISSING", ParsingStatus.PROVIDER_ERROR, started)
         body = {
             "model": self.model_id, "max_tokens": config.max_tokens, "temperature": 0,
-            "system": "You write grounded news syntheses. Use only the supplied stories and record the result with the tool.",
+            "system": "You write grounded evidence syntheses. Use only the supplied packet and record the result with the tool.",
             "messages": [{"role": "user", "content": rendered_prompt}],
-            "tools": [{"name": TOOL_NAME, "description": "Record the grounded synthesis of the supplied stories.",
-                       "input_schema": output_json_schema([article.event_id for article in packet.articles])}],
+            "tools": [{"name": TOOL_NAME, "description": "Record the grounded synthesis of the supplied evidence.",
+                       "input_schema": schema_for_packet(packet)}],
             "tool_choice": {"type": "tool", "name": TOOL_NAME},
         }
         headers = {"Content-Type": "application/json", "x-api-key": self._api_key, "anthropic-version": API_VERSION}

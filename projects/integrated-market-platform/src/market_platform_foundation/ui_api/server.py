@@ -403,6 +403,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path == "/screener/ai-screener/preview":
+                # AI Screener preview reconstructs the active scope and estimates cost; it never calls a model.
+                from .screener_ai import read_ai_screener_preview
+
+                try:
+                    body = {key: (json.loads((query.get(key) or ["null"])[0]) if key == "filters" else (query.get(key) or [None])[0])
+                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen")}
+                    body["universe"] = body["universe"] or "US_EQUITIES"
+                    body["search"] = body["search"] or ""
+                    body["view"] = body["view"] or "Overview"
+                    body["screen"] = body["screen"] or ""
+                    body["descending"] = body["descending"] not in ("0", "false", "no")
+                    body["filters"] = body["filters"] if isinstance(body["filters"], list) else []
+                    self._send_json(read_ai_screener_preview(body))
+                except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                    self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
             if path == "/screener/news/synthesis/preview":
                 # AI status and the pre-click cost of a paid synthesis; a read that never calls a model.
                 from .screener_news import read_synthesis_preview
@@ -1559,6 +1576,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if result is None:
                 self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(result)
+            return
+        if path == "/screener/ai-screener":
+            # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.
+            from .screener_ai import request_ai_screener
+
+            try:
+                result = request_ai_screener(body)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             self._send_json(result)
             return
