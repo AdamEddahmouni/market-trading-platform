@@ -1,5 +1,8 @@
 # OCT1-04 implementation plan
 
+Subsequent action layer: [OCT1-06](2026-10-04-oct1-06-action-decision.md).
+Candidate reduction remains separate from action inference and Paper authority.
+
 Subsequent implementation: [OCT1-05 News and sentiment evidence](2026-10-03-oct1-05-news-evidence-integration.md)
 extends the canonical packet and UI. The OCT1-04 receipts below remain historical.
 

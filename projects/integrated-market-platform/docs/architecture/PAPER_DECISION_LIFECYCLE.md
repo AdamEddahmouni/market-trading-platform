@@ -7,6 +7,13 @@
 
 ## Flow
 
+OCT1-06 adds explicit Screener ActionDecision assessment before a draft. ENTER
+and EXIT can prepare the existing Workspace preview/close flow, with bounded
+action/snapshot refs. Both preview and submit revalidate those refs; governed
+entry additionally reuses BUILD 22 PreTradeRiskEngine and the existing Paper
+risk path. A reduced approved quantity requires a new preview. No state triggers
+submission. See [Screener action decisions](SCREENER_ACTION_DECISION.md).
+
 ```mermaid
 flowchart LR
   A[Paper Command / Lane / Watched Radar opportunity] --> B[Draft + provenance]

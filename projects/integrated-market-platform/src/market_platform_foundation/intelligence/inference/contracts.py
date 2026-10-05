@@ -17,6 +17,7 @@ class IntelligenceTaskType(StrEnum):
     # S11: grounded multi-story synthesis for the Screener News & Analysis panel.
     NEWS_SCREENER_SYNTHESIS = "NEWS_SCREENER_SYNTHESIS"
     SCREENER_CANDIDATE_REDUCTION = "SCREENER_CANDIDATE_REDUCTION"
+    SCREENER_ACTION_DECISION = "SCREENER_ACTION_DECISION"
 
 
 class SentimentLabel(StrEnum):

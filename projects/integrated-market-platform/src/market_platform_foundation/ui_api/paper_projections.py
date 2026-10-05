@@ -459,6 +459,13 @@ def _preview_binding_context(
     the two always agree on what is bound.
     """
     ledger = store.paper_ledger
+    action_refs = [r for r in (parsed.get("decision_source_snapshot") or {}).get("reasons", [])
+                   if r["code"] in ("ACTION_DECISION", "ACTION_SNAPSHOT")]
+    policy_revision = str(ledger.policy.get("risk_policy_identity_hash", ""))
+    if action_refs:
+        import hashlib
+        import json
+        policy_revision += ":action:" + hashlib.sha256(json.dumps(action_refs, sort_keys=True).encode()).hexdigest()
     intent_digest = build_semantic_intent_digest(
         {
             "action": "OPEN",
@@ -481,7 +488,7 @@ def _preview_binding_context(
         "order_type": parsed["order_type"],
         "portfolio_revision": portfolio_state_revision(ledger),
         "quantity": parsed["quantity"],
-        "risk_policy_revision": str(ledger.policy.get("risk_policy_identity_hash", "")),
+        "risk_policy_revision": policy_revision,
         "margin_facts_revision": margin_facts_revision,
         "side": parsed["side"],
     }
@@ -575,6 +582,8 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     _assert_live_execution_allowed(store, submit=False)
     parsed = _parse_order_body(body, store)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    from .screener_action import action_service
+    action_record = action_service(store).validate_order_source(parsed, focus)
     instrument = _admit_focus_instrument(store, focus)
     observation_time = _paper_observation_time(store, instrument_id=focus)
     margin_facts = _resolve_order_margin_facts(
@@ -617,6 +626,16 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
             margin_facts=margin_facts,
         )
         envelope = _paper_envelope(store, {"preview": preview})
+    action_risk = action_service(store).assess_entry_risk(action_record, parsed)
+    if action_risk:
+        envelope["preview"]["action_risk_decision"] = action_risk
+        envelope["preview"]["reason_codes"] += action_risk["reason_codes"]
+        if action_risk["decision"] not in ("APPROVE", "REDUCE") or action_risk["approved_quantity"] < parsed["quantity"]:
+            envelope["preview"]["risk_status"] = "BLOCKED"
+            envelope["preview"]["decision"] = action_risk["decision"]
+            if action_risk["approved_quantity"] > 0 and action_risk["approved_quantity"] < parsed["quantity"]:
+                envelope["preview"]["decision"] = "REDUCE"
+                envelope["preview"]["reason_codes"].append("ACTION_SIZING_REDUCED_REPREVIEW_REQUIRED")
     claims = _preview_binding_context(
         store,
         focus=focus,
@@ -693,6 +712,7 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     parsed = _parse_order_body(body, store)
     _assert_live_execution_allowed(store, submit=True)
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    from .screener_action import action_service
     instrument = _admit_focus_instrument(store, focus)
     existing_order_id = store.paper_ledger.lookup_idempotent_order(parsed["idempotency_key"])
     if existing_order_id:
@@ -718,6 +738,10 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
                     }
                 },
             )
+    action_record = action_service(store).validate_order_source(parsed, focus)
+    action_risk = action_service(store).assess_entry_risk(action_record, parsed)
+    if action_risk and (action_risk["decision"] not in ("APPROVE", "REDUCE") or action_risk["approved_quantity"] < parsed["quantity"]):
+        raise ValueError("ACTION_PRETRADE_RISK_BLOCKED")
     intent_time = _paper_observation_time(store, instrument_id=focus)
     margin_facts = _resolve_order_margin_facts(
         focus=focus,
@@ -752,6 +776,11 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
             created_time_ns=intent_time,
             bars=bars,
         )
+    if action_record:
+        # Waiting for an eligible bar must not extend ActionDecision authority.
+        action_service(store).validate_order_source(parsed, focus)
+        _require_valid_preview(store, body, focus=focus, parsed=parsed, instrument=instrument)
+        _assert_live_execution_allowed(store, submit=True)
     result = submit_interactive_order(
         ledger=store.paper_ledger,
         bars=bars,

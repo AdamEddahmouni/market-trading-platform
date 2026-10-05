@@ -1,0 +1,87 @@
+// SOFTWARE_CONTROLLED only. Requires isolated harness_action_decision.py + Vite.
+const { chromium } = require(process.env.IMP_PLAYWRIGHT_MODULE || 'playwright');
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const base = process.env.IMP_OCT1_06_UI_URL || 'http://127.0.0.1:15106';
+const api = process.env.IMP_OCT1_06_API_URL || 'http://127.0.0.1:18806';
+(async () => {
+  const browser = await chromium.launch({ headless: true });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  page.setDefaultTimeout(15000);
+  const receipt = { classification: 'SOFTWARE_CONTROLLED', scenarios: [], live_submissions: 0, paper_submissions: 0 };
+  const metrics = async () => (await page.request.get(api+'/acceptance/action/metrics')).json();
+  async function assess(state, options={}) {
+    await page.request.get(api+`/acceptance/action/scenario?state=${state}&authority=${options.authority===false?0:1}`);
+    const before=await metrics();
+    await page.goto(base+'/screener');
+    await page.getByRole('button',{name:'AI Screener',exact:true}).click();
+    await page.getByRole('button',{name:'Run AI Screener',exact:true}).click();
+    await page.getByRole('button',{name:'Open decision assessment',exact:true}).click();
+    await page.getByRole('button',{name:'Evaluate Decision',exact:true}).waitFor();
+    assert.equal((await metrics()).calls,before.calls,'opening assessment must not infer');
+    if(options.governed) await page.getByLabel('Governed Opportunity',{exact:true}).selectOption('controlled-opportunity');
+    await page.getByRole('button',{name:'Evaluate Decision',exact:true}).click();
+    const expected=state==='STALE'?'REVALIDATION REQUIRED':state==='ENTER_RISK'?'ENTER':state.replaceAll('_',' ');
+    await page.getByRole('heading',{name:expected,exact:true}).waitFor();
+    const after=await metrics();
+    assert.equal(after.calls,before.calls+1);
+    assert.equal(after.ledger_events,before.ledger_events,'evaluation must not mutate ledger');
+    assert.ok((await page.locator('body').innerText()).includes('news-conflict'));
+    await page.getByText('Immutable evidence snapshot',{exact:true}).first().click();
+    await page.getByText('Position, Opportunity, policy and candidate provenance',{exact:true}).first().click();
+    await page.getByRole('button',{name:'Read decision history',exact:true}).click();
+    await page.waitForFunction(()=>document.querySelectorAll('.action-decision > details').length>0);
+    receipt.scenarios.push({state,expected,zero_implicit_inference:true,ledger_unchanged:true,conflict_visible:true});
+  }
+  try {
+    for(const state of ['NO_ACTION','CONSIDER_ENTRY','HOLD','EXIT','STALE']) await assess(state);
+    await assess('ENTER',{governed:true});
+    await page.screenshot({path:'.local/oct1-06-entry.png',fullPage:true});
+    await page.getByRole('button',{name:'Prepare Paper Preview',exact:true}).click();
+    await page.waitForURL('**/workspace/**');
+    assert.ok(page.url().includes('/workspace/AAPL'));
+    await page.getByRole('button',{name:/Paper.*simulated execution/i}).click();
+    await page.getByText(/Governed entry risk: APPROVE/).waitFor();
+    receipt.scenarios.push({state:'ENTER_HANDOFF',url:page.url()});
+    await assess('ENTER_RISK',{governed:true});
+    await page.getByRole('button',{name:'Prepare Paper Preview',exact:true}).click();
+    await page.waitForURL('**/workspace/AAPL');
+    await page.getByRole('button',{name:/Paper.*simulated execution/i}).click();
+    await page.getByText(/Governed entry risk: REJECT/).waitFor();
+    await page.getByText('BLOCKED',{exact:true}).first().waitFor();
+    assert.equal(await page.getByRole('button',{name:'Submit',exact:true}).isDisabled(),true);
+    receipt.scenarios.push({state:'RISK_BLOCKED',submit_disabled:true});
+    fs.writeFileSync('.local/oct1-06-workspace.txt',await page.locator('body').innerText());
+    await page.screenshot({path:'.local/oct1-06-workspace.png',fullPage:true});
+    await assess('EXIT');
+    await page.getByRole('button',{name:'Prepare Paper Exit',exact:true}).click();
+    await page.waitForURL('**/workspace/AAPL');
+    await page.getByRole('button',{name:/Paper.*simulated execution/i}).click();
+    await page.getByLabel('Quantity',{exact:true}).waitFor();
+    assert.equal(await page.getByLabel('Quantity',{exact:true}).inputValue(),'7');
+    receipt.scenarios.push({state:'EXIT_HANDOFF',url:page.url(),held_quantity:7});
+    await assess('ENTER',{governed:true});
+    await page.request.get(api+'/acceptance/action/expire');
+    await page.getByRole('button',{name:'Prepare Paper Preview',exact:true}).click();
+    await page.getByRole('alert').filter({hasText:/requires revalidation/}).waitFor();
+    assert.ok(page.url().endsWith('/screener'));
+    receipt.scenarios.push({state:'EXPIRED_HANDOFF',blocked:true});
+    await page.request.get(api+'/acceptance/action/scenario?state=ENTER');
+    await page.goto(base+'/screener');
+    await page.getByRole('button',{name:'AI Screener',exact:true}).click();
+    await page.getByRole('button',{name:'Run AI Screener',exact:true}).click();
+    await page.getByRole('button',{name:'Open decision assessment',exact:true}).click();
+    let release;
+    const pending=new Promise(resolve=>release=resolve);
+    await page.route('**/screener/action-decision/run',async route=>{const response=await route.fetch();await pending;await route.fulfill({response});});
+    await page.getByRole('button',{name:'Evaluate Decision',exact:true}).click();
+    await page.getByLabel('Screener universe',{exact:true}).selectOption('FUTURES');
+    release();
+    await page.waitForTimeout(300);
+    assert.equal(await page.getByText('CURRENT DECISION',{exact:true}).count(),0);
+    receipt.scenarios.push({state:'LATE_SCOPE_RESPONSE',isolated:true});
+    fs.writeFileSync('artifacts/oct1-06-browser.json',JSON.stringify(receipt,null,2)+'\n');
+    console.log(JSON.stringify(receipt));
+  } catch(error) { fs.writeFileSync('.local/oct1-06-browser-failure.txt',await page.locator('body').innerText()); throw error; }
+  finally { await browser.close(); }
+})().catch(e=>{console.error(e);process.exitCode=1;});

@@ -46,6 +46,14 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
     if path == "/security/readiness":
         return RoutePolicy(capability="security.config.read")
 
+    if path == "/screener/action-decisions" and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/preview" and method_upper == "POST":
+        return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/run" and method_upper == "POST":
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/handoff" and method_upper == "POST":
+        return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
     if method_upper == "GET":
         if path in {
             "/context",

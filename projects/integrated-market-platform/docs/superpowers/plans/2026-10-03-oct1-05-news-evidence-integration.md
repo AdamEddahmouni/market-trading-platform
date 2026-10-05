@@ -2,6 +2,9 @@
 
 Classification: `SOFTWARE_CONTROLLED` implementation acceptance. Runtime probes below are separate operational evidence; no empirical prediction, causal, calibration or execution authority.
 
+Subsequent bounded action layer: [OCT1-06](2026-10-04-oct1-06-action-decision.md).
+News provenance, sentiment and deterministic conflicts remain governed evidence.
+
 ## Repository and integration boundary
 
 Canonical monorepo `AdamEddahmouni/market-trading-platform`, IMP at `projects/integrated-market-platform/`. Source base `1e9a3c0c6fe5f474a43bcba10f0763c19951a30b` (OCT1-04, PR #460). Branch `codex/oct1-05-news-evidence-integration`; isolated worktree `.worktrees/oct1-05-news-evidence`. The primary dirty checkout and leftover nested clone were preserved. Integration SHA, required checks and remote-main verification belong to the OCT1-05 PR and existing Notion task; Done requires verified integration.

@@ -4,6 +4,13 @@
 
 ## General rules
 
+OCT1-06 adds separate `action-proposal/1.0.0`, `action-preview/1.0.0` and
+`action-decision/1.0.0` contracts. The server-owned immutable companion, snapshots,
+bounded condition IDs, account-scoped history and optional Paper preview
+`action_risk_decision` are described in
+[SCREENER_ACTION_DECISION.md](SCREENER_ACTION_DECISION.md). Existing candidate,
+Opportunity, Paper draft and preview contracts retain their meanings.
+
 1. **Optional fields** — add as optional with safe defaults; old clients/records remain valid
 2. **Never repurpose** — do not change semantic meaning of existing fields
 3. **Backend is canonical** — frontend Zod schemas mirror backend contracts

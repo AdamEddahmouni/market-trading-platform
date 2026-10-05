@@ -1,3 +1,4 @@
+import ActionDecisionPanel from "./ActionDecisionPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerResult, AiScreenerScope } from "../../../api/screenerAi";
@@ -105,6 +106,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       {expired ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : result.value.state !== "CURRENT" && result.value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{result.value.reason ? ` · ${result.value.reason}` : ""}.</PanelMessage> : <>
         {result.value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {result.value.limitations.join(" ")}</PanelMessage>}
         {result.value.candidates.map((selection) => <article className="ai-screener-candidate" key={selection.instrument_id}>
+          <ActionDecisionPanel key={`${result.value.run_id}|${selection.instrument_id}`} runId={result.value.run_id} instrumentId={selection.instrument_id} />
           <header><h3>#{selection.rank} {selection.instrument_id}</h3><button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button></header>
           {(() => {
             const candidate = result.value.evidence.find((item) => item.instrument.instrument_id === selection.instrument_id);

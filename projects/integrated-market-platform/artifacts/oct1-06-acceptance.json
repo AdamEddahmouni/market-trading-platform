@@ -1,0 +1,1427 @@
+{
+  "task": "OCT1-06",
+  "classification": "SOFTWARE_CONTROLLED",
+  "recorded_at": "2026-10-05T19:36:18.010762+00:00",
+  "base_sha": "68e1b93fefc1baccb06892163739a4cadb9a68e6",
+  "branch": "codex/oct1-06-action-decision",
+  "validation_attempts": [
+    {
+      "mode": "changed",
+      "status": "passed",
+      "tests_run": 5979,
+      "skips": 37,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 327.7946453889999,
+      "interrupted": false,
+      "receipt": "oct1-06-changed-snapshot.json",
+      "sha256": "ac17c59a450cb9f9c11dbb49c23c39217ebf98ebfa8b2edd852c192f7100dd97",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "PASSED"
+    },
+    {
+      "mode": "changed",
+      "status": "failed",
+      "tests_run": 5640,
+      "skips": 34,
+      "failures": 0,
+      "errors": 21,
+      "wall_seconds": 464.3969323000056,
+      "interrupted": false,
+      "receipt": "oct1-06-changed.json",
+      "sha256": "6e7b74f63c2056c3b386b4ea79d8c5f70f8bbd0375ae1ea7e0cf3508592bcfe7",
+      "performance": {
+        "classification": "INSUFFICIENT_DATA",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "fast",
+      "status": "passed",
+      "tests_run": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.2191015999997035,
+      "interrupted": false,
+      "receipt": "oct1-06-fast-closure.json",
+      "sha256": "698637d53e96734b6ee9b3fba61aad5e3cedede6729e0e682cb9be67815f1c80",
+      "performance": {
+        "classification": "SEVERE_REGRESSION",
+        "observed_wall_seconds": 3.219102,
+        "baseline_median_seconds": 1.821,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "PASSED"
+    },
+    {
+      "mode": "fast",
+      "status": "passed",
+      "tests_run": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.416326900012791,
+      "interrupted": false,
+      "receipt": "oct1-06-fast-final.json",
+      "sha256": "2b16c288346e0ca9a72b95f040adb3daf6e578b83c6d898717ca6077f4c33a43",
+      "performance": {
+        "classification": "SEVERE_REGRESSION",
+        "observed_wall_seconds": 3.416327,
+        "baseline_median_seconds": 1.821,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "PASSED"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 2049,
+      "skips": 5,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 289.65302490000613,
+      "interrupted": true,
+      "receipt": "oct1-06-full-closure.json",
+      "sha256": "b75f56378f619092f5c255830ed7a583509a67e9a8beb7b62a24771ebf23c860",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 210,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 105.33433659997536,
+      "interrupted": true,
+      "receipt": "oct1-06-full-complete.json",
+      "sha256": "33a5f40fcf1b8428e14dc2b99a66f311b9b1880a8a52e9d696217abc3cfc90ea",
+      "performance": {
+        "classification": "NORMAL",
+        "observed_wall_seconds": 105.334337,
+        "baseline_median_seconds": 198.882,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 210,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 110.36425490002148,
+      "interrupted": true,
+      "receipt": "oct1-06-full-detached.json",
+      "sha256": "440407fb2adfa4c28094061533d604decc2fb2e9f3f3d8d7e9bbc7292881580f",
+      "performance": {
+        "classification": "NORMAL",
+        "observed_wall_seconds": 110.364255,
+        "baseline_median_seconds": 198.882,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 210,
+      "skips": 0,
+      "failures": 0,
+      "errors": 1,
+      "wall_seconds": 228.8129455000162,
+      "interrupted": true,
+      "receipt": "oct1-06-full-final.json",
+      "sha256": "230ed74da068b071ad8ea0b3482c53b4ba99e57edeb3b9ae9badefaa36051ff9",
+      "performance": {
+        "classification": "WARNING",
+        "observed_wall_seconds": 228.812946,
+        "baseline_median_seconds": 198.882,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 297,
+      "skips": 0,
+      "failures": 0,
+      "errors": 15,
+      "wall_seconds": 326.942078552,
+      "interrupted": true,
+      "receipt": "oct1-06-full-linux.json",
+      "sha256": "e0589c2891b0025ff80bf901c9bf2f900bf1f75b86324b2221c34e629aca3ef2",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "passed",
+      "tests_run": 7865,
+      "skips": 57,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 412.770590138,
+      "interrupted": false,
+      "receipt": "oct1-06-full-native.json",
+      "sha256": "93a17f769fb7d32931fe89508f3123f375af44b2b8b969b82848444950c7cbdd",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "PASSED"
+    },
+    {
+      "mode": "full",
+      "status": "failed",
+      "tests_run": 7865,
+      "skips": 57,
+      "failures": 3,
+      "errors": 1,
+      "wall_seconds": 2660.566550691,
+      "interrupted": false,
+      "receipt": "oct1-06-full-snapshot.json",
+      "sha256": "3891ca7f09ce77917e7b68959168aa5c6a63a1ba4224f1aa7ff77bb733edb779",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "interrupted",
+      "tests_run": 2049,
+      "skips": 5,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 359.43121849995805,
+      "interrupted": true,
+      "receipt": "oct1-06-full-verified.json",
+      "sha256": "7db747b396ae626ea037dd0b47ff745d63eba7b5d71ae3a6be299e8db8e9017d",
+      "performance": {
+        "classification": "INCOMPATIBLE_BASELINE",
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": "full",
+      "status": "failed",
+      "tests_run": 7855,
+      "skips": 55,
+      "failures": 1,
+      "errors": 20,
+      "wall_seconds": 549.1646140000084,
+      "interrupted": false,
+      "receipt": "oct1-06-full.json",
+      "sha256": "7580d59f26925cff85017ad0e986eaa37857a2136745089bcf9afcf671266863",
+      "performance": {
+        "classification": "SEVERE_REGRESSION",
+        "observed_wall_seconds": 549.164614,
+        "baseline_median_seconds": 198.882,
+        "gating_policy": "OBSERVE_ONLY"
+      },
+      "classification": "ENVIRONMENT"
+    },
+    {
+      "mode": null,
+      "status": "error",
+      "tests_run": 0,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0,
+      "interrupted": null,
+      "receipt": "oct1-06-validation-suite.json",
+      "sha256": "5ad5b7808e4e1cd2c18da43243973d54960ad42c249011ac76afae98cbc175fc",
+      "performance": {
+        "classification": null,
+        "observed_wall_seconds": null,
+        "baseline_median_seconds": null,
+        "gating_policy": null
+      },
+      "classification": "ENVIRONMENT"
+    }
+  ],
+  "initial_non_green_selectors": [
+    {
+      "selector": "tests/platform/test_operator_surface_fixes.py::RestoreAuthorityTests::test_startup_report_deferred_follows_stored_mode",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_ftep_empirical_not_ready_fail_closed.py::FtepEmpiricalNotReadyFailClosedTests::test_leftover_fetched_overlay_hop_output_has_no_ftep_promotion",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliFinvizOverlayTests::test_cli_fetched_overlay_stays_live_disabled_and_not_l1",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliFinvizOverlayTests::test_cli_opend_down_emits_not_configured_overlay_classifier",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliPersistTests::test_cli_g7_fail_close_binds_even_with_persist_context_injected",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliPersistTests::test_cli_persist_off_minted_is_intentional_ephemeral_no_create_decision",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliPersistTests::test_cli_persist_on_demo_with_injected_context_stays_intentional_ephemeral",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliPersistTests::test_cli_persist_on_paper_with_injected_context_exercises_create_decision",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathACliPersistTests::test_cli_persist_on_without_session_args_is_skipped_no_session",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathAProspectiveTests::test_cli_diagnose_runs_before_discovery",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathAProspectiveTests::test_cli_ignores_yahoo_injected_via_discovery",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathAProspectiveTests::test_cli_paper_opend_down_is_unavailable_not_yahoo",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathAProspectiveTests::test_cli_paper_path_a_status_is_empty_not_null",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/intelligence/test_path_a_prospective.py::PathAProspectiveTests::test_cli_starts_opend_before_quote_fetch_and_fails_closed",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/acceptance/test_campaign_supervision_heartbeat_acceptance.py::CampaignSupervisionAcceptanceTests::test_00_shell_exit_supervisor_survives_parent_process_exit",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "windows-x86_64-none\\Lib\\shutil.py\", line 634, in _rmtree_unsafe\n    onerror(os.unlink, fullname, sys.exc_info())\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\tempfile.py\", line 893, in onerror\n    _os.unlink(path)\nPermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\\\Users\\\\adame\\\\AppData\\\\Local\\\\Temp\\\\imp-campaign-supervision-syuc90b3\\\\campaign-supervision\\\\supervisor-30856-1791210852.log'\n"
+    },
+    {
+      "selector": "tests/acceptance/test_observation_outage_shutdown_contract.py::OutageShutdownContractTests::test_in_flight_block_interrupts_before_receipt",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "nd '['C:\\\\Users\\\\adame\\\\Desktop\\\\market-trading-platform\\\\projects\\\\integrated-market-platform\\\\.venv\\\\Scripts\\\\python.exe', 'C:\\\\Users\\\\adame\\\\Desktop\\\\market-trading-platform\\\\.worktrees\\\\oct1-06-action-decision\\\\projects\\\\integrated-market-platform\\\\tools\\\\platform\\\\campaign_supervisor.py', 'poll-loop', '--state-dir', 'C:\\\\Users\\\\adame\\\\AppData\\\\Local\\\\Temp\\\\imp-outage-contract-qv108ksi', '--iterations', '1', '--block-seconds', '30', '--poll-cadence-seconds', '30']' timed out after 5 seconds\n"
+    },
+    {
+      "selector": "tests/acceptance/test_observation_outage_shutdown_contract.py::OutageShutdownContractTests::test_spawn_labels_shim_and_keeps_role_logs",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\shutil.py\", line 634, in _rmtree_unsafe\n    onerror(os.unlink, fullname, sys.exc_info())\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\tempfile.py\", line 893, in onerror\n    _os.unlink(path)\nPermissionError: [WinError 32] The process cannot access the file because it is being used by another process: 'C:\\\\Users\\\\adame\\\\AppData\\\\Local\\\\Temp\\\\imp-outage-contract-a1wpd3d4\\\\logs\\\\poller.log'\n"
+    },
+    {
+      "selector": "tests/providers/test_opend_hop_interpreter.py::OpenDHopCliInterpreterTests::test_hop_cli_emits_secret_free_interpreter_status",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/providers/test_opend_hop_interpreter.py::OpenDHopInterpreterTests::test_diagnose_without_vendor_sdk_is_fail_closed_not_a_tick",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/providers/test_opend_hop_interpreter.py::OpenDHopInterpreterTests::test_foreign_moomoo_api_test_path_is_mixed_not_required",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/market_data/test_live_p21.py::MoomooSafetyRegressionTests::test_check_live_environment_reports_unreachable_opend",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ib\\logging\\__init__.py\", line 1181, in __init__\n    StreamHandler.__init__(self, self._open())\n                                 ^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\AppData\\Roaming\\uv\\python\\cpython-3.11.15-windows-x86_64-none\\Lib\\logging\\__init__.py\", line 1213, in _open\n    return open_func(self.baseFilename, self.mode,\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nPermissionError: [Errno 13] Permission denied: 'C:\\\\Users\\\\adame\\\\AppData\\\\Roaming\\\\com.moomoo.OpenD\\\\Log\\\\py_2026_10_05.log'\n"
+    },
+    {
+      "selector": "tests/validation/test_repository_closure.py::CanonicalRepositoryClosureAuditTests::test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "ts\\validation\\test_repository_closure.py\", line 144, in test_canonical_audit_is_complete_non_destructive_and_uses_closed_vocabulary\n    audit = load_closure_audit(\n            ^^^^^^^^^^^^^^^^^^^\n  File \"C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-06-action-decision\\projects\\integrated-market-platform\\tools\\repository_closure.py\", line 274, in load_closure_audit\n    raise ClosureAuditError(errors)\ntools.repository_closure.ClosureAuditError: unclassified path: tools/acceptance\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_end_to_end_acceptance",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_required_future_tests",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_canonical_opportunity_durable_loop",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_capabilities_projection_cache",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_live_observational_state",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_news_event_v1_request_path",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_opportunity_api",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_opportunity_radar_feed",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_opportunity_summary_leak_audit",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_screener_warmup",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_ui_api",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "n/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/__init__.py\", line 3, in <module>\n    from .gradient_boosting import GradientBoostingBaseline\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/baselines/controls/gradient_boosting.py\", line 8, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_ui2_api",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_mra001_api",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_mra002_api",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "/usr/lib/python3.14/unittest/loader.py::_FailedTest::test_fixture_setup_cache_isolation",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "tform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibration.py\", line 9, in <module>\n    from .calibrators import apply_calibration\n  File \"/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/src/market_platform_foundation/intelligence/fusion/calibrators.py\", line 11, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'\n\n"
+    },
+    {
+      "selector": "tests/acceptance/test_observation_outage_shutdown_contract.py::OutageShutdownContractTests::test_idle_poller_wakes_on_shutdown_without_a_new_cycle",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "Traceback (most recent call last):\n  File \"/tmp/imp-oct1-06-source-validation-_pols9dv/repo/projects/integrated-market-platform/tests/acceptance/test_observation_outage_shutdown_contract.py\", line 237, in test_idle_poller_wakes_on_shutdown_without_a_new_cycle\n    self.assertLess(elapsed, 2.0, msg=f\"poller exit latency {elapsed:.3f}s\")\nAssertionError: 2.2097581529999957 not less than 2.0 : poller exit latency 2.210s\n",
+      "resolution": "Mounted-runtime exit 2.210s exceeded 2.0s. Native CHANGED and FULL passed unchanged."
+    },
+    {
+      "selector": "tests/acceptance/test_observation_outage_shutdown_contract.py::OutageShutdownContractTests::test_session_boundary_does_not_start_a_poll",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "Traceback (most recent call last):\n  File \"/tmp/imp-oct1-06-source-validation-_pols9dv/repo/projects/integrated-market-platform/tests/acceptance/test_observation_outage_shutdown_contract.py\", line 351, in test_session_boundary_does_not_start_a_poll\n    self.assertEqual(heartbeat[\"phase\"], \"SESSION_BOUNDARY_HOLD\")\nAssertionError: 'ARMED' != 'SESSION_BOUNDARY_HOLD'\n- ARMED\n+ SESSION_BOUNDARY_HOLD\n\n",
+      "resolution": "Native FULL software_fullstack_acceptance passed unchanged; mounted runtime startup missed heartbeat phase."
+    },
+    {
+      "selector": "tests/market_data/test_g8_runtime_performance.py::G8RuntimePerformanceTests::test_outer_callback_bridge_to_canonical_adapter",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "Traceback (most recent call last):\n  File \"/tmp/imp-oct1-06-source-validation-_pols9dv/repo/projects/integrated-market-platform/tests/market_data/test_g8_runtime_performance.py\", line 131, in test_outer_callback_bridge_to_canonical_adapter\n    self.assertGreater(N / elapsed, 100, f\"callback bridge too slow: {N / elapsed:.0f}/s\")\nAssertionError: 36.96823803235638 not greater than 100 : callback bridge too slow: 37/s\n",
+      "resolution": "Mounted runtime measured 36.97 events/s below 100/s; native CHANGED and FULL passed unchanged."
+    },
+    {
+      "selector": "tests/ibkr/test_safety.py::IbkrStructuralSafetyTests::test_documented_probe_script_help_is_offline_and_executable",
+      "classification": "ENVIRONMENT",
+      "diagnostic": "form/.local/oct1-06-linux-python/cpython-3.11.17-linux-x86_64-gnu/lib/python3.11/subprocess.py\", line 1253, in _check_timeout\n    raise TimeoutExpired(\nsubprocess.TimeoutExpired: Command '['/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision/projects/integrated-market-platform/.local/oct1-06-linux-copyenv/bin/python', '/tmp/imp-oct1-06-source-validation-_pols9dv/repo/projects/integrated-market-platform/tools/ibkr/probe.py', '--help']' timed out after 10 seconds\n",
+      "resolution": "Mounted Python subprocess exceeded 10s; native FULL ibkr suite passed unchanged."
+    },
+    {
+      "selector": "tests/intelligence/test_deployment_change_control.py::ReleaseManifestTests::test_reproducibility_same_semantic_hash",
+      "classification": "INTERMITTENT",
+      "diagnostic": "Traceback (most recent call last):\n  File \"C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-06-action-decision\\projects\\integrated-market-platform\\tests\\intelligence\\test_deployment_change_control.py\", line 75, in test_reproducibility_same_semantic_hash\n    self.assertTrue(run_reproducibility_fixture())\nAssertionError: False is not true\n"
+    }
+  ],
+  "focused_backend": {
+    "tests": 27,
+    "passed": 27,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 2.237
+  },
+  "focused_ui": {
+    "tests": 25,
+    "passed": 25,
+    "files": [
+      "ActionDecisionPanel.test.tsx",
+      "OrderTicket.test.tsx"
+    ]
+  },
+  "complete_ui": {
+    "tests": 1289,
+    "passed": 1289,
+    "files": 169,
+    "seconds": 374.2,
+    "workers": 1
+  },
+  "initial_ui": {
+    "tests": 1288,
+    "passed": 1286,
+    "failed": 2,
+    "classification": "INTERMITTENT",
+    "isolated_App_tests": 76,
+    "isolated_App_passed": 76
+  },
+  "static": {
+    "lint": "PASSED",
+    "typecheck": "PASSED",
+    "format": "PASSED",
+    "docs_link_files": 287,
+    "monorepo_guard": "PASSED",
+    "history_ledger": "PASSED",
+    "root_guard_tests": 9
+  },
+  "production_build": {
+    "seconds": 7.2,
+    "initial_gzip_kib": 99.7,
+    "budget_kib": 200
+  },
+  "source_snapshot": {
+    "base": "68e1b93fefc1baccb06892163739a4cadb9a68e6",
+    "source": "/mnt/c/Users/adame/Desktop/market-trading-platform/.worktrees/oct1-06-action-decision",
+    "snapshot": "/tmp/imp-oct1-06-source-validation-_pols9dv/repo",
+    "lf_normalized_sha256": {
+      "projects/integrated-market-platform/docs/README.md": "28c3da5761396882d1ae3ab7cc1df925a9c6532de6b281650b35240cc8652725",
+      "projects/integrated-market-platform/docs/architecture/DATA_CONTRACTS.md": "44694374d61fd4d19971396c4e40241eb23f1ccb211b194fcc7f64b66c7fffdc",
+      "projects/integrated-market-platform/docs/architecture/PAPER_DECISION_LIFECYCLE.md": "63dd94b0733e84c5111ce0c2e77b42c94fa15c74d9688949c0b10851b1c5908a",
+      "projects/integrated-market-platform/docs/architecture/SCREENER_ACTION_DECISION.md": "2c85d731496b018dd51c7ed66afbdcb6681ec4cd48b1ef4972a1204851fa61d2",
+      "projects/integrated-market-platform/docs/engineering/WORK_LOG.md": "6e48953b46de315833e9ccd4e0c1c283179f065a881fd89e38938a8c8144afc3",
+      "projects/integrated-market-platform/docs/platform/PROGRAM_STATUS.md": "cc2ac4b241c7d7031a456692ce1e8bfd24076a594a3850a2a0629d280b4e7b6e",
+      "projects/integrated-market-platform/docs/superpowers/plans/2026-10-02-oct1-04-ai-screener.md": "2cf5a4f0e111e62b7b769a70f85dfe387e62c6f07e5786d9eae8818b6bb88ae1",
+      "projects/integrated-market-platform/docs/superpowers/plans/2026-10-03-oct1-05-news-evidence-integration.md": "d27bf3507d88d6472cf83ec503096fdffe7ff200faed14c43e2d9c55fd668dab",
+      "projects/integrated-market-platform/docs/superpowers/plans/2026-10-04-oct1-06-action-decision.md": "7be798af2c770e81ce11027f7c2768f20e3e155d65f721f49a1344d56f82b71d",
+      "projects/integrated-market-platform/src/market_platform_foundation/intelligence/inference/action_decision.py": "a6ba4db670d9b7976ff053b385bf1e4bdf7f9c961c20676cb744fc33695b6d61",
+      "projects/integrated-market-platform/src/market_platform_foundation/intelligence/inference/contracts.py": "0cfad1861d5fe326bdefe98af1dae028b96dea16dd773b7520caa565dde4944b",
+      "projects/integrated-market-platform/src/market_platform_foundation/intelligence/inference/local_provider.py": "076ff639fcdab590bcee5e8a05503f170afebb46396f843eb3c1a9b50ee0e7d4",
+      "projects/integrated-market-platform/src/market_platform_foundation/intelligence/inference/prompts.py": "88cb317329b40e47ae1add5eac882ca54f6840f37b0e9a2075c8a90e67d30e70",
+      "projects/integrated-market-platform/src/market_platform_foundation/intelligence/inference/schema_dispatch.py": "57dd5f6b3932ec889ba92f76136c7138728517e6697054c525c7313251365b5a",
+      "projects/integrated-market-platform/src/market_platform_foundation/local_state/action_decisions.py": "4932a43775c07ca5410974df8df434b1e6520280849f736f853513f75272bc33",
+      "projects/integrated-market-platform/src/market_platform_foundation/platform/security/route_policy.py": "b7af1625421a70b0d908c583a3f7a84b7406ad497d24b494cd9d4d668dc3bc45",
+      "projects/integrated-market-platform/src/market_platform_foundation/rt01/execution_decision_trace/types.py": "f6f6aabb4679acfe2c1ba9d95be9e1aa0c4991712b634064f44f919aa9ef29bf",
+      "projects/integrated-market-platform/src/market_platform_foundation/ui_api/paper_projections.py": "d25ebe8f817cfc0cf014aaa1a12944c47ff0803e07dd452e966566ef3a9041bb",
+      "projects/integrated-market-platform/src/market_platform_foundation/ui_api/screener_action.py": "e934a4e81626288d323f39cb7f922c8f6cbeda3c18aa105103200ec5eb069a44",
+      "projects/integrated-market-platform/src/market_platform_foundation/ui_api/screener_ai.py": "1ff7ea485fe3c00f9156caded0c013bef4bd0bd000cdd695614925644c73257a",
+      "projects/integrated-market-platform/src/market_platform_foundation/ui_api/server.py": "e2932e3cae163ed1ae688f3b841aa4b219c71a31bad1278783ee4d0be8898997",
+      "projects/integrated-market-platform/tests/acceptance/harness_action_decision.py": "57515df69af41402c93b9ea3d63f5faf36a5a1e3f96e06d9e6f7c03a10da63b7",
+      "projects/integrated-market-platform/tests/intelligence/test_action_decision.py": "4bc50ac957277da781761061c2c78931db3f482b05e062da9a84fe972ec2151b",
+      "projects/integrated-market-platform/tools/ui1/oct1_06_browser.cjs": "beb0e62605f74d7425086995d52179987e301bf58d0199808da3eb5cb47481a3",
+      "projects/integrated-market-platform/ui/src/api/schemas.ts": "83b0a0f9fe55ee840127cdd89286fd263a90eff2a7f1393c23d728b77de3a39a",
+      "projects/integrated-market-platform/ui/src/api/screenerAction.ts": "b92cd8fe14909908e409665353bf5891e0e66bb81f9a3f59fcf8d2802a6bef9e",
+      "projects/integrated-market-platform/ui/src/components/paper/OrderTicket.tsx": "b8523a3c78babd399a705024b0bbd56007e78c04202bfd4b2b1c4035d38fe404",
+      "projects/integrated-market-platform/ui/src/components/screener/panels/ActionDecisionPanel.test.tsx": "21f5a7a05aef3ab7a4f536858e6a9b78fdaf456ab8376de350195bfeb35ed762",
+      "projects/integrated-market-platform/ui/src/components/screener/panels/ActionDecisionPanel.tsx": "0c009c8a6d7c18a5b49d3088b37597ec091d5d6fb99cb412376faf339cfaa950",
+      "projects/integrated-market-platform/ui/src/components/screener/panels/AiScreenerPanel.tsx": "71eb7bc4f44770b891fd8a064281eef24534595f0a78b2350a1ab9f4bd019225",
+      "projects/integrated-market-platform/ui/src/components/screener/screener.css": "05a8a9eaaa0220ab7320d3b7374c33adfa317fc0016c522f90a50bebcbe59273"
+    }
+  },
+  "runtime_acceptance": {
+    "fixture": "SOFTWARE_CONTROLLED",
+    "local": "LOCAL_NOT_CONFIGURED / NOT_EXECUTED",
+    "local_reason": "NO_SYNTHESIS_PROVIDER_CONFIGURED",
+    "hosted": "NOT_EXECUTED",
+    "paid_calls": 0,
+    "model_downloads": 0
+  },
+  "paper_acceptance": {
+    "enter": "Existing Workspace draft and independent PreTrade/Paper preview",
+    "exit": "Opposite side and exact seven-unit controlled held-position close draft",
+    "risk_block": "Canonical duplicate-Opportunity REJECT",
+    "actual_paper_submissions": 0,
+    "actual_live_submissions": 0,
+    "auth": "SOFTWARE_CONTROLLED auth fixture; production response leak guard enabled"
+  },
+  "review": {
+    "remaining_P1": 0,
+    "fixes": [
+      "post-wait action/preview/authority revalidation",
+      "canonical submitted-Opportunity provenance",
+      "idempotent consumed-action retry",
+      "A-B-A latest-transition inference cache",
+      "StrictMode handoff"
+    ]
+  },
+  "scope_stop": "OCT1-07, OCT1-08 and OCT1-09 were not started.",
+  "raw_receipts": "Retained under .local/oct1-06-validation-raw; condensed hashes/counts above are committed. No historical baseline rebase.",
+  "source_parity": {
+    "verified_files": 31,
+    "mismatches": 0,
+    "normalization": "CRLF to LF",
+    "manifest_sha256": "4ab06023a12bb9eab1c6ee781c7ecc4e450cef851b9a78cf06bff7577e44e047",
+    "product_source_changed_on_resume": false,
+    "note": "All 31 snapshot files matched on recovery. Only acceptance documentation/receipts changed afterward."
+  },
+  "recovery": {
+    "status_entries": 56,
+    "tracked_modified": 25,
+    "untracked_entries": 31,
+    "implementation_commits": 0,
+    "head": "68e1b93fefc1baccb06892163739a4cadb9a68e6",
+    "native_full_exit": 0,
+    "source_validation_exit": 1,
+    "source_validation_subresults": [
+      1,
+      0
+    ],
+    "native_validation_running": false
+  },
+  "final_validation": {
+    "fast": {
+      "status": "passed",
+      "tests_run": 23,
+      "passes": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.2191015999997035,
+      "effective_workers": 1,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "timing_classification": "SEVERE_REGRESSION"
+    },
+    "changed": {
+      "status": "passed",
+      "tests_run": 5979,
+      "passes": 5942,
+      "skips": 37,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 327.7946453889999,
+      "effective_workers": 1,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "timing_classification": "INCOMPATIBLE_BASELINE"
+    },
+    "full": {
+      "status": "passed",
+      "tests_run": 7865,
+      "passes": 7808,
+      "skips": 57,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 412.770590138,
+      "effective_workers": 1,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "timing_classification": "INCOMPATIBLE_BASELINE"
+    }
+  },
+  "resumed_static": {
+    "lint": {
+      "checks": [
+        {
+          "argv": [
+            "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-06-action-decision\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+            "-m",
+            "compileall",
+            "-q",
+            "src",
+            "tests",
+            "tools"
+          ],
+          "command": "lint python",
+          "exit_code": 0,
+          "status": "passed",
+          "wall_seconds": 5.012321
+        },
+        {
+          "argv": [
+            "npm.cmd",
+            "run",
+            "typecheck"
+          ],
+          "command": "lint ui",
+          "exit_code": 0,
+          "status": "passed",
+          "wall_seconds": 37.96937
+        }
+      ],
+      "schema_version": "1.0",
+      "status": "passed"
+    },
+    "format": {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "command": "format",
+      "exit_code": 0,
+      "status": "passed",
+      "wall_seconds": 11.029973
+    },
+    "docs_governance_files": 287,
+    "monorepo_guard": "PASSED",
+    "history_ledger": "PASSED",
+    "root_guard_tests": {
+      "tests": 9,
+      "passed": 9
+    },
+    "workflow_lint": "Protected PR validate-workflows checks are the final receipt"
+  },
+  "resumed_command_environment_error": "Root unittest via IMP venv resolved an installed tests package; rerun using stdlib-only uv interpreter passed all 9 tests. No assertions changed.",
+  "final_full_suites": [
+    {
+      "suite_id": "postroot",
+      "status": "passed",
+      "tests_run": 40,
+      "passes": 40,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.4980149499997424
+    },
+    {
+      "suite_id": "phase0",
+      "status": "passed",
+      "tests_run": 51,
+      "passes": 51,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 8.59031189999996
+    },
+    {
+      "suite_id": "phase0a",
+      "status": "passed",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.008791239999936806
+    },
+    {
+      "suite_id": "phase1",
+      "status": "passed",
+      "tests_run": 6,
+      "passes": 6,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.03924297999992632
+    },
+    {
+      "suite_id": "phase2",
+      "status": "passed",
+      "tests_run": 6,
+      "passes": 6,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0007877409998400253
+    },
+    {
+      "suite_id": "phase3",
+      "status": "passed",
+      "tests_run": 8,
+      "passes": 8,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.257204663000266
+    },
+    {
+      "suite_id": "phase4",
+      "status": "passed",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0026764540002659487
+    },
+    {
+      "suite_id": "phase5",
+      "status": "passed",
+      "tests_run": 13,
+      "passes": 12,
+      "skips": 1,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 1.7926085030003378
+    },
+    {
+      "suite_id": "phase5r",
+      "status": "passed",
+      "tests_run": 14,
+      "passes": 14,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.003071318999900541
+    },
+    {
+      "suite_id": "finviz",
+      "status": "passed",
+      "tests_run": 66,
+      "passes": 66,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 11.77032221599984
+    },
+    {
+      "suite_id": "news",
+      "status": "passed",
+      "tests_run": 139,
+      "passes": 139,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 9.154619269999785
+    },
+    {
+      "suite_id": "research",
+      "status": "passed",
+      "tests_run": 168,
+      "passes": 167,
+      "skips": 1,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 2.7646543570003814
+    },
+    {
+      "suite_id": "phase6",
+      "status": "passed",
+      "tests_run": 7,
+      "passes": 7,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0016975539997474698
+    },
+    {
+      "suite_id": "phase7",
+      "status": "passed",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.002501548000054754
+    },
+    {
+      "suite_id": "platform",
+      "status": "passed",
+      "tests_run": 1614,
+      "passes": 1607,
+      "skips": 7,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 54.60022274699986
+    },
+    {
+      "suite_id": "phase8",
+      "status": "passed",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 13.657178054999804
+    },
+    {
+      "suite_id": "storage",
+      "status": "passed",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.003127199999653385
+    },
+    {
+      "suite_id": "assistant",
+      "status": "passed",
+      "tests_run": 17,
+      "passes": 17,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.867979119000211
+    },
+    {
+      "suite_id": "donor_bridge",
+      "status": "passed",
+      "tests_run": 90,
+      "passes": 82,
+      "skips": 8,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 6.060535979999713
+    },
+    {
+      "suite_id": "donor_patterns",
+      "status": "passed",
+      "tests_run": 14,
+      "passes": 14,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0019152419999954873
+    },
+    {
+      "suite_id": "execution",
+      "status": "passed",
+      "tests_run": 10,
+      "passes": 10,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0021766360000583518
+    },
+    {
+      "suite_id": "order_flow",
+      "status": "passed",
+      "tests_run": 156,
+      "passes": 156,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.021861676000298758
+    },
+    {
+      "suite_id": "contracts",
+      "status": "passed",
+      "tests_run": 46,
+      "passes": 46,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0035670540000865003
+    },
+    {
+      "suite_id": "intelligence",
+      "status": "passed",
+      "tests_run": 2303,
+      "passes": 2276,
+      "skips": 27,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 31.981407891000345
+    },
+    {
+      "suite_id": "opportunity_watch_dismiss_acceptance",
+      "status": "passed",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 7.038211730999592
+    },
+    {
+      "suite_id": "software_fullstack_acceptance",
+      "status": "passed",
+      "tests_run": 79,
+      "passes": 79,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 38.38974140900018
+    },
+    {
+      "suite_id": "cross_lane",
+      "status": "passed",
+      "tests_run": 100,
+      "passes": 100,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.16243999200014514
+    },
+    {
+      "suite_id": "distribution",
+      "status": "passed",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0016872169999260223
+    },
+    {
+      "suite_id": "futures",
+      "status": "passed",
+      "tests_run": 65,
+      "passes": 65,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.13642032999996445
+    },
+    {
+      "suite_id": "gridiq",
+      "status": "passed",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 10.159611544999734
+    },
+    {
+      "suite_id": "integration",
+      "status": "passed",
+      "tests_run": 23,
+      "passes": 20,
+      "skips": 3,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 6.58543876900012
+    },
+    {
+      "suite_id": "options",
+      "status": "passed",
+      "tests_run": 147,
+      "passes": 147,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.030444430999978067
+    },
+    {
+      "suite_id": "formulas",
+      "status": "passed",
+      "tests_run": 30,
+      "passes": 30,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0516330730001755
+    },
+    {
+      "suite_id": "providers",
+      "status": "passed",
+      "tests_run": 512,
+      "passes": 512,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 15.313558662000105
+    },
+    {
+      "suite_id": "runtime",
+      "status": "passed",
+      "tests_run": 22,
+      "passes": 22,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.03755155399994692
+    },
+    {
+      "suite_id": "squeeze_models",
+      "status": "passed",
+      "tests_run": 11,
+      "passes": 11,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.0029949009999654663
+    },
+    {
+      "suite_id": "ui1",
+      "status": "passed",
+      "tests_run": 67,
+      "passes": 67,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 15.93436843299969
+    },
+    {
+      "suite_id": "ui2",
+      "status": "passed",
+      "tests_run": 5,
+      "passes": 5,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.693798144000084
+    },
+    {
+      "suite_id": "mra001",
+      "status": "passed",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.865322198000285
+    },
+    {
+      "suite_id": "mra002",
+      "status": "passed",
+      "tests_run": 3,
+      "passes": 3,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.544488606000414
+    },
+    {
+      "suite_id": "market_context",
+      "status": "passed",
+      "tests_run": 123,
+      "passes": 123,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.1366163040001993
+    },
+    {
+      "suite_id": "participant",
+      "status": "passed",
+      "tests_run": 76,
+      "passes": 76,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.049205067999992025
+    },
+    {
+      "suite_id": "market_data",
+      "status": "passed",
+      "tests_run": 152,
+      "passes": 152,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 4.738908167999853
+    },
+    {
+      "suite_id": "ibkr",
+      "status": "passed",
+      "tests_run": 73,
+      "passes": 73,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.5032847789998414
+    },
+    {
+      "suite_id": "sec_edgar",
+      "status": "passed",
+      "tests_run": 82,
+      "passes": 82,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 1.378551256999799
+    },
+    {
+      "suite_id": "short_intelligence",
+      "status": "passed",
+      "tests_run": 37,
+      "passes": 37,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 1.2670596150001074
+    },
+    {
+      "suite_id": "sec_ftd",
+      "status": "passed",
+      "tests_run": 16,
+      "passes": 16,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.005002072000024782
+    },
+    {
+      "suite_id": "market_trackers",
+      "status": "passed",
+      "tests_run": 129,
+      "passes": 129,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 1.1286512809997475
+    },
+    {
+      "suite_id": "cftc",
+      "status": "passed",
+      "tests_run": 63,
+      "passes": 63,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.01501525000003312
+    },
+    {
+      "suite_id": "fred",
+      "status": "passed",
+      "tests_run": 30,
+      "passes": 30,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.004369566000150371
+    },
+    {
+      "suite_id": "crypto_market",
+      "status": "passed",
+      "tests_run": 26,
+      "passes": 26,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.019224590999783686
+    },
+    {
+      "suite_id": "public_records",
+      "status": "passed",
+      "tests_run": 14,
+      "passes": 14,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.004123598000205675
+    },
+    {
+      "suite_id": "fixed_income",
+      "status": "passed",
+      "tests_run": 82,
+      "passes": 82,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.10978133499975229
+    },
+    {
+      "suite_id": "eia",
+      "status": "passed",
+      "tests_run": 23,
+      "passes": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.005360132000078011
+    },
+    {
+      "suite_id": "weather",
+      "status": "passed",
+      "tests_run": 41,
+      "passes": 41,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.013146576000053756
+    },
+    {
+      "suite_id": "cboe_options",
+      "status": "passed",
+      "tests_run": 57,
+      "passes": 57,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.03765414700001202
+    },
+    {
+      "suite_id": "validation",
+      "status": "passed",
+      "tests_run": 210,
+      "passes": 210,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.077162174000023
+    },
+    {
+      "suite_id": "of01",
+      "status": "passed",
+      "tests_run": 84,
+      "passes": 81,
+      "skips": 3,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.23585603999981686
+    },
+    {
+      "suite_id": "of02",
+      "status": "passed",
+      "tests_run": 33,
+      "passes": 33,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.061044108999794844
+    },
+    {
+      "suite_id": "of03",
+      "status": "passed",
+      "tests_run": 51,
+      "passes": 51,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 1.0900614739998673
+    },
+    {
+      "suite_id": "rt01",
+      "status": "passed",
+      "tests_run": 41,
+      "passes": 41,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 6.316462748000049
+    },
+    {
+      "suite_id": "hot_path_telemetry",
+      "status": "passed",
+      "tests_run": 15,
+      "passes": 15,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.892628240999784
+    },
+    {
+      "suite_id": "latency_instrumentation_v1",
+      "status": "passed",
+      "tests_run": 9,
+      "passes": 9,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 5.543210490999627
+    },
+    {
+      "suite_id": "hot_path_telemetry_artifact",
+      "status": "passed",
+      "tests_run": 2,
+      "passes": 2,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 6.267769287000192
+    },
+    {
+      "suite_id": "xa01",
+      "status": "passed",
+      "tests_run": 72,
+      "passes": 72,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.010391696000169759
+    },
+    {
+      "suite_id": "portfolio",
+      "status": "passed",
+      "tests_run": 161,
+      "passes": 161,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.013952230000086274
+    },
+    {
+      "suite_id": "xa02",
+      "status": "passed",
+      "tests_run": 33,
+      "passes": 33,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.018023630999778106
+    },
+    {
+      "suite_id": "xa03",
+      "status": "passed",
+      "tests_run": 31,
+      "passes": 31,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.02046275400016384
+    },
+    {
+      "suite_id": "xa04",
+      "status": "passed",
+      "tests_run": 34,
+      "passes": 27,
+      "skips": 7,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.07847475599965037
+    },
+    {
+      "suite_id": "xa05",
+      "status": "passed",
+      "tests_run": 15,
+      "passes": 15,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 0.03249998599994797
+    },
+    {
+      "suite_id": "trading_correctness",
+      "status": "passed",
+      "tests_run": 147,
+      "passes": 147,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 6.215135068000109
+    }
+  ]
+}
