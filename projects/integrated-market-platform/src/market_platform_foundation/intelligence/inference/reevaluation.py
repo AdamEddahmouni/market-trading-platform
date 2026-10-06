@@ -8,7 +8,7 @@ from __future__ import annotations
 from enum import StrEnum
 
 from ...market_data.freshness_contract import timestamp
-from .action_decision import build_conditions
+from .action_decision import STOP_BREACH_CONDITION, build_conditions
 from .hashing import input_hash_from_dict
 
 POLICY_ID = 'reevaluation-policy/1.0.0'
@@ -71,7 +71,12 @@ _BOUNDS = dict(
     max_model_calls_per_hour=(0, 360), max_model_calls_per_day=(0, 2000),
 )
 # Becoming unsafe bypasses the dwell; recovering does not.
-SAFETY_REASONS = frozenset({'POSITION_CHANGED', 'PENDING_ORDER_APPEARED', 'QUOTE_LOST', 'AUTHORITY_LOST', 'EXIT_CONDITION_MET'})
+# OCT1-08: a breached stop is deterministic downside control; churn suppression can never hold it back.
+SAFETY_REASONS = frozenset({'POSITION_CHANGED', 'PENDING_ORDER_APPEARED', 'QUOTE_LOST', 'AUTHORITY_LOST', 'EXIT_CONDITION_MET',
+                            STOP_BREACH_CONDITION})
+# Deterministic stop bookkeeping: recorded, but never by itself a reason to ask a model.
+STOP_BOOKKEEPING_REASONS = frozenset({'STOP_INITIALIZED', 'STOP_TIGHTENED', 'STOP_UPDATE_STALE', 'STOP_UPDATE_RESUMED',
+                                      'STOP_EPISODE_CHANGED', 'STOP_STATUS_CHANGED'})
 
 
 def build_policy(overrides=None):
@@ -131,7 +136,11 @@ def material_fingerprint(candidate, context, now):
     conditions = {c['condition_id']: c for c in build_conditions(candidate, context, now)}
     current = candidate['current_market_evidence']
     position = context['position']
+    risk = context.get('risk_control')
+    # Absent while no stop is configured, so existing baselines compare unchanged.
+    stop = dict(stop=[risk['status'], risk['active_stop'], risk['position_epoch_id']]) if risk else {}
     return dict(
+        **stop,
         current=sorted([e['capability'], e.get('source'), e.get('delivery_mode'), e.get('freshness_status'),
                         e.get('decision_admissibility'), bool(e.get('weak_reasons'))] for e in current),
         blocked=sorted({b['capability'] for b in candidate.get('blocked', [])}),
@@ -158,6 +167,18 @@ def material_change(prior, current, policy):
         reasons.append('QUOTE_RESTORED' if current['quote'] == 'MET' else 'QUOTE_LOST')
     if prior['authority'] != current['authority']:
         reasons.append('AUTHORITY_RESTORED' if current['authority'] else 'AUTHORITY_LOST')
+    before, after = prior.get('stop'), current.get('stop')
+    if before != after and after is not None:
+        if after[0] == 'BREACHED':
+            reasons.append(STOP_BREACH_CONDITION)
+        elif before is None or before[2] != after[2]:
+            reasons.append('STOP_EPISODE_CHANGED' if before is not None and before[1] is not None else 'STOP_INITIALIZED')
+        elif before[1] != after[1]:
+            reasons.append('STOP_INITIALIZED' if before[1] is None else 'STOP_TIGHTENED')
+        elif after[0] == 'STALE':
+            reasons.append('STOP_UPDATE_STALE')
+        else:
+            reasons.append('STOP_UPDATE_RESUMED' if before[0] == 'STALE' else 'STOP_STATUS_CHANGED')
     if prior['exit_met'] != current['exit_met']:
         reasons.append('EXIT_CONDITION_MET' if current['exit_met'] else 'EXIT_CONDITION_CLEARED')
     if prior['direction'] != current['direction']:

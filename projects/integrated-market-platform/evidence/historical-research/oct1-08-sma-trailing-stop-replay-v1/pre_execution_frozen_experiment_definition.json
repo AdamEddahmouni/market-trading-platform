@@ -1,0 +1,115 @@
+{
+  "calibration_status": "NOT_CALIBRATED",
+  "conclusion_rule": {
+    "below_minimum": "INSUFFICIENT_EVIDENCE, with the in-sample pattern reported separately as description only",
+    "minimum_instruments_for_a_directional_conclusion": 3,
+    "minimum_sessions_for_a_directional_conclusion": 20,
+    "pattern": "Per alternative on the primary side: SMA downside is BETTER/WORSE when its session-mean MAE is lower/higher in at least 80% of sessions; return likewise on session-mean gross return. BETTER downside with WORSE return -> SMA_REDUCED_DOWNSIDE_WITH_RETURN_TRADEOFF; WORSE downside and not BETTER return -> SMA_UNDERPERFORMED_REFERENCE; otherwise NO_CLEAR_DIFFERENCE.",
+    "superiority": "No token asserts superiority. A directional conclusion needs the minimums above and a new frozen definition.",
+    "vocabulary": [
+      "INSUFFICIENT_EVIDENCE",
+      "NO_CLEAR_DIFFERENCE",
+      "SMA_REDUCED_DOWNSIDE_WITH_RETURN_TRADEOFF",
+      "SMA_UNDERPERFORMED_REFERENCE"
+    ]
+  },
+  "corpus": {
+    "bar_capability": "BAR_OHLCV_1M",
+    "corpus_evidence_authority": "HISTORICAL_DEVELOPMENT",
+    "dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46",
+    "instrument_id": "canonical:EQUITY:XNAS:AAPL",
+    "known_limitations": [
+      "ONE_INSTRUMENT",
+      "FIVE_SESSIONS",
+      "PROVIDER_QFQ_NOT_RECONCILED"
+    ],
+    "path": "evidence/historical-research/imp-integrate-experiment-05-r3-opend-fill-economics-v3/corpus_pin",
+    "provider_id": "moomoo.opend",
+    "session_policy": "US_EQUITY_RTH"
+  },
+  "definitions": {
+    "downside_metrics": [
+      "mae_bps",
+      "max_drawdown_bps",
+      "loss_severity_bps",
+      "bars_after_invalidation"
+    ],
+    "invalidation": "first held bar whose close is beyond the initial stop level",
+    "loss_severity": "mean gross return of episodes that lost money",
+    "premature_exit": "a stop exit whose gross return is below the NO_TRAIL return of the same episode"
+  },
+  "entry_rule": {
+    "basis": "FIXED_SCHEDULE_OUTCOME_BLIND",
+    "entry_reference": "OPEN_OF_THE_BAR_AFTER_THE_SIGNAL_BAR",
+    "first_signal_bar_index": 19,
+    "minimum_bars_after_entry": 30,
+    "primary_side": "LONG",
+    "short_note": "Short episodes test the policy math only; Paper short authority is unchanged.",
+    "sides": [
+      "LONG",
+      "SHORT"
+    ],
+    "signal_spacing_bars": 30,
+    "warmup": "FULL_SMA_WINDOW_WITHIN_THE_SESSION"
+  },
+  "evidence_class": "HISTORICAL_REPLAY",
+  "exclusion_rules": [
+    "INITIAL_STOP_NOT_PROTECTIVE: D <= 0 at entry",
+    "BAR_GAP_IN_WINDOW at the signal bar",
+    "SESSION_TOO_SHORT_FOR_ENTRY"
+  ],
+  "experiment_id": "oct1-08-sma-trailing-stop-replay-v1",
+  "fill_model": {
+    "cost_basis": "existing historical-research cost_slippage_bps default; gross and net reported separately",
+    "cost_bps_per_side": 5.0,
+    "horizon_exit": "LAST_BAR_CLOSE",
+    "id": "stop-exit-bar-conservative/1.0.0",
+    "never": "FILL_AT_STOP_LEVEL_ASSUMED",
+    "primary": "STOP_EXIT_AT_TRIGGER_BAR_WORST_PRICE (bar low for a long exit, bar high for a short exit)",
+    "sensitivity": "ALTERNATE_FILL: worse of stop level and trigger-bar open; reported beside the primary, never replacing it"
+  },
+  "horizon": "CLOSE_OF_THE_LAST_BAR_OF_THE_ENTRY_SESSION",
+  "independence": "Episodes inside one session overlap and are not independent; comparisons are aggregated per session first.",
+  "matched_initial_risk": "D = abs(entry_reference - initial SMA stop); the fixed stop and the raw-price trail start at the same D",
+  "methods": {
+    "FIXED_INITIAL_STOP": "entry_reference offset by D; never moves",
+    "NO_TRAIL": "no stop; exit at the horizon",
+    "RAW_PRICE_TRAIL": "high-water (low-water for short) of completed bar closes since entry, offset by D, ratcheted, effective for later bars only",
+    "SMA_TRAIL": "Policy under test: stop = side-rounded SMA of completed closes, ratcheted, effective for later bars only"
+  },
+  "metrics": [
+    "triggered",
+    "exit_time",
+    "exit_price",
+    "holding_bars",
+    "gross_return_bps",
+    "net_return_bps",
+    "mfe_bps",
+    "mae_bps",
+    "max_drawdown_bps",
+    "initial_risk_bps",
+    "stop_moves",
+    "gap_through_stop",
+    "bars_after_invalidation",
+    "vs_no_trail_bps"
+  ],
+  "no_parameter_search": true,
+  "policy": {
+    "bar_interval": "1m",
+    "config_label": "REFERENCE_TEST_CONFIG",
+    "policy_id": "STP-d5f913fc11923c4d7c133b0f5e452c76",
+    "sma_window_bars": 20,
+    "status": "REFERENCE_TEST_CONFIG: not optimized, calibrated, recommended or claimed superior",
+    "tick_rounding_policy": {
+      "long": "CEIL_TO_TICK",
+      "observation": "HALF_EVEN_TO_MINOR_UNIT",
+      "short": "FLOOR_TO_TICK",
+      "tick_minor": 1
+    }
+  },
+  "purpose": "Implement and evaluate the proposed SMA trailing stop as downside control. Not a search for a best parameter.",
+  "result_status_if_run": "REPLAY_EVALUATED",
+  "schema_version": "sma-stop-evaluation-definition/1.0.0",
+  "status": "FROZEN_BEFORE_RESULTS",
+  "trigger": "LONG: bar.low <= stop; SHORT: bar.high >= stop; only a stop effective at the bar start is eligible"
+}
