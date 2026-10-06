@@ -54,6 +54,13 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path == "/screener/action-decision/handoff" and method_upper == "POST":
         return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history") and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/screener/next-session/draft", "/screener/next-session/lock", "/screener/next-session/observe",
+                "/screener/next-session/evaluate", "/screener/reevaluation/configure", "/screener/reevaluation/start",
+                "/screener/reevaluation/stop", "/screener/reevaluation/run-once") and method_upper == "POST":
+        # Decision cadence only: none of these carries paper.order.submit.
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
     if method_upper == "GET":
         if path in {
             "/context",

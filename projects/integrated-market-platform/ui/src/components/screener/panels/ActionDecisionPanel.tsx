@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { actionHistory, prepareAction, previewAction, runAction, type ActionDecision, type ActionPreview } from "../../../api/screenerAction";
 import { workspacePathForInstrument } from "../../../api/instrumentIdentity";
 import { canUsePaperActions } from "../../mode-session/modeAuthority";
+import NextSessionPanel from "./NextSessionPanel";
 
 function PaperHandoff({ decision, permitted, onError }: { decision: ActionDecision; permitted: boolean; onError: () => void }) {
   const navigate = useNavigate();
@@ -101,11 +102,12 @@ export default function ActionDecisionPanel({ runId, instrumentId }: { runId: st
         {!expired && decision.execution_readiness === "PREVIEW_ALLOWED" && (decision.action_state === "ENTER" || decision.action_state === "EXIT") &&
           <PaperHandoff key={decision.decision_id} decision={decision} permitted={permitted} onError={() => setError(true)} />}
         <p>Evaluation places no order. Workspace requires a fresh risk preview and explicit confirmation.</p>
+        <NextSessionPanel decisionId={decision.decision_id} actionState={decision.action_state} />
       </section>}
       <button type="button" disabled={busy} onClick={() => void request(async (signal) => {
         const value = await actionHistory(instrumentId, signal); if (!signal.aborted && current.current === identity) setHistory(value.decisions);
       })}>Read decision history</button>
-      {history.map((item) => <details key={item.decision_id}><summary>{item.decision_time} · {item.previous_state ?? "Initial"} → {item.action_state}</summary><DecisionRecord decision={item} /></details>)}
+      {history.map((item) => <details key={item.decision_id}><summary>{item.decision_time} · {item.previous_state ?? "Initial"} → {item.action_state}</summary><DecisionRecord decision={item} /><NextSessionPanel decisionId={item.decision_id} actionState={item.action_state} /></details>)}
     </>}
   </section>;
 }

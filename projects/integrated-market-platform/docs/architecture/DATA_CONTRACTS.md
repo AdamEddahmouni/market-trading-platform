@@ -11,6 +11,15 @@ bounded condition IDs, account-scoped history and optional Paper preview
 [SCREENER_ACTION_DECISION.md](SCREENER_ACTION_DECISION.md). Existing candidate,
 Opportunity, Paper draft and preview contracts retain their meanings.
 
+OCT1-07 adds `next-session-decision/1.0.0` (+ `next-session-view/1.0.0`),
+`reevaluation-cycle/1.0.0`, `reevaluation-loop/1.0.0`, `reevaluation-status/1.0.0`,
+`reevaluation-history/1.0.0`, policy `reevaluation-policy/1.0.0` and the
+server-authored `reevaluation-candidate-run/1.0.0`. A next-session snapshot
+references an `action-decision/1.0.0` record rather than copying it; cycle
+receipts reference prior/new decision ids. Fields, lifecycle and bounds are in
+[SCREENER_REEVALUATION.md](SCREENER_REEVALUATION.md). `action-decision/1.0.0`
+is unchanged.
+
 1. **Optional fields** — add as optional with safe defaults; old clients/records remain valid
 2. **Never repurpose** — do not change semantic meaning of existing fields
 3. **Backend is canonical** — frontend Zod schemas mirror backend contracts
