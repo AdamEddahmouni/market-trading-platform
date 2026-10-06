@@ -411,6 +411,32 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json({"schema_version":"action-history/1.0.0", "decisions":action_service(self.store).history(instrument)})
                 return
+            if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history"):
+                # OCT1-07 reads: frozen snapshots, loop liveness and bounded cycle receipts. No model, no mutation.
+                try:
+                    first = lambda key: (query.get(key) or [None])[0]
+                    if path == "/screener/next-session":
+                        from .screener_next_session import next_session_service
+                        service = next_session_service(self.store)
+                        if first("id"):
+                            payload = service.read(first("id"))
+                        elif first("instrument") and len(first("instrument")) <= 120:
+                            payload = {"schema_version": "next-session-history/1.0.0", "snapshots": service.history(first("instrument"))}
+                        else:
+                            raise ValueError("INVALID_NEXT_SESSION_REQUEST")
+                    else:
+                        from .screener_reevaluation import reevaluation_service
+                        service = reevaluation_service(self.store)
+                        if path.endswith("/status"):
+                            payload = service.status(readiness=first("readiness") == "1")
+                        else:
+                            payload = service.history(limit=int(first("limit") or 20), before=float(first("before")) if first("before") else None,
+                                                      session_date=first("session_date"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path == "/screener/ai-screener/preview":
                 # AI Screener preview reconstructs the active scope and estimates cost; it never calls a model.
                 from .screener_ai import read_ai_screener_preview
@@ -1595,6 +1621,30 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(getattr(service, operation)(body))
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("SCREENER_ACTION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/screener/next-session/draft", "/screener/next-session/lock", "/screener/next-session/observe", "/screener/next-session/evaluate"):
+            # OCT1-07: explicit freeze/lock/observe/evaluate. Prices are read server-side; no order path.
+            from .screener_next_session import next_session_service
+            try:
+                self._send_json(getattr(next_session_service(self.store), path.rsplit("/", 1)[1])(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_NEXT_SESSION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/screener/reevaluation/configure", "/screener/reevaluation/start", "/screener/reevaluation/stop", "/screener/reevaluation/run-once"):
+            # OCT1-07: operator-controlled cadence. Nothing here starts on its own or submits anything.
+            from .screener_reevaluation import reevaluation_service
+            try:
+                service = reevaluation_service(self.store)
+                operation = path.rsplit("/", 1)[1]
+                if operation == "configure":
+                    result = service.configure(body)
+                elif body not in ({}, None):
+                    raise ValueError("INVALID_REEVALUATION_REQUEST")
+                else:
+                    result = {"start": service.start, "stop": service.stop, "run-once": service.run_once}[operation]()
+                self._send_json(result)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/screener/ai-screener":
             # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.

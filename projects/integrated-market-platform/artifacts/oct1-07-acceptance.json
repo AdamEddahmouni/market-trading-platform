@@ -1,0 +1,189 @@
+{
+  "task": "OCT1-07",
+  "classification": "SOFTWARE_CONTROLLED",
+  "recorded_at": "2026-10-06T06:28:55.404292+00:00",
+  "base_sha": "e78797fb76f8a478b98a19128e14876c8ae7f759",
+  "branch": "codex/oct1-07-reevaluation",
+  "environment": {
+    "os": "Windows 11",
+    "python": "3.11.15",
+    "runner": "tools/imp.py",
+    "clock": "accelerated controlled clock for scheduler acceptance"
+  },
+  "final_validation": {
+    "fast": {
+      "tests": 23,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 2.934,
+      "timing": "SEVERE_REGRESSION (observe-only)"
+    },
+    "changed": {
+      "tests": 5841,
+      "skipped": 35,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 349.656,
+      "timing": "INSUFFICIENT_DATA (observe-only)"
+    },
+    "full": {
+      "tests": 7928,
+      "skipped": 53,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 423.718,
+      "timing": "SEVERE_REGRESSION (observe-only)"
+    },
+    "focused_backend": {
+      "tests": 183,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 10.947,
+      "oct1_07_tests": 63
+    },
+    "focused_ui": {
+      "files": 3,
+      "tests": 15,
+      "failures": 0
+    },
+    "complete_ui": {
+      "files": 171,
+      "tests": 1296,
+      "failures": 0,
+      "seconds": 316.13,
+      "mode": "single worker (--no-file-parallelism)"
+    },
+    "static": {
+      "lint": "passed",
+      "typecheck": "passed",
+      "format": "passed",
+      "build": "passed",
+      "initial_gzip_kib": 99.71,
+      "budget_kib": 200,
+      "docs_links": "passed (governance markdown)",
+      "monorepo_guard": "passed",
+      "history_ledger": "passed"
+    },
+    "changed_after_docs": {
+      "tests": 5783,
+      "skipped": 35,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 369.549
+    }
+  },
+  "non_green_attempts": [
+    {
+      "gate": "FULL (second run)",
+      "result": "7928 tests / 53 skipped / 0 failures / 1 error in 486.136 s",
+      "selector": "tests/ui1/test_news_event_v1_request_path.py::NewsIngestHttpTests::test_http_post_rejects_oversized_body",
+      "error": "ConnectionAbortedError WinError 10053",
+      "classification": "INTERMITTENT/ENVIRONMENT",
+      "isolation_rerun": "passed",
+      "final_full": "passed"
+    },
+    {
+      "gate": "complete UI, default parallelism, concurrent with FULL",
+      "result": "1292 passed / 4 failed",
+      "files": [
+        "src/App.test.tsx"
+      ],
+      "classification": "INTERMITTENT",
+      "isolation_rerun": "76/76 passed"
+    },
+    {
+      "gate": "complete UI, default parallelism",
+      "result": "1292 passed / 4 failed",
+      "files": [
+        "src/App.test.tsx",
+        "src/components/screener/participants/Participants.test.tsx"
+      ],
+      "classification": "INTERMITTENT",
+      "isolation_rerun": "93/93 passed",
+      "single_worker_complete": "1296/1296 passed"
+    },
+    {
+      "gate": "imp.py test focused with file-path selectors",
+      "result": "worker error: invalid selector",
+      "classification": "ENVIRONMENT",
+      "note": "runner requires path::Class::method; suites rerun with unittest"
+    },
+    {
+      "gate": "FULL (first run)",
+      "result": "7928 tests / 53 skipped / 0 failures / 0 errors in 433.719 s",
+      "note": "source predates two late review fixes; superseded by the final-source FULL"
+    }
+  ],
+  "assertions_or_timeouts_changed_to_pass": false,
+  "browser_acceptance": {
+    "receipt": "artifacts/oct1-07-browser.json",
+    "steps_passed": 28,
+    "required_steps": 27,
+    "metrics": {
+      "model_calls": 6,
+      "reductions": 2,
+      "evidence_reads": 14,
+      "cycles": 14,
+      "decisions": 7,
+      "news_provider_refreshes": 0
+    },
+    "paper_submissions": 0,
+    "live_submissions": 0
+  },
+  "runtime_provider_acceptance": {
+    "fixture_runtime": "EXECUTED",
+    "real_thread_start_stop": "EXECUTED (runtime evidence only)",
+    "real_60s_loop": "NOT_EXECUTED",
+    "local_model": "NOT_EXECUTED",
+    "hosted_model": "NOT_EXECUTED",
+    "live_provider_cadence": "NOT_EXECUTED",
+    "one_minute_realtime_validated": false
+  },
+  "performance": "artifacts/oct1-07-performance.json",
+  "review": {
+    "mode": "read-only diff review",
+    "findings_fixed": [
+      "worker bound to leased loop id; configure refused while a worker is alive",
+      "stop refused from a non-owning process",
+      "worker storage failure surfaces as STALLED with last_error",
+      "provider budget refusal not counted as a model call"
+    ]
+  },
+  "source_snapshot": {
+    "algorithm": "sha256 over LF-normalized bytes",
+    "files": {
+      "artifacts/oct1-07-browser.json": "33e4a8fcc0d05c8f651fc0d659945d39dfaf786be0da539c30fb258d02fb8f27",
+      "artifacts/oct1-07-performance.json": "5d3cbfbb9c57b0d472a889ce9d9650ecac1b00e6e5301216825c2d73557366a9",
+      "docs/README.md": "d6a86a74ca4aa693acd57349673b4059a49de72781fba14619e63b46d110523a",
+      "docs/architecture/DATA_CONTRACTS.md": "3ea645f7f695a1fc327155fc1d29a47328f5ee888e0ee97a5f1b30700850eaaa",
+      "docs/architecture/PAPER_FORWARD_TESTING_BRIDGE.md": "d1691f271cae4baedb257fc0b9a8e9897c0d0d108f818f0d96437fdd2533db49",
+      "docs/architecture/SCREENER_ACTION_DECISION.md": "2e2def3f2d3da679fb67ac9ca69797352496a6e4ce3e2f38a321e29955b567e6",
+      "docs/architecture/SCREENER_REEVALUATION.md": "74bd9fd8168d314845f0ab90d403c71f82b2b6568a77bef65928c2e1c4153ee4",
+      "docs/engineering/WORK_LOG.md": "77286f9c2441dc337311359a7307d77e3dc81cf7a04a16f9f61e172e4a0e8df3",
+      "docs/platform/PROGRAM_STATUS.md": "93e369d2f08ba24fa46b2716a91a5e1f45c6dc10bee3be5fe75696a4b98873af",
+      "docs/superpowers/plans/2026-10-06-oct1-07-reevaluation.md": "6dc9f5fc409b7f2bd9ecb2e367c42d98f192a52091a03247f76e988592e7d545",
+      "src/market_platform_foundation/intelligence/inference/reevaluation.py": "3d169ff3c82cedfc265e0f64fc6c73826ad13628ea53969ead9535d5ccfe53c5",
+      "src/market_platform_foundation/local_state/reevaluation.py": "e3ec5c05c50a16d4aa72bfdf79b3460d799091f6649c245049af9bddbe7340ae",
+      "src/market_platform_foundation/platform/security/route_policy.py": "7c5e984c17da56f5ea7672394bd216436b7174030838b1e661d107a8f549412f",
+      "src/market_platform_foundation/ui_api/screener_action.py": "a34c89f39497d5baee425b5ebd579a86e20426ed2ddbae1551fd5fb775951894",
+      "src/market_platform_foundation/ui_api/screener_ai.py": "2318a0728081bf2a84ed52f67ead2f94dd1b8dfc0b6406418821147dad5058c7",
+      "src/market_platform_foundation/ui_api/screener_next_session.py": "ceade2d31dd9f9130b9641a95cce8b01c2b3c8d576b0382cf4ffd1f4dbd3a2f7",
+      "src/market_platform_foundation/ui_api/screener_reevaluation.py": "53b904aad792c9700d66df367e4a645bdf84bc4cf11013c59ef7cf9a246c0b1a",
+      "src/market_platform_foundation/ui_api/server.py": "532907882af409e790a4b9a2bb08a3f99daef1ee12b25888b4eec5b0c2053073",
+      "tests/acceptance/harness_reevaluation.py": "fcc2970c10981897280e5567e1a14efa47279dce3f42021e54f15113e3ac8b3c",
+      "tests/intelligence/test_next_session.py": "8e6fa45edd097edb73153e518f73089e3c37d47a59aa3bb0b022782e31a9b7da",
+      "tests/intelligence/test_reevaluation.py": "3d613edcdc2ff5b1cb410bd2a5d23764763a7f819cdb9d769993495dd4c7afca",
+      "tools/ui1/oct1_07_browser.cjs": "220aa81049c39957cbe312177e6d8d573f3dab12632b6d7086aec4301b7b05be",
+      "ui/src/api/screenerReevaluation.ts": "391af5d92e8cd1caff4eb3642b6e003c8e17d5f8a1aa12fcdcc3c29a86c2c3ed",
+      "ui/src/components/screener/panels/ActionDecisionPanel.tsx": "9170c8fbf14e98f39fdc4db9012fcfd57130ee97d644380c149931702c108b7a",
+      "ui/src/components/screener/panels/AiScreenerPanel.tsx": "8c732c7ce80fac38ede98d7b94fcb8c534795631aaed76acd1672e2ebf61115e",
+      "ui/src/components/screener/panels/NextSessionPanel.test.tsx": "52b43cda734e9f747acb5efd02be7011c251c77abca1f677b07565231b2ba346",
+      "ui/src/components/screener/panels/NextSessionPanel.tsx": "72c0cb12d983458bca04689e0be11842a0d7f96d52bb43fb547d39068951d224",
+      "ui/src/components/screener/panels/ReevaluationPanel.test.tsx": "af65cd2e91d9b9eb54b288d46fe64a8a3b4768a77fff719a3746a10c344d6f64",
+      "ui/src/components/screener/panels/ReevaluationPanel.tsx": "f0066d6176fc8af912bf829eaea37044448b7a54f1facf6b2143d2e9de014ccb",
+      "ui/src/components/screener/screener.css": "56ad0346d5f93194b7dddcf4f0477f05854614b7f4ef22a650ef1e46d6050765"
+    }
+  },
+  "scope_stop": "OCT1-08, OCT1-09, OCT1-10 and OCT1-11 were not started."
+}

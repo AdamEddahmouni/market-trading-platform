@@ -57,6 +57,12 @@ class ScreenerActionService:
                     account_id=ledger.paper_account_id, session_id=ledger.session_id,
                     source='PAPER_LEDGER', pending=pending)
 
+    def _authority(self):
+        ledger = self.store.paper_ledger
+        from ..operating_modes import paper_execution_env_enabled, PAPER_EXECUTION_AUTHORITIES
+        return bool(paper_execution_env_enabled() and ledger.execution_authority in PAPER_EXECUTION_AUTHORITIES
+                    and ledger.execution_mode=='INTERNAL_SIMULATION' and not getattr(self.store,'execution_deferred',False))
+
     def _opportunity(self, candidate, cutoff, requested=None):
         """Require shared immutable evidence lineage AND exact instrument identity.
 
@@ -94,10 +100,8 @@ class ScreenerActionService:
         now = _iso(self.clock())
         candidate = snapshot_evidence(original,now)
         ledger = self.store.paper_ledger
-        from ..operating_modes import paper_execution_env_enabled, PAPER_EXECUTION_AUTHORITIES
         from ..paper.preview import portfolio_state_revision
-        authority = (paper_execution_env_enabled() and ledger.execution_authority in PAPER_EXECUTION_AUTHORITIES
-                     and ledger.execution_mode=='INTERNAL_SIMULATION' and not getattr(self.store,'execution_deferred',False))
+        authority = self._authority()
         context = dict(position=self._position(body['instrument_id'],now), candidate_valid_until=run['valid_until'],
                        opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id')),
                        authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
@@ -131,7 +135,9 @@ class ScreenerActionService:
                     provider_id=getattr(b['provider'],'provider_id',None),model_id=getattr(b['provider'],'model_id',None),
                     prompt_id=PROMPT_ID,input_hash=b['digest'],packet_bytes=len(b['encoded'].encode('utf-8')))
 
-    def run(self,body):
+    def run(self,body,*,revalidation_reason=None):
+        # OCT1-07: a deterministic fail-safe reason records REVALIDATION_REQUIRED
+        # without spending a model call. It can only ever block, never permit.
         # Serial single-owner proposal inference and append: duplicate requests
         # cannot bill concurrently or fork predecessor history.
         with self.lock:
@@ -144,6 +150,7 @@ class ScreenerActionService:
                 return dict(latest[0],cache='HIT')
             proposal, error, response = None,None,None
             if timestamp(b['run']['valid_until'])<=timestamp(now): error='CANDIDATE_EXPIRED'
+            elif revalidation_reason: error=str(revalidation_reason)[:64]
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
                 schema = output_schema(b['candidate'],b['conditions'])

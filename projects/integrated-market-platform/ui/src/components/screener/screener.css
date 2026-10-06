@@ -195,3 +195,7 @@
 
 .action-decision { border-top: 1px solid var(--border-color, #444); margin-block: 1rem; padding-block: .75rem; overflow-wrap: anywhere; }
 .action-decision code { white-space: pre-wrap; word-break: break-word; }
+.next-session, .reevaluation { border-top: 1px solid var(--border-color, #444); margin-block: .75rem; padding-block: .5rem; overflow-wrap: anywhere; }
+.reevaluation table { border-collapse: collapse; width: 100%; font-size: 11px; }
+.reevaluation th, .reevaluation td { border: 1px solid var(--border-color, #444); padding: 2px 6px; text-align: left; }
+.reevaluation caption { text-align: left; padding-block: 4px; }

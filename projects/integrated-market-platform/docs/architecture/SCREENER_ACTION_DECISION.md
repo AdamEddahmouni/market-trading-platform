@@ -3,6 +3,14 @@
 Status: current software contract. Acceptance is SOFTWARE_CONTROLLED; this layer
 does not establish empirical edge or execution authority.
 
+OCT1-07 consumes this contract without changing its states, gate, schema or
+handoff: see [next-session snapshots and reevaluation](SCREENER_REEVALUATION.md).
+Two additive hooks exist for it: `run(..., revalidation_reason=...)` records a
+deterministic `REVALIDATION_REQUIRED` without model inference (it can only block,
+never permit), and `_authority()` exposes the existing Paper authority predicate.
+The "no scheduler" statement below describes this service; recurring evaluation
+is owned by the separate, operator-started OCT1-07 worker.
+
 ## Ownership and flow
 
 An explicit **Evaluate Decision** request reads a persisted OCT1-04/05 selected

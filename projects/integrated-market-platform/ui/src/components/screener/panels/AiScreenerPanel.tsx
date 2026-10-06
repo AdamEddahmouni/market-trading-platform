@@ -1,4 +1,5 @@
 import ActionDecisionPanel from "./ActionDecisionPanel";
+import ReevaluationPanel from "./ReevaluationPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerResult, AiScreenerScope } from "../../../api/screenerAi";
@@ -100,6 +101,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
     {status === "AVAILABLE" && <button type="button" className="screener-primary ai-screener-run" onClick={run} disabled={running || preview.isPending || preview.isError || screenerScope.settled === false}>
       {running ? "Running AI Screener…" : "Run AI Screener"}
     </button>}
+    {screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
     {result?.key === scopeKey && <section className="ai-screener-result" aria-label="AI Screener result">
       <p className="ai-screener-meta">Selected {result.value.candidates.length} of {result.value.intake_count} intake candidates · {result.value.simulated ? "SOFTWARE_CONTROLLED fixture" : result.value.runtime} · valid until {result.value.valid_until}</p>
       <p className="ai-screener-meta">{result.value.state} · {result.value.provider_id} · {result.value.model_id} · prompt {result.value.prompt_id} v{result.value.prompt_version} · cutoff {result.value.decision_cutoff} · {result.value.cache === "HIT" ? "cache hit" : `${result.value.latency_ms ?? "—"} ms`}</p>

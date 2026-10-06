@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-06 — OCT1-07 next-session snapshots and governed reevaluation
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-07 report/PR/task ledger |
+| **Area** | intelligence, local-state, ui-api, security route policy, Screener UI, docs |
+| **Summary** | Freeze an OCT1-06 action decision for the next US market session (calendar-derived target, frozen evaluation policy, lock immutability, append-only observations, signal/execution outcome split). Operator-started reevaluation loop: one core cycle shared by Run Once and the worker, material-change gate before any model call, existing positions first, bounded candidate refresh, duplicate-entry and churn suppression with safety precedence, hard model-call caps, requested vs effective cadence with per-capability clocks, single-owner lease, liveness, and `NOT_OBSERVED` gaps with no backfill. No order, preview, handoff or submit path. |
+| **Key files** | `intelligence/inference/reevaluation.py`, `local_state/reevaluation.py`, `ui_api/screener_next_session.py`, `ui_api/screener_reevaluation.py`, `ui_api/server.py`, `platform/security/route_policy.py`; UI `api/screenerReevaluation.ts`, `NextSessionPanel.tsx`, `ReevaluationPanel.tsx`; additive hooks in `screener_action.py` and `screener_ai.py` |
+| **Validation** | FAST 23/23; CHANGED 5,841 tests / 35 skipped / 0 failures / 0 errors (349.656 s); FULL 7,928 / 53 skipped / 0 / 0 (423.718 s); focused backend 183/183 (63 new); complete single-worker UI 1,296/1,296 (171 files); lint, typecheck, format, build and bundle budget, docs links, monorepo and history guards passed; controlled Chromium acceptance 27/27 steps. Intermittent non-green attempts (one `WinError 10053` HTTP test, parallel-run App/Participants UI tests) passed in isolation and are retained in the report. Timing classifications are observe-only and unchanged in kind. |
+| **Related** | [OCT1-07 report](../superpowers/plans/2026-10-06-oct1-07-reevaluation.md), [reevaluation contract](../architecture/SCREENER_REEVALUATION.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [forward-test bridge](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
+| **Notes** | SOFTWARE_CONTROLLED on an accelerated controlled clock. Real 60-second loop, local/hosted model runtime and live provider cadence were `NOT_EXECUTED`; one-minute real-time behaviour is not claimed. Calendar covers 2025–2026 without early closes; US equities/ETFs only. No strategy, accuracy or profitability claim. OCT1-08, OCT1-09, OCT1-10 and OCT1-11 were not started. |
+
+---
+
 ## 2026-10-05 — OCT1-06 explicit action decisions
 
 | Field | Value |

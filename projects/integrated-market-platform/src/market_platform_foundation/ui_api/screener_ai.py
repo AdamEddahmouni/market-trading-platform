@@ -146,7 +146,9 @@ class ScreenerAiService:
         return {"universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
                 "descending": descending, "filters": copy.deepcopy(filters), "result_set": result_set}
 
-    def _packet(self, body: dict[str, Any], *, refresh_news: bool = False) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
+    def _packet(self, body: dict[str, Any], *, refresh_news: bool = False, include_flow: bool | None = None) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
+        # OCT1-07 reads already-owned flow state without refreshing shared News providers.
+        include_flow = refresh_news if include_flow is None else include_flow
         query = self._query(body)
         page = self._reader.read(universe=query["universe"], search=query["search"], sort=query["sort"],
                                  descending=query["descending"], offset=0, limit=MAX_INTAKE,
@@ -162,7 +164,7 @@ class ScreenerAiService:
                      universe_as_of=page.get("universe_as_of"), screener_as_of=page.get("screener_as_of"),
                      view=query["view"], screen=query["screen"])
         candidates = [build_candidate(row.get("instrument", {}), observations_for_row(row, now=now) +
-                      (flow_observation(row, query['universe'], now=now) if refresh_news else []), now=now)
+                      (flow_observation(row, query['universe'], now=now) if include_flow else []), now=now)
                       for row in rows]
         from .screener_news_evidence import attach_news, fit_news
 
@@ -195,8 +197,8 @@ class ScreenerAiService:
                 "news_coverage": [{"instrument_id": c['instrument']['instrument_id'], **c.get('news', {})} for c in candidates],
                 "decision_cutoff": now, "result_set": page_meta["result_set"]}
 
-    def run(self, body: dict[str, Any]) -> dict[str, Any]:
-        scope, candidates, now, page_meta = self._packet(body, refresh_news=True)
+    def run(self, body: dict[str, Any], *, refresh_news: bool = True) -> dict[str, Any]:
+        scope, candidates, now, page_meta = self._packet(body, refresh_news=refresh_news, include_flow=True)
         reducer = self._provider_reducer()
         result = reducer.reduce(scope, candidates, now)
         from ..local_state.action_decisions import action_repository
