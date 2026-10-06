@@ -186,6 +186,16 @@ or unauthorized inputs stop before downstream Paper mutation.
 - Order ticket embedded; `showLaneBanner=false` in cockpit
 - Observability layer (`WorkspaceObservability`) unchanged below
 
+#### Risk control panel (OCT1-08)
+
+The cockpit shows the [SMA trailing-stop monitor](PAPER_SMA_TRAILING_STOP.md)
+for the instrument's Paper position: status, direction in words, policy,
+SMA, candidate, active and previous stop, distance, update time and
+monitoring liveness. On a breach it shows the server EXIT decision and
+`Paper close: NOT SUBMITTED`; `Prepare Paper Exit` is the existing action
+handoff and only fills the ticket with the current ledger quantity. Preview and
+submit stay in the ticket.
+
 ### 4. Preview
 
 - Server validates draft against current state

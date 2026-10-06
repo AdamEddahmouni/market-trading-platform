@@ -411,6 +411,30 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json({"schema_version":"action-history/1.0.0", "decisions":action_service(self.store).history(instrument)})
                 return
+            if path in ("/paper/risk-control/sma-stop", "/paper/risk-control/sma-stop/history", "/paper/risk-control/sma-stop/config",
+                        "/paper/risk-control/sma-stop/evaluation"):
+                # OCT1-08 reads: persisted stop state, bounded stop events, policy and the replay receipt. No mutation.
+                try:
+                    first = lambda key: (query.get(key) or [None])[0]
+                    operation = path.rsplit("/", 1)[1]
+                    if operation == "evaluation":
+                        from ..research.sma_stop_evaluation import read_receipt
+                        payload = read_receipt()
+                    else:
+                        from .paper_risk_control import risk_control_service
+                        service = risk_control_service(self.store)
+                        if operation == "config":
+                            payload = service.config_view()
+                        elif operation == "history":
+                            payload = service.history(first("instrument"), limit=int(first("limit") or 20),
+                                                      before=int(first("before")) if first("before") else None)
+                        else:
+                            payload = service.status(first("instrument"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history"):
                 # OCT1-07 reads: frozen snapshots, loop liveness and bounded cycle receipts. No model, no mutation.
                 try:
@@ -1629,6 +1653,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(getattr(next_session_service(self.store), path.rsplit("/", 1)[1])(body))
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("SCREENER_NEXT_SESSION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/paper/risk-control/sma-stop/configure", "/paper/risk-control/sma-stop/evaluate"):
+            # OCT1-08: bounded stop policy and Evaluate Stop Now. A stop monitor only: no order, preview or submit.
+            from .paper_risk_control import risk_control_service
+            try:
+                service = risk_control_service(self.store)
+                self._send_json(service.configure(body) if path.endswith("/configure") else service.evaluate_now(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path in ("/screener/reevaluation/configure", "/screener/reevaluation/start", "/screener/reevaluation/stop", "/screener/reevaluation/run-once"):
             # OCT1-07: operator-controlled cadence. Nothing here starts on its own or submits anything.

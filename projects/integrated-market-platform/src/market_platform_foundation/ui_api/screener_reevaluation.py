@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 from ..intelligence.inference.action_decision import POLICY_ID as ACTION_POLICY_ID
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.reevaluation import (
-    CYCLE_SCHEMA, MAX_RECEIPT_BYTES, MAX_TRANSITIONS, POLICY_ID, CycleStatus, ReevaluationTrigger,
+    CYCLE_SCHEMA, MAX_RECEIPT_BYTES, MAX_TRANSITIONS, POLICY_ID, STOP_BOOKKEEPING_REASONS, CycleStatus, ReevaluationTrigger,
     TransitionClass, build_policy, cadence_readiness, effective_cadence, loop_identity, material_change,
     material_fingerprint, missed_slots, provider_states, reevaluation_pick, slot_at_or_after,
     stability_decision, worst_case_calls,
@@ -24,6 +24,7 @@ from ..intelligence.inference.reevaluation import (
 from ..local_state.reevaluation import reevaluation_repository
 from ..market_data.freshness_contract import timestamp
 from ..market_sessions import ET, us_equity_session_label
+from .paper_risk_control import quote_from_candidate
 
 LOOP_SCHEMA = 'reevaluation-loop/1.0.0'
 STATUS_SCHEMA = 'reevaluation-status/1.0.0'
@@ -76,6 +77,14 @@ class ReevaluationService:
 
     def _account(self):
         return self.store.paper_ledger.paper_account_id
+
+    @property
+    def stops(self):
+        """OCT1-08 stop monitor: the same instance the action service reads its risk facts from."""
+        if self.actions.risk_control is None:
+            from .paper_risk_control import risk_control_service
+            self.actions.risk_control = risk_control_service(self.store)
+        return self.actions.risk_control
 
     def _loop(self):
         loop = self.repository.latest_loop(self._account())
@@ -318,9 +327,13 @@ class ReevaluationService:
         iid = candidate['instrument']['instrument_id']
         opportunity = self.actions._opportunity(candidate, int(timestamp(now).timestamp() * 1e9))
         ledger = self.store.paper_ledger
-        return dict(position=self.actions._position(iid, now), candidate_valid_until=None,
-                    opportunity_id=(opportunity or {}).get('opportunity_id'), authority=self.actions._authority(),
-                    policy_id=ACTION_POLICY_ID + ':' + input_hash_from_dict(ledger.policy)[:16])
+        context = dict(position=self.actions._position(iid, now), candidate_valid_until=None,
+                       opportunity_id=(opportunity or {}).get('opportunity_id'), authority=self.actions._authority(),
+                       policy_id=ACTION_POLICY_ID + ':' + input_hash_from_dict(ledger.policy)[:16])
+        risk = self.actions._risk_facts(iid)
+        if risk:
+            context['risk_control'] = risk
+        return context
 
     def _cycle(self, loop, trigger, scheduled, started):
         policy, scope, actions = loop['policy'], loop['scope'], self.actions
@@ -345,16 +358,27 @@ class ReevaluationService:
                                 status=CycleStatus.NO_MATERIAL_CHANGE, evidence_cutoff=now)
         counters, transitions, reasons = receipt['counters'], receipt['transitions'], receipt['reason_codes']
         consumed = consumed_opportunities(ledger)
+        stops, scale = self.stops, int(ledger.policy.get('price_scale', 100))
+        # Stops whose position is no longer held are closed here; they never carry into a later position.
+        for iid in stops.open_instruments():
+            if iid not in held:
+                stops.evaluate(iid)
         blocked_class = TransitionClass.BUDGET_BLOCKED if engine['reason'] == 'SYNTHESIS_DAILY_BUDGET_EXHAUSTED' or (usable and window_left <= 0) else TransitionClass.MODEL_UNAVAILABLE
 
         def note(instrument, classification, codes, **extra):
-            transitions.append(dict(instrument_id=instrument, classification=str(classification), reason_codes=list(dict.fromkeys(codes)),
-                                    prior_decision_id=None, new_decision_id=None, prior_state=None, new_state=None,
-                                    position_state=None, model_call=False, safety=False, **extra))
+            transitions.append(dict(dict(instrument_id=instrument, classification=str(classification), reason_codes=list(dict.fromkeys(codes)),
+                                         prior_decision_id=None, new_decision_id=None, prior_state=None, new_state=None,
+                                         position_state=None, model_call=False, safety=False), **extra))
 
         def plan(iid):
             candidate = by_id.get(iid)
             history = actions.history(iid)
+            if iid in held:
+                # OCT1-08: position -> completed bars -> stop -> breach check, before any model is considered.
+                try:
+                    stops.evaluate(iid, quote=quote_from_candidate(candidate, now, scale) if candidate else None)
+                except ValueError as exc:
+                    reasons.append('STOP_EVALUATION_FAILED_' + (str(exc) if _CODE.fullmatch(str(exc)) else 'ERROR')[:40])
             if candidate is None:
                 return dict(iid=iid, candidate=None, history=history, reasons=[], fingerprint=None)
             context = self._context(candidate, now)
@@ -369,10 +393,14 @@ class ReevaluationService:
             iid, history, changes, fingerprint = item['iid'], item['history'], item['reasons'], item['fingerprint']
             prior = history[0] if history else None
             if item['candidate'] is None:
-                if loop['tracked'].get(iid) != 'EVIDENCE_UNAVAILABLE':
+                breached = (actions._risk_facts(iid) or {}).get('status') == 'BREACHED'
+                marker = 'EVIDENCE_UNAVAILABLE_STOP_BREACHED' if breached else 'EVIDENCE_UNAVAILABLE'
+                if loop['tracked'].get(iid) != marker:
                     state['material'] += 1
-                    note(iid, TransitionClass.REVALIDATION_REQUIRED, ['HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE'])
-                    loop['tracked'][iid] = 'EVIDENCE_UNAVAILABLE'
+                    # The breach is recorded on the stop itself; a decision still needs admissible evidence.
+                    note(iid, TransitionClass.REVALIDATION_REQUIRED,
+                         ['HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE', *(['SMA_TRAILING_STOP_BREACHED'] if breached else [])], safety=breached)
+                    loop['tracked'][iid] = marker
                 return
             if not changes:
                 state['unchanged'] += 1; counters['model_calls_avoided'] += 1
@@ -381,6 +409,25 @@ class ReevaluationService:
             position = item['context']['position']
             base = dict(prior_decision_id=prior['decision_id'] if prior else None, prior_state=prior['action_state'] if prior else None,
                         position_state=position['state'])
+            if set(changes) <= STOP_BOOKKEEPING_REASONS:
+                # A routine stop update is deterministic state, not a question for a model.
+                counters['model_calls_avoided'] += 1
+                transitions.append(dict(instrument_id=iid, classification=str(TransitionClass.MATERIAL_EVIDENCE_CHANGED),
+                                        reason_codes=[*changes, 'DETERMINISTIC_STOP_UPDATE'], new_decision_id=None, new_state=None,
+                                        model_call=False, safety=False, **base))
+                loop['tracked'][iid] = fingerprint
+                return
+            # A breached stop is a server risk exit: no forced revalidation, no model budget, no model veto.
+            server_exit = (fingerprint.get('stop') or [None])[0] == 'BREACHED'
+            recorded = (prior or {}).get('server_exit') or {}
+            if server_exit and recorded.get('stop_state_id') == item['context']['risk_control']['stop_state_id']                     and prior['position']['quantity'] == position['quantity'] and timestamp(prior['valid_until']) > timestamp(now):
+                # The same breach on the same holding already has its current EXIT record: do not fork a second one.
+                counters['duplicate_suppressions'] += 1; counters['model_calls_avoided'] += 1
+                transitions.append(dict(instrument_id=iid, classification=str(TransitionClass.DUPLICATE_SUPPRESSED),
+                                        reason_codes=[*changes, 'STOP_EXIT_ALREADY_RECORDED'], new_decision_id=None, new_state=None,
+                                        model_call=False, safety=True, **base))
+                loop['tracked'][iid] = fingerprint
+                return
             changed_at = next((d['decision_time'] for d in history if d['action_state'] != d['previous_state']), None)
             committed = prior is not None and prior['action_state'] in _COMMITTED
             stability = stability_decision(changes, now=now, last_state_change=changed_at if committed else None, policy=policy)
@@ -391,7 +438,9 @@ class ReevaluationService:
                                         model_call=False, safety=False, dwell_remaining_seconds=stability['dwell_remaining_seconds'], **base))
                 return
             forced = None
-            if position['pending']:
+            if server_exit:
+                pass
+            elif position['pending']:
                 forced = 'PENDING_ORDER_REVALIDATION'
             elif fingerprint['quote'] != 'MET':
                 forced = 'QUOTE_STALE_OR_UNAVAILABLE'
@@ -411,7 +460,7 @@ class ReevaluationService:
                                             model_call=False, safety=False, **base))
                     loop['tracked'][iid] = fingerprint
                     return
-            if forced is None:
+            if forced is None and not server_exit:
                 if not usable or (window_left <= 0):
                     transitions.append(dict(instrument_id=iid, classification=str(blocked_class), reason_codes=[*changes, engine['reason'] or 'MODEL_CALL_CAP_REACHED'],
                                             new_decision_id=None, new_state=None, model_call=False, safety=stability['safety'], **base))

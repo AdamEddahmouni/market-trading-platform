@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-06 — OCT1-08 SMA trailing-stop risk control and replay evaluation
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-08 report/PR/task ledger |
+| **Area** | risk, local-state, ui-api, intelligence action/reevaluation, research, security route policy, Paper Workspace UI, docs |
+| **Summary** | Deterministic server-owned SMA trailing-stop monitor for open Paper positions: versioned policy, per-position-episode state, exact integer SMA on completed bars, direction-aware rounding, monotonic trailing enforced in policy and storage, no same-bar look-ahead, warm-up/stale/gap states. A breach is a server risk condition that yields EXIT without a model call, bypasses the OCT1-07 dwell and model gates, and appends an immutable decision and trace; the model can neither select nor veto it. No native stop order and no automatic submit: exit goes through the existing explicit Paper handoff with ledger quantity. Frozen point-in-time replay comparison against raw-price trail, fixed initial stop and no-trail with matched initial risk. |
+| **Key files** | `risk/sma_trailing_stop.py`, `local_state/sma_trailing_stop.py`, `ui_api/paper_risk_control.py`, `research/sma_stop_evaluation.py`, `tools/research/run_oct1_08_sma_stop_evaluation.py`; additive changes in `intelligence/inference/action_decision.py`, `intelligence/inference/reevaluation.py`, `ui_api/screener_action.py`, `ui_api/screener_reevaluation.py`, `ui_api/server.py`, `platform/security/route_policy.py`; UI `api/paperRiskControl.ts`, `PaperTrailingStopPanel.tsx`, `buildPaperTrailingStopModel.ts`, `SmaStopEvaluationTable.tsx`, `ActionDecisionPanel.tsx`; `evidence/historical-research/oct1-08-sma-trailing-stop-replay-v1/` |
+| **Validation** | FAST 23/23; CHANGED 3,580 tests / 31 skipped / 0 failures / 0 errors (275.157 s); FULL 8,001 / 53 skipped / 0 / 0 (414.533 s); focused backend 163/163 (73 new); complete UI 1,313/1,313 (173 files); lint, typecheck, format, build and bundle budget (99.73 KiB initial), docs links, monorepo and history guards passed; controlled Chromium acceptance 27/27 steps. Timing classifications are observe-only and unchanged in kind. |
+| **Related** | [OCT1-08 report](../superpowers/plans/2026-10-06-oct1-08-sma-trailing-stop.md), [stop contract](../architecture/PAPER_SMA_TRAILING_STOP.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [reevaluation contract](../architecture/SCREENER_REEVALUATION.md) |
+| **Notes** | Replay result `INSUFFICIENT_EVIDENCE` (one instrument, five sessions, 59 evaluable episodes): stops cut adverse excursion and drawdown against holding to the close and also cut return; no superiority claim; `NOT_CALIBRATED`. Prospective Paper observation, live provider cadence and a real one-minute loop were `NOT_EXECUTED`. The stop is observed only while the loop runs or on request. OCT1-09, OCT1-10 and OCT1-11 were not started. |
+
+---
+
 ## 2026-10-06 — OCT1-07 next-session snapshots and governed reevaluation
 
 | Field | Value |

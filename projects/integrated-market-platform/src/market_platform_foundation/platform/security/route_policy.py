@@ -61,6 +61,12 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
                 "/screener/reevaluation/stop", "/screener/reevaluation/run-once") and method_upper == "POST":
         # Decision cadence only: none of these carries paper.order.submit.
         return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/paper/risk-control/sma-stop", "/paper/risk-control/sma-stop/history", "/paper/risk-control/sma-stop/config",
+                "/paper/risk-control/sma-stop/evaluation") and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/paper/risk-control/sma-stop/configure", "/paper/risk-control/sma-stop/evaluate") and method_upper == "POST":
+        # Stop monitor only: neither route carries paper.order.submit.
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
     if method_upper == "GET":
         if path in {
             "/context",

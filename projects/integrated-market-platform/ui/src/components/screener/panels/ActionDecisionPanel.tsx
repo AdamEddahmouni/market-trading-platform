@@ -31,7 +31,8 @@ function DecisionRecord({ decision }: { decision: ActionDecision }) {
     {decision.reference_quote && <p>Decision reference price: {decision.reference_quote.source_value ?? "Unavailable"} · as of {decision.reference_quote.as_of ?? "Unavailable"}. Paper preview price and simulated fill are recorded separately.</p>}
     {(["entry_plan", "hold_plan", "exit_plan"] as const).map((plan) => <section key={plan} aria-label={plan.replace(/_/g, " ")}>
       <h5>{plan.replace(/_/g, " ")}</h5>
-      {decision[plan].length ? decision[plan].map((condition) => <p key={condition.condition_id}>{condition.condition_id} · {condition.status} · source {condition.source} · valid until {condition.valid_until}</p>) : <p>Unavailable / not applicable</p>}
+      {decision[plan].length ? decision[plan].map((condition) => <p key={condition.condition_id}>{condition.condition_id} · {condition.status} · source {condition.source} · valid until {condition.valid_until}
+        {condition.source === "SERVER_RISK_CONTROL" ? ` · stop ${condition.source_value ?? "Unavailable"} · observed ${condition.trigger_price ?? "Unavailable"} at ${condition.as_of ?? "Unavailable"} · policy ${condition.policy_id ?? "Unavailable"}` : ""}</p>) : <p>Unavailable / not applicable</p>}
     </section>)}
     <p>Execution readiness: {decision.execution_readiness} · Risk: {decision.risk_decision_ref ? JSON.stringify(decision.risk_decision_ref) : "NOT_PREVIEWED"}</p>
     <p>Blockers: {decision.blocker_codes.join(", ") || "None"}</p>
@@ -39,7 +40,10 @@ function DecisionRecord({ decision }: { decision: ActionDecision }) {
     <p>Conflicting: {decision.conflicting_refs.join(", ") || "None"}</p>
     <p>Weak: {decision.weak_refs.join(", ") || "None"} · Missing: {decision.missing_capabilities.join(", ") || "None"}</p>
     <p>Governed Opportunity: {decision.opportunity_id ?? "Unavailable — candidate has no governed Opportunity lineage"}</p>
-    <p>Model: {decision.model.provider_id} · {decision.model.model_id} · {decision.model.prompt_id}</p>
+    {decision.server_exit
+      ? <><p>Deterministic risk exit: {decision.server_exit.side} stop {decision.server_exit.active_stop} (previous {decision.server_exit.previous_stop ?? "none"}) · observed {decision.server_exit.trigger_price} at {decision.server_exit.triggered_at} · policy {decision.server_exit.policy_id} · stop state {decision.server_exit.stop_state_id}</p>
+        <p>Model: none — server risk control authored this exit; no model was called and none can change the stop. Paper close: NOT SUBMITTED.</p></>
+      : <p>Model: {decision.model.provider_id} · {decision.model.model_id} · {decision.model.prompt_id}</p>}
     <details><summary>Immutable evidence snapshot</summary>
       <p>{decision.evidence_snapshot_id} · {decision.decision_trace_id}</p>
       {[...snapshot.evidence.current_market_evidence, ...snapshot.evidence.reference_evidence].map((e) => <details key={e.evidence_id}>

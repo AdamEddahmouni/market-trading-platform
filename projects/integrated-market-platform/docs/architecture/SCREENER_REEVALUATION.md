@@ -216,12 +216,26 @@ evaluated baseline is simply unchanged.
 
 Safety reasons always bypass the dwell (`SAFETY_PRECEDENCE`):
 `POSITION_CHANGED`, `PENDING_ORDER_APPEARED`, `QUOTE_LOST`, `AUTHORITY_LOST`,
-`EXIT_CONDITION_MET`. Becoming unsafe bypasses; recovering does not, so
+`EXIT_CONDITION_MET`, `SMA_TRAILING_STOP_BREACHED`. Becoming unsafe bypasses; recovering does not, so
 `HOLD → EXIT` is immediate while the flip back is held.
 
 Precedence inside one instrument: dwell/safety → deterministic fail-safe
 (pending, stale quote, authority loss; no model) → duplicate checks → engine and
 budget caps → model evaluation.
+
+### Stop monitor in the cycle (OCT1-08)
+
+For every held instrument the cycle first evaluates the
+[SMA trailing stop](PAPER_SMA_TRAILING_STOP.md): position, completed bars,
+stop, breach check. `SMA_TRAILING_STOP_BREACHED` is a safety reason: it
+bypasses the dwell, the deterministic fail-safe and the model availability and
+budget gates, and appends a server-authored EXIT with no model call. The same
+breach on the same holding is not recorded twice
+(`STOP_EXIT_ALREADY_RECORDED`). Stop initialization, tightening, staleness and
+resumption enter the material fingerprint but are recorded as
+`DETERMINISTIC_STOP_UPDATE` without a model call; an unchanged stop is not a
+change. Stops whose position is no longer held are closed at the start of the
+cycle.
 
 ### Transition classification
 

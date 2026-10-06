@@ -12,7 +12,7 @@ const Snapshot = z.object({ schema_version: z.literal("next-session-decision/1.0
   account_id: z.string(), created_at: z.string(), decision_cutoff: z.string(), target_session_date: z.string(), target_session_kind: z.string(),
   target_timezone: z.string(), target_session_start: z.string(), target_session_end: z.string(), early_close_metadata: z.string(),
   action_decision_id: z.string(), action_state: z.string(), direction: z.string().nullable(), evidence_snapshot_ref: z.string(),
-  provider_id: z.string().nullable(), model_id: z.string().nullable(), prompt_id: z.string(), position_state: z.string(),
+  provider_id: z.string().nullable(), model_id: z.string().nullable(), prompt_id: z.string().nullable(), position_state: z.string(),
   reference_price: z.number().nullable(), reference_price_as_of: z.string().nullable(),
   evaluation_policy: z.object({ policy_id: z.string(), observation_start: z.string(), observation_end: z.string(), reference_price_basis: z.string() }).passthrough(),
   state: z.string(), lock_state: z.enum(["DRAFT", "LOCKED"]), locked_at: z.string().nullable(), validity_state: z.string(), content_hash: z.string() }).passthrough();

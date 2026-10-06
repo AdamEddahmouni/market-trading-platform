@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from ..intelligence.contracts.common import ContractReference
 from ..intelligence.inference.action_decision import (
     ActionDecisionV1, POLICY_ID, PROMPT_ID, SCHEMA, build_conditions,
-    gate_proposal, output_schema, parse_proposal, snapshot_evidence,
+    gate_proposal, output_schema, parse_proposal, server_exit_condition, snapshot_evidence,
 )
 from ..intelligence.inference.candidate_reduction import ScreenerEvidencePacket
 from ..intelligence.inference.config import IntelligenceInferenceConfig
@@ -29,8 +29,9 @@ def _iso(seconds):
 
 
 class ScreenerActionService:
-    def __init__(self, store, *, repository=None, ai=None, clock=time.time, trace_repository=None):
+    def __init__(self, store, *, repository=None, ai=None, clock=time.time, trace_repository=None, risk_control=None):
         self.store = store
+        self.risk_control = risk_control
         self.repository = repository or action_repository()
         self.ai = ai
         self.clock = clock
@@ -56,6 +57,13 @@ class ScreenerActionService:
                     snapshot_at=None if getattr(self.store,'execution_deferred',False) else now,
                     account_id=ledger.paper_account_id, session_id=ledger.session_id,
                     source='PAPER_LEDGER', pending=pending)
+
+    def _risk_facts(self, instrument):
+        """OCT1-08: read-only deterministic stop facts. None while no stop is configured."""
+        if self.risk_control is None:
+            from .paper_risk_control import risk_control_service
+            self.risk_control = risk_control_service(self.store)
+        return self.risk_control.decision_facts(instrument)
 
     def _authority(self):
         ledger = self.store.paper_ledger
@@ -106,6 +114,8 @@ class ScreenerActionService:
                        opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id')),
                        authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
+        risk = self._risk_facts(body['instrument_id'])
+        if risk: context['risk_control'] = risk
         provider = self._provider()
         prompt = PromptRegistry().get_by_id(PROMPT_ID)
         conditions = build_conditions(candidate,context,now)
@@ -149,7 +159,11 @@ class ScreenerActionService:
             if latest and latest[0]['input_hash']==b['digest'] and timestamp(latest[0]['valid_until'])>timestamp(now):
                 return dict(latest[0],cache='HIT')
             proposal, error, response = None,None,None
-            if timestamp(b['run']['valid_until'])<=timestamp(now): error='CANDIDATE_EXPIRED'
+            # OCT1-08: a breached stop is a server risk exit. It needs no model call and no model can veto it;
+            # the gate still reports every Paper-preview blocker without erasing the EXIT.
+            server_exit = server_exit_condition(b['conditions'])
+            if server_exit: pass
+            elif timestamp(b['run']['valid_until'])<=timestamp(now): error='CANDIDATE_EXPIRED'
             elif revalidation_reason: error=str(revalidation_reason)[:64]
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
@@ -179,6 +193,9 @@ class ScreenerActionService:
             model = dict(provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None),
                          runtime=getattr(provider,'runtime',None),prompt_id=PROMPT_ID,prompt_hash=b['prompt'].content_hash,
                          prompt_version=b['prompt'].version, simulated=bool(response and response.simulated))
+            if server_exit:
+                model = dict(provider_id=None,model_id=None,runtime=None,prompt_id=None,prompt_hash=None,prompt_version=None,
+                             simulated=False,origin='SERVER_RISK_CONTROL')
             if response:
                 for field in ('tokens_input','tokens_output','latency_ms','provider_request_id','provider_response_id'):
                     model[field]=getattr(response,field,None)
@@ -190,7 +207,8 @@ class ScreenerActionService:
                           instrument=b['candidate']['instrument'],decision_time=now,evaluated_at=finished,valid_until=valid_until,
                           previous_decision_id=prior['decision_id'] if prior else None,previous_state=prior['action_state'] if prior else None,
                           position=b['context']['position'],direction=proposal['direction'] if proposal else None,
-                          model_proposal=proposal,rationale=proposal['rationale'] if proposal else 'Decision requires revalidation: '+str(error),
+                          model_proposal=proposal,rationale=proposal['rationale'] if proposal else
+                              'Deterministic SMA trailing-stop risk condition. Server-authored; no model call.' if server_exit else 'Decision requires revalidation: '+str(error),
                           opportunity_id=(b['context']['opportunity'] or {}).get('opportunity_id'),
                           evidence_snapshot_id=snapshot_id,evidence_snapshot=snapshot,model=model,
                           supporting_refs=proposal['supporting_refs'] if proposal else [],
@@ -200,7 +218,16 @@ class ScreenerActionService:
             record['input_hash']=b['digest']
             record['entry_plan']=[c for c in b['conditions'] if c['condition_id'] in (proposal or {}).get('entry_conditions',[])]
             record['hold_plan']=[c for c in b['conditions'] if c['condition_id'] in (proposal or {}).get('hold_conditions',[])]
-            record['exit_plan']=[c for c in b['conditions'] if c['condition_id'] in (proposal or {}).get('exit_conditions',[])]
+            record['exit_plan']=[server_exit] if server_exit else [c for c in b['conditions'] if c['condition_id'] in (proposal or {}).get('exit_conditions',[])]
+            risk = b['context'].get('risk_control')
+            if risk: record['risk_control']=risk
+            if server_exit:
+                # Why IMP exited: this policy, this stop, this observation. Quantity stays with the ledger.
+                record['server_exit']=dict(condition_id=server_exit['condition_id'],reason='DETERMINISTIC_SMA_TRAILING_STOP_RISK_CONDITION',
+                    policy_id=risk['policy_id'],stop_state_id=risk['stop_state_id'],position_epoch_id=risk['position_epoch_id'],
+                    side=risk['side'],active_stop=risk['active_stop'],previous_stop=risk['previous_stop'],
+                    trigger_price=risk['trigger_price'],triggered_at=risk['triggered_at'],trigger_evidence=risk['trigger_evidence'],
+                    paper_close='NOT_SUBMITTED',model_call=False)
             quote=next((c for c in b['conditions'] if c['condition_id']=='CURRENT_QUOTE'),None)
             record['reference_quote']=quote
             record['risk_decision_ref']=None; record['paper_preview_ref']=None
@@ -211,9 +238,13 @@ class ScreenerActionService:
                 decision_kind=ExecutionDecisionKind.ACTION_ASSESSED,eligibility=EligibilityDecisionSnapshot(),
                 provider_state=model,market_data_freshness=dict(cutoff=now,valid_until=valid_until),
                 rule_evaluations=(RuleEvaluationV1(POLICY_ID,RuleEvaluationOutcome.FAIL if record['blocker_codes'] else RuleEvaluationOutcome.PASS,
-                    tuple(record['reason_codes']), (ContractReference('ActionDecisionV1',identity),ContractReference('ActionEvidenceSnapshotV1',snapshot_id))),),
-                blocker_codes=tuple(record['blocker_codes']),config_version_refs=(POLICY_ID,),correlation_id=identity,
-                immutable_inputs=dict(input_hash=b['digest'],action_decision_id=identity,snapshot_id=snapshot_id)))
+                    tuple(record['reason_codes']), (ContractReference('ActionDecisionV1',identity),ContractReference('ActionEvidenceSnapshotV1',snapshot_id))),
+                    *((RuleEvaluationV1(risk['policy_id'],RuleEvaluationOutcome.FAIL,(server_exit['condition_id'],),
+                        (ContractReference('SmaTrailingStopStateV1',risk['stop_state_id']),)),) if server_exit else ())),
+                blocker_codes=tuple(record['blocker_codes']),config_version_refs=(POLICY_ID,*((risk['policy_id'],) if server_exit else ())),correlation_id=identity,
+                immutable_inputs=dict(input_hash=b['digest'],action_decision_id=identity,snapshot_id=snapshot_id,
+                    **(dict(stop_state_id=risk['stop_state_id'],stop_policy_id=risk['policy_id'],active_stop=risk['active_stop'],
+                            trigger_price=risk['trigger_price'],triggered_at=risk['triggered_at']) if server_exit else {}))))
             record['decision_trace_id']=trace.decision_trace_id
             immutable=ActionDecisionV1.from_dict(record).to_dict()
             # SQLite companions and traces share one transaction. Ephemeral
