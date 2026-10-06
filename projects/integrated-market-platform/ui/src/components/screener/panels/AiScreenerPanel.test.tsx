@@ -1,11 +1,15 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AiScreenerPanel from "./AiScreenerPanel";
 import { SpecialistContext, type SpecialistSelection } from "./shared";
 import type { AiScreenerPreview, AiScreenerResult } from "../../../api/screenerAi";
+import { SchemaMismatchError } from "../../../api/fetchJson";
+import { lifecycle, lifecycleList, openPosition } from "../lifecycle/lifecycleFixture";
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), engine: vi.fn() }));
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn() }));
+vi.mock("../../../api/screenerLifecycle", () => ({ tradeLifecycles: mocks.lifecycles, tradeLifecycle: mocks.lifecycle }));
 vi.mock("../../../api/screenerAi", () => ({ fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.run }));
 vi.mock("../../../api/screenerNews", () => ({ postSynthesisEngine: mocks.engine }));
 
@@ -28,9 +32,10 @@ const selection = (overrides: Partial<SpecialistSelection> = {}): SpecialistSele
   screenerScope: scope, openInstrument: vi.fn(), demand: null, actions: { close: vi.fn(), move: vi.fn(), resize: vi.fn() }, ...overrides,
 });
 const renderPanel = (value = selection()) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-  <SpecialistContext.Provider value={value}><AiScreenerPanel api={panelApi} /></SpecialistContext.Provider>
+  <MemoryRouter><SpecialistContext.Provider value={value}><AiScreenerPanel api={panelApi} /></SpecialistContext.Provider></MemoryRouter>
 </QueryClientProvider>);
 
+beforeEach(() => { mocks.lifecycles.mockResolvedValue(lifecycleList()); });
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
@@ -115,5 +120,61 @@ describe("AI Screener panel", () => {
     renderPanel();
     fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("AI Screener run failed");
+  });
+});
+
+describe("AI Screener trade lifecycle", () => {
+  const selected = { ...result, valid_until: "2099-01-01T00:00:00Z", evidence: [{ instrument: { instrument_id: "AAPL" }, current_market_evidence: [], reference_evidence: [], blocked: [], missing: [], weak: [], sufficient: true }],
+    candidates: [{ instrument_id: "AAPL", rank: 1, rationale: "AAPL shows observed strength.", supporting_refs: [], conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }] } as unknown as AiScreenerResult;
+  const run = (id: string) => ({ run_id: id, state: "CURRENT", valid_until: "2099-01-01T00:00:00Z", selected_count: 1 });
+
+  it("shows managed positions before any AI run and never calls a model to do it", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.lifecycles.mockResolvedValue(lifecycleList({ active_managed: [openPosition({ group: "ACTIVE_MANAGED" })], counts: { selected: 0, active_managed: 1, recent_closed: 0, unlinked: 0 } }));
+    renderPanel();
+    const active = await screen.findByRole("region", { name: "Active managed positions" });
+    expect(active).toHaveTextContent("POSITION OPEN · HOLD");
+    expect(active).toHaveTextContent("LONG 6");
+    expect(screen.getByTestId("lifecycle-boundary")).toHaveTextContent("Market data: LIVE OBSERVATIONAL · Execution: SIMULATED PAPER");
+    expect(mocks.lifecycles).toHaveBeenCalledWith(null, expect.any(AbortSignal));
+    expect(mocks.run).not.toHaveBeenCalled();
+  });
+
+  it("renders each selected candidate as its lifecycle with one list request per run", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue(selected);
+    mocks.lifecycles.mockImplementation(async (id: string | null) => id ? lifecycleList({ run: run(id), selected: [lifecycle()], counts: { selected: 1, active_managed: 0, recent_closed: 0, unlinked: 0 } }) : lifecycleList());
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    const card = await screen.findByTestId("lifecycle-card-AAPL");
+    expect(card).toHaveTextContent("ENTER DECIDED · NOT EXECUTED");
+    expect(card).toHaveTextContent("2 supporting · 2 conflicting · 0 weak · 1 missing · 1 blocked");
+    expect(screen.getByRole("button", { name: "Open decision assessment" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open in Screener workflow" })).toBeInTheDocument();
+    expect(mocks.lifecycles.mock.calls.filter(([id]) => id === "run-1")).toHaveLength(1);
+    expect(mocks.lifecycle).not.toHaveBeenCalled();
+  });
+
+  it("never draws a previous run's lifecycle under a new rank list", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue({ ...selected, run_id: "run-2" });
+    // A stale projection for run-1 arrives for the run-2 request.
+    mocks.lifecycles.mockResolvedValue(lifecycleList({ run: run("run-1"), selected: [openPosition()], counts: { selected: 1, active_managed: 0, recent_closed: 0, unlinked: 0 } }));
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    expect(await screen.findByRole("heading", { name: "#1 AAPL" })).toBeInTheDocument();
+    await waitFor(() => expect(mocks.lifecycles).toHaveBeenCalledWith("run-2", expect.any(AbortSignal)));
+    expect(await screen.findByText("Loading lifecycle…")).toBeInTheDocument();
+    expect(screen.queryByTestId("lifecycle-card-AAPL")).not.toBeInTheDocument();
+    expect(screen.queryByText(/POSITION OPEN/)).not.toBeInTheDocument();
+  });
+
+  it("fails visibly when the lifecycle payload does not match this build", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.lifecycles.mockRejectedValue(new SchemaMismatchError("/screener/trade-lifecycles", []));
+    renderPanel();
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Trade lifecycle is unavailable");
+    expect(alert).toHaveTextContent("did not match the format this build expects");
   });
 });

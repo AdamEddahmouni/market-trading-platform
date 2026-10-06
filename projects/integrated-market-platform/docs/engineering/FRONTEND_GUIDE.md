@@ -88,6 +88,29 @@ UI API failures use `{ error, reason_code, error_category }`. `error_category` i
 
 The Workspace ticket defaults to Market. Limit price is a positive decimal with at most two fractional digits and becomes integer minor units in both preview and submit. The version-1 Radar, lane, and attention handoff remains Market-only; side, quantity, type, and price are editable terms. Changing any term or instrument invalidates the server preview. Portfolio position actions pass editable Add/Reduce/Close Market drafts into Workspace only under Paper authority; Close appears only within the backend per-order share limit. A projected `REJECTED` order blocks submit even if the risk check passed. The submit acknowledgement reports the server's actual order state, including rejection.
 
+## Screener trade lifecycle (OCT1-10)
+
+Operator path, all inside the running product:
+
+```
+Screener → AI Screener panel → lifecycle card → View lifecycle (evidence, decision, history)
+        → Prepare Paper Preview / Prepare Paper Exit → Paper Workspace (preview, confirm, Submit)
+        → back to the Screener: managed position → exit → realized P&L
+```
+
+- One server projection feeds the view: `tradeLifecycles(runId)` for the list and
+  `tradeLifecycle(id, runId)` when a card is expanded (`api/screenerLifecycle.ts`).
+  Do not join candidate, decision, position, stop or P&L in React, and do not
+  compute a price, status or P&L in the browser.
+- Query keys are `["screener-trade-lifecycles", runId]` and
+  `["screener-trade-lifecycle", id, runId, …state]`. The run id is part of the
+  identity so one run's lifecycles are never drawn under another's rank list.
+- The Workspace is still the only Paper submit boundary. Lifecycle cards may
+  call the existing governed handoff (`PaperHandoff`); they never submit.
+- Every state is text. Colour, tooltips and icons may repeat a state but never
+  carry it alone; signed P&L has an accessible name.
+- Contract: [SCREENER_TRADE_LIFECYCLE.md](../architecture/SCREENER_TRADE_LIFECYCLE.md).
+
 ## CSS organization
 
 Mode-specific styles: `ui/src/styles/{demo,paper,live}-*.css`. Shared tokens: `tokens.css`, `layout.css`. Operator design system: `ui/src/components/imp-ui/imp-ui.css` (primitives) + `ui/src/styles/radar.css` (Radar surface) + `ui/src/styles/research.css` (Research surface) + `ui/src/styles/lab.css` (Lab workbench, lazy-imported from Lab pages) + `ui/src/components/opportunity/opportunity.css` (shared opportunity card/queue). Semantic state tones (`--imp-state-{tone}-{fg,bg,border}`) live in `tokens.css`; all enum/state rendering goes through `ui/src/state/semanticState.ts` (`resolveSemanticState`) — translate, never invent; unknown values render neutral with the raw string preserved.

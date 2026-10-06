@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-06 — OCT1-10 final AI-selected trade lifecycle Screener
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-10 PR/task ledger |
+| **Area** | Screener UI, lifecycle read model, documentation |
+| **Summary** | Consolidates candidate evidence, decisions, Paper entry/position/exit, OCT1-08 SMA stop and OCT1-09 P&L into one derived trader-facing lifecycle. Opening-fill/account/experiment identities isolate same-symbol episodes; prior managed positions remain visible. |
+| **Key files** | `intelligence/inference/trade_lifecycle.py`, `ui_api/screener_lifecycle.py`, `ui/src/components/screener/lifecycle/`, `artifacts/oct1-10-acceptance.json` |
+| **Validation** | Focused backend 42/42; complete UI 1,370/1,370; recovered FAST 23 run, CHANGED 5,954 run/35 skipped, FULL 8,113 run/53 skipped, zero failures/errors; browser 39+6; static/docs/build/guard gates pass. Timing SEVERE_REGRESSION retained, observe-only. |
+| **Related** | [Contract](../architecture/SCREENER_TRADE_LIFECYCLE.md), [acceptance report](../superpowers/plans/2026-10-06-oct1-10-trade-lifecycle-screener.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; separate `position_epoch()` scoping issue unchanged; no automatic Paper/Live submit, no OCT1-11 work. |
+
 ## 2026-10-06 — OCT1-09 $100K Paper portfolio experiment and P&L lifecycle
 
 | Field | Value |
