@@ -169,6 +169,9 @@ class EvaluationTests(unittest.TestCase):
             self.assertEqual(receipt['reason_codes'], ['EVALUATION_RECEIPT_NOT_FOUND'])
             return
         self.assertLessEqual(len(receipt['episodes']), 20)
+        from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
+        assert_no_secrets_in_payload(receipt)  # the API response guard must accept the projection
+        self.assertEqual(receipt['provenance']['corpus_evidence_label'], 'HISTORICAL_DEVELOPMENT')
         self.assertEqual(receipt['definition_hash'], definition_hash())
         self.assertIn(receipt['conclusion']['conclusion'], CONCLUSIONS)
         self.assertEqual((receipt['conclusion']['superiority_claim'], receipt['corpus_unchanged']), ('NONE', True))

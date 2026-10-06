@@ -29,6 +29,27 @@ describe("Action decisions", () => {
     fireEvent.click(screen.getByRole("button", { name: "Read decision history" }));
     await waitFor(() => expect(api.history).toHaveBeenCalledTimes(1));
   });
+  it("shows a deterministic stop exit as server-authored, with its evidence and no model", async () => {
+    const stop = { condition_id: "SMA_TRAILING_STOP_BREACHED", status: "MET", source: "SERVER_RISK_CONTROL", source_value: "186.1", trigger_price: "185.95",
+      as_of: "2026-10-05T14:45:00Z", policy_id: "STP-reference", valid_until: preview.candidate_valid_until };
+    const exit = { ...decision, action_state: "EXIT", direction: null, previous_state: "HOLD", rationale: "Deterministic SMA trailing-stop risk condition. Server-authored; no model call.",
+      position: { state: "LONG", quantity: 7 }, execution_readiness: "PREVIEW_ALLOWED", blocker_codes: [], model_proposal: null, exit_plan: [stop], entry_plan: [],
+      model: { provider_id: null, model_id: null, prompt_id: null, prompt_hash: null, origin: "SERVER_RISK_CONTROL" },
+      server_exit: { condition_id: "SMA_TRAILING_STOP_BREACHED", reason: "DETERMINISTIC_SMA_TRAILING_STOP_RISK_CONDITION", policy_id: "STP-reference", stop_state_id: "STS-1", side: "LONG",
+        active_stop: "186.1", previous_stop: "185.12", trigger_price: "185.95", triggered_at: "2026-10-05T14:45:00Z", paper_close: "NOT_SUBMITTED", model_call: false } };
+    api.preview.mockResolvedValue({ ...preview, paper_authority: true, position: exit.position }); api.run.mockResolvedValue(exit); api.history.mockResolvedValue({ decisions: [exit] });
+    render(<MemoryRouter><ActionDecisionPanel runId="r" instrumentId="NVDA" /></MemoryRouter>);
+    fireEvent.click(screen.getByRole("button", { name: "Open decision assessment" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Evaluate Decision" }));
+    await screen.findByRole("heading", { name: "EXIT" });
+    expect(screen.getByText(/Deterministic risk exit: LONG stop 186.1 \(previous 185.12\) · observed 185.95 at 2026-10-05T14:45:00Z · policy STP-reference · stop state STS-1/)).toBeInTheDocument();
+    expect(screen.getByText(/Model: none — server risk control authored this exit; no model was called and none can change the stop\. Paper close: NOT SUBMITTED\./)).toBeInTheDocument();
+    expect(screen.getByText(/SMA_TRAILING_STOP_BREACHED · MET · source SERVER_RISK_CONTROL .* stop 186.1 · observed 185.95/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Prepare Paper Exit" })).toBeEnabled();
+    expect(api.handoff).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Read decision history" }));
+    expect(await screen.findByText(/2026-10-05T14:00:00Z · HOLD → EXIT/)).toBeInTheDocument();
+  });
   it("isolates late responses after candidate change", async () => {
     let resolve: (v: unknown) => void = () => {};
     api.preview.mockImplementation(() => new Promise(r => { resolve = r; }));

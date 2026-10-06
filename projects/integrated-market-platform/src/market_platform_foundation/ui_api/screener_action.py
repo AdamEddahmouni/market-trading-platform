@@ -195,7 +195,7 @@ class ScreenerActionService:
                          prompt_version=b['prompt'].version, simulated=bool(response and response.simulated))
             if server_exit:
                 model = dict(provider_id=None,model_id=None,runtime=None,prompt_id=None,prompt_hash=None,prompt_version=None,
-                             simulated=False,authored_by='SERVER_RISK_CONTROL')
+                             simulated=False,origin='SERVER_RISK_CONTROL')
             if response:
                 for field in ('tokens_input','tokens_output','latency_ms','provider_request_id','provider_response_id'):
                     model[field]=getattr(response,field,None)

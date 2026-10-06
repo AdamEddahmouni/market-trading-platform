@@ -155,8 +155,11 @@ class ReevaluationStopTests(unittest.TestCase):
         self.assertEqual((exit_['active_stop'], exit_['trigger_price'], exit_['policy_id'], exit_['model_call'], exit_['paper_close']),
                          ('140', '139.5', self.h.stops._config()[1]['policy_id'], False, 'NOT_SUBMITTED'))
         self.assertEqual(exit_['trigger_evidence']['evidence_ref'], 'q')
-        self.assertEqual((decision['model']['provider_id'], decision['model']['authored_by']), (None, 'SERVER_RISK_CONTROL'))
+        self.assertEqual((decision['model']['provider_id'], decision['model']['origin']), (None, 'SERVER_RISK_CONTROL'))
         self.assertEqual([c['condition_id'] for c in decision['exit_plan']], ['SMA_TRAILING_STOP_BREACHED'])
+        from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
+        for payload in (decision, self.h.stops.status(IID), self.h.stops.history(IID), self.h.stops.config_view()):
+            assert_no_secrets_in_payload(payload)  # the API response guard must accept every stop projection
         self.assertEqual(decision['position']['quantity'], 10)
         trace = self.h.actions.trace_repository.get_execution_decision_trace(decision['decision_trace_id'])
         self.assertIn(exit_['policy_id'], trace.config_version_refs)

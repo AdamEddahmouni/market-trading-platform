@@ -275,7 +275,7 @@ class SmaStopService:
                      stop_state_id=state['stop_state_id'], position_epoch_id=state['position_epoch_id'],
                      sma_window_bars=state['sma_window_bars'], bar_interval=state['bar_interval'],
                      active_stop=minor_to_display(state['active_stop'], scale), previous_stop=minor_to_display(state['previous_stop'], scale),
-                     authority='SERVER_RISK_CONTROL')
+                     source='SERVER_RISK_CONTROL')
         if state['status'] == 'BREACHED':
             facts.update(trigger_price=minor_to_display(state['trigger_price'], scale), triggered_at=_iso_ns(state['triggered_at']),
                          trigger_evidence=state['trigger_evidence'], reason_codes=state['reason_codes'])

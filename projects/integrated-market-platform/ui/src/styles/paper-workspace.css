@@ -291,3 +291,11 @@
   border-left: 3px solid #7eb8ff;
   background: rgba(126, 184, 255, 0.08);
 }
+
+/* OCT1-08 SMA trailing-stop monitor. State is always text; the border only groups the breach block. */
+.sma-stop-panel label { display: block; margin: 6px 0; }
+.sma-stop-panel table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin: 8px 0; }
+.sma-stop-panel th, .sma-stop-panel td { text-align: left; padding: 3px 6px; border-bottom: 1px solid var(--border-subtle, rgba(128, 128, 128, 0.3)); }
+.sma-stop-panel caption { text-align: left; font-weight: 600; padding: 4px 0; }
+.sma-stop-breach { border: 1px solid currentColor; padding: 8px 10px; margin: 8px 0; }
+.sma-stop-actions { margin: 8px 0; }

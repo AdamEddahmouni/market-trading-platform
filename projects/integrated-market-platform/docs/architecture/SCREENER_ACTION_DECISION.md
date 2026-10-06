@@ -140,5 +140,17 @@ and handoff revalidates again even if authority changes after rendering.
 
 Acceptance and integration evidence:
 [OCT1-06 report](../superpowers/plans/2026-10-04-oct1-06-action-decision.md).
-OCT1-07 scheduling, OCT1-08 SMA stops and OCT1-09 experimental Paper campaign are
-outside this contract.
+OCT1-07 scheduling and OCT1-09 experimental Paper campaign are outside this contract.
+
+## Deterministic risk exit (OCT1-08)
+
+One server condition is added by the [SMA trailing-stop contract](PAPER_SMA_TRAILING_STOP.md):
+`SMA_TRAILING_STOP_BREACHED`, source `SERVER_RISK_CONTROL`. It is present only
+while a stop is configured for the held position, so decisions without a stop
+are unchanged. When it is met on the held side the gate returns EXIT without a
+model proposal; pending orders, lost authority or a stale quote block the Paper
+preview but never erase the EXIT. The model may read the condition but cannot
+select it, and the prohibition on model-authored stops, SMA rules, trailing
+logic and numeric levels above is unchanged. The decision record carries
+`server_exit` (policy, stop state, active and previous stop, trigger price,
+time and evidence) and a null model.
