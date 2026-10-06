@@ -1,0 +1,382 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "not_market_evidence": true,
+  "not_a_profitability_claim": true,
+  "fixtures": [
+    "clock",
+    "completed-bar feed",
+    "last-trade quote",
+    "marks",
+    "candidate receipts",
+    "model proposal",
+    "governed Opportunity",
+    "auth"
+  ],
+  "production": [
+    "trade lifecycle projection",
+    "action decision service",
+    "SMA stop service",
+    "experiment service",
+    "Paper preview/submit route",
+    "pre-trade risk",
+    "bar-conservative simulator",
+    "Paper ledger",
+    "SQLite local state",
+    "UI production bundle"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Open Screener",
+      "url": "http://127.0.0.1:15110/screener"
+    },
+    {
+      "step": 2,
+      "name": "Open AI Screener",
+      "boundary": "Market data: FIXTURE REPLAY · Execution: SIMULATED PAPER · Paper experiment equity $100,000.00 · cash $100,000.00"
+    },
+    {
+      "step": 3,
+      "name": "Run controlled AI selection",
+      "run_id": "controlled-1791322862131500-3",
+      "model_calls_for_selection": 0,
+      "note": "The stored candidate receipt is a fixture; the reducer is not called."
+    },
+    {
+      "step": 4,
+      "name": "See selected candidate and rank",
+      "heading": "#1 AAPL",
+      "stage": "SELECTED · NOT ASSESSED",
+      "origin": "AI-selected candidate"
+    },
+    {
+      "step": 5,
+      "name": "See supporting evidence",
+      "supporting": "Supporting QUOTE · price: 150.0 — CONTROLLED_FIXTURE · 2026-10-06 17:41:02 ET · CURRENT · FIXTURE Details TECHNICALS · change_pct: 2 — CONTROLLED_FIXTURE · 2026-10-06 17:41:02 ET · CURRENT · FIXTURE Details",
+      "requests_to_expand": 1
+    },
+    {
+      "step": 6,
+      "name": "See conflicting evidence",
+      "conflicting": "Conflicting SENTIMENT · label: NEGATIVE — CONTROLLED_FIXTURE · 2026-10-06 17:41:02 ET · PUBLICATION-BASED · REFERENCE Details Evidence alignment CONFLICTING: news sentiment vs price · observed direction POSITIVE · Fixture conflict"
+    },
+    {
+      "step": 7,
+      "name": "See missing/weak evidence",
+      "missing": "Missing / unavailable — what IMP does not know Excluded: LEVEL2 · STALE · Age exceeds policy · CONTROLLED_FIXTURE · 2026-10-06 17:26:02 ET",
+      "weak": "Weak None recorded."
+    },
+    {
+      "step": 8,
+      "name": "Run action evaluation",
+      "decision_id": "AD-cc629a1d56f488606164ed06385d4e8aa748e96f6628e7a9199100baad1685e4",
+      "model_calls": 2
+    },
+    {
+      "step": 9,
+      "name": "See ENTER",
+      "stage": "ENTER DECIDED · NOT EXECUTED",
+      "decision": "Decision ENTER · 17:41:02 ET · AI proposal, server-gated decision"
+    },
+    {
+      "step": 10,
+      "name": "See decision time/reference",
+      "entry": "Entry DECIDED — NOT EXECUTED · Paper: no fill · Decision reference $150.00 at 17:41:02 ET (quote, not a fill)"
+    },
+    {
+      "step": 11,
+      "name": "See entry conditions",
+      "conditions": "Entry conditions Current quote available Met Server action policy Directional support Met Server action policy"
+    },
+    {
+      "step": 12,
+      "name": "Prepare Paper entry",
+      "control": "Prepare Paper Preview",
+      "route": "POST /screener/action-decision/handoff"
+    },
+    {
+      "step": 13,
+      "name": "Open existing Workspace",
+      "url": "http://127.0.0.1:15110/workspace/AAPL"
+    },
+    {
+      "step": 14,
+      "name": "Preview",
+      "governed_entry_risk": "APPROVE",
+      "interactive_risk": "PASS",
+      "quantity": 6
+    },
+    {
+      "step": 15,
+      "name": "Explicitly submit Paper simulation",
+      "submit_route": "POST /paper/orders",
+      "fill_id": "56B3616B6E5C070FCD4AD7CF9C9A8E8F02F822F3DD46B988A5920738193C78B7",
+      "fill_kind": "SIMULATED_FILL",
+      "decision_id": "AD-cc629a1d56f488606164ed06385d4e8aa748e96f6628e7a9199100baad1685e4"
+    },
+    {
+      "step": 16,
+      "name": "Return/open lifecycle",
+      "group": "Active managed positions",
+      "run_loaded": false,
+      "origin": "Active managed position — opened from AI Screener run selected 17:41:02 ET"
+    },
+    {
+      "step": 17,
+      "name": "See position open",
+      "stage": "POSITION OPEN · ENTER"
+    },
+    {
+      "step": 18,
+      "name": "See simulated fill time/price",
+      "entry": "Entry Filled (simulated) · Position opened 2026-10-06 17:41:02 ET · simulated Paper fill $150.00 · Decision reference $150.00 at 17:41:02 ET (quote, not a fill)"
+    },
+    {
+      "step": 19,
+      "name": "See quantity/average entry",
+      "position": "LONG 6 · average entry $150.00"
+    },
+    {
+      "step": 20,
+      "name": "See current mark",
+      "mark": "Current mark $151.00 · CURRENT · CONTROLLED_FIXTURE · 2s old",
+      "before_mark": "Unavailable — no mark for this position (never $0.00)"
+    },
+    {
+      "step": 21,
+      "name": "See unrealized P&L",
+      "unrealized": "Unrealized P&L +$6.00 · CURRENT",
+      "accessible_name": "gain of $6.00",
+      "arithmetic": "6 x (151.00 - 150.00)"
+    },
+    {
+      "step": 22,
+      "name": "See SMA risk context",
+      "before_configuration": "SMA trailing stop not configured",
+      "risk": "Risk control SMA trailing stop · ACTIVE · active stop $140.00 · SMA $140.0000 · distance $10.00 · Deterministic risk control · Model: none"
+    },
+    {
+      "step": 23,
+      "name": "Run/consume reevaluation",
+      "decision_id": "AD-2e792335803b152711066725543abbcb94fe2992153ebaaa990998f7eeb4bf7a",
+      "previous_state": "ENTER",
+      "route": "explicit Evaluate Decision on a new run",
+      "note": "The scheduled reevaluation worker is not started in this harness; receipt-to-timeline joins are covered by tests/trading_correctness/test_trade_lifecycle.py."
+    },
+    {
+      "step": 24,
+      "name": "See HOLD transition",
+      "stage": "POSITION OPEN · HOLD",
+      "decision": "Decision HOLD · 17:43:04 ET · AI proposal, server-gated decision"
+    },
+    {
+      "step": 25,
+      "name": "Tighten SMA stop",
+      "risk": "Risk control SMA trailing stop · ACTIVE · active stop $142.00 · SMA $142.0000 · distance $8.00 · Deterministic risk control · Model: none",
+      "arithmetic": "2-bar SMA of 140.00 and 144.00"
+    },
+    {
+      "step": 26,
+      "name": "See stop history/context",
+      "events": [
+        "SMA stop monitoring started",
+        "SMA stop activated",
+        "SMA stop tightened"
+      ],
+      "previous_stop": "$140.00"
+    },
+    {
+      "step": 27,
+      "name": "Trigger controlled stop breach",
+      "status": "BREACHED",
+      "active_stop": "142",
+      "observed": "141",
+      "model_calls_added": 0
+    },
+    {
+      "step": 28,
+      "name": "See EXIT decision while position remains open",
+      "stage": "EXIT DECIDED · POSITION STILL OPEN",
+      "decision": "Decision EXIT · 17:44:06 ET · Deterministic risk control · Model: none",
+      "exit": "Exit EXIT decided — position still open · Paper close: NOT SUBMITTED · Exit decision reference $141.00 at 17:44:06 ET (quote, not a fill)",
+      "position": "LONG 6",
+      "risk": "Risk control SMA trailing stop · BREACHED · active stop $142.00 · SMA $142.0000 · distance $1.00 · observed $141.00 at 2026-10-06 17:44:06 ET · EXIT decision generated · Deterministic risk control · Model: none"
+    },
+    {
+      "step": 29,
+      "name": "Prepare Paper exit",
+      "control": "Prepare Paper Exit (lifecycle card)",
+      "route": "POST /screener/action-decision/handoff"
+    },
+    {
+      "step": 30,
+      "name": "Explicitly submit close",
+      "submit_route": "POST /paper/orders",
+      "side": "SELL",
+      "quantity": 6
+    },
+    {
+      "step": 31,
+      "name": "See close fill",
+      "fill_id": "3EABBA514740FDC039B1A8CA2D1DBD901B3252AD0F9BBF8FE4B816B6895581A7",
+      "fill_kind": "SIMULATED_FILL",
+      "fill_price": "141.00",
+      "lineage": {
+        "ACTION_DECISION": "AD-5ed4ef2fd256d7f7cd61841d519bced1acb17e30cc592dae218d79cede6e658b",
+        "ACTION_SNAPSHOT": "AS-a315adeaa1479a0d2e2047c69eeceb817c98c1daa8376a2649d16e7f1493f4de",
+        "CANDIDATE_RUN": "RK-b089c3cf2ec0d5f285776e9c134ed0c6dcc9b7b3",
+        "DECISION_TRACE": "EDTR-07B264694F5BAE102C3DB499E0DD05398769D571C8C66E387312D26034769B77",
+        "SMA_STOP_STATE": "STS-3a7355e41d96c56b9d1dfd0b659d1346",
+        "SMA_STOP_POLICY": "STP-9a0c10ab735fd7cdcde6278414c7dcba",
+        "POSITION_EPOCH": "PE-2e05e9a67f1bb29940f6666d67fb799e",
+        "PAPER_PREVIEW": "9D07B0A67D1025CA52474F19D9710F8BA68011F80CB7AB32F5557B49A7A7BCCA",
+        "PAPER_EXPERIMENT": "PPE-AD58A2322690B49376946DE0F7BFBC7C"
+      }
+    },
+    {
+      "step": 32,
+      "name": "See position CLOSED",
+      "stage": "POSITION CLOSED",
+      "position": "Position FLAT — episode closed"
+    },
+    {
+      "step": 33,
+      "name": "See exit time/price",
+      "exit": "Exit Closed (simulated close fill) · Position closed 2026-10-06 17:44:06 ET · simulated close fill $141.00 · Exit decision reference $141.00 at 17:44:06 ET (quote, not a fill)"
+    },
+    {
+      "step": 34,
+      "name": "See realized P&L",
+      "realized": "Realized P&L −$54.00 · simulated Paper, this episode only, net of $0.00 costs",
+      "arithmetic": "6 x (141.00 - 150.00)",
+      "ledger_realized_minor": -5400,
+      "accessible_name": "loss of $54.00"
+    },
+    {
+      "step": 35,
+      "name": "Open lifecycle history",
+      "events": [
+        "Candidate selected",
+        "Action decision: ENTER",
+        "Paper order submitted (simulation)",
+        "Paper simulated fill — position opened",
+        "SMA stop monitoring started",
+        "SMA stop activated",
+        "Action decision: HOLD",
+        "SMA stop tightened",
+        "SMA trailing stop breached",
+        "Risk control: EXIT",
+        "Paper order submitted (simulation)",
+        "Paper simulated close fill — position closed"
+      ]
+    },
+    {
+      "step": 36,
+      "name": "Verify candidate→ENTER→fill→HOLD→EXIT→close sequence",
+      "verified_order": [
+        "Candidate selected",
+        "Action decision: ENTER",
+        "Paper simulated fill — position opened",
+        "Action decision: HOLD",
+        "SMA trailing stop breached",
+        "Risk control: EXIT",
+        "Paper simulated close fill — position closed"
+      ]
+    },
+    {
+      "step": 37,
+      "name": "Expand old ENTER",
+      "decision_id": "AD-cc629a1d56f488606164ed06385d4e8aa748e96f6628e7a9199100baad1685e4"
+    },
+    {
+      "step": 38,
+      "name": "Verify original evidence snapshot",
+      "evidence_snapshot_id": "AS-18aa714cbe857340ac42ad5b262f762e54f33fd19ed4fcd2976c9996ba3044f6",
+      "frozen_quote": "price: 150.0",
+      "later_quotes_absent": [
+        "151.0",
+        "141.0"
+      ]
+    },
+    {
+      "step": 39,
+      "name": "Verify zero Live order submissions",
+      "live_attempts": 0,
+      "live_env": null,
+      "browser_live_mutations": 0
+    }
+  ],
+  "extra_scenarios": [
+    {
+      "name": "NO_ACTION: selected candidate, conflicts and gaps visible, flat, no Paper execution",
+      "stage": "NO ACTION",
+      "position": "FLAT",
+      "entry": "None · Paper: no fill",
+      "evidence": "Evidence 2 supporting · 2 conflicting · 0 weak · 0 missing · 1 blocked",
+      "paper_fills": 0
+    },
+    {
+      "name": "ENTER not executed: decision is not a fill and never a position",
+      "stage": "ENTER DECIDED · NOT EXECUTED",
+      "entry": "Entry DECIDED — NOT EXECUTED · Paper: no fill · Decision reference $150.00 at 17:41:02 ET (quote, not a fill)",
+      "position": "FLAT",
+      "paper_fills": 0
+    },
+    {
+      "name": "Stale mark: P&L is labelled stale, never current",
+      "mark": "Current mark $151.00 · STALE · CONTROLLED_FIXTURE · 0s old",
+      "unrealized": "Unrealized P&L +$6.00 · STALE — not a current valuation"
+    },
+    {
+      "name": "Active position not in the latest run stays visible with its original lineage",
+      "latest_run": "controlled-1791322984325993-4",
+      "latest_selected": [
+        "NVDA"
+      ],
+      "managed": "AAPL",
+      "origin": "Active managed position — opened from AI Screener run selected 17:41:02 ET; not selected by the latest run",
+      "origin_run_id": "controlled-1791322862131500-3"
+    },
+    {
+      "name": "EXIT not filled: position still open, Paper close not submitted, deterministic origin",
+      "decision": "Decision EXIT · 17:44:06 ET · Deterministic risk control · Model: none",
+      "exit": "Exit EXIT decided — position still open · Paper close: NOT SUBMITTED · Exit decision reference $141.00 at 17:44:06 ET (quote, not a fill)",
+      "trades": 1
+    },
+    {
+      "name": "Multiple episodes of one symbol: one closed, one new, no cross-contamination",
+      "closed": {
+        "entry": "$150.00",
+        "realized": "−$54.00",
+        "lifecycle_id": "TE-eaccbe8e8fb53f68abfd79a8480694cf"
+      },
+      "current": {
+        "entry": "$160.00",
+        "quantity": 3,
+        "realized": "$0.00",
+        "lifecycle_id": "TE-23a3efad5b77fd89f6d20b7b8d522759",
+        "decision_id": "AD-b8e30a7c8720f0e19f8938ebfde73393775e207e07e7ba5f94a0ba6ad10c52c7"
+      }
+    }
+  ],
+  "live_submissions": 0,
+  "experiment": {
+    "experiment_id": "PPE-AD58A2322690B49376946DE0F7BFBC7C",
+    "paper_account_id": "2943C322D5420DADE664ACD7B0E84D8FB5513D6E1625D1F1322ACB2A73213B0F",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "data_mode": "FIXTURE_REPLAY"
+  },
+  "metrics": {
+    "explicit_ui_submits": 3,
+    "simulated_fills": 3,
+    "model_calls": 4,
+    "decisions": 5,
+    "stop_events": 4,
+    "controlled_clock_offset_seconds": 181,
+    "requests_to_expand_one_lifecycle": 1,
+    "lifecycle_list_requests": 19,
+    "lifecycle_detail_requests": 5,
+    "note": "The decision made by the stop breach used no model call; every Paper fill followed an explicit Workspace submit."
+  }
+}

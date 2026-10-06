@@ -54,6 +54,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path == "/screener/action-decision/handoff" and method_upper == "POST":
         return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if (path == "/screener/trade-lifecycles" or path.startswith("/screener/trade-lifecycles/")) and method_upper == "GET":
+        # OCT1-10 derived read model over the Paper ledger and decision records. Read only.
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history") and method_upper == "GET":
         return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
     if path in ("/screener/next-session/draft", "/screener/next-session/lock", "/screener/next-session/observe",

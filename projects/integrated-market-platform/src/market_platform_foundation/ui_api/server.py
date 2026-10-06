@@ -411,6 +411,24 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json({"schema_version":"action-history/1.0.0", "decisions":action_service(self.store).history(instrument)})
                 return
+            if path == "/screener/trade-lifecycles" or path.startswith("/screener/trade-lifecycles/"):
+                # OCT1-10 reads: one derived lifecycle per candidate or Paper episode. No model, no provider, no mutation.
+                try:
+                    from .screener_lifecycle import lifecycle_service
+                    first = lambda key: (query.get(key) or [None])[0]
+                    service = lifecycle_service(self.store)
+                    if path == "/screener/trade-lifecycles":
+                        payload = service.list(run_id=first("run_id"), closed_limit=int(first("closed_limit") or 5),
+                                               closed_before=int(first("closed_before")) if first("closed_before") else None)
+                    else:
+                        payload = service.detail(path.removeprefix("/screener/trade-lifecycles/"), run_id=first("run_id"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    missing = str(exc) == "LIFECYCLE_NOT_FOUND"
+                    self._send_error_json("SCREENER_LIFECYCLE_NOT_FOUND" if missing else "SCREENER_LIFECYCLE_INVALID", str(exc),
+                                          status=HTTPStatus.NOT_FOUND if missing else HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path in ("/paper/risk-control/sma-stop", "/paper/risk-control/sma-stop/history", "/paper/risk-control/sma-stop/config",
                         "/paper/risk-control/sma-stop/evaluation"):
                 # OCT1-08 reads: persisted stop state, bounded stop events, policy and the replay receipt. No mutation.

@@ -196,6 +196,14 @@ monitoring liveness. On a breach it shows the server EXIT decision and
 handoff and only fills the ticket with the current ledger quantity. Preview and
 submit stay in the ticket.
 
+#### Lifecycle view in the Screener (OCT1-10)
+
+After a submit, the AI Screener shows the resulting position as a
+[trade lifecycle](SCREENER_TRADE_LIFECYCLE.md): simulated fill, position, mark,
+stop, exit and P&L, joined to the decision that authorized the order through the
+`ACTION_DECISION` reason on the intent. The view is read-only. Its
+`Prepare Paper Exit` is the same handoff as above and still ends in this ticket.
+
 ### 4. Preview
 
 - Server validates draft against current state

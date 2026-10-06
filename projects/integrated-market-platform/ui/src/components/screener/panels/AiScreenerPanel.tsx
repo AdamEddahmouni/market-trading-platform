@@ -6,7 +6,10 @@ import type { AiScreenerResult, AiScreenerScope } from "../../../api/screenerAi"
 import { fetchAiScreenerPreview, postAiScreener } from "../../../api/screenerAi";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
 import { compactTokens } from "../news/SynthesisControl";
-import { age, PanelFrame, PanelMessage, useNow, usePanelVisible, useSelection } from "./shared";
+import { tradeLifecycles } from "../../../api/screenerLifecycle";
+import LifecycleCard from "../lifecycle/LifecycleCard";
+import TradeLifecycleGroups, { LifecycleBoundary } from "../lifecycle/TradeLifecycleGroups";
+import { age, ErrorDetail, PanelFrame, PanelMessage, useNow, usePanelVisible, useSelection } from "./shared";
 
 const keyFor = (scope: AiScreenerScope) => JSON.stringify(scope);
 
@@ -70,6 +73,11 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   const expired = result?.key === scopeKey && Date.parse(result.value.valid_until) <= now;
   useEffect(() => { setResult(null); setAiOverride(null); setRunFailed(false); abort.current?.abort(); setRunning(false); }, [scopeKey]);
   useEffect(() => () => { abort.current?.abort(); }, []);
+  // OCT1-10: one server projection joins candidate, decision, Paper position, stop and P&L. The run id is part of the
+  // cache identity, so a previous run's lifecycles are never drawn under a new rank list.
+  const runId = result?.key === scopeKey ? result.value.run_id : null;
+  const lifecycles = useQuery({ queryKey: ["screener-trade-lifecycles", runId], queryFn: ({ signal }) => tradeLifecycles(runId, signal),
+    enabled: visible, refetchInterval: visible ? 15_000 : false, staleTime: 5_000, retry: false });
   const estimate = preview.data?.estimate;
   const status = ai?.state ?? "UNAVAILABLE";
   const evidence = useMemo(() => new Map((result?.value.evidence ?? []).flatMap((candidate) => [
@@ -102,14 +110,19 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       {running ? "Running AI Screener…" : "Run AI Screener"}
     </button>}
     {screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
+    {lifecycles.data && <LifecycleBoundary list={lifecycles.data} />}
+    {lifecycles.isError && <PanelMessage tone="error" role="alert">Trade lifecycle is unavailable; positions, fills and P&amp;L are not shown here.<ErrorDetail error={lifecycles.error} /></PanelMessage>}
     {result?.key === scopeKey && <section className="ai-screener-result" aria-label="AI Screener result">
       <p className="ai-screener-meta">Selected {result.value.candidates.length} of {result.value.intake_count} intake candidates · {result.value.simulated ? "SOFTWARE_CONTROLLED fixture" : result.value.runtime} · valid until {result.value.valid_until}</p>
       <p className="ai-screener-meta">{result.value.state} · {result.value.provider_id} · {result.value.model_id} · prompt {result.value.prompt_id} v{result.value.prompt_version} · cutoff {result.value.decision_cutoff} · {result.value.cache === "HIT" ? "cache hit" : `${result.value.latency_ms ?? "—"} ms`}</p>
       {expired ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : result.value.state !== "CURRENT" && result.value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{result.value.reason ? ` · ${result.value.reason}` : ""}.</PanelMessage> : <>
         {result.value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {result.value.limitations.join(" ")}</PanelMessage>}
-        {result.value.candidates.map((selection) => <article className="ai-screener-candidate" key={selection.instrument_id}>
-          <ActionDecisionPanel key={`${result.value.run_id}|${selection.instrument_id}`} runId={result.value.run_id} instrumentId={selection.instrument_id} />
-          <header><h3>#{selection.rank} {selection.instrument_id}</h3><button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button></header>
+        {result.value.candidates.map((selection) => {
+          const lifecycle = lifecycles.data?.run?.run_id === result.value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
+          const controls = <>
+          <ActionDecisionPanel key={`${result.value.run_id}|${selection.instrument_id}`} runId={result.value.run_id} instrumentId={selection.instrument_id} onChanged={() => void lifecycles.refetch()} />
+          <button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button>
+          <details className="lifecycle-source"><summary>Source evidence and News detail from this run</summary>
           {(() => {
             const candidate = result.value.evidence.find((item) => item.instrument.instrument_id === selection.instrument_id);
             const news = candidate?.news;
@@ -138,8 +151,16 @@ export default function AiScreenerPanel({ api }: { api: any }) {
           <h4>Blocked evidence</h4>{(result.value.evidence.find((item) => item.instrument.instrument_id === selection.instrument_id)?.blocked ?? []).map((item, index) =>
             <p key={index}>{String(item.capability)} · {Array.isArray(item.reason_codes) ? item.reason_codes.join(", ") : "Unavailable"}</p>)}
           <h4>Uncertainties</h4><ul>{selection.uncertainties.map((item) => <li key={item}>{item}</li>)}</ul>
-        </article>)}
+          </details></>;
+          return lifecycle ? <LifecycleCard key={selection.instrument_id} lifecycle={lifecycle} runId={result.value.run_id}>{controls}</LifecycleCard>
+            : <article className="ai-screener-candidate" key={selection.instrument_id}>
+              <header><h3>#{selection.rank} {selection.instrument_id}</h3></header>
+              {!lifecycles.isError && <p role="status">Loading lifecycle…</p>}
+              {controls}
+            </article>;
+        })}
       </>}
     </section>}
+    {lifecycles.data && <TradeLifecycleGroups list={lifecycles.data} runId={runId} />}
   </PanelFrame>;
 }

@@ -99,3 +99,11 @@ with prompt `screener.ai_candidate_reduction.v2` and mandatory grounded conflict
 disclosure. Cached coverage and story/model provenance are inspectable; News
 drilldown selects the candidate in Screener even outside the loaded page.
 OCT1-06 remains outside this implementation.
+
+## Lifecycle view (OCT1-10)
+
+Each selected candidate is rendered in the AI Screener panel as a lifecycle card
+that adds its action decision, Paper entry, position, stop, exit and P&L. That
+view is a read-only projection over this run record and the other authorities;
+it does not change selection, evidence or prompts. Contract:
+[SCREENER_TRADE_LIFECYCLE.md](SCREENER_TRADE_LIFECYCLE.md).

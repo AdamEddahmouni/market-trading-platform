@@ -1,0 +1,63 @@
+{
+  "bounds": {
+    "active_managed": 25,
+    "decisions": 50,
+    "evidence_per_category": 8,
+    "prior_episodes": 5,
+    "recent_closed": 20,
+    "selected": 5,
+    "timeline_events": 200,
+    "unlinked": 10
+  },
+  "browser": {
+    "list_poll_interval_seconds": 15,
+    "requests_per_panel_refresh": 1,
+    "requests_to_expand_one_lifecycle": 1
+  },
+  "classification": "SOFTWARE_CONTROLLED",
+  "dataset": {
+    "closed_episodes": 12,
+    "decisions_for_instrument": 33,
+    "fills": 26,
+    "ledger_events": 158,
+    "open_positions": 2,
+    "stop_events": 6
+  },
+  "detail_projection_closed": {
+    "decisions": 2,
+    "max_ms": 70.444,
+    "mean_ms": 7.538,
+    "p95_ms": 7.371,
+    "payload_bytes": 22498,
+    "samples": 30,
+    "timeline_events": 7
+  },
+  "detail_projection_open": {
+    "decisions": 9,
+    "evidence_items": 3,
+    "max_ms": 9.927,
+    "mean_ms": 6.164,
+    "p95_ms": 8.843,
+    "payload_bytes": 53156,
+    "prior_episodes": 5,
+    "prior_episodes_truncated": 7,
+    "samples": 30,
+    "timeline_events": 19
+  },
+  "list_projection": {
+    "active_managed": 0,
+    "max_ms": 85.889,
+    "mean_ms": 15.307,
+    "p95_ms": 22.912,
+    "payload_bytes": 68977,
+    "recent_closed": 12,
+    "samples": 30,
+    "selected": 2,
+    "unlinked": 0
+  },
+  "method": "in-process time.perf_counter over the production TradeLifecycleService; SQLite local state; controlled fixtures for clock, bars, marks, candidates and model",
+  "model_calls_by_reads": 0,
+  "not_market_evidence": true,
+  "provider_calls_by_reads": 0,
+  "schema_version": "oct1-10-performance/1.0.0"
+}

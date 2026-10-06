@@ -5,7 +5,8 @@ import { workspacePathForInstrument } from "../../../api/instrumentIdentity";
 import { canUsePaperActions } from "../../mode-session/modeAuthority";
 import NextSessionPanel from "./NextSessionPanel";
 
-function PaperHandoff({ decision, permitted, onError }: { decision: ActionDecision; permitted: boolean; onError: () => void }) {
+/** The one governed route from a decision to the Paper Workspace. It prepares a draft; it never submits. */
+export function PaperHandoff({ decision, permitted, onError }: { decision: Pick<ActionDecision, "decision_id" | "action_state">; permitted: boolean; onError: () => void }) {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const current = useRef(decision.decision_id); current.current = decision.decision_id;
@@ -54,7 +55,7 @@ function DecisionRecord({ decision }: { decision: ActionDecision }) {
   </>;
 }
 
-export default function ActionDecisionPanel({ runId, instrumentId }: { runId: string; instrumentId: string }) {
+export default function ActionDecisionPanel({ runId, instrumentId, onChanged }: { runId: string; instrumentId: string; onChanged?: () => void }) {
   const [open, setOpen] = useState(false);
   const [preview, setPreview] = useState<ActionPreview | null>(null);
   const [decision, setDecision] = useState<ActionDecision | null>(null);
@@ -98,7 +99,7 @@ export default function ActionDecisionPanel({ runId, instrumentId }: { runId: st
           void request(async (signal) => { const value = await previewAction(runId, instrumentId, signal, selected); if (!signal.aborted && current.current === identity) setPreview(value); });
         }}><option value="">Evidence lineage only</option>{(preview.available_opportunities ?? []).map((item) => <option key={item.opportunity_id} value={item.opportunity_id}>{item.opportunity_id} · {item.direction}</option>)}</select></label>
         <button type="button" disabled={busy || !preview.candidate_current} onClick={() => void request(async (signal) => {
-          const value = await runAction(runId, instrumentId, signal, opportunity); if (!signal.aborted && current.current === identity) { setDecision(value); setNow(Date.now()); }
+          const value = await runAction(runId, instrumentId, signal, opportunity); if (!signal.aborted && current.current === identity) { setDecision(value); setNow(Date.now()); onChanged?.(); }
         })}>{busy ? "Evaluating…" : "Evaluate Decision"}</button>
       </>}
       {decision && <section aria-label="Current decision"><p>CURRENT DECISION</p><DecisionRecord decision={decision} />
