@@ -109,6 +109,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/sessions":
             return RoutePolicy(capability="state.read")
+        if path in {"/paper/trades", "/paper/equity-history"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
+            return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/trace":
             return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/strategy-profitability":
@@ -148,6 +150,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/paper/orders/cancel":
             return RoutePolicy(capability="paper.order.cancel", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/sessions" or path == "/paper/sessions/close":
+            return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if path == "/paper/experiments" or (path.startswith("/paper/experiments/") and path.endswith("/close")):
             return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path.startswith("/operator/"):
             if path == "/operator/config/provider":

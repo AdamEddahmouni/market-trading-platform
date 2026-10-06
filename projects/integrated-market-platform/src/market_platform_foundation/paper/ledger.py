@@ -11,7 +11,7 @@ from typing import Any, Callable, Iterator
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..portfolio.canonical import CanonicalPortfolio, CashBalance, PortfolioKey
-from ..portfolio.ledger import apply_fill, build_ledger_state
+from ..portfolio.ledger import apply_fill, apply_portfolio_fill, build_ledger_state, build_portfolio_state
 from ..portfolio.paper_fill import apply_paper_fill_to_portfolio, rebuild_portfolio_from_fills
 from ..risk.kill_switch import KillSwitchState
 from ..risk.policy import DEFAULT_RISK_POLICY
@@ -39,6 +39,15 @@ EVENT_TYPES: tuple[str, ...] = (
     "ReconciliationRecorded",
     "ReconciliationCorrectionRecorded",
 )
+
+
+ACCOUNT_IDENTITY_VERSION_PORTFOLIO = 2
+ACCOUNT_SCOPE_PORTFOLIO = "PORTFOLIO"
+
+# Mark qualities that value a position without qualification. Anything else
+# (stale, delayed, restored, disconnected) still values the position but
+# degrades the portfolio valuation.
+CURRENT_MARK_QUALITIES: frozenset[str] = frozenset({"PASS", "OK", "GOOD", "FRESH", "LIVE", "CURRENT"})
 
 
 OPEN_ORDER_STATES: frozenset[str] = frozenset(
@@ -83,6 +92,8 @@ class PaperExecutionLedger:
     _live_mark_provider: str | None = field(default=None, repr=False)
     _live_mark_as_of_ns: int | None = field(default=None, repr=False)
     _live_mark_quality: str | None = field(default=None, repr=False)
+    # Portfolio-scoped accounts value every position from its own mark.
+    _marks: dict[str, dict[str, Any]] = field(default_factory=dict, repr=False)
     persist_sink: Callable[["PaperExecutionLedger", list[dict[str, Any]]], None] | None = field(
         default=None,
         repr=False,
@@ -107,14 +118,27 @@ class PaperExecutionLedger:
         data_mode: str = "FIXTURE_REPLAY",
         data_provider: str = "INTERNAL",
         execution_provider: str = "INTERNAL",
+        experiment_id: str | None = None,
     ) -> PaperExecutionLedger:
         active_policy = policy or DEFAULT_RISK_POLICY
-        account_body = {
-            "currency": active_policy["currency"],
-            "initial_cash_minor": active_policy["initial_cash_minor"],
-            "instrument_id": instrument_id,
-            "replay_session_id": replay_session_id,
-        }
+        if experiment_id:
+            # Portfolio-scoped identity (v2): one account per experiment,
+            # shared by every instrument it trades. The seed instrument is
+            # deliberately absent so focus changes cannot mint a new account.
+            account_body = {
+                "account_identity_version": ACCOUNT_IDENTITY_VERSION_PORTFOLIO,
+                "account_scope": ACCOUNT_SCOPE_PORTFOLIO,
+                "currency": active_policy["currency"],
+                "experiment_id": experiment_id,
+                "initial_cash_minor": active_policy["initial_cash_minor"],
+            }
+        else:
+            account_body = {
+                "currency": active_policy["currency"],
+                "initial_cash_minor": active_policy["initial_cash_minor"],
+                "instrument_id": instrument_id,
+                "replay_session_id": replay_session_id,
+            }
         paper_account_id = sha256_bytes(canonical_bytes(account_body))
         session_body = {
             "execution_authority": execution_authority,
@@ -139,15 +163,17 @@ class PaperExecutionLedger:
             data_provider=data_provider,
             execution_provider=execution_provider,
         )
-        ledger._append(
-            "PaperAccountCreated",
-            {
-                "currency": active_policy["currency"],
-                "initial_cash_minor": active_policy["initial_cash_minor"],
-                "instrument_id": instrument_id,
-                "symbol": symbol,
-            },
-        )
+        account_payload: dict[str, Any] = {
+            "currency": active_policy["currency"],
+            "initial_cash_minor": active_policy["initial_cash_minor"],
+            "instrument_id": instrument_id,
+            "symbol": symbol,
+        }
+        if experiment_id:
+            account_payload["account_identity_version"] = ACCOUNT_IDENTITY_VERSION_PORTFOLIO
+            account_payload["account_scope"] = ACCOUNT_SCOPE_PORTFOLIO
+            account_payload["experiment_id"] = experiment_id
+        ledger._append("PaperAccountCreated", account_payload)
         ledger._append(
             "PaperSessionOpened",
             {
@@ -292,13 +318,58 @@ class PaperExecutionLedger:
     def lookup_idempotent_order(self, idempotency_key: str) -> str | None:
         return self.idempotency_index.get(idempotency_key)
 
+    def _account_created_payload(self) -> dict[str, Any]:
+        for event in self.events:
+            if event["event_type"] == "PaperAccountCreated":
+                payload = event.get("payload")
+                return payload if isinstance(payload, dict) else {}
+        return {}
+
+    def is_portfolio_scoped(self) -> bool:
+        """True only when this ledger's own creation event declares v2 identity.
+
+        Legacy sessions never carry the marker, so persisted single-position
+        accounts keep their pooled accounting and are never reinterpreted.
+        """
+        return (
+            self._account_created_payload().get("account_identity_version")
+            == ACCOUNT_IDENTITY_VERSION_PORTFOLIO
+        )
+
+    @property
+    def experiment_id(self) -> str | None:
+        value = self._account_created_payload().get("experiment_id")
+        return str(value) if value else None
+
+    def position_shares_for(self, instrument_id: str) -> int:
+        return int(self._project_ledger(instrument_id=instrument_id)["position_shares"])
+
+    def reserved_cash_minor(self) -> int:
+        """Cash obligated to working long orders (existing financial-enforcement rule)."""
+        from ..risk.financial import working_order_obligations_by_currency
+
+        currency = str(self.policy.get("currency", "USD")).upper()
+        return int(working_order_obligations_by_currency(self).get(currency, 0))
+
     def project_account(self) -> dict[str, Any]:
         projection = self._project_ledger()
         cash_minor = int(projection["cash_minor"])
         scale = int(self.policy["price_scale"])
+        account: dict[str, Any] = {}
+        buying_power_minor = cash_minor
+        if self.is_portfolio_scoped():
+            reserved = self.reserved_cash_minor()
+            buying_power_minor = max(0, cash_minor - reserved)
+            account = {
+                "account_identity_version": ACCOUNT_IDENTITY_VERSION_PORTFOLIO,
+                "account_scope": ACCOUNT_SCOPE_PORTFOLIO,
+                "experiment_id": self.experiment_id,
+                "reserved_cash_minor": reserved,
+            }
         return {
+            **account,
             "authority_boundary": "PAPER_EXECUTION_OBSERVABILITY",
-            "buying_power_minor": cash_minor,
+            "buying_power_minor": buying_power_minor,
             "cash_minor": cash_minor,
             "cash_display": decimal_minor_to_display(cash_minor, scale=scale),
             "currency": self.policy["currency"],
@@ -326,16 +397,256 @@ class PaperExecutionLedger:
         mark_provider: str,
         mark_as_of_ns: int,
         mark_quality: str,
+        instrument_id: str | None = None,
+        freshness_ms: int | None = None,
     ) -> None:
+        if instrument_id is not None:
+            if isinstance(mark_minor, bool) or not isinstance(mark_minor, int) or mark_minor <= 0:
+                raise ValueError("MARK_INVALID: mark must be a positive integer minor amount")
+            self._marks[str(instrument_id)] = {
+                "freshness_ms": freshness_ms,
+                "instrument_id": str(instrument_id),
+                "mark_as_of_ns": mark_as_of_ns,
+                "mark_minor": mark_minor,
+                "mark_provider": mark_provider,
+                "mark_quality": mark_quality,
+            }
+            return
         self._live_mark_minor = mark_minor
         self._live_mark_provider = mark_provider
         self._live_mark_as_of_ns = mark_as_of_ns
         self._live_mark_quality = mark_quality
 
+    def clear_mark(self, instrument_id: str) -> None:
+        self._marks.pop(str(instrument_id), None)
+
+    def mark_for(self, instrument_id: str) -> dict[str, Any] | None:
+        """The instrument's own mark, or None. Never another instrument's."""
+        mark = self._marks.get(str(instrument_id))
+        return dict(mark) if mark is not None else None
+
+    def _symbol_for_instrument(self, instrument_id: str) -> str:
+        for event in reversed(self.events):
+            if event["event_type"] != "OrderIntentCreated":
+                continue
+            intent = (event.get("payload") or {}).get("intent")
+            if isinstance(intent, dict) and str(intent.get("instrument_id", "")) == instrument_id:
+                instrument = intent.get("instrument")
+                if isinstance(instrument, dict) and instrument.get("symbol"):
+                    return str(instrument["symbol"])
+        if instrument_id == self._primary_instrument_id():
+            return self._primary_symbol()
+        return instrument_id
+
+    def _project_portfolio_positions(self) -> list[dict[str, Any]]:
+        projection = self._project_ledger()
+        scale = int(self.policy["price_scale"])
+        rows: list[dict[str, Any]] = []
+        for instrument_id in sorted(projection["positions"]):
+            position = projection["positions"][instrument_id]
+            shares = int(position["position_shares"])
+            if shares == 0:
+                continue
+            symbol = self._symbol_for_instrument(instrument_id)
+            basis = int(position["position_cost_basis_minor"])
+            avg_fill = abs(basis) // abs(shares)
+            mark = self._marks.get(instrument_id)
+            mark_minor = int(mark["mark_minor"]) if mark is not None else None
+            # Unrealized P&L is measured against total cost basis, not the
+            # floored average, so partial closes never leak a rounding cent.
+            market_value = shares * mark_minor if mark_minor is not None else None
+            unrealized = market_value - basis if market_value is not None else None
+            rows.append(
+                {
+                    "average_fill_display": decimal_minor_to_display(avg_fill, scale=scale),
+                    "average_fill_minor": avg_fill,
+                    "cost_basis_minor": basis,
+                    "first_entry_time_ns": position["first_entry_time"],
+                    "instrument": build_instrument_ref(instrument_id=instrument_id, symbol=symbol),
+                    "instrument_id": instrument_id,
+                    "latest_fill_time_ns": position["latest_fill_time"],
+                    "mark_as_of_ns": mark["mark_as_of_ns"] if mark is not None else None,
+                    "mark_display": decimal_minor_to_display(mark_minor, scale=scale) if mark_minor is not None else None,
+                    "mark_freshness_ms": mark["freshness_ms"] if mark is not None else None,
+                    "mark_minor": mark_minor,
+                    "mark_provider": mark["mark_provider"] if mark is not None else "MARK_UNAVAILABLE",
+                    "mark_quality": mark["mark_quality"] if mark is not None else "UNAVAILABLE",
+                    "mark_source": mark["mark_provider"] if mark is not None else "MARK_UNAVAILABLE",
+                    "market_value_minor": market_value,
+                    "notional_minor": abs(market_value) if market_value is not None else None,
+                    "quantity": shares,
+                    "realized_pnl_minor": int(position["realized_pnl_minor"]),
+                    "side": "LONG" if shares > 0 else "SHORT",
+                    "symbol": symbol,
+                    "unrealized_pnl_display": decimal_minor_to_display(unrealized, scale=scale) if unrealized is not None else None,
+                    "unrealized_pnl_minor": unrealized,
+                }
+            )
+        return rows
+
+    def project_valuation(self, *, as_of_ns: int | None = None) -> dict[str, Any]:
+        """Portfolio valuation: equity = cash + sum(quantity x own mark).
+
+        Fails closed on a missing mark: equity and total P&L are None and the
+        quality is PARTIAL, never a zero-valued position.
+        """
+        if not self.is_portfolio_scoped():
+            raise ValueError("PORTFOLIO_VALUATION_REQUIRES_PORTFOLIO_ACCOUNT")
+        projection = self._project_ledger()
+        positions = self._project_portfolio_positions()
+        initial = int(self.policy["initial_cash_minor"])
+        cash = int(projection["cash_minor"])
+        reserved = self.reserved_cash_minor()
+        marked = [row for row in positions if row["mark_minor"] is not None]
+        missing = [row["instrument_id"] for row in positions if row["mark_minor"] is None]
+        degraded = [
+            row["instrument_id"]
+            for row in marked
+            if str(row["mark_quality"]).upper() not in CURRENT_MARK_QUALITIES
+        ]
+        marked_value = sum(int(row["market_value_minor"]) for row in marked)
+        marked_unrealized = sum(int(row["unrealized_pnl_minor"]) for row in marked)
+        if not positions:
+            quality = "CURRENT"
+        elif missing and not marked:
+            quality = "UNAVAILABLE"
+        elif missing:
+            quality = "PARTIAL"
+        elif degraded:
+            quality = "DEGRADED"
+        else:
+            quality = "CURRENT"
+        complete = not missing
+        equity = cash + marked_value if complete else None
+        total_pnl = equity - initial if equity is not None else None
+        # Basis points of initial capital, exact integer arithmetic, truncated toward zero so a
+        # loss and a gain of the same size report the same magnitude.
+        return_bps = None
+        if total_pnl is not None and initial > 0:
+            magnitude = (abs(total_pnl) * 10_000) // initial
+            return_bps = magnitude if total_pnl >= 0 else -magnitude
+        mark_times = [int(row["mark_as_of_ns"]) for row in marked if row["mark_as_of_ns"]]
+        return {
+            "buying_power_basis": "CASH_LESS_WORKING_ORDER_RESERVATIONS_NO_LEVERAGE",
+            "buying_power_minor": max(0, cash - reserved),
+            "cash_minor": cash,
+            "currency": self.policy["currency"],
+            "degraded_instruments": degraded,
+            "equity_minor": equity,
+            "initial_capital_minor": initial,
+            "marked_position_value_minor": marked_value,
+            "marked_unrealized_pnl_minor": marked_unrealized,
+            "marks": [
+                {
+                    "freshness_ms": row["mark_freshness_ms"],
+                    "instrument_id": row["instrument_id"],
+                    "mark_as_of_ns": row["mark_as_of_ns"],
+                    "mark_minor": row["mark_minor"],
+                    "provider": row["mark_provider"],
+                    "quality": row["mark_quality"],
+                    "symbol": row["symbol"],
+                }
+                for row in positions
+            ],
+            "missing_mark_instruments": missing,
+            "newest_mark_as_of_ns": max(mark_times) if mark_times else None,
+            "oldest_mark_as_of_ns": min(mark_times) if mark_times else None,
+            "open_position_count": len(positions),
+            "position_value_minor": marked_value if complete else None,
+            "quality": quality,
+            "realized_pnl_minor": int(projection["realized_pnl_minor"]),
+            "reserved_cash_minor": reserved,
+            "return_bps": return_bps,
+            "total_commission_minor": int(projection["total_commission_minor"]),
+            "total_fees_minor": int(projection["total_fees_minor"]),
+            "total_pnl_minor": total_pnl,
+            "total_transaction_costs_minor": int(projection["total_commission_minor"])
+            + int(projection["total_fees_minor"]),
+            "unrealized_pnl_minor": marked_unrealized if complete else None,
+            "valuation_cutoff_ns": as_of_ns if as_of_ns is not None else monotonic_wall_ns(),
+        }
+
+    def project_trades(self) -> list[dict[str, Any]]:
+        """Fill-level trade history: one row per position-changing fill.
+
+        Rejected and cancelled orders never appear here; they stay in order
+        history. Economic facts are recomputed from immutable fill events.
+        """
+        if not self.is_portfolio_scoped():
+            raise ValueError("TRADE_HISTORY_REQUIRES_PORTFOLIO_ACCOUNT")
+        projection = self._project_ledger()
+        entries = {str(entry["fill_id"]): entry for entry in projection["entries"]}
+        orders = {str(order.get("order_id")): order for order in self.project_orders()}
+        scale = int(self.policy["price_scale"])
+        trades: list[dict[str, Any]] = []
+        for event in self.events:
+            if event["event_type"] != "FillRecorded":
+                continue
+            payload = event.get("payload")
+            if not isinstance(payload, dict) or not isinstance(payload.get("fill"), dict):
+                continue
+            fill = payload["fill"]
+            entry = entries.get(str(fill.get("fill_id")))
+            if entry is None:
+                continue
+            order_id = str(payload.get("order_id") or fill.get("order_id") or "")
+            order = orders.get(order_id, {})
+            intent = self.lookup_intent_for_order(order_id) or {}
+            snapshot = intent.get("decision_source_snapshot")
+            reasons = snapshot.get("reasons", []) if isinstance(snapshot, dict) else []
+            decision_id = next(
+                (str(r.get("label")) for r in reasons if isinstance(r, dict) and r.get("code") == "ACTION_DECISION"),
+                None,
+            )
+            instrument_id = str(entry["instrument_id"])
+            effect = str(entry["position_effect"])
+            closing = effect in {"REDUCE", "CLOSE", "REVERSE"}
+            trades.append(
+                {
+                    "approved_quantity": order.get("approved_quantity", order.get("quantity")),
+                    "commission_minor": int(entry["commission_minor"]),
+                    "costs_minor": int(entry["commission_minor"]) + int(entry["fees_minor"]),
+                    "decision_id": decision_id,
+                    "decision_source": "AI_DECISION_GOVERNED" if decision_id else "MANUAL_TEST",
+                    "decision_time_ns": intent.get("created_time"),
+                    "fees_minor": int(entry["fees_minor"]),
+                    "fill_id": str(fill.get("fill_id")),
+                    "fill_kind": "SIMULATED_FILL",
+                    "fill_price_display": decimal_minor_to_display(int(fill["fill_price_minor"]), scale=scale),
+                    "fill_price_minor": int(fill["fill_price_minor"]),
+                    "fill_time_ns": fill.get("fill_time"),
+                    "filled_quantity": int(fill["fill_quantity"]),
+                    "instrument_id": instrument_id,
+                    "intent_id": intent.get("intent_id"),
+                    "is_market_truth": False,
+                    "lineage_refs": list(fill.get("lineage_refs") or intent.get("lineage_refs") or []),
+                    "order_id": order_id,
+                    "order_type": intent.get("order_type") or order.get("order_type"),
+                    "position_after": int(entry["position_after"]),
+                    "position_before": int(entry["position_before"]),
+                    "position_effect": effect,
+                    # Realized P&L on the closed quantity, net of this fill's
+                    # costs. Opening fills realize only their own costs.
+                    "realized_pnl_delta_minor": int(entry["realized_pnl_delta_minor"]),
+                    "realized_pnl_minor": int(entry["realized_pnl_delta_minor"]) if closing else None,
+                    "requested_quantity": order.get("requested_quantity", intent.get("desired_quantity")),
+                    "risk_decision_id": fill.get("risk_decision_id") or intent.get("risk_decision_id"),
+                    "sequence": int(event["sequence"]),
+                    "side": "BUY" if str(fill.get("direction")) == "long" else "SELL",
+                    "simulator_version": fill.get("simulator_version"),
+                    "submit_time_ns": fill.get("submit_time_ns"),
+                    "symbol": self._symbol_for_instrument(instrument_id),
+                }
+            )
+        return trades
+
     def project_positions(self) -> list[dict[str, Any]]:
         positions: list[dict[str, Any]] = []
         if self._uses_canonical_authority():
             positions.extend(self._project_canonical_positions())
+        if self.is_portfolio_scoped():
+            positions.extend(self._project_portfolio_positions())
+            return positions
         projection = self._project_ledger()
         position_shares = int(projection["position_shares"])
         if position_shares == 0:
@@ -1188,10 +1499,15 @@ class PaperExecutionLedger:
                     "order_id": order.get("order_id"),
                 },
             )
-            projection = self._project_ledger()
+            fill_instrument_id = str(fill.get("instrument_id", ""))
+            projection = self._project_ledger(instrument_id=fill_instrument_id)
+            position_payload: dict[str, Any] = {}
+            if self.is_portfolio_scoped():
+                position_payload["instrument_id"] = fill_instrument_id
             return self._append(
                 "PositionChanged",
                 {
+                    **position_payload,
                     "cash_minor": int(projection["cash_minor"]),
                     "fill_id": fill.get("fill_id"),
                     "position_cost_basis_minor": int(projection["position_cost_basis_minor"]),
@@ -1200,7 +1516,16 @@ class PaperExecutionLedger:
                 },
             )
 
-    def _project_ledger(self) -> dict[str, Any]:
+    def _project_ledger(self, *, instrument_id: str | None = None) -> dict[str, Any]:
+        """Replay fills into the account projection.
+
+        Portfolio-scoped ledgers keep one position per instrument; the scalar
+        ``position_shares`` / ``position_cost_basis_minor`` keys then describe
+        ``instrument_id`` only (zero when none is given). Legacy ledgers pool
+        every equity fill into the scalar position and ignore ``instrument_id``.
+        """
+        if self.is_portfolio_scoped():
+            return self._project_portfolio_ledger(instrument_id=instrument_id)
         state = build_ledger_state(initial_cash_minor=int(self.policy["initial_cash_minor"]))
         for event in self.events:
             if event["event_type"] != "FillRecorded":
@@ -1217,6 +1542,29 @@ class PaperExecutionLedger:
             state = apply_fill(state, fill=fill, policy=self.policy)
         if self._uses_canonical_authority():
             state = self._merge_derivative_cash_into_ledger(state)
+        return state
+
+    def _project_portfolio_ledger(self, *, instrument_id: str | None) -> dict[str, Any]:
+        state = build_portfolio_state(initial_cash_minor=int(self.policy["initial_cash_minor"]))
+        for event in self.events:
+            if event["event_type"] != "FillRecorded":
+                continue
+            payload = event.get("payload")
+            if not isinstance(payload, dict):
+                continue
+            fill = payload.get("fill")
+            if not isinstance(fill, dict):
+                continue
+            intent = self._lookup_intent_for_fill(fill, {"order_id": payload.get("order_id")})
+            if self._is_derivative_fill(fill, intent):
+                continue
+            state = apply_portfolio_fill(state, fill=fill, policy=self.policy)
+        if self._uses_canonical_authority():
+            state = self._merge_derivative_cash_into_ledger(state)
+        position = state["positions"].get(str(instrument_id)) if instrument_id is not None else None
+        state = dict(state)
+        state["position_shares"] = int(position["position_shares"]) if position else 0
+        state["position_cost_basis_minor"] = int(position["position_cost_basis_minor"]) if position else 0
         return state
 
     def _merge_derivative_cash_into_ledger(self, state: dict[str, Any]) -> dict[str, Any]:

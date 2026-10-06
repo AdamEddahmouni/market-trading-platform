@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, useLocation } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPaperOrderHistoryInfiniteQueryMock } from "../../test/paperOrderHistoryQueryMock";
+import { experimentPortfolio } from "./paperExperimentFixture";
 import { PaperPortfolioPage } from "./PaperPortfolioPage";
 
 function portfolioPayload() {
@@ -64,6 +65,10 @@ vi.mock("../../api/hooks", () => ({
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useClosePaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useCancelPaperOrderMutation: () => ({ mutateAsync: cancelPaperOrder, isPending: false }),
+  useCreatePaperExperimentMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useClosePaperExperimentMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  usePaperTradesInfiniteQuery: () => ({ data: undefined, isLoading: false, isError: false, hasNextPage: false }),
+  usePaperEquityHistoryQuery: () => ({ data: undefined }),
 }));
 
 function renderPage(paperActionsPermitted: boolean) {
@@ -347,6 +352,38 @@ describe("PaperPortfolioPage", () => {
     ];
     renderPage(true);
     expect(screen.queryByRole("button", { name: /Cancel working AAPL order/i })).not.toBeInTheDocument();
+  });
+
+  it("offers explicit experiment creation when no experiment is active", () => {
+    portfolio.account.execution_mode = "INTERNAL_SIMULATION";
+    portfolio.account.execution_authority = "PAPER_ONLY";
+    renderPage(true);
+    expect(screen.getByTestId("experiment-none")).toHaveTextContent("No active Paper experiment");
+    expect(screen.getByRole("button", { name: "Create $100,000 Paper experiment" })).toBeInTheDocument();
+    expect(screen.queryByTestId("experiment-panel")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "New Paper Session" })).toBeInTheDocument();
+  });
+
+  it("shows the experiment account and removes the legacy session controls that could replace it", () => {
+    portfolio = experimentPortfolio() as unknown as typeof portfolio;
+    renderPage(true);
+    const panel = screen.getByTestId("experiment-panel");
+    expect(panel).toHaveTextContent("OCT1-09 PAPER EXPERIMENT · SIMULATED CAPITAL");
+    expect(panel).toHaveTextContent("$100,300.00");
+    expect(screen.queryByTestId("experiment-none")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Archive session" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "New Paper Session" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Close experiment" })).toBeInTheDocument();
+  });
+
+  it("keeps a closed experiment readable and offers a new one explicitly", () => {
+    const closed = experimentPortfolio();
+    closed.experiment.status = "CLOSED";
+    portfolio = closed as unknown as typeof portfolio;
+    renderPage(true);
+    expect(screen.getByTestId("experiment-status")).toHaveTextContent("CLOSED");
+    expect(screen.queryByRole("button", { name: "Close experiment" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create $100,000 Paper experiment" })).toBeInTheDocument();
   });
 
   it.each([

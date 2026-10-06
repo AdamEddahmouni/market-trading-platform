@@ -71,7 +71,7 @@ def _enforce_pretrade_admission(
     )
     instrument = intent.get("instrument") or {}
     account = ledger.project_account()
-    projection = ledger._project_ledger()
+    projection = ledger._project_ledger(instrument_id=str(intent.get("instrument_id", "")))
     kind = str(instrument.get("instrument_kind", "TRADABLE_SECURITY")).upper()
     position_qty = int(projection.get("position_shares", 0))
     if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
@@ -131,6 +131,26 @@ def _enforce_pretrade_admission(
         price_scale=int(ledger.policy.get("price_scale", 100)),
         source_time_ns=int(intent.get("created_time", 0)),
     )
+    if (
+        side == "SELL"
+        and kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}
+        and ledger.is_portfolio_scoped()
+    ):
+        # A portfolio-scoped account does not enable shorting: a sell may only
+        # reduce or close that instrument's own long position, net of quantity
+        # already committed to working sells. A reversal is rejected, never
+        # silently treated as a close.
+        from ..risk.financial import reserved_sell_quantity_for
+
+        owned = max(0, position_qty)
+        reserved_sell = reserved_sell_quantity_for(ledger, str(intent.get("instrument_id", "")))
+        available_to_sell = max(0, owned - reserved_sell)
+        if int(intent.get("desired_quantity", 0)) > available_to_sell:
+            raise ValueError(
+                "INSUFFICIENT_POSITION: "
+                f"{{'owned_quantity': {owned}, 'reserved_sell_quantity': {reserved_sell}, "
+                f"'available_to_sell': {available_to_sell}}}"
+            )
     if side == "BUY" or kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
         if side == "BUY" and kind in {"OPTION_CONTRACT", "TRADABLE_SECURITY", "ETF_FUND", "CRYPTO_PAIR"}:
             if price_minor is None:
@@ -182,7 +202,7 @@ def execute_order_intent(
         raise FillModelLiveForbidden(LIVE_EXECUTION_FORBIDDEN)
     intent = dict(intent)
     intent.setdefault("execution_mode", ledger.execution_mode)
-    projection = ledger._project_ledger()
+    projection = ledger._project_ledger(instrument_id=str(intent.get("instrument_id", "")))
     decision = evaluate_risk(
         intent=intent,
         policy=ledger.policy,
@@ -249,7 +269,7 @@ def _build_preview_envelope(
     idempotency_key: str,
     observation_time: int,
 ) -> dict[str, Any]:
-    projection = ledger._project_ledger()
+    projection = ledger._project_ledger(instrument_id=str(intent.get("instrument_id", "")))
     scale = int(ledger.policy["price_scale"])
     current_position = int(projection["position_shares"])
     projected_position = current_position

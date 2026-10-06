@@ -147,7 +147,7 @@ def build_paper_risk_payload(store: ReplayStore) -> dict[str, Any]:
 
 
 def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None = None) -> dict[str, Any]:
-    from . import live_projections
+    from . import live_projections, paper_experiment
 
     live_projections.apply_live_marks_to_ledger(store)
     ledger = store.paper_ledger
@@ -231,6 +231,7 @@ def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None =
             "risk": demo_risk,
             "session": demo_session,
             **_active_instrument_fields(store),
+            **paper_experiment.portfolio_blocks(store),
         },
     )
     envelope = attach_operational_identity(envelope, identity)
@@ -575,8 +576,9 @@ def _admit_focus_instrument(store: ReplayStore, focus: str) -> dict[str, Any]:
 
 
 def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
-    from . import live_projections
+    from . import live_projections, paper_experiment
 
+    paper_experiment.assert_experiment_order_allowed(store)
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
     _assert_live_execution_allowed(store, submit=False)
@@ -585,6 +587,7 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     from .screener_action import action_service
     action_record = action_service(store).validate_order_source(parsed, focus)
     instrument = _admit_focus_instrument(store, focus)
+    paper_experiment.assert_experiment_instrument_supported(store, instrument)
     observation_time = _paper_observation_time(store, instrument_id=focus)
     margin_facts = _resolve_order_margin_facts(
         focus=focus,
@@ -657,6 +660,19 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
         margin_facts_revision=claims["margin_facts_revision"],
     )
     envelope["preview"]["preview_id"] = record.preview_id
+    if store.paper_ledger.is_portfolio_scoped():
+        # Which fake-money account this order would touch, before submit.
+        account = store.paper_ledger.project_account()
+        envelope["preview"]["experiment_context"] = {
+            "buying_power_minor": account["buying_power_minor"],
+            "capital_kind": "SIMULATED",
+            "cash_minor": account["cash_minor"],
+            "current_position_quantity": store.paper_ledger.position_shares_for(focus),
+            "experiment_id": store.paper_ledger.experiment_id,
+            "initial_capital_minor": account["initial_cash_minor"],
+            "paper_account_id": account["paper_account_id"],
+            "reserved_cash_minor": account["reserved_cash_minor"],
+        }
     envelope["preview"]["preview_binding"] = {
         "account_id": record.account_id,
         "expires_at_ns": record.expires_at_ns,
@@ -704,9 +720,44 @@ def submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
             trace.finish()
 
 
-def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
-    from . import live_projections
+def _order_lineage_refs(
+    store: ReplayStore,
+    *,
+    parsed: dict[str, Any],
+    body: dict[str, Any],
+    action_record: dict[str, Any] | None,
+) -> list[dict[str, Any]]:
+    """Typed references from a Paper order back to what authorized it."""
+    refs: list[dict[str, Any]] = []
 
+    def add(kind: str, identifier: Any) -> None:
+        if identifier:
+            refs.append({"id": str(identifier), "kind": kind, "schema_version": "1"})
+
+    snapshot = parsed.get("decision_source_snapshot")
+    for reason in (snapshot.get("reasons", []) if isinstance(snapshot, dict) else []):
+        if isinstance(reason, dict) and reason.get("code") in {"ACTION_DECISION", "ACTION_SNAPSHOT"}:
+            add(str(reason["code"]), reason.get("label"))
+    if isinstance(action_record, dict):
+        snapshot_record = action_record.get("evidence_snapshot")
+        add("CANDIDATE_RUN", snapshot_record.get("candidate_run_id") if isinstance(snapshot_record, dict) else None)
+        add("OPPORTUNITY", action_record.get("opportunity_id"))
+        add("DECISION_TRACE", action_record.get("decision_trace_id"))
+        add("REEVALUATION_CYCLE", action_record.get("cycle_id"))
+        server_exit = action_record.get("server_exit")
+        if isinstance(server_exit, dict):
+            add("SMA_STOP_STATE", server_exit.get("stop_state_id"))
+            add("SMA_STOP_POLICY", server_exit.get("policy_id"))
+            add("POSITION_EPOCH", server_exit.get("position_epoch_id"))
+    add("PAPER_PREVIEW", body.get("preview_id"))
+    add("PAPER_EXPERIMENT", store.paper_ledger.experiment_id)
+    return refs
+
+
+def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, Any]:
+    from . import live_projections, paper_experiment
+
+    paper_experiment.assert_experiment_order_allowed(store)
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
     parsed = _parse_order_body(body, store)
@@ -714,6 +765,7 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     focus = _require_order_instrument(store, parsed["explicit_instrument"])
     from .screener_action import action_service
     instrument = _admit_focus_instrument(store, focus)
+    paper_experiment.assert_experiment_instrument_supported(store, instrument)
     existing_order_id = store.paper_ledger.lookup_idempotent_order(parsed["idempotency_key"])
     if existing_order_id:
         existing = store.paper_ledger.lookup_order(existing_order_id)
@@ -781,6 +833,15 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
         action_service(store).validate_order_source(parsed, focus)
         _require_valid_preview(store, body, focus=focus, parsed=parsed, instrument=instrument)
         _assert_live_execution_allowed(store, submit=True)
+    experiment_lineage: dict[str, Any] = {}
+    if store.paper_ledger.is_portfolio_scoped():
+        # Lineage is recorded on experiment orders only, so legacy sessions
+        # keep byte-identical intents.
+        experiment_lineage["lineage_refs"] = _order_lineage_refs(
+            store, parsed=parsed, body=body, action_record=action_record
+        )
+        if action_risk and action_risk.get("risk_decision_id"):
+            experiment_lineage["risk_decision_id"] = str(action_risk["risk_decision_id"])
     result = submit_interactive_order(
         ledger=store.paper_ledger,
         bars=bars,
@@ -797,7 +858,11 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
         decision_source_snapshot=parsed["decision_source_snapshot"],
         instrument=instrument,
         margin_facts=margin_facts,
+        **experiment_lineage,
     )
+    if store.paper_ledger.is_portfolio_scoped():
+        live_projections.apply_live_marks_to_ledger(store)
+        paper_experiment.record_equity_snapshot(store, trigger="FILL")
     return _paper_envelope(store, {"submission": result})
 
 
@@ -1119,6 +1184,11 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
         # No live execution capability is composed anywhere in the platform;
         # opening a session labeled LIVE/AUTHORIZED would be a false attestation.
         raise ValueError("OPERATING_MODE_UNSUPPORTED: LIVE execution is not implemented")
+    from . import paper_experiment
+
+    if paper_experiment.active_experiment(store) is not None:
+        # A new session would replace the experiment account and its cash.
+        raise ValueError("PAPER_EXPERIMENT_ACTIVE: close the active experiment before opening another session")
     closed = any(event["event_type"] == "PaperSessionClosed" for event in store.paper_ledger.events)
     if store.paper_ledger.events and not closed:
         store.paper_ledger.close_session()
@@ -1188,7 +1258,10 @@ def open_paper_session(store: ReplayStore, body: dict[str, Any]) -> dict[str, An
 
 def close_paper_session(store: ReplayStore) -> dict[str, Any]:
     from ..local_state.startup import persist_ledger
+    from . import paper_experiment
 
+    if paper_experiment.active_experiment(store) is not None:
+        raise ValueError("PAPER_EXPERIMENT_ACTIVE: close the experiment itself; its session cannot be archived directly")
     event = store.paper_ledger.close_session()
     persist_ledger(store.paper_ledger)
     store.paper_ledger.execution_authority = "BLOCKED"
@@ -1228,11 +1301,14 @@ def _default_client_order_id(store: ReplayStore) -> str:
 
 
 def _sum_unrealized_minor(positions: list[dict[str, Any]]) -> int:
-    return sum(int(row.get("unrealized_pnl_minor", 0)) for row in positions)
+    return sum(int(row.get("unrealized_pnl_minor") or 0) for row in positions)
 
 
 def _sum_unrealized_display(positions: list[dict[str, Any]]) -> str | None:
     if not positions:
+        return None
+    if any("unrealized_pnl_minor" in row and row["unrealized_pnl_minor"] is None for row in positions):
+        # An unmarked experiment position has no unrealized P&L; a partial sum is not a total.
         return None
     total = _sum_unrealized_minor(positions)
     from ..paper.contracts import decimal_minor_to_display

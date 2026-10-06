@@ -337,6 +337,10 @@ vi.mock("./api/hooks", () => ({
   useSubmitPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useOpenPaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useClosePaperSessionMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCreatePaperExperimentMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useClosePaperExperimentMutation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  usePaperTradesInfiniteQuery: () => ({ data: undefined, isLoading: false, isError: false, hasNextPage: false }),
+  usePaperEquityHistoryQuery: () => ({ data: undefined }),
   useCancelPaperOrderMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useProviderHealthQuery: () => ({
     isLoading: false,

@@ -302,11 +302,68 @@ def resolve_live_operating_modes(store: ReplayStore) -> tuple[str, str, str, str
     return data_mode, execution_mode, data_provider, execution_authority
 
 
+PORTFOLIO_MARK_CONSUMER = "paper-portfolio-marks"
+
+
+def _apply_portfolio_marks(store: ReplayStore, runtime: Any) -> None:
+    """Mark each held instrument from its own live quote.
+
+    An instrument whose quote cannot be read keeps its last price but is
+    downgraded to STALE, so an old mark never reads as current equity.
+    """
+    ledger = store.paper_ledger
+    if ledger.data_mode != "LIVE_OBSERVATIONAL":
+        return
+    changed = False
+    for position in ledger.project_positions():
+        instrument_id = str(position["instrument_id"])
+        mark = None
+        if runtime is not None and store.data_mode == "LIVE_OBSERVATIONAL":
+            mark = runtime.live_mark_for(instrument_id)
+            if mark is None:
+                try:
+                    runtime.subscribe(
+                        instrument_id=instrument_id,
+                        capabilities=["BASIC_QUOTE"],
+                        consumer_id=PORTFOLIO_MARK_CONSUMER,
+                    )
+                except Exception:  # noqa: BLE001 — a failed subscribe leaves the mark unavailable
+                    pass
+        existing = ledger.mark_for(instrument_id)
+        if mark is not None and int(mark["mark_minor"]) > 0:
+            ledger.apply_live_mark(
+                mark_minor=int(mark["mark_minor"]),
+                mark_provider=str(mark["mark_provider"]),
+                mark_as_of_ns=int(mark["mark_as_of_ns"]),
+                mark_quality=str(mark["mark_quality"]),
+                instrument_id=instrument_id,
+                freshness_ms=mark.get("freshness_ms"),
+            )
+            changed = True
+        elif existing is not None and existing["mark_quality"] not in {"STALE", "RESTORED"}:
+            ledger.apply_live_mark(
+                mark_minor=int(existing["mark_minor"]),
+                mark_provider=str(existing["mark_provider"]),
+                mark_as_of_ns=int(existing["mark_as_of_ns"]),
+                mark_quality="STALE",
+                instrument_id=instrument_id,
+                freshness_ms=existing.get("freshness_ms"),
+            )
+            changed = True
+    if changed:
+        from ..local_state.startup import persist_ledger
+
+        persist_ledger(ledger)
+
+
 def apply_live_marks_to_ledger(store: ReplayStore) -> None:
     from . import paper_projections
 
     paper_projections.maybe_release_execution_gate(store)
     runtime = _runtime_or_none()
+    if store.paper_ledger.is_portfolio_scoped():
+        _apply_portfolio_marks(store, runtime)
+        return
     if runtime is None:
         return
     focus = paper_projections._live_focus_instrument_id(store)

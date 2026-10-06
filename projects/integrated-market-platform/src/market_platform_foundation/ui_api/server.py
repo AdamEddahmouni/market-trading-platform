@@ -645,6 +645,46 @@ class UiApiHandler(BaseHTTPRequestHandler):
             if path == "/paper/sessions":
                 self._send_json(paper_projections.list_paper_sessions(self.store))
                 return
+            if path in {"/paper/trades", "/paper/equity-history"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
+                from . import paper_experiment
+
+                query = parse_qs(parsed.query)
+
+                def _q(name: str) -> str | None:
+                    value = query.get(name, [None])[0]
+                    return str(value) if value else None
+
+                try:
+                    limit_raw = _q("limit")
+                    if path == "/paper/experiments":
+                        payload = paper_experiment.list_experiments_payload(
+                            self.store, limit=int(limit_raw) if limit_raw else 25
+                        )
+                    elif path == "/paper/experiments/current":
+                        payload = paper_experiment.current_experiment_payload(self.store)
+                    elif path == "/paper/trades":
+                        payload = paper_experiment.trades_payload(
+                            self.store,
+                            experiment_id=_q("experiment_id"),
+                            cursor=_q("cursor"),
+                            limit=int(limit_raw) if limit_raw else 25,
+                        )
+                    elif path == "/paper/equity-history":
+                        before_raw = _q("before")
+                        payload = paper_experiment.equity_history_payload(
+                            self.store,
+                            experiment_id=_q("experiment_id"),
+                            before=int(before_raw) if before_raw else None,
+                            limit=int(limit_raw) if limit_raw else 50,
+                        )
+                    else:
+                        payload = paper_experiment.experiment_payload(
+                            self.store, path.removeprefix("/paper/experiments/")
+                        )
+                    self._send_json(payload)
+                except ValueError as exc:
+                    self._send_error_json("PAPER_EXPERIMENT_READ_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
             if path == "/symbols/search":
                 query_text = (query.get("q") or [""])[0]
                 self._send_json(live_projections.build_symbol_search_payload(str(query_text)))
@@ -1897,6 +1937,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("PAPER_SESSION_OPEN_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/experiments" or (path.startswith("/paper/experiments/") and path.endswith("/close")):
+            from . import paper_experiment
+
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    if path == "/paper/experiments":
+                        payload = paper_experiment.create_experiment(self.store, body)
+                    else:
+                        payload = paper_experiment.close_experiment(
+                            self.store, path.removeprefix("/paper/experiments/").removesuffix("/close")
+                        )
+                self._send_json(payload)
+            except ValueError as exc:
+                self._send_error_json("PAPER_EXPERIMENT_COMMAND_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/paper/sessions/close":
