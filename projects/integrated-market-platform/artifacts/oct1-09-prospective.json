@@ -1,0 +1,257 @@
+{
+  "action_decision": {
+    "decision_history_rows": 0,
+    "instrument": "NVDA",
+    "reason_code": "SCREENER_ACTION_INVALID",
+    "result": "SELECTED_CANDIDATE_REQUIRED"
+  },
+  "ai_screener_runs": [
+    {
+      "coverage": {
+        "blocked_items": 0,
+        "candidate_intake": 0,
+        "evidence_items": 0,
+        "missing_items": 0,
+        "selected": 0
+      },
+      "generated_at": "2026-10-06T18:05:33.706261Z",
+      "intake_count": 0,
+      "limitations": [],
+      "matched_count": 0,
+      "model_id": null,
+      "paid_model_call": false,
+      "provider_id": null,
+      "reason": "NO_SYNTHESIS_PROVIDER_CONFIGURED",
+      "requested_at": "2026-10-06T18:05:32Z",
+      "run_id": "42381cd1de1b43139998208875c6285d",
+      "state": "NOT_CONFIGURED",
+      "why_no_model_call": "no provider configured"
+    },
+    {
+      "coverage": {
+        "blocked_items": 40,
+        "candidate_intake": 20,
+        "evidence_items": 8,
+        "missing_items": 212,
+        "selected": 0
+      },
+      "generated_at": "2026-10-06T18:07:38.546688Z",
+      "intake_count": 20,
+      "limitations": [
+        "No admissible current price plus additional strong evidence."
+      ],
+      "matched_count": 4629,
+      "model_id": "claude-haiku-4-5-20251001",
+      "paid_model_call": false,
+      "provider_id": "anthropic.messages",
+      "reason": "INSUFFICIENT_EVIDENCE",
+      "requested_at": "2026-10-06T18:07:32Z",
+      "run_id": "8e15cb1e1a194e1a88c25a7df9c8c03e",
+      "state": "NO_GROUNDED_CANDIDATES",
+      "why_no_model_call": "deterministic evidence gate found no sufficient candidate before any model call"
+    },
+    {
+      "coverage": {
+        "blocked_items": 75,
+        "candidate_intake": 20,
+        "evidence_items": 0,
+        "missing_items": 200,
+        "selected": 0
+      },
+      "generated_at": "2026-10-06T18:12:47.729608Z",
+      "intake_count": 20,
+      "limitations": [
+        "No admissible current price plus additional strong evidence."
+      ],
+      "matched_count": 4629,
+      "model_id": "claude-haiku-4-5-20251001",
+      "paid_model_call": false,
+      "provider_id": "anthropic.messages",
+      "reason": "INSUFFICIENT_EVIDENCE",
+      "requested_at": "2026-10-06T18:12:40Z",
+      "run_id": "3b653ea471ee4eb2a942af94d6267f91",
+      "state": "NO_GROUNDED_CANDIDATES",
+      "why_no_model_call": "deterministic evidence gate found no sufficient candidate before any model call"
+    }
+  ],
+  "classification": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+  "evidence_class": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+  "experiment": {
+    "capital_kind": "SIMULATED",
+    "cost_policy_id": "PCP-603C4016331746BC380E46F908977379",
+    "created_at_ns": 1791309918867956703,
+    "currency": "USD",
+    "data_mode": "LIVE_OBSERVATIONAL",
+    "data_providers": [
+      "MOOMOO"
+    ],
+    "evidence_class": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+    "execution_authority": "PAPER_ONLY",
+    "execution_mode": "INTERNAL_SIMULATION",
+    "execution_provider": "INTERNAL",
+    "experiment_id": "PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F",
+    "fill_model_id": "simulation.bar_conservative@phase7.bar-conservative/1.1.0",
+    "initial_capital_minor": 10000000,
+    "live_capital": false,
+    "name": "OCT1-09 live-market Paper experiment",
+    "paper_account_id": "A5F994AB0AF1ABCCA4493A65E61AC6B981B6DEB80E54BA5468233D5EC8D467E9",
+    "paper_session_id": "00A498E59D68522E1CAA0107D247D91BE44E11A3E853D14DAD3C736A47A1303D",
+    "risk_policy_id": "D510ACD0DEADFC816EC474B75D685E66A95353BCF7EF35E4BEDA100BB2065792",
+    "schema_version": "paper-portfolio-experiment/1.0.0",
+    "slippage_model": "NOT_SEPARATELY_MODELED",
+    "status": "ACTIVE"
+  },
+  "initialization": {
+    "captured_at_ns": 1791309918869961901,
+    "cash_minor": 10000000,
+    "equity_minor": 10000000,
+    "quality": "CURRENT",
+    "source": "equity snapshot recorded at creation",
+    "trigger": "EXPERIMENT_CREATED"
+  },
+  "live_quotes": {
+    "admissibility_counts": {
+      "ADMISSIBLE:WITHIN_POLICY": 9,
+      "BLOCKED:NO_OBSERVATION_TIME": 11
+    },
+    "admissible_examples": [
+      {
+        "age_ms": 8387,
+        "as_of": "2026-10-06T18:12:23Z",
+        "ask": 12.89,
+        "bid": 12.88,
+        "delivery_mode": "REALTIME",
+        "last": null,
+        "policy": "L1_EVENT_V1",
+        "received_at": "2026-10-06T18:12:30.896173Z",
+        "source": "moomoo",
+        "symbol": "AAL"
+      },
+      {
+        "age_ms": 36387,
+        "as_of": "2026-10-06T18:11:55Z",
+        "ask": 0.1944,
+        "bid": 0.1924,
+        "delivery_mode": "REALTIME",
+        "last": null,
+        "policy": "L1_EVENT_V1",
+        "received_at": "2026-10-06T18:12:30.896173Z",
+        "source": "moomoo",
+        "symbol": "ARAI"
+      },
+      {
+        "age_ms": 18387,
+        "as_of": "2026-10-06T18:12:13Z",
+        "ask": 0.7,
+        "bid": 0.6719,
+        "delivery_mode": "REALTIME",
+        "last": null,
+        "policy": "L1_EVENT_V1",
+        "received_at": "2026-10-06T18:12:30.896173Z",
+        "source": "moomoo",
+        "symbol": "BFRG"
+      },
+      {
+        "age_ms": 24387,
+        "as_of": "2026-10-06T18:12:07Z",
+        "ask": 0.383,
+        "bid": 0.37,
+        "delivery_mode": "REALTIME",
+        "last": null,
+        "policy": "L1_EVENT_V1",
+        "received_at": "2026-10-06T18:12:30.896173Z",
+        "source": "moomoo",
+        "symbol": "FRGT"
+      },
+      {
+        "age_ms": 2387,
+        "as_of": "2026-10-06T18:12:29Z",
+        "ask": 4.36,
+        "bid": 4.32,
+        "delivery_mode": "REALTIME",
+        "last": null,
+        "policy": "L1_EVENT_V1",
+        "received_at": "2026-10-06T18:12:30.896173Z",
+        "source": "moomoo",
+        "symbol": "IPDN"
+      }
+    ],
+    "market_session": "REGULAR",
+    "reported_in_session": {
+      "age_ms": 266,
+      "ask": "240.29",
+      "bid": "240.27",
+      "source": "session transcript; not in the saved window file",
+      "symbol": "NVDA"
+    },
+    "symbols_in_window": 20,
+    "window_generated_at": "2026-10-06T18:12:31.387068Z"
+  },
+  "not_claimed": [
+    "a trade",
+    "a fill",
+    "realized or unrealized P&L",
+    "strategy performance",
+    "profitability"
+  ],
+  "raw_evidence": {
+    "location": ".local/oct1-09-prospective/ (not committed)",
+    "sha256": {
+      "01-experiment-current.json": "66d2d1b170ac26cc6ba11519faeeb213fc2926c7fc86079a8372329f77a58837",
+      "02-ai-screener.json": "87e182334a3c48a82afd52ecaac23ec43843681bacebce1d374082e75823ea90",
+      "02-screener-request-time.txt": "480d6a4b39401d1c3d7f80675a1b56426b6206323d0fc864fda4d9745aa39246",
+      "03-experiment-after-restart.json": "8e6e61eac37e754a0d22b02d67af03db7d93bd60dd4f9b0b819e00d04a231eff",
+      "04-ai-screener.json": "8242cf8aaac84f4ecd2bdb1bca11ca74d806fdd2e800ea8336bf04f35c26f29f",
+      "04-screener-request-time.txt": "6a5c19405f684e449bc8420059acaf444f9a7e8a85af094a3af49403a1303153",
+      "05-screener-page.json": "a977b5599988c7d5a5b463d3811b354643dd85111d4b60ba714911b307e383be",
+      "06-window-first.json": "7b03186313efae7a6098330f83c37b5a09776fe5f6c6658b09acc39c3ed613e2",
+      "06-window-last.json": "7b03186313efae7a6098330f83c37b5a09776fe5f6c6658b09acc39c3ed613e2",
+      "08-ai-screener.json": "c6dd85f945e867946eb9c6dc5e5f22f4dcb4f0090c9c52321d2a8044e1dce4aa",
+      "08-screener-request-time.txt": "b952937a6f8248044e6c61a516b429d827260e8c4ae5192c0bd78f01ebc698ff",
+      "09-action-preview-NVDA.json": "a93bc3e6b6818052d4091defd4cf0d8486c9a4a4ee1e2c098784bc173a84d35d",
+      "09-action-run-NVDA.json": "a93bc3e6b6818052d4091defd4cf0d8486c9a4a4ee1e2c098784bc173a84d35d",
+      "10-portfolio.json": "92e1fcf36e1e5b1a3a3ab3850f0993911b563640b58926113f82f240311ceb7a",
+      "11-trades.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+      "12-equity-history.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1",
+      "13-experiment-current-later.json": "8192adf4172690f5d21440c8d55e000172a6d0c1ae96ad329458c4141fc4465e",
+      "14-trades-later.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+      "15-equity-history-later.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1",
+      "16-experiment-current-final.json": "377ea91f629a0b2cfdaef236e7d68f0558d9479511189c64e889a93867e3a5be",
+      "16-final-read-time.txt": "2bdb4e0ad3dcfa0ab2a880f7906ef0080c85f798d1b42361ceb845b05f9ed2fc",
+      "17-trades-final.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+      "18-equity-history-final.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1"
+    }
+  },
+  "restart": {
+    "cash_minor_after": 10000000,
+    "equity_minor_after": 10000000,
+    "experiment_id_after": "PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F",
+    "market_data_state_after": "EXECUTION_DEFERRED",
+    "note": "Execution stayed deferred until fresh live execution-health authorization; nothing was re-seeded.",
+    "paper_account_id_after": "A5F994AB0AF1ABCCA4493A65E61AC6B981B6DEB80E54BA5468233D5EC8D467E9",
+    "reseeded": false,
+    "restarts": 2
+  },
+  "result": {
+    "equity_snapshots": 1,
+    "experiment_status_at_last_read": "ACTIVE",
+    "final_cash_minor": 10000000,
+    "final_equity_minor": 10000000,
+    "forced_entries": 0,
+    "last_read_utc": "2026-10-06T19:22:14Z",
+    "live_capital_orders": 0,
+    "orders": 0,
+    "outcome": "NO_QUALIFYING_ENTRY",
+    "paid_model_calls": 0,
+    "prospective_realized_lifecycle": "NOT_OBSERVED",
+    "trades": 0
+  },
+  "schema_version": "oct1-09-prospective/1.0.0",
+  "session": {
+    "api": "worktree build, loopback port 18909, isolated state directory",
+    "data_runtime": "Moomoo OpenD (loopback)",
+    "date": "2026-10-06",
+    "market": "US equities regular trading hours"
+  },
+  "upstream_limitation": "Streaming Moomoo quotes were healthy, but the AI Screener's admissible price evidence for its rows was the Finviz snapshot, which carries no observation timestamp, so the OCT1-03 freshness gate correctly excluded it (NO_OBSERVATION_TIME) and no candidate met the evidence gate. Not changed in OCT1-09."
+}

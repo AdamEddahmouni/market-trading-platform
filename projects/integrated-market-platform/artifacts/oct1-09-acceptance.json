@@ -1,0 +1,286 @@
+{
+  "base": "7800b690f0fcf4184c50a528dae8af9f242e3577",
+  "controlled_lifecycle": {
+    "arithmetic": [
+      {
+        "cash": "100000.00",
+        "equity": "100000.00",
+        "event": "create"
+      },
+      {
+        "cash": "99100.00",
+        "event": "BUY 6 AAPL @ 150.00 (governed ENTER, sized inside the governed pre-trade risk approval)"
+      },
+      {
+        "equity": "100030.00",
+        "event": "mark AAPL 155.00",
+        "unrealized": "+30.00"
+      },
+      {
+        "cash": "87100.00",
+        "event": "BUY 50 NVDA @ 240.00 (operator ticket)"
+      },
+      {
+        "equity": "99830.00",
+        "event": "mark NVDA 236.00",
+        "paper_pnl": "-170.00",
+        "unrealized": "+30.00 AAPL, -200.00 NVDA"
+      },
+      {
+        "cash": "87410.00",
+        "equity": "99830.00",
+        "event": "SELL 2 AAPL @ 155.00 (operator ticket)",
+        "realized": "+10.00",
+        "unrealized": "+20.00 AAPL, -200.00 NVDA"
+      },
+      {
+        "cash": "88022.00",
+        "event": "SELL 4 AAPL @ 153.00 (governed EXIT)",
+        "realized": "+22.00"
+      },
+      {
+        "cash": "99822.00",
+        "equity": "99822.00",
+        "event": "SELL 50 NVDA @ 236.00 (operator ticket)",
+        "paper_pnl": "-178.00",
+        "realized": "-178.00",
+        "unrealized": "0.00"
+      }
+    ],
+    "classification": "SOFTWARE_CONTROLLED",
+    "experiment": {
+      "data_mode": "FIXTURE_REPLAY",
+      "execution_mode": "INTERNAL_SIMULATION",
+      "experiment_id": "PPE-74513B2B981F08D08CE8093E3E0D4FE5",
+      "initial_capital_minor": 10000000,
+      "paper_account_id": "D008E14574F91DF549E6AFD17B69A95076A799C489BB8C649EE652D6B75F5B07"
+    },
+    "extra_scenarios": 6,
+    "fixtures": [
+      "completed-bar feed",
+      "marks",
+      "candidate receipt",
+      "model proposal",
+      "governed Opportunity",
+      "auth"
+    ],
+    "live_submissions": 0,
+    "not_market_evidence": true,
+    "production": [
+      "experiment service",
+      "Paper preview/submit route",
+      "pre-trade risk",
+      "bar-conservative simulator",
+      "Paper ledger",
+      "SQLite local state",
+      "action decision service",
+      "UI"
+    ],
+    "steps_passed": 33,
+    "steps_total": 33
+  },
+  "evidence_classes": {
+    "controlled_lifecycle": "SOFTWARE_CONTROLLED",
+    "note": "Controlled fixture arithmetic and the prospective live-data session are never combined; neither is a profitability claim.",
+    "prospective_session": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA"
+  },
+  "evidence_classes_are_separate": true,
+  "item": "OCT1-09",
+  "not_claimed": [
+    "a prospective trade or fill",
+    "strategy performance",
+    "profitability",
+    "win rate, expectancy, profit factor or drawdown"
+  ],
+  "performance_summary": {
+    "portfolio_payload_10_positions_mean_ms": 2.8821,
+    "restore_mean_ms": 477.7,
+    "trade_history_page_25_mean_ms": 36.2429,
+    "valuation_10_positions_mean_ms": 0.6368
+  },
+  "prospective": {
+    "action_decision": {
+      "decision_history_rows": 0,
+      "instrument": "NVDA",
+      "reason_code": "SCREENER_ACTION_INVALID",
+      "result": "SELECTED_CANDIDATE_REQUIRED"
+    },
+    "ai_screener": [
+      {
+        "paid_model_call": false,
+        "reason": "NO_SYNTHESIS_PROVIDER_CONFIGURED",
+        "requested_at": "2026-10-06T18:05:32Z",
+        "run_id": "42381cd1de1b43139998208875c6285d",
+        "state": "NOT_CONFIGURED"
+      },
+      {
+        "paid_model_call": false,
+        "reason": "INSUFFICIENT_EVIDENCE",
+        "requested_at": "2026-10-06T18:07:32Z",
+        "run_id": "8e15cb1e1a194e1a88c25a7df9c8c03e",
+        "state": "NO_GROUNDED_CANDIDATES"
+      },
+      {
+        "paid_model_call": false,
+        "reason": "INSUFFICIENT_EVIDENCE",
+        "requested_at": "2026-10-06T18:12:40Z",
+        "run_id": "3b653ea471ee4eb2a942af94d6267f91",
+        "state": "NO_GROUNDED_CANDIDATES"
+      }
+    ],
+    "classification": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+    "data_mode": "LIVE_OBSERVATIONAL",
+    "data_providers": [
+      "MOOMOO"
+    ],
+    "execution_mode": "INTERNAL_SIMULATION",
+    "experiment_id": "PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F",
+    "initialization": {
+      "captured_at_ns": 1791309918869961901,
+      "cash_minor": 10000000,
+      "equity_minor": 10000000,
+      "quality": "CURRENT",
+      "source": "equity snapshot recorded at creation",
+      "trigger": "EXPERIMENT_CREATED"
+    },
+    "live_data_evidence": {
+      "admissibility_counts": {
+        "ADMISSIBLE:WITHIN_POLICY": 9,
+        "BLOCKED:NO_OBSERVATION_TIME": 11
+      },
+      "admissible_examples": [
+        {
+          "age_ms": 8387,
+          "as_of": "2026-10-06T18:12:23Z",
+          "ask": 12.89,
+          "bid": 12.88,
+          "delivery_mode": "REALTIME",
+          "last": null,
+          "policy": "L1_EVENT_V1",
+          "received_at": "2026-10-06T18:12:30.896173Z",
+          "source": "moomoo",
+          "symbol": "AAL"
+        },
+        {
+          "age_ms": 36387,
+          "as_of": "2026-10-06T18:11:55Z",
+          "ask": 0.1944,
+          "bid": 0.1924,
+          "delivery_mode": "REALTIME",
+          "last": null,
+          "policy": "L1_EVENT_V1",
+          "received_at": "2026-10-06T18:12:30.896173Z",
+          "source": "moomoo",
+          "symbol": "ARAI"
+        },
+        {
+          "age_ms": 18387,
+          "as_of": "2026-10-06T18:12:13Z",
+          "ask": 0.7,
+          "bid": 0.6719,
+          "delivery_mode": "REALTIME",
+          "last": null,
+          "policy": "L1_EVENT_V1",
+          "received_at": "2026-10-06T18:12:30.896173Z",
+          "source": "moomoo",
+          "symbol": "BFRG"
+        }
+      ],
+      "symbols_in_window": 20,
+      "window_generated_at": "2026-10-06T18:12:31.387068Z"
+    },
+    "paper_account_id": "A5F994AB0AF1ABCCA4493A65E61AC6B981B6DEB80E54BA5468233D5EC8D467E9",
+    "restart": {
+      "cash_minor_after": 10000000,
+      "equity_minor_after": 10000000,
+      "experiment_id_after": "PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F",
+      "market_data_state_after": "EXECUTION_DEFERRED",
+      "note": "Execution stayed deferred until fresh live execution-health authorization; nothing was re-seeded.",
+      "paper_account_id_after": "A5F994AB0AF1ABCCA4493A65E61AC6B981B6DEB80E54BA5468233D5EC8D467E9",
+      "reseeded": false,
+      "restarts": 2
+    },
+    "result": {
+      "equity_snapshots": 1,
+      "experiment_status_at_last_read": "ACTIVE",
+      "final_cash_minor": 10000000,
+      "final_equity_minor": 10000000,
+      "forced_entries": 0,
+      "last_read_utc": "2026-10-06T19:22:14Z",
+      "live_capital_orders": 0,
+      "orders": 0,
+      "outcome": "NO_QUALIFYING_ENTRY",
+      "paid_model_calls": 0,
+      "prospective_realized_lifecycle": "NOT_OBSERVED",
+      "trades": 0
+    },
+    "session": {
+      "api": "worktree build, loopback port 18909, isolated state directory",
+      "data_runtime": "Moomoo OpenD (loopback)",
+      "date": "2026-10-06",
+      "market": "US equities regular trading hours"
+    },
+    "upstream_limitation": "Streaming Moomoo quotes were healthy, but the AI Screener's admissible price evidence for its rows was the Finviz snapshot, which carries no observation timestamp, so the OCT1-03 freshness gate correctly excluded it (NO_OBSERVATION_TIME) and no candidate met the evidence gate. Not changed in OCT1-09."
+  },
+  "receipts": {
+    "oct1-09-browser.json": "793177759da3a9300f0a009973438b5cd520cae68afdb3f1a2554955a0e8f4c2",
+    "oct1-09-performance.json": "ca93ef33eb4a6bf2f496dcf632b3e5e9f259d1979fd23d46d08babdbd7e84186",
+    "oct1-09-prospective.json": "7b044361c72eadedc236ce3e1bcf7ddf84bedcd8fe9f2fa64aa682caabcbc2ca"
+  },
+  "schema_version": "oct1-09-acceptance/1.0.0",
+  "scope_stop": "OCT1-10 and OCT1-11 were not started.",
+  "starting_capital": {
+    "capital_kind": "SIMULATED",
+    "currency": "USD",
+    "initial_capital_minor": 10000000,
+    "live_capital": false
+  },
+  "title": "$100K live-market Paper portfolio and complete P&L lifecycle",
+  "validation": {
+    "changed": {
+      "earlier_runs": "runs 1 and 2 had 0 failures and 2 / 1 errors classified ENVIRONMENT (Windows loopback socket abort in tests OCT1-09 does not touch)",
+      "errors": 0,
+      "failures": 0,
+      "run": 3,
+      "seconds": 325.837,
+      "skipped": 35,
+      "tests": 5970
+    },
+    "fast": {
+      "errors": 0,
+      "failures": 0,
+      "seconds": 2.8,
+      "skipped": 0,
+      "tests": 23
+    },
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "runs": 1,
+      "seconds": 521.031,
+      "skipped": 53,
+      "tests": 8071
+    },
+    "guards": {
+      "docs_links": "passed",
+      "format": "passed",
+      "history_ledger_guard": "passed",
+      "lint": "passed",
+      "monorepo_guard": "passed"
+    },
+    "new_backend_tests": {
+      "accounting": 41,
+      "api_persistence_restart": 29,
+      "passed": 70
+    },
+    "ui": {
+      "budget_kib": 130,
+      "build": "passed",
+      "failures": 0,
+      "files": 176,
+      "initial_bundle_kib_gzip": 100.61,
+      "tests": 1337,
+      "typecheck": "passed"
+    }
+  }
+}

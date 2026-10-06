@@ -1,0 +1,103 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "equity_history": {
+    "max_page_100": {
+      "mean_ms": 0.622,
+      "p95_ms": 0.8455,
+      "samples": 100
+    },
+    "page_50": {
+      "mean_ms": 0.5494,
+      "p95_ms": 0.8832,
+      "samples": 100
+    },
+    "snapshots": 63
+  },
+  "mark_update": {
+    "all_10_positions": {
+      "mean_ms": 0.0139,
+      "p95_ms": 0.0149,
+      "samples": 200
+    },
+    "mark_then_valuation_10_positions": {
+      "mean_ms": 0.613,
+      "p95_ms": 0.8367,
+      "samples": 200
+    },
+    "one_instrument": {
+      "mean_ms": 0.0009,
+      "p95_ms": 0.0009,
+      "samples": 500
+    }
+  },
+  "notes": [
+    "The ledger is event-sourced: projections recompute from FillRecorded events, so cost grows with ledger length (reported per section).",
+    "Restore timing includes constructing the UI API store and loading the replay fixture, not only the experiment ledger."
+  ],
+  "portfolio_projection": {
+    "single_position": {
+      "ledger_events": 8,
+      "portfolio_route_payload": {
+        "mean_ms": 2.0696,
+        "p95_ms": 2.8369,
+        "samples": 50
+      },
+      "positions": {
+        "mean_ms": 0.0185,
+        "p95_ms": 0.026,
+        "samples": 200
+      },
+      "valuation": {
+        "mean_ms": 0.0979,
+        "p95_ms": 0.1196,
+        "samples": 200
+      }
+    },
+    "ten_positions": {
+      "ledger_events": 62,
+      "open_positions": 10,
+      "portfolio_route_payload": {
+        "mean_ms": 2.8821,
+        "p95_ms": 4.4032,
+        "samples": 50
+      },
+      "positions": {
+        "mean_ms": 0.2172,
+        "p95_ms": 0.2343,
+        "samples": 200
+      },
+      "valuation": {
+        "mean_ms": 0.6368,
+        "p95_ms": 1.1353,
+        "samples": 200
+      }
+    }
+  },
+  "restore": {
+    "ledger_events": 1202,
+    "mean_ms": 477.7,
+    "store_boot_and_readback_ms": [
+      581.9,
+      501.2,
+      399.7,
+      527.5,
+      378.4
+    ]
+  },
+  "schema_version": "oct1-09-performance/1.0.0",
+  "scope": "local timing only; one machine, in-process, controlled fixtures",
+  "trade_history": {
+    "fills_in_ledger": 200,
+    "first_page_25": {
+      "mean_ms": 36.2429,
+      "p95_ms": 45.3605,
+      "samples": 30
+    },
+    "ledger_events": 1202,
+    "max_page_100": {
+      "mean_ms": 36.7311,
+      "p95_ms": 43.3101,
+      "samples": 30
+    }
+  }
+}

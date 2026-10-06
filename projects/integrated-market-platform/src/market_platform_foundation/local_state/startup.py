@@ -136,6 +136,7 @@ def persist_ledger(ledger: PaperExecutionLedger, *, events: list[dict[str, Any]]
             "live_mark_minor": ledger._live_mark_minor,
             "live_mark_provider": ledger._live_mark_provider,
             "live_mark_quality": ledger._live_mark_quality,
+            "marks": ledger._marks,
         },
     )
 
@@ -194,6 +195,20 @@ def ledger_from_session(row: dict[str, Any], events: list[dict[str, Any]], idemp
     ledger.persist_sink = persist_ledger_batch
     repo = open_local_state()
     snapshot = repo.load_snapshot(str(row["session_id"])) if repo is not None else None
+    if snapshot and isinstance(snapshot.get("marks"), dict):
+        # Instrument-keyed marks come back as their own instrument's last
+        # known price, explicitly RESTORED: valuation is degraded until a
+        # legitimate fresh mark replaces each one.
+        for stored in snapshot["marks"].values():
+            if not isinstance(stored, dict) or stored.get("mark_minor") is None:
+                continue
+            ledger.apply_live_mark(
+                mark_minor=int(stored["mark_minor"]),
+                mark_provider=str(stored.get("mark_provider") or "UNKNOWN"),
+                mark_as_of_ns=int(stored.get("mark_as_of_ns") or 0),
+                mark_quality="RESTORED",
+                instrument_id=str(stored["instrument_id"]),
+            )
     if snapshot and snapshot.get("live_mark_minor") is not None:
         ledger.apply_live_mark(
             mark_minor=int(snapshot["live_mark_minor"]),

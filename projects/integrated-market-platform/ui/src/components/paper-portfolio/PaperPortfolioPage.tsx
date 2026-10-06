@@ -19,6 +19,7 @@ import {
   PortfolioPositionsSection,
 } from "../portfolio-shared/PaperPortfolioObservability";
 import { PaperStrategyProfitabilityObservability } from "../paper-strategy-profitability/PaperStrategyProfitabilityObservability";
+import { PaperExperimentCreate, PaperExperimentPanel } from "./PaperExperimentPanel";
 import { PaperOrderHistory } from "./PaperOrderHistory";
 import { paperCapitalHonesty } from "./paperPortfolioPresentation";
 import { AttentionBanner } from "../imp-ui/AttentionBanner";
@@ -110,6 +111,8 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
     ? `/workspace/${encodeURIComponent(activeInstrument)}`
     : "/workspace";
   const honesty = paperCapitalHonesty("PAPER");
+  // An experiment account is never archived or replaced from the legacy session controls.
+  const experimentBound = Boolean(data.experiment);
   const onTraceOrder = (intentId?: string, orderId?: string) => {
     setTraceIntentId(intentId);
     setTraceOrderId(orderId);
@@ -126,7 +129,7 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             <Link className="portfolio-header-action" to={workspaceHref}>
               Open Workspace
             </Link>
-            {actionEligible ? (
+            {actionEligible && !experimentBound ? (
               <>
                 <button
                   type="button"
@@ -166,7 +169,13 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             {honesty.sentence}
           </AttentionBanner>
 
-          <PortfolioGlanceStrip data={data} />
+          {experimentBound ? (
+            <PaperExperimentPanel data={data} canAct={actionEligible} onViewTrace={onTraceOrder} />
+          ) : null}
+          {/* A closed experiment stays readable; a new one is a new account, created explicitly. */}
+          {data.experiment?.status === "ACTIVE" ? null : <PaperExperimentCreate />}
+
+          {experimentBound ? null : <PortfolioGlanceStrip data={data} />}
 
           <PaperPortfolioObservability
             data={data}
@@ -176,7 +185,9 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
             sections={["attention"]}
           />
 
-          <PortfolioPositionsSection data={data} viewMode="PAPER" canTrade={actionEligible} />
+          {experimentBound ? null : (
+            <PortfolioPositionsSection data={data} viewMode="PAPER" canTrade={actionEligible} />
+          )}
 
           <PaperOrderHistory
             data={data}

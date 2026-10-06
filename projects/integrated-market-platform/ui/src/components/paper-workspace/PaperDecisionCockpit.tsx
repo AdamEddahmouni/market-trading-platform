@@ -7,6 +7,7 @@ import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
 import { buildPaperDecisionSnapshot, type EvidenceQueryPhase } from "./buildPaperDecisionSnapshot";
 import { buildPaperHandoffModel } from "./buildPaperHandoffModel";
 import { buildPaperRiskContext } from "./buildPaperRiskContext";
+import { PaperExperimentContextStrip } from "./PaperExperimentContextStrip";
 import { PaperHandoffPanel } from "./PaperHandoffPanel";
 import { PaperDecisionSnapshotPanel } from "./PaperDecisionSnapshot";
 import { PaperOrderAcknowledgementPanel } from "./PaperOrderAcknowledgementPanel";
@@ -92,6 +93,7 @@ export function PaperDecisionCockpit({
       </div>
 
       <div className="paper-cockpit-action">
+        <PaperExperimentContextStrip portfolio={portfolio} instrumentId={instrumentId} />
         <PaperPreviewStatus state={previewState} />
         {acknowledgement ? (
           <PaperOrderAcknowledgementPanel

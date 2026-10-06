@@ -1791,6 +1791,155 @@ export const ADMITTED_CATALYST_INSTRUMENT_ID = "BOXL";
 export const ADMITTED_FUND_ETF_INSTRUMENT_ID = "NVDA";
 export const FROZEN_DEMO_REFERENCE_SYMBOL = "AVTX";
 
+const nullableNumber = z.number().nullable();
+
+export const PaperExperimentSchema = z.object({
+  schema_version: z.string(),
+  experiment_id: z.string(),
+  name: z.string(),
+  status: z.string(),
+  paper_account_id: z.string(),
+  paper_session_id: z.string(),
+  initial_capital_minor: z.number(),
+  currency: z.string(),
+  capital_kind: z.string(),
+  live_capital: z.boolean(),
+  created_at_ns: z.number(),
+  ended_at_ns: nullableNumber.optional(),
+  data_mode: z.string(),
+  data_providers: z.array(z.string()),
+  execution_mode: z.string(),
+  execution_provider: z.string(),
+  evidence_class: z.string(),
+  bound_to_running_account: z.boolean().optional(),
+  closing: z.record(z.unknown()).nullable().optional(),
+});
+
+export const PaperValuationSchema = z.object({
+  quality: z.string(),
+  currency: z.string(),
+  initial_capital_minor: z.number(),
+  cash_minor: z.number(),
+  reserved_cash_minor: z.number(),
+  buying_power_minor: z.number(),
+  buying_power_basis: z.string(),
+  position_value_minor: nullableNumber,
+  marked_position_value_minor: z.number(),
+  realized_pnl_minor: z.number(),
+  unrealized_pnl_minor: nullableNumber,
+  equity_minor: nullableNumber,
+  total_pnl_minor: nullableNumber,
+  return_bps: nullableNumber,
+  total_commission_minor: z.number(),
+  total_fees_minor: z.number(),
+  open_position_count: z.number(),
+  missing_mark_instruments: z.array(z.string()),
+  degraded_instruments: z.array(z.string()),
+  valuation_cutoff_ns: z.number(),
+  oldest_mark_as_of_ns: nullableNumber.optional(),
+  newest_mark_as_of_ns: nullableNumber.optional(),
+});
+
+export const PaperAssumptionsSchema = z.object({
+  fill_model_registry_id: z.string(),
+  fill_model_version: z.string(),
+  fill_source_capability: z.string(),
+  participation_cap: z.string(),
+  commission_minor_per_share: z.number(),
+  fee_minor_per_order: z.number(),
+  cost_policy_id: z.string(),
+  slippage_model: z.string(),
+  slippage_statement: z.string(),
+  pnl_statement: z.string(),
+  fill_is_market_truth: z.boolean(),
+});
+
+export const PaperBoundarySchema = z.object({
+  capital: z.object({ kind: z.string(), live_capital: z.boolean() }),
+  execution: z.object({
+    mode: z.string(),
+    provider: z.string(),
+    execution_authority: z.string(),
+    fill_kind: z.string(),
+  }),
+  market_data: z.object({
+    mode: z.string(),
+    provider: z.string(),
+    running_mode: z.string(),
+    state: z.string(),
+  }),
+});
+
+export const PaperExperimentCurrentSchema = z.object({
+  state: z.string(),
+  experiment: PaperExperimentSchema.nullable(),
+  valuation: PaperValuationSchema.optional(),
+  assumptions: PaperAssumptionsSchema.optional(),
+  boundary: PaperBoundarySchema.optional(),
+});
+
+export const PaperExperimentCommandSchema = z.object({ experiment: PaperExperimentSchema });
+
+export const PaperTradeSchema = z.object({
+  fill_id: z.string(),
+  order_id: z.string(),
+  intent_id: z.string().nullable().optional(),
+  instrument_id: z.string(),
+  symbol: z.string(),
+  side: z.string(),
+  filled_quantity: z.number(),
+  requested_quantity: nullableNumber.optional(),
+  fill_price_minor: z.number(),
+  fill_time_ns: z.number(),
+  commission_minor: z.number(),
+  fees_minor: z.number(),
+  position_effect: z.string(),
+  position_after: z.number(),
+  realized_pnl_delta_minor: z.number(),
+  decision_source: z.string(),
+  decision_id: z.string().nullable().optional(),
+  risk_decision_id: z.string().nullable().optional(),
+  fill_kind: z.string(),
+  lineage_refs: z.array(z.object({ kind: z.string(), id: z.string() })),
+});
+
+export const PaperTradesResponseSchema = z.object({
+  experiment_id: z.string().nullable(),
+  trades: z.array(PaperTradeSchema),
+  total_count: z.number(),
+  page_size: z.number(),
+  next_cursor: z.string().nullable(),
+});
+
+export const PaperEquityHistoryResponseSchema = z.object({
+  experiment_id: z.string().nullable(),
+  snapshots: z.array(
+    z.object({
+      snapshot_id: z.number(),
+      captured_at_ns: z.number(),
+      trigger: z.string(),
+      quality: z.string(),
+      cash_minor: z.number(),
+      equity_minor: nullableNumber,
+      realized_pnl_minor: z.number(),
+      unrealized_pnl_minor: nullableNumber,
+      total_pnl_minor: nullableNumber,
+    }),
+  ),
+  total_count: z.number(),
+  page_size: z.number(),
+  next_before: nullableNumber,
+});
+
+export type PaperExperiment = z.infer<typeof PaperExperimentSchema>;
+export type PaperValuation = z.infer<typeof PaperValuationSchema>;
+export type PaperAssumptions = z.infer<typeof PaperAssumptionsSchema>;
+export type PaperBoundary = z.infer<typeof PaperBoundarySchema>;
+export type PaperExperimentCurrent = z.infer<typeof PaperExperimentCurrentSchema>;
+export type PaperTrade = z.infer<typeof PaperTradeSchema>;
+export type PaperTradesResponse = z.infer<typeof PaperTradesResponseSchema>;
+export type PaperEquityHistoryResponse = z.infer<typeof PaperEquityHistoryResponseSchema>;
+
 export const PaperPortfolioResponseSchema = z.object({
   as_of_context: AsOfContextSchema,
   capability_states: z.array(CapabilityStateSchema).optional(),
@@ -1824,8 +1973,20 @@ export const PaperPortfolioResponseSchema = z.object({
       mark_as_of_ns: z.number().nullable().optional(),
       average_fill_display: z.string().nullable().optional(),
       unrealized_pnl_display: z.string().nullable().optional(),
+      // Experiment (portfolio-scoped) accounts only.
+      average_fill_minor: z.number().nullable().optional(),
+      cost_basis_minor: z.number().nullable().optional(),
+      first_entry_time_ns: z.number().nullable().optional(),
+      mark_minor: z.number().nullable().optional(),
+      mark_freshness_ms: z.number().nullable().optional(),
+      market_value_minor: z.number().nullable().optional(),
+      unrealized_pnl_minor: z.number().nullable().optional(),
     }),
   ),
+  experiment: PaperExperimentSchema.nullable().optional(),
+  valuation: PaperValuationSchema.optional(),
+  assumptions: PaperAssumptionsSchema.optional(),
+  boundary: PaperBoundarySchema.optional(),
   orders: z.array(z.record(z.unknown())),
   fills: z.array(z.record(z.unknown())),
   risk: z.object({

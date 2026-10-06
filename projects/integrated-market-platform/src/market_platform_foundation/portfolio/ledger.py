@@ -162,3 +162,95 @@ def _avg_cost(position_before: int, position_cost_basis_minor: int) -> int:
     if position_before == 0:
         return 0
     return abs(position_cost_basis_minor) // abs(position_before)
+
+
+def build_portfolio_state(*, initial_cash_minor: int) -> dict[str, Any]:
+    """Portfolio-scoped ledger state: one cash bucket, one position per instrument."""
+
+    return {
+        "cash_minor": initial_cash_minor,
+        "entries": [],
+        "positions": {},
+        "realized_pnl_minor": 0,
+        "total_commission_minor": 0,
+        "total_fees_minor": 0,
+    }
+
+
+def position_effect(*, position_before: int, position_after: int) -> str:
+    """Classify one fill's effect on its own instrument's net position."""
+
+    if position_before == 0:
+        return "OPEN"
+    if position_after == 0:
+        return "CLOSE"
+    if (position_before > 0) != (position_after > 0):
+        return "REVERSE"
+    return "ADD" if abs(position_after) > abs(position_before) else "REDUCE"
+
+
+def apply_portfolio_fill(
+    state: dict[str, Any],
+    *,
+    fill: dict[str, Any],
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply one fill to its own instrument's position and the shared cash.
+
+    The per-instrument arithmetic is ``apply_fill`` itself, run against that
+    instrument's slice of the state, so weighted cost basis, pro-rata closes
+    and cost handling cannot drift from the single-position ledger.
+    """
+
+    instrument_id = str(fill["instrument_id"])
+    positions = dict(state["positions"])
+    before = positions.get(instrument_id) or {
+        "first_entry_time": None,
+        "latest_fill_time": None,
+        "position_cost_basis_minor": 0,
+        "position_shares": 0,
+        "realized_pnl_minor": 0,
+    }
+    slice_before = {
+        "cash_minor": int(state["cash_minor"]),
+        "entries": [],
+        "position_cost_basis_minor": int(before["position_cost_basis_minor"]),
+        "position_shares": int(before["position_shares"]),
+        "realized_pnl_minor": 0,
+        "total_commission_minor": 0,
+        "total_fees_minor": 0,
+    }
+    slice_after = apply_fill(slice_before, fill=fill, policy=policy)
+    entry = dict(slice_after["entries"][0])
+    fill_time = fill.get("fill_time")
+    shares_before = int(before["position_shares"])
+    shares_after = int(slice_after["position_shares"])
+    effect = position_effect(position_before=shares_before, position_after=shares_after)
+    # A flat instrument's next fill starts a new position, so its entry clock
+    # restarts; a reversal opens the remainder at the reversing fill.
+    first_entry_time = fill_time if effect in {"OPEN", "REVERSE"} else before["first_entry_time"]
+    positions[instrument_id] = {
+        "first_entry_time": first_entry_time,
+        "latest_fill_time": fill_time,
+        "position_cost_basis_minor": int(slice_after["position_cost_basis_minor"]),
+        "position_shares": shares_after,
+        "realized_pnl_minor": int(before["realized_pnl_minor"]) + int(slice_after["realized_pnl_minor"]),
+    }
+    entry.update(
+        {
+            "commission_minor": int(slice_after["total_commission_minor"]),
+            "fees_minor": int(slice_after["total_fees_minor"]),
+            "fill_time": fill_time,
+            "instrument_id": instrument_id,
+            "position_cost_basis_after_minor": int(slice_after["position_cost_basis_minor"]),
+            "position_effect": effect,
+        }
+    )
+    return {
+        "cash_minor": int(slice_after["cash_minor"]),
+        "entries": list(state["entries"]) + [entry],
+        "positions": positions,
+        "realized_pnl_minor": int(state["realized_pnl_minor"]) + int(slice_after["realized_pnl_minor"]),
+        "total_commission_minor": int(state["total_commission_minor"]) + int(slice_after["total_commission_minor"]),
+        "total_fees_minor": int(state["total_fees_minor"]) + int(slice_after["total_fees_minor"]),
+    }

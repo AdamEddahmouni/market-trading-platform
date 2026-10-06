@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-06 — OCT1-09 $100K Paper portfolio experiment and P&L lifecycle
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-09 report/PR/task ledger |
+| **Area** | paper ledger, portfolio ledger, risk financial check, local-state, ui-api, security route policy, Paper Portfolio and Workspace UI, docs |
+| **Summary** | One explicit, persistent, versioned $100,000.00 simulated-capital account (`PaperPortfolioExperimentV1`) shared by every instrument. Experiment accounts use a portfolio-scoped account identity (v2) with no instrument in it; legacy sessions keep their instrument-scoped id, pooled position and single mark byte-stable. Per-instrument quantity, cost basis, entry time and mark; valuation `equity = cash + sum(quantity x own mark)` with CURRENT / DEGRADED / PARTIAL / UNAVAILABLE quality and no zero-valued missing mark; fill-level trade history with position effect, realized P&L and decision lineage; reserved cash and no-leverage buying power; sells beyond holdings and derivative orders refused; explicit create, restore without re-seed, fail-closed close; append-only equity snapshots; seven bounded routes. UI shows the experiment, the live-data vs simulated-execution boundary, summary, positions, trades, assumptions and the Workspace account context. Default Paper cash is unchanged. |
+| **Key files** | `paper/experiment.py`, `local_state/paper_experiments.py`, `ui_api/paper_experiment.py`; additive changes in `paper/ledger.py`, `paper/execution.py`, `portfolio/ledger.py`, `risk/financial.py`, `local_state/startup.py`, `ui_api/{paper_projections,live_projections,store,server}.py`, `platform/security/route_policy.py`; UI `PaperExperimentPanel.tsx`, `paperExperimentPresentation.ts`, `PaperExperimentContextStrip.tsx`, `api/{schemas,endpoints,hooks}.ts`, `paper/paperDecisionSourceSnapshot.ts`; `tests/trading_correctness/test_paper_experiment_{accounting,api}.py`, `tests/support/paper_experiment_feed.py`, `tests/acceptance/harness_paper_experiment.py`, `tools/ui1/oct1_09_browser.cjs`; `artifacts/oct1-09-{acceptance,browser,performance,prospective}.json` |
+| **Validation** | FAST 23/23; CHANGED 5,970 tests, 35 skipped, 0 failures, 0 errors (325.8 s); FULL 8,071 tests / 53 skipped / 0 failures / 0 errors (521.0 s); new backend 70/70; complete UI 1,337/1,337 (176 files); lint, typecheck, format, build and bundle budget (100.61 KiB initial), docs links, monorepo and history guards passed; controlled Chromium acceptance 33/33 steps plus 6 extra scenarios on the production bundle with two real process restarts. |
+| **Related** | [OCT1-09 report](../superpowers/plans/2026-10-06-oct1-09-100k-paper-portfolio.md), [experiment contract](../architecture/PAPER_PORTFOLIO_EXPERIMENT.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [stop contract](../architecture/PAPER_SMA_TRAILING_STOP.md) |
+| **Notes** | Prospective live-market session on 2026-10-06 (experiment `PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F`, Moomoo live observational data, internal simulation): AI Screener `NO_GROUNDED_CANDIDATES / INSUFFICIENT_EVIDENCE`, action `SELECTED_CANDIDATE_REQUIRED`, result `NO_QUALIFYING_ENTRY`, zero orders, zero trades, zero paid model calls, equity $100,000.00, restored unchanged across two restarts. No entry was forced. Upstream limitation, not changed here: the Screener's admissible price evidence was the Finviz snapshot without an observation timestamp, which the OCT1-03 freshness gate correctly excluded. The realized lifecycle is therefore proven under controlled fixtures only. No profitability claim. OCT1-10 and OCT1-11 were not started. |
+
+---
+
 ## 2026-10-06 — OCT1-08 SMA trailing-stop risk control and replay evaluation
 
 | Field | Value |

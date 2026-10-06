@@ -89,6 +89,7 @@ Order-flow chart navigation and captured-history contract:
 | Mode authority (Demo/Paper/Live) | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Paper decision lifecycle | [PAPER_DECISION_LIFECYCLE.md](architecture/PAPER_DECISION_LIFECYCLE.md) |
 | Paper SMA trailing-stop risk control and its replay evaluation | [PAPER_SMA_TRAILING_STOP.md](architecture/PAPER_SMA_TRAILING_STOP.md) |
+| Paper portfolio experiment ($100,000 simulated account, per-instrument accounting, P&L lifecycle) | [PAPER_PORTFOLIO_EXPERIMENT.md](architecture/PAPER_PORTFOLIO_EXPERIMENT.md) |
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
 | News/event foundation (deterministic) | [NEWS_EVENT_FOUNDATION.md](architecture/NEWS_EVENT_FOUNDATION.md) |
 | News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |

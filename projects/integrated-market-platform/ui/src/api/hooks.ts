@@ -40,6 +40,10 @@ export const queryKeys = {
   assistantConversations: ["assistant", "conversations"] as const,
   assistantMessages: (conversationId: string) => ["assistant", conversationId, "messages"] as const,
   paperPortfolio: ["paper", "portfolio"] as const,
+  paperExperimentCurrent: ["paper", "experiment", "current"] as const,
+  paperTrades: (experimentId?: string) => ["paper", "experiment", "trades", experimentId ?? "none"] as const,
+  paperEquityHistory: (experimentId?: string) =>
+    ["paper", "experiment", "equity-history", experimentId ?? "none"] as const,
   paperForwardTests: (accountId?: string) => ["paper", "forward-tests", accountId ?? "unbound"] as const,
   demoPortfolio: ["demo", "portfolio"] as const,
   paperOrderHistory: ["paper", "order-history"] as const,
@@ -339,6 +343,7 @@ function useInvalidatePaper() {
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.demoPortfolio });
     void queryClient.invalidateQueries({ queryKey: queryKeys.paperOrderHistory });
+    void queryClient.invalidateQueries({ queryKey: ["paper", "experiment"] });
     void queryClient.invalidateQueries({ queryKey: ["paper", "strategy-profitability"] });
     void queryClient.invalidateQueries({ queryKey: ["paper", "trace"] });
     void queryClient.invalidateQueries({ queryKey: ["context"] });
@@ -361,6 +366,45 @@ export function useSubmitPaperOrderMutation() {
   const invalidate = useInvalidatePaper();
   return useMutation({
     mutationFn: (body: PaperOrderRequest) => api.submitPaperOrder(body),
+    onSuccess: () => invalidate(),
+  });
+}
+
+export function usePaperExperimentCurrentQuery(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.paperExperimentCurrent,
+    queryFn: () => api.getPaperExperimentCurrent(),
+    enabled,
+  });
+}
+
+export function usePaperTradesInfiniteQuery(experimentId?: string) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.paperTrades(experimentId),
+    queryFn: ({ pageParam }) => api.getPaperTrades({ cursor: pageParam }),
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    initialPageParam: undefined as string | undefined,
+    enabled: Boolean(experimentId),
+  });
+}
+
+export function usePaperEquityHistoryQuery(experimentId?: string) {
+  return useQuery({
+    queryKey: queryKeys.paperEquityHistory(experimentId),
+    queryFn: () => api.getPaperEquityHistory(),
+    enabled: Boolean(experimentId),
+  });
+}
+
+export function useCreatePaperExperimentMutation() {
+  const invalidate = useInvalidatePaper();
+  return useMutation({ mutationFn: () => api.createPaperExperiment(), onSuccess: () => invalidate() });
+}
+
+export function useClosePaperExperimentMutation() {
+  const invalidate = useInvalidatePaper();
+  return useMutation({
+    mutationFn: (experimentId: string) => api.closePaperExperiment(experimentId),
     onSuccess: () => invalidate(),
   });
 }

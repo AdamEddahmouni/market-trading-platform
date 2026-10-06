@@ -258,6 +258,26 @@ class ReplayStore:
         self.paper_ledger.data_provider = self.data_provider
         self.execution_deferred = False
         self.restore_details = {"reason": "PERSISTENCE_DISABLED"}
+        from .paper_experiment import restore_active_experiment_ledger
+
+        experiment_ledger, experiment = restore_active_experiment_ledger()
+        if experiment_ledger is not None and experiment is not None:
+            # The experiment's own events and stored policy are the authority:
+            # cash is never re-seeded, the stored data mode is never swapped
+            # for replay, and execution stays deferred until the existing
+            # live-health gate releases it.
+            self.paper_ledger = experiment_ledger
+            self.execution_deferred = True
+            self.execution_mode = experiment_ledger.execution_mode
+            self.execution_authority = experiment_ledger.execution_authority
+            self.execution_provider = experiment_ledger.execution_provider
+            self.restore_details = {
+                "experiment_id": experiment["experiment_id"],
+                "reason": "RESTORED_EXPERIMENT",
+                "same_session": True,
+                "session_id": experiment_ledger.session_id,
+            }
+            return
         current = session_record_from_ledger(self.paper_ledger)
         current["data_mode"] = self.data_mode
         current["data_provider"] = self.data_provider
