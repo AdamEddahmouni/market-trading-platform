@@ -55,6 +55,7 @@ it in the authoritative doc — do not silently choose.
 | Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
 | Screener decision freshness and consumer gate | [SCREENER_DECISION_FRESHNESS.md](architecture/SCREENER_DECISION_FRESHNESS.md) |
+| Screener explicit action decisions and Paper handoff | [SCREENER_ACTION_DECISION.md](architecture/SCREENER_ACTION_DECISION.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Demo / Paper / Live safety | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Engineering rules | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |

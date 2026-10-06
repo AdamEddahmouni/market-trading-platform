@@ -27,6 +27,7 @@ EXECUTION_DECISION_TRACE_IMPLEMENTATION_VERSION = "execution-decision-trace-v1"
 class ExecutionDecisionKind(StrEnum):
     """Point-in-time decision event — observability only; no authority."""
 
+    ACTION_ASSESSED = "ACTION_ASSESSED"
     SURFACE = "SURFACE"
     WATCH = "WATCH"
     DISMISS = "DISMISS"
@@ -45,6 +46,7 @@ class RuleEvaluationOutcome(StrEnum):
 
 
 _OPERATOR_ACTION_BY_KIND: dict[ExecutionDecisionKind, OperatorLifecycleState | None] = {
+    ExecutionDecisionKind.ACTION_ASSESSED: None,
     ExecutionDecisionKind.SURFACE: None,
     ExecutionDecisionKind.WATCH: OperatorLifecycleState.WATCHED,
     ExecutionDecisionKind.DISMISS: OperatorLifecycleState.DISMISSED,

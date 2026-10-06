@@ -1891,6 +1891,7 @@ export const PaperOrderPreviewResponseSchema = z.object({
   preview: z.object({
     preview_id: z.string().optional(),
     risk_status: z.string(),
+    action_risk_decision: z.object({ risk_decision_id: z.string(), decision: z.string(), operator_quantity: z.number(), approved_quantity: z.number(), reason_codes: z.array(z.string()) }).passthrough().optional(),
     decision: z.string(),
     reason_codes: z.array(z.string()).optional(),
     side: z.string().optional(),

@@ -192,3 +192,6 @@
 .decision-freshness dl div { display: grid; grid-template-columns: 110px 1fr; gap: 8px; }
 .decision-freshness dd { margin: 0; overflow-wrap: anywhere; }
 .screener-row-freshness { font-size: 9px; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+
+.action-decision { border-top: 1px solid var(--border-color, #444); margin-block: 1rem; padding-block: .75rem; overflow-wrap: anywhere; }
+.action-decision code { white-space: pre-wrap; word-break: break-word; }

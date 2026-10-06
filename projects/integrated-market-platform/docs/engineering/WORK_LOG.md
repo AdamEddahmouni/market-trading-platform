@@ -34,6 +34,19 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-05 — OCT1-06 explicit action decisions
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented; validation and protected integration receipts belong to the OCT1-06 report/PR/task ledger |
+| **Area** | intelligence, local-state, ui-api, Paper boundaries, Screener UI, docs |
+| **Summary** | Dedicated bounded proposal inference, deterministic position-aware states/conditions, immutable PIT evidence and trace/history, existing Opportunity selection and explicit Workspace Paper preview/close handoff. Both Paper boundaries revalidate action source; entry reuses existing PreTradeRiskEngine and interactive risk. |
+| **Validation** | Backend boundary/restart/budget tests, actual controlled browser/HTTP/Workspace scenarios, full UI suite, FAST/CHANGED/FULL, lint/typecheck/build/budget and governance links; exact final counts, timing classifications and initial failures are retained in the acceptance ledger. |
+| **Related** | [OCT1-06 report](../superpowers/plans/2026-10-04-oct1-06-action-decision.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [Paper lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md) |
+| **Notes** | SOFTWARE_CONTROLLED. Real local runtime unconfigured; hosted inference not executed. No model sizing/risk override, automatic submit, Live execution or broad Paper campaign. OCT1-07, OCT1-08 and OCT1-09 were not started. |
+
+---
+
 ## 2026-10-03 — OCT1-05 News and sentiment evidence integration
 
 | Field | Value |

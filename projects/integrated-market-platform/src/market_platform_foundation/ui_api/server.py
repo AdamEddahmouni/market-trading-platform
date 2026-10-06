@@ -403,6 +403,14 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path == "/screener/action-decisions":
+                from .screener_action import action_service
+                instrument = (query.get("instrument") or [""])[0]
+                if not instrument or len(instrument)>120:
+                    self._send_error_json("INVALID_ACTION_HISTORY", "Instrument required", status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json({"schema_version":"action-history/1.0.0", "decisions":action_service(self.store).history(instrument)})
+                return
             if path == "/screener/ai-screener/preview":
                 # AI Screener preview reconstructs the active scope and estimates cost; it never calls a model.
                 from .screener_ai import read_ai_screener_preview
@@ -1578,6 +1586,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
                 return
             self._send_json(result)
+            return
+        if path in ("/screener/action-decision/preview", "/screener/action-decision/run", "/screener/action-decision/handoff"):
+            from .screener_action import action_service
+            try:
+                service = action_service(self.store)
+                operation = path.rsplit("/",1)[1]
+                self._send_json(getattr(service, operation)(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_ACTION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path == "/screener/ai-screener":
             # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.

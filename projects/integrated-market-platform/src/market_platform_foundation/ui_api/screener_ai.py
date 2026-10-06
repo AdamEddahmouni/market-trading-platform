@@ -199,6 +199,9 @@ class ScreenerAiService:
         scope, candidates, now, page_meta = self._packet(body, refresh_news=True)
         reducer = self._provider_reducer()
         result = reducer.reduce(scope, candidates, now)
+        from ..local_state.action_decisions import action_repository
+        if action_repository().get('candidate_run', result['run_id']) is None:
+            action_repository().put('candidate_run', result['run_id'], result)
         return {**result, "schema_version": SCHEMA_VERSION, "scope": scope,
                 "matched_count": page_meta["matched_count"], "intake_count": len(candidates),
                 "max_intake": MAX_INTAKE, "result_set": page_meta["result_set"]}

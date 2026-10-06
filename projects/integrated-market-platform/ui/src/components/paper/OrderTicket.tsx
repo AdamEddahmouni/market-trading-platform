@@ -428,6 +428,7 @@ export function OrderTicket({
           <p>
             Risk: <strong>{preview.risk_status}</strong> ({preview.decision})
           </p>
+          {preview.action_risk_decision && <p>Governed entry risk: {preview.action_risk_decision.decision} · Operator quantity {preview.action_risk_decision.operator_quantity} · Approved quantity {preview.action_risk_decision.approved_quantity} · {preview.action_risk_decision.risk_decision_id}. A reduced quantity requires a new preview.</p>}
           {preview.reason_codes && preview.reason_codes.length > 0 ? (
             <p>Reasons: {preview.reason_codes.join(", ")}</p>
           ) : null}
