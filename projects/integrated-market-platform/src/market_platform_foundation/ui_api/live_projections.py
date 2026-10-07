@@ -356,6 +356,16 @@ def _apply_portfolio_marks(store: ReplayStore, runtime: Any) -> None:
         persist_ledger(ledger)
 
 
+def keep_portfolio_marks_current(store: ReplayStore) -> None:
+    """Marks and quote subscriptions for held instruments only.
+
+    For callers with no page behind them (the reevaluation loop): it never
+    creates the live runtime and never touches the execution gate.
+    """
+    if store.paper_ledger.is_portfolio_scoped():
+        _apply_portfolio_marks(store, get_live_runtime(create=False) if live_observational_enabled() else None)
+
+
 def apply_live_marks_to_ledger(store: ReplayStore) -> None:
     from . import paper_projections
 

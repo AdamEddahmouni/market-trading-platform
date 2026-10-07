@@ -124,6 +124,8 @@ class ReevaluationRepository:
 
         def write():
             if self.connection:
+                if self.connection.execute('SELECT 1 FROM reevaluation_cycles WHERE id=?', (value['cycle_id'],)).fetchone():
+                    raise ValueError('REEVALUATION_RECEIPT_IMMUTABLE')
                 self.connection.execute('INSERT INTO reevaluation_cycles VALUES (?,?,?,?,?,?)',
                                         (value['cycle_id'], value['loop_id'], value['scheduled_epoch'], value['session_date'], value['model_call_count'], encoded))
             else:
@@ -146,13 +148,15 @@ class ReevaluationRepository:
                       and (not session_date or v['session_date'] == session_date)]
             return sorted(reversed(values), key=lambda v: v['scheduled_epoch'], reverse=True)[:limit]
 
-    def model_calls_since(self, loop_id, epoch):
+    def model_calls_since(self, account_id, epoch):
+        """Across every loop of the account: a reconfigured scope does not start a fresh budget."""
         with self.lock:
             if self.connection:
-                return int(self.connection.execute('SELECT COALESCE(SUM(model_calls),0) FROM reevaluation_cycles WHERE loop_id=? AND scheduled_for>=?',
-                                                   (loop_id, epoch)).fetchone()[0])
+                return int(self.connection.execute(
+                    'SELECT COALESCE(SUM(model_calls),0) FROM reevaluation_cycles WHERE scheduled_for>=? AND loop_id IN '
+                    '(SELECT loop_id FROM reevaluation_loops WHERE account_id=?)', (epoch, account_id)).fetchone()[0])
             return sum(v['model_call_count'] for v in map(json.loads, self._cycles.values())
-                       if v['loop_id'] == loop_id and v['scheduled_epoch'] >= epoch)
+                       if v['account_id'] == account_id and v['scheduled_epoch'] >= epoch)
 
     # --- loop configuration, liveness and lease ---------------------------------
     def _loop_row(self, loop_id):

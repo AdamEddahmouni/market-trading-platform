@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — OCT1-12 scheduled reevaluation hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented and locally accepted; protected integration receipts belong to the owning PR |
+| **Area** | backend/intelligence reevaluation loop, local-state lease and receipts, Paper mark subscription |
+| **Summary** | Every held Paper position is evaluated each cycle (rotating above `max_held_per_cycle`), reads its own evidence when it leaves the intake or selection, and keeps a server-side quote subscription with no page open. A failed evidence read ends `REEVALUATION_BLOCKED` and still runs the SMA stop monitor. Scheduled cycles are lease-fenced and renew the lease before model calls. Model-call caps follow the Paper account across reconfigured scopes. Quote recovery is dwelled so a flapping quote cannot buy a model call per recovery. |
+| **Tests** | Ten red-first regressions and three lock-in tests in `tests/intelligence/test_reevaluation.py`; six cycle tests on the real Screener row/cache evidence path in `tests/platform/test_reevaluation_live_evidence.py`; canonical totals in the receipt |
+| **Related** | [Reevaluation contract](../architecture/SCREENER_REEVALUATION.md), [acceptance](../../artifacts/oct1-12-acceptance.json) |
+| **Notes** | SOFTWARE_CONTROLLED only; LIVE_RTH_ACCEPTANCE = NOT_OBSERVED_MARKET_CLOSED. No preview, handoff, order or submit path added; Paper stays the explicit handoff; Live unchanged. Selected candidates that are not held are still quoted only while a Screener window owns them. Mark-age enforcement, Paper cost realism and Screener page work were not started. |
+
 ## 2026-10-07 — SMA position epoch instrument/episode scoping
 
 | Field | Value |

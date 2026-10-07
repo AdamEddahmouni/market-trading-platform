@@ -60,6 +60,7 @@ DEFAULT_POLICY = dict(
     min_state_dwell_seconds=300,
     max_action_calls_per_cycle=2,
     max_model_calls_per_cycle=3,
+    max_held_per_cycle=10,
     max_model_calls_per_hour=30,
     max_model_calls_per_day=120,
     lease_seconds=180,
@@ -67,7 +68,7 @@ DEFAULT_POLICY = dict(
 _BOUNDS = dict(
     model_min_interval_seconds=(1, 3600), price_move_bps=(1, 10000), decision_max_age_seconds=(60, 86400),
     candidate_refresh_min_seconds=(60, 86400), min_state_dwell_seconds=(0, 86400),
-    max_action_calls_per_cycle=(0, 5), max_model_calls_per_cycle=(0, 6),
+    max_action_calls_per_cycle=(0, 5), max_model_calls_per_cycle=(0, 6), max_held_per_cycle=(1, 50),
     max_model_calls_per_hour=(0, 360), max_model_calls_per_day=(0, 2000),
 )
 # Becoming unsafe bypasses the dwell; recovering does not.
