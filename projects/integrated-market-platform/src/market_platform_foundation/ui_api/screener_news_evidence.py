@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from ..market_data.freshness_contract import evaluate, timestamp
 from ..news.finbert_sentiment import BASIS, SENTIMENT_VERSION, summarize
 from ..news.instrument_matching import EXACT, CONTEXT, match_profile, profile_for_row, entity_name, CRYPTO_ASSET_NAMES
-from ..intelligence.inference.candidate_reduction import build_candidate, MAX_PACKET_BYTES, packet_candidates
+from ..intelligence.inference.candidate_reduction import build_candidate, MAX_INTAKE, MAX_PACKET_BYTES, packet_candidates
 from ..intelligence.inference.hashing import input_hash_from_dict
 
 VERSION = 'screener-news-evidence/1.0.0'
@@ -54,13 +54,13 @@ def _coverage(service, provider, query, applicable):
 
 
 def project_news(service, *, universe: str, rows: list[dict], refresh: bool = False) -> dict:
-    """<=20 candidates, <=60 unique scores; zero instrument provider calls.
+    """Bounded candidates and at most MAX_INTAKE * MAX_STORIES unique scores; zero instrument provider calls.
 
     Candidate profiles reuse canonical matching. S11 cache receipts supply the
     ingestion clock for this projection, so identical receipts preserve identity.
     """
     from .screener_news import WINDOWS, provider_status, aggregate_state, _finviz_published
-    if len(rows) > 20:
+    if len(rows) > MAX_INTAKE:
         raise ValueError('INTAKE_BOUND_EXCEEDED')
     shared = []
     statuses = []

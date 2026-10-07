@@ -107,7 +107,13 @@ class ScreenerAiService:
     """Explicit preview/run boundary for the trader-facing AI Screener."""
 
     def __init__(self, *, reader: Any | None = None, news: Any | None = None,
-                 clock: Callable[[], float] = time.time) -> None:
+                 clock: Callable[[], float] = time.time, market_snapshots: Any | None = None) -> None:
+        # A dedicated bounded cache never replaces the Screener's universe-wide ordering snapshot.
+        self._market_snapshots = market_snapshots
+        if reader is None and market_snapshots is None:
+            from .screener_snapshot import EtfSnapshotSource
+            from .screener_projections import _quote_transport
+            self._market_snapshots = EtfSnapshotSource(transport_getter=_quote_transport, prefix='ai-intake', require_complete=False)
         self._reader = reader or multi_screener_service()
         self._news = news
         self._clock = clock
@@ -165,6 +171,18 @@ class ScreenerAiService:
                                  descending=query["descending"], offset=0, limit=MAX_INTAKE,
                                  filters=query["filters"], result_set=query["result_set"])
         raw_rows = list(page.get('rows') or [])[:MAX_INTAKE]
+        market = None
+        if self._market_snapshots is not None and query['universe'] in ('US_EQUITIES', 'US_ETFS'):
+            from ..intelligence.inference.hashing import input_hash_from_dict
+            from ..market_data.live_runtime import provider_symbol_for
+            market_key = input_hash_from_dict({'instruments': sorted(r['instrument']['instrument_id'] for r in raw_rows)})
+            if refresh_news and raw_rows:
+                market, _ = self._market_snapshots.current(
+                    [{'instrument': r['instrument'], 'provider_symbol': provider_symbol_for(r['instrument']['instrument_id'])} for r in raw_rows],
+                    catalog_as_of=market_key, force=True)
+            else:
+                cached = self._market_snapshots.latest()
+                market = cached if cached is not None and cached.catalog_as_of == market_key else None
         # Stages are reported in the order the work really happens: news is read before the evidence
         # cutoff is taken, so the cutoff is never older than the news refresh that preceded it.
         report_stage("NEWS")
@@ -178,9 +196,25 @@ class ScreenerAiService:
         scope.update(result_set=page.get("result_set_id"), matched_count=int(page.get("result_count") or 0),
                      universe_as_of=page.get("universe_as_of"), screener_as_of=page.get("screener_as_of"),
                      view=query["view"], screen=query["screen"])
-        candidates = [build_candidate(row.get("instrument", {}), observations_for_row(row, now=now) +
-                      (flow_observation(row, query['universe'], now=now) if include_flow else []), now=now)
-                      for row in rows]
+        candidates = []
+        for row in rows:
+            observations = observations_for_row(row, now=now)
+            if market is not None:
+                from ..market_data.freshness_contract import evaluate
+                identifier = row['instrument']['instrument_id']
+                values = market.values.get(identifier) or {}
+                status = evaluate(capability='market_snapshot', source='MOOMOO_OPEND_SNAPSHOT', delivery_mode='SNAPSHOT',
+                    now=now, as_of=market.row_as_of.get(identifier), stale_after_ms=60000,
+                    policy='L1_EVENT_V1', basis='PROVIDER_AS_OF', state='AVAILABLE')
+                status['received_at'] = market.as_of
+                quote = {name: values[name] for name in ('price', 'bid', 'ask', 'spread_pct') if _finite(values.get(name))}
+                technical = {name: values[name] for name in ('volume', 'change_pct') if _finite(values.get(name))}
+                if 'change_pct' in technical:
+                    technical['change_basis'] = 'PREVIOUS_CLOSE'
+                observations.extend([('QUOTE', status, quote, []), ('TECHNICALS', status, technical, [])])
+            if include_flow:
+                observations.extend(flow_observation(row, query['universe'], now=now))
+            candidates.append(build_candidate(row.get('instrument', {}), observations, now=now))
         from .screener_news_evidence import attach_news, fit_news
 
         report_stage("PACKET", intake_count=len(candidates))

@@ -75,6 +75,32 @@ def run(synth):
 
 
 class RequestShapeTests(unittest.TestCase):
+    def test_candidate_reduction_enables_strict_instrument_specific_tool_schema(self):
+        from tests.intelligence.test_ai_screener import candidate, output, NOW
+        from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer
+        calls = []
+        c = candidate()
+        def poster(url, body, headers, timeout):
+            request = json.loads(body)
+            calls.append(request)
+            return 200, json.dumps({'content': [{'type': 'tool_use', 'name': TOOL_NAME, 'input': output(c)}],
+                                    'usage': {'input_tokens': 100, 'output_tokens': 50}}).encode()
+        provider = AnthropicSynthesisProvider(api_key='controlled', model='claude-haiku-4-5-20251001', poster=poster)
+        result = CandidateReducer(provider=provider, clock=lambda: 1790953200.0).reduce({}, [c], NOW)
+        self.assertEqual(result['state'], 'CURRENT')
+        tool = calls[0]['tools'][0]
+        self.assertTrue(tool['strict'])
+        choice = tool['input_schema']['properties']['candidates']['items']['anyOf'][0]
+        self.assertEqual(choice['properties']['missing_capabilities']['const'], sorted(x['capability'] for x in c['missing']))
+        def check(schema):
+            if isinstance(schema, dict):
+                self.assertFalse({'minimum', 'maximum', 'maxItems', 'uniqueItems', 'maxLength'} & schema.keys())
+                self.assertLessEqual(schema.get('minItems', 0), 1)
+                for value in schema.values(): check(value)
+            elif isinstance(schema, list):
+                for value in schema: check(value)
+        check(tool['input_schema'])
+
     def test_forced_schema_tool_current_model_and_bounded_output(self):
         transport = FakeClaude(tool_input=lambda ids: grounded(ids))
         _, synth = paid(transport)

@@ -29,7 +29,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from .config import IntelligenceInferenceConfig
-from .contracts import IntelligenceInputPacket, ParsingStatus
+from .contracts import IntelligenceInputPacket, IntelligenceTaskType, ParsingStatus
 from .errors import InferenceErrorCode
 from .provider import ANTHROPIC_API_URL, ProviderInferenceResponse
 from .run_progress import report_stage
@@ -172,6 +172,8 @@ class AnthropicSynthesisProvider:
                        "input_schema": schema_for_packet(packet)}],
             "tool_choice": {"type": "tool", "name": TOOL_NAME},
         }
+        if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION:
+            body['tools'][0]['strict'] = True
         headers = {"Content-Type": "application/json", "x-api-key": self._api_key, "anthropic-version": API_VERSION}
         try:
             status, raw = self._post(ANTHROPIC_API_URL, json.dumps(body).encode("utf-8"), headers, config.timeout_seconds)

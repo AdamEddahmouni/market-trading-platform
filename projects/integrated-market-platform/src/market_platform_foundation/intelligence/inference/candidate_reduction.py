@@ -22,9 +22,9 @@ from .screener_synthesis import unsupported_certainty
 
 PROMPT_ID = 'screener.ai_candidate_reduction.v2'
 SCHEMA_VERSION = 'ai-screener-output/1.0.0'
-MAX_INTAKE = 20
+MAX_INTAKE = 50
 MAX_SELECTED = 5
-MAX_PACKET_BYTES = 96000
+MAX_PACKET_BYTES = 320000
 CAPABILITIES = ('QUOTE', 'TECHNICALS', 'ORDER_FLOW', 'CVD', 'LEVEL2', 'OPTIONS', 'FUTURES', 'CROSS_ASSET', 'SQUEEZE', 'FUNDAMENTALS', 'NEWS', 'SENTIMENT', 'RATES')
 _PROHIBITED = re.compile(r'\b(?:buy|sell|enter|exit|hold|close|reduce|target|stop|guaranteed|certain|obvious winner)\b|price target|expected returns?|profit|will (?:rise|fall|rally|crash)|can.t lose', re.I)
 
@@ -97,17 +97,45 @@ def build_candidate(instrument: dict, observations: list[tuple], *, now: str) ->
 
 
 def output_schema(candidates: list[dict]) -> dict:
-    ids = [c['instrument']['instrument_id'] for c in candidates] or ['_']
-    refs = [e['evidence_id'] for c in candidates for e in (*c['current_market_evidence'], *c['reference_evidence'])] or ['_']
-    ref_list = dict(type='array', maxItems=12, items={'type': 'string', 'enum': refs})
-    strings = dict(type='array', maxItems=12, items={'type': 'string'})
-    properties = dict(instrument_id={'type': 'string', 'enum': ids}, rank={'type': 'integer', 'minimum': 1, 'maximum': MAX_SELECTED},
-                      rationale={'type': 'string'}, supporting_refs={**ref_list, 'minItems': 2}, conflicting_refs=ref_list,
-                      weak_refs=ref_list, missing_capabilities=strings, uncertainties=strings)
+    choices = []
+    for c in candidates:
+        evidence = (*c['current_market_evidence'], *c['reference_evidence'])
+        refs = [e['evidence_id'] for e in evidence] or ['_']
+        ref_list = dict(type='array', items={'type': 'string', 'enum': refs}, description='At most 12 distinct references belonging to this instrument.')
+        strings = dict(type='array', items={'type': 'string'}, description='At most 12 distinct strings.')
+        properties = dict(instrument_id={'type': 'string', 'enum': [c['instrument']['instrument_id']]},
+                          rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED + 1))},
+                          rationale={'type': 'string'}, supporting_refs={**ref_list, 'minItems': 1, 'description': 'At least two strong references, including a current quote; at most 12.'},
+                          conflicting_refs=ref_list,
+                          weak_refs={**strings, 'const': sorted(e['evidence_id'] for e in evidence if e['weak_reasons'])},
+                          missing_capabilities={**strings, 'const': sorted({x['capability'] for x in c['missing']})},
+                          uncertainties=strings)
+        choices.append(dict(type='object', additionalProperties=False, required=list(properties), properties=properties))
+    # An empty intake can only produce an empty candidate list (a reduction never calls a model for it).
+    items = {'anyOf': choices} if choices else {'type': 'string', 'enum': ['_']}
     return dict(type='object', additionalProperties=False, required=['schema_version', 'candidates', 'limitations'],
                 properties=dict(schema_version={'type': 'string', 'enum': [SCHEMA_VERSION]},
-                    candidates=dict(type='array', maxItems=MAX_SELECTED, items=dict(type='object', additionalProperties=False,
-                                    required=list(properties), properties=properties)), limitations=strings))
+                    candidates=dict(type='array', items=items, description=f'Zero to {MAX_SELECTED} distinct candidates, in rank order.'),
+                    limitations=dict(type='array', items={'type': 'string'}, description='At most 12 limitations; required when no candidates are selected.')))
+
+
+def rejection_details(raw: str, candidates: list[dict], reason: str | None) -> dict:
+    """Retain only canonical identities/capabilities, never raw model text or provider error bodies."""
+    if reason != 'MISSING_EVIDENCE_MISMATCH':
+        return {}
+    parsed = json.loads(raw)  # this reason is reached only after JSON and candidate identity validation
+    by_id = {c['instrument']['instrument_id']: c for c in candidates}
+    for pick in parsed['candidates']:
+        c = by_id.get(pick['instrument_id'])
+        if c is None:
+            continue
+        expected = {x['capability'] for x in c['missing']}
+        declared = pick['missing_capabilities']
+        if set(declared) != expected:
+            return {'instrument_id': c['instrument']['instrument_id'], 'expected_missing': sorted(expected),
+                    'declared_missing': sorted(x for x in declared if x in CAPABILITIES),
+                    'unknown_capability_count': sum(x not in CAPABILITIES for x in declared)}
+    return {}
 
 
 def parse_reduction(raw: str, candidates: list[dict]) -> tuple[dict | None, str | None]:
@@ -208,6 +236,7 @@ class CandidateReducer:
                 return [stable(v) for v in value]
             return value
         material = dict(scope=scope, candidates=stable(candidates), prompt_hash=prompt.content_hash,
+                        output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                         provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None))
         digest = input_hash_from_dict(material)
         # cutoff is recorded but not used as a volatile cache key: admitted facts and deadlines are hashed.
@@ -237,6 +266,7 @@ class CandidateReducer:
                     scope=scope, provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None),
                     runtime=getattr(self.provider, 'runtime', 'PAID_API') if self.provider else None,
                     prompt_id=prompt.prompt_id, prompt_version=prompt.version, prompt_hash=prompt.content_hash,
+                    output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                     input_hash=digest, packet_bytes=size, evidence=candidates, candidates=[], limitations=[], cache='MISS', simulated=False,
                     valid_until=datetime.fromtimestamp(expiry, UTC).isoformat().replace('+00:00', 'Z'),
                     coverage=dict(candidate_intake=len(candidates), selected=0, evidence_items=sum(len(c['current_market_evidence']) + len(c['reference_evidence']) for c in candidates),
@@ -276,7 +306,18 @@ class CandidateReducer:
             else:
                 report_stage('VALIDATION')
                 parsed, reason = parse_reduction(response.raw_text, candidates)
+                if parsed and parsed['candidates']:
+                    # Unselected observations cannot shorten the lifetime of valid selected evidence.
+                    by_id = {c['instrument']['instrument_id']: c for c in candidates}
+                    selected_evidence = [e for pick in parsed['candidates']
+                        for e in (*by_id[pick['instrument_id']]['current_market_evidence'], *by_id[pick['instrument_id']]['reference_evidence'])
+                        if e['evidence_id'] in (*pick['supporting_refs'], *pick['conflicting_refs'], *pick['weak_refs'])]
+                    selected_deadlines = [timestamp(e['valid_until']).timestamp() for e in selected_evidence if e['valid_until']]
+                    expiry = min([self.clock() + 1800, *selected_deadlines])
+                    base['valid_until'] = datetime.fromtimestamp(expiry, UTC).isoformat().replace('+00:00', 'Z')
                 result = {**base, **(parsed or {}), 'state': 'INVALID_OUTPUT' if reason else 'EXPIRED' if self.clock() >= expiry else 'CURRENT' if parsed['candidates'] else 'NO_GROUNDED_CANDIDATES', 'reason': reason}
+                if reason:
+                    result['validation'] = rejection_details(response.raw_text, candidates, reason)
                 result['coverage']['selected'] = len(result['candidates'])
             # Cache failures too: repeated explicit clicks never automatically re-bill invalid output.
             with self.lock:
