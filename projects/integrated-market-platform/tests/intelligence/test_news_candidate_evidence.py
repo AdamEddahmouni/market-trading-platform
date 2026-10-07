@@ -228,6 +228,52 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
         self.assertTrue(all(c['news']['story_count'] or c['news']['state']=='PACKET_LIMITED' for c in candidates))
         print('OCT1-05 MAXIMUM PACKET',estimate['packet_bytes'],'bytes;',estimate['input_tokens'],'estimated input tokens')
 
+    def _full_live_window(self, flow_bytes):
+        """Twenty rows that each carry current evidence and a news status with no story to thin."""
+        rows=[{'instrument':{'instrument_id':f'EQ:X{i:02d}'},'symbol':f'X{i:02d}','company':f'Example company {i}'} for i in range(20)]
+        values=project_news(service(finviz={**FINVIZ,'items':[]}),universe='US_EQUITIES',rows=rows,refresh=True)
+        status=evaluate(capability='quote',source='IMP_TEST',delivery_mode='REALTIME',now=NEWS_ISO,as_of=NEWS_ISO,
+            stale_after_ms=30000,policy='CONTROLLED',basis='EVENT_TIME')
+        candidates=[]
+        for row in rows:
+            identifier=row['instrument']['instrument_id']
+            flow={f'f{k}':'x'*300 for k in range(flow_bytes//300)}
+            c=build_candidate({'instrument_id':identifier,'symbol':row['symbol']},[('QUOTE',status,{'price':123},[]),
+                ('TECHNICALS',status,{'change_pct':1.2},[]),('ORDER_FLOW',status,{'net_signed_volume':10,**flow},[])],now=NEWS_ISO)
+            attach_news(c,values[identifier],now=NEWS_ISO)
+            candidates.append(c)
+        return candidates,values
+
+    def test_full_live_window_with_no_story_left_thins_provider_status_instead_of_failing(self):
+        candidates,values=self._full_live_window(flow_bytes=300)
+        self.assertTrue(all(c['news']['story_count']==0 and c['news']['providers'] for c in candidates))
+        evidence=copy.deepcopy([(c['current_market_evidence'],c['reference_evidence'],c['sufficient']) for c in candidates])
+        fit_news({},candidates,values,now=NEWS_ISO)
+        estimate=CandidateReducer().estimate({},candidates,NEWS_ISO)
+        self.assertLessEqual(estimate['packet_bytes'],96000)
+        self.assertEqual(evidence,[(c['current_market_evidence'],c['reference_evidence'],c['sufficient']) for c in candidates])
+        thinned=[c['instrument']['instrument_id'] for c in candidates if 'GLOBAL_PACKET_STATUS_CAP' in c['news']['limitations']]
+        # Highest instrument id first, and only as many as the cap needs.
+        self.assertEqual(thinned,[c['instrument']['instrument_id'] for c in candidates][-len(thinned):])
+        self.assertTrue(0<len(thinned)<len(candidates))
+        for c in candidates:
+            limited='GLOBAL_PACKET_STATUS_CAP' in c['news']['limitations']
+            self.assertEqual(c['news']['providers']==[],limited)
+            self.assertEqual(c['news']['state'],'NO_RELEVANT_STORIES')
+        self.assertTrue(all('GLOBAL_PACKET_STATUS_CAP' not in v['limitations'] for v in values.values()))
+
+    def test_window_that_fits_keeps_every_provider_status(self):
+        candidates,values=self._full_live_window(flow_bytes=0)
+        before=copy.deepcopy(candidates)
+        fit_news({},candidates,values,now=NEWS_ISO)
+        self.assertEqual(before,candidates)
+
+    def test_evidence_that_cannot_fit_still_fails_closed(self):
+        candidates,values=self._full_live_window(flow_bytes=2400)
+        fit_news({},candidates,values,now=NEWS_ISO)
+        with self.assertRaisesRegex(ValueError,'EVIDENCE_PACKET_BOUND_EXCEEDED'):
+            CandidateReducer().estimate({},candidates,NEWS_ISO)
+
     def test_flow_quality_and_window_gate(self):
         from market_platform_foundation.ui_api.screener_ai import flow_observation
         from market_platform_foundation.ui_api import screener_specialist
