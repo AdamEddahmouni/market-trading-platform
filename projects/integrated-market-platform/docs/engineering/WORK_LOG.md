@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — OCT1-13 AI Screener packet bound on a full live window
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend/AI Screener evidence packet (`ui_api/screener_news_evidence.py::fit_news`) |
+| **Summary** | Found in the first minutes of the 2026-10-07 regular session on canonical `746b93f8`: with all 20 window rows carrying current Moomoo evidence, the read-only preview packet was 95.6 KB with every story already thinned, and the run, which adds order-flow evidence, was refused before inference with `EVIDENCE_PACKET_BOUND_EXCEEDED`. Thinning could only remove stories, so once none were left the request failed. `fit_news` now continues the same deterministic thinning into the per-provider status detail of candidates that carry no story (highest instrument id first, only as many as the cap needs), marked `GLOBAL_PACKET_STATUS_CAP`. |
+| **Tests** | `tests/intelligence/test_news_candidate_evidence.py` (red-first: a full window with no story left fits instead of failing; a window that fits is untouched; evidence that cannot fit still fails closed) |
+| **Related** | [QUOTE push observation time](#2026-10-07--oct1-13-quote-push-observation-time) |
+| **Notes** | The 96 KB cap, intake cap, prompt, model, thresholds and evidence requirements are unchanged; no evidence item is removed and a packet that already fit is byte-identical. Known limit kept as is: stories are still thinned before status detail, so a full live window reaches the model with no news stories. |
+
 ## 2026-10-07 — OCT1-13 QUOTE push observation time
 
 | Field | Value |
