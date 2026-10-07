@@ -299,7 +299,8 @@ async function stop(child) {
     await harness('mark?instrument=AAPL&price=153.00'); await harness('mark?instrument=NVDA&price=236.00');
     const exit = await assess('EXIT');
     assert.equal(exit.action_state, 'EXIT');
-    await page.getByRole('button', { name: 'Prepare Paper Exit', exact: true }).click();
+    // The lifecycle card and the decision record both offer this action; the decision just evaluated is the one meant.
+    await page.getByRole('region', { name: 'Current decision', exact: true }).getByRole('button', { name: 'Prepare Paper Exit', exact: true }).click();
     await page.waitForURL('**/workspace/AAPL');
     await enterPaper();
     await page.getByTestId('experiment-context').waitFor();

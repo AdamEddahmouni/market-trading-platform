@@ -8,6 +8,7 @@ from typing import Any
 
 from ..discovery import DiscoveryEngine, get_screen, list_screens
 from ..discovery.capture import load_discovery_capture, replay_capture_equivalence
+from ..discovery.models import response_provenance
 from ..finviz import (
     authority_matrix_payload,
     finviz_api_key,
@@ -74,9 +75,13 @@ def build_discover_screens_payload() -> dict[str, Any]:
 def build_discover_run_payload(screen_id: str, *, force: bool = False) -> dict[str, Any]:
     engine = DiscoveryEngine()
     candidate_set = engine.run_screen(screen_id, force=force, persist=True)
+    # The persisted capture keeps each candidate's full provenance; the response carries its summary.
+    response = candidate_set.to_dict()
+    response["candidates"] = [{**candidate, "provenance": response_provenance(candidate.get("provenance"))}
+                              for candidate in response.get("candidates") or []]
     return {
         "available": candidate_set.quality != "UNAVAILABLE",
-        "candidate_set": candidate_set.to_dict(),
+        "candidate_set": response,
         "screen": get_screen(screen_id).to_dict() if get_screen(screen_id) else None,
     }
 
