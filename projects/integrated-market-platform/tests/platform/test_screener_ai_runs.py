@@ -219,13 +219,13 @@ class AiScreenerRunTests(unittest.TestCase):
         runs = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, max_requests=30, max_tokens=200_000, clock=lambda: NOW)))
 
         before = runs.current("PAPER-1")
-        self.assertEqual(before["schema_version"], "screener-ai-screener-runs/1.1.0")
+        self.assertEqual(before["schema_version"], "screener-ai-screener-runs/1.2.0")
         self.assertEqual(before["state"], "IDLE")
         self.assertEqual(before["ai"], {"state": "AVAILABLE", "reason": None, "provider_id": "inference.test",
                                         "model_id": "candidate-reduction.v1", "runtime": "PAID_API"})
         # No run has reserved anything yet, so the size of a run is not known and no count is invented.
         self.assertEqual(before["budget"], {"day": "2026-10-02", "tokens": 0, "max_tokens": 200_000, "requests": 0, "max_requests": 30,
-                                            "tokens_left": 200_000, "requests_left": 30, "per_run_tokens": None, "per_run_basis": None,
+                                            "headroom": 200_000, "requests_left": 30, "run_size": None, "run_size_basis": None,
                                             "runs_left": None, "resets_at": "2026-10-03T00:00:00Z"})
 
         done = settled(runs, "PAPER-1", runs.start("PAPER-1", SCOPE)["run_id"])
@@ -233,12 +233,14 @@ class AiScreenerRunTests(unittest.TestCase):
         after = runs.current("PAPER-1")["budget"]
 
         self.assertEqual((after["tokens"], after["requests"]), (150, 1))
-        self.assertEqual((after["per_run_tokens"], after["per_run_basis"]), (reserved, "LAST_RESERVATION"))
+        self.assertEqual((after["run_size"], after["run_size_basis"]), (reserved, "LAST_RESERVATION"))
         self.assertEqual(after["runs_left"], min(29, (200_000 - 150) // reserved))
+        # The whole status, budget included, is a response: it must pass the response guard as it is.
+        assert_no_secrets_in_payload(runs.current("PAPER-1"))
 
     def test_status_waits_for_budget_when_another_run_of_the_measured_size_cannot_fit(self):
         sizing = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, clock=lambda: NOW)))
-        reserved = sizing.current("PAPER-1")["budget"]["per_run_tokens"] if settled(sizing, "PAPER-1", sizing.start("PAPER-1", SCOPE)["run_id"]) else None
+        reserved = sizing.current("PAPER-1")["budget"]["run_size"] if settled(sizing, "PAPER-1", sizing.start("PAPER-1", SCOPE)["run_id"]) else None
         runs = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, max_tokens=reserved + 100, clock=lambda: NOW)))
         settled(runs, "PAPER-1", runs.start("PAPER-1", SCOPE)["run_id"])
 
@@ -366,6 +368,25 @@ class AiScreenerRunRouteTests(unittest.TestCase):
         status, done = self.call("GET", f"/screener/ai-screener/runs/{started['run_id']}")
         self.assertEqual((status, done["state"], done["result"]["state"]), (200, "COMPLETED", "CURRENT"))
         self.assertEqual(self.provider.calls, 1)
+
+    def test_status_for_a_paid_engine_with_a_budget_passes_the_response_guard(self):
+        # Regression: a budget field named like a credential was blocked by the guard, so the strip had no status
+        # for exactly the engines that have a budget.
+        paid = BudgetedProvider(CandidateProvider(), DailyBudget(None, max_requests=30, max_tokens=200_000))
+        runs = AiScreenerRuns(ScreenerAiService(reader=Reader([row("EQ:A")]), news=StatusNews(paid), clock=lambda: NOW))
+        with patch.object(screener_ai_runs, "_RUNS", runs):
+            status, started = self.call("POST", "/screener/ai-screener", SCOPE)
+            self.assertEqual(status, 200)
+            settled(runs, self.account, started["run_id"])
+            status, current = self.call("GET", "/screener/ai-screener/runs/active")
+            self.assertEqual(status, 200, current)
+            status, done = self.call("GET", f"/screener/ai-screener/runs/{started['run_id']}")
+
+        self.assertEqual((status, done["state"]), (200, "COMPLETED"))
+        self.assertEqual(current["state"], "IDLE")
+        self.assertGreater(current["budget"]["run_size"], 0)
+        self.assertEqual(current["budget"]["headroom"], 200_000 - current["budget"]["tokens"])
+        self.assertIsInstance(current["budget"]["runs_left"], int)
 
     def test_reading_status_never_starts_a_run(self):
         status, current = self.call("GET", "/screener/ai-screener/runs/active")

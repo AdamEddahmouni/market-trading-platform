@@ -188,3 +188,10 @@
 .ai-run-stage.done{color:#9fb4c8}
 .ai-run-stage.current{color:#e8f1fc;font-weight:600}
 .ai-run-stage.skipped{font-style:italic}
+.ai-screener-engine-box{display:flex;flex-direction:column;gap:3px;align-items:flex-end;max-width:100%}
+.ai-screener-engine-box p{margin:0}
+.engine-switch-confirm{max-width:420px;padding:6px 8px;border:1px solid #e2bc7d;border-radius:3px;background:#161a1f;color:#dce8f3;font-size:11px;line-height:1.4;text-align:left}
+.engine-switch-confirm p{margin:0 0 4px}
+.engine-switch-warning{color:#e2bc7d}
+.engine-switch-confirm button{border:1px solid #33475c;border-radius:3px;padding:3px 8px;background:#141c26;color:#dce8f3;font:inherit;cursor:pointer}
+.engine-switch-confirm button:focus-visible{outline:2px solid #70afff;outline-offset:1px}

@@ -76,8 +76,8 @@ function budgetText(data: AiScreenerRuns) {
 function budgetDetail(data: AiScreenerRuns) {
   const budget = data.budget;
   if (!budget) return undefined;
-  return `${budget.per_run_tokens !== null ? `A run is counted as ${budget.per_run_tokens.toLocaleString()} tokens, the last amount reserved for this model. ` : "No run has reserved tokens yet, so runs left cannot be counted. "}`
-    + `${budget.requests_left} of ${budget.max_requests} requests and ${budget.tokens_left.toLocaleString()} of ${budget.max_tokens.toLocaleString()} tokens left for UTC day ${budget.day}. Shared by every paid AI feature on this machine.`;
+  return `${budget.run_size !== null ? `A run is counted as ${budget.run_size.toLocaleString()} tokens, the last amount reserved for this model. ` : "No run has reserved tokens yet, so runs left cannot be counted. "}`
+    + `${budget.requests_left} of ${budget.max_requests} requests and ${budget.headroom.toLocaleString()} of ${budget.max_tokens.toLocaleString()} tokens left for UTC day ${budget.day}. Shared by every paid AI feature on this machine.`;
 }
 
 /**
@@ -96,6 +96,9 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
   const call = data?.active?.stage === "MODEL_CALL" ? modelCallContext(data.active) : undefined;
   return <section className={`ai-strip ${data ? data.state.toLowerCase() : "unknown"}`} aria-label="AI status">
     <span className="ai-strip-tag">AI</span><span className="ai-strip-dot" aria-hidden="true" />
+    {/* The engine every AI panel on this machine uses; a run in progress names its own model in the line itself. */}
+    {data && data.state !== "RUNNING" && data.ai.model_id && <span className="ai-strip-engine" title="The engine used by every AI panel on this machine">
+      {data.ai.model_id} · {data.ai.runtime === "LOCAL_MODEL" ? "local" : "paid"}</span>}
     {/* Not a live region: this line changes every second while a model works, and announcing that would drown everything else. */}
     {data ? <p className="ai-strip-main">{mainText(data, loopText(loop.data, loop.isError, now), now)}{call ? ` · ${call}` : ""}</p>
       : runs.isError ? <p className="ai-strip-main">Status unavailable; a run may still be in progress on the server.<ErrorDetail error={runs.error} /></p>
@@ -106,7 +109,7 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
     <div className="ai-strip-actions">
       {looping && <button type="button" disabled={stop.isPending} onClick={() => stop.mutate()} title="Stops the scheduled loop. A model call already in flight finishes; nothing is submitted.">Stop automatic passes</button>}
       {data?.state === "IDLE" && <button type="button" disabled={start.isPending || scope.settled === false} onClick={() => start.mutate(scope)}
-        title={`Runs the AI Screener once for the current Screener scope.${data.budget?.per_run_tokens ? ` Reserves about ${data.budget.per_run_tokens.toLocaleString()} tokens.` : ""}`}>Run now</button>}
+        title={`Runs the AI Screener once for the current Screener scope.${data.budget?.run_size ? ` Reserves about ${data.budget.run_size.toLocaleString()} tokens.` : ""}`}>Run now</button>}
       <button type="button" onClick={onOpen}>Open</button>
     </div>
   </section>;

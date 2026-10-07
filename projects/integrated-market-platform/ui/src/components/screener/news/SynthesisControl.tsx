@@ -5,6 +5,7 @@ import { SETUP_QUERY_KEY, type Remedy } from "../../../api/screenerSetup";
 import { fetchSynthesisPreview, postNewsSynthesis, postSynthesisEngine, type AiStatus, type NewsStory, type NewsSynthesis,
   type NewsWindowId, type SynthesisBudget, type SynthesisEngine, type SynthesisRefItem, type SynthesisRequest } from "../../../api/screenerNews";
 import { humanize, newsDayTime } from "./newsFormat";
+import { EngineSwitchConfirm, engineLockText, type PendingEngine } from "../ai/EngineSwitch";
 import { RemedyHint } from "../setup/Remedy";
 
 const PREVIEW_ROOT = "screener-news-synthesis-preview";
@@ -54,26 +55,34 @@ function EngineSelect({ ai, disabled, onChanged }: { ai: AiStatus; disabled: boo
   const client = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Choosing an option only proposes it: the engine is machine-wide, so nothing is sent until it is confirmed.
+  const [pending, setPending] = useState<PendingEngine | null>(null);
   const engines = ai.engines ?? [];
   if (!engines.length) return null;
   const chosen = engines.find((engine) => engine.id === ai.engine);
   const value = chosen ? optionValue(chosen.id, ai.engine_model ?? chosen.default_model) : AUTO;
-  const change = async (next: string) => {
+  const locked = engineLockText(ai);
+  const propose = (next: string) => {
     if (next === AUTO || next === value) return;
     const split = next.indexOf("|");
+    const engine = engines.find((item) => item.id === next.slice(0, split));
+    if (engine) { setFailed(false); setPending({ engine, model: next.slice(split + 1) || null }); }
+  };
+  const confirm = async () => {
+    if (!pending) return;
     setSaving(true); setFailed(false);
     try {
-      const status = await postSynthesisEngine(next.slice(0, split), next.slice(split + 1) || null);
+      const status = await postSynthesisEngine(pending.engine.id, pending.model);
       applyAiStatus(client, status);
       onChanged();
     } catch {
       setFailed(true);
     } finally {
-      setSaving(false);
+      setSaving(false); setPending(null);
     }
   };
   return <span className="news-ai-engine">
-    <label>AI engine <select value={value} disabled={disabled || saving} onChange={(event) => void change(event.target.value)}
+    <label>AI engine <select value={value} disabled={disabled || saving || Boolean(locked) || Boolean(pending)} onChange={(event) => propose(event.target.value)}
       title="Free local model or a paid API. Paid engines share one hard daily limit.">
       {!chosen && <option value={AUTO}>Automatic{ai.model_id ? ` (now ${ai.model_id})` : ""}</option>}
       {engines.map((engine) => {
@@ -86,6 +95,8 @@ function EngineSelect({ ai, disabled, onChanged }: { ai: AiStatus; disabled: boo
         </optgroup>;
       })}
     </select></label>
+    {locked && <span className="screener-panel-note"> {locked}</span>}
+    {pending && <EngineSwitchConfirm pending={pending} busy={saving} onConfirm={() => void confirm()} onCancel={() => setPending(null)} />}
     {saving && <span className="screener-panel-note" role="status"> Switching…</span>}
     {failed && <span className="screener-panel-note" role="alert"> Could not switch the AI engine.</span>}
   </span>;

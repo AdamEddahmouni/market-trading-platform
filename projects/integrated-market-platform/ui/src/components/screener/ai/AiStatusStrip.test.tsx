@@ -23,9 +23,9 @@ const run = (overrides: Partial<AiScreenerRun> = {}): AiScreenerRun => ({ schema
 const finished = (summary: Record<string, unknown> = {}) => run({ state: "COMPLETED", stage: null, finished_at: "2026-10-07T13:58:12Z",
   summary: { state: "NO_GROUNDED_CANDIDATES", reason: null, candidate_run_id: "run-1", selected: [], intake_count: 20, cache: "MISS", provider_id: "anthropic.messages",
     model_id: "claude-haiku-4-5", runtime: "PAID_API", tokens_input: 43_000, tokens_output: 638, valid_until: ahead(42_500), limitations: [], ...summary } as AiScreenerRun["summary"] });
-const budget = { day: "2026-10-07", tokens: 87_000, max_tokens: 200_000, requests: 4, max_requests: 30, tokens_left: 113_000, requests_left: 26,
-  per_run_tokens: 38_700, per_run_basis: "LAST_RESERVATION", runs_left: 2, resets_at: ahead(5 * 3_600_000) };
-const status = (overrides: Partial<AiScreenerRuns> = {}): AiScreenerRuns => ({ schema_version: "screener-ai-screener-runs/1.1.0", state: "IDLE",
+const budget = { day: "2026-10-07", tokens: 87_000, max_tokens: 200_000, requests: 4, max_requests: 30, headroom: 113_000, requests_left: 26,
+  run_size: 38_700, run_size_basis: "LAST_RESERVATION", runs_left: 2, resets_at: ahead(5 * 3_600_000) };
+const status = (overrides: Partial<AiScreenerRuns> = {}): AiScreenerRuns => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE",
   ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-haiku-4-5", runtime: "PAID_API" }, budget, active: null, latest: null, ...overrides });
 const loop = (worker_state: string, worker_label: string, extra: Record<string, unknown> = {}) => ({ schema_version: "reevaluation-status/1.0.0", worker_state, worker_label,
   engine: { state: "AVAILABLE", reason: null, provider_id: "p", model_id: "m", runtime: "PAID_API", budget: null }, durability: "DURABLE", paper_execution: "MANUAL_ONLY", ...extra });
@@ -45,6 +45,7 @@ describe("AI status strip", () => {
     mount();
     await waitFor(() => expect(strip()).toHaveTextContent(/Idle · last pass 09:58:12 ET · 0 of 20 selected · evidence expires in 0:4[123] · next automatic cycle in 2:1[234]/));
     expect(strip()).toHaveTextContent("Budget 87k / 200k tokens · ~2 runs left · last run used 44k");
+    expect(strip().querySelector(".ai-strip-engine")).toHaveTextContent("claude-haiku-4-5 · paid");
     expect(strip().querySelector(".ai-strip-budget")).toHaveAttribute("title", expect.stringContaining("A run is counted as 38,700 tokens, the last amount reserved for this model."));
     expect(within(strip()).getByRole("button", { name: "Run now" })).toBeEnabled();
     expect(api.post).not.toHaveBeenCalled();
@@ -56,6 +57,7 @@ describe("AI status strip", () => {
     await waitFor(() => expect(strip()).toHaveTextContent("Running · model call 7.0s · claude-haiku-4-5 · 20 candidates · typical 11s from 3 measured calls · request times out at 45s"));
     expect(strip()).toHaveTextContent("~2 runs left · this run holds 39k");
     expect(strip()).toHaveClass("running");
+    expect(strip().querySelector(".ai-strip-engine")).toBeNull();
     expect(within(strip()).queryByRole("button", { name: "Run now" })).toBeNull();
     expect(strip()).not.toHaveTextContent("%");
   });
@@ -76,7 +78,7 @@ describe("AI status strip", () => {
 
   it("waiting for budget: says why and when the budget resets, and offers no run", async () => {
     api.runs.mockResolvedValue(status({ state: "WAITING_FOR_BUDGET", ai: { state: "UNAVAILABLE", reason: "SYNTHESIS_DAILY_BUDGET_EXHAUSTED", provider_id: "anthropic.messages",
-      model_id: "claude-haiku-4-5", runtime: "PAID_API" }, budget: { ...budget, tokens: 200_000, tokens_left: 0, runs_left: 0 } }));
+      model_id: "claude-haiku-4-5", runtime: "PAID_API" }, budget: { ...budget, tokens: 200_000, headroom: 0, runs_left: 0 } }));
     mount();
     await waitFor(() => expect(strip()).toHaveTextContent(/Waiting for budget · today's model budget is used up \(SYNTHESIS_DAILY_BUDGET_EXHAUSTED\) · resets \d\d:\d\d:\d\d ET \(in (4:59:5\d|5:00:00)\)/));
     expect(strip()).toHaveTextContent("~0 runs left");
@@ -103,7 +105,7 @@ describe("AI status strip", () => {
   });
 
   it("does not count runs left before any run has reserved tokens", async () => {
-    api.runs.mockResolvedValue(status({ budget: { ...budget, per_run_tokens: null, per_run_basis: null, runs_left: null } }));
+    api.runs.mockResolvedValue(status({ budget: { ...budget, run_size: null, run_size_basis: null, runs_left: null } }));
     mount();
     await waitFor(() => expect(strip()).toHaveTextContent("Idle · no pass since the server started"));
     expect(strip()).toHaveTextContent("Budget 87k / 200k tokens · 26 of 30 requests left · run size not yet measured");

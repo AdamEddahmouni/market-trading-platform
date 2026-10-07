@@ -49,6 +49,15 @@ def _finite(value: Any) -> bool:
     return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
 
 
+def engine_fit(engines: list[dict[str, Any]], *, input_tokens: int | None, output_tokens: int) -> list[dict[str, Any]]:
+    """Whether this packet fits each selectable engine. ``fits`` is None when the packet size or the engine's
+    context window is not known: nothing is claimed in either direction."""
+    required = input_tokens + output_tokens if input_tokens is not None else None
+    return [{"engine": engine["id"], "packet_size": required, "context_window": engine.get("context_window"),
+             "fits": required <= engine["context_window"] if required is not None and engine.get("context_window") else None}
+            for engine in engines]
+
+
 def observations_for_row(row: dict[str, Any], *, now: str) -> list[tuple[str, dict[str, Any], dict[str, Any], list[str]]]:
     """Project only bounded row facts; specialist payloads are never serialized wholesale."""
     observations = []
@@ -218,6 +227,8 @@ class ScreenerAiService:
                                       "missing": sum(len(item["missing"]) for item in candidates),
                                       "weak": sum(len(item["weak"]) for item in candidates)},
                 "news_coverage": [{"instrument_id": c['instrument']['instrument_id'], **c.get('news', {})} for c in candidates],
+                "engine_fit": engine_fit(ai.get("engines") or [], input_tokens=estimate["input_tokens"] if estimate else None,
+                                         output_tokens=reducer.config.max_tokens),
                 "decision_cutoff": now, "result_set": page_meta["result_set"]}
 
     def run(self, body: dict[str, Any], *, refresh_news: bool = True) -> dict[str, Any]:
@@ -247,5 +258,5 @@ def read_ai_screener_preview(body: dict[str, Any]) -> dict[str, Any]:
     return screener_ai_service().preview(body)
 
 
-__all__ = ["MAX_INTAKE", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerAiService",
+__all__ = ["MAX_INTAKE", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerAiService", "engine_fit",
            "observations_for_row", "read_ai_screener_preview", "screener_ai_service"]

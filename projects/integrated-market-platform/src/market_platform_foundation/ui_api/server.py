@@ -70,6 +70,17 @@ def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, 
 LEDGER_ROUTE_LOCK = threading.Lock()
 
 
+def with_engine_lock(payload: dict[str, Any], read_lock: Any) -> dict[str, Any]:
+    """Every Screener response that offers the engine picker also says whether the choice may change now.
+
+    The picker's choices travel in an ``ai`` block that lists ``engines``; that block gains ``engine_lock``. The
+    lock is read only when such a block is present."""
+    ai = payload.get("ai") if isinstance(payload, dict) else None
+    if not isinstance(ai, dict) or "engines" not in ai or "engine_lock" in ai:
+        return payload
+    return {**payload, "ai": {**ai, "engine_lock": read_lock()}}
+
+
 class UiApiHandler(BaseHTTPRequestHandler):
     store: ReplayStore
 
@@ -96,6 +107,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
             from datetime import UTC, datetime
 
             payload = project_screener_response(self.path, payload, now=datetime.now(UTC).isoformat().replace("+00:00", "Z"))
+            payload = with_engine_lock(payload, self._engine_lock)
         try:
             assert_no_secrets_in_payload(payload)
         except Exception as exc:
@@ -127,6 +139,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IMP-Session")
         self.end_headers()
+
+    def _engine_lock(self) -> dict[str, Any]:
+        """Whether the machine-wide AI engine choice may change now. An unreadable loop state locks it."""
+        from .screener_reevaluation import reevaluation_service
+
+        try:
+            return reevaluation_service(self.store).engine_lock()
+        except Exception:  # noqa: BLE001 - fail closed: never switch a model under a loop whose state is unknown
+            return {"locked": True, "reason": "REEVALUATION_STATE_UNKNOWN"}
 
     def _authorize_request(
         self,
@@ -1721,10 +1742,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
             from .screener_news import select_synthesis_engine
 
             engine, model = body.get("engine"), body.get("model")
+            # The choice applies to every AI feature on this machine; it never changes under a running loop.
+            lock = self._engine_lock()
+            if lock["locked"]:
+                self._send_error_json("SYNTHESIS_ENGINE_LOCKED", f"The AI engine cannot be changed now: {lock['reason']}", status=HTTPStatus.CONFLICT)
+                return
             try:
                 if not isinstance(engine, str) or not (model is None or isinstance(model, str)):
                     raise ValueError("SYNTHESIS_ENGINE_INVALID")
-                self._send_json(select_synthesis_engine(engine, model))
+                self._send_json({**select_synthesis_engine(engine, model), "engine_lock": lock})
             except ValueError as exc:
                 self._send_error_json("SYNTHESIS_ENGINE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
