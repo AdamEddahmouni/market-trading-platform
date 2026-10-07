@@ -107,8 +107,9 @@ def output_schema(candidates: list[dict]) -> dict:
                           rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED + 1))},
                           rationale={'type': 'string'}, supporting_refs={**ref_list, 'minItems': 1, 'description': 'At least two strong references, including a current quote; at most 12.'},
                           conflicting_refs=ref_list,
-                          weak_refs={**strings, 'const': sorted(e['evidence_id'] for e in evidence if e['weak_reasons'])},
-                          missing_capabilities={**strings, 'const': sorted({x['capability'] for x in c['missing']})},
+                          # Strict grammars reject complex const. Decode exact scalar JSON before validation.
+                          weak_refs={'type': 'string', 'const': json.dumps(sorted(e['evidence_id'] for e in evidence if e['weak_reasons'])), 'description': 'Exact JSON-encoded weak reference list.'},
+                          missing_capabilities={'type': 'string', 'const': json.dumps(sorted({x['capability'] for x in c['missing']})), 'description': 'Exact JSON-encoded missing capability list.'},
                           uncertainties=strings)
         choices.append(dict(type='object', additionalProperties=False, required=list(properties), properties=properties))
     # An empty intake can only produce an empty candidate list (a reduction never calls a model for it).
@@ -131,6 +132,8 @@ def rejection_details(raw: str, candidates: list[dict], reason: str | None) -> d
             continue
         expected = {x['capability'] for x in c['missing']}
         declared = pick['missing_capabilities']
+        if isinstance(declared, str):
+            declared = json.loads(declared)
         if set(declared) != expected:
             return {'instrument_id': c['instrument']['instrument_id'], 'expected_missing': sorted(expected),
                     'declared_missing': sorted(x for x in declared if x in CAPABILITIES),
@@ -158,6 +161,12 @@ def parse_reduction(raw: str, candidates: list[dict]) -> tuple[dict | None, str 
     for rank, pick in enumerate(selected, 1):
         if not isinstance(pick, dict) or set(pick) != {'instrument_id', 'rank', 'rationale', 'supporting_refs', 'conflicting_refs', 'weak_refs', 'missing_capabilities', 'uncertainties'}:
             return None, 'SCHEMA_INVALID'
+        for name in ('weak_refs', 'missing_capabilities'):
+            if isinstance(pick[name], str):
+                try:
+                    pick[name] = json.loads(pick[name])
+                except ValueError:
+                    return None, 'SCHEMA_INVALID'
         identifier = pick['instrument_id']
         if not isinstance(identifier, str) or identifier not in by_id or identifier in used:
             return None, 'UNKNOWN_OR_DUPLICATE_CANDIDATE'

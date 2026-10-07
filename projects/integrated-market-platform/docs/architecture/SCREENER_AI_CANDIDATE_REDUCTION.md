@@ -155,6 +155,13 @@ its final cutoff, so their counts may differ as ticks arrive or evidence ages.
 ## Limits and lifecycle
 
 The hard limits are `MAX_INTAKE=50`, `MAX_SELECTED=5` and a 320,000-byte packet.
+Strict inference uses scalar JSON-encoded strings for its fixed weak-reference
+and missing-capability lists: the provider rejects complex array constants.
+The parser decodes those two strings into canonical arrays before applying all
+existing validation. Legacy array output remains valid input. Malformed or
+incorrect lists still fail closed. Shared news refresh precedes acquisition of
+short-lived market snapshots, so slow news providers cannot age newly acquired
+snapshots before the decision cutoff.
 Intake is the first 50 rows of the server's existing sorted/filtered result,
 independent of which page the browser has loaded; no additional ranking model
 is introduced. An explicit equity/ETF Run also reads one bounded OpenD

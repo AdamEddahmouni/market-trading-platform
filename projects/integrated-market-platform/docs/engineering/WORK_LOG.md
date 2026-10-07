@@ -6522,3 +6522,7 @@ Validation: regression reproductions failed on the old schema, expiry, intake,
 diagnostics and absent snapshot integration; 89 focused offline tests passed
 across candidate/news/provider/async/live-price modules. Protected CI owns
 manifest affected suites and mandatory fast invariants before deployment.
+
+## 2026-10-07 — Live strict-schema compatibility correction
+
+PR481's first real50-instrument scan had48 sufficient candidates and318356 packet bytes but was refused before generation: no tokens billed, request count8 preserved. A free count diagnostic reproduced Anthropic's precise rejection: complex array constants are unsupported. Encode only fixed missing/weak lists as scalar JSON constants and decode before unchanged canonical validation. The corrected request is accepted by the free count endpoint at174375 input tokens. News refresh took30 seconds; acquire provider-timed snapshots afterwards to preserve their60-second lifetime. No thresholds, model, prompt version, Paper account or live-capital authority change.90 focused regressions passed; acquisition-order assertions and protected CI cover the follow-up. Preserve SHA1e247065 and its restart interval as an intermediate software epoch.
