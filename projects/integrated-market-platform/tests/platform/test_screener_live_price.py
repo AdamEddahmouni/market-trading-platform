@@ -141,6 +141,28 @@ class LivePriceTests(unittest.TestCase):
         self.assertEqual(quote['facts'], {'price':240.27})
         self.assertTrue(c['sufficient'])
 
+    def test_quote_push_between_snapshot_polls_stays_current_evidence(self):
+        from market_platform_foundation.market_data.observational_state import ObservationalStateStore
+        state = ObservationalStateStore()
+        def l1(payload, received, event=None):
+            state.apply_admitted({'admission': {'display': 'DISPLAY_ADMITTED'},
+                'envelope': {'instrument_id': 'NVDA', 'event_time': event or received, 'available_time': received},
+                'record': {'capability': 'US_EQUITY_L1', 'raw_payload': payload, 'provider': 'MOOMOO_OPEND',
+                           'clocks': {'received_time_ns': received}}})
+        l1({'last_price': 240.20, 'bid_price': 240.22, 'ask_price': 240.24, 'volume': 2000.0,
+            'update_time': '2026-10-06 14:05:22.000'}, NS-1_800_000_000, NS-2_000_000_000)
+        # The push that follows a trade has data_date/data_time and no update_time.
+        l1({'last_price': 240.27, 'volume': 2100.0, 'data_date': '2026-10-06', 'data_time': '14:05:23'}, NS-500_000_000)
+        self.quotes['NVDA'] = state.quote_for('NVDA')
+        price = self.row()['fields']['price']
+        self.assertEqual((price['value'], price['state'], price['provider_as_of']), (240.27, 'LIVE', '2026-10-06T18:05:23Z'))
+        self.assertIsNone(self.row()['fields']['bid']['provider_as_of'])
+        _, _, _, candidates = self.packet('NVDA')
+        quote = next(e for e in candidates[0]['current_market_evidence'] if e['capability']=='QUOTE')
+        self.assertEqual((quote['facts'], quote['as_of'], quote['freshness_status']), ({'price': 240.27}, '2026-10-06T18:05:23Z', 'CURRENT'))
+        self.assertEqual(quote['received_at'], '2026-10-06T18:05:23.500000Z')
+        self.assertTrue(candidates[0]['sufficient'])
+
     def test_etf_canonical_identity_joins_market_data_symbol(self):
         from market_platform_foundation.ui_api.screener_multi import MultiUniverseScreener
         self.quote('SPY',500)
