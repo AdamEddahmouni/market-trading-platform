@@ -232,3 +232,5 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Sep 15 Item 9 kline P12 review | [ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md](engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md) |
 | Sep 15 live OE P12/P13 reviews | [reviews/](engineering/reviews/) |
 | Sep 15 Item 7 / provider drafts | [drafts/20260915-rth-runbook-item7-provider/](engineering/drafts/20260915-rth-runbook-item7-provider/README.md) |
+
+- [Prospective outcome evaluation](architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) — OCT1-11 contracts, admission, formulas and frozen reproduction.

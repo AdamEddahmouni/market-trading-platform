@@ -403,6 +403,33 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 self._send_json(setup_checklist())
                 return
+            if path.startswith("/evaluation/prospective/"):
+                try:
+                    from .prospective_evaluation import evaluation_service
+                    service = evaluation_service(self.store)
+                    first = lambda key: (query.get(key) or [None])[0]
+                    identifier = first("run_id")
+                    if path == "/evaluation/prospective/runs":
+                        payload = {"runs": service.repository.list(service.account, before=first("before"), limit=int(first("limit") or 25))}
+                    elif path.startswith("/evaluation/prospective/runs/"):
+                        identifier = path.removeprefix("/evaluation/prospective/runs/")
+                        payload = service.summary(service.get(identifier), finalized=True)
+                    else:
+                        run = service.get(identifier) if identifier else service.project(cutoff=first("cutoff"), evidence_class=first("evidence_class"))
+                        if path == "/evaluation/prospective/summary":
+                            payload = service.summary(run, finalized=bool(identifier))
+                        elif path == "/evaluation/prospective/records":
+                            payload = service.records(run, offset=int(first("offset") or 0), limit=int(first("limit") or 25),
+                                                      dimension=first("dimension"), label=first("label"))
+                        elif path == "/evaluation/prospective/detail":
+                            payload = service.detail(run, first("evaluation_id"))
+                        else:
+                            raise ValueError("EVALUATION_ROUTE_NOT_FOUND")
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PROSPECTIVE_EVALUATION_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path == "/screener/action-decisions":
                 from .screener_action import action_service
                 instrument = (query.get("instrument") or [""])[0]
@@ -1588,6 +1615,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
             self._send_json(handle_auth_logout(token))
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
+            return
+        if path in ("/evaluation/prospective/runs", "/evaluation/prospective/rerun"):
+            try:
+                from .prospective_evaluation import evaluation_service
+                service = evaluation_service(self.store)
+                if path.endswith("/rerun"):
+                    if set(body) != {"run_id"}:
+                        raise ValueError("INVALID_EVALUATION_REQUEST")
+                    payload = service.reproduce(body["run_id"])
+                else:
+                    payload = service.create(body)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PROSPECTIVE_EVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            self._send_json(payload)
             return
         if path in ("/screener/window", "/screener/window/release"):
             from .screener_projections import release_screener_window, update_screener_window

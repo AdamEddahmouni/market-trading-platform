@@ -42,6 +42,7 @@ export default defineConfig({
   server: {
     port: uiPort,
     proxy: {
+      "/evaluation": apiTarget,
       "/context": apiTarget,
       "/auth": apiTarget,
       "/capabilities": apiTarget,

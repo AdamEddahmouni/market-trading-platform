@@ -53,6 +53,7 @@ import "./styles/radar.css";
 import "./components/opportunity/opportunity.css";
 import "./components/imp-ui/imp-ui.css";
 
+const EvaluationPage = lazy(() => import("./components/evaluation/EvaluationPage"));
 const AssistantHistoryPage = lazy(() =>
   import("./components/AssistantHistoryPage").then((module) => ({
     default: module.AssistantHistoryPage,
@@ -603,6 +604,7 @@ export function WorkstationShell({ mode, onSwitchMode }: WorkstationShellProps) 
                 />
               }
             />
+            <Route path="/portfolio/evaluation" element={<EvaluationPage mode={mode} />} />
             <Route path="/research/*" element={<ModeResearchRoute mode={mode} />} />
             <Route
               path="/portfolio"

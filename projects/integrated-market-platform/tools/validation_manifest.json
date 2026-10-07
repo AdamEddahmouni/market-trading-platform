@@ -760,7 +760,10 @@
         "tools/evidence_capture_context.py",
         "tools/rth_empirical_ops.py",
         "tools/ftep_watch_catalysts.py",
-        "tools/intelligence_enrichment_worker.py"
+        "tools/intelligence_enrichment_worker.py",
+        "src/market_platform_foundation/evaluation/**",
+        "src/market_platform_foundation/local_state/evaluations.py",
+        "src/market_platform_foundation/ui_api/prospective_evaluation.py"
       ],
       "test_globs": [
         "tests/intelligence/test_*.py"

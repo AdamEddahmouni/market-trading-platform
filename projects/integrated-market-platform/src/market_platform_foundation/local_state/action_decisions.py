@@ -47,6 +47,25 @@ class ActionDecisionRepository:
                 with self.connection.transaction(): insert()
             else: insert()
 
+    def evaluation_decisions(self, account_id, cutoff, *, limit=10001):
+        """Bounded accounting read; compare instants, never ISO lexical spelling."""
+        from datetime import datetime
+        instant = lambda value: datetime.fromisoformat(value.replace('Z', '+00:00'))
+        with self.lock:
+            if self.connection:
+                rows = self.connection.execute(
+                    "SELECT payload FROM action_decision_records WHERE kind='decision' "
+                    "AND json_extract(payload,'$.position.account_id')=? LIMIT ?",
+                    (account_id, limit)).fetchall()
+                values = [json.loads(r[0]) for r in rows]
+            else:
+                values = [json.loads(v) for (k, _), v in self._memory.items() if k == 'decision']
+                values = [r for r in values if r['position']['account_id'] == account_id]
+            if len(values) >= limit:
+                raise ValueError('EVALUATION_ACCOUNT_SOURCE_BOUND_EXCEEDED')
+            return sorted([r for r in values if instant(r['decision_time']) <= instant(cutoff)],
+                          key=lambda r:(instant(r['decision_time']), r['decision_id']))
+
     def history(self, instrument_id):
         with self.lock:
             if self.connection:

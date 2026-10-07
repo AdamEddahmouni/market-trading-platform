@@ -126,6 +126,7 @@ export function PaperPortfolioPage({ paperActionsPermitted }: Props) {
         subtitle="Exposure and active execution state. Orders are submitted from Workspace."
         actions={
           <div className="portfolio-header-actions">
+            <Link className="portfolio-header-action" to="/portfolio/evaluation">Outcome evaluation</Link>
             <Link className="portfolio-header-action" to={workspaceHref}>
               Open Workspace
             </Link>

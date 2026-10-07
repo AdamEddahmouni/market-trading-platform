@@ -1,0 +1,66 @@
+{
+  "read_only_databases": [
+    {
+      "path": "C:\\Users\\adame\\.codex\\worktrees\\oct1-07-reevaluation\\market-trading-platform\\projects\\integrated-market-platform\\.local\\imp-state.sqlite3",
+      "tables": [],
+      "access": "SQLITE_MODE_RO"
+    },
+    {
+      "path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-09-100k-paper-portfolio\\projects\\integrated-market-platform\\.local\\imp-state.sqlite3",
+      "tables": [
+        {
+          "table": "paper_experiments",
+          "count": 0
+        },
+        {
+          "table": "paper_equity_snapshots",
+          "count": 0
+        }
+      ],
+      "access": "SQLITE_MODE_RO"
+    },
+    {
+      "path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-09-100k-paper-portfolio\\projects\\integrated-market-platform\\.local\\oct1-09-dbg\\imp-state.sqlite3",
+      "tables": [
+        {
+          "table": "paper_experiments",
+          "count": 1
+        },
+        {
+          "table": "paper_equity_snapshots",
+          "count": 1
+        },
+        {
+          "table": "action_decision_records",
+          "count": 1
+        }
+      ],
+      "access": "SQLITE_MODE_RO"
+    },
+    {
+      "path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\oct1-09-100k-paper-portfolio\\projects\\integrated-market-platform\\.local\\oct1-09-harness-state\\imp-state.sqlite3",
+      "tables": [
+        {
+          "table": "paper_experiments",
+          "count": 1
+        },
+        {
+          "table": "paper_equity_snapshots",
+          "count": 8
+        },
+        {
+          "table": "action_decision_records",
+          "count": 7
+        }
+      ],
+      "access": "SQLITE_MODE_RO"
+    }
+  ],
+  "classification": {
+    "oct1-07_database": "NO_AVAILABLE_NEXT_SESSION_TABLES",
+    "oct1-09-dbg": "SOFTWARE_CONTROLLED_CANDIDATE_ONLY",
+    "oct1-09-harness-state": "SOFTWARE_CONTROLLED_SIMULATED_MODEL",
+    "actual_prospective": "ARCHIVED_RAW_OCT1_09_NO_QUALIFYING_ENTRY"
+  },
+  "scope": "Available audited package stores; no systemwide claim"
+}
