@@ -90,12 +90,14 @@ class RequestShapeTests(unittest.TestCase):
         self.assertEqual(result['state'], 'CURRENT')
         tool = calls[0]['tools'][0]
         self.assertTrue(tool['strict'])
-        choice = tool['input_schema']['properties']['candidates']['items']['anyOf'][0]
-        self.assertEqual(json.loads(choice['properties']['missing_capabilities']['const']), sorted(x['capability'] for x in c['missing']))
+        choice = tool['input_schema']['properties']['candidates']['items']
+        self.assertEqual(choice['properties']['candidate_key']['enum'], [0])
+        self.assertEqual(choice['properties']['supporting_refs']['items']['type'], 'integer')
         def check(schema):
             if isinstance(schema, dict):
                 self.assertFalse({'minimum', 'maximum', 'maxItems', 'uniqueItems', 'maxLength'} & schema.keys())
                 self.assertLessEqual(schema.get('minItems', 0), 1)
+                self.assertNotIn('anyOf', schema)
                 if 'const' in schema:
                     self.assertNotIsInstance(schema['const'], (list, dict))
                 for value in schema.values(): check(value)

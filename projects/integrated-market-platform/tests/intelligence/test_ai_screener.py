@@ -50,6 +50,29 @@ class Stub:
 
 
 class AiScreenerTests(unittest.TestCase):
+    def test_flat_wire_key_preserves_canonical_metadata_and_rejects_unrelated_refs(self):
+        from market_platform_foundation.intelligence.inference.candidate_reduction import reference_ids
+        c = candidate()
+        other = build_candidate({'instrument_id':'EQ:B'}, [('QUOTE',observation(),{'price':42},[]),
+            ('TECHNICALS',observation('bars'),{'volume':100},[])],now=NOW)
+        value = output(c)
+        pick = value['candidates'][0]
+        for name in ('instrument_id', 'weak_refs', 'missing_capabilities'):
+            pick.pop(name)
+        pick['candidate_key'] = 0
+        refs = reference_ids([c, other])
+        pick['supporting_refs'] = [refs.index(ref) for ref in pick['supporting_refs']]
+        expected = output(c)
+        expected['candidates'][0]['missing_capabilities'].sort()
+        self.assertEqual(parse_reduction(json.dumps(value), [c,other]), (expected, None))
+        pick['supporting_refs'][0] = refs.index(other['current_market_evidence'][0]['evidence_id'])
+        self.assertEqual(parse_reduction(json.dumps(value), [c,other])[1], 'UNKNOWN_OR_UNRELATED_REF')
+        pick['supporting_refs'][0] = len(refs)
+        self.assertEqual(parse_reduction(json.dumps(value), [c,other])[1], 'UNKNOWN_OR_UNRELATED_REF')
+        for invalid in (2, True, '0'):
+            pick['candidate_key'] = invalid
+            self.assertEqual(parse_reduction(json.dumps(value), [c,other])[1], 'UNKNOWN_OR_DUPLICATE_CANDIDATE')
+
     def test_strict_scalar_lists_decode_to_canonical_arrays_and_still_validate(self):
         c = candidate()
         value = output(c)
@@ -111,15 +134,10 @@ class AiScreenerTests(unittest.TestCase):
             ('NEWS', observation('news', reference=True), {'story_id': 'controlled'}, []),
         ], now=NOW)
         schema = output_schema([a, b])['properties']['candidates']['items']
-        choices = schema.get('anyOf', [schema])
-        self.assertEqual(len(choices), 2, 'The model must choose one instrument-specific contract')
-        for c, choice in zip((a, b), choices):
-            props = choice['properties']
-            self.assertEqual(props['instrument_id']['enum'], [c['instrument']['instrument_id']])
-            self.assertEqual(props['missing_capabilities']['type'], 'string')
-            self.assertEqual(json.loads(props['missing_capabilities']['const']), sorted({m['capability'] for m in c['missing']}))
-            self.assertEqual(set(props['supporting_refs']['items']['enum']),
-                             {e['evidence_id'] for e in (*c['current_market_evidence'], *c['reference_evidence'])})
+        self.assertNotIn('anyOf', schema)
+        props = schema['properties']
+        self.assertEqual(props['candidate_key']['enum'], [0, 1])
+        self.assertEqual(props['supporting_refs']['items']['enum'], list(range(5)))
 
     def test_unselected_short_deadline_does_not_expire_fresh_selected_support(self):
         fresh = candidate()

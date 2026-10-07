@@ -6526,3 +6526,27 @@ manifest affected suites and mandatory fast invariants before deployment.
 ## 2026-10-07 — Live strict-schema compatibility correction
 
 PR481's first real50-instrument scan had48 sufficient candidates and318356 packet bytes but was refused before generation: no tokens billed, request count8 preserved. A free count diagnostic reproduced Anthropic's precise rejection: complex array constants are unsupported. Encode only fixed missing/weak lists as scalar JSON constants and decode before unchanged canonical validation. The corrected request is accepted by the free count endpoint at174375 input tokens. News refresh took30 seconds; acquire provider-timed snapshots afterwards to preserve their60-second lifetime. No thresholds, model, prompt version, Paper account or live-capital authority change.90 focused regressions passed; acquisition-order assertions and protected CI cover the follow-up. Preserve SHA1e247065 and its restart interval as an intermediate software epoch.
+
+## 2026-10-07 — Bounded candidate grammar correction
+
+PR482's real 50-instrument request was rejected before generation because the
+vendor could not compile its large strict grammar. Token counting had accepted
+the request but did not establish grammar compatibility. Replace repeated
+per-instrument branches and long reference enums with a flat strict schema:
+packet-local integer candidate keys and integer evidence references. Each key
+explicitly binds the instrument and fixed missing/weak metadata carried in the
+packet. Decode those bindings and apply every existing canonical evidence,
+ownership, conflict, freshness, rank and action-language guard. The output
+schema hash remains in receipt/cache lineage. Preserve the model, prompt
+version, evidence/risk thresholds, intake bound and Paper authority.
+
+Validation: 91 focused offline regressions passed, including cross-instrument
+references, invalid key types and canonical metadata decoding. The exact
+replacement schema compiled in a vendor schema-only request (HTTP 200;
+2,276 input tokens and one truncated output token). This probe produced no
+canonical candidates and is not a successful live-market workflow. Shared
+usage remains 310,047 tokens and 13 requests. The Codex usage interruption
+prevented deployment during RTH; October 7 was finalized at its fixed 20:00Z
+cutoff with zero decisions/trades, insufficient evidence and matching source
+and metric reproduction. Later deployment must remain outside that closed
+prospective epoch. Protected CI owns affected suites and mandatory invariants.
