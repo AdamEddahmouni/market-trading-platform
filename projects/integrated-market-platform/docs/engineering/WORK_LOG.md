@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — Screener live price evidence convergence
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; validation and protected integration receipts in linked report |
+| **Area** | backend/screener, intelligence/candidate evidence, UI/screener |
+| **Summary** | Join existing equity/ETF OpenD L1 observations into backend rows after snapshot ordering so the AI gate consumes the same price/source clock as the table. Preserve Finviz reference fields, source clock integrity, immutable history and execution gates. |
+| **Key files** | Screener projections/multi/AI, candidate reduction, ScreenerPage and AI panel; controlled regression and loopback harness |
+| **Tests** | Red/green price and carried-book clock regressions; canonical and UI totals recorded in receipt |
+| **Related** | [Price convergence report](../superpowers/plans/2026-10-07-screener-live-price-evidence.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; LIVE_RTH_ACCEPTANCE = NOT_OBSERVED_MARKET_CLOSED; zero Paper/Live submits. No unrelated tracker work. |
+
 ## 2026-10-06 — OCT1-11 prospective outcome evaluation
 
 | Field | Value |

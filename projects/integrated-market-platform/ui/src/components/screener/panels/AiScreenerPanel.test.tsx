@@ -178,3 +178,24 @@ describe("AI Screener trade lifecycle", () => {
     expect(alert).toHaveTextContent("did not match the format this build expects");
   });
 });
+
+
+it("displays the exact current price, provider, observation and receive clocks used by AI", async () => {
+  mocks.preview.mockResolvedValue(preview);
+  const evidence = { evidence_id: "EV:PRICE", capability: "QUOTE", instrument_id: "NVDA", role: "CURRENT_MARKET",
+    source: "MOOMOO_OPEND", as_of: "2026-10-06T18:05:23Z", received_at: "2026-10-06T18:05:23.500Z",
+    delivery_mode: "REALTIME", freshness_status: "CURRENT", decision_admissibility: "ADMISSIBLE",
+    valid_until: "2099-01-01T00:00:00Z", weak_reasons: [], facts: { price: 240.27, bid: 240.26, ask: 240.28 } };
+  mocks.run.mockResolvedValue({ ...result, valid_until: "2099-01-01T00:00:00Z", evidence: [{
+    instrument: { instrument_id: "NVDA" }, current_market_evidence: [evidence], reference_evidence: [],
+    blocked: [], missing: [], weak: [], sufficient: true,
+  }], candidates: [{ instrument_id: "NVDA", rank: 1, rationale: "Observed evidence for review.", supporting_refs: ["EV:PRICE"],
+    conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }] });
+  renderPanel();
+  fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+  expect(await screen.findByText("$240.27")).toBeInTheDocument();
+  expect(screen.getByText("MOOMOO_OPEND")).toBeInTheDocument();
+  expect(screen.getByText("2026-10-06T18:05:23Z")).toBeInTheDocument();
+  expect(screen.getByText("2026-10-06T18:05:23.500Z")).toBeInTheDocument();
+  expect(screen.getByText("CURRENT · ADMISSIBLE · CURRENT_MARKET")).toBeInTheDocument();
+});

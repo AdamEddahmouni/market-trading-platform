@@ -27,9 +27,10 @@ function EvidenceCard({ title, evidence }: { title: string; evidence: Record<str
     </dl></details>;
   }
   return <details className="ai-screener-evidence"><summary>{title} · {evidence.capability}</summary>
-    <dl><div><dt>Facts</dt><dd><code>{JSON.stringify(evidence.facts)}</code></dd></div>
+    <dl>{evidence.capability === "QUOTE" && <div><dt>Price</dt><dd>{typeof evidence.facts?.price === "number" ? `$${evidence.facts.price.toFixed(2)}` : "unavailable"}</dd></div>}<div><dt>Facts</dt><dd><code>{JSON.stringify(evidence.facts)}</code></dd></div>
       <div><dt>Source</dt><dd>{evidence.source ?? "unavailable"}</dd></div>
-      <div><dt>As of</dt><dd>{evidence.as_of ?? "unknown"}</dd></div>
+      <div><dt>Observed</dt><dd>{evidence.as_of ?? "unknown"}</dd></div>
+      <div><dt>Received</dt><dd>{evidence.received_at ?? "unknown"}</dd></div>
       <div><dt>Freshness</dt><dd>{evidence.freshness_status} · {evidence.decision_admissibility} · {evidence.role}</dd></div>
     </dl></details>;
 }

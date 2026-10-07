@@ -26,7 +26,7 @@ from .screener_admission import (
 )
 from .screener_filters import apply_filters, field_value
 from .screener_futures_context import resolve_contract
-from .screener_projections import MAX_WINDOW, RESULT_CACHE_ENTRIES, SCHEMA_VERSION, screener_service
+from .screener_projections import MAX_WINDOW, RESULT_CACHE_ENTRIES, SCHEMA_VERSION, screener_service, with_current_quote
 from .screener_query import DEFAULT_PAGE_LIMIT, ScreenerQuery, exact_matches_first, order_rows, page_payload, parse_query, snapshot_fields
 from .screener_snapshot import SOURCE as SNAPSHOT_SOURCE
 from .screener_snapshot import EtfSnapshotSource, MarketSnapshot
@@ -451,6 +451,9 @@ class MultiUniverseScreener:
         page = page_payload(query, ordered)
         if snapshot is not None:
             page["rows"] = [_with_snapshot(row, snapshot) for row in page["rows"]]
+        if universe == US_ETFS:
+            page["rows"] = [with_current_quote(row, screener_service().quote_for(row["market_data_id"]))
+                            for row in page["rows"]]
         return {**envelope, "result_set_id": f"{token}|{snapshot.id if snapshot else ''}" if rows else None,
                 "source_error": empty_error if not rows else None, **page}
 
@@ -467,7 +470,11 @@ class MultiUniverseScreener:
         rows, _as_of, error = self._catalog(universe)
         row = next((row for row in rows if row["instrument"]["instrument_id"] == instrument_id), None)
         snapshot = self._snapshots.retained(snapshot_id) if snapshot_id and universe == US_ETFS else None
-        return (_with_snapshot(row, snapshot) if row is not None and snapshot is not None else row), error
+        if row is not None and snapshot is not None:
+            row = _with_snapshot(row, snapshot)
+        if row is not None and universe == US_ETFS:
+            row = with_current_quote(row, screener_service().quote_for(row["market_data_id"]))
+        return row, error
 
     def latest_snapshot_id(self, universe: str) -> str | None:
         """The most recent retained complete market snapshot, without building a new one."""

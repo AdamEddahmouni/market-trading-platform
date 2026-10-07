@@ -40,6 +40,24 @@ an explicit, read-only synthesis endpoint and reuses the existing News
 provider boundary, but introduces no execution path, provider, subscription or
 autonomous action loop.
 
+## Equity/ETF price convergence
+
+Screener page and selected-row reads join the already-owned, per-symbol OpenD
+L1 cache after snapshot filtering and ordering. Last price, volume and supplied
+bid/ask/spread retain their own provider/event/receive provenance; reference
+caches are immutable. Finviz fundamentals and discovery fields remain Finviz
+reference data. Missing L1 values do not erase reference values, and a stale
+L1 price remains visibly stale instead of reverting to a timeless export.
+The existing 32-symbol expiring window also warms the first 20 equity/ETF intake
+rows; AI reads do not acquire subscriptions or issue per-symbol provider calls.
+
+A book carried through a newer last-price push has only a retained book receipt
+clock in the existing cache. Its provider event clock is therefore unknown,
+not copied from the newer price. It stays visible but cannot establish current
+bid/ask evidence. Unknown price clocks, delayed quotes, disconnects, future
+observations and aged quotes still fail the existing OCT1-03 gate.
+See the [controlled convergence receipt](../superpowers/plans/2026-10-07-screener-live-price-evidence.md).
+
 ## Bond dates
 
 Maturity, issue, expiry and settlement terms describe the security. Auction and operation dates describe the corresponding source event. Observation/publication dates accompany reported market values. Retrieved/fetched dates describe acquisition. Bond preview labels Maturity explicitly and Observed beside the observed-price date; the decision vector excludes identity/terms/date-unit values from freshness. A future maturity cannot make old observations current.
