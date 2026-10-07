@@ -1,0 +1,68 @@
+{
+  "task": "OCT1-12",
+  "title": "Scheduled reevaluation hardening",
+  "classification": "SOFTWARE_CONTROLLED",
+  "recorded_on": "2026-10-07",
+  "base_sha": "4e1f98652e8a949006ad22509839d1f3b929488b",
+  "branch": "codex/oct1-12-reevaluation-hardening",
+  "environment": {
+    "os": "Windows 11",
+    "python": "3.11.15",
+    "runner": "tools/imp.py",
+    "clock": "controlled clock; no wall-clock one-minute session was run"
+  },
+  "LIVE_RTH_ACCEPTANCE": "NOT_OBSERVED_MARKET_CLOSED",
+  "final_validation": {
+    "fast": {
+      "tests": 23, "skipped": 0, "failures": 0, "errors": 0, "seconds": 3.49,
+      "timing": "SEVERE_REGRESSION (observe-only)",
+      "note": "run before the final operator-stop fix; covered again by full"
+    },
+    "changed": {
+      "tests": 4947, "skipped": 42, "failures": 0, "errors": 0, "seconds": 306.591,
+      "timing": "INSUFFICIENT_DATA (observe-only)",
+      "note": "run before the final operator-stop fix; covered again by full"
+    },
+    "full": {
+      "tests": 8192, "skipped": 53, "failures": 0, "errors": 0, "seconds": 387.316,
+      "timing": "SEVERE_REGRESSION (observe-only)",
+      "note": "final code"
+    },
+    "focused_backend": {
+      "modules": ["tests.intelligence.test_reevaluation", "tests.platform.test_reevaluation_live_evidence"],
+      "tests": 61, "failures": 0, "errors": 0
+    },
+    "static": {"lint": "passed", "format": "passed"},
+    "ui": "NOT_RUN: no UI source changed; the cycle and status schemas are passthrough and unchanged",
+    "browser": "NOT_RUN: tools/ui1/oct1_07_browser.cjs was not re-executed"
+  },
+  "defects_fixed": [
+    {"id": "A", "finding": "Only the first 3 held instruments outside the intake got an evidence read and only the first 10 held were evaluated; unavailable evidence was noted once, then silent.",
+     "repair": "Every held instrument is read and evaluated up to max_held_per_cycle (default 10), rotating least-recently-seen first with HELD_POSITION_CAP_EXCEEDED; unavailable evidence is noted again every decision_max_age_seconds."},
+    {"id": "B", "finding": "A failed Screener evidence read ended the cycle FAILED before any held position's SMA stop was evaluated.",
+     "repair": "Cycle ends REEVALUATION_BLOCKED with EVIDENCE_READ_FAILED; the stop monitor still runs for held instruments; no model call, no baseline change."},
+    {"id": "C", "finding": "Lease ownership was checked once at cycle start and loop writes were unfenced; a cycle outlasting the lease could overwrite a new owner's baselines.",
+     "repair": "Scheduled-cycle writes are owner-fenced; the lease is renewed before each model call; a displaced cycle records FAILED/REEVALUATION_LEASE_LOST, keeps its spent model call counted and ends its worker. An operator Stop mid-cycle still finishes normally."},
+    {"id": "D", "finding": "Model-call caps were counted per loop, so reconfiguring the scope reset the hourly and daily budget.",
+     "repair": "Caps are counted across every loop of the Paper account."},
+    {"id": "E", "finding": "A duplicate receipt id raised ValueError in memory but sqlite3.IntegrityError on SQLite.",
+     "repair": "Both backends raise REEVALUATION_RECEIPT_IMMUTABLE."},
+    {"id": "F1", "finding": "Found on the real evidence path: held instruments were subscribed for quotes only by page-driven Paper/lifecycle requests, so a loop with no page open had no current quote for its own positions.",
+     "repair": "Each cycle refreshes held-position marks and their paper-portfolio-marks subscription without creating the live runtime or touching the execution gate."},
+    {"id": "F2", "finding": "Found on the real evidence path: every stale-to-current quote recovery bought an undwelled model call, because the prior record was a non-committed REVALIDATION_REQUIRED.",
+     "repair": "QUOTE_RESTORED waits min_state_dwell_seconds from the recorded loss; repeated losses inside the window are not re-recorded."}
+  ],
+  "verified_unchanged": [
+    "60-second slot grid, overrun skip, RUNTIME_STALLED and PROCESS_DOWNTIME gaps without backfill (existing WorkerTests)",
+    "SQLite restart keeps tracked baselines and does not reissue an unexpired ENTER (new lock-in test)",
+    "Sub-threshold ticking quotes with advancing clocks cost zero model calls on the real Screener row/cache path",
+    "Stale, delayed, silent-feed and disconnected quotes yield REVALIDATION_REQUIRED / BLOCKED with no model call and no ledger event",
+    "No preview, handoff, order or submit path added; Live authority unchanged"
+  ],
+  "not_done": [
+    "Regular-session run against live providers and a real model runtime",
+    "Controlled browser acceptance re-run",
+    "Fill landing mid-cycle and full lifecycle stage walk were not given new tests; existing OCT1-06/08/10 suites pass unchanged",
+    "Selected candidates that are not held are not subscribed by the loop: without a Screener window their quote is stale and ENTER is blocked"
+  ]
+}

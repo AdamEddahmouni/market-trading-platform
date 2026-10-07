@@ -66,6 +66,7 @@ class FixtureAi:
         self.selected = ['US:NVDA']
         self.packets = self.reductions = 0
         self.no_quote, self.reference = set(), []
+        self.off_intake = set()  # still searchable, no longer in the bounded intake
         self.refreshes = []
 
     @staticmethod
@@ -97,7 +98,7 @@ class FixtureAi:
         self.packets += 1
         self.refreshes.append(refresh_news)
         now = self.clock()
-        rows = [iid for iid in self.rows if not body.get('search') or body['search'] in iid]
+        rows = [iid for iid in self.rows if (body['search'] in iid if body.get('search') else iid not in self.off_intake)]
         return body, [self.candidate(iid, now) for iid in rows], iso(now), {}
 
     def run(self, body, *, refresh_news=True):
@@ -134,6 +135,9 @@ class Harness:
 
     def hold(self, quantity=10, iid='US:NVDA'):
         self.ledger.project_positions = Mock(return_value=[dict(instrument_id=iid, symbol=iid.split(':')[1], quantity=quantity)] if quantity else [])
+
+    def hold_many(self, iids, quantity=10):
+        self.ledger.project_positions = Mock(return_value=[dict(instrument_id=iid, symbol=iid.split(':')[1], quantity=quantity) for iid in iids])
 
     def history(self, iid='US:NVDA'):
         return self.action_repo.history(iid)
@@ -485,8 +489,8 @@ class ReevaluationCycleTests(unittest.TestCase):
 
     def test_failed_cycle_is_recorded_not_hidden(self):
         self.h.configure()
-        self.h.ai._packet = Mock(side_effect=RuntimeError('provider exploded with private detail'))
-        receipt = self.h.service.run_once()
+        with patch.object(self.h.service, 'engine_state', side_effect=RuntimeError('engine exploded with private detail')):
+            receipt = self.h.service.run_once()
         self.assertEqual((receipt['cycle_status'], receipt['reason_codes']), ('FAILED', ['RuntimeError']))
         self.assertEqual(self.h.service.status()['liveness']['last_error']['code'], 'RuntimeError')
 
@@ -502,6 +506,188 @@ class ReevaluationCycleTests(unittest.TestCase):
         self.assertEqual(len(self.h.service.history(session_date='2026-10-05')['cycles']), 7)
         self.assertEqual(self.h.service.history(session_date='2026-10-06')['cycles'], [])
         self.assertLess(len(json.dumps(page['cycles'][0]).encode('utf-8')), 32000)
+
+
+class HardeningTests(unittest.TestCase):
+    """OCT1-12: held positions, failed reads, lease fencing and budget scope."""
+
+    def setUp(self):
+        self.h = Harness()
+
+    def held(self, count):
+        iids = [f'US:H{n:02d}' for n in range(count)]
+        for iid in iids:
+            self.h.ai.rows[iid] = dict(price=100.0, change=1.0)
+        self.h.ai.off_intake.update(iids)
+        self.h.hold_many(iids)
+        return iids
+
+    def unavailable(self, receipt):
+        return [t['instrument_id'] for t in receipt['transitions'] if 'HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE' in t['reason_codes']]
+
+    def test_every_held_position_outside_the_intake_gets_its_own_evidence_read(self):
+        iids = self.held(5)
+        self.h.configure()
+        receipt = self.h.service.run_once()
+        self.assertEqual(self.unavailable(receipt), [])
+        self.assertEqual(receipt['position_count'], 5)
+        for _ in range(3):
+            self.h.tick()
+        self.assertTrue(all(self.h.history(iid) for iid in iids))  # deferred by the call cap, never dropped
+
+    def test_held_position_dropped_from_selection_and_intake_is_still_reevaluated(self):
+        self.h.hold()
+        self.h.configure(min_state_dwell_seconds=0)
+        self.h.service.run_once()
+        self.h.ai.rows['US:AAPL'] = dict(price=100.0, change=1.0)
+        self.h.ai.selected = ['US:AAPL']
+        self.h.ai.off_intake.add('US:NVDA')
+        removed = self.h.tick(600)
+        self.assertEqual([t['instrument_id'] for t in only(removed, 'CANDIDATE_REMOVED')], ['US:NVDA'])
+        self.assertIn('US:NVDA', self.h.service._loop()['tracked'])
+        before = len(self.h.history())
+        self.h.ai.rows['US:NVDA'].update(price=140.0, change=-3.0)
+        receipt = self.h.tick()
+        self.assertEqual(self.unavailable(receipt), [])
+        self.assertEqual(len(self.h.history()), before + 1)
+        self.assertEqual(self.h.history()[0]['action_state'], 'EXIT')
+
+    def test_held_positions_above_the_cycle_bound_rotate_and_say_so(self):
+        iids = self.held(12)
+        self.h.configure()
+        first = self.h.service.run_once()
+        self.assertIn('HELD_POSITION_CAP_EXCEEDED', first['reason_codes'])
+        self.assertEqual(first['position_count'], 12)
+        self.h.tick()
+        self.assertEqual(sorted(self.h.service._loop()['held_seen']), iids)  # none starved
+
+    def test_persistently_unavailable_held_evidence_is_noted_again_after_the_decision_age(self):
+        self.h.hold_many(['US:GONE'])
+        self.h.configure()
+        self.assertEqual(self.unavailable(self.h.service.run_once()), ['US:GONE'])
+        self.assertEqual(self.unavailable(self.h.tick()), [])  # not repeated every minute
+        self.assertEqual(self.unavailable(self.h.tick(900)), ['US:GONE'])
+
+    def test_failed_evidence_read_still_runs_the_stop_monitor_for_held_positions(self):
+        self.h.hold()
+        self.h.configure()
+        self.h.service.run_once()
+        calls = self.h.provider.calls
+        tracked = self.h.service._loop()['tracked']
+        self.h.ai._packet = Mock(side_effect=RuntimeError('provider exploded with private detail'))
+        with patch.object(self.h.service.stops, 'evaluate', wraps=self.h.service.stops.evaluate) as evaluate:
+            receipt = self.h.tick()
+        self.assertEqual(receipt['cycle_status'], 'REEVALUATION_BLOCKED')
+        self.assertEqual(receipt['reason_codes'], ['EVIDENCE_READ_FAILED', 'RuntimeError'])
+        self.assertEqual([c.args[0] for c in evaluate.call_args_list], ['US:NVDA'])
+        self.assertEqual((self.h.provider.calls, receipt['model_call_count'], receipt['position_count']), (calls, 0, 1))
+        self.assertEqual(self.h.service._loop()['tracked'], tracked)  # no baseline advance on a blind cycle
+
+    def test_displaced_owner_cannot_overwrite_the_new_owners_baselines(self):
+        self.h.hold()
+        self.h.configure(min_state_dwell_seconds=0)
+        self.h.service.start(wait=self.h.wait, threaded=False)
+        worker = self.h.service.worker
+        worker.run(max_cycles=1)
+        loop_id = self.h.service._loop()['loop_id']
+        baseline = self.h.repo.get_loop(loop_id)['tracked']
+
+        def takeover():  # the model call outlasts the lease and another process takes the loop
+            self.h.provider.hook = None
+            self.h.clock.value += 200
+            self.h.repo.acquire_lease(loop_id, 'other-process', now=self.h.clock(), lease_seconds=180)
+        self.h.provider.hook = takeover
+        self.h.ai.rows['US:NVDA']['price'] = 160.0
+        worker.run(max_cycles=1)
+        stored = self.h.repo.get_loop(loop_id)
+        self.assertEqual((stored['owner_id'], stored['tracked'], stored['cycle_count']), ('other-process', baseline, 1))
+        self.assertFalse(worker.alive())
+        self.assertEqual(worker.exit_reason, 'REEVALUATION_LEASE_LOST')
+        last = self.h.repo.cycles(loop_id, limit=1)[0]
+        self.assertEqual((last['cycle_status'], last['model_call_count']), ('FAILED', 1))  # the spent call stays counted
+        self.assertIn('REEVALUATION_LEASE_LOST', last['reason_codes'])
+
+    def test_operator_stop_during_a_scheduled_cycle_lets_it_finish_normally(self):
+        self.h.hold()
+        self.h.configure()
+        self.h.service.start(wait=self.h.wait, threaded=False)
+        loop_id = self.h.service._loop()['loop_id']
+        self.h.provider.hook = self.h.service.stop
+        receipt = self.h.service.evaluate_cycle('SCHEDULED_CADENCE', T0, loop_id=loop_id)
+        stored = self.h.repo.get_loop(loop_id)
+        self.assertEqual((receipt['cycle_status'], receipt['reason_codes']), ('MATERIAL_CHANGE', []))
+        self.assertEqual((stored['desired_state'], stored['owner_id'], stored['cycle_count']), ('STOPPED', None, 1))
+        self.assertIn('US:NVDA', stored['tracked'])
+
+    def test_lease_is_renewed_before_a_model_call(self):
+        self.h.hold()
+        self.h.configure()
+        self.h.service.start(wait=self.h.wait, threaded=False)
+        loop_id = self.h.service._loop()['loop_id']
+        seen = []
+        self.h.clock.value += 100  # evidence work took a while since the slot heartbeat
+        self.h.provider.hook = lambda: seen.append(self.h.repo.get_loop(loop_id)['lease_until'])
+        self.h.service.evaluate_cycle('SCHEDULED_CADENCE', T0, loop_id=loop_id)
+        self.assertEqual(seen[0], self.h.clock() + 180)
+
+    def test_model_call_caps_follow_the_account_across_reconfigured_scopes(self):
+        self.h.hold()
+        self.h.configure(max_model_calls_per_hour=2)
+        self.h.service.run_once()  # reduction + action = 2
+        calls = self.h.provider.calls
+        first = self.h.service._loop()['loop_id']
+        self.h.clock.value += 1
+        self.h.service.configure(dict(scope=dict(SCOPE, sort='price'), requested_cadence_seconds=60, policy=dict(max_model_calls_per_hour=2)))
+        self.assertNotEqual(self.h.service._loop()['loop_id'], first)
+        receipt = self.h.tick()
+        self.assertEqual((receipt['cycle_status'], receipt['model_call_count'], self.h.provider.calls), ('BUDGET_BLOCKED', 0, calls))
+
+    def test_held_instruments_keep_a_quote_subscription_without_any_page_open(self):
+        self.h.hold()
+        self.h.ledger.data_mode = self.h.store.data_mode = 'LIVE_OBSERVATIONAL'
+        authority = self.h.ledger.execution_authority
+        runtime = Mock()
+        runtime.live_mark_for.return_value = None
+        base = 'market_platform_foundation.ui_api.'
+        with patch.object(self.h.ledger, 'is_portfolio_scoped', return_value=True), \
+                patch(base + 'live_projections.live_observational_enabled', return_value=True), \
+                patch(base + 'live_projections.get_live_runtime', return_value=runtime) as getter, \
+                patch(base + 'paper_projections.maybe_release_execution_gate') as gate:
+            self.h.configure()
+            receipt = self.h.service.run_once()
+        runtime.subscribe.assert_called_once_with(instrument_id='US:NVDA', capabilities=['BASIC_QUOTE'], consumer_id='paper-portfolio-marks')
+        getter.assert_called_with(create=False)  # the loop never boots a provider connection
+        gate.assert_not_called()  # and never touches Paper execution authority
+        self.assertEqual(self.h.ledger.execution_authority, authority)
+        self.assertNotIn('HELD_QUOTE_SUBSCRIPTION_FAILED', receipt['reason_codes'])
+
+    def test_quote_flapping_stale_and_current_is_dwelled_not_a_model_call_per_recovery(self):
+        self.h.hold()
+        self.h.configure()
+        self.h.service.run_once()  # HOLD
+        calls = self.h.provider.calls
+        self.h.ai.no_quote.add('US:NVDA')
+        lost = self.h.tick()
+        self.assertIn('QUOTE_LOST', only(lost, 'REVALIDATION_REQUIRED')[0]['reason_codes'])
+        for _ in range(2):
+            self.h.ai.no_quote.clear()
+            back = self.h.tick()
+            self.assertIn('QUOTE_RESTORED', only(back, 'CHURN_SUPPRESSED')[0]['reason_codes'])
+            self.h.ai.no_quote.add('US:NVDA')
+            self.assertEqual(self.h.tick()['transitions'], [])  # the same loss is not recorded twice
+        self.assertEqual((self.h.provider.calls, len(self.h.history())), (calls, 2))
+        self.h.ai.no_quote.clear()
+        settled = self.h.tick(120)  # the dwell since the loss has passed
+        self.assertEqual((settled['model_call_count'], self.h.history()[0]['action_state']), (1, 'HOLD'))
+
+    def test_duplicate_receipt_is_the_same_stable_error_on_both_backends(self):
+        with tempfile.TemporaryDirectory() as temp:
+            connection = LocalStateConnection(Path(temp) / 'state.sqlite')
+            for h in (Harness(), Harness(connection=connection)):
+                h.configure()
+                receipt = h.service.run_once()
+                with self.assertRaisesRegex(ValueError, 'REEVALUATION_RECEIPT_IMMUTABLE'): h.repo.put_cycle(receipt)
+            connection.close()
 
 
 class WorkerTests(unittest.TestCase):
@@ -610,6 +796,32 @@ class WorkerTests(unittest.TestCase):
             self.assertEqual(cycles[3]['scheduled_for'], iso(T0 + 420))
             self.assertEqual(len(restarted.history()), 1)  # no decisions invented for the gap
             self.assertEqual(restarted.service.status()['liveness']['missed_ticks'], 5)
+            connection.close()
+
+    def test_restart_keeps_baselines_and_does_not_reissue_an_active_enter(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'state.sqlite'
+            connection = LocalStateConnection(path)
+            h = Harness(connection=connection, owner='process-a')
+            h.configure(min_state_dwell_seconds=0)
+            h.service.start(wait=h.wait, threaded=False)
+            h.service.worker.run(max_cycles=1)  # ENTER recorded, then the process dies holding the lease
+            self.assertEqual(h.history()[0]['action_state'], 'ENTER')
+            tracked = h.repo.get_loop(h.service._loop()['loop_id'])['tracked']
+            connection.close()
+
+            connection = LocalStateConnection(path)
+            restarted = Harness(connection=connection, owner='process-b', clock=Clock(T0 + 100))
+            with self.assertRaisesRegex(ValueError, 'REEVALUATION_LOOP_ALREADY_OWNED'):  # the dead owner's lease is waited out
+                restarted.service.start(wait=restarted.wait, threaded=False)
+            restarted.clock.value = T0 + 200
+            restarted.ai.rows['US:NVDA']['price'] = 152.0
+            restarted.service.start(wait=restarted.wait, threaded=False)
+            self.assertEqual(restarted.repo.get_loop(restarted.service._loop()['loop_id'])['tracked'], tracked)
+            restarted.service.worker.run(max_cycles=1)
+            receipt = restarted.repo.cycles(restarted.service._loop()['loop_id'], limit=1)[0]
+            self.assertIn('ACTIVE_ENTER_UNEXPIRED', only(receipt, 'DUPLICATE_SUPPRESSED')[0]['reason_codes'])
+            self.assertEqual((restarted.provider.calls, len(restarted.history())), (0, 1))
             connection.close()
 
     def test_duplicate_worker_rejected_and_expired_lease_recoverable(self):

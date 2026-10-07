@@ -187,6 +187,7 @@ within fixed ranges; unknown keys are rejected.
 | `min_state_dwell_seconds` | 300 |
 | `max_action_calls_per_cycle` | 2 |
 | `max_model_calls_per_cycle` | 3 |
+| `max_held_per_cycle` | 10 |
 | `max_model_calls_per_hour` | 30 |
 | `max_model_calls_per_day` | 120 |
 | `lease_seconds` (not overridable) | 180 |
@@ -246,9 +247,10 @@ cycle.
 
 ### Model and provider bounds
 
-- Model calls are counted from persisted receipts per loop: per cycle, rolling
-  hour and rolling day. The provider's own daily request/token budget still
-  applies. Exhausted ⇒ `BUDGET_BLOCKED`, deterministic checks continue, no
+- Model calls are counted from persisted receipts per cycle, and per rolling
+  hour and rolling day across **every loop of the Paper account**, so
+  reconfiguring the scope does not start a fresh budget. The provider's own
+  daily request/token budget still applies. Exhausted ⇒ `BUDGET_BLOCKED`, deterministic checks continue, no
   request is sent, the baseline is not advanced so the work is retried.
 - No configured engine ⇒ `MODEL_UNAVAILABLE`. The loop never switches provider.
 - Deterministic fail-safe revalidation needs no model and is never blocked.
@@ -356,14 +358,50 @@ mutations use `state.write`. None carries `paper.order.submit`.
 | `GET /screener/reevaluation/status[?readiness=1]` | liveness, cadence, engine, readiness |
 | `GET /screener/reevaluation/history?limit=&before=&session_date=` | bounded receipts |
 
+## Hardening (OCT1-12)
+
+- **Held positions are never dropped.** Every held instrument is evaluated each
+  cycle, least recently seen first, up to `max_held_per_cycle`; above the bound
+  the rest rotate in on the following cycles and the receipt carries
+  `HELD_POSITION_CAP_EXCEEDED`. A held instrument outside the bounded intake or
+  no longer selected gets its own targeted evidence read. Evidence that stays
+  unavailable is noted again every `decision_max_age_seconds`
+  (`HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE`), not once.
+- **Held instruments keep a quote subscription without a page.** Each cycle
+  refreshes the held-position marks and their `paper-portfolio-marks`
+  subscription. It never creates the live runtime and never touches the
+  execution gate; failure is `HELD_QUOTE_SUBSCRIPTION_FAILED` on the receipt.
+  Selected candidates that are not held are **not** subscribed by the loop:
+  their quote is current only while a Screener window owns it.
+- **A failed evidence read is not a skipped stop.** If the Screener read raises,
+  the cycle ends `REEVALUATION_BLOCKED` with `EVIDENCE_READ_FAILED`: no model
+  call, no baseline change, and the SMA stop monitor still runs for every held
+  instrument from its own bar and quote sources.
+- **Lease fencing.** A scheduled cycle writes loop state only while it still
+  owns the lease, and renews the lease before each model call. A cycle displaced
+  mid-flight records a `FAILED` receipt with `REEVALUATION_LEASE_LOST` (any model
+  call it already made stays counted), leaves the new owner's baselines
+  untouched and ends its worker.
+- **Quote recovery is dwelled.** `QUOTE_RESTORED` waits `min_state_dwell_seconds`
+  from the recorded loss, and a repeated loss inside that window is not
+  re-recorded: a quote flapping around the freshness window costs at most one
+  model call per dwell per instrument.
+- A duplicate receipt id is `REEVALUATION_RECEIPT_IMMUTABLE` on both backends.
+
 ## Limitations
 
 - Calendar coverage is 2025–2026 with no early-close list; next-session supports
   US equities and ETFs only.
 - The worker is a thread in the UI API process with a SQLite lease: single host.
   After a crash a new process waits out the previous lease (≤180 s).
-- Model-call caps are per loop; the provider's daily budget is the cross-loop bound.
+- Model-call caps are per Paper account on this host's local-state database.
+- A quote is `STALE` when the feed has delivered nothing for 5 s or the provider
+  event is older than 60 s. A selected candidate with no Screener window open is
+  therefore blocked from ENTER; only held instruments are subscribed by the loop.
 - `price_move_bps`, dwell and age defaults are operational choices that have not
   been tuned against real market sessions.
 - One-minute behaviour against live providers and a real model runtime has not
-  been empirically validated; see the OCT1-07 report.
+  been empirically validated; see the OCT1-07 report. OCT1-12 exercised the
+  cycle on the real Screener row/cache evidence path under a controlled clock
+  (`tests/platform/test_reevaluation_live_evidence.py`); a regular-session run
+  is still `NOT_OBSERVED`.

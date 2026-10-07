@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 from ..intelligence.inference.action_decision import POLICY_ID as ACTION_POLICY_ID
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.reevaluation import (
-    CYCLE_SCHEMA, MAX_RECEIPT_BYTES, MAX_TRANSITIONS, POLICY_ID, STOP_BOOKKEEPING_REASONS, CycleStatus, ReevaluationTrigger,
+    CYCLE_SCHEMA, DEFAULT_POLICY, MAX_RECEIPT_BYTES, MAX_TRANSITIONS, POLICY_ID, STOP_BOOKKEEPING_REASONS, CycleStatus, ReevaluationTrigger,
     TransitionClass, build_policy, cadence_readiness, effective_cadence, loop_identity, material_change,
     material_fingerprint, missed_slots, provider_states, reevaluation_pick, slot_at_or_after,
     stability_decision, worst_case_calls,
@@ -285,16 +285,24 @@ class ReevaluationService:
             # A worker is bound to the loop it leased, whatever was configured since.
             loop = self.repository.get_loop(loop_id) if loop_id else self._loop()
             started = self.clock()
-            if trigger is not ReevaluationTrigger.MANUAL and loop['owner_id'] != self.owner_id:
+            # A scheduled cycle writes only while this process still owns the loop.
+            fence = None if trigger is ReevaluationTrigger.MANUAL else self.owner_id
+            if fence and loop['owner_id'] != fence:
                 raise ValueError('REEVALUATION_LEASE_LOST')
             loop.update(last_scheduled_epoch=scheduled_for, last_started_epoch=started)
-            self.repository.save_loop(loop)
+            self.repository.save_loop(loop, owner_id=fence)
+            spent = dict(model_calls=0)
+
+            def guard():
+                """Before a model call: renew the lease, or stop if another process took the loop."""
+                if fence and not self.heartbeat(loop['loop_id']) and self.repository.get_loop(loop['loop_id'])['owner_id'] is not None:
+                    raise ValueError('REEVALUATION_LEASE_LOST')  # an operator Stop releases the lease; that cycle still finishes
             try:
-                receipt = self._cycle(loop, trigger, scheduled_for, started)
+                receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent)
             except Exception as exc:  # a failed cycle is recorded, never silently retried
                 code = str(exc) if _CODE.fullmatch(str(exc)) else type(exc).__name__
                 receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled_for, started=started, status=CycleStatus.FAILED)
-                receipt['reason_codes'] = [code]
+                receipt.update(reason_codes=[code], model_call_count=spent['model_calls'])  # a spent call stays counted
                 loop['last_error'] = dict(at=_iso(started), code=code)
             completed = self.clock()
             receipt.update(completed_at=_iso(completed), duration_ms=int(round((completed - started) * 1000)), missed_ticks_before=missed)
@@ -302,15 +310,24 @@ class ReevaluationService:
                 receipt['reason_codes'].append('CYCLE_OVERRAN')
             if completed - started > loop['effective_cadence_seconds']:
                 receipt['reason_codes'].append('CYCLE_EXCEEDED_CADENCE')
+            control = self.repository.get_loop(loop['loop_id'])
+            if fence and control['owner_id'] not in (None, fence):
+                # Displaced mid-cycle: the receipt is append-only truth, the loop now belongs to someone else.
+                receipt['cycle_status'] = str(CycleStatus.FAILED)
+                if 'REEVALUATION_LEASE_LOST' not in receipt['reason_codes']:
+                    receipt['reason_codes'].append('REEVALUATION_LEASE_LOST')
+                self._bound(receipt)
+                self.repository.put_cycle(receipt)
+                raise ValueError('REEVALUATION_LEASE_LOST')
             self._bound(receipt)
             self.repository.put_cycle(receipt)
             loop.update(last_completed_epoch=completed, last_status=receipt['cycle_status'], updated_epoch=completed,
                         missed_ticks=loop['missed_ticks'] + missed, cycle_count=loop['cycle_count'] + 1)
             if receipt['cycle_status'] != CycleStatus.FAILED:
                 loop['last_success_epoch'] = completed
-            control = self.repository.get_loop(loop['loop_id'])  # Start/Stop during the cycle wins
-            loop.update({key: control[key] for key in ('desired_state', 'clean_stop', 'anchor_epoch')})
-            self.repository.save_loop(loop)
+            # Start/Stop during the cycle wins; so does the lease heartbeat taken before a model call.
+            loop.update({key: control[key] for key in ('desired_state', 'clean_stop', 'anchor_epoch', 'heartbeat_at')})
+            self.repository.save_loop(loop, owner_id=fence if control['owner_id'] == fence else None)
             return receipt
         finally:
             self.cycle_lock.release()
@@ -335,28 +352,70 @@ class ReevaluationService:
             context['risk_control'] = risk
         return context
 
-    def _cycle(self, loop, trigger, scheduled, started):
+    def _blind_cycle(self, loop, trigger, scheduled, started, held, exc):
+        """The evidence read failed: no decisions, but held positions keep their deterministic stop monitor."""
+        receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled, started=started, status=CycleStatus.REEVALUATION_BLOCKED)
+        reasons = receipt['reason_codes']
+        reasons.extend(['EVIDENCE_READ_FAILED', str(exc) if _CODE.fullmatch(str(exc)) else type(exc).__name__])
+        stops = self.stops
+        for iid in dict.fromkeys([*held, *stops.open_instruments()]):
+            try:
+                stops.evaluate(iid)  # no Screener quote: the stop service reads its own bar and quote sources
+            except ValueError as error:
+                reasons.append('STOP_EVALUATION_FAILED_' + (str(error) if _CODE.fullmatch(str(error)) else 'ERROR')[:40])
+        receipt.update(position_count=len(held), candidate_count=len(loop['selected']))
+        loop['last_error'] = dict(at=_iso(started), code=reasons[1])
+        return receipt
+
+    def _cycle(self, loop, trigger, scheduled, started, *, guard=lambda: None, spent=None):
         policy, scope, actions = loop['policy'], loop['scope'], self.actions
         ledger = self.store.paper_ledger
-        _, candidates, now, _ = self.ai._packet(scope, include_flow=True)
-        by_id = {c['instrument']['instrument_id']: c for c in candidates}
         positions = [p for p in ledger.project_positions() if p.get('quantity')]
         held = [p['instrument_id'] for p in positions]
-        for position in [p for p in positions if p['instrument_id'] not in by_id][:3]:
+        # Held instruments keep their own quote subscription whether or not any page is showing them.
+        subscribed = True
+        try:
+            from .live_projections import keep_portfolio_marks_current
+            keep_portfolio_marks_current(self.store)
+        except Exception:
+            subscribed = False
+        try:
+            _, candidates, now, _ = self.ai._packet(scope, include_flow=True)
+        except Exception as exc:
+            return self._blind_cycle(loop, trigger, scheduled, started, held, exc)
+        by_id = {c['instrument']['instrument_id']: c for c in candidates}
+        # Every held position is looked at, least recently seen first, up to the per-cycle bound.
+        seen = loop.setdefault('held_seen', {})
+        for iid in [i for i in seen if i not in held]:
+            del seen[iid]
+        bound = policy.get('max_held_per_cycle', DEFAULT_POLICY['max_held_per_cycle'])
+        watched = sorted(held, key=lambda i: seen.get(i, 0))[:bound]
+        for position in [p for p in positions if p['instrument_id'] in watched and p['instrument_id'] not in by_id]:
             # A held instrument outside the bounded intake gets one targeted read, not a universe sweep.
             if position.get('symbol'):
-                _, extra, _, _ = self.ai._packet(dict(scope, search=str(position['symbol'])[:120], filters=[], result_set=None), include_flow=True)
+                try:
+                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(position['symbol'])[:120], filters=[], result_set=None), include_flow=True)
+                except Exception:
+                    continue  # recorded below as HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE; the stop is still evaluated
                 by_id.update({c['instrument']['instrument_id']: c for c in extra if c['instrument']['instrument_id'] == position['instrument_id']})
         engine = self.engine_state()
         usable = engine['state'] == 'AVAILABLE'
-        hour = self.repository.model_calls_since(loop['loop_id'], started - 3600)
-        day = self.repository.model_calls_since(loop['loop_id'], started - 86400)
+        hour = self.repository.model_calls_since(loop['account_id'], started - 3600)
+        day = self.repository.model_calls_since(loop['account_id'], started - 86400)
         window_left = min(policy['max_model_calls_per_hour'] - hour, policy['max_model_calls_per_day'] - day)
-        state = dict(remaining=max(0, min(policy['max_model_calls_per_cycle'], window_left)) if usable else 0,
+        state = spent if spent is not None else {}
+        state.update(remaining=max(0, min(policy['max_model_calls_per_cycle'], window_left)) if usable else 0,
                      model_calls=0, action_calls=0, material=0, unchanged=0)
         receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled, started=started,
                                 status=CycleStatus.NO_MATERIAL_CHANGE, evidence_cutoff=now)
         counters, transitions, reasons = receipt['counters'], receipt['transitions'], receipt['reason_codes']
+        if len(held) > len(watched):
+            reasons.append('HELD_POSITION_CAP_EXCEEDED')
+        if held and not subscribed:
+            reasons.append('HELD_QUOTE_SUBSCRIPTION_FAILED')
+        noted = loop.setdefault('unavailable_noted', {})
+        for iid in [i for i in noted if i not in held]:
+            del noted[iid]
         consumed = consumed_opportunities(ledger)
         stops, scale = self.stops, int(ledger.policy.get('price_scale', 100))
         # Stops whose position is no longer held are closed here; they never carry into a later position.
@@ -395,7 +454,9 @@ class ReevaluationService:
             if item['candidate'] is None:
                 breached = (actions._risk_facts(iid) or {}).get('status') == 'BREACHED'
                 marker = 'EVIDENCE_UNAVAILABLE_STOP_BREACHED' if breached else 'EVIDENCE_UNAVAILABLE'
-                if loop['tracked'].get(iid) != marker:
+                # Said again once the last note is as old as a decision may be: a blind holding never goes quiet.
+                if loop['tracked'].get(iid) != marker or started - noted.get(iid, started) >= policy['decision_max_age_seconds']:
+                    noted[iid] = started
                     state['material'] += 1
                     # The breach is recorded on the stop itself; a decision still needs admissible evidence.
                     note(iid, TransitionClass.REVALIDATION_REQUIRED,
@@ -430,7 +491,10 @@ class ReevaluationService:
                 return
             changed_at = next((d['decision_time'] for d in history if d['action_state'] != d['previous_state']), None)
             committed = prior is not None and prior['action_state'] in _COMMITTED
-            stability = stability_decision(changes, now=now, last_state_change=changed_at if committed else None, policy=policy)
+            # A quote coming back is a recovery: it waits out the dwell since the loss was recorded, so a
+            # flapping quote buys at most one model call per dwell instead of one per recovery.
+            since = changed_at if committed else prior['decision_time'] if prior and 'QUOTE_RESTORED' in changes else None
+            stability = stability_decision(changes, now=now, last_state_change=since, policy=policy)
             if not stability['evaluate']:
                 counters['churn_suppressions'] += 1; counters['model_calls_avoided'] += 1
                 transitions.append(dict(instrument_id=iid, classification=str(TransitionClass.CHURN_SUPPRESSED),
@@ -477,6 +541,8 @@ class ReevaluationService:
                        valid_until=_iso(min([timestamp(now).timestamp() + 1800, *deadlines])), evidence=[candidate],
                        candidates=[reevaluation_pick(candidate, int(loop['ranks'].get(iid, 0)))], limitations=[], simulated=False)
             actions.repository.put('candidate_run', run['run_id'], run)
+            if forced is None and not server_exit:
+                guard()
             try:
                 decision = actions.run(dict(run_id=run['run_id'], instrument_id=iid), revalidation_reason=forced)
             except ValueError as exc:  # one instrument failing closed must not hide the others
@@ -515,7 +581,8 @@ class ReevaluationService:
             loop['tracked'][iid] = fingerprint
 
         # 1. Existing positions first: HOLD/EXIT work is never starved by new candidates.
-        for iid in held[:10]:
+        for iid in watched:
+            seen[iid] = started
             execute(plan(iid))
         # 2. Is there a new candidate? Re-reduce only on material intake change, rate limited.
         flat = dict(position=dict(state='FLAT', quantity=0, pending=False), candidate_valid_until=None)
@@ -531,6 +598,7 @@ class ReevaluationService:
                 reasons.append('CANDIDATE_REFRESH_DEFERRED')
             else:
                 state['material'] += 1
+                guard()
                 result = self.ai.run(scope, refresh_news=False)
                 if result.get('cache') != 'HIT' and 'latency_ms' in result:
                     state['model_calls'] += 1; state['remaining'] -= 1
@@ -581,6 +649,7 @@ class ReevaluationWorker:
         self.wait = wait or self.stop_event.wait
         self.thread = None
         self.finished = False
+        self.exit_reason = None
         self.slot, self.missed, self.overran, self.previous_session = None, 0, False, None
 
     def start(self):
@@ -603,6 +672,7 @@ class ReevaluationWorker:
                 while not self.stop_event.is_set() and slot - service.clock() > 0:
                     self.wait(min(slot - service.clock(), lease / 3))
                     if not service.heartbeat(self.loop_id):
+                        self.exit_reason = 'REEVALUATION_LEASE_LOST'
                         return
                 if self.stop_event.is_set():
                     break
@@ -619,12 +689,14 @@ class ReevaluationWorker:
                     ReevaluationTrigger.SESSION_END if previous == 'REGULAR' and session != 'REGULAR' else ReevaluationTrigger.SCHEDULED_CADENCE
                 previous = session
                 if not service.heartbeat(self.loop_id):
+                    self.exit_reason = 'REEVALUATION_LEASE_LOST'
                     return
                 try:
                     service.evaluate_cycle(trigger, slot, missed=missed, overran=overran, loop_id=self.loop_id)
                     missed, overran = 0, False
                 except ValueError as exc:
                     if str(exc) != 'CYCLE_IN_PROGRESS':
+                        self.exit_reason = str(exc) if _CODE.fullmatch(str(exc)) else 'CYCLE_REJECTED'
                         return
                     missed += 1  # a manual cycle held the single cycle slot
                 done += 1
@@ -645,7 +717,7 @@ class ReevaluationWorker:
                 pass
             self.finished = True
         finally:
-            self.finished = self.finished or max_cycles is None or self.stop_event.is_set()
+            self.finished = self.finished or max_cycles is None or self.stop_event.is_set() or self.exit_reason is not None
 
 
 def reevaluation_service(store):
