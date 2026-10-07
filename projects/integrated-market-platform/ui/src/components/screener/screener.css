@@ -207,6 +207,7 @@
 .ai-strip.waiting_for_budget .ai-strip-dot,.ai-strip.blocked .ai-strip-dot{border-color:#e2bc7d;background:#e2bc7d}
 .ai-strip.not_configured .ai-strip-dot,.ai-strip.unknown .ai-strip-dot{border-style:dashed}
 .ai-strip-main{flex:1 1 320px;min-width:0;color:#dce8f3}
+.ai-strip-engine{padding:0 5px;border:1px solid #33475c;border-radius:2px;color:#9fb4c8;white-space:nowrap}
 .ai-strip-budget{color:#8ea0b3;white-space:nowrap}
 .ai-strip-error{color:#ff9a8a}
 .ai-strip-actions{display:flex;gap:5px;margin-left:auto}

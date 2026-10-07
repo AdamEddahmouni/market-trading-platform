@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
+import { EngineSwitchConfirm, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
 import { useAiScreenerRunResult, useAiScreenerRuns } from "../ai/useAiScreenerRuns";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
 import { compactTokens } from "../news/SynthesisControl";
@@ -37,22 +38,34 @@ function EvidenceCard({ title, evidence }: { title: string; evidence: Record<str
     </dl></details>;
 }
 
-function EngineChoice({ ai, onChanged }: { ai: AiStatus; onChanged: (next: AiStatus) => void }) {
+function EngineChoice({ ai, fit, onChanged }: { ai: AiStatus; fit: EngineFit[]; onChanged: (next: AiStatus) => void }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  // Choosing an option only proposes it: the engine is machine-wide, so nothing is sent until it is confirmed.
+  const [pending, setPending] = useState<PendingEngine | null>(null);
   const selected = ai.engines?.find((engine) => engine.id === ai.engine);
   if (!ai.engines?.length) return <span className="ai-screener-meta">Engine {ai.provider_id ?? "unconfigured"}</span>;
   const value = `${ai.engine ?? "auto"}|${ai.engine_model ?? selected?.default_model ?? ""}`;
-  return <label className="ai-screener-engine">Engine/model <select value={value} disabled={busy} onChange={(event) => {
-    const separator = event.target.value.indexOf("|");
+  const locked = engineLockText(ai);
+  const fitFor = (id: string) => fit.find((item) => item.engine === id);
+  const confirm = () => {
+    if (!pending) return;
     setBusy(true); setFailed(false);
-    void postSynthesisEngine(event.target.value.slice(0, separator), event.target.value.slice(separator + 1) || null)
-      .then(onChanged).catch(() => setFailed(true)).finally(() => setBusy(false));
+    void postSynthesisEngine(pending.engine.id, pending.model).then(onChanged).catch(() => setFailed(true)).finally(() => { setBusy(false); setPending(null); });
+  };
+  return <div className="ai-screener-engine-box"><label className="ai-screener-engine">Engine/model <select value={value} disabled={busy || Boolean(locked) || Boolean(pending)} onChange={(event) => {
+    const separator = event.target.value.indexOf("|");
+    const engine = ai.engines!.find((item) => item.id === event.target.value.slice(0, separator));
+    if (engine && event.target.value !== value) { setFailed(false); setPending({ engine, model: event.target.value.slice(separator + 1) || null }); }
   }}>
     {ai.engines.map((engine) => engine.models.map((model) => <option key={`${engine.id}|${model}`} value={`${engine.id}|${model}`} disabled={engine.state !== "AVAILABLE"}>
-      {engine.label} · {model} · {engine.runtime === "LOCAL_MODEL" ? "local" : "paid"}
+      {engine.label} · {model} · {engine.runtime === "LOCAL_MODEL" ? "local" : "paid"}{fitText(fitFor(engine.id)) ? ` · ${fitText(fitFor(engine.id))}` : ""}
     </option>))}
-  </select>{failed && <span role="alert"> Could not switch engine.</span>}</label>;
+  </select>{failed && <span role="alert"> Could not switch engine.</span>}</label>
+    {locked && <p className="ai-screener-meta">{locked}</p>}
+    {selected && fitFor(selected.id)?.fits === false && <p className="ai-screener-meta" role="alert">The {fitText(fitFor(selected.id))}. Choose another engine or narrow the Screener scope.</p>}
+    {pending && <EngineSwitchConfirm pending={pending} fit={fitFor(pending.engine.id)} busy={busy} onConfirm={confirm} onCancel={() => setPending(null)} />}
+  </div>;
 }
 
 function refsFor(selection: { supporting_refs: string[]; conflicting_refs: string[]; weak_refs: string[] }, name: keyof typeof selection) {
@@ -95,7 +108,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
     <div className="ai-screener-toolbar">
       <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · intake capped at {preview.data?.max_intake ?? 20}</p></div>
-      {ai && <EngineChoice ai={ai} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
+      {ai && <EngineChoice ai={ai} fit={preview.data?.engine_fit ?? []} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
     </div>
     <p className="ai-screener-meta">View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "Unsaved"} · search {screenerScope.search || "all"} · sort {screenerScope.sort} {screenerScope.descending ? "descending" : "ascending"} · result set {screenerScope.result_set ?? "unavailable"} · filters {JSON.stringify(screenerScope.filters)}</p>
     {start.isError && <PanelMessage tone="error" role="alert">AI Screener run failed. Retry explicitly.<ErrorDetail error={start.error} /></PanelMessage>}

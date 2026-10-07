@@ -157,7 +157,7 @@ describe("ScreenerPage", () => {
   });
 
   it("keeps the AI status strip under the header, fed by the current scope, and opens the AI Screener from it", async () => {
-    mocks.aiRuns.mockResolvedValue({ schema_version: "screener-ai-screener-runs/1.1.0", state: "IDLE", budget: null, active: null, latest: null,
+    mocks.aiRuns.mockResolvedValue({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: null,
       ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
     mocks.aiLoop.mockResolvedValue({ schema_version: "reevaluation-status/1.0.0", worker_state: "NOT_CONFIGURED", worker_label: "Not configured",
       engine: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", budget: null }, durability: "DURABLE", paper_execution: "MANUAL_ONLY" });

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AiScreenerPanel from "./AiScreenerPanel";
@@ -63,7 +63,7 @@ beforeEach(() => {
     if (run.state === "RUNNING") server.active = run; else finish(run);
     return run;
   });
-  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.1.0", state: server.active ? "RUNNING" : "IDLE",
+  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: server.active ? "RUNNING" : "IDLE",
     ai: { state: "AVAILABLE", reason: null, provider_id: "inference.test", model_id: "candidate.v1", runtime: "LOCAL_MODEL" }, budget: null, active: server.active, latest: server.latest }));
   mocks.detail.mockImplementation(async (id: string) => server.results.get(id) ?? Promise.reject(new Error("SCREENER_AI_RUN_UNKNOWN")));
 });
@@ -98,6 +98,53 @@ describe("AI Screener panel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Open News & Analysis" }));
     expect(openNews).toHaveBeenCalledWith("EQ:A", { instrument_id: "EQ:A" }); expect(openInstrument).not.toHaveBeenCalled();
   });
+  describe("engine picker safety", () => {
+    const engines = [
+      { id: "local", label: "Local model", runtime: "LOCAL_MODEL" as const, models: ["small-4b"], default_model: "small-4b", context_window: 8192, state: "AVAILABLE" as const, reason: null },
+      { id: "anthropic", label: "Anthropic Claude", runtime: "PAID_API" as const, models: ["claude-haiku-4-5"], default_model: "claude-haiku-4-5", context_window: null, state: "AVAILABLE" as const, reason: null },
+    ];
+    const engine_fit = [{ engine: "local", fits: false, packet_size: 37_340, context_window: 8192 }, { engine: "anthropic", fits: null, packet_size: 37_340, context_window: null }];
+    const paid = { ...ai, runtime: "PAID_API" as const, engine: "anthropic", engine_model: "claude-haiku-4-5", engines };
+
+    it("asks before switching, says the change is machine-wide, and sends nothing until confirmed", async () => {
+      mocks.preview.mockResolvedValue({ ...preview, ai: paid, engine_fit });
+      mocks.engine.mockResolvedValue({ ...paid, runtime: "LOCAL_MODEL", engine: "local", engine_model: "small-4b" });
+      renderPanel();
+      const select = await screen.findByRole("combobox", { name: "Engine/model" });
+      // A model too small for this packet is marked, not silently selectable; an unknown limit claims nothing.
+      expect(within(select).getByRole("option", { name: "Local model · small-4b · local · current packet does not fit: needs ~37k tokens, model context 8k" })).toBeInTheDocument();
+      expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5 · paid" })).toBeInTheDocument();
+      fireEvent.change(select, { target: { value: "local|small-4b" } });
+      const confirm = screen.getByRole("alertdialog", { name: "Confirm AI engine change" });
+      expect(confirm).toHaveTextContent("Switch the AI engine to Local model · small-4b?");
+      expect(confirm).toHaveTextContent("This applies to every AI panel on this machine (News synthesis, AI Screener, Action Decisions and automatic passes)");
+      expect(confirm).toHaveTextContent("The current packet does not fit: needs ~37k tokens, model context 8k. An AI Screener run on it would be refused or cut short.");
+      expect(mocks.engine).not.toHaveBeenCalled();
+      fireEvent.click(within(confirm).getByRole("button", { name: "Keep current engine" }));
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+      expect(mocks.engine).not.toHaveBeenCalled();
+      fireEvent.change(screen.getByRole("combobox", { name: "Engine/model" }), { target: { value: "local|small-4b" } });
+      fireEvent.click(screen.getByRole("button", { name: "Switch engine" }));
+      await waitFor(() => expect(mocks.engine).toHaveBeenCalledWith("local", "small-4b"));
+      expect(mocks.engine).toHaveBeenCalledTimes(1);
+      expect(mocks.post).not.toHaveBeenCalled();
+    });
+
+    it("is locked while automatic passes run", async () => {
+      mocks.preview.mockResolvedValue({ ...preview, ai: { ...paid, engine_lock: { locked: true, reason: "REEVALUATION_LOOP_RUNNING" } }, engine_fit });
+      renderPanel();
+      expect(await screen.findByRole("combobox", { name: "Engine/model" })).toBeDisabled();
+      expect(screen.getByText("Locked while automatic passes are running. Stop them to change the engine.")).toBeInTheDocument();
+      expect(mocks.engine).not.toHaveBeenCalled();
+    });
+
+    it("warns when the engine already selected cannot hold the current packet", async () => {
+      mocks.preview.mockResolvedValue({ ...preview, ai: { ...paid, runtime: "LOCAL_MODEL", engine: "local", engine_model: "small-4b" }, engine_fit });
+      renderPanel();
+      expect(await screen.findByText("The current packet does not fit: needs ~37k tokens, model context 8k. Choose another engine or narrow the Screener scope.")).toBeInTheDocument();
+    });
+  });
+
   it("previews the bounded scope but never runs inference on open", async () => {
     mocks.preview.mockResolvedValue(preview);
     renderPanel();

@@ -81,20 +81,36 @@ def local_model(value: Value, cache_dir: Path) -> tuple[str | None, str | None]:
     return (None, missing) if missing else (manifest.model_id, None)
 
 
+def local_context_window(value: Value, cache_dir: Path) -> int | None:
+    """The context window the managed local model is started with; None for an operator-run endpoint. Starts nothing."""
+
+    from ...local_state.external_cache import read_manifest
+    from .local_provider import BASE_URL_ENV, MANIFEST_RELATIVE, LocalModelManifest
+
+    if (value(BASE_URL_ENV) or "").strip():
+        return None
+    manifest = LocalModelManifest.from_dict(read_manifest(cache_dir / MANIFEST_RELATIVE) or {})
+    return manifest.context if manifest is not None else None
+
+
 def engine_options(value: Value, cache_dir: Path) -> list[dict[str, Any]]:
     """Every engine with its models and whether it can run now (never calls a model)."""
 
     options: list[dict[str, Any]] = []
     for spec in ENGINE_SPECS.values():
+        # A context window is stated only where IMP sets it (the managed local model). None means "not recorded",
+        # never "unlimited".
+        context = None
         if spec.engine == "local":
             model, reason = local_model(value, cache_dir)
             models = [model] if model else []
+            context = local_context_window(value, cache_dir) if model else None
         else:
             models = [model for model, _ in engine_models(spec.engine, value)]
             configured = bool((value(spec.credential_env or "") or "").strip())
             reason = None if configured else f"{spec.credential_env}_NOT_SET"
         options.append({"id": spec.engine, "label": spec.label, "runtime": spec.runtime, "models": models,
-                        "default_model": models[0] if models else None,
+                        "default_model": models[0] if models else None, "context_window": context,
                         "state": "AVAILABLE" if reason is None else "NOT_CONFIGURED", "reason": reason})
     return options
 
@@ -173,4 +189,4 @@ class SynthesisSettings:
 
 
 __all__ = ["AUTO", "ENGINES", "ENGINE_SETTINGS_RELATIVE", "ENGINE_SPECS", "EngineSpec", "SynthesisSettings",
-           "engine_models", "engine_options", "local_model"]
+           "engine_models", "engine_options", "local_context_window", "local_model"]

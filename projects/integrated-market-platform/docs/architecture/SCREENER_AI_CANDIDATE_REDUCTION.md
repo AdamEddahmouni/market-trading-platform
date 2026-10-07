@@ -64,12 +64,12 @@ latency of earlier measured calls to the same model in this server process
 prompt, the call or the result, and callers that do not observe (the
 reevaluation loop, Action Decisions, News synthesis) are unaffected.
 
-`runs/active` (`screener-ai-screener-runs/1.1.0`) is also what the Screener's
+`runs/active` (`screener-ai-screener-runs/1.2.0`) is also what the Screener's
 always-visible AI strip reads. Besides the two runs it states one `state`
 (`RUNNING`, `IDLE`, `WAITING_FOR_BUDGET`, `BLOCKED`, `NOT_CONFIGURED`), the
 engine (`ai`) and, for a paid engine, the shared daily `budget` in runs-left
 terms. The size of a run is the last worst-case reservation actually held for
-that model in this server process (`per_run_basis: LAST_RESERVATION`); until
+that model in this server process (`run_size_basis: LAST_RESERVATION`); until
 one has been held, `runs_left` is null and the strip shows requests left
 instead of inventing a count. `WAITING_FOR_BUDGET` means the engine reports
 the budget exhausted, or another run of the measured size does not fit.
@@ -83,6 +83,31 @@ the panel's Run AI Screener; `Stop automatic passes` is the existing
 reevaluation stop; `Open` opens the AI Screener panel. The strip starts
 nothing on its own and is not an ARIA live region, because it changes every
 second while a model works.
+
+### Engine choice
+
+The engine and model are one machine-wide setting shared by News synthesis,
+the AI Screener, Action Decisions and the reevaluation loop.
+
+- **Locked while a loop runs.** `POST /screener/news/synthesis/engine` answers
+  409 `SYNTHESIS_ENGINE_LOCKED` while a reevaluation loop holds its lease
+  (`REEVALUATION_LOOP_RUNNING`), in this process or another, and saves nothing.
+  If the loop state cannot be read the route also refuses
+  (`REEVALUATION_STATE_UNKNOWN`). Every Screener response whose `ai` block
+  lists `engines` also carries `ai.engine_lock`, so both pickers disable
+  themselves and say why; the route is the enforcement.
+- **Confirmed before it is sent.** Choosing an option in either picker only
+  proposes it. A confirmation states that the change applies to every AI panel
+  on this machine and whether the engine is paid; nothing is posted until the
+  operator confirms.
+- **Packet fit.** Each engine option carries `context_window`: the context
+  window IMP starts the managed local model with, and null where none is
+  recorded (hosted engines, an operator-run local endpoint). The preview adds
+  `engine_fit`, one entry per engine with `packet_size` (the packet's
+  estimated input plus the output allowance) and `fits`. `fits` is null when
+  either side is unknown, so a hosted engine is never claimed to fit or not to
+  fit. A local model too small for the current packet is marked in the picker
+  and in the confirmation instead of being silently selectable.
 
 Tracked runs live in the server process (the last 20). A server restart ends
 an in-flight run and forgets its tracking record; the stored candidate run

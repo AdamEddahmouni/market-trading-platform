@@ -121,6 +121,8 @@ export type SynthesisBudget = z.infer<typeof Budget>;
 /** One operator-selectable synthesis engine: its models (first = default) and whether it can run now. */
 const Engine = z.object({ id: z.string(), label: z.string(), runtime: z.enum(["LOCAL_MODEL", "PAID_API"]),
   models: z.array(z.string()), default_model: z.string().nullable(),
+  // The context window IMP starts the model with; null where none is recorded (never "unlimited").
+  context_window: z.number().nullable().optional(),
   state: z.enum(["AVAILABLE", "NOT_CONFIGURED"]), reason: z.string().nullable() }).passthrough();
 export type SynthesisEngine = z.infer<typeof Engine>;
 const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
@@ -130,7 +132,9 @@ const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVA
   /** The operator's choice ("auto" until one is picked) and every engine the picker offers. */
   engine: z.string().optional(), engine_model: z.string().nullable().optional(),
   engine_source: z.enum(["OPERATOR", "ENVIRONMENT", "AUTOMATIC"]).optional(),
-  engines: z.array(Engine).optional() }).passthrough();
+  engines: z.array(Engine).optional(),
+  // The engine choice is machine-wide and cannot change while a scheduled loop runs; the server enforces it.
+  engine_lock: z.object({ locked: z.boolean(), reason: z.string().nullable() }).optional() }).passthrough();
 export const AiStatusSchema = AiStatus;
 export type AiStatus = z.infer<typeof AiStatus>;
 

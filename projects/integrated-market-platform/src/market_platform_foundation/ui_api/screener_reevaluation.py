@@ -92,6 +92,13 @@ class ReevaluationService:
             raise ValueError('REEVALUATION_NOT_CONFIGURED')
         return loop
 
+    def engine_lock(self):
+        """The engine choice is machine-wide. While a loop holds its lease the choice is locked, so a running
+        session never changes model between cycles. Reads the lease only."""
+        loop = self.repository.latest_loop(self._account())
+        leased = bool(loop and loop['owner_id'] and loop['lease_until'] and loop['lease_until'] > self.clock())
+        return dict(locked=leased, reason='REEVALUATION_LOOP_RUNNING' if leased else None)
+
     def engine_state(self):
         """Selected engine and its hard budget; never a fallback to another provider."""
         provider = self.actions._provider()

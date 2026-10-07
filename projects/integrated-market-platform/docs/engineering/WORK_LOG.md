@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — AI engine picker safety (Phase 1d of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend (`ui_api/server.py`, `ui_api/screener_reevaluation.py`, `ui_api/screener_ai.py`, `intelligence/inference/synthesis_engines.py`), `ui/screener` engine pickers |
+| **Summary** | In the 2026-10-07 session the engine dropdown switched the model for the whole machine immediately, with no confirmation, in the middle of a session. The engine route now refuses a change while a reevaluation loop holds its lease (409 `SYNTHESIS_ENGINE_LOCKED`, also when the loop state cannot be read); both pickers ask for confirmation and say the change is machine-wide before anything is sent; each engine states the context window IMP starts it with, and the AI Screener preview says per engine whether the current packet fits. The status strip shows the selected engine. |
+| **Key files** | `src/market_platform_foundation/ui_api/{server,screener_reevaluation,screener_ai}.py`, `src/market_platform_foundation/intelligence/inference/synthesis_engines.py`, `ui/src/components/screener/ai/{EngineSwitch.tsx,AiStatusStrip.tsx}`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `ui/src/components/screener/news/SynthesisControl.tsx`, `ui/src/api/{screenerAi,screenerNews}.ts`, `tests/platform/test_synthesis_engine_safety.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_synthesis_engine_safety.py` (red-first, 10: context window per engine, packet fit including "unknown claims nothing", lease lock in this and another process, route refusal with nothing saved, unreadable loop state fails closed); `AiScreenerPanel.test.tsx` (+3) and `News.test.tsx` (+1, 2 updated) for confirmation, cancel, lock and fit wording |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1d; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#engine-choice) |
+| **Notes** | No methodology change: no prompt, packet, threshold or loop logic is touched; the loop only gains a read of its own lease. Hosted engines state no context window because IMP records none; their fit is reported as unknown rather than assumed. An unfit engine stays selectable after the warning because the same setting also serves News synthesis, whose packets are small. Stopping the loop releases the lock. **Defect fixed here:** the status strip change merged earlier today named two budget fields `tokens_left` and `per_run_tokens`; the name-based response guard blocks integer values under names containing `token`, so `GET /screener/ai-screener/runs/active` would have answered 500 for any paid engine (a local engine has no budget and was unaffected). The strip's tests used an engine without a budget over HTTP. The fields are now `headroom`, `run_size` and `run_size_basis` (`screener-ai-screener-runs/1.2.0`), new fields in this change avoid the pattern (`context_window`, `packet_size`), the guard is unchanged, and a regression test reads the status for a budgeted engine through the real handler. |
+
+---
+
 ## 2026-10-07 — AI status strip on the Main Screener (Phase 1b of the coverage and visibility plan)
 
 | Field | Value |

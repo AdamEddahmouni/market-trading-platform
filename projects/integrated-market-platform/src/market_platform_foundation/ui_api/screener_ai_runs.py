@@ -21,7 +21,7 @@ from typing import Any, Callable
 from ..intelligence.inference.run_progress import observing
 
 RUN_SCHEMA = "screener-ai-screener-run/1.0.0"
-RUNS_SCHEMA = "screener-ai-screener-runs/1.1.0"
+RUNS_SCHEMA = "screener-ai-screener-runs/1.2.0"
 # The order the work happens in. A stage that did not happen (no budget, cached answer) is absent from a run.
 STAGES = ("SCOPE", "NEWS", "EVIDENCE", "PACKET", "BUDGET_RESERVED", "MODEL_CALL", "VALIDATION", "STORED")
 MAX_TRACKED_RUNS = 20
@@ -122,14 +122,14 @@ class AiScreenerRuns:
         raw = ai.get("budget")
         if not raw:
             return None
-        tokens_left = max(0, int(raw["max_tokens"]) - int(raw["tokens"]))
+        headroom = max(0, int(raw["max_tokens"]) - int(raw["tokens"]))
         requests_left = max(0, int(raw["max_requests"]) - int(raw["requests"]))
         per_run = self._reservations.get(ai.get("model_id") or "")
         resets = datetime.combine(date.fromisoformat(raw["day"]) + timedelta(days=1), day_time(), UTC)
         return {"day": raw["day"], "tokens": int(raw["tokens"]), "max_tokens": int(raw["max_tokens"]), "requests": int(raw["requests"]),
-                "max_requests": int(raw["max_requests"]), "tokens_left": tokens_left, "requests_left": requests_left,
-                "per_run_tokens": per_run, "per_run_basis": "LAST_RESERVATION" if per_run else None,
-                "runs_left": min(requests_left, tokens_left // per_run) if per_run else None,
+                "max_requests": int(raw["max_requests"]), "headroom": headroom, "requests_left": requests_left,
+                "run_size": per_run, "run_size_basis": "LAST_RESERVATION" if per_run else None,
+                "runs_left": min(requests_left, headroom // per_run) if per_run else None,
                 "resets_at": resets.isoformat().replace("+00:00", "Z")}
 
     def _enter(self, run: dict[str, Any], stage: str, detail: dict[str, Any]) -> None:

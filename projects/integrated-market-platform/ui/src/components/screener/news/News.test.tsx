@@ -636,7 +636,18 @@ describe("S11 News & Analysis panel", () => {
     expect(within(select).getByRole("option", { name: "Anthropic Claude · claude-haiku-4-5-20251001 (paid)" })).toBeEnabled();
     expect(within(select).getByRole("option", { name: "OpenAI · gpt-6-luna (needs OPENAI_API_KEY)" })).toBeDisabled();
     fireEvent.change(select, { target: { value: "local|qwen-local" } });
+    // Choosing only proposes: the engine is machine-wide, so nothing is sent until the operator confirms.
+    const confirm = within(region).getByRole("alertdialog", { name: "Confirm AI engine change" });
+    expect(confirm).toHaveTextContent("Switch the AI engine to Local model · qwen-local?");
+    expect(confirm).toHaveTextContent("This applies to every AI panel on this machine");
+    expect(mocks.engine).not.toHaveBeenCalled();
+    fireEvent.click(within(confirm).getByRole("button", { name: "Keep current engine" }));
+    expect(within(region).queryByRole("alertdialog")).toBeNull();
+    expect(mocks.engine).not.toHaveBeenCalled();
+    fireEvent.change(within(region).getByRole("combobox", { name: "AI engine" }), { target: { value: "local|qwen-local" } });
+    fireEvent.click(within(region).getByRole("button", { name: "Switch engine" }));
     await waitFor(() => expect(mocks.engine).toHaveBeenCalledWith("local", "qwen-local"));
+    expect(mocks.engine).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(region).toHaveTextContent("Model qwen-local (local, no API cost)."));
     expect((within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement).value).toBe("local|qwen-local");
     expect(within(region).queryByRole("option", { name: /Automatic/ })).toBeNull();
@@ -654,7 +665,21 @@ describe("S11 News & Analysis panel", () => {
     const select = within(region).getByRole("combobox", { name: "AI engine" }) as HTMLSelectElement;
     expect(select.value).toBe("openai|gpt-6-luna");
     fireEvent.change(select, { target: { value: "anthropic|claude-sonnet-5-5" } });
+    expect(within(region).getByRole("alertdialog")).toHaveTextContent("This is a paid API: its calls count against the shared daily budget.");
+    fireEvent.click(within(region).getByRole("button", { name: "Switch engine" }));
     expect(await within(region).findByRole("alert")).toHaveTextContent("Could not switch the AI engine.");
+  });
+
+  it("locks the engine picker while automatic passes run", async () => {
+    mocks.instrumentNews.mockImplementation(async (universe: string, id: string) => instrumentNews(id, universe,
+      { ai: { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
+        engine: "anthropic", engine_model: "claude-sonnet-5-5", engine_source: "OPERATOR", engines: ENGINES,
+        engine_lock: { locked: true, reason: "REEVALUATION_LOOP_RUNNING" } } }));
+    const panel = await openPanel();
+    const region = within(panel).getByRole("region", { name: "AI synthesis" });
+    expect(within(region).getByRole("combobox", { name: "AI engine" })).toBeDisabled();
+    expect(region).toHaveTextContent("Locked while automatic passes are running. Stop them to change the engine.");
+    expect(mocks.engine).not.toHaveBeenCalled();
   });
 
   const PAID_AI = { state: "AVAILABLE", reason: null, provider_id: "anthropic.messages", model_id: "claude-sonnet-5-5", runtime: "PAID_API",
