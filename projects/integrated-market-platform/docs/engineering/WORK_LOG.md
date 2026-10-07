@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — SMA position epoch instrument/episode scoping
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; validation and protected integration receipts in linked report |
+| **Area** | backend/risk, Paper stop persistence, action/lifecycle projections |
+| **Summary** | Corrected the OCT1-10 retained stop epoch limitation using canonical account/experiment/instrument/opening-fill identity, guarded legacy migration and current-episode reads, scoped lifecycle history and deterministic EXIT lineage. |
+| **Tests** | Five red regression assertions; focused 257 passed; CHANGED 5,512 run / 43 skipped / zero failures/errors; UI 1,374 passed; production build/typecheck passed. Final FULL/static/integration evidence in repair report/receipt. |
+| **Related** | [SMA position epoch scoping](../superpowers/plans/2026-10-07-sma-position-epoch-scoping.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; no formula/methodology change, no automatic Paper/Live submit or breach model call; no subsequent lane started. |
+
 ## 2026-10-07 — Screener live price evidence convergence
 
 | Field | Value |

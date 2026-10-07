@@ -225,6 +225,8 @@ class ScreenerActionService:
                 # Why IMP exited: this policy, this stop, this observation. Quantity stays with the ledger.
                 record['server_exit']=dict(condition_id=server_exit['condition_id'],reason='DETERMINISTIC_SMA_TRAILING_STOP_RISK_CONDITION',
                     policy_id=risk['policy_id'],stop_state_id=risk['stop_state_id'],position_epoch_id=risk['position_epoch_id'],
+                    account_id=risk.get('account_id'),experiment_id=risk.get('experiment_id'),
+                    instrument_id=risk.get('instrument_id'),episode_id=risk.get('episode_id'),
                     side=risk['side'],active_stop=risk['active_stop'],previous_stop=risk['previous_stop'],
                     trigger_price=risk['trigger_price'],triggered_at=risk['triggered_at'],trigger_evidence=risk['trigger_evidence'],
                     paper_close='NOT_SUBMITTED',model_call=False)

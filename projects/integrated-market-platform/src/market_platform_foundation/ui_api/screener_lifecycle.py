@@ -18,7 +18,7 @@ from ..intelligence.inference.trade_lifecycle import (
 from ..paper.ledger import CURRENT_MARK_QUALITIES
 from ..risk.sma_trailing_stop import minor_to_display
 
-_STOP_FIELDS = ('stop_state_id', 'policy_id', 'sma_window_bars', 'bar_interval', 'sma_value', 'active_stop', 'previous_stop', 'candidate_stop',
+_STOP_FIELDS = ('episode_id', 'position_epoch_id', 'experiment_id', 'instrument_id', 'stop_state_id', 'policy_id', 'sma_window_bars', 'bar_interval', 'sma_value', 'active_stop', 'previous_stop', 'candidate_stop',
                 'stop_as_of', 'last_updated_at', 'last_evaluated_at', 'distance_to_stop', 'distance_bps', 'reference_price', 'reference_as_of',
                 'trigger_state', 'trigger_price', 'triggered_at', 'clamp_count', 'tighten_count', 'closed_at', 'closed_reason')
 
@@ -191,12 +191,25 @@ class TradeLifecycleService:
         base = dict(method='SMA_TRAILING_STOP', origin='DETERMINISTIC_RISK_CONTROL', model='none', reason_codes=[], policy=None, stop=None,
                     exit_decision_id=None, lineage='STOP_STATE')
         try:
+            if episode is not None:
+                scoped_ids = []
+                for identifier in ids:
+                    state = self.stops.repository.get('state', identifier)
+                    if state and state.get('account_id') == ctx.account and state.get('instrument_id') == instrument \
+                            and state.get('episode_id') in (None, episode['episode_id']):
+                        scoped_ids.append(identifier)
+                ids = scoped_ids
+                for state in reversed(self.stops.repository.episode_states(ctx.account, instrument, episode['episode_id'])):
+                    if state['stop_state_id'] not in ids:
+                        ids.append(state['stop_state_id'])
             if episode is None or ctx.positions is None:
                 configured = self.stops.config_view()
                 return dict(base, status='NOT_APPLICABLE', configured=bool(configured.get('enabled')), lineage='NOT_APPLICABLE'), ids
             if episode['open']:
                 status = self.stops.status(instrument)
                 view = status.get('stop')
+                if view and view.get('episode_id') not in (None, episode['episode_id']):
+                    return dict(base, status='BLOCKED', configured=True, reason_codes=['STOP_EPISODE_MISMATCH']), ids
                 if view and view.get('stop_state_id') and view['stop_state_id'] not in ids:
                     ids.append(view['stop_state_id'])
                 policy = status.get('policy') or {}

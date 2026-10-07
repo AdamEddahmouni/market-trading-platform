@@ -638,3 +638,67 @@ class HttpRouteTests(_Lifecycle):
             policy = policy_for_route('GET', path)
             self.assertEqual((policy.capability, str(policy.account_scope).rsplit('.', 1)[-1]), ('audit.read', 'PAPER_LEDGER'))
         self.assertNotEqual(policy_for_route('POST', '/screener/trade-lifecycles').capability, 'audit.read')
+
+class PositionEpochAcceptanceTests(_Lifecycle):
+    def test_controlled_two_position_breach_close_reopen_and_history(self):
+        run = self.new_run(A, N)
+        self.enter(instrument=A, run=run)
+        self.feed.mark(self.store, A, '150.00')
+        self.enter(instrument=N, quantity=4, price='250.00')
+        closes = {A: [14500, 14500], N: [23800, 23800]}
+        prices = {A: 15000, N: 25000}
+        def bars(instrument, policy, scale):
+            self.closes = closes[instrument]
+            return dict(state='CURRENT', reason=None, source='SOFTWARE_CONTROLLED', bars=self.bars())
+        self.stops._bars = bars
+        self.stops._quotes = lambda instrument, scale: dict(admissible=True, price_minor=prices[instrument],
+            as_of_ns=int(self.t * 1e9), source='SOFTWARE_CONTROLLED', evidence_ref='q')
+        self.stops.configure(dict(enabled=True, sma_window_bars=2))
+        a = self.stops.evaluate(A)['stop']
+        n = self.stops.evaluate(N)['stop']
+        self.assertEqual((a['active_stop'], n['active_stop']), ('145', '238'))
+        cards = {r['instrument_id']: r for r in self.listing(run)['selected']}
+        for instrument, stop in ((A, a), (N, n)):
+            self.assertEqual(cards[instrument]['lineage']['episode_id'], stop['episode_id'])
+        closes[A].append(14900)
+        self.tick(60)
+        self.assertEqual(self.stops.evaluate(A)['stop']['active_stop'], '147')
+        self.assertEqual(self.stops.status(N)['stop']['active_stop'], '238')
+        closes[N].append(24200)
+        self.assertEqual(self.stops.evaluate(N)['stop']['active_stop'], '240')
+        fills, calls = len(self.store.paper_ledger.project_fills()), self.model.calls
+        prices[A] = 14100
+        self.quote = 141.0
+        self.tick()
+        breached = self.stops.evaluate_now(dict(instrument_id=A))
+        self.assertEqual(breached['status'], 'BREACHED')
+        exit_ = self.actions.history(A)[0]
+        self.assertEqual(exit_['action_state'], 'EXIT')
+        self.assertEqual((exit_['server_exit']['instrument_id'], exit_['server_exit']['episode_id'],
+                          exit_['server_exit']['experiment_id']), (A, a['episode_id'], self.store.paper_ledger.experiment_id))
+        self.assertEqual((len(self.store.paper_ledger.project_fills()), self.model.calls), (fills, calls))
+        self.assertEqual(self.stops.status(N)['status'], 'ACTIVE')
+        self.assertEqual(len(self.store.paper_ledger.project_positions()), 2)
+        self.governed(exit_, price='141.00')
+        self.stops.evaluate(A)
+        closed = next(r for r in self.listing(run)['recent_closed'] if r['instrument_id'] == A)
+        detail = self.service.detail(closed['lifecycle_id'])
+        stop_events = [r for r in detail['timeline'] if r['kind'] == 'STOP']
+        self.assertTrue(stop_events)
+        old_ids = {e['stop_state_id'] for e in self.stops.repository.events(self.store.paper_ledger.paper_account_id, A)}
+        self.feed.mark(self.store, N, '250.00')
+        new_run, _ = self.enter(instrument=A, quantity=3, price='150.00')
+        closes[A] = [14000, 14000]
+        prices[A] = 15000
+        self.tick()
+        new = self.stops.evaluate(A)['stop']
+        self.assertNotEqual(new['episode_id'], a['episode_id'])
+        self.assertEqual((new['active_stop'], new['previous_stop'], new['triggered_at'], new['carried_from']), ('140', None, None, None))
+        current = self.only(self.listing(new_run)['selected'])
+        self.assertEqual(current['risk_control']['stop']['episode_id'], new['episode_id'])
+        current_detail = self.service.detail(current['lifecycle_id'], run_id=new_run)
+        for event in current_detail['timeline']:
+            if event['kind'] == 'STOP':
+                self.assertNotIn(event['ref']['id'], old_ids)
+                self.assertEqual(event['ref']['id'], new['stop_state_id'])
+        self.assertEqual(self.stops.status(N)['stop']['active_stop'], '240')
