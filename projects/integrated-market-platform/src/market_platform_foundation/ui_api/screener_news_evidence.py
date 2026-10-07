@@ -230,12 +230,24 @@ def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str
 
     Rebuild NEWS/SENTIMENT/alignments after each removal so refs and counts agree.
     Reserve bytes for cutoff and scope serialization; aliases are not copied in packets.
-    When no story is left and the packet is still over, thin the per-provider status detail of
-    candidates that carry no story. Evidence is never removed here.
+    Thin per-provider status detail on candidates carrying no story before
+    removing reference evidence. Repeat after each story removal, since a
+    newly empty candidate can release coverage metadata without losing facts.
     """
     def over():
         return len(json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True).encode('utf-8')) > MAX_PACKET_BYTES
 
+    def thin_empty_coverage():
+        for candidate in sorted(candidates, key=lambda c: c['instrument']['instrument_id'], reverse=True):
+            status = candidate.get('news')
+            if not status or status['story_count'] or not status['providers']:
+                continue
+            if not over():
+                break
+            status['providers'] = []
+            status['limitations'] = [*status['limitations'], 'GLOBAL_PACKET_STATUS_CAP']
+
+    thin_empty_coverage()
     while over():
         target = max((c for c in candidates if projections.get(c['instrument']['instrument_id'],{}).get('stories')), key=lambda c: (len(projections[c['instrument']['instrument_id']]['stories']), c['instrument']['instrument_id']), default=None)
         if target is None:
@@ -254,12 +266,4 @@ def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str
             if not any(m['capability']==capability for m in target['missing']):
                 target['missing'].append({'capability':capability,'reason':'NO_INTERNAL_EVIDENCE'})
         attach_news(target, news, now=now)
-    # A full live window: current evidence alone fills the packet and there is no story to thin.
-    for candidate in sorted(candidates, key=lambda c: c['instrument']['instrument_id'], reverse=True):
-        status = candidate.get('news')
-        if not status or status['story_count'] or not status['providers']:
-            continue
-        if not over():
-            break
-        status['providers'] = []
-        status['limitations'] = [*status['limitations'], 'GLOBAL_PACKET_STATUS_CAP']
+        thin_empty_coverage()

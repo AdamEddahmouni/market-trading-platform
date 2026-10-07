@@ -268,6 +268,56 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
         fit_news({},candidates,values,now=NEWS_ISO)
         self.assertEqual(before,candidates)
 
+    def test_live_price_volume_window_preserves_news_before_empty_coverage_details(self):
+        rows = [{'instrument': {'instrument_id': f'EQ:X{i:02d}', 'asset_class': 'EQUITY',
+                                'venue_id': 'US_EQUITY'}, 'symbol': f'X{i:02d}',
+                 'company': f'Orchid{i:02d} Corporation'} for i in range(20)]
+        items = [finviz_row(f'Orchid{i:02d} announces event', [f'X{i:02d}'],
+                           '2026-09-28 09:30:00', f'https://fixture.test/{i}') for i in range(6)]
+        with tempfile.TemporaryDirectory() as folder:
+            model = FinbertSentiment(model_path=folder, loader=loader({'Orchid': 'positive'}))
+            values = project_news(service(finviz={**FINVIZ, 'items': items}, sentiment=model),
+                                  universe='US_EQUITIES', rows=rows, refresh=True)
+        current = evaluate(capability='market_snapshot', source='moomoo', delivery_mode='REALTIME',
+                           now=NEWS_ISO, as_of=NEWS_ISO, stale_after_ms=60000,
+                           policy='L1_EVENT_V1', basis='PROVIDER_AS_OF')
+        current['received_at'] = NEWS_ISO
+        unknown = evaluate(capability='market_snapshot', source='FINVIZ_ELITE', delivery_mode='SNAPSHOT',
+                           now=NEWS_ISO, as_of=None, stale_after_ms=None,
+                           policy='UNKNOWN_POLICY', basis='PROVIDER_AS_OF')
+        candidates = []
+        for row in rows:
+            c = build_candidate(row['instrument'], [
+                ('QUOTE', {**unknown, 'source': 'moomoo'}, {'bid': 123, 'ask': 124}, []),
+                ('TECHNICALS', unknown, {'change_pct': 2, 'rel_volume': 3, 'rsi_14': 55}, []),
+                ('QUOTE', current, {'price': 123}, []),
+                ('TECHNICALS', current, {'volume': 100000}, []),
+            ], now=NEWS_ISO)
+            c['instrument']['company'] = row['company']
+            attach_news(c, values[row['instrument']['instrument_id']], now=NEWS_ISO)
+            candidates.append(c)
+        before = copy.deepcopy(candidates)
+        self.assertEqual(sum(c['news']['story_count'] for c in candidates), 6)
+        with self.assertRaisesRegex(ValueError, 'EVIDENCE_PACKET_BOUND_EXCEEDED'):
+            CandidateReducer().estimate({}, candidates, NEWS_ISO)
+
+        fit_news({}, candidates, values, now=NEWS_ISO)
+
+        self.assertGreater(sum(c['news']['story_count'] for c in candidates), 0,
+                           'Usable stories must survive before empty provider details consume the packet')
+        self.assertTrue(any(e['capability'] == 'SENTIMENT' for c in candidates
+                            for e in c['reference_evidence']))
+        self.assertLessEqual(CandidateReducer().estimate({}, candidates, NEWS_ISO)['packet_bytes'], 96000)
+        for old, fitted in zip(before, candidates):
+            self.assertEqual(old['current_market_evidence'], fitted['current_market_evidence'])
+            self.assertEqual(old['blocked'], fitted['blocked'])
+            for evidence in fitted['reference_evidence']:
+                self.assertIn(evidence, old['reference_evidence'])
+            refs = {e['evidence_id'] for e in fitted['reference_evidence']}
+            for comparison in fitted['alignments']:
+                self.assertTrue(set(comparison['news_refs']) <= refs)
+                self.assertTrue(set(comparison['sentiment_refs']) <= refs)
+
     def test_evidence_that_cannot_fit_still_fails_closed(self):
         candidates,values=self._full_live_window(flow_bytes=2400)
         fit_news({},candidates,values,now=NEWS_ISO)
