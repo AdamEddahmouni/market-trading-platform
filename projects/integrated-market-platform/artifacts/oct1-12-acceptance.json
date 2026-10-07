@@ -14,43 +14,86 @@
   "LIVE_RTH_ACCEPTANCE": "NOT_OBSERVED_MARKET_CLOSED",
   "final_validation": {
     "fast": {
-      "tests": 23, "skipped": 0, "failures": 0, "errors": 0, "seconds": 3.49,
-      "timing": "SEVERE_REGRESSION (observe-only)",
-      "note": "run before the final operator-stop fix; covered again by full"
+      "tests": 23,
+      "skipped": 0,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 4.847,
+      "timing": "SEVERE_REGRESSION (observe-only)"
     },
     "changed": {
-      "tests": 4947, "skipped": 42, "failures": 0, "errors": 0, "seconds": 306.591,
+      "tests": 5276,
+      "skipped": 43,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 610.431,
       "timing": "INSUFFICIENT_DATA (observe-only)",
-      "note": "run before the final operator-stop fix; covered again by full"
+      "selection": "--paths-file from git diff --name-only origin/main...HEAD (the CI merge-base selection)",
+      "note": "On the committed clean tree the default working-tree selection is only the mandatory set (864 tests, 1 skipped, 0 failures, 0 errors, 239.829 s); that run also passed and is not the result claimed here."
     },
     "full": {
-      "tests": 8192, "skipped": 53, "failures": 0, "errors": 0, "seconds": 387.316,
+      "tests": 8192,
+      "skipped": 53,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 452.681,
       "timing": "SEVERE_REGRESSION (observe-only)",
-      "note": "final code"
+      "note": "Second run. The first run on the same commit reported 1 failure in trading_correctness (8192 run, 53 skipped, 537.025 s) while a FinBERT model load and a news probe were running on the same machine; the failing test id was not captured. trading_correctness then passed alone (257 tests, 0 failures) and this run, with nothing else running, passed. Classified as a load-sensitive test, not reproduced."
     },
     "focused_backend": {
-      "modules": ["tests.intelligence.test_reevaluation", "tests.platform.test_reevaluation_live_evidence"],
-      "tests": 61, "failures": 0, "errors": 0
+      "modules": [
+        "tests.intelligence.test_reevaluation",
+        "tests.platform.test_reevaluation_live_evidence"
+      ],
+      "tests": 61,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 1.753
     },
-    "static": {"lint": "passed", "format": "passed"},
+    "static": {
+      "lint": "passed",
+      "format": "passed"
+    },
+    "generated_artifacts": "The suites rewrite tracked performance artifacts while they run (artifacts/g8-, g13-runtime-performance.json, artifacts/p3-plan-*, tests/artifact/*baseline*.json); they were restored and are not part of this change.",
     "ui": "NOT_RUN: no UI source changed; the cycle and status schemas are passthrough and unchanged",
     "browser": "NOT_RUN: tools/ui1/oct1_07_browser.cjs was not re-executed"
   },
   "defects_fixed": [
-    {"id": "A", "finding": "Only the first 3 held instruments outside the intake got an evidence read and only the first 10 held were evaluated; unavailable evidence was noted once, then silent.",
-     "repair": "Every held instrument is read and evaluated up to max_held_per_cycle (default 10), rotating least-recently-seen first with HELD_POSITION_CAP_EXCEEDED; unavailable evidence is noted again every decision_max_age_seconds."},
-    {"id": "B", "finding": "A failed Screener evidence read ended the cycle FAILED before any held position's SMA stop was evaluated.",
-     "repair": "Cycle ends REEVALUATION_BLOCKED with EVIDENCE_READ_FAILED; the stop monitor still runs for held instruments; no model call, no baseline change."},
-    {"id": "C", "finding": "Lease ownership was checked once at cycle start and loop writes were unfenced; a cycle outlasting the lease could overwrite a new owner's baselines.",
-     "repair": "Scheduled-cycle writes are owner-fenced; the lease is renewed before each model call; a displaced cycle records FAILED/REEVALUATION_LEASE_LOST, keeps its spent model call counted and ends its worker. An operator Stop mid-cycle still finishes normally."},
-    {"id": "D", "finding": "Model-call caps were counted per loop, so reconfiguring the scope reset the hourly and daily budget.",
-     "repair": "Caps are counted across every loop of the Paper account."},
-    {"id": "E", "finding": "A duplicate receipt id raised ValueError in memory but sqlite3.IntegrityError on SQLite.",
-     "repair": "Both backends raise REEVALUATION_RECEIPT_IMMUTABLE."},
-    {"id": "F1", "finding": "Found on the real evidence path: held instruments were subscribed for quotes only by page-driven Paper/lifecycle requests, so a loop with no page open had no current quote for its own positions.",
-     "repair": "Each cycle refreshes held-position marks and their paper-portfolio-marks subscription without creating the live runtime or touching the execution gate."},
-    {"id": "F2", "finding": "Found on the real evidence path: every stale-to-current quote recovery bought an undwelled model call, because the prior record was a non-committed REVALIDATION_REQUIRED.",
-     "repair": "QUOTE_RESTORED waits min_state_dwell_seconds from the recorded loss; repeated losses inside the window are not re-recorded."}
+    {
+      "id": "A",
+      "finding": "Only the first 3 held instruments outside the intake got an evidence read and only the first 10 held were evaluated; unavailable evidence was noted once, then silent.",
+      "repair": "Every held instrument is read and evaluated up to max_held_per_cycle (default 10), rotating least-recently-seen first with HELD_POSITION_CAP_EXCEEDED; unavailable evidence is noted again every decision_max_age_seconds."
+    },
+    {
+      "id": "B",
+      "finding": "A failed Screener evidence read ended the cycle FAILED before any held position's SMA stop was evaluated.",
+      "repair": "Cycle ends REEVALUATION_BLOCKED with EVIDENCE_READ_FAILED; the stop monitor still runs for held instruments; no model call, no baseline change."
+    },
+    {
+      "id": "C",
+      "finding": "Lease ownership was checked once at cycle start and loop writes were unfenced; a cycle outlasting the lease could overwrite a new owner's baselines.",
+      "repair": "Scheduled-cycle writes are owner-fenced; the lease is renewed before each model call; a displaced cycle records FAILED/REEVALUATION_LEASE_LOST, keeps its spent model call counted and ends its worker. An operator Stop mid-cycle still finishes normally."
+    },
+    {
+      "id": "D",
+      "finding": "Model-call caps were counted per loop, so reconfiguring the scope reset the hourly and daily budget.",
+      "repair": "Caps are counted across every loop of the Paper account."
+    },
+    {
+      "id": "E",
+      "finding": "A duplicate receipt id raised ValueError in memory but sqlite3.IntegrityError on SQLite.",
+      "repair": "Both backends raise REEVALUATION_RECEIPT_IMMUTABLE."
+    },
+    {
+      "id": "F1",
+      "finding": "Found on the real evidence path: held instruments were subscribed for quotes only by page-driven Paper/lifecycle requests, so a loop with no page open had no current quote for its own positions.",
+      "repair": "Each cycle refreshes held-position marks and their paper-portfolio-marks subscription without creating the live runtime or touching the execution gate."
+    },
+    {
+      "id": "F2",
+      "finding": "Found on the real evidence path: every stale-to-current quote recovery bought an undwelled model call, because the prior record was a non-committed REVALIDATION_REQUIRED.",
+      "repair": "QUOTE_RESTORED waits min_state_dwell_seconds from the recorded loss; repeated losses inside the window are not re-recorded."
+    }
   ],
   "verified_unchanged": [
     "60-second slot grid, overrun skip, RUNTIME_STALLED and PROCESS_DOWNTIME gaps without backfill (existing WorkerTests)",
@@ -64,5 +107,15 @@
     "Controlled browser acceptance re-run",
     "Fill landing mid-cycle and full lifecycle stage walk were not given new tests; existing OCT1-06/08/10 suites pass unchanged",
     "Selected candidates that are not held are not subscribed by the loop: without a Screener window their quote is stale and ENTER is blocked"
+  ],
+  "implementation": {
+    "sha": "6767f2d104c294725ac57ca4cad2acc3879299af",
+    "tree": "39ae8cdb26e8bd8082554636dba2f48da92dbbd1",
+    "merge_base": "4e1f98652e8a949006ad22509839d1f3b929488b",
+    "note": "All results below were run on this exact commit. The commit that records them changes only this receipt and the reevaluation contract (documentation)."
+  },
+  "operator_requirements": [
+    "KEEP THE SCREENER OPEN DURING THE LIVE CANDIDATE-SELECTION PHASE: a selected candidate that is not held has a current quote only while a Screener window owns its subscription.",
+    "Held Paper positions do not need the Screener: the reevaluation loop keeps their quote subscription and SMA stop monitor on the server."
   ]
 }

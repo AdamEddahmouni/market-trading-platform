@@ -388,6 +388,14 @@ mutations use `state.write`. None carries `paper.order.submit`.
   model call per dwell per instrument.
 - A duplicate receipt id is `REEVALUATION_RECEIPT_IMMUTABLE` on both backends.
 
+### Operator requirement for a live session
+
+**KEEP THE SCREENER OPEN DURING THE LIVE CANDIDATE-SELECTION PHASE.** A selected
+candidate that is not held has a current quote only while a Screener window owns
+its subscription; with the window closed its quote goes `STALE` and ENTER is
+blocked. Held Paper positions do not need the window: the loop keeps their quote
+subscription and SMA stop monitor on the server.
+
 ## Limitations
 
 - Calendar coverage is 2025–2026 with no early-close list; next-session supports
