@@ -4,14 +4,15 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AiScreenerPanel from "./AiScreenerPanel";
 import { SpecialistContext, type SpecialistSelection } from "./shared";
-import type { AiScreenerPreview, AiScreenerResult } from "../../../api/screenerAi";
+import type { AiScreenerPreview, AiScreenerResult, AiScreenerRun, AiScreenerRuns } from "../../../api/screenerAi";
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { lifecycle, lifecycleList, openPosition } from "../lifecycle/lifecycleFixture";
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn() }));
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn() }));
 vi.mock("../../../api/screenerLifecycle", () => ({ tradeLifecycles: mocks.lifecycles, tradeLifecycle: mocks.lifecycle }));
-vi.mock("../../../api/screenerAi", () => ({ fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.run }));
-vi.mock("../../../api/screenerNews", () => ({ postSynthesisEngine: mocks.engine }));
+vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),
+  fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.post, fetchAiScreenerRuns: mocks.runs, fetchAiScreenerRun: mocks.detail }));
+vi.mock("../../../api/screenerNews", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerNews")>(), postSynthesisEngine: mocks.engine }));
 
 const scope = { universe: "US_EQUITIES" as const, search: "A", sort: "volume", descending: true, filters: [] };
 const ai = { state: "AVAILABLE" as const, reason: null, provider_id: "inference.test", model_id: "candidate.v1",
@@ -26,6 +27,23 @@ const result = { schema_version: "screener-ai-screener/1.0.0" as const, state: "
   cache: "MISS" as const, simulated: true, tokens_input: null, tokens_output: null, latency_ms: 1, evidence: [], candidates: [],
   limitations: ["No candidate selected."], coverage: {} } as AiScreenerResult;
 
+const STAGES = ["SCOPE", "NEWS", "EVIDENCE", "PACKET", "BUDGET_RESERVED", "MODEL_CALL", "VALIDATION", "STORED"];
+const stage = (name: string, elapsed_ms: number, detail: Record<string, unknown> = {}) => ({ stage: name, started_at: "2026-10-02T15:00:00Z", elapsed_ms, detail });
+const trackedRun = (overrides: Partial<AiScreenerRun> = {}): AiScreenerRun => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper",
+  state: "RUNNING", joined: false, scope, stage: "MODEL_CALL", stage_order: STAGES,
+  stages: [stage("SCOPE", 40), stage("NEWS", 900), stage("EVIDENCE", 20), stage("PACKET", 30, { packet_bytes: 95_600 }), stage("MODEL_CALL", 7_000)],
+  started_at: "2026-10-02T15:00:00Z", finished_at: null, elapsed_ms: 7_990, engine: { provider_id: "inference.test", model_id: "candidate.v1", runtime: "PAID_API" },
+  timeout_seconds: 45, typical_latency_ms: 10_800, typical_latency_samples: 3, intake_count: 4, sufficient_count: 1, packet_bytes: 95_600,
+  summary: null, result: null, error: null, ...overrides } as AiScreenerRun);
+/** What the server reports once a run has finished: the stored result plus how the run went. */
+const finishedRun = (value: AiScreenerResult, overrides: Partial<AiScreenerRun> = {}) => trackedRun({ run_id: `track-${value.run_id}`, state: "COMPLETED", stage: null,
+  scope: value.scope as AiScreenerRun["scope"], finished_at: "2026-10-02T15:00:12Z", elapsed_ms: 12_300, result: value,
+  summary: { state: value.state, reason: value.reason ?? null, candidate_run_id: value.run_id, selected: value.candidates.map(({ instrument_id, rank }) => ({ instrument_id, rank })),
+    provider_id: value.provider_id, model_id: value.model_id, runtime: value.runtime, limitations: value.limitations }, ...overrides });
+// A stand-in for the server's run registry: POST starts or finishes a run, the two GETs only read it.
+const server: { active: AiScreenerRun | null; latest: AiScreenerRun | null; results: Map<string, AiScreenerRun> } = { active: null, latest: null, results: new Map() };
+const finish = (run: AiScreenerRun) => { server.active = null; server.latest = { ...run, result: null }; server.results.set(run.run_id, run); };
+
 const panelApi = { isVisible: true, onDidVisibilityChange: () => ({ dispose: () => undefined }) } as never;
 const selection = (overrides: Partial<SpecialistSelection> = {}): SpecialistSelection => ({
   row: null, universe: "US_EQUITIES", supportedPanels: new Set(["ai_screener"]), settledId: null, quote: undefined, filters: [],
@@ -35,7 +53,19 @@ const renderPanel = (value = selection()) => render(<QueryClientProvider client=
   <MemoryRouter><SpecialistContext.Provider value={value}><AiScreenerPanel api={panelApi} /></SpecialistContext.Provider></MemoryRouter>
 </QueryClientProvider>);
 
-beforeEach(() => { mocks.lifecycles.mockResolvedValue(lifecycleList()); });
+beforeEach(() => {
+  server.active = null; server.latest = null; server.results.clear();
+  mocks.lifecycles.mockResolvedValue(lifecycleList());
+  // Existing cases describe only the stored result; the run that carried it is wrapped here.
+  mocks.post.mockImplementation(async (requested: typeof scope) => {
+    const value = await mocks.run(requested);
+    const run = value.schema_version === "screener-ai-screener-run/1.0.0" ? value as AiScreenerRun : finishedRun({ ...value, scope: requested });
+    if (run.state === "RUNNING") server.active = run; else finish(run);
+    return run;
+  });
+  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.0.0", active: server.active, latest: server.latest }));
+  mocks.detail.mockImplementation(async (id: string) => server.results.get(id) ?? Promise.reject(new Error("SCREENER_AI_RUN_UNKNOWN")));
+});
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
@@ -73,6 +103,72 @@ describe("AI Screener panel", () => {
     expect(await screen.findByRole("button", { name: "Run AI Screener" })).toBeInTheDocument();
     expect(mocks.preview).toHaveBeenCalledWith(scope, expect.any(AbortSignal));
     expect(mocks.run).not.toHaveBeenCalled();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("shows the stage the server is in with measured time, then the result once the server has it", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue(trackedRun());
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    const progress = await screen.findByRole("region", { name: "AI Screener run progress" });
+    expect(progress).toHaveTextContent("Running · model call 7.0s · candidate.v1 · 4 candidates · packet 95,600 bytes · 8.0s in total");
+    expect(progress).toHaveTextContent("typical 11s from 3 measured calls · request times out at 45s");
+    // No budget wrapped this call and the answer is not back: neither stage is claimed.
+    expect(progress).toHaveTextContent("Budget reservednot needed");
+    expect(progress).toHaveTextContent("Checking the answer—");
+    expect(progress.querySelector('[aria-current="step"]')).toHaveTextContent("Model call7.0s");
+    expect(progress).not.toHaveTextContent("%");
+    expect(screen.getByRole("button", { name: "Running AI Screener…" })).toBeDisabled();
+    expect(screen.queryByRole("region", { name: "AI Screener result" })).toBeNull();
+    finish(finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z" }));
+    const shown = await screen.findByRole("region", { name: "AI Screener result" }, { timeout: 3_000 });
+    expect(shown).toHaveTextContent("Run took 12.3s on the server");
+    expect(screen.queryByRole("region", { name: "AI Screener run progress" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Run AI Screener" })).toBeEnabled();
+    expect(mocks.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("re-attaches to a run already in progress after a reload without starting anything", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    server.active = trackedRun({ stage: "NEWS", stages: [stage("SCOPE", 40), stage("NEWS", 2_500)], typical_latency_ms: null, typical_latency_samples: 0 });
+    renderPanel();
+    expect(await screen.findByRole("region", { name: "AI Screener run progress" })).toHaveTextContent("Running · news 2.5s");
+    expect(await screen.findByRole("button", { name: "Running AI Screener…" })).toBeDisabled();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("joins the run in progress instead of starting a second one", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue(trackedRun({ joined: true }));
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    expect(await screen.findByText("Joined the run already in progress; no second run was started.")).toBeInTheDocument();
+  });
+
+  it("names a failed run by its stage and stable code", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    server.latest = trackedRun({ state: "FAILED", stage: null, error: { code: "EVIDENCE_PACKET_BOUND_EXCEEDED", stage: "PACKET" } });
+    renderPanel();
+    expect(await screen.findByRole("alert")).toHaveTextContent("AI Screener run failed while building the packet · EVIDENCE_PACKET_BOUND_EXCEEDED. No result was recorded. Retry explicitly.");
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("keeps a result for the same query after the Screener list refreshes, and says so", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    finish(finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z", result_set: "set-1", scope: { ...scope, result_set: "set-1" } as AiScreenerResult["scope"] }));
+    renderPanel(selection({ screenerScope: { ...scope, result_set: "set-2" } }));
+    expect(await screen.findByRole("region", { name: "AI Screener result" })).toHaveTextContent("the Screener list has refreshed since; this result is as of its cutoff");
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("never draws the latest result under a different Screener query", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    finish(finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z", scope: { ...scope, search: "B" } as AiScreenerResult["scope"] }));
+    renderPanel();
+    expect(await screen.findByText("The latest run answered a different Screener scope (US_EQUITIES). Run AI Screener to answer this one.")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "AI Screener result" })).toBeNull();
+    expect(mocks.detail).not.toHaveBeenCalled();
   });
 
   it("does not render a result that arrives after the scope changes", async () => {

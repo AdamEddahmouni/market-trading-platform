@@ -181,3 +181,10 @@
 .lifecycle-conditions th,.lifecycle-conditions td{padding:2px 6px 2px 0;border-top:1px solid #1f2b38;text-align:left;font-weight:400}
 .lifecycle-source{margin-top:4px;border-top:1px solid #1f2b38;padding-top:3px}
 @container (max-width: 420px){.lifecycle-facts div{grid-template-columns:1fr;gap:0}.lifecycle-facts dt{font-size:10px}}
+.ai-run-progress{padding:5px 7px;border:1px solid #2b4560;background:#0f1822}
+.ai-run-progress-head{margin:0 0 4px;color:#dce8f3;font-size:11px}
+.ai-run-stages{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 10px;margin:0;padding:0;list-style:none;font-size:10px}
+.ai-run-stage{display:flex;justify-content:space-between;gap:6px;color:#6f8296}
+.ai-run-stage.done{color:#9fb4c8}
+.ai-run-stage.current{color:#e8f1fc;font-weight:600}
+.ai-run-stage.skipped{font-style:italic}

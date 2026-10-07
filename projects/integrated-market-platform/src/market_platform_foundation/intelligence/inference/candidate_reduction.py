@@ -17,6 +17,7 @@ from .config import IntelligenceInferenceConfig
 from .contracts import IntelligenceTaskType
 from .hashing import input_hash_from_dict
 from .prompts import PromptRegistry
+from .run_progress import report_stage
 from .screener_synthesis import unsupported_certainty
 
 PROMPT_ID = 'screener.ai_candidate_reduction.v2'
@@ -227,7 +228,9 @@ class CandidateReducer:
                     tokens=worst(rendered, self.config) if callable(worst) else None, cached=cached, input_hash=digest)
 
     def reduce(self, scope, candidates, now):
+        report_stage('PACKET')
         digest, rendered, prompt, size = self._prepare(scope, candidates, now)
+        report_stage('PACKET', packet_bytes=size, intake_count=len(candidates), sufficient_count=sum(bool(c['sufficient']) for c in candidates))
         deadlines = [timestamp(e['valid_until']).timestamp() for c in candidates for e in (*c['current_market_evidence'], *c['reference_evidence']) if e['valid_until']]
         expiry = min([self.clock() + 1800, *deadlines])
         base = dict(schema_version=SCHEMA_VERSION, run_id=uuid.uuid4().hex, decision_cutoff=now, generated_at=now,
@@ -250,12 +253,16 @@ class CandidateReducer:
             if waiter is None:
                 self.inflight[digest] = threading.Event()
         if waiter is not None:
+            # Another caller already holds this exact packet's model call; this run waits for that answer.
+            report_stage('MODEL_CALL', shared=True)
             waiter.wait(self.config.timeout_seconds + 5)
             with self.lock:
                 cached = self.cache.get(digest)
             return {**cached[1], 'cache': 'HIT'} if cached and cached[0] > self.clock() else {**base, 'state': 'UNAVAILABLE', 'reason': 'SYNTHESIS_IN_PROGRESS_OR_EXPIRED'}
         try:
             packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates))
+            if not getattr(self.provider, 'reports_stages', False):
+                report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
             base.update(provider_id=response.provider_id, model_id=response.model_id, tokens_input=response.tokens_input,
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
@@ -267,6 +274,7 @@ class CandidateReducer:
                 reason = message if re.fullmatch(r'[A-Z][A-Z0-9_]*', message or '') else response.error_code.value
                 result = {**base, 'state': 'UNAVAILABLE', 'reason': reason}
             else:
+                report_stage('VALIDATION')
                 parsed, reason = parse_reduction(response.raw_text, candidates)
                 result = {**base, **(parsed or {}), 'state': 'INVALID_OUTPUT' if reason else 'EXPIRED' if self.clock() >= expiry else 'CURRENT' if parsed['candidates'] else 'NO_GROUNDED_CANDIDATES', 'reason': reason}
                 result['coverage']['selected'] = len(result['candidates'])

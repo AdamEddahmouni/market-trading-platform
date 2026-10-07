@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — AI Screener run status (Phase 1a of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend (`ui_api/screener_ai_runs.py`, `intelligence/inference/run_progress.py`), `ui/screener` AI Screener panel |
+| **Summary** | An AI Screener run used to be one HTTP request held open by the panel, with a button label as the only sign of work; closing the panel or reloading lost it. `POST /screener/ai-screener` now returns a tracked run at once and the work continues on the server. `GET /screener/ai-screener/runs/{run_id}` and `/runs/active` report the stage the server is really in (`SCOPE`, `NEWS`, `EVIDENCE`, `PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`, `VALIDATION`, `STORED`) with measured elapsed time, and the result once finished. One run per account: a second click joins the run in progress. The panel polls status, shows stage progress with the request timeout and the measured typical latency for the model, and re-attaches after a reload. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_ai_runs.py` (new), `src/market_platform_foundation/intelligence/inference/run_progress.py` (new), `ui_api/{screener_ai,server}.py`, `intelligence/inference/{candidate_reduction,anthropic_synthesis}.py`, `platform/security/route_policy.py`, `ui/src/api/screenerAi.ts`, `ui/src/components/screener/ai/{useAiScreenerRuns.ts,AiRunProgress.tsx}`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `tests/support/controlled_ai_run.py`, `tests/acceptance/harness_{action_decision,reevaluation}.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_runs.py` (red-first, 14: stage order from a controlled slow engine, reservation reported only when held, refused reservation and cached answer claim no model call, join, re-attach, account isolation, stable failure codes, HTTP contract); `ui/src/api/screenerAi.test.ts` and `ui/src/components/screener/panels/AiScreenerPanel.test.tsx` |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1a; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md) |
+| **Notes** | No methodology change: the packet, prompt, model call, validation, cache identity, budget reservation and stored result are byte-for-byte what `ScreenerAiService.run` produced before; stage reporting only observes. The plan listed `EVIDENCE` before `NEWS`; the code reads news before taking the evidence cutoff, so stages are reported in that real order rather than reordering the work. Tracked runs are in-process: a server restart ends an in-flight run. The panel now keeps a result for the same Screener query across a list refresh (it used to withdraw it) and says the list has refreshed. Not yet done from Phase 1: the persistent strip, row badges and AI tab, run history, engine picker safety. Browser acceptance against the built UI was deferred until after the 2026-10-07 session close because a live session shares this machine. |
+
+---
+
 ## 2026-10-07 — OCT1-13 AI Screener packet bound on a full live window
 
 | Field | Value |
