@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — AI Screener results where the rows are (Phase 1c, part 1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | `ui/screener` (row marks, reason chips, run history), backend `ui_api/screener_ai_runs.py`, `local_state/action_decisions.py` |
+| **Summary** | Results lived only in the bottom panel, and "nothing selected" was one long paragraph of model prose. Screener rows now carry the latest pass's rank (`AI 1`) or a "shown, not selected" mark; an empty or thin selection is explained by short chips the server derives from the evidence packet (blocked evidence by capability and reason, no news story, insufficient evidence) with the model's own text behind a disclosure; and a run history lists stored passes with engine, result, tokens, model time and what each added or removed against the previous pass of the same query. |
+| **Key files** | `src/market_platform_foundation/ui_api/{screener_ai_runs,server}.py`, `src/market_platform_foundation/local_state/action_decisions.py` (`recent`), `ui/src/components/screener/ai/{aiRowMarks.tsx,AiRunInsights.tsx,AiRunInsights.test.tsx}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/components/screener/panels/{AiScreenerPanel.tsx,AiScreenerPanel.test.tsx,dock.css}`, `ui/src/api/screenerAi.ts`, `tests/platform/test_screener_ai_history.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_history.py` (8, written before the implementation: reasons with counts and named exceptions, bounded chips, summary intake, history order, diff only within one query, page bound, durable store order, read-only route policy); `AiRunInsights.test.tsx` (9: chip wording, history table, row marks including the expiry instant); `ScreenerPage.test.tsx` (+1) and `AiScreenerPanel.test.tsx` (+1) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1c; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#results-where-the-rows-are) |
+| **Notes** | No methodology change: reasons and history are read models over records the run already stored; nothing new reaches the model. The plan's "in the current shortlist" marker is shown as "shown to the AI Screener, not selected", because the shortlist itself belongs to Phase 3, which is not approved. History rows are ordered by when they were stored, not by a run's own clock. Not in this change: the AI tab beside Quick Preview in the right rail (the rest of Phase 1c). |
+
+---
+
 ## 2026-10-07 — AI engine picker safety (Phase 1d of the coverage and visibility plan)
 
 | Field | Value |

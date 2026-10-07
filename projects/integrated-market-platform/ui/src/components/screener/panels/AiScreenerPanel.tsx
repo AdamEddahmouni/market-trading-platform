@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
+import { AiReasonChips, AiRunHistory } from "../ai/AiRunInsights";
 import { EngineSwitchConfirm, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
 import { useAiScreenerRunResult, useAiScreenerRuns } from "../ai/useAiScreenerRuns";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
@@ -139,7 +140,8 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       <p className="ai-screener-meta">{value.state} · {value.provider_id} · {value.model_id} · prompt {value.prompt_id} v{value.prompt_version} · cutoff {value.decision_cutoff} · {value.cache === "HIT" ? "cache hit" : `${value.latency_ms ?? "—"} ms`}</p>
       {mine && <p className="ai-screener-meta">Run took {(mine.elapsed_ms / 1000).toFixed(1)}s on the server{value.result_set && screenerScope.result_set && value.result_set !== screenerScope.result_set ? " · the Screener list has refreshed since; this result is as of its cutoff" : ""}.</p>}
       {expired ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
-        {value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {value.limitations.join(" ")}</PanelMessage>}
+        {value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected.</PanelMessage>}
+        <AiReasonChips reasons={mine?.summary?.reasons ?? []} limitations={value.candidates.length === 0 ? value.limitations : []} />
         {value.candidates.map((selection) => {
           const lifecycle = lifecycles.data?.run?.run_id === value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
           const controls = <>
@@ -185,5 +187,6 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       </>}
     </section>}
     {lifecycles.data && <TradeLifecycleGroups list={lifecycles.data} runId={runId} />}
+    <AiRunHistory scope={screenerScope} />
   </PanelFrame>;
 }

@@ -175,6 +175,33 @@ describe("ScreenerPage", () => {
     expect(await screen.findByRole("region", { name: "Specialist panels" })).toBeInTheDocument();
   });
 
+  it("marks the rows of the latest pass for this query: the rank it selected and the rows it was shown", async () => {
+    const run = (search: string) => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper", state: "COMPLETED", joined: false,
+      scope: { universe: "US_EQUITIES", search, sort: "volume", descending: true, filters: [], view: "Overview", screen: "", result_set: null }, stage: null, stage_order: [], stages: [],
+      started_at: "2026-10-07T13:58:00Z", finished_at: "2026-10-07T13:58:12Z", elapsed_ms: 12_000, engine: { provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" },
+      timeout_seconds: 300, typical_latency_ms: null, typical_latency_samples: 0, intake_count: 2, sufficient_count: 1, packet_bytes: 1, result: null, error: null,
+      summary: { state: "CURRENT", reason: null, candidate_run_id: "run-1", selected: [{ instrument_id: "MSFT", rank: 1 }], intake: ["AAPL", "MSFT"], reasons: [],
+        provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", valid_until: "2099-01-01T00:00:00Z", limitations: [] } });
+    const status = (search: string) => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: run(search),
+      ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+    mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    mocks.aiRuns.mockResolvedValue(status(""));
+    const view = mount();
+    // Cells re-render as quotes and marks arrive, so each look reads the table afresh.
+    await waitFor(() => expect(screen.getByText("AI 1").closest('[role="row"]')).toHaveTextContent("MSFT"));
+    expect(screen.getByText("AI", { selector: ".ai-row-seen" }).closest('[role="row"]')).toHaveTextContent("AAPL");
+    expect(screen.getByText("AI 1")).toHaveAttribute("title", expect.stringContaining("A candidate for review, not an instruction to trade."));
+    view.unmount();
+    // A pass that answered a different Screener query marks nothing here.
+    mocks.aiRuns.mockResolvedValue(status("other"));
+    mount();
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(mocks.aiRuns.mock.calls.length).toBeGreaterThan(1));
+    await screen.findByText(/Idle · last pass/);
+    expect(screen.queryByText("AI 1")).toBeNull();
+    expect(document.querySelector(".ai-row-seen")).toBeNull();
+  });
+
   it("shows no AI strip for a universe that does not offer the AI Screener", async () => {
     mount();
     await screen.findByText("AAPL");

@@ -553,6 +553,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if run_id == "active":
                     self._send_json(ai_screener_runs().current(account))
                     return
+                if run_id == "history":
+                    # Stored candidate runs, newest first, with the change against the previous run of the same query.
+                    from ..local_state.action_decisions import action_repository
+                    from .screener_ai_runs import run_history
+
+                    try:
+                        self._send_json(run_history(action_repository(), limit=int((query.get("limit") or ["20"])[0])))
+                    except (ValueError, TypeError) as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc) if str(exc) == "INVALID_HISTORY_LIMIT" else "INVALID_HISTORY_LIMIT",
+                                              status=HTTPStatus.BAD_REQUEST)
+                    return
                 run = ai_screener_runs().read(account, run_id)
                 if run is None:
                     self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",

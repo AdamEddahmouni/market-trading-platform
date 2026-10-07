@@ -47,6 +47,16 @@ class ActionDecisionRepository:
                 with self.connection.transaction(): insert()
             else: insert()
 
+    def recent(self, kind, limit):
+        """The newest records of one kind, newest first. Bounded read; nothing is modified."""
+        if kind not in ('candidate_run','decision') or not isinstance(limit, int) or not 1 <= limit <= 200:
+            raise ValueError('ACTION_RECORD_READ_INVALID')
+        with self.lock:
+            if self.connection:
+                rows = self.connection.execute('SELECT payload FROM action_decision_records WHERE kind=? ORDER BY rowid DESC LIMIT ?', (kind,limit)).fetchall()
+                return [json.loads(row[0]) for row in rows]
+            return [json.loads(v) for (k,_),v in reversed(list(self._memory.items())) if k==kind][:limit]
+
     def evaluation_decisions(self, account_id, cutoff, *, limit=10001):
         """Bounded accounting read; compare instants, never ISO lexical spelling."""
         from datetime import datetime
