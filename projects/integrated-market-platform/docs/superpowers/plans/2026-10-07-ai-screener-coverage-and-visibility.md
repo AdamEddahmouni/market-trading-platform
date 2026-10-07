@@ -70,7 +70,7 @@ AI  ○ Idle · last pass 09:58 · 0 of 20 selected · next automatic pass in 2:
 
 - States: idle, running (with stage), waiting for budget, blocked (with the reason in plain words), loop stopped.
 - Countdown to the next automatic pass and to evidence expiry.
-- Budget meter in runs-left terms, not just tokens.
+- Budget shown per run (this run's cap and what it used) with the daily backstop as a secondary figure.
 - One click opens the detail view.
 
 ### 1c. Results where the rows are
@@ -115,7 +115,7 @@ This changes the model's input, so it starts a new evidence series (see Governan
 
 - Extend the existing loop, not a second scheduler: its intake becomes the shortlist instead of the first 20 rows of a page scope.
 - Shortlist larger than one packet: batches, then one final pass over the batch winners. Material-change gating already skips the model when nothing moved.
-- Budget: a full pass on Haiku was 43,638 tokens. The 200,000-token day allows about four. *Owner decision: the daily budget.* For scale, at Haiku list prices as I recall them that run was about five cents, so a budget ten times larger is a few dollars a day; verify current pricing before choosing. Prompt caching is not used today and would cut the repeated prompt and schema cost.
+- Budget (owner direction, 2026-10-07): **cap each run, not the day.** Every run type gets its own explicit token cap (candidate reduction, Action Decision, reevaluation), refused before the call if the worst case would exceed it. Today the per-run size is only implied by the 96 KB packet and the output limit (about 38,700 tokens worst case; 43,638 used on Haiku), while the 200,000-token day (`IMP_SYNTHESIS_DAILY_TOKENS`, `IMP_SYNTHESIS_DAILY_REQUESTS`) is what actually stopped the session after four runs. The daily figure becomes a high runaway backstop for the scheduled loop rather than the working limit, alongside the existing per-cycle, hourly and daily call caps. The owner is willing to raise it. Prompt caching is not used today and would cut the repeated prompt and schema cost.
 - Local model: not used for batch passes. Keep it selectable only where the packet fits its context.
 
 ## Phase 4: smaller quality-of-life items
@@ -166,7 +166,7 @@ Phases 2 and 3 change methodology. Receipts and cycle records carry a methodolog
 |---|----------|----------------|
 | 1 | What defines the shortlist | The operator's saved screen, top N by its sort; no new scoring formula |
 | 2 | Shortlist size | About 40, bounded by the OpenD allowance after held positions and the page window |
-| 3 | Daily model budget | Raise it deliberately once Phase 2 shows the packet is worth sending; keep 200k until then |
+| 3 | Model budget | Decided: per-run token caps are the working limit. Still open: the cap per run type and the size of the daily backstop; propose the current worst case plus headroom per run, and a backstop sized from the loop's worst-case call projection |
 | 4 | Derive change % and volume ratios from Moomoo snapshots | Yes |
 | 5 | Local model for batch passes | No; hosted model only, local stays for small single-candidate work |
 | 6 | Automatic passes start on their own at 09:30 | No; the operator presses Start once per session |
