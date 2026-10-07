@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +7,10 @@ import { ScreenerPage, fieldFor } from "./ScreenerPage";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
+  aiRuns: vi.fn(), aiLoop: vi.fn(),
 }));
+vi.mock("../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerAi")>(), fetchAiScreenerRuns: mocks.aiRuns }));
+vi.mock("../../api/screenerReevaluation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerReevaluation")>(), reevaluationStatus: mocks.aiLoop }));
 vi.mock("../../api/screener", () => ({
   fetchScreener: mocks.fetch,
   fetchScreenerConfig: mocks.config,
@@ -148,7 +151,34 @@ describe("ScreenerPage", () => {
     }));
     mocks.window.mockReset().mockResolvedValue({ quotes: {}, active: 0, cap: 32 });
     mocks.release.mockReset().mockResolvedValue({ released: true });
+    mocks.aiRuns.mockReset().mockRejectedValue(new Error("AI status not under test"));
+    mocks.aiLoop.mockReset().mockRejectedValue(new Error("AI status not under test"));
     vi.stubGlobal("crypto", { randomUUID: () => "abc-123" });
+  });
+
+  it("keeps the AI status strip under the header, fed by the current scope, and opens the AI Screener from it", async () => {
+    mocks.aiRuns.mockResolvedValue({ schema_version: "screener-ai-screener-runs/1.1.0", state: "IDLE", budget: null, active: null, latest: null,
+      ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+    mocks.aiLoop.mockResolvedValue({ schema_version: "reevaluation-status/1.0.0", worker_state: "NOT_CONFIGURED", worker_label: "Not configured",
+      engine: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", budget: null }, durability: "DURABLE", paper_execution: "MANUAL_ONLY" });
+    mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    mount();
+    await screen.findByText("AAPL");
+    const strip = await screen.findByRole("region", { name: "AI status" });
+    await waitFor(() => expect(strip).toHaveTextContent("Idle · no pass since the server started · automatic passes not configured"));
+    expect(strip).toHaveTextContent("Local model · no API cost");
+    // Always visible: directly under the header, outside the dock, with no panel open.
+    expect(document.querySelector(".screener-topline")?.nextElementSibling).toBe(strip);
+    expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull();
+    expect(within(strip).getByRole("button", { name: "Run now" })).toBeEnabled();
+    fireEvent.click(within(strip).getByRole("button", { name: "Open" }));
+    expect(await screen.findByRole("region", { name: "Specialist panels" })).toBeInTheDocument();
+  });
+
+  it("shows no AI strip for a universe that does not offer the AI Screener", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(screen.queryByRole("region", { name: "AI status" })).toBeNull());
   });
 
   it("renders real rows, unavailable values, direction, and canonical navigation", async () => {

@@ -17,6 +17,9 @@ def start_controlled_run(account_id, scope, build, *, engine=None):
         def engine(self):
             return dict(dict(provider_id='controlled.fixture', model_id='controlled', runtime='LOCAL_MODEL'), **(engine or {}), timeout_seconds=45)
 
+        def ai_status(self):
+            return dict(self.engine(), state='AVAILABLE', reason=None, budget=None)
+
         def run(self, body):
             return build(body)
 

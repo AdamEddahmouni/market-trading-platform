@@ -189,6 +189,10 @@ class ScreenerAiService:
     def _ai_status(self) -> dict[str, Any]:
         return self._news_service().ai_status()
 
+    def ai_status(self) -> dict[str, Any]:
+        """Engine state and shared budget as the News service reports them. Calls no model."""
+        return self._ai_status()
+
     def engine(self) -> dict[str, Any]:
         """The engine the next run would use and its request timeout. Calls no model."""
         reducer = self._provider_reducer()

@@ -44,6 +44,19 @@ class SlowProvider(CandidateProvider):
         return super().infer(packet, rendered_prompt=rendered_prompt, config=config)
 
 
+class StatusNews(News):
+    """News service stand-in whose AI status follows the engine and its budget, as the production one does."""
+
+    def ai_status(self):
+        if self.provider is None:
+            return {"state": "NOT_CONFIGURED", "reason": "ANTHROPIC_API_KEY_NOT_SET", "provider_id": None, "model_id": None, "runtime": None}
+        budget = self.provider.budget_status() if hasattr(self.provider, "budget_status") else None
+        spent = budget is not None and (budget["requests"] >= budget["max_requests"] or budget["tokens"] >= budget["max_tokens"])
+        return {"state": "UNAVAILABLE" if spent else "AVAILABLE", "reason": "SYNTHESIS_DAILY_BUDGET_EXHAUSTED" if spent else None,
+                "provider_id": self.provider.provider_id, "model_id": self.provider.model_id,
+                "runtime": "PAID_API" if budget is not None else "LOCAL_MODEL", "budget": budget, "engines": []}
+
+
 def settled(runs: AiScreenerRuns, account: str, run_id: str) -> dict:
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline:
@@ -163,7 +176,8 @@ class AiScreenerRunTests(unittest.TestCase):
     def test_a_reloaded_page_reattaches_to_the_active_run_then_to_the_latest_result(self):
         provider = SlowProvider()
         runs = self.runs_for(provider)
-        self.assertEqual(runs.current("PAPER-1"), {"schema_version": "screener-ai-screener-runs/1.0.0", "active": None, "latest": None})
+        empty = runs.current("PAPER-1")
+        self.assertEqual((empty["active"], empty["latest"]), (None, None))
         started = runs.start("PAPER-1", SCOPE)
         self.assertTrue(provider.entered.wait(10))
 
@@ -196,6 +210,67 @@ class AiScreenerRunTests(unittest.TestCase):
         self.assertEqual(second["typical_latency_ms"], 1)
         done = settled(runs, "PAPER-1", second["run_id"])
         self.assertEqual(done["typical_latency_samples"], 1)
+
+    def status_runs(self, provider) -> AiScreenerRuns:
+        service = ScreenerAiService(reader=self.reader, news=StatusNews(provider), clock=lambda: NOW)
+        return AiScreenerRuns(service, clock=lambda: NOW, monotonic=lambda: self.ticks[0])
+
+    def test_status_states_the_budget_in_runs_left_once_a_run_size_has_been_measured(self):
+        runs = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, max_requests=30, max_tokens=200_000, clock=lambda: NOW)))
+
+        before = runs.current("PAPER-1")
+        self.assertEqual(before["schema_version"], "screener-ai-screener-runs/1.1.0")
+        self.assertEqual(before["state"], "IDLE")
+        self.assertEqual(before["ai"], {"state": "AVAILABLE", "reason": None, "provider_id": "inference.test",
+                                        "model_id": "candidate-reduction.v1", "runtime": "PAID_API"})
+        # No run has reserved anything yet, so the size of a run is not known and no count is invented.
+        self.assertEqual(before["budget"], {"day": "2026-10-02", "tokens": 0, "max_tokens": 200_000, "requests": 0, "max_requests": 30,
+                                            "tokens_left": 200_000, "requests_left": 30, "per_run_tokens": None, "per_run_basis": None,
+                                            "runs_left": None, "resets_at": "2026-10-03T00:00:00Z"})
+
+        done = settled(runs, "PAPER-1", runs.start("PAPER-1", SCOPE)["run_id"])
+        reserved = next(item for item in done["stages"] if item["stage"] == "BUDGET_RESERVED")["detail"]["reserved_tokens"]
+        after = runs.current("PAPER-1")["budget"]
+
+        self.assertEqual((after["tokens"], after["requests"]), (150, 1))
+        self.assertEqual((after["per_run_tokens"], after["per_run_basis"]), (reserved, "LAST_RESERVATION"))
+        self.assertEqual(after["runs_left"], min(29, (200_000 - 150) // reserved))
+
+    def test_status_waits_for_budget_when_another_run_of_the_measured_size_cannot_fit(self):
+        sizing = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, clock=lambda: NOW)))
+        reserved = sizing.current("PAPER-1")["budget"]["per_run_tokens"] if settled(sizing, "PAPER-1", sizing.start("PAPER-1", SCOPE)["run_id"]) else None
+        runs = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, max_tokens=reserved + 100, clock=lambda: NOW)))
+        settled(runs, "PAPER-1", runs.start("PAPER-1", SCOPE)["run_id"])
+
+        current = runs.current("PAPER-1")
+
+        self.assertEqual(current["budget"]["runs_left"], 0)
+        self.assertEqual(current["state"], "WAITING_FOR_BUDGET")
+
+    def test_status_names_an_exhausted_budget_an_unconfigured_engine_and_any_other_block(self):
+        spent = self.status_runs(BudgetedProvider(CandidateProvider(), DailyBudget(None, max_requests=0, clock=lambda: NOW)))
+        self.assertEqual(spent.current("PAPER-1")["state"], "WAITING_FOR_BUDGET")
+
+        missing = self.status_runs(None).current("PAPER-1")
+        self.assertEqual((missing["state"], missing["ai"]["reason"], missing["budget"]), ("NOT_CONFIGURED", "ANTHROPIC_API_KEY_NOT_SET", None))
+
+        blocked = self.status_runs(CandidateProvider())
+        blocked._fixed_service._news.ai_status = lambda: {"state": "UNAVAILABLE", "reason": "LOCAL_MODEL_UNREACHABLE", "provider_id": "local",
+                                                         "model_id": "small", "runtime": "LOCAL_MODEL", "budget": None}
+        self.assertEqual((blocked.current("PAPER-1")["state"], blocked.current("PAPER-1")["ai"]["reason"]), ("BLOCKED", "LOCAL_MODEL_UNREACHABLE"))
+
+    def test_status_is_running_while_a_run_is_active_and_a_local_engine_has_no_budget(self):
+        provider = SlowProvider()
+        runs = self.status_runs(provider)
+        started = runs.start("PAPER-1", SCOPE)
+        self.assertTrue(provider.entered.wait(10))
+
+        current = runs.current("PAPER-1")
+
+        self.assertEqual((current["state"], current["budget"], current["ai"]["runtime"]), ("RUNNING", None, "LOCAL_MODEL"))
+        provider.release.set()
+        settled(runs, "PAPER-1", started["run_id"])
+        self.assertEqual(runs.current("PAPER-1")["state"], "IDLE")
 
     def test_an_invalid_scope_fails_before_any_run_exists(self):
         runs = self.runs_for(CandidateProvider())

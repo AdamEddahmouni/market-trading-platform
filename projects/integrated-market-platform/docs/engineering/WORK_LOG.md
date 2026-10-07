@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — AI status strip on the Main Screener (Phase 1b of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | `ui/screener` (`ai/AiStatusStrip.tsx`, `ScreenerPage.tsx`), backend `ui_api/screener_ai_runs.py` |
+| **Summary** | The AI Screener's state was only visible inside a bottom dock panel. A persistent strip now sits under the Screener header: idle, running (stage, measured time, model, candidate count, typical latency and timeout), waiting for budget, blocked or not configured (reason in plain words with the code), the last pass with its selection count and an evidence-expiry countdown, the scheduled loop's next cycle, and the shared budget in runs-left terms. `GET /screener/ai-screener/runs/active` (now `1.1.0`) adds `state`, `ai` and `budget` so the strip and the panel share one poll. |
+| **Key files** | `ui/src/components/screener/ai/{AiStatusStrip.tsx,AiStatusStrip.test.tsx,useAiScreenerRuns.ts}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/api/screenerAi.ts`, `src/market_platform_foundation/ui_api/{screener_ai_runs,screener_ai}.py`, `tests/platform/test_screener_ai_runs.py`, `tests/support/controlled_ai_run.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_runs.py` (red-first, +4: budget in runs-left terms only after a reservation was held, waiting for budget, exhausted / not configured / blocked, running and local engine); `ui/src/components/screener/ai/AiStatusStrip.test.tsx` (13, every strip state); `ScreenerPage.test.tsx` (+2: strip placement and Open, hidden where the universe has no AI Screener) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1b; [AI Screener run status](#2026-10-07--ai-screener-run-status-phase-1a-of-the-coverage-and-visibility-plan) |
+| **Notes** | No methodology change and no new model path. Runs left are counted from the last reservation actually held for the model; before any run has reserved tokens the strip shows requests left and says the run size is not yet measured. "Next automatic cycle" is the loop's next scheduled cycle; a cycle re-runs the AI Screener only when the candidate list changed materially. The strip shows no control that cancels a model call in flight, because a blocking call cannot be cancelled truthfully. Not yet done from Phase 1: row badges, the AI tab in the right rail, run history, engine picker safety. Local note: `Participants.test.tsx` "opens Institutional & Whale" timed out on this machine with and without this change while a live session shared it; it is left to CI. |
+
+---
+
 ## 2026-10-07 — Discovery responses no longer trip the secret-leak guard; two browser acceptance scripts repaired
 
 | Field | Value |

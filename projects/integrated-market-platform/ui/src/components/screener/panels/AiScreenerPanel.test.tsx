@@ -63,7 +63,8 @@ beforeEach(() => {
     if (run.state === "RUNNING") server.active = run; else finish(run);
     return run;
   });
-  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.0.0", active: server.active, latest: server.latest }));
+  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.1.0", state: server.active ? "RUNNING" : "IDLE",
+    ai: { state: "AVAILABLE", reason: null, provider_id: "inference.test", model_id: "candidate.v1", runtime: "LOCAL_MODEL" }, budget: null, active: server.active, latest: server.latest }));
   mocks.detail.mockImplementation(async (id: string) => server.results.get(id) ?? Promise.reject(new Error("SCREENER_AI_RUN_UNKNOWN")));
 });
 afterEach(() => vi.clearAllMocks());
