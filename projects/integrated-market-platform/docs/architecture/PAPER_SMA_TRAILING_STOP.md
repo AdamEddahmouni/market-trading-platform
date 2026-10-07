@@ -270,3 +270,35 @@ Results and limits: [OCT1-08 report](../superpowers/plans/2026-10-06-oct1-08-sma
 - An EXIT decision needs admissible candidate evidence for the instrument; the
   breach itself is recorded on the stop state regardless.
 - No holiday calendar: bar freshness is the existing completed-bar policy.
+
+
+## Position identity repair (2026-10-07)
+
+Stop state `sma-trailing-stop-state/1.1.0` uses identity contract
+`sma-position-epoch/2.0.0`. Portfolio stop `position_epoch_id` equals the
+canonical OCT1-10 trade episode ID: account + experiment + canonical
+instrument + opening fill. Legacy instrument-scoped ledgers use session as
+namespace. Instrument-scoped PositionChanged transitions, ordered by ledger
+sequence, retain identity for partial closes and scale-in and replace it on
+flat/reopen or reversal. Untagged legacy rows require an exact FillRecorded
+instrument reference; unknown lineage fails closed. Portfolio positions never
+fall back to a monitor-generated episode.
+
+Read-only status/action facts verify the current episode, so a new opening
+cannot display or act on the old stop before evaluation. New state, stop
+events and deterministic EXIT carry canonical lineage. Lifecycle state/history
+lookup verifies account, instrument and episode; IDs remain opaque strings.
+
+A v1 persisted stop is projected compatibly only when its old hash matches the
+corrected current opening-fill lineage. Evaluation migrates the payload,
+preserving stop ID, level, breach and historical references. Immutable events,
+decisions and historical acceptance receipts remain unchanged. Ambiguous v1
+state returns `BLOCKED / LEGACY_POSITION_EPOCH_AMBIGUOUS`, exposes no actionable
+stop, and produces no update or EXIT until explicit operator resolution. The
+pre-existing no-fill fallback is confined to non-portfolio fixture/legacy
+projections and has versioned identity semantics.
+
+Formula/policy version, completed-bar timing, monotonic clamps, deterministic
+safety precedence and explicit Paper handoff remain unchanged. See the
+[repair report](../superpowers/plans/2026-10-07-sma-position-epoch-scoping.md)
+for red regression, controlled two-position and restart evidence.

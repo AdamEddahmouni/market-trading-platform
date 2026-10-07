@@ -15,7 +15,8 @@ from decimal import ROUND_HALF_EVEN, Decimal
 from ..intelligence.inference.hashing import input_hash_from_dict
 
 POLICY_SCHEMA = 'sma-trailing-stop-policy/1.0.0'
-STATE_SCHEMA = 'sma-trailing-stop-state/1.0.0'
+STATE_SCHEMA = 'sma-trailing-stop-state/1.1.0'
+EPOCH_SCHEMA = 'sma-position-epoch/2.0.0'
 METHOD = 'SMA_TRAILING'
 BREACH_CONDITION = 'SMA_TRAILING_STOP_BREACHED'
 EVALUATION_FILL_MODEL = 'stop-exit-bar-conservative/1.0.0'
@@ -322,6 +323,8 @@ def close_state(state, reason, at_ns, events=None):
 def _event(state, kind, at_ns, **extra):
     return dict(kind=kind, at_ns=at_ns, stop_state_id=state['stop_state_id'], policy_id=state['policy_id'],
                 position_epoch_id=state['position_epoch_id'], side=state['side'], status=state['status'],
+                account_id=state['account_id'], session_id=state['session_id'], instrument_id=state['instrument_id'],
+                experiment_id=state.get('experiment_id'), episode_id=state.get('episode_id'),
                 sma_value=state['sma_value'], candidate_stop=state['candidate_stop'], active_stop=state['active_stop'],
                 previous_stop=state['previous_stop'], bar_id=state['bar_id'], reason_codes=list(state['reason_codes']),
                 trigger_price=state.get('trigger_price'), **extra)
@@ -337,18 +340,35 @@ def loosens(side, previous, new):
     return new < previous if side == 'LONG' else new > previous
 
 
-def position_epoch(events, *, account_id, session_id, instrument_id, side):
-    """Deterministic position episode from the ledger's own fill lineage.
+def position_epoch(events, *, account_id, session_id, instrument_id, side, experiment_id=None):
+    """Instrument-scoped opening fill, using the canonical lifecycle identity.
 
-    The epoch starts at the fill that took the net position from flat (or the
-    opposite side) to this side. Partial reductions keep it; flat or reversal
-    ends it. Returns None when the ledger carries no such lineage.
+    PositionChanged rows from legacy ledgers may omit instrument_id. Only the
+    referenced FillRecorded row may supply it; unknown lineage fails closed.
+    Ledger sequence, rather than event time or input order, orders transitions.
     """
-    opening, previous = None, 0
+    from ..intelligence.inference.trade_lifecycle import episode_identity
+    fills = {}
     for item in events:
+        if item.get('event_type') == 'FillRecorded':
+            fill = (item.get('payload') or {}).get('fill') or {}
+            key = fill.get('fill_id')
+            if key in fills and fills[key] != fill.get('instrument_id'):
+                raise ValueError('POSITION_FILL_LINEAGE_AMBIGUOUS')
+            fills[key] = fill.get('instrument_id')
+    opening, previous = None, 0
+    for item in sorted(events, key=lambda row: row.get('sequence', -1)):
         if item.get('event_type') != 'PositionChanged':
             continue
-        shares = int((item.get('payload') or {}).get('position_shares', 0))
+        payload = item.get('payload') or {}
+        instrument = payload.get('instrument_id') or fills.get(payload.get('fill_id'))
+        if instrument is None:
+            raise ValueError('POSITION_FILL_LINEAGE_UNAVAILABLE')
+        if instrument != instrument_id:
+            continue
+        if payload.get('fill_id') in fills and fills[payload['fill_id']] != instrument:
+            raise ValueError('POSITION_FILL_LINEAGE_AMBIGUOUS')
+        shares = int(payload.get('position_shares', 0))
         if shares == 0:
             opening = None
         elif previous == 0 or (previous > 0) != (shares > 0):
@@ -356,7 +376,12 @@ def position_epoch(events, *, account_id, session_id, instrument_id, side):
         previous = shares
     if opening is None or (previous > 0) != (side == 'LONG'):
         return None
-    lineage = dict(account=account_id, session=session_id, instrument=instrument_id, side=side,
-                   fill_id=opening['payload'].get('fill_id'), sequence=opening.get('sequence'))
-    return dict(position_epoch_id='PE-' + input_hash_from_dict(lineage)[:32], epoch_basis='LEDGER_OPENING_FILL',
-                opened_at_ns=opening.get('event_time'), opening_fill_id=lineage['fill_id'])
+    fill_id = opening['payload'].get('fill_id')
+    if not fill_id:
+        raise ValueError('POSITION_FILL_LINEAGE_UNAVAILABLE')
+    legacy = dict(account=account_id, session=session_id, instrument=instrument_id, side=side,
+                  fill_id=fill_id, sequence=opening.get('sequence'))
+    return dict(position_epoch_id=episode_identity(account_id=account_id, experiment_id=experiment_id or session_id,
+                                                  instrument_id=instrument_id, opening_fill_id=fill_id),
+                epoch_schema=EPOCH_SCHEMA, epoch_basis='LEDGER_OPENING_FILL', opened_at_ns=opening.get('event_time'),
+                opening_fill_id=fill_id, legacy_position_epoch_id='PE-' + input_hash_from_dict(legacy)[:32])

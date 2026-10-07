@@ -35,6 +35,7 @@ MINUTE = 60_000_000_000
 
 
 class Handler(ExperimentHandler):
+    instrument_closes, instrument_quotes = {}, {}
     offset, cutoff, anchor, closes, quote, runs = 0.0, 0.0, None, [], 150.0, 0
 
     # --- one controlled clock for decisions, stops, fills and marks ------------------
@@ -87,19 +88,19 @@ class Handler(ExperimentHandler):
         if not isinstance(repository, InMemoryIntelligenceRepository):
             repository = cls.store.strategy_repository = InMemoryIntelligenceRepository()
         repository.put_opportunity(OpportunityV1(
-            f'controlled-opportunity-{cls.runs}', '1', IntelligenceScope(tuple(instruments)), int((cls.cutoff - 1) * 1e9),
+            'controlled-opportunity-' + identity, '1', IntelligenceScope(tuple(instruments)), int((cls.cutoff - 1) * 1e9),
             QualitySummary('GOOD'), side='LONG', valid_until_ns=int((cls.cutoff + 600) * 1e9)))
 
     # --- controlled stop inputs ---------------------------------------------------------
     @classmethod
     def read_bars(cls, instrument, policy, scale):
         bars = [dict(bar_id=f'B{i}', event_time=cls.anchor + i * MINUTE, available_time=cls.anchor + (i + 1) * MINUTE, open=c, high=c, low=c, close=c)
-                for i, c in enumerate(cls.closes)] if cls.anchor is not None else []
+                for i, c in enumerate(cls.instrument_closes.get(instrument, cls.closes))] if cls.anchor is not None else []
         return dict(state='CURRENT', reason=None, source='CONTROLLED_FIXTURE', bars=bars)
 
     @classmethod
     def read_quote(cls, instrument, scale):
-        return dict(admissible=True, price_minor=int(round(cls.quote * 100)), as_of_ns=int(cls.cutoff * 1e9), source='CONTROLLED_FIXTURE',
+        return dict(admissible=True, price_minor=int(round(cls.instrument_quotes.get(instrument, cls.quote) * 100)), as_of_ns=int(cls.cutoff * 1e9), source='CONTROLLED_FIXTURE',
                     evidence_ref='q', reason=None)
 
     def stop(self, query):
@@ -107,14 +108,15 @@ class Handler(ExperimentHandler):
         if operation == 'configure':
             Handler.advance()
             Handler.anchor, Handler.closes = int(Handler.cutoff * 1e9), []
+            Handler.instrument_closes, Handler.instrument_quotes = {}, {}
             self.stops.configure(dict(enabled=True, sma_window_bars=int(query.get('window', 2))))
         elif operation == 'bar':
             # One more completed bar: the clock moves past it, as it does for a monitored position.
-            Handler.closes.append(int(round(float(query['close']) * 100)))
+            Handler.instrument_closes.setdefault(instrument, []).append(int(round(float(query['close']) * 100)))
             Handler.advance(60)
             self.stops.evaluate(instrument)
         elif operation == 'quote':
-            Handler.quote = float(query['price'])
+            Handler.instrument_quotes[instrument] = float(query['price'])
             Handler.feed.prices[instrument] = query['price']
             Handler.advance(1)
             # The production "Evaluate Stop Now" path: on a breach it appends the deterministic EXIT, never an order.
@@ -125,7 +127,7 @@ class Handler(ExperimentHandler):
 
     def lifecycle_metrics(self):
         account = self.store.paper_ledger.paper_account_id
-        return dict(self.metrics(), run_id=self.run['run_id'], offset_seconds=Handler.offset, bars=len(Handler.closes),
+        return dict(self.metrics(), run_id=self.run['run_id'], offset_seconds=Handler.offset, bars=sum(len(rows) for rows in Handler.instrument_closes.values()) or len(Handler.closes),
                     stop_events=self.stops.repository.event_count(account, 'AAPL'), decisions=len(self.repo.history('AAPL')),
                     trades=len(self.store.paper_ledger.project_trades()) if self.store.paper_ledger.is_portfolio_scoped() else 0)
 
@@ -166,7 +168,7 @@ if __name__ == '__main__':
     Handler.repo = ExperimentHandler.repo = ActionHandler.repo = action_repository()
     Handler.model = ExperimentHandler.model = ActionHandler.model = FixtureModel()
     ai = SimpleNamespace(_news_service=lambda: SimpleNamespace(synthesis_provider=lambda: Handler.model), _query=lambda body: body,
-                         _packet=lambda scope, **_: (scope, [Handler.packet('AAPL', 'EXIT')], iso(Handler.cutoff), {}))
+                         _packet=lambda scope, **_: (scope, [Handler.packet(i, 'EXIT') for i in ('AAPL', 'NVDA')], iso(Handler.cutoff), {}))
     clock = lambda: Handler.cutoff
     Handler.service = ExperimentHandler.service = ActionHandler.service = ScreenerActionService(store, repository=Handler.repo, ai=ai, clock=clock)
     store._action_decision_service = Handler.service
@@ -176,6 +178,9 @@ if __name__ == '__main__':
     store._sma_stop_service = Handler.stops
     # The projection reads a moving clock, so decision validity and mark age are judged honestly.
     store._trade_lifecycle_service = TradeLifecycleService(store, clock=lambda: time.time() + Handler.offset)
+    # Preserve the controlled clock's causal order across a process restart.
+    Handler.cutoff = max([Handler.cutoff, *(float(s.get('last_evaluated_at') or 0) / 1e9
+                         for s in Handler.stops.repository.open_states(store.paper_ledger.paper_account_id))])
     Handler.configure('NO_ACTION')
     port = int(os.environ.get('IMP_E2E_API_PORT', '18810'))
     if port in (8766, 5173, 11111, 18909):

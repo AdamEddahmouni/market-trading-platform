@@ -235,7 +235,7 @@ class TemporalTests(unittest.TestCase):
 class EpochTests(unittest.TestCase):
     @staticmethod
     def events(*shares):
-        return [dict(event_type='PositionChanged', sequence=i, event_time=T0_NS + i, payload=dict(position_shares=s, fill_id=f'F{i}'))
+        return [dict(event_type='PositionChanged', sequence=i, event_time=T0_NS + i, payload=dict(instrument_id=IID, position_shares=s, fill_id=f'F{i}'))
                 for i, s in enumerate(shares)]
 
     def epoch(self, shares, side='LONG'):

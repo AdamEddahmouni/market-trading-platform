@@ -16,7 +16,7 @@ from ..intelligence.inference.hashing import input_hash_from_dict
 from ..local_state.sma_trailing_stop import sma_stop_repository
 from ..market_data.freshness_contract import timestamp
 from ..risk.sma_trailing_stop import (
-    BREACH_CONDITION, INTERVAL_SECONDS, METHOD, REFERENCE_TEST_CONFIG, advance, build_policy, check_quote_trigger,
+    BREACH_CONDITION, EPOCH_SCHEMA, STATE_SCHEMA, INTERVAL_SECONDS, METHOD, REFERENCE_TEST_CONFIG, advance, build_policy, check_quote_trigger,
     close_state, event, initial_state, mark_stale, minor_to_display, normalize_bars, position_epoch, price_to_minor,
 )
 
@@ -114,15 +114,43 @@ class SmaStopService:
     def _epoch(self, instrument, side, watch):
         ledger = self.store.paper_ledger
         found = position_epoch(ledger.events, account_id=ledger.paper_account_id, session_id=ledger.session_id,
-                               instrument_id=instrument, side=side)
+                               instrument_id=instrument, side=side, experiment_id=ledger.experiment_id)
         if found:
             return found
+        if ledger.is_portfolio_scoped():
+            raise ValueError('POSITION_FILL_LINEAGE_UNAVAILABLE')
         # A projected position with no fill lineage (restored or fixture ledgers): the
         # episode is counted from the flat/reversal observations this monitor made.
         lineage = dict(account=ledger.paper_account_id, session=ledger.session_id, instrument=instrument, side=side,
-                       generation=watch['generation'])
+                       generation=watch['generation'], epoch_schema=EPOCH_SCHEMA)
         return dict(position_epoch_id='PE-' + input_hash_from_dict(lineage)[:32], epoch_basis='LEDGER_POSITION_WITHOUT_FILL_LINEAGE',
-                    opened_at_ns=None, opening_fill_id=None)
+                    opened_at_ns=None, opening_fill_id=None, epoch_schema=EPOCH_SCHEMA, legacy_position_epoch_id=None)
+
+    def _validated_state(self, instrument, state):
+        """Read compatibility without mutating history or guessing an episode."""
+        position = self._position(instrument)
+        if position is None or position['state'] == 'FLAT':
+            return None, None
+        ledger = self.store.paper_ledger
+        if state and state.get('session_id') != ledger.session_id:
+            return None, 'POSITION_SCOPE_CHANGED'
+        watch = self.repository.get('watch', self._account() + '|' + instrument) or dict(generation=0)
+        try:
+            epoch = self._epoch(instrument, position['state'], watch)
+        except ValueError as exc:
+            return None, str(exc)
+        if state is None:
+            return None, None
+        if state.get('epoch_schema') != EPOCH_SCHEMA:
+            if state['position_epoch_id'] != epoch.get('legacy_position_epoch_id') or state['side'] != position['state']:
+                return None, 'LEGACY_POSITION_EPOCH_AMBIGUOUS'
+            return dict(state, schema_version=STATE_SCHEMA, epoch_schema=EPOCH_SCHEMA,
+                        position_epoch_id=epoch['position_epoch_id'], episode_id=epoch['position_epoch_id'],
+                        opening_fill_id=epoch['opening_fill_id'], experiment_id=ledger.experiment_id,
+                        legacy_position_epoch_id=state['position_epoch_id']), None
+        if state.get('experiment_id') != ledger.experiment_id or state['position_epoch_id'] != epoch['position_epoch_id']:
+            return None, 'POSITION_EPOCH_CHANGED'
+        return state, None
 
     # --- operator configuration ---------------------------------------------------
     def configure(self, body):
@@ -205,7 +233,15 @@ class SmaStopService:
                     self._save(dict(close_state(state, 'POSITION_FLAT', now_ns, events), last_evaluated_at=now_ns), events)
                 self.repository.put('watch', watch_id, watch, updated_at=now_ns)
                 return self.status(instrument)
-            epoch = self._epoch(instrument, position['state'], watch)
+            try:
+                epoch = self._epoch(instrument, position['state'], watch)
+            except ValueError:
+                return self.status(instrument)
+            compatible, reason = self._validated_state(instrument, state)
+            if reason == 'LEGACY_POSITION_EPOCH_AMBIGUOUS':
+                return self.status(instrument)
+            if compatible:
+                state = compatible
             if state and (state['position_epoch_id'] != epoch['position_epoch_id'] or state['side'] != position['state'] or state['policy_id'] != policy['policy_id']):
                 reason = 'POSITION_REVERSED' if state['side'] != position['state'] else \
                     'POSITION_EPOCH_CHANGED' if state['position_epoch_id'] != epoch['position_epoch_id'] else 'POLICY_CHANGED'
@@ -220,7 +256,9 @@ class SmaStopService:
                                       position_epoch_id=epoch['position_epoch_id'], epoch_basis=epoch['epoch_basis'],
                                       side=position['state'], quantity=position['quantity'], policy=policy, activated_at=now_ns,
                                       activation_reason='POSITION_OPENED' if watched else 'LATE_ACTIVATION', price_scale=scale)
-                prior = self.repository.latest_state(account, instrument, open_only=False)
+                state.update(epoch_schema=EPOCH_SCHEMA, episode_id=epoch['position_epoch_id'],
+                             opening_fill_id=epoch['opening_fill_id'], experiment_id=ledger.experiment_id)
+                prior, _ = self._validated_state(instrument, self.repository.latest_state(account, instrument, open_only=False))
                 if prior and prior['position_epoch_id'] == epoch['position_epoch_id'] and prior['side'] == state['side'] \
                         and prior['active_stop'] is not None and prior.get('closed_reason') != 'POSITION_FLAT':
                     # Disable/re-enable on the same position cannot be used to loosen protection.
@@ -267,7 +305,7 @@ class SmaStopService:
         config, _ = self._config()
         if not config or not config['enabled']:
             return None
-        state = self.repository.latest_state(self._account(), instrument)
+        state, _ = self._validated_state(instrument, self.repository.latest_state(self._account(), instrument))
         if state is None:
             return None
         scale = state['price_scale']
@@ -275,7 +313,8 @@ class SmaStopService:
                      stop_state_id=state['stop_state_id'], position_epoch_id=state['position_epoch_id'],
                      sma_window_bars=state['sma_window_bars'], bar_interval=state['bar_interval'],
                      active_stop=minor_to_display(state['active_stop'], scale), previous_stop=minor_to_display(state['previous_stop'], scale),
-                     source='SERVER_RISK_CONTROL')
+                     source='SERVER_RISK_CONTROL', account_id=state['account_id'], session_id=state['session_id'],
+                     instrument_id=state['instrument_id'], experiment_id=state.get('experiment_id'), episode_id=state.get('episode_id'))
         if state['status'] == 'BREACHED':
             facts.update(trigger_price=minor_to_display(state['trigger_price'], scale), triggered_at=_iso_ns(state['triggered_at']),
                          trigger_evidence=state['trigger_evidence'], reason_codes=state['reason_codes'])
@@ -316,6 +355,11 @@ class SmaStopService:
         if position is None:
             return dict(base, status='BLOCKED', reason_codes=['POSITION_SNAPSHOT_UNAVAILABLE'], stop=self._stop_view(state) if state else None,
                         monitoring=self._monitoring(state, now_ns, policy))
+        if position['state'] != 'FLAT':
+            state, reason = self._validated_state(instrument, state)
+            if reason and reason not in ('POSITION_EPOCH_CHANGED', 'POSITION_SCOPE_CHANGED'):
+                return dict(base, status='BLOCKED', reason_codes=[reason], stop=None,
+                            monitoring=self._monitoring(None, now_ns, policy))
         if state is None or (state['status'] == 'CLOSED' and position['state'] != 'FLAT'):
             return dict(base, status='WARMING_UP' if position['state'] != 'FLAT' else 'CLOSED',
                         reason_codes=['NOT_YET_EVALUATED'] if position['state'] != 'FLAT' else ['NO_OPEN_POSITION'], stop=None,
@@ -338,6 +382,8 @@ class SmaStopService:
         distance = abs(reference - state['active_stop']) if reference is not None and state['active_stop'] is not None else None
         return dict(
             stop_state_id=state['stop_state_id'], position_epoch_id=state['position_epoch_id'], epoch_basis=state['epoch_basis'],
+            epoch_schema=state.get('epoch_schema'), episode_id=state.get('episode_id'), experiment_id=state.get('experiment_id'),
+            account_id=state['account_id'], instrument_id=state['instrument_id'], opening_fill_id=state.get('opening_fill_id'),
             side=state['side'], quantity=state['quantity'], policy_id=state['policy_id'], sma_window_bars=state['sma_window_bars'],
             bar_interval=state['bar_interval'], config_label=state['config_label'], activated_at=_iso_ns(state['activated_at']),
             activation_reason=state['activation_reason'], sma_value=state['sma_value'], candidate_stop=show('candidate_stop'),
@@ -388,7 +434,7 @@ class SmaStopService:
     def record_exit(self, instrument):
         """Server-authored EXIT through the unchanged OCT1-06 append path. No model call."""
         from ..intelligence.inference.reevaluation import reevaluation_pick
-        state = self.repository.latest_state(self._account(), instrument)
+        state, _ = self._validated_state(instrument, self.repository.latest_state(self._account(), instrument))
         if not state or state['status'] != 'BREACHED':
             raise ValueError('STOP_NOT_BREACHED')
         existing = self._exit_decision(state)

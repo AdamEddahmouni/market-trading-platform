@@ -95,6 +95,19 @@ class SmaStopRepository:
                 values = list(reversed(values))
             return next((v for v in values if not open_only or v['status'] != 'CLOSED'), None)
 
+    def episode_states(self, account_id, instrument_id, episode_id):
+        """Exact canonical episode lookup, including closed stop activations."""
+        with self.lock:
+            if self.connection:
+                rows = self.connection.execute(
+                    "SELECT payload FROM sma_stop_records WHERE kind='state' AND account_id=? AND instrument_id=? "
+                    "AND json_extract(payload, '$.episode_id')=? ORDER BY updated_at DESC, rowid DESC LIMIT 20",
+                    (account_id, instrument_id, episode_id)).fetchall()
+                return [json.loads(row[0]) for row in rows]
+            return [json.loads(v[-1]) for (kind, _), v in reversed(self._records.items())
+                    if kind == 'state' and v[0] == account_id and v[1] == instrument_id
+                    and json.loads(v[-1]).get('episode_id') == episode_id][:20]
+
     def open_states(self, account_id):
         with self.lock:
             if self.connection:
