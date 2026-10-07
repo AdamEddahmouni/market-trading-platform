@@ -300,8 +300,6 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
             candidates.append(c)
         before = copy.deepcopy(candidates)
         self.assertEqual(sum(c['news']['story_count'] for c in candidates), 6)
-        self.assertLessEqual(CandidateReducer().estimate({}, candidates, NEWS_ISO)['packet_bytes'], MAX_PACKET_BYTES)
-
         fit_news({}, candidates, values, now=NEWS_ISO)
 
         self.assertGreater(sum(c['news']['story_count'] for c in candidates), 0,

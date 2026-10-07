@@ -20,7 +20,7 @@ from .prompts import PromptRegistry
 from .run_progress import report_stage
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.ai_candidate_reduction.v2'
+PROMPT_ID = 'screener.ai_candidate_reduction.v3'
 SCHEMA_VERSION = 'ai-screener-output/1.0.0'
 MAX_INTAKE = 50
 MAX_SELECTED = 5
@@ -30,8 +30,20 @@ _PROHIBITED = re.compile(r'\b(?:buy|sell|enter|exit|hold|close|reduce|target|sto
 
 
 def packet_candidates(candidates: list[dict]) -> list[dict]:
-    """API compatibility aliases must not duplicate packet data."""
-    return [{k:v for k,v in c.items() if k not in ('blocked_evidence','missing_evidence','weak_evidence')} for c in candidates]
+    """The inference projection: no duplicated aliases, plus the packet-local wire indices.
+
+    ``candidate_key`` is the candidate's position; ``reference_index`` is an evidence item's position in
+    that candidate's own list (current market first, then reference). The canonical candidates are not mutated.
+    """
+    result = []
+    for index, c in enumerate(candidates):
+        item = {k: v for k, v in c.items() if k not in ('blocked_evidence', 'missing_evidence', 'weak_evidence')}
+        item['candidate_key'] = index
+        offset = len(c['current_market_evidence'])
+        item['current_market_evidence'] = [{**e, 'reference_index': i} for i, e in enumerate(c['current_market_evidence'])]
+        item['reference_evidence'] = [{**e, 'reference_index': offset + i} for i, e in enumerate(c['reference_evidence'])]
+        result.append(item)
+    return result
 
 
 def bounded_facts(value: Any, *, depth: int = 0) -> Any:
@@ -96,24 +108,56 @@ def build_candidate(instrument: dict, observations: list[tuple], *, now: str) ->
     return result
 
 
+def candidate_metadata(candidate: dict) -> dict:
+    """Fixed metadata bound by the candidate's packet-local index."""
+    evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
+    return dict(instrument_id=candidate['instrument']['instrument_id'],
+        weak_refs=sorted(e['evidence_id'] for e in evidence if e['weak_reasons']),
+        missing_capabilities=sorted({x['capability'] for x in candidate['missing']}))
+
+
+def reference_ids(candidate: dict) -> list[str]:
+    """One candidate's evidence ids in wire order; ``reference_index`` is a position in this list."""
+    return [e['evidence_id'] for e in (*candidate['current_market_evidence'], *candidate['reference_evidence'])]
+
+
+WIRE_KEYS = frozenset({'candidate_key', 'rank', 'rationale', 'supporting_refs', 'conflicting_refs', 'uncertainties'})
+
+
+def decode_wire_pick(pick: dict, candidates: list[dict]) -> tuple[dict | None, str | None]:
+    """Exact decode of one compact pick to the canonical shape. It maps valid indices and nothing else:
+    an index that is not this candidate's own is a failure, never clamped, dropped or looked up elsewhere."""
+    key = pick['candidate_key']
+    if type(key) is not int or not 0 <= key < len(candidates):
+        return None, 'WIRE_CANDIDATE_KEY_INVALID'
+    own = reference_ids(candidates[key])
+    decoded = {**candidate_metadata(candidates[key]), **{k: v for k, v in pick.items() if k != 'candidate_key'}}
+    for name in ('supporting_refs', 'conflicting_refs'):
+        indices = pick[name]
+        if not isinstance(indices, list) or any(type(i) is not int or not 0 <= i < len(own) for i in indices):
+            return None, 'WIRE_REFERENCE_INDEX_INVALID'
+        decoded[name] = [own[i] for i in indices]
+    return decoded, None
+
+
+def rejection_stage(reason: str | None) -> str | None:
+    """Which gate rejected the output: the wire decode, or the canonical validator that follows it."""
+    if reason is None:
+        return None
+    return 'DECODE' if reason == 'MALFORMED_JSON' or reason.startswith('WIRE_') else 'CANONICAL_VALIDATION'
+
+
 def output_schema(candidates: list[dict]) -> dict:
-    choices = []
-    for c in candidates:
-        evidence = (*c['current_market_evidence'], *c['reference_evidence'])
-        refs = [e['evidence_id'] for e in evidence] or ['_']
-        ref_list = dict(type='array', items={'type': 'string', 'enum': refs}, description='At most 12 distinct references belonging to this instrument.')
-        strings = dict(type='array', items={'type': 'string'}, description='At most 12 distinct strings.')
-        properties = dict(instrument_id={'type': 'string', 'enum': [c['instrument']['instrument_id']]},
-                          rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED + 1))},
-                          rationale={'type': 'string'}, supporting_refs={**ref_list, 'minItems': 1, 'description': 'At least two strong references, including a current quote; at most 12.'},
-                          conflicting_refs=ref_list,
-                          # Strict grammars reject complex const. Decode exact scalar JSON before validation.
-                          weak_refs={'type': 'string', 'const': json.dumps(sorted(e['evidence_id'] for e in evidence if e['weak_reasons'])), 'description': 'Exact JSON-encoded weak reference list.'},
-                          missing_capabilities={'type': 'string', 'const': json.dumps(sorted({x['capability'] for x in c['missing']})), 'description': 'Exact JSON-encoded missing capability list.'},
-                          uncertainties=strings)
-        choices.append(dict(type='object', additionalProperties=False, required=list(properties), properties=properties))
-    # An empty intake can only produce an empty candidate list (a reduction never calls a model for it).
-    items = {'anyOf': choices} if choices else {'type': 'string', 'enum': ['_']}
+    # Flat and instrument-independent: per-instrument branches and long reference enums exceed the vendor
+    # grammar compiler. Evidence positions are candidate-local, so the enum is the largest single list.
+    refs = list(range(max((len(reference_ids(c)) for c in candidates), default=0))) or [0]
+    ref_list = dict(type='array', items={'type': 'integer', 'enum': refs}, description='reference_index values of the selected candidate only; at most 12 distinct.')
+    properties = dict(candidate_key={'type': 'integer', 'enum': list(range(len(candidates))) or [0],
+            'description': 'The candidate_key of the selected candidate. It binds the instrument and its fixed weak and missing lists.'},
+        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string'},
+        supporting_refs={**ref_list, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
+        conflicting_refs=ref_list, uncertainties={'type': 'array', 'items': {'type': 'string'}, 'description': 'At most 12 distinct strings.'})
+    items = dict(type='object', additionalProperties=False, required=list(properties), properties=properties)
     return dict(type='object', additionalProperties=False, required=['schema_version', 'candidates', 'limitations'],
                 properties=dict(schema_version={'type': 'string', 'enum': [SCHEMA_VERSION]},
                     candidates=dict(type='array', items=items, description=f'Zero to {MAX_SELECTED} distinct candidates, in rank order.'),
@@ -124,10 +168,11 @@ def rejection_details(raw: str, candidates: list[dict], reason: str | None) -> d
     """Retain only canonical identities/capabilities, never raw model text or provider error bodies."""
     if reason != 'MISSING_EVIDENCE_MISMATCH':
         return {}
+    # Reached only by the legacy full-identifier shape: the compact wire never carries a missing list.
     parsed = json.loads(raw)  # this reason is reached only after JSON and candidate identity validation
     by_id = {c['instrument']['instrument_id']: c for c in candidates}
     for pick in parsed['candidates']:
-        c = by_id.get(pick['instrument_id'])
+        c = by_id.get(pick.get('instrument_id'))
         if c is None:
             continue
         expected = {x['capability'] for x in c['missing']}
@@ -159,6 +204,12 @@ def parse_reduction(raw: str, candidates: list[dict]) -> tuple[dict | None, str 
     by_id = {c['instrument']['instrument_id']: c for c in candidates}
     used = set()
     for rank, pick in enumerate(selected, 1):
+        if isinstance(pick, dict) and set(pick) == WIRE_KEYS:
+            # Decode the compact wire first; every canonical gate below then runs on the decoded pick.
+            pick, reason = decode_wire_pick(pick, candidates)
+            if reason:
+                return None, reason
+            selected[rank-1] = pick
         if not isinstance(pick, dict) or set(pick) != {'instrument_id', 'rank', 'rationale', 'supporting_refs', 'conflicting_refs', 'weak_refs', 'missing_capabilities', 'uncertainties'}:
             return None, 'SCHEMA_INVALID'
         for name in ('weak_refs', 'missing_capabilities'):
@@ -326,7 +377,7 @@ class CandidateReducer:
                     base['valid_until'] = datetime.fromtimestamp(expiry, UTC).isoformat().replace('+00:00', 'Z')
                 result = {**base, **(parsed or {}), 'state': 'INVALID_OUTPUT' if reason else 'EXPIRED' if self.clock() >= expiry else 'CURRENT' if parsed['candidates'] else 'NO_GROUNDED_CANDIDATES', 'reason': reason}
                 if reason:
-                    result['validation'] = rejection_details(response.raw_text, candidates, reason)
+                    result['validation'] = {'stage': rejection_stage(reason), **rejection_details(response.raw_text, candidates, reason)}
                 result['coverage']['selected'] = len(result['candidates'])
             # Cache failures too: repeated explicit clicks never automatically re-bill invalid output.
             with self.lock:
