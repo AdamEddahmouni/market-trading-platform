@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — Preserve usable news before empty candidate coverage during packing
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented in isolated repair checkout; live deployment requires protected integration and an explicit new software epoch |
+| **Area** | backend AI Screener evidence packing |
+| **Summary** | The active campaign's 20-row packet had no news or sentiment references because packing removed all stories before thinning provider status. Packing now releases coverage detail on candidates without admitted stories first, and repeats that step when story thinning empties another candidate. The 96 KB bound and deterministic story ordering remain enforced. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_news_evidence.py`, `tests/intelligence/test_news_candidate_evidence.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | New controlled 20-row price/volume regression failed with zero retained stories before the correction; afterward it retains 3 NEWS and 3 SENTIMENT items in a 93,489-byte packet. All 29 tests in the two directly affected candidate/evidence modules passed; documentation links passed for 292 governance files. Broader manifest-selected validation is delegated to protected CI to avoid contention with the active RTH runtime. |
+| **Related** | [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#limits-and-lifecycle) |
+| **Notes** | Controlled fixtures remain separate from prospective receipts. No live runtime, historical input, model, prompt, candidate cap, source-time gate, risk rule or Paper account was changed during preparation. This repairs evidence delivery and makes no claim that the model must select candidates. |
+
+---
+
 ## 2026-10-07 — AI engine picker safety (Phase 1d of the coverage and visibility plan)
 
 | Field | Value |

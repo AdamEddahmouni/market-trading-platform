@@ -156,6 +156,15 @@ The hard limits are `MAX_INTAKE=20`, `MAX_SELECTED=5` and a 96,000-byte packet.
 Intake is the first 20 rows of the server's existing sorted/filtered result,
 independent of which page the browser has loaded; no additional ranking model
 or source retrieval is introduced.
+When a news packet exceeds the byte bound, packing first removes detailed
+provider coverage from candidates with no admitted story, in descending
+instrument-ID order, and records `GLOBAL_PACKET_STATUS_CAP`. Only then are
+stories removed by the existing deterministic ordering. After each removal,
+NEWS, SENTIMENT and alignment references are rebuilt; newly empty candidates
+release their provider coverage before another story is removed. Current
+market facts, evidence IDs, source clocks and admission rules are unchanged.
+Packets that fit retain all coverage detail. If admitted evidence still cannot
+fit, inference remains blocked by `EVIDENCE_PACKET_BOUND_EXCEEDED`.
 Packets are content-hashed for cache/deduplication and expire conservatively;
 expired current evidence withdraws rather than being reused. The hash includes
 scope/result-set/snapshot identity, admitted evidence and deadlines, prompt
