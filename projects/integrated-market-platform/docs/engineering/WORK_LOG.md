@@ -34,6 +34,20 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — Discovery responses no longer trip the secret-leak guard; two browser acceptance scripts repaired
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend discovery responses (`discovery/models.py`, `discovery/mixed.py`, `ui_api/discovery_projections.py`), `tools/ui1` |
+| **Summary** | Found in the 2026-10-07 session: the Radar read (`GET /discover/mixed`) answered 500 with `UI_SECRET_LEAK_BLOCKED`. Cause: the discovery engine attaches the Finviz export's per-column field inventory to every candidate's provenance, and two of that table's column names (`source_authority_label`, `authority_note`) contain `auth`, which the name-based response guard blocks by design. Both discovery responses passed candidate provenance through unchanged; their tests used a hand-written provenance without the inventory, so only a real export reached the guard. The responses now carry the inventory's summary (`field_count`, `categories`); the capture file keeps the full table. Also repaired: `oct1_09_browser.cjs` clicked an ambiguous `Prepare Paper Exit` (now scoped to the `Current decision` region), and `oct1_11_browser.cjs` ignored `IMP_CHROMIUM_PATH`. |
+| **Key files** | `src/market_platform_foundation/discovery/{models,mixed}.py`, `src/market_platform_foundation/ui_api/discovery_projections.py`, `tests/platform/test_discovery_response_leak_gate.py` (new), `tools/ui1/oct1_09_browser.cjs`, `tools/ui1/oct1_11_browser.cjs` |
+| **Tests** | `tests/platform/test_discovery_response_leak_gate.py` (red-first, 4, built from real `DiscoveryEngine` output: the capture keeps the inventory and the guard still rejects it as a response; Radar candidates and a screen-run response pass the guard; a secret under another provenance key is still blocked) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 4; [pre-RTH readiness](../superpowers/plans/2026-10-07-oct1-13-pre-rth-readiness.md) |
+| **Notes** | The guard (`platform/security/leak_audit.py`) and its allowlist are unchanged. Capture files and their replay equivalence are unchanged. `GET /discover/run` had the same defect and is fixed by the same change. The two browser scripts were syntax-checked only; running them needs the built UI and was deferred until after the 2026-10-07 session close because a live session shares this machine. |
+
+---
+
 ## 2026-10-07 — AI Screener run status (Phase 1a of the coverage and visibility plan)
 
 | Field | Value |
