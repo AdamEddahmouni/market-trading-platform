@@ -34,6 +34,17 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — OCT1-13 QUOTE push observation time
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend/market-data L1 cache (`market_data/observational_state.py`) |
+| **Summary** | Found in the pre-RTH readiness check on live OpenD and confirmed in the 2026-10-06 regular-session capture: OpenD's QUOTE push has `data_date`/`data_time` and no `update_time`, so every push left the L1 quote with no provider clock. Actively traded symbols (NVDA, INTC, MRVL in the capture) were `BLOCKED: NO_OBSERVATION_TIME` between the 2 s snapshot polls while quiet symbols stayed admissible. A push now dates its quote from `data_date` + `data_time` when the price shown is the regular-session `last_price`. A pre-market, after-hours or overnight price, a clock ahead of receipt, a time with no date and a snapshot's own `update_time` are unchanged. |
+| **Tests** | `tests/market_data/test_live_p21.py` (two red-first store tests), `tests/platform/test_screener_live_price.py` (push between polls reaches the row and candidate evidence as CURRENT with the provider clock) |
+| **Related** | [Live price evidence](../superpowers/plans/2026-10-07-screener-live-price-evidence.md) |
+| **Notes** | Freshness policy, thresholds, session price selection and admission are unchanged. The regular-session push was not observable before the open: its shape comes from the 2026-10-06 capture and the existing live-derived fixture. Outside the regular session a push still shows the previous session's print for symbols whose `data_time` is not the close; it is now dated as such and reads stale instead of live. |
+
 ## 2026-10-07 — OCT1-12 scheduled reevaluation hardening
 
 | Field | Value |

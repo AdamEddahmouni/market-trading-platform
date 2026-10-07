@@ -189,3 +189,19 @@ tracker was created or marked closed, and no historical roadmap status changed.
 
 The timeless Finviz blocker is software-fixed when legitimate current cached
 L1 evidence exists. Live runtime convergence remains pending RTH proof.
+
+## Addendum: QUOTE push observation time (OCT1-13)
+
+The pre-RTH readiness check on live OpenD still found `NO_OBSERVATION_TIME` on
+rows with a live Moomoo price. The 2026-10-06 regular-session capture shows the
+same split at 14:12 ET: NVDA, INTC, MRVL, NKE and SPCX blocked; AAL, PACB and
+RXRX admissible. The cause is in the L1 cache, not the row join: OpenD's QUOTE
+push carries `data_date`/`data_time` (when `last_price` traded) and no
+`update_time`, so each push replaced the snapshot-clocked quote with one that
+had no provider clock until the next 2 s snapshot poll.
+
+A push now takes its observation time from `data_date` + `data_time` when the
+price shown is the regular-session `last_price`. It is not used for a
+pre-market, after-hours or overnight price (the push has no clock for those), for
+a time ahead of receipt, or for a payload with its own `update_time`. The
+freshness policy and thresholds are unchanged.
