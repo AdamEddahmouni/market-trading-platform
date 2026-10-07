@@ -46,7 +46,7 @@ class ProspectiveMetricsTests(unittest.TestCase):
         self.assertIsNone(run([])['metrics']['win_rate'])
 
     def test_flat_and_open(self):
-        r=record(1); r['execution_outcome']['state']='OPEN'
+        r=record(1); r['execution_outcome']['state']='OPEN'; r['execution_outcome']['exit_time']=None
         m=run([record(0,0),r])['metrics']
         self.assertEqual((m['completed_trades'],m['flat'],m['open_censored']),(1,1,1))
         self.assertIsNone(m['win_rate'])
@@ -119,3 +119,12 @@ class ProspectiveMetricsTests(unittest.TestCase):
         r=run([record()]);self.assertFalse(r['authority']['live_capital'])
         self.assertFalse(r['authority']['trading_mutation'])
         self.assertEqual(r['conclusion'],'INSUFFICIENT_EVIDENCE')
+
+    def test_open_exposure_is_censored_at_cutoff(self):
+        row=record()
+        row['execution_outcome'].update(state='OPEN',exit_time=None)
+        m=run([row])['metrics']
+        self.assertEqual(m['exposure_seconds'],'971940')
+        self.assertEqual(m['completed_trades'],0)
+        self.assertEqual(m['open_censored'],1)
+        self.assertIsNone(m['net_pnl_minor'])

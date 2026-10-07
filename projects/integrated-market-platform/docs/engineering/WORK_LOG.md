@@ -38,11 +38,11 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `in-progress` — integration gates pending |
+| **Status** | Implemented and locally accepted; protected integration receipts belong to PR467 and the OCT1-11 tracker record |
 | **Area** | backend/evaluation, local-state, UI/portfolio |
 | **Summary** | Immutable outcome runs and deterministic Paper metrics reuse canonical decision, next-session, accounting and lifecycle authorities. Explicit cohorts, exclusions, sparse-equity limits and source reconstruction preserve evidence. |
 | **Key files** | `evaluation/`, `local_state/evaluations.py`, `ui_api/prospective_evaluation.py`, `ui/src/components/evaluation/` |
-| **Tests** | Acceptance receipt records exact results; required final gates remain pending. |
+| **Tests** | FAST 23; CHANGED 6042/35 skips/0 failures/errors; FULL 8143/53 skips/0 failures/errors (421.317s); 31 final focused backend cases; UI 1372/179 files; browser 29 grouped steps covering 40 scenarios; static/docs/guard/build pass. Prior failures and observe-only severe timings retained. |
 | **Related** | [Plan](../superpowers/plans/2026-10-06-oct1-11-prospective-evaluation.md), [contracts](../architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) |
 | **Notes** | Actual OCT1-09 window: NO_QUALIFYING_ENTRY; zero AI decisions/trades, one equity point, insufficient evidence. No live capital or FTEP authority. |
 

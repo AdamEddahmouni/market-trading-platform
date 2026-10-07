@@ -1,0 +1,208 @@
+{
+  "evaluation": {
+    "schema_version": "prospective-evaluation-run/1.0.0",
+    "run_id": "PE-bbb878dd9ad02395b99dcd3afd96806d",
+    "created_at": "2026-10-06T19:22:14Z",
+    "cutoff": "2026-10-06T19:22:14Z",
+    "git_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+    "metric_definition_version": "prospective-metrics/1.0.0",
+    "evaluation_policy_id": "outcome-evaluation/1.0.0",
+    "input_fingerprint": "bbb878dd9ad02395b99dcd3afd96806d694bc46c4a641056cc7eb099c014ada5",
+    "evidence_class": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+    "currency": "USD",
+    "inputs": {
+      "records": [],
+      "equity": [
+        {
+          "captured_at_ns": 1791309918869961901,
+          "cash_minor": 10000000,
+          "equity_minor": 10000000,
+          "last_event_sequence": 1,
+          "marked_position_value_minor": 0,
+          "position_value_minor": 0,
+          "quality": "CURRENT",
+          "realized_pnl_minor": 0,
+          "snapshot_id": 1,
+          "state_hash": "D7EE179A1BA87657B4597B2C666607184CAAE7C18DD099870D1C9D5AD84B4C18",
+          "total_pnl_minor": 0,
+          "trigger": "EXPERIMENT_CREATED",
+          "unrealized_pnl_minor": 0
+        }
+      ],
+      "policy": {
+        "policy_id": "outcome-evaluation/1.0.0",
+        "schema_version": "outcome-evaluation-policy/1.0.0",
+        "created_at": "2026-10-06T00:00:00Z",
+        "metric_definition_version": "prospective-metrics/1.0.0",
+        "currency": "USD",
+        "signal_horizons": "SOURCE_NEXT_SESSION_FROZEN_POLICY",
+        "execution_outcome_policy": "ACTUAL_PAPER_CLOSE",
+        "reference_price_basis": "FROZEN_DECISION_REFERENCE_QUOTE",
+        "cost_policy": "LEDGER_NET_EXPLICIT_COSTS_ONCE",
+        "mark_policy": "CANONICAL_EQUITY_CURRENT_SNAPSHOTS_ONLY",
+        "win_definition": "NET_MINOR_GT_ZERO",
+        "loss_definition": "NET_MINOR_LT_ZERO",
+        "win_rate_denominator": "COMPLETED_NONFLAT",
+        "flat_streak_policy": "BREAK",
+        "exposure_clock": "ELAPSED_WALL_TIME_INCLUDING_SESSION_GAPS",
+        "segment_dimensions": [
+          "setup",
+          "asset",
+          "regime",
+          "model",
+          "prompt",
+          "direction",
+          "instrument",
+          "stop_policy",
+          "policy"
+        ],
+        "no_losses_profit_factor": "UNDEFINED"
+      },
+      "cutoff": "2026-10-06T19:22:14Z",
+      "git_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+      "evidence_class": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+      "source_refs": [
+        {
+          "kind": "OCT1-09_ARCHIVED_NO_QUALIFYING_ENTRY",
+          "hashes": {
+            "01-experiment-current.json": "66d2d1b170ac26cc6ba11519faeeb213fc2926c7fc86079a8372329f77a58837",
+            "02-ai-screener.json": "87e182334a3c48a82afd52ecaac23ec43843681bacebce1d374082e75823ea90",
+            "02-screener-request-time.txt": "480d6a4b39401d1c3d7f80675a1b56426b6206323d0fc864fda4d9745aa39246",
+            "03-experiment-after-restart.json": "8e6e61eac37e754a0d22b02d67af03db7d93bd60dd4f9b0b819e00d04a231eff",
+            "04-ai-screener.json": "8242cf8aaac84f4ecd2bdb1bca11ca74d806fdd2e800ea8336bf04f35c26f29f",
+            "04-screener-request-time.txt": "6a5c19405f684e449bc8420059acaf444f9a7e8a85af094a3af49403a1303153",
+            "05-screener-page.json": "a977b5599988c7d5a5b463d3811b354643dd85111d4b60ba714911b307e383be",
+            "06-window-first.json": "7b03186313efae7a6098330f83c37b5a09776fe5f6c6658b09acc39c3ed613e2",
+            "06-window-last.json": "7b03186313efae7a6098330f83c37b5a09776fe5f6c6658b09acc39c3ed613e2",
+            "08-ai-screener.json": "c6dd85f945e867946eb9c6dc5e5f22f4dcb4f0090c9c52321d2a8044e1dce4aa",
+            "08-screener-request-time.txt": "b952937a6f8248044e6c61a516b429d827260e8c4ae5192c0bd78f01ebc698ff",
+            "09-action-preview-NVDA.json": "a93bc3e6b6818052d4091defd4cf0d8486c9a4a4ee1e2c098784bc173a84d35d",
+            "09-action-run-NVDA.json": "a93bc3e6b6818052d4091defd4cf0d8486c9a4a4ee1e2c098784bc173a84d35d",
+            "10-portfolio.json": "92e1fcf36e1e5b1a3a3ab3850f0993911b563640b58926113f82f240311ceb7a",
+            "11-trades.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+            "12-equity-history.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1",
+            "13-experiment-current-later.json": "8192adf4172690f5d21440c8d55e000172a6d0c1ae96ad329458c4141fc4465e",
+            "14-trades-later.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+            "15-equity-history-later.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1",
+            "16-experiment-current-final.json": "377ea91f629a0b2cfdaef236e7d68f0558d9479511189c64e889a93867e3a5be",
+            "16-final-read-time.txt": "2bdb4e0ad3dcfa0ab2a880f7906ef0080c85f798d1b42361ceb845b05f9ed2fc",
+            "17-trades-final.json": "9d0f0e75bb841a6a009675f990560d29745e9c5d272031c3720dd5dddb6a17ab",
+            "18-equity-history-final.json": "bdacc163688094771dc2574f304c451087004460170a304da745d95cb53e58d1"
+          }
+        }
+      ]
+    },
+    "metrics": {
+      "decisions": 0,
+      "signal_outcomes": 0,
+      "completed_trades": 0,
+      "open_censored": 0,
+      "unavailable": 0,
+      "action_counts": {},
+      "quality_counts": {},
+      "wins": 0,
+      "losses": 0,
+      "flat": 0,
+      "win_rate": null,
+      "average_win_minor": null,
+      "average_loss_minor": null,
+      "median_win_minor": null,
+      "median_loss_minor": null,
+      "payoff_ratio": null,
+      "expectancy_minor": null,
+      "profit_factor": null,
+      "profit_factor_status": "UNAVAILABLE",
+      "net_pnl_minor": null,
+      "gross_pnl_minor": null,
+      "costs_minor": null,
+      "commission_minor": 0,
+      "fees_minor": 0,
+      "cost_drag_minor": null,
+      "slippage": "NOT_SEPARATELY_MODELED",
+      "longest_losing_streak": 0,
+      "current_losing_streak": 0,
+      "executed_notional_minor": 0,
+      "exposure_seconds": null,
+      "time_in_market_fraction": null,
+      "average_gross_notional_to_equity": null,
+      "peak_gross_notional_to_equity": null,
+      "signal_market_return_mean": null,
+      "signal_directional_return_mean": null,
+      "turnover": "0",
+      "turnover_reference_equity_minor": 10000000
+    },
+    "portfolio_metrics": {
+      "snapshot_count": 1,
+      "excluded_snapshots": 0,
+      "resolution": "OBSERVED_CANONICAL_SNAPSHOTS_NO_INTERPOLATION",
+      "drawdown": null,
+      "starting_equity_minor": 10000000,
+      "ending_equity_minor": 10000000,
+      "observed_equity_return": null,
+      "reference_equity_minor": 10000000,
+      "scope": "WHOLE_SELECTED_PAPER_ACCOUNT_NOT_AI_CAUSAL_ATTRIBUTION"
+    },
+    "admission": {
+      "total_considered": 0,
+      "admitted": 0,
+      "excluded": 0,
+      "reasons": {}
+    },
+    "included_record_ids": [],
+    "excluded_records": [],
+    "segments": {
+      "setup": [],
+      "asset": [],
+      "regime": [],
+      "model": [],
+      "prompt": [],
+      "direction": [],
+      "instrument": [],
+      "stop_policy": [],
+      "policy": []
+    },
+    "weekly": [],
+    "week_characteristics": {
+      "positive": 0,
+      "negative": 0,
+      "percentage_positive": null
+    },
+    "conclusion": "INSUFFICIENT_EVIDENCE",
+    "review": [
+      "Insufficient sample for strong performance conclusions.",
+      "Model comparisons are descriptive; no causal superiority or profitability claim.",
+      "A human-reviewed methodology change requires a new version and future prospective epoch."
+    ],
+    "authority": {
+      "live_capital": false,
+      "trading_mutation": false,
+      "model_promotion": false,
+      "ftep_activation": false
+    },
+    "limitations": [
+      "Paper uses simulated fills. Metrics grant no trading authority.",
+      "Exposure uses elapsed wall time including session gaps; not RTH occupancy.",
+      "Gross-notional/equity exposure unavailable without synchronized per-position mark history.",
+      "Drawdown is limited to stored current equity snapshots; missing periods are not interpolated.",
+      "AI attribution preserves stored proposals; stochastic generation is not reproduced."
+    ]
+  },
+  "reproducibility": {
+    "status": "MATCH",
+    "input_fingerprint": "bbb878dd9ad02395b99dcd3afd96806d694bc46c4a641056cc7eb099c014ada5",
+    "run_id": "PE-bbb878dd9ad02395b99dcd3afd96806d"
+  },
+  "archive_tables": {
+    "paper_experiments": 0
+  },
+  "trade_archive": {
+    "experiment_id": "PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F",
+    "next_cursor": null,
+    "page_size": 25,
+    "total_count": 0,
+    "trades": []
+  },
+  "collection_outcome": "NO_QUALIFYING_ENTRY",
+  "conclusion": "INSUFFICIENT_EVIDENCE",
+  "no_fabricated_ai_decisions": true
+}

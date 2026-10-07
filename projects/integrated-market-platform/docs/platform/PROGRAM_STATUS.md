@@ -510,3 +510,8 @@ change, material authority creation/removal/transfer, a major limitation opening
 or closing, or a qualification/production-eligibility change. Routine commits,
 refactors, wording fixes, and ordinary test-count changes do not require an
 update.
+
+
+### OCT1-11 — prospective outcome evaluation
+
+Implementation and local software acceptance complete; protected integration authority is [PR467](https://github.com/AdamEddahmouni/market-trading-platform/pull/467) and the OCT1-11 post-merge tracker receipt. Versioned audit records/runs, strict class/clock/lineage admission, separate signal/Paper metrics, weekly/stored-label segmentation, frozen reproduction and a lazy portfolio evaluation view reuse existing authorities. FAST 23; CHANGED 6042 with 35 skips; FULL 8143 with 53 skips; zero failures/errors; 31 final focused backend cases, complete UI 1372, and controlled browser acceptance pass. Evidence stays SOFTWARE_CONTROLLED for fixtures. Genuine OCT1-09 observation window produced no qualifying AI decisions/trades and one equity point: INSUFFICIENT_EVIDENCE. No automatic trading/model/policy changes or FTEP activation; Live capital remains blocked. [A–Z report](../superpowers/plans/2026-10-06-oct1-11-acceptance-report.md).
