@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-06 — OCT1-11 prospective outcome evaluation
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` — integration gates pending |
+| **Area** | backend/evaluation, local-state, UI/portfolio |
+| **Summary** | Immutable outcome runs and deterministic Paper metrics reuse canonical decision, next-session, accounting and lifecycle authorities. Explicit cohorts, exclusions, sparse-equity limits and source reconstruction preserve evidence. |
+| **Key files** | `evaluation/`, `local_state/evaluations.py`, `ui_api/prospective_evaluation.py`, `ui/src/components/evaluation/` |
+| **Tests** | Acceptance receipt records exact results; required final gates remain pending. |
+| **Related** | [Plan](../superpowers/plans/2026-10-06-oct1-11-prospective-evaluation.md), [contracts](../architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) |
+| **Notes** | Actual OCT1-09 window: NO_QUALIFYING_ENTRY; zero AI decisions/trades, one equity point, insufficient evidence. No live capital or FTEP authority. |
+
 ## 2026-10-06 — OCT1-10 final AI-selected trade lifecycle Screener
 
 | Field | Value |

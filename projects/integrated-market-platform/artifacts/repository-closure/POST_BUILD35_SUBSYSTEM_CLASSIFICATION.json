@@ -723,6 +723,20 @@
         "pipelines/stock_data/tests/test_monorepo_boundary.py proves the platform core does not import collector dependencies."
       ],
       "disposition": "DEFER"
+    },
+    {
+      "id": "prospective-outcome-evaluation",
+      "classification": "CANONICAL",
+      "scope": [
+        "src/market_platform_foundation/evaluation"
+      ],
+      "responsibility": "OCT1-11 bounded deterministic prospective outcome evaluation over canonical immutable source authorities; no trading or FTEP activation.",
+      "evidence": [
+        "docs/architecture/PROSPECTIVE_OUTCOME_EVALUATION.md",
+        "tests/intelligence/test_prospective_evaluation.py",
+        "tests/intelligence/test_evaluation_sources.py"
+      ],
+      "disposition": "KEEP"
     }
   ]
 }

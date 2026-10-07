@@ -1,0 +1,1225 @@
+{
+  "schema_version": "prospective-evaluation-run/1.0.0",
+  "run_id": "PE-5b7f5f179becc914e7d23f4df6af579a",
+  "created_at": "2026-10-16T20:00:00Z",
+  "cutoff": "2026-10-16T20:00:00Z",
+  "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "metric_definition_version": "prospective-metrics/1.0.0",
+  "evaluation_policy_id": "outcome-evaluation/1.0.0",
+  "input_fingerprint": "5b7f5f179becc914e7d23f4df6af579a601a3060ff436876cee7a161cf712431",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "currency": "USD",
+  "inputs": {
+    "records": [
+      {
+        "evaluation_id": "e0",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d0",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t0",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 10000,
+          "gross_pnl_minor": 10010,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:00:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in0"
+          ],
+          "exit_fill_ids": [
+            "out0"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e1",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d1",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t1",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": -5000,
+          "gross_pnl_minor": -4990,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:01:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in1"
+          ],
+          "exit_fill_ids": [
+            "out1"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e2",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d2",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t2",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 5000,
+          "gross_pnl_minor": 5010,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:02:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in2"
+          ],
+          "exit_fill_ids": [
+            "out2"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e3",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d3",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t3",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": -10000,
+          "gross_pnl_minor": -9990,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:03:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in3"
+          ],
+          "exit_fill_ids": [
+            "out3"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e4",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d4",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t4",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 10,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:04:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in4"
+          ],
+          "exit_fill_ids": [
+            "out4"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e5",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d5",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/2",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t5",
+        "execution_outcome": {
+          "state": "OPEN",
+          "net_pnl_minor": 100,
+          "gross_pnl_minor": 110,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:05:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in5"
+          ],
+          "exit_fill_ids": [
+            "out5"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e6",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d6",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "MANUAL_UNLINKED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t6",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 100,
+          "gross_pnl_minor": 110,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:06:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in6"
+          ],
+          "exit_fill_ids": [
+            "out6"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e7",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d7",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "HISTORICAL_REPLAY",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t7",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 100,
+          "gross_pnl_minor": 110,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:07:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in7"
+          ],
+          "exit_fill_ids": [
+            "out7"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      },
+      {
+        "evaluation_id": "e8",
+        "schema_version": "decision-outcome/1.0.0",
+        "account_id": "a",
+        "experiment_id": "x",
+        "currency": "USD",
+        "instrument_id": "AAPL",
+        "action_decision_id": "d8",
+        "candidate_run_id": "c",
+        "evidence_snapshot_id": "s",
+        "source_fingerprint": "f",
+        "decision_time": "2026-10-05T14:00:00Z",
+        "decision_cutoff": "2026-10-05T14:00:00Z",
+        "evidence_max_time": "2026-10-05T13:59:00Z",
+        "evidence_available_time": "2026-10-05T13:59:01Z",
+        "evidence_class": "FIXTURE",
+        "quality": "COMPLETE",
+        "action_state": "ENTER",
+        "direction": "LONG",
+        "origin": "AI_PROPOSAL_SERVER_GATED",
+        "model": {
+          "provider_id": "p",
+          "model_id": "m",
+          "model_version": "1",
+          "prompt_version": "1"
+        },
+        "segments": {
+          "setup": "one",
+          "asset": "EQUITY",
+          "regime": "UNAVAILABLE",
+          "model": "p/m/1",
+          "prompt": "1",
+          "direction": "LONG"
+        },
+        "trade_episode_id": "t8",
+        "execution_outcome": {
+          "state": "CLOSED",
+          "net_pnl_minor": 100,
+          "gross_pnl_minor": 110,
+          "costs_minor": 10,
+          "commission_minor": 6,
+          "fees_minor": 4,
+          "entry_time": "2026-10-05T14:01:00Z",
+          "exit_time": "2026-10-05T15:08:00Z",
+          "executed_notional_minor": 20000,
+          "entry_fill_ids": [
+            "in8"
+          ],
+          "exit_fill_ids": [
+            "out8"
+          ]
+        },
+        "signal_outcomes": [],
+        "limitations": []
+      }
+    ],
+    "equity": [
+      {
+        "snapshot_id": 0,
+        "captured_at_ns": 1791205200000000000,
+        "equity_minor": 10000000,
+        "quality": "CURRENT"
+      },
+      {
+        "snapshot_id": 1,
+        "captured_at_ns": 1791208800000000000,
+        "equity_minor": 10100000,
+        "quality": "CURRENT"
+      },
+      {
+        "snapshot_id": 2,
+        "captured_at_ns": 1791212400000000000,
+        "equity_minor": 10040000,
+        "quality": "CURRENT"
+      },
+      {
+        "snapshot_id": 3,
+        "captured_at_ns": 1791216000000000000,
+        "equity_minor": 10020000,
+        "quality": "CURRENT"
+      },
+      {
+        "snapshot_id": 4,
+        "captured_at_ns": 1791219600000000000,
+        "equity_minor": 10200000,
+        "quality": "CURRENT"
+      }
+    ],
+    "policy": {
+      "policy_id": "outcome-evaluation/1.0.0",
+      "schema_version": "outcome-evaluation-policy/1.0.0",
+      "created_at": "2026-10-06T00:00:00Z",
+      "metric_definition_version": "prospective-metrics/1.0.0",
+      "currency": "USD",
+      "signal_horizons": "SOURCE_NEXT_SESSION_FROZEN_POLICY",
+      "execution_outcome_policy": "ACTUAL_PAPER_CLOSE",
+      "reference_price_basis": "FROZEN_DECISION_REFERENCE_QUOTE",
+      "cost_policy": "LEDGER_NET_EXPLICIT_COSTS_ONCE",
+      "mark_policy": "CANONICAL_EQUITY_CURRENT_SNAPSHOTS_ONLY",
+      "win_definition": "NET_MINOR_GT_ZERO",
+      "loss_definition": "NET_MINOR_LT_ZERO",
+      "win_rate_denominator": "COMPLETED_NONFLAT",
+      "flat_streak_policy": "BREAK",
+      "exposure_clock": "ELAPSED_WALL_TIME_INCLUDING_SESSION_GAPS",
+      "segment_dimensions": [
+        "setup",
+        "asset",
+        "regime",
+        "model",
+        "prompt",
+        "direction",
+        "instrument",
+        "stop_policy",
+        "policy"
+      ],
+      "no_losses_profit_factor": "UNDEFINED"
+    },
+    "cutoff": "2026-10-16T20:00:00Z",
+    "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "source_refs": []
+  },
+  "metrics": {
+    "decisions": 6,
+    "signal_outcomes": 0,
+    "completed_trades": 5,
+    "open_censored": 1,
+    "unavailable": 0,
+    "action_counts": {
+      "ENTER": 6
+    },
+    "quality_counts": {
+      "COMPLETE": 6
+    },
+    "wins": 2,
+    "losses": 2,
+    "flat": 1,
+    "win_rate": "0.5",
+    "average_win_minor": "7500",
+    "average_loss_minor": "-7500",
+    "median_win_minor": "7500",
+    "median_loss_minor": "-7500",
+    "payoff_ratio": "1",
+    "expectancy_minor": "0",
+    "profit_factor": "1",
+    "profit_factor_status": "DEFINED",
+    "net_pnl_minor": 0,
+    "gross_pnl_minor": 50,
+    "costs_minor": 50,
+    "commission_minor": 30,
+    "fees_minor": 20,
+    "cost_drag_minor": 50,
+    "slippage": "NOT_SEPARATELY_MODELED",
+    "longest_losing_streak": 1,
+    "current_losing_streak": 0,
+    "executed_notional_minor": 120000,
+    "exposure_seconds": "3840",
+    "time_in_market_fraction": "0.003950617283950617283950617284",
+    "average_gross_notional_to_equity": null,
+    "peak_gross_notional_to_equity": null,
+    "signal_market_return_mean": null,
+    "signal_directional_return_mean": null,
+    "turnover": "0.012",
+    "turnover_reference_equity_minor": 10000000
+  },
+  "portfolio_metrics": {
+    "snapshot_count": 5,
+    "excluded_snapshots": 0,
+    "resolution": "OBSERVED_CANONICAL_SNAPSHOTS_NO_INTERPOLATION",
+    "drawdown": {
+      "amount_minor": 80000,
+      "fraction": "0.007920792079207920792079207921",
+      "start": "2026-10-05T14:00:00Z",
+      "trough": "2026-10-05T16:00:00Z",
+      "recovered_at": "2026-10-05T17:00:00Z",
+      "duration_seconds": "10800",
+      "duration_censored": false,
+      "last_observed_at": "2026-10-05T17:00:00Z"
+    },
+    "starting_equity_minor": 10000000,
+    "ending_equity_minor": 10200000,
+    "observed_equity_return": "0.02",
+    "reference_equity_minor": 10000000,
+    "scope": "WHOLE_SELECTED_PAPER_ACCOUNT_NOT_AI_CAUSAL_ATTRIBUTION"
+  },
+  "admission": {
+    "total_considered": 9,
+    "admitted": 6,
+    "excluded": 3,
+    "reasons": {
+      "EVIDENCE_CLASS_MISMATCH": 2,
+      "MANUAL_UNLINKED_NOT_AI": 1
+    }
+  },
+  "included_record_ids": [
+    "e0",
+    "e1",
+    "e2",
+    "e3",
+    "e4",
+    "e5"
+  ],
+  "excluded_records": [
+    {
+      "evaluation_id": "e6",
+      "reason": "MANUAL_UNLINKED_NOT_AI",
+      "evidence_class": "SOFTWARE_CONTROLLED",
+      "origin": "MANUAL_UNLINKED",
+      "action_state": "ENTER"
+    },
+    {
+      "evaluation_id": "e7",
+      "reason": "EVIDENCE_CLASS_MISMATCH",
+      "evidence_class": "HISTORICAL_REPLAY",
+      "origin": "AI_PROPOSAL_SERVER_GATED",
+      "action_state": "ENTER"
+    },
+    {
+      "evaluation_id": "e8",
+      "reason": "EVIDENCE_CLASS_MISMATCH",
+      "evidence_class": "FIXTURE",
+      "origin": "AI_PROPOSAL_SERVER_GATED",
+      "action_state": "ENTER"
+    }
+  ],
+  "segments": {
+    "setup": [
+      {
+        "label": "one",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "asset": [
+      {
+        "label": "EQUITY",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "regime": [
+      {
+        "label": "UNAVAILABLE",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "model": [
+      {
+        "label": "p/m/1",
+        "metrics": {
+          "decisions": 5,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 0,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 5
+          },
+          "quality_counts": {
+            "COMPLETE": 5
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 100000,
+          "exposure_seconds": "3780",
+          "time_in_market_fraction": "0.003888888888888888888888888889",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      },
+      {
+        "label": "p/m/2",
+        "metrics": {
+          "decisions": 1,
+          "signal_outcomes": 0,
+          "completed_trades": 0,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 1
+          },
+          "quality_counts": {
+            "COMPLETE": 1
+          },
+          "wins": 0,
+          "losses": 0,
+          "flat": 0,
+          "win_rate": null,
+          "average_win_minor": null,
+          "average_loss_minor": null,
+          "median_win_minor": null,
+          "median_loss_minor": null,
+          "payoff_ratio": null,
+          "expectancy_minor": null,
+          "profit_factor": null,
+          "profit_factor_status": "UNAVAILABLE",
+          "net_pnl_minor": null,
+          "gross_pnl_minor": null,
+          "costs_minor": null,
+          "commission_minor": 0,
+          "fees_minor": 0,
+          "cost_drag_minor": null,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 0,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 20000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "prompt": [
+      {
+        "label": "1",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "direction": [
+      {
+        "label": "LONG",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "instrument": [
+      {
+        "label": "UNAVAILABLE",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "stop_policy": [
+      {
+        "label": "UNAVAILABLE",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ],
+    "policy": [
+      {
+        "label": "UNAVAILABLE",
+        "metrics": {
+          "decisions": 6,
+          "signal_outcomes": 0,
+          "completed_trades": 5,
+          "open_censored": 1,
+          "unavailable": 0,
+          "action_counts": {
+            "ENTER": 6
+          },
+          "quality_counts": {
+            "COMPLETE": 6
+          },
+          "wins": 2,
+          "losses": 2,
+          "flat": 1,
+          "win_rate": "0.5",
+          "average_win_minor": "7500",
+          "average_loss_minor": "-7500",
+          "median_win_minor": "7500",
+          "median_loss_minor": "-7500",
+          "payoff_ratio": "1",
+          "expectancy_minor": "0",
+          "profit_factor": "1",
+          "profit_factor_status": "DEFINED",
+          "net_pnl_minor": 0,
+          "gross_pnl_minor": 50,
+          "costs_minor": 50,
+          "commission_minor": 30,
+          "fees_minor": 20,
+          "cost_drag_minor": 50,
+          "slippage": "NOT_SEPARATELY_MODELED",
+          "longest_losing_streak": 1,
+          "current_losing_streak": 0,
+          "executed_notional_minor": 120000,
+          "exposure_seconds": "3840",
+          "time_in_market_fraction": "0.003950617283950617283950617284",
+          "average_gross_notional_to_equity": null,
+          "peak_gross_notional_to_equity": null,
+          "signal_market_return_mean": null,
+          "signal_directional_return_mean": null
+        }
+      }
+    ]
+  },
+  "weekly": [
+    {
+      "week": "2026-10-05",
+      "metrics": {
+        "decisions": 5,
+        "signal_outcomes": 0,
+        "completed_trades": 5,
+        "open_censored": 0,
+        "unavailable": 0,
+        "action_counts": {
+          "ENTER": 5
+        },
+        "quality_counts": {
+          "COMPLETE": 5
+        },
+        "wins": 2,
+        "losses": 2,
+        "flat": 1,
+        "win_rate": "0.5",
+        "average_win_minor": "7500",
+        "average_loss_minor": "-7500",
+        "median_win_minor": "7500",
+        "median_loss_minor": "-7500",
+        "payoff_ratio": "1",
+        "expectancy_minor": "0",
+        "profit_factor": "1",
+        "profit_factor_status": "DEFINED",
+        "net_pnl_minor": 0,
+        "gross_pnl_minor": 50,
+        "costs_minor": 50,
+        "commission_minor": 30,
+        "fees_minor": 20,
+        "cost_drag_minor": 50,
+        "slippage": "NOT_SEPARATELY_MODELED",
+        "longest_losing_streak": 1,
+        "current_losing_streak": 0,
+        "executed_notional_minor": 100000,
+        "exposure_seconds": "3780",
+        "time_in_market_fraction": "0.003888888888888888888888888889",
+        "average_gross_notional_to_equity": null,
+        "peak_gross_notional_to_equity": null,
+        "signal_market_return_mean": null,
+        "signal_directional_return_mean": null
+      },
+      "observed_start_equity_minor": 10000000,
+      "observed_end_equity_minor": 10200000,
+      "return_fraction": "0.02",
+      "drawdown": {
+        "amount_minor": 80000,
+        "fraction": "0.007920792079207920792079207921",
+        "start": "2026-10-05T14:00:00Z",
+        "trough": "2026-10-05T16:00:00Z",
+        "recovered_at": "2026-10-05T17:00:00Z",
+        "duration_seconds": "10800",
+        "duration_censored": false,
+        "last_observed_at": "2026-10-05T17:00:00Z"
+      },
+      "coverage": "SPARSE_OBSERVED_ENDPOINTS_NOT_FULL_WEEK_RETURN"
+    }
+  ],
+  "week_characteristics": {
+    "positive": 0,
+    "negative": 0,
+    "percentage_positive": "0"
+  },
+  "conclusion": "INSUFFICIENT_EVIDENCE",
+  "review": [
+    "Insufficient sample for strong performance conclusions.",
+    "Model comparisons are descriptive; no causal superiority or profitability claim.",
+    "A human-reviewed methodology change requires a new version and future prospective epoch.",
+    "Observed completed Paper result: 0 USD minor units over 5 trades.",
+    "Explicit cost / gross observed profit: 1"
+  ],
+  "authority": {
+    "live_capital": false,
+    "trading_mutation": false,
+    "model_promotion": false,
+    "ftep_activation": false
+  },
+  "limitations": [
+    "Paper uses simulated fills. Metrics grant no trading authority.",
+    "Exposure uses elapsed wall time including session gaps; not RTH occupancy.",
+    "Gross-notional/equity exposure unavailable without synchronized per-position mark history.",
+    "Drawdown is limited to stored current equity snapshots; missing periods are not interpolated.",
+    "AI attribution preserves stored proposals; stochastic generation is not reproduced."
+  ]
+}
