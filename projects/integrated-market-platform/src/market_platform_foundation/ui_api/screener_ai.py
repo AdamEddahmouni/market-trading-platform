@@ -171,6 +171,10 @@ class ScreenerAiService:
                                  descending=query["descending"], offset=0, limit=MAX_INTAKE,
                                  filters=query["filters"], result_set=query["result_set"])
         raw_rows = list(page.get('rows') or [])[:MAX_INTAKE]
+        # Slow shared news must precede acquisition of short-lived market observations.
+        report_stage("NEWS")
+        news_reader = getattr(self._news_service(), 'candidate_evidence', None)
+        news = news_reader(universe=query['universe'], rows=raw_rows, refresh=refresh_news) if news_reader else {}
         market = None
         if self._market_snapshots is not None and query['universe'] in ('US_EQUITIES', 'US_ETFS'):
             from ..intelligence.inference.hashing import input_hash_from_dict
@@ -185,9 +189,6 @@ class ScreenerAiService:
                 market = cached if cached is not None and cached.catalog_as_of == market_key else None
         # Stages are reported in the order the work really happens: news is read before the evidence
         # cutoff is taken, so the cutoff is never older than the news refresh that preceded it.
-        report_stage("NEWS")
-        news_reader = getattr(self._news_service(), 'candidate_evidence', None)
-        news = news_reader(universe=query['universe'], rows=raw_rows, refresh=refresh_news) if news_reader else {}
         report_stage("EVIDENCE")
         now = _iso(self._clock)
         projected = project_screener_response("/screener", {**page, "rows": list(page.get("rows") or [])[:MAX_INTAKE]}, now=now)

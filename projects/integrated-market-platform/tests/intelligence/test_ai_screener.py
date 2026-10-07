@@ -50,15 +50,30 @@ class Stub:
 
 
 class AiScreenerTests(unittest.TestCase):
+    def test_strict_scalar_lists_decode_to_canonical_arrays_and_still_validate(self):
+        c = candidate()
+        value = output(c)
+        for field in ('missing_capabilities', 'weak_refs'):
+            value['candidates'][0][field] = json.dumps(value['candidates'][0][field])
+        parsed, reason = parse_reduction(json.dumps(value), [c])
+        self.assertIsNone(reason)
+        self.assertEqual(parsed, output(c))
+        value['candidates'][0]['missing_capabilities'] = '[]'
+        self.assertEqual(parse_reduction(json.dumps(value), [c])[1], 'MISSING_EVIDENCE_MISMATCH')
+        value['candidates'][0]['missing_capabilities'] = 'not JSON'
+        self.assertEqual(parse_reduction(json.dumps(value), [c])[1], 'SCHEMA_INVALID')
+
     def test_explicit_run_acquires_provider_clocked_direction_preview_is_cache_only(self):
         from tests.platform.test_screener_s18 import Reader, News, row
         from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
+        sequence = []
         class Snapshots:
             calls = 0
             cached = None
             observed = NOW
             def latest(self): return self.cached
             def current(self, rows, *, catalog_as_of, force):
+                sequence.append('market')
                 self.calls += 1
                 self.cached = SimpleNamespace(catalog_as_of=catalog_as_of, as_of=NOW,
                     row_as_of={'EQ:A': self.observed},
@@ -67,12 +82,15 @@ class AiScreenerTests(unittest.TestCase):
         snapshots = Snapshots()
         source = row()
         source['fields']['change_pct'] = {'value': 999, 'source': 'FINVIZ_ELITE', 'state': 'SNAPSHOT'}
-        service = ScreenerAiService(reader=Reader([source]), news=News(Stub()), clock=lambda: 1790953200.0)
+        news = News(Stub())
+        news.candidate_evidence = lambda **kwargs: sequence.append('news') or {}
+        service = ScreenerAiService(reader=Reader([source]), news=news, clock=lambda: 1790953200.0)
         service._market_snapshots = snapshots
         service.preview({'universe': 'US_EQUITIES'})
         self.assertEqual(snapshots.calls, 0)
         _, evidence, _, _ = service._packet({'universe': 'US_EQUITIES'}, refresh_news=True)
         self.assertEqual(snapshots.calls, 1)
+        self.assertEqual(sequence[-2:], ['news', 'market'])
         direction = [e for e in evidence[0]['current_market_evidence'] if e['source'] == 'MOOMOO_OPEND_SNAPSHOT' and 'change_pct' in e['facts']]
         self.assertEqual(direction[0]['facts']['change_pct'], 2.0)
         self.assertEqual(direction[0]['facts']['change_basis'], 'PREVIOUS_CLOSE')
@@ -98,7 +116,8 @@ class AiScreenerTests(unittest.TestCase):
         for c, choice in zip((a, b), choices):
             props = choice['properties']
             self.assertEqual(props['instrument_id']['enum'], [c['instrument']['instrument_id']])
-            self.assertEqual(props['missing_capabilities']['const'], sorted({m['capability'] for m in c['missing']}))
+            self.assertEqual(props['missing_capabilities']['type'], 'string')
+            self.assertEqual(json.loads(props['missing_capabilities']['const']), sorted({m['capability'] for m in c['missing']}))
             self.assertEqual(set(props['supporting_refs']['items']['enum']),
                              {e['evidence_id'] for e in (*c['current_market_evidence'], *c['reference_evidence'])})
 
