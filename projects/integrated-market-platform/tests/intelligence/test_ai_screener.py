@@ -1,10 +1,12 @@
 import json
+import copy
+from types import SimpleNamespace
 import unittest
 from concurrent.futures import ThreadPoolExecutor
 
 from market_platform_foundation.market_data.freshness_contract import evaluate
 from market_platform_foundation.intelligence.inference.candidate_reduction import (
-    build_candidate, CandidateReducer, parse_reduction,
+    build_candidate, CandidateReducer, parse_reduction, output_schema, MAX_INTAKE,
 )
 from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
 
@@ -48,6 +50,99 @@ class Stub:
 
 
 class AiScreenerTests(unittest.TestCase):
+    def test_explicit_run_acquires_provider_clocked_direction_preview_is_cache_only(self):
+        from tests.platform.test_screener_s18 import Reader, News, row
+        from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
+        class Snapshots:
+            calls = 0
+            cached = None
+            observed = NOW
+            def latest(self): return self.cached
+            def current(self, rows, *, catalog_as_of, force):
+                self.calls += 1
+                self.cached = SimpleNamespace(catalog_as_of=catalog_as_of, as_of=NOW,
+                    row_as_of={'EQ:A': self.observed},
+                    values={'EQ:A': {'price': 123, 'volume': 100, 'change_pct': 2.0}})
+                return self.cached, None
+        snapshots = Snapshots()
+        source = row()
+        source['fields']['change_pct'] = {'value': 999, 'source': 'FINVIZ_ELITE', 'state': 'SNAPSHOT'}
+        service = ScreenerAiService(reader=Reader([source]), news=News(Stub()), clock=lambda: 1790953200.0)
+        service._market_snapshots = snapshots
+        service.preview({'universe': 'US_EQUITIES'})
+        self.assertEqual(snapshots.calls, 0)
+        _, evidence, _, _ = service._packet({'universe': 'US_EQUITIES'}, refresh_news=True)
+        self.assertEqual(snapshots.calls, 1)
+        direction = [e for e in evidence[0]['current_market_evidence'] if e['source'] == 'MOOMOO_OPEND_SNAPSHOT' and 'change_pct' in e['facts']]
+        self.assertEqual(direction[0]['facts']['change_pct'], 2.0)
+        self.assertEqual(direction[0]['facts']['change_basis'], 'PREVIOUS_CLOSE')
+        self.assertEqual(direction[0]['as_of'], NOW)
+        self.assertNotIn('999', json.dumps(evidence))
+        service.preview({'universe': 'US_EQUITIES'})
+        self.assertEqual(snapshots.calls, 1)
+        snapshots.observed = '2026-10-02T14:58:00Z'
+        _, stale, _, _ = service._packet({'universe': 'US_EQUITIES'}, refresh_news=True)
+        self.assertFalse(any(e['source'] == 'MOOMOO_OPEND_SNAPSHOT' for e in stale[0]['current_market_evidence']))
+        self.assertTrue(any('AGE_EXCEEDS_POLICY' in b['reason_codes'] for b in stale[0]['blocked']))
+
+    def test_model_schema_binds_missing_capabilities_and_refs_to_each_instrument(self):
+        a = candidate()
+        b = build_candidate({'instrument_id': 'EQ:B'}, [
+            ('QUOTE', observation(), {'price': 42}, []),
+            ('TECHNICALS', observation('bars'), {'volume': 100}, []),
+            ('NEWS', observation('news', reference=True), {'story_id': 'controlled'}, []),
+        ], now=NOW)
+        schema = output_schema([a, b])['properties']['candidates']['items']
+        choices = schema.get('anyOf', [schema])
+        self.assertEqual(len(choices), 2, 'The model must choose one instrument-specific contract')
+        for c, choice in zip((a, b), choices):
+            props = choice['properties']
+            self.assertEqual(props['instrument_id']['enum'], [c['instrument']['instrument_id']])
+            self.assertEqual(props['missing_capabilities']['const'], sorted({m['capability'] for m in c['missing']}))
+            self.assertEqual(set(props['supporting_refs']['items']['enum']),
+                             {e['evidence_id'] for e in (*c['current_market_evidence'], *c['reference_evidence'])})
+
+    def test_unselected_short_deadline_does_not_expire_fresh_selected_support(self):
+        fresh = candidate()
+        old = build_candidate({'instrument_id': 'EQ:B'}, [
+            ('QUOTE', observation(as_of='2026-10-02T14:59:35Z'), {'price': 1}, []),
+            ('TECHNICALS', observation('bars', as_of='2026-10-02T14:59:35Z'), {'volume': 100}, []),
+        ], now=NOW)
+        clock = [1790953200.0]
+        class Slow(Stub):
+            def infer(self, packet, *, rendered_prompt, config):
+                clock[0] += 20
+                return super().infer(packet, rendered_prompt=rendered_prompt, config=config)
+        result = CandidateReducer(provider=Slow(), clock=lambda: clock[0]).reduce({}, [fresh, old], NOW)
+        self.assertEqual(result['state'], 'CURRENT')
+        self.assertEqual(result['valid_until'], '2026-10-02T15:00:30Z')
+
+    def test_missing_mismatch_is_rejected_and_has_bounded_diagnostic(self):
+        class Wrong(Stub):
+            def infer(self, packet, *, rendered_prompt, config):
+                value = output(packet.candidates[0])
+                value['candidates'][0]['missing_capabilities'] = []
+                return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id)
+        c = candidate()
+        result = CandidateReducer(provider=Wrong(), clock=lambda: 1790953200.0).reduce({}, [c], NOW)
+        self.assertEqual((result['state'], result['reason'], result['candidates']),
+                         ('INVALID_OUTPUT', 'MISSING_EVIDENCE_MISMATCH', []))
+        self.assertEqual(result['validation']['instrument_id'], 'EQ:A')
+        self.assertEqual(result['validation']['expected_missing'], sorted({m['capability'] for m in c['missing']}))
+        self.assertEqual(result['validation']['declared_missing'], [])
+        self.assertNotIn('raw_text', result)
+
+    def test_broader_intake_fits_and_remains_bounded(self):
+        self.assertEqual(MAX_INTAKE, 50)
+        candidates = [build_candidate({'instrument_id': f'EQ:{i}'}, [
+            ('QUOTE', observation(), {'price': 123}, []),
+            ('TECHNICALS', observation('bars'), {'volume': 100}, []),
+        ], now=NOW) for i in range(MAX_INTAKE)]
+        reducer = CandidateReducer(provider=Stub(), clock=lambda: 1790953200.0)
+        self.assertEqual(reducer.estimate({}, candidates, NOW)['intake_count'], 50)
+        with self.assertRaisesRegex(ValueError, 'INTAKE_BOUND_EXCEEDED'):
+            reducer.reduce({}, candidates + [copy.deepcopy(candidates[0])], NOW)
+
     def test_stale_values_removed_at_actual_cutoff(self):
         status = observation('order_flow', as_of='2026-10-02T14:59:20Z')
         status['eligible_for_current_decision'] = True

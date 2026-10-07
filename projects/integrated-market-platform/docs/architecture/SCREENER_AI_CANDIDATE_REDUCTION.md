@@ -18,7 +18,9 @@ The server owns the scope and evidence boundary:
 
 1. Reconstruct the active settled Screener scope (universe, search, sort,
    direction, filters, view/screen, match count and result-set/snapshot identity).
-2. Read no more than the first 20 matching rows.
+2. Read no more than the first 50 matching rows. An explicit Run also acquires
+   allowlisted observations through the existing OpenD snapshot adapter; Preview
+   reads its bounded cache without acquisition.
 3. Project only allowlisted numeric quote, technical and dated rates/reference
    row facts into an isolated evidence packet. Other specialist capabilities
    remain explicitly missing; whole specialist payloads are not consumed.
@@ -152,10 +154,33 @@ its final cutoff, so their counts may differ as ticks arrive or evidence ages.
 
 ## Limits and lifecycle
 
-The hard limits are `MAX_INTAKE=20`, `MAX_SELECTED=5` and a 96,000-byte packet.
-Intake is the first 20 rows of the server's existing sorted/filtered result,
+The hard limits are `MAX_INTAKE=50`, `MAX_SELECTED=5` and a 320,000-byte packet.
+Intake is the first 50 rows of the server's existing sorted/filtered result,
 independent of which page the browser has loaded; no additional ranking model
-or source retrieval is introduced.
+is introduced. An explicit equity/ETF Run also reads one bounded OpenD
+market snapshot for this intake using the existing snapshot adapter. Its
+dedicated cache never alters the Screener's universe ordering or result chain.
+Preview reads this cache only. Price, volume, bid/ask/spread and change versus
+previous close carry the provider's row observation clock; `change_basis` is
+`PREVIOUS_CLOSE`. The unchanged 60-second L1 policy is independently evaluated
+at the final cutoff. Snapshot retrieval time never substitutes for a missing,
+stale or future provider clock. News instrument providers remain cache-only.
+
+The model output schema has an instrument-specific branch containing only that
+instrument's evidence references and exact constant missing/weak lists. Claude
+candidate reduction uses strict tool inputs; the application parser still
+checks every evidence, ranking, language and freshness invariant. Unsupported
+strict numerical/array bounds are expressed in descriptions and enforced by
+the unchanged parser. The output-schema hash participates in cache identity
+and is recorded in the receipt. A missing-list rejection records bounded
+canonical capability diagnostics, never raw model text or provider bodies.
+
+After successful validation, result lifetime is bounded by the evidence cited
+by selected candidates, including their current quote and all cited weak or
+conflicting evidence. An unrelated unselected observation cannot expire that
+selection. Expired selected evidence still returns `EXPIRED`. Every deployment
+changing acquisition, intake or schema is a new software/method epoch and must
+retain the preceding epoch's immutable receipts.
 When a news packet exceeds the byte bound, packing first removes detailed
 provider coverage from candidates with no admitted story, in descending
 instrument-ID order, and records `GLOBAL_PACKET_STATUS_CAP`. Only then are

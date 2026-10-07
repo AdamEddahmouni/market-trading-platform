@@ -6502,3 +6502,23 @@ intersecting buckets. No unrelated persistence or baseline fixes were added.
 | Item | Area | Notes |
 |------|------|-------|
 | Master-account login before Mode Launcher | `ui/auth` | User idea: single login provisions connected broker/data APIs; not concrete yet |
+# 2026-10-07 — Repair AI candidate contracts and missing market evidence
+
+The live Screener had repeated zero results and an INVALID_OUTPUT /
+MISSING_EVIDENCE_MISMATCH after the prior news-packing correction. Candidate
+output schemas allowed arbitrary missing strings and cross-instrument references,
+and the Claude tool was forced but not strict. Corrected instrument-specific
+strict schemas preserve all backend validation and now retain bounded rejection
+diagnostics. Result expiry now follows selected cited evidence rather than an
+unselected intake row's deadline. The existing OpenD snapshot adapter supplies
+provider-clocked current change versus previous close on explicit Run; Preview
+stays cache-only and unknown/stale/future observations stay blocked. The user's
+explicit follow-up authorized resolving remaining runtime issues and the
+previously flagged intake limit: intake is 50 with a matching320KB packet, still
+at most 5 selected and no broker authority. This is a new software/method epoch;
+previous prospective evidence and budget usage must remain immutable.
+
+Validation: regression reproductions failed on the old schema, expiry, intake,
+diagnostics and absent snapshot integration; 89 focused offline tests passed
+across candidate/news/provider/async/live-price modules. Protected CI owns
+manifest affected suites and mandatory fast invariants before deployment.

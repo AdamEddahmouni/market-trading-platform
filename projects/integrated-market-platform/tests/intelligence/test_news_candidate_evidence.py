@@ -11,7 +11,7 @@ from dataclasses import replace
 from tests.intelligence.test_ai_screener import NOW, candidate, output, observation
 from tests.platform.test_screener_s11 import service, NOW as NEWS_NOW, ROWS, loader
 from market_platform_foundation.ui_api.screener_news_evidence import project_news, attach_news, alignment
-from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer, parse_reduction
+from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer, parse_reduction, MAX_INTAKE, MAX_PACKET_BYTES
 from market_platform_foundation.news.finbert_sentiment import FinbertSentiment
 from market_platform_foundation.intelligence.inference.candidate_reduction import build_candidate
 from market_platform_foundation.ui_api.screener_news_evidence import fit_news
@@ -213,8 +213,8 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
         self.assertFalse(any(e['capability']=='NEWS' for e in c['reference_evidence']))
 
     def test_maximum_intake_thins_packet_deterministically(self):
-        rows=[{'instrument':{'instrument_id':f'EQ:X{i}'},'symbol':f'X{i}','company':f'Example company {i}'} for i in range(20)]
-        items=[finviz_row(f'Example company {i} announces event {j} '+('x'*300),[f'X{i}'],f'2026-09-28 09:{j+30:02d}:00',f'https://fixture.test/{i}/{j}') for i in range(20) for j in range(3)]
+        rows=[{'instrument':{'instrument_id':f'EQ:X{i}'},'symbol':f'X{i}','company':f'Example company {i}'} for i in range(MAX_INTAKE)]
+        items=[finviz_row(f'Example company {i} announces event {j} '+('x'*300),[f'X{i}'],f'2026-09-28 09:{j+30:02d}:00',f'https://fixture.test/{i}/{j}') for i in range(MAX_INTAKE) for j in range(3)]
         news=service(finviz={**FINVIZ,'items':items})
         values=project_news(news,universe='US_EQUITIES',rows=rows,refresh=True)
         candidates=[grounded(row['instrument']['instrument_id']) for row in rows]
@@ -222,15 +222,15 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
             attach_news(c,values[c['instrument']['instrument_id']],now=NEWS_ISO)
         fit_news({},candidates,values,now=NEWS_ISO)
         estimate=CandidateReducer().estimate({},candidates,NEWS_ISO)
-        self.assertLessEqual(estimate['packet_bytes'],96000)
+        self.assertLessEqual(estimate['packet_bytes'],MAX_PACKET_BYTES)
         self.assertEqual(news.provider_requests['finviz'],1)
         self.assertEqual(news.provider_requests['newsapi'],0)
         self.assertTrue(all(c['news']['story_count'] or c['news']['state']=='PACKET_LIMITED' for c in candidates))
         print('OCT1-05 MAXIMUM PACKET',estimate['packet_bytes'],'bytes;',estimate['input_tokens'],'estimated input tokens')
 
     def _full_live_window(self, flow_bytes):
-        """Twenty rows that each carry current evidence and a news status with no story to thin."""
-        rows=[{'instrument':{'instrument_id':f'EQ:X{i:02d}'},'symbol':f'X{i:02d}','company':f'Example company {i}'} for i in range(20)]
+        """A bounded window with current evidence and no story to thin."""
+        rows=[{'instrument':{'instrument_id':f'EQ:X{i:02d}'},'symbol':f'X{i:02d}','company':f'Example company {i}'} for i in range(MAX_INTAKE)]
         values=project_news(service(finviz={**FINVIZ,'items':[]}),universe='US_EQUITIES',rows=rows,refresh=True)
         status=evaluate(capability='quote',source='IMP_TEST',delivery_mode='REALTIME',now=NEWS_ISO,as_of=NEWS_ISO,
             stale_after_ms=30000,policy='CONTROLLED',basis='EVENT_TIME')
@@ -245,12 +245,12 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
         return candidates,values
 
     def test_full_live_window_with_no_story_left_thins_provider_status_instead_of_failing(self):
-        candidates,values=self._full_live_window(flow_bytes=300)
+        candidates,values=self._full_live_window(flow_bytes=1800)
         self.assertTrue(all(c['news']['story_count']==0 and c['news']['providers'] for c in candidates))
         evidence=copy.deepcopy([(c['current_market_evidence'],c['reference_evidence'],c['sufficient']) for c in candidates])
         fit_news({},candidates,values,now=NEWS_ISO)
         estimate=CandidateReducer().estimate({},candidates,NEWS_ISO)
-        self.assertLessEqual(estimate['packet_bytes'],96000)
+        self.assertLessEqual(estimate['packet_bytes'],MAX_PACKET_BYTES)
         self.assertEqual(evidence,[(c['current_market_evidence'],c['reference_evidence'],c['sufficient']) for c in candidates])
         thinned=[c['instrument']['instrument_id'] for c in candidates if 'GLOBAL_PACKET_STATUS_CAP' in c['news']['limitations']]
         # Highest instrument id first, and only as many as the cap needs.
@@ -271,7 +271,7 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
     def test_live_price_volume_window_preserves_news_before_empty_coverage_details(self):
         rows = [{'instrument': {'instrument_id': f'EQ:X{i:02d}', 'asset_class': 'EQUITY',
                                 'venue_id': 'US_EQUITY'}, 'symbol': f'X{i:02d}',
-                 'company': f'Orchid{i:02d} Corporation'} for i in range(20)]
+                 'company': f'Orchid{i:02d} Corporation'} for i in range(MAX_INTAKE)]
         items = [finviz_row(f'Orchid{i:02d} announces event', [f'X{i:02d}'],
                            '2026-09-28 09:30:00', f'https://fixture.test/{i}') for i in range(6)]
         with tempfile.TemporaryDirectory() as folder:
@@ -292,14 +292,15 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
                 ('TECHNICALS', unknown, {'change_pct': 2, 'rel_volume': 3, 'rsi_14': 55}, []),
                 ('QUOTE', current, {'price': 123}, []),
                 ('TECHNICALS', current, {'volume': 100000}, []),
+                ('QUOTE', {**current, 'source': 'MOOMOO_OPEND_SNAPSHOT', 'delivery_mode': 'SNAPSHOT'}, {'price': 123, 'bid': 122, 'ask': 124, 'spread_pct': 1.6}, []),
+                ('TECHNICALS', {**current, 'source': 'MOOMOO_OPEND_SNAPSHOT', 'delivery_mode': 'SNAPSHOT'}, {'volume': 100000, 'change_pct': 2, 'change_basis': 'PREVIOUS_CLOSE'}, []),
             ], now=NEWS_ISO)
             c['instrument']['company'] = row['company']
             attach_news(c, values[row['instrument']['instrument_id']], now=NEWS_ISO)
             candidates.append(c)
         before = copy.deepcopy(candidates)
         self.assertEqual(sum(c['news']['story_count'] for c in candidates), 6)
-        with self.assertRaisesRegex(ValueError, 'EVIDENCE_PACKET_BOUND_EXCEEDED'):
-            CandidateReducer().estimate({}, candidates, NEWS_ISO)
+        self.assertLessEqual(CandidateReducer().estimate({}, candidates, NEWS_ISO)['packet_bytes'], MAX_PACKET_BYTES)
 
         fit_news({}, candidates, values, now=NEWS_ISO)
 
@@ -307,7 +308,7 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
                            'Usable stories must survive before empty provider details consume the packet')
         self.assertTrue(any(e['capability'] == 'SENTIMENT' for c in candidates
                             for e in c['reference_evidence']))
-        self.assertLessEqual(CandidateReducer().estimate({}, candidates, NEWS_ISO)['packet_bytes'], 96000)
+        self.assertLessEqual(CandidateReducer().estimate({}, candidates, NEWS_ISO)['packet_bytes'], MAX_PACKET_BYTES)
         for old, fitted in zip(before, candidates):
             self.assertEqual(old['current_market_evidence'], fitted['current_market_evidence'])
             self.assertEqual(old['blocked'], fitted['blocked'])
@@ -319,7 +320,7 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
                 self.assertTrue(set(comparison['sentiment_refs']) <= refs)
 
     def test_evidence_that_cannot_fit_still_fails_closed(self):
-        candidates,values=self._full_live_window(flow_bytes=2400)
+        candidates,values=self._full_live_window(flow_bytes=4800)
         fit_news({},candidates,values,now=NEWS_ISO)
         with self.assertRaisesRegex(ValueError,'EVIDENCE_PACKET_BOUND_EXCEEDED'):
             CandidateReducer().estimate({},candidates,NEWS_ISO)
