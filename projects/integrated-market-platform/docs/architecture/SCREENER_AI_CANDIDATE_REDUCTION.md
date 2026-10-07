@@ -84,6 +84,30 @@ reevaluation stop; `Open` opens the AI Screener panel. The strip starts
 nothing on its own and is not an ARIA live region, because it changes every
 second while a model works.
 
+### Results where the rows are
+
+A finished run's `summary` also lists `intake` (the instrument ids the model
+was shown) and `reasons`: why the pass had little to select from, computed by
+the server from the evidence packet and never from model prose. A reason is
+blocked evidence by capability and reason code, a candidate shown with no news
+story, or a candidate without sufficient evidence; each carries a count and
+names at most three instruments. The Screener marks the rows of the latest
+pass for the query on screen: the selected rows with their rank and the other
+shown rows as "shown, not selected". A pass for another query marks nothing,
+and marks are struck through when the pass's evidence expires. The panel shows
+the reasons as chips with the codes in their titles, and keeps the model's own
+explanation behind a disclosure.
+
+`GET /screener/ai-screener/runs/history?limit=N` (`state.read`, N from 1 to
+50, `screener-ai-screener-history/1.0.0`) lists stored candidate runs, newest
+first by storage order, without evidence packets. It reads the durable
+candidate-run records, so passes made by the reevaluation loop are listed and
+history survives a restart. Each row is compared with the previous stored run
+of the same Screener query (universe, view, saved screen, search, sort and
+filters; the list snapshot is not part of the identity) and states what was
+`added` and `removed`; with no earlier run of that query both are null and no
+change is claimed.
+
 ### Engine choice
 
 The engine and model are one machine-wide setting shared by News synthesis,
