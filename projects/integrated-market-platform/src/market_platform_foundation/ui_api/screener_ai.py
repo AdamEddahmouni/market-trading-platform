@@ -52,7 +52,7 @@ def observations_for_row(row: dict[str, Any], *, now: str) -> list[tuple[str, di
     """Project only bounded row facts; specialist payloads are never serialized wholesale."""
     observations = []
     fields = row.get("fields") or {}
-    for capability, allowed in (("QUOTE", ("price",)), ("TECHNICALS", _TECHNICAL_FIELDS), ("RATES", _REFERENCE_FIELDS)):
+    for capability, allowed in (("QUOTE", ("price", "bid", "ask", "spread_pct")), ("TECHNICALS", _TECHNICAL_FIELDS), ("RATES", _REFERENCE_FIELDS)):
         for status in row.get("decision_inputs", []):
             names = [name for name in status.get("covered_fields", []) if name in allowed]
             if not names:

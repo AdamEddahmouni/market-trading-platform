@@ -67,6 +67,14 @@ weak-only support, conflicting support, malformed output, duplicate/excess candi
 prohibited action, target, forecast or execution language fail closed. Zero
 valid candidates is a valid result.
 
+The equity/ETF row projection now joins canonical cached last price before this
+packet is assembled. QUOTE facts may also contain bid, ask and spread when
+those exact fields share admissible source clocks. New evidence retains
+`received_at` separately from source `as_of`; historical runs remain immutable.
+A healthy price alone does not waive the required additional strong support.
+Preview is evaluated at its own cutoff; run always rebuilds/re-evaluates at
+its final cutoff, so their counts may differ as ticks arrive or evidence ages.
+
 ## Limits and lifecycle
 
 The hard limits are `MAX_INTAKE=20`, `MAX_SELECTED=5` and a 96,000-byte packet.

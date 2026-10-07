@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StrictMode } from "react";
-import { ScreenerPage } from "./ScreenerPage";
+import { ScreenerPage, fieldFor } from "./ScreenerPage";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -430,5 +430,16 @@ describe("ScreenerPage", () => {
     expect(screen.getByRole("button", { name: /Edit Days to Expiry/ })).toBeInTheDocument();
     expect(mocks.fetch).toHaveBeenCalledWith(...called({ universe: "FUTURES", sort: "root", descending: false,
       filters: [expect.objectContaining({ field: "dte", value: 90 })] }));
+  });
+});
+
+
+describe("Canonical current-price continuity", () => {
+  it("keeps a stale provider price over timeless Finviz while preserving reference fields", () => {
+    const row = makeRow("NVDA", "Nvidia", 1);
+    const live = { value: 240.27, source: "MOOMOO_OPEND", state: "STALE", provider_as_of: "2026-10-06T18:05:23Z" };
+    const quote = { state: "STALE", fields: { price: live } };
+    expect(fieldFor(row, "price", quote)).toEqual(live);
+    expect(fieldFor(row, "market_cap", quote)).toEqual(row.fields.market_cap);
   });
 });

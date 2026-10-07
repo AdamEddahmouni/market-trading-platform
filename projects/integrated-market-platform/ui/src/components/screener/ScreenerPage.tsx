@@ -182,15 +182,15 @@ const clock = (value: string, universe?: ScreenerUniverse) => universe === "CRYP
   ? `${new Date(value).toISOString().slice(11, 19)} UTC` : new Date(value).toLocaleTimeString();
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
-function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
+export function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
-  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT") && current.value !== null) return current;
+  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT" || key === "price" && current?.state === "STALE") && current.value !== null) return current;
   return row.fields[key];
 }
 const FRESHNESS: Record<string, string> = { LIVE: "Live quote", DELAYED: "Delayed quote", SNAPSHOT: "Snapshot quote", STALE: "Stale quote" };
 /** Quote freshness for a row in the visible window; rows outside it have no quote and show no dot. */
 function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow }) {
-  const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.[0];
+  const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.find((item) => (item.covered_fields as string[] | undefined)?.includes("price")) ?? row.decision_inputs?.[0];
   const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
   if (evidence) {
     const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${currentFreshness(evidence, now).replace(/_/g, " ")}`;
@@ -642,7 +642,7 @@ export function ScreenerPage() {
       const field = fieldFor(item, definition.key, quotes[item.instrument.instrument_id]);
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
-      const detail = field ? [field.source, field.state, field.basis, field.as_of ? `as of ${field.as_of}` : null].filter(Boolean).join(" · ") : "Unavailable";
+      const detail = field ? [field.source, field.state, field.basis, field.provider_as_of || field.as_of ? `observed ${field.provider_as_of ?? field.as_of}` : "observation time unknown", field.received_ns ? `received ${new Date(field.received_ns / 1e6).toISOString()}` : null].filter(Boolean).join(" · ") : "Unavailable";
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
@@ -682,12 +682,15 @@ export function ScreenerPage() {
     if (!query.hasNextPage || query.isFetchingNextPage || query.isFetchNextPageError || query.isRefetching) return;
     if (lastVirtual >= rows.length - PREFETCH_ROWS) void query.fetchNextPage();
   }, [lastVirtual, rows.length, query.hasNextPage, query.isFetchingNextPage, query.isFetchNextPageError, query.isRefetching]);
-  // Loaded rows are not subscribed: only visible rows plus the selection acquire L1.
+  // One bounded owner warms the AI first-20 intake plus selection/visible rows.
   const visible = useMemo(() => {
     const ids = virtualRows.slice(0, 26).map((item) => rows[item.index]?.instrument.instrument_id).filter((id): id is string => Boolean(id));
+    if (universe === "US_EQUITIES" || universe === "US_ETFS") {
+      ids.unshift(...rows.slice(0, 20).map((row) => row.instrument.instrument_id));
+    }
     if (selected) ids.unshift(selected);
     return [...new Set(ids)].slice(0, 32);
-  }, [indices, rows, selected]);
+  }, [indices, rows, selected, universe]);
   useEffect(() => {
     if (previousUniverse.current === universe) return;
     previousUniverse.current = universe;

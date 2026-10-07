@@ -9,6 +9,9 @@ const FieldSchema = z.object({
   state: z.string(),
   as_of: z.string().nullable().optional(),
   as_of_ns: z.number().optional(),
+  provider_as_of: z.string().nullable().optional(),
+  event_time_ns: z.number().nullable().optional(),
+  received_ns: z.number().optional(),
   /** S9: what the number is (e.g. HIGH_YIELD vs HIGH_INVESTMENT_RATE, NOMINAL_PAR_10Y). */
   basis: z.string().optional(),
 });

@@ -75,7 +75,7 @@ def build_candidate(instrument: dict, observations: list[tuple], *, now: str) ->
         if checked['decision_admissibility'] == 'DEGRADED':
             weakness.append('DEGRADED_REFERENCE')
         item = dict(capability=family, instrument_id=identity['instrument_id'], role=checked['decision_role'],
-                    source=checked['source'], as_of=checked['as_of'], delivery_mode=checked['delivery_mode'],
+                    source=checked['source'], as_of=checked['as_of'], received_at=status.get('received_at'), delivery_mode=checked['delivery_mode'],
                     freshness_status=checked['freshness_status'], decision_admissibility=checked['decision_admissibility'],
                     valid_until=checked['valid_until'], policy=checked['policy'], basis=checked['basis'],
                     weak_reasons=list(dict.fromkeys(weakness)), facts=bounded_facts(facts))
