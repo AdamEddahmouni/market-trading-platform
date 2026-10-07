@@ -31,7 +31,15 @@ _PROHIBITED = re.compile(r'\b(?:buy|sell|enter|exit|hold|close|reduce|target|sto
 
 def packet_candidates(candidates: list[dict]) -> list[dict]:
     """API compatibility aliases must not duplicate packet data."""
-    return [{k:v for k,v in c.items() if k not in ('blocked_evidence','missing_evidence','weak_evidence')} for c in candidates]
+    refs = {identifier:index for index,identifier in enumerate(reference_ids(candidates))}
+    result = []
+    for index,c in enumerate(candidates):
+        item = {k:v for k,v in c.items() if k not in ('blocked_evidence','missing_evidence','weak_evidence')}
+        item['candidate_key'] = index
+        for name in ('current_market_evidence', 'reference_evidence'):
+            item[name] = [{**e, 'reference_index': refs[e['evidence_id']]} for e in c[name]]
+        result.append(item)
+    return result
 
 
 def bounded_facts(value: Any, *, depth: int = 0) -> Any:
@@ -96,24 +104,27 @@ def build_candidate(instrument: dict, observations: list[tuple], *, now: str) ->
     return result
 
 
+def candidate_metadata(candidate: dict) -> dict:
+    """Fixed metadata bound by the candidate's packet-local index."""
+    evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
+    return dict(instrument_id=candidate['instrument']['instrument_id'],
+        weak_refs=sorted(e['evidence_id'] for e in evidence if e['weak_reasons']),
+        missing_capabilities=sorted({x['capability'] for x in candidate['missing']}))
+
+
+def reference_ids(candidates: list[dict]) -> list[str]:
+    return sorted({e['evidence_id'] for c in candidates for e in (*c['current_market_evidence'], *c['reference_evidence'])})
+
+
 def output_schema(candidates: list[dict]) -> dict:
-    choices = []
-    for c in candidates:
-        evidence = (*c['current_market_evidence'], *c['reference_evidence'])
-        refs = [e['evidence_id'] for e in evidence] or ['_']
-        ref_list = dict(type='array', items={'type': 'string', 'enum': refs}, description='At most 12 distinct references belonging to this instrument.')
-        strings = dict(type='array', items={'type': 'string'}, description='At most 12 distinct strings.')
-        properties = dict(instrument_id={'type': 'string', 'enum': [c['instrument']['instrument_id']]},
-                          rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED + 1))},
-                          rationale={'type': 'string'}, supporting_refs={**ref_list, 'minItems': 1, 'description': 'At least two strong references, including a current quote; at most 12.'},
-                          conflicting_refs=ref_list,
-                          # Strict grammars reject complex const. Decode exact scalar JSON before validation.
-                          weak_refs={'type': 'string', 'const': json.dumps(sorted(e['evidence_id'] for e in evidence if e['weak_reasons'])), 'description': 'Exact JSON-encoded weak reference list.'},
-                          missing_capabilities={'type': 'string', 'const': json.dumps(sorted({x['capability'] for x in c['missing']})), 'description': 'Exact JSON-encoded missing capability list.'},
-                          uncertainties=strings)
-        choices.append(dict(type='object', additionalProperties=False, required=list(properties), properties=properties))
-    # An empty intake can only produce an empty candidate list (a reduction never calls a model for it).
-    items = {'anyOf': choices} if choices else {'type': 'string', 'enum': ['_']}
+    refs = list(range(len(reference_ids(candidates)))) or [0]
+    ref_list = dict(type='array', items={'type': 'integer', 'enum': refs}, description='Use packet reference_index values, at most 12 distinct; all must belong to the selected instrument.' )
+    properties = dict(candidate_key={'type': 'integer', 'enum': list(range(len(candidates))) or [0],
+            'description': 'Copy the selected instrument candidate_key index. It binds identity and the exact weak/missing lists already present in that candidate.'},
+        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string'},
+        supporting_refs={**ref_list, 'minItems': 1, 'description': 'Use reference_index values: at least two strong references of this instrument including a current quote; at most 12.'},
+        conflicting_refs=ref_list, uncertainties={'type': 'array', 'items': {'type': 'string'}, 'description': 'At most 12 distinct strings.'})
+    items = dict(type='object', additionalProperties=False, required=list(properties), properties=properties)
     return dict(type='object', additionalProperties=False, required=['schema_version', 'candidates', 'limitations'],
                 properties=dict(schema_version={'type': 'string', 'enum': [SCHEMA_VERSION]},
                     candidates=dict(type='array', items=items, description=f'Zero to {MAX_SELECTED} distinct candidates, in rank order.'),
@@ -159,6 +170,19 @@ def parse_reduction(raw: str, candidates: list[dict]) -> tuple[dict | None, str 
     by_id = {c['instrument']['instrument_id']: c for c in candidates}
     used = set()
     for rank, pick in enumerate(selected, 1):
+        if isinstance(pick, dict) and set(pick) == {'candidate_key', 'rank', 'rationale', 'supporting_refs', 'conflicting_refs', 'uncertainties'}:
+            key = pick['candidate_key']
+            if type(key) is not int or not 0 <= key < len(candidates):
+                return None, 'UNKNOWN_OR_DUPLICATE_CANDIDATE'
+            refs = reference_ids(candidates)
+            for name in ('supporting_refs', 'conflicting_refs'):
+                indices = pick[name]
+                if not isinstance(indices, list) or any(type(i) is not int or not 0 <= i < len(refs) for i in indices):
+                    return None, 'UNKNOWN_OR_UNRELATED_REF'
+            # Decode only packet-local bindings explicitly selected by the model, then run every canonical gate.
+            pick = {**candidate_metadata(candidates[key]), **{k:v for k,v in pick.items() if k != 'candidate_key'},
+                    'supporting_refs': [refs[i] for i in pick['supporting_refs']], 'conflicting_refs': [refs[i] for i in pick['conflicting_refs']]}
+            selected[rank-1] = pick
         if not isinstance(pick, dict) or set(pick) != {'instrument_id', 'rank', 'rationale', 'supporting_refs', 'conflicting_refs', 'weak_refs', 'missing_capabilities', 'uncertainties'}:
             return None, 'SCHEMA_INVALID'
         for name in ('weak_refs', 'missing_capabilities'):
