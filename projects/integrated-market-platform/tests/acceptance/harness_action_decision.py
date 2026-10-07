@@ -25,6 +25,7 @@ from market_platform_foundation.intelligence.contracts.opportunity import Opport
 from market_platform_foundation.intelligence.contracts.common import IntelligenceScope, QualitySummary
 from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
 from tests.intelligence.test_action_decision import candidate, proposal
+from tests.support.controlled_ai_run import start_controlled_run
 
 def iso(value): return datetime.fromtimestamp(value,UTC).isoformat().replace('+00:00','Z')
 
@@ -60,7 +61,7 @@ class Handler(UiApiHandler):
         path=urlparse(self.path).path
         if path=='/screener/ai-screener':
             body=json.loads(self.rfile.read(int(self.headers.get('Content-Length','0'))) or b'{}')
-            self._send_json(dict(self.run,scope=body)); return
+            self._send_json(start_controlled_run(self.store.paper_ledger.paper_account_id,body,lambda scope:dict(self.run,scope=scope))); return
         if path in ('/paper/orders','/paper/order/submit','/paper/orders/submit'):
             self._send_error_json('HARNESS_SUBMIT_DISABLED','This harness only previews.',status=403); return
         super().do_POST()

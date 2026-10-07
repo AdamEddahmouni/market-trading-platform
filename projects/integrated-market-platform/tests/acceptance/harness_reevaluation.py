@@ -26,6 +26,7 @@ from market_platform_foundation.ui_api.screener_reevaluation import Reevaluation
 from market_platform_foundation.ui_api.server import UiApiHandler
 from market_platform_foundation.ui_api.store import ReplayStore
 from tests.intelligence.test_reevaluation import Clock, FixtureAi, FixtureProvider, iso
+from tests.support.controlled_ai_run import start_controlled_run
 
 ET = ZoneInfo('America/New_York')
 INSTRUMENT = 'US:NVDA'
@@ -133,7 +134,7 @@ class Handler(UiApiHandler):
                        provider_id=self.provider.provider_id, model_id=self.provider.model_id, runtime='LOCAL_MODEL', prompt_id='screener.candidate_reduction.v1',
                        prompt_version='1', prompt_hash='fixture', packet_bytes=1000, cache='MISS', simulated=True, limitations=['SOFTWARE_CONTROLLED_EVIDENCE'], coverage={})
             action_repository().put('candidate_run', identity, run)
-            self._send_json(dict(run, scope=body))
+            self._send_json(start_controlled_run(self.store.paper_ledger.paper_account_id, body, lambda scope: dict(run, scope=scope)))
         elif path.startswith('/paper/') or 'submit' in path or path.startswith('/live/'):
             Handler.submit_attempts += 1
             self._send_error_json('HARNESS_SUBMIT_DISABLED', 'This harness never submits.', status=403)

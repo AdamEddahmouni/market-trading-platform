@@ -19,6 +19,7 @@ from ..intelligence.inference.candidate_reduction import (
     CandidateReducer,
     build_candidate,
 )
+from ..intelligence.inference.run_progress import report_stage
 from .screener_freshness import project_screener_response
 from .screener_multi import multi_screener_service
 from .screener_universes import universe_spec
@@ -150,12 +151,17 @@ class ScreenerAiService:
         # OCT1-07 reads already-owned flow state without refreshing shared News providers.
         include_flow = refresh_news if include_flow is None else include_flow
         query = self._query(body)
+        report_stage("SCOPE")
         page = self._reader.read(universe=query["universe"], search=query["search"], sort=query["sort"],
                                  descending=query["descending"], offset=0, limit=MAX_INTAKE,
                                  filters=query["filters"], result_set=query["result_set"])
         raw_rows = list(page.get('rows') or [])[:MAX_INTAKE]
+        # Stages are reported in the order the work really happens: news is read before the evidence
+        # cutoff is taken, so the cutoff is never older than the news refresh that preceded it.
+        report_stage("NEWS")
         news_reader = getattr(self._news_service(), 'candidate_evidence', None)
         news = news_reader(universe=query['universe'], rows=raw_rows, refresh=refresh_news) if news_reader else {}
+        report_stage("EVIDENCE")
         now = _iso(self._clock)
         projected = project_screener_response("/screener", {**page, "rows": list(page.get("rows") or [])[:MAX_INTAKE]}, now=now)
         rows = projected["rows"]
@@ -168,6 +174,7 @@ class ScreenerAiService:
                       for row in rows]
         from .screener_news_evidence import attach_news, fit_news
 
+        report_stage("PACKET", intake_count=len(candidates))
         for candidate, row in zip(candidates, rows):
             candidate['instrument']['company'] = str(row.get('company') or '')[:120]
             identifier = candidate['instrument']['instrument_id']
@@ -181,6 +188,18 @@ class ScreenerAiService:
 
     def _ai_status(self) -> dict[str, Any]:
         return self._news_service().ai_status()
+
+    def engine(self) -> dict[str, Any]:
+        """The engine the next run would use and its request timeout. Calls no model."""
+        reducer = self._provider_reducer()
+        provider = reducer.provider
+        return {"provider_id": getattr(provider, "provider_id", None), "model_id": getattr(provider, "model_id", None),
+                "runtime": (getattr(provider, "runtime", None) or "PAID_API") if provider is not None else None,
+                "timeout_seconds": reducer.config.timeout_seconds}
+
+    def validate_scope(self, body: dict[str, Any]) -> dict[str, Any]:
+        """The normalized Screener scope, or ValueError. Reads nothing."""
+        return self._query(body)
 
     def preview(self, body: dict[str, Any]) -> dict[str, Any]:
         scope, candidates, now, page_meta = self._packet(body)
@@ -202,6 +221,7 @@ class ScreenerAiService:
         reducer = self._provider_reducer()
         result = reducer.reduce(scope, candidates, now)
         from ..local_state.action_decisions import action_repository
+        report_stage("STORED")
         if action_repository().get('candidate_run', result['run_id']) is None:
             action_repository().put('candidate_run', result['run_id'], result)
         return {**result, "schema_version": SCHEMA_VERSION, "scope": scope,
@@ -223,9 +243,5 @@ def read_ai_screener_preview(body: dict[str, Any]) -> dict[str, Any]:
     return screener_ai_service().preview(body)
 
 
-def request_ai_screener(body: dict[str, Any]) -> dict[str, Any]:
-    return screener_ai_service().run(body)
-
-
 __all__ = ["MAX_INTAKE", "PREVIEW_SCHEMA_VERSION", "SCHEMA_VERSION", "ScreenerAiService",
-           "observations_for_row", "read_ai_screener_preview", "request_ai_screener", "screener_ai_service"]
+           "observations_for_row", "read_ai_screener_preview", "screener_ai_service"]

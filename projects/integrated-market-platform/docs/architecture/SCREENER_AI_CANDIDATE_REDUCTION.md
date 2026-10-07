@@ -40,6 +40,36 @@ status, and never calls an inference provider. `POST /screener/ai-screener` is
 `state.write` because it performs the explicit operator-requested synthesis;
 it has no execution side effect.
 
+The POST returns at once with a tracked run (`screener-ai-screener-run/1.0.0`)
+and the work continues on the server. `GET /screener/ai-screener/runs/{run_id}`
+(`state.read`) returns that run: its stage, per-stage measured time, packet
+size, candidate counts and, once finished, the stored result
+(`screener-ai-screener/1.0.0`, unchanged). `GET /screener/ai-screener/runs/active`
+(`state.read`) returns the account's run in progress and its latest finished
+run without result bodies, which is what a reloaded page attaches to. Reading
+status never starts a run. There is one run per account: a second POST while a
+run is in progress joins it (`joined: true`) and starts nothing.
+
+Stages are reported in the order the work happens: `SCOPE`, `NEWS`,
+`EVIDENCE`, `PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`, `VALIDATION`, `STORED`.
+News is read before the evidence cutoff is taken, so `NEWS` precedes
+`EVIDENCE`. A stage that did not happen is absent: `BUDGET_RESERVED` only when
+a paid engine's reservation was actually held, and no model stages for a
+cached answer or a refused reservation. The model call is one blocking request
+with no streaming, so progress is stages with elapsed time and never a
+percentage. `MODEL_CALL` is reported with the request timeout and the median
+latency of earlier measured calls to the same model in this server process
+(absent until one has been measured). Stage reporting is observation only
+(`intelligence/inference/run_progress.py`): it does not change the packet, the
+prompt, the call or the result, and callers that do not observe (the
+reevaluation loop, Action Decisions, News synthesis) are unaffected.
+
+Tracked runs live in the server process (the last 20). A server restart ends
+an in-flight run and forgets its tracking record; the stored candidate run
+remains the durable record of any result. A run that raises ends as `FAILED`
+with a stable reason code and the stage it failed in; no other error text
+leaves the process.
+
 The service reuses the News service's selected provider instance, model
 catalog, secret handling and shared paid-engine daily budget. Local inference
 uses the same provider boundary without a second budget. Provider status and
@@ -88,8 +118,12 @@ content hash, provider and model. Volatile cutoff, snapshot/evaluation display
 clocks and age are excluded from cache identity; material source clocks and
 evidence deadlines remain bound. Expiry is the earliest admitted evidence deadline or the
 30-minute cap, whichever comes first. Inflight requests deduplicate; failures
-are also cached to avoid automatic rebilling. Scope changes withdraw results
-and discard late responses. No expiry or scope event automatically runs a model.
+are also cached to avoid automatic rebilling. A result is drawn only under the
+Screener query it answered (universe, view, saved screen, search, sort and
+filters); under any other query it is withheld. A refresh of the Screener list
+does not withdraw it: the result states its own cutoff and the UI notes that
+the list has refreshed since. No expiry or scope event automatically runs a
+model.
 
 The UI shows engine/model, shared daily budget where available, packet/cost
 estimate, selected/intake counts, cutoff and expiry. Supporting, conflicting,

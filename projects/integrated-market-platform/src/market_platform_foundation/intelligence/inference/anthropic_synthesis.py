@@ -32,6 +32,7 @@ from .config import IntelligenceInferenceConfig
 from .contracts import IntelligenceInputPacket, ParsingStatus
 from .errors import InferenceErrorCode
 from .provider import ANTHROPIC_API_URL, ProviderInferenceResponse
+from .run_progress import report_stage
 
 PROVIDER_ID = "anthropic.messages"
 # Sonnet: strong grounding and conflict handling at a moderate per-call cost. Override with IMP_SYNTHESIS_ANTHROPIC_MODEL.
@@ -217,6 +218,8 @@ class AnthropicSynthesisProvider:
 class BudgetedProvider:
     """Any provider behind a ``DailyBudget``: over-limit calls are refused before a request is sent."""
 
+    reports_stages = True  # announces BUDGET_RESERVED, then MODEL_CALL, only once the reservation is held
+
     def __init__(self, provider: Any, budget: DailyBudget) -> None:
         self._provider = provider
         self.budget = budget
@@ -242,8 +245,10 @@ class BudgetedProvider:
             return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id,
                                              error_code=InferenceErrorCode.PROVIDER_RATE_LIMIT, error_message=reason,
                                              parsing_status=ParsingStatus.PROVIDER_ERROR, latency_ms=0)
+        report_stage("BUDGET_RESERVED", reserved_tokens=worst_case)
         response = None
         try:
+            report_stage("MODEL_CALL")
             response = self._provider.infer(packet, rendered_prompt=rendered_prompt, config=config)
             return response
         finally:

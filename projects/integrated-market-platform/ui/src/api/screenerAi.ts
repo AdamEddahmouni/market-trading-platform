@@ -75,7 +75,53 @@ export function fetchAiScreenerPreview(scope: AiScreenerScope, signal?: AbortSig
   return fetchJson(`/screener/ai-screener/preview?${queryFor(scope)}`, AiScreenerPreviewSchema, signal ? { signal } : undefined);
 }
 
-/** Explicit operator action; GET is intentionally not used for inference. */
+const RunStageSchema = z.object({ stage: z.string(), started_at: z.string(), elapsed_ms: z.number(), detail: z.record(z.unknown()) });
+const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string(),
+  selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), intake_count: z.number().nullable().optional(),
+  cache: z.string().nullable().optional(), simulated: z.boolean().nullable().optional(), provider_id: z.string().nullable(), model_id: z.string().nullable(),
+  runtime: z.string().nullable(), tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(),
+  latency_ms: z.number().nullable().optional(), packet_bytes: z.number().nullable().optional(), decision_cutoff: z.string().nullable().optional(),
+  valid_until: z.string().nullable().optional(), limitations: z.array(z.string()),
+}).passthrough();
+/** One tracked run. `run_id` identifies the run being watched; the stored candidate run is `summary.candidate_run_id`. */
+export const AiScreenerRunSchema = z.object({ schema_version: z.literal("screener-ai-screener-run/1.0.0"), run_id: z.string(), account_id: z.string(),
+  state: z.enum(["RUNNING", "COMPLETED", "FAILED"]), joined: z.boolean(), scope: ScopeSchema, stage: z.string().nullable(), stage_order: z.array(z.string()),
+  stages: z.array(RunStageSchema), started_at: z.string(), finished_at: z.string().nullable(), elapsed_ms: z.number(),
+  engine: z.object({ provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable() }),
+  timeout_seconds: z.number(), typical_latency_ms: z.number().nullable(), typical_latency_samples: z.number(),
+  intake_count: z.number().nullable(), sufficient_count: z.number().nullable(), packet_bytes: z.number().nullable(),
+  summary: RunSummarySchema.nullable(), result: AiScreenerResultSchema.nullable(), error: z.object({ code: z.string(), stage: z.string().nullable() }).nullable(),
+}).passthrough();
+export type AiScreenerRun = z.infer<typeof AiScreenerRunSchema>;
+export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screener-ai-screener-runs/1.0.0"),
+  active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable() }).passthrough();
+export type AiScreenerRuns = z.infer<typeof AiScreenerRunsSchema>;
+
+function sorted(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sorted);
+  if (value && typeof value === "object") return Object.fromEntries(Object.entries(value as Record<string, unknown>).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([key, item]) => [key, sorted(item)]));
+  return value;
+}
+
+/** Identity of the Screener query a run answers. The list snapshot (`result_set`) is not part of it: the same query
+ *  after a list refresh is still the same question, and a result states its own cutoff. */
+export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown }) {
+  return JSON.stringify(sorted({ universe: scope.universe, search: scope.search, sort: scope.sort ?? null, descending: scope.descending,
+    filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "" }));
+}
+
+/** Explicit operator action; GET is intentionally not used for inference. Returns at once: the run continues on the
+ *  server, and a run already in progress for this account is joined instead of starting a second one. */
 export function postAiScreener(scope: AiScreenerScope, signal?: AbortSignal) {
-  return postJson("/screener/ai-screener", scope, AiScreenerResultSchema, signal ? { signal } : undefined);
+  return postJson("/screener/ai-screener", scope, AiScreenerRunSchema, signal ? { signal } : undefined);
+}
+
+/** Read-only: the run in progress and the latest finished run for this account, without result bodies. */
+export function fetchAiScreenerRuns(signal?: AbortSignal) {
+  return fetchJson("/screener/ai-screener/runs/active", AiScreenerRunsSchema, signal ? { signal } : undefined);
+}
+
+/** Read-only: one tracked run, with its full result once finished. */
+export function fetchAiScreenerRun(runId: string, signal?: AbortSignal) {
+  return fetchJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}`, AiScreenerRunSchema, signal ? { signal } : undefined);
 }

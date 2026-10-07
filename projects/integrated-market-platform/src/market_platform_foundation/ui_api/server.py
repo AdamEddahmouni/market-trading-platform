@@ -523,6 +523,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 except (ValueError, TypeError, json.JSONDecodeError) as exc:
                     self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
+            if path.startswith("/screener/ai-screener/runs/"):
+                # Run status the server actually knows: stage, elapsed time and, once finished, the result. Never calls a model.
+                from .screener_ai_runs import ai_screener_runs
+
+                account = self.store.paper_ledger.paper_account_id
+                run_id = path.removeprefix("/screener/ai-screener/runs/")
+                if run_id == "active":
+                    self._send_json(ai_screener_runs().current(account))
+                    return
+                run = ai_screener_runs().read(account, run_id)
+                if run is None:
+                    self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
+                                          status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(run)
+                return
             if path == "/screener/news/synthesis/preview":
                 # AI status and the pre-click cost of a paid synthesis; a read that never calls a model.
                 from .screener_news import read_synthesis_preview
@@ -1781,10 +1797,11 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if path == "/screener/ai-screener":
             # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.
-            from .screener_ai import request_ai_screener
+            # The run continues on the server; this returns its id at once and joins a run already in progress.
+            from .screener_ai_runs import ai_screener_runs
 
             try:
-                result = request_ai_screener(body)
+                result = ai_screener_runs().start(self.store.paper_ledger.paper_account_id, body)
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return

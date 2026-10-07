@@ -126,7 +126,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="audit.read")
         if path.startswith("/assistant/conversations"):
             return RoutePolicy(capability="state.read")
-        if path == "/screener/ai-screener/preview":
+        if path == "/screener/ai-screener/preview" or path.startswith("/screener/ai-screener/runs/"):
+            # Preview and run status are reads: neither starts a run nor calls a model.
             return RoutePolicy(capability="state.read")
         if path == "/canary/snapshot" or path == "/canary/reconciliation":
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.QUERY_ACCOUNT_ID)
