@@ -15,8 +15,10 @@ export function useAiScreenerRuns(enabled: boolean) {
     refetchInterval: (query) => !enabled ? false : query.state.data?.active ? 1_000 : 5_000 });
   const start = useMutation({ mutationFn: (scope: AiScreenerScope) => postAiScreener(scope), onSuccess: (run) => {
     if (run.state !== "RUNNING") client.setQueryData(aiRunKey(run.run_id), run);
-    client.setQueryData<AiScreenerRuns>(AI_RUNS_KEY, (old) => ({ schema_version: "screener-ai-screener-runs/1.0.0",
-      active: run.state === "RUNNING" ? run : null, latest: run.state === "RUNNING" ? old?.latest ?? null : { ...run, result: null } }));
+    // Shown at once; the next status read replaces it with the server's own account of state and budget.
+    client.setQueryData<AiScreenerRuns>(AI_RUNS_KEY, (old) => old && ({ ...old, state: run.state === "RUNNING" ? "RUNNING" : old.state,
+      active: run.state === "RUNNING" ? run : null, latest: run.state === "RUNNING" ? old.latest : { ...run, result: null } }));
+    void client.invalidateQueries({ queryKey: AI_RUNS_KEY });
   } });
   return { runs, start };
 }

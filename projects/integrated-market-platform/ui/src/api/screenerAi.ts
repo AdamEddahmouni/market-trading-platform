@@ -93,8 +93,14 @@ export const AiScreenerRunSchema = z.object({ schema_version: z.literal("screene
   summary: RunSummarySchema.nullable(), result: AiScreenerResultSchema.nullable(), error: z.object({ code: z.string(), stage: z.string().nullable() }).nullable(),
 }).passthrough();
 export type AiScreenerRun = z.infer<typeof AiScreenerRunSchema>;
-export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screener-ai-screener-runs/1.0.0"),
-  active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable() }).passthrough();
+const RunBudgetSchema = z.object({ day: z.string(), tokens: z.number(), max_tokens: z.number(), requests: z.number(), max_requests: z.number(),
+  tokens_left: z.number(), requests_left: z.number(), per_run_tokens: z.number().nullable(), per_run_basis: z.string().nullable(),
+  runs_left: z.number().nullable(), resets_at: z.string() }).passthrough();
+/** What the Screener shows at all times: engine state, budget in runs-left terms, the run in progress, the latest finished run. */
+export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screener-ai-screener-runs/1.1.0"),
+  state: z.enum(["RUNNING", "IDLE", "WAITING_FOR_BUDGET", "BLOCKED", "NOT_CONFIGURED"]),
+  ai: z.object({ state: z.string().nullable(), reason: z.string().nullable(), provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable() }),
+  budget: RunBudgetSchema.nullable(), active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable() }).passthrough();
 export type AiScreenerRuns = z.infer<typeof AiScreenerRunsSchema>;
 
 function sorted(value: unknown): unknown {

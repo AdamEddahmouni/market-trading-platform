@@ -47,10 +47,12 @@ describe("AI Screener API contract", () => {
 
   it("reads run status with GET and carries the stored result only when the run has finished", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL) => new Response(JSON.stringify(String(url).endsWith("/runs/active")
-      ? { schema_version: "screener-ai-screener-runs/1.0.0", active: running, latest: null }
+      ? { schema_version: "screener-ai-screener-runs/1.1.0", state: "RUNNING", ai: { state: "AVAILABLE", reason: null, provider_id: "inference.test", model_id: "candidate.v1", runtime: "LOCAL_MODEL" },
+          budget: null, active: running, latest: null }
       : { ...running, state: "COMPLETED", stage: null, finished_at: "2026-10-02T15:00:12Z", result: stored,
           summary: { state: "NO_GROUNDED_CANDIDATES", reason: null, candidate_run_id: "run-1", selected: [], provider_id: "inference.test", model_id: "candidate.v1", runtime: "LOCAL_MODEL", limitations: [] } }), { status: 200 })));
-    expect((await fetchAiScreenerRuns()).active?.stage).toBe("MODEL_CALL");
+    const current = await fetchAiScreenerRuns();
+    expect([current.state, current.active?.stage, current.budget]).toEqual(["RUNNING", "MODEL_CALL", null]);
     const done = await fetchAiScreenerRun("track 1");
     expect(done.result?.state).toBe("NO_GROUNDED_CANDIDATES");
     expect(vi.mocked(fetch).mock.calls.map(([url, init]) => [url, init?.method ?? "GET"])).toEqual([

@@ -15,13 +15,13 @@ import threading
 import time
 import uuid
 from collections import OrderedDict, deque
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, time as day_time, timedelta
 from typing import Any, Callable
 
 from ..intelligence.inference.run_progress import observing
 
 RUN_SCHEMA = "screener-ai-screener-run/1.0.0"
-RUNS_SCHEMA = "screener-ai-screener-runs/1.0.0"
+RUNS_SCHEMA = "screener-ai-screener-runs/1.1.0"
 # The order the work happens in. A stage that did not happen (no budget, cached answer) is absent from a run.
 STAGES = ("SCOPE", "NEWS", "EVIDENCE", "PACKET", "BUDGET_RESERVED", "MODEL_CALL", "VALIDATION", "STORED")
 MAX_TRACKED_RUNS = 20
@@ -58,6 +58,7 @@ class AiScreenerRuns:
         self._runs: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._active: dict[str, dict[str, Any]] = {}
         self._latencies: dict[str, deque[int]] = {}
+        self._reservations: dict[str, int] = {}
 
     def _service(self) -> Any:
         if self._fixed_service is not None:
@@ -99,14 +100,37 @@ class AiScreenerRuns:
             return self._snapshot(run) if run is not None and run["account_id"] == account_id else None
 
     def current(self, account_id: str) -> dict[str, Any]:
-        """What a page attaches to after a reload: the run in progress and the latest finished run, without results."""
+        """What a page shows and attaches to: the engine's state and budget, the run in progress and the latest
+        finished run (without result bodies). Reads only; calls no model and starts nothing."""
+        ai = self._service().ai_status()
         with self._lock:
             active = self._active.get(account_id)
             latest = next((run for run in reversed(self._runs.values())
                            if run["account_id"] == account_id and run["state"] != "RUNNING"), None)
-            return {"schema_version": RUNS_SCHEMA,
+            budget = self._budget(ai)
+            exhausted = ai.get("reason") == "SYNTHESIS_DAILY_BUDGET_EXHAUSTED" or (budget is not None and budget["runs_left"] == 0)
+            state = ("RUNNING" if active is not None else "NOT_CONFIGURED" if ai.get("state") == "NOT_CONFIGURED"
+                     else "WAITING_FOR_BUDGET" if exhausted else "BLOCKED" if ai.get("state") != "AVAILABLE" else "IDLE")
+            return {"schema_version": RUNS_SCHEMA, "state": state,
+                    "ai": {key: ai.get(key) for key in ("state", "reason", "provider_id", "model_id", "runtime")}, "budget": budget,
                     "active": self._snapshot(active, result=False) if active is not None else None,
                     "latest": self._snapshot(latest, result=False) if latest is not None else None}
+
+    def _budget(self, ai: dict[str, Any]) -> dict[str, Any] | None:
+        """The shared daily budget in runs-left terms. The size of a run is the last reservation this engine's
+        model actually held; until one has been held it is unknown and no count is given."""
+        raw = ai.get("budget")
+        if not raw:
+            return None
+        tokens_left = max(0, int(raw["max_tokens"]) - int(raw["tokens"]))
+        requests_left = max(0, int(raw["max_requests"]) - int(raw["requests"]))
+        per_run = self._reservations.get(ai.get("model_id") or "")
+        resets = datetime.combine(date.fromisoformat(raw["day"]) + timedelta(days=1), day_time(), UTC)
+        return {"day": raw["day"], "tokens": int(raw["tokens"]), "max_tokens": int(raw["max_tokens"]), "requests": int(raw["requests"]),
+                "max_requests": int(raw["max_requests"]), "tokens_left": tokens_left, "requests_left": requests_left,
+                "per_run_tokens": per_run, "per_run_basis": "LAST_RESERVATION" if per_run else None,
+                "runs_left": min(requests_left, tokens_left // per_run) if per_run else None,
+                "resets_at": resets.isoformat().replace("+00:00", "Z")}
 
     def _enter(self, run: dict[str, Any], stage: str, detail: dict[str, Any]) -> None:
         if stage not in STAGES:
@@ -124,6 +148,8 @@ class AiScreenerRuns:
             for key in ("intake_count", "sufficient_count", "packet_bytes"):
                 if key in kept:
                     run[key] = kept[key]
+            if stage == "BUDGET_RESERVED" and isinstance(kept.get("reserved_tokens"), int) and run["engine"]["model_id"]:
+                self._reservations[run["engine"]["model_id"]] = kept["reserved_tokens"]
 
     def _work(self, service: Any, run: dict[str, Any], scope: dict[str, Any]) -> None:
         result = error = None

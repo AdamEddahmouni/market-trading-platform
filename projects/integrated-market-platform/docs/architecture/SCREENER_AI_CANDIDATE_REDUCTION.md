@@ -64,6 +64,26 @@ latency of earlier measured calls to the same model in this server process
 prompt, the call or the result, and callers that do not observe (the
 reevaluation loop, Action Decisions, News synthesis) are unaffected.
 
+`runs/active` (`screener-ai-screener-runs/1.1.0`) is also what the Screener's
+always-visible AI strip reads. Besides the two runs it states one `state`
+(`RUNNING`, `IDLE`, `WAITING_FOR_BUDGET`, `BLOCKED`, `NOT_CONFIGURED`), the
+engine (`ai`) and, for a paid engine, the shared daily `budget` in runs-left
+terms. The size of a run is the last worst-case reservation actually held for
+that model in this server process (`per_run_basis: LAST_RESERVATION`); until
+one has been held, `runs_left` is null and the strip shows requests left
+instead of inventing a count. `WAITING_FOR_BUDGET` means the engine reports
+the budget exhausted, or another run of the measured size does not fit.
+
+The strip sits under the Screener header for every universe that offers the AI
+Screener. It shows the stage and measured time of a run in progress, the last
+pass with its selection count and an evidence-expiry countdown, the budget,
+and the scheduled loop's next cycle (read from
+`GET /screener/reevaluation/status`). `Run now` is the same explicit POST as
+the panel's Run AI Screener; `Stop automatic passes` is the existing
+reevaluation stop; `Open` opens the AI Screener panel. The strip starts
+nothing on its own and is not an ARIA live region, because it changes every
+second while a model works.
+
 Tracked runs live in the server process (the last 20). A server restart ends
 an in-flight run and forgets its tracking record; the stored candidate run
 remains the durable record of any result. A run that raises ends as `FAILED`

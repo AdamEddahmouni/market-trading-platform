@@ -199,3 +199,17 @@
 .reevaluation table { border-collapse: collapse; width: 100%; font-size: 11px; }
 .reevaluation th, .reevaluation td { border: 1px solid var(--border-color, #444); padding: 2px 6px; text-align: left; }
 .reevaluation caption { text-align: left; padding-block: 4px; }
+.ai-strip{display:flex;align-items:center;gap:8px;min-height:26px;padding:3px 10px;border-bottom:1px solid #223041;background:#0e151d;color:#c7d4e1;font-size:11px;flex-wrap:wrap}
+.ai-strip p{margin:0}
+.ai-strip-tag{color:#8ea0b3;font-weight:700;letter-spacing:.06em}
+.ai-strip-dot{width:8px;height:8px;border-radius:50%;border:1px solid #6f8296;flex:none}
+.ai-strip.running .ai-strip-dot{border-color:#70afff;background:#70afff}
+.ai-strip.waiting_for_budget .ai-strip-dot,.ai-strip.blocked .ai-strip-dot{border-color:#e2bc7d;background:#e2bc7d}
+.ai-strip.not_configured .ai-strip-dot,.ai-strip.unknown .ai-strip-dot{border-style:dashed}
+.ai-strip-main{flex:1 1 320px;min-width:0;color:#dce8f3}
+.ai-strip-budget{color:#8ea0b3;white-space:nowrap}
+.ai-strip-error{color:#ff9a8a}
+.ai-strip-actions{display:flex;gap:5px;margin-left:auto}
+.ai-strip-actions button{border:1px solid #33475c;border-radius:3px;padding:2px 8px;background:#141c26;color:#dce8f3;font:inherit;cursor:pointer}
+.ai-strip-actions button:disabled{opacity:.5;cursor:default}
+.ai-strip-actions button:focus-visible{outline:2px solid #70afff;outline-offset:1px}
