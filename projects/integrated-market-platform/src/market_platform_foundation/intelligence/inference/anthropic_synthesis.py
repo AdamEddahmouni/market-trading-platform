@@ -147,9 +147,15 @@ class DailyBudget:
         if self._path is not None:
             try:
                 loaded = json.loads(self._path.read_text(encoding="utf-8"))
-                state = loaded if isinstance(loaded, dict) else {}
-            except (OSError, ValueError):
+                if not isinstance(loaded, dict):
+                    raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                state = loaded
+            except FileNotFoundError:
                 state = {}
+            except (OSError, ValueError) as exc:
+                # Unknown persisted usage cannot become a fresh allowance. Preserve the file
+                # for repair and stop before a reservation can authorize any generation.
+                raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE") from exc
         return state
 
     def _rolled(self) -> dict[str, Any]:

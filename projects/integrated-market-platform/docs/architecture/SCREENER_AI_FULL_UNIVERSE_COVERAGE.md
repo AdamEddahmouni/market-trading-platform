@@ -282,6 +282,9 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
   persistence blocks generation; a failed settlement retains the persisted
   worst-case reservation. These locks coordinate one serving process, not
   multiple independent servers sharing the same quota file.
+  An unreadable or malformed existing quota file blocks reservation with
+  `SYNTHESIS_BUDGET_STATE_UNREADABLE`; unknown prior usage never becomes a
+  fresh allowance, and the file is preserved for repair.
 - **Completed restart reads.** A completed selection is read from its immutable
   candidate and parent terminal receipts after restart, with account isolation.
   Partial and interrupted receipts remain diagnostic records, never selections.

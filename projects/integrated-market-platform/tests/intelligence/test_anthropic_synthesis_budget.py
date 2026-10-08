@@ -148,6 +148,24 @@ class BudgetTests(unittest.TestCase):
                 with self.assertRaises(OSError):
                     budget.reserve(1000)
 
+    def test_unreadable_budget_state_cannot_reset_already_reserved_usage(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "quota.json"
+            budget = DailyBudget(path, max_requests=1, max_tokens=10)
+            self.assertIsNone(budget.reserve(10))
+            for malformed in ("{truncated", "[]"):
+                with self.subTest(malformed=malformed):
+                    path.write_text(malformed, encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                        budget.reserve(10)
+                    with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                        DailyBudget(path, max_requests=1, max_tokens=10)
+                    self.assertEqual(path.read_text(encoding="utf-8"), malformed)
+            with patch.object(Path, "read_text", side_effect=PermissionError("controlled read failure")):
+                with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                    budget.reserve(10)
+
     def test_engine_switch_instances_share_releases_and_spent_usage(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "quota.json"
