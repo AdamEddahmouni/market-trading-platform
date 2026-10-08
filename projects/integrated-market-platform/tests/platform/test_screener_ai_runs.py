@@ -473,6 +473,10 @@ class AiScreenerRunRouteTests(unittest.TestCase):
     """The HTTP contract: POST starts and returns at once; GET reads status and never starts anything."""
 
     def setUp(self) -> None:
+        from market_platform_foundation.local_state.ai_screener_coverage import CoverageLedger
+        ledger = patch("market_platform_foundation.local_state.ai_screener_coverage._LEDGER", CoverageLedger())
+        ledger.start()
+        self.addCleanup(ledger.stop)
         self.provider = GatedProvider()
         service = ScreenerAiService(reader=PagingReader(universe(120, strong={119: 90.0})), news=News(self.provider), clock=lambda: NOW)
         self.runs = AiScreenerRuns(service)
