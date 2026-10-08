@@ -103,10 +103,13 @@ class _Run:
 
 
 class ScreenerAiCoverage:
-    def __init__(self, service: Any, *, ledger: Any | None = None, software_sha: str | None = None) -> None:
+    def __init__(self, service: Any, *, ledger: Any | None = None, software_sha: str | None = None,
+                 repository: Any | None = None) -> None:
         self.service = service
         self._ledger = ledger
         self._software_sha = software_sha
+        # Where the one final candidate run is stored: the same repository the Action Decision layer reads.
+        self._repository = repository
 
     def ledger(self) -> Any:
         if self._ledger is None:
@@ -551,10 +554,13 @@ class ScreenerAiCoverage:
             block["reduction_run_id"] = final["run_id"]
             # Stored under this run's own id: the reducer's request id stays on the receipt as reduction_run_id.
             record = {**final, "run_id": "CU-" + run.run_id[:40], "universe_coverage": block}
-            from ..local_state.action_decisions import action_repository
+            repository = self._repository
+            if repository is None:
+                from ..local_state.action_decisions import action_repository
 
+                repository = action_repository()
             report_stage("STORED")
-            action_repository().put("candidate_run", record["run_id"], record)
+            repository.put("candidate_run", record["run_id"], record)
             result = {**record, "schema_version": RESULT_SCHEMA_VERSION, **common}
         else:
             if status == GLOBAL_SELECTION_COMPLETE:

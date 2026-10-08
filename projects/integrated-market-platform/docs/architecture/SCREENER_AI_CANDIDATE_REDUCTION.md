@@ -9,7 +9,15 @@ authority.
 
 The AI Screener is an explicit operator request that reduces the active
 Screener result set to at most five candidates grounded in the rows already
-visible to the server. It is a read-only analytical convenience. It cannot
+visible to the server. It is a read-only analytical convenience.
+
+This document is the contract for **one model request**: its evidence packet,
+wire, prompt and validation. Since `ai-screener-coverage/1.0.0` an operator Run
+covers the whole Screener query with many such requests; enumeration,
+per-row accounting, batching, the run's budget, global comparison, Stop and
+recovery are specified in
+[Screener AI full-universe coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md).
+Where this document says "intake" it means the rows of one request. It cannot
 retrieve new information, browse the web, call tools, create orders, size a
 position, produce a target or forecast, alter a portfolio, or start an
 autonomous loop.
@@ -18,9 +26,12 @@ The server owns the scope and evidence boundary:
 
 1. Reconstruct the active settled Screener scope (universe, search, sort,
    direction, filters, view/screen, match count and result-set/snapshot identity).
-2. Read no more than the first 50 matching rows. An explicit Run also acquires
-   allowlisted observations through the existing OpenD snapshot adapter; Preview
-   reads its bounded cache without acquisition.
+2. Put no more than 50 rows in one request. An operator Run enumerates every
+   matching row and sends each eligible one in a bounded batch (see the
+   coverage contract); the single-request method used by automatic passes reads
+   only the first 50 rows of the sorted result and never claims coverage. A Run
+   acquires allowlisted observations through the existing OpenD snapshot
+   adapter; Preview reads its bounded cache without acquisition.
 3. Project only allowlisted numeric quote, technical and dated rates/reference
    row facts into an isolated evidence packet. Other specialist capabilities
    remain explicitly missing; whole specialist payloads are not consumed.
@@ -42,23 +53,27 @@ status, and never calls an inference provider. `POST /screener/ai-screener` is
 `state.write` because it performs the explicit operator-requested synthesis;
 it has no execution side effect.
 
-The POST returns at once with a tracked run (`screener-ai-screener-run/1.0.0`)
+The POST returns at once with a tracked run (`screener-ai-screener-run/2.0.0`)
 and the work continues on the server. `GET /screener/ai-screener/runs/{run_id}`
-(`state.read`) returns that run: its stage, per-stage measured time, packet
-size, candidate counts and, once finished, the stored result
-(`screener-ai-screener/1.0.0`, unchanged). `GET /screener/ai-screener/runs/active`
+(`state.read`) returns that run: its stage, per-stage measured time, the counts
+it has produced so far and, once finished, the result
+(`screener-ai-screener/1.0.0`, with an additive `universe_coverage` block). `GET /screener/ai-screener/runs/active`
 (`state.read`) returns the account's run in progress and its latest finished
 run without result bodies, which is what a reloaded page attaches to. Reading
 status never starts a run. There is one run per account: a second POST while a
 run is in progress joins it (`joined: true`) and starts nothing.
 
-Stages are reported in the order the work happens: `SCOPE`, `NEWS`,
-`EVIDENCE`, `PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`, `VALIDATION`, `STORED`.
-News is read before the evidence cutoff is taken, so `NEWS` precedes
-`EVIDENCE`. A stage that did not happen is absent: `BUDGET_RESERVED` only when
-a paid engine's reservation was actually held, and no model stages for a
-cached answer or a refused reservation. The model call is one blocking request
-with no streaming, so progress is stages with elapsed time and never a
+A run's stages are `ENUMERATION`, `ELIGIBILITY`, `PLANNING`, `BUDGET_HELD`,
+`BATCH_INFERENCE`, `GLOBAL_REDUCTION`, `STORED` (coverage contract). Inside the
+batch and comparison stages each request reports the steps of one request,
+carried as the stage's `step`: `PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`,
+`VALIDATION`. The single-request method reports `SCOPE`, `NEWS`, `EVIDENCE`,
+`PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`, `VALIDATION`, `STORED` to a caller
+that observes it. News is read before the evidence cutoff is taken. A stage or
+step that did not happen is absent: `BUDGET_RESERVED` only when a paid engine's
+reservation was actually held, and no model step for a cached answer or a
+refused reservation. A model call is one blocking request with no streaming,
+so progress is stages, steps and real counts with elapsed time and never a
 percentage. `MODEL_CALL` is reported with the request timeout and the median
 latency of earlier measured calls to the same model in this server process
 (absent until one has been measured). Stage reporting is observation only
@@ -66,22 +81,24 @@ latency of earlier measured calls to the same model in this server process
 prompt, the call or the result, and callers that do not observe (the
 reevaluation loop, Action Decisions, News synthesis) are unaffected.
 
-`runs/active` (`screener-ai-screener-runs/1.2.0`) is also what the Screener's
+`runs/active` (`screener-ai-screener-runs/2.0.0`) is also what the Screener's
 always-visible AI strip reads. Besides the two runs it states one `state`
 (`RUNNING`, `IDLE`, `WAITING_FOR_BUDGET`, `BLOCKED`, `NOT_CONFIGURED`), the
-engine (`ai`) and, for a paid engine, the shared daily `budget` in runs-left
-terms. The size of a run is the last worst-case reservation actually held for
-that model in this server process (`run_size_basis: LAST_RESERVATION`); until
-one has been held, `runs_left` is null and the strip shows requests left
-instead of inventing a count. `WAITING_FOR_BUDGET` means the engine reports
-the budget exhausted, or another run of the measured size does not fit.
+engine (`ai`), runs a restart interrupted, and, for a paid engine, the shared
+daily `budget` including what a run in progress holds. `run_size` is what the
+last run held for its whole plan (`run_size_basis: LAST_RUN_HOLD`); it is
+information, not a gate, because the next query may need a different amount.
+`WAITING_FOR_BUDGET` means the budget itself is spent. A run the budget cannot
+pay for is refused by its own plan, before any model call, with the shortfall.
 
 The strip sits under the Screener header for every universe that offers the AI
 Screener. It shows the stage and measured time of a run in progress, the last
-pass with its selection count and an evidence-expiry countdown, the budget,
-and the scheduled loop's next cycle (read from
-`GET /screener/reevaluation/status`). `Run now` is the same explicit POST as
-the panel's Run AI Screener; `Stop automatic passes` is the existing
+pass with its selection count, how many rows the model evaluated out of how
+many the query matched, and an evidence-expiry countdown, the budget, and the
+scheduled loop's next cycle (read from `GET /screener/reevaluation/status`).
+A pass that did not finish is stated as incomplete, never as a selection
+count. `Run now` is the same explicit POST as the panel's Run AI Screener;
+`Stop run` stops the run in progress; `Stop automatic passes` is the existing
 reevaluation stop; `Open` opens the AI Screener panel. The strip starts
 nothing on its own and is not an ARIA live region, because it changes every
 second while a model works.
@@ -111,9 +128,11 @@ the AI Screener, Action Decisions and the reevaluation loop.
   fit. A local model too small for the current packet is marked in the picker
   and in the confirmation instead of being silently selectable.
 
-Tracked runs live in the server process (the last 20). A server restart ends
-an in-flight run and forgets its tracking record; the stored candidate run
-remains the durable record of any result. A run that raises ends as `FAILED`
+Tracked runs live in the server process (the last 20). A full-universe run
+also appends its receipts to the coverage ledger as it goes, so a restart that
+ends an in-flight run leaves a record: the run is closed as `INTERRUPTED` and
+nothing is resumed. The stored candidate run remains the durable record of a
+completed selection. A run that raises ends as `FAILED`
 with a stable reason code and the stage it failed in; no other error text
 leaves the process.
 
@@ -154,9 +173,13 @@ its final cutoff, so their counts may differ as ticks arrive or evidence ages.
 
 ## Limits and lifecycle
 
-The hard limits are `MAX_INTAKE=50`, `MAX_SELECTED=5` and a 320,000-byte packet.
-The 50-row intake is not closure of the full-universe blind-spot issue: rows
-beyond the first 50 are never seen by the model, and nothing here batches them.
+The hard limits of one request are `MAX_INTAKE=50` rows, `MAX_SELECTED=5` and a
+320,000-byte packet. They bound a batch, not the run: rows beyond the first 50
+are enumerated, classified and batched by the
+[coverage contract](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md). Historical: before
+`ai-screener-coverage/1.0.0` a run was one request over the first 50 rows (20
+before PR 481), and rows beyond them were never seen by the model. Runs stored
+under that method keep their records unchanged.
 
 Inference uses a compact wire (`ai-screener-wire/3.0.0`), separate from the
 stored result (`ai-screener-output/1.0.0`), which is unchanged:
@@ -193,10 +216,12 @@ records `wire_schema_version`, `output_schema_hash`, `prompt_id`,
 are part of cache identity. Shared news refresh precedes acquisition of
 short-lived market snapshots, so slow news providers cannot age newly acquired
 snapshots before the decision cutoff.
-Intake is the first 50 rows of the server's existing sorted/filtered result,
-independent of which page the browser has loaded; no additional ranking model
-is introduced. An explicit equity/ETF Run also reads one bounded OpenD
-market snapshot for this intake using the existing snapshot adapter. Its
+For the single-request method (automatic passes) intake is the first 50 rows
+of the server's existing sorted/filtered result, independent of which page the
+browser has loaded. An operator Run takes every matching row and orders
+eligible rows by identity, not by sort; no ranking model is introduced in
+either. An explicit equity/ETF Run also reads bounded OpenD market snapshots
+for the rows it assesses using the existing snapshot adapter. Its
 dedicated cache never alters the Screener's universe ordering or result chain.
 Preview reads this cache only. Price, volume, bid/ask/spread and change versus
 previous close carry the provider's row observation clock; `change_basis` is

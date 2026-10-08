@@ -611,6 +611,65 @@ class RecoveryTests(unittest.TestCase):
         self.assertIsNone(ledger.latest_terminal("PAPER-9"))
 
 
+class NewsEvidenceTests(unittest.TestCase):
+    """Real S11 news projection (controlled receipts): one symbol with stories, the rest of the universe with none."""
+
+    def harness(self, rows):
+        from tests.platform.test_screener_s11 import NOW as NEWS_NOW, service
+
+        provider = RankingProvider()
+        h = Harness(rows, provider, clock=lambda: NEWS_NOW)
+        h.service = ScreenerAiService(reader=h.reader, news=service(provider=provider), clock=lambda: NEWS_NOW)
+        return h
+
+    def rows(self, size=130):
+        as_of = "2026-09-28T14:00:00Z"
+        rows = [row(index, as_of=as_of) for index in range(size)]
+        for position, (symbol, company, rsi) in {7: ("AAPL", "Apple Inc.", 91.0), 128: ("MSFT", "Microsoft Corp", 88.0)}.items():
+            rows[position] = row(position, rsi=rsi, as_of=as_of)
+            rows[position]["instrument"].update(instrument_id="EQ:" + symbol, symbol=symbol)
+            rows[position].update(symbol=symbol, company=company)
+        return rows
+
+    def test_a_symbol_with_news_keeps_it_and_a_symbol_without_is_neither_favoured_nor_dropped(self):
+        h = self.harness(self.rows())
+        h.run()
+        reconciled(self, h.block, 130)
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(h.block["ai_evaluated_count"], 130)
+        self.assertEqual(h.selected(), ["EQ:AAPL", "EQ:MSFT"])
+        by_id = {item["instrument"]["instrument_id"]: item for item in h.result["evidence"]}
+        apple = by_id["EQ:AAPL"]
+        # Admitted news is in the final comparison's evidence with its own publication clock, not displaced by metadata.
+        stories = [item for item in apple["reference_evidence"] if item["capability"] == "NEWS"]
+        self.assertEqual(len(stories), 1)
+        self.assertEqual(stories[0]["facts"]["source_count"], 2)
+        self.assertLessEqual(stories[0]["as_of"], h.result["decision_cutoff"])
+        self.assertEqual(apple["news"]["story_count"], 1)
+        self.assertEqual(h.block["plan"]["reference_evidence_thinned"], 0)
+        # Batch membership is the same universe order whether or not any news exists: verbosity moves no row.
+        plain = Harness(self.rows(), clock=lambda: 1790604000.0)
+        plain.run()
+        first = lambda harness: [frozenset(call["instrument_ids"]) for call in harness.calls() if call["stage"] == "BATCH_INFERENCE"]
+        self.assertEqual(first(h), first(plain))
+        self.assertEqual(plain.selected(), ["EQ:AAPL", "EQ:MSFT"])
+
+    def test_a_story_published_after_the_cutoff_never_enters_the_decision(self):
+        from tests.platform.test_screener_s11 import FINVIZ, NOW as NEWS_NOW, finviz_row, service
+
+        late = {**FINVIZ, "items": [*FINVIZ["items"], finviz_row("Apple guidance raised after the bell", ["AAPL"], "2026-09-28 10:30:00", "https://r.test/apple-late")]}
+        provider = RankingProvider()
+        h = Harness(self.rows(), provider, clock=lambda: NEWS_NOW)
+        h.service = ScreenerAiService(reader=h.reader, news=service(provider=provider, finviz=late), clock=lambda: NEWS_NOW)
+        h.run()
+        apple = next(item for item in h.result["evidence"] if item["instrument"]["instrument_id"] == "EQ:AAPL")
+        headlines = [item["facts"]["headline"] for item in apple["reference_evidence"] if item["capability"] == "NEWS"]
+        # 10:30 ET is half an hour after this run's 14:00Z cutoff.
+        self.assertEqual(headlines, ["Apple unveils M5 MacBook lineup"])
+        for item in (*apple["current_market_evidence"], *apple["reference_evidence"]):
+            self.assertLessEqual(item["as_of"], h.result["decision_cutoff"])
+
+
 class ActionBoundaryTests(unittest.TestCase):
     def test_only_a_completed_global_selection_is_stored_as_a_candidate_run(self):
         h = Harness(universe(260, strong={3: 88.0, 259: 96.0}))
