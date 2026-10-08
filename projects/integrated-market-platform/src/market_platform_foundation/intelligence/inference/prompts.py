@@ -320,6 +320,20 @@ class PromptRegistry:
         for prompt in self._prompts:
             self._by_task[prompt.task_type] = prompt
             self._by_id[prompt.prompt_id] = prompt
+        if prompts is None:
+            original = self._by_id["screener.ai_candidate_reduction.v3"]
+            encoding = """Input encoding ai-screener-evidence-columns/1.0.0 is lossless:
+columns names candidate fields; evidence_columns names evidence fields.
+Each rows entry is [candidate_cell, current_market_evidence_cells, reference_evidence_cells].
+Each cell is [values, absent_indices]. Bind values[i] to columns[i] (or evidence_columns[i]);
+absent_indices means the field is absent, while a null value means explicitly null.
+Facts inside cells retain their original named fields. Read every candidate and all its evidence.
+candidate_key and reference_index retain their meanings and candidate-local ownership below.
+"""
+            self._by_id["screener.ai_candidate_reduction.v4"] = PromptDefinition(
+                prompt_id="screener.ai_candidate_reduction.v4", task_type=original.task_type, version="4.0.0",
+                template=encoding + original.template, output_schema_version=original.output_schema_version,
+                description="Lossless column input; unchanged candidate-local output wire")
 
     def get_for_task(self, task_type: IntelligenceTaskType) -> PromptDefinition:
         prompt = self._by_task.get(task_type)

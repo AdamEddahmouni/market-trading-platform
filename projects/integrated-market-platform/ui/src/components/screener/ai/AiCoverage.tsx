@@ -47,6 +47,7 @@ export function CoverageSummary({ coverage }: { coverage: AiScreenerCoverage }) 
     {excluded > 0 && <p className="ai-screener-meta">{excluded} batch {excluded === 1 ? "finalist was" : "finalists were"} left out of the final comparison: no admissible current evidence at that cutoff.</p>}
     <p className="ai-screener-meta">Not evaluated: {count(coverage.counts.ineligible)} ineligible · {count(coverage.counts.evidence_blocked)} evidence missing, stale or unavailable · {count(coverage.counts.unprocessed)} eligible but not processed{coverage.reconciled ? "" : " · counts do not reconcile"}.</p>
     <p className="ai-screener-meta">{budgetLine(coverage)}</p>
+    {coverage.efficiency && <p className="ai-screener-meta">{coverage.efficiency.reused_batches} reused batches · {coverage.efficiency.new_inference_requests} new requests · {compactTokens(coverage.efficiency.actual_input_tokens + coverage.efficiency.actual_output_tokens)} reported tokens · {compactTokens(coverage.efficiency.required_tokens ?? 0)} tokens required by the plan · {coverage.efficiency.estimated_provider_cost ? "estimated $" + coverage.efficiency.estimated_provider_cost.estimated_dollars.toFixed(4) + " using configured prices" : "Dollar estimate unavailable"}.</p>}
     {reasons.length > 0 && <details><summary>Why rows were not evaluated · {reasons.length} {reasons.length === 1 ? "reason" : "reasons"}</summary>
       <ul>{reasons.map(([reason, rows]) => <li key={reason}>{reason} · {rows.toLocaleString()}</li>)}</ul>
     </details>}

@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-08 — Full-universe AI inference budget efficiency
+
+| Field | Value |
+|-------|-------|
+| **Status** | implementation complete; validation and protected integration recorded in the acceptance receipt |
+| **Area** | AI Screener inference, evidence, shared quota and UI accounting |
+| **Summary** | Exact context reuse persists successful answers and avoids buying reusable batch/global comparisons. Each request retains its canonical manifest. Quota transactions coordinate processes and fail closed on malformed state; unknown usage remains charged. Optional lossless input columns and context fitting remain off pending real-provider quality controls. |
+| **Key files** | Candidate reducer, evidence compaction, inference identity, durable inference cache, shared quota, coverage planner/ledger, run progress and existing Screener UI |
+| **Tests** | Focused regression and downstream controlled lifecycle tests; complete validation and benchmark totals in the new acceptance receipt. Initial integration failures and their repair are retained there. Oversized-length HTTP fixtures now require rejection before any payload arrives, eliminating a reproduced Windows unread-body close race without changing production HTTP handling or weakening the 413 assertions. |
+| **Related** | [Budget-efficiency contract](../architecture/SCREENER_AI_BUDGET_EFFICIENCY.md), [acceptance receipt](../../artifacts/ai-screener-budget-efficiency-acceptance.json) |
+| **Notes** | SOFTWARE_CONTROLLED. Cold 4,630-row runs remain above default allowance; 94 cold calls become zero fully reusable calls and two after one changed candidate. No paid generation, model switch, active Paper campaign or Live authority. Historical October 7 evidence is preserved. |
+
 ## 2026-10-07 — Full-universe Screener final defect closure
 
 | Field | Value |

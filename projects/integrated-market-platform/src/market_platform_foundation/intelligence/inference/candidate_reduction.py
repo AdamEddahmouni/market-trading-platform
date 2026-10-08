@@ -20,6 +20,8 @@ from .hashing import input_hash_from_dict
 from .prompts import PromptRegistry
 from .run_progress import report_stage
 from .screener_synthesis import unsupported_certainty
+from .evidence_compaction import OPTIMIZER_VERSION, VERSION as INPUT_ENCODING_VERSION, compact, semantic_hash, verify
+from .inference_identity import provider_identity, reusable_engine
 
 PROMPT_ID = 'screener.ai_candidate_reduction.v3'
 SCHEMA_VERSION = 'ai-screener-output/1.0.0'
@@ -276,7 +278,8 @@ class ScreenerEvidencePacket:
 
 
 class CandidateReducer:
-    def __init__(self, *, provider=None, clock=time.time, not_configured_reason='NO_SYNTHESIS_PROVIDER_CONFIGURED'):
+    def __init__(self, *, provider=None, clock=time.time, not_configured_reason='NO_SYNTHESIS_PROVIDER_CONFIGURED',
+                 cache_store=None, compact_input=False):
         self.provider = provider
         self.clock = clock
         self.reason = not_configured_reason
@@ -286,27 +289,124 @@ class CandidateReducer:
         self.lock = threading.Lock()
         self.cache = OrderedDict()
         self.inflight = {}
+        self.cache_store = cache_store
+        self.compact_input = compact_input
+        self._cache_sizes = {}
+        self._cache_bytes = 0
+
+    @property
+    def prompt_id(self):
+        return 'screener.ai_candidate_reduction.v4' if self.compact_input else PROMPT_ID
+
+    def _entry(self, digest, candidates, *, successful_only=False):
+        if not self.config.enable_cache or not reusable_engine(self.provider):
+            return None
+        entry = self.cache.get(digest)
+        if (entry is None or entry[0] <= self.clock()) and self.cache_store is not None:
+            entry = self.cache_store.get(digest, self.clock())
+        if entry is None or entry[0] <= self.clock():
+            return None
+        result = entry[1]
+        if not isinstance(result, dict) or not isinstance(result.get('run_id'), str) or not result['run_id']:
+            return None
+        if result.get('input_hash') != digest:
+            return None
+        if result.get('state') not in ('CURRENT', 'NO_GROUNDED_CANDIDATES'):
+            return None if successful_only else entry  # failure cooldown is never completed inference work
+        try:
+            stored_digest, _, prompt, _ = self._prepare(result['scope'],result['evidence'],result['decision_cutoff'])
+            expected = {'schema_version':SCHEMA_VERSION,'wire_schema_version':WIRE_SCHEMA_VERSION,
+                'prompt_id':prompt.prompt_id,'prompt_version':prompt.version,'prompt_hash':prompt.content_hash,
+                'output_schema_hash':input_hash_from_dict(output_schema(candidates)),
+                'provider_id':getattr(self.provider,'provider_id',None),'model_id':getattr(self.provider,'model_id',None),
+                'runtime':getattr(self.provider,'runtime','PAID_API') if self.provider else None,
+                'simulated':getattr(getattr(self.provider,'_provider',self.provider),'runtime',None) == 'FIXTURE'}
+            if stored_digest != digest or any(result.get(key) != value for key,value in expected.items()):
+                return None
+            if bool(result['candidates']) != (result['state'] == 'CURRENT'):
+                return None
+            clocks = [timestamp(result.get(k)) for k in ('decision_cutoff','generated_at','valid_until')]
+            if any(clock is None for clock in clocks) or not clocks[0] <= clocks[1] <= timestamp(
+                    datetime.fromtimestamp(self.clock(),UTC).isoformat()):
+                return None
+            if self.clock() >= clocks[1].timestamp()+1800:
+                return None
+            selected_ids = {pick['instrument_id'] for pick in result['candidates']}
+            refs = {ref for pick in result['candidates'] for name in ('supporting_refs','conflicting_refs','weak_refs')
+                    for ref in pick[name]}
+            deadlines = [timestamp(e['valid_until']).timestamp() for c in result['evidence']
+                         for e in (*c['current_market_evidence'],*c['reference_evidence'])
+                         if e['valid_until'] and (not selected_ids or
+                            c['instrument']['instrument_id'] in selected_ids and e['evidence_id'] in refs)]
+            if clocks[2].timestamp() > min([clocks[1].timestamp()+1800,*deadlines]):
+                return None
+            for c in candidates:
+                for e in (*c['current_market_evidence'],*c['reference_evidence']):
+                    if e['valid_until'] and (timestamp(e['valid_until']) is None or timestamp(e['valid_until']).timestamp() <= self.clock()):
+                        return None
+        except (KeyError,TypeError,ValueError,AttributeError):
+            return None
+        parsed, reason = parse_reduction(json.dumps({key:result.get(key) for key in
+            ('schema_version','candidates','limitations')}), candidates)
+        if reason or parsed is None:
+            return None
+        if timestamp(result.get('decision_cutoff')) is None or timestamp(result.get('valid_until')) is None:
+            return None
+        if timestamp(result['decision_cutoff']).timestamp() > self.clock() or timestamp(result['valid_until']).timestamp() <= self.clock():
+            return None
+        return entry
+
+    def _remember(self, digest, expiry, result):
+        size = len(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+        self._cache_bytes -= self._cache_sizes.get(digest, 0)
+        self.cache[digest] = (expiry, result)
+        self._cache_sizes[digest] = size
+        self._cache_bytes += size
+        while len(self.cache) > 512 or self._cache_bytes > 128 * 1024 * 1024:
+            key, _ = self.cache.popitem(last=False)
+            self._cache_bytes -= self._cache_sizes.pop(key)
+
+    def _hit(self, result, now):
+        return {**result, 'cache':'HIT', 'reuse':{'origin_run_id':result['run_id'],
+                'origin_cutoff':result['decision_cutoff'], 'validated_at':now, 'contract':OPTIMIZER_VERSION}}
 
     def _prepare(self, scope, candidates, now):
         if len(candidates) > MAX_INTAKE:
             raise ValueError('INTAKE_BOUND_EXCEEDED')
-        prompt = self.registry.get_by_id(PROMPT_ID)
+        prompt = self.registry.get_by_id(self.prompt_id)
         # Evaluation clocks are recorded in the receipt, not volatile cache identity.
-        def stable(value):
-            if isinstance(value, dict):
-                return {k:stable(v) for k,v in value.items() if k not in ('cutoff','snapshot_at','evaluated_at','age_ms')}
-            if isinstance(value, list):
-                return [stable(v) for v in value]
-            return value
-        material = dict(scope=scope, candidates=stable(candidates), prompt_hash=prompt.content_hash,
+        # Only named evaluation metadata can be omitted. A fact named cutoff/snapshot_at is material.
+        projected = packet_candidates(candidates)
+        stable = []
+        for c in projected:
+            item = dict(c)
+            if isinstance(c.get('news'), dict):
+                item['news'] = {k:v for k,v in c['news'].items() if k != 'snapshot_at'}
+            if isinstance(c.get('alignments'), list):
+                item['alignments'] = [{k:v for k,v in a.items() if k != 'cutoff'} for a in c['alignments']]
+            stable.append(item)
+        material = dict(scope=scope, candidates=stable, prompt_hash=prompt.content_hash,
+                        optimizer_version=OPTIMIZER_VERSION, selection_method='FULL_UNIVERSE_TOURNAMENT_REDUCTION/1.0.0',
+                        input_encoding=INPUT_ENCODING_VERSION if self.compact_input else 'canonical-json/1.0.0',
+                        inference_config=self.config.to_dict(), runtime=getattr(self.provider,'runtime',None),
+                        provider_inference_identity=provider_identity(self.provider),
                         wire_schema_version=WIRE_SCHEMA_VERSION,
                         output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                         provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None))
-        digest = input_hash_from_dict(material)
+        digest = semantic_hash(material)
         # cutoff is recorded but not used as a volatile cache key: admitted facts and deadlines are hashed.
-        encoded = json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True)
-        if len(encoded.encode('utf-8')) > MAX_PACKET_BYTES:
+        manifest = dict(scope=scope, decision_cutoff=now, candidates=projected)
+        original = json.dumps(manifest, ensure_ascii=False, sort_keys=True)
+        # The canonical bound is retained even when the model representation is smaller.
+        if len(original.encode('utf-8')) > MAX_PACKET_BYTES:
             raise ValueError('EVIDENCE_PACKET_BOUND_EXCEEDED')
+        if self.compact_input:
+            packed = compact(manifest)
+            if not verify(manifest, packed):
+                raise ValueError('EVIDENCE_COMPACTION_NOT_EQUIVALENT')
+            encoded = json.dumps(packed, ensure_ascii=False, sort_keys=True, separators=(',',':'))
+        else:
+            encoded = original
         rendered = prompt.template.replace('{{evidence_json}}', encoded).replace('{{output_schema}}', json.dumps(output_schema(candidates)))
         return digest, rendered, prompt, len(encoded.encode('utf-8'))
 
@@ -318,12 +418,25 @@ class CandidateReducer:
     def estimate(self, scope, candidates, now):
         digest, rendered, _, size = self._prepare(scope, candidates, now)
         with self.lock:
-            entry = self.cache.get(digest)
-            cached = entry is not None and entry[0] > self.clock()
+            entry = self._entry(digest, candidates, successful_only=True)
+            cached = entry is not None
         worst = getattr(self.provider, 'worst_case_tokens', None)
+        inputs = estimate_tokens(rendered,getattr(self.provider,'model_id',None))
+        total = worst(rendered,self.config) if callable(worst) else None
+        accounting = getattr(self.provider,'request_accounting',None)
+        if callable(accounting):
+            packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION,'plan',digest,now,scope,candidates,output_schema(candidates))
+            try:
+                counted = accounting(packet,rendered_prompt=rendered,config=self.config)
+                inputs = counted['input_tokens']
+                total = max(total or 0,counted['total_tokens'])
+            except ValueError:
+                pass  # Unsupported contracts are rejected by the existing contract gate.
         return dict(intake_count=len(candidates), sufficient_count=sum(c['sufficient'] for c in candidates),
-                    packet_bytes=size, input_tokens=estimate_tokens(rendered, getattr(self.provider, 'model_id', None)),
-                    tokens=worst(rendered, self.config) if callable(worst) else None, cached=cached, input_hash=digest)
+                    packet_bytes=size, input_tokens=inputs,
+                    tokens=total, cached=cached, input_hash=digest,
+                    cached_selected=[p['instrument_id'] for p in entry[1]['candidates']] if cached else [],
+                    optimizer_version=OPTIMIZER_VERSION, input_encoding=INPUT_ENCODING_VERSION if self.compact_input else 'canonical-json/1.0.0')
 
     def preflight(self, scope, candidates, now):
         """The engine's own free count of this exact request, or None where it offers none. Spends nothing."""
@@ -334,12 +447,13 @@ class CandidateReducer:
         packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates))
         return check(packet, rendered_prompt=rendered, config=self.config)
 
-    def reduce(self, scope, candidates, now):
+    def reduce(self, scope, candidates, now, *, allow_inference=True):
         report_stage('PACKET')
         digest, rendered, prompt, size = self._prepare(scope, candidates, now)
         report_stage('PACKET', packet_bytes=size, intake_count=len(candidates), sufficient_count=sum(bool(c['sufficient']) for c in candidates))
         deadlines = [timestamp(e['valid_until']).timestamp() for c in candidates for e in (*c['current_market_evidence'], *c['reference_evidence']) if e['valid_until']]
         expiry = min([self.clock() + 1800, *deadlines])
+        reuse_expiry = expiry  # Every competitor, including an unselected candidate, bounds comparison reuse.
         base = dict(schema_version=SCHEMA_VERSION, run_id=uuid.uuid4().hex, decision_cutoff=now, generated_at=now,
                     scope=scope, provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None),
                     runtime=getattr(self.provider, 'runtime', 'PAID_API') if self.provider else None,
@@ -347,6 +461,7 @@ class CandidateReducer:
                     wire_schema_version=WIRE_SCHEMA_VERSION,
                     output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                     input_hash=digest, packet_bytes=size, evidence=candidates, candidates=[], limitations=[], cache='MISS', simulated=False,
+                    inference_dispatched=False,
                     valid_until=datetime.fromtimestamp(expiry, UTC).isoformat().replace('+00:00', 'Z'),
                     coverage=dict(candidate_intake=len(candidates), selected=0, evidence_items=sum(len(c['current_market_evidence']) + len(c['reference_evidence']) for c in candidates),
                                   blocked_items=sum(len(c['blocked']) for c in candidates), missing_items=sum(len(c['missing']) for c in candidates)))
@@ -360,9 +475,9 @@ class CandidateReducer:
         if not any(c['sufficient'] for c in candidates):
             return {**base, 'state': 'NO_GROUNDED_CANDIDATES', 'reason': 'INSUFFICIENT_EVIDENCE', 'limitations': ['No admissible current price plus additional strong evidence.']}
         with self.lock:
-            cached = self.cache.get(digest)
-            if cached and cached[0] > self.clock():
-                return {**cached[1], 'cache': 'HIT'}
+            cached = self._entry(digest, candidates)
+            if cached:
+                return self._hit(cached[1], now)
             waiter = self.inflight.get(digest)
             if waiter is None:
                 self.inflight[digest] = threading.Event()
@@ -371,13 +486,16 @@ class CandidateReducer:
             report_stage('MODEL_CALL', shared=True)
             waiter.wait(self.config.timeout_seconds + 5)
             with self.lock:
-                cached = self.cache.get(digest)
-            return {**cached[1], 'cache': 'HIT'} if cached and cached[0] > self.clock() else {**base, 'state': 'UNAVAILABLE', 'reason': 'SYNTHESIS_IN_PROGRESS_OR_EXPIRED'}
+                cached = self._entry(digest, candidates)
+            return self._hit(cached[1], now) if cached else {**base, 'state': 'UNAVAILABLE', 'reason': 'SYNTHESIS_IN_PROGRESS_OR_EXPIRED'}
         try:
+            if not allow_inference:
+                return {**base,'state':'UNAVAILABLE','reason':'REUSE_INVALIDATED_AFTER_PLANNING'}
             packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates))
             if not getattr(self.provider, 'reports_stages', False):
                 report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
+            base['inference_dispatched'] = not (response.error_message or '').startswith('SYNTHESIS_')
             base.update(provider_id=response.provider_id, model_id=response.model_id, tokens_input=response.tokens_input,
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
                         provider_response_id=response.provider_response_id, simulated=response.simulated,
@@ -405,9 +523,13 @@ class CandidateReducer:
                 result['coverage']['selected'] = len(result['candidates'])
             # Cache failures too: repeated explicit clicks never automatically re-bill invalid output.
             with self.lock:
-                self.cache[digest] = (min(expiry, self.clock() + (60 if result['state'] == 'UNAVAILABLE' else 1800)), result)
-                while len(self.cache) > 64:
-                    self.cache.popitem(last=False)
+                cache_expiry = min(reuse_expiry, expiry, self.clock() + (60 if result['state'] == 'UNAVAILABLE' else 1800))
+                self._remember(digest, cache_expiry, result)
+                if self.cache_store is not None and result['state'] in ('CURRENT','NO_GROUNDED_CANDIDATES'):
+                    try:
+                        self.cache_store.put(digest, cache_expiry, result, self.clock())
+                    except Exception:  # noqa: BLE001 - cache storage failure never changes a validated answer
+                        pass
             return result
         finally:
             with self.lock:
