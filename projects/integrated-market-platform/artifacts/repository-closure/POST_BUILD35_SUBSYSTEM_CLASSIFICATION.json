@@ -182,6 +182,7 @@
         "src/market_platform_foundation/research",
         "src/market_platform_foundation/shadow",
         "src/market_platform_foundation/strategy",
+        "tools/ai_screener_full_universe_acceptance.py",
         "tools/ai_screener_provider_contract.py",
         "tools/intelligence_enrichment_worker.py"
       ],

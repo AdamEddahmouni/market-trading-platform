@@ -53,7 +53,27 @@ export const AiScreenerPreviewSchema = z.object({ schema_version: z.literal("scr
 }).passthrough();
 export type AiScreenerPreview = z.infer<typeof AiScreenerPreviewSchema>;
 
+const CoverageCountsSchema = z.object({ evaluated: z.number(), ineligible: z.number(), evidence_blocked: z.number(), unprocessed: z.number(),
+  by_class: z.record(z.number()), reasons: z.record(z.number()) }).passthrough();
+/** Full-universe accounting of one run. Every enumerated row is in exactly one of the four counts. */
+export const AiScreenerCoverageSchema = z.object({ method_version: z.string(), status: z.string(), reason: z.string().nullable(),
+  universe_count: z.number().nullable(), assessed_count: z.number(), eligible_count: z.number(), ai_evaluated_count: z.number(),
+  ai_coverage_pct: z.number().nullable(), batches_planned: z.number(), batches_completed: z.number(), model_calls: z.number(),
+  finalist_count: z.number(), selected_count: z.number().nullable().optional(), coverage_complete: z.boolean(), selection_complete: z.boolean(),
+  reconciled: z.boolean(), counts: CoverageCountsSchema,
+  budget: z.object({ capped: z.boolean(), required_tokens: z.number().optional(), available_tokens: z.number().optional(),
+    required_requests: z.number().optional(), available_requests: z.number().optional(), tokens_input: z.number().optional(),
+    tokens_output: z.number().optional() }).passthrough(),
+  reduction: z.object({ rounds_planned: z.number(), rounds_completed: z.number() }).passthrough(),
+}).passthrough();
+export type AiScreenerCoverage = z.infer<typeof AiScreenerCoverageSchema>;
+const ProvisionalSchema = z.object({ instrument_id: z.string(), batch: z.number(), rank_in_batch: z.number(), rationale: z.string(),
+  evidence_cutoff: z.string(), valid_until: z.string() }).passthrough();
+
+/** `universe_coverage` is absent only on a result built by the single-request method (automatic passes, fixtures).
+ *  `provisional` lists batch finalists of a run that did not finish; they are never a selection. */
 export const AiScreenerResultSchema = z.object({ schema_version: z.literal("screener-ai-screener/1.0.0"), state: z.string(), reason: z.string().nullable().optional(),
+  universe_coverage: AiScreenerCoverageSchema.optional(), provisional: z.array(ProvisionalSchema).optional(),
   scope: ScopeSchema, matched_count: z.number(), intake_count: z.number(), max_intake: z.number(), result_set: z.string().nullable().optional(),
   run_id: z.string(), decision_cutoff: z.string(), generated_at: z.string(), valid_until: z.string(), input_hash: z.string(),
   provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable(), prompt_id: z.string(), prompt_version: z.string(), prompt_hash: z.string(),
@@ -77,15 +97,19 @@ export function fetchAiScreenerPreview(scope: AiScreenerScope, signal?: AbortSig
 }
 
 const RunStageSchema = z.object({ stage: z.string(), started_at: z.string(), elapsed_ms: z.number(), detail: z.record(z.unknown()) });
-const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string(),
+// `candidate_run_id` is null unless a candidate run was stored: only a completed global selection stores one.
+const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string().nullable(),
   selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), intake_count: z.number().nullable().optional(),
   cache: z.string().nullable().optional(), simulated: z.boolean().nullable().optional(), provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.string().nullable(), tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(),
   latency_ms: z.number().nullable().optional(), packet_bytes: z.number().nullable().optional(), decision_cutoff: z.string().nullable().optional(),
   valid_until: z.string().nullable().optional(), limitations: z.array(z.string()),
+  coverage: AiScreenerCoverageSchema.nullable().optional(), provisional_count: z.number().optional(),
 }).passthrough();
-/** One tracked run. `run_id` identifies the run being watched; the stored candidate run is `summary.candidate_run_id`. */
-export const AiScreenerRunSchema = z.object({ schema_version: z.literal("screener-ai-screener-run/1.0.0"), run_id: z.string(), account_id: z.string(),
+/** One tracked run. `run_id` identifies the run being watched; the stored candidate run is `summary.candidate_run_id`.
+ *  `progress` holds counts the run has actually produced so far; nothing in it is projected. */
+export const AiScreenerRunSchema = z.object({ schema_version: z.literal("screener-ai-screener-run/2.0.0"), run_id: z.string(), account_id: z.string(),
+  progress: z.record(z.number()).optional(), stop_requested: z.boolean().optional(), stop_requested_at: z.string().nullable().optional(),
   state: z.enum(["RUNNING", "COMPLETED", "FAILED"]), joined: z.boolean(), scope: ScopeSchema, stage: z.string().nullable(), stage_order: z.array(z.string()),
   stages: z.array(RunStageSchema), started_at: z.string(), finished_at: z.string().nullable(), elapsed_ms: z.number(),
   engine: z.object({ provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable() }),
@@ -96,9 +120,13 @@ export const AiScreenerRunSchema = z.object({ schema_version: z.literal("screene
 export type AiScreenerRun = z.infer<typeof AiScreenerRunSchema>;
 const RunBudgetSchema = z.object({ day: z.string(), tokens: z.number(), max_tokens: z.number(), requests: z.number(), max_requests: z.number(),
   headroom: z.number(), requests_left: z.number(), run_size: z.number().nullable(), run_size_basis: z.string().nullable(),
-  runs_left: z.number().nullable(), resets_at: z.string() }).passthrough();
-/** What the Screener shows at all times: engine state, budget in runs-left terms, the run in progress, the latest finished run. */
-export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screener-ai-screener-runs/1.2.0"),
+  runs_left: z.number().nullable(), resets_at: z.string(), held_tokens: z.number().optional(), held_requests: z.number().optional() }).passthrough();
+const InterruptedRunSchema = z.object({ run_id: z.string(), status: z.string().nullable(), reason: z.string().nullable(), finished_at: z.string().nullable(),
+  calls_completed: z.number().nullable().optional(), unknown_provider_outcomes: z.number() }).passthrough();
+/** What the Screener shows at all times: engine state, the shared budget, the run in progress, the latest finished run, and
+ *  runs a server restart killed (closed as interrupted; never resumed). */
+export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screener-ai-screener-runs/2.0.0"),
+  interrupted: z.array(InterruptedRunSchema).optional(),
   state: z.enum(["RUNNING", "IDLE", "WAITING_FOR_BUDGET", "BLOCKED", "NOT_CONFIGURED"]),
   ai: z.object({ state: z.string().nullable(), reason: z.string().nullable(), provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable() }),
   budget: RunBudgetSchema.nullable(), active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable() }).passthrough();
@@ -131,4 +159,24 @@ export function fetchAiScreenerRuns(signal?: AbortSignal) {
 /** Read-only: one tracked run, with its full result once finished. */
 export function fetchAiScreenerRun(runId: string, signal?: AbortSignal) {
   return fetchJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}`, AiScreenerRunSchema, signal ? { signal } : undefined);
+}
+
+/** Explicit operator Stop: no further model call starts. A call already sent is not cancelled and stays charged. */
+export function postStopAiScreenerRun(runId: string, signal?: AbortSignal) {
+  return postJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}/stop`, {}, AiScreenerRunSchema, signal ? { signal } : undefined);
+}
+
+const CoverageCallSchema = z.object({ call_id: z.string(), stage: z.string(), round: z.number().nullable().optional(), index: z.number(), of: z.number(),
+  outcome: z.string(), state: z.string(), reason: z.string().nullable().optional(), evidence_cutoff: z.string(), instrument_ids: z.array(z.string()),
+  selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), tokens_input: z.number().nullable().optional(),
+  tokens_output: z.number().nullable().optional() }).passthrough();
+export const AiScreenerCoverageReceiptsSchema = z.object({ schema_version: z.literal("screener-ai-screener-coverage/1.0.0"), run_id: z.string(),
+  calls: z.array(CoverageCallSchema), unfinished_calls: z.array(z.object({ call_id: z.string() }).passthrough()),
+  rows: z.object({ phase: z.string(), total: z.number(), offset: z.number(), limit: z.number(),
+    items: z.array(z.object({ instrument_id: z.string(), class: z.string(), reasons: z.array(z.string()) })) }).passthrough(),
+}).passthrough();
+
+/** Read-only: one run's per-call receipts and the first 500 rows the model did not evaluate, from the server's ledger. */
+export function fetchAiScreenerCoverage(runId: string, signal?: AbortSignal) {
+  return fetchJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}/coverage?class=NOT_EVALUATED&limit=500`, AiScreenerCoverageReceiptsSchema, signal ? { signal } : undefined);
 }

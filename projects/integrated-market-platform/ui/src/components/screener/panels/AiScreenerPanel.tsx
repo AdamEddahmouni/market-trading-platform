@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
+import { CoverageReceipts, CoverageSummary, ProvisionalFinalists } from "../ai/AiCoverage";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
 import { EngineSwitchConfirm, contractText, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
 import { useAiScreenerRunResult, useAiScreenerRuns } from "../ai/useAiScreenerRuns";
@@ -79,7 +80,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   const scopeKey = keyFor(screenerScope);
   const [aiOverride, setAiOverride] = useState<AiStatus | null>(null);
   // The run lives on the server: this panel only reads it, so closing the panel or reloading the page loses nothing.
-  const { runs, start } = useAiScreenerRuns(visible);
+  const { runs, start, stop } = useAiScreenerRuns(visible);
   const questionKey = aiScopeKey(screenerScope);
   const active = runs.data?.active ?? null;
   const latest = runs.data?.latest ?? null;
@@ -108,7 +109,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   const run = () => start.mutate(screenerScope);
   return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
     <div className="ai-screener-toolbar">
-      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · intake capped at {preview.data?.max_intake ?? 20}</p></div>
+      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · a run assesses every matched row and sends each eligible row to the model{preview.data ? ` in batches of up to ${preview.data.max_intake}` : " in bounded batches"}</p></div>
       {ai && <EngineChoice ai={ai} fit={preview.data?.engine_fit ?? []} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
     </div>
     <p className="ai-screener-meta">View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "Unsaved"} · search {screenerScope.search || "all"} · sort {screenerScope.sort} {screenerScope.descending ? "descending" : "ascending"} · result set {screenerScope.result_set ?? "unavailable"} · filters {JSON.stringify(screenerScope.filters)}</p>
@@ -118,7 +119,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
     {preview.isError && <PanelMessage tone="error" role="alert">AI Screener status unavailable. Retry by reopening the panel.</PanelMessage>}
     {ai && <p className="ai-screener-meta">Provider {ai.provider_id ?? "none"} · model {ai.model_id ?? "none"} · runtime {ai.runtime ?? "not configured"} · {ai.runtime === "PAID_API" ? "shared paid budget" : "no API cost"}.</p>}
     {ai?.budget && <p className="ai-screener-meta">Daily shared budget: {ai.budget.requests}/{ai.budget.max_requests} requests · {ai.budget.tokens}/{ai.budget.max_tokens} tokens · UTC day {ai.budget.day}.</p>}
-    {estimate && <p className="ai-screener-meta">Server intake {estimate.intake_count} · {estimate.sufficient_count} sufficiently grounded · packet {estimate.packet_bytes.toLocaleString()} bytes · {estimate.cached ? "cached, no model cost" : estimate.tokens != null ? `worst-case ≈ ${compactTokens(estimate.tokens)} tokens` : "cost estimate unavailable"}.</p>}
+    {estimate && <p className="ai-screener-meta">Preview of the first {estimate.intake_count} rows only (about one batch; the run plans every batch before any model call) · {estimate.sufficient_count} sufficiently grounded · packet {estimate.packet_bytes.toLocaleString()} bytes · {estimate.cached ? "cached, no model cost" : estimate.tokens != null ? `worst-case ≈ ${compactTokens(estimate.tokens)} tokens` : "cost estimate unavailable"}.</p>}
     {preview.data?.news_coverage && <details><summary>News coverage · cached preview · no acquisition or scoring</summary>
       {preview.data.news_coverage.map((item) => <p key={item.instrument_id}>{item.instrument_id} · {item.state} · {item.story_count} stories · {item.window} · sentiment {item.sentiment.state} · {item.providers.map((p) => `${p.id}: ${p.state}`).join(" · ")}</p>)}
     </details>}
@@ -127,6 +128,9 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       {running ? "Running AI Screener…" : "Run AI Screener"}
     </button>}
     {active && <AiRunProgress run={active} />}
+    {active && <button type="button" className="ai-screener-stop" disabled={stop.isPending || active.stop_requested === true} onClick={() => stop.mutate(active.run_id)}
+      title="No further model call starts. A call already sent is not cancelled and its tokens stay charged.">{active.stop_requested ? "Stopping after the call in flight…" : "Stop run"}</button>}
+    {stop.isError && <PanelMessage tone="error" role="alert">Could not stop the run.<ErrorDetail error={stop.error} /></PanelMessage>}
     {active && start.data?.joined && start.data.run_id === active.run_id && <PanelMessage>Joined the run already in progress; no second run was started.</PanelMessage>}
     {active && aiScopeKey(active.scope) !== questionKey && <PanelMessage tone="warn">This run answers a different Screener scope ({active.scope.universe}). One run at a time per account.</PanelMessage>}
     {!active && mine?.state === "FAILED" && <PanelMessage tone="error" role="alert">AI Screener run failed{mine.error?.stage ? ` while ${(STAGE_LABEL[mine.error.stage] ?? mine.error.stage).toLowerCase()}` : ""}{mine.error ? ` · ${mine.error.code}` : ""}. No result was recorded. Retry explicitly.</PanelMessage>}
@@ -136,11 +140,16 @@ export default function AiScreenerPanel({ api }: { api: any }) {
     {lifecycles.data && <LifecycleBoundary list={lifecycles.data} />}
     {lifecycles.isError && <PanelMessage tone="error" role="alert">Trade lifecycle is unavailable; positions, fills and P&amp;L are not shown here.<ErrorDetail error={lifecycles.error} /></PanelMessage>}
     {value && <section className="ai-screener-result" aria-label="AI Screener result">
-      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} intake candidates · {value.simulated ? "SOFTWARE_CONTROLLED fixture" : value.runtime} · valid until {value.valid_until}</p>
+      {value.universe_coverage && <CoverageSummary coverage={value.universe_coverage} />}
+      {value.universe_coverage && mine && <CoverageReceipts runId={mine.run_id} />}
+      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} rows sent to the model{value.universe_coverage ? "" : " (single-request method: only the head of the sorted result was read)"} · {value.simulated ? "SOFTWARE_CONTROLLED fixture" : value.runtime} · valid until {value.valid_until}</p>
       <p className="ai-screener-meta">{value.state} · {value.provider_id} · {value.model_id} · prompt {value.prompt_id} v{value.prompt_version} · cutoff {value.decision_cutoff} · {value.cache === "HIT" ? "cache hit" : `${value.latency_ms ?? "—"} ms`}</p>
       {mine && <p className="ai-screener-meta">Run took {(mine.elapsed_ms / 1000).toFixed(1)}s on the server{value.result_set && screenerScope.result_set && value.result_set !== screenerScope.result_set ? " · the Screener list has refreshed since; this result is as of its cutoff" : ""}.</p>}
-      {expired ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
-        {value.candidates.length === 0 && <PanelMessage>No sufficiently grounded candidates were selected. {value.limitations.join(" ")}</PanelMessage>}
+      {value.state === "INCOMPLETE" ? <>
+        <PanelMessage tone="warn" role="status">This run did not finish, so it is not a selection from the whole universe. {value.limitations.join(" ")}</PanelMessage>
+        <ProvisionalFinalists result={value} />
+      </> : expired && (value.candidates.length > 0 || !value.universe_coverage) ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
+        {value.candidates.length === 0 && <PanelMessage>{value.universe_coverage ? "The run finished and selected no candidate." : "No sufficiently grounded candidates were selected."} {value.limitations.join(" ")}</PanelMessage>}
         {value.candidates.map((selection) => {
           const lifecycle = lifecycles.data?.run?.run_id === value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
           const controls = <>

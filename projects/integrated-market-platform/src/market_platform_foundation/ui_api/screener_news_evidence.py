@@ -226,7 +226,7 @@ def attach_news(candidate: dict, news: dict, *, now: str) -> None:
 
 
 def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str) -> None:
-    """Deterministic global thinning before inference, never raise the 96KB cap.
+    """Deterministic global thinning before inference, never raise MAX_PACKET_BYTES.
 
     Rebuild NEWS/SENTIMENT/alignments after each removal so refs and counts agree.
     Reserve bytes for cutoff and scope serialization; aliases are not copied in packets.

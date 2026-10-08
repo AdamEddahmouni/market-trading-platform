@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchAiScreenerRun, fetchAiScreenerRuns, postAiScreener, type AiScreenerRun, type AiScreenerRuns, type AiScreenerScope } from "../../../api/screenerAi";
+import { fetchAiScreenerRun, fetchAiScreenerRuns, postAiScreener, postStopAiScreenerRun, type AiScreenerRun, type AiScreenerRuns, type AiScreenerScope } from "../../../api/screenerAi";
 
 export const AI_RUNS_KEY = ["screener-ai-screener-runs"] as const;
 export const aiRunKey = (runId: string | null) => ["screener-ai-screener-run", runId] as const;
@@ -20,7 +20,9 @@ export function useAiScreenerRuns(enabled: boolean) {
       active: run.state === "RUNNING" ? run : null, latest: run.state === "RUNNING" ? old.latest : { ...run, result: null } }));
     void client.invalidateQueries({ queryKey: AI_RUNS_KEY });
   } });
-  return { runs, start };
+  // Stop asks the server to start no further model call; the run reports STOPPED once the call in flight has finished.
+  const stop = useMutation({ mutationFn: (runId: string) => postStopAiScreenerRun(runId), onSettled: () => client.invalidateQueries({ queryKey: AI_RUNS_KEY }) });
+  return { runs, start, stop };
 }
 
 /** The full result of one finished run, read once. */

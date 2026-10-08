@@ -36,4 +36,20 @@ def observing(observer: StageObserver) -> Iterator[None]:
         _OBSERVER.reset(token)
 
 
-__all__ = ["StageObserver", "observing", "report_stage"]
+@contextmanager
+def relabelled(stage: str, **fixed: Any) -> Iterator[None]:
+    """Report every stage announced inside the block as ``stage``, carrying the inner stage as ``step``.
+
+    A run made of many bounded calls shows which call it is on, not one line per inner stage of each call."""
+    outer = _OBSERVER.get()
+    if outer is None:
+        yield
+        return
+    token = _OBSERVER.set(lambda inner, detail: outer(stage, {**fixed, **detail, "step": inner}))
+    try:
+        yield
+    finally:
+        _OBSERVER.reset(token)
+
+
+__all__ = ["StageObserver", "observing", "relabelled", "report_stage"]

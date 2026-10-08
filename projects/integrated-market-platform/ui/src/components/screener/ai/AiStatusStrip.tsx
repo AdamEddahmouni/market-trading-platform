@@ -3,7 +3,8 @@ import type { AiScreenerRun, AiScreenerRuns, AiScreenerScope } from "../../../ap
 import { reevaluationStatus, stopReevaluation, type ReevaluationStatus } from "../../../api/screenerReevaluation";
 import { compactTokens } from "../news/SynthesisControl";
 import { ErrorDetail, etClock, useNow } from "../panels/shared";
-import { currentStageText, modelCallContext } from "./AiRunProgress";
+import { coverageStatusText } from "./AiCoverage";
+import { currentStageText, modelCallContext, modelCallInFlight, progressText } from "./AiRunProgress";
 import { useAiScreenerRuns } from "./useAiScreenerRuns";
 
 export const LOOP_STATUS_KEY = ["screener-reevaluation-status"] as const;
@@ -17,6 +18,12 @@ const REASONS: Record<string, string> = {
   NO_SYNTHESIS_PROVIDER_CONFIGURED: "no AI engine is set up on this machine",
   EVIDENCE_PACKET_BOUND_EXCEEDED: "too much evidence for one call",
   INSUFFICIENT_EVIDENCE: "no candidate had enough current evidence",
+  AI_COVERAGE_BUDGET_INSUFFICIENT: "today's budget cannot pay for every eligible row plus the global comparison",
+  PROVISIONAL_PARTIAL_COVERAGE: "the run did not finish, so the universe was not fully searched",
+  UNIVERSE_ENUMERATION_FAILED: "the Screener result could not be read completely",
+  STOPPED: "stopped by the operator before it finished",
+  EVIDENCE_PROVIDER_UNAVAILABLE: "the quote source returned nothing, so no row could be assessed",
+  SYNTHESIS_RUN_HOLD_EXHAUSTED: "a request outgrew the budget held for this run",
 };
 export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ? `${REASONS[code]} (${code})` : code;
 
@@ -32,9 +39,13 @@ function lastPass(latest: AiScreenerRun | null, now: number) {
   const at = etClock(latest.finished_at);
   if (latest.state === "FAILED" || !latest.summary) return `last pass ${at} failed (${plainReason(latest.error?.code)})`;
   const summary = latest.summary;
+  const coverage = summary.coverage;
+  // A run that did not finish is never summarised as a count of selections: it says what was and was not evaluated.
+  if (coverage && !coverage.selection_complete) return `last pass ${at} incomplete · ${coverage.ai_evaluated_count.toLocaleString()} of ${coverage.eligible_count.toLocaleString()} eligible rows AI-evaluated (${plainReason(coverage.status)})`;
   if (summary.state !== "CURRENT" && summary.state !== "NO_GROUNDED_CANDIDATES") return `last pass ${at} gave no result (${plainReason(summary.reason ?? summary.state)})`;
   const left = summary.valid_until ? Date.parse(summary.valid_until) - now : null;
-  return `last pass ${at} · ${summary.selected.length} of ${summary.intake_count ?? "?"} selected${left === null ? "" : left > 0 ? ` · evidence expires in ${countdown(left)}` : " · evidence expired"}`;
+  const searched = coverage ? `${coverage.ai_evaluated_count.toLocaleString()} AI-evaluated of ${(coverage.universe_count ?? 0).toLocaleString()} rows` : `${summary.intake_count ?? "?"} intake rows`;
+  return `last pass ${at} · ${summary.selected.length} selected · ${searched}${left === null || !summary.selected.length ? "" : left > 0 ? ` · evidence expires in ${countdown(left)}` : " · evidence expired"}`;
 }
 
 /** The scheduled loop, read only. A cycle re-runs the AI Screener only when the candidate list has changed materially. */
@@ -52,11 +63,12 @@ function loopText(loop: ReevaluationStatus | undefined, failed: boolean, now: nu
 function mainText(data: AiScreenerRuns, loop: string, now: number) {
   if (data.state === "RUNNING" && data.active) {
     const run = data.active;
-    return `Running · ${currentStageText(run)} · ${run.engine.model_id ?? "no model"}${run.intake_count != null ? ` · ${run.intake_count} candidates` : ""}`;
+    const counts = progressText(run);
+    return `${run.stop_requested ? "Stopping after the call in flight" : "Running"} · ${currentStageText(run)} · ${run.engine.model_id ?? "no model"}${counts ? ` · ${counts}` : ""}`;
   }
   if (data.state === "WAITING_FOR_BUDGET") {
     const reset = data.budget ? ` · resets ${etClock(data.budget.resets_at)} (in ${countdown(Date.parse(data.budget.resets_at) - now)})` : "";
-    return `Waiting for budget · ${data.ai.reason ? plainReason(data.ai.reason) : "another run of the last measured size does not fit in today's budget"}${reset}`;
+    return `Waiting for budget · ${data.ai.reason ? plainReason(data.ai.reason) : "today's shared budget is used up"}${reset}`;
   }
   if (data.state === "NOT_CONFIGURED") return `Not configured · ${plainReason(data.ai.reason)}`;
   if (data.state === "BLOCKED") return `Blocked · ${plainReason(data.ai.reason)}`;
@@ -66,17 +78,17 @@ function mainText(data: AiScreenerRuns, loop: string, now: number) {
 function budgetText(data: AiScreenerRuns) {
   const budget = data.budget;
   if (!budget) return data.ai.runtime === "LOCAL_MODEL" ? "Local model · no API cost" : data.ai.runtime ? "No shared budget reported" : null;
-  const held = data.active?.stages.find((entry) => entry.stage === "BUDGET_RESERVED")?.detail.reserved_tokens;
-  const used = data.latest?.summary?.cache === "MISS" ? (data.latest.summary.tokens_input ?? 0) + (data.latest.summary.tokens_output ?? 0) : 0;
-  return `Budget ${compactTokens(budget.tokens)} / ${compactTokens(budget.max_tokens)} tokens · ${budget.runs_left !== null
-    ? `~${budget.runs_left} ${budget.runs_left === 1 ? "run" : "runs"} left` : `${budget.requests_left} of ${budget.max_requests} requests left · run size not yet measured`}${
-    typeof held === "number" ? ` · this run holds ${compactTokens(held)}` : used > 0 ? ` · last run used ${compactTokens(used)}` : ""}`;
+  const held = data.active ? budget.held_tokens ?? 0 : 0;
+  const spent = data.latest?.summary?.coverage?.budget;
+  const used = spent ? (spent.tokens_input ?? 0) + (spent.tokens_output ?? 0) : 0;
+  return `Budget ${compactTokens(budget.tokens)} / ${compactTokens(budget.max_tokens)} tokens · ${budget.requests_left} of ${budget.max_requests} requests left${
+    held > 0 ? ` · this run holds ${compactTokens(held)}` : used > 0 ? ` · last run used ${compactTokens(used)}` : ""}`;
 }
 
 function budgetDetail(data: AiScreenerRuns) {
   const budget = data.budget;
   if (!budget) return undefined;
-  return `${budget.run_size !== null ? `A run is counted as ${budget.run_size.toLocaleString()} tokens, the last amount reserved for this model. ` : "No run has reserved tokens yet, so runs left cannot be counted. "}`
+  return `${budget.run_size !== null ? `The last run held ${budget.run_size.toLocaleString()} tokens for its whole plan. A different Screener query needs a different amount; each run states what it needs before any model call. ` : "No run has held tokens yet. Each run states what it needs before any model call. "}`
     + `${budget.requests_left} of ${budget.max_requests} requests and ${budget.headroom.toLocaleString()} of ${budget.max_tokens.toLocaleString()} tokens left for UTC day ${budget.day}. Shared by every paid AI feature on this machine.`;
 }
 
@@ -87,13 +99,14 @@ function budgetDetail(data: AiScreenerRuns) {
  */
 export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScope; onOpen: () => void }) {
   const client = useQueryClient();
-  const { runs, start } = useAiScreenerRuns(true);
+  const { runs, start, stop: stopRun } = useAiScreenerRuns(true);
   const loop = useQuery({ queryKey: LOOP_STATUS_KEY, queryFn: ({ signal }) => reevaluationStatus(signal), refetchInterval: 15_000, retry: false });
   const stop = useMutation({ mutationFn: () => stopReevaluation(), onSettled: () => client.invalidateQueries({ queryKey: LOOP_STATUS_KEY }) });
   const data = runs.data;
   const now = useNow(1_000, Boolean(data));
   const looping = loop.data?.worker_state === "RUNNING" || loop.data?.worker_state === "DELAYED";
-  const call = data?.active?.stage === "MODEL_CALL" ? modelCallContext(data.active) : undefined;
+  const call = data?.active && modelCallInFlight(data.active) ? modelCallContext(data.active) : undefined;
+  const interrupted = data?.interrupted?.[data.interrupted.length - 1];
   return <section className={`ai-strip ${data ? data.state.toLowerCase() : "unknown"}`} aria-label="AI status">
     <span className="ai-strip-tag">AI</span><span className="ai-strip-dot" aria-hidden="true" />
     {/* The engine every AI panel on this machine uses; a run in progress names its own model in the line itself. */}
@@ -106,10 +119,15 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
     {data && budgetText(data) && <p className="ai-strip-budget" title={budgetDetail(data)}>{budgetText(data)}</p>}
     {start.isError && <p className="ai-strip-error" role="alert">Could not start a run.<ErrorDetail error={start.error} /></p>}
     {stop.isError && <p className="ai-strip-error" role="alert">Could not stop automatic passes.</p>}
+    {stopRun.isError && <p className="ai-strip-error" role="alert">Could not stop the run.<ErrorDetail error={stopRun.error} /></p>}
+    {/* Shown until a later run has finished: after that the latest pass is the news. */}
+    {data && !data.active && !data.latest && interrupted && <p className="ai-strip-error">{coverageStatusText(interrupted.status ?? "INTERRUPTED")} · {interrupted.calls_completed ?? 0} model {interrupted.calls_completed === 1 ? "call" : "calls"} had finished{interrupted.unknown_provider_outcomes ? ` · ${interrupted.unknown_provider_outcomes} had no recorded outcome and ${interrupted.unknown_provider_outcomes === 1 ? "stays" : "stay"} charged` : ""}. Nothing was resumed.</p>}
     <div className="ai-strip-actions">
+      {data?.active && <button type="button" disabled={stopRun.isPending || data.active.stop_requested === true} onClick={() => stopRun.mutate(data.active!.run_id)}
+        title="No further model call starts. A call already sent is not cancelled and its tokens stay charged; finished batches are kept as provisional.">{data.active.stop_requested ? "Stopping…" : "Stop run"}</button>}
       {looping && <button type="button" disabled={stop.isPending} onClick={() => stop.mutate()} title="Stops the scheduled loop. A model call already in flight finishes; nothing is submitted.">Stop automatic passes</button>}
       {data?.state === "IDLE" && <button type="button" disabled={start.isPending || scope.settled === false} onClick={() => start.mutate(scope)}
-        title={`Runs the AI Screener once for the current Screener scope.${data.budget?.run_size ? ` Reserves about ${data.budget.run_size.toLocaleString()} tokens.` : ""}`}>Run now</button>}
+        title="Assesses every row of the current Screener query and sends each eligible row to the model in batches. The run plans its whole cost first and calls no model if today's budget cannot pay for it.">Run now</button>}
       <button type="button" onClick={onOpen}>Open</button>
     </div>
   </section>;

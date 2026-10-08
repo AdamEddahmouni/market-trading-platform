@@ -173,30 +173,59 @@ class ScreenerAiService:
         raw_rows = list(page.get('rows') or [])[:MAX_INTAKE]
         # Slow shared news must precede acquisition of short-lived market observations.
         report_stage("NEWS")
-        news_reader = getattr(self._news_service(), 'candidate_evidence', None)
-        news = news_reader(universe=query['universe'], rows=raw_rows, refresh=refresh_news) if news_reader else {}
-        market = None
-        if self._market_snapshots is not None and query['universe'] in ('US_EQUITIES', 'US_ETFS'):
-            from ..intelligence.inference.hashing import input_hash_from_dict
-            from ..market_data.live_runtime import provider_symbol_for
-            market_key = input_hash_from_dict({'instruments': sorted(r['instrument']['instrument_id'] for r in raw_rows)})
-            if refresh_news and raw_rows:
-                market, _ = self._market_snapshots.current(
-                    [{'instrument': r['instrument'], 'provider_symbol': provider_symbol_for(r['instrument']['instrument_id'])} for r in raw_rows],
-                    catalog_as_of=market_key, force=True)
-            else:
-                cached = self._market_snapshots.latest()
-                market = cached if cached is not None and cached.catalog_as_of == market_key else None
+        news = self._news_for(query['universe'], raw_rows, refresh=refresh_news)
+        market, _ = self._market(query['universe'], raw_rows, acquire=refresh_news)
         # Stages are reported in the order the work really happens: news is read before the evidence
         # cutoff is taken, so the cutoff is never older than the news refresh that preceded it.
         report_stage("EVIDENCE")
         now = _iso(self._clock)
-        projected = project_screener_response("/screener", {**page, "rows": list(page.get("rows") or [])[:MAX_INTAKE]}, now=now)
-        rows = projected["rows"]
+        scope = self._scope(query, page)
+        candidates, _ = self._candidates(query['universe'], page, raw_rows, market=market, now=now, include_flow=include_flow)
+        from .screener_news_evidence import attach_news, fit_news
+
+        report_stage("PACKET", intake_count=len(candidates))
+        for candidate in candidates:
+            identifier = candidate['instrument']['instrument_id']
+            if identifier in news:
+                attach_news(candidate, news[identifier], now=now)
+        fit_news(scope, candidates, news, now=now)
+        return scope, candidates, now, {"matched_count": int(page.get("result_count") or 0),
+                                       "result_set": page.get("result_set_id"),
+                                       "universe_as_of": page.get("universe_as_of"),
+                                       "screener_as_of": page.get("screener_as_of")}
+
+    @staticmethod
+    def _scope(query: dict[str, Any], page: dict[str, Any]) -> dict[str, Any]:
         scope = {key: query[key] for key in ("universe", "search", "sort", "descending", "filters")}
         scope.update(result_set=page.get("result_set_id"), matched_count=int(page.get("result_count") or 0),
                      universe_as_of=page.get("universe_as_of"), screener_as_of=page.get("screener_as_of"),
                      view=query["view"], screen=query["screen"])
+        return scope
+
+    def _news_for(self, universe: str, raw_rows: list[dict[str, Any]], *, refresh: bool) -> dict[str, Any]:
+        news_reader = getattr(self._news_service(), 'candidate_evidence', None)
+        return news_reader(universe=universe, rows=raw_rows, refresh=refresh) if news_reader else {}
+
+    def _market(self, universe: str, raw_rows: list[dict[str, Any]], *, acquire: bool) -> tuple[Any | None, str | None]:
+        """The bounded vendor snapshot for exactly these rows, or the reason there is none. ``acquire`` takes a
+        new one; otherwise only a retained snapshot of the same rows is read."""
+        if self._market_snapshots is None or universe not in ('US_EQUITIES', 'US_ETFS'):
+            return None, None
+        from ..intelligence.inference.hashing import input_hash_from_dict
+        from ..market_data.live_runtime import provider_symbol_for
+        market_key = input_hash_from_dict({'instruments': sorted(r['instrument']['instrument_id'] for r in raw_rows)})
+        if acquire and raw_rows:
+            return self._market_snapshots.current(
+                [{'instrument': r['instrument'], 'provider_symbol': provider_symbol_for(r['instrument']['instrument_id'])} for r in raw_rows],
+                catalog_as_of=market_key, force=True)
+        cached = self._market_snapshots.latest()
+        return (cached if cached is not None and cached.catalog_as_of == market_key else None), None
+
+    def _candidates(self, universe: str, page: dict[str, Any], raw_rows: list[dict[str, Any]], *, market: Any | None,
+                    now: str, include_flow: bool) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Gate these rows' facts at ``now``. News is attached by the caller."""
+        projected = project_screener_response("/screener", {**page, "rows": raw_rows}, now=now)
+        rows = projected["rows"]
         candidates = []
         for row in rows:
             observations = observations_for_row(row, now=now)
@@ -214,21 +243,11 @@ class ScreenerAiService:
                     technical['change_basis'] = 'PREVIOUS_CLOSE'
                 observations.extend([('QUOTE', status, quote, []), ('TECHNICALS', status, technical, [])])
             if include_flow:
-                observations.extend(flow_observation(row, query['universe'], now=now))
-            candidates.append(build_candidate(row.get('instrument', {}), observations, now=now))
-        from .screener_news_evidence import attach_news, fit_news
-
-        report_stage("PACKET", intake_count=len(candidates))
-        for candidate, row in zip(candidates, rows):
+                observations.extend(flow_observation(row, universe, now=now))
+            candidate = build_candidate(row.get('instrument', {}), observations, now=now)
             candidate['instrument']['company'] = str(row.get('company') or '')[:120]
-            identifier = candidate['instrument']['instrument_id']
-            if identifier in news:
-                attach_news(candidate, news[identifier], now=now)
-        fit_news(scope, candidates, news, now=now)
-        return scope, candidates, now, {"matched_count": int(page.get("result_count") or 0),
-                                       "result_set": page.get("result_set_id"),
-                                       "universe_as_of": page.get("universe_as_of"),
-                                       "screener_as_of": page.get("screener_as_of")}
+            candidates.append(candidate)
+        return candidates, rows
 
     def _ai_status(self) -> dict[str, Any]:
         return self._news_service().ai_status()
@@ -278,6 +297,28 @@ class ScreenerAiService:
         return {**result, "schema_version": SCHEMA_VERSION, "scope": scope,
                 "matched_count": page_meta["matched_count"], "intake_count": len(candidates),
                 "max_intake": MAX_INTAKE, "result_set": page_meta["result_set"]}
+
+    def run_universe(self, body: dict[str, Any], *, run_id: str, account_id: str,
+                     should_stop: Callable[[], bool] = lambda: False) -> dict[str, Any]:
+        """The operator's Run: every row of the active query accounted for, eligible rows reduced in bounded
+        batches, finalists compared globally. ``run`` above remains the single-request method the automatic
+        passes use; it reads only the head of the sorted result and never claims coverage."""
+        from .screener_ai_coverage import ScreenerAiCoverage
+
+        return ScreenerAiCoverage(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop)
+
+    def release_hold(self, run_id: str) -> dict[str, int] | None:
+        """Return a dead run's unused paid hold even if the selected engine is now local."""
+        budget = getattr(self._provider_reducer().provider, 'budget', None)
+        if budget is None:
+            from ..intelligence.inference.anthropic_synthesis import BUDGET_RELATIVE, DailyBudget
+            from ..local_state.external_cache import imp_cache_dir
+
+            path = imp_cache_dir() / BUDGET_RELATIVE
+            if not path.exists():
+                return None
+            budget = DailyBudget(path)
+        return budget.release(run_id)
 
 
 _SERVICE: ScreenerAiService | None = None

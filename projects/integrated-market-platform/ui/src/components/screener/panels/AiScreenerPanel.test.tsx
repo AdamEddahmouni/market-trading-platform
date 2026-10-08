@@ -8,33 +8,43 @@ import type { AiScreenerPreview, AiScreenerResult, AiScreenerRun, AiScreenerRuns
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { lifecycle, lifecycleList, openPosition } from "../lifecycle/lifecycleFixture";
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn() }));
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn(),
+  stop: vi.fn(), receipts: vi.fn() }));
 vi.mock("../../../api/screenerLifecycle", () => ({ tradeLifecycles: mocks.lifecycles, tradeLifecycle: mocks.lifecycle }));
 vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),
-  fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.post, fetchAiScreenerRuns: mocks.runs, fetchAiScreenerRun: mocks.detail }));
+  fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.post, fetchAiScreenerRuns: mocks.runs, fetchAiScreenerRun: mocks.detail,
+  postStopAiScreenerRun: mocks.stop, fetchAiScreenerCoverage: mocks.receipts }));
 vi.mock("../../../api/screenerNews", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerNews")>(), postSynthesisEngine: mocks.engine }));
 
 const scope = { universe: "US_EQUITIES" as const, search: "A", sort: "volume", descending: true, filters: [] };
 const ai = { state: "AVAILABLE" as const, reason: null, provider_id: "inference.test", model_id: "candidate.v1",
   runtime: "LOCAL_MODEL" as const, engine: "local", engine_model: "candidate.v1", engines: [] };
 const preview = { schema_version: "screener-ai-screener-preview/1.0.0" as const, ai, scope, matched_count: 4,
-  intake_count: 4, max_intake: 20, estimate: null, evidence_summary: { sufficient: 1, blocked: 0, missing: 0, weak: 0 },
+  intake_count: 4, max_intake: 50, estimate: null, evidence_summary: { sufficient: 1, blocked: 0, missing: 0, weak: 0 },
   decision_cutoff: "2026-10-02T15:00:00Z", result_set: null } as AiScreenerPreview;
 const result = { schema_version: "screener-ai-screener/1.0.0" as const, state: "CURRENT", reason: null, scope,
-  matched_count: 4, intake_count: 4, max_intake: 20, result_set: null, run_id: "run-1", decision_cutoff: "2026-10-02T15:00:00Z",
+  matched_count: 4, intake_count: 4, max_intake: 50, result_set: null, run_id: "run-1", decision_cutoff: "2026-10-02T15:00:00Z",
   generated_at: "2026-10-02T15:00:00Z", valid_until: "2026-10-02T15:05:00Z", input_hash: "hash", provider_id: "inference.test",
   model_id: "candidate.v1", runtime: "LOCAL_MODEL", prompt_id: "p", prompt_version: "1", prompt_hash: "ph", packet_bytes: 1,
   cache: "MISS" as const, simulated: true, tokens_input: null, tokens_output: null, latency_ms: 1, evidence: [], candidates: [],
   limitations: ["No candidate selected."], coverage: {} } as AiScreenerResult;
 
-const STAGES = ["SCOPE", "NEWS", "EVIDENCE", "PACKET", "BUDGET_RESERVED", "MODEL_CALL", "VALIDATION", "STORED"];
+const STAGES = ["ENUMERATION", "ELIGIBILITY", "PLANNING", "BUDGET_HELD", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED"];
+const coverage = (overrides: Record<string, unknown> = {}) => ({ method_version: "ai-screener-coverage/1.0.0", status: "GLOBAL_SELECTION_COMPLETE", reason: null,
+  universe_count: 4_630, assessed_count: 4_630, eligible_count: 150, ai_evaluated_count: 150, ai_coverage_pct: 100, batches_planned: 3, batches_completed: 3,
+  model_calls: 4, finalist_count: 2, selected_count: 1, coverage_complete: true, selection_complete: true, reconciled: true,
+  counts: { evaluated: 150, ineligible: 12, evidence_blocked: 4_468, unprocessed: 0, by_class: {}, reasons: { "EVIDENCE_STALE:STALE": 4_468, "INELIGIBLE:NO_SECOND_STRONG_EVIDENCE": 12 } },
+  budget: { capped: true, required_tokens: 150_000, available_tokens: 160_000, required_requests: 4, available_requests: 26, tokens_input: 43_000, tokens_output: 638 },
+  reduction: { rounds_planned: 1, rounds_completed: 1 }, ...overrides });
 const stage = (name: string, elapsed_ms: number, detail: Record<string, unknown> = {}) => ({ stage: name, started_at: "2026-10-02T15:00:00Z", elapsed_ms, detail });
-const trackedRun = (overrides: Partial<AiScreenerRun> = {}): AiScreenerRun => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper",
-  state: "RUNNING", joined: false, scope, stage: "MODEL_CALL", stage_order: STAGES,
-  stages: [stage("SCOPE", 40), stage("NEWS", 900), stage("EVIDENCE", 20), stage("PACKET", 30, { packet_bytes: 95_600 }), stage("MODEL_CALL", 7_000)],
+const trackedRun = (overrides: Partial<AiScreenerRun> = {}): AiScreenerRun => ({ schema_version: "screener-ai-screener-run/2.0.0", run_id: "track-1", account_id: "paper",
+  state: "RUNNING", joined: false, scope, stage: "BATCH_INFERENCE", stage_order: STAGES,
+  stages: [stage("ENUMERATION", 40, { universe_count: 4_630 }), stage("ELIGIBILITY", 900, { eligible_count: 150 }), stage("PLANNING", 30, { batches_planned: 3 }),
+    stage("BATCH_INFERENCE", 7_000, { batch: 2, batches_planned: 3, batches_completed: 1, step: "MODEL_CALL" })],
   started_at: "2026-10-02T15:00:00Z", finished_at: null, elapsed_ms: 7_990, engine: { provider_id: "inference.test", model_id: "candidate.v1", runtime: "PAID_API" },
-  timeout_seconds: 45, typical_latency_ms: 10_800, typical_latency_samples: 3, intake_count: 4, sufficient_count: 1, packet_bytes: 95_600,
-  summary: null, result: null, error: null, ...overrides } as AiScreenerRun);
+  timeout_seconds: 45, typical_latency_ms: 10_800, typical_latency_samples: 3, intake_count: null, sufficient_count: null, packet_bytes: 95_600,
+  progress: { universe_count: 4_630, assessed_count: 4_630, eligible_count: 150, batches_planned: 3, batches_completed: 1, rows_evaluated: 50 },
+  stop_requested: false, stop_requested_at: null, summary: null, result: null, error: null, ...overrides } as AiScreenerRun);
 /** What the server reports once a run has finished: the stored result plus how the run went. */
 const finishedRun = (value: AiScreenerResult, overrides: Partial<AiScreenerRun> = {}) => trackedRun({ run_id: `track-${value.run_id}`, state: "COMPLETED", stage: null,
   scope: value.scope as AiScreenerRun["scope"], finished_at: "2026-10-02T15:00:12Z", elapsed_ms: 12_300, result: value,
@@ -59,11 +69,11 @@ beforeEach(() => {
   // Existing cases describe only the stored result; the run that carried it is wrapped here.
   mocks.post.mockImplementation(async (requested: typeof scope) => {
     const value = await mocks.run(requested);
-    const run = value.schema_version === "screener-ai-screener-run/1.0.0" ? value as AiScreenerRun : finishedRun({ ...value, scope: requested });
+    const run = value.schema_version === "screener-ai-screener-run/2.0.0" ? value as AiScreenerRun : finishedRun({ ...value, scope: requested });
     if (run.state === "RUNNING") server.active = run; else finish(run);
     return run;
   });
-  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: server.active ? "RUNNING" : "IDLE",
+  mocks.runs.mockImplementation(async (): Promise<AiScreenerRuns> => ({ schema_version: "screener-ai-screener-runs/2.0.0", state: server.active ? "RUNNING" : "IDLE",
     ai: { state: "AVAILABLE", reason: null, provider_id: "inference.test", model_id: "candidate.v1", runtime: "LOCAL_MODEL" }, budget: null, active: server.active, latest: server.latest }));
   mocks.detail.mockImplementation(async (id: string) => server.results.get(id) ?? Promise.reject(new Error("SCREENER_AI_RUN_UNKNOWN")));
 });
@@ -171,13 +181,15 @@ describe("AI Screener panel", () => {
     renderPanel();
     fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
     const progress = await screen.findByRole("region", { name: "AI Screener run progress" });
-    expect(progress).toHaveTextContent("Running · model call 7.0s · candidate.v1 · 4 candidates · packet 95,600 bytes · 8.0s in total");
+    expect(progress).toHaveTextContent("Running · batch 2 of 3 · model call · 7.0s in this stage · candidate.v1 · 4,630 rows · 150 eligible · 50 AI-evaluated · 1 of 3 batches done · 8.0s in total");
     expect(progress).toHaveTextContent("typical 11s from 3 measured calls · request times out at 45s");
-    // No budget wrapped this call and the answer is not back: neither stage is claimed.
-    expect(progress).toHaveTextContent("Budget reservednot needed");
-    expect(progress).toHaveTextContent("Checking the answer—");
-    expect(progress.querySelector('[aria-current="step"]')).toHaveTextContent("Model call7.0s");
+    // No budget wrapped this engine and the comparison has not begun: neither stage is claimed.
+    expect(progress).toHaveTextContent("Budget held for the whole runnot needed");
+    expect(progress).toHaveTextContent("Comparing batch finalists—");
+    expect(progress.querySelector('[aria-current="step"]')).toHaveTextContent("Model batches7.0s · 1 of 3 done");
+    // Counts only: nothing is extrapolated into a percentage while the run is in progress.
     expect(progress).not.toHaveTextContent("%");
+    expect(screen.getByRole("button", { name: "Stop run" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Running AI Screener…" })).toBeDisabled();
     expect(screen.queryByRole("region", { name: "AI Screener result" })).toBeNull();
     finish(finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z" }));
@@ -190,9 +202,10 @@ describe("AI Screener panel", () => {
 
   it("re-attaches to a run already in progress after a reload without starting anything", async () => {
     mocks.preview.mockResolvedValue(preview);
-    server.active = trackedRun({ stage: "NEWS", stages: [stage("SCOPE", 40), stage("NEWS", 2_500)], typical_latency_ms: null, typical_latency_samples: 0 });
+    server.active = trackedRun({ stage: "ELIGIBILITY", stages: [stage("ENUMERATION", 40), stage("ELIGIBILITY", 2_500)], typical_latency_ms: null, typical_latency_samples: 0,
+      progress: { universe_count: 4_630 } });
     renderPanel();
-    expect(await screen.findByRole("region", { name: "AI Screener run progress" })).toHaveTextContent("Running · news 2.5s");
+    expect(await screen.findByRole("region", { name: "AI Screener run progress" })).toHaveTextContent("Running · checking evidence 2.5s · candidate.v1 · 4,630 rows");
     expect(await screen.findByRole("button", { name: "Running AI Screener…" })).toBeDisabled();
     expect(mocks.post).not.toHaveBeenCalled();
   });
@@ -207,9 +220,80 @@ describe("AI Screener panel", () => {
 
   it("names a failed run by its stage and stable code", async () => {
     mocks.preview.mockResolvedValue(preview);
-    server.latest = trackedRun({ state: "FAILED", stage: null, error: { code: "EVIDENCE_PACKET_BOUND_EXCEEDED", stage: "PACKET" } });
+    server.latest = trackedRun({ state: "FAILED", stage: null, error: { code: "MARKET_SNAPSHOT_UNAVAILABLE", stage: "ENUMERATION" } });
     renderPanel();
-    expect(await screen.findByRole("alert")).toHaveTextContent("AI Screener run failed while building the packet · EVIDENCE_PACKET_BOUND_EXCEEDED. No result was recorded. Retry explicitly.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("AI Screener run failed while reading every screener row · MARKET_SNAPSHOT_UNAVAILABLE. No result was recorded. Retry explicitly.");
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("states that a run assesses the whole matched universe, not a capped intake", async () => {
+    mocks.preview.mockResolvedValue({ ...preview, matched_count: 4_630 });
+    renderPanel();
+    expect(await screen.findByText(/4,630 matched · a run assesses every matched row and sends each eligible row to the model in batches of up to 50/)).toBeInTheDocument();
+    expect(screen.queryByText(/intake capped/)).toBeNull();
+  });
+
+  it("a finished full-universe run shows its accounting, why rows were not evaluated, and its receipts on request", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue({ ...result, valid_until: "2099-01-01T00:00:00Z", intake_count: 150,
+      universe_coverage: coverage({ reason: "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF", reduction: { rounds_planned: 1, rounds_completed: 1, finalists_excluded_count: 1 } }),
+      candidates: [{ instrument_id: "EQ:A", rank: 1, rationale: "Review admitted observations.", supporting_refs: [], conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }] });
+    mocks.receipts.mockResolvedValue({ schema_version: "screener-ai-screener-coverage/1.0.0", run_id: "track-run-1", unfinished_calls: [],
+      calls: [{ call_id: "BATCH_INFERENCE:0:0", stage: "BATCH_INFERENCE", round: null, index: 0, of: 3, outcome: "COMPLETED", state: "CURRENT", reason: null,
+        evidence_cutoff: "2026-10-02T15:00:01Z", instrument_ids: ["EQ:A", "EQ:B"], selected: [{ instrument_id: "EQ:A", rank: 1 }], tokens_input: 1_000, tokens_output: 100 }],
+      rows: { phase: "FINAL", class: null, total: 4_630, offset: 0, limit: 500, items: [{ instrument_id: "EQ:Z", class: "EVIDENCE_STALE", reasons: ["STALE"] },
+        { instrument_id: "EQ:A", class: "AI_EVALUATED", reasons: [] }] } });
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    const summary = await screen.findByRole("region", { name: "AI Screener coverage" });
+    expect(summary).toHaveTextContent("Final · every eligible row was evaluated and the finalists were compared globally");
+    expect(summary).toHaveTextContent("4,630 rows · 4,630 assessed · 150 eligible · 150 AI-evaluated (100% of eligible) · batch 3 of 3 · 2 batch finalists · 4 model calls");
+    expect(summary).toHaveTextContent("Not evaluated: 12 ineligible · 4,468 evidence missing, stale or unavailable · 0 eligible but not processed.");
+    expect(summary).toHaveTextContent("the plan needed 150k tokens and 4 requests · 160k tokens and 26 requests were available · used 44k tokens");
+    expect(summary).toHaveTextContent("EVIDENCE_STALE:STALE · 4,468");
+    expect(summary).toHaveTextContent("1 batch finalist was left out of the final comparison: no admissible current evidence at that cutoff.");
+    expect(mocks.receipts).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Batch receipts and rows not evaluated"));
+    expect(await screen.findByText(/Batch 1 of 3 · 2 rows · COMPLETED · CURRENT · cutoff 2026-10-02T15:00:01Z · 1 selected/)).toBeInTheDocument();
+    expect(screen.getByText("EQ:Z · EVIDENCE_STALE · STALE")).toBeInTheDocument();
+    expect(screen.getByText("Rows the model did not evaluate: showing 2 of 4,630.")).toBeInTheDocument();
+    expect(mocks.receipts).toHaveBeenCalledWith("track-run-1", expect.any(AbortSignal));
+    // A completed global selection is the only result that offers an Action Decision.
+    expect(screen.getByRole("heading", { name: /#1 EQ:A/ })).toBeInTheDocument();
+  });
+
+  it("a run that did not finish is labelled partial, lists finalists as provisional, and offers no Action Decision", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    mocks.run.mockResolvedValue({ ...result, state: "INCOMPLETE", reason: "PROVISIONAL_PARTIAL_COVERAGE", valid_until: "2026-10-02T15:00:00Z", intake_count: 100,
+      limitations: ["This run did not finish. Listed finalists are provisional and are not a global selection."],
+      universe_coverage: coverage({ status: "PROVISIONAL_PARTIAL_COVERAGE", reason: "BATCH_FAILED:ANTHROPIC_OVERLOADED_ERROR", ai_evaluated_count: 100, ai_coverage_pct: 66.67,
+        batches_completed: 2, model_calls: 3, finalist_count: 1, selected_count: 0, coverage_complete: false, selection_complete: false,
+        counts: { evaluated: 100, ineligible: 12, evidence_blocked: 4_468, unprocessed: 50, by_class: {}, reasons: { "UNPROCESSED:BATCH_FAILED:ANTHROPIC_OVERLOADED_ERROR": 50 } } }),
+      provisional: [{ instrument_id: "EQ:P", batch: 1, rank_in_batch: 1, rationale: "Review admitted observations.", evidence_cutoff: "2026-10-02T15:00:01Z", valid_until: "2026-10-02T15:01:01Z" }] });
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
+    const summary = await screen.findByRole("region", { name: "AI Screener coverage" });
+    expect(summary).toHaveTextContent("Partial · the run did not finish; this is not a search of the whole universe · BATCH_FAILED:ANTHROPIC_OVERLOADED_ERROR");
+    expect(summary).toHaveTextContent("100 AI-evaluated (66.67% of eligible) · batch 2 of 3");
+    expect(summary).toHaveTextContent("50 eligible but not processed");
+    expect(screen.getByText(/This run did not finish, so it is not a selection from the whole universe\./)).toBeInTheDocument();
+    const provisional = screen.getByRole("region", { name: "Provisional batch finalists" });
+    expect(provisional).toHaveTextContent("Provisional · 1 batch finalist from the batches that finished. This run did not finalize a global selection, so these finalists cannot be evaluated for action.");
+    expect(provisional).toHaveTextContent("EQ:P · batch 1 rank 1");
+    expect(screen.queryByRole("heading", { name: /#1/ })).toBeNull();
+    expect(screen.queryByText("Evidence expired — rerun AI Screener.")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Evaluate/ })).toBeNull();
+  });
+
+  it("Stop asks the server once and says the call in flight is finishing", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    server.active = trackedRun();
+    mocks.stop.mockImplementation(async () => { server.active = trackedRun({ stop_requested: true }); return server.active; });
+    renderPanel();
+    fireEvent.click(await screen.findByRole("button", { name: "Stop run" }));
+    await waitFor(() => expect(mocks.stop).toHaveBeenCalledWith("track-1"));
+    expect(await screen.findByRole("button", { name: "Stopping after the call in flight…" }, { timeout: 3_000 })).toBeDisabled();
+    expect(await screen.findByRole("region", { name: "AI Screener run progress" })).toHaveTextContent("Stopping after the call in flight · batch 2 of 3");
     expect(mocks.post).not.toHaveBeenCalled();
   });
 

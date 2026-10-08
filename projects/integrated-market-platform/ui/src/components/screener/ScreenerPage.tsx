@@ -684,15 +684,13 @@ export function ScreenerPage() {
     if (!query.hasNextPage || query.isFetchingNextPage || query.isFetchNextPageError || query.isRefetching) return;
     if (lastVirtual >= rows.length - PREFETCH_ROWS) void query.fetchNextPage();
   }, [lastVirtual, rows.length, query.hasNextPage, query.isFetchingNextPage, query.isFetchNextPageError, query.isRefetching]);
-  // One bounded owner warms the AI first-20 intake plus selection/visible rows.
+  // One bounded owner keeps live quotes for the selection and the visible rows. The AI Screener does not depend on
+  // this window: a run takes its own bounded vendor snapshot of every row it assesses, wherever the row is sorted.
   const visible = useMemo(() => {
     const ids = virtualRows.slice(0, 26).map((item) => rows[item.index]?.instrument.instrument_id).filter((id): id is string => Boolean(id));
-    if (universe === "US_EQUITIES" || universe === "US_ETFS") {
-      ids.unshift(...rows.slice(0, 20).map((row) => row.instrument.instrument_id));
-    }
     if (selected) ids.unshift(selected);
     return [...new Set(ids)].slice(0, 32);
-  }, [indices, rows, selected, universe]);
+  }, [indices, rows, selected]);
   useEffect(() => {
     if (previousUniverse.current === universe) return;
     previousUniverse.current = universe;

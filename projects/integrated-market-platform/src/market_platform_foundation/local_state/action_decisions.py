@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import threading
+from contextlib import nullcontext
 
 from .paths import persistence_enabled
 from .startup import open_local_state
@@ -19,7 +20,7 @@ class ActionDecisionRepository:
                 connection.execute('CREATE INDEX IF NOT EXISTS action_decision_history ON action_decision_records(kind,instrument_id,decision_time)')
 
     def get(self, kind, identifier):
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             if self.connection:
                 row = self.connection.execute('SELECT payload FROM action_decision_records WHERE kind=? AND id=?', (kind,identifier)).fetchone()
                 encoded = row[0] if row else None
@@ -33,7 +34,7 @@ class ActionDecisionRepository:
         encoded = json.dumps(value,sort_keys=True,separators=(',',':'),allow_nan=False)
         if len(encoded.encode('utf-8')) > (512000 if kind=='candidate_run' else 128000):
             raise ValueError('ACTION_RECORD_BOUND_EXCEEDED')
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             def insert():
                 previous = self.get(kind,identifier)
                 if previous is not None:
@@ -51,7 +52,7 @@ class ActionDecisionRepository:
         """Bounded accounting read; compare instants, never ISO lexical spelling."""
         from datetime import datetime
         instant = lambda value: datetime.fromisoformat(value.replace('Z', '+00:00'))
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             if self.connection:
                 rows = self.connection.execute(
                     "SELECT payload FROM action_decision_records WHERE kind='decision' "
@@ -67,7 +68,7 @@ class ActionDecisionRepository:
                           key=lambda r:(instant(r['decision_time']), r['decision_id']))
 
     def history(self, instrument_id):
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             if self.connection:
                 rows = self.connection.execute('SELECT payload FROM action_decision_records WHERE kind=? AND instrument_id=? ORDER BY decision_time DESC, rowid DESC LIMIT 100', ('decision',instrument_id)).fetchall()
                 return [json.loads(row[0]) for row in rows]

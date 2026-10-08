@@ -195,3 +195,12 @@
 .engine-switch-warning{color:#e2bc7d}
 .engine-switch-confirm button{border:1px solid #33475c;border-radius:3px;padding:3px 8px;background:#141c26;color:#dce8f3;font:inherit;cursor:pointer}
 .engine-switch-confirm button:focus-visible{outline:2px solid #70afff;outline-offset:1px}
+/* Full-universe coverage: the status line is the first thing read; partial is never styled like final. */
+.ai-coverage{display:flex;flex-direction:column;gap:3px;padding:5px 7px;border:1px solid #263747;background:#101820}
+.ai-coverage-status{margin:0;font-size:11px;color:#dce8f3}
+.ai-coverage-status.final{color:#9fd8b0}
+.ai-coverage-status.partial{color:#f0c674}
+.ai-coverage ul,.ai-coverage-provisional ul,.ai-coverage-receipts ul,.ai-coverage-receipts ol{margin:3px 0 0;padding-left:16px;color:#9fb4c8;font-size:10px;line-height:1.4}
+.ai-coverage details summary,.ai-coverage-receipts summary{color:#8ea0b3;font-size:10px;cursor:pointer}
+.ai-screener-stop{align-self:flex-start;padding:4px 9px}
+.ai-screener-stop:focus-visible{outline:2px solid #70afff;outline-offset:1px}

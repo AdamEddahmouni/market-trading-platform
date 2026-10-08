@@ -34,6 +34,30 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — Full-universe Screener final defect closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (implementation, final local validation and observed protected CI; canonical integration verified separately after normal merge) |
+| **Area** | AI Screener completeness, budget, persistence and restart diagnostics |
+| **Summary** | Retrieved the original independent review. Finalists excluded from global comparison now block a completed selection. Candidate publication and the terminal receipt roll back together. Budget instances reload shared usage and releases, local-engine recovery releases paid holds, and failed reservation persistence blocks generation. Completed selection reads survive tracker restart. Provider-count context overflow and Stop during the final in-flight request cannot publish a completed selection. |
+| **Key files** | `screener_ai_coverage.py`, `screener_ai_runs.py`, `screener_ai.py`, `anthropic_synthesis.py`, `ai_screener_coverage.py`, `action_decisions.py`, associated regression tests and acceptance tool |
+| **Tests** | Red/green controlled regressions; final exact-source totals and original failed-run disposition are recorded in `artifacts/ai-screener-full-universe-acceptance.json`. Final checks include the corrected partial-selection UI copy, isolated durable-ledger route fixtures, and fail-closed unreadable persisted quota state. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md) |
+| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. [PR #485](https://github.com/AdamEddahmouni/market-trading-platform/pull/485) records normal protected integration. |
+
+## 2026-10-07 — AI Screener full-universe coverage, bounded batches and global selection
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui/screener`, `docs` |
+| **Summary** | An AI Screener run read only the first 50 rows of the sorted Screener result, so about 99% of a 4,630-row universe never reached the model and "no candidates" described only the head of the list. A run now enumerates the whole pinned result set, classifies every row with the existing evidence gates, sends each eligible row to the model in bounded batches ordered by identity, and compares batch finalists until one request holds them all (`ai-screener-coverage/1.0.0`). Only that final answer is stored as a candidate run. The whole plan is held against the shared budget before the first call; a plan that does not fit calls no model. |
+| **Key files** | New: `src/market_platform_foundation/ui_api/screener_ai_coverage.py`, `ui_api/screener_ai_universe.py`, `intelligence/inference/coverage_plan.py`, `local_state/ai_screener_coverage.py`, `tools/ai_screener_full_universe_acceptance.py`, `ui/src/components/screener/ai/AiCoverage.tsx`, `docs/architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md`. Changed: `ui_api/screener_ai.py`, `ui_api/screener_ai_runs.py`, `ui_api/server.py`, `intelligence/inference/anthropic_synthesis.py`, `candidate_reduction.py`, `run_progress.py`, `platform/security/route_policy.py`, `platform/security/leak_audit.py`, `ui/src/api/screenerAi.ts`, `AiStatusStrip.tsx`, `AiRunProgress.tsx`, `AiScreenerPanel.tsx`, `ScreenerPage.tsx`. |
+| **Tests** | Recorded in `artifacts/ai-screener-full-universe-acceptance.json` (`validation`), from runs on the implementation commit. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md); [single-request contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md); the PR 484 entry below, whose "NOT closure of the full-universe blind-spot issue" this closes. |
+| **Notes** | Token estimates changed for every paid AI operation: input is now bounded from UTF-8 bytes below the provider's measured bytes per token (the former three-characters rule under-counted every Claude model), so reservations are larger and refusals come earlier. Measured limit: a controlled 50-row packet is about 96,000 bytes, so under the default 200,000-token / 30-request allowance only a query with about 50 eligible rows (Sonnet/Opus) or about 100 (Haiku) completes; larger queries end `AI_COVERAGE_BUDGET_INSUFFICIENT` before any call. A local model has no cap. Not done: no paid generation under this method; no resume after restart; automatic reevaluation passes keep the single-request method; the packet shape (about a third of a candidate is its fixed missing-capability list) is unchanged, so a more compact wire remains a separate, unstarted change. `ui/ai-right-rail-tab` (unmerged) edits the same UI files and will need a rebase. |
+
 ## 2026-10-07 — Preserve usable news before empty candidate coverage during packing
 
 | Field | Value |

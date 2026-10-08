@@ -553,6 +553,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if run_id == "active":
                     self._send_json(ai_screener_runs().current(account))
                     return
+                if run_id.endswith("/coverage"):
+                    # One run's receipts and per-row accounting, from the ledger. Reads only.
+                    try:
+                        receipts = ai_screener_runs().coverage(
+                            account, run_id.removesuffix("/coverage"), row_class=(query.get("class") or [None])[0],
+                            offset=int((query.get("offset") or ["0"])[0]), limit=int((query.get("limit") or ["200"])[0]))
+                    except ValueError as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                        return
+                    if receipts is None:
+                        self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "No full-universe run with this id exists for this account",
+                                              status=HTTPStatus.NOT_FOUND)
+                        return
+                    self._send_json(receipts)
+                    return
                 run = ai_screener_runs().read(account, run_id)
                 if run is None:
                     self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
@@ -1820,6 +1835,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
+            # Operator Stop: no further model call starts. A call already sent is not cancelled and stays charged.
+            from .screener_ai_runs import ai_screener_runs
+
+            stopped = ai_screener_runs().stop(self.store.paper_ledger.paper_account_id,
+                                              path.removeprefix("/screener/ai-screener/runs/").removesuffix("/stop"))
+            if stopped is None:
+                self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
+                                      status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(stopped)
             return
         if path == "/screener/ai-screener":
             # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.

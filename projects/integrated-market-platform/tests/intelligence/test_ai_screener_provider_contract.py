@@ -14,7 +14,8 @@ from market_platform_foundation.intelligence.inference.anthropic_models import (
     ModelRequestContractUnsupported, build_request, contract_status, count_request,
 )
 from market_platform_foundation.intelligence.inference.anthropic_synthesis import (
-    COUNT_TOKENS_URL, DEFAULT_MODEL, AnthropicSynthesisProvider, BudgetedProvider, DailyBudget, rejection_reason,
+    BYTES_PER_TOKEN, COUNT_TOKENS_URL, DEFAULT_BYTES_PER_TOKEN, DEFAULT_MODEL, AnthropicSynthesisProvider, BudgetedProvider,
+    DailyBudget, estimate_tokens, rejection_reason,
 )
 from market_platform_foundation.intelligence.inference.candidate_reduction import (
     MAX_INTAKE, MAX_PACKET_BYTES, MAX_SELECTED, PROMPT_ID, SCHEMA_VERSION, WIRE_SCHEMA_VERSION, CandidateReducer,
@@ -298,7 +299,19 @@ class RequestConstructionTests(unittest.TestCase):
             provider = BudgetedProvider(AnthropicSynthesisProvider(api_key='controlled', model=model, poster=Claude(self.answer)),
                                         DailyBudget(None))
             extra = THINKING_HEADROOM if CLAUDE_MODELS[model].thinks_by_default else 0
-            self.assertEqual(provider.worst_case_tokens('x' * 300, config), 101 + 1500 + 2600 + extra)
+            # The input estimate is model-aware and never below the provider's measured bytes-per-token.
+            self.assertEqual(provider.worst_case_tokens('x' * 300, config), int(300 / BYTES_PER_TOKEN[model]) + 1 + 1500 + 2600 + extra)
+
+    def test_the_input_estimate_is_never_below_the_provider_count_measured_on_october_7(self):
+        # Controlled 50-candidate packet, counted by the provider with no generation: bytes of the whole rendered
+        # request are at least the packet's 319,719 bytes, so an estimate from the packet alone is a lower bound.
+        measured = {'claude-haiku-4-5-20251001': 120_235, 'claude-sonnet-5-5': 177_826, 'claude-opus-5-5': 177_826}
+        for model, tokens in measured.items():
+            self.assertGreater(estimate_tokens('x' * 319_719, model), tokens)
+            # The former rule (three characters per token) was below the bill on every model.
+            self.assertLess(319_719 // 3 + 1, tokens)
+        self.assertEqual(estimate_tokens('x' * 300, 'an-unmeasured-model'), int(300 / DEFAULT_BYTES_PER_TOKEN) + 1)
+        self.assertEqual(estimate_tokens('é' * 150), int(300 / DEFAULT_BYTES_PER_TOKEN) + 1)
 
     def test_a_saved_model_outside_the_catalog_selects_no_provider(self):
         import tempfile
