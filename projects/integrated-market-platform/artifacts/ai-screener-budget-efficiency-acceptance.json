@@ -4891,8 +4891,9 @@
       "status": "PASS_SOFTWARE_CONTROLLED"
     },
     "G12": {
+      "note": "Default batching composition is unchanged. A matched adaptive density/order experiment and real-provider quality remain unverified; adaptive mode stays OFF.",
       "requirement": "Batch composition regressions",
-      "status": "CONTROLLED_PASS_PROVIDER_LIMITATION_DISCLOSED"
+      "status": "DEFAULT_COMPOSITION_UNCHANGED_ADAPTIVE_IMPACT_NOT_VERIFIED_GATED_OFF"
     },
     "G13": {
       "requirement": "Reuse context",
@@ -5617,8 +5618,8 @@
       "rows_without_a_price": 25
     }
   },
-  "implementation_sha": null,
-  "implementation_sha_note": "Filled with the source implementation commit in a subsequent receipt-only commit; final protected PR head and canonical ancestry are reported after integration.",
+  "implementation_sha": "98651cbfa88aff969cb9ad4e231263f56678a932",
+  "implementation_sha_note": "Validated source implementation commit. This subsequent receipt-only commit records its identity; protected PR head and canonical integration are verified after merge.",
   "integration": {
     "merge_sha": null,
     "pr_url": null,
@@ -5629,7 +5630,8 @@
     "No network or billed generation. Fixture clocks are frozen.",
     "Traced baselines and optimized samples carry instrumentation overhead. Final no-tracing samples ran alongside validation; latency is diagnostic, not an isolated performance comparison.",
     "Category bytes profile uncompressed semantic evidence and are not additive physical compact-wire bytes.",
-    "Final contract verification includes cache lineage/expiry repair."
+    "Final contract verification includes cache lineage/expiry repair.",
+    "Historical baseline runner recorded global_reduction_requests=0 even when model_requests exceeds first-pass batches. Preserve the raw observation; actual global comparison counts derived from those counters are 1 at 100, 500, 4630, and 20000 rows, and 0 at 0,20,50. This metadata defect does not alter measured total calls, bytes, or selections."
   ],
   "method": {
     "adaptive_batches_default": false,
@@ -7581,6 +7583,13 @@
       "finding": "Windows oversized-header fixture socket races",
       "id": "R8",
       "severity": "REVIEW_NOTE"
+    },
+    {
+      "disposition": "CORRECTED_DISCLOSED",
+      "finding": "Adaptive composition unverified; historical baseline global-call counter mislabeled",
+      "id": "R9",
+      "resolution": "G12 explicitly marks adaptive impact unverified and gated OFF; raw baseline retained with corrected derived global-call counts.",
+      "severity": "RECEIPT_CORRECTION"
     }
   ],
   "runtime_models_changed": false,
