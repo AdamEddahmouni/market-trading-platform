@@ -1,10 +1,15 @@
 """Paid Claude path for Screener news synthesis, with a hard daily budget.
 
-``AnthropicSynthesisProvider`` calls the Messages API with a forced tool whose input
-schema is ``output_json_schema`` (refs limited to the packet's story ids), temperature
-0, and a bounded ``max_tokens``. Forced tool use keeps the structure on contract, so a
-paid call is rarely spent on output that validation then rejects. ``parse_synthesis``
-still validates every result.
+``AnthropicSynthesisProvider`` calls the Messages API with one schema-typed tool whose
+input schema is the task's output schema, and a bounded ``max_tokens``. The request body
+is built per model by ``anthropic_models``: a model that accepts them gets temperature 0
+and a forced tool call; a model that rejects them gets neither, and a reply without the
+tool call is an error. A model with no known request shape is refused before any network
+call (``MODEL_REQUEST_CONTRACT_UNSUPPORTED``); the provider never substitutes another
+model. The application parser still validates every result.
+
+``preflight`` sends the same request to the token-count endpoint, which bills nothing and
+generates nothing: it reports the input tokens and whether the provider accepts the body.
 
 ``BudgetedProvider`` wraps any provider with ``DailyBudget``, a persisted per-day
 limit on requests and tokens. Before each call it reserves the worst case (the prompt
@@ -28,6 +33,10 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from .anthropic_models import (
+    CLAUDE_MODELS, TOOL_NAME, UNSUPPORTED, ModelRequestContractUnsupported, build_request, contract_status,
+    count_request, output_tokens,
+)
 from .config import IntelligenceInferenceConfig
 from .contracts import IntelligenceInputPacket, IntelligenceTaskType, ParsingStatus
 from .errors import InferenceErrorCode
@@ -35,14 +44,14 @@ from .provider import ANTHROPIC_API_URL, ProviderInferenceResponse
 from .run_progress import report_stage
 
 PROVIDER_ID = "anthropic.messages"
-# Sonnet: strong grounding and conflict handling at a moderate per-call cost. Override with IMP_SYNTHESIS_ANTHROPIC_MODEL.
+# Used only when neither the operator's saved choice nor IMP_SYNTHESIS_ANTHROPIC_MODEL names a model.
 DEFAULT_MODEL = "claude-sonnet-5-5"
 MODEL_ENV = "IMP_SYNTHESIS_ANTHROPIC_MODEL"
 DAILY_REQUESTS_ENV, DAILY_TOKENS_ENV = "IMP_SYNTHESIS_DAILY_REQUESTS", "IMP_SYNTHESIS_DAILY_TOKENS"
 DEFAULT_DAILY_REQUESTS = 30
 DEFAULT_DAILY_TOKENS = 200_000
 BUDGET_RELATIVE = Path("quota") / "anthropic-synthesis.json"
-TOOL_NAME = "record_synthesis"
+COUNT_TOKENS_URL = ANTHROPIC_API_URL + "/count_tokens"
 API_VERSION = "2023-06-01"
 _CHARS_PER_TOKEN = 3          # conservative: over-estimates tokens, so the reservation errs toward refusing
 
@@ -56,6 +65,25 @@ def _http_post(url: str, body: bytes, headers: dict[str, str], timeout: float) -
             return response.status, response.read()
     except HTTPError as exc:
         return exc.code, exc.read() or b""
+
+
+def rejection_reason(status: int, payload: dict[str, Any]) -> str:
+    """A stable reason for a refused request. The provider's message is read for its class and never kept."""
+
+    error = payload.get("error") if isinstance(payload.get("error"), dict) else {}
+    kind = str(error.get("type") or "").upper() or f"HTTP_{status}"
+    if status == 400:
+        message = str(error.get("message") or "").lower()
+        for reason, markers in (
+            ("ANTHROPIC_CONTEXT_EXCEEDED", ("prompt is too long", "context window", "context limit")),
+            ("ANTHROPIC_GRAMMAR_TOO_LARGE", ("grammar", "too complex", "compil")),
+            ("ANTHROPIC_TOOL_CHOICE_UNSUPPORTED", ("tool_choice",)),
+            ("ANTHROPIC_PARAMETER_UNSUPPORTED", ("temperature", "top_p", "top_k", "thinking", "max_tokens")),
+            ("ANTHROPIC_SCHEMA_REJECTED", ("schema", "strict", "additionalproperties", "const", "enum")),
+        ):
+            if any(marker in message for marker in markers):
+                return reason
+    return f"ANTHROPIC_{kind}"
 
 
 def estimate_tokens(text: str) -> int:
@@ -157,26 +185,82 @@ class AnthropicSynthesisProvider:
                                          error_message=message, parsing_status=status, tokens_input=usage[0],
                                          tokens_output=usage[1], latency_ms=int((time.perf_counter() - started) * 1000))
 
-    def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
-              config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
+    @property
+    def reasoning_headroom(self) -> int:
+        """Output tokens added for a model that reasons before answering; the budget reserves them too."""
+
+        return output_tokens(self.model_id, 0)
+
+    def request_contract(self, task_type: IntelligenceTaskType) -> dict[str, Any]:
+        """Whether the selected model can run this task. Calls nothing."""
+
+        return contract_status(self.model_id, task_type)
+
+    def request_body(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
+                     config: IntelligenceInferenceConfig) -> dict[str, Any]:
+        """The exact generation body for this model, or ``ModelRequestContractUnsupported``."""
+
         from .schema_dispatch import schema_for_packet
 
+        return build_request(self.model_id, task_type=packet.task_type, input_schema=schema_for_packet(packet),
+                             rendered_prompt=rendered_prompt, max_tokens=config.max_tokens)
+
+    def _headers(self) -> dict[str, str]:
+        return {"Content-Type": "application/json", "x-api-key": self._api_key, "anthropic-version": API_VERSION}
+
+    def preflight(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
+                  config: IntelligenceInferenceConfig) -> dict[str, Any]:
+        """Count the generation request's input tokens. Bills nothing, generates nothing, reserves no budget.
+
+        ``accepted`` is the provider's verdict on the body (model, parameters, tool schema). It does not show that
+        a strict schema's grammar compiles: only a generation request compiles it."""
+
+        result: dict[str, Any] = {"model_id": self.model_id, "accepted": False, "input_tokens": None,
+                                  "context_window": None, "context_fit": None, "reason": None}
+        if not self._api_key:
+            return {**result, "reason": "API_KEY_MISSING"}
+        try:
+            body = self.request_body(packet, rendered_prompt=rendered_prompt, config=config)
+        except ModelRequestContractUnsupported as exc:
+            return {**result, "reason": UNSUPPORTED, **exc.details()}
+        capabilities = CLAUDE_MODELS[self.model_id]
+        result["context_window"] = capabilities.context_window
+        if not capabilities.count_tokens:
+            return {**result, "reason": "COUNT_TOKENS_UNSUPPORTED"}
+        try:
+            status, raw = self._post(COUNT_TOKENS_URL, json.dumps(count_request(body)).encode("utf-8"), self._headers(),
+                                     config.timeout_seconds)
+        except TimeoutError:
+            return {**result, "reason": "ANTHROPIC_TIMEOUT"}
+        except (URLError, OSError) as exc:
+            return {**result, "reason": "ANTHROPIC_TIMEOUT" if "timed out" in str(exc).lower() else "ANTHROPIC_UNREACHABLE"}
+        try:
+            payload = json.loads(raw.decode("utf-8")) if raw else {}
+        except (ValueError, UnicodeDecodeError):
+            payload = {}
+        if not isinstance(payload, dict):
+            payload = {}
+        if status != 200:
+            return {**result, "reason": "ANTHROPIC_AUTH_FAILED" if status in (401, 403) else rejection_reason(status, payload)}
+        tokens = payload.get("input_tokens")
+        if type(tokens) is not int:
+            return {**result, "reason": "ANTHROPIC_RESPONSE_MALFORMED"}
+        fits = tokens + body["max_tokens"] <= capabilities.context_window
+        return {**result, "accepted": True, "input_tokens": tokens, "context_fit": fits,
+                "reason": None if fits else "ANTHROPIC_CONTEXT_EXCEEDED"}
+
+    def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
+              config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
         started = time.perf_counter()
         if not self._api_key:
             return self._error(InferenceErrorCode.PROVIDER_AUTH_FAILURE, "API_KEY_MISSING", ParsingStatus.PROVIDER_ERROR, started)
-        body = {
-            "model": self.model_id, "max_tokens": config.max_tokens, "temperature": 0,
-            "system": "You write grounded evidence syntheses. Use only the supplied packet and record the result with the tool.",
-            "messages": [{"role": "user", "content": rendered_prompt}],
-            "tools": [{"name": TOOL_NAME, "description": "Record the grounded synthesis of the supplied evidence.",
-                       "input_schema": schema_for_packet(packet)}],
-            "tool_choice": {"type": "tool", "name": TOOL_NAME},
-        }
-        if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION:
-            body['tools'][0]['strict'] = True
-        headers = {"Content-Type": "application/json", "x-api-key": self._api_key, "anthropic-version": API_VERSION}
         try:
-            status, raw = self._post(ANTHROPIC_API_URL, json.dumps(body).encode("utf-8"), headers, config.timeout_seconds)
+            body = self.request_body(packet, rendered_prompt=rendered_prompt, config=config)
+        except ModelRequestContractUnsupported:
+            # Refused here, before any request: the selected model stays on the receipt and nothing replaces it.
+            return self._error(InferenceErrorCode.INFERENCE_UNAVAILABLE, UNSUPPORTED, ParsingStatus.PROVIDER_ERROR, started)
+        try:
+            status, raw = self._post(ANTHROPIC_API_URL, json.dumps(body).encode("utf-8"), self._headers(), config.timeout_seconds)
         except TimeoutError:
             return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "ANTHROPIC_TIMEOUT", ParsingStatus.TIMEOUT, started)
         except (URLError, OSError) as exc:
@@ -191,23 +275,29 @@ class AnthropicSynthesisProvider:
         if not isinstance(payload, dict):
             payload = {}
         if status != 200:
-            error = payload.get("error") if isinstance(payload.get("error"), dict) else {}
-            kind = str(error.get("type") or "").upper() or f"HTTP_{status}"
             if status in (401, 403):
                 return self._error(InferenceErrorCode.PROVIDER_AUTH_FAILURE, "ANTHROPIC_AUTH_FAILED",
                                    ParsingStatus.PROVIDER_ERROR, started)
             code = InferenceErrorCode.PROVIDER_RATE_LIMIT if status == 429 else InferenceErrorCode.PROVIDER_UNAVAILABLE
-            # The error type only (e.g. INVALID_REQUEST_ERROR for a bad model id or an empty credit balance).
-            return self._error(code, f"ANTHROPIC_{kind}", ParsingStatus.PROVIDER_ERROR, started)
+            # A stable class only (e.g. INVALID_REQUEST_ERROR for a bad model id or an empty credit balance).
+            return self._error(code, rejection_reason(status, payload), ParsingStatus.PROVIDER_ERROR, started)
         usage_block = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
         usage = (usage_block.get("input_tokens"), usage_block.get("output_tokens"))
         if payload.get("stop_reason") == "max_tokens":
             return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "ANTHROPIC_OUTPUT_TRUNCATED",
                                ParsingStatus.MALFORMED, started, usage)
+        if payload.get("stop_reason") == "refusal":
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "ANTHROPIC_REFUSAL", ParsingStatus.PROVIDER_ERROR,
+                               started, usage)
         blocks = payload.get("content") if isinstance(payload.get("content"), list) else []
-        tool_input = next((block.get("input") for block in blocks if isinstance(block, dict)
-                           and block.get("type") == "tool_use" and block.get("name") == TOOL_NAME), None)
-        if not isinstance(tool_input, dict):
+        calls = [block.get("input") for block in blocks if isinstance(block, dict)
+                 and block.get("type") == "tool_use" and block.get("name") == TOOL_NAME]
+        if not calls:
+            # Text in place of the tool call is never parsed: the structured contract is the only accepted answer.
+            return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "ANTHROPIC_TOOL_NOT_CALLED",
+                               ParsingStatus.MALFORMED, started, usage)
+        tool_input = calls[0]
+        if len(calls) != 1 or not isinstance(tool_input, dict):
             return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "ANTHROPIC_RESPONSE_MALFORMED",
                                ParsingStatus.MALFORMED, started, usage)
         return ProviderInferenceResponse(raw_text=json.dumps(tool_input, ensure_ascii=False), provider_id=self.provider_id,
@@ -231,6 +321,19 @@ class BudgetedProvider:
 
     def budget_status(self) -> dict[str, Any]:
         return self.budget.status()
+
+    def request_contract(self, task_type: IntelligenceTaskType) -> dict[str, Any] | None:
+        """The wrapped provider's verdict on whether its model can run this task; None where it states none."""
+
+        check = getattr(self._provider, "request_contract", None)
+        return check(task_type) if callable(check) else None
+
+    def preflight(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
+                  config: IntelligenceInferenceConfig) -> dict[str, Any] | None:
+        """The wrapped provider's free token count for this request. Reserves and spends nothing."""
+
+        check = getattr(self._provider, "preflight", None)
+        return check(packet, rendered_prompt=rendered_prompt, config=config) if callable(check) else None
 
     def worst_case_tokens(self, rendered_prompt: str, config: IntelligenceInferenceConfig) -> int:
         """What a call reserves against the daily budget; the UI cost preview states this same number."""
@@ -286,6 +389,6 @@ def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path |
     return BudgetedProvider(provider, budget)
 
 
-__all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BudgetedProvider", "DAILY_REQUESTS_ENV", "DAILY_TOKENS_ENV",
-           "DEFAULT_DAILY_REQUESTS", "DEFAULT_DAILY_TOKENS", "DEFAULT_MODEL", "DailyBudget", "MODEL_ENV", "build_paid_provider",
-           "estimate_tokens"]
+__all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BudgetedProvider", "COUNT_TOKENS_URL", "DAILY_REQUESTS_ENV",
+           "DAILY_TOKENS_ENV", "DEFAULT_DAILY_REQUESTS", "DEFAULT_DAILY_TOKENS", "DEFAULT_MODEL", "DailyBudget", "MODEL_ENV",
+           "TOOL_NAME", "build_paid_provider", "estimate_tokens", "rejection_reason"]

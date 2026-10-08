@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
-import { EngineSwitchConfirm, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
+import { EngineSwitchConfirm, contractText, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
 import { useAiScreenerRunResult, useAiScreenerRuns } from "../ai/useAiScreenerRuns";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
 import { compactTokens } from "../news/SynthesisControl";
@@ -59,11 +59,12 @@ function EngineChoice({ ai, fit, onChanged }: { ai: AiStatus; fit: EngineFit[]; 
     if (engine && event.target.value !== value) { setFailed(false); setPending({ engine, model: event.target.value.slice(separator + 1) || null }); }
   }}>
     {ai.engines.map((engine) => engine.models.map((model) => <option key={`${engine.id}|${model}`} value={`${engine.id}|${model}`} disabled={engine.state !== "AVAILABLE"}>
-      {engine.label} · {model} · {engine.runtime === "LOCAL_MODEL" ? "local" : "paid"}{fitText(fitFor(engine.id)) ? ` · ${fitText(fitFor(engine.id))}` : ""}
+      {engine.label} · {model} · {engine.runtime === "LOCAL_MODEL" ? "local" : "paid"}{fitText(fitFor(engine.id)) ? ` · ${fitText(fitFor(engine.id))}` : ""}{contractText(engine, model) ? ` · ${contractText(engine, model)}` : ""}
     </option>))}
   </select>{failed && <span role="alert"> Could not switch engine.</span>}</label>
     {locked && <p className="ai-screener-meta">{locked}</p>}
     {selected && fitFor(selected.id)?.fits === false && <p className="ai-screener-meta" role="alert">The {fitText(fitFor(selected.id))}. Choose another engine or narrow the Screener scope.</p>}
+    {selected && contractText(selected, ai.engine_model) && <p className="ai-screener-meta" role="alert">The selected model {contractText(selected, ai.engine_model)}. Choose another model.</p>}
     {pending && <EngineSwitchConfirm pending={pending} fit={fitFor(pending.engine.id)} busy={busy} onConfirm={confirm} onCancel={() => setPending(null)} />}
   </div>;
 }

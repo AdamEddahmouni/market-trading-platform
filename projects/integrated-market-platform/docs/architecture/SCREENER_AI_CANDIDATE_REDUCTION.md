@@ -155,14 +155,42 @@ its final cutoff, so their counts may differ as ticks arrive or evidence ages.
 ## Limits and lifecycle
 
 The hard limits are `MAX_INTAKE=50`, `MAX_SELECTED=5` and a 320,000-byte packet.
-Strict inference uses packet-local integer candidate and evidence references.
-Each candidate index binds its existing instrument identity and exact weak/missing
-metadata; each evidence index binds one full immutable evidence ID. The packet
-contains those indices beside the original facts and metadata. The parser
-decodes only valid indices before applying every canonical validation gate,
-including rejecting references belonging to another instrument. Stored results
-retain full IDs and canonical lists. Legacy output remains supported; malformed
-or incorrect lists still fail closed. Shared news refresh precedes acquisition of
+The 50-row intake is not closure of the full-universe blind-spot issue: rows
+beyond the first 50 are never seen by the model, and nothing here batches them.
+
+Inference uses a compact wire (`ai-screener-wire/3.0.0`), separate from the
+stored result (`ai-screener-output/1.0.0`), which is unchanged:
+
+```text
+canonical candidates -> compact packet -> compact model output -> exact decode -> canonical validation -> stored result
+```
+
+In the packet each candidate carries `candidate_key`, its position in this
+request, and each of its evidence items carries `reference_index`, its position
+in that candidate's own list (current market first, then reference). A model
+pick is `candidate_key`, `rank`, `rationale`, `supporting_refs`,
+`conflicting_refs` and `uncertainties`, where the two reference lists hold that
+candidate's `reference_index` values. An index is looked up only in the list of
+the candidate the pick names, so no value on the wire can name another
+instrument's evidence. `candidate_key` is generated from the request, never
+stored on the canonical candidate, and decoded only against this request's
+candidates. A key or index that is not an in-range integer fails with
+`WIRE_CANDIDATE_KEY_INVALID` or `WIRE_REFERENCE_INDEX_INVALID`; nothing is
+clamped, repaired, matched by symbol or looked up elsewhere. The model no
+longer states weak references or missing capabilities: the decoder takes both
+from the packet candidate, so the stored lists are exactly the packet's. Every
+canonical gate then runs on the decoded pick, including the ownership, weak
+support and missing-list checks. A rejection records `validation.stage`:
+`DECODE` or `CANONICAL_VALIDATION`. Output already in the stored shape is still
+accepted by the parser and passes the same canonical gates.
+
+Prompt `screener.ai_candidate_reduction.v3` describes this wire. It lists the
+output fields by name, and a regression compares that list with the schema and
+checks that every field name in the prompt exists in the schema or the packet.
+Prompts v1 and v2 are unchanged for the runs stored under them. Each run
+records `wire_schema_version`, `output_schema_hash`, `prompt_id`,
+`prompt_version` and `prompt_hash`; all of them, with the provider and model,
+are part of cache identity. Shared news refresh precedes acquisition of
 short-lived market snapshots, so slow news providers cannot age newly acquired
 snapshots before the decision cutoff.
 Intake is the first 50 rows of the server's existing sorted/filtered result,
@@ -178,7 +206,8 @@ stale or future provider clock. News instrument providers remain cache-only.
 
 The model output schema is flat with bounded integer enums: large branching
 schemas and long reference enums exceed the vendor grammar compiler's size
-limits. Claude candidate reduction uses strict tool inputs; the application parser still
+limits. The reference enum is the longest single candidate's list, so the
+schema does not grow with the intake. Claude candidate reduction uses strict tool inputs; the application parser still
 checks every evidence, ranking, language and freshness invariant. Unsupported
 strict numerical/array bounds are expressed in descriptions and enforced by
 the unchanged parser. The output-schema hash participates in cache identity
@@ -238,3 +267,47 @@ that adds its action decision, Paper entry, position, stop, exit and P&L. That
 view is a read-only projection over this run record and the other authorities;
 it does not change selection, evidence or prompts. Contract:
 [SCREENER_TRADE_LIFECYCLE.md](SCREENER_TRADE_LIFECYCLE.md).
+
+## Claude request compatibility
+
+`intelligence/inference/anthropic_models.py` is the one table of what each
+hosted Claude model accepts, and builds the request from it. It serves every
+task on the Claude engine (News synthesis, AI Screener, Action Decisions).
+
+| Model | Temperature | Forced tool call | Strict tool schema | Reasons by default | Context |
+| --- | --- | --- | --- | --- | --- |
+| `claude-haiku-4-5-20251001` | sent as 0 | sent | yes | no | 200,000 |
+| `claude-sonnet-5-5` | omitted (rejected) | omitted (rejected) | yes | yes | 1,000,000 |
+| `claude-opus-5-5` | omitted (rejected) | omitted (rejected) | yes | yes | 1,000,000 |
+
+An optional parameter the model rejects is omitted. Where the tool call cannot
+be forced, the request uses `tool_choice: auto` limited to one call and the
+system text requires the call; a reply without the tool call is
+`ANTHROPIC_TOOL_NOT_CALLED` and its text is never parsed. A model that reasons
+by default gets 8,192 extra output tokens, reserved against the daily budget,
+because `max_tokens` bounds reasoning and answer together. That figure has not
+been measured against a real run.
+
+The AI Screener requires a strict tool schema. A model that cannot provide it,
+or that has no row in the table, is refused before any reservation or request
+with `MODEL_REQUEST_CONTRACT_UNSUPPORTED`, and the result's `compatibility`
+states the selected model, the required contract and the unsupported
+capability. No other model is used in its place. The Haiku request is byte for
+byte what was sent before requests became model-aware. A saved Claude model
+that is no longer in the catalog selects no provider
+(`SYNTHESIS_MODEL_NOT_IN_CATALOG`) instead of the default. `DEFAULT_MODEL`
+applies only when neither the saved choice nor
+`IMP_SYNTHESIS_ANTHROPIC_MODEL` names a model. The engine options list
+`model_contracts` for the Claude engine, and the picker says when a model
+cannot run the AI Screener.
+
+`AnthropicSynthesisProvider.preflight` sends the generation request, minus
+`max_tokens` and `temperature`, to the token-count endpoint: it bills and
+generates nothing and reports the input tokens, whether the provider accepts
+the body, and whether tokens plus the output bound fit the model's window. It
+is a diagnostic; a run does not call it. A token count does not compile a
+strict schema's grammar: only a generation request does.
+`tools/ai_screener_provider_contract.py` writes
+`artifacts/ai-screener-provider-contract-closure.json`; with `--probe` it runs
+the token count on the exact 50-candidate request and a zero-output grammar
+probe for every selectable model.

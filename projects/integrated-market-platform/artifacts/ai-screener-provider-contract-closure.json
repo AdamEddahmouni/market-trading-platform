@@ -1,0 +1,380 @@
+{
+  "base_sha": "e3883d4849187b34192ce5bf41ad6899e63c70c9",
+  "billed_grammar_probe_input_tokens": 3494,
+  "billed_grammar_probe_output_tokens": 1,
+  "billed_grammar_probe_requests": 3,
+  "controlled_decode": {
+    "model": "claude-haiku-4-5-20251001",
+    "reason": null,
+    "selected": [
+      "EQ:X41",
+      "EQ:X7",
+      "EQ:X0",
+      "EQ:X49",
+      "EQ:X23"
+    ],
+    "selected_keys": [
+      41,
+      7,
+      0,
+      49,
+      23
+    ],
+    "state": "CURRENT",
+    "stored_fields": [
+      "conflicting_refs",
+      "instrument_id",
+      "missing_capabilities",
+      "rank",
+      "rationale",
+      "supporting_refs",
+      "uncertainties",
+      "weak_refs"
+    ]
+  },
+  "default_model": "claude-sonnet-5-5",
+  "implementation_sha": "9732d8313c4c2114ccf918a97fbf4df1a1604677",
+  "invalid_output_checks": {
+    "duplicate_reference": {
+      "reason": "INVALID_SUPPORTING_REFS",
+      "selected": 0,
+      "stage": "CANONICAL_VALIDATION",
+      "state": "INVALID_OUTPUT"
+    },
+    "evidence_omitted_during_packing": {
+      "reason": "WIRE_REFERENCE_INDEX_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "index_valid_only_for_another_candidate": {
+      "reason": "WIRE_REFERENCE_INDEX_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "malformed_binding": {
+      "reason": "WIRE_CANDIDATE_KEY_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "negative_index": {
+      "reason": "WIRE_REFERENCE_INDEX_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "out_of_range_index": {
+      "reason": "WIRE_REFERENCE_INDEX_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "restated_missing_list": {
+      "reason": "SCHEMA_INVALID",
+      "selected": 0,
+      "stage": "CANONICAL_VALIDATION",
+      "state": "INVALID_OUTPUT"
+    },
+    "symbol_in_place_of_key": {
+      "reason": "WIRE_CANDIDATE_KEY_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    },
+    "unknown_candidate_key": {
+      "reason": "WIRE_CANDIDATE_KEY_INVALID",
+      "selected": 0,
+      "stage": "DECODE",
+      "state": "INVALID_OUTPUT"
+    }
+  },
+  "known_unresolved": [
+    "50-row intake is NOT closure of the full-universe blind-spot issue.",
+    "No end-to-end paid generation was run on any model under this contract."
+  ],
+  "method": {
+    "max_intake": 50,
+    "max_packet_bytes": 320000,
+    "max_selected": 5
+  },
+  "model_capability_matrix": [
+    {
+      "AI_SCREENER_COMPATIBLE": true,
+      "CONTEXT_WINDOW": 1000000,
+      "COUNT_TOKENS_SUPPORTED": true,
+      "FORCED_TOOL_CHOICE_SUPPORTED": false,
+      "MODEL": "claude-sonnet-5-5",
+      "REASONS_BY_DEFAULT": true,
+      "REASON_IF_NOT": null,
+      "REQUEST_SHAPE_SUPPORTED": true,
+      "SOURCE": "capability table, confirmed by provider probe",
+      "STRICT_SCHEMA_SUPPORTED": true,
+      "TEMPERATURE_SUPPORTED": false
+    },
+    {
+      "AI_SCREENER_COMPATIBLE": true,
+      "CONTEXT_WINDOW": 200000,
+      "COUNT_TOKENS_SUPPORTED": true,
+      "FORCED_TOOL_CHOICE_SUPPORTED": true,
+      "MODEL": "claude-haiku-4-5-20251001",
+      "REASONS_BY_DEFAULT": false,
+      "REASON_IF_NOT": null,
+      "REQUEST_SHAPE_SUPPORTED": true,
+      "SOURCE": "capability table, confirmed by provider probe",
+      "STRICT_SCHEMA_SUPPORTED": true,
+      "TEMPERATURE_SUPPORTED": true
+    },
+    {
+      "AI_SCREENER_COMPATIBLE": true,
+      "CONTEXT_WINDOW": 1000000,
+      "COUNT_TOKENS_SUPPORTED": true,
+      "FORCED_TOOL_CHOICE_SUPPORTED": false,
+      "MODEL": "claude-opus-5-5",
+      "REASONS_BY_DEFAULT": true,
+      "REASON_IF_NOT": null,
+      "REQUEST_SHAPE_SUPPORTED": true,
+      "SOURCE": "capability table, confirmed by provider probe",
+      "STRICT_SCHEMA_SUPPORTED": true,
+      "TEMPERATURE_SUPPORTED": false
+    }
+  ],
+  "october_7_model": "claude-haiku-4-5-20251001",
+  "packet": {
+    "bytes": 319719,
+    "candidates": 50,
+    "fixture": "50 controlled candidates: current quote and technicals each, three long stories each before fitting",
+    "raw_bytes_before_fitting": 349557,
+    "rendered_prompt_chars": 324076,
+    "stories_after_fitting": 41,
+    "stories_before_fitting": 50,
+    "within_cap": true
+  },
+  "paid_generation_calls": 0,
+  "probe_requests_that_returned_output_tokens": 1,
+  "prompt_hash": "8598360a1b79a50ad7c26f77f7d910bbdd378f4b0870d8604f94b7f4aa24cd27",
+  "prompt_id": "screener.ai_candidate_reduction.v3",
+  "prompt_version": "3.0.0",
+  "provider_controls": {
+    "legacy_array_constants": {
+      "grammar_probe": {
+        "accepted": false,
+        "classification": "ANTHROPIC_SCHEMA_REJECTED",
+        "http_status": 400,
+        "max_tokens": 0,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "tools.0.custom: Schema type 'const - complex' is not supported"
+      },
+      "schema_bytes": 53880,
+      "token_count": {
+        "accepted": false,
+        "classification": "ANTHROPIC_SCHEMA_REJECTED",
+        "http_status": 400,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "tools.0.custom: Schema type 'const - complex' is not supported"
+      }
+    },
+    "legacy_per_instrument_branches": {
+      "grammar_probe": {
+        "accepted": false,
+        "classification": "ANTHROPIC_GRAMMAR_TOO_LARGE",
+        "http_status": 400,
+        "max_tokens": 1,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "The compiled grammar is too large, which would cause performance issues. Simplify your tool schemas or reduce the number of strict tools."
+      },
+      "schema_bytes": 52298,
+      "token_count": {
+        "accepted": true,
+        "classification": null,
+        "http_status": 200,
+        "input_tokens": 21557,
+        "output_tokens": null,
+        "stop_reason": null
+      }
+    }
+  },
+  "provider_preflight": {
+    "claude-haiku-4-5-20251001": {
+      "CONTEXT_FIT": "PASS",
+      "GRAMMAR_COMPILES": "PASS",
+      "SCHEMA_PROVIDER_ACCEPTED": "PASS",
+      "grammar_probe": {
+        "accepted": true,
+        "classification": null,
+        "http_status": 200,
+        "input_tokens": 1230,
+        "max_tokens": 1,
+        "output_tokens": 1,
+        "stop_reason": "max_tokens"
+      },
+      "token_count": {
+        "accepted": true,
+        "context_fit": true,
+        "context_window": 200000,
+        "input_tokens": 120235,
+        "model_id": "claude-haiku-4-5-20251001",
+        "reason": null
+      }
+    },
+    "claude-opus-5-5": {
+      "CONTEXT_FIT": "PASS",
+      "GRAMMAR_COMPILES": "PASS",
+      "SCHEMA_PROVIDER_ACCEPTED": "PASS",
+      "grammar_probe": {
+        "accepted": true,
+        "classification": null,
+        "http_status": 200,
+        "input_tokens": 1132,
+        "max_tokens": 0,
+        "output_tokens": 0,
+        "stop_reason": "max_tokens"
+      },
+      "legacy_forced_tool_choice": {
+        "accepted": false,
+        "classification": "ANTHROPIC_TOOL_CHOICE_UNSUPPORTED",
+        "http_status": 400,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "tool_choice: type \"tool\" and \"any\" are not supported for this model."
+      },
+      "legacy_temperature": {
+        "accepted": false,
+        "classification": "ANTHROPIC_PARAMETER_UNSUPPORTED",
+        "http_status": 400,
+        "max_tokens": 0,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "`temperature` is deprecated for this model."
+      },
+      "token_count": {
+        "accepted": true,
+        "context_fit": true,
+        "context_window": 1000000,
+        "input_tokens": 177826,
+        "model_id": "claude-opus-5-5",
+        "reason": null
+      }
+    },
+    "claude-sonnet-5-5": {
+      "CONTEXT_FIT": "PASS",
+      "GRAMMAR_COMPILES": "PASS",
+      "SCHEMA_PROVIDER_ACCEPTED": "PASS",
+      "grammar_probe": {
+        "accepted": true,
+        "classification": null,
+        "http_status": 200,
+        "input_tokens": 1132,
+        "max_tokens": 0,
+        "output_tokens": 0,
+        "stop_reason": "max_tokens"
+      },
+      "legacy_forced_tool_choice": {
+        "accepted": false,
+        "classification": "ANTHROPIC_TOOL_CHOICE_UNSUPPORTED",
+        "http_status": 400,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "tool_choice: type \"tool\" and \"any\" are not supported for this model."
+      },
+      "legacy_temperature": {
+        "accepted": false,
+        "classification": "ANTHROPIC_PARAMETER_UNSUPPORTED",
+        "http_status": 400,
+        "max_tokens": 0,
+        "provider_error_type": "invalid_request_error",
+        "provider_message": "`temperature` is deprecated for this model."
+      },
+      "token_count": {
+        "accepted": true,
+        "context_fit": true,
+        "context_window": 1000000,
+        "input_tokens": 177826,
+        "model_id": "claude-sonnet-5-5",
+        "reason": null
+      }
+    }
+  },
+  "provider_probes_run": true,
+  "receipt": "ai-screener-provider-contract-closure",
+  "request_construction": {
+    "claude-haiku-4-5-20251001": {
+      "count_request_fields": [
+        "model",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "fields": [
+        "model",
+        "max_tokens",
+        "temperature",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "max_tokens": 2600,
+      "strict": true,
+      "system_names_the_tool_call": false,
+      "temperature": 0,
+      "tool_choice": {
+        "name": "record_synthesis",
+        "type": "tool"
+      }
+    },
+    "claude-opus-5-5": {
+      "count_request_fields": [
+        "model",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "fields": [
+        "model",
+        "max_tokens",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "max_tokens": 10792,
+      "strict": true,
+      "system_names_the_tool_call": true,
+      "temperature": "OMITTED",
+      "tool_choice": {
+        "disable_parallel_tool_use": true,
+        "type": "auto"
+      }
+    },
+    "claude-sonnet-5-5": {
+      "count_request_fields": [
+        "model",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "fields": [
+        "model",
+        "max_tokens",
+        "system",
+        "messages",
+        "tools",
+        "tool_choice"
+      ],
+      "max_tokens": 10792,
+      "strict": true,
+      "system_names_the_tool_call": true,
+      "temperature": "OMITTED",
+      "tool_choice": {
+        "disable_parallel_tool_use": true,
+        "type": "auto"
+      }
+    }
+  },
+  "stored_schema_version": "ai-screener-output/1.0.0",
+  "wire_schema_bytes": 1623,
+  "wire_schema_hash": "16bb8fe2b05e413d7b41d581eae361421d2bae436639605b152f656225293bc1",
+  "wire_schema_version": "ai-screener-wire/3.0.0"
+}

@@ -143,6 +143,17 @@ describe("AI Screener panel", () => {
       renderPanel();
       expect(await screen.findByText("The current packet does not fit: needs ~37k tokens, model context 8k. Choose another engine or narrow the Screener scope.")).toBeInTheDocument();
     });
+
+    it("says when the server reports a model cannot run the AI Screener", async () => {
+      const model_contracts = [{ model: "claude-haiku-4-5", ai_screener_compatible: false, reason: "MODEL_REQUEST_CONTRACT_UNSUPPORTED", unsupported_capability: "MODEL_NOT_IN_CAPABILITY_TABLE" }];
+      const reported = engines.map((engine) => engine.id === "anthropic" ? { ...engine, model_contracts } : engine);
+      mocks.preview.mockResolvedValue({ ...preview, ai: { ...paid, engines: reported }, engine_fit });
+      renderPanel();
+      const select = await screen.findByRole("combobox", { name: "Engine/model" });
+      const text = "cannot run the AI Screener (MODEL_REQUEST_CONTRACT_UNSUPPORTED: MODEL_NOT_IN_CAPABILITY_TABLE)";
+      expect(within(select).getByRole("option", { name: `Anthropic Claude · claude-haiku-4-5 · paid · ${text}` })).toBeInTheDocument();
+      expect(screen.getByText(`The selected model ${text}. Choose another model.`)).toBeInTheDocument();
+    });
   });
 
   it("previews the bounded scope but never runs inference on open", async () => {
