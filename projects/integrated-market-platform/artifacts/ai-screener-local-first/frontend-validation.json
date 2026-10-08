@@ -1,0 +1,46 @@
+{
+  "full_tests": {
+    "status": "PASS",
+    "tests": 1414,
+    "files": 180,
+    "workers": 2,
+    "seconds": 99.37,
+    "source": "artifacts/local-first-ui-full-two-workers.log",
+    "sha256": "35b54a9a2b4dba5ff08771b459256ba06a69e2de13ea9952ee1f522d48ba11d2"
+  },
+  "focused_tests": {
+    "status": "PASS",
+    "tests": 31
+  },
+  "base_app": {
+    "status": "PASS",
+    "tests": 76
+  },
+  "feature_app": {
+    "status": "PASS",
+    "tests": 76
+  },
+  "typecheck": {
+    "status": "PASS",
+    "command": "npm run typecheck",
+    "exit_code": 0
+  },
+  "build": {
+    "status": "PASS",
+    "command": "npm run build",
+    "exit_code": 0,
+    "initial_gzip_kib": 100.76,
+    "largest_chunk_raw_kib": 870.73,
+    "vela_lazy_gzip_kib": 246.08,
+    "bundle_budget": "PASS",
+    "source": "Primary execution receipt: build completed in 9.20s; tool chunk 7f6634"
+  },
+  "initial_full_attempt": {
+    "tests": 1414,
+    "passed": 1410,
+    "failed": 4,
+    "source": "artifacts/local-first-ui-full.log",
+    "explanation": "App lazy-route timing under default full-suite worker load. Base and feature App76 both pass isolated; complete 1414-test run passes at two workers without test changes."
+  },
+  "paid_generations": 0
+}

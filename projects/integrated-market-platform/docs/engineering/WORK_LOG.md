@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-08 — Local-first experimental AI Screener
+
+| Field | Value |
+|-------|-------|
+| **Status** | implemented — local validation complete; experimental, methodology approval and operational activation OFF |
+| **Area** | Screener intelligence, local state, UI, controlled research |
+| **Summary** | Separate versioned qualification/premium engine preserves exhaustive defaults and Action rejection. Full fixture accounting through 20,000 passes; Qwen admission resource blocked, quality/economics unproven, approval/activation OFF. |
+| **Key files** | [Method](../architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md), [acceptance](../../artifacts/ai-screener-local-first-acceptance.json), staged orchestration/qualification/storage and Main Screener UI |
+| **Tests** | FAST 23 passed; CHANGED 6,270 run (35 skipped, 0 failures, 0 errors); FULL 8,431 run (53 skipped, 0 failures, 0 errors); UI 1,414 tests / 180 files at two workers; typecheck, build, bundle budget, lint, docs links pass. Implementation commit `231be2dd`. |
+| **Evidence** | Frozen protocol; zero paid/real local generations; resource refusal and review retained. October 7 evidence and dirty original preserved. |
+
+
 ## 2026-10-08 — Full-universe AI inference budget efficiency
 
 | Field | Value |

@@ -119,3 +119,9 @@ The API/UI expose new requests, reused answers, reported tokens, plan requiremen
 and unavailable or configured dollar estimates. Progress counts reflect completed
 reuse/generation work; planned demand remains in the plan. Partial results remain
 diagnostic and cannot enter Action Decision.
+
+## Experimental local-first method
+
+The separate [local-first experimental engine](SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md)
+requires explicit selection. Exhaustive remains the operational default; experimental results
+confer no Action Decision or execution authority.

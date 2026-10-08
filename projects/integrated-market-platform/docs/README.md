@@ -234,3 +234,5 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Sep 15 Item 7 / provider drafts | [drafts/20260915-rth-runbook-item7-provider/](engineering/drafts/20260915-rth-runbook-item7-provider/README.md) |
 
 - [Prospective outcome evaluation](architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) — OCT1-11 contracts, admission, formulas and frozen reproduction.
+
+- [Local-first experimental AI Screener](architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md) — methodology approval OFF.

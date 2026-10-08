@@ -1,0 +1,62 @@
+{
+  "inference_budget": {
+    "calls": 25373,
+    "limit_seconds": 7200,
+    "used_seconds": 28.411637399731262
+  },
+  "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "operationally_approved": false,
+  "paid_generations": 0,
+  "pilot_comparison": [
+    {
+      "backend": "VULKAN",
+      "elapsed_seconds": 0.005303599995386321,
+      "gpu_layers": 99,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    },
+    {
+      "backend": "CPU",
+      "elapsed_seconds": 0.004322699998738244,
+      "gpu_layers": 0,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    }
+  ],
+  "real_generations": 0,
+  "scales": [
+    {
+      "completed": 0,
+      "scale": 20,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    },
+    {
+      "completed": 0,
+      "scale": 50,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    },
+    {
+      "completed": 0,
+      "scale": 100,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    },
+    {
+      "completed": 0,
+      "scale": 500,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    },
+    {
+      "completed": 0,
+      "scale": 4630,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    },
+    {
+      "completed": 0,
+      "scale": 20000,
+      "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+    }
+  ],
+  "suitability": "UNPROVEN"
+}
