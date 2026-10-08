@@ -20,15 +20,19 @@ MAX_RECORD_BYTES = 512000
 
 
 class CoverageLedger:
-    def __init__(self, connection=None):
+    def __init__(self, connection=None, *, table="ai_screener_coverage_records"):
+        if table not in ("ai_screener_coverage_records", "ai_screener_staged_records"):
+            raise ValueError("COVERAGE_TABLE_INVALID")
+        self.table = table
         self.connection = connection
         self._memory: list[tuple[str, int, str, str]] = []
         self.lock = threading.RLock()
         if connection is not None:
             with connection.transaction():
-                connection.execute('CREATE TABLE IF NOT EXISTS ai_screener_coverage_records (run_id TEXT NOT NULL, seq INTEGER NOT NULL, '
+                connection.execute(f'CREATE TABLE IF NOT EXISTS {self.table} (run_id TEXT NOT NULL, seq INTEGER NOT NULL, '
                                    'kind TEXT NOT NULL, payload TEXT NOT NULL, PRIMARY KEY(run_id,seq))')
-                connection.execute('CREATE INDEX IF NOT EXISTS ai_screener_coverage_kind ON ai_screener_coverage_records(kind,run_id)')
+                index = 'ai_screener_coverage_kind' if self.table == 'ai_screener_coverage_records' else 'ai_screener_staged_kind'
+                connection.execute(f'CREATE INDEX IF NOT EXISTS {index} ON {self.table}(kind,run_id)')
 
     def _rows(self, run_id: str | None = None, kind: str | None = None) -> list[tuple[str, int, str, str]]:
         if self.connection:
@@ -39,7 +43,7 @@ class CoverageLedger:
                     values.append(value)
             where = ' WHERE ' + ' AND '.join(clauses) if clauses else ''
             return [tuple(row) for row in self.connection.execute(
-                'SELECT run_id,seq,kind,payload FROM ai_screener_coverage_records' + where + ' ORDER BY rowid', values).fetchall()]
+                f'SELECT run_id,seq,kind,payload FROM {self.table}' + where + ' ORDER BY rowid', values).fetchall()]
         return [row for row in self._memory if (run_id is None or row[0] == run_id) and (kind is None or row[2] == kind)]
 
     def append(self, run_id: str, kind: str, payload: dict[str, Any]) -> None:
@@ -51,9 +55,15 @@ class CoverageLedger:
         with self.connection._lock if self.connection else nullcontext(), self.lock:
             def insert():
                 if self.connection:
-                    count, started, ended = self.connection.execute(
-                        "SELECT COUNT(*),COALESCE(SUM(kind='run'),0),COALESCE(SUM(kind='terminal'),0) "
-                        "FROM ai_screener_coverage_records WHERE run_id=?", (run_id,)).fetchone()
+                    if self.table == "ai_screener_staged_records":
+                        last = self.connection.execute(f"SELECT seq FROM {self.table} WHERE run_id=? ORDER BY seq DESC LIMIT 1", (run_id,)).fetchone()
+                        count = last[0]+1 if last else 0
+                        started = self.connection.execute(f"SELECT 1 FROM {self.table} WHERE run_id=? AND kind='run' LIMIT 1", (run_id,)).fetchone() is not None
+                        ended = self.connection.execute(f"SELECT 1 FROM {self.table} WHERE run_id=? AND kind='terminal' LIMIT 1", (run_id,)).fetchone() is not None
+                    else:
+                        count, started, ended = self.connection.execute(
+                            "SELECT COUNT(*),COALESCE(SUM(kind='run'),0),COALESCE(SUM(kind='terminal'),0) "
+                            f"FROM {self.table} WHERE run_id=?", (run_id,)).fetchone()
                 else:
                     existing = self._rows(run_id)
                     count = len(existing)
@@ -65,7 +75,7 @@ class CoverageLedger:
                     raise ValueError('COVERAGE_RUN_ALREADY_TERMINAL')
                 record = (run_id, count, kind, encoded)
                 if self.connection:
-                    self.connection.execute('INSERT INTO ai_screener_coverage_records VALUES (?,?,?,?)', record)
+                    self.connection.execute(f'INSERT INTO {self.table} VALUES (?,?,?,?)', record)
                 else:
                     self._memory.append(record)
             if self.connection and not self.connection.in_transaction:

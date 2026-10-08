@@ -3,13 +3,17 @@ import { fetchJson, postJson } from "./fetchJson";
 import { AiStatusSchema } from "./screenerNews";
 import type { ScreenerFilter, ScreenerUniverse } from "./screener";
 
+const MethodSchema = z.enum(['EXHAUSTIVE_EXISTING', 'STAGED_LOCAL_FIRST_EXPERIMENTAL']);
+const StagedSchema = z.object({ schema_version: z.literal('ai-screener-staged-accounting/1.0.0'), method_version: z.string(), approval_status: z.literal('UNAPPROVED'), status: z.string(), reason: z.string().nullable().optional(), counters: z.record(z.number()), primary_states: z.record(z.number()), reconciled: z.boolean(), local_coverage_complete: z.boolean(), selection_complete: z.boolean(), local_model: z.record(z.unknown()), premium_model: z.record(z.unknown()), premium_plan: z.record(z.unknown()).nullable() }).passthrough();
 const ScopeSchema = z.object({
+  method: MethodSchema.optional(),
   universe: z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS", "CRYPTO"]),
   search: z.string(), sort: z.string().nullable(), descending: z.boolean(), filters: z.array(z.object({
     id: z.string(), field: z.string(), operator: z.string(), value: z.union([z.number(), z.string(), z.array(z.number()), z.array(z.string())]),
   }).passthrough()),
 }).passthrough();
 export type AiScreenerScope = {
+  method?: z.infer<typeof MethodSchema>;
   universe: ScreenerUniverse;
   search: string;
   sort: string;
@@ -47,6 +51,7 @@ const SelectionSchema = z.object({ instrument_id: z.string(), rank: z.number(), 
 }).passthrough();
 const EvidenceSummarySchema = z.object({ sufficient: z.number(), blocked: z.number(), missing: z.number(), weak: z.number() }).passthrough();
 export const AiScreenerPreviewSchema = z.object({ schema_version: z.literal("screener-ai-screener-preview/1.0.0"), ai: AiStatusSchema,
+  staged: z.object({ method_version: z.string(), approval_status: z.literal('UNAPPROVED'), local_model: z.record(z.unknown()) }).optional(),
   scope: ScopeSchema, matched_count: z.number(), intake_count: z.number(), max_intake: z.number(), estimate: EstimateSchema.nullable(),
   evidence_summary: EvidenceSummarySchema, news_coverage: z.array(NewsCoverageSchema.extend({ instrument_id: z.string() })).optional(), decision_cutoff: z.string(), result_set: z.string().nullable().optional(),
   engine_fit: z.array(z.object({ engine: z.string(), fits: z.boolean().nullable(), packet_size: z.number().nullable(), context_window: z.number().nullable() })).optional(),
@@ -76,7 +81,7 @@ const ProvisionalSchema = z.object({ instrument_id: z.string(), batch: z.number(
 
 /** `universe_coverage` is absent only on a result built by the single-request method (automatic passes, fixtures).
  *  `provisional` lists batch finalists of a run that did not finish; they are never a selection. */
-export const AiScreenerResultSchema = z.object({ schema_version: z.literal("screener-ai-screener/1.0.0"), state: z.string(), reason: z.string().nullable().optional(),
+export const AiScreenerResultSchema = z.object({ schema_version: z.enum(["screener-ai-screener/1.0.0", "screener-ai-staged-result/1.0.0"]), method: MethodSchema.optional(), operationally_approved: z.literal(false).optional(), staged: StagedSchema.optional(), state: z.string(), reason: z.string().nullable().optional(),
   universe_coverage: AiScreenerCoverageSchema.optional(), provisional: z.array(ProvisionalSchema).optional(),
   scope: ScopeSchema, matched_count: z.number(), intake_count: z.number(), max_intake: z.number(), result_set: z.string().nullable().optional(),
   run_id: z.string(), decision_cutoff: z.string(), generated_at: z.string(), valid_until: z.string(), input_hash: z.string(),
@@ -92,6 +97,7 @@ function queryFor(scope: AiScreenerScope) {
   if (scope.result_set) query.set("result_set", scope.result_set);
   if (scope.view) query.set("view", scope.view);
   if (scope.screen) query.set("screen", scope.screen);
+  if (scope.method) query.set("method", scope.method);
   return query;
 }
 
@@ -102,7 +108,7 @@ export function fetchAiScreenerPreview(scope: AiScreenerScope, signal?: AbortSig
 
 const RunStageSchema = z.object({ stage: z.string(), started_at: z.string(), elapsed_ms: z.number(), detail: z.record(z.unknown()) });
 // `candidate_run_id` is null unless a candidate run was stored: only a completed global selection stores one.
-const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string().nullable(),
+const RunSummarySchema = z.object({ staged: StagedSchema.nullable().optional(), method: MethodSchema.optional(), state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string().nullable(),
   selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), intake_count: z.number().nullable().optional(),
   cache: z.string().nullable().optional(), simulated: z.boolean().nullable().optional(), provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.string().nullable(), tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(),
@@ -133,7 +139,7 @@ export const AiScreenerRunsSchema = z.object({ schema_version: z.literal("screen
   interrupted: z.array(InterruptedRunSchema).optional(),
   state: z.enum(["RUNNING", "IDLE", "WAITING_FOR_BUDGET", "BLOCKED", "NOT_CONFIGURED"]),
   ai: z.object({ state: z.string().nullable(), reason: z.string().nullable(), provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable() }),
-  budget: RunBudgetSchema.nullable(), active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable() }).passthrough();
+  budget: RunBudgetSchema.nullable(), active: AiScreenerRunSchema.nullable(), latest: AiScreenerRunSchema.nullable(), experimental_latest: AiScreenerRunSchema.nullable().optional() }).passthrough();
 export type AiScreenerRuns = z.infer<typeof AiScreenerRunsSchema>;
 
 function sorted(value: unknown): unknown {
@@ -144,9 +150,9 @@ function sorted(value: unknown): unknown {
 
 /** Identity of the Screener query a run answers. The list snapshot (`result_set`) is not part of it: the same query
  *  after a list refresh is still the same question, and a result states its own cutoff. */
-export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown }) {
+export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown; method?: string }) {
   return JSON.stringify(sorted({ universe: scope.universe, search: scope.search, sort: scope.sort ?? null, descending: scope.descending,
-    filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "" }));
+    filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "", ...(scope.method === "STAGED_LOCAL_FIRST_EXPERIMENTAL" ? { method: scope.method } : {}) }));
 }
 
 /** Explicit operator action; GET is intentionally not used for inference. Returns at once: the run continues on the

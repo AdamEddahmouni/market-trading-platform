@@ -363,3 +363,9 @@ pre-fix source; F3 finalist exclusions, F6 shared holds and F9 atomic publicatio
 are explicitly covered. Controlled final-call Stop and provider-count context
 overflow are additional closure regressions. Historical October 7 failures are
 retained unchanged.
+
+## Experimental local-first method
+
+The separate [local-first experimental engine](SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md)
+requires explicit selection. Exhaustive remains the operational default; experimental results
+confer no Action Decision or execution authority.

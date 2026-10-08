@@ -89,13 +89,14 @@ class LocalModelManifest:
     runtime_version: str
     context: int = 8192
     gpu_layers: int = 99
+    threads: int = 4
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> LocalModelManifest | None:
         try:
             return cls(Path(str(payload["runtime_path"])), Path(str(payload["model_path"])), str(payload["model_id"]),
                        str(payload.get("revision") or ""), str(payload.get("runtime_version") or ""),
-                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)))
+                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)), int(payload.get("threads", 4)))
         except (KeyError, TypeError, ValueError):
             return None
 
@@ -167,7 +168,7 @@ class LocalLlamaServer:
             started = self._clock()
             args = [str(self.manifest.runtime_path), "-m", str(self.manifest.model_path), "--alias", SERVER_ALIAS,
                     "--host", "127.0.0.1", "--port", str(self._port), "-c", str(self.manifest.context),
-                    "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui"]
+                    "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui", "-t", str(self.manifest.threads)]
             log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
             try:
                 self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -241,23 +242,53 @@ class LocalChatInferenceProvider:
         self._request_model = request_model or model_id
         self._post = poster
 
-    def _error(self, code: InferenceErrorCode, message: str, status: ParsingStatus, started: float) -> ProviderInferenceResponse:
+    def _error(self, code: InferenceErrorCode, message: str, status: ParsingStatus, started: float, *, dispatched: bool = False) -> ProviderInferenceResponse:
         return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id, error_code=code,
-                                         error_message=message, parsing_status=status,
+                                         error_message=message, parsing_status=status, inference_dispatched=dispatched,
                                          latency_ms=int((time.perf_counter() - started) * 1000))
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
+        from .local_resources import ADMISSION, SLOT, ResourceMonitor
+        started = time.perf_counter()
+        if not ADMISSION.acquire(blocking=False):
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_INFERENCE_QUEUE_FULL', ParsingStatus.PROVIDER_ERROR, started)
+        if not SLOT.acquire(timeout=config.timeout_seconds):
+            ADMISSION.release()
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_INFERENCE_BUSY", ParsingStatus.PROVIDER_ERROR, started)
+        qualification = packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION
+        monitor = ResourceMonitor(self._server) if qualification and self._server is not None else None
+        try:
+            if qualification and getattr(packet, 'should_stop', lambda: False)():
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
+            if monitor and monitor.check():
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
+            return self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
+        finally:
+            if monitor:
+                monitor.close()
+                self.last_resource_sample = {"peak_process_bytes": monitor.peak_bytes, "failure": monitor.failure}
+            SLOT.release()
+            ADMISSION.release()
+
+    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None):
         started = time.perf_counter()
         if not is_loopback_url(self.base_url):
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_ENDPOINT_NOT_LOOPBACK",
                                ParsingStatus.PROVIDER_ERROR, started)
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION:
+            if self._server is None or (not self._server.running() and self._server._ours() is True):
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME', ParsingStatus.PROVIDER_ERROR, started)
+        if monitor: monitor.start()
         if self._server is not None:
             reason = self._server.ensure_running()
             if reason is not None:
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, reason, ParsingStatus.PROVIDER_ERROR, started)
+        if monitor:
+            if monitor.failure:
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
         response_format: dict[str, Any] = {"type": "json_object"}
-        if packet.task_type in (IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS, IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, IntelligenceTaskType.SCREENER_ACTION_DECISION):
+        if packet.task_type in (IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS, IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, IntelligenceTaskType.SCREENER_ACTION_DECISION, IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION):
             from .schema_dispatch import schema_for_packet
 
             # Grammar-constrained structure (refs limited to the packet's story ids); content is still validated.
@@ -270,33 +301,51 @@ class LocalChatInferenceProvider:
                 "chat_template_kwargs": {"enable_thinking": False},
                 "messages": [{"role": "system", "content": "Return ONLY valid JSON matching the schema in the user prompt."},
                              {"role": "user", "content": rendered_prompt}]}
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION:
+            try:
+                status, templated = self._post(f"{self.base_url}/apply-template",
+                    json.dumps({"messages":body["messages"],"chat_template_kwargs":body["chat_template_kwargs"]}).encode("utf-8"),config.timeout_seconds)
+                prompt=json.loads(templated)["prompt"] if status==200 else None
+                if not isinstance(prompt,str): raise ValueError("LOCAL_TEMPLATE_UNAVAILABLE")
+                status, tokenized=self._post(f"{self.base_url}/tokenize",json.dumps({"content":prompt,"add_special":True}).encode("utf-8"),config.timeout_seconds)
+                tokens=json.loads(tokenized)["tokens"] if status==200 else None
+                if not isinstance(tokens,list):raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
+                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":config.max_tokens,"context_window":self._server.manifest.context}
+                if len(tokens)+config.max_tokens>self._server.manifest.context:
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_EXCEEDED",ParsingStatus.PROVIDER_ERROR,started)
+            except (ValueError,KeyError,TypeError,OSError,URLError):
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_PREFLIGHT_FAILED",ParsingStatus.PROVIDER_ERROR,started)
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION and getattr(packet, 'should_stop', lambda: False)():
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
         try:
             status, raw = self._post(f"{self.base_url}/v1/chat/completions", json.dumps(body).encode("utf-8"),
                                      config.timeout_seconds)
         except TimeoutError:
-            return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started)
+            return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started, dispatched=True)
         except (URLError, OSError) as exc:
             if "timed out" in str(exc).lower():
-                return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started)
-            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, LOCAL_UNAVAILABLE, ParsingStatus.PROVIDER_ERROR, started)
+                return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started, dispatched=True)
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, LOCAL_UNAVAILABLE, ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         finally:
             if self._server is not None:
                 self._server.touch()
+        if monitor and monitor.failure:
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         if status != 200:
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, f"LOCAL_MODEL_HTTP_{status}",
-                               ParsingStatus.PROVIDER_ERROR, started)
+                               ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         try:
             payload = json.loads(raw.decode("utf-8"))
             text = str(payload["choices"][0]["message"]["content"] or "")
         except (ValueError, KeyError, IndexError, TypeError, AttributeError):
             return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "LOCAL_MODEL_RESPONSE_MALFORMED",
-                               ParsingStatus.MALFORMED, started)
+                               ParsingStatus.MALFORMED, started, dispatched=True)
         usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
-        return ProviderInferenceResponse(raw_text=_THINK.sub("", text).strip(), provider_id=self.provider_id,
+        return ProviderInferenceResponse(raw_text=text if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION else _THINK.sub("", text).strip(), provider_id=self.provider_id,
                                          model_id=self.model_id, tokens_input=usage.get("prompt_tokens"),
                                          tokens_output=usage.get("completion_tokens"),
                                          latency_ms=int((time.perf_counter() - started) * 1000),
-                                         provider_response_id=str(payload.get("id") or ""))
+                                         provider_response_id=str(payload.get("id") or ""),inference_dispatched=True)
 
 
 @dataclass(frozen=True, slots=True)

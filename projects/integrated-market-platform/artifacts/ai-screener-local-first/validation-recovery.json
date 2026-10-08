@@ -1,0 +1,22 @@
+{
+  "attempt": "2026-10-08T18:07:34.149946+00:00",
+  "status": "interrupted",
+  "tests_run": 2117,
+  "passes": 2111,
+  "skips": 5,
+  "failures": 1,
+  "errors": 0,
+  "wall_seconds": 278.29039439999906,
+  "failed_suites": [
+    {
+      "suite_id": "phase0",
+      "failure_details": [
+        {
+          "selector": "tests/phase0/test_pipeline.py::EvidenceTests::test_collector_excludes_generated_environment_paths",
+          "traceback": "Traceback (most recent call last):\n  File \"C:\\Users\\adame\\.codex\\worktrees\\ai-screener-local-first-intelligence\\market-trading-platform\\projects\\integrated-market-platform\\tests\\phase0\\test_pipeline.py\", line 91, in test_collector_excludes_generated_environment_paths\n    self.assertEqual(\nAssertionError: 2 != 0\n"
+        }
+      ]
+    }
+  ],
+  "corrections": "Progress contract, dated fixture clock and relocated base audit snapshot."
+}

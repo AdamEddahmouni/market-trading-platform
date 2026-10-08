@@ -1,10 +1,10 @@
 import type { AiScreenerRun } from "../../../api/screenerAi";
 
 export const STAGE_LABEL: Record<string, string> = { ENUMERATION: "Reading every Screener row", ELIGIBILITY: "Checking evidence for every row",
-  PLANNING: "Planning batches and budget", BUDGET_HELD: "Budget held for the whole run", BATCH_INFERENCE: "Model batches",
+  LOCAL_ASSESSMENT: "Assessing each eligible instrument locally", PLANNING: "Planning batches and budget", BUDGET_HELD: "Budget held for the whole run", BATCH_INFERENCE: "Model batches",
   GLOBAL_REDUCTION: "Comparing batch finalists", STORED: "Storing the result",
   TOKEN_PLANNING: "Measuring request requirements", REUSE_ASSESSMENT: "Checking valid earlier inference", COMPACTION: "Packing equivalent evidence" };
-const SHORT_LABEL: Record<string, string> = { ENUMERATION: "reading rows", ELIGIBILITY: "checking evidence", PLANNING: "planning", BUDGET_HELD: "budget held",
+const SHORT_LABEL: Record<string, string> = { ENUMERATION: "reading rows", ELIGIBILITY: "checking evidence", LOCAL_ASSESSMENT: "local qualification", PLANNING: "planning", BUDGET_HELD: "budget held",
   BATCH_INFERENCE: "batch", GLOBAL_REDUCTION: "comparing finalists", STORED: "storing",
   TOKEN_PLANNING: "measuring requests", REUSE_ASSESSMENT: "checking reuse", COMPACTION: "packing evidence" };
 /** The step a bounded call is in, inside the batch or comparison stage. */
@@ -20,6 +20,8 @@ export function progressText(run: AiScreenerRun) {
   const progress = run.progress ?? {};
   return [number(progress.universe_count) !== null ? `${progress.universe_count!.toLocaleString()} rows` : null,
     number(progress.eligible_count) !== null ? `${progress.eligible_count!.toLocaleString()} eligible` : null,
+    number(progress.local_assessed) !== null ? progress.local_assessed + " locally assessed" : null,
+    number(progress.premium_evaluated) !== null ? progress.premium_evaluated + " premium evaluated" : null,
     number(progress.rows_evaluated) !== null ? `${progress.rows_evaluated!.toLocaleString()} AI-evaluated` : null,
     number(progress.batches_planned) !== null ? `${progress.batches_completed ?? 0} of ${progress.batches_planned} batches done` : null,
     number(progress.reused_batches) !== null ? progress.reused_batches + " reused batches" : null,

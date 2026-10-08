@@ -530,7 +530,13 @@
         ".github/workflows/imp-validate.yml",
         "fixtures/auth/**",
         "tests/fixtures/providers/moomoo/**",
-        "tests/fixtures/providers/tradier/**"
+        "tests/fixtures/providers/tradier/**",
+        "src/market_platform_foundation/intelligence/inference/local_qualification.py",
+        "src/market_platform_foundation/intelligence/inference/local_resources.py",
+        "src/market_platform_foundation/local_state/staged_screener.py",
+        "src/market_platform_foundation/ui_api/screener_ai_staged.py",
+        "tools/ai_screener_local_first_benchmark.py",
+        "tests/support/local_first.py"
       ],
       "test_globs": [
         "tests/platform/test_*.py"

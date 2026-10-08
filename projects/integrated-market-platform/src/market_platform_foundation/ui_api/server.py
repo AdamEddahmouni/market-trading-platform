@@ -533,7 +533,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 try:
                     body = {key: (json.loads((query.get(key) or ["null"])[0]) if key == "filters" else (query.get(key) or [None])[0])
-                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen")}
+                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen", "method")}
                     body["universe"] = body["universe"] or "US_EQUITIES"
                     body["search"] = body["search"] or ""
                     body["view"] = body["view"] or "Overview"

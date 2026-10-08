@@ -1,0 +1,835 @@
+{
+  "evidence_class": "LOCAL_RESOURCE_OBSERVATION",
+  "observations": [
+    {
+      "assessment": {
+        "assessment_id": "LA-70d07b7eb54313195ca4a21e7134e62efe31d61c02801b3c362dcafdf7318a7c",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "e3b833f5f8082058e78ec5ef62136ee19bdc7ba10041a6caa50642337ab41d29",
+        "input_hash": "70d07b7eb54313195ca4a21e7134e62efe31d61c02801b3c362dcafdf7318a7c",
+        "instrument_id": "EQ:S00000",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18190",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "99",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.84,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:tail_strong",
+      "elapsed_seconds": 0.002226399999926798,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18190",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "99",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "VULKAN_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "tail_strong",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2147827712,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    },
+    {
+      "assessment": {
+        "assessment_id": "LA-ec30a399ae3b1ad5dec55325f3e37ba380632c104487fc5ce32928b5246684b9",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "ffad68b40decf76ee92eec7b5531a41f6b6d875eab2c2a4767dd85c2612b8c68",
+        "input_hash": "ec30a399ae3b1ad5dec55325f3e37ba380632c104487fc5ce32928b5246684b9",
+        "instrument_id": "EQ:S00001",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18190",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "99",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.48,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:strong_little_news",
+      "elapsed_seconds": 0.001649999998335261,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18190",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "99",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "VULKAN_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "strong_little_news",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2147971072,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    },
+    {
+      "assessment": {
+        "assessment_id": "LA-4dacf6f6932f048dc369fba3f25dbfe755ec565fc378ea315a45b23216fb305d",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "8907698da48eadcdb224e5dddae2554cdc02a6d1bc0ef0d2c3fcba5cbc27425a",
+        "input_hash": "4dacf6f6932f048dc369fba3f25dbfe755ec565fc378ea315a45b23216fb305d",
+        "instrument_id": "EQ:S00004",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18190",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "99",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.37,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:rapid_price",
+      "elapsed_seconds": 0.0014271999971242622,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18190",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "99",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "VULKAN_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "rapid_price",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2148024320,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    },
+    {
+      "assessment": {
+        "assessment_id": "LA-c241a8113e1061b209d345f54d3cf2162ba840ec190c8252bf4d1ff397042eab",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "e3b833f5f8082058e78ec5ef62136ee19bdc7ba10041a6caa50642337ab41d29",
+        "input_hash": "c241a8113e1061b209d345f54d3cf2162ba840ec190c8252bf4d1ff397042eab",
+        "instrument_id": "EQ:S00000",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18191",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "0",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.48,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:tail_strong",
+      "elapsed_seconds": 0.0015646000028937124,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18191",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "0",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "CPU_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "tail_strong",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2148073472,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    },
+    {
+      "assessment": {
+        "assessment_id": "LA-0a5e515e97c99156980e0606d124b3fe5a2fd88ff4548ef2d9134bf13e6c0515",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "ffad68b40decf76ee92eec7b5531a41f6b6d875eab2c2a4767dd85c2612b8c68",
+        "input_hash": "0a5e515e97c99156980e0606d124b3fe5a2fd88ff4548ef2d9134bf13e6c0515",
+        "instrument_id": "EQ:S00001",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18191",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "0",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.39,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:strong_little_news",
+      "elapsed_seconds": 0.0012428999980329536,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18191",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "0",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "CPU_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "strong_little_news",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2148118528,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    },
+    {
+      "assessment": {
+        "assessment_id": "LA-51ff729d86e0a60d5f2a34e5df768777811942eac6a942b1c5036439413368ea",
+        "cache": "MISS",
+        "category": "UNRESOLVED",
+        "completed_at": "2026-10-02T15:00:00+00:00",
+        "evidence_cutoff": "2026-10-02T15:00:00Z",
+        "evidence_hash": "8907698da48eadcdb224e5dddae2554cdc02a6d1bc0ef0d2c3fcba5cbc27425a",
+        "input_hash": "51ff729d86e0a60d5f2a34e5df768777811942eac6a942b1c5036439413368ea",
+        "instrument_id": "EQ:S00004",
+        "method_version": "ai-screener-local-first/1.0.0",
+        "missing": [
+          {
+            "capability": "ORDER_FLOW",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CVD",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "LEVEL2",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "OPTIONS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUTURES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "CROSS_ASSET",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SQUEEZE",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "FUNDAMENTALS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "NEWS",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "SENTIMENT",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          },
+          {
+            "capability": "RATES",
+            "reason": "NO_INTERNAL_EVIDENCE"
+          }
+        ],
+        "model_identity": {
+          "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "base_url": "http://127.0.0.1:18191",
+          "manifest": {
+            "context": "8192",
+            "gpu_layers": "0",
+            "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+            "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+            "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+            "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+            "runtime_version": "b11269"
+          },
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path_stat": [
+            2497280256,
+            1790737913991724200
+          ],
+          "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+          "provider_id": "local.openai_compatible",
+          "reasoning_effort": null,
+          "reasoning_headroom": null,
+          "runtime": "LOCAL_MODEL",
+          "runtime_path_stat": [
+            9216,
+            1791475676707457700
+          ]
+        },
+        "processing_ms": 0.32,
+        "provider_latency_ms": 0,
+        "raw_text": "",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "schema_version": "ai-screener-local-assessment/1.0.0",
+        "simulated": false,
+        "tokens_input": null,
+        "tokens_output": null,
+        "valid": false
+      },
+      "case_id": "US_EQUITIES:development:rapid_price",
+      "elapsed_seconds": 0.0015151999978115782,
+      "identity": {
+        "_request_model": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "base_url": "http://127.0.0.1:18191",
+        "manifest": {
+          "context": "8192",
+          "gpu_layers": "0",
+          "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+          "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+          "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+          "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+          "runtime_version": "b11269"
+        },
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_path_stat": [
+          2497280256,
+          1790737913991724200
+        ],
+        "provider_class": "market_platform_foundation.intelligence.inference.local_provider.LocalChatInferenceProvider",
+        "provider_id": "local.openai_compatible",
+        "reasoning_effort": null,
+        "reasoning_headroom": null,
+        "runtime": "LOCAL_MODEL",
+        "runtime_path_stat": [
+          9216,
+          1791475676707457700
+        ]
+      },
+      "label": "POSITIVE",
+      "phase": "CPU_PILOT",
+      "resource_sample": {
+        "failure": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "peak_process_bytes": 0
+      },
+      "scenario": "rapid_price",
+      "split": "development",
+      "system_memory": {
+        "available_bytes": 2148179968,
+        "process_bytes": null
+      },
+      "universe": "US_EQUITIES",
+      "variant": "original"
+    }
+  ],
+  "real_generations": 0,
+  "paid_generations": 0
+}

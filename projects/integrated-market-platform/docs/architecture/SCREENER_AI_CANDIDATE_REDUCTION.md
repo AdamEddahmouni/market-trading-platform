@@ -336,3 +336,9 @@ strict schema's grammar: only a generation request does.
 `artifacts/ai-screener-provider-contract-closure.json`; with `--probe` it runs
 the token count on the exact 50-candidate request and a zero-output grammar
 probe for every selectable model.
+
+## Experimental local-first method
+
+The separate [local-first experimental engine](SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md)
+requires explicit selection. Exhaustive remains the operational default; experimental results
+confer no Action Decision or execution authority.

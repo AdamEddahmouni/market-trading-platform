@@ -31,12 +31,17 @@ RUNS_SCHEMA = "screener-ai-screener-runs/2.0.0"
 # BATCH_INFERENCE and GLOBAL_REDUCTION each cover many bounded calls; their detail names the call in progress.
 STAGES = ("ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT", "BUDGET_HELD",
           "COMPACTION", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED")
+STAGED_STAGES = STAGES[:2] + ("LOCAL_ASSESSMENT",) + STAGES[2:]
+
+
+def _stage_order(scope):
+    return STAGED_STAGES if scope.get("method") == "STAGED_LOCAL_FIRST_EXPERIMENTAL" else STAGES
 MAX_TRACKED_RUNS = 20
 _LATENCY_SAMPLES = 20
 # Counts a run has actually produced so far; the latest value of each is the run's progress.
 _PROGRESS_KEYS = ("universe_count", "assessed_count", "eligible_count", "batches_planned", "batches_completed",
                   "rows_evaluated", "required_tokens", "held_tokens", "held_requests", "finalists", "round",
-                  "reused_batches", "new_inference_requests", "actual_tokens")
+                  "reused_batches", "new_inference_requests", "actual_tokens", "local_assessed", "premium_evaluated")
 _DETAIL_KEYS = (*_PROGRESS_KEYS, "batch", "step", "packet_bytes", "reserved_tokens", "shared", "intake_count", "sufficient_count")
 _STABLE_CODE = re.compile(r"[A-Z][A-Z0-9_]*")
 # Runs alive in this process, across every tracker: restart recovery must never close one of these.
@@ -63,8 +68,9 @@ def _summary(result: dict[str, Any]) -> dict[str, Any]:
     """What a status strip needs from a finished run, without the evidence packet."""
     coverage = _coverage(result)
     # Only a completed global selection (or a single-request result) names a stored candidate run.
-    stored = coverage is None or coverage["status"] == "GLOBAL_SELECTION_COMPLETE"
+    stored = result.get("method") != "STAGED_LOCAL_FIRST_EXPERIMENTAL" and (coverage is None or coverage["status"] == "GLOBAL_SELECTION_COMPLETE")
     return {
+        "method": result.get("method", "EXHAUSTIVE_EXISTING"), "staged": result.get("staged"),
         "coverage": coverage, "provisional_count": len(result.get("provisional") or []),
         "candidate_run_id": result.get("run_id") if stored else None,
         "state": result.get("state"), "reason": result.get("reason"),
@@ -103,6 +109,12 @@ class AiScreenerRuns:
             ledger = coverage_ledger()
             with _RECOVERY:
                 # ``_LIVE`` itself, not a copy: a run is registered there before it writes its first receipt.
+                from ..local_state.staged_screener import staged_stores
+                staged, _ = staged_stores()
+                staged_live = _LIVE | {value + "-premium" for value in _LIVE}
+                for staged_id in interrupt_open_runs(staged, tracked=staged_live, release=service.release_hold, clock=self._clock):
+                    terminal=staged.terminal(staged_id) or {}
+                    self._recovered.append({'run_id':staged_id,'account_id':terminal.get('account_id'), 'method':'STAGED_LOCAL_FIRST_EXPERIMENTAL', 'status':terminal.get('status'), 'reason':terminal.get('reason'), 'finished_at':terminal.get('finished_at'), 'calls_completed':terminal.get('calls_completed'), 'unknown_provider_outcomes':len(terminal.get('unknown_provider_outcomes') or [])})
                 for run_id in interrupt_open_runs(ledger, tracked=_LIVE, release=service.release_hold, clock=self._clock):
                     terminal = ledger.terminal(run_id) or {}
                     self._recovered.append({"run_id": run_id, "account_id": terminal.get("account_id"), "status": terminal.get("status"),
@@ -122,6 +134,12 @@ class AiScreenerRuns:
             from ..local_state.ai_screener_coverage import coverage_ledger
 
             ledger = coverage_ledger()
+            from ..local_state.staged_screener import staged_stores
+            staged,_=staged_stores()
+            for staged_id in staged.open_runs():
+                head=staged.records(staged_id,"run")
+                if staged_id in _LIVE or staged_id.removesuffix("-premium") in _LIVE or not head or head[0].get("account_id")!=account_id: continue
+                found.append({"run_id":staged_id,"account_id":account_id,"method":"STAGED_LOCAL_FIRST_EXPERIMENTAL","status":"INTERRUPTED","reason":"SERVER_RESTARTED_DURING_RUN","finished_at":None,"calls_completed":len(staged.records(staged_id,"batch")),"unknown_provider_outcomes":len(staged.unfinished_batches(staged_id))})
             for run_id in ledger.open_runs():
                 head = ledger.records(run_id, "run")
                 if run_id in _LIVE or not head or head[0].get("account_id") != account_id:
@@ -175,7 +193,29 @@ class AiScreenerRuns:
             run = self._runs.get(run_id)
             if run is not None:
                 return self._snapshot(run) if run["account_id"] == account_id else None
-        return self._restored(account_id, run_id=run_id)
+        staged = self._restored_staged(account_id, run_id)
+        return staged or self._restored(account_id, run_id=run_id)
+
+    def _restored_staged(self, account_id, run_id=None, *, result=True):
+        from ..local_state.staged_screener import staged_stores
+        ledger, repo = staged_stores()
+        terminal = ledger.terminal(run_id) if run_id else ledger.latest_terminal(account_id)
+        if terminal and not run_id: run_id=terminal["run_id"]
+        if not terminal or terminal.get("account_id") != account_id or not terminal.get("experimental_result_id"):
+            return None
+        record = repo.get(terminal["experimental_result_id"])
+        if record is None:
+            return None
+        head = ledger.records(run_id, "run")[0]
+        return {"schema_version": RUN_SCHEMA, "run_id": run_id, "account_id": account_id,
+                "state": "COMPLETED", "joined": False, "scope": head["query"], "stage": None,
+                "stage_order": list(STAGED_STAGES), "stages": [], "started_at": head["started_at"],
+                "finished_at": terminal["finished_at"], "elapsed_ms": round((datetime.fromisoformat(terminal["finished_at"].replace("Z","+00:00"))-datetime.fromisoformat(head["started_at"].replace("Z","+00:00"))).total_seconds()*1000),
+                "engine": {key: record.get(key) for key in ("provider_id", "model_id", "runtime")},
+                "timeout_seconds": 120, "typical_latency_ms": None, "typical_latency_samples": 0,
+                "intake_count": record["intake_count"], "sufficient_count": record["staged"]["counters"]["deterministically_eligible"],
+                "packet_bytes": record["packet_bytes"], "progress": {}, "stop_requested": False,
+                "stop_requested_at": None, "summary": _summary(record), "result": record if result else None, "error": None}
 
     def _restored(self, account_id: str, *, run_id: str | None = None, result: bool = True) -> dict[str, Any] | None:
         """Read a completed selection after restart from its immutable parent and candidate receipts.
@@ -234,6 +274,10 @@ class AiScreenerRuns:
 
         ledger = coverage_ledger()
         head = ledger.records(run_id, "run")
+        if not head:
+            from ..local_state.staged_screener import staged_stores
+            ledger, _ = staged_stores()
+            head = ledger.records(run_id, "run")
         if not head or head[0].get("account_id") != account_id:
             return None
         parts = ledger.records(run_id, "rows")
@@ -259,7 +303,9 @@ class AiScreenerRuns:
         with self._lock:
             active = self._active.get(account_id)
             latest = next((run for run in reversed(self._runs.values())
-                           if run["account_id"] == account_id and run["state"] != "RUNNING"), None)
+                           if run["account_id"] == account_id and run["state"] != "RUNNING" and run["scope"].get("method") != "STAGED_LOCAL_FIRST_EXPERIMENTAL"), None)
+            experimental = next((run for run in reversed(self._runs.values()) if run["account_id"] == account_id
+                                  and run["state"] != "RUNNING" and run["scope"].get("method") == "STAGED_LOCAL_FIRST_EXPERIMENTAL"), None)
             budget = self._budget(ai)
             # What the next run needs depends on its query, so only a spent budget blocks here; a run that cannot
             # be paid for is refused by its own plan, before any model call, with the exact shortfall.
@@ -271,6 +317,7 @@ class AiScreenerRuns:
                     "ai": {key: ai.get(key) for key in ("state", "reason", "provider_id", "model_id", "runtime")}, "budget": budget,
                     "active": self._snapshot(active, result=False) if active is not None else None,
                     "latest": self._snapshot(latest, result=False) if latest is not None else self._restored(account_id, result=False),
+                    "experimental_latest": self._snapshot(experimental, result=False) if experimental is not None else self._restored_staged(account_id,result=False),
                     "interrupted": interrupted}
 
     def _budget(self, ai: dict[str, Any]) -> dict[str, Any] | None:
@@ -291,7 +338,7 @@ class AiScreenerRuns:
                 "resets_at": resets.isoformat().replace("+00:00", "Z")}
 
     def _enter(self, run: dict[str, Any], stage: str, detail: dict[str, Any]) -> None:
-        if stage not in STAGES:
+        if stage not in _stage_order(run["scope"]):
             return
         kept = {key: detail[key] for key in _DETAIL_KEYS if key in detail}
         with self._lock:
@@ -343,7 +390,7 @@ class AiScreenerRuns:
         return {
             "schema_version": RUN_SCHEMA, "run_id": run["run_id"], "account_id": run["account_id"], "state": run["state"],
             "joined": joined, "scope": run["scope"],
-            "stage": run["stages"][-1]["stage"] if running and run["stages"] else None, "stage_order": list(STAGES),
+            "stage": run["stages"][-1]["stage"] if running and run["stages"] else None, "stage_order": list(_stage_order(run["scope"])),
             "stages": [{"stage": item["stage"], "started_at": _iso(item["started_at"]),
                         "elapsed_ms": int(round(((item["ended"] if item["ended"] is not None else now) - item["started"]) * 1000)),
                         "detail": dict(item["detail"])} for item in run["stages"]],
