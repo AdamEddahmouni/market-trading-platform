@@ -148,6 +148,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/screener/ai-screener":
             # Explicit candidate reduction is a bounded inference action, never a render-time read.
             return RoutePolicy(capability="state.write")
+        if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
+            # Operator Stop of this account's own run: it prevents further model calls and grants nothing.
+            return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis/engine":
             # Operator choice of synthesis engine and model, saved in the IMP cache; calls no model.
             return RoutePolicy(capability="state.write")

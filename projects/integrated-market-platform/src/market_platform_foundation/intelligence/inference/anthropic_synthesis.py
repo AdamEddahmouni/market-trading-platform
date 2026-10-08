@@ -17,6 +17,10 @@ estimate plus ``max_tokens``). A call that could cross either limit is refused b
 any network request, with a stable reason. The file lives in the external IMP cache
 (``quota/anthropic-synthesis.json``, shared by every paid engine), so a restart cannot reset the count.
 
+A multi-call run (the full-universe AI Screener) first places a ``hold`` for its whole plan. Every other
+caller sees the held requests and tokens as used; the run's own calls draw from the hold and can never
+exceed it; what the run did not use is released when it ends. A local model has no budget at all.
+
 No retries anywhere: a 429, overload, timeout, or truncated answer is a state the
 operator sees, never a loop that keeps billing.
 """
@@ -26,7 +30,9 @@ from __future__ import annotations
 import json
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -53,7 +59,14 @@ DEFAULT_DAILY_TOKENS = 200_000
 BUDGET_RELATIVE = Path("quota") / "anthropic-synthesis.json"
 COUNT_TOKENS_URL = ANTHROPIC_API_URL + "/count_tokens"
 API_VERSION = "2023-06-01"
-_CHARS_PER_TOKEN = 3          # conservative: over-estimates tokens, so the reservation errs toward refusing
+# UTF-8 bytes per input token, set BELOW what the provider counted on the controlled 50-candidate packet
+# (2026-10-07 count_tokens: 2.66 for Haiku 4.5, 1.80 for Sonnet 5.5 and Opus 5.5), so an estimate is never under
+# the bill. A model with no measurement takes the lowest ratio. The former three-characters rule under-counted
+# every Claude model by 12% to 67%.
+BYTES_PER_TOKEN = {"claude-haiku-4-5-20251001": 2.2, "claude-sonnet-5-5": 1.5, "claude-opus-5-5": 1.5}
+DEFAULT_BYTES_PER_TOKEN = 1.5
+# The run hold a model call on this thread draws from: (run id, tokens planned for this call).
+_HOLD: ContextVar[tuple[str, int] | None] = ContextVar("imp_synthesis_budget_hold", default=None)
 
 Poster = Callable[[str, bytes, dict[str, str], float], tuple[int, bytes]]
 
@@ -86,8 +99,22 @@ def rejection_reason(status: int, payload: dict[str, Any]) -> str:
     return f"ANTHROPIC_{kind}"
 
 
-def estimate_tokens(text: str) -> int:
-    return len(text or "") // _CHARS_PER_TOKEN + 1
+def estimate_tokens(text: str, model_id: str | None = None) -> int:
+    """A conservative input-token bound for this model: never below a provider count measured so far."""
+
+    ratio = BYTES_PER_TOKEN.get(model_id or "", DEFAULT_BYTES_PER_TOKEN)
+    return int(len((text or "").encode("utf-8")) / ratio) + 1
+
+
+@contextmanager
+def drawing_from_hold(run_id: str, planned_tokens: int = 0) -> Iterator[None]:
+    """Model calls made on this thread inside the block draw from ``run_id``'s hold instead of the open budget."""
+
+    token = _HOLD.set((run_id, max(0, int(planned_tokens))))
+    try:
+        yield
+    finally:
+        _HOLD.reset(token)
 
 
 class DailyBudget:
@@ -118,8 +145,20 @@ class DailyBudget:
     def _rolled(self) -> dict[str, Any]:
         today = self._today()
         if self._state.get("day") != today:
-            self._state = {"day": today, "requests": 0, "input_tokens": 0, "output_tokens": 0, "reserved_tokens": 0}
+            # A hold belongs to the day it was placed on: a run that crosses midnight finds none and stops.
+            self._state = {"day": today, "requests": 0, "input_tokens": 0, "output_tokens": 0, "reserved_tokens": 0,
+                           "holds": {}}
         return self._state
+
+    @staticmethod
+    def _holds(state: dict[str, Any]) -> dict[str, dict[str, int]]:
+        holds = state.get("holds")
+        if not isinstance(holds, dict):
+            holds = state["holds"] = {}
+        return holds
+
+    def _held(self, state: dict[str, Any], key: str) -> int:
+        return sum(int(item.get(key, 0)) for item in self._holds(state).values())
 
     def _save(self) -> None:
         if self._path is None:
@@ -132,21 +171,69 @@ class DailyBudget:
             pass  # the in-memory count still enforces the limit for this process
 
     def _used(self, state: dict[str, Any]) -> int:
-        return int(state.get("input_tokens", 0)) + int(state.get("output_tokens", 0)) + int(state.get("reserved_tokens", 0))
+        return (int(state.get("input_tokens", 0)) + int(state.get("output_tokens", 0))
+                + int(state.get("reserved_tokens", 0)) + self._held(state, "tokens"))
 
-    def reserve(self, worst_case_tokens: int) -> str | None:
-        """Count one request and hold its worst-case tokens, or return the reason it is refused."""
+    def _requests(self, state: dict[str, Any]) -> int:
+        return int(state.get("requests", 0)) + self._held(state, "requests")
+
+    def reserve(self, worst_case_tokens: int, *, hold: str | None = None) -> str | None:
+        """Count one request and hold its worst-case tokens, or return the reason it is refused.
+
+        With ``hold``, the request and tokens come out of that run's hold and nothing else: a call the hold cannot
+        cover is refused even when the open budget could."""
 
         with self._lock:
             state = self._rolled()
-            if int(state.get("requests", 0)) >= self.max_requests:
-                return "SYNTHESIS_DAILY_REQUEST_LIMIT"
-            if self._used(state) + worst_case_tokens > self.max_tokens:
-                return "SYNTHESIS_DAILY_TOKEN_LIMIT"
+            if hold is not None:
+                held = self._holds(state).get(hold)
+                if held is None:
+                    return "SYNTHESIS_RUN_HOLD_MISSING"
+                if int(held["requests"]) < 1 or int(held["tokens"]) < worst_case_tokens:
+                    return "SYNTHESIS_RUN_HOLD_EXHAUSTED"
+                held["requests"] = int(held["requests"]) - 1
+                held["tokens"] = int(held["tokens"]) - worst_case_tokens
+            else:
+                if self._requests(state) >= self.max_requests:
+                    return "SYNTHESIS_DAILY_REQUEST_LIMIT"
+                if self._used(state) + worst_case_tokens > self.max_tokens:
+                    return "SYNTHESIS_DAILY_TOKEN_LIMIT"
             state["requests"] = int(state.get("requests", 0)) + 1
             state["reserved_tokens"] = int(state.get("reserved_tokens", 0)) + worst_case_tokens
             self._save()
             return None
+
+    def hold(self, run_id: str, *, requests: int, tokens: int) -> dict[str, Any]:
+        """Set aside a whole run's requests and tokens, or state exactly why they do not fit. Spends nothing."""
+
+        requests, tokens = max(0, int(requests)), max(0, int(tokens))
+        with self._lock:
+            state = self._rolled()
+            available_requests = max(0, self.max_requests - self._requests(state))
+            available_tokens = max(0, self.max_tokens - self._used(state))
+            reason = ("SYNTHESIS_RUN_HOLD_EXISTS" if run_id in self._holds(state)
+                      else "SYNTHESIS_DAILY_REQUEST_LIMIT" if requests > available_requests
+                      else "SYNTHESIS_DAILY_TOKEN_LIMIT" if tokens > available_tokens else None)
+            if reason is None:
+                self._holds(state)[run_id] = {"requests": requests, "tokens": tokens}
+                self._save()
+            return {"held": reason is None, "reason": reason, "required_requests": requests, "required_tokens": tokens,
+                    "available_requests": available_requests, "available_tokens": available_tokens}
+
+    def release(self, run_id: str) -> dict[str, int]:
+        """Return what a run's hold did not use to the open budget. Reservations and usage already made stay."""
+
+        with self._lock:
+            state = self._rolled()
+            held = self._holds(state).pop(run_id, None)
+            if held is not None:
+                self._save()
+            return {"requests": int((held or {}).get("requests", 0)), "tokens": int((held or {}).get("tokens", 0))}
+
+    def held(self, run_id: str) -> dict[str, int] | None:
+        with self._lock:
+            held = self._holds(self._rolled()).get(run_id)
+            return {"requests": int(held["requests"]), "tokens": int(held["tokens"])} if held is not None else None
 
     def settle(self, worst_case_tokens: int, tokens_input: int | None, tokens_output: int | None) -> None:
         """Replace a reservation with reported usage; with no usage reported, the worst case stays charged."""
@@ -164,8 +251,10 @@ class DailyBudget:
     def status(self) -> dict[str, Any]:
         with self._lock:
             state = self._rolled()
-            return {"day": state["day"], "requests": int(state.get("requests", 0)), "max_requests": self.max_requests,
-                    "tokens": self._used(state), "max_tokens": self.max_tokens}
+            # Held requests and tokens count as used: nothing else may spend what a run in progress set aside.
+            return {"day": state["day"], "requests": self._requests(state), "max_requests": self.max_requests,
+                    "tokens": self._used(state), "max_tokens": self.max_tokens,
+                    "held_requests": self._held(state, "requests"), "held_tokens": self._held(state, "tokens")}
 
 
 class AnthropicSynthesisProvider:
@@ -340,12 +429,16 @@ class BudgetedProvider:
 
         # + tool schema and system text; + a reasoning model's thinking room (hosted providers)
         headroom = int(getattr(self._provider, "reasoning_headroom", 0) or 0)
-        return estimate_tokens(rendered_prompt) + 1_500 + int(config.max_tokens) + headroom
+        return estimate_tokens(rendered_prompt, self.model_id) + 1_500 + int(config.max_tokens) + headroom
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
         worst_case = self.worst_case_tokens(rendered_prompt, config)
-        reason = self.budget.reserve(worst_case)
+        held = _HOLD.get()
+        if held is not None:
+            # Never reserve less than the run planned for this call (a plan calibrated by a provider count).
+            worst_case = max(worst_case, held[1])
+        reason = self.budget.reserve(worst_case, hold=held[0] if held is not None else None)
         if reason is not None:
             return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id,
                                              error_code=InferenceErrorCode.PROVIDER_RATE_LIMIT, error_message=reason,
@@ -389,6 +482,7 @@ def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path |
     return BudgetedProvider(provider, budget)
 
 
-__all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BudgetedProvider", "COUNT_TOKENS_URL", "DAILY_REQUESTS_ENV",
-           "DAILY_TOKENS_ENV", "DEFAULT_DAILY_REQUESTS", "DEFAULT_DAILY_TOKENS", "DEFAULT_MODEL", "DailyBudget", "MODEL_ENV",
-           "TOOL_NAME", "build_paid_provider", "estimate_tokens", "rejection_reason"]
+__all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BYTES_PER_TOKEN", "BudgetedProvider", "COUNT_TOKENS_URL",
+           "DAILY_REQUESTS_ENV", "DAILY_TOKENS_ENV", "DEFAULT_BYTES_PER_TOKEN", "DEFAULT_DAILY_REQUESTS",
+           "DEFAULT_DAILY_TOKENS", "DEFAULT_MODEL", "DailyBudget", "MODEL_ENV", "TOOL_NAME", "build_paid_provider",
+           "drawing_from_hold", "estimate_tokens", "rejection_reason"]

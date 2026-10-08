@@ -91,6 +91,17 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
         "tokens_output",
         "total_tokens_input",
         "worst_case_tokens",
+        # Full-universe AI Screener plan and shared-budget hold counters.
+        "required_tokens",
+        "available_tokens",
+        "held_tokens",
+        "planned_tokens",
+        "batch_tokens",
+        "batch_tokens_max",
+        "largest_batch_tokens",
+        "reduction_tokens",
+        "reserved_output_tokens",
+        "estimated_input_tokens",
     )
 )
 

@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from ...market_data.freshness_contract import eligible_evidence, evaluate, timestamp
+from .anthropic_synthesis import estimate_tokens
 from .config import IntelligenceInferenceConfig
 from .contracts import IntelligenceTaskType
 from .hashing import input_hash_from_dict
@@ -321,8 +322,17 @@ class CandidateReducer:
             cached = entry is not None and entry[0] > self.clock()
         worst = getattr(self.provider, 'worst_case_tokens', None)
         return dict(intake_count=len(candidates), sufficient_count=sum(c['sufficient'] for c in candidates),
-                    packet_bytes=size, input_tokens=len(rendered) // 3 + 1,
+                    packet_bytes=size, input_tokens=estimate_tokens(rendered, getattr(self.provider, 'model_id', None)),
                     tokens=worst(rendered, self.config) if callable(worst) else None, cached=cached, input_hash=digest)
+
+    def preflight(self, scope, candidates, now):
+        """The engine's own free count of this exact request, or None where it offers none. Spends nothing."""
+        check = getattr(self.provider, 'preflight', None)
+        if not callable(check):
+            return None
+        digest, rendered, _, _ = self._prepare(scope, candidates, now)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates))
+        return check(packet, rendered_prompt=rendered, config=self.config)
 
     def reduce(self, scope, candidates, now):
         report_stage('PACKET')
