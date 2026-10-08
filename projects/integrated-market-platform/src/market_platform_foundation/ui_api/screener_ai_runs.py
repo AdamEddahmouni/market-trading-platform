@@ -29,12 +29,14 @@ RUN_SCHEMA = "screener-ai-screener-run/2.0.0"
 RUNS_SCHEMA = "screener-ai-screener-runs/2.0.0"
 # The order the work happens in. A stage that did not happen (no budget, nothing eligible) is absent from a run.
 # BATCH_INFERENCE and GLOBAL_REDUCTION each cover many bounded calls; their detail names the call in progress.
-STAGES = ("ENUMERATION", "ELIGIBILITY", "PLANNING", "BUDGET_HELD", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED")
+STAGES = ("ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT", "BUDGET_HELD",
+          "COMPACTION", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED")
 MAX_TRACKED_RUNS = 20
 _LATENCY_SAMPLES = 20
 # Counts a run has actually produced so far; the latest value of each is the run's progress.
 _PROGRESS_KEYS = ("universe_count", "assessed_count", "eligible_count", "batches_planned", "batches_completed",
-                  "rows_evaluated", "required_tokens", "held_tokens", "held_requests", "finalists", "round")
+                  "rows_evaluated", "required_tokens", "held_tokens", "held_requests", "finalists", "round",
+                  "reused_batches", "new_inference_requests", "actual_tokens")
 _DETAIL_KEYS = (*_PROGRESS_KEYS, "batch", "step", "packet_bytes", "reserved_tokens", "shared", "intake_count", "sufficient_count")
 _STABLE_CODE = re.compile(r"[A-Z][A-Z0-9_]*")
 # Runs alive in this process, across every tracker: restart recovery must never close one of these.
@@ -53,7 +55,7 @@ def _coverage(result: dict[str, Any]) -> dict[str, Any] | None:
         return None
     keys = ("method_version", "status", "reason", "universe_count", "assessed_count", "eligible_count", "ai_evaluated_count",
             "ai_coverage_pct", "batches_planned", "batches_completed", "model_calls", "finalist_count", "selected_count",
-            "coverage_complete", "selection_complete", "reconciled", "counts", "budget", "reduction")
+            "coverage_complete", "selection_complete", "reconciled", "counts", "budget", "reduction", "efficiency")
     return {key: block.get(key) for key in keys}
 
 

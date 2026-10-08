@@ -15,7 +15,7 @@ from typing import Any
 from .paths import persistence_enabled
 from .startup import open_local_state
 
-KINDS = ('run', 'rows', 'plan', 'batch_started', 'batch', 'round', 'terminal')
+KINDS = ('run', 'rows', 'plan', 'manifest', 'batch_started', 'batch', 'round', 'terminal')
 MAX_RECORD_BYTES = 512000
 
 
@@ -50,12 +50,20 @@ class CoverageLedger:
             raise ValueError('COVERAGE_RECORD_BOUND_EXCEEDED')
         with self.connection._lock if self.connection else nullcontext(), self.lock:
             def insert():
-                existing = self._rows(run_id)
-                if kind in ('run', 'terminal') and any(row[2] == kind for row in existing):
+                if self.connection:
+                    count, started, ended = self.connection.execute(
+                        "SELECT COUNT(*),COALESCE(SUM(kind='run'),0),COALESCE(SUM(kind='terminal'),0) "
+                        "FROM ai_screener_coverage_records WHERE run_id=?", (run_id,)).fetchone()
+                else:
+                    existing = self._rows(run_id)
+                    count = len(existing)
+                    started = any(row[2] == 'run' for row in existing)
+                    ended = any(row[2] == 'terminal' for row in existing)
+                if (kind == 'run' and started) or (kind == 'terminal' and ended):
                     raise ValueError('IMMUTABLE_COVERAGE_RECORD_COLLISION')
-                if kind != 'run' and any(row[2] == 'terminal' for row in existing):
+                if kind != 'run' and ended:
                     raise ValueError('COVERAGE_RUN_ALREADY_TERMINAL')
-                record = (run_id, len(existing), kind, encoded)
+                record = (run_id, count, kind, encoded)
                 if self.connection:
                     self.connection.execute('INSERT INTO ai_screener_coverage_records VALUES (?,?,?,?)', record)
                 else:

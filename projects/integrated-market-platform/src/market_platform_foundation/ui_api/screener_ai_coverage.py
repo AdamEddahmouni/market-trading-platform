@@ -12,6 +12,7 @@ This module adds no retry, no ranking score and no trading threshold, and has no
 from __future__ import annotations
 
 import math
+import os
 import time
 from datetime import UTC, datetime
 from typing import Any, Callable
@@ -24,6 +25,7 @@ from ..intelligence.inference.coverage_plan import (
     budget_requirement, chunks, classify, fair_order, reconciles, reduction_rounds, tally,
 )
 from ..intelligence.inference.hashing import input_hash_from_dict
+from ..intelligence.inference.evidence_compaction import OPTIMIZER_VERSION, semantic_hash
 from ..intelligence.inference.run_progress import relabelled, report_stage
 from .screener_ai_universe import UniverseEnumerationError, enumerate_universe
 
@@ -115,12 +117,14 @@ class _Run:
 
 class ScreenerAiCoverage:
     def __init__(self, service: Any, *, ledger: Any | None = None, software_sha: str | None = None,
-                 repository: Any | None = None) -> None:
+                 repository: Any | None = None, adaptive_batches: bool | None = None) -> None:
         self.service = service
         self._ledger = ledger
         self._software_sha = software_sha
         # Where the one final candidate run is stored: the same repository the Action Decision layer reads.
         self._repository = repository
+        self.adaptive_batches = (os.environ.get("IMP_AI_SCREENER_ADAPTIVE_BATCHES") == "1"
+                                 if adaptive_batches is None else adaptive_batches)
 
     def ledger(self) -> Any:
         if self._ledger is None:
@@ -137,12 +141,13 @@ class ScreenerAiCoverage:
         query = service._query(body)
         reducer = service._provider_reducer()
         provider = reducer.provider
-        prompt = reducer.registry.get_by_id(PROMPT_ID)
+        prompt = reducer.registry.get_by_id(reducer.prompt_id)
         run = _Run(run_id, account_id)
         run.scope = service._scope(query, {"result_set_id": query["result_set"]})
         run.query = query
         self.identity = {
             "account_id": account_id, "method_version": METHOD_VERSION, "method_name": METHOD_NAME,
+            "optimizer_version": OPTIMIZER_VERSION, "compact_input": reducer.compact_input,
             "software_sha": self._software_sha or _software_sha(),
             "provider_id": getattr(provider, "provider_id", None), "model_id": getattr(provider, "model_id", None),
             "runtime": (getattr(provider, "runtime", None) or "PAID_API") if provider is not None else None,
@@ -208,10 +213,11 @@ class ScreenerAiCoverage:
 
         mark = time.perf_counter()
         report_stage("PLANNING", eligible_count=run.eligible_count)
+        report_stage("TOKEN_PLANNING", eligible_count=run.eligible_count)
         batches = self._plan(run, eligible, candidates)
         del candidates
         run.timings["planning_ms"] = (time.perf_counter() - mark) * 1000
-        report_stage("PLANNING", batches_planned=len(batches), required_tokens=run.plan["required"]["tokens"] if self._budget is not None else None)
+        report_stage("REUSE_ASSESSMENT", batches_planned=len(batches), required_tokens=run.plan["required"]["tokens"] if self._budget is not None else None)
         if run.plan.get("preflight_rejected"):
             self._unprocessed(run, batches, "PROVIDER_PREFLIGHT_REJECTED")
             return self._terminal(run, FAILED, run.plan["preflight_rejected"])
@@ -220,6 +226,8 @@ class ScreenerAiCoverage:
         if self._budget is not None:
             held = self._budget.hold(run.run_id, requests=run.plan["required"]["requests"], tokens=run.plan["required"]["tokens"])
             run.budget = {"capped": True, **held}
+            run.plan.update(available_request_budget=held["available_requests"],available_token_budget=held["available_tokens"],
+                            feasible_under_current_limits=held["held"])
             if not held["held"]:
                 self._unprocessed(run, batches, "BUDGET_INSUFFICIENT")
                 return self._terminal(run, BUDGET_INSUFFICIENT, held["reason"])
@@ -234,7 +242,7 @@ class ScreenerAiCoverage:
                 self._unprocessed(run, batches[index:], "STOPPED_BY_OPERATOR")
                 return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             outcome = self._call(run, batch["instrument_ids"], stage="BATCH_INFERENCE", index=index, total=len(batches),
-                                 planned_tokens=batch["tokens"], first_pass=True)
+                                 planned_tokens=batch["tokens"], first_pass=True, reuse_only=batch.get("cached",False))
             if outcome["failure"]:
                 self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "BATCH_FAILED:" + outcome["failure"])
                 self._unprocessed(run, batches[index + 1:], "NOT_STARTED_AFTER_BATCH_FAILURE")
@@ -270,7 +278,8 @@ class ScreenerAiCoverage:
                 if should_stop():
                     return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                 outcome = self._call(run, group, stage="GLOBAL_REDUCTION", index=index, total=len(groups),
-                                     planned_tokens=run.plan["largest_batch_tokens"], first_pass=False, round_number=number)
+                                     planned_tokens=run.plan["largest_batch_tokens"], first_pass=False, round_number=number,
+                                     reuse_only=run.plan.get("global_reuse_only",False))
                 if outcome["failure"]:
                     return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "GLOBAL_REDUCTION_INCOMPLETE:" + outcome["failure"])
                 final = outcome["result"]
@@ -421,25 +430,39 @@ class ScreenerAiCoverage:
                     run.classes[group[0]] = (UNPROCESSED, [reason])
                 else:
                     half = math.ceil(len(group) / 2)
+                    if self.adaptive_batches and reason == "PACKET_EXCEEDS_CONTEXT_WINDOW":
+                        # Longest fitting prefix in the same identity order, within the existing 50-row group.
+                        # This changes comparison composition and is gated off pending provider quality controls.
+                        low, high, fit = 1, len(group)-1, 0
+                        while low <= high:
+                            middle = (low+high)//2
+                            part = reducer.estimate(run.scope,members[:middle],now)
+                            if part["input_tokens"] + output <= window:
+                                fit, low = middle, middle+1
+                            else:
+                                high = middle-1
+                        half = fit or 1
                     pending[:0] = [group[:half], group[half:]]
                 continue
             batches.append({"instrument_ids": group, "packet_bytes": estimate["packet_bytes"], "input_tokens": estimate["input_tokens"],
                             "tokens": estimate["tokens"] if estimate["tokens"] is not None else estimate["input_tokens"] + output,
+                            "cached":estimate["cached"], "cached_selected":estimate.get("cached_selected",[]),
                             "members": members})
         measured = None
         rejected = None
-        if batches and self._budget is not None:
+        misses = [batch for batch in batches if not batch["cached"]]
+        if misses and self._budget is not None:
             # The provider's own count of the first request, where it offers one. It bills and reserves nothing.
-            check = reducer.preflight(run.scope, batches[0]["members"], now)
+            check = reducer.preflight(run.scope, misses[0]["members"], now)
             if check is not None:
                 measured = {key: check.get(key) for key in ("accepted", "input_tokens", "context_window", "context_fit", "reason")}
-                measured["estimated_input_tokens"] = batches[0]["input_tokens"]
+                measured["estimated_input_tokens"] = misses[0]["input_tokens"]
                 tokens = check.get("input_tokens")
                 if check.get("context_fit") is False:
                     rejected = str(check.get("reason") or "PROVIDER_CONTEXT_EXCEEDED")
-                elif check.get("accepted") and isinstance(tokens, int) and tokens > batches[0]["input_tokens"]:
+                elif check.get("accepted") and isinstance(tokens, int) and tokens > misses[0]["input_tokens"]:
                     # The estimate was under the provider's count: raise every batch by the same ratio plus a margin.
-                    factor = tokens / batches[0]["input_tokens"] * 1.05
+                    factor = tokens / misses[0]["input_tokens"] * 1.05
                     measured["plan_scaled_by"] = round(factor, 4)
                     for batch in batches:
                         batch["tokens"] = math.ceil(batch["tokens"] * factor)
@@ -450,6 +473,37 @@ class ScreenerAiCoverage:
             batch["tokens"] = math.ceil(batch["tokens"] * PLAN_DRIFT_MARGIN)
         rounds = reduction_rounds(len(batches))
         tokens = [batch["tokens"] for batch in batches]
+        # Complete unchanged first-pass answers determine the comparison context exactly.
+        # Reuse a global comparison only if every round is itself an exact valid cache hit.
+        global_reuse = bool(batches) and not misses
+        pool = list(dict.fromkeys(key for batch in batches for key in batch["cached_selected"]))
+        number = 0
+        while global_reuse and pool and len(batches) > 1:
+            number += 1
+            winners = []
+            groups = chunks(fair_order(f"{run.scope['result_set']}|round-{number}", pool))
+            for group in groups:
+                check = reducer.estimate(run.scope, [candidates[key] for key in group], now)
+                if not check["cached"]:
+                    global_reuse = False
+                    break
+                winners.extend(check["cached_selected"])
+            if len(groups) == 1:
+                break
+            pool = list(dict.fromkeys(winners))
+        required = budget_requirement(tokens, rounds)
+        required["batch_tokens"] = sum(batch["tokens"] for batch in misses)
+        required["reduction_tokens"] = 0 if global_reuse else required["reduction_tokens"]
+        required["reduction_calls"] = 0 if global_reuse else required["reduction_calls"]
+        required["tokens"] = required["batch_tokens"] + required["reduction_tokens"]
+        required["requests"] = len(misses) + required["reduction_calls"]
+        expected_inputs = sum(batch["input_tokens"] for batch in misses) + required["reduction_calls"] * max(
+            (batch["input_tokens"] for batch in batches),default=0)
+        reserved_outputs = required["requests"] * int(reducer.config.max_tokens)
+        reserved_reasoning = required["requests"] * int(getattr(self._provider,"reasoning_headroom",0) or 0)
+        from ..intelligence.inference.token_cost import estimated_cost
+        cost = estimated_cost(getattr(self._provider,"price_schedule",None),model_id=getattr(self._provider,"model_id",None),
+                              input_tokens=expected_inputs,output_tokens=reserved_outputs+reserved_reasoning,now=now)
         sizes = [len(batch["instrument_ids"]) for batch in batches]
         run.plan = {
             "order": "sha256(result_set|instrument_id)", "batches_planned": len(batches), "reduction_rounds_planned": rounds,
@@ -459,15 +513,27 @@ class ScreenerAiCoverage:
             "batch_tokens_max": max(tokens, default=0), "largest_batch_tokens": max(tokens, default=0),
             "context_window": window, "reserved_output_tokens": output, "reference_evidence_thinned": thinned,
             "drift_margin": PLAN_DRIFT_MARGIN,
-            "required": budget_requirement(tokens, rounds), "budget_basis": "PROVIDER_WORST_CASE" if self._budget is not None else "UNCAPPED_ENGINE",
+            "optimizer_version":OPTIMIZER_VERSION, "cached_batches":len(batches)-len(misses),
+            "batch_optimizer":"MAXIMAL_CONTEXT_PREFIX" if self.adaptive_batches else "BASELINE_BISECTION",
+            "new_inference_batches":len(misses), "global_reuse_only":global_reuse,
+            "expected_input_tokens":expected_inputs, "total_eligible_candidates":len(eligible),
+            "expected_requests":required["requests"], "reserved_output_tokens_total":reserved_outputs,
+            "reserved_reasoning_tokens_total":reserved_reasoning, "estimated_total_tokens":required["tokens"],
+            "available_request_budget":None, "available_token_budget":None, "feasible_under_current_limits":None,
+            "reserved_batch_output_tokens":len(misses)*int(reducer.config.max_tokens),
+            "reserved_reasoning_tokens":len(misses)*int(getattr(self._provider,"reasoning_headroom",0) or 0),
+            "estimated_provider_cost":cost, "cost_basis":cost["basis"] if cost else "UNAVAILABLE_PRICE_CONFIGURATION",
+            "required": required, "budget_basis": "PROVIDER_WORST_CASE" if self._budget is not None else "UNCAPPED_ENGINE",
             "provider_count": measured, "preflight_rejected": rejected,
         }
+        report_stage("REUSE_ASSESSMENT", reused_batches=0,
+                     new_inference_requests=0, required_tokens=required["tokens"])
         return batches
 
     # ------------------------------------------------------------ model call
 
     def _call(self, run: _Run, instrument_ids: list[str], *, stage: str, index: int, total: int, planned_tokens: int,
-              first_pass: bool, round_number: int | None = None) -> dict[str, Any]:
+              first_pass: bool, round_number: int | None = None, reuse_only: bool = False) -> dict[str, Any]:
         """One bounded request on evidence acquired for it. Never retried."""
         from ..intelligence.inference.anthropic_synthesis import drawing_from_hold
         from .screener_news_evidence import attach_news, fit_news
@@ -503,6 +569,12 @@ class ScreenerAiCoverage:
                 dropped[candidate["instrument"]["instrument_id"]] = [UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
             submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
             if keep:
+                if self._reducer.compact_input:
+                    report_stage("COMPACTION", intake_count=len(keep))
+                from ..intelligence.inference.candidate_reduction import packet_candidates
+                manifest = {"scope":run.scope, "decision_cutoff":now, "candidates":packet_candidates(keep)}
+                self.ledger().append(run.run_id,"manifest",{"call_id":call_id, "semantic_hash":semantic_hash(manifest),
+                    "optimizer_version":OPTIMIZER_VERSION, "canonical":manifest})
                 self.ledger().append(run.run_id, "batch_started", {
                     "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total,
                     "instrument_ids": submitted, "evidence_cutoff": now, "planned_tokens": planned_tokens,
@@ -511,16 +583,18 @@ class ScreenerAiCoverage:
                 with relabelled(stage, round=round_number, **position):
                     if run.hold:
                         with drawing_from_hold(run.run_id, planned_tokens):
-                            result = self._reducer.reduce(run.scope, keep, now)
+                            result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only)
                     else:
-                        result = self._reducer.reduce(run.scope, keep, now)
+                        result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only)
                 # A request answered from the reducer's cache was not sent again and is not counted as a model call.
                 if result.get("cache") == "HIT":
                     run.cache_hits += 1
-                else:
+                elif result.get("inference_dispatched",True):
                     run.calls += 1
                 if result["state"] not in _ANSWERED:
                     failure = str(result.get("reason") or result["state"])
+                if self._budget is not None and self._budget.status().get("usage_overrun"):
+                    failure = "PROVIDER_USAGE_EXCEEDED_RESERVATION"
         except ValueError as exc:
             if str(exc) != "EVIDENCE_PACKET_BOUND_EXCEEDED":
                 raise
@@ -535,6 +609,8 @@ class ScreenerAiCoverage:
             if result.get("cache") == "MISS":
                 run.tokens_input += int(result.get("tokens_input") or 0)
                 run.tokens_output += int(result.get("tokens_output") or 0)
+            report_stage(stage,reused_batches=run.cache_hits,new_inference_requests=run.calls,
+                         actual_tokens=run.tokens_input+run.tokens_output)
             unknown = failure is not None and failure.endswith("TIMEOUT")
             self.ledger().append(run.run_id, "batch", {
                 "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total,
@@ -542,6 +618,7 @@ class ScreenerAiCoverage:
                 "state": result["state"], "reason": result.get("reason"), "validation": result.get("validation"),
                 "reduction_run_id": result["run_id"], "input_hash": result["input_hash"], "packet_bytes": result["packet_bytes"],
                 "output_schema_hash": result["output_schema_hash"], "cache": result["cache"],
+                "reuse":result.get("reuse"), "manifest_hash":semantic_hash(manifest),
                 "tokens_input": result.get("tokens_input"), "tokens_output": result.get("tokens_output"),
                 "latency_ms": result.get("latency_ms"), "provider_request_id": result.get("provider_request_id"),
                 "evidence_cutoff": now, "completed_at": result.get("generated_at"), "valid_until": result.get("valid_until"),
@@ -610,6 +687,12 @@ class ScreenerAiCoverage:
             "ai_coverage_pct": round(100 * counts["evaluated"] / eligible_now, 2) if eligible_now else None,
             "batches_planned": planned, "batches_completed": run.batches_completed, "model_calls": run.calls,
             "answers_from_cache": run.cache_hits,
+            "optimizer_version":OPTIMIZER_VERSION,
+            "efficiency":{"reused_batches":run.cache_hits, "new_inference_requests":run.calls,
+                          "actual_input_tokens":run.tokens_input, "actual_output_tokens":run.tokens_output,
+                          "required_tokens":(run.plan or {}).get("required",{}).get("tokens"),
+                          "estimated_provider_cost":(run.plan or {}).get("estimated_provider_cost"),
+                          "cost_basis":(run.plan or {}).get("cost_basis","UNAVAILABLE_PRICE_CONFIGURATION")},
             "plan": run.plan, "reduction": {"rounds_planned": len((run.plan or {}).get("reduction_rounds_planned", [])),
                                            "rounds_completed": run.rounds_completed,
                                            # Finalists whose evidence was no longer admissible when a comparison was due.

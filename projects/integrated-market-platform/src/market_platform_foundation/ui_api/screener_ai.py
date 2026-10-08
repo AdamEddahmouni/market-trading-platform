@@ -133,7 +133,11 @@ class ScreenerAiService:
         provider = news.synthesis_provider()
         key = (id(provider), getattr(provider, "model_id", None))
         if self._reducer is None or self._provider_key != key:
-            self._reducer = CandidateReducer(provider=provider, clock=self._clock)
+            import os
+            from ..local_state.screener_inference_cache import inference_cache
+            store = inference_cache() if getattr(provider, 'runtime', '') in ('PAID_API','LOCAL_MODEL') else None
+            self._reducer = CandidateReducer(provider=provider, clock=self._clock, cache_store=store,
+                compact_input=os.environ.get('IMP_AI_SCREENER_COMPACT_INPUT') == '1')
             self._provider_key = key
         return self._reducer
 

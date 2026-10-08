@@ -3,6 +3,14 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiScreenerRun, AiScreenerRuns } from "../../../api/screenerAi";
 import AiStatusStrip, { countdown, plainReason } from "./AiStatusStrip";
+import { CoverageSummary } from "./AiCoverage";
+
+it("shows measured reuse and new requests without claiming dollar savings", () => {
+  render(<CoverageSummary coverage={{ ...coverage(), efficiency: { reused_batches: 3, new_inference_requests: 0,
+    actual_input_tokens: 0, actual_output_tokens: 0, required_tokens: 0, estimated_provider_cost: null } }} />);
+  expect(screen.getByLabelText("AI Screener coverage")).toHaveTextContent("3 reused batches · 0 new requests");
+  expect(screen.getByLabelText("AI Screener coverage")).toHaveTextContent("Dollar estimate unavailable");
+});
 
 const api = vi.hoisted(() => ({ runs: vi.fn(), post: vi.fn(), loop: vi.fn(), stop: vi.fn(), stopRun: vi.fn() }));
 vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),

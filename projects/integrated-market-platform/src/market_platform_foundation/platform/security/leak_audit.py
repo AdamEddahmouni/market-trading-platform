@@ -102,6 +102,16 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
         "reduction_tokens",
         "reserved_output_tokens",
         "estimated_input_tokens",
+        "actual_input_tokens",
+        "actual_output_tokens",
+        "actual_tokens",
+        "estimated_total_tokens",
+        "expected_input_tokens",
+        "reserved_batch_output_tokens",
+        "reserved_output_tokens_total",
+        "reserved_reasoning_tokens",
+        "reserved_reasoning_tokens_total",
+        "available_token_budget",
     )
 )
 

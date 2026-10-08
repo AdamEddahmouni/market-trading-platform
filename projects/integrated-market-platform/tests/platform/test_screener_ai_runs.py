@@ -82,13 +82,14 @@ class AiScreenerRunTests(unittest.TestCase):
         self.assertEqual(during["state"], "RUNNING")
         self.assertEqual(during["stage"], "BATCH_INFERENCE")
         # No budget wraps this engine, so no hold is claimed.
-        self.assertEqual([item["stage"] for item in during["stages"]], ["ENUMERATION", "ELIGIBILITY", "PLANNING", "BATCH_INFERENCE"])
+        self.assertEqual([item["stage"] for item in during["stages"]], ["ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT", "BATCH_INFERENCE"])
         self.assertEqual(during["stages"][-1]["detail"]["step"], "MODEL_CALL")
         self.assertEqual((during["stages"][-1]["detail"]["batch"], during["stages"][-1]["detail"]["batches_planned"]), (1, 3))
         self.assertEqual(during["stages"][-1]["elapsed_ms"], 7000)
         self.assertEqual(during["elapsed_ms"], 7000)
         # Counts are what the run has produced, not a projection: nothing is evaluated until a batch answers.
-        self.assertEqual(during["progress"], {"universe_count": 120, "assessed_count": 120, "eligible_count": 120, "batches_planned": 3})
+        self.assertEqual(during["progress"], {"universe_count": 120, "assessed_count": 120, "eligible_count": 120, "batches_planned": 3,
+                                             "required_tokens": during["progress"]["required_tokens"], "reused_batches": 0, "new_inference_requests": 0})
         self.assertIsNone(during["result"])
 
         provider.release.release()
@@ -101,7 +102,7 @@ class AiScreenerRunTests(unittest.TestCase):
         self.assertEqual(done["state"], "COMPLETED")
         self.assertIsNone(done["stage"])
         self.assertEqual([item["stage"] for item in done["stages"]],
-                         ["ENUMERATION", "ELIGIBILITY", "PLANNING", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED"])
+                         ["ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT", "BATCH_INFERENCE", "GLOBAL_REDUCTION", "STORED"])
         self.assertTrue(all(isinstance(item["elapsed_ms"], int) for item in done["stages"]))
         self.assertEqual(done["result"]["schema_version"], "screener-ai-screener/1.0.0")
         self.assertEqual(done["result"]["state"], "CURRENT")
@@ -120,7 +121,7 @@ class AiScreenerRunTests(unittest.TestCase):
 
         done = settled(runs, "PAPER-1", runs.start("PAPER-1", SCOPE)["run_id"])
 
-        self.assertEqual([item["stage"] for item in done["stages"]], list(STAGES))
+        self.assertEqual([item["stage"] for item in done["stages"]], [stage for stage in STAGES if stage != "COMPACTION"])
         held = next(item for item in done["stages"] if item["stage"] == "BUDGET_HELD")["detail"]
         self.assertGreater(held["held_tokens"], 0)
         self.assertEqual(held["held_requests"], 4)
@@ -137,7 +138,7 @@ class AiScreenerRunTests(unittest.TestCase):
         self.assertEqual(done["summary"]["reason"], "AI_COVERAGE_BUDGET_INSUFFICIENT")
         # Nothing was stored, so nothing is named as a candidate run.
         self.assertIsNone(done["summary"]["candidate_run_id"])
-        self.assertEqual([item["stage"] for item in done["stages"]], ["ENUMERATION", "ELIGIBILITY", "PLANNING"])
+        self.assertEqual([item["stage"] for item in done["stages"]], ["ENUMERATION", "ELIGIBILITY", "PLANNING", "TOKEN_PLANNING", "REUSE_ASSESSMENT"])
         coverage = done["summary"]["coverage"]
         self.assertEqual((coverage["eligible_count"], coverage["batches_planned"], coverage["batches_completed"]), (120, 3, 0))
         self.assertEqual(coverage["counts"]["unprocessed"], 120)

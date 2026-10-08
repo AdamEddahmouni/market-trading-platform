@@ -28,6 +28,9 @@ operator sees, never a loop that keeps billing.
 from __future__ import annotations
 
 import json
+import math
+import re
+import sqlite3
 import threading
 import time
 from collections.abc import Callable, Iterator
@@ -137,7 +140,26 @@ class DailyBudget:
         with _BUDGET_LOCKS_LOCK:
             self._lock = (_BUDGET_LOCKS.setdefault(str(path.resolve()), threading.RLock())
                           if path is not None else threading.RLock())
-        self._state = self._load()
+        with self._locked():
+            self._state = self._load()
+
+    @contextmanager
+    def _locked(self):
+        """Serialize account mutations across processes as well as engine instances."""
+        with self._lock:
+            connection = None
+            try:
+                if self._path is not None:
+                    self._path.parent.mkdir(parents=True, exist_ok=True)
+                    connection = sqlite3.connect(str(self._path) + ".lock.sqlite", timeout=10)
+                    connection.execute("BEGIN IMMEDIATE")
+                yield
+            except sqlite3.Error as exc:
+                raise ValueError("SYNTHESIS_BUDGET_LOCK_UNAVAILABLE") from exc
+            finally:
+                if connection is not None:
+                    connection.rollback()
+                    connection.close()
 
     def _today(self) -> str:
         return datetime.fromtimestamp(self._clock(), tz=UTC).date().isoformat()
@@ -149,10 +171,26 @@ class DailyBudget:
                 loaded = json.loads(self._path.read_text(encoding="utf-8"))
                 if not isinstance(loaded, dict):
                     raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                if not loaded:
+                    raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                if loaded:
+                    if not isinstance(loaded.get("day"),str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}",loaded["day"]):
+                        raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                    datetime.fromisoformat(loaded["day"])
+                    for key in ("requests","input_tokens","output_tokens","reserved_tokens"):
+                        if type(loaded.get(key)) is not int or loaded[key] < 0:
+                            raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                    if not isinstance(loaded.get("holds",{}),dict):
+                        raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                    for item in loaded.get("holds",{}).values():
+                        if not isinstance(item,dict) or any(type(item.get(k)) is not int or item[k] < 0 for k in ("requests","tokens")):
+                            raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
+                        if not isinstance(item.get("touched"),(int,float)) or not math.isfinite(item["touched"]):
+                            raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE")
                 state = loaded
             except FileNotFoundError:
                 state = {}
-            except (OSError, ValueError) as exc:
+            except (OSError, ValueError, KeyError, TypeError) as exc:
                 # Unknown persisted usage cannot become a fresh allowance. Preserve the file
                 # for repair and stop before a reservation can authorize any generation.
                 raise ValueError("SYNTHESIS_BUDGET_STATE_UNREADABLE") from exc
@@ -202,8 +240,12 @@ class DailyBudget:
         With ``hold``, the request and tokens come out of that run's hold and nothing else: a call the hold cannot
         cover is refused even when the open budget could."""
 
-        with self._lock:
+        with self._locked():
             state = self._rolled()
+            if state.get("usage_overrun"):
+                return "SYNTHESIS_USAGE_EXCEEDED_RESERVATION"
+            if self._used(state) > self.max_tokens:
+                return "SYNTHESIS_DAILY_TOKEN_LIMIT"
             if hold is not None:
                 held = self._holds(state).get(hold)
                 if held is None:
@@ -227,11 +269,12 @@ class DailyBudget:
         """Set aside a whole run's requests and tokens, or state exactly why they do not fit. Spends nothing."""
 
         requests, tokens = max(0, int(requests)), max(0, int(tokens))
-        with self._lock:
+        with self._locked():
             state = self._rolled()
             available_requests = max(0, self.max_requests - self._requests(state))
             available_tokens = max(0, self.max_tokens - self._used(state))
-            reason = ("SYNTHESIS_RUN_HOLD_EXISTS" if run_id in self._holds(state)
+            reason = ("SYNTHESIS_USAGE_EXCEEDED_RESERVATION" if state.get("usage_overrun")
+                      else "SYNTHESIS_RUN_HOLD_EXISTS" if run_id in self._holds(state)
                       else "SYNTHESIS_DAILY_REQUEST_LIMIT" if requests > available_requests
                       else "SYNTHESIS_DAILY_TOKEN_LIMIT" if tokens > available_tokens else None)
             if reason is None:
@@ -243,7 +286,7 @@ class DailyBudget:
     def release(self, run_id: str) -> dict[str, int]:
         """Return what a run's hold did not use to the open budget. Reservations and usage already made stay."""
 
-        with self._lock:
+        with self._locked():
             state = self._rolled()
             held = self._holds(state).pop(run_id, None)
             if held is not None:
@@ -251,29 +294,37 @@ class DailyBudget:
             return {"requests": int((held or {}).get("requests", 0)), "tokens": int((held or {}).get("tokens", 0))}
 
     def held(self, run_id: str) -> dict[str, int] | None:
-        with self._lock:
+        with self._locked():
             held = self._holds(self._rolled()).get(run_id)
             return {"requests": int(held["requests"]), "tokens": int(held["tokens"])} if held is not None else None
 
     def settle(self, worst_case_tokens: int, tokens_input: int | None, tokens_output: int | None) -> None:
         """Replace a reservation with reported usage; with no usage reported, the worst case stays charged."""
 
-        with self._lock:
+        with self._locked():
             state = self._rolled()
+            if any(value is not None and (type(value) is not int or value < 0) for value in (tokens_input,tokens_output)):
+                tokens_input = tokens_output = None
             state["reserved_tokens"] = max(0, int(state.get("reserved_tokens", 0)) - worst_case_tokens)
-            if tokens_input is None and tokens_output is None:
-                state["input_tokens"] = int(state.get("input_tokens", 0)) + worst_case_tokens
+            if tokens_input is None or tokens_output is None:
+                charged = max(worst_case_tokens,int(tokens_input or 0)+int(tokens_output or 0))
+                state["input_tokens"] = int(state.get("input_tokens", 0)) + charged
+                if charged > worst_case_tokens:
+                    state["usage_overrun"] = True
             else:
                 state["input_tokens"] = int(state.get("input_tokens", 0)) + int(tokens_input or 0)
                 state["output_tokens"] = int(state.get("output_tokens", 0)) + int(tokens_output or 0)
+                if int(tokens_input or 0) + int(tokens_output or 0) > worst_case_tokens:
+                    state["usage_overrun"] = True
             self._save()
 
     def status(self) -> dict[str, Any]:
-        with self._lock:
+        with self._locked():
             state = self._rolled()
             # Held requests and tokens count as used: nothing else may spend what a run in progress set aside.
             return {"day": state["day"], "requests": self._requests(state), "max_requests": self.max_requests,
                     "tokens": self._used(state), "max_tokens": self.max_tokens,
+                    "usage_overrun":bool(state.get("usage_overrun")),
                     "held_requests": self._held(state, "requests"), "held_tokens": self._held(state, "tokens")}
 
 
@@ -431,6 +482,25 @@ class BudgetedProvider:
     def budget_status(self) -> dict[str, Any]:
         return self.budget.status()
 
+    @property
+    def reasoning_headroom(self) -> int:
+        return int(getattr(self._provider,"reasoning_headroom",0) or 0)
+
+    def request_accounting(self, packet, *, rendered_prompt, config):
+        builder = getattr(self._provider,"request_body",None)
+        prompt_tokens = estimate_tokens(rendered_prompt,self.model_id)
+        request = builder(packet,rendered_prompt=rendered_prompt,config=config) if callable(builder) else None
+        if isinstance(request, dict):
+            body = count_request(request)
+            text = json.dumps(body,ensure_ascii=False,sort_keys=True,separators=(',',':'))
+            inputs = estimate_tokens(text,self.model_id)
+        else:
+            inputs = prompt_tokens + 1500
+        output = int(config.max_tokens) + self.reasoning_headroom
+        return {"basis":"MODEL_CALIBRATED_UTF8_ESTIMATE", "input_tokens":inputs,
+                "system_and_schema_tokens":max(0,inputs-prompt_tokens), "output_tokens":int(config.max_tokens),
+                "reasoning_tokens":self.reasoning_headroom, "total_tokens":inputs+output}
+
     def request_contract(self, task_type: IntelligenceTaskType) -> dict[str, Any] | None:
         """The wrapped provider's verdict on whether its model can run this task; None where it states none."""
 
@@ -453,7 +523,29 @@ class BudgetedProvider:
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
-        worst_case = self.worst_case_tokens(rendered_prompt, config)
+        try:
+            accounting = self.request_accounting(packet,rendered_prompt=rendered_prompt,config=config)
+            worst_case = max(self.worst_case_tokens(rendered_prompt, config),accounting["total_tokens"])
+        except ModelRequestContractUnsupported:
+            return ProviderInferenceResponse(raw_text="",provider_id=self.provider_id,model_id=self.model_id,
+                error_code=InferenceErrorCode.INFERENCE_UNAVAILABLE,error_message=UNSUPPORTED,parsing_status=ParsingStatus.PROVIDER_ERROR)
+        if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION:
+            # Count the freshly acquired request, including a changed or global-comparison packet,
+            # before any paid generation. A byte ratio is an estimate, not a tokenizer proof.
+            counted = self.preflight(packet,rendered_prompt=rendered_prompt,config=config)
+            if isinstance(counted, dict):
+                exact = counted.get("input_tokens")
+                if counted.get("accepted") and type(exact) is int and exact >= 0:
+                    worst_case = max(worst_case,exact+accounting["output_tokens"]+accounting["reasoning_tokens"])
+                elif counted.get("reason") not in {"COUNT_TOKENS_UNSUPPORTED","ANTHROPIC_TIMEOUT","ANTHROPIC_UNREACHABLE"}:
+                    return ProviderInferenceResponse(raw_text="",provider_id=self.provider_id,model_id=self.model_id,
+                        error_code=InferenceErrorCode.INFERENCE_UNAVAILABLE,
+                        error_message="SYNTHESIS_PREFLIGHT_REJECTED:"+str(counted.get("reason")),
+                        parsing_status=ParsingStatus.PROVIDER_ERROR)
+                if counted.get("context_fit") is False:
+                    return ProviderInferenceResponse(raw_text="",provider_id=self.provider_id,model_id=self.model_id,
+                        error_code=InferenceErrorCode.INFERENCE_UNAVAILABLE,error_message="SYNTHESIS_CONTEXT_EXCEEDED",
+                        parsing_status=ParsingStatus.PROVIDER_ERROR)
         held = _HOLD.get()
         if held is not None:
             # Never reserve less than the run planned for this call (a plan calibrated by a provider count).
@@ -474,8 +566,13 @@ class BudgetedProvider:
                 # Unknown outcome: the request may have been billed, so the worst case stays charged.
                 self.budget.settle(worst_case, None, None)
             elif response.error_code is not None and response.tokens_input is None and response.tokens_output is None:
-                # Refused before generation (auth, 4xx, unreachable): nothing billed.
-                self.budget.settle(worst_case, 0, 0)
+                # Only a known pre-generation refusal establishes zero usage. Unknown transport/server
+                # outcomes retain the reservation. No automatic retry is made.
+                refused = response.error_message in {"API_KEY_MISSING",UNSUPPORTED,"ANTHROPIC_AUTH_FAILED",
+                    "ANTHROPIC_RATE_LIMIT_ERROR","ANTHROPIC_OVERLOADED_ERROR","ANTHROPIC_INVALID_REQUEST_ERROR",
+                    "ANTHROPIC_SCHEMA_REJECTED","ANTHROPIC_GRAMMAR_TOO_LARGE","ANTHROPIC_CONTEXT_EXCEEDED",
+                    "ANTHROPIC_TOOL_CHOICE_UNSUPPORTED","ANTHROPIC_PARAMETER_UNSUPPORTED"}
+                self.budget.settle(worst_case,0 if refused else None,0 if refused else None)
             else:
                 self.budget.settle(worst_case, response.tokens_input, response.tokens_output)
 
@@ -499,7 +596,12 @@ def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path |
                          max_tokens=_int_setting(value, DAILY_TOKENS_ENV, DEFAULT_DAILY_TOKENS))
     if provider is None:
         provider = AnthropicSynthesisProvider(api_key=value("ANTHROPIC_API_KEY") or "", model=model or value(MODEL_ENV))
-    return BudgetedProvider(provider, budget)
+    wrapped = BudgetedProvider(provider, budget)
+    try:
+        wrapped.price_schedule = json.loads(value("IMP_SYNTHESIS_PRICE_SCHEDULE") or "null")
+    except (TypeError,ValueError):
+        wrapped.price_schedule = None
+    return wrapped
 
 
 __all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BYTES_PER_TOKEN", "BudgetedProvider", "COUNT_TOKENS_URL",

@@ -328,12 +328,16 @@ without an Action Decision. No new workspace exists.
 
 ## Known limitations
 
+The [budget-efficiency extension](SCREENER_AI_BUDGET_EFFICIENCY.md) adds validated
+durable reuse, per-request manifests, and optional compaction/batch fitting.
+Its receipt reports savings separately from cold-run economic feasibility.
+
 - Under the default allowance only small queries complete; see Budget.
 - A batch holds at most 50 rows until a larger strict-schema grammar is
   preflighted.
-- The packet shape is PR 484's. About a third of a quote-and-technicals
-  candidate is its fixed missing-capability list; a more compact wire would be
-  a new wire version and is not part of this method.
+- The default packet shape is PR 484's. About a third of a quote-and-technicals
+  candidate is its fixed missing-capability list. Optional lossless input columns
+  are gated off pending provider quality evaluation; output wire 3.0.0 is retained.
 - Per-instrument news is cache-only during a run.
 - Automatic reevaluation passes keep the single-request method.
 - No run is resumed after a restart.

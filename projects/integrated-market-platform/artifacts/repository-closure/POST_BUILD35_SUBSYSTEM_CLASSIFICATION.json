@@ -618,6 +618,7 @@
       "classification": "RETAINED_SUPPORTING",
       "scope": [
         "tools/benchmark.py",
+        "tools/ai_screener_efficiency_benchmark.py",
         "tools/mutation_verification.py",
         "tools/p5_profile_harness.py",
         "tools/parallel_safety_audit.py",
