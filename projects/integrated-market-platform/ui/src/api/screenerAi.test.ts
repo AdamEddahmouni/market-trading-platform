@@ -82,7 +82,7 @@ describe("AI Screener API contract", () => {
     const read = await fetchAiScreenerCoverage("track 1");
     expect(read.rows.items[0]).toEqual({ instrument_id: "EQ:Z", class: "EVIDENCE_STALE", reasons: ["STALE"] });
     expect(vi.mocked(fetch).mock.calls.map(([url, init]) => [url, init?.method ?? "GET"])).toEqual([
-      ["/screener/ai-screener/runs/track%201/stop", "POST"], ["/screener/ai-screener/runs/track%201/coverage?limit=500", "GET"]]);
+      ["/screener/ai-screener/runs/track%201/stop", "POST"], ["/screener/ai-screener/runs/track%201/coverage?class=NOT_EVALUATED&limit=500", "GET"]]);
   });
 
   it("rejects a run in the previous run contract instead of rendering it as full-universe", async () => {

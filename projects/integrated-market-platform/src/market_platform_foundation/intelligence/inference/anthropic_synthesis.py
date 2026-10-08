@@ -65,6 +65,10 @@ API_VERSION = "2023-06-01"
 # every Claude model by 12% to 67%.
 BYTES_PER_TOKEN = {"claude-haiku-4-5-20251001": 2.2, "claude-sonnet-5-5": 1.5, "claude-opus-5-5": 1.5}
 DEFAULT_BYTES_PER_TOKEN = 1.5
+# A hold nobody has drawn from for this long belongs to a run that is gone (a crash, or an engine switched under
+# it): it lapses instead of locking shared budget until the UTC day ends. A live run draws at least once per
+# request, and a request times out in at most 300 seconds.
+HOLD_IDLE_SECONDS = 900
 # The run hold a model call on this thread draws from: (run id, tokens planned for this call).
 _HOLD: ContextVar[tuple[str, int] | None] = ContextVar("imp_synthesis_budget_hold", default=None)
 
@@ -150,11 +154,13 @@ class DailyBudget:
                            "holds": {}}
         return self._state
 
-    @staticmethod
-    def _holds(state: dict[str, Any]) -> dict[str, dict[str, int]]:
+    def _holds(self, state: dict[str, Any]) -> dict[str, dict[str, Any]]:
         holds = state.get("holds")
         if not isinstance(holds, dict):
             holds = state["holds"] = {}
+        now = self._clock()
+        for run_id in [key for key, item in holds.items() if now - float(item.get("touched", now)) > HOLD_IDLE_SECONDS]:
+            del holds[run_id]
         return holds
 
     def _held(self, state: dict[str, Any], key: str) -> int:
@@ -193,6 +199,7 @@ class DailyBudget:
                     return "SYNTHESIS_RUN_HOLD_EXHAUSTED"
                 held["requests"] = int(held["requests"]) - 1
                 held["tokens"] = int(held["tokens"]) - worst_case_tokens
+                held["touched"] = self._clock()
             else:
                 if self._requests(state) >= self.max_requests:
                     return "SYNTHESIS_DAILY_REQUEST_LIMIT"
@@ -215,7 +222,7 @@ class DailyBudget:
                       else "SYNTHESIS_DAILY_REQUEST_LIMIT" if requests > available_requests
                       else "SYNTHESIS_DAILY_TOKEN_LIMIT" if tokens > available_tokens else None)
             if reason is None:
-                self._holds(state)[run_id] = {"requests": requests, "tokens": tokens}
+                self._holds(state)[run_id] = {"requests": requests, "tokens": tokens, "touched": self._clock()}
                 self._save()
             return {"held": reason is None, "reason": reason, "required_requests": requests, "required_tokens": tokens,
                     "available_requests": available_requests, "available_tokens": available_tokens}
@@ -483,6 +490,6 @@ def build_paid_provider(value: Callable[[str], str | None], *, cache_dir: Path |
 
 
 __all__ = ["AnthropicSynthesisProvider", "BUDGET_RELATIVE", "BYTES_PER_TOKEN", "BudgetedProvider", "COUNT_TOKENS_URL",
-           "DAILY_REQUESTS_ENV", "DAILY_TOKENS_ENV", "DEFAULT_BYTES_PER_TOKEN", "DEFAULT_DAILY_REQUESTS",
+           "DAILY_REQUESTS_ENV", "DAILY_TOKENS_ENV", "DEFAULT_BYTES_PER_TOKEN", "DEFAULT_DAILY_REQUESTS", "HOLD_IDLE_SECONDS",
            "DEFAULT_DAILY_TOKENS", "DEFAULT_MODEL", "DailyBudget", "MODEL_ENV", "TOOL_NAME", "build_paid_provider",
            "drawing_from_hold", "estimate_tokens", "rejection_reason"]

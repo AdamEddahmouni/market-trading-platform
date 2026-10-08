@@ -47,8 +47,12 @@ They are reported separately and are never substituted for one another.
 
 `coverage_complete` is true only when enumeration is complete, the four
 buckets add up to the universe, no eligible row is unprocessed and every
-planned batch answered. `selection_complete` additionally requires the global
-comparison to have finished. Nothing else is called complete.
+planned batch answered. A row that was eligible when classified and could not
+be sent when its request was due (its quote aged out, or the quote source
+failed) is unprocessed, so such a run is never complete and its
+`ai_coverage_pct` counts that row in the denominator. `selection_complete`
+additionally requires the global comparison to have finished on evidence that
+was still current when the answer arrived. Nothing else is called complete.
 
 ## Enumeration
 
@@ -91,7 +95,12 @@ their output (`intelligence/inference/coverage_plan.py::classify`).
 Missing or stale evidence is never an economic rejection and is never counted
 as evaluated. A row with a current price and nothing else may still be lifted
 to `ELIGIBLE` by admitted news, exactly as the existing sufficiency rule
-allows; only those rows are news-projected during classification.
+allows; only those rows are news-projected during classification. Already-owned
+order-flow state is read at classification as it is for every request, so a
+row is classified on the evidence it would be sent with. If the bulk quote
+source returns nothing at all and no row is eligible, the run ends
+`EVIDENCE_PROVIDER_UNAVAILABLE`, not `NO_ELIGIBLE_ROWS`: that outcome says
+nothing about the rows.
 
 Market evidence stays bounded. For equities and ETFs the run takes one bulk
 OpenD snapshot of the enumerated rows through the existing
@@ -173,11 +182,16 @@ Every request is the existing `CandidateReducer.reduce`: prompt
 exact decode, canonical validation, the model the operator selected. There is
 no free-form fallback, no model substitution and no retry.
 
-Immediately before each request the batch's rows get a new bounded snapshot
-and a new cutoff, and their candidates are rebuilt. A row no longer sufficient
-at that cutoff is reclassified by its own reason and is not sent. Each request
-records its evidence cutoff, completion time, expiry, input hash and tokens.
-No observation later than a request's cutoff can enter it.
+Immediately before each request the batch's rows are read again from the
+Screener as it serves them now, equities and ETFs get a new bounded snapshot,
+a new cutoff is taken, and the candidates are rebuilt. Membership stays the
+enumeration's: a row that has since left the result is read from the
+enumeration and its own clocks decide. Nothing is acquired beyond what the
+Screener already serves and the bounded snapshot. A row no longer sufficient
+at that cutoff is not sent; it becomes `UNPROCESSED` with
+`<CLASS>_AT_REQUEST_CUTOFF` and its reason codes. Each request records its
+evidence cutoff, completion time, expiry, input hash and tokens. No
+observation later than a request's cutoff can enter it.
 
 ## Global comparison
 
@@ -188,7 +202,15 @@ Finalists are deduplicated, ordered by identity with a per-round salt, given
 fresh evidence, and compared with the same request contract in groups of up to
 50. Winners advance until one group remains; that group's answer is the final
 0 to 5. A finalist whose evidence is no longer sufficient at the comparison
-cutoff is not sent.
+cutoff is not sent and is named in `reduction.finalists_excluded`; a selection
+made without it carries the reason `FINALISTS_EXCLUDED_AT_FINAL_CUTOFF` and a
+limitation saying so. If no finalist is admissible the run is
+`PROVISIONAL_PARTIAL_COVERAGE` (`NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF`):
+nothing was compared. If the final answer arrives after the evidence it cites
+has expired, it is not a selection: the run is `PROVISIONAL_PARTIAL_COVERAGE`
+(`FINAL_SELECTION_EXPIRED_DURING_INFERENCE`), its picks are listed as
+provisional and nothing is stored. Quotes live 60 seconds, so a slow engine
+will meet this often; that is reported, not hidden.
 
 "Selected" means selected by this documented tournament of bounded comparisons
 made by the configured model. It is not a ranking score and not a claim of
@@ -199,11 +221,12 @@ the receipts record every group, cutoff and answer.
 
 | Terminal status | Meaning | Stored candidate run |
 |---|---|---|
-| `GLOBAL_SELECTION_COMPLETE` | Complete coverage and a finished comparison with at least one selection | Yes, as `CU-<run id>` |
+| `GLOBAL_SELECTION_COMPLETE` | Complete coverage and a finished comparison with at least one selection whose evidence is current | Yes, as `CU-<run id>` |
 | `COMPLETE_NO_SELECTION` | Complete coverage; nothing selected | No |
 | `NO_ELIGIBLE_ROWS` | Every row assessed; none eligible; no model called | No |
 | `EMPTY_UNIVERSE` | The query matched no rows | No |
-| `PROVISIONAL_PARTIAL_COVERAGE` | A batch or comparison failed, or a row could not be sent | No |
+| `EVIDENCE_PROVIDER_UNAVAILABLE` | The quote source returned nothing; no row could be assessed as eligible | No |
+| `PROVISIONAL_PARTIAL_COVERAGE` | A batch or comparison failed, an eligible row could not be sent, no finalist was admissible, or the final answer outlived its evidence | No |
 | `AI_COVERAGE_BUDGET_INSUFFICIENT` | The plan did not fit the budget; no model called | No |
 | `UNIVERSE_ENUMERATION_FAILED` | The result could not be read completely | No |
 | `STOPPED` | Operator Stop | No |
@@ -245,10 +268,16 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
   re-attaches.
 - **Restart.** Receipts are appended to the coverage ledger
   (`local_state/ai_screener_coverage.py`, table
-  `ai_screener_coverage_records`, insert-only) as the run goes. On the next
-  status read or Run, a run with no terminal record is closed `INTERRUPTED`; a
-  request with no recorded outcome is listed as an unknown provider outcome
-  and stays charged; only the never-reserved part of the hold is released.
+  `ai_screener_coverage_records`, insert-only) as the run goes. A status read
+  reports a run with no terminal record that is not alive in this process as
+  interrupted and writes nothing. The next operator write (Run or Stop) closes
+  it `INTERRUPTED`; a request with no recorded outcome is listed as an unknown
+  provider outcome and stays charged; only the never-reserved part of the hold
+  is released.
+- **Orphaned hold.** A hold nobody has drawn from for 900 seconds lapses. A
+  live run draws at least once per request, and a request times out in at most
+  300 seconds, so only a hold whose run is gone (a crash with no ledger, or an
+  engine switched under it) lapses. What it had already reserved stays charged.
 - **No resume.** Quote evidence expires after 60 seconds, so an old run cannot
   continue on its snapshot. A new Run is a new run with a new identity.
 - **No retries.** Permanent failures (invalid schema, unsupported model,
@@ -258,7 +287,9 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
 
 `GET /screener/ai-screener/runs/{run_id}/coverage` (`state.read`) returns one
 run's plan, per-request receipts and a page of per-row accounting
-(`?class=`, `?offset=`, `?limit=` up to 500) for the owning account.
+(`?class=` one class or `NOT_EVALUATED`, `?offset=`, `?limit=` up to 500) for
+the owning account. The ledger's terminal record keeps finalist identities
+only (at most 500); rationales stay in the per-request receipts.
 
 ## UI
 
@@ -292,5 +323,15 @@ without an Action Decision. No new workspace exists.
 - Per-instrument news is cache-only during a run.
 - Automatic reevaluation passes keep the single-request method.
 - No run is resumed after a restart.
+- The candidate run is written before the ledger's terminal record. If the
+  terminal write then failed, a stored selection would exist beside a run
+  later closed as interrupted. The terminal record is bounded to make that
+  failure unlikely; it is not transactional.
+- A tail batch or a split batch has fewer rows competing for the same five
+  finalist slots. Order is unbiased; competition per batch is not perfectly
+  equal.
+- Rows are re-read per request from what the Screener already serves. For a
+  universe with no bulk snapshot source (futures, bonds, crypto) a request is
+  only as fresh as the Screener's own quotes for those rows.
 - The preview still describes only the first batch-sized slice of the sorted
   result; it is labelled as such. The run's own plan is the authoritative cost.

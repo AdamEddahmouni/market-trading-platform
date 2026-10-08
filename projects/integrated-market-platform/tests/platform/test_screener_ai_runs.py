@@ -131,6 +131,8 @@ class AiScreenerRunTests(unittest.TestCase):
         self.assertEqual(done["state"], "COMPLETED")
         self.assertEqual(done["summary"]["state"], "INCOMPLETE")
         self.assertEqual(done["summary"]["reason"], "AI_COVERAGE_BUDGET_INSUFFICIENT")
+        # Nothing was stored, so nothing is named as a candidate run.
+        self.assertIsNone(done["summary"]["candidate_run_id"])
         self.assertEqual([item["stage"] for item in done["stages"]], ["ENUMERATION", "ELIGIBILITY", "PLANNING"])
         coverage = done["summary"]["coverage"]
         self.assertEqual((coverage["eligible_count"], coverage["batches_planned"], coverage["batches_completed"]), (120, 3, 0))
@@ -384,6 +386,8 @@ class StopAndRecoveryTests(unittest.TestCase):
         self.assertEqual(receipts["plan"]["plan"]["batches_planned"], 3)
         blocked = runs.coverage("PAPER-1", done["run_id"], row_class="EVIDENCE_UNAVAILABLE")
         self.assertEqual([item["instrument_id"] for item in blocked["rows"]["items"]], [instrument_id(0)])
+        skipped = runs.coverage("PAPER-1", done["run_id"], row_class="NOT_EVALUATED")
+        self.assertEqual((skipped["rows"]["total"], skipped["rows"]["items"][0]["class"]), (1, "EVIDENCE_UNAVAILABLE"))
         assert_no_secrets_in_payload(receipts)
 
     def test_a_run_a_restart_killed_is_reported_interrupted_and_its_unused_hold_returns(self):
@@ -403,9 +407,18 @@ class StopAndRecoveryTests(unittest.TestCase):
         found = current["interrupted"][0]
         self.assertEqual((found["run_id"], found["status"], found["unknown_provider_outcomes"]), ("killed-by-restart", "INTERRUPTED", 1))
         self.assertEqual(runs.current("PAPER-1")["interrupted"], [])
+        # A status read reports it and writes nothing: the ledger and the budget are as the dead run left them.
+        self.assertIsNone(ledger.terminal("killed-by-restart"))
+        self.assertEqual(budget.status()["held_tokens"], 2200)
+
+        # The next operator write closes it and returns the part of its hold that was never reserved.
+        settled(runs, "PAPER-7", runs.start("PAPER-7", SCOPE)["run_id"])
+        after = [item for item in runs.current("PAPER-7")["interrupted"] if item["run_id"] == "killed-by-restart"]
+        self.assertEqual(len(after), 1)
+        self.assertEqual((after[0]["status"], after[0]["unknown_provider_outcomes"]), ("INTERRUPTED", 1))
         # Nothing is resumed and nothing is refunded for the call whose outcome is unknown.
         status = budget.status()
-        self.assertEqual((status["tokens"], status["requests"], status["held_tokens"]), (800, 1, 0))
+        self.assertEqual((status["tokens"], status["requests"], status["held_tokens"]), (800 + 1100, 2, 0))
         self.assertEqual(ledger.terminal("killed-by-restart")["status"], "INTERRUPTED")
         self.assertEqual(runs.coverage("PAPER-7", "killed-by-restart")["unfinished_calls"][0]["call_id"], "BATCH_INFERENCE:0:0")
 

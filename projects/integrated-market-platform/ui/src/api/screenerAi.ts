@@ -97,7 +97,8 @@ export function fetchAiScreenerPreview(scope: AiScreenerScope, signal?: AbortSig
 }
 
 const RunStageSchema = z.object({ stage: z.string(), started_at: z.string(), elapsed_ms: z.number(), detail: z.record(z.unknown()) });
-const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string(),
+// `candidate_run_id` is null unless a candidate run was stored: only a completed global selection stores one.
+const RunSummarySchema = z.object({ state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string().nullable(),
   selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), intake_count: z.number().nullable().optional(),
   cache: z.string().nullable().optional(), simulated: z.boolean().nullable().optional(), provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.string().nullable(), tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(),
@@ -175,7 +176,7 @@ export const AiScreenerCoverageReceiptsSchema = z.object({ schema_version: z.lit
     items: z.array(z.object({ instrument_id: z.string(), class: z.string(), reasons: z.array(z.string()) })) }).passthrough(),
 }).passthrough();
 
-/** Read-only: one run's per-call receipts and a page of per-row accounting, from the server's ledger. */
+/** Read-only: one run's per-call receipts and the first 500 rows the model did not evaluate, from the server's ledger. */
 export function fetchAiScreenerCoverage(runId: string, signal?: AbortSignal) {
-  return fetchJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}/coverage?limit=500`, AiScreenerCoverageReceiptsSchema, signal ? { signal } : undefined);
+  return fetchJson(`/screener/ai-screener/runs/${encodeURIComponent(runId)}/coverage?class=NOT_EVALUATED&limit=500`, AiScreenerCoverageReceiptsSchema, signal ? { signal } : undefined);
 }

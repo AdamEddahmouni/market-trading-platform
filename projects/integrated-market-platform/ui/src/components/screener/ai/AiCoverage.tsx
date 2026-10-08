@@ -9,6 +9,7 @@ const STATUS_TEXT: Record<string, string> = {
   COMPLETE_NO_SELECTION: "Final · every eligible row was evaluated and none was selected",
   NO_ELIGIBLE_ROWS: "Final · no row had enough current evidence, so no model was called",
   EMPTY_UNIVERSE: "Final · the Screener query matched no rows",
+  EVIDENCE_PROVIDER_UNAVAILABLE: "Not run · the quote source returned nothing, so no row could be assessed; this says nothing about the rows",
   PROVISIONAL_PARTIAL_COVERAGE: "Partial · the run did not finish; this is not a search of the whole universe",
   AI_COVERAGE_BUDGET_INSUFFICIENT: "Not run · today's shared budget cannot pay for the whole plan; no model was called",
   UNIVERSE_ENUMERATION_FAILED: "Not run · the Screener result could not be read completely",
@@ -39,9 +40,11 @@ function budgetLine(coverage: AiScreenerCoverage) {
 /** The run's accounting, its status in plain words, and why every row that was not evaluated was not. */
 export function CoverageSummary({ coverage }: { coverage: AiScreenerCoverage }) {
   const reasons = Object.entries(coverage.counts.reasons);
+  const excluded = typeof coverage.reduction.finalists_excluded_count === "number" ? coverage.reduction.finalists_excluded_count : 0;
   return <section className="ai-coverage" aria-label="AI Screener coverage">
     <p className={`ai-coverage-status ${coverage.selection_complete ? "final" : "partial"}`} role="status">{coverageStatusText(coverage.status)}{coverage.reason && coverage.reason !== coverage.status ? ` · ${coverage.reason}` : ""}</p>
     <p className="ai-screener-meta">{coverageLine(coverage)} · {coverage.finalist_count} batch {coverage.finalist_count === 1 ? "finalist" : "finalists"} · {coverage.model_calls} model {coverage.model_calls === 1 ? "call" : "calls"}</p>
+    {excluded > 0 && <p className="ai-screener-meta">{excluded} batch {excluded === 1 ? "finalist was" : "finalists were"} left out of the final comparison: no admissible current evidence at that cutoff.</p>}
     <p className="ai-screener-meta">Not evaluated: {count(coverage.counts.ineligible)} ineligible · {count(coverage.counts.evidence_blocked)} evidence missing, stale or unavailable · {count(coverage.counts.unprocessed)} eligible but not processed{coverage.reconciled ? "" : " · counts do not reconcile"}.</p>
     <p className="ai-screener-meta">{budgetLine(coverage)}</p>
     {reasons.length > 0 && <details><summary>Why rows were not evaluated · {reasons.length} {reasons.length === 1 ? "reason" : "reasons"}</summary>
@@ -65,7 +68,7 @@ export function CoverageReceipts({ runId }: { runId: string }) {
   const [open, setOpen] = useState(false);
   const receipts = useQuery({ queryKey: ["screener-ai-screener-coverage", runId], queryFn: ({ signal }) => fetchAiScreenerCoverage(runId, signal),
     enabled: open, staleTime: Infinity, retry: false });
-  const skipped = receipts.data?.rows.items.filter((row) => row.class !== "AI_EVALUATED") ?? [];
+  const skipped = receipts.data?.rows.items ?? [];
   return <details className="ai-coverage-receipts" onToggle={(event) => setOpen(event.currentTarget.open)}>
     <summary>Batch receipts and rows not evaluated</summary>
     {receipts.isPending && open && <p className="ai-screener-meta">Reading receipts…</p>}
@@ -73,7 +76,7 @@ export function CoverageReceipts({ runId }: { runId: string }) {
     {receipts.data && <>
       <ol>{receipts.data.calls.map((call) => <li key={call.call_id}>{call.stage === "GLOBAL_REDUCTION" ? `Comparison round ${call.round ?? "?"}` : "Batch"} {call.index + 1} of {call.of} · {call.instrument_ids.length} rows · {call.outcome} · {call.state}{call.reason ? ` · ${call.reason}` : ""} · cutoff {call.evidence_cutoff} · {call.selected.length} selected{call.tokens_input != null ? ` · ${compactTokens((call.tokens_input ?? 0) + (call.tokens_output ?? 0))} tokens` : ""}</li>)}</ol>
       {receipts.data.unfinished_calls.length > 0 && <PanelMessage tone="warn">{receipts.data.unfinished_calls.length} model {receipts.data.unfinished_calls.length === 1 ? "call has" : "calls have"} no recorded outcome; the reserved tokens stay charged.</PanelMessage>}
-      <p className="ai-screener-meta">Rows not evaluated, first {skipped.length} of this page ({receipts.data.rows.total.toLocaleString()} rows accounted for in total):</p>
+      <p className="ai-screener-meta">Rows the model did not evaluate: showing {skipped.length.toLocaleString()} of {receipts.data.rows.total.toLocaleString()}.</p>
       <ul>{skipped.map((row) => <li key={row.instrument_id}>{row.instrument_id} · {row.class}{row.reasons.length ? ` · ${row.reasons.join(", ")}` : ""}</li>)}</ul>
     </>}
   </details>;

@@ -182,13 +182,13 @@ class FairnessTests(unittest.TestCase):
         self.assertEqual(first.selected(), third.selected())
         self.assertEqual(first.selected(), [instrument_id(77), instrument_id(410), instrument_id(3), instrument_id(911)])
 
-    def test_overlapping_finalists_enter_the_comparison_once(self):
-        class Echo(RankingProvider):
-            # Every first-pass batch also names its first row: many batches, a small distinct pool.
-            pass
-
-        h = Harness(universe(150, strong={10: 90.0, 60: 91.0, 110: 92.0}), Echo())
+    def test_batches_are_disjoint_and_each_finalist_enters_the_comparison_once(self):
+        h = Harness(universe(150, strong={10: 90.0, 60: 91.0, 110: 92.0}))
         h.run()
+        first_pass = [call["instrument_ids"] for call in h.calls() if call["stage"] == "BATCH_INFERENCE"]
+        sent = [value for batch in first_pass for value in batch]
+        self.assertEqual(len(sent), len(set(sent)))
+        self.assertEqual(sorted(sent), sorted(instrument_id(index) for index in range(150)))
         final = h.provider.seen[-1]
         self.assertEqual(len(final), len(set(final)))
         self.assertEqual(sorted(final), sorted(instrument_id(index) for index in (10, 60, 110)))
@@ -238,8 +238,48 @@ class EligibilityTests(unittest.TestCase):
         self.assertEqual(h.result["state"], "INCOMPLETE")
 
 
+class ClockReader(PagingReader):
+    """Rows observed at the moment they are read, as a live Screener serves them; ``frozen`` rows keep one clock."""
+
+    def __init__(self, rows, clock, *, frozen=()):
+        super().__init__(rows)
+        self.clock, self.frozen = clock, {instrument_id(index) for index in frozen}
+
+    def read(self, **kwargs):
+        from datetime import UTC, datetime
+
+        now = datetime.fromtimestamp(self.clock(), UTC).isoformat().replace("+00:00", "Z")
+        for item in self.rows:
+            if item["instrument"]["instrument_id"] not in self.frozen:
+                for field in item["fields"].values():
+                    field["as_of"] = now
+        return super().read(**{**kwargs, "result_set": None})
+
+
+class Snapshots:
+    """The bounded vendor snapshot source: records every acquisition and can be made to fail from a given one."""
+
+    def __init__(self, clock, *, fail_from=None):
+        self.clock, self.fail_from, self.sizes = clock, fail_from, []
+
+    def latest(self):
+        return None
+
+    def current(self, rows, *, catalog_as_of, force=False):
+        from datetime import UTC, datetime
+        from types import SimpleNamespace
+
+        self.sizes.append(len(rows))
+        if self.fail_from is not None and len(self.sizes) >= self.fail_from:
+            return None, "MARKET_SNAPSHOT_UNAVAILABLE"
+        now = datetime.fromtimestamp(self.clock(), UTC).isoformat().replace("+00:00", "Z")
+        ids = [item["instrument"]["instrument_id"] for item in rows]
+        return SimpleNamespace(values={key: {"price": 100.0, "volume": 5000.0, "change_pct": 1.0, "bid": None, "ask": None, "spread_pct": None} for key in ids},
+                               row_as_of={key: now for key in ids}, refused=frozenset(), as_of=now, catalog_as_of=catalog_as_of), None
+
+
 class TemporalTests(unittest.TestCase):
-    def test_evidence_that_ages_out_between_batches_is_dropped_not_sent(self):
+    def test_eligible_rows_that_age_out_before_their_request_are_not_sent_and_the_run_is_not_complete(self):
         ticks = [NOW]
         provider = RankingProvider()
         provider.on_call = lambda call, packet: (ticks.__setitem__(0, NOW + 90), provider.respond(packet))[1]
@@ -249,13 +289,111 @@ class TemporalTests(unittest.TestCase):
         self.assertEqual(provider.calls, 1)
         reconciled(self, h.block, 100)
         counts = h.block["counts"]
-        self.assertEqual(counts["evaluated"], 50)
-        self.assertEqual(counts["evidence_blocked"], 50)
-        self.assertEqual(counts["by_class"]["EVIDENCE_STALE"], 50)
-        # The first batch's finalist is stale by the final comparison, so it is not selected and nothing is stored.
-        self.assertEqual(h.result["candidates"], [])
-        self.assertIn(h.block["reason"], ("NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF", None))
+        self.assertEqual((counts["evaluated"], counts["unprocessed"], counts["evidence_blocked"]), (50, 50, 0))
+        self.assertTrue(all(key.startswith("UNPROCESSED:EVIDENCE_STALE_AT_REQUEST_CUTOFF") or key.startswith("UNPROCESSED:") for key in counts["reasons"]))
+        self.assertEqual(counts["reasons"]["UNPROCESSED:EVIDENCE_STALE_AT_REQUEST_CUTOFF"], 50)
+        # Half of the eligible rows never reached the model: that is never complete and never 100%.
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "ELIGIBLE_ROWS_NOT_SUBMITTED"))
+        self.assertEqual(h.block["ai_coverage_pct"], 50.0)
+        self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+        self.assertEqual((h.result["state"], h.result["candidates"]), ("INCOMPLETE", []))
         self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
+
+    def test_rows_are_read_again_for_every_request_so_a_long_run_does_not_age_out_its_own_evidence(self):
+        ticks = [NOW]
+        provider = RankingProvider()
+        provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 50), provider.respond(packet))[1]
+        clock = lambda: ticks[0]
+        h = Harness([], provider, clock=clock, reader=ClockReader(universe(200, strong={199: 95.0}), clock))
+        h.run()
+        # Five requests fifty seconds apart, 200 seconds in all against a 60-second quote policy: every request saw
+        # rows observed at its own cutoff, where rows kept from enumeration would have expired by the third.
+        self.assertEqual(provider.calls, 5)
+        self.assertEqual((h.block["status"], h.block["ai_evaluated_count"]), ("GLOBAL_SELECTION_COMPLETE", 200))
+        self.assertTrue(h.block["coverage_complete"])
+        self.assertEqual(h.selected(), [instrument_id(199)])
+        for call in h.calls():
+            self.assertEqual(call["dropped"], {})
+
+    def test_a_finalist_stale_at_the_final_comparison_is_excluded_and_the_result_says_so(self):
+        ticks = [NOW]
+        provider = RankingProvider()
+        provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 35), provider.respond(packet))[1]
+        clock = lambda: ticks[0]
+        # Row 99 is the strongest and keeps its first observation clock; every other row is observed afresh.
+        h = Harness([], provider, clock=clock, reader=ClockReader(universe(100, strong={5: 90.0, 99: 95.0}), clock, frozen=(99,)))
+        h.run()
+        self.assertEqual(provider.calls, 3)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("GLOBAL_SELECTION_COMPLETE", "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF"))
+        self.assertEqual(h.selected(), [instrument_id(5)])
+        excluded = h.block["reduction"]["finalists_excluded"]
+        self.assertEqual([(item["instrument_id"], item["class"]) for item in excluded], [(instrument_id(99), "EVIDENCE_STALE")])
+        self.assertEqual(h.block["reduction"]["finalists_excluded_count"], 1)
+        self.assertTrue(any("1 batch finalist(s) had no admissible" in text for text in h.result["limitations"]))
+        stored = action_repository().get("candidate_run", h.result["run_id"])
+        self.assertEqual(stored["universe_coverage"]["reduction"]["finalists_excluded_count"], 1)
+        self.assertNotIn(instrument_id(99), provider.seen[-1])
+
+    def test_no_finalist_admissible_at_the_final_comparison_is_not_a_completed_selection(self):
+        ticks = [NOW]
+        provider = RankingProvider()
+        provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 35), provider.respond(packet))[1]
+        clock = lambda: ticks[0]
+        h = Harness([], provider, clock=clock, reader=ClockReader(universe(100, strong={5: 90.0, 99: 95.0}), clock, frozen=(5, 99)))
+        h.run()
+        self.assertEqual(provider.calls, 2)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF"))
+        self.assertFalse(h.block["selection_complete"])
+        self.assertEqual(len(h.result["provisional"]), 2)
+
+    def test_an_answer_that_arrives_after_its_evidence_expired_is_not_stored_as_a_selection(self):
+        ticks = [NOW]
+        provider = RankingProvider()
+        provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 70), provider.respond(packet))[1]
+        h = Harness(universe(40, strong={7: 90.0}), provider, clock=lambda: ticks[0])
+        h.run()
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "FINAL_SELECTION_EXPIRED_DURING_INFERENCE"))
+        self.assertEqual((h.result["state"], h.result["candidates"]), ("INCOMPLETE", []))
+        self.assertEqual([item["instrument_id"] for item in h.result["provisional"]], [instrument_id(7)])
+        self.assertFalse(h.block["selection_complete"])
+        self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
+
+    def test_a_bounded_vendor_snapshot_is_acquired_once_for_classification_and_once_for_every_request(self):
+        rows = [row(index, price=None, rsi=90.0 if index == 119 else 50.0) for index in range(120)]
+        h = Harness(rows)
+        snapshots = Snapshots(lambda: NOW)
+        h.service = ScreenerAiService(reader=h.reader, news=News(h.provider), clock=lambda: NOW, market_snapshots=snapshots)
+        h.run()
+        # No row carries a price of its own: eligibility and every request's quote come from the snapshot source.
+        self.assertEqual(snapshots.sizes, [120, 50, 50, 20, 1])
+        self.assertEqual((h.block["status"], h.block["ai_evaluated_count"]), ("GLOBAL_SELECTION_COMPLETE", 120))
+        self.assertEqual(h.selected(), [instrument_id(119)])
+        quote = next(item for item in h.result["evidence"][0]["current_market_evidence"] if item["capability"] == "QUOTE")
+        self.assertEqual((quote["source"], quote["facts"]["price"]), ("MOOMOO_OPEND_SNAPSHOT", 100.0))
+
+    def test_a_snapshot_source_that_fails_mid_run_leaves_those_rows_unprocessed_by_name(self):
+        rows = [row(index, price=None) for index in range(120)]
+        h = Harness(rows)
+        snapshots = Snapshots(lambda: NOW, fail_from=3)
+        h.service = ScreenerAiService(reader=h.reader, news=News(h.provider), clock=lambda: NOW, market_snapshots=snapshots)
+        h.run()
+        reconciled(self, h.block, 120)
+        self.assertEqual(h.provider.calls, 1)
+        self.assertEqual(h.block["status"], "PROVISIONAL_PARTIAL_COVERAGE")
+        self.assertEqual((h.block["counts"]["evaluated"], h.block["counts"]["unprocessed"]), (50, 70))
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:PROVIDER_UNAVAILABLE_AT_REQUEST_CUTOFF"], 70)
+        self.assertFalse(h.block["coverage_complete"])
+
+    def test_a_quote_source_that_returns_nothing_is_reported_as_that_and_not_as_no_eligible_rows(self):
+        rows = [row(index, price=None) for index in range(80)]
+        h = Harness(rows)
+        h.service = ScreenerAiService(reader=h.reader, news=News(h.provider), clock=lambda: NOW, market_snapshots=Snapshots(lambda: NOW, fail_from=1))
+        h.run()
+        reconciled(self, h.block, 80)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("EVIDENCE_PROVIDER_UNAVAILABLE", "MARKET_SNAPSHOT_UNAVAILABLE"))
+        self.assertEqual(h.block["counts"]["by_class"], {"PROVIDER_UNAVAILABLE": 80})
+        self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+        self.assertEqual((h.result["state"], h.provider.calls), ("INCOMPLETE", 0))
 
     def test_each_call_records_its_own_cutoff_and_none_precedes_its_evidence(self):
         ticks = [NOW]
@@ -399,6 +537,22 @@ class StopTests(unittest.TestCase):
         self.assertFalse(h.block["coverage_complete"])
         self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
 
+    def test_a_long_stopped_run_with_hundreds_of_finalists_still_writes_one_terminal_and_one_row_account(self):
+        stop = [False]
+        provider = RankingProvider()
+        provider.on_call = lambda call, packet: (stop.__setitem__(0, call >= 50), provider.respond(packet))[1]
+        h = Harness(universe(3000, strong={index: 80.0 + index % 17 for index in range(3000)}), provider)
+        h.run(should_stop=lambda: stop[0])
+        terminal = h.ledger.terminal(h.run_id)
+        self.assertEqual(terminal["status"], "STOPPED")
+        self.assertEqual(h.ledger.open_runs(), [])
+        self.assertEqual(len(h.result["provisional"]), 250)
+        self.assertEqual((terminal["provisional_count"], len(terminal["provisional"])), (250, 250))
+        self.assertNotIn("rationale", terminal["provisional"][0])
+        self.assertNotIn("plan", terminal["universe_coverage"])
+        final_rows = [item for part in h.ledger.records(h.run_id, "rows") if part["phase"] == "FINAL" for item in part["rows"]]
+        self.assertEqual(len(final_rows), 3000)
+
     def test_stop_before_the_first_call_spends_nothing(self):
         h = Harness(universe(120))
         h.run(should_stop=lambda: True)
@@ -525,6 +679,25 @@ class BudgetTests(unittest.TestCase):
         self.assertIsNone(h.budget.held(h.run_id))
         self.assertLessEqual(h.budget.status()["tokens"], h.budget.max_tokens)
         self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
+
+    def test_a_hold_nobody_draws_from_lapses_instead_of_locking_the_shared_budget_all_day(self):
+        from market_platform_foundation.intelligence.inference.anthropic_synthesis import HOLD_IDLE_SECONDS
+
+        ticks = [NOW]
+        budget = DailyBudget(None, max_requests=30, max_tokens=10_000, clock=lambda: ticks[0])
+        self.assertTrue(budget.hold("gone", requests=5, tokens=8000)["held"])
+        self.assertEqual(budget.reserve(3000), "SYNTHESIS_DAILY_TOKEN_LIMIT")
+        ticks[0] += HOLD_IDLE_SECONDS - 1
+        self.assertIsNone(budget.reserve(1000, hold="gone"))          # a live run's draw keeps its hold alive
+        ticks[0] += HOLD_IDLE_SECONDS - 1
+        self.assertEqual(budget.held("gone"), {"requests": 4, "tokens": 7000})
+        ticks[0] += 2
+        # Idle past the limit: the hold is gone, what it reserved stays charged, and the rest is open again.
+        self.assertIsNone(budget.held("gone"))
+        self.assertEqual(budget.reserve(500, hold="gone"), "SYNTHESIS_RUN_HOLD_MISSING")
+        status = budget.status()
+        self.assertEqual((status["tokens"], status["held_tokens"], status["requests"]), (1000, 0, 1))
+        self.assertIsNone(budget.reserve(3000))
 
     def test_the_provider_count_raises_an_underestimated_plan_and_a_rejected_request_spends_nothing(self):
         rows = universe(160)

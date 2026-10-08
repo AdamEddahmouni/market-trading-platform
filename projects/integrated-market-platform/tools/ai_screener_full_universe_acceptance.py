@@ -72,11 +72,11 @@ def fixtures():
     return support
 
 
-def run_controlled(rows, provider=None, *, should_stop=lambda: False, reader=None, repository=None, tag="acc"):
+def run_controlled(rows, provider=None, *, should_stop=lambda: False, reader=None, repository=None, tag="acc", clock=None):
     support = fixtures()
     provider = provider if provider is not None else support.RankingProvider()
     reader = reader or support.PagingReader(rows)
-    service = ScreenerAiService(reader=reader, news=support.News(provider), clock=lambda: support.NOW)
+    service = ScreenerAiService(reader=reader, news=support.News(provider), clock=clock or (lambda: support.NOW))
     ledger = CoverageLedger()
     repository = repository if repository is not None else ActionDecisionRepository()
     result = ScreenerAiCoverage(service, ledger=ledger, software_sha=git("rev-parse", "HEAD"), repository=repository).run(
@@ -307,6 +307,23 @@ def failure_injection() -> dict:
     provider = support.RankingProvider()
     result, _, _, _, _ = run_controlled(support.universe(260), provider)
     cases["completed_scan_none_selected"] = outcome(result, provider)
+
+    # Ninety seconds pass during the first request: the second batch's quotes are past their sixty-second policy.
+    ticks = [support.NOW]
+    provider = support.RankingProvider()
+    provider.on_call = lambda call, packet: (ticks.__setitem__(0, support.NOW + 90), provider.respond(packet))[1]
+    result, _, _, _, repository = run_controlled(support.universe(100, strong={0: 90.0, 99: 95.0}), provider, clock=lambda: ticks[0])
+    cases["eligible_rows_stale_before_their_request"] = outcome(result, provider, {
+        "ai_coverage_pct": result["universe_coverage"]["ai_coverage_pct"],
+        "candidate_run_stored": repository.get("candidate_run", "CU-" + result["run_id"]) is not None})
+
+    # Seventy seconds pass during the only request: the answer arrives after the evidence it cites has expired.
+    ticks = [support.NOW]
+    provider = support.RankingProvider()
+    provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 70), provider.respond(packet))[1]
+    result, _, _, _, repository = run_controlled(support.universe(40, strong={7: 90.0}), provider, clock=lambda: ticks[0])
+    cases["final_answer_outlived_its_evidence"] = outcome(result, provider, {
+        "candidate_run_stored": repository.get("candidate_run", "CU-" + result["run_id"]) is not None})
     return cases
 
 
@@ -372,7 +389,12 @@ def gates(scale_rows, replay, budget, failures, validation) -> dict:
         "G8_shared_budget_preserved": "PASS" if all(plan["hold_left_after"] == 0 and plan["budget_tokens_after"] <= DEFAULT_DAILY_TOKENS for plan in budget["plans"]) else "FAIL",
         "G9_compact_schema_compatibility_preserved": passed("wire_contract"),
         "G10_useful_evidence_survives_packet_fitting": passed("news_evidence"),
-        "G11_temporal_correctness": passed("temporal"),
+        "G11_temporal_correctness": "PASS" if suites.get("temporal") == "PASS"
+        and failures["eligible_rows_stale_before_their_request"]["status"] == "PROVISIONAL_PARTIAL_COVERAGE"
+        and failures["eligible_rows_stale_before_their_request"]["ai_coverage_pct"] == 50.0
+        and not failures["final_answer_outlived_its_evidence"]["candidate_run_stored"]
+        and failures["final_answer_outlived_its_evidence"]["reason"] == "FINAL_SELECTION_EXPIRED_DURING_INFERENCE"
+        else passed("temporal"),
         "G12_cross_instrument_reference_isolation": "PASS" if failures["malformed_candidate_reference"]["reason"] == "BATCH_FAILED:WIRE_REFERENCE_INDEX_INVALID" else "FAIL",
         "G13_batch_order_bias_controlled": passed("fairness"),
         "G14_intermediate_candidates_never_final": "PASS" if not failures["provider_failure_mid_scan"]["candidate_run_stored"] and not failures["global_reduction_failure"]["candidate_run_stored"] and failures["global_reduction_failure"]["provisional_finalists"] == 3 else "FAIL",
@@ -421,6 +443,11 @@ def build(probe: bool, validation: dict | None) -> dict:
             "owner raising IMP_SYNTHESIS_DAILY_* are the only ways to complete it.",
             "A batch holds at most 50 rows: the only strict-schema grammar size the provider has been shown to accept.",
             "No run is resumed after a server restart; quote evidence expires after 60 seconds, so a new Run is a new run.",
+            "A final answer that arrives more than 60 seconds after its evidence cutoff is not a selection. Request timeouts are "
+            "45 seconds (300 for a local model), so a slow engine will end runs as partial; that is reported, not hidden.",
+            "For a universe with no bulk snapshot source (futures, bonds, crypto) a request is only as fresh as the quotes the "
+            "Screener already serves for those rows.",
+            "The candidate run is written before the ledger's terminal record; the two writes are not one transaction.",
             "Per-instrument news providers are cache-only during a run; rows outside those caches carry shared-source news only.",
             "Automatic reevaluation passes keep the single-request method and never claim coverage.",
             "Selection is the documented tournament of bounded comparisons made by the configured model. It is not a ranking "

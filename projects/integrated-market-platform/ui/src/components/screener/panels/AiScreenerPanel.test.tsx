@@ -235,7 +235,8 @@ describe("AI Screener panel", () => {
 
   it("a finished full-universe run shows its accounting, why rows were not evaluated, and its receipts on request", async () => {
     mocks.preview.mockResolvedValue(preview);
-    mocks.run.mockResolvedValue({ ...result, valid_until: "2099-01-01T00:00:00Z", intake_count: 150, universe_coverage: coverage(),
+    mocks.run.mockResolvedValue({ ...result, valid_until: "2099-01-01T00:00:00Z", intake_count: 150,
+      universe_coverage: coverage({ reason: "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF", reduction: { rounds_planned: 1, rounds_completed: 1, finalists_excluded_count: 1 } }),
       candidates: [{ instrument_id: "EQ:A", rank: 1, rationale: "Review admitted observations.", supporting_refs: [], conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }] });
     mocks.receipts.mockResolvedValue({ schema_version: "screener-ai-screener-coverage/1.0.0", run_id: "track-run-1", unfinished_calls: [],
       calls: [{ call_id: "BATCH_INFERENCE:0:0", stage: "BATCH_INFERENCE", round: null, index: 0, of: 3, outcome: "COMPLETED", state: "CURRENT", reason: null,
@@ -250,10 +251,12 @@ describe("AI Screener panel", () => {
     expect(summary).toHaveTextContent("Not evaluated: 12 ineligible · 4,468 evidence missing, stale or unavailable · 0 eligible but not processed.");
     expect(summary).toHaveTextContent("the plan needed 150k tokens and 4 requests · 160k tokens and 26 requests were available · used 44k tokens");
     expect(summary).toHaveTextContent("EVIDENCE_STALE:STALE · 4,468");
+    expect(summary).toHaveTextContent("1 batch finalist was left out of the final comparison: no admissible current evidence at that cutoff.");
     expect(mocks.receipts).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Batch receipts and rows not evaluated"));
     expect(await screen.findByText(/Batch 1 of 3 · 2 rows · COMPLETED · CURRENT · cutoff 2026-10-02T15:00:01Z · 1 selected/)).toBeInTheDocument();
     expect(screen.getByText("EQ:Z · EVIDENCE_STALE · STALE")).toBeInTheDocument();
+    expect(screen.getByText("Rows the model did not evaluate: showing 2 of 4,630.")).toBeInTheDocument();
     expect(mocks.receipts).toHaveBeenCalledWith("track-run-1", expect.any(AbortSignal));
     // A completed global selection is the only result that offers an Action Decision.
     expect(screen.getByRole("heading", { name: /#1 EQ:A/ })).toBeInTheDocument();

@@ -39,6 +39,7 @@ _DETAIL_KEYS = (*_PROGRESS_KEYS, "batch", "step", "packet_bytes", "reserved_toke
 _STABLE_CODE = re.compile(r"[A-Z][A-Z0-9_]*")
 # Runs alive in this process, across every tracker: restart recovery must never close one of these.
 _LIVE: set[str] = set()
+_RECOVERY = threading.Lock()
 
 
 def _iso(seconds: float) -> str:
@@ -58,9 +59,13 @@ def _coverage(result: dict[str, Any]) -> dict[str, Any] | None:
 
 def _summary(result: dict[str, Any]) -> dict[str, Any]:
     """What a status strip needs from a finished run, without the evidence packet."""
+    coverage = _coverage(result)
+    # Only a completed global selection (or a single-request result) names a stored candidate run.
+    stored = coverage is None or coverage["status"] == "GLOBAL_SELECTION_COMPLETE"
     return {
-        "coverage": _coverage(result), "provisional_count": len(result.get("provisional") or []),
-        "state": result.get("state"), "reason": result.get("reason"), "candidate_run_id": result.get("run_id"),
+        "coverage": coverage, "provisional_count": len(result.get("provisional") or []),
+        "candidate_run_id": result.get("run_id") if stored else None,
+        "state": result.get("state"), "reason": result.get("reason"),
         "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in result.get("candidates", [])],
         "intake_count": result.get("intake_count"), "cache": result.get("cache"), "simulated": result.get("simulated"),
         "provider_id": result.get("provider_id"), "model_id": result.get("model_id"), "runtime": result.get("runtime"),
@@ -82,26 +87,49 @@ class AiScreenerRuns:
         self._active: dict[str, dict[str, Any]] = {}
         self._latencies: dict[str, deque[int]] = {}
         self._reservations: dict[str, int] = {}
-        self._recovered: list[dict[str, Any]] | None = None
+        self._recovered: list[dict[str, Any]] = []
 
     def _recover(self, service: Any) -> None:
-        """Once per process: close full-universe runs a previous process left open and release their unused holds."""
-        if self._recovered is not None or not callable(getattr(service, "run_universe", None)):
+        """Close full-universe runs a previous process left open and release their unused holds. Called only from
+        an operator write (Run, Stop), never from a status read."""
+        if not callable(getattr(service, "run_universe", None)):
             return
-        self._recovered = []
         try:
             from ..local_state.ai_screener_coverage import coverage_ledger
             from .screener_ai_coverage import interrupt_open_runs
 
             ledger = coverage_ledger()
-            for run_id in interrupt_open_runs(ledger, tracked=set(_LIVE), release=service.release_hold, clock=self._clock):
-                terminal = ledger.terminal(run_id) or {}
-                self._recovered.append({"run_id": run_id, "account_id": terminal.get("account_id"), "status": terminal.get("status"),
-                                        "reason": terminal.get("reason"), "finished_at": terminal.get("finished_at"),
-                                        "calls_completed": terminal.get("calls_completed"),
-                                        "unknown_provider_outcomes": len(terminal.get("unknown_provider_outcomes") or [])})
-        except Exception:  # noqa: BLE001 - recovery is bookkeeping; it never blocks a new run or a status read
+            with _RECOVERY:
+                # ``_LIVE`` itself, not a copy: a run is registered there before it writes its first receipt.
+                for run_id in interrupt_open_runs(ledger, tracked=_LIVE, release=service.release_hold, clock=self._clock):
+                    terminal = ledger.terminal(run_id) or {}
+                    self._recovered.append({"run_id": run_id, "account_id": terminal.get("account_id"), "status": terminal.get("status"),
+                                            "reason": terminal.get("reason"), "finished_at": terminal.get("finished_at"),
+                                            "calls_completed": terminal.get("calls_completed"),
+                                            "unknown_provider_outcomes": len(terminal.get("unknown_provider_outcomes") or [])})
+        except Exception:  # noqa: BLE001 - recovery is bookkeeping; it never blocks a new run, and is tried again on the next
             pass
+
+    def _interrupted(self, service: Any, account_id: str) -> list[dict[str, Any]]:
+        """Runs of this account a restart ended: those already closed, and those found open and not alive in this
+        process, which the next Run or Stop will close. Reads the ledger only; writes nothing."""
+        found = [item for item in self._recovered if item["account_id"] == account_id]
+        if not callable(getattr(service, "run_universe", None)):
+            return found
+        try:
+            from ..local_state.ai_screener_coverage import coverage_ledger
+
+            ledger = coverage_ledger()
+            for run_id in ledger.open_runs():
+                head = ledger.records(run_id, "run")
+                if run_id in _LIVE or not head or head[0].get("account_id") != account_id:
+                    continue
+                found.append({"run_id": run_id, "account_id": account_id, "status": "INTERRUPTED", "reason": "SERVER_RESTARTED_DURING_RUN",
+                              "finished_at": None, "calls_completed": len(ledger.records(run_id, "batch")),
+                              "unknown_provider_outcomes": len(ledger.unfinished_batches(run_id))})
+        except Exception:  # noqa: BLE001 - a status read never fails on bookkeeping
+            pass
+        return found
 
     def _service(self) -> Any:
         if self._fixed_service is not None:
@@ -148,6 +176,7 @@ class AiScreenerRuns:
     def stop(self, account_id: str, run_id: str) -> dict[str, Any] | None:
         """Ask this account's run to start no further model call. A call already sent finishes and stays charged;
         completed receipts are kept. Stopping a finished run changes nothing."""
+        self._recover(self._service())
         with self._lock:
             run = self._runs.get(run_id)
             if run is None or run["account_id"] != account_id:
@@ -159,7 +188,8 @@ class AiScreenerRuns:
 
     def coverage(self, account_id: str, run_id: str, *, row_class: str | None = None, offset: int = 0,
                  limit: int = 200) -> dict[str, Any] | None:
-        """One run's receipts: its plan, every model call, and a page of per-row accounting. Reads the ledger only."""
+        """One run's receipts: its plan, every model call, and a page of per-row accounting. Reads the ledger only.
+        ``row_class`` is one class, or ``NOT_EVALUATED`` for every row the model did not evaluate."""
         from ..local_state.ai_screener_coverage import coverage_ledger
 
         ledger = coverage_ledger()
@@ -168,13 +198,14 @@ class AiScreenerRuns:
             return None
         parts = ledger.records(run_id, "rows")
         phase = "FINAL" if any(part["phase"] == "FINAL" for part in parts) else "CLASSIFIED"
-        rows = [row for part in parts if part["phase"] == phase for row in part["rows"] if row_class is None or row[1] == row_class]
+        wanted = (lambda name: name != "AI_EVALUATED") if row_class == "NOT_EVALUATED" else (lambda name: row_class is None or name == row_class)
+        rows = [row for part in parts if part["phase"] == phase for row in part["rows"] if wanted(row[1])]
         offset, limit = max(0, int(offset)), max(1, min(500, int(limit)))
         plan = ledger.records(run_id, "plan")
         terminal = ledger.terminal(run_id)
         return {"schema_version": "screener-ai-screener-coverage/1.0.0", "run_id": run_id, "run": head[0],
                 "plan": plan[0] if plan else None, "calls": ledger.records(run_id, "batch"),
-                "unfinished_calls": ledger.unfinished_batches(run_id) if terminal is None or terminal["status"] == "INTERRUPTED" else [],
+                "unfinished_calls": ledger.unfinished_batches(run_id),
                 "rounds": ledger.records(run_id, "round"), "terminal": terminal,
                 "rows": {"phase": phase, "class": row_class, "total": len(rows), "offset": offset, "limit": limit,
                          "items": [{"instrument_id": row[0], "class": row[1], "reasons": row[2]} for row in rows[offset:offset + limit]]}}
@@ -183,8 +214,8 @@ class AiScreenerRuns:
         """What a page shows and attaches to: the engine's state and budget, the run in progress and the latest
         finished run (without result bodies). Reads only; calls no model and starts nothing."""
         service = self._service()
-        self._recover(service)
         ai = service.ai_status()
+        interrupted = self._interrupted(service, account_id)
         with self._lock:
             active = self._active.get(account_id)
             latest = next((run for run in reversed(self._runs.values())
@@ -200,7 +231,7 @@ class AiScreenerRuns:
                     "ai": {key: ai.get(key) for key in ("state", "reason", "provider_id", "model_id", "runtime")}, "budget": budget,
                     "active": self._snapshot(active, result=False) if active is not None else None,
                     "latest": self._snapshot(latest, result=False) if latest is not None else None,
-                    "interrupted": [item for item in self._recovered or [] if item["account_id"] == account_id]}
+                    "interrupted": interrupted}
 
     def _budget(self, ai: dict[str, Any]) -> dict[str, Any] | None:
         """The shared daily budget. ``run_size`` is what the last run on this engine's model held for its whole

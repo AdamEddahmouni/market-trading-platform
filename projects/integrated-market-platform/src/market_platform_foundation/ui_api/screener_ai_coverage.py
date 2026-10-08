@@ -33,6 +33,8 @@ GLOBAL_SELECTION_COMPLETE = "GLOBAL_SELECTION_COMPLETE"
 COMPLETE_NO_SELECTION = "COMPLETE_NO_SELECTION"
 NO_ELIGIBLE_ROWS = "NO_ELIGIBLE_ROWS"
 EMPTY_UNIVERSE = "EMPTY_UNIVERSE"
+# Nothing was eligible because the quote source itself returned nothing: not a statement about the rows.
+EVIDENCE_PROVIDER_UNAVAILABLE = "EVIDENCE_PROVIDER_UNAVAILABLE"
 PROVISIONAL_PARTIAL_COVERAGE = "PROVISIONAL_PARTIAL_COVERAGE"
 BUDGET_INSUFFICIENT = "AI_COVERAGE_BUDGET_INSUFFICIENT"
 ENUMERATION_FAILED = "UNIVERSE_ENUMERATION_FAILED"
@@ -61,7 +63,11 @@ _LIMITATIONS = {
     ENUMERATION_FAILED: "The Screener result could not be read completely; nothing was evaluated.",
     STOPPED: "Stopped by the operator before the run finished. Listed finalists are provisional.",
     FAILED: "The run failed before it finished.",
+    EVIDENCE_PROVIDER_UNAVAILABLE: "The quote source returned nothing, so no row could be assessed as eligible. This says nothing about the rows.",
 }
+# Kept out of the ledger's terminal record: a long run's finalists with their rationales can exceed a record.
+MAX_TERMINAL_FINALISTS = 500
+MAX_EXCLUDED_LISTED = 100
 
 
 def _iso(seconds: float) -> str:
@@ -92,6 +98,11 @@ class _Run:
         self.batches_completed = 0
         self.submitted = 0
         self.calls = 0
+        self.cache_hits = 0
+        self.query: dict[str, Any] = {}
+        self.provider_reason: str | None = None
+        self.excluded_finalists: list[dict[str, Any]] = []
+        self.final_rows_recorded = False
         self.finalists: list[dict[str, Any]] = []
         self.rounds_completed = 0
         self.budget: dict[str, Any] = {"capped": False}
@@ -129,6 +140,7 @@ class ScreenerAiCoverage:
         prompt = reducer.registry.get_by_id(PROMPT_ID)
         run = _Run(run_id, account_id)
         run.scope = service._scope(query, {"result_set_id": query["result_set"]})
+        run.query = query
         self.identity = {
             "account_id": account_id, "method_version": METHOD_VERSION, "method_name": METHOD_NAME,
             "software_sha": self._software_sha or _software_sha(),
@@ -185,6 +197,8 @@ class ScreenerAiCoverage:
         run.eligible_count = len(eligible)
         report_stage("ELIGIBILITY", assessed_count=len(run.classes), eligible_count=run.eligible_count)
         if not eligible:
+            if run.provider_reason:
+                return self._terminal(run, EVIDENCE_PROVIDER_UNAVAILABLE, run.provider_reason)
             return self._terminal(run, NO_ELIGIBLE_ROWS)
         refusal = self._engine_refusal()
         if refusal:
@@ -238,7 +252,7 @@ class ScreenerAiCoverage:
             return self._terminal(run, COMPLETE_NO_SELECTION)
         if len(batches) == 1 and last is not None:
             # One request already compared every eligible row; its evidence was acquired for that request.
-            return self._terminal(run, GLOBAL_SELECTION_COMPLETE, final=last)
+            return self._final(run, last)
 
         mark = time.perf_counter()
         pool = list(dict.fromkeys(item["instrument_id"] for item in run.finalists))
@@ -264,12 +278,38 @@ class ScreenerAiCoverage:
             report_stage("GLOBAL_REDUCTION", round=number, finalists=len(winners))
             if not winners:
                 run.timings["global_reduction_ms"] = (time.perf_counter() - mark) * 1000
-                return self._terminal(run, COMPLETE_NO_SELECTION, "NO_FINALIST_SELECTED_IN_GLOBAL_COMPARISON" if admitted
-                                      else "NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF")
+                if not admitted:
+                    # No finalist had admissible evidence when the comparison was due: nothing was compared.
+                    return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF")
+                return self._terminal(run, COMPLETE_NO_SELECTION, "NO_FINALIST_SELECTED_IN_GLOBAL_COMPARISON")
             if len(groups) == 1:
                 run.timings["global_reduction_ms"] = (time.perf_counter() - mark) * 1000
-                return self._terminal(run, GLOBAL_SELECTION_COMPLETE, final=final)
+                return self._final(run, final)
             pool = list(dict.fromkeys(winners))
+
+    def _final(self, run: _Run, final: dict[str, Any] | None) -> dict[str, Any]:
+        """The last comparison's answer becomes the result only while its own evidence is still current."""
+        if final is None or final.get("state") != "CURRENT":
+            # The answer arrived after the evidence it cites had expired: a selection nobody may act on is not final.
+            if final is not None:
+                run.finalists = [{"instrument_id": pick["instrument_id"], "batch": 0, "rank_in_batch": pick["rank"],
+                                  "rationale": pick["rationale"], "evidence_cutoff": final["decision_cutoff"],
+                                  "valid_until": final["valid_until"]} for pick in final.get("candidates", [])] or run.finalists
+            return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "FINAL_SELECTION_EXPIRED_DURING_INFERENCE")
+        return self._terminal(run, GLOBAL_SELECTION_COMPLETE, "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF" if run.excluded_finalists else None, final=final)
+
+    def _current_rows(self, run: _Run, instrument_ids: list[str]) -> list[dict[str, Any]]:
+        """These rows as the Screener serves them now, so a request's row evidence is not older than the request.
+
+        The enumeration's membership stands: a row that has since left the result is read from the enumeration and
+        its own clocks decide whether it is still admissible. If the result cannot be read again the enumerated rows
+        are used the same way. Nothing is acquired here beyond what the Screener already serves."""
+        try:
+            now = enumerate_universe(self.service._reader, {**run.query, "result_set": None})
+        except (UniverseEnumerationError, ValueError):
+            return [run.rows[key] for key in instrument_ids]
+        fresh = {row["instrument"]["instrument_id"]: row for row in now.rows}
+        return [fresh.get(key, run.rows[key]) for key in instrument_ids]
 
     # ------------------------------------------------------- classification
 
@@ -280,9 +320,11 @@ class ScreenerAiCoverage:
         # Shared news is refreshed before short-lived quotes are taken, as the single-request method does.
         service._news_for(run.universe, raw[:1], refresh=True)
         market, market_reason = service._market(run.universe, raw, acquire=True)
+        run.provider_reason = market_reason
         now = _iso(service._clock())
         run.cutoffs["classification"] = now
-        candidates, _ = service._candidates(run.universe, run.envelope, raw, market=market, now=now, include_flow=False)
+        # Order flow is read here as it is for every request, so a row is classified on the evidence it would be sent with.
+        candidates, _ = service._candidates(run.universe, run.envelope, raw, market=market, now=now, include_flow=True)
         refused = market.refused if market is not None else frozenset()
         kept: dict[str, dict[str, Any]] = {}
         maybe: list[str] = []
@@ -418,7 +460,7 @@ class ScreenerAiCoverage:
         from .screener_news_evidence import attach_news, fit_news
 
         service = self.service
-        raw = [run.rows[key] for key in instrument_ids]
+        raw = self._current_rows(run, instrument_ids)
         news = service._news_for(run.universe, raw, refresh=True)
         market, market_reason = service._market(run.universe, raw, acquire=True)
         now = _iso(service._clock())
@@ -452,13 +494,18 @@ class ScreenerAiCoverage:
                     "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total,
                     "instrument_ids": submitted, "evidence_cutoff": now, "planned_tokens": planned_tokens,
                     "request_started_at": _iso(service._clock())})
-                with relabelled(stage, batch=index + 1, batches_planned=total, round=round_number):
+                position = {"batch": index + 1, "batches_planned": total} if first_pass else {"group": index + 1, "groups": total}
+                with relabelled(stage, round=round_number, **position):
                     if run.hold:
                         with drawing_from_hold(run.run_id, planned_tokens):
                             result = self._reducer.reduce(run.scope, keep, now)
                     else:
                         result = self._reducer.reduce(run.scope, keep, now)
-                run.calls += 1
+                # A request answered from the reducer's cache was not sent again and is not counted as a model call.
+                if result.get("cache") == "HIT":
+                    run.cache_hits += 1
+                else:
+                    run.calls += 1
                 if result["state"] not in _ANSWERED:
                     failure = str(result.get("reason") or result["state"])
         except ValueError as exc:
@@ -466,6 +513,10 @@ class ScreenerAiCoverage:
                 raise
             submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
             failure = "EVIDENCE_PACKET_BOUND_EXCEEDED"
+            # The request was announced and never sent: close its receipt so it is not read as an unknown outcome.
+            self.ledger().append(run.run_id, "batch", {
+                "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total, "outcome": "NOT_SENT",
+                "state": "FAILED", "reason": failure, "evidence_cutoff": now, "instrument_ids": submitted, "dropped": dropped, "selected": []})
         picks = (result or {}).get("candidates", []) if failure is None else []
         if result is not None:
             if result.get("cache") == "MISS":
@@ -485,7 +536,10 @@ class ScreenerAiCoverage:
                 "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in picks]})
         if first_pass:
             for key, value in dropped.items():
-                run.classes[key] = (value[0], list(value[1]))
+                # Eligible when classified, not sendable at this request: an eligible row the model never saw. It is
+                # unprocessed, with the reason it could not be sent, and the run cannot be complete.
+                reasons = list(value[1]) if value[0] == UNPROCESSED else [f"{value[0]}_AT_REQUEST_CUTOFF", *value[1]]
+                run.classes[key] = (UNPROCESSED, reasons)
             if failure is None:
                 for key in submitted:
                     run.classes[key] = (AI_EVALUATED, [])
@@ -493,6 +547,9 @@ class ScreenerAiCoverage:
                 run.finalists.extend({"instrument_id": pick["instrument_id"], "batch": index + 1, "rank_in_batch": pick["rank"],
                                       "rationale": pick["rationale"], "evidence_cutoff": now,
                                       "valid_until": result["valid_until"]} for pick in picks)
+        else:
+            run.excluded_finalists.extend({"instrument_id": key, "round": round_number, "class": value[0], "reasons": list(value[1]),
+                                           "evidence_cutoff": now} for key, value in dropped.items())
         return {"result": result if failure is None else None, "failure": failure, "submitted": submitted, "dropped": dropped}
 
     @staticmethod
@@ -514,6 +571,10 @@ class ScreenerAiCoverage:
             run.hold = False
 
     def _record_rows(self, run: _Run, phase: str) -> None:
+        if phase == "FINAL":
+            if run.final_rows_recorded:
+                return
+            run.final_rows_recorded = True
         rows = [[key, *run.classes[key]] for key in run.order if key in run.classes]
         for index, group in enumerate(chunks(rows, ROWS_PER_RECORD)):
             self.ledger().append(run.run_id, "rows", {"phase": phase, "part": index, "rows": group})
@@ -524,7 +585,8 @@ class ScreenerAiCoverage:
         reconciled = bool(run.enumeration.get("complete")) and reconciles(counts, run.universe_count or 0)
         planned = (run.plan or {}).get("batches_planned", 0)
         coverage_complete = reconciled and counts["unprocessed"] == 0 and run.batches_completed == planned \
-            and status not in (FAILED, STOPPED, ENUMERATION_FAILED, BUDGET_INSUFFICIENT, PROVISIONAL_PARTIAL_COVERAGE, INTERRUPTED)
+            and status not in (FAILED, STOPPED, ENUMERATION_FAILED, BUDGET_INSUFFICIENT, PROVISIONAL_PARTIAL_COVERAGE, INTERRUPTED,
+                               EVIDENCE_PROVIDER_UNAVAILABLE)
         eligible_now = counts["evaluated"] + counts["unprocessed"]
         return {
             "method_version": METHOD_VERSION, "method_name": METHOD_NAME, "coverage_run_id": run.run_id,
@@ -534,8 +596,12 @@ class ScreenerAiCoverage:
             "ai_evaluated_count": counts["evaluated"],
             "ai_coverage_pct": round(100 * counts["evaluated"] / eligible_now, 2) if eligible_now else None,
             "batches_planned": planned, "batches_completed": run.batches_completed, "model_calls": run.calls,
+            "answers_from_cache": run.cache_hits,
             "plan": run.plan, "reduction": {"rounds_planned": len((run.plan or {}).get("reduction_rounds_planned", [])),
-                                           "rounds_completed": run.rounds_completed},
+                                           "rounds_completed": run.rounds_completed,
+                                           # Finalists whose evidence was no longer admissible when a comparison was due.
+                                           "finalists_excluded": run.excluded_finalists[:MAX_EXCLUDED_LISTED],
+                                           "finalists_excluded_count": len(run.excluded_finalists)},
             "finalist_count": len({item["instrument_id"] for item in run.finalists}),
             "budget": {**run.budget, "tokens_input": run.tokens_input, "tokens_output": run.tokens_output},
             "coverage_complete": coverage_complete, "selection_complete": coverage_complete and status in SELECTION_COMPLETE,
@@ -554,15 +620,24 @@ class ScreenerAiCoverage:
             block["reduction_run_id"] = final["run_id"]
             # Stored under this run's own id: the reducer's request id stays on the receipt as reduction_run_id.
             record = {**final, "run_id": "CU-" + run.run_id[:40], "universe_coverage": block}
+            if run.excluded_finalists:
+                record["limitations"] = [*record.get("limitations", []), f"{len(run.excluded_finalists)} batch finalist(s) had no admissible "
+                                         "current evidence when the final comparison was made and were not compared."]
             repository = self._repository
             if repository is None:
                 from ..local_state.action_decisions import action_repository
 
                 repository = action_repository()
             report_stage("STORED")
-            repository.put("candidate_run", record["run_id"], record)
-            result = {**record, "schema_version": RESULT_SCHEMA_VERSION, **common}
-        else:
+            try:
+                repository.put("candidate_run", record["run_id"], record)
+            except ValueError as exc:
+                # The final record could not be stored (for example it exceeds the store's bound): nothing is actionable.
+                final, status, reason = None, FAILED, str(exc)
+                block = self._block(run, status, reason)
+            else:
+                result = {**record, "schema_version": RESULT_SCHEMA_VERSION, **common}
+        if not (status == GLOBAL_SELECTION_COMPLETE and final is not None and block["selection_complete"]):
             if status == GLOBAL_SELECTION_COMPLETE:
                 # Never label a run complete that the accounting says is not.
                 status, block["status"], block["reason"] = PROVISIONAL_PARTIAL_COVERAGE, PROVISIONAL_PARTIAL_COVERAGE, "ACCOUNTING_INCOMPLETE"
@@ -583,17 +658,22 @@ class ScreenerAiCoverage:
             "account_id": run.account_id, "status": status, "reason": block["reason"], "finished_at": now,
             "candidate_run_id": result["run_id"] if status == GLOBAL_SELECTION_COMPLETE else None,
             "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in result["candidates"]],
-            "provisional": result.get("provisional", []), "universe_coverage": block, "scope": run.scope or None})
+            # Identities only, bounded: rationales stay in the per-request receipts and the returned result.
+            "provisional": [{key: item[key] for key in ("instrument_id", "batch", "rank_in_batch")}
+                            for item in result.get("provisional", [])[:MAX_TERMINAL_FINALISTS]],
+            "provisional_count": len(result.get("provisional", [])),
+            "universe_coverage": {key: value for key, value in block.items() if key != "plan"}, "scope": run.scope or None})
         run.terminal = result
         return result
 
 
-def interrupt_open_runs(ledger: Any, *, tracked: set[str], release: Callable[[str], Any], clock: Callable[[], float] = time.time) -> list[str]:
+def interrupt_open_runs(ledger: Any, *, tracked: Any, release: Callable[[str], Any], clock: Callable[[], float] = time.time) -> list[str]:
     """Close runs a previous process left open. Nothing is resumed: quote evidence older than a minute cannot
     be reused, so a new Run is a new run. A call left without an outcome stays charged; only the part of the
     run's hold that was never reserved is released."""
     closed = []
     for run_id in ledger.open_runs():
+        # Asked per run, at the moment of closing it: a run that started while this loop ran is never closed.
         if run_id in tracked:
             continue
         head = ledger.records(run_id, "run")[0]
@@ -617,6 +697,6 @@ def interrupt_open_runs(ledger: Any, *, tracked: set[str], release: Callable[[st
     return closed
 
 
-__all__ = ["BUDGET_INSUFFICIENT", "COMPLETE_NO_SELECTION", "EMPTY_UNIVERSE", "ENUMERATION_FAILED", "FAILED",
+__all__ = ["BUDGET_INSUFFICIENT", "COMPLETE_NO_SELECTION", "EMPTY_UNIVERSE", "ENUMERATION_FAILED", "EVIDENCE_PROVIDER_UNAVAILABLE", "FAILED",
            "GLOBAL_SELECTION_COMPLETE", "INTERRUPTED", "NO_ELIGIBLE_ROWS", "PROVISIONAL_PARTIAL_COVERAGE",
            "SELECTION_COMPLETE", "STOPPED", "ScreenerAiCoverage", "interrupt_open_runs"]

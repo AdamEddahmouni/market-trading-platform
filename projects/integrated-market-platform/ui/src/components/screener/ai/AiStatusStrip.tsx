@@ -22,6 +22,7 @@ const REASONS: Record<string, string> = {
   PROVISIONAL_PARTIAL_COVERAGE: "the run did not finish, so the universe was not fully searched",
   UNIVERSE_ENUMERATION_FAILED: "the Screener result could not be read completely",
   STOPPED: "stopped by the operator before it finished",
+  EVIDENCE_PROVIDER_UNAVAILABLE: "the quote source returned nothing, so no row could be assessed",
   SYNTHESIS_RUN_HOLD_EXHAUSTED: "a request outgrew the budget held for this run",
 };
 export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ? `${REASONS[code]} (${code})` : code;
@@ -119,7 +120,8 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
     {start.isError && <p className="ai-strip-error" role="alert">Could not start a run.<ErrorDetail error={start.error} /></p>}
     {stop.isError && <p className="ai-strip-error" role="alert">Could not stop automatic passes.</p>}
     {stopRun.isError && <p className="ai-strip-error" role="alert">Could not stop the run.<ErrorDetail error={stopRun.error} /></p>}
-    {data && !data.active && interrupted && <p className="ai-strip-error">{coverageStatusText(interrupted.status ?? "INTERRUPTED")} · {interrupted.calls_completed ?? 0} model {interrupted.calls_completed === 1 ? "call" : "calls"} had finished{interrupted.unknown_provider_outcomes ? ` · ${interrupted.unknown_provider_outcomes} had no recorded outcome and ${interrupted.unknown_provider_outcomes === 1 ? "stays" : "stay"} charged` : ""}. Nothing was resumed.</p>}
+    {/* Shown until a later run has finished: after that the latest pass is the news. */}
+    {data && !data.active && !data.latest && interrupted && <p className="ai-strip-error">{coverageStatusText(interrupted.status ?? "INTERRUPTED")} · {interrupted.calls_completed ?? 0} model {interrupted.calls_completed === 1 ? "call" : "calls"} had finished{interrupted.unknown_provider_outcomes ? ` · ${interrupted.unknown_provider_outcomes} had no recorded outcome and ${interrupted.unknown_provider_outcomes === 1 ? "stays" : "stay"} charged` : ""}. Nothing was resumed.</p>}
     <div className="ai-strip-actions">
       {data?.active && <button type="button" disabled={stopRun.isPending || data.active.stop_requested === true} onClick={() => stopRun.mutate(data.active!.run_id)}
         title="No further model call starts. A call already sent is not cancelled and its tokens stay charged; finished batches are kept as provisional.">{data.active.stop_requested ? "Stopping…" : "Stop run"}</button>}
