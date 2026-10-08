@@ -76,14 +76,17 @@ function refsFor(selection: { supporting_refs: string[]; conflicting_refs: strin
 
 export default function AiScreenerPanel({ api }: { api: any }) {
   const visible = usePanelVisible(api);
-  const { screenerScope, openInstrument, openNews, actions } = useSelection();
+  const { screenerScope: baseScope, openInstrument, openNews, actions } = useSelection();
+  const [method, setMethod] = useState<NonNullable<AiScreenerScope['method']>>('EXHAUSTIVE_EXISTING');
+  const experimental = method === 'STAGED_LOCAL_FIRST_EXPERIMENTAL';
+  const screenerScope = { ...baseScope, ...(experimental ? { method } : {}) };
   const scopeKey = keyFor(screenerScope);
   const [aiOverride, setAiOverride] = useState<AiStatus | null>(null);
   // The run lives on the server: this panel only reads it, so closing the panel or reloading the page loses nothing.
   const { runs, start, stop } = useAiScreenerRuns(visible);
   const questionKey = aiScopeKey(screenerScope);
   const active = runs.data?.active ?? null;
-  const latest = runs.data?.latest ?? null;
+  const latest = (experimental ? runs.data?.experimental_latest : runs.data?.latest) ?? null;
   // A result is drawn only under the Screener query it answered.
   const mine = latest && aiScopeKey(latest.scope) === questionKey ? latest : null;
   const detail = useAiScreenerRunResult(mine);
@@ -100,7 +103,7 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   // cache identity, so a previous run's lifecycles are never drawn under a new rank list.
   const runId = value?.run_id ?? null;
   const lifecycles = useQuery({ queryKey: ["screener-trade-lifecycles", runId], queryFn: ({ signal }) => tradeLifecycles(runId, signal),
-    enabled: visible, refetchInterval: visible ? 15_000 : false, staleTime: 5_000, retry: false });
+    enabled: visible && !experimental, refetchInterval: visible && !experimental ? 15_000 : false, staleTime: 5_000, retry: false });
   const estimate = preview.data?.estimate;
   const status = ai?.state ?? "UNAVAILABLE";
   const evidence = useMemo(() => new Map((value?.evidence ?? []).flatMap((candidate) => [
@@ -108,8 +111,11 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   ].map((item) => [item.evidence_id, item] as const))), [value]);
   const run = () => start.mutate(screenerScope);
   return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
+    <label>Screener method <select aria-label="Screener method" value={method} disabled={running} onChange={(e) => setMethod(e.target.value as typeof method)}><option value="EXHAUSTIVE_EXISTING">Exhaustive existing</option><option value="STAGED_LOCAL_FIRST_EXPERIMENTAL">Local-first experimental</option></select></label>
+    {experimental && <PanelMessage tone="warn">Experimental method unapproved. Local qualification precedes the entire premium pool budget check. Results have no Action Decision or Paper submission authority.</PanelMessage>}
+    {experimental && preview.data?.staged && <p>Local model {String(preview.data.staged.local_model.model_id ?? "unavailable")} · readiness {String(preview.data.staged.local_model.state)} · method {preview.data.staged.method_version}</p>}
     <div className="ai-screener-toolbar">
-      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · a run assesses every matched row and sends each eligible row to the model{preview.data ? ` in batches of up to ${preview.data.max_intake}` : " in bounded batches"}</p></div>
+      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · {experimental ? "every eligible row receives a local assessment; unresolved cases advance to premium review" : "a run assesses every matched row and sends each eligible row to the model in batches of up to " + (preview.data?.max_intake ?? 50)}</p></div>
       {ai && <EngineChoice ai={ai} fit={preview.data?.engine_fit ?? []} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
     </div>
     <p className="ai-screener-meta">View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "Unsaved"} · search {screenerScope.search || "all"} · sort {screenerScope.sort} {screenerScope.descending ? "descending" : "ascending"} · result set {screenerScope.result_set ?? "unavailable"} · filters {JSON.stringify(screenerScope.filters)}</p>
@@ -132,28 +138,29 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       title="No further model call starts. A call already sent is not cancelled and its tokens stay charged.">{active.stop_requested ? "Stopping after the call in flight…" : "Stop run"}</button>}
     {stop.isError && <PanelMessage tone="error" role="alert">Could not stop the run.<ErrorDetail error={stop.error} /></PanelMessage>}
     {active && start.data?.joined && start.data.run_id === active.run_id && <PanelMessage>Joined the run already in progress; no second run was started.</PanelMessage>}
-    {active && aiScopeKey(active.scope) !== questionKey && <PanelMessage tone="warn">This run answers a different Screener scope ({active.scope.universe}). One run at a time per account.</PanelMessage>}
+    {active && aiScopeKey(active.scope) !== questionKey && <PanelMessage tone="warn">This run answers a different Screener scope ({active.scope.universe}, method {active.scope.method ?? "EXHAUSTIVE_EXISTING"}). One run at a time per account.</PanelMessage>}
     {!active && mine?.state === "FAILED" && <PanelMessage tone="error" role="alert">AI Screener run failed{mine.error?.stage ? ` while ${(STAGE_LABEL[mine.error.stage] ?? mine.error.stage).toLowerCase()}` : ""}{mine.error ? ` · ${mine.error.code}` : ""}. No result was recorded. Retry explicitly.</PanelMessage>}
     {!active && latest && !mine && <PanelMessage>The latest run answered a different Screener scope ({latest.scope.universe}). Run AI Screener to answer this one.</PanelMessage>}
     {mine?.state === "COMPLETED" && detail.isError && <PanelMessage tone="error" role="alert">The result of the latest run is no longer held by the server. Rerun AI Screener.<ErrorDetail error={detail.error} /></PanelMessage>}
-    {screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
-    {lifecycles.data && <LifecycleBoundary list={lifecycles.data} />}
-    {lifecycles.isError && <PanelMessage tone="error" role="alert">Trade lifecycle is unavailable; positions, fills and P&amp;L are not shown here.<ErrorDetail error={lifecycles.error} /></PanelMessage>}
+    {!experimental && screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
+    {!experimental && lifecycles.data && <LifecycleBoundary list={lifecycles.data} />}
+    {!experimental && lifecycles.isError && <PanelMessage tone="error" role="alert">Trade lifecycle is unavailable; positions, fills and P&amp;L are not shown here.<ErrorDetail error={lifecycles.error} /></PanelMessage>}
     {value && <section className="ai-screener-result" aria-label="AI Screener result">
       {value.universe_coverage && <CoverageSummary coverage={value.universe_coverage} />}
       {value.universe_coverage && mine && <CoverageReceipts runId={mine.run_id} />}
-      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} rows sent to the model{value.universe_coverage ? "" : " (single-request method: only the head of the sorted result was read)"} · {value.simulated ? "SOFTWARE_CONTROLLED fixture" : value.runtime} · valid until {value.valid_until}</p>
+      {value.staged && <section aria-label="Experimental accounting"><p>{value.staged.status} · approval {value.staged.approval_status} · local coverage {value.staged.local_coverage_complete ? "complete" : "incomplete"} · accounting {value.staged.reconciled ? "reconciled" : "incomplete"}</p>{Object.entries(value.staged.counters).map(([name, count]) => <p key={name}>{name.replace(/_/g, " ")}: {count}</p>)}<details><summary>Whole premium pool budget plan and model lineage</summary><pre>{JSON.stringify({ budget: value.staged.premium_plan, local: value.staged.local_model, premium: value.staged.premium_model }, null, 2)}</pre></details></section>}
+      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} {value.staged ? "local assessments" : "rows sent to the model"}{value.universe_coverage || value.staged ? "" : " (single-request method: only the head of the sorted result was read)"} · {value.simulated ? "SOFTWARE_CONTROLLED fixture" : value.runtime} · valid until {value.valid_until}</p>
       <p className="ai-screener-meta">{value.state} · {value.provider_id} · {value.model_id} · prompt {value.prompt_id} v{value.prompt_version} · cutoff {value.decision_cutoff} · {value.cache === "HIT" ? "cache hit" : `${value.latency_ms ?? "—"} ms`}</p>
       {mine && <p className="ai-screener-meta">Run took {(mine.elapsed_ms / 1000).toFixed(1)}s on the server{value.result_set && screenerScope.result_set && value.result_set !== screenerScope.result_set ? " · the Screener list has refreshed since; this result is as of its cutoff" : ""}.</p>}
       {value.state === "INCOMPLETE" ? <>
         <PanelMessage tone="warn" role="status">This run did not finish, so it is not a selection from the whole universe. {value.limitations.join(" ")}</PanelMessage>
         <ProvisionalFinalists result={value} />
-      </> : expired && (value.candidates.length > 0 || !value.universe_coverage) ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
+      </> : expired && (value.candidates.length > 0 || (!value.universe_coverage && !value.staged)) ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
         {value.candidates.length === 0 && <PanelMessage>{value.universe_coverage ? "The run finished and selected no candidate." : "No sufficiently grounded candidates were selected."} {value.limitations.join(" ")}</PanelMessage>}
         {value.candidates.map((selection) => {
-          const lifecycle = lifecycles.data?.run?.run_id === value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
+          const lifecycle = !experimental && lifecycles.data?.run?.run_id === value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
           const controls = <>
-          <ActionDecisionPanel key={`${value.run_id}|${selection.instrument_id}`} runId={value.run_id} instrumentId={selection.instrument_id} onChanged={() => void lifecycles.refetch()} />
+          {!value.staged && <ActionDecisionPanel key={`${value.run_id}|${selection.instrument_id}`} runId={value.run_id} instrumentId={selection.instrument_id} onChanged={() => void lifecycles.refetch()} />}
           <button type="button" onClick={() => openInstrument(selection.instrument_id)}>Open in Screener workflow</button>
           <details className="lifecycle-source"><summary>Source evidence and News detail from this run</summary>
           {(() => {
@@ -188,12 +195,12 @@ export default function AiScreenerPanel({ api }: { api: any }) {
           return lifecycle ? <LifecycleCard key={selection.instrument_id} lifecycle={lifecycle} runId={value.run_id}>{controls}</LifecycleCard>
             : <article className="ai-screener-candidate" key={selection.instrument_id}>
               <header><h3>#{selection.rank} {selection.instrument_id}</h3></header>
-              {!lifecycles.isError && <p role="status">Loading lifecycle…</p>}
+              {!experimental && !lifecycles.isError && <p role="status">Loading lifecycle…</p>}
               {controls}
             </article>;
         })}
       </>}
     </section>}
-    {lifecycles.data && <TradeLifecycleGroups list={lifecycles.data} runId={runId} />}
+    {!experimental && lifecycles.data && <TradeLifecycleGroups list={lifecycles.data} runId={runId} />}
   </PanelFrame>;
 }

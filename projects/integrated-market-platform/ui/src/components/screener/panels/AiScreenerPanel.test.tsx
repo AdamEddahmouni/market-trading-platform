@@ -80,6 +80,37 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
+
+  it("displays experimental accounting without decision or Paper controls", async () => {
+    const stagedResult = { ...result, schema_version: "screener-ai-staged-result/1.0.0", method: "STAGED_LOCAL_FIRST_EXPERIMENTAL",
+      operationally_approved: false, run_id: "LF-test", scope: { ...scope, method: "STAGED_LOCAL_FIRST_EXPERIMENTAL" },
+      candidates: [{ instrument_id: "EQ:TEST", rank: 1, rationale: "Controlled review case.", supporting_refs: [], conflicting_refs: [], weak_refs: [], missing_capabilities: [], uncertainties: [] }],
+      staged: { schema_version: "ai-screener-staged-accounting/1.0.0", method_version: "ai-screener-local-first/1.0.0", approval_status: "UNAPPROVED",
+        status: "STAGED_SELECTION_COMPLETE", reason: null, counters: { local_assessed: 4, advanced_to_premium: 1, final_selected: 1 },
+        primary_states: { FINAL_STAGED_SELECTION: 1, NOT_ADVANCED_BY_STAGED_METHOD: 3 }, reconciled: true, local_coverage_complete: true,
+        selection_complete: true, local_model: { model_id: "controlled-local" }, premium_model: { model_id: "controlled-premium" }, premium_plan: { feasible_under_current_limits: true } } } as AiScreenerResult;
+    const run = finishedRun(stagedResult);
+    mocks.runs.mockResolvedValue({ schema_version: "screener-ai-screener-runs/2.0.0", state: "IDLE", ai, budget: null, active: null, latest: null, experimental_latest: { ...run, result: null } });
+    mocks.detail.mockResolvedValue(run);
+    mocks.preview.mockResolvedValue(preview);
+    renderPanel();
+    fireEvent.change(await screen.findByLabelText("Screener method"), { target: { value: "STAGED_LOCAL_FIRST_EXPERIMENTAL" } });
+    expect(await screen.findByLabelText("Experimental accounting")).toHaveTextContent("UNAPPROVED");
+    expect(screen.queryByRole("button", { name: "Open decision assessment" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Prepare Paper/ })).not.toBeInTheDocument();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
+  it("requires an explicit experimental method and never runs when selected", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    renderPanel();
+    const method = await screen.findByLabelText("Screener method");
+    expect(method).toHaveValue("EXHAUSTIVE_EXISTING");
+    fireEvent.change(method, { target: { value: "STAGED_LOCAL_FIRST_EXPERIMENTAL" } });
+    expect(await screen.findByText(/Experimental method unapproved/)).toBeInTheDocument();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
+
   it.each(["CONFLICTING", "CONFIRMING", "MIXED", "UNKNOWN", "CONTEXT_ONLY"] as const)("displays deterministic %s independently of model prose and drills into News", async (alignment) => {
     mocks.preview.mockResolvedValue(preview);
     const openInstrument = vi.fn(); const openPanel = vi.fn(); const openNews = vi.fn();

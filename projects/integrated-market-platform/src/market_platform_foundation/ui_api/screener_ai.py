@@ -145,6 +145,9 @@ class ScreenerAiService:
     def _query(body: dict[str, Any]) -> dict[str, Any]:
         if not isinstance(body, dict):
             raise ValueError("INVALID_AI_SCREENER_SCOPE")
+        method = body.get("method", "EXHAUSTIVE_EXISTING")
+        if method not in ("EXHAUSTIVE_EXISTING", "STAGED_LOCAL_FIRST_EXPERIMENTAL"):
+            raise ValueError("INVALID_AI_SCREENER_METHOD")
         universe = body.get("universe")
         if not isinstance(universe, str):
             raise ValueError("INVALID_AI_SCREENER_SCOPE")
@@ -163,7 +166,7 @@ class ScreenerAiService:
         view, screen = body.get("view", "Overview"), body.get("screen", "")
         if not all(isinstance(value, str) and len(value) <= 120 for value in (view, screen)):
             raise ValueError("INVALID_AI_SCREENER_SCOPE")
-        return {"universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
+        return {**({"method": method} if method != "EXHAUSTIVE_EXISTING" else {}), "universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
                 "descending": descending, "filters": copy.deepcopy(filters), "result_set": result_set}
 
     def _packet(self, body: dict[str, Any], *, refresh_news: bool = False, include_flow: bool | None = None) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
@@ -273,11 +276,18 @@ class ScreenerAiService:
         return self._query(body)
 
     def preview(self, body: dict[str, Any]) -> dict[str, Any]:
+        method = self._query(body).get("method", "EXHAUSTIVE_EXISTING")
+        staged = None
+        if method == "STAGED_LOCAL_FIRST_EXPERIMENTAL":
+            from .screener_ai_staged import local_status
+            staged = {"method_version": "ai-screener-local-first/1.0.0", "approval_status": "UNAPPROVED",
+                      "local_model": local_status(), "premium_plan": None,
+                      "reason": "FULL_POOL_PLAN_AVAILABLE_AFTER_LOCAL_ASSESSMENT"}
         scope, candidates, now, page_meta = self._packet(body)
         ai = self._ai_status()
         reducer = self._provider_reducer()
         estimate = reducer.estimate(scope, candidates, now) if ai.get("state") == "AVAILABLE" else None
-        return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai, "scope": scope,
+        return {"schema_version": PREVIEW_SCHEMA_VERSION, "ai": ai, "scope": scope, **({"staged": staged} if staged else {}),
                 "matched_count": page_meta["matched_count"], "intake_count": len(candidates),
                 "max_intake": MAX_INTAKE, "estimate": estimate,
                 "evidence_summary": {"sufficient": sum(bool(item["sufficient"]) for item in candidates),
@@ -291,6 +301,8 @@ class ScreenerAiService:
                 "decision_cutoff": now, "result_set": page_meta["result_set"]}
 
     def run(self, body: dict[str, Any], *, refresh_news: bool = True) -> dict[str, Any]:
+        if self._query(body).get('method') == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
+            raise ValueError('STAGED_METHOD_REQUIRES_UNIVERSE_RUN')
         scope, candidates, now, page_meta = self._packet(body, refresh_news=refresh_news, include_flow=True)
         reducer = self._provider_reducer()
         result = reducer.reduce(scope, candidates, now)
@@ -309,6 +321,9 @@ class ScreenerAiService:
         passes use; it reads only the head of the sorted result and never claims coverage."""
         from .screener_ai_coverage import ScreenerAiCoverage
 
+        if body.get("method") == "STAGED_LOCAL_FIRST_EXPERIMENTAL":
+            from .screener_ai_staged import ScreenerAiStaged
+            return ScreenerAiStaged(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop)
         return ScreenerAiCoverage(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop)
 
     def release_hold(self, run_id: str) -> dict[str, int] | None:

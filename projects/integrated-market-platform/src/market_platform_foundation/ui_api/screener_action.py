@@ -99,7 +99,12 @@ class ScreenerActionService:
         started = time.perf_counter()
         if not isinstance(body,dict) or not {'run_id','instrument_id'} <= set(body) or set(body)-{'run_id','instrument_id','opportunity_id'} or any(not isinstance(v,str) or not v or len(v)>120 for v in body.values()):
             raise ValueError('INVALID_ACTION_REQUEST')
+        if body["run_id"].startswith("LF-"):
+            raise ValueError("EXPERIMENTAL_METHOD_UNAPPROVED")
         run = self.repository.get('candidate_run',body['run_id'])
+        if run and (run.get("method") == "STAGED_LOCAL_FIRST_EXPERIMENTAL" or
+                    run.get("staged") or str(run.get("method_version", "")).startswith("ai-screener-local-first/")):
+            raise ValueError("EXPERIMENTAL_METHOD_UNAPPROVED")
         if run is None: raise ValueError('CANDIDATE_RUN_NOT_FOUND')
         pick = next((p for p in run['candidates'] if p['instrument_id']==body['instrument_id']),None)
         original = next((p for p in run['evidence'] if p['instrument']['instrument_id']==body['instrument_id']),None)

@@ -64,6 +64,56 @@ def _call_name(node: ast.Call) -> str:
     return ".".join(reversed(parts))
 
 
+def _read_only_local_memory_bridge(relative: str, tree: ast.AST) -> bool:
+    """Audit the authorized Windows memory-only bridge; ctypes stays prohibited elsewhere."""
+    if relative != "intelligence/inference/local_resources.py":
+        return False
+    allowed = {
+        "ctypes.Structure", "ctypes.c_ulonglong", "ctypes.c_size_t", "ctypes.c_void_p",
+        "ctypes.sizeof", "ctypes.byref", "ctypes.windll", "ctypes.windll.kernel32",
+        "ctypes.windll.kernel32.GlobalMemoryStatusEx", "ctypes.windll.psapi",
+        "ctypes.windll.psapi.GetProcessMemoryInfo", "wintypes.DWORD", "wintypes.HANDLE",
+    }
+    parents = {child: node for node in ast.walk(tree) for child in ast.iter_child_nodes(node)}
+    namespaces = {"ctypes.windll", "ctypes.windll.kernel32", "ctypes.windll.psapi"}
+    for node in ast.walk(tree):
+        parent = parents.get(node)
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load):
+            if node.id in {"ctypes", "wintypes"} and not (isinstance(parent, ast.Attribute) and parent.value is node):
+                return False
+            if node.id == "query" and not (
+                isinstance(parent, ast.Call) and parent.func is node
+                or isinstance(parent, ast.Attribute) and parent.value is node and parent.attr == "argtypes"
+            ):
+                return False
+        if isinstance(node, ast.Import):
+            if any(a.name.startswith("ctypes") and (a.name != "ctypes" or a.asname) for a in node.names):
+                return False
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").startswith("ctypes"):
+            if node.module != "ctypes" or any(a.name != "wintypes" or a.asname for a in node.names):
+                return False
+        elif isinstance(node, ast.Attribute):
+            # Apply the same static member-name audit to data attributes and calls.
+            name = _call_name(ast.Call(func=node, args=[], keywords=[]))
+            if name.split(".", 1)[0] in {"ctypes", "wintypes"} and name not in allowed:
+                return False
+            if name in namespaces and not (isinstance(parent, ast.Attribute) and parent.value is node):
+                return False
+            if name in {"ctypes.windll.kernel32.GlobalMemoryStatusEx", "ctypes.windll.psapi.GetProcessMemoryInfo"}:
+                called = isinstance(parent, ast.Call) and parent.func is node
+                alias = (
+                    name == "ctypes.windll.psapi.GetProcessMemoryInfo" and isinstance(parent, ast.Assign)
+                    and parent.value is node and len(parent.targets) == 1
+                    and isinstance(parent.targets[0], ast.Name) and parent.targets[0].id == "query"
+                )
+                if not (called or alias):
+                    return False
+        elif isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name):
+            if node.value.id in {"ctypes", "wintypes"}:
+                return False
+    return True
+
+
 def analyze_tree(root: Path) -> dict[str, object]:
     root = root.resolve()
     paths = sorted(root.rglob("*.py"), key=lambda item: item.relative_to(root).as_posix())
@@ -107,7 +157,9 @@ def analyze_tree(root: Path) -> dict[str, object]:
                         graph.setdefault(module, set()).add(resolved)
                 imports.append({"path": relative, "target": resolved or target})
                 root_name = (resolved or target).split(".", 1)[0]
-                if root_name in _PROHIBITED_MODULE_ROOTS:
+                if root_name in _PROHIBITED_MODULE_ROOTS and not (
+                    root_name == "ctypes" and _read_only_local_memory_bridge(relative, tree)
+                ):
                     prohibited.append({"path": relative, "target": resolved or target})
             if not isinstance(node, ast.Call):
                 continue
