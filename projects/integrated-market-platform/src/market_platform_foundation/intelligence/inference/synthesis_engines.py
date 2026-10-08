@@ -63,6 +63,23 @@ def engine_models(engine: str, value: Value) -> list[tuple[str, str | None]]:
     return models
 
 
+def claude_model_contracts(models: list[str]) -> list[dict[str, Any]]:
+    """For each offered Claude model: its context window and whether it can run the AI Screener. Calls nothing."""
+
+    from .anthropic_models import CLAUDE_MODELS, contract_status
+    from .contracts import IntelligenceTaskType
+
+    rows = []
+    for model in models:
+        status = contract_status(model, IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION)
+        known = CLAUDE_MODELS.get(model)
+        rows.append({"model": model, "context_window": known.context_window if known else None,
+                     "ai_screener_compatible": status["supported"], "reason": status["reason"],
+                     "required_contract": status["required_contract"],
+                     "unsupported_capability": status["unsupported_capability"]})
+    return rows
+
+
 def local_model(value: Value, cache_dir: Path) -> tuple[str | None, str | None]:
     """(model id, None) for a configured local model, else (None, reason). Starts nothing."""
 
@@ -111,6 +128,8 @@ def engine_options(value: Value, cache_dir: Path) -> list[dict[str, Any]]:
             reason = None if configured else f"{spec.credential_env}_NOT_SET"
         options.append({"id": spec.engine, "label": spec.label, "runtime": spec.runtime, "models": models,
                         "default_model": models[0] if models else None, "context_window": context,
+                        # Stated only for Claude, whose request shape IMP records per model.
+                        "model_contracts": claude_model_contracts(models) if spec.engine == "anthropic" else None,
                         "state": "AVAILABLE" if reason is None else "NOT_CONFIGURED", "reason": reason})
     return options
 
@@ -189,4 +208,4 @@ class SynthesisSettings:
 
 
 __all__ = ["AUTO", "ENGINES", "ENGINE_SETTINGS_RELATIVE", "ENGINE_SPECS", "EngineSpec", "SynthesisSettings",
-           "engine_models", "engine_options", "local_context_window", "local_model"]
+           "claude_model_contracts", "engine_models", "engine_options", "local_context_window", "local_model"]

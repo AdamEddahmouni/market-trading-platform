@@ -262,6 +262,7 @@ class ScreenerAiService:
                                       "missing": sum(len(item["missing"]) for item in candidates),
                                       "weak": sum(len(item["weak"]) for item in candidates)},
                 "news_coverage": [{"instrument_id": c['instrument']['instrument_id'], **c.get('news', {})} for c in candidates],
+                "engine_contract": reducer.contract(),
                 "engine_fit": engine_fit(ai.get("engines") or [], input_tokens=estimate["input_tokens"] if estimate else None,
                                          output_tokens=reducer.config.max_tokens),
                 "decision_cutoff": now, "result_set": page_meta["result_set"]}

@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
+from market_platform_foundation.intelligence.inference.anthropic_models import THINKING_HEADROOM  # noqa: E402
 from market_platform_foundation.intelligence.inference.anthropic_synthesis import (  # noqa: E402
     BUDGET_RELATIVE, DEFAULT_MODEL, TOOL_NAME, AnthropicSynthesisProvider, BudgetedProvider, DailyBudget,
     build_paid_provider,
@@ -105,15 +106,17 @@ class RequestShapeTests(unittest.TestCase):
                 for value in schema: check(value)
         check(tool['input_schema'])
 
-    def test_forced_schema_tool_current_model_and_bounded_output(self):
+    def test_schema_tool_current_model_and_bounded_output(self):
         transport = FakeClaude(tool_input=lambda ids: grounded(ids))
         _, synth = paid(transport)
         result = run(synth)
         self.assertEqual((result["state"], result["runtime"], result["model_id"]), ("CURRENT", "PAID_API", DEFAULT_MODEL))
         url, body, headers, timeout = transport.requests[0]
         self.assertEqual(DEFAULT_MODEL, "claude-sonnet-5-5")
-        self.assertEqual((body["temperature"], body["max_tokens"], timeout), (0, 2048, 45.0))
-        self.assertEqual(body["tool_choice"], {"type": "tool", "name": TOOL_NAME})
+        # The default model rejects an explicit temperature and a forced tool call, and reasons before it answers.
+        self.assertNotIn("temperature", body)
+        self.assertEqual((body["max_tokens"], timeout), (2048 + THINKING_HEADROOM, 45.0))
+        self.assertEqual(body["tool_choice"], {"type": "auto", "disable_parallel_tool_use": True})
         refs = body["tools"][0]["input_schema"]["properties"]["observed_facts"]["items"]["properties"]["refs"]["items"]
         self.assertEqual(refs["enum"], ["s1", "s2", "s3"])                     # refs limited to the packet
         self.assertEqual((headers["x-api-key"], headers["anthropic-version"]), ("test-key", "2023-06-01"))

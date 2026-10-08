@@ -6550,3 +6550,35 @@ prevented deployment during RTH; October 7 was finalized at its fixed 20:00Z
 cutoff with zero decisions/trades, insufficient evidence and matching source
 and metric reproduction. Later deployment must remain outside that closed
 prospective epoch. Protected CI owns affected suites and mandatory invariants.
+
+## 2026-10-07 — AI candidate wire and Claude request compatibility closure
+
+PR483 shipped a flat schema with packet-global evidence indices under prompt
+v2, which still told the model to list `weak_refs` and `missing_capabilities`
+that the schema no longer had. The provider also sent every Claude model one
+body: temperature 0 and a forced tool call, which Sonnet 5.5 (the default) and
+Opus 5.5 reject with a 400 for every task. Replace global indices with
+candidate-local ones (`ai-screener-wire/3.0.0`), so no wire value can name
+another instrument's evidence; decode exactly, then run the unchanged canonical
+validator; record the decode or validation stage of a rejection. Add prompt v3
+for this wire with a field-list regression against the schema and packet; v1
+and v2 are untouched. Build Claude requests from one capability table
+(`anthropic_models.py`); refuse a model with no known request shape with
+`MODEL_REQUEST_CONTRACT_UNSUPPORTED` before any request, never substituting
+another; reject a reply without the tool call. Add a free token-count
+preflight built from the same request. The stored result shape, thresholds,
+intake bound, Paper, Action Decision, reevaluation and SMA are unchanged. The
+October 7 Haiku request is byte-identical. See
+[SCREENER_AI_CANDIDATE_REDUCTION.md](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md).
+
+Provider diagnostics on the controlled 50-candidate packet (319,719 bytes),
+recorded in `artifacts/ai-screener-provider-contract-closure.json`: the exact
+request counts 120,235 input tokens on Haiku 4.5 and 177,826 on Sonnet 5.5 and
+Opus 5.5; the schema is accepted and its grammar compiles on all three. The
+two superseded schemas fail as they did live (complex constants refused;
+per-instrument branches counted, then refused as too large to compile). Both
+5.5 models refuse the old forced tool call and temperature. The probes billed
+3,494 input tokens and one output token; no candidate generation ran, so the
+reasoning headroom, the 45-second timeout on the reasoning models and
+end-to-end output on any model remain unmeasured. The 50-row intake is NOT
+closure of the full-universe blind-spot issue.

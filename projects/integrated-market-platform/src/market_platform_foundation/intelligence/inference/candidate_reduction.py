@@ -22,6 +22,8 @@ from .screener_synthesis import unsupported_certainty
 
 PROMPT_ID = 'screener.ai_candidate_reduction.v3'
 SCHEMA_VERSION = 'ai-screener-output/1.0.0'
+# The provider wire (packet indices in, compact picks out). The stored result stays SCHEMA_VERSION.
+WIRE_SCHEMA_VERSION = 'ai-screener-wire/3.0.0'
 MAX_INTAKE = 50
 MAX_SELECTED = 5
 MAX_PACKET_BYTES = 320000
@@ -296,6 +298,7 @@ class CandidateReducer:
                 return [stable(v) for v in value]
             return value
         material = dict(scope=scope, candidates=stable(candidates), prompt_hash=prompt.content_hash,
+                        wire_schema_version=WIRE_SCHEMA_VERSION,
                         output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                         provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None))
         digest = input_hash_from_dict(material)
@@ -305,6 +308,11 @@ class CandidateReducer:
             raise ValueError('EVIDENCE_PACKET_BOUND_EXCEEDED')
         rendered = prompt.template.replace('{{evidence_json}}', encoded).replace('{{output_schema}}', json.dumps(output_schema(candidates)))
         return digest, rendered, prompt, len(encoded.encode('utf-8'))
+
+    def contract(self):
+        """Whether the selected engine's model can carry this task's request contract; None where it states none."""
+        check = getattr(self.provider, 'request_contract', None)
+        return check(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION) if callable(check) else None
 
     def estimate(self, scope, candidates, now):
         digest, rendered, _, size = self._prepare(scope, candidates, now)
@@ -326,6 +334,7 @@ class CandidateReducer:
                     scope=scope, provider_id=getattr(self.provider, 'provider_id', None), model_id=getattr(self.provider, 'model_id', None),
                     runtime=getattr(self.provider, 'runtime', 'PAID_API') if self.provider else None,
                     prompt_id=prompt.prompt_id, prompt_version=prompt.version, prompt_hash=prompt.content_hash,
+                    wire_schema_version=WIRE_SCHEMA_VERSION,
                     output_schema_hash=input_hash_from_dict(output_schema(candidates)),
                     input_hash=digest, packet_bytes=size, evidence=candidates, candidates=[], limitations=[], cache='MISS', simulated=False,
                     valid_until=datetime.fromtimestamp(expiry, UTC).isoformat().replace('+00:00', 'Z'),
@@ -333,6 +342,11 @@ class CandidateReducer:
                                   blocked_items=sum(len(c['blocked']) for c in candidates), missing_items=sum(len(c['missing']) for c in candidates)))
         if self.provider is None:
             return {**base, 'state': 'NOT_CONFIGURED', 'reason': self.reason}
+        contract = self.contract()
+        if contract is not None and not contract['supported']:
+            # Refused before any reservation or request. The selected model stays on the receipt; nothing replaces it.
+            return {**base, 'state': 'UNAVAILABLE', 'reason': contract['reason'],
+                    'compatibility': {k: contract[k] for k in ('selected_model', 'required_contract', 'unsupported_capability')}}
         if not any(c['sufficient'] for c in candidates):
             return {**base, 'state': 'NO_GROUNDED_CANDIDATES', 'reason': 'INSUFFICIENT_EVIDENCE', 'limitations': ['No admissible current price plus additional strong evidence.']}
         with self.lock:

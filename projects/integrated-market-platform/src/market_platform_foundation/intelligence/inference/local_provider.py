@@ -312,7 +312,8 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
     """Provider priority: the operator's ``engine`` (UI choice), else ``IMP_SYNTHESIS_PROVIDER``
     (local | anthropic | openai | gemini), else Anthropic when its key is configured, else a configured local model.
     A missing paid key never disables local synthesis in automatic mode. ``model`` must be in the engine's catalog
-    (``synthesis_engines``); anything else falls back to the engine's default."""
+    (``synthesis_engines``). A Claude model outside the catalog selects no provider: it is never replaced by the
+    default. For OpenAI and Gemini anything else still falls back to the engine's default."""
 
     from ...local_state.external_cache import read_manifest
     from .synthesis_engines import engine_models
@@ -324,9 +325,12 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
             from .anthropic_synthesis import build_paid_provider
 
             offered = [item[0] for item in engine_models("anthropic", value)]
+            if model and model not in offered:
+                return SynthesisSelection(None, "SYNTHESIS_MODEL_NOT_IN_CATALOG", None)
             # Key from the same source that selected it (env or private provider file), behind the daily budget.
-            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir,
-                                                          model=model if model in offered else None), None, "PAID_API")
+            # With no model chosen, the catalog's first entry: IMP_SYNTHESIS_ANTHROPIC_MODEL when set, else the default.
+            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir, model=model or offered[0]),
+                                      None, "PAID_API")
         return SynthesisSelection(anthropic_factory(), None, "PAID_API")
     if choice == "anthropic":
         return SynthesisSelection(None, "ANTHROPIC_API_KEY_NOT_SET", None)
