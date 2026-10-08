@@ -140,6 +140,30 @@ class RequestShapeTests(unittest.TestCase):
 
 
 class BudgetTests(unittest.TestCase):
+    def test_failed_budget_persistence_blocks_reservation_before_generation(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            budget = DailyBudget(Path(directory) / "quota.json", clock=Clock())
+            with patch("market_platform_foundation.local_state.external_cache.write_json_atomic", side_effect=OSError("fixture")):
+                with self.assertRaises(OSError):
+                    budget.reserve(1000)
+
+    def test_engine_switch_instances_share_releases_and_spent_usage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "quota.json"
+            clock = Clock()
+            first = DailyBudget(path, max_tokens=10000, clock=clock)
+            self.assertTrue(first.hold("run", requests=4, tokens=8000)["held"])
+            second = DailyBudget(path, max_tokens=10000, clock=clock)
+            self.assertIsNone(first.reserve(1000, hold="run"))
+            first.settle(1000, 700, 50)
+            first.release("run")
+            self.assertEqual(second.status()["held_tokens"], 0)
+            self.assertEqual(second.status()["tokens"], 750)
+            self.assertIsNone(second.reserve(2000))
+            self.assertEqual(first.status()["tokens"], 2750)
+            self.assertEqual(first.status()["requests"], 2)
+
     def test_request_limit_refuses_before_any_network_call(self):
         transport = FakeClaude(tool_input=lambda ids: grounded(ids))
         clock = Clock()

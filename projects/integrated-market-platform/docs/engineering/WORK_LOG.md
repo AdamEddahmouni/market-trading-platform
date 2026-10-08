@@ -34,6 +34,18 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-07 — Full-universe Screener final defect closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `in-progress` until final validation and protected integration recorded in the acceptance receipt |
+| **Area** | AI Screener completeness, budget, persistence and restart diagnostics |
+| **Summary** | Retrieved the original independent review. Finalists excluded from global comparison now block a completed selection. Candidate publication and the terminal receipt roll back together. Budget instances reload shared usage and releases, local-engine recovery releases paid holds, and failed reservation persistence blocks generation. Completed selection reads survive tracker restart. Provider-count context overflow and Stop during the final in-flight request cannot publish a completed selection. |
+| **Key files** | `screener_ai_coverage.py`, `screener_ai_runs.py`, `screener_ai.py`, `anthropic_synthesis.py`, `ai_screener_coverage.py`, `action_decisions.py`, associated regression tests and acceptance tool |
+| **Tests** | Red/green controlled regressions; final exact-source totals and original failed-run disposition are recorded in `artifacts/ai-screener-full-universe-acceptance.json`. Original UI source validation remains applicable because UI source is unchanged by these closure fixes. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md) |
+| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. |
+
 ## 2026-10-07 — AI Screener full-universe coverage, bounded batches and global selection
 
 | Field | Value |

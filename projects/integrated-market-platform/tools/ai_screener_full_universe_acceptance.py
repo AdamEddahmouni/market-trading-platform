@@ -107,6 +107,8 @@ def scale(sizes: list[int]) -> list[dict]:
         rows_out.append({
             "universe_rows": size, "status": block["status"], "enumeration_pages": block["enumeration"].get("pages"),
             "assessed": block["assessed_count"], "eligible": block["eligible_count"], "ai_evaluated": counts["evaluated"],
+            "primary_row_states": {key: counts[key] for key in ("evaluated", "ineligible", "evidence_blocked", "unprocessed")},
+            "classification_counts": counts["by_class"],
             "reconciled": block["reconciled"], "coverage_complete": block["coverage_complete"],
             "selection_complete": block["selection_complete"], "batches_planned": block["batches_planned"],
             "batches_completed": block["batches_completed"], "batch_rows_max": (block["plan"] or {}).get("batch_rows_max"),
@@ -324,6 +326,23 @@ def failure_injection() -> dict:
     result, _, _, _, repository = run_controlled(support.universe(40, strong={7: 90.0}), provider, clock=lambda: ticks[0])
     cases["final_answer_outlived_its_evidence"] = outcome(result, provider, {
         "candidate_run_stored": repository.get("candidate_run", "CU-" + result["run_id"]) is not None})
+    from tests.platform.test_screener_ai_coverage import ClockReader
+    ticks = [support.NOW]
+    provider = support.RankingProvider()
+    provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 35), provider.respond(packet))[1]
+    clock = lambda: ticks[0]
+    reader = ClockReader(support.universe(100, strong={5: 90.0, 99: 95.0}), clock, frozen=(99,))
+    result, _, _, _, repository = run_controlled([], provider, reader=reader, clock=clock)
+    cases["finalist_excluded_at_global_cutoff"] = outcome(result, provider, {
+        "candidate_run_stored": repository.get("candidate_run", "CU-" + result["run_id"]) is not None,
+        "excluded_finalists": result["universe_coverage"]["reduction"]["finalists_excluded_count"]})
+
+    stop = [False]
+    provider = support.RankingProvider()
+    provider.on_call = lambda call, packet: (stop.__setitem__(0, True), provider.respond(packet))[1]
+    result, _, _, _, repository = run_controlled(support.universe(40, strong={39: 95.0}), provider, should_stop=lambda: stop[0])
+    cases["stop_during_final_inflight_call"] = outcome(result, provider, {
+        "candidate_run_stored": repository.get("candidate_run", "CU-" + result["run_id"]) is not None})
     return cases
 
 
@@ -394,7 +413,7 @@ def gates(scale_rows, replay, budget, failures, validation) -> dict:
         and failures["eligible_rows_stale_before_their_request"]["ai_coverage_pct"] == 50.0
         and not failures["final_answer_outlived_its_evidence"]["candidate_run_stored"]
         and failures["final_answer_outlived_its_evidence"]["reason"] == "FINAL_SELECTION_EXPIRED_DURING_INFERENCE"
-        else passed("temporal"),
+        else "FAIL",
         "G12_cross_instrument_reference_isolation": "PASS" if failures["malformed_candidate_reference"]["reason"] == "BATCH_FAILED:WIRE_REFERENCE_INDEX_INVALID" else "FAIL",
         "G13_batch_order_bias_controlled": passed("fairness"),
         "G14_intermediate_candidates_never_final": "PASS" if not failures["provider_failure_mid_scan"]["candidate_run_stored"] and not failures["global_reduction_failure"]["candidate_run_stored"] and failures["global_reduction_failure"]["provisional_finalists"] == 3 else "FAIL",
@@ -436,6 +455,7 @@ def build(probe: bool, validation: dict | None) -> dict:
         "packet_composition": packet_composition(),
         "LIVE_RTH_ACCEPTANCE": "NOT_OBSERVED: no prospective or live-market session was run for this feature",
         "validation": validation or "NOT_RUN_BY_THIS_TOOL",
+        "independent_review": (validation or {}).get("independent_review", "NOT_SUPPLIED"),
         "gates": gates(scale_rows, replay, budget, failures, validation),
         "remaining_limitations": [
             "Under the default shared allowance (200,000 tokens, 30 requests per UTC day) an unfiltered multi-thousand-row "
@@ -447,7 +467,7 @@ def build(probe: bool, validation: dict | None) -> dict:
             "45 seconds (300 for a local model), so a slow engine will end runs as partial; that is reported, not hidden.",
             "For a universe with no bulk snapshot source (futures, bonds, crypto) a request is only as fresh as the quotes the "
             "Screener already serves for those rows.",
-            "The candidate run is written before the ledger's terminal record; the two writes are not one transaction.",
+            "Quota-file locking coordinates instances in one serving process; independent servers sharing a quota file are not supported.",
             "Per-instrument news providers are cache-only during a run; rows outside those caches carry shared-source news only.",
             "Automatic reevaluation passes keep the single-request method and never claim coverage.",
             "Selection is the documented tournament of bounded comparisons made by the configured model. It is not a ranking "

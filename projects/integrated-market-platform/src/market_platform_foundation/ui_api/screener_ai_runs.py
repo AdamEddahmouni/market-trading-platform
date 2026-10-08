@@ -171,7 +171,45 @@ class AiScreenerRuns:
         """One of this account's tracked runs, with its full result once finished."""
         with self._lock:
             run = self._runs.get(run_id)
-            return self._snapshot(run) if run is not None and run["account_id"] == account_id else None
+            if run is not None:
+                return self._snapshot(run) if run["account_id"] == account_id else None
+        return self._restored(account_id, run_id=run_id)
+
+    def _restored(self, account_id: str, *, run_id: str | None = None, result: bool = True) -> dict[str, Any] | None:
+        """Read a completed selection after restart from its immutable parent and candidate receipts.
+
+        No inference, budget changes or recovery writes occur. Incomplete runs remain available
+        through coverage receipts; they cannot be reconstructed as stored candidate selections.
+        """
+        if not callable(getattr(self._service(), "run_universe", None)):
+            return None
+        from ..local_state.ai_screener_coverage import coverage_ledger
+        from ..local_state.action_decisions import action_repository
+        from .screener_ai import SCHEMA_VERSION
+
+        ledger = coverage_ledger()
+        terminal = ledger.terminal(run_id) if run_id is not None else ledger.latest_terminal(account_id)
+        if not terminal or terminal.get("account_id") != account_id or terminal.get("status") != "GLOBAL_SELECTION_COMPLETE":
+            return None
+        run_id = run_id or terminal["run_id"]
+        head = ledger.records(run_id, "run")[0]
+        record = action_repository().get("candidate_run", terminal["candidate_run_id"])
+        if record is None:
+            return None
+        block = record["universe_coverage"]
+        restored = {**record, "schema_version": SCHEMA_VERSION, "scope": terminal["scope"],
+                    "matched_count": block["universe_count"], "intake_count": block["ai_evaluated_count"],
+                    "max_intake": head["limits"]["max_batch_rows"], "result_set": terminal["scope"]["result_set"]}
+        elapsed = (datetime.fromisoformat(terminal["finished_at"].replace("Z", "+00:00"))
+                   - datetime.fromisoformat(head["started_at"].replace("Z", "+00:00"))).total_seconds()
+        return {"schema_version": RUN_SCHEMA, "run_id": run_id, "account_id": account_id, "state": "COMPLETED", "joined": False,
+                "scope": head["query"], "stage": None, "stage_order": list(STAGES), "stages": [],
+                "started_at": head["started_at"], "finished_at": terminal["finished_at"], "elapsed_ms": round(elapsed * 1000),
+                "engine": {key: head.get(key) for key in ("provider_id", "model_id", "runtime")},
+                "timeout_seconds": self._service().engine()["timeout_seconds"], "typical_latency_ms": None, "typical_latency_samples": 0,
+                "intake_count": block["ai_evaluated_count"], "sufficient_count": block["eligible_count"], "packet_bytes": record["packet_bytes"],
+                "progress": {}, "stop_requested": False, "stop_requested_at": None, "summary": _summary(restored),
+                "result": restored if result else None, "error": None}
 
     def stop(self, account_id: str, run_id: str) -> dict[str, Any] | None:
         """Ask this account's run to start no further model call. A call already sent finishes and stays charged;
@@ -230,7 +268,7 @@ class AiScreenerRuns:
             return {"schema_version": RUNS_SCHEMA, "state": state,
                     "ai": {key: ai.get(key) for key in ("state", "reason", "provider_id", "model_id", "runtime")}, "budget": budget,
                     "active": self._snapshot(active, result=False) if active is not None else None,
-                    "latest": self._snapshot(latest, result=False) if latest is not None else None,
+                    "latest": self._snapshot(latest, result=False) if latest is not None else self._restored(account_id, result=False),
                     "interrupted": interrupted}
 
     def _budget(self, ai: dict[str, Any]) -> dict[str, Any] | None:

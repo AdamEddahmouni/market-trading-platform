@@ -71,6 +71,8 @@ DEFAULT_BYTES_PER_TOKEN = 1.5
 HOLD_IDLE_SECONDS = 900
 # The run hold a model call on this thread draws from: (run id, tokens planned for this call).
 _HOLD: ContextVar[tuple[str, int] | None] = ContextVar("imp_synthesis_budget_hold", default=None)
+_BUDGET_LOCKS: dict[str, threading.RLock] = {}
+_BUDGET_LOCKS_LOCK = threading.Lock()
 
 Poster = Callable[[str, bytes, dict[str, str], float], tuple[int, bytes]]
 
@@ -130,7 +132,11 @@ class DailyBudget:
         self.max_requests = max(0, int(max_requests))
         self.max_tokens = max(0, int(max_tokens))
         self._clock = clock
-        self._lock = threading.Lock()
+        # Engine switches construct new instances for the same account budget. Serialize their
+        # read/modify/write operations and reload under that lock before using persisted state.
+        with _BUDGET_LOCKS_LOCK:
+            self._lock = (_BUDGET_LOCKS.setdefault(str(path.resolve()), threading.RLock())
+                          if path is not None else threading.RLock())
         self._state = self._load()
 
     def _today(self) -> str:
@@ -147,6 +153,8 @@ class DailyBudget:
         return state
 
     def _rolled(self) -> dict[str, Any]:
+        if self._path is not None:
+            self._state = self._load()
         today = self._today()
         if self._state.get("day") != today:
             # A hold belongs to the day it was placed on: a run that crosses midnight finds none and stops.
@@ -171,10 +179,9 @@ class DailyBudget:
             return
         from ...local_state.external_cache import write_json_atomic
 
-        try:
-            write_json_atomic(self._path, {**self._state, "max_requests": self.max_requests, "max_tokens": self.max_tokens})
-        except OSError:
-            pass  # the in-memory count still enforces the limit for this process
+        # A reservation that cannot be persisted must not permit a paid call. A failed
+        # settlement leaves the previously persisted worst-case reservation charged.
+        write_json_atomic(self._path, {**self._state, "max_requests": self.max_requests, "max_tokens": self.max_tokens})
 
     def _used(self, state: dict[str, Any]) -> int:
         return (int(state.get("input_tokens", 0)) + int(state.get("output_tokens", 0))

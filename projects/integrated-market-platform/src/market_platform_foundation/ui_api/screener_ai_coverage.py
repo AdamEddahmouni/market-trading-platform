@@ -245,6 +245,9 @@ class ScreenerAiCoverage:
                          rows_evaluated=run.submitted)
         run.timings["batch_inference_ms"] = (time.perf_counter() - mark) * 1000
 
+        if should_stop():
+            return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
+
         if any(name == UNPROCESSED for name, _ in run.classes.values()):
             # Every planned call ran, but a row that could not be sent (too large, thinned below sufficiency) remains.
             return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "ELIGIBLE_ROWS_NOT_SUBMITTED")
@@ -273,9 +276,15 @@ class ScreenerAiCoverage:
                 final = outcome["result"]
                 admitted = admitted or bool(outcome["submitted"])
                 winners.extend(pick["instrument_id"] for pick in (final or {}).get("candidates", []))
+            if should_stop():
+                return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             run.rounds_completed = number
             self.ledger().append(run.run_id, "round", {"round": number, "calls": len(groups), "entrants": len(pool), "advanced": len(winners)})
             report_stage("GLOBAL_REDUCTION", round=number, finalists=len(winners))
+            if run.excluded_finalists and admitted:
+                # Required finalists were not compared. Neither a winner nor an abstention
+                # from the remaining subset is a completed global selection.
+                return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF")
             if not winners:
                 run.timings["global_reduction_ms"] = (time.perf_counter() - mark) * 1000
                 if not admitted:
@@ -296,7 +305,9 @@ class ScreenerAiCoverage:
                                   "rationale": pick["rationale"], "evidence_cutoff": final["decision_cutoff"],
                                   "valid_until": final["valid_until"]} for pick in final.get("candidates", [])] or run.finalists
             return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "FINAL_SELECTION_EXPIRED_DURING_INFERENCE")
-        return self._terminal(run, GLOBAL_SELECTION_COMPLETE, "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF" if run.excluded_finalists else None, final=final)
+        if run.excluded_finalists:
+            return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF")
+        return self._terminal(run, GLOBAL_SELECTION_COMPLETE, final=final)
 
     def _current_rows(self, run: _Run, instrument_ids: list[str]) -> list[dict[str, Any]]:
         """These rows as the Screener serves them now, so a request's row evidence is not older than the request.
@@ -424,7 +435,9 @@ class ScreenerAiCoverage:
                 measured = {key: check.get(key) for key in ("accepted", "input_tokens", "context_window", "context_fit", "reason")}
                 measured["estimated_input_tokens"] = batches[0]["input_tokens"]
                 tokens = check.get("input_tokens")
-                if check.get("accepted") and isinstance(tokens, int) and tokens > batches[0]["input_tokens"]:
+                if check.get("context_fit") is False:
+                    rejected = str(check.get("reason") or "PROVIDER_CONTEXT_EXCEEDED")
+                elif check.get("accepted") and isinstance(tokens, int) and tokens > batches[0]["input_tokens"]:
                     # The estimate was under the provider's count: raise every batch by the same ratio plus a margin.
                     factor = tokens / batches[0]["input_tokens"] * 1.05
                     measured["plan_scaled_by"] = round(factor, 4)
@@ -584,7 +597,7 @@ class ScreenerAiCoverage:
         # Every enumerated row is in exactly one bucket, or the run is not complete whatever else happened.
         reconciled = bool(run.enumeration.get("complete")) and reconciles(counts, run.universe_count or 0)
         planned = (run.plan or {}).get("batches_planned", 0)
-        coverage_complete = reconciled and counts["unprocessed"] == 0 and run.batches_completed == planned \
+        coverage_complete = reconciled and not run.excluded_finalists and counts["unprocessed"] == 0 and run.batches_completed == planned \
             and status not in (FAILED, STOPPED, ENUMERATION_FAILED, BUDGET_INSUFFICIENT, PROVISIONAL_PARTIAL_COVERAGE, INTERRUPTED,
                                EVIDENCE_PROVIDER_UNAVAILABLE)
         eligible_now = counts["evaluated"] + counts["unprocessed"]
@@ -615,28 +628,18 @@ class ScreenerAiCoverage:
         now = _iso(service._clock())
         common = {"scope": run.scope or None, "matched_count": run.universe_count or 0, "intake_count": run.submitted,
                   "max_intake": MAX_INTAKE, "result_set": (run.scope or {}).get("result_set")}
+        repository = record = None
         if status == GLOBAL_SELECTION_COMPLETE and final is not None and block["selection_complete"]:
             block["selected_count"] = len(final["candidates"])
             block["reduction_run_id"] = final["run_id"]
             # Stored under this run's own id: the reducer's request id stays on the receipt as reduction_run_id.
             record = {**final, "run_id": "CU-" + run.run_id[:40], "universe_coverage": block}
-            if run.excluded_finalists:
-                record["limitations"] = [*record.get("limitations", []), f"{len(run.excluded_finalists)} batch finalist(s) had no admissible "
-                                         "current evidence when the final comparison was made and were not compared."]
             repository = self._repository
             if repository is None:
                 from ..local_state.action_decisions import action_repository
 
                 repository = action_repository()
-            report_stage("STORED")
-            try:
-                repository.put("candidate_run", record["run_id"], record)
-            except ValueError as exc:
-                # The final record could not be stored (for example it exceeds the store's bound): nothing is actionable.
-                final, status, reason = None, FAILED, str(exc)
-                block = self._block(run, status, reason)
-            else:
-                result = {**record, "schema_version": RESULT_SCHEMA_VERSION, **common}
+            result = {**record, "schema_version": RESULT_SCHEMA_VERSION, **common}
         if not (status == GLOBAL_SELECTION_COMPLETE and final is not None and block["selection_complete"]):
             if status == GLOBAL_SELECTION_COMPLETE:
                 # Never label a run complete that the accounting says is not.
@@ -654,7 +657,7 @@ class ScreenerAiCoverage:
                 **common}
         if run.classes:
             self._record_rows(run, "FINAL")
-        self.ledger().append(run.run_id, "terminal", {
+        terminal = {
             "account_id": run.account_id, "status": status, "reason": block["reason"], "finished_at": now,
             "candidate_run_id": result["run_id"] if status == GLOBAL_SELECTION_COMPLETE else None,
             "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in result["candidates"]],
@@ -662,7 +665,15 @@ class ScreenerAiCoverage:
             "provisional": [{key: item[key] for key in ("instrument_id", "batch", "rank_in_batch")}
                             for item in result.get("provisional", [])[:MAX_TERMINAL_FINALISTS]],
             "provisional_count": len(result.get("provisional", [])),
-            "universe_coverage": {key: value for key, value in block.items() if key != "plan"}, "scope": run.scope or None})
+            "universe_coverage": {key: value for key, value in block.items() if key != "plan"}, "scope": run.scope or None}
+        try:
+            self.ledger().finalize(run.run_id, terminal, repository=repository, candidate=record)
+        except ValueError as exc:
+            if record is None:
+                raise
+            return self._terminal(run, FAILED, str(exc))
+        if record is not None:
+            report_stage("STORED")
         run.terminal = result
         return result
 

@@ -203,8 +203,9 @@ fresh evidence, and compared with the same request contract in groups of up to
 50. Winners advance until one group remains; that group's answer is the final
 0 to 5. A finalist whose evidence is no longer sufficient at the comparison
 cutoff is not sent and is named in `reduction.finalists_excluded`; a selection
-made without it carries the reason `FINALISTS_EXCLUDED_AT_FINAL_CUTOFF` and a
-limitation saying so. If no finalist is admissible the run is
+made without it cannot be final. The run ends `PROVISIONAL_PARTIAL_COVERAGE`
+with `FINALISTS_EXCLUDED_AT_FINAL_CUTOFF`, preserves the named exclusions and
+completed batch receipts, and stores no actionable candidate run. If no finalist is admissible the run is
 `PROVISIONAL_PARTIAL_COVERAGE` (`NO_FINALIST_ADMISSIBLE_AT_FINAL_CUTOFF`):
 nothing was compared. If the final answer arrives after the evidence it cites
 has expired, it is not a selection: the run is `PROVISIONAL_PARTIAL_COVERAGE`
@@ -263,7 +264,8 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
 - **Stop.** `POST /screener/ai-screener/runs/{run_id}/stop` (`state.write`).
   No further request starts. A request already sent is not claimed cancelled:
   the provider offers no confirmed cancellation, so it finishes, is recorded
-  and stays charged. Finished receipts are kept; the unused hold is released.
+  and stays charged. Stop is checked again after the last batch or comparison
+  request, before finalization. Finished receipts are kept; the unused hold is released.
 - **Client disconnect.** The run lives on the server; a reloaded page
   re-attaches.
 - **Restart.** Receipts are appended to the coverage ledger
@@ -274,6 +276,15 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
   it `INTERRUPTED`; a request with no recorded outcome is listed as an unknown
   provider outcome and stays charged; only the never-reserved part of the hold
   is released.
+- **Engine switch.** Instances using the same persisted budget serialize their
+  operations and reload the current file before using it. A local-engine selection
+  still releases an interrupted paid run's shared hold. Failed reservation
+  persistence blocks generation; a failed settlement retains the persisted
+  worst-case reservation. These locks coordinate one serving process, not
+  multiple independent servers sharing the same quota file.
+- **Completed restart reads.** A completed selection is read from its immutable
+  candidate and parent terminal receipts after restart, with account isolation.
+  Partial and interrupted receipts remain diagnostic records, never selections.
 - **Orphaned hold.** A hold nobody has drawn from for 900 seconds lapses. A
   live run draws at least once per request, and a request times out in at most
   300 seconds, so only a hold whose run is gone (a crash with no ledger, or an
@@ -323,10 +334,10 @@ without an Action Decision. No new workspace exists.
 - Per-instrument news is cache-only during a run.
 - Automatic reevaluation passes keep the single-request method.
 - No run is resumed after a restart.
-- The candidate run is written before the ledger's terminal record. If the
-  terminal write then failed, a stored selection would exist beside a run
-  later closed as interrupted. The terminal record is bounded to make that
-  failure unlikely; it is not transactional.
+- Candidate publication and the terminal receipt commit together in the shared
+  local-state transaction; a failure leaves no actionable candidate. Controlled
+  in-memory stores provide the same rollback behavior. Store locks follow the
+  connection lock to avoid conflict with concurrent Action Decision writes.
 - A tail batch or a split batch has fewer rows competing for the same five
   finalist slots. Order is unbiased; competition per batch is not perfectly
   equal.
@@ -335,3 +346,13 @@ without an Action Decision. No new workspace exists.
   only as fresh as the Screener's own quotes for those rows.
 - The preview still describes only the first batch-sized slice of the sorted
   result; it is labelled as such. The run's own plan is the authoritative cost.
+
+## Final defect-closure evidence
+
+The acceptance receipt includes the original independent-review identifiers
+F1–F11 and P1–P3, source-bound regression results, recovered failed validation
+and its subsequent disposition. F1 and F2 regressions reject the preserved
+pre-fix source; F3 finalist exclusions, F6 shared holds and F9 atomic publication
+are explicitly covered. Controlled final-call Stop and provider-count context
+overflow are additional closure regressions. Historical October 7 failures are
+retained unchanged.

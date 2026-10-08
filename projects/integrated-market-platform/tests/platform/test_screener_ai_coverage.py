@@ -195,6 +195,22 @@ class FairnessTests(unittest.TestCase):
 
 
 class EligibilityTests(unittest.TestCase):
+    def test_native_order_flow_can_supply_the_existing_second_evidence_gate(self):
+        from unittest.mock import patch
+        from market_platform_foundation.market_data.freshness_contract import evaluate
+
+        item = row(0)
+        item["fields"] = {"price": item["fields"]["price"]}
+        status = evaluate(capability="ORDER_FLOW", source="IMP_TEST", delivery_mode="REALTIME", now="2026-10-02T15:00:00Z",
+                          as_of="2026-10-02T15:00:00Z", stale_after_ms=60000, policy="L1_EVENT_V1", basis="PROVIDER_AS_OF")
+        h = Harness([item])
+        with patch("market_platform_foundation.ui_api.screener_ai.flow_observation", return_value=[("ORDER_FLOW", status, {"net_signed_volume": 1000}, [])]):
+            h.run()
+        self.assertEqual((h.block["eligible_count"], h.block["ai_evaluated_count"]), (1, 1))
+        self.assertEqual(h.provider.seen, [[instrument_id(0)]])
+        self.assertEqual(h.calls()[0]["packet_bytes"], h.block["plan"]["packet_bytes_max"])
+        self.assertTrue(h.block["selection_complete"])
+
     def test_missing_stale_and_future_evidence_is_reported_and_never_sent(self):
         rows = universe(120, strong={119: 90.0})
         rows[0] = row(0, price=None)                                    # no price observation at all
@@ -300,22 +316,27 @@ class TemporalTests(unittest.TestCase):
         self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
 
     def test_rows_are_read_again_for_every_request_so_a_long_run_does_not_age_out_its_own_evidence(self):
-        ticks = [NOW]
-        provider = RankingProvider()
-        provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 50), provider.respond(packet))[1]
-        clock = lambda: ticks[0]
-        h = Harness([], provider, clock=clock, reader=ClockReader(universe(200, strong={199: 95.0}), clock))
-        h.run()
-        # Five requests fifty seconds apart, 200 seconds in all against a 60-second quote policy: every request saw
-        # rows observed at its own cutoff, where rows kept from enumeration would have expired by the third.
-        self.assertEqual(provider.calls, 5)
-        self.assertEqual((h.block["status"], h.block["ai_evaluated_count"]), ("GLOBAL_SELECTION_COMPLETE", 200))
-        self.assertTrue(h.block["coverage_complete"])
-        self.assertEqual(h.selected(), [instrument_id(199)])
-        for call in h.calls():
-            self.assertEqual(call["dropped"], {})
+        for universe_name, asset_class in (("US_EQUITIES", "EQUITY"), ("FUTURES", "FUTURE"),
+                                           ("BONDS", "FIXED_INCOME"), ("CRYPTO", "CRYPTO")):
+            with self.subTest(universe=universe_name):
+                ticks = [NOW]
+                provider = RankingProvider()
+                provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 50), provider.respond(packet))[1]
+                clock = lambda: ticks[0]
+                rows = universe(200, strong={199: 95.0})
+                for item in rows:
+                    item["instrument"].update(universe=universe_name, asset_class=asset_class)
+                h = Harness([], provider, clock=clock, reader=ClockReader(rows, clock))
+                h.run(scope={**SCOPE, "universe": universe_name})
+                # Five requests over 200 seconds with a 60-second quote policy: every request
+                # must read current source clocks, including assets without a bulk quote source.
+                self.assertEqual(provider.calls, 5)
+                self.assertEqual((h.block["status"], h.block["ai_evaluated_count"]), ("GLOBAL_SELECTION_COMPLETE", 200))
+                self.assertTrue(h.block["coverage_complete"])
+                self.assertEqual(h.selected(), [instrument_id(199)])
 
-    def test_a_finalist_stale_at_the_final_comparison_is_excluded_and_the_result_says_so(self):
+
+    def test_a_finalist_stale_at_the_final_comparison_blocks_a_completed_selection(self):
         ticks = [NOW]
         provider = RankingProvider()
         provider.on_call = lambda call, packet: (ticks.__setitem__(0, ticks[0] + 35), provider.respond(packet))[1]
@@ -324,14 +345,14 @@ class TemporalTests(unittest.TestCase):
         h = Harness([], provider, clock=clock, reader=ClockReader(universe(100, strong={5: 90.0, 99: 95.0}), clock, frozen=(99,)))
         h.run()
         self.assertEqual(provider.calls, 3)
-        self.assertEqual((h.block["status"], h.block["reason"]), ("GLOBAL_SELECTION_COMPLETE", "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF"))
-        self.assertEqual(h.selected(), [instrument_id(5)])
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "FINALISTS_EXCLUDED_AT_FINAL_CUTOFF"))
+        self.assertEqual(h.selected(), [])
+        self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+        self.assertEqual(h.result["state"], "INCOMPLETE")
         excluded = h.block["reduction"]["finalists_excluded"]
         self.assertEqual([(item["instrument_id"], item["class"]) for item in excluded], [(instrument_id(99), "EVIDENCE_STALE")])
         self.assertEqual(h.block["reduction"]["finalists_excluded_count"], 1)
-        self.assertTrue(any("1 batch finalist(s) had no admissible" in text for text in h.result["limitations"]))
-        stored = action_repository().get("candidate_run", h.result["run_id"])
-        self.assertEqual(stored["universe_coverage"]["reduction"]["finalists_excluded_count"], 1)
+        self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
         self.assertNotIn(instrument_id(99), provider.seen[-1])
 
     def test_no_finalist_admissible_at_the_final_comparison_is_not_a_completed_selection(self):
@@ -522,6 +543,21 @@ class FailureTests(unittest.TestCase):
 
 
 class StopTests(unittest.TestCase):
+    def test_stop_during_the_last_inflight_call_prevents_finalization(self):
+        for size, final_call in ((40, 1), (120, 4)):
+            with self.subTest(size=size):
+                stop = [False]
+                provider = RankingProvider()
+                provider.on_call = lambda call, packet: (stop.__setitem__(0, call == final_call), provider.respond(packet))[1]
+                h = Harness(universe(size, strong={size - 1: 95.0}), provider)
+                h.run(should_stop=lambda: stop[0])
+                self.assertEqual(provider.calls, final_call)
+                self.assertEqual(h.block["status"], "STOPPED")
+                self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+                self.assertEqual(h.result["candidates"], [])
+                self.assertIsNone(action_repository().get("candidate_run", "CU-" + h.run_id))
+                self.assertEqual(len(h.calls()), final_call)
+
     def test_stop_prevents_the_next_call_and_keeps_completed_receipts(self):
         stop = [False]
         provider = RankingProvider()
@@ -540,18 +576,27 @@ class StopTests(unittest.TestCase):
     def test_a_long_stopped_run_with_hundreds_of_finalists_still_writes_one_terminal_and_one_row_account(self):
         stop = [False]
         provider = RankingProvider()
-        provider.on_call = lambda call, packet: (stop.__setitem__(0, call >= 50), provider.respond(packet))[1]
-        h = Harness(universe(3000, strong={index: 80.0 + index % 17 for index in range(3000)}), provider)
+        def on_call(call, packet):
+            import json
+            from dataclasses import replace
+            stop[0] = call >= 90
+            response = provider.respond(packet)
+            payload = json.loads(response.raw_text)
+            for pick in payload["candidates"]:
+                pick["rationale"] = "Candidate for controlled review. " * 34
+            return replace(response, raw_text=json.dumps(payload))
+        provider.on_call = on_call
+        h = Harness(universe(4600, strong={index: 80.0 + index % 17 for index in range(4600)}), provider)
         h.run(should_stop=lambda: stop[0])
         terminal = h.ledger.terminal(h.run_id)
         self.assertEqual(terminal["status"], "STOPPED")
         self.assertEqual(h.ledger.open_runs(), [])
-        self.assertEqual(len(h.result["provisional"]), 250)
-        self.assertEqual((terminal["provisional_count"], len(terminal["provisional"])), (250, 250))
+        self.assertEqual(len(h.result["provisional"]), 450)
+        self.assertEqual((terminal["provisional_count"], len(terminal["provisional"])), (450, 450))
         self.assertNotIn("rationale", terminal["provisional"][0])
         self.assertNotIn("plan", terminal["universe_coverage"])
         final_rows = [item for part in h.ledger.records(h.run_id, "rows") if part["phase"] == "FINAL" for item in part["rows"]]
-        self.assertEqual(len(final_rows), 3000)
+        self.assertEqual(len(final_rows), 4600)
 
     def test_stop_before_the_first_call_spends_nothing(self):
         h = Harness(universe(120))
@@ -733,6 +778,13 @@ class BudgetTests(unittest.TestCase):
         self.assertEqual(rejected.budget.status()["tokens"], 0)
         reconciled(self, rejected.block, 160)
 
+        context_refused = self.budgeted(rows, max_tokens=10 ** 12, inner=Counted(lambda size: {
+            "accepted": True, "input_tokens": size, "context_window": 1, "context_fit": False, "reason": "ANTHROPIC_CONTEXT_EXCEEDED"}))
+        context_refused.run()
+        self.assertEqual((context_refused.block["status"], context_refused.block["reason"]), ("FAILED", "ANTHROPIC_CONTEXT_EXCEEDED"))
+        self.assertEqual(context_refused.inner.calls, 0)
+        self.assertEqual(context_refused.budget.status()["tokens"], 0)
+
         unreachable = self.budgeted(rows, max_tokens=10 ** 12, inner=Counted(lambda size: {
             "accepted": False, "input_tokens": None, "context_window": None, "context_fit": None, "reason": "ANTHROPIC_UNREACHABLE"}))
         unreachable.run()
@@ -740,6 +792,46 @@ class BudgetTests(unittest.TestCase):
 
 
 class RecoveryTests(unittest.TestCase):
+    def test_sqlite_candidate_and_terminal_roll_back_together(self):
+        import tempfile
+        from unittest.mock import patch
+        from market_platform_foundation.local_state.action_decisions import ActionDecisionRepository
+        from market_platform_foundation.local_state.connection import LocalStateConnection
+
+        with tempfile.TemporaryDirectory() as directory:
+            with LocalStateConnection(Path(directory) / "state.sqlite3") as connection:
+                ledger = CoverageLedger(connection)
+                repository = ActionDecisionRepository(connection)
+                ledger.append("atomic", "run", {"account_id": "PAPER-1"})
+                candidate = {"run_id": "CU-atomic", "candidates": []}
+                with patch.object(ledger, "append", side_effect=ValueError("CONTROLLED_TERMINAL_FAILURE")):
+                    with self.assertRaisesRegex(ValueError, "CONTROLLED_TERMINAL_FAILURE"):
+                        ledger.finalize("atomic", {"status": "GLOBAL_SELECTION_COMPLETE"}, repository=repository, candidate=candidate)
+                self.assertIsNone(repository.get("candidate_run", "CU-atomic"))
+                self.assertIsNone(ledger.terminal("atomic"))
+                ledger.finalize("atomic", {"status": "GLOBAL_SELECTION_COMPLETE"}, repository=repository, candidate=candidate)
+                self.assertEqual(repository.get("candidate_run", "CU-atomic"), candidate)
+                self.assertEqual(ledger.terminal("atomic")["status"], "GLOBAL_SELECTION_COMPLETE")
+
+    def test_terminal_write_failure_cannot_leave_an_actionable_candidate(self):
+        from unittest.mock import patch
+
+        h = Harness(universe(40, strong={7: 90.0}))
+        original = h.ledger.append
+        def append(run_id, kind, payload):
+            if kind == "terminal" and payload["status"] == "GLOBAL_SELECTION_COMPLETE":
+                raise ValueError("CONTROLLED_TERMINAL_FAILURE")
+            return original(run_id, kind, payload)
+        with patch.object(h.ledger, "append", side_effect=append):
+            try:
+                h.run()
+            except ValueError:
+                pass
+        self.assertFalse(action_repository().get("candidate_run", "CU-" + h.run_id) is not None)
+        self.assertEqual(h.ledger.terminal(h.run_id)["status"], "FAILED")
+        final_rows = [row for part in h.ledger.records(h.run_id, "rows") if part["phase"] == "FINAL" for row in part["rows"]]
+        self.assertEqual(len(final_rows), 40)
+
     def test_a_run_killed_mid_call_is_closed_as_interrupted_and_only_its_unused_hold_is_released(self):
         ledger = CoverageLedger()
         ledger.append("dead-run", "run", {"account_id": "PAPER-1", "method_version": METHOD_VERSION})

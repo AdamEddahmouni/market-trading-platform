@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import threading
+from contextlib import nullcontext
 from typing import Any
 
 from .paths import persistence_enabled
@@ -47,7 +48,7 @@ class CoverageLedger:
         encoded = json.dumps(payload, sort_keys=True, separators=(',', ':'), allow_nan=False)
         if len(encoded.encode('utf-8')) > MAX_RECORD_BYTES:
             raise ValueError('COVERAGE_RECORD_BOUND_EXCEEDED')
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             def insert():
                 existing = self._rows(run_id)
                 if kind in ('run', 'terminal') and any(row[2] == kind for row in existing):
@@ -66,8 +67,32 @@ class CoverageLedger:
                 insert()
 
     def records(self, run_id: str, kind: str | None = None) -> list[dict[str, Any]]:
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             return [{'seq': seq, 'kind': name, **json.loads(payload)} for _, seq, name, payload in self._rows(run_id, kind)]
+
+    def finalize(self, run_id: str, payload: dict[str, Any], *, repository=None, candidate=None) -> None:
+        """Commit the final candidate and its terminal receipt together, or leave neither.
+
+        Production repositories share the local-state connection. Controlled in-memory stores
+        receive the same rollback guarantee while both readers are excluded by their locks.
+        """
+        if candidate is None:
+            self.append(run_id, 'terminal', payload)
+            return
+        if repository.connection is not self.connection:
+            raise ValueError('COVERAGE_FINALIZATION_STORE_MISMATCH')
+        with self.connection._lock if self.connection else nullcontext(), self.lock, repository.lock:
+            memory = dict(repository._memory) if self.connection is None else None
+            records = list(self._memory) if self.connection is None else None
+            try:
+                with self.connection.transaction() if self.connection else nullcontext():
+                    repository.put('candidate_run', candidate['run_id'], candidate)
+                    self.append(run_id, 'terminal', payload)
+            except Exception:
+                if memory is not None:
+                    repository._memory = memory
+                    self._memory = records
+                raise
 
     def terminal(self, run_id: str) -> dict[str, Any] | None:
         found = self.records(run_id, 'terminal')
@@ -75,7 +100,7 @@ class CoverageLedger:
 
     def open_runs(self) -> list[str]:
         """Runs that began and never reached a terminal record."""
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             started = [row[0] for row in self._rows(kind='run')]
             ended = {row[0] for row in self._rows(kind='terminal')}
             return [run_id for run_id in started if run_id not in ended]
@@ -86,7 +111,7 @@ class CoverageLedger:
         return [item for item in self.records(run_id, 'batch_started') if item['call_id'] not in finished]
 
     def latest_terminal(self, account_id: str) -> dict[str, Any] | None:
-        with self.lock:
+        with self.connection._lock if self.connection else nullcontext(), self.lock:
             for run_id, _, _, payload in reversed(self._rows(kind='terminal')):
                 value = json.loads(payload)
                 if value.get('account_id') == account_id:

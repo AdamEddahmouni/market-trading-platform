@@ -49,6 +49,10 @@ def release_all(provider: GatedProvider, count: int = 50) -> None:
 
 class AiScreenerRunTests(unittest.TestCase):
     def setUp(self) -> None:
+        from market_platform_foundation.local_state.ai_screener_coverage import CoverageLedger
+        patcher = patch("market_platform_foundation.local_state.ai_screener_coverage._LEDGER", CoverageLedger())
+        patcher.start()
+        self.addCleanup(patcher.stop)
         self.ticks = [100.0]
         # 120 rows: three batches and one global comparison. The controlled-strong row is the last one.
         self.reader = PagingReader(universe(120, strong={119: 90.0}))
@@ -421,6 +425,33 @@ class StopAndRecoveryTests(unittest.TestCase):
         self.assertEqual((status["tokens"], status["requests"], status["held_tokens"]), (800 + 1100, 2, 0))
         self.assertEqual(ledger.terminal("killed-by-restart")["status"], "INTERRUPTED")
         self.assertEqual(runs.coverage("PAPER-7", "killed-by-restart")["unfinished_calls"][0]["call_id"], "BATCH_INFERENCE:0:0")
+
+    def test_a_new_tracker_reads_a_completed_selection_from_durable_receipts(self):
+        service = ScreenerAiService(reader=PagingReader(universe(120, strong={119: 90.0})), news=News(RankingProvider()), clock=lambda: NOW)
+        first = AiScreenerRuns(service, clock=lambda: NOW)
+        done = settled(first, "PAPER-restored", first.start("PAPER-restored", SCOPE)["run_id"])
+        second = AiScreenerRuns(service, clock=lambda: NOW)
+        latest = second.current("PAPER-restored")["latest"]
+        self.assertIsNotNone(latest)
+        self.assertEqual(latest["summary"], done["summary"])
+        restored = second.read("PAPER-restored", done["run_id"])
+        self.assertEqual(restored["result"]["candidates"], done["result"]["candidates"])
+        self.assertIsNone(second.read("wrong-account", done["run_id"]))
+        self.assertEqual(second.current("PAPER-restored")["interrupted"], [])
+
+    def test_local_engine_recovery_releases_the_shared_paid_budget(self):
+        import tempfile
+        from market_platform_foundation.intelligence.inference.anthropic_synthesis import BUDGET_RELATIVE
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory)
+            budget = DailyBudget(cache / BUDGET_RELATIVE)
+            budget.hold("orphaned-paid-run", requests=3, tokens=3000)
+            budget.reserve(800, hold="orphaned-paid-run")
+            service = ScreenerAiService(reader=PagingReader(universe(1)), news=News(RankingProvider()))
+            with patch("market_platform_foundation.local_state.external_cache.imp_cache_dir", return_value=cache):
+                self.assertEqual(service.release_hold("orphaned-paid-run"), {"requests": 2, "tokens": 2200})
+            self.assertEqual(budget.status()["tokens"], 800)
+            self.assertEqual(budget.status()["held_tokens"], 0)
 
     def test_recovery_never_closes_a_run_that_is_alive_in_this_process(self):
         provider = GatedProvider()

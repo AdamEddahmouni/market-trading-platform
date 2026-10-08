@@ -308,9 +308,17 @@ class ScreenerAiService:
         return ScreenerAiCoverage(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop)
 
     def release_hold(self, run_id: str) -> dict[str, int] | None:
-        """Return a dead run's unused budget hold. None for an engine with no budget."""
+        """Return a dead run's unused paid hold even if the selected engine is now local."""
         budget = getattr(self._provider_reducer().provider, 'budget', None)
-        return budget.release(run_id) if budget is not None else None
+        if budget is None:
+            from ..intelligence.inference.anthropic_synthesis import BUDGET_RELATIVE, DailyBudget
+            from ..local_state.external_cache import imp_cache_dir
+
+            path = imp_cache_dir() / BUDGET_RELATIVE
+            if not path.exists():
+                return None
+            budget = DailyBudget(path)
+        return budget.release(run_id)
 
 
 _SERVICE: ScreenerAiService | None = None
