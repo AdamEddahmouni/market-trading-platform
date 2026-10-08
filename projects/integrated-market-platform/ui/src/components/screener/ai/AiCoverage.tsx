@@ -58,7 +58,7 @@ export function ProvisionalFinalists({ result }: { result: AiScreenerResult }) {
   const finalists = result.provisional ?? [];
   if (!finalists.length) return null;
   return <section className="ai-coverage-provisional" aria-label="Provisional batch finalists">
-    <PanelMessage tone="warn">Provisional · {finalists.length} batch {finalists.length === 1 ? "finalist" : "finalists"} from the batches that finished. They were never compared globally and cannot be evaluated for action.</PanelMessage>
+    <PanelMessage tone="warn">Provisional · {finalists.length} batch {finalists.length === 1 ? "finalist" : "finalists"} from the batches that finished. This run did not finalize a global selection, so these finalists cannot be evaluated for action.</PanelMessage>
     <ul>{finalists.map((item) => <li key={`${item.batch}|${item.instrument_id}`}>{item.instrument_id} · batch {item.batch} rank {item.rank_in_batch} · evidence cutoff {item.evidence_cutoff}<br />{item.rationale}</li>)}</ul>
   </section>;
 }

@@ -278,7 +278,7 @@ describe("AI Screener panel", () => {
     expect(summary).toHaveTextContent("50 eligible but not processed");
     expect(screen.getByText(/This run did not finish, so it is not a selection from the whole universe\./)).toBeInTheDocument();
     const provisional = screen.getByRole("region", { name: "Provisional batch finalists" });
-    expect(provisional).toHaveTextContent("Provisional · 1 batch finalist from the batches that finished. They were never compared globally and cannot be evaluated for action.");
+    expect(provisional).toHaveTextContent("Provisional · 1 batch finalist from the batches that finished. This run did not finalize a global selection, so these finalists cannot be evaluated for action.");
     expect(provisional).toHaveTextContent("EQ:P · batch 1 rank 1");
     expect(screen.queryByRole("heading", { name: /#1/ })).toBeNull();
     expect(screen.queryByText("Evidence expired — rerun AI Screener.")).toBeNull();
