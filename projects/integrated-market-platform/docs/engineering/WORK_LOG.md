@@ -38,13 +38,13 @@ For large features, also add or update a completion note under `docs/superpowers
 
 | Field | Value |
 |-------|-------|
-| **Status** | `in-progress` until final validation and protected integration recorded in the acceptance receipt |
+| **Status** | `complete` (implementation, final local validation and observed protected CI; canonical integration verified separately after normal merge) |
 | **Area** | AI Screener completeness, budget, persistence and restart diagnostics |
 | **Summary** | Retrieved the original independent review. Finalists excluded from global comparison now block a completed selection. Candidate publication and the terminal receipt roll back together. Budget instances reload shared usage and releases, local-engine recovery releases paid holds, and failed reservation persistence blocks generation. Completed selection reads survive tracker restart. Provider-count context overflow and Stop during the final in-flight request cannot publish a completed selection. |
 | **Key files** | `screener_ai_coverage.py`, `screener_ai_runs.py`, `screener_ai.py`, `anthropic_synthesis.py`, `ai_screener_coverage.py`, `action_decisions.py`, associated regression tests and acceptance tool |
 | **Tests** | Red/green controlled regressions; final exact-source totals and original failed-run disposition are recorded in `artifacts/ai-screener-full-universe-acceptance.json`. Final checks include the corrected partial-selection UI copy, isolated durable-ledger route fixtures, and fail-closed unreadable persisted quota state. |
 | **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md) |
-| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. |
+| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. [PR #485](https://github.com/AdamEddahmouni/market-trading-platform/pull/485) records normal protected integration. |
 
 ## 2026-10-07 — AI Screener full-universe coverage, bounded batches and global selection
 

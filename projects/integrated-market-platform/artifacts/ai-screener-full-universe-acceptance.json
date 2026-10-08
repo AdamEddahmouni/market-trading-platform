@@ -324,6 +324,7 @@
     ],
     "reading": "A plan the default allowance cannot pay for is refused before any generation request; the run reports AI_COVERAGE_BUDGET_INSUFFICIENT with every eligible row unprocessed. Nothing raises the allowance."
   },
+  "canonical_integration_verification": "This software acceptance receipt is finalized before normal merge. PR merged state, canonical SHA, ancestry and expected tree are verified separately after merge.",
   "classification": "SOFTWARE_CONTROLLED",
   "controlled_downstream_acceptance": {
     "automatic_paper_submissions": 0,
@@ -558,118 +559,6 @@
       "unprocessed": 0
     }
   },
-  "final_acceptance_gates": [
-    {
-      "name": "Complete universe enumeration",
-      "number": 1,
-      "status": "PASS"
-    },
-    {
-      "name": "No first-50 blind spot",
-      "number": 2,
-      "status": "PASS"
-    },
-    {
-      "name": "Row reconciliation",
-      "number": 3,
-      "status": "PASS"
-    },
-    {
-      "name": "Deterministic eligibility integrity",
-      "number": 4,
-      "status": "PASS"
-    },
-    {
-      "name": "Evidence-blocked classification",
-      "number": 5,
-      "status": "PASS"
-    },
-    {
-      "name": "Provider-safe bounded batches",
-      "number": 6,
-      "status": "PASS"
-    },
-    {
-      "name": "Budget correctness",
-      "number": 7,
-      "status": "PASS"
-    },
-    {
-      "name": "Candidate/evidence isolation",
-      "number": 8,
-      "status": "PASS"
-    },
-    {
-      "name": "Temporal correctness",
-      "number": 9,
-      "status": "PASS"
-    },
-    {
-      "name": "Global 0-5 selection",
-      "number": 10,
-      "status": "PASS"
-    },
-    {
-      "name": "Partial-vs-complete honesty",
-      "number": 11,
-      "status": "PASS"
-    },
-    {
-      "name": "Async Stop/recovery",
-      "number": 12,
-      "status": "PASS"
-    },
-    {
-      "name": "Failure diagnostics",
-      "number": 13,
-      "status": "PASS"
-    },
-    {
-      "name": "UI/API consistency",
-      "number": 14,
-      "status": "PASS"
-    },
-    {
-      "name": "Action Decision compatibility",
-      "number": 15,
-      "status": "PASS"
-    },
-    {
-      "name": "Paper/Live execution authority isolation",
-      "number": 16,
-      "status": "PASS"
-    },
-    {
-      "name": "October 7 controlled replay",
-      "number": 17,
-      "status": "PASS"
-    },
-    {
-      "name": "Large-universe performance",
-      "number": 18,
-      "status": "PASS"
-    },
-    {
-      "name": "Independent-review high-severity closure",
-      "number": 19,
-      "status": "PASS"
-    },
-    {
-      "name": "Final validation",
-      "number": 20,
-      "status": "PASS"
-    },
-    {
-      "name": "Protected CI",
-      "number": 21,
-      "status": "PENDING"
-    },
-    {
-      "name": "Canonical integration",
-      "number": 22,
-      "status": "PENDING"
-    }
-  ],
   "gates": {
     "G10_useful_evidence_survives_packet_fitting": "PASS",
     "G11_temporal_correctness": "PASS",
@@ -687,7 +576,7 @@
     "G22_no_live_capital_authority": "PASS",
     "G23_october_7_controlled_replay": "PASS",
     "G24_large_universe_scale": "PASS",
-    "G25_validation_and_protected_ci": "LOCAL_PASS_PROTECTED_CI_PENDING",
+    "G25_validation_and_protected_ci": "PASS",
     "G2_no_silent_first_n_limit": "PASS",
     "G3_every_row_accounted_for": "PASS",
     "G4_existing_deterministic_gates_preserved": "PASS",
@@ -1171,6 +1060,108 @@
     "stored_schema_version": "ai-screener-output/1.0.0",
     "wire_schema_version": "ai-screener-wire/3.0.0"
   },
+  "local_acceptance_gates": [
+    {
+      "name": "Complete universe enumeration",
+      "number": 1,
+      "status": "PASS"
+    },
+    {
+      "name": "No first-50 blind spot",
+      "number": 2,
+      "status": "PASS"
+    },
+    {
+      "name": "Row reconciliation",
+      "number": 3,
+      "status": "PASS"
+    },
+    {
+      "name": "Deterministic eligibility integrity",
+      "number": 4,
+      "status": "PASS"
+    },
+    {
+      "name": "Evidence-blocked classification",
+      "number": 5,
+      "status": "PASS"
+    },
+    {
+      "name": "Provider-safe bounded batches",
+      "number": 6,
+      "status": "PASS"
+    },
+    {
+      "name": "Budget correctness",
+      "number": 7,
+      "status": "PASS"
+    },
+    {
+      "name": "Candidate/evidence isolation",
+      "number": 8,
+      "status": "PASS"
+    },
+    {
+      "name": "Temporal correctness",
+      "number": 9,
+      "status": "PASS"
+    },
+    {
+      "name": "Global 0-5 selection",
+      "number": 10,
+      "status": "PASS"
+    },
+    {
+      "name": "Partial-vs-complete honesty",
+      "number": 11,
+      "status": "PASS"
+    },
+    {
+      "name": "Async Stop/recovery",
+      "number": 12,
+      "status": "PASS"
+    },
+    {
+      "name": "Failure diagnostics",
+      "number": 13,
+      "status": "PASS"
+    },
+    {
+      "name": "UI/API consistency",
+      "number": 14,
+      "status": "PASS"
+    },
+    {
+      "name": "Action Decision compatibility",
+      "number": 15,
+      "status": "PASS"
+    },
+    {
+      "name": "Paper/Live execution authority isolation",
+      "number": 16,
+      "status": "PASS"
+    },
+    {
+      "name": "October 7 controlled replay",
+      "number": 17,
+      "status": "PASS"
+    },
+    {
+      "name": "Large-universe performance",
+      "number": 18,
+      "status": "PASS"
+    },
+    {
+      "name": "Independent-review high-severity closure",
+      "number": 19,
+      "status": "PASS"
+    },
+    {
+      "name": "Final validation",
+      "number": 20,
+      "status": "PASS"
+    }
+  ],
   "method": {
     "batch_order": "sha256(result_set|instrument_id)",
     "drift_margin": 1.05,
@@ -1632,7 +1623,7 @@
   ],
   "schema_version": "ai-screener-full-universe-acceptance/1.0.0",
   "validation": {
-    "G25": "LOCAL_PASS_PROTECTED_CI_PENDING",
+    "G25": "PASS",
     "additional_quota_closure": {
       "behavior": "Malformed/unreadable existing quota state fails closed; only a missing initial file initializes a fresh state. File contents remain unchanged on failure.",
       "pre_fix_probe": {
@@ -3670,8 +3661,86 @@
       "artifacts/historical-rth-development/"
     ],
     "protected_ci": {
-      "note": "PR checks have not yet run.",
-      "status": "PENDING"
+      "all_reported_checks_passed": true,
+      "checks": [
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723335058/job/113135771509",
+          "name": "validate-workflows",
+          "state": "SUCCESS",
+          "workflow": "IMP Validation"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723335058/job/113135771558",
+          "name": "validate-python-changed / validate",
+          "state": "SUCCESS",
+          "workflow": "IMP Validation"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723334820/job/113135770260",
+          "name": "validate-workflows",
+          "state": "SUCCESS",
+          "workflow": "Monorepo Guardrails"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723335058/job/113135771617",
+          "name": "validate-python / validate",
+          "state": "SUCCESS",
+          "workflow": "IMP Validation"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723334820/job/113135770079",
+          "name": "validate",
+          "state": "SUCCESS",
+          "workflow": "Monorepo Guardrails"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723335058/job/113135771444",
+          "name": "validate-docs",
+          "state": "SUCCESS",
+          "workflow": "IMP Validation"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723335058/job/113135771183",
+          "name": "validate-ui",
+          "state": "SUCCESS",
+          "workflow": "IMP Validation"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723320264/job/113135724986",
+          "name": "validate-workflows",
+          "state": "SUCCESS",
+          "workflow": "Monorepo Guardrails"
+        },
+        {
+          "bucket": "pass",
+          "link": "https://github.com/AdamEddahmouni/market-trading-platform/actions/runs/37723320264/job/113135725213",
+          "name": "validate",
+          "state": "SUCCESS",
+          "workflow": "Monorepo Guardrails"
+        }
+      ],
+      "implementation_source_sha": "5f39d27116020e2b3f2b48a00e3e537d4283bb61",
+      "note": "Observed CI on this source-bound receipt head. The final documentation/receipt successor is checked again before normal merge.",
+      "observed_at": "2026-10-08T03:41:11.238813+00:00",
+      "pr_url": "https://github.com/AdamEddahmouni/market-trading-platform/pull/485",
+      "required_approvals": 0,
+      "required_contexts": [
+        "validate"
+      ],
+      "source_changes_since_local_validation": [
+        "acceptance receipt only"
+      ],
+      "status": "PASS",
+      "unresolved_pr_conversations": 0,
+      "validated_pr_head": "9f60de95be3c03551c0718c2edd8240c840f1747"
     },
     "receipt_generation": {
       "all_local_acceptance_gates_passed": true,
