@@ -540,6 +540,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     body["screen"] = body["screen"] or ""
                     body["descending"] = body["descending"] not in ("0", "false", "no")
                     body["filters"] = body["filters"] if isinstance(body["filters"], list) else []
+                    if body['method'] is None:
+                        body.pop('method')
+                    if query.get('local_model_id'):
+                        body['local_model_id'] = query['local_model_id'][0]
                     self._send_json(read_ai_screener_preview(body))
                 except (ValueError, TypeError, json.JSONDecodeError) as exc:
                     self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)

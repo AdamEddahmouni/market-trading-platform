@@ -6653,3 +6653,17 @@ per-instrument branches counted, then refused as too large to compile). Both
 reasoning headroom, the 45-second timeout on the reasoning models and
 end-to-end output on any model remain unmeasured. The 50-row intake is NOT
 closure of the full-universe blind-spot issue.
+# 2026-10-09 — Laptop local Qwen registry
+
+Added explicit experimental Screener selection for official Qwen3-0.6B and
+Qwen3-1.7B Q8_0 pins alongside preserved Qwen3-4B Q4_K_M. Official smaller GGUF
+repositories expose Q8_0 only at the verified revisions. New installer verifies
+artifact/runtime integrity in the external IMP cache, using relative manifests.
+Model-specific KV/weight estimates preserve the 4 GiB floor, 6 GiB process cap
+and 1.5 GiB uncalibrated reserve. Pilot/development admission refused both models;
+zero launches/generations and holdout unconsumed. Quality and premium savings
+remain NOT PROVEN. Independent review fixes cover owned runtime handoff,
+per-identity verification caching and persisted-manifest offline validation.
+No paid engine setting, operational methodology approval, trading authority,
+campaign state or PC migration changed. Validation and acceptance evidence:
+[laptop model receipt](../../artifacts/ai-screener-laptop-local-models-acceptance.json).

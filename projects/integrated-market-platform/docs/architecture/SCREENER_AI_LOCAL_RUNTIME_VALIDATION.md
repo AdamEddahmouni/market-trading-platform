@@ -98,3 +98,79 @@ exhaustion or evidence of poor model quality. No holdout was consumed.
 
 See the [acceptance receipt](../../artifacts/ai-screener-local-runtime-validation.json)
 and [final report](../reports/AI_SCREENER_LOCAL_RUNTIME_VALIDATION_REPORT.md).
+
+## Laptop model registry and explicit selection
+
+The existing 4B artifact, legacy manifest, default selection and profiles remain
+preserved. `local_models.py` adds official Qwen3-0.6B and Qwen3-1.7B **Q8_0** pins.
+The official repositories at the recorded revisions expose only Q8_0; the
+preferred Q4_K_M is unavailable. No third-party quantization is substituted.
+Sources: [0.6B official files](https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/tree/23749fefcc72300e3a2ad315e1317431b06b590a)
+and [1.7B official files](https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/tree/90862c4b9d2787eaed51d12237eafdfe7c5f6077).
+
+Explicit installation from the IMP tree:
+
+```powershell
+python tools/news/setup_laptop_models.py --model Qwen/Qwen3-0.6B-GGUF:Q8_0
+python tools/news/setup_laptop_models.py --model Qwen/Qwen3-1.7B-GGUF:Q8_0
+python tools/news/setup_laptop_models.py --model Qwen/Qwen3-0.6B-GGUF:Q8_0 --check
+```
+
+Weights and separate manifests live under `IMP_CACHE_DIR` (Windows default
+`%LOCALAPPDATA%\IMP`), with weights in `models/weights/<revision>/` and manifests
+`models/Qwen3-0.6B-Q8_0.json` / `models/Qwen3-1.7B-Q8_0.json`.
+New manifests use cache-relative paths. Installation stages an exclusive partial
+file, verifies exact bytes and SHA-256, verifies the pinned runtime archive and
+all executables/DLLs, then atomically publishes the manifest. Offline checking
+also verifies the resolved saved manifest and profile. Runtime never downloads.
+`models/local-llm.json` and the 4B weights are untouched.
+
+Both smaller models use `cpu-4096/1`: 4096 context, f16 KV, 128 logical batch,
+64 microbatch, four CPU threads, one slot, mmap, no device/operation/KV offload,
+no automatic fitting. Startup/inference deadlines remain 180/120 seconds.
+KV estimates use 28 layers, eight KV heads, head dimension 128, as recorded in
+the official [0.6B configuration](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/config.json)
+and [1.7B configuration](https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/config.json).
+The unchanged 1.5 GiB graph/buffer reserve and 4 GiB free-memory floor produce
+startup requirements of **6.53 GiB (0.6B)** and **7.65 GiB (1.7B)**.
+These are conservative estimates, not measured peaks or accepted optimizations.
+Evidence exceeding context is refused intact. The unchanged 4B requirements are
+8.39 GiB at 4096 context and 8.95 GiB at 8192 context. The earlier 8.39 GiB pilot
+used `cpu-4096/1`; the legacy manifest retains its 8192 context. The process and
+process-commit ceilings remain 6 GiB.
+
+The existing AI Screener panel exposes an **Experimental local model** selector
+when the operator chooses Local-first experimental. It submits `local_model_id`
+with the run scope; the backend validates membership and exact identity. The
+selection is part of result/query identity and does not change the paid engine,
+machine-wide synthesis setting or default exhaustive method. Missing or invalid
+selected artifacts never fall back. Switching stops only previously owned
+managed server objects sharing the port, under the inference slot. Foreign
+processes are never adopted or terminated.
+
+Preview reports all three configurations, pins, installation, quantization,
+resource admission, current available memory, last benchmark error and observed
+performance. Observations are external benchmark summaries with model hash and
+revision checks. Admission readiness grants no quality or trading approval.
+
+```powershell
+python tools/local_runtime_benchmark.py --model Qwen/Qwen3-0.6B-GGUF:Q8_0 --phase pilot
+python tools/local_runtime_benchmark.py --model Qwen/Qwen3-0.6B-GGUF:Q8_0 --phase development
+# Only after a complete valid development run with frozen configuration:
+python tools/local_runtime_benchmark.py --model Qwen/Qwen3-0.6B-GGUF:Q8_0 --phase holdout
+```
+
+The same commands support 1.7B explicitly. The frozen 52 cases, 26/26 splits,
+evidence hashes, labels, prompt and quality targets remain unchanged. All models
+share the existing cumulative two-hour ledger. Attempts are append-only;
+holdout remains once per frozen successful-development configuration.
+
+October 9 laptop pilots and development admission attempts verified both
+artifacts but refused launch below the safety floor. **Zero starts and zero
+generations**: runtime/contract compatibility, qualification quality, recall,
+grounding, peak model memory, throughput and premium savings are **NOT PROVEN**.
+The holdout was not consumed. 20/50/100/500/4630 projections stay null without
+real latency measurements; the premium planner reports not measured rather than
+claiming affordability against reference quotas. See the
+[laptop acceptance receipt](../../artifacts/ai-screener-laptop-local-models-acceptance.json).
+Experimental activation, paid generations and Paper/Live submissions remain OFF.
