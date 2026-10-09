@@ -1,0 +1,1845 @@
+{
+  "artifact_integrity_checks": [
+    {
+      "artifact_verified": true,
+      "bytes": 639446688,
+      "manifest": "C:\\Users\\adame\\AppData\\Local\\IMP\\models\\Qwen3-0.6B-Q8_0.json",
+      "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+      "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+      "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031"
+    },
+    {
+      "artifact_verified": true,
+      "bytes": 1834426016,
+      "manifest": "C:\\Users\\adame\\AppData\\Local\\IMP\\models\\Qwen3-1.7B-Q8_0.json",
+      "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+      "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+      "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a"
+    }
+  ],
+  "base_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+  "benchmark_budget": {
+    "limit_seconds": 7200,
+    "used_seconds": 43.160637399756524
+  },
+  "canonical_integration": "PENDING",
+  "closure": {
+    "baseline": {
+      "classification": "pre_existing_dirty_tree",
+      "failures": [
+        {
+          "areas": [
+            "finviz",
+            "platform",
+            "intelligence",
+            "ui1",
+            "validation"
+          ],
+          "errors": 91,
+          "failures": 1,
+          "mode": "changed",
+          "wall_seconds": 530.542
+        },
+        {
+          "areas": [
+            "finviz",
+            "platform",
+            "intelligence",
+            "ui1",
+            "ui2",
+            "validation"
+          ],
+          "errors": 92,
+          "failures": 1,
+          "mode": "full",
+          "wall_seconds": 734.902
+        }
+      ]
+    },
+    "changed_areas": [
+      "backend",
+      "developer-tooling",
+      "documentation",
+      "other",
+      "tests",
+      "ui"
+    ],
+    "changed_files": [
+      "artifacts/ai-screener-laptop-local-models-acceptance.json",
+      "artifacts/ai-screener-laptop-local-models/format.json",
+      "artifacts/ai-screener-laptop-local-models/frontend-exits.json",
+      "artifacts/ai-screener-laptop-local-models/hardware.json",
+      "artifacts/ai-screener-laptop-local-models/independent-review.json",
+      "artifacts/ai-screener-laptop-local-models/validation-changed-socket-abort.json",
+      "artifacts/ai-screener-laptop-local-models/validation-changed-worktree-temp.json",
+      "artifacts/ai-screener-laptop-local-models/validation-changed.json",
+      "artifacts/ai-screener-laptop-local-models/validation-fast.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135149-3b95426c/admission.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135149-3b95426c/summary.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135333-fa5f4454/admission.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135333-fa5f4454/summary.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135723-f959d421/admission.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135723-f959d421/summary.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135728-b03c5b71/admission.json",
+      "artifacts/ai-screener-local-runtime/attempt-20261009T135728-b03c5b71/summary.json",
+      "artifacts/g13-runtime-performance.json",
+      "artifacts/historical-development/demo-runs/hist-rth-AAPL-0306296002/e2e_result.json",
+      "artifacts/historical-development/demo-runs/hist-rth-AAPL-67bc155304/e2e_result.json",
+      "artifacts/historical-development/demo-runs/hist-rth-AAPL-915e359ab8/e2e_result.json",
+      "artifacts/historical-development/demo-runs/hist-rth-AAPL-ac4381c080/e2e_result.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/raw/AAPL_2026-09-15.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/manifests/dataset_manifest.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/normalized/AAPL_normalized.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/quality/quality_report.json",
+      "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/raw/AAPL_2026-09-15.json",
+      "artifacts/p3-plan-cli-check.json",
+      "docs/architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md",
+      "docs/engineering/WORK_LOG.md",
+      "src/market_platform_foundation/intelligence/inference/inference_identity.py",
+      "src/market_platform_foundation/intelligence/inference/local_models.py",
+      "src/market_platform_foundation/intelligence/inference/local_provider.py",
+      "src/market_platform_foundation/intelligence/inference/local_runtime.py",
+      "src/market_platform_foundation/ui_api/screener_ai.py",
+      "src/market_platform_foundation/ui_api/screener_ai_staged.py",
+      "src/market_platform_foundation/ui_api/server.py",
+      "tests/platform/test_local_runtime_validation.py",
+      "tests/platform/test_screener_ai_runs.py",
+      "tools/local_runtime_benchmark.py",
+      "tools/news/setup_laptop_models.py",
+      "ui/src/App.test.tsx",
+      "ui/src/api/screenerAi.ts",
+      "ui/src/components/screener/panels/AiScreenerPanel.test.tsx",
+      "ui/src/components/screener/panels/AiScreenerPanel.tsx"
+    ],
+    "documentation_changes": [
+      "docs/architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md",
+      "docs/engineering/WORK_LOG.md"
+    ],
+    "environment": {
+      "environment": {
+        "environment_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv",
+        "local_venv_present": true,
+        "shared_candidates": [
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\finviz-leftover-discovery-d1ba\\projects\\integrated-market-platform\\.venv",
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\phase4-lane-h-strategy-runtime\\projects\\integrated-market-platform\\.venv",
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\phase5-lane-h-rth-ops\\projects\\integrated-market-platform\\.venv",
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\rebase-pr-121\\projects\\integrated-market-platform\\.venv"
+        ]
+      },
+      "imp_project_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform",
+      "next_commands": [
+        "python tools/imp.py validate fast"
+      ],
+      "python": {
+        "current_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+        "current_version": "3.11.15",
+        "resolution_source": "local_venv",
+        "resolved_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+        "resolved_version": "3.11.15",
+        "supported": true
+      },
+      "timezone": {
+        "detail": "America/New_York available",
+        "ready": true
+      },
+      "tools": {
+        "git_available": true,
+        "node_available": true,
+        "npm_available": true
+      },
+      "worktree": {
+        "branch": "codex/ai-screener-laptop-local-models",
+        "git_metadata_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.git\\worktrees\\ai-screener-laptop-local-models",
+        "is_linked_worktree": true,
+        "root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models"
+      }
+    },
+    "generated_at": "2026-10-09T14:50:01.994667+00:00",
+    "report_type": "imp_closure",
+    "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform",
+    "risk": {
+      "live_execution_authorized": false,
+      "paper_authority_changed": false,
+      "status": "review_required"
+    },
+    "schema_version": "1.0",
+    "telemetry": {
+      "enabled": true,
+      "path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.local\\developer-workflow\\telemetry.jsonl",
+      "summary": {
+        "agent_iterations": [],
+        "ci_wall_seconds": 0,
+        "command_counts": {
+          "closure docs": 1,
+          "closure format": 1,
+          "format": 1,
+          "lint python": 2,
+          "lint ui": 2,
+          "test focused": 11,
+          "validate changed": 3,
+          "validate fast": 2,
+          "validate full": 1
+        },
+        "events": 24,
+        "redundant_command_events": 15,
+        "validation_wall_seconds": 2508.040462
+      }
+    },
+    "validation": {
+      "documentation": {
+        "argv": [
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+          "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\tools\\check_docs_links.py"
+        ],
+        "command": "closure docs",
+        "exit_code": 0,
+        "status": "passed",
+        "wall_seconds": 1.637955
+      },
+      "format": {
+        "argv": [
+          "git",
+          "diff",
+          "--check"
+        ],
+        "command": "closure format",
+        "exit_code": 0,
+        "status": "passed",
+        "wall_seconds": 0.142967
+      },
+      "full": {
+        "core_checkpoint_required": false,
+        "errors": 0,
+        "failures": 0,
+        "mode": "full",
+        "selected_suites": [
+          "postroot",
+          "phase0",
+          "phase0a",
+          "phase1",
+          "phase2",
+          "phase3",
+          "phase4",
+          "phase5",
+          "phase5r",
+          "finviz",
+          "news",
+          "research",
+          "phase6",
+          "phase7",
+          "platform",
+          "phase8",
+          "storage",
+          "assistant",
+          "donor_bridge",
+          "donor_patterns",
+          "execution",
+          "order_flow",
+          "contracts",
+          "intelligence",
+          "opportunity_watch_dismiss_acceptance",
+          "software_fullstack_acceptance",
+          "cross_lane",
+          "distribution",
+          "futures",
+          "gridiq",
+          "integration",
+          "options",
+          "formulas",
+          "providers",
+          "runtime",
+          "squeeze_models",
+          "ui1",
+          "ui2",
+          "mra001",
+          "mra002",
+          "market_context",
+          "participant",
+          "market_data",
+          "ibkr",
+          "sec_edgar",
+          "short_intelligence",
+          "sec_ftd",
+          "market_trackers",
+          "cftc",
+          "fred",
+          "crypto_market",
+          "public_records",
+          "fixed_income",
+          "eia",
+          "weather",
+          "cboe_options",
+          "validation",
+          "of01",
+          "of02",
+          "of03",
+          "rt01",
+          "hot_path_telemetry",
+          "latency_instrumentation_v1",
+          "hot_path_telemetry_artifact",
+          "xa01",
+          "portfolio",
+          "xa02",
+          "xa03",
+          "xa04",
+          "xa05",
+          "trading_correctness"
+        ],
+        "skips": 53,
+        "status": "passed",
+        "tests_run": 8474,
+        "wall_seconds": 867.5334447000059
+      }
+    }
+  },
+  "controlled_e2e": "EXISTING_FIXTURE_TESTS_PASS; REAL_MODEL_E2E_RESOURCE_BLOCKED",
+  "development_results": {
+    "Qwen/Qwen3-0.6B-GGUF:Q8_0": [
+      {
+        "admission": {
+          "artifact_verified": true,
+          "available_memory": 2514456576,
+          "available_memory_bytes": 2514456576,
+          "context_configuration": {
+            "batch": 128,
+            "context": 4096,
+            "kv_type": "f16",
+            "mmap": true,
+            "parallel_slots": 1,
+            "ubatch": 64
+          },
+          "context_window": 4096,
+          "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+          "estimated_kv_bytes": 469762048,
+          "estimated_peak_memory": 2719821472,
+          "execution_profile": "cpu-4096/1",
+          "inference_occurred": false,
+          "measurement_timestamp": "2026-10-09T13:57:25.081092+00:00",
+          "minimum_available_bytes": 4294967296,
+          "model_hash": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+          "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+          "model_revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+          "model_weight_bytes": 639446688,
+          "observed_peak_memory": null,
+          "premium_generation_attempted": false,
+          "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+          "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+          "quantization": "Q8_0",
+          "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+          "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+          "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+          "required_memory": 7014788768,
+          "resource_sample": {
+            "available_bytes": 2514456576,
+            "commit_available_bytes": 14281265152,
+            "commit_total_bytes": 40195850240,
+            "memory_load_percent": 84,
+            "process_bytes": null,
+            "process_commit_bytes": null,
+            "process_peak_bytes": null,
+            "process_peak_commit_bytes": null,
+            "total_bytes": 16687722496
+          },
+          "results_produced": false,
+          "retry_requires_fresh_resource_measurement": true,
+          "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+          "runtime_launched": false,
+          "runtime_version": "b11269",
+          "schema_version": "local-runtime-readiness/1.0.0",
+          "state": "RESOURCE_BLOCKED"
+        },
+        "budget": {
+          "limit_seconds": 7200,
+          "used_seconds": 38.519637399753265
+        },
+        "configuration_hash": null,
+        "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+        "economic_feasibility": {
+          "paid_generations": 0,
+          "plans": null,
+          "status": "STAGED_BUDGET_NOT_MEASURED"
+        },
+        "elapsed_seconds": 1.8280000000086147,
+        "ended_at": "2026-10-09T13:57:25.171809+00:00",
+        "execution_profile": "cpu-4096/1",
+        "live_submissions": 0,
+        "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+        "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+        "observed_latency_seconds": [],
+        "operational_activation": "OFF",
+        "paid_generations": 0,
+        "paper_submissions": 0,
+        "phase": "development",
+        "projected_workloads": [
+          {
+            "projected_seconds": null,
+            "rows": 20,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 50,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 100,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 500,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 4630,
+            "state": "NOT_MEASURED"
+          }
+        ],
+        "quality": {
+          "cases_not_completed": 26,
+          "evidence_grounding_failures": null,
+          "failed": 0,
+          "false_exclusions": null,
+          "fixture_cases_completed": 0,
+          "inconsistent_decisions": null,
+          "intentional_stale_exclusions": 0,
+          "invalid_output_rate": null,
+          "missing_capability_errors": null,
+          "operational_advancement_recall": null,
+          "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+          "proposed_premium_count": null,
+          "qualification_accuracy": null,
+          "qualified": 0,
+          "quality_complete": false,
+          "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+          "real_cases_completed": 0,
+          "recall": null,
+          "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+          "reference_top5_recall": null,
+          "timeout_or_failure_count": null,
+          "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+          "uncertain": 0,
+          "valid_outputs": 0
+        },
+        "real_generation_requests": 0,
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "runtime_starts": 0,
+        "schema_version": "local-runtime-benchmark/1.0.0",
+        "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+        "started_at": "2026-10-09T13:57:23.257789+00:00",
+        "startup_ms": null,
+        "throughput_per_minute": null
+      }
+    ],
+    "Qwen/Qwen3-1.7B-GGUF:Q8_0": [
+      {
+        "admission": {
+          "artifact_verified": true,
+          "available_memory": 2578038784,
+          "available_memory_bytes": 2578038784,
+          "context_configuration": {
+            "batch": 128,
+            "context": 4096,
+            "kv_type": "f16",
+            "mmap": true,
+            "parallel_slots": 1,
+            "ubatch": 64
+          },
+          "context_window": 4096,
+          "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+          "estimated_kv_bytes": 469762048,
+          "estimated_peak_memory": 3914800800,
+          "execution_profile": "cpu-4096/1",
+          "inference_occurred": false,
+          "measurement_timestamp": "2026-10-09T13:57:30.695390+00:00",
+          "minimum_available_bytes": 4294967296,
+          "model_hash": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+          "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+          "model_revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+          "model_weight_bytes": 1834426016,
+          "observed_peak_memory": null,
+          "premium_generation_attempted": false,
+          "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+          "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+          "quantization": "Q8_0",
+          "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+          "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+          "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+          "required_memory": 8209768096,
+          "resource_sample": {
+            "available_bytes": 2578038784,
+            "commit_available_bytes": 14348058624,
+            "commit_total_bytes": 40195850240,
+            "memory_load_percent": 84,
+            "process_bytes": null,
+            "process_commit_bytes": null,
+            "process_peak_bytes": null,
+            "process_peak_commit_bytes": null,
+            "total_bytes": 16687722496
+          },
+          "results_produced": false,
+          "retry_requires_fresh_resource_measurement": true,
+          "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+          "runtime_launched": false,
+          "runtime_version": "b11269",
+          "schema_version": "local-runtime-readiness/1.0.0",
+          "state": "RESOURCE_BLOCKED"
+        },
+        "budget": {
+          "limit_seconds": 7200,
+          "used_seconds": 40.98863739976514
+        },
+        "configuration_hash": null,
+        "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+        "economic_feasibility": {
+          "paid_generations": 0,
+          "plans": null,
+          "status": "STAGED_BUDGET_NOT_MEASURED"
+        },
+        "elapsed_seconds": 2.4690000000118744,
+        "ended_at": "2026-10-09T13:57:30.732650+00:00",
+        "execution_profile": "cpu-4096/1",
+        "live_submissions": 0,
+        "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+        "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+        "observed_latency_seconds": [],
+        "operational_activation": "OFF",
+        "paid_generations": 0,
+        "paper_submissions": 0,
+        "phase": "development",
+        "projected_workloads": [
+          {
+            "projected_seconds": null,
+            "rows": 20,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 50,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 100,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 500,
+            "state": "NOT_MEASURED"
+          },
+          {
+            "projected_seconds": null,
+            "rows": 4630,
+            "state": "NOT_MEASURED"
+          }
+        ],
+        "quality": {
+          "cases_not_completed": 26,
+          "evidence_grounding_failures": null,
+          "failed": 0,
+          "false_exclusions": null,
+          "fixture_cases_completed": 0,
+          "inconsistent_decisions": null,
+          "intentional_stale_exclusions": 0,
+          "invalid_output_rate": null,
+          "missing_capability_errors": null,
+          "operational_advancement_recall": null,
+          "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+          "proposed_premium_count": null,
+          "qualification_accuracy": null,
+          "qualified": 0,
+          "quality_complete": false,
+          "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+          "real_cases_completed": 0,
+          "recall": null,
+          "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+          "reference_top5_recall": null,
+          "timeout_or_failure_count": null,
+          "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+          "uncertain": 0,
+          "valid_outputs": 0
+        },
+        "real_generation_requests": 0,
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "runtime_starts": 0,
+        "schema_version": "local-runtime-benchmark/1.0.0",
+        "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+        "started_at": "2026-10-09T13:57:28.220834+00:00",
+        "startup_ms": null,
+        "throughput_per_minute": null
+      }
+    ]
+  },
+  "engineering_integration": "IMPLEMENTED_PENDING_PROTECTED_INTEGRATION",
+  "engineering_verdict": "LAPTOP_LOCAL_AI_MODELS_BLOCKED",
+  "evidence_files": {
+    "catalog": "artifacts/ai-screener-laptop-local-models/evidence-files.json"
+  },
+  "false_exclusions": null,
+  "frozen_benchmark": {
+    "cutoff": "2026-10-02T15:00:00Z",
+    "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+    "evidence_class": "SOFTWARE_CONTROLLED_HISTORICAL_REPLAY",
+    "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+    "prompt_hash": "62754efd07ca9a2db3ed9527646d7d98616aaf869e5c8c2ab8bdb1e2edd05dd9",
+    "targets": {
+      "invalid_output_rate": 0.01,
+      "invalid_refs_accepted": 0,
+      "labeled_positive_recall": 0.95,
+      "paid_token_reduction": 0.9,
+      "qualification_disagreement": 0.05,
+      "reference_top5_recall": 1.0
+    }
+  },
+  "gates": {
+    "G1": "PASS",
+    "G10": "PASS",
+    "G11": "PASS",
+    "G12": "PASS",
+    "G13": "NOT PROVEN",
+    "G14": "NOT PROVEN",
+    "G15": "PASS",
+    "G16": "PASS",
+    "G17": "NOT PROVEN",
+    "G18": "PASS",
+    "G19": "PASS",
+    "G2": "PASS",
+    "G20": "PASS",
+    "G21": "PASS",
+    "G22": "PASS",
+    "G23": "PASS",
+    "G24": "PASS",
+    "G25": "PASS",
+    "G26": "BLOCKED",
+    "G27": "BLOCKED",
+    "G28": "PASS",
+    "G29": "PASS",
+    "G3": "PASS",
+    "G4": "PASS",
+    "G5": "PASS",
+    "G6": "BLOCKED",
+    "G7": "BLOCKED",
+    "G8": "NOT PROVEN",
+    "G9": "PASS"
+  },
+  "grounding_accuracy": null,
+  "hardware": {
+    "cpu": {
+      "Name": "Intel(R) Core(TM) Ultra 7 256V",
+      "NumberOfCores": 8,
+      "NumberOfLogicalProcessors": 8
+    },
+    "dedicated_gpu_memory": "UNMEASURED_CIM_ADAPTER_RAM_IS_NOT_PROOF",
+    "disk": {
+      "Free": 51958317056,
+      "Used": 950484529152
+    },
+    "final_readonly_resource_sample": {
+      "available_bytes": 3126956032,
+      "commit_available_bytes": 14074994688,
+      "commit_total_bytes": 40195850240,
+      "memory_load_percent": 81,
+      "process_bytes": null,
+      "process_commit_bytes": null,
+      "process_peak_bytes": null,
+      "process_peak_commit_bytes": null,
+      "total_bytes": 16687722496
+    },
+    "gpu": {
+      "AdapterRAM": 2147479552,
+      "DriverVersion": "32.0.101.8626",
+      "Name": "Intel(R) Arc(TM) 140V GPU (8GB)"
+    },
+    "gpu_acceleration": "NOT_VALIDATED",
+    "gpu_diagnostic": {
+      "dedicated_memory_mb": 128,
+      "display_memory_mb": 9199,
+      "shared_memory_adds_admission_capacity": false,
+      "shared_memory_mb": 9071,
+      "source": "dxdiag XML"
+    },
+    "inference_backend": "PINNED_LLAMA_CPU_ONLY",
+    "llama_processes": [],
+    "os_memory": {
+      "FreePhysicalMemory": 2951756,
+      "FreeVirtualMemory": 14789688,
+      "TotalVirtualMemorySize": 39253760,
+      "TotalVisibleMemorySize": 16296604
+    },
+    "shared_gpu_memory": "SHARED_SYSTEM_RAM_NOT_ADMISSION_CAPACITY",
+    "timestamp": "2026-10-09T13:57:31.0360977Z"
+  },
+  "implementation_sha": "f7c5784967099e278047f837df255021b8ec2a4f",
+  "independent_review": {
+    "findings": [
+      {
+        "issue": "Owned runtime switching blocked by shared port",
+        "priority": "P2",
+        "resolution": "Serial handoff under inference SLOT",
+        "status": "CLOSED"
+      },
+      {
+        "issue": "Multi-model verification cache repeatedly cleared",
+        "priority": "P2",
+        "resolution": "Bounded identity/hash/size-specific cache retains entries",
+        "status": "CLOSED"
+      },
+      {
+        "issue": "Offline check ignored tampered saved manifest",
+        "priority": "P2",
+        "resolution": "Verify saved artifact identity and profile",
+        "status": "CLOSED"
+      }
+    ],
+    "followup": "Final combined-diff review reconfirmed all three fixes, default preview/model forwarding, cache identity/source hashes, platform-independent installer tests and lazy-loading assertions. No remaining confirmed issue. Static review; no reviewer inference/tests.",
+    "reviewed_implementation_sha": "f7c5784967099e278047f837df255021b8ec2a4f",
+    "status": "CLOSED",
+    "type": "INDEPENDENT_READ_ONLY_SUBAGENT"
+  },
+  "inference_receipts": [],
+  "initial_attempt_source_note": "The four initial pilot/development admission attempts ran with uncommitted implementation atop the recorded baseline. The two final pilots ran on implementation_sha. No attempt reached inference.",
+  "invalid_output_rate": null,
+  "live_submissions": 0,
+  "measurement_timestamp": "2026-10-09T14:56:28.741016+00:00",
+  "model_readiness": {
+    "Qwen/Qwen3-0.6B-GGUF:Q8_0": {
+      "contract": "NOT_PROVEN",
+      "estimated_startup_bytes": 7014788768,
+      "observed_peak_memory": null,
+      "quality": "MODEL_QUALITY_NOT_PROVEN",
+      "real_generations": 0,
+      "runtime": "LOCAL_INFERENCE_RESOURCE_BLOCKED"
+    },
+    "Qwen/Qwen3-1.7B-GGUF:Q8_0": {
+      "contract": "NOT_PROVEN",
+      "estimated_startup_bytes": 8209768096,
+      "observed_peak_memory": null,
+      "quality": "MODEL_QUALITY_NOT_PROVEN",
+      "real_generations": 0,
+      "runtime": "LOCAL_INFERENCE_RESOURCE_BLOCKED"
+    },
+    "Qwen/Qwen3-4B-GGUF:Q4_K_M": {
+      "contract": "NOT_PROVEN",
+      "estimated_startup_bytes": 9610819840,
+      "evaluation_basis": "Preserved prior resource refusals; legacy artifact/profile retained. No new 4B generation attempted.",
+      "observed_peak_memory": null,
+      "quality": "MODEL_QUALITY_NOT_PROVEN",
+      "real_generations": 0,
+      "runtime": "LOCAL_INFERENCE_RESOURCE_BLOCKED"
+    }
+  },
+  "models": [
+    {
+      "artifact_url": "https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/23749fefcc72300e3a2ad315e1317431b06b590a/Qwen3-0.6B-Q8_0.gguf",
+      "context_limit": 32768,
+      "filename": "Qwen3-0.6B-Q8_0.gguf",
+      "head_dim": 128,
+      "kv_heads": 8,
+      "layers": 28,
+      "license": "Apache-2.0",
+      "model_family": "Qwen3",
+      "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+      "parameter_count": 600000000,
+      "profile": "cpu-4096/1",
+      "quantization": "Q8_0",
+      "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+      "sha256": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+      "source_repository": "Qwen/Qwen3-0.6B-GGUF",
+      "weight_bytes": 639446688
+    },
+    {
+      "artifact_url": "https://huggingface.co/Qwen/Qwen3-1.7B-GGUF/resolve/90862c4b9d2787eaed51d12237eafdfe7c5f6077/Qwen3-1.7B-Q8_0.gguf",
+      "context_limit": 32768,
+      "filename": "Qwen3-1.7B-Q8_0.gguf",
+      "head_dim": 128,
+      "kv_heads": 8,
+      "layers": 28,
+      "license": "Apache-2.0",
+      "model_family": "Qwen3",
+      "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+      "parameter_count": 1700000000,
+      "profile": "cpu-4096/1",
+      "quantization": "Q8_0",
+      "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+      "sha256": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+      "source_repository": "Qwen/Qwen3-1.7B-GGUF",
+      "weight_bytes": 1834426016
+    },
+    {
+      "artifact_url": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/resolve/bc640142c66e1fdd12af0bd68f40445458f3869b/Qwen3-4B-Q4_K_M.gguf",
+      "context_limit": 40960,
+      "filename": "Qwen3-4B-Q4_K_M.gguf",
+      "head_dim": 128,
+      "kv_heads": 8,
+      "layers": 36,
+      "license": "Apache-2.0",
+      "model_family": "Qwen3",
+      "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+      "parameter_count": 4000000000,
+      "profile": "cpu-8192/1",
+      "quantization": "Q4_K_M",
+      "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+      "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+      "source_repository": "Qwen/Qwen3-4B-GGUF",
+      "weight_bytes": 2497280256
+    }
+  ],
+  "operational_activation": "OFF",
+  "paid_generations": 0,
+  "paper_submissions": 0,
+  "pc_migration": "UNTOUCHED",
+  "per_model_attempts": [
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 1776553984,
+        "available_memory_bytes": 1776553984,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 2719821472,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T13:51:50.350587+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+        "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+        "model_revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "model_weight_bytes": 639446688,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 7014788768,
+        "resource_sample": {
+          "available_bytes": 1776553984,
+          "commit_available_bytes": 13680558080,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 89,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 35.42663739973068
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 1.3429999999934807,
+      "ended_at": "2026-10-09T13:51:50.404366+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "pilot",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+      "started_at": "2026-10-09T13:51:49.017194+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 3155828736,
+        "available_memory_bytes": 3155828736,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 3914800800,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T13:53:35.198897+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+        "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+        "model_revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "model_weight_bytes": 1834426016,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 8209768096,
+        "resource_sample": {
+          "available_bytes": 3155828736,
+          "commit_available_bytes": 14775406592,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 81,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 36.69163739974465
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 1.2650000000139698,
+      "ended_at": "2026-10-09T13:53:35.236839+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "pilot",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+      "started_at": "2026-10-09T13:53:33.933378+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 2514456576,
+        "available_memory_bytes": 2514456576,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 2719821472,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T13:57:25.081092+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+        "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+        "model_revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "model_weight_bytes": 639446688,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 7014788768,
+        "resource_sample": {
+          "available_bytes": 2514456576,
+          "commit_available_bytes": 14281265152,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 84,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 38.519637399753265
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 1.8280000000086147,
+      "ended_at": "2026-10-09T13:57:25.171809+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "development",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 26,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+      "started_at": "2026-10-09T13:57:23.257789+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 2578038784,
+        "available_memory_bytes": 2578038784,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 3914800800,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T13:57:30.695390+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+        "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+        "model_revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "model_weight_bytes": 1834426016,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 8209768096,
+        "resource_sample": {
+          "available_bytes": 2578038784,
+          "commit_available_bytes": 14348058624,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 84,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 40.98863739976514
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 2.4690000000118744,
+      "ended_at": "2026-10-09T13:57:30.732650+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "development",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 26,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+      "started_at": "2026-10-09T13:57:28.220834+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 2450210816,
+        "available_memory_bytes": 2450210816,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 2719821472,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T14:52:37.040793+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+        "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+        "model_revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "model_weight_bytes": 639446688,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 7014788768,
+        "resource_sample": {
+          "available_bytes": 2450210816,
+          "commit_available_bytes": 13269499904,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 85,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 41.8796373997684
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 0.8910000000032596,
+      "ended_at": "2026-10-09T14:52:37.090763+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "pilot",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "f7c5784967099e278047f837df255021b8ec2a4f",
+      "started_at": "2026-10-09T14:52:36.153851+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 2950733824,
+        "available_memory_bytes": 2950733824,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 469762048,
+        "estimated_peak_memory": 3914800800,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T14:53:32.419035+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "061b54daade076b5d3362dac252678d17da8c68f07560be70818cace6590cb1a",
+        "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+        "model_revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "model_weight_bytes": 1834426016,
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "quantization": "Q8_0",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 8209768096,
+        "resource_sample": {
+          "available_bytes": 2950733824,
+          "commit_available_bytes": 13967380480,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 82,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "90862c4b9d2787eaed51d12237eafdfe7c5f6077",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 43.160637399756524
+      },
+      "configuration_hash": null,
+      "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+      "economic_feasibility": {
+        "paid_generations": 0,
+        "plans": null,
+        "status": "STAGED_BUDGET_NOT_MEASURED"
+      },
+      "elapsed_seconds": 1.2809999999881256,
+      "ended_at": "2026-10-09T14:53:32.460894+00:00",
+      "execution_profile": "cpu-4096/1",
+      "live_submissions": 0,
+      "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+      "model_id": "Qwen/Qwen3-1.7B-GGUF:Q8_0",
+      "observed_latency_seconds": [],
+      "operational_activation": "OFF",
+      "paid_generations": 0,
+      "paper_submissions": 0,
+      "phase": "pilot",
+      "projected_workloads": [
+        {
+          "projected_seconds": null,
+          "rows": 20,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 50,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 100,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 500,
+          "state": "NOT_MEASURED"
+        },
+        {
+          "projected_seconds": null,
+          "rows": 4630,
+          "state": "NOT_MEASURED"
+        }
+      ],
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "schema_version": "local-runtime-benchmark/1.0.0",
+      "source_sha": "f7c5784967099e278047f837df255021b8ec2a4f",
+      "started_at": "2026-10-09T14:53:31.140489+00:00",
+      "startup_ms": null,
+      "throughput_per_minute": null
+    }
+  ],
+  "premium_budget": {
+    "affordability": "NOT_PROVEN",
+    "configured_allowance_and_remaining": {
+      "day": "2026-10-09",
+      "held_requests": 0,
+      "held_tokens": 0,
+      "max_requests": 30,
+      "max_tokens": 2000000,
+      "remaining_requests": 30,
+      "remaining_tokens": 2000000,
+      "requests": 0,
+      "tokens": 0,
+      "usage_overrun": false
+    },
+    "eligible_instruments": null,
+    "estimated_premium_tokens": null,
+    "global_reduction_reservation": null,
+    "local_failed": 0,
+    "local_qualified": null,
+    "local_uncertain": null,
+    "locally_assessed": 0,
+    "not_advanced": null,
+    "paid_engine_changed": false,
+    "paid_generations": 0,
+    "planned_premium_requests": null,
+    "proposed_premium_pool": null,
+    "status": "STAGED_BUDGET_NOT_MEASURED"
+  },
+  "preserved_4b": {
+    "legacy_manifest_untouched": true,
+    "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5"
+  },
+  "projected_workloads": [
+    {
+      "instruments": 20,
+      "seconds": null,
+      "status": "NOT_MEASURED"
+    },
+    {
+      "instruments": 50,
+      "seconds": null,
+      "status": "NOT_MEASURED"
+    },
+    {
+      "instruments": 100,
+      "seconds": null,
+      "status": "NOT_MEASURED"
+    },
+    {
+      "instruments": 500,
+      "seconds": null,
+      "status": "NOT_MEASURED"
+    },
+    {
+      "instruments": 4630,
+      "seconds": null,
+      "status": "NOT_MEASURED"
+    }
+  ],
+  "protected_ci": "PENDING",
+  "quantization_exception": "Official smaller repositories contain Q8_0 only; preferred Q4_K_M unavailable.",
+  "real_generation_requests": 0,
+  "recall": null,
+  "remaining_limitations": [
+    "Physical memory below unchanged 4 GiB floor and model-specific startup requirements.",
+    "No genuine local output, no quality/recall/throughput/savings measurement.",
+    "GPU acceleration not validated; shared GPU memory is not extra capacity.",
+    "No holdout without complete valid development; no trading approval.",
+    "Interrupted process recovery retains leases/reservations; no automatic foreign PID cleanup."
+  ],
+  "runtime_archive_sha256": "34a27c239727047adc5aed80b656b13373ff136b27d28bd898a14b7b7283695a",
+  "runtime_version": "b11269",
+  "schema_version": "ai-screener-laptop-local-models-acceptance/1.0.0",
+  "splits": {
+    "development": 26,
+    "holdout": 26,
+    "holdout_consumed": false,
+    "holdout_execution": "NOT_RUN"
+  },
+  "storage_added_bytes": 2473872704,
+  "throughput": null,
+  "validation": {
+    "bundle_initial_gzip_kib": 100.76,
+    "changed": {
+      "errors": 0,
+      "failures": 0,
+      "inherited_baseline_comparison": null,
+      "passes": 6278,
+      "performance_classification": "INSUFFICIENT_DATA",
+      "performance_gating_policy": "OBSERVE_ONLY",
+      "skips": 35,
+      "status": "passed",
+      "tests_run": 6313,
+      "wall_seconds": 430.6417089999886
+    },
+    "compile_lint": "PASS",
+    "docs_links": {
+      "governance_markdown_files": 296,
+      "status": "PASS"
+    },
+    "earlier_failures": {
+      "changed_socket_abort": {
+        "errors": 1,
+        "failures": 0,
+        "isolated_module": {
+          "errors": 0,
+          "failures": 0,
+          "passes": 6,
+          "tests": 6
+        },
+        "passes": 6277,
+        "reason": "WinError 10053 in controlled HTTP opportunity summary; unchanged module passed immediately in isolation.",
+        "skips": 35,
+        "tests": 6313
+      },
+      "changed_worktree_temp": {
+        "errors": 0,
+        "failures": 4,
+        "focused_outside_git": {
+          "errors": 0,
+          "failures": 0,
+          "passes": 4,
+          "tests": 4
+        },
+        "passes": 6272,
+        "reason": "TEMP inside Git caused non-Git fixture discovery to inherit parent checkout.",
+        "skips": 35,
+        "tests": 6311
+      },
+      "sandbox_changed": "INTERRUPTED_ENVIRONMENT_DENIAL",
+      "ui_full_before_fix": {
+        "failures": 4,
+        "passes": 1412,
+        "reason": "Synchronous assertions before lazy App view loaded; isolated App76 passed; await unchanged controls.",
+        "tests": 1416
+      }
+    },
+    "fast": {
+      "errors": 0,
+      "failures": 0,
+      "inherited_baseline_comparison": {
+        "absolute_delta_seconds": -0.077982,
+        "baseline_seconds": 3.511,
+        "baseline_status": "MEASURED_COMPATIBLE",
+        "classification": "NORMAL",
+        "ratio": 0.977789,
+        "threshold_crossed": null
+      },
+      "passes": 23,
+      "performance_classification": "SEVERE_REGRESSION",
+      "performance_gating_policy": "OBSERVE_ONLY",
+      "skips": 0,
+      "status": "passed",
+      "tests_run": 23,
+      "wall_seconds": 3.433018300012918
+    },
+    "focused_backend": {
+      "errors": 0,
+      "failures": 0,
+      "passes": 82,
+      "tests": 82
+    },
+    "focused_http": {
+      "errors": 0,
+      "failures": 0,
+      "passes": 2,
+      "tests": 2
+    },
+    "focused_ui": {
+      "failures": 0,
+      "passes": 33,
+      "tests": 33
+    },
+    "format": "PASS",
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "inherited_baseline_comparison": null,
+      "passes": 8421,
+      "performance_classification": "INCOMPATIBLE_BASELINE",
+      "performance_gating_policy": "OBSERVE_ONLY",
+      "skips": 53,
+      "status": "passed",
+      "tests_run": 8474,
+      "wall_seconds": 867.5334447000059
+    },
+    "history_ledger_guard": "PASS",
+    "monorepo_guard": "PASS",
+    "ui_build": "PASS",
+    "ui_full": {
+      "failures": 0,
+      "files": 180,
+      "passes": 1416,
+      "tests": 1416
+    },
+    "ui_load_race_repaired": true,
+    "ui_typecheck": "PASS"
+  }
+}
