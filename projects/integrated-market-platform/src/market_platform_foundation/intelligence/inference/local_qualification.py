@@ -181,6 +181,7 @@ class LocalQualifier:
         if "response" in locals():
             result.update(tokens_input=response.tokens_input,tokens_output=response.tokens_output,provider_latency_ms=response.latency_ms,inference_dispatched=response.inference_dispatched if response.inference_dispatched is not None else bool(response.raw_text),
                 context_fit=getattr(self.provider,'last_context_sample',None))
+            result['runtime_resources']=getattr(self.provider,'last_resource_sample',None)
         if parsed and not current(candidate,finished):
             return {**result,"valid":False,"reason":"LOCAL_EVIDENCE_EXPIRED_DURING_INFERENCE"}
         if parsed:

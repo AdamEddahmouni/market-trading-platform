@@ -113,7 +113,13 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
     <label>Screener method <select aria-label="Screener method" value={method} disabled={running} onChange={(e) => setMethod(e.target.value as typeof method)}><option value="EXHAUSTIVE_EXISTING">Exhaustive existing</option><option value="STAGED_LOCAL_FIRST_EXPERIMENTAL">Local-first experimental</option></select></label>
     {experimental && <PanelMessage tone="warn">Experimental method unapproved. Local qualification precedes the entire premium pool budget check. Results have no Action Decision or Paper submission authority.</PanelMessage>}
-    {experimental && preview.data?.staged && <p>Local model {String(preview.data.staged.local_model.model_id ?? "unavailable")} · readiness {String(preview.data.staged.local_model.state)} · method {preview.data.staged.method_version}</p>}
+    {experimental && preview.data?.staged && <section aria-label="Local runtime admission">
+      <p>Local model {String(preview.data.staged.local_model.model_id ?? "unavailable")} · readiness {String(preview.data.staged.local_model.state)} · profile {String(preview.data.staged.local_model.execution_profile ?? "unavailable")}</p>
+      <p>{typeof preview.data.staged.local_model.available_memory_bytes === 'number' ? (preview.data.staged.local_model.available_memory_bytes / 1024 ** 3).toFixed(2) + ' GiB available' : 'Available memory unmeasured'} · {typeof preview.data.staged.local_model.minimum_available_bytes === 'number' ? (preview.data.staged.local_model.minimum_available_bytes / 1024 ** 3).toFixed(2) + ' GiB safety floor' : 'Safety floor unavailable'}</p>
+      {Boolean(preview.data.staged.local_model.reason) && <p>Admission refused: {String(preview.data.staged.local_model.reason)}. Retry requires a fresh resource measurement.</p>}
+      <p>Local model quality is not proven by readiness. No benchmark results or premium savings are implied.</p>
+      <details><summary>Runtime admission measurements</summary><pre>{JSON.stringify(preview.data.staged.local_model, null, 2)}</pre></details>
+    </section>}
     <div className="ai-screener-toolbar">
       <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · {experimental ? "every eligible row receives a local assessment; unresolved cases advance to premium review" : "a run assesses every matched row and sends each eligible row to the model in batches of up to " + (preview.data?.max_intake ?? 50)}</p></div>
       {ai && <EngineChoice ai={ai} fit={preview.data?.engine_fit ?? []} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}

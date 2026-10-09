@@ -90,13 +90,17 @@ class LocalModelManifest:
     context: int = 8192
     gpu_layers: int = 99
     threads: int = 4
+    execution_profile: str = 'cpu-8192/1'
+    batch: int = 128
+    ubatch: int = 64
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> LocalModelManifest | None:
         try:
             return cls(Path(str(payload["runtime_path"])), Path(str(payload["model_path"])), str(payload["model_id"]),
                        str(payload.get("revision") or ""), str(payload.get("runtime_version") or ""),
-                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)), int(payload.get("threads", 4)))
+                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)), int(payload.get("threads", 4)),
+                       str(payload.get('execution_profile') or 'cpu-8192/1'), int(payload.get('batch',128)), int(payload.get('ubatch',64)))
         except (KeyError, TypeError, ValueError):
             return None
 
@@ -131,6 +135,11 @@ class LocalLlamaServer:
         self._watcher: threading.Thread | None = None
         self.starts = 0
         self.last_start_ms: float | None = None
+        from .local_runtime import MODEL_ID
+        self.enforce_admission = manifest.model_id == MODEL_ID
+        self.last_readiness = None
+        self.should_stop = lambda: False
+        self._runtime_lease = None
 
     def _ours(self) -> bool | None:
         """True: our alias answers; False: something else holds the port; None: nothing answers."""
@@ -155,13 +164,21 @@ class LocalLlamaServer:
 
         with self._lock:
             self._last_used = self._clock()
+            if self.should_stop():return 'STOPPED_BY_OPERATOR'
+            if self.enforce_admission:
+                from .local_runtime import readiness
+                self.last_readiness=readiness(self.manifest,process=self._process)
+                if self.last_readiness['rejection_reason']:return self.last_readiness['rejection_reason']
             if self.running() and self._ours():
                 return None
+            if self._process is not None:
+                self._stop_locked()  # never overwrite an unreaped owned instance
             missing = self.manifest.missing()
             if missing:
                 return missing
             owner = self._ours()
             if owner is True:
+                if self.enforce_admission:return 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME'
                 return None  # started by an earlier IMP process; reuse it
             if owner is False:
                 return "LOCAL_MODEL_PORT_IN_USE"
@@ -169,11 +186,26 @@ class LocalLlamaServer:
             args = [str(self.manifest.runtime_path), "-m", str(self.manifest.model_path), "--alias", SERVER_ALIAS,
                     "--host", "127.0.0.1", "--port", str(self._port), "-c", str(self.manifest.context),
                     "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui", "-t", str(self.manifest.threads)]
+            if self.enforce_admission:
+                args += ['--device','none','--no-kv-offload','--no-op-offload','--fit','off',
+                         '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
+                         '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads)]
+                lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
+                try:
+                    with lease.open('x',encoding='utf-8') as stream:
+                        stream.write(json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile}))
+                except FileExistsError:
+                    return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
+                except OSError:
+                    return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
+                self._runtime_lease=lease
             log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
             try:
                 self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                            creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0)
+                                            creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0,
+                                            env={k:v for k,v in os.environ.items() if not k.startswith(('LLAMA_ARG_','GGML_'))})
             except OSError:
+                self._stop_locked()
                 return "LOCAL_RUNTIME_START_FAILED"
             finally:
                 if log is not subprocess.DEVNULL:
@@ -181,7 +213,11 @@ class LocalLlamaServer:
             self.starts += 1
             deadline = started + self._startup_timeout_s
             while self._clock() < deadline:
+                if self.should_stop():
+                    self._stop_locked()
+                    return 'STOPPED_BY_OPERATOR'
                 if self._process.poll() is not None:
+                    self._stop_locked()
                     return "LOCAL_RUNTIME_EXITED"
                 try:
                     status, _ = self._get(f"{self.base_url}/health", 2.0)
@@ -215,13 +251,18 @@ class LocalLlamaServer:
                     return
 
     def _stop_locked(self) -> None:
-        process, self._process = self._process, None
+        process = self._process
         if process is not None and process.poll() is None:
             process.terminate()
             try:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
+                process.wait(timeout=10)
+        self._process = None  # ownership ends only after confirmed exit
+        if self._runtime_lease is not None:
+            self._runtime_lease.unlink(missing_ok=True)
+            self._runtime_lease=None
 
     def stop(self) -> None:
         with self._lock:
@@ -257,19 +298,45 @@ class LocalChatInferenceProvider:
             ADMISSION.release()
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_INFERENCE_BUSY", ParsingStatus.PROVIDER_ERROR, started)
         qualification = packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION
-        monitor = ResourceMonitor(self._server) if qualification and self._server is not None else None
+        stop = getattr(packet, 'should_stop', lambda: False)
+        managed = isinstance(self._server,LocalLlamaServer) and self._server.enforce_admission
+        monitor = ResourceMonitor(self._server, stop, time.monotonic()+STARTUP_TIMEOUT_S+config.timeout_seconds) if (qualification or managed) and self._server is not None else None
+        self.last_resource_sample = {}
+        self.last_context_sample = None
+        response = None
         try:
             if qualification and getattr(packet, 'should_stop', lambda: False)():
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
+            if (qualification or managed) and isinstance(self._server, LocalLlamaServer):
+                self._server.enforce_admission=True
+                self._server.should_stop=stop
+                from .local_runtime import readiness
+                self._server.last_readiness=readiness(self._server.manifest,process=self._server._process)
+                if self._server.last_readiness['rejection_reason']:
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,self._server.last_readiness['rejection_reason'],ParsingStatus.PROVIDER_ERROR,started)
             if monitor and monitor.check():
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
-            return self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
-        finally:
+            response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
             if monitor:
                 monitor.close()
-                self.last_resource_sample = {"peak_process_bytes": monitor.peak_bytes, "failure": monitor.failure}
-            SLOT.release()
-            ADMISSION.release()
+                if monitor.failure:
+                    response=self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,monitor.failure,ParsingStatus.PROVIDER_ERROR,started,
+                                         dispatched=bool(response.inference_dispatched))
+            return response
+        finally:
+            try:
+                if monitor:
+                    monitor.close()
+                    self.last_resource_sample = {"peak_process_bytes": monitor.peak_bytes or None,
+                        'peak_commit_bytes':monitor.peak_commit_bytes or None,"failure": monitor.failure,
+                        'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
+                        'startup_ms':getattr(self._server,'last_start_ms',None)}
+                    if response is None or response.error_code or monitor.failure or stop():
+                        self._server.stop()
+            finally:
+                if isinstance(self._server,LocalLlamaServer):self._server.should_stop=lambda:False
+                SLOT.release()
+                ADMISSION.release()
 
     def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None):
         started = time.perf_counter()
@@ -411,7 +478,10 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
     missing = manifest.missing()
     if missing:
         return SynthesisSelection(None, missing, None)
-    server = _managed_server(manifest, cache_dir)
+    try:
+        server = _managed_server(manifest, cache_dir)
+    except ValueError as exc:
+        return SynthesisSelection(None,str(exc),None)
     return SynthesisSelection(LocalChatInferenceProvider(base_url=server.base_url, model_id=manifest.model_id,
                                                          server=server, request_model=SERVER_ALIAS), None, "LOCAL_MODEL")
 
@@ -421,6 +491,9 @@ _SERVERS_LOCK = threading.Lock()
 
 
 def _managed_server(manifest: LocalModelManifest, cache_dir: Path) -> LocalLlamaServer:
+    from .local_runtime import MODEL_ID, apply_profile
+    if manifest.model_id == MODEL_ID:
+        manifest=apply_profile(manifest,manifest.execution_profile)
     key = (str(manifest.runtime_path), str(manifest.model_path))
     with _SERVERS_LOCK:
         server = _SERVERS.get(key)

@@ -1,0 +1,126 @@
+{
+  "admission": {
+    "artifact_verified": true,
+    "available_memory": 2670833664,
+    "available_memory_bytes": 2670833664,
+    "context_configuration": {
+      "batch": 128,
+      "context": 8192,
+      "kv_type": "f16",
+      "mmap": true,
+      "parallel_slots": 1,
+      "ubatch": 64
+    },
+    "context_window": 8192,
+    "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+    "estimated_kv_bytes": 1207959552,
+    "estimated_peak_memory": 5315852544,
+    "execution_profile": "cpu-8192/1",
+    "inference_occurred": false,
+    "measurement_timestamp": "2026-10-08T23:19:39.247568+00:00",
+    "minimum_available_bytes": 4294967296,
+    "model_hash": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+    "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "observed_peak_memory": null,
+    "premium_generation_attempted": false,
+    "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+    "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+    "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+    "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+    "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+    "required_memory": 9610819840,
+    "resource_sample": {
+      "available_bytes": 2670833664,
+      "commit_available_bytes": 16436027392,
+      "commit_total_bytes": 40195850240,
+      "memory_load_percent": 83,
+      "process_bytes": null,
+      "process_commit_bytes": null,
+      "process_peak_bytes": null,
+      "process_peak_commit_bytes": null,
+      "total_bytes": 16687722496
+    },
+    "results_produced": false,
+    "retry_requires_fresh_resource_measurement": true,
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "runtime_launched": false,
+    "runtime_version": "b11269",
+    "schema_version": "local-runtime-readiness/1.0.0",
+    "state": "RESOURCE_BLOCKED"
+  },
+  "budget": {
+    "limit_seconds": 7200,
+    "used_seconds": 31.06763739973394
+  },
+  "configuration_hash": null,
+  "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+  "economic_feasibility": {
+    "paid_generations": 0,
+    "plans": null,
+    "status": "STAGED_BUDGET_NOT_MEASURED"
+  },
+  "elapsed_seconds": 2.6560000000026776,
+  "ended_at": "2026-10-08T23:19:39.301006+00:00",
+  "execution_profile": "cpu-8192/1",
+  "live_submissions": 0,
+  "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "observed_latency_seconds": [],
+  "operational_activation": "OFF",
+  "paid_generations": 0,
+  "paper_submissions": 0,
+  "phase": "pilot",
+  "projected_workloads": [
+    {
+      "projected_seconds": null,
+      "rows": 50,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 100,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 500,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 4630,
+      "state": "NOT_MEASURED"
+    }
+  ],
+  "quality": {
+    "cases_not_completed": 3,
+    "evidence_grounding_failures": null,
+    "failed": 0,
+    "false_exclusions": null,
+    "fixture_cases_completed": 0,
+    "inconsistent_decisions": null,
+    "invalid_output_rate": null,
+    "missing_capability_errors": null,
+    "operational_advancement_recall": null,
+    "proposed_premium_count": null,
+    "qualification_accuracy": null,
+    "qualified": 0,
+    "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+    "real_cases_completed": 0,
+    "recall": null,
+    "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+    "reference_top5_recall": null,
+    "timeout_or_failure_count": null,
+    "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+    "uncertain": 0,
+    "valid_outputs": 0
+  },
+  "real_generation_requests": 0,
+  "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+  "runtime_starts": 0,
+  "schema_version": "local-runtime-benchmark/1.0.0",
+  "source_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+  "started_at": "2026-10-08T23:19:36.607457+00:00",
+  "startup_ms": null,
+  "throughput_per_minute": null
+}

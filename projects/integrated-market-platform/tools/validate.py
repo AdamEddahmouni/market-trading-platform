@@ -1097,13 +1097,26 @@ def run_worker_process(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        # Process-lifecycle acceptance tests must not interrupt the validator's
+        # console when their owned Windows child processes are cleaned up.
+        creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
+        if os.name == "nt" else 0,
     )
     if registry is not None:
         registry.add(process)
     try:
         stdout, stderr = process.communicate()
+    except KeyboardInterrupt:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        raise
     finally:
-        if registry is not None:
+        if registry is not None and process.poll() is not None:
             registry.discard(process)
     elapsed = time.perf_counter() - started
     stripped = stdout.strip()

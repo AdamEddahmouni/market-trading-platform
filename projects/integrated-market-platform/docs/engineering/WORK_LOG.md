@@ -1,5 +1,28 @@
 # IMP Work Log
 
+## 2026-10-08 — Local runtime safety and validation
+
+PR #487 merged at `930c0e0b` after nine successful checks; merge parents and
+implementation ancestry verified. The next focused feature extends the existing
+local adapter with pinned artifact verification, bounded CPU candidate profiles,
+one resource-readiness contract, commit/OS-peak monitoring, owned startup/Stop
+cleanup and cross-process launch lease. The original frozen 52-case benchmark
+gains append-only attempts, shared cumulative budget, once-only frozen holdout
+and offline economic planning. Staged preview displays resource refusal.
+
+Actual pilot: 2.49 GiB available, below unchanged 4 GiB floor; zero starts and
+generation requests. No accepted profile or quality/savings claim. Exhaustive
+default, experimental isolation and activation OFF preserved. See
+[runtime contract](../architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md) and
+[acceptance receipt](../../artifacts/ai-screener-local-runtime-validation.json).
+
+FULL closure exposed an existing Windows shared-console interruption during
+process-supervision acceptance cleanup. The unchanged 23-test module passes
+with an isolated worker process group. Added that Windows-only launch isolation
+to the validator and a regression that failed before the fix; test inventory,
+assertions and safety gates are unchanged. Earlier interrupted FULL receipts
+are retained and do not count as completion.
+
 > **Donor-era entries: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
 >
 > Entries from the donor era (2026-08-14 through the correction) predate the

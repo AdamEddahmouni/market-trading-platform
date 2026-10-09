@@ -1,5 +1,8 @@
 # Local-first experimental AI Screener
 
+Runtime admission and the bounded real benchmark now follow
+[Resource-safe local runtime](SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md).
+
 Classification: CURRENT_CANONICAL_TRUTH for software contracts; SOFTWARE_CONTROLLED for fixtures.
 Method: ai-screener-local-first/1.0.0. Methodology approval and operational activation: **OFF**.
 

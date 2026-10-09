@@ -69,6 +69,9 @@ it in the authoritative doc — do not silently choose.
 
 ## Architecture
 
+Local inference safety and real-model validation:
+[SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md](architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md).
+
 Order-flow chart navigation and captured-history contract:
 [ORDER_FLOW_TEMPORAL_HISTORY.md](architecture/ORDER_FLOW_TEMPORAL_HISTORY.md).
 
