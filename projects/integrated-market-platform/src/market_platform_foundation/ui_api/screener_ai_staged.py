@@ -18,25 +18,29 @@ from .screener_ai_universe import enumerate_universe, UniverseEnumerationError
 
 SCHEMA="screener-ai-staged-result/1.0.0"
 
-def local_provider():
-    from ..intelligence.inference.local_provider import select_synthesis_provider
+def local_provider(model_id=None):
+    from ..intelligence.inference.local_provider import registered_local_provider
+    from ..intelligence.inference.local_runtime import verify_identity_reason
     from ..local_state.external_cache import imp_cache_dir
-    from ..news.config import configured_value
-    provider=select_synthesis_provider(configured_value, cache_dir=imp_cache_dir(), engine="local").provider
+    try:
+        provider=registered_local_provider(imp_cache_dir(), model_id)
+    except ValueError:
+        return None
     manifest=getattr(getattr(provider,"_server",None),"manifest",None)
-    if not manifest or manifest.revision!="bc640142c66e1fdd12af0bd68f40445458f3869b" or manifest.runtime_version!="b11269": return None
+    if verify_identity_reason(manifest): return None
     return provider
 
-def local_status():
+def local_status(model_id=None):
     from ..intelligence.inference.local_runtime import readiness, apply_profile
-    from ..intelligence.inference.local_provider import LocalModelManifest, MANIFEST_RELATIVE
-    from ..local_state.external_cache import imp_cache_dir, read_manifest
-    server=getattr(local_provider(),"_server",None)
-    manifest=getattr(server,'manifest',None) or LocalModelManifest.from_dict(read_manifest(imp_cache_dir()/MANIFEST_RELATIVE) or {})
+    from ..intelligence.inference.local_models import model_manifest, DEFAULT_MODEL_ID
+    from ..local_state.external_cache import imp_cache_dir
+    server=getattr(local_provider(model_id),"_server",None)
+    manifest=getattr(server,'manifest',None) or model_manifest(imp_cache_dir(), model_id)
     if manifest and server is None:
         try:manifest=apply_profile(manifest,manifest.execution_profile)
         except ValueError:pass  # readiness reports the invalid persisted profile
-    return readiness(manifest,process=getattr(server,'_process',None))
+    status = readiness(manifest,process=getattr(server,'_process',None))
+    return {**status, 'selected_model_id': model_id or DEFAULT_MODEL_ID}
 
 class _PoolReader:
     def __init__(self,rows,envelope,refresh):
@@ -160,6 +164,8 @@ class _PremiumCoverage(ScreenerAiCoverage):
 class ScreenerAiStaged:
     def __init__(self,service,*,local=None,ledger=None,repository=None,cache=None):
         self.service=service
+        self._injected_local = local is not None
+        self._cache = cache
         self.local=local if local is not None else local_provider()
         default_ledger,default_repo=staged_stores() if ledger is None or repository is None else (None,None)
         self.ledger,self.repository=ledger or default_ledger,repository or default_repo
@@ -171,6 +177,13 @@ class ScreenerAiStaged:
     def run(self,body,*,run_id,account_id,should_stop=lambda:False):
         query=self.service._query(body)
         if query.get("method")!=METHOD: raise ValueError("EXPLICIT_STAGED_METHOD_REQUIRED")
+        if not self._injected_local:
+            self.local = local_provider(query.get('local_model_id'))
+            cache = self._cache
+            if cache is None and self.local is not None:
+                from ..local_state.screener_inference_cache import inference_cache
+                cache = inference_cache()
+            self.qualifier = LocalQualifier(self.local, clock=self.service._clock, cache=cache)
         start=_iso(self.service._clock())
         self.run_id,self.account_id,self.query=run_id,account_id,query
         self.states,self.assessments,self.expected={},{},{}

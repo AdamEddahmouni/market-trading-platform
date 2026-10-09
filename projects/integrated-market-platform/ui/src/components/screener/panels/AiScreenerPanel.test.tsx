@@ -80,6 +80,24 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
+  it("selects an experimental local model explicitly without changing the paid engine", async () => {
+    const small = "Qwen/Qwen3-0.6B-GGUF:Q8_0";
+    mocks.preview.mockResolvedValue({ ...preview, staged: { method_version: "ai-screener-local-first/1.0.0", approval_status: "UNAPPROVED",
+      local_model: { state: "RESOURCE_BLOCKED" }, local_models: [
+        { model_id: small, installed: true, quantization: "Q8_0", benchmark_status: "NOT_RUN" },
+        { model_id: "Qwen/Qwen3-1.7B-GGUF:Q8_0", installed: false, quantization: "Q8_0", benchmark_status: "NOT_RUN" },
+        { model_id: "Qwen/Qwen3-4B-GGUF:Q4_K_M", installed: true, quantization: "Q4_K_M", benchmark_status: "NOT_RUN" },
+      ] } });
+    renderPanel();
+    fireEvent.change(await screen.findByLabelText("Screener method"), { target: { value: "STAGED_LOCAL_FIRST_EXPERIMENTAL" } });
+    const selector = await screen.findByLabelText("Experimental local model");
+    expect(selector).toHaveValue("Qwen/Qwen3-4B-GGUF:Q4_K_M");
+    expect(within(selector).getAllByRole("option")).toHaveLength(3);
+    fireEvent.change(selector, { target: { value: small } });
+    await waitFor(() => expect(mocks.preview).toHaveBeenLastCalledWith(expect.objectContaining({ local_model_id: small }), expect.anything()));
+    expect(mocks.engine).not.toHaveBeenCalled();
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
   it("shows local memory admission diagnostics without implying model execution", async () => {
     mocks.preview.mockResolvedValue({ ...preview, staged: { method_version: "ai-screener-local-first/1.0.0", approval_status: "UNAPPROVED",
       local_model: { model_id: "Qwen3-4B", state: "RESOURCE_BLOCKED", execution_profile: "cpu-8192/1", available_memory_bytes: 2 * 1024 ** 3,

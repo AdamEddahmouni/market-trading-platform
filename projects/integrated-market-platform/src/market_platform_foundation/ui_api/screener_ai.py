@@ -148,6 +148,13 @@ class ScreenerAiService:
         method = body.get("method", "EXHAUSTIVE_EXISTING")
         if method not in ("EXHAUSTIVE_EXISTING", "STAGED_LOCAL_FIRST_EXPERIMENTAL"):
             raise ValueError("INVALID_AI_SCREENER_METHOD")
+        local_selection = {}
+        if method == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
+            from ..intelligence.inference.local_models import MODELS, DEFAULT_MODEL_ID
+            model_id = body.get('local_model_id', DEFAULT_MODEL_ID)
+            if not isinstance(model_id, str) or model_id not in MODELS:
+                raise ValueError('LOCAL_MODEL_NOT_IN_REGISTRY')
+            local_selection['local_model_id'] = model_id
         universe = body.get("universe")
         if not isinstance(universe, str):
             raise ValueError("INVALID_AI_SCREENER_SCOPE")
@@ -166,7 +173,7 @@ class ScreenerAiService:
         view, screen = body.get("view", "Overview"), body.get("screen", "")
         if not all(isinstance(value, str) and len(value) <= 120 for value in (view, screen)):
             raise ValueError("INVALID_AI_SCREENER_SCOPE")
-        return {**({"method": method} if method != "EXHAUSTIVE_EXISTING" else {}), "universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
+        return {**local_selection, **({"method": method} if method != "EXHAUSTIVE_EXISTING" else {}), "universe": universe, "view": view, "screen": screen, "search": search, "sort": sort,
                 "descending": descending, "filters": copy.deepcopy(filters), "result_set": result_set}
 
     def _packet(self, body: dict[str, Any], *, refresh_news: bool = False, include_flow: bool | None = None) -> tuple[dict[str, Any], list[dict[str, Any]], str, dict[str, Any]]:
@@ -207,6 +214,8 @@ class ScreenerAiService:
         scope.update(result_set=page.get("result_set_id"), matched_count=int(page.get("result_count") or 0),
                      universe_as_of=page.get("universe_as_of"), screener_as_of=page.get("screener_as_of"),
                      view=query["view"], screen=query["screen"])
+        if query.get('method') == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
+            scope.update(method=query['method'], local_model_id=query['local_model_id'])
         return scope
 
     def _news_for(self, universe: str, raw_rows: list[dict[str, Any]], *, refresh: bool) -> dict[str, Any]:
@@ -280,8 +289,11 @@ class ScreenerAiService:
         staged = None
         if method == "STAGED_LOCAL_FIRST_EXPERIMENTAL":
             from .screener_ai_staged import local_status
+            from ..intelligence.inference.local_models import model_options
+            from ..local_state.external_cache import imp_cache_dir
             staged = {"method_version": "ai-screener-local-first/1.0.0", "approval_status": "UNAPPROVED",
-                      "local_model": local_status(), "premium_plan": None,
+                      "local_model": local_status(self._query(body)['local_model_id']),
+                      "local_models": model_options(imp_cache_dir()), "premium_plan": None,
                       "reason": "FULL_POOL_PLAN_AVAILABLE_AFTER_LOCAL_ASSESSMENT"}
         scope, candidates, now, page_meta = self._packet(body)
         ai = self._ai_status()

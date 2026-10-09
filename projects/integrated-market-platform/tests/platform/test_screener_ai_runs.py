@@ -505,6 +505,25 @@ class AiScreenerRunRouteTests(unittest.TestCase):
         connection.close()
         return response.status, payload
 
+    def test_preview_keeps_exhaustive_default_when_method_is_absent(self):
+        with patch('market_platform_foundation.ui_api.screener_ai.screener_ai_service', return_value=self.runs._fixed_service):
+            status, payload = self.call('GET', '/screener/ai-screener/preview?universe=US_EQUITIES')
+        self.assertEqual(status, 200, payload)
+        self.assertNotIn('staged', payload)
+        self.assertEqual(self.provider.calls, 0)
+
+    def test_experimental_preview_passes_explicit_model_to_admission(self):
+        from urllib.parse import urlencode
+        chosen = 'Qwen/Qwen3-0.6B-GGUF:Q8_0'
+        with patch('market_platform_foundation.ui_api.screener_ai.screener_ai_service', return_value=self.runs._fixed_service), \
+             patch('market_platform_foundation.ui_api.screener_ai_staged.local_status', return_value={'model_id':chosen, 'state':'RESOURCE_BLOCKED'}) as status_reader, \
+             patch('market_platform_foundation.intelligence.inference.local_models.model_options', return_value=[]):
+            status, payload = self.call('GET', '/screener/ai-screener/preview?'+urlencode(
+                {'universe':'US_EQUITIES', 'method':'STAGED_LOCAL_FIRST_EXPERIMENTAL', 'local_model_id':chosen}))
+        self.assertEqual(status, 200, payload)
+        status_reader.assert_called_once_with(chosen)
+        self.assertEqual(self.provider.calls, 0)
+
     def test_post_returns_a_running_run_and_get_follows_it_to_the_result(self):
         status, started = self.call("POST", "/screener/ai-screener", SCOPE)
         self.assertEqual((status, started["schema_version"], started["state"]), (200, RUN_SCHEMA, "RUNNING"))

@@ -26,6 +26,15 @@ _VERIFIED = {}
 _VERIFY_LOCK = threading.Lock()
 
 
+def model_pin(manifest):
+    from .local_models import MODELS
+    pin = MODELS.get(manifest.model_id) if manifest else None
+    if not pin or manifest.revision != pin.revision or manifest.runtime_version != RUNTIME_VERSION:
+        return None
+    # Preserve the existing 4B constants and verification contract.
+    return replace(pin, weight_bytes=MODEL_BYTES, sha256=MODEL_HASH) if pin.model_id == MODEL_ID else pin
+
+
 def apply_profile(manifest, name):
     if name not in PROFILES:
         raise ValueError('LOCAL_RUNTIME_PROFILE_INVALID')
@@ -38,6 +47,9 @@ def profile_reason(manifest):
     if manifest.execution_profile not in PROFILES:
         return 'LOCAL_RUNTIME_PROFILE_INVALID'
     actual = (manifest.context, manifest.batch, manifest.ubatch, manifest.threads, manifest.gpu_layers)
+    pin = model_pin(manifest)
+    if pin and manifest.context > pin.context_limit:
+        return 'LOCAL_RUNTIME_PROFILE_CONTEXT_LIMIT'
     return None if actual == PROFILES[manifest.execution_profile] else 'LOCAL_RUNTIME_PROFILE_MISMATCH'
 
 
@@ -52,8 +64,8 @@ def verify_artifacts(manifest):
     Success is cached only for unchanged file identities. Failures are not cached.
     Never executes or downloads an artifact to verify it.
     """
-    if not manifest or (manifest.model_id, manifest.revision, manifest.runtime_version) != (
-            MODEL_ID, MODEL_REVISION, RUNTIME_VERSION):
+    pin = model_pin(manifest)
+    if not pin:
         return 'PINNED_LOCAL_MODEL_REQUIRED'
     if os.name != 'nt':
         return 'LOCAL_PINNED_RUNTIME_PLATFORM_UNSUPPORTED'
@@ -65,11 +77,12 @@ def verify_artifacts(manifest):
         files = sorted(p for p in manifest.runtime_path.parent.iterdir()
                        if p.suffix.lower() in ('.dll', '.exe'))
         paths = [manifest.model_path, archive, *files]
-        key = tuple((str(p.resolve()), p.stat().st_size, p.stat().st_mtime_ns, p.stat().st_ctime_ns) for p in paths)
+        file_key = tuple((str(p.resolve()), p.stat().st_size, p.stat().st_mtime_ns, p.stat().st_ctime_ns) for p in paths)
+        key = (pin.model_id, pin.revision, pin.sha256, pin.weight_bytes, ARCHIVE_HASH, file_key)
         with _VERIFY_LOCK:
             if key in _VERIFIED:
                 return None
-            if manifest.model_path.stat().st_size != MODEL_BYTES or _digest(manifest.model_path) != MODEL_HASH:
+            if manifest.model_path.stat().st_size != pin.weight_bytes or _digest(manifest.model_path) != pin.sha256:
                 return 'MODEL_CHECKSUM_FAILED'
             if _digest(archive) != ARCHIVE_HASH:
                 return 'LOCAL_RUNTIME_ARCHIVE_CHECKSUM_FAILED'
@@ -83,8 +96,9 @@ def verify_artifacts(manifest):
                     if _digest(path) != expected:
                         return 'LOCAL_RUNTIME_CHECKSUM_FAILED'
             current=tuple((str(p.resolve()),p.stat().st_size,p.stat().st_mtime_ns,p.stat().st_ctime_ns) for p in paths)
-            if current!=key:return 'LOCAL_ARTIFACT_CHANGED_DURING_VERIFICATION'
-            _VERIFIED.clear()
+            if current!=file_key:return 'LOCAL_ARTIFACT_CHANGED_DURING_VERIFICATION'
+            if len(_VERIFIED) >= 16:
+                _VERIFIED.clear()
             _VERIFIED[key] = True
     except (OSError, ValueError, zipfile.BadZipFile, KeyError):
         return 'LOCAL_ARTIFACT_VERIFICATION_UNAVAILABLE'
@@ -97,11 +111,12 @@ def readiness(manifest, *, sample=None, process=None):
     reason = artifact_reason
     if not reason:
         reason = profile_reason(manifest)
-    # f16 K+V: pinned Qwen3 36 layers, 8 KV heads, head dim 128.
+    pin = model_pin(manifest)
+    # Model-specific f16 K+V dimensions from the official architecture.
     # Count the FULL weight artifact even with mmap, plus conservative uncalibrated
     # 1.5 GiB runtime/graph/buffer reserve; shared GPU budgets never add capacity.
-    kv = 36 * 8 * 128 * 4 * manifest.context if manifest else None
-    peak = MODEL_BYTES + kv + 3*GIB//2 if kv is not None else None
+    kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * manifest.context if pin else None
+    peak = pin.weight_bytes + kv + 3*GIB//2 if kv is not None else None
     resident = min(sample.get('process_bytes') or 0, sample.get('process_commit_bytes') or 0)
     additional = max(0, peak-resident) if peak is not None else None
     required = MIN_AVAILABLE_BYTES + additional if additional is not None else None
@@ -124,7 +139,9 @@ def readiness(manifest, *, sample=None, process=None):
         'schema_version':'local-runtime-readiness/1.0.0',
         'model_id':manifest.model_id if manifest else None,
         'model_revision':manifest.revision if manifest else None, 'revision':manifest.revision if manifest else None,
-        'model_hash':MODEL_HASH if manifest and not verify_identity_reason(manifest) else None,
+        'model_hash':pin.sha256 if pin else None,
+        'quantization':pin.quantization if pin else None,
+        'model_weight_bytes':pin.weight_bytes if pin else None,
         'artifact_verified':not bool(artifact_reason),
         'runtime_version':manifest.runtime_version if manifest else None,
         'execution_profile':manifest.execution_profile if manifest else None,
@@ -148,4 +165,4 @@ def readiness(manifest, *, sample=None, process=None):
 
 
 def verify_identity_reason(manifest):
-    return (manifest.model_id,manifest.revision,manifest.runtime_version) != (MODEL_ID,MODEL_REVISION,RUNTIME_VERSION)
+    return model_pin(manifest) is None

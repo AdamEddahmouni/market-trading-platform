@@ -7,6 +7,7 @@ const MethodSchema = z.enum(['EXHAUSTIVE_EXISTING', 'STAGED_LOCAL_FIRST_EXPERIME
 const StagedSchema = z.object({ schema_version: z.literal('ai-screener-staged-accounting/1.0.0'), method_version: z.string(), approval_status: z.literal('UNAPPROVED'), status: z.string(), reason: z.string().nullable().optional(), counters: z.record(z.number()), primary_states: z.record(z.number()), reconciled: z.boolean(), local_coverage_complete: z.boolean(), selection_complete: z.boolean(), local_model: z.record(z.unknown()), premium_model: z.record(z.unknown()), premium_plan: z.record(z.unknown()).nullable() }).passthrough();
 const ScopeSchema = z.object({
   method: MethodSchema.optional(),
+  local_model_id: z.string().optional(),
   universe: z.enum(["US_EQUITIES", "FUTURES", "US_ETFS", "BONDS", "CRYPTO"]),
   search: z.string(), sort: z.string().nullable(), descending: z.boolean(), filters: z.array(z.object({
     id: z.string(), field: z.string(), operator: z.string(), value: z.union([z.number(), z.string(), z.array(z.number()), z.array(z.string())]),
@@ -14,6 +15,7 @@ const ScopeSchema = z.object({
 }).passthrough();
 export type AiScreenerScope = {
   method?: z.infer<typeof MethodSchema>;
+  local_model_id?: string;
   universe: ScreenerUniverse;
   search: string;
   sort: string;
@@ -51,7 +53,7 @@ const SelectionSchema = z.object({ instrument_id: z.string(), rank: z.number(), 
 }).passthrough();
 const EvidenceSummarySchema = z.object({ sufficient: z.number(), blocked: z.number(), missing: z.number(), weak: z.number() }).passthrough();
 export const AiScreenerPreviewSchema = z.object({ schema_version: z.literal("screener-ai-screener-preview/1.0.0"), ai: AiStatusSchema,
-  staged: z.object({ method_version: z.string(), approval_status: z.literal('UNAPPROVED'), local_model: z.record(z.unknown()) }).optional(),
+  staged: z.object({ method_version: z.string(), approval_status: z.literal('UNAPPROVED'), local_model: z.record(z.unknown()), local_models: z.array(z.record(z.unknown())).optional() }).optional(),
   scope: ScopeSchema, matched_count: z.number(), intake_count: z.number(), max_intake: z.number(), estimate: EstimateSchema.nullable(),
   evidence_summary: EvidenceSummarySchema, news_coverage: z.array(NewsCoverageSchema.extend({ instrument_id: z.string() })).optional(), decision_cutoff: z.string(), result_set: z.string().nullable().optional(),
   engine_fit: z.array(z.object({ engine: z.string(), fits: z.boolean().nullable(), packet_size: z.number().nullable(), context_window: z.number().nullable() })).optional(),
@@ -98,6 +100,7 @@ function queryFor(scope: AiScreenerScope) {
   if (scope.view) query.set("view", scope.view);
   if (scope.screen) query.set("screen", scope.screen);
   if (scope.method) query.set("method", scope.method);
+  if (scope.local_model_id) query.set("local_model_id", scope.local_model_id);
   return query;
 }
 
@@ -150,9 +153,9 @@ function sorted(value: unknown): unknown {
 
 /** Identity of the Screener query a run answers. The list snapshot (`result_set`) is not part of it: the same query
  *  after a list refresh is still the same question, and a result states its own cutoff. */
-export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown; method?: string }) {
+export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown; method?: string; local_model_id?: string }) {
   return JSON.stringify(sorted({ universe: scope.universe, search: scope.search, sort: scope.sort ?? null, descending: scope.descending,
-    filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "", ...(scope.method === "STAGED_LOCAL_FIRST_EXPERIMENTAL" ? { method: scope.method } : {}) }));
+    filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "", ...(scope.method === "STAGED_LOCAL_FIRST_EXPERIMENTAL" ? { method: scope.method, local_model_id: scope.local_model_id ?? "Qwen/Qwen3-4B-GGUF:Q4_K_M" } : {}) }));
 }
 
 /** Explicit operator action; GET is intentionally not used for inference. Returns at once: the run continues on the

@@ -135,8 +135,8 @@ class LocalLlamaServer:
         self._watcher: threading.Thread | None = None
         self.starts = 0
         self.last_start_ms: float | None = None
-        from .local_runtime import MODEL_ID
-        self.enforce_admission = manifest.model_id == MODEL_ID
+        from .local_models import MODELS
+        self.enforce_admission = manifest.model_id in MODELS
         self.last_readiness = None
         self.should_stop = lambda: False
         self._runtime_lease = None
@@ -305,6 +305,9 @@ class LocalChatInferenceProvider:
         self.last_context_sample = None
         response = None
         try:
+            if isinstance(self._server, LocalLlamaServer):
+                # SLOT is held: no other inference can still be using an owned prior model.
+                _stop_other_managed_servers(self._server)
             if qualification and getattr(packet, 'should_stop', lambda: False)():
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
             if (qualification or managed) and isinstance(self._server, LocalLlamaServer):
@@ -486,15 +489,24 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
                                                          server=server, request_model=SERVER_ALIAS), None, "LOCAL_MODEL")
 
 
-_SERVERS: dict[tuple[str, str], LocalLlamaServer] = {}
+_SERVERS: dict[tuple[LocalModelManifest, str], LocalLlamaServer] = {}
 _SERVERS_LOCK = threading.Lock()
 
 
+def _stop_other_managed_servers(selected):
+    with _SERVERS_LOCK:
+        others = [server for server in _SERVERS.values() if server is not selected and server._port == selected._port]
+    for server in others:
+        # These are owned objects from this API process, never foreign port/PID discovery.
+        server.stop()
+
+
 def _managed_server(manifest: LocalModelManifest, cache_dir: Path) -> LocalLlamaServer:
-    from .local_runtime import MODEL_ID, apply_profile
-    if manifest.model_id == MODEL_ID:
+    from .local_models import MODELS
+    from .local_runtime import apply_profile
+    if manifest.model_id in MODELS:
         manifest=apply_profile(manifest,manifest.execution_profile)
-    key = (str(manifest.runtime_path), str(manifest.model_path))
+    key = (manifest, str(cache_dir))
     with _SERVERS_LOCK:
         server = _SERVERS.get(key)
         if server is None:
@@ -505,6 +517,17 @@ def _managed_server(manifest: LocalModelManifest, cache_dir: Path) -> LocalLlama
         return server
 
 
+def registered_local_provider(cache_dir: Path, model_id: str | None = None):
+    from .local_models import DEFAULT_MODEL_ID, model_manifest
+    chosen = model_id or DEFAULT_MODEL_ID
+    manifest = model_manifest(cache_dir, chosen)
+    if manifest is None or manifest.model_id != chosen or manifest.missing():
+        return None
+    server = _managed_server(manifest, cache_dir)
+    return LocalChatInferenceProvider(base_url=server.base_url, model_id=chosen,
+        server=server, request_model=SERVER_ALIAS)
+
+
 __all__ = ["DEFAULT_PORT", "LOCAL_PROVIDER_ID", "LOCAL_UNAVAILABLE", "LocalChatInferenceProvider", "LocalLlamaServer",
            "LocalModelManifest", "MANIFEST_RELATIVE", "SERVER_ALIAS", "SynthesisSelection", "is_loopback_url",
-           "select_synthesis_provider"]
+           "select_synthesis_provider", "registered_local_provider"]

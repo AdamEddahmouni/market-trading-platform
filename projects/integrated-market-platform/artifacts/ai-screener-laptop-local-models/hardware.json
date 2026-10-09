@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-10-09T13:57:31.0360977Z",
+  "cpu": {
+    "Name": "Intel(R) Core(TM) Ultra 7 256V",
+    "NumberOfCores": 8,
+    "NumberOfLogicalProcessors": 8
+  },
+  "os_memory": {
+    "TotalVisibleMemorySize": 16296604,
+    "FreePhysicalMemory": 2951756,
+    "TotalVirtualMemorySize": 39253760,
+    "FreeVirtualMemory": 14789688
+  },
+  "gpu": {
+    "Name": "Intel(R) Arc(TM) 140V GPU (8GB)",
+    "AdapterRAM": 2147479552,
+    "DriverVersion": "32.0.101.8626"
+  },
+  "disk": {
+    "Used": 950484529152,
+    "Free": 51958317056
+  },
+  "llama_processes": [],
+  "inference_backend": "PINNED_LLAMA_CPU_ONLY",
+  "gpu_acceleration": "NOT_VALIDATED",
+  "dedicated_gpu_memory": "UNMEASURED_CIM_ADAPTER_RAM_IS_NOT_PROOF",
+  "shared_gpu_memory": "SHARED_SYSTEM_RAM_NOT_ADMISSION_CAPACITY",
+  "gpu_diagnostic": {
+    "dedicated_memory_mb": 128,
+    "shared_memory_mb": 9071,
+    "display_memory_mb": 9199,
+    "source": "dxdiag XML",
+    "shared_memory_adds_admission_capacity": false
+  }
+}

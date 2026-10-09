@@ -20,8 +20,9 @@ from market_platform_foundation.local_state.external_cache import imp_cache_dir,
 from market_platform_foundation.intelligence.inference.evidence_compaction import semantic_hash
 from market_platform_foundation.intelligence.inference.local_runtime import apply_profile, readiness, PROFILES
 from market_platform_foundation.intelligence.inference.local_provider import (
-    LocalModelManifest,LocalLlamaServer,LocalChatInferenceProvider,MANIFEST_RELATIVE,SERVER_ALIAS)
+    LocalLlamaServer,LocalChatInferenceProvider,SERVER_ALIAS)
 from market_platform_foundation.intelligence.inference.local_qualification import LocalQualifier
+from market_platform_foundation.intelligence.inference.local_models import MODELS, DEFAULT_MODEL_ID, model_manifest
 from tests.support.coverage_universe import NOW
 
 LIMIT=7200
@@ -104,7 +105,10 @@ def economic_plan(records,cases,cutoff):
             'limitations':'Partial benchmark pool only; no observed 4630-row pool or savings; reference quotas are not live remaining quota.'}
 
 
-def run(*,phase='pilot',profile='cpu-8192/1',output=None):
+def run(*,phase='pilot',profile=None,model_id=DEFAULT_MODEL_ID,output=None):
+    if model_id not in MODELS:
+        raise ValueError('LOCAL_MODEL_NOT_IN_REGISTRY')
+    profile = profile or MODELS[model_id].profile
     frozen=load()
     state=imp_cache_dir()/'benchmarks'/'local-runtime-validation'
     attempt=output or ROOT/'artifacts'/'ai-screener-local-runtime'/('attempt-'+datetime.now(UTC).strftime('%Y%m%dT%H%M%S')+'-'+uuid4().hex[:8])
@@ -126,20 +130,24 @@ def run(*,phase='pilot',profile='cpu-8192/1',output=None):
                 raise ValueError('LOCAL_BENCHMARK_BUDGET_CORRUPT')
             if budget.get('pending') or old_budget.get('pending'):raise ValueError('PRIOR_INFERENCE_OUTCOME_UNKNOWN')
             reserve(dict(budget),'ADMISSION_RESERVE_VALIDATION')
-            base=LocalModelManifest.from_dict(read_manifest(imp_cache_dir()/MANIFEST_RELATIVE) or {})
+            base=model_manifest(imp_cache_dir(), model_id)
             if not base:raise ValueError('LOCAL_MODEL_MANIFEST_MISSING')
+            if base.model_id != model_id:raise ValueError('LOCAL_MODEL_IDENTITY_MISMATCH')
             manifest=apply_profile(base,profile)
             status=readiness(manifest)
             write_json_atomic(attempt/'admission.json',status)
             if status['rejection_reason']:raise ValueError(status['rejection_reason'])
             config={'manifest_hash':frozen['manifest_hash'],'dataset_hash':frozen['dataset_hash'],
                 'prompt_hash':frozen['prompt_hash'],'profile':profile,'runtime':manifest.runtime_version,
+                'model_id':model_id,'model_revision':manifest.revision,
                 'model_hash':status['model_hash'],'max_tokens':frozen['max_tokens'],'temperature':0,
                 'runner_version':'local-runtime-benchmark/1.0.0',
                 'source_content_hash':semantic_hash({str(p.relative_to(ROOT)):p.read_text(encoding='utf-8') for p in (
                     Path(__file__),ROOT/'src/market_platform_foundation/intelligence/inference/local_provider.py',
                     ROOT/'src/market_platform_foundation/intelligence/inference/local_resources.py',
                     ROOT/'src/market_platform_foundation/intelligence/inference/local_runtime.py',
+                    ROOT/'src/market_platform_foundation/intelligence/inference/local_models.py',
+                    ROOT/'src/market_platform_foundation/intelligence/inference/inference_identity.py',
                     ROOT/'src/market_platform_foundation/intelligence/inference/local_qualification.py')})}
             config_key=semantic_hash(config)
             config_path=state/(config_key+'.json')
@@ -191,17 +199,21 @@ def run(*,phase='pilot',profile='cpu-8192/1',output=None):
             latencies=[r['elapsed_seconds'] for r in records if r['assessment'].get('inference_dispatched')]
             summary={'schema_version':'local-runtime-benchmark/1.0.0','source_sha':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
                 'manifest_hash':frozen['manifest_hash'],'dataset_hash':frozen['dataset_hash'],'configuration_hash':config_key,
-                'phase':phase,'execution_profile':profile,'started_at':start,'ended_at':datetime.now(UTC).isoformat(),
+                'model_id':model_id,'phase':phase,'execution_profile':profile,'started_at':start,'ended_at':datetime.now(UTC).isoformat(),
                 'elapsed_seconds':elapsed,'budget':budget,'admission':status,'rejection_reason':failure,'quality':quality,
                 'runtime_starts':server.starts if server else 0,'startup_ms':server.last_start_ms if server else None,
                 'real_generation_requests':sum(bool(r['assessment'].get('inference_dispatched')) for r in records),
                 'observed_latency_seconds':latencies,'throughput_per_minute':60/statistics.mean(latencies) if latencies else None,
                 'projected_workloads':[{'rows':n,'projected_seconds':n*statistics.mean(latencies) if latencies else None,
-                    'state':'PROJECTED_FROM_SMALL_SAMPLE' if latencies else 'NOT_MEASURED'} for n in (50,100,500,4630)],
+                    'state':'PROJECTED_FROM_SMALL_SAMPLE' if latencies else 'NOT_MEASURED'} for n in (20,50,100,500,4630)],
                 'economic_feasibility':economic_plan(records,frozen['cases'],frozen['cutoff']),
                 'operational_activation':'OFF','paid_generations':0,'paper_submissions':0,'live_submissions':0}
             if failure and 'RESOURCE' in failure:summary['quality']['quality_status']='LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED'
             write_json_atomic(attempt/'summary.json',summary)
+            pin = MODELS[model_id]
+            write_json_atomic(imp_cache_dir()/'benchmarks'/'local-model-observations'/(pin.filename+'.json'),
+                {**summary, 'model_hash':pin.sha256,'revision':pin.revision,'attempt_path':str(attempt),
+                 'observed_peak_memory':max((r.get('resource_sample',{}).get('peak_process_bytes') or 0 for r in records), default=0) or None})
             print(json.dumps({'attempt':str(attempt),'rejection_reason':failure,'runtime_starts':summary['runtime_starts'],
                               'real_generation_requests':summary['real_generation_requests'],'quality':summary['quality']},indent=2),flush=True)
         return summary
@@ -210,9 +222,10 @@ def run(*,phase='pilot',profile='cpu-8192/1',output=None):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--phase',choices=('pilot','development','holdout'),default='pilot')
-    parser.add_argument('--profile',choices=tuple(PROFILES),default='cpu-8192/1')
+    parser.add_argument('--profile',choices=tuple(PROFILES))
+    parser.add_argument('--model',choices=tuple(MODELS),default=DEFAULT_MODEL_ID)
     args=parser.parse_args()
-    summary=run(phase=args.phase,profile=args.profile)
+    summary=run(phase=args.phase,profile=args.profile,model_id=args.model)
     return 2 if summary['rejection_reason'] else 0
 
 

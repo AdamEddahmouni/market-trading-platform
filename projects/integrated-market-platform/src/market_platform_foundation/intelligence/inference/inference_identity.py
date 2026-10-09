@@ -12,6 +12,11 @@ def provider_identity(provider):
         identity['manifest'] = {key:str(getattr(manifest,key,None)) for key in
                                ('model_id','revision','runtime_version','context','gpu_layers','model_path','runtime_path',
                                 'execution_profile','threads','batch','ubatch')}
+        from .local_models import MODELS
+        pin = MODELS.get(getattr(manifest, 'model_id', None))
+        if pin:
+            identity['manifest']['artifact_sha256'] = pin.sha256
+            identity['manifest']['quantization'] = pin.quantization
         for name in ('model_path','runtime_path'):
             path = getattr(manifest,name,None)
             try:

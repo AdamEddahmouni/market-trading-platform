@@ -336,3 +336,171 @@ class ControlledLifecycleTests(unittest.TestCase):
 def json_bytes(value):
     import json
     return json.dumps(value).encode()
+
+
+class LaptopModelTests(unittest.TestCase):
+    def test_offline_check_validates_the_persisted_manifest_revision(self):
+        import hashlib
+        import json
+        import os
+        import tempfile
+        from types import SimpleNamespace
+        from tools.news import setup_laptop_models as setup
+        from market_platform_foundation.intelligence.inference.local_models import manifest_relative
+        chosen = 'Qwen/Qwen3-0.6B-GGUF:Q8_0'
+        pin = replace(setup.MODELS[chosen], weight_bytes=4, sha256=hashlib.sha256(b'GGUF').hexdigest())
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            target = root/'models'/'weights'/pin.revision/pin.filename
+            target.parent.mkdir(parents=True)
+            target.write_bytes(b'GGUF')
+            (root/manifest_relative(chosen)).write_text(json.dumps({'model_id':chosen,
+                'revision':'tampered', 'model_path':str(target), 'runtime_path':str(root/'llama-server.exe')}), encoding='utf-8')
+            with patch.object(setup, 'os', SimpleNamespace(name='nt', fsync=os.fsync)), \
+                 patch.object(setup, 'MODELS', {chosen:pin}), patch.object(setup, 'imp_cache_dir', return_value=root), \
+                 patch.object(setup, '_runtime', return_value=root/'llama-server.exe'), \
+                 patch.object(setup, 'verify_artifacts', side_effect=lambda m: 'PINNED_LOCAL_MODEL_REQUIRED' if m.revision != pin.revision else None):
+                with self.assertRaisesRegex(ValueError, 'PINNED_LOCAL_MODEL_REQUIRED'):
+                    setup.install(chosen, offline=True)
+
+    def test_verification_retains_distinct_models_and_rejects_changed_files(self):
+        import hashlib
+        import tempfile
+        import zipfile
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference import local_models as models, local_runtime as runtime
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root/'downloads').mkdir()
+            (root/'runtime').mkdir()
+            exe = root/'runtime'/'llama-server.exe'
+            exe.write_bytes(b'fixture exe')
+            archive = root/'downloads'/runtime.ARCHIVE_NAME
+            with zipfile.ZipFile(archive, 'w') as bundle:
+                bundle.write(exe, exe.name)
+            pins, manifests = {}, []
+            for i, original in enumerate(list(models.MODELS.values())[:2]):
+                path = root/f'{i}.gguf'
+                path.write_bytes(b'GGUF'+bytes([i]))
+                pin = replace(original, weight_bytes=5, sha256=hashlib.sha256(path.read_bytes()).hexdigest())
+                pins[pin.model_id] = pin
+                manifests.append(LocalModelManifest(exe, path, pin.model_id, pin.revision, runtime.RUNTIME_VERSION))
+            with patch.object(models, 'MODELS', pins), patch.object(runtime, 'os', SimpleNamespace(name='nt')), \
+                 patch.object(runtime, 'ARCHIVE_HASH', hashlib.sha256(archive.read_bytes()).hexdigest()), \
+                 patch('market_platform_foundation.local_state.external_cache.imp_cache_dir', return_value=root):
+                runtime._VERIFIED.clear()
+                for manifest in manifests:
+                    self.assertIsNone(runtime.verify_artifacts(manifest))
+                self.assertEqual(len(runtime._VERIFIED), 2)
+                manifests[0].model_path.write_bytes(b'WRONG')
+                self.assertEqual(runtime.verify_artifacts(manifests[0]), 'MODEL_CHECKSUM_FAILED')
+                runtime._VERIFIED.clear()
+
+    def test_switch_reaps_only_other_owned_runtime_on_shared_port(self):
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference import local_provider as local
+        selected = SimpleNamespace(_port=18089)
+        prior = SimpleNamespace(_port=18089, stop=unittest.mock.Mock(), running=lambda:True)
+        different_port = SimpleNamespace(_port=19999, stop=unittest.mock.Mock(), running=lambda:True)
+        with patch.object(local, '_SERVERS', {'old':prior, 'new':selected, 'elsewhere':different_port}):
+            local._stop_other_managed_servers(selected)
+        prior.stop.assert_called_once()
+        different_port.stop.assert_not_called()
+
+    def test_installer_rejects_bad_download_and_preserves_4b_manifest(self):
+        import io
+        import os
+        import tempfile
+        from types import SimpleNamespace
+        from tools.news import setup_laptop_models as setup
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root/'models').mkdir()
+            legacy = root/'models'/'local-llm.json'
+            legacy.write_text('preserve original 4B', encoding='utf-8')
+            runtime = root/'runtime'/'llama-server.exe'
+            with patch.object(setup, 'os', SimpleNamespace(name='nt', fsync=os.fsync)), \
+                 patch.object(setup, 'imp_cache_dir', return_value=root), \
+                 patch.object(setup, '_runtime', return_value=runtime), \
+                 patch.object(setup, 'urlopen', return_value=io.BytesIO(b'corrupt')):
+                with self.assertRaisesRegex(ValueError, 'MODEL_CHECKSUM_FAILED'):
+                    setup.install('Qwen/Qwen3-0.6B-GGUF:Q8_0')
+            self.assertEqual(legacy.read_text(encoding='utf-8'), 'preserve original 4B')
+            self.assertFalse(list(root.rglob('*.download')))
+            self.assertFalse((root/'models'/'Qwen3-0.6B-Q8_0.json').exists())
+
+    def test_manifest_rejects_cross_model_pin_and_cache_path_escape(self):
+        import json
+        import tempfile
+        from market_platform_foundation.intelligence.inference.local_models import model_manifest, manifest_relative
+        chosen = 'Qwen/Qwen3-0.6B-GGUF:Q8_0'
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            path = root/manifest_relative(chosen)
+            path.parent.mkdir()
+            payload = {'model_id':'Qwen/Qwen3-4B-GGUF:Q4_K_M', 'model_path':'model', 'runtime_path':'runtime'}
+            path.write_text(json.dumps(payload), encoding='utf-8')
+            self.assertIsNone(model_manifest(root, chosen))
+            payload.update(model_id=chosen, cache_relative_paths=True, model_path='../outside.gguf')
+            path.write_text(json.dumps(payload), encoding='utf-8')
+            self.assertIsNone(model_manifest(root, chosen))
+
+    def test_registry_preserves_4b_and_registers_official_small_artifacts(self):
+        from market_platform_foundation.intelligence.inference.local_models import MODELS
+        from market_platform_foundation.intelligence.inference import local_runtime as runtime
+        self.assertEqual(len(MODELS), 3)
+        self.assertEqual(MODELS[runtime.MODEL_ID].sha256, runtime.MODEL_HASH)
+        for size in ('0.6B', '1.7B'):
+            pin = MODELS[f'Qwen/Qwen3-{size}-GGUF:Q8_0']
+            self.assertEqual(pin.quantization, 'Q8_0')
+            self.assertEqual(pin.license, 'Apache-2.0')
+            self.assertEqual(pin.layers, 28)
+
+    def test_small_profiles_reduce_allocation_without_lowering_safety_floor(self):
+        from market_platform_foundation.intelligence.inference.local_models import MODELS
+        from market_platform_foundation.intelligence.inference import local_runtime as runtime
+        statuses = []
+        for pin in MODELS.values():
+            manifest = runtime.apply_profile(LocalModelManifest(Path('server'), Path('model'),
+                pin.model_id, pin.revision, runtime.RUNTIME_VERSION), pin.profile)
+            with patch.object(runtime, 'verify_artifacts', return_value=None):
+                value = runtime.readiness(manifest, sample={'available_bytes': 12*resources.GIB,
+                    'commit_available_bytes': 12*resources.GIB})
+            self.assertEqual(value['minimum_available_bytes'], 4*resources.GIB)
+            self.assertEqual(value['model_hash'], pin.sha256)
+            from market_platform_foundation.intelligence.inference.local_provider import LocalLlamaServer
+            self.assertTrue(LocalLlamaServer(manifest).enforce_admission)
+            statuses.append(value['estimated_peak_memory'])
+        self.assertLess(statuses[0], statuses[1])
+        self.assertLess(statuses[1], statuses[2])
+
+    def test_explicit_selection_never_falls_back_to_legacy_4b(self):
+        import tempfile
+        from market_platform_foundation.intelligence.inference.local_models import model_manifest, MODELS
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root/'models').mkdir()
+            (root/'models'/'local-llm.json').write_text('{"model_id":"legacy"}', encoding='utf-8')
+            self.assertIsNone(model_manifest(root, next(iter(MODELS))))
+            with self.assertRaisesRegex(ValueError, 'LOCAL_MODEL_NOT_IN_REGISTRY'):
+                model_manifest(root, 'invented')
+
+    def test_scope_validates_and_preserves_explicit_local_model(self):
+        from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
+        chosen = 'Qwen/Qwen3-0.6B-GGUF:Q8_0'
+        body = {'universe':'US_EQUITIES', 'method':'STAGED_LOCAL_FIRST_EXPERIMENTAL', 'local_model_id':chosen}
+        self.assertEqual(ScreenerAiService._query(body)['local_model_id'], chosen)
+        self.assertEqual(ScreenerAiService._scope(ScreenerAiService._query(body), {})['local_model_id'], chosen)
+        with self.assertRaisesRegex(ValueError, 'LOCAL_MODEL_NOT_IN_REGISTRY'):
+            ScreenerAiService._query({**body, 'local_model_id':'wrong'})
+
+    def test_cross_model_cache_identity_is_distinct(self):
+        from market_platform_foundation.intelligence.inference.local_models import MODELS
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.local_qualification import LocalQualifier
+        from tools.ai_screener_local_first_benchmark import load
+        case = load()['cases'][0]
+        hashes = {LocalQualifier(LocalChatInferenceProvider(base_url='http://127.0.0.1:18089',
+            model_id=pin.model_id)).input(case['scope'], case['candidate'], load()['cutoff'])[0]
+            for pin in MODELS.values()}
+        self.assertEqual(len(hashes), 3)

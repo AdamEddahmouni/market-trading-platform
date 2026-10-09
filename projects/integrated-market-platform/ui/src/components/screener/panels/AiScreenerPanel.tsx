@@ -78,8 +78,9 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   const visible = usePanelVisible(api);
   const { screenerScope: baseScope, openInstrument, openNews, actions } = useSelection();
   const [method, setMethod] = useState<NonNullable<AiScreenerScope['method']>>('EXHAUSTIVE_EXISTING');
+  const [localModelId, setLocalModelId] = useState('Qwen/Qwen3-4B-GGUF:Q4_K_M');
   const experimental = method === 'STAGED_LOCAL_FIRST_EXPERIMENTAL';
-  const screenerScope = { ...baseScope, ...(experimental ? { method } : {}) };
+  const screenerScope = { ...baseScope, ...(experimental ? { method, local_model_id: localModelId } : {}) };
   const scopeKey = keyFor(screenerScope);
   const [aiOverride, setAiOverride] = useState<AiStatus | null>(null);
   // The run lives on the server: this panel only reads it, so closing the panel or reloading the page loses nothing.
@@ -113,6 +114,20 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   return <PanelFrame id="ai_screener" instrumentScoped={false} detail="internal evidence only">
     <label>Screener method <select aria-label="Screener method" value={method} disabled={running} onChange={(e) => setMethod(e.target.value as typeof method)}><option value="EXHAUSTIVE_EXISTING">Exhaustive existing</option><option value="STAGED_LOCAL_FIRST_EXPERIMENTAL">Local-first experimental</option></select></label>
     {experimental && <PanelMessage tone="warn">Experimental method unapproved. Local qualification precedes the entire premium pool budget check. Results have no Action Decision or Paper submission authority.</PanelMessage>}
+    {experimental && preview.data?.staged?.local_models && <section aria-label="Local model settings">
+      <label>Experimental local model <select aria-label="Experimental local model" value={localModelId} disabled={running}
+        onChange={(event) => setLocalModelId(event.target.value)}>
+        {preview.data.staged.local_models.map((model) => <option key={String(model.model_id)} value={String(model.model_id)}>
+          {String(model.model_id)} · {model.installed ? 'installed' : 'not installed'} · {String(model.quantization)} · {String(model.benchmark_status)}
+        </option>)}
+      </select></label>
+      <p>Selection applies to local qualification only. Trading approval OFF.</p>
+      {preview.data.staged.local_models.filter((model) => model.model_id === localModelId).map((model) => <div key={String(model.model_id)}>
+        <p>Revision {String(model.artifact_revision ?? 'unavailable')} · runtime {String(model.runtime_version ?? 'unavailable')} · readiness {String(model.readiness_status ?? 'unavailable')}</p>
+        <p>{typeof model.required_memory === 'number' ? (model.required_memory / 1024 ** 3).toFixed(2) + ' GiB required' : 'Requirement unmeasured'} · benchmark {String(model.benchmark_status)} · last inference error {String(model.last_inference_error ?? 'none recorded')}</p>
+        <details><summary>Observed performance and projected premium workload</summary><pre>{JSON.stringify(model.performance_observations ?? { state: 'NOT_MEASURED' }, null, 2)}</pre></details>
+      </div>)}
+    </section>}
     {experimental && preview.data?.staged && <section aria-label="Local runtime admission">
       <p>Local model {String(preview.data.staged.local_model.model_id ?? "unavailable")} · readiness {String(preview.data.staged.local_model.state)} · profile {String(preview.data.staged.local_model.execution_profile ?? "unavailable")}</p>
       <p>{typeof preview.data.staged.local_model.available_memory_bytes === 'number' ? (preview.data.staged.local_model.available_memory_bytes / 1024 ** 3).toFixed(2) + ' GiB available' : 'Available memory unmeasured'} · {typeof preview.data.staged.local_model.minimum_available_bytes === 'number' ? (preview.data.staged.local_model.minimum_available_bytes / 1024 ** 3).toFixed(2) + ' GiB safety floor' : 'Safety floor unavailable'}</p>

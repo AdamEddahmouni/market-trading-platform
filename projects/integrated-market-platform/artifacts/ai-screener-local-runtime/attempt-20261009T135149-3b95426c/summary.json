@@ -1,0 +1,137 @@
+{
+  "admission": {
+    "artifact_verified": true,
+    "available_memory": 1776553984,
+    "available_memory_bytes": 1776553984,
+    "context_configuration": {
+      "batch": 128,
+      "context": 4096,
+      "kv_type": "f16",
+      "mmap": true,
+      "parallel_slots": 1,
+      "ubatch": 64
+    },
+    "context_window": 4096,
+    "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+    "estimated_kv_bytes": 469762048,
+    "estimated_peak_memory": 2719821472,
+    "execution_profile": "cpu-4096/1",
+    "inference_occurred": false,
+    "measurement_timestamp": "2026-10-09T13:51:50.350587+00:00",
+    "minimum_available_bytes": 4294967296,
+    "model_hash": "9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031",
+    "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+    "model_revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+    "model_weight_bytes": 639446688,
+    "observed_peak_memory": null,
+    "premium_generation_attempted": false,
+    "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+    "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+    "quantization": "Q8_0",
+    "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+    "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+    "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+    "required_memory": 7014788768,
+    "resource_sample": {
+      "available_bytes": 1776553984,
+      "commit_available_bytes": 13680558080,
+      "commit_total_bytes": 40195850240,
+      "memory_load_percent": 89,
+      "process_bytes": null,
+      "process_commit_bytes": null,
+      "process_peak_bytes": null,
+      "process_peak_commit_bytes": null,
+      "total_bytes": 16687722496
+    },
+    "results_produced": false,
+    "retry_requires_fresh_resource_measurement": true,
+    "revision": "23749fefcc72300e3a2ad315e1317431b06b590a",
+    "runtime_launched": false,
+    "runtime_version": "b11269",
+    "schema_version": "local-runtime-readiness/1.0.0",
+    "state": "RESOURCE_BLOCKED"
+  },
+  "budget": {
+    "limit_seconds": 7200,
+    "used_seconds": 35.42663739973068
+  },
+  "configuration_hash": null,
+  "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+  "economic_feasibility": {
+    "paid_generations": 0,
+    "plans": null,
+    "status": "STAGED_BUDGET_NOT_MEASURED"
+  },
+  "elapsed_seconds": 1.3429999999934807,
+  "ended_at": "2026-10-09T13:51:50.404366+00:00",
+  "execution_profile": "cpu-4096/1",
+  "live_submissions": 0,
+  "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "model_id": "Qwen/Qwen3-0.6B-GGUF:Q8_0",
+  "observed_latency_seconds": [],
+  "operational_activation": "OFF",
+  "paid_generations": 0,
+  "paper_submissions": 0,
+  "phase": "pilot",
+  "projected_workloads": [
+    {
+      "projected_seconds": null,
+      "rows": 20,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 50,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 100,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 500,
+      "state": "NOT_MEASURED"
+    },
+    {
+      "projected_seconds": null,
+      "rows": 4630,
+      "state": "NOT_MEASURED"
+    }
+  ],
+  "quality": {
+    "cases_not_completed": 3,
+    "evidence_grounding_failures": null,
+    "failed": 0,
+    "false_exclusions": null,
+    "fixture_cases_completed": 0,
+    "inconsistent_decisions": null,
+    "intentional_stale_exclusions": 0,
+    "invalid_output_rate": null,
+    "missing_capability_errors": null,
+    "operational_advancement_recall": null,
+    "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+    "proposed_premium_count": null,
+    "qualification_accuracy": null,
+    "qualified": 0,
+    "quality_complete": false,
+    "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+    "real_cases_completed": 0,
+    "recall": null,
+    "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+    "reference_top5_recall": null,
+    "timeout_or_failure_count": null,
+    "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+    "uncertain": 0,
+    "valid_outputs": 0
+  },
+  "real_generation_requests": 0,
+  "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+  "runtime_starts": 0,
+  "schema_version": "local-runtime-benchmark/1.0.0",
+  "source_sha": "2ef5a4d233ab16a3cfb8fd5d8dc579c52e09100f",
+  "started_at": "2026-10-09T13:51:49.017194+00:00",
+  "startup_ms": null,
+  "throughput_per_minute": null
+}
