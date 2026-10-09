@@ -7,7 +7,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from tools import validate as validate_module
 from tools.validate import (
@@ -93,6 +93,37 @@ class ValidateOrchestrationTests(unittest.TestCase):
                 )
                 self.assertEqual(result["status"], "error")
                 self.assertIn(expected, result["worker_error"])
+
+    def test_windows_worker_does_not_share_parent_console_group(self) -> None:
+        suite = self.write_suite(
+            "isolated",
+            "import unittest\nclass Tests(unittest.TestCase):\n"
+            "    def test_ok(self): self.assertTrue(True)\n",
+        )
+        original_spawn = validate_module.subprocess.Popen
+        with patch.object(validate_module.subprocess, "Popen", wraps=original_spawn) as spawn:
+            result = run_worker_process(
+                repository_root=self.root, suite_id="isolated", suite_path=str(suite["path"])
+            )
+        self.assertEqual(result["status"], "passed")
+        expected = (
+            validate_module.subprocess.CREATE_NEW_PROCESS_GROUP | validate_module.subprocess.CREATE_NO_WINDOW
+        ) if os.name == "nt" else 0
+        self.assertEqual(spawn.call_args.kwargs.get("creationflags", 0), expected)
+
+    def test_interrupted_worker_is_reaped_before_parent_propagates_cancel(self) -> None:
+        process = Mock()
+        process.poll.return_value = None
+        process.communicate.side_effect = KeyboardInterrupt
+        process.wait.side_effect = lambda **_kwargs: setattr(process.poll, "return_value", 0)
+        registry = validate_module.WorkerProcessRegistry()
+        with patch.object(validate_module.subprocess, "Popen", return_value=process):
+            with self.assertRaises(KeyboardInterrupt):
+                run_worker_process(repository_root=self.root, suite_id="cancel", registry=registry)
+        process.terminate.assert_called_once()
+        process.wait.assert_called_once_with(timeout=5)
+        registry.terminate_all()
+        process.terminate.assert_called_once()
 
     def test_full_clears_live_gates_in_child_only(self) -> None:
         suite = self.write_suite(

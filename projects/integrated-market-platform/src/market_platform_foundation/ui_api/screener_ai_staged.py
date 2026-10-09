@@ -28,17 +28,15 @@ def local_provider():
     return provider
 
 def local_status():
+    from ..intelligence.inference.local_runtime import readiness, apply_profile
     from ..intelligence.inference.local_provider import LocalModelManifest, MANIFEST_RELATIVE
     from ..local_state.external_cache import imp_cache_dir, read_manifest
-    manifest=getattr(getattr(local_provider(),"_server",None),"manifest",None)
-    from ..intelligence.inference.local_resources import memory_sample, MIN_AVAILABLE_BYTES
-    available=memory_sample()["available_bytes"]
-    resource_blocked=available is not None and available<MIN_AVAILABLE_BYTES
-    return {"state":"RESOURCE_BLOCKED" if resource_blocked else "READY" if manifest and not manifest.missing() else "UNAVAILABLE",
-            "available_memory_bytes":available,"minimum_available_bytes":MIN_AVAILABLE_BYTES,"cache_path":str(imp_cache_dir()),
-            "reason":manifest.missing() if manifest else "LOCAL_MODEL_MANIFEST_MISSING",
-            "model_id":manifest.model_id if manifest else None,"revision":manifest.revision if manifest else None,
-            "context_window":manifest.context if manifest else None}
+    server=getattr(local_provider(),"_server",None)
+    manifest=getattr(server,'manifest',None) or LocalModelManifest.from_dict(read_manifest(imp_cache_dir()/MANIFEST_RELATIVE) or {})
+    if manifest and server is None:
+        try:manifest=apply_profile(manifest,manifest.execution_profile)
+        except ValueError:pass  # readiness reports the invalid persisted profile
+    return readiness(manifest,process=getattr(server,'_process',None))
 
 class _PoolReader:
     def __init__(self,rows,envelope,refresh):

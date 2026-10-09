@@ -80,6 +80,19 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("AI Screener panel", () => {
+  it("shows local memory admission diagnostics without implying model execution", async () => {
+    mocks.preview.mockResolvedValue({ ...preview, staged: { method_version: "ai-screener-local-first/1.0.0", approval_status: "UNAPPROVED",
+      local_model: { model_id: "Qwen3-4B", state: "RESOURCE_BLOCKED", execution_profile: "cpu-8192/1", available_memory_bytes: 2 * 1024 ** 3,
+        minimum_available_bytes: 4 * 1024 ** 3, reason: "LOCAL_RESOURCE_INSUFFICIENT_MEMORY", quality_status: "LOCAL_QUALITY_NOT_PROVEN" } } });
+    renderPanel();
+    fireEvent.change(await screen.findByLabelText("Screener method"), { target: { value: "STAGED_LOCAL_FIRST_EXPERIMENTAL" } });
+    const diagnostics = await screen.findByLabelText("Local runtime admission");
+    expect(diagnostics).toHaveTextContent("2.00 GiB available");
+    expect(diagnostics).toHaveTextContent("4.00 GiB safety floor");
+    expect(diagnostics).toHaveTextContent("LOCAL_RESOURCE_INSUFFICIENT_MEMORY");
+    expect(diagnostics).toHaveTextContent("Local model quality is not proven");
+    expect(mocks.post).not.toHaveBeenCalled();
+  });
 
   it("displays experimental accounting without decision or Paper controls", async () => {
     const stagedResult = { ...result, schema_version: "screener-ai-staged-result/1.0.0", method: "STAGED_LOCAL_FIRST_EXPERIMENTAL",

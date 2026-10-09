@@ -86,94 +86,11 @@ def load():
         raise ValueError("FROZEN_BENCHMARK_DRIFT")
     m["manifest_hash"]=digest;return m
 def real():
-    from market_platform_foundation.intelligence.inference.local_provider import LocalModelManifest,LocalLlamaServer,LocalChatInferenceProvider
-    from market_platform_foundation.intelligence.inference.inference_identity import provider_identity
-    from market_platform_foundation.intelligence.inference.local_resources import memory_sample
-    from market_platform_foundation.intelligence.inference.local_provider import MANIFEST_RELATIVE
-    from market_platform_foundation.local_state.external_cache import imp_cache_dir
-    m=load()
-    manifest_path=imp_cache_dir()/MANIFEST_RELATIVE
-    base=LocalModelManifest.from_dict(json.loads(manifest_path.read_text(encoding="utf-8")))
-    if not base or base.revision!="bc640142c66e1fdd12af0bd68f40445458f3869b" or base.runtime_version!="b11269":
-        raise ValueError("PINNED_LOCAL_MODEL_REQUIRED")
-    if hashlib.file_digest(base.model_path.open("rb"),"sha256").hexdigest()!="7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5":
-        raise ValueError("MODEL_CHECKSUM_FAILED")
-    budget_file=OUT/"inference-budget.json"
-    budget=json.loads(budget_file.read_text(encoding="utf-8")) if budget_file.exists() else {"used_seconds":0.,"calls":0,"limit_seconds":7200}
-    if budget.get("pending"): raise ValueError("PRIOR_INFERENCE_OUTCOME_UNKNOWN; charge reserved time before manual research resumption")
-    runs=[]; pilot_stats=[]
-    def call(provider,qualifier,case,phase,variant="original"):
-        remaining=7200-budget["used_seconds"]
-        if remaining<720:raise TimeoutError("CUMULATIVE_TWO_HOUR_CEILING")
-        budget["pending"]={"reserved_seconds":720,"case_id":case["case_id"]};write(budget_file,budget)
-        started=time.perf_counter()
-        c=copy.deepcopy(case["candidate"])
-        if variant=="reverse evidence order":c["current_market_evidence"].reverse();c["reference_evidence"].reverse()
-        original_input=qualifier.input
-        if variant=="JSON indentation/order":
-            def formatted(*args):
-                digest,canonical,rendered=original_input(*args)
-                prefix=rendered.split("\nEVIDENCE DATA\n")[0]
-                return digest,canonical,prefix+"\nEVIDENCE DATA\n"+json.dumps(canonical,indent=2,sort_keys=False)
-            qualifier.input=formatted
-        try:answer=qualifier.assess(case["scope"],c,m["cutoff"])
-        finally:qualifier.input=original_input
-        elapsed=time.perf_counter()-started
-        budget["used_seconds"]+=elapsed;budget["calls"]+=1;budget.pop("pending");write(budget_file,budget)
-        record={"phase":phase,"variant":variant,"case_id":case["case_id"],"universe":case["universe"],
-         "split":case["split"],"scenario":case["scenario"],"label":case["label"],"elapsed_seconds":elapsed,
-         "identity":provider_identity(provider),"resource_sample":getattr(provider,"last_resource_sample",{}),
-         "system_memory":memory_sample(),"assessment":answer}
-        with (OUT/"real-results.jsonl").open("a",encoding="utf-8") as f:f.write(json.dumps(record,sort_keys=True)+"\n")
-        runs.append(record);print(phase,case["case_id"],answer["valid"],answer["category"],round(elapsed,2),flush=True)
-        return record
-    for name,layers,port in (("VULKAN",99,18190),("CPU",0,18191)):
-        server=LocalLlamaServer(replace(base,gpu_layers=layers,threads=4),port=port,log_path=OUT/(name.lower()+"-runtime.log"))
-        provider=LocalChatInferenceProvider(base_url=server.base_url,model_id=base.model_id,server=server)
-        qualifier=LocalQualifier(provider,clock=lambda:NOW)
-        try:
-            samples=[call(provider,qualifier,m["cases"][i],name+"_PILOT") for i in m["pilot_case_indices"]]
-            pilot_stats.append({"backend":name,"gpu_layers":layers,"startup_ms":server.last_start_ms,
-             "elapsed_seconds":sum(s["elapsed_seconds"] for s in samples),"valid":sum(s["assessment"]["valid"] for s in samples),
-             "resource_failures":sum(bool(s["resource_sample"].get("failure")) for s in samples)})
-        finally:server.stop()
-    acceptable=[s for s in pilot_stats if not s["resource_failures"] and s["valid"]==3]
-    if not acceptable:
-        write(OUT/"real-summary.json",{"manifest_hash":m["manifest_hash"],"pilot_comparison":pilot_stats,"scales":[{"scale":n,"completed":0,"state":"BLOCKED_RESOURCE_OR_RELIABILITY"} for n in m["scales"]],"inference_budget":budget,"generation_requests_dispatched":sum(bool(r["assessment"].get("inference_dispatched")) for r in runs),"real_generations":sum(bool(r["assessment"].get("inference_dispatched")) and bool(r["assessment"].get("raw_text")) for r in runs),"paid_generations":0,"operationally_approved":False,"suitability":"UNPROVEN"})
-        print("No compliant pilot; real-model scale evaluation blocked",flush=True)
-        return
-    # Quality failures preserve results and prevent a suitability claim. Choose speed for measurement only if no compliant pilot.
-    selected=min(acceptable or pilot_stats,key=lambda s:s["elapsed_seconds"])
-    write(OUT/"pilot-comparison.json",{"pilots":pilot_stats,"selected_for_measurement":selected,
-     "suitability":"UNPROVEN","selection_basis":"Fastest reliable contract-compliant pilot, else diagnostic speed only.",
-     "integrated_gpu":"Shared system memory; adapter marketing capacity is not dedicated VRAM."})
-    server=LocalLlamaServer(replace(base,gpu_layers=selected["gpu_layers"],threads=4),port=18192,log_path=OUT/"selected-runtime.log")
-    provider=LocalChatInferenceProvider(base_url=server.base_url,model_id=base.model_id,server=server)
-    qualifier=LocalQualifier(provider,clock=lambda:NOW)
-    scales=[]
-    try:
-        for c in m["cases"]:call(provider,qualifier,c,"FROZEN_EVALUATION")
-        for i in m["repeat_case_indices"]:
-            for variant in m["perturbations"]:
-                call(provider,qualifier,m["cases"][i],"REPEAT_PERTURBATION",variant)
-        for scale in m["scales"]:
-            started=time.perf_counter();completed=0
-            try:
-                # Independent software-controlled measurements at each scale, with no paid engine.
-                for i in range(scale):
-                    call(provider,qualifier,m["cases"][i%len(m["cases"])],"SCALE_"+str(scale))
-                    completed+=1
-            except TimeoutError:
-                scales.append({"scale":scale,"completed":completed,"state":"INTERRUPTED_TWO_HOUR_CEILING",
-                 "elapsed_seconds":time.perf_counter()-started});break
-            scales.append({"scale":scale,"completed":completed,"state":"MEASURED",
-             "elapsed_seconds":time.perf_counter()-started})
-    finally:
-        server.stop()
-        for scale in m["scales"]:
-            if not any(s["scale"]==scale for s in scales):scales.append({"scale":scale,"completed":0,"state":"NOT_MEASURED_CEILING"})
-        write(OUT/"real-summary.json",{"manifest_hash":m["manifest_hash"],"pilot_comparison":pilot_stats,
-         "scales":scales,"inference_budget":budget,"paid_generations":0,"operationally_approved":False})
+    # The same frozen manifest, adapter and cumulative budget; no legacy bypass.
+    from tools.local_runtime_benchmark import run
+    return run(phase="pilot")
+
+
 def controls():
     """Software-only full-engine scales; all fixture authority is constructor-injected."""
     import tempfile

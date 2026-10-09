@@ -53,6 +53,11 @@ serial. `PARALLEL_SAFE` work may use the configured worker count.
 `RESOURCE_HEAVY` work is capped by the existing validator. Live validation is
 opt-in and never substitutes for offline FULL.
 
+Windows validation workers use a separate process group with no console window.
+This isolates the validator from console-control events during owned-process
+cleanup in lifecycle acceptance tests. It does not change test selection,
+assertions, network gates, failure reporting, or worker ownership.
+
 For UI changes, add `cd ui && npm test`, `npm run typecheck`, and
 `npm run build`; the build retains the 200 KiB gzip budget. For documentation
 changes, run `tools/check_docs_links.py`.

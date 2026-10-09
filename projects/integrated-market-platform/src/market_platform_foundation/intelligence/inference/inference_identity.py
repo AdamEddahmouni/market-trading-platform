@@ -10,7 +10,8 @@ def provider_identity(provider):
     manifest = getattr(getattr(engine,'_server',None),'manifest',None)
     if manifest is not None:
         identity['manifest'] = {key:str(getattr(manifest,key,None)) for key in
-                               ('model_id','revision','runtime_version','context','gpu_layers','model_path','runtime_path')}
+                               ('model_id','revision','runtime_version','context','gpu_layers','model_path','runtime_path',
+                                'execution_profile','threads','batch','ubatch')}
         for name in ('model_path','runtime_path'):
             path = getattr(manifest,name,None)
             try:
