@@ -1,0 +1,34 @@
+{
+  "measured_at": "2026-10-08T23:23:05.3167622Z",
+  "method": "Windows CIM and PowerShell Get-Process; GPU AdapterRAM is a legacy reported field, not dedicated/shared allocation proof",
+  "os": {
+    "TotalVisibleMemorySize": 16296604,
+    "FreePhysicalMemory": 3333548,
+    "TotalVirtualMemorySize": 39253760,
+    "FreeVirtualMemory": 17311476
+  },
+  "cpu": {
+    "Name": "Intel(R) Core(TM) Ultra 7 256V",
+    "NumberOfCores": 8,
+    "NumberOfLogicalProcessors": 8
+  },
+  "gpu": {
+    "Name": "Intel(R) Arc(TM) 140V GPU (8GB)",
+    "AdapterRAM": 2147479552,
+    "DriverVersion": "32.0.101.8626"
+  },
+  "storage": {
+    "Used": 932586819584,
+    "Free": 69856026624
+  },
+  "measuring_process": {
+    "WorkingSet64": 105299968,
+    "PrivateMemorySize64": 37199872,
+    "PeakWorkingSet64": 105299968
+  },
+  "model_process_working_set": null,
+  "model_process_committed_memory": null,
+  "model_load_time": null,
+  "model_idle_consumption": null,
+  "limitation": "Runtime startup refused; no model allocation profile observed. Vulkan budget is shared-system memory, not added capacity."
+}
