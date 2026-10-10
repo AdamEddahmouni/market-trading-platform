@@ -139,6 +139,61 @@ class TwsIbkrClientTests(unittest.TestCase):
         self.assertEqual(getattr(contract, "exchange", None), "SMART")
         self.assertIn(("market_data_type", 3), broker.calls)
 
+    def test_snapshot_waits_for_delayed_prices_and_cancels_demand(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            broker = FakeBroker()
+            ticker = SimpleNamespace(last=float("nan"), bid=float("nan"), ask=float("nan"), marketDataType=3)
+            broker.reqMktData = lambda *args, **kwargs: ticker
+            waits = []
+            cancellations = []
+            def sleep(seconds):
+                waits.append(seconds)
+                if len(waits) >= 3:
+                    ticker.last = 225.05
+            broker.sleep = sleep
+            broker.cancelMktData = lambda contract: cancellations.append(contract)
+            client = TwsIbkrClient(self._config(Path(tmp)), broker_factory=lambda _config: broker)
+            client.request_json("GET", "/iserver/secdef/search", params={"symbol": "AAPL"})
+            result = client.request_json("GET", "/iserver/marketdata/snapshot", params={"conids": "265598"})
+            client.close()
+        self.assertEqual(result[0]["31"], 225.05)
+        self.assertEqual(result[0]["market_data_type"], 3)
+        self.assertEqual(len(cancellations), 1)
+        self.assertEqual(broker.order_calls, [])
+
+    def test_snapshot_uses_fresh_ticker_instead_of_previous_contract_prices(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            broker=FakeBroker()
+            client=TwsIbkrClient(self._config(Path(tmp)),broker_factory=lambda _config:broker)
+            client.request_json("GET","/iserver/secdef/search",params={"symbol":"AAPL"})
+            original=client._contract(265598)
+            stale=SimpleNamespace(last=100.0,bid=99.0,ask=101.0,marketDataType=1)
+            fresh=SimpleNamespace(last=float("nan"),bid=float("nan"),ask=float("nan"),marketDataType=3)
+            broker.reqMktData=lambda contract,*args,**kwargs: stale if contract is original else fresh
+            broker.sleep=lambda seconds:setattr(fresh,"last",225.05)
+            result=client.request_json("GET","/iserver/marketdata/snapshot",params={"conids":"265598"})
+            client.close()
+        self.assertEqual(result[0]["31"],225.05)
+        self.assertEqual(result[0]["market_data_type"],3)
+
+    def test_snapshot_timeout_returns_no_invented_price_and_cancels_demand(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            broker = FakeBroker()
+            broker.reqMktData = lambda *args, **kwargs: SimpleNamespace(last=float("nan"),bid=float("nan"),ask=float("nan"),marketDataType=3)
+            waits = []
+            cancellations = []
+            broker.sleep = lambda seconds: waits.append(seconds)
+            broker.cancelMktData = lambda contract: cancellations.append(contract)
+            from dataclasses import replace
+            config = replace(self._config(Path(tmp)), timeout_seconds=0.5)
+            client = TwsIbkrClient(config, broker_factory=lambda _config: broker)
+            client.request_json("GET", "/iserver/secdef/search", params={"symbol":"AAPL"})
+            result = client.request_json("GET", "/iserver/marketdata/snapshot", params={"conids":"265598"})
+            client.close()
+        self.assertNotIn("31", result[0])
+        self.assertEqual(len(cancellations), 1)
+        self.assertLessEqual(sum(waits), config.timeout_seconds)
+
     def test_empty_history_is_reported_as_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             broker = FakeBroker()

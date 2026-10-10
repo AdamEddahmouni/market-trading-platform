@@ -370,7 +370,7 @@ def serve(*, host: str, port: int) -> None:
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
-    start_screener_warmup()
+    start_screener_warmup(store=store)
     server.serve_forever()
 
 
@@ -400,7 +400,11 @@ def warm_screener(read: Any = None, universes: tuple[str, ...] = WARMUP_UNIVERSE
     return timings
 
 
-def start_screener_warmup() -> threading.Thread | None:
+def start_screener_warmup(*, store: ReplayStore | None = None) -> threading.Thread | None:
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled() or (store is not None and store.data_mode not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}):
+        return None
     # Only a live launch (the launcher sets these gates) warms; tests and replay never reach providers.
     live = any(os.environ.get(gate) == "1" for gate in ("IMP_FINVIZ_LIVE", "IMP_MOOMOO_LIVE"))
     if not live or os.environ.get("IMP_SCREENER_WARMUP", "1") == "0":

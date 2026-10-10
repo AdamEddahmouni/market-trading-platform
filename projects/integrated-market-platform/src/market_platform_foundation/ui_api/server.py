@@ -171,6 +171,19 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 status=authorization_http_status(auth),
             )
             return False
+        # Current-market Screener/discovery has no admitted replay implementation.
+        # Refuse before imports, singleton caches, provider demand, or mutations;
+        # serving store authority outranks browser state and configured credentials.
+        current_market_route = (
+            path == "/screener" or path.startswith("/screener/")
+            or path == "/discover" or path.startswith("/discover/")
+        )
+        if current_market_route and getattr(self.store, "data_mode", "UNKNOWN") not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}:
+            self._send_error_json(
+                "MODE_BLOCKED", "Current-market Screener is unavailable in replay; no provider request was made.",
+                status=HTTPStatus.FORBIDDEN,
+            )
+            return False
         return True
 
     def do_GET(self) -> None:

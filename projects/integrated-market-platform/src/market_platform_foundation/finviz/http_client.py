@@ -22,6 +22,14 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 
+def refuse_replay_network() -> None:
+    """Deny live Finviz transport and credential callbacks during controlled replay."""
+    import os
+
+    if str(os.environ.get("IMP_CONTROLLED_REPLAY") or "").strip() in {"1", "true", "yes"}:
+        raise RuntimeError("FINVIZ_REPLAY_NETWORK_BLOCKED")
+
+
 @dataclass
 class HttpResponse:
     """Minimal response surface mirroring the requests objects we replaced."""
@@ -53,6 +61,7 @@ def urllib_get(
     Raises :class:`urllib.error.URLError`, :class:`http.client.HTTPException`,
     or :class:`OSError` (timeouts) on failure.
     """
+    refuse_replay_network()
     target = url
     if params:
         query = urllib.parse.urlencode(params)
@@ -117,6 +126,7 @@ class UrllibSession:
         timeout: float = 15.0,
         params: dict[str, Any] | None = None,
     ) -> HttpResponse:
+        refuse_replay_network()
         target = url
         if params:
             query = urllib.parse.urlencode(params)
@@ -134,6 +144,7 @@ class UrllibSession:
         timeout: float = 15.0,
         allow_redirects: bool = True,
     ) -> HttpResponse:
+        refuse_replay_network()
         del allow_redirects  # urllib follows redirects; cookies are preserved by the jar
         payload = urllib.parse.urlencode(data or {}).encode("utf-8")
         request = urllib.request.Request(

@@ -6667,3 +6667,23 @@ per-identity verification caching and persisted-manifest offline validation.
 No paid engine setting, operational methodology approval, trading authority,
 campaign state or PC migration changed. Validation and acceptance evidence:
 [laptop model receipt](../../artifacts/ai-screener-laptop-local-models-acceptance.json).
+
+# 2026-10-10 — Portable workstation readiness corrections
+
+Closed controlled-replay current-market Screener/discovery access at the HTTP
+authority boundary and frontend entry. Added fresh-context, authority-loss,
+Finviz sink/credential recovery and replay provider-health regressions.
+Restricted public Finviz secret-audit exceptions to finite status values and
+integer counters. Fixed the IBKR delayed snapshot race with bounded polling,
+request cancellation and a fresh contract identity for repeated snapshots.
+Existing current-market route fixtures now declare observational authority.
+
+Independent review caught the low-level Finviz recovery bypass and reused IBKR
+ticker risk; both corrections passed regression coverage. Complete frontend
+tests, typecheck and production bundle-budget build passed locally. Backend
+checkpoint and protected integration receipts are tracked with the sprint.
+OpenD's existing listener failed a fresh API handshake before lifecycle testing;
+operator vendor restart/login remains required. No order submission was added
+to provider probes. The migration backup and unrelated source work remain
+preserved; SSD launchers and workstation-specific dependency repairs are
+separate from these canonical source changes.

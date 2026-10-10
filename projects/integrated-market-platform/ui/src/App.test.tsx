@@ -706,12 +706,33 @@ describe("App mode launcher integration", () => {
   it("opens the first-class standalone Screener from primary navigation", async () => {
     render(<App />);
     await enterMode("Paper");
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "LIVE", data_mode: "LIVE_OBSERVATIONAL", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
     fireEvent.click(screen.getByRole("link", { name: "Screener" }));
     expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Session environment" })).not.toBeInTheDocument();
   });
 
+  it("blocks the standalone Screener when the backend session is replay", async () => {
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "REPLAY", data_mode: "FIXTURE_REPLAY", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
+    window.history.pushState({}, "", "/screener");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: /Screener unavailable/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Main Screener" })).not.toBeInTheDocument();
+  });
   it("loads Screener directly without the old mode launcher", async () => {
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "LIVE", data_mode: "LIVE_OBSERVATIONAL", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
     window.history.pushState({}, "", "/screener");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();

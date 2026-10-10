@@ -519,7 +519,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
             ) as store_cls, patch(
                 "market_platform_foundation.finviz.credential_manager.get_finviz_credential_manager",
             ) as cred_mock:
-                store_cls.return_value = MagicMock(data_mode="LIVE")
+                store_cls.return_value = MagicMock(data_mode="LIVE_OBSERVATIONAL")
                 cred_mock.return_value.health.return_value = MagicMock(
                     state=FinvizAuthState.AUTH_INVALID,
                     source=FinvizCredentialSource.PRIVATE_FILE,
@@ -531,7 +531,7 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
                     last_auth_error="AUTH_INVALID",
                     automatic_recovery="MANUAL",
                 )
-                payload = build_provider_health_payload(MagicMock())
+                payload = build_provider_health_payload(MagicMock(data_mode="LIVE_OBSERVATIONAL"))
         self.assertTrue(payload.get("available"))
         self.assertEqual(
             payload.get("lifecycle", {}).get("connection_state"),

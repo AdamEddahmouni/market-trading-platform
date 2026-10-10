@@ -177,6 +177,9 @@ class FinvizCredentialManager:
         return "UNAVAILABLE"
 
     def validate_token(self, token: str, *, http_get: Callable[..., Any] | None = None) -> bool:
+        from .http_client import refuse_replay_network
+
+        refuse_replay_network()
         getter = http_get or self._http_getter
         if getter is None:
             getter = urllib_get
@@ -284,6 +287,9 @@ class FinvizCredentialManager:
         return True
 
     def attempt_recovery(self) -> bool:
+        from .http_client import refuse_replay_network
+
+        refuse_replay_network()
         acquired = self._recovery_lock.acquire(blocking=False)
         if not acquired:
             deadline = time.monotonic() + 60.0

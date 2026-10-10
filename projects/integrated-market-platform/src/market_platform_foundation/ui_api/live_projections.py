@@ -17,6 +17,9 @@ def _runtime_or_none():
 
 
 def build_provider_health_payload(store: ReplayStore) -> dict[str, Any]:
+    if store.data_mode not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}:
+        return {"available": False, "status": "NOT_APPLICABLE", "data_mode": store.data_mode,
+                "reason": "Replay does not probe live providers"}
     runtime = _runtime_or_none()
     if runtime is None:
         return {

@@ -164,3 +164,30 @@ reconnect, timeout, empty payload, malformed response, temporary network
 failure, restart recovery, and Yahoo-as-hop-L1 fallback blocked. These tests
 are SOFTWARE-class; they do not collect Item 9, calibrate, or enable Live.
 OpenD down does not promote Yahoo delayed overlay into hop L1.
+
+## Portable workstation replay and read-only snapshots
+
+Controlled replay refuses current-market `/screener` and `/discover` routes
+(including configuration and AI reevaluation mutations) before provider access.
+The UI waits for a fresh `/context` result before mounting the Screener and
+removes its rows when authority becomes unavailable. Replay provider health is
+`NOT_APPLICABLE`; it does not construct or probe live runtimes. Finviz credential
+validation, recovery, cache access and HTTP/login sinks refuse controlled replay
+even if live flags are also present.
+
+Finviz health audit admits only enumerated public authentication/source/error
+values and nonnegative integer generation/recovery counters. Tokens, arbitrary
+strings under those names and generic auth fields still fail secret auditing.
+
+The IBKR TWS socket adapter requests delayed snapshot data, waits up to its
+configured timeout for a finite positive price, and always cancels the request.
+Each snapshot uses a distinct contract object to avoid retained ticker prices.
+`market_data_type` distinguishes realtime (1), frozen (2), delayed (3) and
+delayed frozen (4); a populated delayed price does not certify realtime
+entitlement. Gateway installation or a listening port alone does not establish
+authentication or a current capability certificate.
+
+Offline validation must remove inherited operator `IMP_*` settings. In
+particular, `IMP_STATE_DIR` enables persistence regardless of `IMP_PERSIST_STATE`;
+ordinary unit runs leave it unset and persistence tests choose their own
+temporary directories. Preserve operational state independently of test state.

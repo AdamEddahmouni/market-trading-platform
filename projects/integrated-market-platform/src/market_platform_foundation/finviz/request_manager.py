@@ -178,6 +178,9 @@ class FinvizRequestManager:
         timeout_s: float = 15.0,
         api_key: str | None = None,
     ) -> tuple[int, str, dict[str, Any]]:
+        from .http_client import refuse_replay_network
+
+        refuse_replay_network()
         del priority
         token = api_key or self._credential_manager.get_token()
         if token and "auth" not in params:
