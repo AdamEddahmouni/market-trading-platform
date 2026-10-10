@@ -191,3 +191,10 @@ Offline validation must remove inherited operator `IMP_*` settings. In
 particular, `IMP_STATE_DIR` enables persistence regardless of `IMP_PERSIST_STATE`;
 ordinary unit runs leave it unset and persistence tests choose their own
 temporary directories. Preserve operational state independently of test state.
+
+Portable launcher state version 2 binds each service to its process creation
+time and absolute checkout/runtime command. Legacy or unverifiable records
+never authorize termination. Stop/rollback retain unresolved records, and
+restart/update refuse to proceed after partial cleanup. Broker applications
+remain external sessions. Windows termination verifies creation time while
+holding a process handle; generic command substrings alone are insufficient.

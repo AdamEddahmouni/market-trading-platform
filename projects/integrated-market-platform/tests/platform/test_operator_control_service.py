@@ -3,6 +3,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from tools.platform.control_service import (
     ALLOWED_ACTIONS,
@@ -11,6 +12,8 @@ from tools.platform.control_service import (
     normalize_action,
 )
 from market_platform_foundation.platform.security.route_policy import policy_for_route
+from tools.platform.local_launcher import PlatformController
+from tests.platform.test_local_launcher import FakeSystem, always_usable, make_root
 
 
 class OperatorControlServiceTests(unittest.TestCase):
@@ -27,6 +30,25 @@ class OperatorControlServiceTests(unittest.TestCase):
         self.assertEqual(payload["status"], "STOPPED")
         self.assertNotIn("secrets_included", payload)
         self.assertEqual(payload["services"], [])
+
+    def test_control_status_requires_the_recorded_process_birth(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+            controller = PlatformController(root=root, system=fake, environ={}, python_runtime_probe=always_usable)
+            self.assertEqual(controller.start(open_browser=False), 0)
+            fake.open_ports.update({8766, 5173, 8767})
+            fake.creation_times[1000] = "replacement-birth"
+            with mock.patch("tools.platform.control_service.PlatformController", return_value=controller), \
+                    mock.patch("tools.platform.control_service.check_update_cached", return_value={"status": "UNAVAILABLE"}):
+                payload = build_control_status(root)
+            self.assertEqual(payload["status"], "PARTIAL")
+            api = next(row for row in payload["services"] if row["name"] == "api")
+            self.assertFalse(api["owned"])
+            self.assertFalse(api["health"]["identity_owned"])
+            self.assertNotIn("creation_time", api)
+            self.assertEqual(fake.terminated, [])
 
     def test_operator_routes_use_narrow_capabilities(self) -> None:
         self.assertEqual(policy_for_route("GET", "/operator/readiness").capability, "state.read")

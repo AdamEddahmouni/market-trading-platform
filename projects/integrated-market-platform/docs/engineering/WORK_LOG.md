@@ -6687,3 +6687,13 @@ operator vendor restart/login remains required. No order submission was added
 to provider probes. The migration backup and unrelated source work remain
 preserved; SSD launchers and workstation-specific dependency repairs are
 separate from these canonical source changes.
+
+Follow-up independent lifecycle review reproduced a stale-PID/other-checkout
+ownership match. Launcher v2 now saves birth identity and exact command paths;
+partial cleanup remains visible and blocks restart/update. Control status uses
+the same ownership check. Direct custom Finviz login transports now check
+replay authority before construction and every request, including mode changes.
+The source checkpoint at 4f0e5214 passed 8,471 tests (59 classified skips, no
+failures/errors); final incremental checks cover these subsequent corrections.
+The 514-second checkpoint crossed the stored severe performance-regression
+threshold; this sprint does not claim workstation performance qualification.

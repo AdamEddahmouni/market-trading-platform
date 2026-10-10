@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path, PureWindowsPath
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -17,6 +18,7 @@ from tools.platform.local_launcher import (
     PlatformController,
     build_backend_environment,
     select_backend_python,
+    WindowsSystem,
 )
 
 
@@ -30,6 +32,8 @@ class FakeSystem:
         self.spawn_calls: list[dict[str, object]] = []
         self.command_lines: dict[int, str] = {}
         self.terminated: list[int] = []
+        self.creation_times: dict[int, str] = {}
+        self.failed_terminations: set[int] = set()
         self.opened: list[str] = []
         self.ready: dict[str, bool] = {}
         self.open_ports: set[int] = set()
@@ -45,7 +49,8 @@ class FakeSystem:
     def spawn(self, argv, *, cwd: Path, env, log_path: Path) -> int:  # type: ignore[no-untyped-def]
         pid = self.next_pid
         self.next_pid += 1
-        command_line = " ".join(str(item) for item in argv)
+        command_line = subprocess.list2cmdline([str(item) for item in argv])
+        self.creation_times[pid] = str(100_000 + pid)
         self.command_lines[pid] = command_line
         self.spawn_calls.append(
             {
@@ -61,7 +66,14 @@ class FakeSystem:
     def command_line(self, pid: int) -> str | None:
         return self.command_lines.get(pid)
 
-    def terminate_tree(self, pid: int) -> bool:
+    def creation_time(self, pid: int) -> str | None:
+        return self.creation_times.get(pid)
+
+    def terminate_tree(self, pid: int, *, creation_time: str | None = None) -> bool:
+        if creation_time is not None and self.creation_times.get(pid) != creation_time:
+            return False
+        if pid in self.failed_terminations:
+            return False
         self.terminated.append(pid)
         self.command_lines.pop(pid, None)
         return True
@@ -211,10 +223,10 @@ class LocalLauncherTests(unittest.TestCase):
             fake.command_lines[42] = "python unrelated_backup.py"
             controller = PlatformController(root=root, system=fake, environ={})
 
-            self.assertEqual(controller.stop(), 0)
+            self.assertEqual(controller.stop(), 1)
 
             self.assertEqual(fake.terminated, [])
-            self.assertFalse(state_path.exists())
+            self.assertTrue(state_path.exists())
 
     def test_stop_terminates_only_verified_owned_process_trees(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -235,6 +247,158 @@ class LocalLauncherTests(unittest.TestCase):
             self.assertEqual(controller.stop(), 0)
 
             self.assertEqual(fake.terminated, [1002, 1001, 1000])
+
+    def running_controller(self, base: Path) -> tuple[Path, FakeSystem, PlatformController]:
+        root = make_root(base)
+        fake = FakeSystem()
+        fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+        controller = PlatformController(root=root, system=fake, environ={}, python_runtime_probe=always_usable)
+        self.assertEqual(controller.start(open_browser=False), 0)
+        return root, fake, controller
+
+    def test_saved_ownership_binds_birth_runtime_and_checkout_for_every_service(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            state = json.loads(controller.state_path.read_text(encoding="utf-8"))
+            self.assertEqual(state["version"], 2)
+            services = {row["name"]: row for row in state["services"]}
+            for row in services.values():
+                self.assertEqual(row["creation_time"], fake.creation_times[row["pid"]])
+            for name, script in (("api", "tools/ui1/run_ui_api.py"), ("control", "tools/platform/control_service.py")):
+                self.assertIn(str(root / ".venv/Scripts/python.exe"), services[name]["identity"])
+                self.assertIn(str(root / script), services[name]["identity"])
+            self.assertIn(str(root / "ui"), services["ui"]["identity"])
+            self.assertIn("--prefix", fake.spawn_calls[1]["argv"])
+            self.assertIn(str(root / "ui"), fake.spawn_calls[1]["argv"])
+
+    def test_stop_preserves_reused_pid_with_identical_command_but_new_birth(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            fake.creation_times[1000] = "different-process-birth"
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+            self.assertEqual([row.pid for row in controller._read_state()], [1000])
+
+    def test_stop_preserves_matching_generic_signature_from_another_checkout(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            fake.command_lines[1000] = fake.command_lines[1000].replace(str(root), str(root.parent / "other-checkout"))
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+            self.assertIn(1000, fake.command_lines)
+
+    def test_legacy_or_missing_birth_state_never_authorizes_termination(self) -> None:
+        for version in (1, 2):
+            with self.subTest(version=version), tempfile.TemporaryDirectory() as tmp:
+                root, fake, controller = self.running_controller(Path(tmp))
+                state = json.loads(controller.state_path.read_text(encoding="utf-8"))
+                state["version"] = version
+                for row in state["services"]:
+                    row.pop("creation_time", None)
+                controller.state_path.write_text(json.dumps(state), encoding="utf-8")
+                self.assertEqual(controller.stop(), 1)
+                self.assertEqual(fake.terminated, [])
+                self.assertTrue(controller.state_path.is_file())
+
+    def test_missing_command_identity_never_authorizes_termination(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            state = json.loads(controller.state_path.read_text(encoding="utf-8"))
+            for row in state["services"]:
+                row.pop("identity")
+            controller.state_path.write_text(json.dumps(state), encoding="utf-8")
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [])
+            self.assertTrue(controller.state_path.exists())
+
+    def test_partial_command_tokens_do_not_authorize_another_port(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            fake.command_lines[1000] = fake.command_lines[1000].replace("--port 8766", "--port 87660")
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+
+    def test_birth_change_immediately_before_termination_is_rechecked(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            terminate = fake.terminate_tree
+            def replace_before_stop(pid: int, *, creation_time: str | None = None) -> bool:
+                if pid == 1000:
+                    fake.creation_times[pid] = "replacement-birth"
+                return terminate(pid, creation_time=creation_time)
+            fake.terminate_tree = replace_before_stop
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+            self.assertEqual([row.pid for row in controller._read_state()], [1000])
+
+    def test_rollback_preserves_pid_reused_after_spawn(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            controller = PlatformController(root=root, system=fake, environ={}, python_runtime_probe=always_usable)
+            def failed_readiness() -> bool:
+                fake.creation_times[1000] = "replacement-birth"
+                return False
+            controller._wait_until_ready = failed_readiness
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+            self.assertEqual([row.pid for row in controller._read_state()], [1000])
+
+    def test_partial_stop_failure_retains_retryable_state_and_blocks_restart(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            fake.failed_terminations.add(1001)
+            self.assertEqual(controller.restart(open_browser=False), 1)
+            self.assertEqual(len(fake.spawn_calls), 3)
+            self.assertEqual([row.pid for row in controller._read_state()], [1001])
+            fake.failed_terminations.clear()
+            self.assertEqual(controller.stop(), 0)
+            self.assertFalse(controller.state_path.exists())
+            self.assertEqual(fake.terminated, [1002, 1000, 1001])
+
+    def test_unavailable_birth_identity_blocks_start_without_killing_unknown(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = make_root(Path(tmp))
+            fake = FakeSystem()
+            fake.ready = {"http://127.0.0.1:8766/context": True, "http://127.0.0.1:5173/": True}
+            fake.creation_time = lambda pid: None
+            controller = PlatformController(root=root, system=fake, environ={}, python_runtime_probe=always_usable)
+            self.assertEqual(controller.start(open_browser=False), 1)
+            self.assertEqual(len(fake.spawn_calls), 1)
+            self.assertEqual(fake.terminated, [])
+            self.assertTrue(controller.state_path.exists())
+
+    def test_status_does_not_report_pid_replacement_as_owned(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            fake.open_ports.update({8766, 5173, 8767})
+            fake.creation_times[1000] = "replacement-birth"
+            captured = io.StringIO()
+            with contextlib.redirect_stdout(captured):
+                self.assertEqual(controller.status(), 1)
+            self.assertIn("API identity owned  NO", captured.getvalue())
+
+    def test_windows_creation_time_is_fail_closed_and_never_prints_commands(self) -> None:
+        with mock.patch("tools.platform.local_launcher.os.name", "nt"), mock.patch("tools.platform.local_launcher.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 0, stdout="638959968000000000\n")
+            self.assertEqual(WindowsSystem().creation_time(42), "638959968000000000")
+            self.assertIn("StartTime", run.call_args.args[0][-1])
+            self.assertNotIn("CommandLine", run.call_args.args[0][-1])
+            run.return_value = subprocess.CompletedProcess([], 1, stdout="638959968000000000\n")
+            self.assertIsNone(WindowsSystem().creation_time(42))
+
+    def test_windows_tree_termination_pins_process_and_checks_birth_before_taskkill(self) -> None:
+        with mock.patch("tools.platform.local_launcher.os.name", "nt"), mock.patch("tools.platform.local_launcher.subprocess.run") as run:
+            run.return_value = subprocess.CompletedProcess([], 0, stdout="")
+            self.assertTrue(WindowsSystem().terminate_tree(42, creation_time="638959968000000000"))
+            script = run.call_args.args[0][-1]
+            self.assertIn(".Handle", script)
+            self.assertIn("StartTime", script)
+            self.assertIn("638959968000000000", script)
+            self.assertLess(script.index("StartTime"), script.index("taskkill.exe"))
+            run.reset_mock()
+            self.assertFalse(WindowsSystem().terminate_tree(42))
+            run.assert_not_called()
 
     def test_missing_node_modules_blocks_start(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

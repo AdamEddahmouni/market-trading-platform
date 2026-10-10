@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import socket
 import subprocess
@@ -59,7 +60,9 @@ class SystemOperations(Protocol):
 
     def command_line(self, pid: int) -> str | None: ...
 
-    def terminate_tree(self, pid: int) -> bool: ...
+    def creation_time(self, pid: int) -> str | None: ...
+
+    def terminate_tree(self, pid: int, *, creation_time: str | None = None) -> bool: ...
 
     def url_ready(self, url: str, timeout_seconds: float = 1.0) -> bool: ...
 
@@ -76,6 +79,7 @@ class ServiceRecord:
     pid: int
     identity: list[str]
     log_path: str
+    creation_time: str | None = None
 
     @classmethod
     def from_dict(cls, value: object) -> "ServiceRecord | None":
@@ -84,13 +88,21 @@ class ServiceRecord:
         try:
             name = str(value["name"])
             pid = int(value["pid"])
-            identity = [str(token) for token in value["identity"]]
+            raw_identity = value.get("identity", [])
+            identity = (
+                raw_identity
+                if isinstance(raw_identity, list) and all(isinstance(token, str) and token for token in raw_identity)
+                else []
+            )
             log_path = str(value["log_path"])
         except (KeyError, TypeError, ValueError):
             return None
-        if not name or pid <= 0 or not identity:
+        if not name or pid <= 0:
             return None
-        return cls(name=name, pid=pid, identity=identity, log_path=log_path)
+        birth = value.get("creation_time")
+        if not isinstance(birth, str) or not birth.isdigit():
+            birth = None
+        return cls(name=name, pid=pid, identity=identity, log_path=log_path, creation_time=birth)
 
 
 class WindowsSystem:
@@ -153,16 +165,41 @@ class WindowsSystem:
         line = result.stdout.strip()
         return line or None
 
-    def terminate_tree(self, pid: int) -> bool:
+    def creation_time(self, pid: int) -> str | None:
         if os.name != "nt":
-            return False
+            return None
+        script = (
+            "$ErrorActionPreference='Stop'; $p=$null; try { "
+            f"$p=[Diagnostics.Process]::GetProcessById({int(pid)}); "
+            "$handle=$p.Handle; if (-not $p.HasExited) { $p.StartTime.ToUniversalTime().Ticks } "
+            "} catch { exit 1 } finally { if ($p) { $p.Dispose() } }"
+        )
         try:
             result = subprocess.run(
-                ["taskkill.exe", "/PID", str(int(pid)), "/T", "/F"],
-                check=False,
-                capture_output=True,
-                text=True,
-                timeout=15,
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                check=False, capture_output=True, text=True, timeout=8,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            return None
+        birth = result.stdout.strip()
+        return birth if result.returncode == 0 and birth.isdigit() else None
+
+    def terminate_tree(self, pid: int, *, creation_time: str | None = None) -> bool:
+        if os.name != "nt" or not creation_time or not creation_time.isdigit():
+            return False
+        # Hold the process handle until taskkill completes: Windows cannot recycle
+        # the PID while its process object is referenced by this handle.
+        script = (
+            "$ErrorActionPreference='Stop'; $p=$null; try { "
+            f"$p=[Diagnostics.Process]::GetProcessById({int(pid)}); $handle=$p.Handle; "
+            f"if ($p.HasExited -or $p.StartTime.ToUniversalTime().Ticks.ToString() -ne '{creation_time}') {{ exit 1 }}; "
+            f"& taskkill.exe /PID {int(pid)} /T /F | Out-Null; exit $LASTEXITCODE "
+            "} catch { exit 1 } finally { if ($p) { $p.Dispose() } }"
+        )
+        try:
+            result = subprocess.run(
+                ["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", script],
+                check=False, capture_output=True, text=True, timeout=15,
             )
         except (OSError, subprocess.TimeoutExpired):
             return False
@@ -319,8 +356,11 @@ def shortcut_script(*, shortcut: PurePath, target: PurePath, working_directory: 
 def command_identity_matches(command_line: str | None, identity: Sequence[str]) -> bool:
     if not command_line:
         return False
-    normalized = command_line.casefold()
-    return all(str(token).casefold() in normalized for token in identity)
+    normalized = command_line.replace("/", "\\").casefold()
+    return bool(identity) and all(
+        re.search(r'(?:^|[\s"])' + re.escape(str(token).replace("/", "\\").casefold()) + r'(?=$|[\s"])', normalized)
+        for token in identity
+    )
 
 
 class PlatformController:
@@ -354,16 +394,18 @@ class PlatformController:
             payload = json.loads(self.state_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError):
             return []
-        if not isinstance(payload, dict) or payload.get("version") != 1:
+        if not isinstance(payload, dict) or payload.get("version") not in {1, 2}:
             return []
         services = payload.get("services")
         if not isinstance(services, list):
             return []
+        if payload["version"] == 1:
+            services = [dict(item, creation_time=None) if isinstance(item, dict) else item for item in services]
         return [record for item in services if (record := ServiceRecord.from_dict(item)) is not None]
 
     def _write_state(self, services: Sequence[ServiceRecord]) -> None:
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        body = {"version": 1, "services": [asdict(service) for service in services]}
+        body = {"version": 2, "services": [asdict(service) for service in services]}
         fd, temporary_name = tempfile.mkstemp(prefix="platform-launcher-", suffix=".tmp", dir=self.state_path.parent)
         temporary = Path(temporary_name)
         try:
@@ -378,9 +420,22 @@ class PlatformController:
         self.state_path.unlink(missing_ok=True)
 
     def _is_owned(self, service: ServiceRecord) -> bool:
-        if not self._process_alive(service.pid):
+        required_path = {
+            "api": self.root / "tools/ui1/run_ui_api.py",
+            "control": self.root / "tools/platform/control_service.py",
+            "ui": self.root / "ui",
+        }.get(service.name)
+        if (
+            not required_path or str(required_path) not in service.identity
+            or not service.identity or not Path(service.identity[0]).is_absolute()
+            or (service.name == "ui" and "--prefix" not in service.identity)
+            or not service.creation_time or not self._process_alive(service.pid)
+        ):
             return False
-        return command_identity_matches(self.system.command_line(service.pid), service.identity)
+        return (
+            self.system.creation_time(service.pid) == service.creation_time
+            and command_identity_matches(self.system.command_line(service.pid), service.identity)
+        )
 
     def _both_ready(self) -> bool:
         return self.system.url_ready(API_URL) and self.system.url_ready(UI_URL)
@@ -413,10 +468,40 @@ class PlatformController:
             )
         return backend_python, npm
 
-    def _rollback(self, services: Sequence[ServiceRecord]) -> None:
+    def _stop_services(self, services: Sequence[ServiceRecord]) -> int:
+        retained: set[int] = set()
         for service in reversed(services):
-            self.system.terminate_tree(service.pid)
+            if not self._process_alive(service.pid):
+                continue
+            if not self._is_owned(service):
+                retained.add(service.pid)
+                print(f"Skipped PID {service.pid}: process ownership could not be verified for {service.name}.")
+            elif self.system.terminate_tree(service.pid, creation_time=service.creation_time):
+                print(f"Stopped {service.name} process tree (PID {service.pid}).")
+            else:
+                retained.add(service.pid)
+                print(f"WARNING: could not stop {service.name} PID {service.pid}; inspect {service.log_path}.")
+        if retained:
+            self._write_state([service for service in services if service.pid in retained])
+            return 1
         self._clear_state()
+        return 0
+
+    def _rollback(self, services: Sequence[ServiceRecord]) -> None:
+        self._stop_services(services)
+
+    def _record_spawn(
+        self, services: list[ServiceRecord], *, name: str, pid: int, command: Sequence[str], log_path: Path
+    ) -> None:
+        service = ServiceRecord(
+            name=name, pid=pid, identity=list(command),
+            log_path=log_path.relative_to(self.root).as_posix(),
+            creation_time=self.system.creation_time(pid),
+        )
+        services.append(service)
+        self._write_state(services)
+        if not self._is_owned(service):
+            raise LauncherError("Started process ownership could not be verified; automatic cleanup was withheld.")
 
     def start(self, *, open_browser: bool) -> int:
         existing = self._read_state()
@@ -432,8 +517,8 @@ class PlatformController:
             if open_browser:
                 self.system.open_browser(OPERATOR_URL)
             return 0
-        if existing:
-            self.stop()
+        if existing and self.stop():
+            return 1
 
         for name, host, port in (("API", API_HOST, API_PORT), ("UI", UI_HOST, UI_PORT), ("CONTROL", CONTROL_HOST, CONTROL_PORT)):
             if self.system.port_is_open(host, port):
@@ -451,69 +536,21 @@ class PlatformController:
         environment = build_backend_environment(self.environ, profile=self.profile, root=self.root)
         services: list[ServiceRecord] = []
         try:
-            backend_pid = self.system.spawn(
-                [
-                    str(backend_python),
-                    str(self.root / "tools/ui1/run_ui_api.py"),
-                    "--serve",
-                    "--host",
-                    API_HOST,
-                    "--port",
-                    str(API_PORT),
-                ],
-                cwd=self.root,
-                env=environment,
-                log_path=backend_log,
-            )
-            services.append(
-                ServiceRecord(
-                    name="api",
-                    pid=backend_pid,
-                    identity=["run_ui_api.py", "--serve", str(API_PORT)],
-                    log_path=str(backend_log.relative_to(self.root).as_posix()),
-                )
-            )
-            self._write_state(services)
+            backend_command = [str(backend_python), str(self.root / "tools/ui1/run_ui_api.py"),
+                               "--serve", "--host", API_HOST, "--port", str(API_PORT)]
+            backend_pid = self.system.spawn(backend_command, cwd=self.root, env=environment, log_path=backend_log)
+            self._record_spawn(services, name="api", pid=backend_pid, command=backend_command, log_path=backend_log)
 
-            ui_pid = self.system.spawn(
-                [npm, "run", "dev", "--", "--host", UI_HOST, "--port", str(UI_PORT)],
-                cwd=self.root / "ui",
-                env=self.environ,
-                log_path=ui_log,
-            )
-            services.append(
-                ServiceRecord(
-                    name="ui",
-                    pid=ui_pid,
-                    identity=["npm", "run", "dev", str(UI_PORT)],
-                    log_path=str(ui_log.relative_to(self.root).as_posix()),
-                )
-            )
-            self._write_state(services)
+            ui_command = [npm, "--prefix", str(self.root / "ui"), "run", "dev", "--", "--host", UI_HOST,
+                          "--port", str(UI_PORT)]
+            ui_pid = self.system.spawn(ui_command, cwd=self.root / "ui", env=self.environ, log_path=ui_log)
+            self._record_spawn(services, name="ui", pid=ui_pid, command=ui_command, log_path=ui_log)
 
-            control_pid = self.system.spawn(
-                [
-                    str(backend_python),
-                    str(self.root / "tools/platform/control_service.py"),
-                    "serve",
-                    "--host",
-                    CONTROL_HOST,
-                    "--port",
-                    str(CONTROL_PORT),
-                ],
-                cwd=self.root,
-                env=environment,
-                log_path=self.root / ".local/platform-control.log",
-            )
-            services.append(
-                ServiceRecord(
-                    name="control",
-                    pid=control_pid,
-                    identity=["control_service.py", "serve", str(CONTROL_PORT)],
-                    log_path=".local/platform-control.log",
-                )
-            )
-            self._write_state(services)
+            control_command = [str(backend_python), str(self.root / "tools/platform/control_service.py"),
+                               "serve", "--host", CONTROL_HOST, "--port", str(CONTROL_PORT)]
+            control_log = self.root / ".local/platform-control.log"
+            control_pid = self.system.spawn(control_command, cwd=self.root, env=environment, log_path=control_log)
+            self._record_spawn(services, name="control", pid=control_pid, command=control_command, log_path=control_log)
         except (OSError, LauncherError) as exc:
             self._rollback(services)
             print(f"ERROR: platform process start failed: {exc}")
@@ -521,7 +558,7 @@ class PlatformController:
 
         if not self._wait_until_ready():
             self._rollback(services)
-            print("ERROR: platform did not become ready; launcher-owned processes were stopped.")
+            print("ERROR: platform did not become ready; verified processes were stopped and unresolved ownership was retained.")
             print(f"Backend log: {backend_log}")
             print(f"UI log:      {ui_log}")
             return 1
@@ -535,7 +572,8 @@ class PlatformController:
 
     def restart(self, *, open_browser: bool = False) -> int:
         """Stop launcher-owned services and start a fresh platform stack."""
-        self.stop()
+        if self.stop():
+            return 1
         # taskkill returns before Windows releases the listening sockets; starting at once
         # reported "port already in use by a process not owned by this launcher".
         for _ in range(PORT_RELEASE_ATTEMPTS):
@@ -550,16 +588,7 @@ class PlatformController:
             self._clear_state()
             print("Platform is already stopped (no launcher state).")
             return 0
-        for service in reversed(services):
-            if self._is_owned(service):
-                if self.system.terminate_tree(service.pid):
-                    print(f"Stopped {service.name} process tree (PID {service.pid}).")
-                else:
-                    print(f"WARNING: could not stop {service.name} PID {service.pid}; inspect {service.log_path}.")
-            else:
-                print(f"Skipped PID {service.pid}: current command no longer matches launcher-owned {service.name}.")
-        self._clear_state()
-        return 0
+        return self._stop_services(services)
 
     def status(self) -> int:
         from tools.platform.service_health import aggregate_platform_health, evaluate_service_health
@@ -585,7 +614,7 @@ class PlatformController:
                 http_url=http_url,
                 identity=service.identity,
                 command_line=self.system.command_line,
-                identity_matches=command_identity_matches,
+                identity_matches=lambda command, identity: self._is_owned(service),
                 port_is_open=self.system.port_is_open,
                 process_alive_fn=self._process_alive,
                 http_probe=self.system.url_ready,
@@ -650,7 +679,8 @@ class PlatformController:
         if not git or not npm:
             print("ERROR: Git and npm are required to apply an update.")
             return 1
-        self.stop()
+        if self.stop():
+            return 1
         pulled = subprocess.run([git, "pull", "--ff-only"], cwd=self.root, capture_output=True, text=True, check=False)
         if pulled.returncode:
             print("ERROR: fast-forward update failed; no reset or overwrite was attempted.")

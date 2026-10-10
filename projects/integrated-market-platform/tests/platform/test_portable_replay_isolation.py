@@ -61,6 +61,28 @@ class PortableReplayIsolationTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'REPLAY'):manager.validate_token('synthetic-fixture-token')
             with self.assertRaisesRegex(RuntimeError,'REPLAY'):manager.attempt_recovery()
 
+    def test_direct_login_transport_cannot_bypass_replay_with_custom_factory(self):
+        from market_platform_foundation.finviz.login_recovery import recover_token_via_login
+        for flag in ('1', 'TRUE', 'Yes'):
+            factory = unittest.mock.Mock(side_effect=AssertionError('login session constructed'))
+            with self.subTest(flag=flag), patch.dict(os.environ, {'IMP_CONTROLLED_REPLAY': flag}):
+                with self.assertRaisesRegex(RuntimeError, 'REPLAY'):
+                    recover_token_via_login(username='fixture-user', password='fixture-pass', session_factory=factory)
+                factory.assert_not_called()
+
+    def test_login_transport_checks_authority_again_before_next_request(self):
+        from market_platform_foundation.finviz.login_recovery import recover_token_via_login, LOGIN_PAGE_URL
+        calls = []
+        def first_request(url, **kwargs):
+            calls.append(url)
+            os.environ['IMP_CONTROLLED_REPLAY'] = '1'
+            return SimpleNamespace(url=LOGIN_PAGE_URL, status_code=200, text='fixture login page')
+        session = SimpleNamespace(get=first_request, post=lambda *a, **kw: calls.append('forbidden post'), close=lambda: None)
+        with patch.dict(os.environ, {'IMP_CONTROLLED_REPLAY': '0'}):
+            with self.assertRaisesRegex(RuntimeError, 'REPLAY'):
+                recover_token_via_login(username='fixture-user', password='fixture-pass', session_factory=lambda: session)
+        self.assertEqual(calls, [LOGIN_PAGE_URL])
+
     def test_finite_public_finviz_metadata_passes_secret_audit(self):
         assert_no_secrets_in_payload({'finviz':{'authentication':'HEALTHY','credential_source':'PRIVATE_FILE','finviz_credential_generation':2,'auth_recoveries':0,'last_auth_error':'AUTH_EXPIRED'}})
 

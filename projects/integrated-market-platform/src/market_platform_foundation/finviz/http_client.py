@@ -22,12 +22,16 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable
 
 
+class ReplayNetworkBlocked(RuntimeError):
+    """Controlled replay denies a live Finviz transport boundary."""
+
+
 def refuse_replay_network() -> None:
     """Deny live Finviz transport and credential callbacks during controlled replay."""
     import os
 
-    if str(os.environ.get("IMP_CONTROLLED_REPLAY") or "").strip() in {"1", "true", "yes"}:
-        raise RuntimeError("FINVIZ_REPLAY_NETWORK_BLOCKED")
+    if str(os.environ.get("IMP_CONTROLLED_REPLAY") or "").strip().lower() in {"1", "true", "yes"}:
+        raise ReplayNetworkBlocked("FINVIZ_REPLAY_NETWORK_BLOCKED")
 
 
 @dataclass
