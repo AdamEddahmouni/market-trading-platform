@@ -98,6 +98,9 @@ class PaperExecutionLedger:
         default=None,
         repr=False,
     )
+    # A research-only startup projection is never a canonical Paper account.
+    # This process-local flag is not serialized or restored onto admitted sessions.
+    _ephemeral_startup_projection: bool = field(default=False, init=False, repr=False)
     _pending_persist: list[dict[str, Any]] = field(default_factory=list, repr=False)
     _batch_depth: int = field(default=0, repr=False)
     _canonical_portfolio: CanonicalPortfolio | None = field(default=None, repr=False)

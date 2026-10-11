@@ -1,5 +1,14 @@
 # IMP Work Log
 
+## 2026-10-11 — Live startup identity recovery
+
+Resolve the serving data identity before loading persistent Paper state. Keep
+live research operational and Paper execution blocked when no compatible
+active session exists, without creating an account or reopening closed history.
+Focused loading regressions cover live and controlled replay startup, absent
+admission, incompatible replay history, and closed simulated-capital history.
+Existing preview, risk, freshness, execution, and provider gates remain in force.
+
 ## 2026-10-08 — Local runtime safety and validation
 
 PR #487 merged at `930c0e0b` after nine successful checks; merge parents and
