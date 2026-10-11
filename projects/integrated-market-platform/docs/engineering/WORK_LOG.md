@@ -6743,3 +6743,8 @@ The subsequent branch checkout traversed the development fixture junction and re
 ## Portable Finviz exact-path acceptance closure
 
 Independent continuation review reproduced a dotted-key collision in the PR #491 public authority exception. The audit now retains actual mapping/list path segments for that exception, rejects unsupported matrix authority value types and placeholders, and keeps recursive and textual secret scanning active. Scoped regressions retain the initial failures and cover dotted lookalikes, unsupported values and sensitive sibling metadata. This only completes the portable workstation health acceptance; no provider execution or adjacent feature is enabled.
+
+
+### Portable aggregate provider health audit recovery
+
+The SSD observational acceptance exposed `/provider/health` nesting the documented Finviz authority matrix under `finviz`. Accept the same exact public field/value assignments at this second documented structural path. Keep arbitrary nesting, dotted/case/list lookalikes, unsupported values, unknown fields, credentials and sibling secrets blocked. Add real aggregate HTTP coverage without provider calls and nested negative regressions; no execution or provider authority change.

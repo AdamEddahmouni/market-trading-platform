@@ -233,14 +233,23 @@ def _is_model_token_count(key: str, value: Any) -> bool:
     )
 
 
+def _is_finviz_matrix_authority_path(segments: tuple[str | int, ...]) -> bool:
+    """Only the standalone and aggregate provider-health response structures."""
+    if len(segments) == 5 and segments[0] == "finviz":
+        segments = segments[1:]
+    return (
+        len(segments) == 4 and segments[:2] == ("authority", "matrix")
+        and segments[-1] == "authority"
+    )
+
+
 def _structural_secret_key_is_benign(
     path: str, key: str, value: Any, *, segments: tuple[str | int, ...] = (),
 ) -> bool:
     normalized = normalize_key(str(key))
     if (
-        len(segments) == 4 and segments[:2] == ("authority", "matrix")
-        and segments[-1] == "authority" and isinstance(value, str)
-        and _PUBLIC_FINVIZ_SOURCE_AUTHORITIES.get(segments[2]) == value
+        _is_finviz_matrix_authority_path(segments) and isinstance(value, str)
+        and _PUBLIC_FINVIZ_SOURCE_AUTHORITIES.get(segments[-2]) == value
     ):
         return True
     if normalized in _PUBLIC_FINVIZ_ENUMS and isinstance(value, str) and value in _PUBLIC_FINVIZ_ENUMS[normalized]:
@@ -282,11 +291,7 @@ def scan_snapshot(
         for key, value in snapshot.items():
             child_path = f"{path}.{key}" if path else str(key)
             child_segments = (*segments, str(key))
-            matrix_authority = (
-                len(child_segments) == 4
-                and child_segments[:2] == ("authority", "matrix")
-                and child_segments[-1] == "authority"
-            )
+            matrix_authority = _is_finviz_matrix_authority_path(child_segments)
             if is_secret_key(str(key)) and not _structural_secret_key_is_benign(
                 child_path, str(key), value, segments=child_segments
             ):
