@@ -40,7 +40,9 @@ class FakeSystem:
 
     def which(self, executable: str) -> str | None:
         if executable == "npm.cmd":
-            return r"C:\Program Files\nodejs\npm.cmd"
+            # The Windows launcher contract is tested on Linux too. Supply a
+            # host-native absolute fixture, including spaces to retain quoting coverage.
+            return str(Path(tempfile.gettempdir()) / "Program Files/nodejs/npm.cmd")
         return None
 
     def port_is_open(self, host: str, port: int) -> bool:
@@ -299,6 +301,18 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(controller.stop(), 1)
                 self.assertEqual(fake.terminated, [])
                 self.assertTrue(controller.state_path.is_file())
+
+    def test_relative_runtime_identity_never_authorizes_termination(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root, fake, controller = self.running_controller(Path(tmp))
+            state = json.loads(controller.state_path.read_text(encoding="utf-8"))
+            service = state["services"][0]
+            service["identity"][0] = "python.exe"
+            fake.command_lines[service["pid"]] = subprocess.list2cmdline(service["identity"])
+            controller.state_path.write_text(json.dumps(state), encoding="utf-8")
+            self.assertEqual(controller.stop(), 1)
+            self.assertEqual(fake.terminated, [1002, 1001])
+            self.assertEqual([row.pid for row in controller._read_state()], [1000])
 
     def test_missing_command_identity_never_authorizes_termination(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
