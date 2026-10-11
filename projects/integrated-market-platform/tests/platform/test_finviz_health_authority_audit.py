@@ -65,6 +65,30 @@ class FinvizHealthAuthorityAuditTests(unittest.TestCase):
         with self.assertRaises(SecretLeakError):
             assert_no_secrets_in_payload({"other": {"authority": authority_matrix_payload()}})
 
+    def test_dotted_key_matrix_lookalikes_stay_blocked(self):
+        payloads = [
+            {"authority": {"matrix.broad_screening": {"authority": "FINVIZ_ELITE"}}},
+            {"authority.matrix": {"broad_screening": {"authority": "FINVIZ_ELITE"}}},
+            {"authority": {"matrix": {"broad_screening.authority": "FINVIZ_ELITE"}}},
+            {"authority.matrix.broad_screening.authority": "FINVIZ_ELITE"},
+        ]
+        for payload in payloads:
+            with self.subTest(payload=payload), self.assertRaises(SecretLeakError):
+                assert_no_secrets_in_payload(payload)
+
+    def test_unsupported_matrix_authority_values_stay_blocked(self):
+        for value in (None, True, False, [], {}, "", "PLACEHOLDER"):
+            payload = {"authority": {"matrix": {"broad_screening": {"authority": value}}}}
+            with self.subTest(value=value), self.assertRaises(SecretLeakError):
+                assert_no_secrets_in_payload(payload)
+
+    def test_sensitive_sibling_metadata_stays_blocked(self):
+        payload = {"authority": {"matrix": {"broad_screening": {
+            "authority": "FINVIZ_ELITE", "api_key": "synthetic-private-value"
+        }}}}
+        with self.assertRaises(SecretLeakError):
+            assert_no_secrets_in_payload(payload)
+
     def test_wrong_documented_assignment_stays_blocked(self):
         with self.assertRaises(SecretLeakError):
             assert_no_secrets_in_payload({"authority": {"matrix": {"broad_screening": {"authority": "MOOMOO"}}}})
