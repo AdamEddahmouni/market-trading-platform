@@ -46,6 +46,16 @@
 
 **LIVE-001 production execution is blocked** in this repository.
 
+### Live-data startup and Paper admission
+
+The serving API resolves live-data versus controlled-replay identity before
+loading persisted Paper state. A live-data startup without a compatible open
+Paper session remains observational with execution blocked and reports
+`PAPER_SESSION_ACTIVATION_REQUIRED` in operator restore diagnostics. Startup
+does not persist a default account, reopen closed experiments, or select replay
+as a fallback. An operator must explicitly create an admitted Paper session;
+restored sessions retain the existing freshness and execution gates.
+
 ## Frontend responsibilities
 
 - Mode-specific page composition (`Mode*Route` → Demo/Paper/Live pages)

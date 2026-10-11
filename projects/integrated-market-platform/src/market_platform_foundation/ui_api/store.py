@@ -261,7 +261,15 @@ class ReplayStore:
         from .paper_experiment import restore_active_experiment_ledger
 
         experiment_ledger, experiment = restore_active_experiment_ledger()
-        if experiment_ledger is not None and experiment is not None:
+        if (
+            experiment_ledger is not None and experiment is not None
+            and (self.data_mode != "LIVE_OBSERVATIONAL" or (
+                experiment_ledger.data_mode == self.data_mode
+                and experiment_ledger.data_provider == self.data_provider
+                and experiment_ledger.execution_mode == "INTERNAL_SIMULATION"
+                and not any(event["event_type"] == "PaperSessionClosed" for event in experiment_ledger.events)
+            ))
+        ):
             # The experiment's own events and stored policy are the authority:
             # cash is never re-seeded, the stored data mode is never swapped
             # for replay, and execution stays deferred until the existing
@@ -292,6 +300,20 @@ class ReplayStore:
             self.data_mode = restored.data_mode
             self.data_provider = restored.data_provider
             self.execution_provider = restored.execution_provider
+            return
+        if self.data_mode == "LIVE_OBSERVATIONAL":
+            # Startup is research admission, not permission to create/reset a Paper account.
+            # Keep the default in-memory projection blocked until explicit session creation.
+            self.execution_deferred = True
+            self.execution_mode = "NONE"
+            self.execution_authority = "BLOCKED"
+            self.paper_ledger.execution_authority = "BLOCKED"
+            self.paper_ledger._ephemeral_startup_projection = True
+            self.restore_details = {
+                **details,
+                "resume_reason": details["reason"],
+                "reason": "PAPER_SESSION_ACTIVATION_REQUIRED",
+            }
             return
         self.paper_ledger.persist_sink = persist_ledger_batch
         persist_ledger(self.paper_ledger)

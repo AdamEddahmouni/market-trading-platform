@@ -57,9 +57,16 @@ def _load_local_env() -> None:
 
 
 def _load_store() -> ReplayStore:
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+    from market_platform_foundation.market_data.live_config import moomoo_live_enabled
+
+    live = os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1" and not is_controlled_replay_enabled()
+    # Persistence must see the intended data identity, never the default replay identity.
     store = ReplayStore(
         collection_root=COLLECTION_ROOT,
         assistant_audit_root=TRACKED_ASSISTANT_AUDIT_ROOT,
+        data_mode="LIVE_OBSERVATIONAL" if live else "FIXTURE_REPLAY",
+        data_provider="MOOMOO" if live and moomoo_live_enabled() else "INTERNAL",
     )
     store.load()
     from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
@@ -69,14 +76,10 @@ def _load_store() -> ReplayStore:
         from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
         register_cockpit_replay_store(store)
-    from tools.controlled_replay.env import is_controlled_replay_enabled
-
-    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1" and not is_controlled_replay_enabled():
+    if live:
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
 
-        store.data_mode = "LIVE_OBSERVATIONAL"
-        store.data_provider = "MOOMOO"
         install_ibkr_observational_provider()
         get_live_runtime(create=True)
     return store
