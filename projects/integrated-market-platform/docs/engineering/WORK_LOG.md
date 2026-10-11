@@ -6697,3 +6697,37 @@ The source checkpoint at 4f0e5214 passed 8,471 tests (59 classified skips, no
 failures/errors); final incremental checks cover these subsequent corrections.
 The 514-second checkpoint crossed the stored severe performance-regression
 threshold; this sprint does not claim workstation performance qualification.
+
+# 2026-10-10 — Portable sprint recovery and replay startup closure
+
+Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
+38075666627 artifact imp-python-changed (11678149758) contains 19 platform
+failures: the fake npm path was Windows-absolute but host-relative on Linux,
+and the strengthened process ownership predicate correctly rejected it. The
+host-native absolute fixture retains spaces and all shutdown safety assertions;
+relative runtime identities have explicit rejection coverage.
+
+Independent review identified a further replay startup bypass. Settings loaders
+could restore Live gates removed by the launch profile and promote the serving
+store to Live despite controlled replay. Synthetic regressions reproduced this
+without provider calls. Startup now reapplies replay restrictions after both
+settings loaders, strips restored provider/execution gates, independently refuses
+Live store composition, and denies current-market routes for replay-marked stores
+even when a contradictory Live data-mode label is present.
+
+Isolated changed validation exposed two news-fixture errors and one Windows
+job-probe false positive. The news fixture now explicitly supplies its intended
+in-memory repository, avoiding inherited SQLite selection and recursion through
+its InMemory put_event spy. The Windows probe checks STILL_ACTIVE using the
+actual exit code; an openable retained process object is not a surviving process.
+Both fixtures passed focused reproduction after correction; no production
+security/correctness assertion was weakened.
+
+Historical restoration is verified read-only against recorded hash and every
+pre-test table/row, with the affected audit copy retained. Recovery validation
+never loads operator settings, isolates state/cache/secrets and fails on any
+historical hash change. Fresh OpenD authentication/SPY reads recovered after
+vendor restart. IBKR read-only SPY history and two delayed snapshots passed.
+Final exact-source closure and protected integration evidence remain separate
+receipts; physical drive remount/second-PC and full entitlement certification
+are not inferred from local fixtures.

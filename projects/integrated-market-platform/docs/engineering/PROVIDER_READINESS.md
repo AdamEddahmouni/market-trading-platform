@@ -198,3 +198,14 @@ never authorize termination. Stop/rollback retain unresolved records, and
 restart/update refuse to proceed after partial cleanup. Broker applications
 remain external sessions. Windows termination verifies creation time while
 holding a process handle; generic command substrings alone are insufficient.
+
+
+### Controlled replay startup settings boundary
+
+The API reapplies the controlled replay profile after private provider settings
+and repository `.env` are loaded. Saved Live provider/execution gates cannot
+promote replay to Live; store composition independently refuses Live runtime
+creation while controlled replay is enabled. Current-market routes also reject
+stores marked controlled replay even if their data-mode label is contradictory.
+The portable acceptance record distinguishes fresh read-only provider probes
+from full entitlement, regular-hours freshness and cross-computer certification.

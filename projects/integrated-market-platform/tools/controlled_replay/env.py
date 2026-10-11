@@ -44,8 +44,11 @@ def build_controlled_replay_environment(
     state_dir = controlled_replay_state_dir(root)
     state_dir.mkdir(parents=True, exist_ok=True)
 
-    for key in _FORBIDDEN_LIVE_DEFAULTS:
-        result.pop(key, None)
+    for key in list(result):
+        if key in _FORBIDDEN_LIVE_DEFAULTS or (
+            key.startswith("IMP_") and (key.endswith("_LIVE") or "EXECUTION" in key)
+        ):
+            result.pop(key, None)
 
     forced = {
         CONTROLLED_REPLAY_FLAG: "1",

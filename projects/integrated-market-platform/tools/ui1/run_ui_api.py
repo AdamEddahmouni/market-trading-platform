@@ -69,7 +69,9 @@ def _load_store() -> ReplayStore:
         from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
         register_cockpit_replay_store(store)
-    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+
+    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1" and not is_controlled_replay_enabled():
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
 
@@ -434,6 +436,13 @@ def main() -> int:
         # in Setup), then applies the private provider file the Setup panel and CLI write.
         bootstrap_process_environment()
     _load_local_env()
+    from tools.controlled_replay.env import build_controlled_replay_environment, is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled():
+        # Saved provider settings and .env cannot override the launch profile.
+        replay_environment = build_controlled_replay_environment(os.environ, root=ROOT)
+        os.environ.clear()
+        os.environ.update(replay_environment)
     configure_login_transport()
     if not args.serve:
         install_guard([])

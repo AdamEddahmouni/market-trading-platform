@@ -178,7 +178,10 @@ class UiApiHandler(BaseHTTPRequestHandler):
             path == "/screener" or path.startswith("/screener/")
             or path == "/discover" or path.startswith("/discover/")
         )
-        if current_market_route and getattr(self.store, "data_mode", "UNKNOWN") not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}:
+        if current_market_route and (
+            getattr(self.store, "controlled_replay", False)
+            or getattr(self.store, "data_mode", "UNKNOWN") not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}
+        ):
             self._send_error_json(
                 "MODE_BLOCKED", "Current-market Screener is unavailable in replay; no provider request was made.",
                 status=HTTPStatus.FORBIDDEN,

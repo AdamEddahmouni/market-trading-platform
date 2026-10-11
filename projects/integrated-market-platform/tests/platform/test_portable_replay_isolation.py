@@ -7,6 +7,11 @@ import unittest
 from http.server import ThreadingHTTPServer
 from unittest.mock import patch
 from types import SimpleNamespace
+import tempfile
+from pathlib import Path
+from unittest.mock import Mock
+from tools.controlled_replay.env import build_controlled_replay_environment
+from tools.ui1 import run_ui_api
 from market_platform_foundation.ui_api.server import UiApiHandler
 from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload, SecretLeakError
 
@@ -94,4 +99,59 @@ class PortableReplayIsolationTests(unittest.TestCase):
             with self.subTest(value=value),self.assertRaises(SecretLeakError):
                 assert_no_secrets_in_payload({'finviz':{'auth_recoveries':value}})
 
-if __name__=='__main__':unittest.main()
+
+
+class ReplayStartupTests(unittest.TestCase):
+    def test_replay_marked_store_cannot_gain_current_market_access_from_live_mode_label(self):
+        handler = type('MarkedReplayHandler', (UiApiHandler,), {
+            'store': SimpleNamespace(data_mode='LIVE_OBSERVATIONAL', controlled_replay=True)})
+        server = ThreadingHTTPServer(('127.0.0.1', 0), handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            with patch('market_platform_foundation.ui_api.server.authorize_http_request', return_value=None):
+                connection = http.client.HTTPConnection('127.0.0.1', server.server_address[1], timeout=5)
+                connection.request('GET', '/screener?refresh=1')
+                response = connection.getresponse()
+                self.assertEqual(response.status, 403)
+                self.assertEqual(json.loads(response.read())['reason_code'], 'MODE_BLOCKED')
+                connection.close()
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(5)
+
+    def test_saved_settings_cannot_restore_live_provider_gates_during_replay_startup(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / '.env').write_text('IMP_LIVE_OBSERVATIONAL=1\nIMP_MOOMOO_LIVE=1\nIMP_FINNHUB_LIVE=1\n')
+            environment = build_controlled_replay_environment({}, root=root)
+            observed = {}
+            def bootstrap():
+                os.environ['IMP_NEWSAPI_LIVE'] = '1'
+            def serve(**kwargs):
+                observed.update(os.environ)
+            with patch.dict(os.environ, environment, clear=True), patch.object(run_ui_api, 'ROOT', root), \
+                    patch.object(run_ui_api, 'parse_args', return_value=SimpleNamespace(serve=True, host='127.0.0.1', port=8766)), \
+                    patch.object(run_ui_api, 'bootstrap_process_environment', side_effect=bootstrap), \
+                    patch.object(run_ui_api, 'configure_login_transport'), patch.object(run_ui_api, 'serve', side_effect=serve):
+                self.assertEqual(run_ui_api.main(), 0)
+            for gate in ('IMP_LIVE_OBSERVATIONAL', 'IMP_MOOMOO_LIVE', 'IMP_FINNHUB_LIVE', 'IMP_NEWSAPI_LIVE'):
+                self.assertNotEqual(observed.get(gate), '1', gate)
+            self.assertEqual(observed['IMP_PAPER_EXECUTION'], '0')
+
+    def test_store_composition_denies_live_runtime_even_with_reintroduced_live_gate(self):
+        store = SimpleNamespace(load=Mock(), data_mode='FIXTURE_REPLAY', data_provider='INTERNAL')
+        with patch.dict(os.environ, {'IMP_CONTROLLED_REPLAY': '1', 'IMP_LIVE_OBSERVATIONAL': '1'}, clear=True), \
+                patch.object(run_ui_api, 'ReplayStore', return_value=store), \
+                patch('market_platform_foundation.ui_api.live_intelligence.bind_ui_api_intelligence'), \
+                patch('tools.ibkr.runtime_bootstrap.install_ibkr_observational_provider') as ibkr, \
+                patch('market_platform_foundation.market_data.live_runtime.get_live_runtime') as live:
+            self.assertIs(run_ui_api._load_store(), store)
+            self.assertEqual(store.data_mode, 'FIXTURE_REPLAY')
+            ibkr.assert_not_called()
+            live.assert_not_called()
+
+
+if __name__ == '__main__':
+    unittest.main()
