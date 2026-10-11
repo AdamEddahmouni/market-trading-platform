@@ -60,8 +60,8 @@ const AssistantHistoryPage = lazy(() =>
   })),
 );
 const ScreenerPage = lazy(() =>
-  import("./components/screener/ScreenerPage").then((module) => ({
-    default: module.ScreenerPage,
+  import("./components/screener/ScreenerEntry").then((module) => ({
+    default: module.ScreenerEntry,
   })),
 );
 const AssistantSidecar = lazy(() =>

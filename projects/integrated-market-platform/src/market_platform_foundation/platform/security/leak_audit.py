@@ -115,6 +115,19 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
     )
 )
 
+# Finviz diagnostics publish finite status enums and integer counters, never tokens.
+_PUBLIC_FINVIZ_ENUMS = {
+    "authentication": frozenset({"UNCONFIGURED", "LOADED", "VALIDATING", "HEALTHY", "AUTH_INVALID",
+        "AUTH_EXPIRED", "AUTH_REVOKED", "AUTH_OPERATOR_ACTION_REQUIRED", "REFRESHING", "RATE_LIMITED",
+        "PROVIDER_UNAVAILABLE", "ERROR"}),
+    "credentialsource": frozenset({"ENVIRONMENT", "PRIVATE_FILE", "WINDOWS_CREDENTIAL_MANAGER", "PROVIDER_ENV_FILE", "NONE"}),
+    "lastautherror": frozenset({"AUTH_OK", "AUTH_INVALID", "AUTH_EXPIRED", "AUTH_REVOKED", "SUBSCRIPTION_NOT_ELITE",
+        "RATE_LIMITED", "NETWORK_ERROR", "PROVIDER_ERROR", "UNKNOWN", "REFRESHED", "MANUAL_AUTH_REQUIRED",
+        "INVALID_EXPORT", "CONFIG_MISSING", "AUTH_FAILED", "TOKEN_NOT_FOUND", "DEPENDENCY_MISSING",
+        "REDIRECT_REJECTED", "LOGIN_CREDENTIALS_MISSING", "MFA_OR_CAPTCHA"}),
+}
+_PUBLIC_FINVIZ_COUNTERS = frozenset({"finvizcredentialgeneration", "authrecoveries"})
+
 _FINGERPRINT_HEX_CHARS = 12
 
 
@@ -192,6 +205,10 @@ def _is_model_token_count(key: str, value: Any) -> bool:
 
 def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
     normalized = normalize_key(str(key))
+    if normalized in _PUBLIC_FINVIZ_ENUMS and isinstance(value, str) and value in _PUBLIC_FINVIZ_ENUMS[normalized]:
+        return True
+    if normalized in _PUBLIC_FINVIZ_COUNTERS and type(value) is int and value >= 0:
+        return True
     if normalized in BENIGN_SECRET_SHAPED_KEYS:
         return True
     if _is_model_token_count(str(key), value):

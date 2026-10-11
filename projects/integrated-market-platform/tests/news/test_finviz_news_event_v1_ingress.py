@@ -50,6 +50,9 @@ class FinvizNewsEventV1IngressTests(unittest.TestCase):
         self.store.load()
         self.store.data_mode = "LIVE_OBSERVATIONAL"
         self.store.mode = "LIVE"
+        # This fixture asserts the in-memory consumer contract. Do not inherit
+        # SQLite selection or previously admitted events from the test runner.
+        self.store.strategy_repository = InMemoryIntelligenceRepository()
         bind_ui_api_intelligence(self.store)
         self._runtime_patch = patch(
             "market_platform_foundation.market_data.live_runtime.get_live_runtime",

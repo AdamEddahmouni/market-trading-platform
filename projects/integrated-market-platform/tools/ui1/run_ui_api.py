@@ -69,7 +69,9 @@ def _load_store() -> ReplayStore:
         from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
         register_cockpit_replay_store(store)
-    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+
+    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1" and not is_controlled_replay_enabled():
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
 
@@ -370,7 +372,7 @@ def serve(*, host: str, port: int) -> None:
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
-    start_screener_warmup()
+    start_screener_warmup(store=store)
     server.serve_forever()
 
 
@@ -400,7 +402,11 @@ def warm_screener(read: Any = None, universes: tuple[str, ...] = WARMUP_UNIVERSE
     return timings
 
 
-def start_screener_warmup() -> threading.Thread | None:
+def start_screener_warmup(*, store: ReplayStore | None = None) -> threading.Thread | None:
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled() or (store is not None and store.data_mode not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}):
+        return None
     # Only a live launch (the launcher sets these gates) warms; tests and replay never reach providers.
     live = any(os.environ.get(gate) == "1" for gate in ("IMP_FINVIZ_LIVE", "IMP_MOOMOO_LIVE"))
     if not live or os.environ.get("IMP_SCREENER_WARMUP", "1") == "0":
@@ -430,6 +436,13 @@ def main() -> int:
         # in Setup), then applies the private provider file the Setup panel and CLI write.
         bootstrap_process_environment()
     _load_local_env()
+    from tools.controlled_replay.env import build_controlled_replay_environment, is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled():
+        # Saved provider settings and .env cannot override the launch profile.
+        replay_environment = build_controlled_replay_environment(os.environ, root=ROOT)
+        os.environ.clear()
+        os.environ.update(replay_environment)
     configure_login_transport()
     if not args.serve:
         install_guard([])

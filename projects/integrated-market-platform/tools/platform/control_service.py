@@ -28,7 +28,6 @@ from tools.platform.local_launcher import (
     PlatformController,
     ServiceRecord,
     WindowsSystem,
-    command_identity_matches,
 )
 from tools.platform.service_health import aggregate_platform_health, evaluate_service_health
 from tools.platform.single_bind import SingleBindHTTPServer
@@ -131,7 +130,7 @@ def build_control_status(root: Path | None = None) -> dict[str, Any]:
             http_url=_SERVICE_HTTP_URLS.get(record.name),
             identity=record.identity,
             command_line=controller.system.command_line,
-            identity_matches=command_identity_matches,
+            identity_matches=lambda command, identity: controller._is_owned(record),
             port_is_open=controller.system.port_is_open,
             http_timeout_seconds=0.75,
             process_alive_fn=controller._process_alive,
