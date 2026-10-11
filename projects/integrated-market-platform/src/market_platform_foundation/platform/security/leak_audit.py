@@ -128,6 +128,36 @@ _PUBLIC_FINVIZ_ENUMS = {
 }
 _PUBLIC_FINVIZ_COUNTERS = frozenset({"finvizcredentialgeneration", "authrecoveries"})
 
+# Exact public source assignments from the Finviz health authority matrix.
+# Both the full response path and its field/value pair must match; generic
+# authority fields and unknown assignments continue to fail closed.
+_PUBLIC_FINVIZ_SOURCE_AUTHORITIES = {
+    "broad_screening": "FINVIZ_ELITE",
+    "candidate_discovery": "FINVIZ_ELITE",
+    "fundamental_snapshot": "FINVIZ_ELITE",
+    "technical_screening": "FINVIZ_ELITE",
+    "relative_volume": "FINVIZ_ELITE",
+    "short_float_discovery": "FINVIZ_ELITE",
+    "official_short_interest": "FINRA",
+    "threshold_status": "OFFICIAL_REGSHO",
+    "fail_to_deliver": "SEC",
+    "sec_filings": "SEC_EDGAR",
+    "filing_discovery_alert": "FINVIZ_ELITE",
+    "news_discovery": "FINVIZ_ELITE",
+    "original_news": "ORIGINAL_PUBLISHER",
+    "insider_discovery": "FINVIZ_ELITE",
+    "insider_filing_truth": "SEC",
+    "analyst_events": "FINVIZ_ELITE",
+    "sector_industry_breadth": "FINVIZ_ELITE",
+    "etf_holdings": "FINVIZ_ELITE",
+    "live_bbo": "MOOMOO",
+    "live_trades": "MOOMOO",
+    "l2_depth": "MOOMOO",
+    "cvd": "IMP_DERIVED",
+    "internal_fill": "EXECUTION_ADMITTED",
+    "execution": "INTERNAL",
+}
+
 _FINGERPRINT_HEX_CHARS = 12
 
 
@@ -205,6 +235,13 @@ def _is_model_token_count(key: str, value: Any) -> bool:
 
 def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
     normalized = normalize_key(str(key))
+    if (
+        normalized == "authority" and isinstance(value, str)
+        and path.startswith("authority.matrix.") and path.endswith(".authority")
+    ):
+        family = path[len("authority.matrix."):-len(".authority")]
+        if _PUBLIC_FINVIZ_SOURCE_AUTHORITIES.get(family) == value:
+            return True
     if normalized in _PUBLIC_FINVIZ_ENUMS and isinstance(value, str) and value in _PUBLIC_FINVIZ_ENUMS[normalized]:
         return True
     if normalized in _PUBLIC_FINVIZ_COUNTERS and type(value) is int and value >= 0:
