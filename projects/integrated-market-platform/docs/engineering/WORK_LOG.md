@@ -6731,3 +6731,10 @@ vendor restart. IBKR read-only SPY history and two delayed snapshots passed.
 Final exact-source closure and protected integration evidence remain separate
 receipts; physical drive remount/second-PC and full entitlement certification
 are not inferred from local fixtures.
+
+
+## Portable Finviz health authority audit follow-up
+
+Actual SSD acceptance after PR #490 integration reproduced HTTP 500 for Finviz health: the fail-closed response audit rejected the documented source authority matrix. The source now admits only exact field/value assignments at authority.matrix.<field>.authority; generic paths, unknown fields/enums, wrong assignments, numeric values and credential strings remain blocked. A real-handler regression uses synthetic isolated credentials and forbids provider requests. The initial seven-test reproduction had two failures; the completed regression covers nine cases. Credentials and historical hashes remained unchanged during the stopped acceptance.
+
+The subsequent branch checkout traversed the development fixture junction and removed its 12-file thin runtime target. All 12 files (8,068,648 bytes) were restored byte-for-byte from the preserved backup; historical state, credentials and models were outside that operation. RUN_DEV now uses an independently owned managed copy, with source hashes, alias refusal and pruning/relocation tests, so Git can prune developer fixtures without reaching runtime data. Launcher/config preimages and incident receipts are retained. The final focused health/operator/discovery regression passed all 17 tests with isolated state and unchanged historical hashes.
