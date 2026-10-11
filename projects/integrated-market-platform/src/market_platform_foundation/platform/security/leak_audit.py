@@ -128,6 +128,36 @@ _PUBLIC_FINVIZ_ENUMS = {
 }
 _PUBLIC_FINVIZ_COUNTERS = frozenset({"finvizcredentialgeneration", "authrecoveries"})
 
+# Exact public source assignments from the Finviz health authority matrix.
+# Both the full response path and its field/value pair must match; generic
+# authority fields and unknown assignments continue to fail closed.
+_PUBLIC_FINVIZ_SOURCE_AUTHORITIES = {
+    "broad_screening": "FINVIZ_ELITE",
+    "candidate_discovery": "FINVIZ_ELITE",
+    "fundamental_snapshot": "FINVIZ_ELITE",
+    "technical_screening": "FINVIZ_ELITE",
+    "relative_volume": "FINVIZ_ELITE",
+    "short_float_discovery": "FINVIZ_ELITE",
+    "official_short_interest": "FINRA",
+    "threshold_status": "OFFICIAL_REGSHO",
+    "fail_to_deliver": "SEC",
+    "sec_filings": "SEC_EDGAR",
+    "filing_discovery_alert": "FINVIZ_ELITE",
+    "news_discovery": "FINVIZ_ELITE",
+    "original_news": "ORIGINAL_PUBLISHER",
+    "insider_discovery": "FINVIZ_ELITE",
+    "insider_filing_truth": "SEC",
+    "analyst_events": "FINVIZ_ELITE",
+    "sector_industry_breadth": "FINVIZ_ELITE",
+    "etf_holdings": "FINVIZ_ELITE",
+    "live_bbo": "MOOMOO",
+    "live_trades": "MOOMOO",
+    "l2_depth": "MOOMOO",
+    "cvd": "IMP_DERIVED",
+    "internal_fill": "EXECUTION_ADMITTED",
+    "execution": "INTERNAL",
+}
+
 _FINGERPRINT_HEX_CHARS = 12
 
 
@@ -203,8 +233,16 @@ def _is_model_token_count(key: str, value: Any) -> bool:
     )
 
 
-def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
+def _structural_secret_key_is_benign(
+    path: str, key: str, value: Any, *, segments: tuple[str | int, ...] = (),
+) -> bool:
     normalized = normalize_key(str(key))
+    if (
+        len(segments) == 4 and segments[:2] == ("authority", "matrix")
+        and segments[-1] == "authority" and isinstance(value, str)
+        and _PUBLIC_FINVIZ_SOURCE_AUTHORITIES.get(segments[2]) == value
+    ):
+        return True
     if normalized in _PUBLIC_FINVIZ_ENUMS and isinstance(value, str) and value in _PUBLIC_FINVIZ_ENUMS[normalized]:
         return True
     if normalized in _PUBLIC_FINVIZ_COUNTERS and type(value) is int and value >= 0:
@@ -228,6 +266,7 @@ def scan_snapshot(
     snapshot: Any,
     *,
     path: str = "",
+    _segments: tuple[str | int, ...] | None = None,
 ) -> tuple[SecretFinding, ...]:
     """Scan a config dict / env snapshot recursively for live secrets.
 
@@ -238,13 +277,25 @@ def scan_snapshot(
     """
 
     findings: list[SecretFinding] = []
+    segments = (() if not path else (path,)) if _segments is None else _segments
     if isinstance(snapshot, Mapping):
         for key, value in snapshot.items():
             child_path = f"{path}.{key}" if path else str(key)
+            child_segments = (*segments, str(key))
+            matrix_authority = (
+                len(child_segments) == 4
+                and child_segments[:2] == ("authority", "matrix")
+                and child_segments[-1] == "authority"
+            )
             if is_secret_key(str(key)) and not _structural_secret_key_is_benign(
-                child_path, str(key), value
+                child_path, str(key), value, segments=child_segments
             ):
-                if isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
+                if matrix_authority:
+                    findings.append(SecretFinding(
+                        path=child_path, reason="UNSUPPORTED_PUBLIC_AUTHORITY_ASSIGNMENT",
+                        fingerprint=_fingerprint(str(value)),
+                    ))
+                elif isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
                     findings.append(
                         SecretFinding(
                             path=child_path,
@@ -260,10 +311,10 @@ def scan_snapshot(
                             fingerprint=_fingerprint(str(value)),
                         )
                     )
-            findings.extend(scan_snapshot(value, path=child_path))
+            findings.extend(scan_snapshot(value, path=child_path, _segments=child_segments))
     elif isinstance(snapshot, (list, tuple)):
         for index, item in enumerate(snapshot):
-            findings.extend(scan_snapshot(item, path=f"{path}[{index}]"))
+            findings.extend(scan_snapshot(item, path=f"{path}[{index}]", _segments=(*segments, index)))
     return tuple(findings)
 
 
