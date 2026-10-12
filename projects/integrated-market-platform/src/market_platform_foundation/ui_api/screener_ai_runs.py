@@ -158,8 +158,12 @@ class AiScreenerRuns:
 
         return screener_ai_service()
 
-    def start(self, account_id: str, body: dict[str, Any]) -> dict[str, Any]:
-        """Start a run for this account, or join the one already in progress. ValueError for an invalid scope."""
+    def start(self, account_id: str, body: dict[str, Any], *, spend_limit: dict[str, int] | None = None,
+              origin: str = "OPERATOR") -> dict[str, Any]:
+        """Start a run for this account, or join the one already in progress. ValueError for an invalid scope.
+
+        ``spend_limit`` (AUTO-01) caps what a run started without an operator may hold; a joined run keeps the
+        terms it was started under."""
         service = self._service()
         scope = service.validate_scope(body)
         self._recover(service)
@@ -177,7 +181,8 @@ class AiScreenerRuns:
                    "engine": {key: engine[key] for key in ("provider_id", "model_id", "runtime")},
                    "timeout_seconds": engine["timeout_seconds"], "stages": [], "intake_count": None,
                    "sufficient_count": None, "packet_bytes": None, "result": None, "error": None,
-                   "progress": {}, "stop": threading.Event(), "stop_requested_at": None}
+                   "progress": {}, "stop": threading.Event(), "stop_requested_at": None,
+                   "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin}
             self._active[account_id] = run
             self._runs[run["run_id"]] = run
             _LIVE.add(run["run_id"])
@@ -362,7 +367,9 @@ class AiScreenerRuns:
         try:
             with observing(lambda stage, detail: self._enter(run, stage, detail)):
                 full = getattr(service, "run_universe", None)
-                result = (full(scope, run_id=run["run_id"], account_id=run["account_id"], should_stop=run["stop"].is_set)
+                # Passed only when set, so a harness service with the original signature keeps working.
+                extra = {"spend_limit": run["spend_limit"]} if run.get("spend_limit") is not None else {}
+                result = (full(scope, run_id=run["run_id"], account_id=run["account_id"], should_stop=run["stop"].is_set, **extra)
                           if callable(full) else service.run(scope))
         except Exception as exc:  # noqa: BLE001 - a run must always end; only a stable code leaves this process
             message = str(exc)
@@ -389,7 +396,7 @@ class AiScreenerRuns:
         samples = self._latencies.get(run["engine"]["model_id"] or "", ())
         return {
             "schema_version": RUN_SCHEMA, "run_id": run["run_id"], "account_id": run["account_id"], "state": run["state"],
-            "joined": joined, "scope": run["scope"],
+            "joined": joined, "scope": run["scope"], "origin": run.get("origin", "OPERATOR"),
             "stage": run["stages"][-1]["stage"] if running and run["stages"] else None, "stage_order": list(_stage_order(run["scope"])),
             "stages": [{"stage": item["stage"], "started_at": _iso(item["started_at"]),
                         "elapsed_ms": int(round(((item["ended"] if item["ended"] is not None else now) - item["started"]) * 1000)),

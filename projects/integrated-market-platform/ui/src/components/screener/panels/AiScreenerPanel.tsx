@@ -1,5 +1,6 @@
 import ActionDecisionPanel from "./ActionDecisionPanel";
 import ReevaluationPanel from "./ReevaluationPanel";
+import PaperAutomationPanel from "./PaperAutomationPanel";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
@@ -164,6 +165,9 @@ export default function AiScreenerPanel({ api }: { api: any }) {
     {!active && latest && !mine && <PanelMessage>The latest run answered a different Screener scope ({latest.scope.universe}). Run AI Screener to answer this one.</PanelMessage>}
     {mine?.state === "COMPLETED" && detail.isError && <PanelMessage tone="error" role="alert">The result of the latest run is no longer held by the server. Rerun AI Screener.<ErrorDetail error={detail.error} /></PanelMessage>}
     {!experimental && screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
+    {/* The Paper controller and its Emergency Stop are independent of the Screener scope, so this panel stays mounted
+        while the scope is unsettled; the server refuses any request the unsettled scope does not admit. */}
+    {!experimental && <PaperAutomationPanel key={`automation-${scopeKey}`} scope={screenerScope} />}
     {!experimental && lifecycles.data && <LifecycleBoundary list={lifecycles.data} />}
     {!experimental && lifecycles.isError && <PanelMessage tone="error" role="alert">Trade lifecycle is unavailable; positions, fills and P&amp;L are not shown here.<ErrorDetail error={lifecycles.error} /></PanelMessage>}
     {value && <section className="ai-screener-result" aria-label="AI Screener result">

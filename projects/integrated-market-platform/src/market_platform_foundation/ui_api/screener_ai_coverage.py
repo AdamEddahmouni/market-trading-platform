@@ -136,7 +136,9 @@ class ScreenerAiCoverage:
     # ------------------------------------------------------------------ run
 
     def run(self, body: dict[str, Any], *, run_id: str, account_id: str,
-            should_stop: Callable[[], bool] = lambda: False) -> dict[str, Any]:
+            should_stop: Callable[[], bool] = lambda: False, spend_limit: dict[str, int] | None = None) -> dict[str, Any]:
+        # AUTO-01: an owner cap on what an unattended run may hold. It can only refuse a plan, never enlarge one.
+        self._spend_limit = spend_limit
         service = self.service
         query = service._query(body)
         reducer = service._provider_reducer()
@@ -223,6 +225,17 @@ class ScreenerAiCoverage:
             return self._terminal(run, FAILED, run.plan["preflight_rejected"])
         if not batches:
             return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "NO_ROW_FITS_ONE_REQUEST")
+        limit = getattr(self, "_spend_limit", None)
+        if self._budget is not None and limit is not None and (
+                run.plan["required"]["requests"] > limit["requests"] or run.plan["required"]["tokens"] > limit["tokens"]):
+            # Nothing is held and no model is called: the plan exceeds what the owner authorized for unattended runs.
+            run.budget = {"capped": True, "held": False, "reason": "AUTONOMOUS_SPENDING_LIMIT",
+                          "required_requests": run.plan["required"]["requests"], "required_tokens": run.plan["required"]["tokens"],
+                          "available_requests": limit["requests"], "available_tokens": limit["tokens"],
+                          "available_basis": "OWNER_AUTONOMOUS_LIMIT"}
+            run.plan.update(feasible_under_current_limits=False)
+            self._unprocessed(run, batches, "BUDGET_INSUFFICIENT")
+            return self._terminal(run, BUDGET_INSUFFICIENT, "AUTONOMOUS_SPENDING_LIMIT")
         if self._budget is not None:
             held = self._budget.hold(run.run_id, requests=run.plan["required"]["requests"], tokens=run.plan["required"]["tokens"])
             run.budget = {"capped": True, **held}

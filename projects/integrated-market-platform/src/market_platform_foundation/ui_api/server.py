@@ -14,6 +14,11 @@ from urllib.parse import parse_qs, urlparse
 from ..canonical import canonical_bytes, write_canonical_json
 from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
 from ..platform.security.leak_audit import assert_no_secrets_in_payload
+from ..platform.security.route_policy import (
+    PAPER_AUTOMATION_BASE,
+    PAPER_AUTOMATION_READ_PATHS,
+    paper_automation_operations,
+)
 from . import broker_projections
 from . import canary_projections
 from . import controlled_replay as controlled_replay_api
@@ -56,6 +61,11 @@ from .request_auth import (
     loopback_request_origin,
 )
 from .store import ReplayStore
+
+# AUTO-01 dispatch, derived from the single capability table in platform.security.route_policy. The dispatch
+# tables and the capability resolver can no longer disagree, and an operation that is in neither is refused
+# here before it could reach the resolver and inherit the read-only default.
+PAPER_AUTOMATION_POST_OPERATIONS = paper_automation_operations("POST")
 
 
 def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, Any]:
@@ -514,6 +524,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                             payload = service.status(first("instrument"))
                 except (ValueError, TypeError, KeyError) as exc:
                     self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path in PAPER_AUTOMATION_READ_PATHS:
+                # AUTO-01 reads: controller state, audit history and the behaviour report. No model, no provider, no mutation.
+                # The set is derived from the same capability table that authorizes them.
+                try:
+                    from .paper_automation import paper_automation_service
+                    first = lambda key: (query.get(key) or [None])[0]
+                    service = paper_automation_service(self.store)
+                    operation = path.rsplit("/", 1)[1]
+                    if operation == "status":
+                        payload = service.status()
+                    elif operation == "report":
+                        payload = service.report()
+                    else:
+                        payload = service.history(limit=int(first("limit") or 50), before=int(first("before")) if first("before") else None,
+                                                  kind=first("kind"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                     return
                 self._send_json(payload)
                 return
@@ -1839,6 +1869,30 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(service.configure(body) if path.endswith("/configure") else service.evaluate_now(body))
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith(PAPER_AUTOMATION_BASE):
+            # AUTO-01: owner policy, explicit arming and controls for unattended internal Paper simulation.
+            # The controller reaches orders only through the canonical preview and submit; no broker route exists here.
+            # The dispatchable set is derived from the single capability table (route_policy.PAPER_AUTOMATION_CAPABILITIES),
+            # so a POST can never reach a read operation. Authorization already ran in policy_for_route: an operation absent
+            # from that table, or a wrong method on a real one, matches no entry and keeps the global read-only fallthrough
+            # capability. Fail-closed for mutations therefore rests on this refusal, made before any service call.
+            from .paper_automation import paper_automation_service
+            operation = path.removeprefix(PAPER_AUTOMATION_BASE)
+            if operation not in PAPER_AUTOMATION_POST_OPERATIONS:
+                self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
+                return
+            try:
+                service = paper_automation_service(self.store)
+                if operation in ("configure", "arm", "emergency-stop"):
+                    result = getattr(service, operation.replace("-", "_"))(body)
+                elif body not in ({}, None):
+                    raise ValueError("INVALID_AUTOMATION_REQUEST")
+                else:
+                    result = getattr(service, operation)()
+                self._send_json(result)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path in ("/screener/reevaluation/configure", "/screener/reevaluation/start", "/screener/reevaluation/stop", "/screener/reevaluation/run-once"):
             # OCT1-07: operator-controlled cadence. Nothing here starts on its own or submits anything.

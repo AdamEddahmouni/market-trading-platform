@@ -26,6 +26,7 @@
 | Fail-closed | Preview stale → revalidation required; authority loss → ticket hidden, observational UI remains |
 | Preview | Accepted preview does **not** bypass revalidation when draft/market changes |
 | Submit | Workspace is canonical decision boundary; Paper Command cannot submit directly |
+| Unattended submit | Only the armed [Paper automation controller](PAPER_AUTOMATION.md), server-side, through the same handoff, preview, risk and submit functions; internal simulation only, refused when any Live or broker-paper gate is set |
 
 ### Paper authority loss behavior
 

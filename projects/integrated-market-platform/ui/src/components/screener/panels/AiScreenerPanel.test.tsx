@@ -9,12 +9,15 @@ import { SchemaMismatchError } from "../../../api/fetchJson";
 import { lifecycle, lifecycleList, openPosition } from "../lifecycle/lifecycleFixture";
 
 const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn(),
-  stop: vi.fn(), receipts: vi.fn() }));
+  stop: vi.fn(), receipts: vi.fn(), automationStatus: vi.fn(), automationHistory: vi.fn(), automationReport: vi.fn() }));
 vi.mock("../../../api/screenerLifecycle", () => ({ tradeLifecycles: mocks.lifecycles, tradeLifecycle: mocks.lifecycle }));
 vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),
   fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.post, fetchAiScreenerRuns: mocks.runs, fetchAiScreenerRun: mocks.detail,
   postStopAiScreenerRun: mocks.stop, fetchAiScreenerCoverage: mocks.receipts }));
 vi.mock("../../../api/screenerNews", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerNews")>(), postSynthesisEngine: mocks.engine }));
+// Only the reads the automation panel performs are replaced; every writer keeps its real signature.
+vi.mock("../../../api/paperAutomation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/paperAutomation")>(),
+  paperAutomationStatus: mocks.automationStatus, paperAutomationHistory: mocks.automationHistory, paperAutomationReport: mocks.automationReport }));
 
 const scope = { universe: "US_EQUITIES" as const, search: "A", sort: "volume", descending: true, filters: [] };
 const ai = { state: "AVAILABLE" as const, reason: null, provider_id: "inference.test", model_id: "candidate.v1",
@@ -422,6 +425,35 @@ describe("AI Screener panel", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("AI Screener run failed");
   });
+});
+
+const automationBoundary = { execution: "INTERNAL_PAPER_SIMULATION_ONLY", live_capital: false, real_money_order_routes: "NOT_REACHABLE_FROM_AUTOMATION",
+  execution_mode: "INTERNAL_SIMULATION", execution_provider: "INTERNAL", execution_authority: "PAPER_ONLY" };
+const automationPolicy = { policy_id: "PAP-1", account_id: "paper", experiment_id: "PPE-1",
+  schedule: { sessions: ["REGULAR"], cadence_seconds: 60, universe_evaluation_interval_seconds: 1800, no_new_entries_minutes_before_close: 15 },
+  risk: { max_position_notional_minor: 500000, max_aggregate_exposure_minor: 1000000, max_open_positions: 2, max_daily_loss_minor: 100000, max_per_trade_risk_minor: 10000,
+    assumed_adverse_move_bps: 200, allowed_universes: ["US_EQUITIES"], order_types: ["MARKET"], allow_long: true, allow_short: false, allow_entries: true, allow_exits: true },
+  exits: { on_stop_breach: true, on_thesis_exit: true },
+  ai: { allow_local_inference: true, allow_paid_inference: false, max_paid_requests_per_day: 0, max_paid_tokens_per_day: 0 }, emergency_stop: { max_consecutive_failures: 3 } };
+const automationStopped = { schema_version: "paper-automation-status/1.0.0", status: "STOPPED", status_label: "Stopped", required_configuration: [],
+  arm_acknowledgement: "ARM_PAPER_ONLY_AUTOMATION", session: { label: "REGULAR", trading_day: true, session_date: "2026-10-05", minutes_to_close: 300 },
+  durability: "SQLITE_LOCAL_STATE", boundary: automationBoundary, identity_blockers: [], blockers: [], policy: automationPolicy, armed: true,
+  arming: { arming_id: "PAA-1", policy_id: "PAP-1", armed_at: "2026-10-05T14:01:00Z", operator: null }, emergency: null, desired_state: "STOPPED",
+  liveness: { owner: null, worker_alive: false, heartbeat_at: null, cycle_count: 0, consecutive_failures: 0, last_error: null, last_scheduled: null },
+  last_cycle: null, universe: { active_run_id: null, last_result: null, adopted_run_id: null }, candidate_quotes: [], positions: [], working_orders: [], recent_intents: [] };
+
+// The backend emergency latch is independent of the Screener scope, so the control that reaches it must not
+// unmount while the scope is unsettled.
+it("keeps Paper automation and its emergency stop reachable while the Screener scope is unsettled", async () => {
+  mocks.preview.mockResolvedValue(preview);
+  mocks.automationStatus.mockResolvedValue(automationStopped);
+  mocks.automationHistory.mockResolvedValue({ events: [] });
+  mocks.automationReport.mockResolvedValue(null);
+  renderPanel(selection({ screenerScope: { ...scope, settled: false } }));
+  const region = screen.getByRole("region", { name: "Paper automation" });
+  fireEvent.click(within(region).getByRole("button", { name: "Open Paper automation controls" }));
+  await within(region).findByRole("status");
+  expect(within(region).getByRole("button", { name: "Emergency stop" })).toBeEnabled();
 });
 
 describe("AI Screener trade lifecycle", () => {

@@ -45,6 +45,8 @@ export default function ReevaluationPanel({ scope }: { scope: AiScreenerScope })
   // Display refresh only while a worker is running: it reads status and receipts, never evaluates.
   useEffect(() => { if (!open || !running) return; const timer = setInterval(() => { void refresh().catch(() => undefined); }, 5_000); return () => clearInterval(timer); }, [open, running]);
   const configured = Boolean(status?.loop_id);
+  // The armed Paper automation controller owns this loop while it runs: it is shown here, not operated from here.
+  const driven = Boolean(status?.driver);
   const readiness = status?.readiness ?? preview;
   return <section className="reevaluation" aria-label="Reevaluation">
     <button type="button" disabled={busy} onClick={() => { setOpen(true); request(async () => undefined); }}>Open reevaluation controls</button>
@@ -53,14 +55,15 @@ export default function ReevaluationPanel({ scope }: { scope: AiScreenerScope })
       {status && <>
         <h4>REEVALUATION</h4>
         <p role="status">Worker: <strong>{status.worker_state}</strong> — {status.worker_label}</p>
-        <label>Requested cadence (seconds) <input type="number" min={10} max={3600} value={cadence} disabled={busy || running} onChange={(event) => setCadence(Number(event.target.value))} /></label>
-        <button type="button" disabled={busy || running} onClick={() => request(async () => { const next = await configureReevaluation(scope, cadence); if (mounted.current) setPreview(next.readiness ?? null); })}>Configure</button>
+        <label>Requested cadence (seconds) <input type="number" min={10} max={3600} value={cadence} disabled={busy || running || driven} onChange={(event) => setCadence(Number(event.target.value))} /></label>
+        <button type="button" disabled={busy || running || driven} onClick={() => request(async () => { const next = await configureReevaluation(scope, cadence); if (mounted.current) setPreview(next.readiness ?? null); })}>Configure</button>
         {configured && <>
           <p>Scope: {status.scope?.universe} · Account: {status.account_id} · storage {status.durability}</p>
           <p>Requested: {status.requested_cadence_seconds} sec · Effective: {status.effective_cadence_seconds} sec{status.cadence?.degraded ? ` — slower than requested (limited by ${status.cadence.limiting_constraint})` : ""}</p>
           <p>AI engine: {text(status.engine.provider_id)} · {text(status.engine.model_id)} · {text(status.engine.runtime)} · {status.engine.state}{status.engine.reason ? ` (${status.engine.reason})` : ""}{status.engine.budget ? ` · budget ${status.engine.budget.requests}/${status.engine.budget.max_requests} requests` : ""}</p>
           {status.projection && <p>Model call caps: at most {status.projection.worst_case_model_calls} calls per {status.projection.session_minutes}-minute session ({status.projection.cycles} cycles). Projection of request volume, not a cost.</p>}
-          <p>Paper execution remains manual: reevaluation never previews, hands off or submits an order.</p>
+          {driven ? <p>This loop is driven by the armed Paper automation controller. Its candidates come from complete full-universe AI selections, and its gated decisions may be submitted as internal Paper orders under the owner policy. Use the Paper automation controls to pause or stop it.</p>
+            : <p>Paper execution remains manual: reevaluation never previews, hands off or submits an order.</p>}
           {readiness ? <>
             <p>Provider readiness: <strong>{READINESS[readiness.readiness]}</strong>{readiness.reason_codes.length ? ` · ${readiness.reason_codes.join(", ")}` : ""}</p>
             <table><caption>Evidence clocks — a {status.requested_cadence_seconds}-second schedule does not make slower evidence {status.requested_cadence_seconds}-second fresh</caption>
@@ -70,9 +73,11 @@ export default function ReevaluationPanel({ scope }: { scope: AiScreenerScope })
                 <td>{text(row.state)}</td><td>{text(row.as_of)}{row.age_seconds != null ? ` · ${row.age_seconds}s old` : ""}</td><td>{row.within_requested_cadence ? "Yes" : "No"}</td>
               </tr>)}</tbody></table>
           </> : <p>Provider readiness: not yet assessed — configure or run a cycle.</p>}
-          {running ? <button type="button" disabled={busy} onClick={() => request(() => stopReevaluation())}>Stop</button>
-            : <button type="button" disabled={busy} onClick={() => request(() => startReevaluation())}>Start</button>}
-          <button type="button" disabled={busy} onClick={() => request(() => runReevaluationOnce())}>Run Reevaluation Now</button>
+          {!driven && <>
+            {running ? <button type="button" disabled={busy} onClick={() => request(() => stopReevaluation())}>Stop</button>
+              : <button type="button" disabled={busy} onClick={() => request(() => startReevaluation())}>Start</button>}
+            <button type="button" disabled={busy} onClick={() => request(() => runReevaluationOnce())}>Run Reevaluation Now</button>
+          </>}
           {status.liveness && <p>Last scheduled {text(status.liveness.last_scheduled)} · last started {text(status.liveness.last_started)} · last completed {text(status.liveness.last_completed)} · last result {text(status.liveness.last_status?.replace(/_/g, " "))} · next {text(status.next_scheduled)} · missed cycles {status.liveness.missed_ticks} · cycles run {status.liveness.cycle_count}{status.liveness.last_error ? ` · last error ${status.liveness.last_error.code} at ${status.liveness.last_error.at}` : ""}</p>}
           <h4>Cycle history (latest {cycles.length})</h4>
           {cycles.length ? <ol reversed>{cycles.map((cycle) => <CycleRow key={cycle.cycle_id} cycle={cycle} />)}</ol> : <p>No cycles recorded.</p>}

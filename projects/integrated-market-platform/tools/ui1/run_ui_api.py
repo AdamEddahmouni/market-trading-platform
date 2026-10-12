@@ -376,7 +376,22 @@ def serve(*, host: str, port: int) -> None:
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
     start_screener_warmup(store=store)
+    print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
     server.serve_forever()
+
+
+def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:
+    """Continue an armed, running Paper automation policy after a restart, if every check still passes.
+
+    Nothing is configured, armed or started here: with no persisted armed policy this is a read.
+    A failure is reported and leaves the controller stopped; it never prevents serving.
+    """
+    try:
+        from market_platform_foundation.ui_api.paper_automation import paper_automation_service
+
+        return paper_automation_service(store).resume_on_startup()
+    except Exception as exc:  # noqa: BLE001 - startup recovery never blocks the API
+        return {"resumed": False, "reason": type(exc).__name__}
 
 
 WARMUP_UNIVERSES = ("US_EQUITIES", "US_ETFS", "FUTURES")

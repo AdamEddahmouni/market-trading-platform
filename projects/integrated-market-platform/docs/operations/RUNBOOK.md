@@ -3,6 +3,8 @@
 **Status:** Lightweight local operations guide (troubleshooting).  
 **Current developer workflow** (setup, validation, provider/FTEP probes, ports):
 [DEVELOPER_RUNBOOK.md](../engineering/DEVELOPER_RUNBOOK.md).
+**Autonomous Paper automation** (arming, controls, blocker codes, restart):
+[AUTONOMOUS_PAPER_OPERATIONS_RUNBOOK.md](AUTONOMOUS_PAPER_OPERATIONS_RUNBOOK.md).
 
 ## UI fails to start
 
