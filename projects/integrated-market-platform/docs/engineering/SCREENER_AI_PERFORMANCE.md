@@ -1,6 +1,6 @@
 # Screener / AI pipeline performance
 
-**Status:** Sprint recovery; integration and portable acceptance are separate gates.
+**Status:** Corrected source and controlled local measurements validated; protected integration and portable acceptance remain separate gates.
 
 This document governs measurements of the existing Screener and bounded AI
 evidence path. It does not change roadmap priorities, inference authorization,
@@ -124,3 +124,58 @@ protected PR/merge identity, bounded deployment hashes, and actual live
 runtime acceptance are reported separately. A merged source change does not
 itself deploy the SSD. Unmeasured or unavailable observations remain explicit.
 This sprint stops after the specifically authorized acceptance work.
+
+
+## Corrected controlled measurements — 2026-10-12
+
+Before: `d47e3c9ee3bf05d6de663bfaaabbec9681b1fdc4` (accepted PR #494). After:
+`c9f4daebddb6c26aebbf7fa332967231198058c5` (the reviewed source). Both measured source scopes
+were clean. Same CPython 3.11.15 / Windows / AMD Ryzen 5 3600 host; complete
+environment and methodology records are retained. Three alternating process
+pairs requested 21 repetitions per stage; actual per-stage repetitions and
+warmups are recorded. Main response/filter stages have 21 samples per pair.
+The table reports the median of the three per-process medians in milliseconds.
+
+Fixture: **5,085 synthetic provider rows**, **4,622 actually admitted rows**,
+200-row response pages, 412 rows matching the three-rule filter. Production
+full-universe paging returned all 4,622 unique rows over ten pages with exact
+value/order parity. This is a controlled synthetic workload, not a measured
+live provider universe.
+
+| Stage | Before ms | After ms | Disposition |
+|---|---:|---:|---|
+| Prepared response CPU | 148.979 | 99.037 | Improved in all three pairs |
+| Complete leak audit | 84.850 | 52.111 | Improved in all three pairs |
+| Structural leak walk | 52.049 | 20.168 | Improved in all three pairs |
+| Three-rule filtering | 18.666 | 9.546 | Improved in all three pairs |
+| Filtered uncached read | 19.746 | 10.206 | Improved in all three pairs |
+| AI observations (baseline retained) | 1.469 | 1.479 | No reproducible improvement claim |
+| Full-universe service paging | 4.107 | 3.908 | No reproducible improvement claim |
+| Universe refresh CPU | 94.132 | 90.200 | No reproducible improvement claim |
+
+All three accepted comparison reports are `COMPARABLE`; none flags a
+regression across 42 stages. This does not assert that every small timing
+difference is an improvement. Five stages improve beyond the thresholds in
+all pairs. The removed regex shortcut and reverted AI optimization are not
+credited with performance gains.
+
+Actual React/jsdom hook workloads: steady state
+**0.0720 → 0.0128 ms**;
+changing dependencies **0.0653 → 0.0438 ms**.
+These include React scheduling/hook work and remain small absolute costs;
+they are not browser frame or full-page responsiveness measurements.
+
+The initial new collection overlapped a UI timing run and is retained as
+provisional evidence, including its two regression flags. Acceptance uses
+only the subsequent serial collection; no prior measurement was edited.
+Raw distributions, ranges, comparisons, review, security differential,
+fixture integrity and validation summary are in
+[accepted receipts](../../evidence/performance/screener-ai-20261012/accepted/).
+
+Final local validation: CHANGED **2,901 tests / 9 skipped / 0 failures /
+0 errors**; FULL **8,611 / 59 / 0 / 0**; UI **1,427 tests**; typecheck,
+production build (100.77 KiB initial gzip bundle), lint and docs links pass.
+The three FULL path errors were resolved solely by shortening the disposable
+temp root, with focused reproduction followed by a passing full rerun.
+Independent final review has no blockers. Protected integration and actual
+portable live acceptance are separate remaining receipts.

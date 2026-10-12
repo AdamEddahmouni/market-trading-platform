@@ -1,0 +1,9 @@
+{
+  "baseline_sha": "d47e3c9ee3bf05d6de663bfaaabbec9681b1fdc4",
+  "text_samples": 25006,
+  "structural_payloads": 5000,
+  "mismatches": 0,
+  "source_leak_audit_sha256": "5af37dd7f338d8d3511b8096aa4c71cef8d07e5c310700217d777b31b80a7079",
+  "claim_limit": "finite deterministic differential corpus, not universal equivalence proof",
+  "regex_prefilter": "removed; every original governed regex is evaluated"
+}
