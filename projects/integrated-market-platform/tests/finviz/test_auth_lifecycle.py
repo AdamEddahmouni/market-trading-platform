@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, call, patch
@@ -290,6 +291,60 @@ class FinvizAuthLifecycleTests(unittest.TestCase):
                     thread.start()
                 for thread in threads:
                     thread.join(timeout=5)
+
+    def test_waiters_return_when_inflight_recovery_fails(self) -> None:
+        manager = FinvizCredentialManager()
+        manager._token = "stale"
+        manager._source = FinvizCredentialSource.PRIVATE_FILE
+        entered = threading.Event()
+        release = threading.Event()
+        outcomes: list[bool] = []
+        polling: set[int] = set()
+        real_sleep = time.sleep
+
+        def observed_sleep(delay: float) -> None:
+            polling.add(threading.get_ident())
+            real_sleep(0.01)
+
+        def blocked_login(**kwargs) -> MagicMock:
+            entered.set()
+            release.wait(timeout=5)
+            return MagicMock(status=LoginRecoveryStatus.CONFIG_MISSING, token=None)
+
+        def recover() -> None:
+            outcomes.append(manager.attempt_recovery())
+
+        with patch(
+            "market_platform_foundation.finviz.credential_manager._configured_token_with_source",
+            return_value=(None, FinvizCredentialSource.PRIVATE_FILE),
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.read_login_credentials",
+            return_value=("user", "pass"),
+        ), patch(
+            "market_platform_foundation.finviz.credential_manager.recover_token_via_login",
+            side_effect=blocked_login,
+        ) as login_mock, patch(
+            "market_platform_foundation.finviz.credential_manager.time.sleep",
+            side_effect=observed_sleep,
+        ):
+            holder = threading.Thread(target=recover, daemon=True)
+            holder.start()
+            self.assertTrue(entered.wait(timeout=5))
+            waiters = [threading.Thread(target=recover, daemon=True) for _ in range(2)]
+            for waiter in waiters:
+                waiter.start()
+            deadline = time.monotonic() + 5
+            while len(polling) < 2 and time.monotonic() < deadline:
+                real_sleep(0.01)
+            self.assertEqual(len(polling), 2)
+            release.set()
+            for thread in (holder, *waiters):
+                thread.join(timeout=5)
+            self.assertFalse(any(thread.is_alive() for thread in (holder, *waiters)))
+
+        self.assertEqual(login_mock.call_count, 1)
+        self.assertEqual(outcomes, [False, False, False])
+        self.assertEqual(manager._state, FinvizAuthState.AUTH_INVALID)
 
     def test_candidate_credential_validated_before_swap(self) -> None:
         manager = FinvizCredentialManager()

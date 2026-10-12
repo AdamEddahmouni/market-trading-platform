@@ -625,6 +625,7 @@
         "tools/perf_baseline_measure.py",
         "tools/performance_budget.py",
         "tools/performance_telemetry.py",
+        "tools/tracked_evidence.py",
         "tools/ai_screener_local_first_benchmark.py",
         "tools/local_runtime_benchmark.py"
       ],
@@ -632,7 +633,8 @@
       "evidence": [
         "tests/validation/test_benchmark.py keeps benchmark results non-gating.",
         "tests/validation/test_mutation_verification.py binds the required failure modes.",
-        "tests/validation/test_performance_budget.py keeps budget classification observe-only and non-gating."
+        "tests/validation/test_performance_budget.py keeps budget classification observe-only and non-gating.",
+        "tests/validation/test_tracked_evidence.py keeps routine validation from rewriting tracked evidence unless a refresh is requested."
       ],
       "disposition": "KEEP"
     },
