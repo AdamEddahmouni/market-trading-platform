@@ -21,6 +21,24 @@ clock advanced between two reads). The reevaluation status field
 `paper_execution` may be `AUTOMATION_POLICY`. The response leak guard treats
 `max_paid_tokens_per_day` as a whole-number count.
 
+Integration closed the same day: PR #496 merged normally into `origin/main` at
+`bb46e716` after every protected CI check passed. Two review findings were
+repaired before merge — a superseded generation could lose its self-latch to
+`disarm → configure → re-arm → start` while its cycle was finishing (now fenced
+by the arming+run generation, with the latch recorded as
+`EMERGENCY_LATCH_SUPERSEDED` and a deterministic regression test), and a closed
+session could hide a simultaneous blocker (the last evaluating cycle's blockers
+are now carried into the read with provenance, so the panel names both). The
+automation capability table and the route dispatch were reduced to one source,
+so an operation can no longer drift into read-only privilege. Focused AUTO-01
+suites are 117 backend tests; `validate full` is 8,728 tests / 59 skipped / 0
+failures / 0 errors and `imp.py closure` exits 0; the UI suite is 1,440 tests
+with typecheck and production build clean. The portable runtime source was then
+synchronized from the accepted git objects (186 files, 78 preimages, every
+hash verified, UI rebuilt and re-verified). Live-provider unattended behaviour
+remains `NOT_OBSERVED`, and the workstation restart that loads the synchronized
+source is the one outstanding owner action.
+
 Not implemented: any liquidation rule (daily-loss, close or emergency), and
 any way to mint the governed Opportunity an ENTER still requires. 106 new
 backend tests (35 policy, 8 universe, 63 trading-correctness) and 12 UI tests use
