@@ -1,5 +1,32 @@
 # IMP Work Log
 
+## 2026-10-12 — Autonomous Paper operations (AUTO-01)
+
+Added one server-owned controller that runs the existing authorities
+unattended for internal Paper simulation: the full-universe AI run, the
+reevaluation cycle, the Action Decision gate, the SMA stop monitor and the
+canonical Paper handoff, preview, risk and submit. It needs a complete owner
+policy (no defaults) and a separate recorded arming; it holds a per-account
+lease, renews it inside the cycle, records downtime without backfill, and
+resumes after a restart only if every start check passes again. Candidates
+come only from complete full-universe selections; unattended model calls need
+the owner's local or paid authorization and a paid run carries an owner cap
+that refuses before any hold. One Action Decision is one order; an exit whose
+order ended unfilled is decided again with backoff. Emergency Stop latches,
+cancels working automation orders and never liquidates.
+
+Three existing behaviours changed. Action handoff now gates at the cutoff of
+its own position snapshot (it failed `POSITION_SNAPSHOT_STALE` whenever the
+clock advanced between two reads). The reevaluation status field
+`paper_execution` may be `AUTOMATION_POLICY`. The response leak guard treats
+`max_paid_tokens_per_day` as a whole-number count.
+
+Not implemented: any liquidation rule (daily-loss, close or emergency), and
+any way to mint the governed Opportunity an ENTER still requires. 106 new
+backend tests (35 policy, 8 universe, 63 trading-correctness) and 12 UI tests use
+controlled fixtures; a live regular-session run is `NOT_OBSERVED`. See
+[Autonomous Paper operations](../architecture/PAPER_AUTOMATION.md).
+
 ## 2026-10-11 — Performance comparability and import boundaries (P8)
 
 Recovered an interrupted performance sprint and finished it on the portable

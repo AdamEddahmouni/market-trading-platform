@@ -38,7 +38,7 @@ export type ReevaluationCycle = z.infer<typeof Cycle>;
 const Engine = z.object({ state: z.string(), reason: z.string().nullable(), provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable(),
   budget: z.object({ requests: z.number(), max_requests: z.number() }).passthrough().nullable() }).passthrough();
 export const ReevaluationStatusSchema = z.object({ schema_version: z.literal("reevaluation-status/1.0.0"), worker_state: z.string(), worker_label: z.string(),
-  engine: Engine, durability: z.string(), paper_execution: z.literal("MANUAL_ONLY"), loop_id: z.string().optional(), account_id: z.string().optional(),
+  engine: Engine, durability: z.string(), paper_execution: z.enum(["MANUAL_ONLY", "AUTOMATION_POLICY"]), driver: z.string().nullable().optional(), loop_id: z.string().optional(), account_id: z.string().optional(),
   scope: z.object({ universe: z.string() }).passthrough().optional(), requested_cadence_seconds: z.number().optional(), effective_cadence_seconds: z.number().optional(),
   cadence: z.object({ limiting_constraint: z.string(), degraded: z.boolean() }).passthrough().optional(),
   liveness: z.object({ last_scheduled: z.string().nullable(), last_started: z.string().nullable(), last_completed: z.string().nullable(), last_success: z.string().nullable(),

@@ -303,7 +303,9 @@ A stale quote on a scheduled tick produces `REVALIDATION_REQUIRED`
 ## Worker, lease and liveness
 
 - **Operator controlled.** Configure, Start, Stop, Run Once, Status. Nothing
-  starts when the app or a panel opens, or after a restart.
+  starts when the app or a panel opens, or after a restart. The one exception
+  is a loop driven by an armed Paper automation controller, which that
+  controller resumes after a restart only if its own start checks pass again.
 - **Schedule.** Slots are `anchor + n × effective`. One thread. If a cycle runs
   past later slots those slots are **skipped** (never run late, never overlapped);
   the next receipt carries `missed_ticks_before` and `CYCLE_OVERRAN`, and the long
@@ -342,6 +344,34 @@ Reevaluation produces decisions and receipts only. It has no preview, handoff,
 order or submit path and imports none. Paper execution remains the explicit
 OCT1-06 handoff through Workspace; Live authority is unchanged. Position is always
 read from the current Paper ledger, never inferred from a prior decision.
+
+### Driven by Paper automation (AUTO-01)
+
+A separately armed controller ([Autonomous Paper operations](PAPER_AUTOMATION.md))
+may drive this loop instead of the worker thread. The cycle, lease, receipts,
+fingerprint, churn control and model caps are the ones above. What changes
+while a driver is attached (`status.driver`, `paper_execution: AUTOMATION_POLICY`):
+
+- `attach_driver` takes the loop's lease; operator Configure, Start, Stop and
+  Run Once are refused with `REEVALUATION_DRIVEN_BY_PAPER_AUTOMATION`. A running
+  manual worker is never taken over.
+- `candidate_source` is `FULL_UNIVERSE_SELECTION`. The intake-head reduction is
+  **not** run. Candidates change only when `adopt_selection` is given a result
+  with `coverage_complete` and `selection_complete`; anything else raises
+  `SELECTION_COVERAGE_INCOMPLETE`. A selected candidate outside the sorted
+  intake gets one targeted read, as a held instrument does.
+- `driven_cycle(..., model_gate=)` can only withhold model calls. Deterministic
+  work, including stop evaluation, continues; a withheld owner spending
+  authorization classifies as `BUDGET_BLOCKED`.
+- `request_redecision(instrument)` marks a decision whose inputs changed after
+  it was made. The next cycle evaluates it (`DECISION_INPUT_CHANGED`) instead of
+  suppressing it as a duplicate. A held position is decided again at once; a
+  flat one still waits out the dwell.
+- `detach_driver` releases the lease and clears the selection, so the next
+  operator Start uses the intake-head method again.
+
+The loop itself still submits nothing. Orders are placed by the controller's
+Paper adapter through the canonical handoff, preview and submit.
 
 ## API
 

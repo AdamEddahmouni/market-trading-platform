@@ -138,6 +138,16 @@ Frontend request generations/abort guards isolate late candidate/scope responses
 The display expiry timer never reevaluates. Expired records retain their history,
 and handoff revalidates again even if authority changes after rendering.
 
+Handoff gates at the cutoff its own position snapshot was taken at. It used to
+gate at a clock read taken just before that snapshot, which made the snapshot
+look later than the cutoff and failed `POSITION_SNAPSHOT_STALE` whenever the
+clock advanced between the two reads.
+
+The same `handoff` is the only way the
+[Paper automation adapter](PAPER_AUTOMATION.md#paper-adapter) obtains an order
+draft. Automation calls the service method directly; the HTTP route and its
+`paper.order.submit` capability are unchanged.
+
 Acceptance and integration evidence:
 [OCT1-06 report](../superpowers/plans/2026-10-04-oct1-06-action-decision.md).
 OCT1-07 scheduling and OCT1-09 experimental Paper campaign are outside this contract.

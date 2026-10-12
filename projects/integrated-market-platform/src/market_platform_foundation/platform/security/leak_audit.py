@@ -112,6 +112,8 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
         "reserved_reasoning_tokens",
         "reserved_reasoning_tokens_total",
         "available_token_budget",
+        # AUTO-01 owner policy: the daily paid-inference allowance, a whole-number count.
+        "max_paid_tokens_per_day",
     )
 )
 

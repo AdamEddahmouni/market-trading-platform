@@ -281,7 +281,9 @@ class ScreenerActionService:
         if record['opportunity_id']: request['opportunity_id']=record['opportunity_id']
         b=self._build(request)
         if b['digest']!=record['input_hash']: raise ValueError('ACTION_INPUT_CHANGED')
-        current=gate_proposal(record['model_proposal'],b['candidate'],b['context'],now=now)
+        # Gated at the cutoff the position snapshot was just taken at: an earlier clock read would make that
+        # snapshot look like it came from the future and fail POSITION_SNAPSHOT_STALE on any ticking clock.
+        current=gate_proposal(record['model_proposal'],b['candidate'],b['context'],now=b['now'])
         if current['execution_readiness']!='PREVIEW_ALLOWED': raise ValueError('ACTION_HANDOFF_BLOCKED')
         state=record['action_state']
         if state not in ('ENTER','EXIT'): raise ValueError('ACTION_NOT_HANDOFF_ELIGIBLE')

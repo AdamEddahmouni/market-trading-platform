@@ -142,6 +142,14 @@ The budget is the existing shared daily allowance
 by default), shared by News synthesis, the AI Screener, Action Decisions and
 reevaluation. This method adds no private budget and never raises a limit.
 
+- **Owner cap for unattended runs.** `run(..., spend_limit={requests, tokens})`
+  is passed only by [Paper automation](PAPER_AUTOMATION.md#ai-evaluation). A plan
+  larger than the cap ends `AI_COVERAGE_BUDGET_INSUFFICIENT` with reason
+  `AUTONOMOUS_SPENDING_LIMIT` before any hold or model call; the budget block
+  reports the cap as `available_*` with `available_basis: OWNER_AUTONOMOUS_LIMIT`.
+  The cap can only refuse. A run records its `origin` (`OPERATOR` or
+  `AUTOMATION`); a joined run keeps the terms it was started under.
+
 - **Estimate.** `estimate_tokens` now bounds input tokens from UTF-8 bytes with
   a per-model ratio set below the provider's own count of the controlled
   50-candidate packet (2.2 bytes per token for Haiku 4.5, 1.5 for Sonnet 5.5
@@ -242,8 +250,10 @@ the evidence it cites, so the existing `CANDIDATE_EXPIRED`, quote-freshness and
 risk gates apply unchanged. A partial result carries `state: INCOMPLETE`, an
 empty `candidates` list and a `provisional` list for inspection; the panel
 offers no Action Decision for it. The Action Decision, Paper, risk, SMA stop,
-lifecycle and evaluation code is not modified. There is no automatic Paper
-submit and no Live authority.
+lifecycle and evaluation code is not modified. This coverage method itself adds
+no automatic Paper submit and no Live authority: unattended internal
+simulation submission exists only through the separately configured and armed
+[Paper automation](PAPER_AUTOMATION.md) controller, never for Live.
 
 Accounting invariant, checked at every terminal write:
 
