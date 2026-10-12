@@ -4,6 +4,21 @@ import os
 import subprocess
 import sys
 import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+for _entry in (str(ROOT), str(ROOT / "src")):
+    if _entry not in sys.path:
+        sys.path.insert(0, _entry)
+
+
+def _child_environment() -> dict[str, str]:
+    env = dict(os.environ)
+    inherited = env.get("PYTHONPATH")
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(ROOT), str(ROOT / "src"), *([inherited] if inherited else [])]
+    )
+    return env
 
 
 class IntelligenceImportBoundaryTests(unittest.TestCase):
@@ -12,7 +27,7 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
             sys.executable, "-c",
             "import json,sys; from market_platform_foundation.intelligence.contracts import EventV1; "
             "print(json.dumps(sorted(sys.modules)))",
-        ], capture_output=True, text=True, check=True, env=dict(os.environ))
+        ], capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
         modules = json.loads(completed.stdout)
         for name in ("normalization", "replay", "signals", "scheduling", "snapshots"):
             with self.subTest(name=name):
@@ -23,7 +38,7 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
             sys.executable, "-c",
             "import json,sys; from market_platform_foundation.intelligence.opportunity import GlobalOpportunityComparator; "
             "print(json.dumps(sorted(sys.modules)))",
-        ], capture_output=True, text=True, check=True, env=dict(os.environ))
+        ], capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
         modules = json.loads(completed.stdout)
         self.assertNotIn("market_platform_foundation.intelligence.opportunity.engine", modules)
         self.assertNotIn("market_platform_foundation.intelligence.evaluation", modules)
@@ -93,7 +108,7 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
                 subprocess.run([
                     sys.executable, "-c",
                     statement + "; assert facade.OpportunityEngine is owner.OpportunityEngine",
-                ], capture_output=True, text=True, check=True, env=dict(os.environ))
+                ], capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
 
     def test_normalization_registration_is_unchanged_when_first_reached_through_facade(self):
         program = (
@@ -101,11 +116,11 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
             "print(json.dumps(sorted(map(repr, registry._REGISTRY))))"
         )
         direct = subprocess.run([sys.executable, "-c", program],
-                                capture_output=True, text=True, check=True, env=dict(os.environ))
+                                capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
         through_facade = subprocess.run([
             sys.executable, "-c",
             "from market_platform_foundation.intelligence import normalize_event; " + program,
-        ], capture_output=True, text=True, check=True, env=dict(os.environ))
+        ], capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
         self.assertEqual(direct.stdout, through_facade.stdout)
 
     def test_facade_attributes_remain_patchable_and_restore_the_original(self):
@@ -128,7 +143,7 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
             "print(json.dumps(sorted({name.split('.')[0] for name in sys.modules})))"
         )
         completed = subprocess.run([sys.executable, "-c", program],
-                                   capture_output=True, text=True, check=True, env=dict(os.environ))
+                                   capture_output=True, text=True, check=True, env=_child_environment(), cwd=ROOT)
         packages = json.loads(completed.stdout)
         for name in ("sklearn", "scipy", "pandas", "joblib"):
             with self.subTest(name=name):

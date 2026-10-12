@@ -139,7 +139,7 @@ class PerformanceClassificationTests(unittest.TestCase):
                 receipt = {
                     "mode": mode,
                     "wall_seconds": workload.baseline_median_seconds * 3,
-                    "tests_run": workload.reference_test_count + 100,
+                    "tests_run": workload.reference_test_count + max(1, workload.reference_test_count // 10),
                     "skips": workload.reference_skipped or 0,
                     "effective_workers": workload.reference_workers,
                     "scheduler_version": self.budget.parent_scheduler_version,

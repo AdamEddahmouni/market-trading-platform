@@ -228,9 +228,10 @@ fixture paths past 260 characters. Use a short worktree and temporary path
 rather than enabling long paths globally; see
 [PORTABLE_WORKSTATION.md](PORTABLE_WORKSTATION.md#worktree-paths-must-be-short).
 
-**Timing classification `INSUFFICIENT_DATA`:** the run's test or skip count
-differs from the budget's reference workload, so no regression ratio is
-derived. Raw wall time is still reported; see
+**Timing classification `INSUFFICIENT_DATA`:** most often the run's test or
+skip count differs from the budget's reference workload (the printed reason
+says so), so no regression ratio is derived. Until the baseline is re-recorded
+on the current workload, FAST and FULL timing regressions are not classified. Raw wall time is still reported; see
 [performance-engineering-p8](../audits/performance-engineering-p8/README.md).
 
 ---

@@ -1821,7 +1821,7 @@ def main(argv: list[str] | None = None) -> int:
     regression_explain = perf.get("regression_explain")
     if regression_explain:
         print(f"PERF: {regression_explain}")
-    elif budget.get("explain") and budget.get("trustworthy_for_action") is False:
+    elif budget.get("classification") == "INSUFFICIENT_DATA" and budget.get("explain"):
         print(f"PERF: not comparable to baseline: {'; '.join(budget['explain'])}")
     if result["core_checkpoint_required"]:
         print("core_checkpoint_required=true (core checkpoint = mandatory invariants + "
