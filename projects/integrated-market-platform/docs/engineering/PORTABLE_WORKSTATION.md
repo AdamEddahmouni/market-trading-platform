@@ -84,16 +84,17 @@ depth, and the same tests passed from a short path on unchanged source.
   for the default `dev/` worktree. A task worktree needs its own independent
   copy of the fixture files listed in `DEVELOPMENT-CONFIG.json`
   (`replay_fixture_files`) under `projects/short-squeeze-project/`, and its own
-  `ui/node_modules` junction, before FULL validation.
+  ordinary `ui/node_modules` directory installed from its lockfile, before FULL validation.
+  Never create a worktree junction to protected runtime dependencies.
 - Do not move the running application or enable long paths globally to work
   around a deep development path.
 
 ### Junctions and Git
 
-`ui/node_modules` in a worktree is a junction to the running application's
-dependency tree. Git operations that delete a directory can follow a junction
-into its target. Remove the junction itself (`rmdir` on the link) before
-removing a worktree, and never run `git clean` in a worktree that contains one.
+Use independently owned development dependencies. Historical worktrees may
+contain a junction to runtime data; inspect reparse points before Git operations.
+Never let checkout, cleanup, sparse-cone changes, or worktree removal traverse
+such a link. This sprint recovered without creating a runtime junction.
 
 The worktrees use sparse checkout. The replay fixture copy lives at tracked
 paths outside the sparse cone, so `git stash`, `git checkout -- <path>` across

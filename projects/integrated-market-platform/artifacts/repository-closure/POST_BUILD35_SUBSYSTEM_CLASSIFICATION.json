@@ -627,7 +627,9 @@
         "tools/performance_telemetry.py",
         "tools/tracked_evidence.py",
         "tools/ai_screener_local_first_benchmark.py",
-        "tools/local_runtime_benchmark.py"
+        "tools/local_runtime_benchmark.py",
+        "tools/screener_ai_perf_profile.py",
+        "tools/screener_ai_perf_compare.py"
       ],
       "responsibility": "Informational performance measurement, P7 performance-budget telemetry, parallel-safety audit support, and controlled proof that mandatory validation invariants detect regressions.",
       "evidence": [

@@ -18,6 +18,7 @@ Design:
 
 from __future__ import annotations
 
+import functools
 import json
 import re
 from typing import Any, Mapping
@@ -57,12 +58,24 @@ def is_secret_key(name: str) -> bool:
 
     Deliberately over-broad (substring match): false positives redact benign
     fields, which is safe; false negatives leak credentials, which is not.
+
+    Classification is a pure function of the key text and one API response
+    repeats the same few hundred field names once per row, so it is memoized.
+    The bound keeps an unbounded key vocabulary from growing the cache; it
+    never changes an answer.
     """
 
     if not isinstance(name, str):
         return False
+    if type(name) is not str:
+        return any(marker in normalize_key(name) for marker in SECRET_KEY_MARKERS)
+    return _is_secret_key(name, SECRET_KEY_MARKERS)
+
+
+@functools.lru_cache(maxsize=4096)
+def _is_secret_key(name: str, markers: tuple[str, ...]) -> bool:
     normalized = normalize_key(name)
-    return any(marker in normalized for marker in SECRET_KEY_MARKERS)
+    return any(marker in normalized for marker in markers)
 
 
 def redact_mapping(payload: Any) -> Any:

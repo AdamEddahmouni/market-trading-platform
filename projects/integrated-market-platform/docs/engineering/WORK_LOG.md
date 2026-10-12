@@ -6776,3 +6776,31 @@ Independent continuation review reproduced a dotted-key collision in the PR #491
 ### Portable aggregate provider health audit recovery
 
 The SSD observational acceptance exposed `/provider/health` nesting the documented Finviz authority matrix under `finviz`. Accept the same exact public field/value assignments at this second documented structural path. Keep arbitrary nesting, dotted/case/list lookalikes, unsupported values, unknown fields, credentials and sibling secrets blocked. Add real aggregate HTTP coverage without provider calls and nested negative regressions; no execution or provider authority change.
+
+
+## 2026-10-12 — Screener/AI performance sprint recovery
+
+Recovered the original `codex/screener-ai-performance-20261012` worktree from
+the accepted PR #494 merge `d47e3c9e`. Preserved all prior measurements and
+unrelated historical artifacts. New regressions reproduced missed dynamic
+credential regex matches, malformed AI membership behavior and filter error
+timing changes. Removed the unsafe credential prefilter and restored baseline
+AI projection; retained direct filter branches with baseline short-circuit
+semantics. Unicode audit rendering now scans actual characters. Bounded key
+classification caching includes policy identity and handles string subclasses.
+
+Performance tools now record complete fixture/value, method, environment and
+clean measured-source identities. Full-universe production paging must match
+all admitted values and order. UI measurements use shared production hooks,
+real React memo invalidation and source-derived fixtures (62 entries / 73
+columns), replacing the earlier synthetic constant counts. Historical audit
+findings remain intact; the executable closure inventory appends the two new
+tool paths to its existing performance owner. Current ownership routes are in
+`SCREENER_AI_PERFORMANCE.md` and the existing validation manifest.
+
+All 12 restored runtime fixtures matched backup hashes (8,068,648 bytes), with
+independent validation copies and no runtime junction. Focused parity/tooling
+and the complete 1,427-test UI suite passed during recovery. Exact final
+CHANGED/FULL, independent review, paired timings, protected integration and
+portable runtime acceptance require their own final receipts; the earlier
+2,880-test checkpoint and provisional speedups do not establish acceptance.

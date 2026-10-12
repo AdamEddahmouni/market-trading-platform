@@ -27,6 +27,7 @@ never new universes; the canonical asset classes stay XA-01 ``EQUITY`` and
 
 from __future__ import annotations
 
+import functools
 import hashlib
 from collections import Counter
 from dataclasses import dataclass, field
@@ -70,9 +71,18 @@ def listing_key(symbol: str) -> str:
 
 
 def reference_category(industry: str | None) -> str:
-    """Finviz industry to a security category; an empty industry is never guessed."""
+    """Finviz industry to a security category; an empty industry is never guessed.
 
-    text = str(industry or "").strip().casefold()
+    A US export names a few hundred distinct industries across thousands of
+    listings, and admission classifies every one of them on each refresh, so the
+    mapping is memoized. The bound keeps a hostile source from growing it.
+    """
+
+    return _reference_category(str(industry or "").strip().casefold())
+
+
+@functools.lru_cache(maxsize=2048)
+def _reference_category(text: str) -> str:
     if not text:
         return UNCLASSIFIED
     if text == _ETF_INDUSTRY:

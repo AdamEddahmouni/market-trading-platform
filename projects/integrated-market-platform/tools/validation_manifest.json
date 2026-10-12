@@ -1712,7 +1712,9 @@
         "tools/parallel_safety_audit.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
-        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
+        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md",
+        "tools/screener_ai_perf_profile.py",
+        "tools/screener_ai_perf_compare.py"
       ],
       "test_globs": [
         "tests/validation/test_*.py"
