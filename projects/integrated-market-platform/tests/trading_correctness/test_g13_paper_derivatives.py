@@ -8,6 +8,7 @@ import unittest
 from decimal import Decimal
 from pathlib import Path
 
+from tools.tracked_evidence import evidence_output_path
 from market_platform_foundation.paper.execution import (
     cancel_interactive_order,
     replace_interactive_order,
@@ -831,7 +832,9 @@ class G13RuntimePerformanceTests(unittest.TestCase):
             )
         results["fill_to_portfolio_ms"] = (time.perf_counter() - start) * 1000
 
-        evidence_path = Path(__file__).resolve().parents[2] / "artifacts" / "g13-runtime-performance.json"
+        evidence_path = evidence_output_path(
+            Path(__file__).resolve().parents[2] / "artifacts" / "g13-runtime-performance.json"
+        )
         evidence_path.parent.mkdir(parents=True, exist_ok=True)
         evidence_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
 

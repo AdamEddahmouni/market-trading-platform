@@ -12,8 +12,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.preprocessing import StandardScaler
 
 from ..baselines.features import FeatureVectorBuilder
 from ..baselines.types import BaselineFeatureVector
@@ -172,6 +170,10 @@ def fit_production_specialist(
 
     x_rows = [list(vector.values) for vector, _label, _example in normalized]
     y_rows = [label for _vector, label, _example in normalized]
+    # scikit-learn loads when a model is fitted, not when contracts import.
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.preprocessing import StandardScaler
+
     scaler = StandardScaler()
     x_scaled = scaler.fit_transform(np.asarray(x_rows, dtype=float))
     classifier = LogisticRegression(

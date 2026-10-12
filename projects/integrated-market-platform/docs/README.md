@@ -43,6 +43,7 @@ it in the authoritative doc — do not silently choose.
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
+| Portable SSD workstation (source vs runtime vs backup) | [PORTABLE_WORKSTATION.md](engineering/PORTABLE_WORKSTATION.md) |
 | Next US equity RTH campaign (current `main`) | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
 | RTH15-00 reconciliation target | [RTH15_00_TARGET_STATE.md](engineering/RTH15_00_TARGET_STATE.md) |
 | RTH15-00 reconciliation matrix | [RTH15_00_RECONCILIATION_MATRIX.md](engineering/RTH15_00_RECONCILIATION_MATRIX.md) |
@@ -127,6 +128,7 @@ Order-flow chart navigation and captured-history contract:
 | Validation system internals | [VALIDATION_ARCHITECTURE.md](engineering/VALIDATION_ARCHITECTURE.md) |
 | Current workflow audit | [DEVELOPER_OPERATING_SYSTEM_AUDIT.md](engineering/DEVELOPER_OPERATING_SYSTEM_AUDIT.md) |
 | Performance P0 forensic baseline | [performance-engineering-p0/](audits/performance-engineering-p0/README.md) |
+| Performance P8 baseline comparability and import boundary | [performance-engineering-p8/](audits/performance-engineering-p8/README.md) |
 | Definition of done | [DEFINITION_OF_DONE.md](engineering/DEFINITION_OF_DONE.md) |
 | Coding standards | [CODING_STANDARDS.md](engineering/CODING_STANDARDS.md) |
 | Dependencies | [DEPENDENCIES.md](engineering/DEPENDENCIES.md) |

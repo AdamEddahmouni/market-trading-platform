@@ -297,6 +297,9 @@ class FinvizCredentialManager:
                 with self._lock:
                     if self._state == FinvizAuthState.HEALTHY:
                         return True
+                if not self._recovery_lock.locked():
+                    # The in-flight recovery finished; its outcome is final.
+                    break
                 time.sleep(0.1)
             with self._lock:
                 return self._state == FinvizAuthState.HEALTHY
