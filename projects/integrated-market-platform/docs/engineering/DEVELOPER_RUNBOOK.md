@@ -222,11 +222,23 @@ FTEP empirical posture remains **`FTEP_EMPIRICAL_NOT_READY`** until owner gates 
 
 See [operations/RUNBOOK.md](../operations/RUNBOOK.md) for UI/API/provider failure playbooks.
 
+**Windows path length:** packaging, frozen-corpus, and restart tests fail with
+file-not-found errors when the checkout or `TEMP` path is deep enough to push
+fixture paths past 260 characters. Use a short worktree and temporary path
+rather than enabling long paths globally; see
+[PORTABLE_WORKSTATION.md](PORTABLE_WORKSTATION.md#worktree-paths-must-be-short).
+
+**Timing classification `INSUFFICIENT_DATA`:** the run's test or skip count
+differs from the budget's reference workload, so no regression ratio is
+derived. Raw wall time is still reported; see
+[performance-engineering-p8](../audits/performance-engineering-p8/README.md).
+
 ---
 
 ## Related authorities
 
 - [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) — prerequisites and Windows setup narrative  
+- [PORTABLE_WORKSTATION.md](PORTABLE_WORKSTATION.md) — portable SSD source/runtime/backup boundaries  
 - [FRONTEND_GUIDE.md](FRONTEND_GUIDE.md) — shipped primary nav labels and UI patterns
 - [CURSOR_CLOUD_ENVIRONMENT.md](CURSOR_CLOUD_ENVIRONMENT.md) — cloud secrets **names** only  
 - [AGENTS.md](../../AGENTS.md) — agent entry and safety invariants

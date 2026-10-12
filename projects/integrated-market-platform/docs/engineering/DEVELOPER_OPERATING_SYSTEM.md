@@ -154,6 +154,17 @@ Forensic baselines and optimization ledgers live under
 Optimize measured hotspots only; preserve assurance invariants. Performance work
 is secondary/enabling and must not displace primary product increments.
 
+A timing is compared with a budget baseline only when the workload identity
+matches. Declared reference test and skip counts apply to every workload,
+including FAST and FULL; a changed selection reports `INSUFFICIENT_DATA` with
+raw timings and no ratio. Re-baselining requires explicit provenance under the
+budget's promotion policy. Current comparability evidence:
+[performance-engineering-p8](../audits/performance-engineering-p8/README.md).
+
+Tests that reproduce a tracked evidence artifact write to the temporary
+directory (`tools/tracked_evidence.py`). Set `IMP_REFRESH_TRACKED_EVIDENCE=1`
+only to re-record that evidence deliberately.
+
 ## Local lane topology (historical 2026-09-10)
 
 The table below is the **2026-09-10** worktree topology. It is **not** current

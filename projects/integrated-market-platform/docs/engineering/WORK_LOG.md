@@ -1,5 +1,24 @@
 # IMP Work Log
 
+## 2026-10-11 — Performance comparability and import boundaries (P8)
+
+Recovered an interrupted performance sprint and finished it on the portable
+SSD from short-path worktrees. The budget reporter no longer compares a run
+against a baseline taken on a different test population: it reports
+`INSUFFICIENT_DATA` with the reason and both raw timings; the recorded
+baseline is unchanged. Intelligence facades export lazily, and scikit-learn
+loads when a model is fitted instead of at backend API import (3.78 s to
+1.47 s). Finviz recovery waiters return when the in-flight recovery ends
+instead of polling for 60 s. Tests that reproduce tracked evidence write to
+the temporary directory unless `IMP_REFRESH_TRACKED_EVIDENCE=1`.
+
+FULL on unchanged `a1f9a3a1`: 8,513 tests, 523.6 s. FULL on this branch:
+8,528 tests, 434.9 s, 0 failures, 0 tracked files modified. Live Screener,
+local-model inference, paid inference, and frontend were not measured and no
+improvement is claimed for them. See
+[P8 evidence](../audits/performance-engineering-p8/README.md) and the
+[portable workstation runbook](PORTABLE_WORKSTATION.md).
+
 ## 2026-10-11 — Live startup identity recovery
 
 Resolve the serving data identity before loading persistent Paper state. Keep
