@@ -1,3 +1,4 @@
+import { useAvailableFilters, useScreenSnapshot } from "./screenerRenderMemo";
 import { currentFreshness, useDecisionNow } from "./DecisionFreshness";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -273,8 +274,8 @@ export function ScreenerPage() {
   const config = useQuery({ queryKey: ["main-screener-config"], queryFn: fetchScreenerConfig, staleTime: 60_000 });
   const activeSpec = config.data?.universes?.find((item) => item.id === universe);
   const activeViews = activeSpec?.views ?? views;
-  const availableKeys = activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
-    Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys;
+  const availableKeys = useMemo(() => activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
+    Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys, [activeSpec]);
   // Sort/filter support is server metadata: a live-window column may display but never order the universe.
   const fieldCaps = activeSpec?.fields;
   // The universe's own label/unit for a shared field (Crypto change is a UTC-day change).
@@ -283,8 +284,7 @@ export function ScreenerPage() {
     const own = fieldCaps?.[name];
     return entry && own?.label ? { ...entry, label: own.label, unit: own.unit ?? entry.unit } : entry;
   };
-  const availableFilters = config.data?.catalog.filter((item) => (item.universes ?? ["US_EQUITIES"]).includes(universe))
-    .map((item) => catalogEntry(item.field) ?? item) ?? [];
+  const availableFilters = useAvailableFilters(config.data?.catalog, universe, fieldCaps);
   const isSortable = (key: string) => Boolean(fieldCaps?.[key]?.sortable);
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   // Equities are one Finviz export; only their bid/ask/spread come from an OpenD market snapshot.
@@ -292,7 +292,9 @@ export function ScreenerPage() {
     (universe !== "US_EQUITIES" || field === "bid" || field === "ask" || field === "spread_pct");
   const snapshotQuery = Boolean(fieldCaps) && (fromMarketSnapshot(effectiveSort) || filters.some((rule) => fromMarketSnapshot(rule.field)));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
-  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"] : ["news", "ai_screener"])), ...ALWAYS_PANELS] as PanelId[]);
+  // Stable identity: this set is passed to panels and gates a query, so rebuilding it
+  // every render defeats every downstream memo comparison.
+  const supportedPanels = useMemo(() => new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"] : ["news", "ai_screener"])), ...ALWAYS_PANELS] as PanelId[]), [activeSpec?.panels, universe]);
   // News is a view inside the active universe (URL `news=1`), never a universe.
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);
@@ -879,11 +881,10 @@ export function ScreenerPage() {
     [order[index], order[next]] = [order[next], order[index]];
     setColumnOrder(order); setView("Custom"); urlUpdate({ view: "Custom" });
   };
-  const currentSnapshot = () => ({ filters, view, sort: { field: sort, descending },
-    columns: { visible: availableKeys.filter((key) => columnVisibility[key] !== false), order: columnOrder.filter((key) => availableKeys.includes(key as ColumnKey)),
-      widths: Object.fromEntries(Object.entries(columnSizing).filter(([key]) => availableKeys.includes(key as ColumnKey))),
-      pinned: (columnPinning.left ?? []).filter((key) => availableKeys.includes(key as ColumnKey)) } });
-  const lastSerialized = JSON.stringify(currentSnapshot());
+  const { snapshot: currentSnapshot, serialized: lastSerialized } = useScreenSnapshot({
+    filters, view, sort, descending, keys: availableKeys, visibility: columnVisibility,
+    order: columnOrder, sizing: columnSizing, pinning: columnPinning,
+  });
   useEffect(() => {
     if (!restored || !config.data?.persistence_available) return;
     const timer = window.setTimeout(() => {
@@ -896,7 +897,7 @@ export function ScreenerPage() {
     }, 600);
     return () => window.clearTimeout(timer);
   }, [lastSerialized, restored, config.data?.persistence_available, universe]);
-  const changed = Boolean(selectedScreenId && savedBase && savedBase !== JSON.stringify(currentSnapshot()));
+  const changed = Boolean(selectedScreenId && savedBase && savedBase !== lastSerialized);
   const selectedSaved = config.data?.saved.find((item) => item.id === selectedScreenId);
   const selectedPreset = config.data?.presets.find((item) => item.id === selectedScreenId);
   const selectedName = selectedSaved?.name ?? selectedPreset?.name ?? "Unsaved Screen";

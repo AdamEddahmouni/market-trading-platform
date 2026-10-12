@@ -289,13 +289,38 @@ def scan_snapshot(
     segments = (() if not path else (path,)) if _segments is None else _segments
     if isinstance(snapshot, Mapping):
         for key, value in snapshot.items():
+            name = key if type(key) is str else str(key)
+            if not isinstance(value, (Mapping, list, tuple)):
+                # A scalar has no children, so its path is built only to report a finding.
+                if not is_secret_key(name):
+                    continue
+                child_segments = (*segments, name)
+                child_path = f"{path}.{key}" if path else str(key)
+                if _structural_secret_key_is_benign(child_path, name, value, segments=child_segments):
+                    continue
+                if _is_finviz_matrix_authority_path(child_segments):
+                    findings.append(SecretFinding(
+                        path=child_path, reason="UNSUPPORTED_PUBLIC_AUTHORITY_ASSIGNMENT",
+                        fingerprint=_fingerprint(str(value))))
+                elif isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
+                    findings.append(SecretFinding(
+                        path=child_path,
+                        reason="SECRET_SHAPED_KEY_WITH_LIVE_VALUE",
+                        fingerprint=_fingerprint(value),
+                    ))
+                elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                    findings.append(SecretFinding(
+                        path=child_path,
+                        reason="SECRET_SHAPED_KEY_WITH_NON_STRING_VALUE",
+                        fingerprint=_fingerprint(str(value)),
+                    ))
+                continue
             child_path = f"{path}.{key}" if path else str(key)
-            child_segments = (*segments, str(key))
-            matrix_authority = _is_finviz_matrix_authority_path(child_segments)
-            if is_secret_key(str(key)) and not _structural_secret_key_is_benign(
-                child_path, str(key), value, segments=child_segments
+            child_segments = (*segments, name)
+            if is_secret_key(name) and not _structural_secret_key_is_benign(
+                child_path, name, value, segments=child_segments
             ):
-                if matrix_authority:
+                if _is_finviz_matrix_authority_path(child_segments):
                     findings.append(SecretFinding(
                         path=child_path, reason="UNSUPPORTED_PUBLIC_AUTHORITY_ASSIGNMENT",
                         fingerprint=_fingerprint(str(value)),
@@ -347,7 +372,7 @@ def assert_no_secrets_in_payload(payload: Any, *, context: str = "payload") -> N
     findings = scan_snapshot(payload)
     textual_rules: tuple[str, ...] = ()
     try:
-        rendered = json.dumps(payload, sort_keys=True, default=str)
+        rendered = json.dumps(payload, sort_keys=True, default=str, ensure_ascii=False)
     except (TypeError, ValueError):
         rendered = ""
     if rendered:

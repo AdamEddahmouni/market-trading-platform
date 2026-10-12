@@ -135,15 +135,17 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
 
 def _snapshot_row(row: FinvizScreenerRow, as_of: str, classification: dict[str, Any] | None = None) -> dict[str, Any]:
     identity = finviz_to_canonical(row.ticker)
-    fields = {
-        name: {
-            "value": getattr(row, name),
+    # One attribute read per field: the universe refresh reads this for every listing,
+    # so a repeated getattr is a repeated cost across the whole admitted universe.
+    fields = {}
+    for name in FIELD_NAMES:
+        value = getattr(row, name)
+        fields[name] = {
+            "value": value,
             "source": "FINVIZ_ELITE",
-            "state": "SNAPSHOT" if getattr(row, name) is not None else "UNAVAILABLE",
+            "state": "SNAPSHOT" if value is not None else "UNAVAILABLE",
             "as_of": as_of,
         }
-        for name in FIELD_NAMES
-    }
     return {
         "instrument": {
             "instrument_id": identity.instrument_id,
