@@ -9,6 +9,7 @@ import time
 import unittest
 from pathlib import Path
 
+from tools.tracked_evidence import evidence_output_path
 from tools.validation_manifest import load_manifest
 from tools.validate import (
     CLASS_EVIDENCE_ONLY_CHECK,
@@ -153,7 +154,8 @@ class P3SelectorPartitionTests(unittest.TestCase):
         self.assertLess(elapsed, 1.0)
 
     def test_plan_cli_executes_zero_tests(self) -> None:
-        paths_file = ROOT / "artifacts" / "p3-plan-scenario.txt"
+        paths_file = evidence_output_path(ROOT / "artifacts" / "p3-plan-scenario.txt")
+        plan_json = evidence_output_path(ROOT / "artifacts" / "p3-plan-cli-check.json")
         paths_file.parent.mkdir(parents=True, exist_ok=True)
         paths_file.write_text("src/market_platform_foundation/news/pipeline.py\n", encoding="utf-8")
         completed = subprocess.run(
@@ -165,7 +167,7 @@ class P3SelectorPartitionTests(unittest.TestCase):
                 str(paths_file),
                 "--plan",
                 "--json",
-                str(ROOT / "artifacts" / "p3-plan-cli-check.json"),
+                str(plan_json),
             ],
             cwd=str(ROOT),
             capture_output=True,
@@ -173,9 +175,7 @@ class P3SelectorPartitionTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
-        payload = json.loads(
-            (ROOT / "artifacts" / "p3-plan-cli-check.json").read_text(encoding="utf-8")
-        )
+        payload = json.loads(plan_json.read_text(encoding="utf-8"))
         self.assertFalse(payload["executes_tests"])
         self.assertIn("news", payload["selected_suites"])
         self.assertNotIn("tests_run", payload)

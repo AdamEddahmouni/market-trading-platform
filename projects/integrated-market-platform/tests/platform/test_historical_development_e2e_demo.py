@@ -93,7 +93,8 @@ class HistoricalDevelopmentE2eDemoTests(unittest.TestCase):
         from tools.historical_data.demo_cli import main
 
         buffer = io.StringIO()
-        with redirect_stdout(buffer):
+        # Explicit roots keep routine validation out of the repository artifacts tree.
+        with tempfile.TemporaryDirectory() as tmp, redirect_stdout(buffer):
             code = main(
                 [
                     "--fixture-path",
@@ -102,6 +103,10 @@ class HistoricalDevelopmentE2eDemoTests(unittest.TestCase):
                     SESSION_DAY,
                     "--end",
                     SESSION_DAY,
+                    "--corpus-artifact-root",
+                    str(Path(tmp) / "artifacts" / "historical-rth-development"),
+                    "--demo-artifact-root",
+                    str(Path(tmp) / "artifacts" / "historical-development"),
                 ]
             )
         output = buffer.getvalue()
