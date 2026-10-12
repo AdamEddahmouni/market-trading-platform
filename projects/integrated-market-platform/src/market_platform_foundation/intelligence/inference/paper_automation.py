@@ -11,6 +11,7 @@ from enum import StrEnum
 from .hashing import input_hash_from_dict
 
 POLICY_SCHEMA = 'paper-automation-policy/1.0.0'
+UNIVERSE_FINGERPRINT_SCHEMA = 'universe-fingerprint/1.0.0'
 ARM_ACKNOWLEDGEMENT = 'ARM_PAPER_ONLY_AUTOMATION'
 # The stop monitor, the completed-bar feed and the fill model are regular-session contracts.
 SUPPORTED_SESSIONS = ('REGULAR',)
@@ -36,6 +37,20 @@ class AutomationStatus(StrEnum):
     ERROR = 'ERROR'
 
 
+class UniverseDecision(StrEnum):
+    """The four outcomes of one adaptive full-universe scheduling decision.
+
+    RUN starts an evaluation; DEFER can start later, possibly without any owner action;
+    SKIP has nothing worth paying for because the current selection is still valid; BLOCK
+    cannot start without a change the controller cannot make on its own (exhausted daily
+    allowance, closed session). Every one of them carries its exact reason codes.
+    """
+    RUN = 'RUN'
+    DEFER = 'DEFER'
+    SKIP = 'SKIP'
+    BLOCK = 'BLOCK'
+
+
 class IntentState(StrEnum):
     CREATED = 'CREATED'
     PREVIEWED = 'PREVIEWED'
@@ -48,6 +63,13 @@ class IntentState(StrEnum):
 # An intent in one of these states already produced (or may have produced) an order: never repeated.
 INTENT_TERMINAL = frozenset({IntentState.SUBMITTED})
 
+# Adaptive full-universe scheduling is optional and additive. A body that omits these keys keeps the exact
+# fixed minimum-separation behaviour of the original schema, with the same policy id; supplying them enables
+# the adaptive policy in ``should_run_universe`` and yields a new policy id, as any content change must.
+# ``universe_evaluation_interval_seconds`` is the MINIMUM SEPARATION between two broad runs; it was always a
+# floor, and this only names it.
+_SCHEDULE_OPTIONAL = dict(universe_max_age_seconds=int, universe_material_change_trigger=bool,
+                          universe_max_runs_per_day=int)
 _SECTIONS = dict(
     schedule=dict(sessions=list, cadence_seconds=int, universe_evaluation_interval_seconds=int,
                   no_new_entries_minutes_before_close=int),
@@ -60,9 +82,13 @@ _SECTIONS = dict(
             max_paid_tokens_per_day=int),
     emergency_stop=dict(max_consecutive_failures=int),
 )
+# Every allowed key per section, required and optional. Unknown keys are still rejected, never ignored.
+_ALLOWED = {section: set(fields) for section, fields in _SECTIONS.items()}
+_ALLOWED['schedule'] = set(_SECTIONS['schedule']) | set(_SCHEDULE_OPTIONAL)
 _INT_BOUNDS = dict(
     cadence_seconds=(60, 3600), universe_evaluation_interval_seconds=(300, 86400),
     no_new_entries_minutes_before_close=(0, REGULAR_SESSION_MINUTES),
+    universe_max_age_seconds=(300, 86400), universe_max_runs_per_day=(1, 100),
     max_position_notional_minor=(1, 10 ** 13), max_aggregate_exposure_minor=(1, 10 ** 13), max_open_positions=(1, 50),
     max_daily_loss_minor=(1, 10 ** 13), max_per_trade_risk_minor=(1, 10 ** 13), assumed_adverse_move_bps=(1, 10000),
     max_paid_requests_per_day=(0, 100000), max_paid_tokens_per_day=(0, 10 ** 10), max_consecutive_failures=(1, 20),
@@ -72,6 +98,11 @@ _INT_BOUNDS = dict(
 def required_fields():
     """Every owner decision the policy needs, as section.field paths."""
     return ['scope', *(f'{section}.{field}' for section, fields in _SECTIONS.items() for field in fields)]
+
+
+def optional_fields():
+    """Owner decisions that enable adaptive scheduling. Omitting one is a choice, never a default."""
+    return sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL)
 
 
 def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledger_policy):
@@ -90,7 +121,7 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
         if not isinstance(value, dict):
             missing.extend(f'{section}.{field}' for field in fields)
             continue
-        if set(value) - set(fields):
+        if set(value) - _ALLOWED[section]:
             raise ValueError('AUTOMATION_POLICY_INVALID')
         missing.extend(f'{section}.{field}' for field in fields if field not in value)
     if missing:
@@ -105,6 +136,15 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
             if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
                 raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'{section}.{field}')
             policy[section][field] = list(value) if kind is list else value
+    for field, kind in _SCHEDULE_OPTIONAL.items():
+        if field not in body['schedule']:
+            continue
+        value = body['schedule'][field]
+        if type(value) is not kind:
+            raise ValueError('AUTOMATION_POLICY_FIELD_INVALID:' + f'schedule.{field}')
+        if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
+            raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'schedule.{field}')
+        policy['schedule'][field] = value
     schedule, risk, ai = policy['schedule'], policy['risk'], policy['ai']
     for field, allowed, code in (('sessions', SUPPORTED_SESSIONS, 'AUTOMATION_SESSION_UNSUPPORTED'),):
         if not schedule[field] or len(set(schedule[field])) != len(schedule[field]) or set(schedule[field]) - set(allowed):
@@ -126,6 +166,11 @@ def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledg
     if risk['max_aggregate_exposure_minor'] > int(initial_capital_minor):
         raise ValueError('AUTOMATION_EXPOSURE_EXCEEDS_PAPER_CAPITAL')  # the experiment account has no leverage
     if schedule['universe_evaluation_interval_seconds'] < schedule['cadence_seconds']:
+        raise ValueError('AUTOMATION_SCHEDULE_INVALID')
+    if schedule.get('universe_max_age_seconds') is not None \
+            and schedule['universe_max_age_seconds'] < schedule['universe_evaluation_interval_seconds']:
+        # A maximum useful age below the minimum separation can never be reached without first waiting out the
+        # separation, so it is a contradiction rather than a tighter schedule.
         raise ValueError('AUTOMATION_SCHEDULE_INVALID')
     if ai['allow_paid_inference'] and not (ai['max_paid_requests_per_day'] and ai['max_paid_tokens_per_day']):
         raise ValueError('AUTOMATION_PAID_SPENDING_LIMIT_REQUIRED')
@@ -284,3 +329,113 @@ def derive_status(*, configured, armed, desired, emergency, error, blockers, ses
 def intent_identity(account_id, decision_id):
     """One Paper intent per Action Decision per account: the order's idempotency key."""
     return 'PAI-' + input_hash_from_dict(dict(account=account_id, decision=decision_id))[:40]
+
+
+def universe_fingerprint(*, scope_hash, session_date, universe_count=None):
+    """The facts a complete selection is only valid for, as a small comparable record.
+
+    Only things the controller can observe without paying for a model. ``universe_count`` is
+    ``None`` whenever the current row count has not been read, and an unobserved fact is
+    never reported as a change: the scheduler does not invent membership movement it did
+    not see. ``scope_hash`` and ``session_date`` are always known, so a new trading session
+    or a changed Screener scope is always a material change of the evaluated universe.
+    """
+    return dict(schema=UNIVERSE_FINGERPRINT_SCHEMA, scope=scope_hash, session_date=session_date,
+                universe_count=universe_count)
+
+
+def universe_material_change(prior, current):
+    """Reason codes for a material difference between two universe fingerprints; empty means unchanged.
+
+    ``prior is None`` is the absence of a completed selection, not a change; the scheduler
+    treats that case as its own RUN reason instead of a material change.
+    """
+    if prior is None or current is None:
+        return []
+    reasons = []
+    if current.get('session_date') != prior.get('session_date'):
+        reasons.append('NEW_SESSION')
+    if current.get('scope') != prior.get('scope'):
+        reasons.append('SCOPE_CHANGED')
+    before, after = prior.get('universe_count'), current.get('universe_count')
+    if before is not None and after is not None and before != after:
+        reasons.append('UNIVERSE_MEMBERSHIP_CHANGED')
+    return reasons
+
+
+def should_run_universe(facts):
+    """Pure adaptive decision: should the full-universe AI evaluation start now?
+
+    Deterministic and side-effect free: it reads only facts the controller already computed and
+    never touches the clock, a provider, a model, the ledger or a repository. Distinct from the
+    fixed ``universe_evaluation_interval_seconds`` timer it replaces, it separates four outcomes
+    and always states the exact reason:
+
+    * ``DEFER`` — worth running, but not now and possibly without any owner action (an active run,
+      a retry backoff, an unhealthy provider, the minimum separation not yet elapsed).
+    * ``SKIP`` — nothing worth paying for: the last complete selection is still inside its maximum
+      useful age and the evaluation inputs have not materially changed.
+    * ``BLOCK`` — cannot start without a change the controller cannot make itself (the daily run
+      limit or the daily allowance is exhausted, the plan cannot fit the remaining allowance, the
+      session is not eligible).
+    * ``RUN`` — start one now.
+
+    An owner policy that supplies no adaptive fields keeps the legacy behaviour exactly: after the
+    minimum separation elapses the run happens (``UNIVERSE_MIN_SEPARATION_ELAPSED``).
+    """
+    schedule = facts['schedule']
+    now = float(facts['now'])
+    minimum = int(schedule['universe_evaluation_interval_seconds'])
+    max_age = schedule.get('universe_max_age_seconds')
+
+    def verdict(decision, codes, next_eligible=None, **detail):
+        return dict(decision=str(decision), reason_codes=list(dict.fromkeys(codes)),
+                    next_eligible_epoch=next_eligible, detail=detail)
+
+    if facts.get('active_run_id'):
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_RUN_ACTIVE'], run_id=facts['active_run_id'])
+    if facts.get('session_label') not in (facts.get('sessions') or ()):
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_SESSION_NOT_ELIGIBLE'],
+                       session_label=facts.get('session_label'))
+    backoff_until = facts.get('backoff_until')
+    if backoff_until is not None and now < float(backoff_until):
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_RETRY_BACKOFF'], next_eligible=float(backoff_until),
+                       consecutive_failures=facts.get('consecutive_failures'),
+                       last_failure_code=facts.get('last_failure_code'))
+    gate = facts.get('provider_gate') or {}
+    if not gate.get('allowed'):
+        reason = gate.get('reason') or 'UNIVERSE_RESOURCE_GATE'
+        if gate.get('kind') == 'BUDGET':
+            return verdict(UniverseDecision.BLOCK, [reason], gate='DAILY_ALLOWANCE')
+        return verdict(UniverseDecision.DEFER, [reason], gate='PROVIDER_HEALTH')
+    cap = schedule.get('universe_max_runs_per_day')
+    started = int((facts.get('runs_today') or {}).get('started') or 0)
+    if cap is not None and started >= int(cap):
+        # A higher interval cannot fix this: the owner's own daily workload ceiling has been spent.
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_DAILY_RUN_LIMIT_REACHED'],
+                       runs_started=started, runs_per_day=int(cap))
+    feasibility = facts.get('feasibility') or {}
+    if feasibility and feasibility.get('feasible') is False:
+        # A plan that cannot fit today's remaining allowance cannot fit later today either: usage only grows.
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_PLAN_INFEASIBLE'], **feasibility)
+    last_started = facts.get('last_started_epoch')
+    if last_started is not None and now - float(last_started) < minimum:
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_MIN_SEPARATION'], next_eligible=float(last_started) + minimum,
+                       remaining_seconds=int(minimum - (now - float(last_started))), minimum_separation_seconds=minimum)
+    complete = facts.get('last_complete')
+    if complete is None or complete.get('finished_at_epoch') is None:
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_NO_COMPLETE_SELECTION'])
+    reasons = list(facts.get('material_change') or [])
+    if schedule.get('universe_material_change_trigger') and reasons:
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_MATERIAL_CHANGE', *reasons], material_change=reasons)
+    if max_age is None:
+        # Legacy policy: no maximum useful age was configured, so the minimum separation is the whole schedule.
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_MIN_SEPARATION_ELAPSED'], minimum_separation_seconds=minimum)
+    age = now - float(complete['finished_at_epoch'])
+    if age >= int(max_age):
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_SELECTION_MAX_AGE_EXCEEDED'],
+                       selection_age_seconds=int(age), max_age_seconds=int(max_age))
+    return verdict(UniverseDecision.SKIP, ['UNIVERSE_SELECTION_FRESH_AND_UNCHANGED'],
+                   next_eligible=float(complete['finished_at_epoch']) + int(max_age),
+                   selection_age_seconds=int(age), max_age_seconds=int(max_age),
+                   material_change=reasons or ['NO_MATERIAL_CHANGE_OBSERVED'])

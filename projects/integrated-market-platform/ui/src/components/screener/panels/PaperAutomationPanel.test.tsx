@@ -60,13 +60,29 @@ const report = { schema_version: "paper-automation-report/1.0.0", evidence_class
 const events = [{ sequence: 3, at: 3, kind: "PAPER_INTENT_SUBMITTED", at_iso: "2026-10-05T14:05:00Z", instrument_id: "AAPL", reason_codes: ["PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION"] },
   { sequence: 2, at: 2, kind: "NOT_OBSERVED", at_iso: "2026-10-05T14:02:00Z", reason: "PROCESS_DOWNTIME", observed_from: "2026-10-05T13:30:00Z", observed_to: "2026-10-05T14:02:00Z", missed_scheduled_cycles: 32 },
   { sequence: 1, at: 1, kind: "ARMED", at_iso: "2026-10-05T14:01:00Z" }];
+// The adaptive scheduler reports its own decisions: what it decided last, why, and when the next attempt may start.
+const scheduling = { policy: { min_separation_seconds: 1800, max_age_seconds: 3600, material_change_trigger: true, max_runs_per_day: 4,
+  optional_fields: ["schedule.universe_max_age_seconds", "schedule.universe_material_change_trigger", "schedule.universe_max_runs_per_day"] },
+  adaptive: true,
+  last_decision: { decision: "SKIP", reason_codes: ["UNIVERSE_SELECTION_FRESH_AND_UNCHANGED"], next_eligible_epoch: 1791212400,
+    next_eligible_iso: "2026-10-05T15:00:00Z", at_iso: "2026-10-05T14:05:00Z" },
+  next_eligible: "2026-10-05T15:00:00Z", next_eligible_epoch: 1791212400,
+  last_complete: { run_id: "AIR-1", finished_at: "2026-10-05T14:00:00Z", universe_count: 7000 },
+  last_complete_fingerprint: { scope: "scope-digest", session_date: "2026-10-05", universe_count: 7000 },
+  active_run_id: null, withheld: null, failure: null, runs_today: { started: 1, limit: 4 } };
+const adaptiveRunning = { ...running, scheduling };
+const numbers: [RegExp, string][] = [[/Evaluation cadence/, "60"], [/Full-universe AI evaluation interval/, "1800"], [/No new entries in the last/, "15"],
+  [/Maximum position size/, "5000"], [/Maximum aggregate exposure/, "10000"], [/Maximum open positions/, "2"], [/Maximum daily loss/, "1000"],
+  [/Maximum risk per trade/, "100"], [/Adverse move assumed/, "200"], [/Paid AI requests per day/, "0"], [/Paid AI tokens per day/, "0"], [/Consecutive failed cycles/, "3"]];
+const choices: [RegExp, string][] = [[/^Automatic entries/, "yes"], [/^Long entries/, "yes"], [/^Short entries/, "no"], [/^Automatic exits/, "yes"],
+  [/trailing-stop breach/, "yes"], [/gated decision is EXIT/, "yes"], [/Unattended local AI/, "yes"], [/Unattended paid AI/, "no"]];
 const open = () => fireEvent.click(screen.getByRole("button", { name: "Open Paper automation controls" }));
 const fill = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 afterEach(() => vi.resetAllMocks());
 
 describe("Paper automation controls", () => {
   it("accepts the payloads the tests render (the fixtures match the server schema)", () => {
-    for (const payload of [bare, disarmed, stopped, running, waitingWithBlocker]) expect(PaperAutomationStatusSchema.safeParse(payload).success).toBe(true);
+    for (const payload of [bare, disarmed, stopped, running, waitingWithBlocker, adaptiveRunning]) expect(PaperAutomationStatusSchema.safeParse(payload).success).toBe(true);
     expect(PaperAutomationStatusSchema.safeParse({ ...running, status: "TRADING" }).success).toBe(false);
     expect(PaperAutomationStatusSchema.safeParse({ ...running, boundary: { ...boundary, live_capital: true } }).success).toBe(false);
   });
@@ -216,6 +232,35 @@ describe("Paper automation controls", () => {
     // The report read succeeded, so its own section still renders: only the failed read is called out.
     expect(screen.getByText(/not evidence of a profitable strategy or a durable edge/)).toBeInTheDocument();
     expect(screen.queryByText(/Simulated results are unavailable/)).not.toBeInTheDocument();
+  });
+
+  it("shows the adaptive scheduler's own decision state and starts nothing while doing so", async () => {
+    api.status.mockResolvedValue(adaptiveRunning); api.history.mockResolvedValue({ events: [] }); api.report.mockResolvedValue(report);
+    render(<PaperAutomationPanel scope={scope} />);
+    open();
+    await waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Automation: RUNNING"));
+    expect(screen.getByText(/^Adaptive · minimum separation 1800s · a selection stays useful for 3600s/)).toBeInTheDocument();
+    expect(screen.getByText(/runs today 1 of 4/)).toBeInTheDocument();
+    expect(screen.getByText(/Last complete selection from session 2026-10-05/)).toBeInTheDocument();
+    expect(screen.getByText(/Last decision/)).toHaveTextContent(
+      "Last decision SKIP at 2026-10-05T14:05:00Z because UNIVERSE SELECTION FRESH AND UNCHANGED · next eligible 2026-10-05T15:00:00Z.");
+    for (const call of [api.configure, api.arm, api.start, api.pause, api.resume, api.stop, api.emergency, api.disarm]) expect(call).not.toHaveBeenCalled();
+  });
+
+  it("sends an adaptive scheduling field only when the owner supplied one", async () => {
+    api.status.mockResolvedValueOnce(bare).mockResolvedValue(disarmed); api.configure.mockResolvedValue(disarmed);
+    api.history.mockResolvedValue({ events: [] }); api.report.mockResolvedValue(report);
+    render(<PaperAutomationPanel scope={scope} />);
+    open();
+    await screen.findByRole("status");
+    for (const [label, value] of numbers) fill(label, value);
+    for (const [label, value] of choices) fill(label, value);
+    fill(/Maximum useful age of a complete selection/, "3600");
+    fill(/Re-run when the evaluated universe materially changes/, "yes");
+    fireEvent.click(screen.getByRole("button", { name: "Save policy" }));
+    await waitFor(() => expect(api.configure).toHaveBeenCalled());
+    // The untouched "maximum runs per day" is absent, not defaulted: an omitted owner decision stays omitted.
+    expect(api.configure.mock.calls[0][1].schedule).toEqual({ ...policy.schedule, universe_max_age_seconds: 3600, universe_material_change_trigger: true });
   });
 
   it("a poll tick only re-reads: it never evaluates, previews or submits", async () => {

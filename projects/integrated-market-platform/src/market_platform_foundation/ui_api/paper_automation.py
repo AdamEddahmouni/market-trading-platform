@@ -22,7 +22,8 @@ from datetime import UTC, datetime
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.paper_automation import (
     ARM_ACKNOWLEDGEMENT, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
-    entry_risk_blockers, exposure_minor, intent_identity, required_fields, size_entry, spending_gate,
+    entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
+    size_entry, spending_gate, universe_fingerprint, universe_material_change,
 )
 from ..local_state.paper_automation import paper_automation_repository
 from ..market_data.freshness_contract import timestamp
@@ -40,6 +41,13 @@ _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
 # After an exit order ends without closing the position, the next exit order for that instrument waits
 # cadence * 2^n, capped here. A new order always needs a new Action Decision; this only spaces them out.
 EXIT_BACKOFF_CAP_SECONDS = 900
+# After a full-universe run ends without adopting a selection, the next attempt waits cadence * 2^n, capped here.
+# A run that fails for a lasting reason is not relaunched every cycle.
+UNIVERSE_BACKOFF_CAP_SECONDS = 900
+# The refusal reasons an unrunnable plan is recorded with: a plan over the owner's cap or the shared allowance.
+UNIVERSE_BUDGET_REASONS = ('AUTONOMOUS_SPENDING_NOT_AUTHORIZED', 'AUTONOMOUS_SPENDING_LIMIT_REACHED',
+                           'AUTONOMOUS_SPENDING_BUDGET_UNREADABLE', 'SYNTHESIS_DAILY_REQUEST_LIMIT',
+                           'SYNTHESIS_DAILY_TOKEN_LIMIT', 'AI_COVERAGE_BUDGET_INSUFFICIENT')
 _CODE = re.compile(r'[A-Z][A-Z0-9_]{2,79}')
 # Evidence moved between the decision and the order: nothing is forced, the next cycle decides again.
 _DEFER_CODES = ('ACTION_INPUT_CHANGED', 'ACTION_DECISION_EXPIRED', 'ACTION_HANDOFF_BLOCKED', 'CANDIDATE_EXPIRED',
@@ -49,6 +57,19 @@ _DEFER_CODES = ('ACTION_INPUT_CHANGED', 'ACTION_DECISION_EXPIRED', 'ACTION_HANDO
 
 def _iso(seconds):
     return datetime.fromtimestamp(seconds, UTC).isoformat().replace('+00:00', 'Z') if seconds is not None else None
+
+
+def _utc_day(seconds):
+    """The UTC calendar day an epoch falls in: the day the shared AI allowance rolls over on."""
+    return datetime.fromtimestamp(float(seconds), UTC).date().isoformat() if seconds is not None else None
+
+
+def _epoch(value, fallback):
+    """An ISO instant as an epoch, or the fallback when it is absent or unparseable."""
+    try:
+        return timestamp(value).timestamp() if value else fallback
+    except (TypeError, ValueError, OverflowError):
+        return fallback
 
 
 def _code(exc):
@@ -533,15 +554,15 @@ class PaperAutomationService:
                         start_equity_minor=valuation['equity_minor'], valuation_quality=valuation['quality'])
         elif work['day'].get('start_equity_minor') is None and valuation['equity_minor'] is not None:
             work['day'].update(start_equity_minor=valuation['equity_minor'], captured_at=_iso(now))
-        gate = spending_gate(policy, self.reevaluation.engine_state())
+        gate = dict(spending_gate(policy, self.reevaluation.engine_state()), kind='BUDGET')
         if not gate['allowed']:
             self._block(summary, 'BUDGET', gate['reason'])
         unhealthy = bool(health.get('reasons'))
         if unhealthy:
             # No usable provider: no model is paid to read evidence that is not current, and nothing is ordered.
             # The deterministic part of the cycle still runs so held positions keep their stop monitor.
-            gate = dict(allowed=False, reason=str(health['reasons'][0]))
-        self._universe(work, policy, summary, now, gate)
+            gate = dict(allowed=False, reason=str(health['reasons'][0]), kind='DATA')
+        self._universe(work, policy, summary, now, session, gate)
         self._candidate_quotes(work, summary)
         from ..intelligence.inference.reevaluation import ReevaluationTrigger
         receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=gate)
@@ -559,7 +580,55 @@ class PaperAutomationService:
         self._execute_pending(work, policy, summary, session)
 
     # --- full-universe AI evaluation -----------------------------------------------------------
-    def _universe(self, work, policy, summary, now, gate):
+    def _remaining_allowance(self, policy, engine):
+        """The tighter of the owner's cap and the shared allowance, minus what is already used or held."""
+        if engine.get('runtime') == 'LOCAL_MODEL' or not engine.get('budget'):
+            return None
+        budget, ai = engine['budget'], policy['ai']
+        return dict(requests=max(0, min(ai['max_paid_requests_per_day'], int(budget['max_requests'])) - int(budget['requests']) - int(budget.get('held_requests') or 0)),
+                    tokens=max(0, min(ai['max_paid_tokens_per_day'], int(budget['max_tokens'])) - int(budget['tokens']) - int(budget.get('held_tokens') or 0)))
+
+    def _universe_runs_today(self, now):
+        """How many full-universe runs this controller has started inside the current UTC day."""
+        today = _utc_day(now)
+        events = self.repository.events(self._account(), limit=200, kinds=['UNIVERSE_RUN_STARTED'])
+        return sum(1 for event in events if _utc_day(event.get('at')) == today)
+
+    def _universe_feasibility(self, policy, universe, engine):
+        """Whether a run of the last known plan size still fits today's remaining allowance.
+
+        The requirement predicted is the last complete run's own plan. With no such run there is nothing to
+        predict, and the authoritative check stays where it belongs: the coverage method refuses an infeasible
+        plan before it holds anything or calls a model.
+        """
+        required = (universe.get('last_result') or {}).get('required') or {}
+        available = self._remaining_allowance(policy, engine)
+        if available is None or not required.get('requests') or not required.get('tokens'):
+            return None
+        return dict(feasible=int(required['requests']) <= available['requests'] and int(required['tokens']) <= available['tokens'],
+                    required_requests=int(required['requests']), required_tokens=int(required['tokens']),
+                    available_requests=available['requests'], available_tokens=available['tokens'])
+
+    def _universe_facts(self, policy, universe, *, now, session, gate, engine):
+        """Every fact the adaptive decision reads, and the fingerprint the selection it would produce is valid for.
+
+        The current row count is not read here: the controller does not query the Screener just to decide whether
+        to query the Screener, so an unobserved count stays ``None`` and never reports membership movement.
+        """
+        fingerprint = universe_fingerprint(scope_hash=input_hash_from_dict(policy['scope']), session_date=session.get('session_date'))
+        failure = universe.get('failure') or {}
+        facts = dict(
+            now=now, schedule=policy['schedule'], sessions=policy['schedule']['sessions'], session_label=session.get('label'),
+            active_run_id=universe.get('active_run_id'), last_started_epoch=universe.get('last_started_epoch'),
+            last_complete=universe.get('last_complete'),
+            material_change=universe_material_change(universe.get('last_complete_fingerprint'), fingerprint),
+            provider_gate=dict(gate, kind=gate.get('kind') or ('BUDGET' if gate.get('reason') in UNIVERSE_BUDGET_REASONS else 'DATA')),
+            runs_today=dict(started=self._universe_runs_today(now)), feasibility=self._universe_feasibility(policy, universe, engine),
+            backoff_until=failure.get('backoff_until'), consecutive_failures=failure.get('count'), last_failure_code=failure.get('code'))
+        return facts, fingerprint
+
+    def _universe(self, work, policy, summary, now, session, gate):
+        """One adaptive scheduling decision, then at most one run. Never a fixed timer dressed up as one."""
         universe = dict(work.get('universe') or {})
         account = work['account_id']
         active = universe.get('active_run_id')
@@ -573,34 +642,41 @@ class PaperAutomationService:
             elif snapshot['state'] == 'RUNNING':
                 summary['universe'] = dict(state='RUNNING', run_id=active, stage=snapshot.get('stage'), progress=snapshot.get('progress'))
             else:
-                universe.update(active_run_id=None, last_result=self._finish_universe(snapshot, universe))
+                universe.update(active_run_id=None, last_result=self._finish_universe(snapshot, universe, now=now, policy=policy))
         result = universe.get('last_result') or {}
         if result.get('status') == 'AI_COVERAGE_BUDGET_INSUFFICIENT':
             self._block(summary, 'BUDGET', 'AI_COVERAGE_BUDGET_INSUFFICIENT')
-        interval = policy['schedule']['universe_evaluation_interval_seconds']
-        due = universe.get('last_started_epoch') is None or now - universe['last_started_epoch'] >= interval
-        if not universe.get('active_run_id') and due:
+        engine = self.reevaluation.engine_state()
+        facts, fingerprint = self._universe_facts(policy, universe, now=now, session=session, gate=gate, engine=engine)
+        decision = should_run_universe(facts)
+        previous = universe.get('last_decision') or {}
+        universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=_iso(decision['next_eligible_epoch']))
+        if decision['decision'] == 'RUN' and not universe.get('active_run_id') and gate['allowed']:
+            limit = self._remaining_allowance(policy, engine)
+            started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION')
+            universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None, run_fingerprint=fingerprint,
+                            origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
+            self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
+                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'])
+            summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
+        elif decision['decision'] != 'RUN':
+            kind = {'DEFER': 'UNIVERSE_RUN_DEFERRED', 'SKIP': 'UNIVERSE_RUN_SKIPPED', 'BLOCK': 'UNIVERSE_RUN_BLOCKED'}[decision['decision']]
             if not gate['allowed']:
+                # The gate refused, so no run starts whatever the schedule says; the refusal keeps its reason.
                 universe['withheld'] = dict(at=_iso(now), reason=gate['reason'])
-            else:
-                limit = None
-                engine = self.reevaluation.engine_state()
-                if engine.get('runtime') != 'LOCAL_MODEL' and engine.get('budget'):
-                    budget, ai = engine['budget'], policy['ai']
-                    limit = dict(requests=max(0, min(ai['max_paid_requests_per_day'], int(budget['max_requests'])) - int(budget['requests']) - int(budget.get('held_requests') or 0)),
-                                 tokens=max(0, min(ai['max_paid_tokens_per_day'], int(budget['max_tokens'])) - int(budget['tokens']) - int(budget.get('held_tokens') or 0)))
-                started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION')
-                universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None,
-                                origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
-                self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
-                            engine=started.get('engine'))
-                summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
+            if (previous.get('decision'), tuple(previous.get('reason_codes') or ())) != (decision['decision'], tuple(decision['reason_codes'])):
+                # One receipt per change of decision, not one per cycle: the audit stays readable and bounded.
+                self._event(kind, **{key: value for key, value in decision.items() if key != 'detail'},
+                            next_eligible_iso=_iso(decision['next_eligible_epoch']), **decision['detail'])
+            if decision['decision'] == 'BLOCK':
+                category = 'BUDGET' if decision['detail'].get('gate') == 'DAILY_ALLOWANCE' else 'DATA'
+                self._block(summary, category, decision['reason_codes'][0])
         if summary.get('universe') is None:
             summary['universe'] = dict(state='IDLE', last_result=universe.get('last_result'), withheld=universe.get('withheld'),
-                                       next_due=_iso((universe.get('last_started_epoch') or now) + interval))
+                                       decision=decision, next_due=_iso(decision['next_eligible_epoch']))
         work['universe'] = universe
 
-    def _finish_universe(self, snapshot, universe):
+    def _finish_universe(self, snapshot, universe, *, now, policy):
         """Record what the run really covered. Only a complete selection is adopted; a partial one never is."""
         result = snapshot.get('result') or {}
         coverage = result.get('universe_coverage') or {}
@@ -615,14 +691,27 @@ class PaperAutomationService:
                       tokens_input=(coverage.get('budget') or {}).get('tokens_input'),
                       tokens_output=(coverage.get('budget') or {}).get('tokens_output'),
                       model_calls=coverage.get('model_calls'), candidate_run_id=result.get('run_id') if result.get('candidates') else None,
-                      adopted=False)
+                      required=(coverage.get('plan') or {}).get('required'), adopted=False)
         if record['coverage_complete'] and record['selection_complete']:
             try:
                 self.reevaluation.adopt_selection(result)
                 record['adopted'] = True
                 universe.update(adopted_run_id=result.get('run_id'), adopted_at=record['finished_at'])
+                # The selection is only valid for the inputs it was produced from, so the fingerprint observed when
+                # the run started becomes the baseline the next decision compares against.
+                universe.update(last_complete=dict(run_id=record['run_id'], finished_at_epoch=min(_epoch(record['finished_at'], now), now),
+                                                   finished_at=record['finished_at'], universe_count=record['universe_count'],
+                                                   candidate_run_id=record['candidate_run_id']),
+                                last_complete_fingerprint=universe.get('run_fingerprint'))
+                universe.pop('failure', None)
             except ValueError as exc:
                 record['adoption_refused'] = _code(exc)
+        else:
+            # A partial, failed, stopped or interrupted run is not retried every cycle: it backs off.
+            failure = universe.get('failure') or {}
+            count = int(failure.get('count') or 0) + 1
+            delay = min(policy['schedule']['cadence_seconds'] * 2 ** (count - 1), UNIVERSE_BACKOFF_CAP_SECONDS)
+            universe['failure'] = dict(count=count, code=record['reason'] or record['status'], backoff_until=now + delay)
         self._event('UNIVERSE_RUN_FINISHED', **record)
         return record
 
@@ -970,6 +1059,7 @@ class PaperAutomationService:
                           last_error=controller.get('last_error'), last_scheduled=_iso(controller.get('last_scheduled_epoch'))),
             last_cycle=last or None, universe=controller.get('universe'), candidate_quotes=controller.get('subscriptions') or [],
             risk=self.risk_utilization(policy, positions=positions, valuation=valuation, day=controller.get('day')),
+            scheduling=self.scheduling(policy, controller),
             day=controller.get('day'), positions=[{k: p.get(k) for k in ('instrument_id', 'symbol', 'side', 'quantity', 'average_fill_minor',
                                                                            'mark_minor', 'mark_quality', 'unrealized_pnl_minor')} for p in positions],
             working_orders=[{k: o.get(k) for k in ('order_id', 'instrument_id', 'side', 'state', 'client_order_id')}
@@ -978,6 +1068,27 @@ class PaperAutomationService:
             engine=self.reevaluation.engine_state(), spending=spending_gate(policy, self.reevaluation.engine_state()),
             required_configuration=required_fields(), arm_acknowledgement=ARM_ACKNOWLEDGEMENT, boundary=boundary,
             durability=self.repository.durability, evaluated_at=_iso(now))
+
+    def scheduling(self, policy, controller):
+        """The adaptive scheduler's own state, as the operator has to see it. Reads only; decides nothing.
+
+        Opening the UI must never start an evaluation, so this reports the last decision and when the next one
+        becomes eligible, never a new one.
+        """
+        schedule = policy['schedule']
+        universe = controller.get('universe') or {}
+        decision = universe.get('last_decision') or None
+        return dict(
+            policy=dict(min_separation_seconds=schedule['universe_evaluation_interval_seconds'],
+                        max_age_seconds=schedule.get('universe_max_age_seconds'),
+                        material_change_trigger=schedule.get('universe_material_change_trigger'),
+                        max_runs_per_day=schedule.get('universe_max_runs_per_day'), optional_fields=optional_fields()),
+            adaptive=schedule.get('universe_max_age_seconds') is not None or schedule.get('universe_material_change_trigger') is not None,
+            last_decision=decision, next_eligible_epoch=(decision or {}).get('next_eligible_epoch'),
+            next_eligible=_iso((decision or {}).get('next_eligible_epoch')),
+            last_complete=universe.get('last_complete'), last_complete_fingerprint=universe.get('last_complete_fingerprint'),
+            active_run_id=universe.get('active_run_id'), withheld=universe.get('withheld'), failure=universe.get('failure'),
+            runs_today=dict(started=self._universe_runs_today(self.clock()), limit=schedule.get('universe_max_runs_per_day')))
 
     def history(self, *, limit=50, before=None, kind=None):
         controller = self._controller()

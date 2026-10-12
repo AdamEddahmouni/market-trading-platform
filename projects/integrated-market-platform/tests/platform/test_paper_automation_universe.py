@@ -57,7 +57,9 @@ class Base(unittest.TestCase):
 
     def step(self, service, automation_policy, gate=None) -> dict:
         summary = dict(blockers=[], universe=None)
-        service._universe(self.work, automation_policy, summary, self.loop.clock(), gate or dict(allowed=True, reason=None))
+        now = self.loop.clock()
+        # The adaptive scheduler reads the market session as one of its facts, so the same fixed clock decides it.
+        service._universe(self.work, automation_policy, summary, now, service.session(now), gate or dict(allowed=True, reason=None))
         return summary
 
     def settle(self, runs: AiScreenerRuns) -> dict:
@@ -213,6 +215,135 @@ class OwnerSpendingCapTests(Base):
         self.assertIsNone(self.loop.service._loop().get("pending_selection"))
         started = service.repository.events(self.work["account_id"], kinds=["UNIVERSE_RUN_STARTED"])[0]
         self.assertEqual(started["spend_limit"], dict(requests=need["requests"] - 1, tokens=10 ** 9))
+
+
+# An adaptive owner policy: a maximum useful age for the selection, the material-change trigger, and a daily
+# workload ceiling. Everything else is the same policy the tests above use.
+ADAPTIVE = dict(universe_max_age_seconds=3600, universe_material_change_trigger=True, universe_max_runs_per_day=4)
+
+
+class AdaptiveSchedulingTests(Base):
+    """The controller's adaptive step against the real run tracker: what it decides, refuses and records."""
+
+    def adaptive(self, **schedule) -> dict:
+        return dict(policy(schedule=dict(ADAPTIVE, **schedule)), scope=dict(SCOPE))
+
+    def on_one_clock(self, provider):
+        """A tracker and controller on the fixture's own clock, so a run's completion and the schedule agree.
+
+        The controlled universe's evidence is anchored to ``NOW``, so the controller's clock starts there too:
+        a scheduler whose notion of when a selection completed disagrees with the run tracker's is not testable.
+        """
+        self.loop = Harness()
+        self.loop.clock.value = NOW
+        self.loop.service.attach_driver("PAPER_AUTOMATION", scope=LOOP_SCOPE, requested_cadence_seconds=60)
+        screener = ScreenerAiService(reader=self.reader, news=News(provider), clock=lambda: NOW)
+        runs = AiScreenerRuns(screener, clock=lambda: NOW, monotonic=lambda: 100.0)
+        self.work = dict(account_id=self.loop.ledger.paper_account_id, universe={})
+        service = PaperAutomationService(self.loop.store, repository=PaperAutomationRepository(), reevaluation=self.loop.service,
+                                         runs=runs, clock=self.loop.clock)
+        return runs, service
+
+    def run_once(self, service, runs, automation_policy) -> dict:
+        self.assertEqual(self.step(service, automation_policy)["universe"]["state"], "STARTED")
+        self.settle(runs)
+        return self.step(service, automation_policy)
+
+    def test_a_fresh_unchanged_selection_is_skipped_and_only_rerun_once_it_expires(self):
+        provider = RankingProvider()
+        runs, service = self.on_one_clock(provider)
+        automation_policy = self.adaptive()
+        adopted = self.run_once(service, runs, automation_policy)
+        self.assertTrue(adopted["universe"]["last_result"]["adopted"])
+        calls = provider.calls
+        # Past the minimum separation, comfortably inside the maximum useful age, nothing has changed.
+        self.loop.clock.value += 1800
+        summary = self.step(service, automation_policy)
+        self.assertEqual((summary["universe"]["state"], summary["universe"]["decision"]["decision"]), ("IDLE", "SKIP"))
+        self.assertEqual(provider.calls, calls)
+        self.assertIsNone(self.work["universe"].get("active_run_id"))
+        for _ in range(3):  # repeated cycles neither re-run nor repeat the receipt
+            self.loop.clock.value += 60
+            self.step(service, automation_policy)
+        skipped = service.repository.events(self.work["account_id"], kinds=["UNIVERSE_RUN_SKIPPED"])
+        self.assertEqual(len(skipped), 1)
+        self.assertEqual(skipped[0]["reason_codes"], ["UNIVERSE_SELECTION_FRESH_AND_UNCHANGED"])
+        self.assertEqual(provider.calls, calls)
+        self.loop.clock.value += 1800  # now the selection is past its maximum useful age
+        self.assertEqual(self.step(service, automation_policy)["universe"]["state"], "STARTED")
+        self.settle(runs)
+
+    def test_an_exhausted_allowance_blocks_the_run_and_the_refusal_is_recorded_once(self):
+        runs, service = self.on_one_clock(RankingProvider())
+        automation_policy = self.adaptive()
+        # No ``kind`` is supplied: it is derived from the refusal reason, so a budget refusal is a block.
+        gate = dict(allowed=False, reason="AUTONOMOUS_SPENDING_LIMIT_REACHED")
+        self.step(service, automation_policy, gate=gate)
+        summary = self.step(service, automation_policy, gate=gate)
+        self.assertEqual(summary["universe"]["decision"]["decision"], "BLOCK")
+        self.assertEqual(summary["universe"]["decision"]["detail"], dict(gate="DAILY_ALLOWANCE"))
+        self.assertIn(dict(category="BUDGET", code="AUTONOMOUS_SPENDING_LIMIT_REACHED"), summary["blockers"])
+        self.assertEqual(self.work["universe"]["withheld"]["reason"], "AUTONOMOUS_SPENDING_LIMIT_REACHED")
+        self.assertIsNone(self.work["universe"].get("active_run_id"))
+        self.assertEqual(len(service.repository.events(self.work["account_id"], kinds=["UNIVERSE_RUN_BLOCKED"])), 1)
+
+    def test_an_incomplete_run_backs_off_instead_of_being_relaunched_every_cycle(self):
+        inner = RankingProvider()
+        provider = BudgetedProvider(inner, DailyBudget(None, max_requests=1, max_tokens=1000, clock=lambda: NOW))
+        runs, service = self.on_one_clock(provider)
+        automation_policy = self.adaptive()
+        self.assertEqual(self.step(service, automation_policy)["universe"]["state"], "STARTED")
+        self.settle(runs)
+        summary = self.step(service, automation_policy)
+        self.assertEqual(summary["universe"]["decision"]["reason_codes"], ["UNIVERSE_RETRY_BACKOFF"])
+        self.assertEqual(summary["universe"]["last_result"]["status"], "AI_COVERAGE_BUDGET_INSUFFICIENT")
+        failure = self.work["universe"]["failure"]
+        self.assertEqual(failure["count"], 1)
+        self.assertIsNotNone(failure["code"])
+        self.assertIsNone(self.work["universe"].get("active_run_id"))
+        self.assertEqual(inner.calls, 0)  # the refused plan was never paid for
+        deferred = service.repository.events(self.work["account_id"], kinds=["UNIVERSE_RUN_DEFERRED"])[0]
+        self.assertEqual(deferred["reason_codes"], ["UNIVERSE_RETRY_BACKOFF"])
+
+    def test_a_new_trading_session_is_a_material_change_that_starts_a_run(self):
+        provider = RankingProvider()
+        runs, service = self.on_one_clock(provider)
+        automation_policy = self.adaptive(universe_max_age_seconds=86400)
+        self.run_once(service, runs, automation_policy)
+        self.loop.clock.value += 259200  # Friday's selection, revisited on Monday's session
+        summary = self.step(service, automation_policy)
+        self.assertEqual(summary["universe"]["state"], "STARTED")
+        decision = self.work["universe"]["last_decision"]
+        self.assertEqual(decision["reason_codes"], ["UNIVERSE_MATERIAL_CHANGE", "NEW_SESSION"])
+        self.assertEqual(decision["detail"]["material_change"], ["NEW_SESSION"])
+        # The new run's fingerprint belongs to the session it started in; the completed selection it replaces
+        # was made in the previous one.
+        self.assertEqual((self.work["universe"]["last_complete_fingerprint"]["session_date"],
+                          self.work["universe"]["run_fingerprint"]["session_date"]), ("2026-10-02", "2026-10-05"))
+        self.settle(runs)
+
+    def test_the_scheduling_state_is_persisted_so_a_restart_resumes_the_same_schedule(self):
+        provider = RankingProvider()
+        runs, service = self.on_one_clock(provider)
+        automation_policy = self.adaptive()
+        self.run_once(service, runs, automation_policy)
+        # The controller row is where the scheduler's own state lives between cycles and across a restart.
+        service.repository.save_controller(dict(schema_version="paper-automation-controller/1.0.0",
+                                                account_id=self.work["account_id"], updated_epoch=self.loop.clock(),
+                                                universe=self.work["universe"]))
+        persisted = service.repository.get_controller(self.work["account_id"])["universe"]
+        self.assertEqual(persisted["last_complete_fingerprint"]["session_date"], "2026-10-02")
+        self.assertTrue(persisted["last_complete_fingerprint"]["scope"])
+        self.assertEqual(persisted["last_decision"]["decision"], "DEFER")
+        # A restarted service reads that state instead of rebuilding a schedule from nothing.
+        restarted = PaperAutomationService(self.loop.store, repository=service.repository, reevaluation=self.loop.service,
+                                           runs=runs, clock=self.loop.clock)
+        summary = dict(blockers=[], universe=None)
+        now = self.loop.clock()
+        restarted._universe(dict(self.work, universe=persisted), automation_policy, summary, now, restarted.session(now),
+                            dict(allowed=True, reason=None))
+        self.assertEqual(summary["universe"]["decision"]["reason_codes"], ["UNIVERSE_MIN_SEPARATION"])
+        self.assertEqual(provider.calls, 4)  # one complete run, and no duplicate paid work after the restart
 
 
 if __name__ == "__main__":
