@@ -38,7 +38,8 @@ class EngineSpec:
 ENGINE_SPECS: dict[str, EngineSpec] = {spec.engine: spec for spec in (
     EngineSpec("local", "Local model", "LOCAL_MODEL", None, None),
     EngineSpec("anthropic", "Anthropic Claude", "PAID_API", "ANTHROPIC_API_KEY", "IMP_SYNTHESIS_ANTHROPIC_MODEL",
-               (("claude-sonnet-5-5", None), ("claude-haiku-4-5-20251001", None), ("claude-opus-5-5", None))),
+               (("claude-sonnet-5-5", None), ("claude-haiku-4-5-20251001", None), ("claude-haiku-5-5", None),
+                ("claude-opus-5-5", None))),
     # GPT-6 Luna accepts reasoning_effort "none" (and so temperature 0); Sol and Astra start at "low".
     EngineSpec("openai", "OpenAI", "PAID_API", "OPENAI_API_KEY", "IMP_SYNTHESIS_OPENAI_MODEL",
                (("gpt-6-luna", "none"), ("gpt-6.1-sol", "low"), ("gpt-6-astra", "low")), default_effort="low"),

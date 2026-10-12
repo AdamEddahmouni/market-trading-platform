@@ -66,7 +66,13 @@ API_VERSION = "2023-06-01"
 # (2026-10-07 count_tokens: 2.66 for Haiku 4.5, 1.80 for Sonnet 5.5 and Opus 5.5), so an estimate is never under
 # the bill. A model with no measurement takes the lowest ratio. The former three-characters rule under-counted
 # every Claude model by 12% to 67%.
-BYTES_PER_TOKEN = {"claude-haiku-4-5-20251001": 2.2, "claude-sonnet-5-5": 1.5, "claude-opus-5-5": 1.5}
+# PROVISIONAL for claude-haiku-5-5: the provider has not counted a controlled packet on it yet. Its tokenizer
+# produces about 30% more tokens for the same text than Haiku 4.5, so its ratio is set BELOW Haiku 4.5's 2.2 and
+# above the unmeasured default, and it must be replaced by a free ``count_tokens`` measurement before the model is
+# trusted for an unattended reservation. The candidate-reduction path still raises every reservation from a live
+# provider count, and a lower byte ratio is never allowed to shrink one.
+BYTES_PER_TOKEN = {"claude-haiku-4-5-20251001": 2.2, "claude-sonnet-5-5": 1.5, "claude-opus-5-5": 1.5,
+                   "claude-haiku-5-5": 1.7}
 DEFAULT_BYTES_PER_TOKEN = 1.5
 # A hold nobody has drawn from for this long belongs to a run that is gone (a crash, or an engine switched under
 # it): it lapses instead of locking shared budget until the UTC day ends. A live run draws at least once per
