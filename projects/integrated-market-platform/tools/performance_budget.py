@@ -318,7 +318,13 @@ def classify_performance(
             environment=environment,
             workload=workload,
         )
-    if workload.workload_identity_required:
+    # Declared reference counts always constrain comparisons, even for older
+    # FAST/FULL budgets that predate the optional changed-workload identity flag.
+    if (
+        workload.workload_identity_required
+        or workload.reference_test_count is not None
+        or workload.reference_skipped is not None
+    ):
         identity_ok, identity_reasons = workload_identity_matches(workload, receipt)
         if not identity_ok:
             return _classification_payload(
@@ -328,6 +334,9 @@ def classify_performance(
                 budget=budget,
                 environment=environment,
                 workload=workload,
+                # Raw timings stay visible; no ratio is derived across workloads.
+                wall_seconds=float(receipt.get("wall_seconds", 0.0)),
+                baseline_seconds=workload.baseline_median_seconds,
             )
     wall_seconds = float(receipt.get("wall_seconds", 0.0))
     baseline = workload.baseline_median_seconds

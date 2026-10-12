@@ -132,6 +132,40 @@ class PerformanceClassificationTests(unittest.TestCase):
         )
         self.assertEqual(result["classification"], CLASSIFICATION_INCOMPATIBLE)
 
+    def test_fast_and_full_changed_test_counts_are_not_actionable(self) -> None:
+        for mode in ("fast", "full"):
+            with self.subTest(mode=mode):
+                workload = self.budget.workloads[mode]
+                receipt = {
+                    "mode": mode,
+                    "wall_seconds": workload.baseline_median_seconds * 3,
+                    "tests_run": workload.reference_test_count + 100,
+                    "skips": workload.reference_skipped or 0,
+                    "effective_workers": workload.reference_workers,
+                    "scheduler_version": self.budget.parent_scheduler_version,
+                }
+                result = classify_performance(receipt, budget=self.budget, environment=self.environment)
+                self.assertEqual(result["classification"], CLASSIFICATION_INSUFFICIENT_DATA)
+                self.assertFalse(result["trustworthy_for_action"])
+                self.assertNotIn("percentage_delta", result)
+                self.assertNotIn("ratio", result)
+                self.assertEqual(result["observed_wall_seconds"], round(receipt["wall_seconds"], 6))
+                self.assertEqual(result["baseline_median_seconds"], workload.baseline_median_seconds)
+                self.assertTrue(any("test count mismatch" in reason for reason in result["explain"]))
+
+    def test_full_changed_skip_count_is_not_actionable(self) -> None:
+        workload = self.budget.workloads["full"]
+        result = classify_performance(
+            {"mode": "full", "wall_seconds": workload.baseline_median_seconds,
+             "tests_run": workload.reference_test_count,
+             "skips": workload.reference_skipped + 1,
+             "effective_workers": workload.reference_workers,
+             "scheduler_version": self.budget.parent_scheduler_version},
+            budget=self.budget, environment=self.environment,
+        )
+        self.assertEqual(result["classification"], CLASSIFICATION_INSUFFICIENT_DATA)
+        self.assertFalse(result["trustworthy_for_action"])
+
     def test_no_baseline_for_unknown_mode(self) -> None:
         receipt = {"mode": "live", "wall_seconds": 1.0, "tests_run": 1}
         result = classify_performance(
@@ -274,6 +308,20 @@ class PerformanceTelemetryTests(unittest.TestCase):
             }
         )
         self.assertEqual(summary["slowest_suites"][0]["suite_id"], "b")
+
+    def test_slowest_suite_includes_discovery_and_process_overhead(self) -> None:
+        summary = suite_timing_summary({"worker_results": [
+            {"suite_id": "imports", "wall_seconds": 0.01, "discovery_seconds": 8.0,
+             "process_wall_seconds": 9.0, "tests_run": 1, "status": "passed"},
+            {"suite_id": "execution", "wall_seconds": 2.0, "discovery_seconds": 0.1,
+             "process_wall_seconds": 2.2, "tests_run": 1, "status": "passed"},
+        ]})
+        row = summary["slowest_suites"][0]
+        self.assertEqual(row["suite_id"], "imports")
+        self.assertAlmostEqual(row["process_overhead_seconds"], 0.99)
+        text = format_regression_explanation({}, {}, summary)
+        self.assertIn("slowest_suites=imports:9.0s", text)
+        self.assertIn("discovery=8.0s", text)
 
     def test_performance_status_for_env_is_fast(self) -> None:
         root = Path(__file__).resolve().parents[2]

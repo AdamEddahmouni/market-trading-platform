@@ -21,93 +21,204 @@ from .contracts import (
     StrategyMatch,
     StrategyMatchDisposition,
 )
-from .normalization import (
-    NormalizationContext,
-    NormalizationError,
-    NormalizationResult,
-    normalize_event,
-    require_normalized_event,
-)
-from .quality import (
-    DEFAULT_QUALITY_POLICY,
-    CapabilityAssessment,
-    CapabilityRequirement,
-    DecisionAction,
-    IntelligenceCapability,
-    ProviderHealthSnapshot,
-    QualityAssessment,
-    QualityCapabilityError,
-    QualityDecision,
-    QualityFinding,
-    QualityPolicy,
-    RequirementSet,
-    assess_capabilities,
-    inspect_quality,
-    quality_summary_from_assessment,
-    require_quality_decision,
-    select_usable_source,
-)
-from .snapshots import (
-    SnapshotBuildRequest,
-    SnapshotBuildResult,
-    SnapshotBuilder,
-    SnapshotCompositionPolicy,
-    SnapshotIntegrityError,
-    SnapshotQualityError,
-    SnapshotReferenceError,
-    SnapshotResolvedState,
-    build_snapshot,
-    compose_snapshot,
-    inspect_snapshot_build,
-    resolve_snapshot,
-    verify_snapshot_integrity,
-    verify_snapshot_reproducibility,
-)
-from .signals import (
-    ALL_SIGNAL_TYPES,
-    FastSignalEngine,
-    SignalComputationRequest,
-    SignalComputationResult,
-    compute_fast_signals,
-    compute_from_snapshot,
-)
-from .replay import (
-    ReplayClock,
-    ReplayDecisionSchedule,
-    ReplayFaultProfile,
-    ReplayRuntime,
-    ReplayScenario,
-    ReplayRunResult,
-    observed_replay_scenario,
-)
-from .routing import (
-    DetectionFrame,
-    DetectionPolicyV1,
-    DetectorSupportStatus,
-    EventDetectorEngine,
-    RegimeContext,
-    RoutingPolicyV1,
-    SmartRouter,
-)
-from .scheduling import (
-    InferenceScheduler,
-    RecordingInferenceExecutor,
-    SchedulerPolicyV1,
-)
-from .temporal import (
-    DEFAULT_TEMPORAL_POLICY,
-    TemporalIntegrityError,
-    TemporalIntegrityPolicy,
-    TemporalIntegrityReport,
-    TemporalViolationCode,
-    eligible_as_of,
-    inspect_temporal_integrity,
-    require_snapshot_temporally_valid,
-    require_temporally_usable,
-    select_events_as_of,
-    usable_as_of,
-    validate_snapshot_temporal_integrity,
-)
+from importlib import import_module as _import_module
+from typing import Any as _Any, TYPE_CHECKING as _TYPE_CHECKING
+
+# Keep static typing and the public facade while leaf contract imports avoid
+# initializing providers, replay, signals, and scheduling. Their own module
+# initialization (including normalization registration) remains unchanged.
+if _TYPE_CHECKING:
+    from .normalization import (
+        NormalizationContext,
+        NormalizationError,
+        NormalizationResult,
+        normalize_event,
+        require_normalized_event,
+    )
+    from .quality import (
+        DEFAULT_QUALITY_POLICY,
+        CapabilityAssessment,
+        CapabilityRequirement,
+        DecisionAction,
+        IntelligenceCapability,
+        ProviderHealthSnapshot,
+        QualityAssessment,
+        QualityCapabilityError,
+        QualityDecision,
+        QualityFinding,
+        QualityPolicy,
+        RequirementSet,
+        assess_capabilities,
+        inspect_quality,
+        quality_summary_from_assessment,
+        require_quality_decision,
+        select_usable_source,
+    )
+    from .snapshots import (
+        SnapshotBuildRequest,
+        SnapshotBuildResult,
+        SnapshotBuilder,
+        SnapshotCompositionPolicy,
+        SnapshotIntegrityError,
+        SnapshotQualityError,
+        SnapshotReferenceError,
+        SnapshotResolvedState,
+        build_snapshot,
+        compose_snapshot,
+        inspect_snapshot_build,
+        resolve_snapshot,
+        verify_snapshot_integrity,
+        verify_snapshot_reproducibility,
+    )
+    from .signals import (
+        ALL_SIGNAL_TYPES,
+        FastSignalEngine,
+        SignalComputationRequest,
+        SignalComputationResult,
+        compute_fast_signals,
+        compute_from_snapshot,
+    )
+    from .replay import (
+        ReplayClock,
+        ReplayDecisionSchedule,
+        ReplayFaultProfile,
+        ReplayRuntime,
+        ReplayScenario,
+        ReplayRunResult,
+        observed_replay_scenario,
+    )
+    from .routing import (
+        DetectionFrame,
+        DetectionPolicyV1,
+        DetectorSupportStatus,
+        EventDetectorEngine,
+        RegimeContext,
+        RoutingPolicyV1,
+        SmartRouter,
+    )
+    from .scheduling import (
+        InferenceScheduler,
+        RecordingInferenceExecutor,
+        SchedulerPolicyV1,
+    )
+    from .temporal import (
+        DEFAULT_TEMPORAL_POLICY,
+        TemporalIntegrityError,
+        TemporalIntegrityPolicy,
+        TemporalIntegrityReport,
+        TemporalViolationCode,
+        eligible_as_of,
+        inspect_temporal_integrity,
+        require_snapshot_temporally_valid,
+        require_temporally_usable,
+        select_events_as_of,
+        usable_as_of,
+        validate_snapshot_temporal_integrity,
+    )
+
+_EXPORT_GROUPS = {
+    '.normalization': (
+        'NormalizationContext',
+        'NormalizationError',
+        'NormalizationResult',
+        'normalize_event',
+        'require_normalized_event',
+    ),
+    '.quality': (
+        'DEFAULT_QUALITY_POLICY',
+        'CapabilityAssessment',
+        'CapabilityRequirement',
+        'DecisionAction',
+        'IntelligenceCapability',
+        'ProviderHealthSnapshot',
+        'QualityAssessment',
+        'QualityCapabilityError',
+        'QualityDecision',
+        'QualityFinding',
+        'QualityPolicy',
+        'RequirementSet',
+        'assess_capabilities',
+        'inspect_quality',
+        'quality_summary_from_assessment',
+        'require_quality_decision',
+        'select_usable_source',
+    ),
+    '.snapshots': (
+        'SnapshotBuildRequest',
+        'SnapshotBuildResult',
+        'SnapshotBuilder',
+        'SnapshotCompositionPolicy',
+        'SnapshotIntegrityError',
+        'SnapshotQualityError',
+        'SnapshotReferenceError',
+        'SnapshotResolvedState',
+        'build_snapshot',
+        'compose_snapshot',
+        'inspect_snapshot_build',
+        'resolve_snapshot',
+        'verify_snapshot_integrity',
+        'verify_snapshot_reproducibility',
+    ),
+    '.signals': (
+        'ALL_SIGNAL_TYPES',
+        'FastSignalEngine',
+        'SignalComputationRequest',
+        'SignalComputationResult',
+        'compute_fast_signals',
+        'compute_from_snapshot',
+    ),
+    '.replay': (
+        'ReplayClock',
+        'ReplayDecisionSchedule',
+        'ReplayFaultProfile',
+        'ReplayRuntime',
+        'ReplayScenario',
+        'ReplayRunResult',
+        'observed_replay_scenario',
+    ),
+    '.routing': (
+        'DetectionFrame',
+        'DetectionPolicyV1',
+        'DetectorSupportStatus',
+        'EventDetectorEngine',
+        'RegimeContext',
+        'RoutingPolicyV1',
+        'SmartRouter',
+    ),
+    '.scheduling': (
+        'InferenceScheduler',
+        'RecordingInferenceExecutor',
+        'SchedulerPolicyV1',
+    ),
+    '.temporal': (
+        'DEFAULT_TEMPORAL_POLICY',
+        'TemporalIntegrityError',
+        'TemporalIntegrityPolicy',
+        'TemporalIntegrityReport',
+        'TemporalViolationCode',
+        'eligible_as_of',
+        'inspect_temporal_integrity',
+        'require_snapshot_temporally_valid',
+        'require_temporally_usable',
+        'select_events_as_of',
+        'usable_as_of',
+        'validate_snapshot_temporal_integrity',
+    ),
+}
+_LAZY_EXPORTS = {name: module for module, names in _EXPORT_GROUPS.items() for name in names}
+
+
+def __getattr__(name: str) -> _Any:
+    module = _LAZY_EXPORTS.get(name)
+    if module is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(_import_module(module, __name__), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_LAZY_EXPORTS))
 
 __all__ = [
     "ALL_SIGNAL_TYPES",

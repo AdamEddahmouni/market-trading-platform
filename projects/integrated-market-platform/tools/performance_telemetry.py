@@ -107,11 +107,15 @@ def suite_timing_summary(receipt: Mapping[str, Any]) -> dict[str, Any]:
                 "wall_seconds": round(wall_seconds, 6),
                 "process_wall_seconds": round(process_wall, 6),
                 "discovery_seconds": round(float(worker.get("discovery_seconds", 0.0)), 6),
+                "process_overhead_seconds": round(
+                    max(0.0, process_wall - wall_seconds - float(worker.get("discovery_seconds", 0.0))),
+                    6,
+                ),
                 "tests_run": int(worker.get("tests_run", 0)),
                 "status": str(worker.get("status", "")),
             }
         )
-    suite_rows.sort(key=lambda row: row["wall_seconds"], reverse=True)
+    suite_rows.sort(key=lambda row: row["process_wall_seconds"], reverse=True)
     schedule = receipt.get("execution_schedule", {})
     wave_summary = []
     for wave in schedule.get("waves", []):
@@ -193,7 +197,9 @@ def format_regression_explanation(
     slowest = timing.get("slowest_suites", [])
     if slowest:
         top = ", ".join(
-            f"{row['suite_id']}:{row['wall_seconds']}s" for row in slowest[:3]
+            f"{row['suite_id']}:{row.get('process_wall_seconds', row['wall_seconds'])}s"
+            f" (discovery={row.get('discovery_seconds', 0.0)}s, execution={row['wall_seconds']}s)"
+            for row in slowest[:3]
         )
         lines.append(f"slowest_suites={top}")
     lines.append(f"tests_run={receipt.get('tests_run')} failures={receipt.get('failures')}")
