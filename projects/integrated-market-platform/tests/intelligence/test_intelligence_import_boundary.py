@@ -116,3 +116,20 @@ class IntelligenceImportBoundaryTests(unittest.TestCase):
         with mock.patch("market_platform_foundation.intelligence.normalize_event", sentinel):
             self.assertIs(facade.normalize_event, sentinel)
         self.assertIs(facade.normalize_event, normalize_event)
+
+    def test_model_packages_and_backend_api_import_without_scientific_stack(self):
+        program = (
+            "import json,sys; "
+            "import market_platform_foundation.intelligence.fusion, "
+            "market_platform_foundation.intelligence.baselines, "
+            "market_platform_foundation.intelligence.production, "
+            "market_platform_foundation.intelligence.training.factory, "
+            "tools.ui1.run_ui_api; "
+            "print(json.dumps(sorted({name.split('.')[0] for name in sys.modules})))"
+        )
+        completed = subprocess.run([sys.executable, "-c", program],
+                                   capture_output=True, text=True, check=True, env=dict(os.environ))
+        packages = json.loads(completed.stdout)
+        for name in ("sklearn", "scipy", "pandas", "joblib"):
+            with self.subTest(name=name):
+                self.assertNotIn(name, packages)

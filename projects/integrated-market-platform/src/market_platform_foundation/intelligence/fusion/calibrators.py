@@ -9,8 +9,6 @@ import math
 from dataclasses import dataclass
 
 import numpy as np
-from sklearn.isotonic import IsotonicRegression
-from sklearn.linear_model import LogisticRegression
 
 from .calibration_data import (
     MINIMUM_CALIBRATION_SAMPLES,
@@ -66,6 +64,9 @@ class CalibrationTrainer:
           parameters = {"kind": "identity"}
           method_version = IDENTITY_METHOD_VERSION
       elif method == CalibrationMethod.LOGISTIC_PROBABILITY:
+          # scikit-learn loads only when a model is fitted, not on contract import.
+          from sklearn.linear_model import LogisticRegression
+
           model = LogisticRegression(random_state=self.random_state, max_iter=1000)
           model.fit(probabilities.reshape(-1, 1), labels)
           parameters = {
@@ -74,6 +75,8 @@ class CalibrationTrainer:
           }
           method_version = LOGISTIC_METHOD_VERSION
       elif method == CalibrationMethod.ISOTONIC:
+          from sklearn.isotonic import IsotonicRegression
+
           model = IsotonicRegression(out_of_bounds="raise")
           model.fit(probabilities, labels)
           parameters = {
