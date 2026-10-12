@@ -35,10 +35,27 @@ const CHOICES = [
   ["allow_local_inference", "Unattended local AI inference"],
   ["allow_paid_inference", "Unattended paid AI inference"],
 ] as const;
+/** Adaptive full-universe scheduling. Every one of these is optional: left blank, the owner keeps the fixed
+ * minimum separation and nothing is defaulted into the saved policy. */
+const OPTIONAL_NUMBERS = [
+  ["universe_max_age_seconds", "Maximum useful age of a complete selection (seconds, 300–86400; blank = no maximum)"],
+  ["universe_max_runs_per_day", "Maximum full-universe runs per UTC day (1–100; blank = not capped by this policy)"],
+] as const;
+const OPTIONAL_CHOICES = [
+  ["universe_material_change_trigger", "Re-run when the evaluated universe materially changes"],
+] as const;
+const OPTIONAL_BOUNDS: Record<typeof OPTIONAL_NUMBERS[number][0], { min: number; max?: number; step: number }> = {
+  universe_max_age_seconds: { min: 300, max: 86400, step: 1 },
+  universe_max_runs_per_day: { min: 1, max: 100, step: 1 },
+};
 type NumberField = typeof NUMBERS[number][0];
 type ChoiceField = typeof CHOICES[number][0];
+type AdaptiveNumberField = typeof OPTIONAL_NUMBERS[number][0];
+type AdaptiveChoiceField = typeof OPTIONAL_CHOICES[number][0];
 type Draft = Record<NumberField, string> & Record<ChoiceField, "" | "yes" | "no">;
+type AdaptiveDraft = Record<AdaptiveNumberField, string> & Record<AdaptiveChoiceField, "" | "yes" | "no">;
 const EMPTY = Object.fromEntries([...NUMBERS.map(([key]) => [key, ""]), ...CHOICES.map(([key]) => [key, ""])]) as Draft;
+const EMPTY_ADAPTIVE = Object.fromEntries([...OPTIONAL_NUMBERS.map(([key]) => [key, ""]), ...OPTIONAL_CHOICES.map(([key]) => [key, ""])]) as AdaptiveDraft;
 /** Browser-side range hints only. The server remains the authority for every bound; nothing here changes what is sent. */
 const BOUNDS: Record<NumberField, { min: number; max?: number; step: number }> = {
   cadence_seconds: { min: 60, max: 3600, step: 1 },
@@ -55,15 +72,21 @@ const BOUNDS: Record<NumberField, { min: number; max?: number; step: number }> =
   max_consecutive_failures: { min: 1, max: 20, step: 1 },
 };
 
-function policyFrom(draft: Draft, universe: string): PaperAutomationPolicyInput | null {
+function policyFrom(draft: Draft, adaptiveDraft: AdaptiveDraft, universe: string): PaperAutomationPolicyInput | null {
   const number = (key: NumberField) => draft[key].trim() !== "" && Number.isFinite(Number(draft[key])) ? Number(draft[key]) : null;
   const dollars = (key: NumberField) => { const value = number(key); return value == null ? null : Math.round(value * 100); };
   const choice = (key: ChoiceField) => draft[key] === "" ? null : draft[key] === "yes";
   const values = { numbers: NUMBERS.map(([key]) => number(key)), choices: CHOICES.map(([key]) => choice(key)) };
   if (values.numbers.some((value) => value == null) || values.choices.some((value) => value == null)) return null;
+  // A blank adaptive field is sent as nothing at all, never as a value the owner did not choose.
+  const typed = (key: AdaptiveNumberField) => { const raw = adaptiveDraft[key].trim(); return raw === "" ? undefined : Number(raw); };
+  if (OPTIONAL_NUMBERS.some(([key]) => { const raw = adaptiveDraft[key].trim(); return raw !== "" && !Number.isFinite(Number(raw)); })) return null;
+  const adaptive: Record<string, number | boolean> = {};
+  for (const [key] of OPTIONAL_NUMBERS) { const value = typed(key); if (value !== undefined) adaptive[key] = value; }
+  for (const [key] of OPTIONAL_CHOICES) if (adaptiveDraft[key] !== "") adaptive[key] = adaptiveDraft[key] === "yes";
   return {
     schedule: { sessions: ["REGULAR"], cadence_seconds: number("cadence_seconds")!, universe_evaluation_interval_seconds: number("universe_evaluation_interval_seconds")!,
-      no_new_entries_minutes_before_close: number("no_new_entries_minutes_before_close")! },
+      no_new_entries_minutes_before_close: number("no_new_entries_minutes_before_close")!, ...adaptive },
     risk: { max_position_notional_minor: dollars("max_position_notional")!, max_aggregate_exposure_minor: dollars("max_aggregate_exposure")!,
       max_open_positions: number("max_open_positions")!, max_daily_loss_minor: dollars("max_daily_loss")!, max_per_trade_risk_minor: dollars("max_per_trade_risk")!,
       assumed_adverse_move_bps: number("assumed_adverse_move_bps")!, allowed_universes: [universe], order_types: ["MARKET"],
@@ -89,6 +112,7 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
   const [events, setEvents] = useState<PaperAutomationEvent[]>([]);
   const [report, setReport] = useState<PaperAutomationReport | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [adaptive, setAdaptive] = useState<AdaptiveDraft>(EMPTY_ADAPTIVE);
   const [phrase, setPhrase] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -124,12 +148,13 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
   const scheduled = status?.desired_state === "RUNNING" || status?.desired_state === "PAUSED";
   // Display refresh only: reads status, history and the report. It never evaluates, previews or submits.
   useEffect(() => { if (!open || !scheduled) return; const timer = setInterval(() => { void refresh().catch(() => undefined); }, 5_000); return () => clearInterval(timer); }, [open, scheduled]);
-  const policy = policyFrom(draft, scope.universe);
+  const policy = policyFrom(draft, adaptive, scope.universe);
   const configured = Boolean(status?.policy);
   const armed = Boolean(status?.armed);
   const emergency = Boolean(status?.emergency);
   const cycle = status?.last_cycle;
   const universe = status?.universe;
+  const scheduling = status?.scheduling;
   return <section className="reevaluation paper-automation" aria-label="Paper automation">
     <button type="button" disabled={busy} onClick={() => { setOpen(true); request(async () => undefined); }}>Open Paper automation controls</button>
     {open && <>
@@ -155,6 +180,10 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
           {NUMBERS.map(([key, label]) => <label key={key}>{label} <input type="number" {...BOUNDS[key]} value={draft[key]} onChange={(event) => setDraft({ ...draft, [key]: event.target.value })} /></label>)}
           {CHOICES.map(([key, label]) => <label key={key}>{label} <select value={draft[key]} onChange={(event) => setDraft({ ...draft, [key]: event.target.value as Draft[ChoiceField] })}>
             <option value="">Choose…</option><option value="yes">Allowed</option><option value="no">Not allowed</option></select></label>)}
+          <p>Adaptive full-universe scheduling — optional. Leave every line blank to keep the fixed minimum separation above.</p>
+          {OPTIONAL_NUMBERS.map(([key, label]) => <label key={key}>{label} <input type="number" {...OPTIONAL_BOUNDS[key]} value={adaptive[key]} onChange={(event) => setAdaptive({ ...adaptive, [key]: event.target.value })} /></label>)}
+          {OPTIONAL_CHOICES.map(([key, label]) => <label key={key}>{label} <select value={adaptive[key]} onChange={(event) => setAdaptive({ ...adaptive, [key]: event.target.value as AdaptiveDraft[AdaptiveChoiceField] })}>
+            <option value="">Not enabled</option><option value="yes">Enabled</option><option value="no">Disabled</option></select></label>)}
           <button type="button" disabled={busy || !policy} onClick={() => request(() => configurePaperAutomation(scope, policy!))}>Save policy</button>
           {!policy && <p>Complete every field to save the policy. Saving a policy arms nothing.</p>}
         </fieldset>}
@@ -185,6 +214,14 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
 
           {status.liveness && <p>Controller: {status.liveness.owner === "THIS_PROCESS" ? "owned by this server" : status.liveness.owner === "OTHER_PROCESS" ? "owned by another process" : "not scheduled"} · worker {status.liveness.worker_alive ? "alive" : "not alive"} · heartbeat {text(status.liveness.heartbeat_at)} · last scheduled {text(status.liveness.last_scheduled)} · cycles {text(status.liveness.cycle_count)} · consecutive failures {text(status.liveness.consecutive_failures)}{status.liveness.last_error ? ` · last error ${status.liveness.last_error.code} at ${status.liveness.last_error.at}` : ""}</p>}
           <p>Provider: {status.provider ? `${status.provider.state}${status.provider.reasons.length ? ` · ${status.provider.reasons.join(", ")}` : ""}` : "not yet read by a cycle"} · AI engine: {text(status.engine?.provider_id)} · {text(status.engine?.model_id)} · {text(status.engine?.runtime)} · {text(status.engine?.state)}{status.engine?.reason ? ` (${status.engine.reason})` : ""} · unattended model calls {status.spending?.allowed ? "permitted" : `withheld${status.spending?.reason ? ` (${status.spending.reason})` : ""}`}</p>
+
+          {scheduling && <>
+            <h4>Adaptive full-universe scheduling</h4>
+            <p>{scheduling.adaptive ? "Adaptive" : "Fixed minimum separation only"} · minimum separation {scheduling.policy.min_separation_seconds}s{scheduling.policy.max_age_seconds != null ? ` · a selection stays useful for ${scheduling.policy.max_age_seconds}s` : ""}{scheduling.policy.material_change_trigger ? " · re-runs on a material universe change" : ""}{scheduling.policy.max_runs_per_day != null ? ` · at most ${scheduling.policy.max_runs_per_day} runs per UTC day` : ""} · runs today {scheduling.runs_today.started}{scheduling.runs_today.limit != null ? ` of ${scheduling.runs_today.limit}` : ""}</p>
+            {scheduling.last_complete_fingerprint ? <p>Last complete selection from session {scheduling.last_complete_fingerprint.session_date}{scheduling.last_complete_fingerprint.universe_count != null ? ` (${scheduling.last_complete_fingerprint.universe_count} rows read)` : ""}.</p> : <p>No complete full-universe selection has been adopted yet.</p>}
+            {scheduling.last_decision ? <p>Last decision <strong>{words(scheduling.last_decision.decision)}</strong> at {text(scheduling.last_decision.at_iso)} because {scheduling.last_decision.reason_codes.map(words).join(", ")}{scheduling.next_eligible ? ` · next eligible ${scheduling.next_eligible}` : ""}.</p> : <p>No scheduling decision has been recorded yet.</p>}
+            {scheduling.failure ? <p>Last run was not adoptable ({scheduling.failure.code}), {scheduling.failure.count} in a row; the next attempt waits until {new Date(scheduling.failure.backoff_until * 1000).toISOString()}.</p> : null}
+          </>}
 
           <h4>AI evaluation</h4>
           {universe?.active_run_id ? <p>Full-universe AI run {universe.active_run_id} in progress.</p>

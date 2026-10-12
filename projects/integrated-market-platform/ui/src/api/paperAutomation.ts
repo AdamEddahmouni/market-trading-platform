@@ -5,8 +5,26 @@ import type { AiScreenerScope } from "./screenerAi";
 /** AUTO-01: owner policy, arming and controls for unattended internal Paper simulation. The server decides everything shown here. */
 const Blocker = z.object({ category: z.string(), code: z.string() });
 const Session = z.object({ label: z.string(), trading_day: z.boolean(), session_date: z.string(), minutes_to_close: z.number().nullable() }).passthrough();
+/** Adaptive full-universe scheduling is optional: an absent field means the owner did not enable it. */
+const Scheduling = z.object({
+  policy: z.object({ min_separation_seconds: z.number(), max_age_seconds: z.number().nullable().optional(),
+    material_change_trigger: z.boolean().nullable().optional(), max_runs_per_day: z.number().nullable().optional(),
+    optional_fields: z.array(z.string()) }).passthrough(),
+  adaptive: z.boolean(),
+  last_decision: z.object({ decision: z.string(), reason_codes: z.array(z.string()), next_eligible_epoch: z.number().nullable().optional(),
+    next_eligible_iso: z.string().nullable().optional(), at_iso: z.string().nullable().optional() }).passthrough().nullable().optional(),
+  next_eligible: z.string().nullable().optional(), next_eligible_epoch: z.number().nullable().optional(),
+  last_complete: z.object({ run_id: z.string(), finished_at: z.string().nullable().optional(),
+    universe_count: z.number().nullable().optional() }).passthrough().nullable().optional(),
+  last_complete_fingerprint: z.object({ scope: z.string(), session_date: z.string(),
+    universe_count: z.number().nullable().optional() }).passthrough().nullable().optional(),
+  active_run_id: z.string().nullable().optional(),
+  withheld: z.object({ at: z.string(), reason: z.string() }).nullable().optional(),
+  failure: z.object({ count: z.number(), code: z.string(), backoff_until: z.number() }).passthrough().nullable().optional(),
+  runs_today: z.object({ started: z.number(), limit: z.number().nullable().optional() }).passthrough() }).passthrough();
 const Policy = z.object({ policy_id: z.string(), account_id: z.string(), experiment_id: z.string(),
-  schedule: z.object({ sessions: z.array(z.string()), cadence_seconds: z.number(), universe_evaluation_interval_seconds: z.number(), no_new_entries_minutes_before_close: z.number() }),
+  schedule: z.object({ sessions: z.array(z.string()), cadence_seconds: z.number(), universe_evaluation_interval_seconds: z.number(), no_new_entries_minutes_before_close: z.number(),
+    universe_max_age_seconds: z.number().optional(), universe_material_change_trigger: z.boolean().optional(), universe_max_runs_per_day: z.number().optional() }),
   risk: z.object({ max_position_notional_minor: z.number(), max_aggregate_exposure_minor: z.number(), max_open_positions: z.number(), max_daily_loss_minor: z.number(),
     max_per_trade_risk_minor: z.number(), assumed_adverse_move_bps: z.number(), allowed_universes: z.array(z.string()), order_types: z.array(z.string()),
     allow_long: z.boolean(), allow_short: z.boolean(), allow_entries: z.boolean(), allow_exits: z.boolean() }),
@@ -42,6 +60,7 @@ export const PaperAutomationStatusSchema = z.object({ schema_version: z.literal(
   last_cycle: Cycle.nullable().optional(),
   universe: z.object({ active_run_id: z.string().nullable(), last_result: UniverseResult.nullable(), adopted_run_id: z.string().nullable().optional(),
     withheld: z.object({ at: z.string(), reason: z.string() }).nullable().optional() }).passthrough().nullable().optional(),
+  scheduling: Scheduling.optional(),
   candidate_quotes: z.array(z.string()).optional(), risk: Risk.optional(),
   positions: z.array(z.object({ instrument_id: z.string(), quantity: z.number(), side: z.string().nullable().optional(), average_fill_minor: z.number().nullable().optional(),
     mark_minor: z.number().nullable().optional(), unrealized_pnl_minor: z.number().nullable().optional() }).passthrough()).optional(),
