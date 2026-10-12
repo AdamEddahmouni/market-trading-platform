@@ -327,6 +327,60 @@ class RequestConstructionTests(unittest.TestCase):
                 self.assertEqual(picked.provider.model_id, model)
 
 
+class Haiku55ContractTests(unittest.TestCase):
+    """Haiku 5.5 readiness: the 5.5 request shape, block-type selection, refusals, and its own tokenizer reserve.
+
+    Mock transport and the existing strict-schema validator only; nothing here proves generated quality."""
+
+    MODEL = 'claude-haiku-5-5'
+
+    @classmethod
+    def setUpClass(cls):
+        cls.candidates, _ = packed()
+        cls.answer = wire_output(cls.candidates, range(MAX_SELECTED))
+
+    def test_the_model_is_in_the_table_and_can_run_the_ai_screener(self):
+        self.assertIn(self.MODEL, CLAUDE_MODELS)
+        self.assertEqual(contract_status(self.MODEL, REDUCTION),
+                         {'supported': True, 'reason': None, 'selected_model': self.MODEL,
+                          'required_contract': 'STRICT_TOOL_SCHEMA', 'unsupported_capability': None})
+
+    def test_request_omits_sampling_parameters_and_keeps_a_strict_schema_tool(self):
+        transport = Claude(self.answer)
+        result, _ = reduce_with(self.MODEL, transport, self.candidates)
+        self.assertEqual((result['state'], result['reason']), ('CURRENT', None))
+        body = transport.requests[0][1]
+        for parameter in ('temperature', 'top_p', 'top_k', 'thinking'):
+            self.assertNotIn(parameter, body)
+        self.assertTrue(body['tools'][0]['strict'])
+        self.assertEqual(body['tool_choice'], {'type': 'auto', 'disable_parallel_tool_use': True})
+        self.assertEqual(body['max_tokens'], 2600 + THINKING_HEADROOM)
+
+    def test_a_thinking_block_before_the_tool_call_is_not_the_answer(self):
+        # The transport stands in the default adaptive-thinking reply: a thinking block first, tool call second.
+        transport = Claude(self.answer)
+        result, _ = reduce_with(self.MODEL, transport, self.candidates)
+        self.assertEqual(len(result['candidates']), MAX_SELECTED)
+        sent = transport.requests[0][1]
+        self.assertEqual(set(sent), {'model', 'max_tokens', 'system', 'messages', 'tools', 'tool_choice'})
+
+    def test_a_safety_refusal_is_a_typed_failure_and_never_a_parsed_answer(self):
+        refused = Claude(content=[], stop_reason='refusal')
+        result, _ = reduce_with(self.MODEL, refused, self.candidates)
+        self.assertEqual((result['state'], result['reason'], result['candidates']), ('UNAVAILABLE', 'ANTHROPIC_REFUSAL', []))
+
+    def test_the_newer_tokenizer_reserves_more_than_haiku_4_5(self):
+        config = CandidateReducer().config
+        haiku55 = BudgetedProvider(AnthropicSynthesisProvider(api_key='controlled', model=self.MODEL, poster=Claude(self.answer)),
+                                   DailyBudget(None))
+        haiku45 = BudgetedProvider(AnthropicSynthesisProvider(api_key='controlled', model=OCTOBER_7_MODEL, poster=Claude(self.answer)),
+                                   DailyBudget(None))
+        sample = 'x' * 30_000
+        self.assertLess(BYTES_PER_TOKEN[self.MODEL], BYTES_PER_TOKEN[OCTOBER_7_MODEL])
+        self.assertGreater(haiku55.worst_case_tokens(sample, config), haiku45.worst_case_tokens(sample, config))
+        self.assertGreaterEqual(BYTES_PER_TOKEN[self.MODEL], DEFAULT_BYTES_PER_TOKEN)
+
+
 class PreflightTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -580,7 +634,8 @@ class EnginePickerTruthTests(unittest.TestCase):
             self.assertEqual([r['model'] for r in rows], SELECTABLE)
             self.assertTrue(all(r['ai_screener_compatible'] and r['reason'] is None for r in rows))
             self.assertEqual({r['model']: r['context_window'] for r in rows},
-                             {'claude-sonnet-5-5': 1_000_000, OCTOBER_7_MODEL: 200_000, 'claude-opus-5-5': 1_000_000})
+                             {'claude-sonnet-5-5': 1_000_000, OCTOBER_7_MODEL: 200_000, 'claude-haiku-5-5': 1_000_000,
+                              'claude-opus-5-5': 1_000_000})
             self.assertIsNone(options['openai']['model_contracts'])
             env = {'ANTHROPIC_API_KEY': 'controlled', 'IMP_SYNTHESIS_ANTHROPIC_MODEL': 'claude-fable-5-1'}
             configured = {o['id']: o for o in engine_options(env.get, Path(directory))}['anthropic']

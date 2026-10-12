@@ -49,6 +49,12 @@ CLAUDE_MODELS: dict[str, ClaudeModel] = {item.model: item for item in (
                 thinks_by_default=True, count_tokens=True, context_window=1_000_000),
     ClaudeModel("claude-opus-5-5", temperature=False, forced_tool_choice=False, strict_tools=True,
                 thinks_by_default=True, count_tokens=True, context_window=1_000_000),
+    # Haiku 5.5 shares the 5.5 request shape: sampling parameters must be omitted, a reply is selected by content
+    # block type (a thinking block may precede the tool call), and strict tools are served on the Claude API.
+    # Its newer tokenizer counts roughly 30% more tokens for the same text, so its budget ratio is calibrated
+    # separately in ``anthropic_synthesis.BYTES_PER_TOKEN``.
+    ClaudeModel("claude-haiku-5-5", temperature=False, forced_tool_choice=False, strict_tools=True,
+                thinks_by_default=True, count_tokens=True, context_window=1_000_000),
 )}
 
 
