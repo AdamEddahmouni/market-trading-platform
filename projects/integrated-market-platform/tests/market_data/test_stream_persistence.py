@@ -137,7 +137,10 @@ class StreamPersistenceTests(unittest.TestCase):
         with patch.object(writer, '_storage_ok', return_value=False):
             self.assertEqual(writer.flush(), 0)
         self.assertEqual(writer.checkpoints(), [])
-        self.assertEqual(writer.status()['state'], 'FAILED')
+        # A drive that may return is retried, never reported as committed and never recreated.
+        self.assertEqual(writer.status()['state'], 'RETRYING')
+        self.assertEqual(writer.status()['backlog'], 1)
+        self.assertEqual(writer.flush(), 1)
 
     def test_out_of_order_watermark_never_regresses(self):
         writer = self.open()
@@ -180,6 +183,7 @@ class StreamPersistenceTests(unittest.TestCase):
         writer.flush()
         writer.connection.execute('UPDATE market_stream_runs SET closed_ns=NULL, lease_until_ns=0')
         writer.connection.close()
+        writer._owner_lock.release()  # the operating system does this when a process dies
         writer._closed = True
         writer = self.open()
         self.assertGreater(writer.status()['known_gaps'], 0)

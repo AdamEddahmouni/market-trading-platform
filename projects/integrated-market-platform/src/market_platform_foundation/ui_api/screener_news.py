@@ -390,6 +390,9 @@ class ScreenerNewsService:
         if provider == "finviz":
             items, status = self._finviz_items()
             key = ("finviz",)
+        elif provider == "rss" and query:
+            items, status = self._rss_feed_items(query)
+            key = ("rss_feed", query)
         elif provider == "rss":
             items, status = self._rss_items(universe)
             key = ("rss", universe)
@@ -467,6 +470,34 @@ class ScreenerNewsService:
                   "reason": reason, "fetched_at": fetched, "item_count": len(entry.value["items"]),
                   "feeds": entry.value["feeds"]}
         return entry.value["items"], status
+
+    def _rss_feed_items(self, feed_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """One catalog feed with its own state, so a failing feed backs off without the others."""
+        from ..news.rss_feeds import FEEDS_BY_ID
+
+        feed = FEEDS_BY_ID.get(feed_id)
+        if feed is None:
+            raise ValueError("COLLECTION_FEED_INVALID")
+
+        def job() -> Any:
+            self.provider_requests["rss"] += 1
+            return self._rss.fetch(feed)
+
+        entry = self._await(("rss_feed", feed_id), job, ttl_s=RSS_TTL_S)
+        if entry is None:
+            return [], provider_status("rss", None, scope="FEED", pending=True)
+        if not entry.ok:
+            return [], provider_status("rss", {"success": False, "error": entry.reason}, scope="FEED")
+        result = entry.value
+        # STALE means this refresh failed and the items are the previous good fetch. Keep the
+        # failure's own class so a rate limit or rejected credential is not treated as an outage.
+        state = result.state
+        if state == "STALE":
+            state = {"HTTP_429": "RATE_LIMITED", "HTTP_401": "AUTH_FAILED", "HTTP_403": "AUTH_FAILED"}.get(
+                str(result.reason), "ERROR")
+        return list(result.items), {"id": "rss", "label": PROVIDER_LABELS["rss"], "kind": "NEWS", "scope": "FEED",
+                                    "feed_id": feed_id, "state": state, "reason": result.reason,
+                                    "fetched_at": result.fetched_at, "item_count": len(result.items)}
 
     def _newsapi_guard(self) -> bool:
         today = datetime.fromtimestamp(self._clock(), tz=UTC).date().isoformat()

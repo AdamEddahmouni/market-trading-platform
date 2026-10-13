@@ -3,9 +3,14 @@
 No subscriptions, backfill, provider activation, AI or execution dispatch. A
 queue receipt is not a commit. Watermarks describe stored observations only;
 neither provider continuity nor exactly-once delivery is asserted.
+
+Ownership is an OS-held owner lock plus a run lease. A writer started by
+``start_persistence`` owns nothing until it has an observation or a gap to
+store, and hands ownership back after ``IDLE_RELEASE_SECONDS`` without supply.
 """
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import math
@@ -18,11 +23,14 @@ from pathlib import Path
 from typing import Any, Mapping
 from uuid import uuid4
 
-from ..local_state.connection import LocalStateConnection
+from ..local_state.connection import LocalStateConnection, transient_storage_error
 
 MAX_RECORD_BYTES = 128 * 1024
 MAX_BATCH_BYTES = 2 * 1024 * 1024
 LEASE_NS = 120 * 1_000_000_000
+IDLE_RELEASE_SECONDS = 120.0  # one lease interval without supply returns ownership
+RETRY_LIMIT = 6  # consecutive recoverable failures before the writer stops
+OWNER_LOCK_SUFFIX = '.market-writer.lock'
 MAX_SEEN_BARS = 2048  # per selected symbol; above the provider's 1000-bar current window
 CAPABILITIES = {'US_EQUITY_L1', 'US_EQUITY_TICKS', 'US_EQUITY_DEPTH',
                 'CRYPTO_TRADES', 'CRYPTO_BOOK', 'CURRENT_BAR_1M'}
@@ -43,10 +51,51 @@ def _source(provider: str) -> str:
             'moomoo_opend': 'moomoo', 'kraken': 'kraken'}.get(provider.lower(), '')
 
 
+class _OwnerLock:
+    """Exclusive sidecar lock held for as long as this process owns the writer.
+
+    The operating system drops it when the process dies, which is the evidence
+    that an unexpired run lease belongs to a dead writer rather than a live one.
+    """
+
+    def __init__(self, path: Path) -> None:
+        self.path = path
+        self._handle: Any = None
+
+    def acquire(self) -> bool:
+        if self._handle is not None:
+            return True
+        handle = open(self.path, 'a+b')  # noqa: SIM115 - held until release; never creates the directory
+        try:
+            if os.name == 'nt':
+                import msvcrt
+
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BaseException as exc:
+            handle.close()
+            # Only contention means a live owner. Anything else is a storage fault for the bounded retry.
+            if isinstance(exc, OSError) and exc.errno in (errno.EACCES, errno.EAGAIN, errno.EDEADLK):
+                return False
+            raise
+        self._handle = handle
+        return True
+
+    def release(self) -> None:
+        handle, self._handle = self._handle, None
+        if handle is not None:
+            handle.close()  # closing the handle releases the lock on every platform
+
+
 class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
                  queue_limit: int = 512, batch_limit: int = 64,
-                 max_database_bytes: int = 512 * 1024 * 1024) -> None:
+                 max_database_bytes: int = 512 * 1024 * 1024, acquire: bool = True,
+                 idle_release_seconds: float | None = IDLE_RELEASE_SECONDS) -> None:
         if not sources or set(sources) - {'moomoo', 'kraken'} or not symbols or len(symbols) > 20:
             raise ValueError('MARKET_CAPTURE_TARGETS_INVALID')
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
@@ -62,14 +111,18 @@ class MarketStreamWriter:
         self._stop, self._wake = threading.Event(), threading.Event()
         self._thread: threading.Thread | None = None
         self._closed, self._accepting = False, True
-        self.run_id = uuid4().hex
+        self.run_id: str | None = None  # None while this writer owns nothing
+        self._owner_lock = _OwnerLock(Path(str(path) + OWNER_LOCK_SUFFIX))
+        self._idle_release = idle_release_seconds
+        self._active_at = time.monotonic()
         self._gaps: dict[tuple[str, str], list[int]] = {}
         self._bars_seen: dict[str, dict[int, str]] = {}
-        self._state, self._error = 'READY', None
+        self._state, self._error = 'IDLE', None
         self._committed = self._duplicates = self._rejected = self._peak_backlog = 0
         self._last_received = self._last_commit = None
         self._max_flush_seconds = 0.0
-        self._consecutive_failures = 0
+        self._consecutive_failures = self._transient_failures = 0
+        self._ownership_waits = self._idle_releases = 0
         self.connection = LocalStateConnection(path, require_existing=True)
         try:
             # FULL applies only to this writer connection. Preserve other callers' policy.
@@ -77,27 +130,53 @@ class MarketStreamWriter:
             self.connection.execute('PRAGMA busy_timeout=250')
             stat = path.stat()
             self._identity = (stat.st_dev, stat.st_ino)
-            now = time.time_ns()
-            with self.connection.transaction():
-                open_runs = self.connection.execute('SELECT * FROM market_stream_runs WHERE closed_ns IS NULL').fetchall()
-                if any(row['lease_until_ns'] > now for row in open_runs):
-                    raise ValueError('MARKET_CAPTURE_OWNER_ACTIVE')
-                for row in open_runs:
-                    self._write_gap(row['run_id'], '*', 'UNCLEAN_RESTART_NO_REPLAY', row['heartbeat_ns'], now, 1)
-                    self.connection.execute('UPDATE market_stream_runs SET closed_ns=? WHERE run_id=?', (now, row['run_id']))
-                previous = self.connection.execute('SELECT MAX(closed_ns) FROM market_stream_runs').fetchone()[0]
-                if previous is not None:
-                    self._write_gap(self.run_id, '*', 'CAPTURE_DOWNTIME_UNVERIFIED', previous, now, 1)
-                else:
-                    self._write_gap(self.run_id, '*', 'INITIAL_COVERAGE_UNVERIFIED', now, now, 1)
-                self.connection.execute('INSERT INTO market_stream_runs VALUES (?,?,?,?,NULL)', (self.run_id, now, now, now+LEASE_NS))
+            if acquire:
+                self._acquire()
+                self._state = 'READY'
             self._known_gaps = self.connection.execute('SELECT COUNT(*) FROM market_stream_gaps').fetchone()[0]
             checkpoint = self.connection.execute('SELECT * FROM market_stream_checkpoints ORDER BY commit_ns DESC LIMIT 1').fetchone()
             self._last_checkpoint = dict(checkpoint) if checkpoint else None
             self._last_commit = checkpoint['commit_ns'] if checkpoint else None
         except Exception:
+            self._owner_lock.release()
             self.connection.close()
             raise
+
+    def _acquire(self) -> None:
+        """Take the owner lock, then open a run. A live owner is never overridden."""
+        if not self._owner_lock.acquire():
+            raise ValueError('MARKET_CAPTURE_OWNER_ACTIVE')
+        run_id = uuid4().hex
+        try:
+            now = time.time_ns()
+            with self.connection.transaction():
+                # Every writer holds the owner lock while its run is open, so a run
+                # still open here was left by a process that no longer exists, even
+                # when its lease has not yet expired. Its unstored tail is a gap.
+                for row in self.connection.execute('SELECT * FROM market_stream_runs WHERE closed_ns IS NULL').fetchall():
+                    self._write_gap(row['run_id'], '*', 'UNCLEAN_RESTART_NO_REPLAY', row['heartbeat_ns'], now, 1)
+                    self.connection.execute('UPDATE market_stream_runs SET closed_ns=?,lease_until_ns=0 WHERE run_id=?', (now, row['run_id']))
+                previous = self.connection.execute('SELECT MAX(closed_ns) FROM market_stream_runs').fetchone()[0]
+                if previous is not None:
+                    self._write_gap(run_id, '*', 'CAPTURE_DOWNTIME_UNVERIFIED', previous, now, 1)
+                else:
+                    self._write_gap(run_id, '*', 'INITIAL_COVERAGE_UNVERIFIED', now, now, 1)
+                self.connection.execute('INSERT INTO market_stream_runs VALUES (?,?,?,?,NULL)', (run_id, now, now, now+LEASE_NS))
+        except Exception:
+            self._owner_lock.release()
+            raise
+        self.run_id = run_id
+        self._active_at = time.monotonic()
+
+    def _release(self) -> None:
+        """Idle hand-back: a clean close, so another process may own at once."""
+        self.connection.execute('UPDATE market_stream_runs SET closed_ns=?,lease_until_ns=0 WHERE run_id=?',
+                                (time.time_ns(), self.run_id))
+        self.run_id = None
+        self._owner_lock.release()
+        with self._lock:
+            self._idle_releases += 1
+            self._state = 'IDLE'
 
     def _write_gap(self, run: str, stream: str, reason: str, start: int, end: int, count: int) -> None:
         self.connection.execute('''INSERT INTO market_stream_gaps VALUES (?,?,?,?,?,?)
@@ -228,15 +307,44 @@ class MarketStreamWriter:
         while len(seen) > MAX_SEEN_BARS:
             del seen[min(seen)]
 
-    def _storage_ok(self) -> bool:
+    def _storage_fault(self) -> str | None:
         path = self.connection.path
         try:
             stat = path.stat()
             wal = Path(str(path) + '-wal')
             size = stat.st_size + (wal.stat().st_size if wal.exists() else 0)
-            return (stat.st_dev, stat.st_ino) == self._identity and size + 4*MAX_BATCH_BYTES <= self.max_database_bytes
         except OSError:
-            return False
+            return 'MARKET_STORAGE_UNAVAILABLE'  # may be a drive that returns; retried, never recreated
+        if (stat.st_dev, stat.st_ino) != self._identity:
+            return 'MARKET_STORAGE_REPLACED'
+        if size + 4*MAX_BATCH_BYTES > self.max_database_bytes:
+            return 'MARKET_STORAGE_FULL'
+        return None
+
+    def _storage_ok(self) -> bool:
+        return self._storage_fault() is None
+
+    def _failed(self, exc: Exception) -> None:
+        """Classify one failed flush. Nothing was committed and nothing was dequeued."""
+        code = str(exc) if str(exc).startswith('MARKET_') else type(exc).__name__
+        if code == 'MARKET_CAPTURE_OWNER_ACTIVE':
+            with self._lock:
+                self._state, self._error = 'WAITING_FOR_OWNERSHIP', code
+                self._ownership_waits += 1
+            return
+        recoverable = code == 'MARKET_STORAGE_UNAVAILABLE' or transient_storage_error(exc)
+        if code == 'MARKET_CAPTURE_LEASE_LOST':
+            # This run may never commit again. Give the lock back and re-enter through
+            # the normal fenced acquisition, which records the abandoned run as a gap.
+            self.run_id = None
+            self._owner_lock.release()
+            recoverable = True
+        with self._lock:
+            self._consecutive_failures += 1
+            self._transient_failures += recoverable
+            self._state, self._error = ('RETRYING' if recoverable else 'FAILED'), code
+        if not recoverable:
+            self.gap('WRITER_FAILURE')
 
     def flush(self) -> int:
         with self._flush_lock:
@@ -254,7 +362,15 @@ class MarketStreamWriter:
             committed = duplicates = 0
             try:
                 if not self._storage_ok():
-                    raise ValueError('MARKET_STORAGE_MISSING_REPLACED_OR_FULL')
+                    raise ValueError(self._storage_fault() or 'MARKET_STORAGE_UNAVAILABLE')
+                if self.run_id is None:
+                    if not batch and not gaps:
+                        with self._lock:
+                            if self._state != 'FAILED':
+                                self._state, self._error = 'IDLE', None
+                                self._consecutive_failures = 0
+                        return 0
+                    self._acquire()
                 now = time.time_ns()
                 with self.connection.transaction():
                     lease = self.connection.execute('SELECT lease_until_ns,closed_ns FROM market_stream_runs WHERE run_id=?', (self.run_id,)).fetchone()
@@ -293,17 +409,19 @@ class MarketStreamWriter:
                     if committed:
                         self._last_commit = now
                     self._state, self._error = 'READY', None
-                    self._consecutive_failures = 0
+                    self._consecutive_failures = self._ownership_waits = 0
                     self._max_flush_seconds = max(self._max_flush_seconds, time.perf_counter()-started)
                     self._known_gaps = known_gaps
                     self._last_checkpoint = dict(checkpoint) if checkpoint else None
+                    drained = not self._queue and not self._gaps
+                if batch or gaps:
+                    self._active_at = time.monotonic()
+                elif (drained and self._idle_release is not None
+                        and time.monotonic() - self._active_at >= self._idle_release):
+                    self._release()
                 return committed
             except Exception as exc:
-                with self._lock:
-                    self._state = 'FAILED'
-                    self._consecutive_failures += 1
-                    self._error = str(exc) if str(exc).startswith('MARKET_') else type(exc).__name__
-                self.gap('WRITER_FAILURE')
+                self._failed(exc)
                 return 0
 
     def checkpoints(self) -> list[dict[str, Any]]:
@@ -318,6 +436,10 @@ class MarketStreamWriter:
                     'sources': sorted(self.sources), 'symbols': sorted(self.symbols),
                     'received_ns': self._last_received, 'last_commit_ns': self._last_commit,
                     'accepting': self._accepting,
+                    'ownership': 'HELD' if self.run_id is not None else 'NOT_HELD',
+                    'collecting': self.run_id is not None and state == 'READY',
+                    'idle_release_seconds': self._idle_release, 'idle_releases': self._idle_releases,
+                    'ownership_waits': self._ownership_waits, 'transient_failures': self._transient_failures,
                     'worker_alive': bool(self._thread and self._thread.is_alive()),
                     'last_checkpoint': dict(self._last_checkpoint) if self._last_checkpoint else None,
                     'received_age_seconds': (time.time_ns()-self._last_received)/1e9 if self._last_received else None,
@@ -326,7 +448,7 @@ class MarketStreamWriter:
                     'pending_gap_classes': len(self._gaps), 'known_gaps': self._known_gaps,
                     'queue_limit': self.queue_limit, 'batch_limit': self.batch_limit,
                     'max_database_bytes': self.max_database_bytes, 'max_flush_seconds': self._max_flush_seconds,
-                    'consecutive_failures': self._consecutive_failures, 'retry_limit': 6,
+                    'consecutive_failures': self._consecutive_failures, 'retry_limit': RETRY_LIMIT,
                     'coverage': 'OBSERVED_ONLY_NOT_COMPLETE', 'recovery': 'NO_PROVIDER_REPLAY',
                     'checkpoint_semantics': 'COMMITTED_WATERMARK_NOT_REPLAY_CURSOR'}
 
@@ -336,15 +458,23 @@ class MarketStreamWriter:
                 self._wake.wait(1)
                 self._wake.clear()
                 self.flush()
-                if self._state == 'FAILED':
-                    if self._consecutive_failures >= 6:
-                        self.gap('WRITER_RETRY_LIMIT_EXCEEDED')
-                        with self._lock:
-                            self._accepting = False
-                            self._error = 'WRITER_RETRY_LIMIT_EXCEEDED'
-                        self._stop.set()
-                        return
-                    self._stop.wait(min(30, 2 ** (self._consecutive_failures-1)))
+                with self._lock:
+                    state, failures, waits = self._state, self._consecutive_failures, self._ownership_waits
+                if state == 'RETRYING' and failures >= RETRY_LIMIT:
+                    self.gap('WRITER_RETRY_LIMIT_EXCEEDED')
+                    with self._lock:
+                        self._state, self._error = 'FAILED', 'WRITER_RETRY_LIMIT_EXCEEDED'
+                    state = 'FAILED'
+                if state == 'FAILED':
+                    # Not recoverable by retrying: stop accepting so the loss stays visible.
+                    with self._lock:
+                        self._accepting = False
+                    self._stop.set()
+                    return
+                if state == 'RETRYING':
+                    self._stop.wait(min(30, 2 ** (failures-1)))
+                elif state == 'WAITING_FOR_OWNERSHIP':
+                    self._stop.wait(min(30, 2 ** min(waits, 5)))  # a live owner holds the lock
                 else:
                     with self._lock:
                         if self._queue:
@@ -374,11 +504,18 @@ class MarketStreamWriter:
         deadline = time.monotonic()+5
         while self._queue and time.monotonic() < deadline:
             self.flush()
-            if self._state == 'FAILED':
+            if self._state != 'READY':
                 break
         self.flush()
         try:
-            if self._state != 'FAILED' and not self._queue and not self._gaps:
+            if self._queue or self._gaps:
+                # Unstored at shutdown. The run stays open so the next owner records the gap.
+                with self._lock:
+                    if self._state != 'FAILED':
+                        self._state, self._error = 'FAILED', 'MARKET_CAPTURE_UNPERSISTED_AT_SHUTDOWN'
+            if self.run_id is None:
+                pass  # owns nothing: no run to close
+            elif self._state != 'FAILED':
                 self.connection.execute('UPDATE market_stream_runs SET closed_ns=?,lease_until_ns=0 WHERE run_id=?', (time.time_ns(), self.run_id))
             else:
                 self.connection.execute('UPDATE market_stream_runs SET lease_until_ns=0 WHERE run_id=?', (self.run_id,))
@@ -391,6 +528,7 @@ class MarketStreamWriter:
                 pass  # An unclosed run will be diagnosed by the next valid owner.
         finally:
             self.connection.close()
+            self._owner_lock.release()
             self._closed = True
 
 
@@ -426,7 +564,9 @@ def start_persistence(data_mode: str, env: Mapping[str, str] | None = None) -> M
     with _GLOBAL_LOCK:
         if _WRITER is not None:
             raise ValueError('MARKET_CAPTURE_ALREADY_STARTED')
-        writer = MarketStreamWriter(path, sources=sources, symbols=symbols)
+        # Lazy ownership: an unsupplied process never holds the lease, and a live
+        # owner elsewhere delays capture instead of failing this process's startup.
+        writer = MarketStreamWriter(path, sources=sources, symbols=symbols, acquire=False)
         try:
             writer.start()
         except Exception:

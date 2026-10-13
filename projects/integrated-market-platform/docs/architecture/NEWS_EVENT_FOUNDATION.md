@@ -57,9 +57,13 @@ not enter opportunity detectors, research campaigns, or AI evidence automaticall
 Durable job state contains last attempt/success, next due time, failure count,
 provider state, insertion/duplicate/rejection counts and known recovery gaps.
 Leases prevent simultaneous workers claiming the same job and expire after 120
-seconds following interruption. Provider errors back off up to one day; unrelated
-providers remain schedulable. Storage/path identity is checked before acquisition
-and writing; missing or replaced storage blocks rather than creating an empty DB.
+seconds following interruption. Each source is its own job, including each RSS
+catalog feed, so a failing source backs off alone: up to one hour for an outage,
+up to one day for credentials, quota or configuration. A response that stored
+some items and rejected others is `PARTIAL`, neither a success nor a backoff.
+Storage/path identity is checked before acquisition and writing; a replaced
+store blocks, an unreadable one is retried within a bound, and neither creates
+an empty DB.
 
 Restart performs one overdue acquisition through the adapter's existing bounded
 rolling window. Finnhub/NewsAPI reuse their seven-day default search;

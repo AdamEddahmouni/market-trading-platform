@@ -2,6 +2,10 @@
 
 Plan is the default and read-only. Run requires separately approved deployment,
 schema13 migration, sources/rights and activation. No private .env is loaded.
+
+--status prints the persisted supervision evidence without taking ownership.
+--reset-restart-budget is the operator recovery for a latched restart block; it
+is refused while a supervisor owns the lease and starts nothing.
 """
 from __future__ import annotations
 import argparse
@@ -14,8 +18,12 @@ import time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT)); sys.path.insert(0,str(ROOT/'src'))
-from market_platform_foundation.news.supervision import CollectionSupervisor, collection_only_reason, require_current_schema
+from market_platform_foundation.news.supervision import (CollectionSupervisor, collection_only_reason,
+    require_current_schema, reset_restart_budget, supervision_status, LEASE_SECONDS, RESTART_LIMIT,
+    RESTART_WINDOW_SECONDS, HEALTHY_RESET_SECONDS, COOLDOWN_LIMIT)
 from market_platform_foundation.local_state.connection import LocalStateConnection
+
+OWNER_WAIT_SECONDS=LEASE_SECONDS+30  # one full lease interval of a dead owner, plus margin
 
 def storage_path(env) -> Path:
     directory=env.get('IMP_STATE_DIR','')
@@ -42,13 +50,36 @@ class OwnedProcess:
 def plan(env) -> dict:
     return {'activation_requested':False,'enabled':env.get('IMP_PF01_SUPERVISION_ENABLED')=='1',
             'collection_only_blocker':collection_only_reason(env),'services_registered':False,
-            'market_source_demand':'NOT_ACQUIRED_BY_THIS_ENTRYPOINT','restart_limit':3,
+            'market_source_demand':'NOT_ACQUIRED_BY_THIS_ENTRYPOINT','restart_limit':RESTART_LIMIT,
+            'restart_window_seconds':RESTART_WINDOW_SECONDS,'healthy_reset_seconds':HEALTHY_RESET_SECONDS,
+            'cooldown_limit':COOLDOWN_LIMIT,
             'default_action':'READ_ONLY_PLAN','execution_authority':'NONE','ai_required':False}
+
+def own(connection, spawn, *, wait=OWNER_WAIT_SECONDS, sleep=time.sleep, clock=time.monotonic) -> CollectionSupervisor:
+    """A previous supervisor that died keeps its lease for at most one interval; wait that long, no longer."""
+    deadline=clock()+wait; announced=False
+    while True:
+        try: return CollectionSupervisor(connection,spawn=spawn,env=os.environ)
+        except ValueError as exc:
+            if str(exc)!='SUPERVISOR_OWNER_ACTIVE' or clock()>=deadline: raise
+            if not announced:
+                print(json.dumps({'state':'WAITING','reason':'SUPERVISOR_OWNER_ACTIVE','wait_seconds':wait}),flush=True)
+                announced=True
+            sleep(5)
 
 def main(argv=None) -> int:
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run',action='store_true')
+    group=parser.add_mutually_exclusive_group()
+    group.add_argument('--run',action='store_true')
+    group.add_argument('--status',action='store_true')
+    group.add_argument('--reset-restart-budget',action='store_true')
     args=parser.parse_args(argv)
+    if args.status:
+        print(json.dumps(supervision_status(os.environ))); return 0
+    if args.reset_restart_budget:
+        with LocalStateConnection(storage_path(os.environ),require_existing=True) as connection:
+            print(json.dumps(reset_restart_budget(connection)))
+        return 0
     if not args.run:
         print(json.dumps(plan(os.environ))); return 0
     if os.environ.get('IMP_PF01_SUPERVISION_ENABLED')!='1': raise ValueError('SUPERVISION_DISABLED')
@@ -67,7 +98,7 @@ def main(argv=None) -> int:
                 cwd=ROOT,env=env,stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
                 text=True,creationflags=getattr(subprocess,'CREATE_NO_WINDOW',0))
             return OwnedProcess(process)
-        supervisor=CollectionSupervisor(connection,spawn=spawn,env=os.environ)
+        supervisor=own(connection,spawn)
         try:
             while True:
                 supervisor.tick()

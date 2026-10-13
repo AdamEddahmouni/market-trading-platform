@@ -40,8 +40,18 @@ whole-universe poll. `sec_filings` retains the official-filing source type.
 Providers supported by this lifecycle are exactly `finviz`, `rss`, `newsapi`,
 `finnhub`, `sec_filings`. Per-provider `IMP_NEWS_COLLECTION_<PROVIDER>_SECONDS`
 overrides must be at least 120 / 300 / 900 / 600 / 600 seconds respectively, and
-no more than 86,400 seconds. RSS shares existing per-feed caches across universes.
-No full article bodies or new social sources are acquired.
+no more than 86,400 seconds. No full article bodies or new social sources are
+acquired.
+
+Every source is its own job with its own schedule, lease, failure count and gap
+evidence. `rss` creates one job per catalog feed that belongs to a selected
+universe (job ID `rss:<feed>:<universe>`, under the first selected universe
+that lists the feed), so each feed is requested once per interval however many
+universes include it. The universes still select feeds; a single feed cannot be
+selected or excluded by name. The job ID contains the first selected universe
+that lists the feed, so reordering `IMP_NEWS_COLLECTION_UNIVERSES` starts those
+feeds as new jobs. With all ten catalog feeds, `finviz` and the three symbol
+providers selected, the 64-job bound allows 17 symbols.
 
 NewsAPI's Developer plan is development/testing only, delayed by 24 hours, and
 limited to 100 requests/day. Existing IMP guard is 90; a failed persisted quota
@@ -60,15 +70,46 @@ Paper controller. Existing unrelated startup behavior retains its own policy.
 
 Inspect `GET /provider/health` → `raw_collection`. The worker reports its actual
 thread liveness, heartbeat, scheduling state, pending count, job checkpoint and
-provider state. `BLOCKED`, `STALE`, `BACKOFF`, `PENDING`, `HEALTHY` and `PAUSED`
-must be read with their job details. A running backend with failed jobs is not
-healthy coverage. Raw status reads do not start a collector or refresh news.
+provider state. `BLOCKED`, `STALE`, `RETRYING`, `BACKOFF`, `PARTIAL`, `PENDING`,
+`HEALTHY` and `PAUSED` must be read with their job details. A running backend
+with failed jobs is not healthy coverage. Raw status reads do not start a
+collector or refresh news.
+
+`sources` counts jobs by state and `coverage` summarizes each source's last
+finished poll: `COMPLETE` only when every one fully succeeded, `PARTIAL` when
+some did, `NONE` when none did, `UNKNOWN` before any has finished. It describes
+the last poll, not how recent it was; read `last_success` for that. One failing source never changes another source's schedule.
+
+| Source result | Job state | Next poll |
+|---|---|---|
+| Complete response | `HEALTHY` | The normal interval |
+| Some items stored, some rejected or missing | `PARTIAL` (`last_success` not advanced, `rejected_total` kept) | The normal interval |
+| Unreachable, malformed or server error | `BACKOFF`, `PROVIDER_UNAVAILABLE` | Doubling from twice the interval, at most one hour |
+| Authentication failure, rate limit, missing configuration or live gate off | `BACKOFF` with the specific reason | Doubling, at most one day |
+| Adapter still fetching | `PENDING` | 5 seconds, lease kept |
+
+A response whose items were all rejected is a failure; an empty but complete
+response is `HEALTHY`. The failure class is kept when a feed that worked earlier
+starts returning a rate limit or an authentication error.
+Backoff only ever lengthens a source's interval; no source is polled more often
+than its configured interval.
+
+A storage failure is not a provider failure. If the fetched batch cannot be
+written because the database is busy or briefly unreadable, the collector keeps
+that one batch, reports `RETRYING`, makes no provider call and retries the write
+after 1, 2, 4, 8 and 16 seconds. After six consecutive failures it reports
+`BLOCKED` (`COLLECTION_STORAGE_RETRY_LIMIT_EXCEEDED`) and keeps probing every 30
+seconds. A batch whose job lease expired meanwhile is not committed; the job
+records `unpersisted_count`. A replaced store and corruption block without
+retrying and stay blocked until the process is restarted; the storage bound
+blocks until space is available.
 
 Normal backend shutdown signals stop, allows the current bounded call/transaction
 to finish, then prevents further jobs. To disable collection for subsequent
 starts, set the enable flag to zero. No new UI control or remote mutation route
 is introduced. A crashed backend requires the existing operator lifecycle to
-restart it; a durable job lease may delay recovery up to 120 seconds.
+restart it; a job that was mid-poll at the crash keeps its lease for up to 120
+seconds, and the other jobs run meanwhile.
 
 Records and progress share one SQLite transaction. A write failure never claims
 success. Duplicate records retain their first acquisition/publication clocks.

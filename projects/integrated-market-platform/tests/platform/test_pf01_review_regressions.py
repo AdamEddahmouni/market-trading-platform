@@ -78,14 +78,20 @@ class IndependentReviewRegressions(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'COLLECTION_WORKERS_BLOCKED'):
             self.run_child(None, Worker())
 
-    def test_alive_failed_writer_is_rejected_without_waiting_for_thread_exit(self):
+    def test_failed_writer_is_rejected_but_a_retrying_writer_is_not(self):
         writer = persistence.MarketStreamWriter(self.path, sources=('kraken',), symbols=('BTC/USD',))
         try:
+            writer.start()
+            # Recoverable: the writer's own bounded retry owns this, the process stays up.
             with patch.object(writer, '_storage_ok', return_value=False):
-                writer.start()
+                writer.flush()
+                self.assertEqual(writer.status()['state'], 'RETRYING')
+                self.assertTrue(writer.status()['worker_alive'])
+                self.run_child(writer, Worker())
+            # Not recoverable: a replaced store ends the process on the next check.
+            with patch.object(writer, '_storage_fault', return_value='MARKET_STORAGE_REPLACED'):
                 writer.flush()
                 self.assertEqual(writer.status()['state'], 'FAILED')
-                self.assertTrue(writer.status()['worker_alive'])
                 with self.assertRaisesRegex(ValueError, 'COLLECTION_WORKER_UNHEALTHY'):
                     self.run_child(writer, Worker())
         finally:

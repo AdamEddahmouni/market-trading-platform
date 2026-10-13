@@ -15,6 +15,24 @@ class CorruptStateError(ValueError):
     """SQLite integrity_check failed; original file is preserved."""
 
 
+# SQLite primary result codes a bounded retry can outlast: BUSY, LOCKED, IOERR, CANTOPEN, PROTOCOL.
+_TRANSIENT_SQLITE_CODES = frozenset({5, 6, 10, 14, 15})
+
+
+def transient_storage_error(exc: BaseException) -> bool:
+    """True for contention or I/O conditions that a bounded retry may outlast.
+
+    Corruption, schema, constraint, identity and disk-full failures are never transient.
+    """
+    if isinstance(exc, sqlite3.OperationalError):
+        code = getattr(exc, "sqlite_errorcode", None)
+        if code is not None:
+            return code & 0xFF in _TRANSIENT_SQLITE_CODES
+        text = str(exc).lower()
+        return any(token in text for token in ("locked", "busy", "disk i/o", "unable to open"))
+    return isinstance(exc, OSError)
+
+
 class LocalStateConnection:
     def __init__(self, path: Path, *, require_existing: bool = False,
                  expected_identity: tuple[int, int] | None = None) -> None:

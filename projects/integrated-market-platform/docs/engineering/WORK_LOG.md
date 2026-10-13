@@ -6913,3 +6913,31 @@ needs a separately approved source-demand design and provider entitlement. See
 [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md).
 No merge, deployment, canonical migration, provider request, AI call, trading
 activation or real overnight run.
+
+## 2026-10-13 — PF-01 supervision hardening
+
+Closed the five behaviours the PF-01 review left open, from `151a8c6f` in a
+fourth SSD worktree. The supervisor's lifetime three-crash budget is now three
+restarts per rolling hour with doubling backoff, a reset after 30 minutes of
+child uptime, a latch after three exhausted windows and an operator reset
+command. Database contention is retried by the worker that hit it and no longer
+ends the child or spends a restart; replaced, full or corrupt storage still
+stops at once. The market writer takes an operating-system owner lock with its
+run lease, so a restart after a crash no longer waits out the 120-second lease
+and a live owner is still never overridden. A writer with nothing to store owns
+nothing, so an idle headless process cannot block the serving backend's writer,
+and a backend that finds a live owner starts and waits instead of failing. Each
+RSS feed is its own collection job, so one failing or unconfigured feed backs
+off alone.
+
+Changed behaviour to know about: RSS job IDs are now `rss:<feed>:<universe>`;
+a writer may report `IDLE`, `RETRYING` or `WAITING_FOR_OWNERSHIP`; the state
+directory gains an empty `imp-state.sqlite3.market-writer.lock` file; the
+supervisor may report `COOLDOWN` or `STORAGE_WAIT`. No schema change.
+
+Offline only: no deployment, migration, provider request, subscription, paid
+call or trading. Headless market supply is still not implemented and no real
+overnight run has been observed. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md),
+[market persistence](../operations/PF01B_MARKET_PERSISTENCE.md) and
+[raw collection](../operations/PF01_RAW_COLLECTION.md).

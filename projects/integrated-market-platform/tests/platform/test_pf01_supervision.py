@@ -34,20 +34,24 @@ class SupervisionTests(unittest.TestCase):
         owner=self.supervisor(); owner.tick(); owner.tick()
         self.assertEqual(len(self.children),1)
         with self.assertRaisesRegex(ValueError,'OWNER_ACTIVE'): self.supervisor()
+    def run_for(self,owner,seconds,step=30):
+        for _ in range(int(seconds/step)): self.now+=step; owner.tick()
     def test_crashes_have_persistent_bounded_restart_budget(self):
         owner=self.supervisor(); owner.tick()
-        for index in range(3):
-            self.children[-1].exit=1; owner.tick()
-            if index<2:
-                owner.tick(); self.assertEqual(len(self.children),index+1)
-                self.now+=60; owner.tick(); self.now+=61; owner.tick()
-        self.assertEqual(owner.status()['state'],'BLOCKED')
+        for backoff in (120,240,480):
+            self.children[-1].exit=1; owner.tick(); spawned=len(self.children)
+            self.run_for(owner,backoff-30); self.assertEqual(len(self.children),spawned)
+            self.run_for(owner,30); self.assertEqual(len(self.children),spawned+1)
+        self.children[-1].exit=1; owner.tick()
+        self.assertEqual(owner.status()['state'],'COOLDOWN')
         self.assertEqual(owner.status()['reason'],'RESTART_LIMIT_EXCEEDED')
         exits=[e for e in owner.status()['events'] if e['reason']=='CHILD_PROCESS_EXIT_GAP_UNVERIFIED']
-        self.assertEqual([e.get('exit_code') for e in exits],[1,1,1])
-        owner.stop(); restarted=self.supervisor(); restarted.tick()
-        self.assertEqual(len(self.children),3)
-        self.assertEqual(restarted.status()['crashes'],3)
+        self.assertEqual([e.get('exit_code') for e in exits],[1,1,1,1])
+        # The budget is evidence in the store, not process memory: a new supervisor inherits it.
+        owner.stop(); restarted=self.supervisor(); self.run_for(restarted,600)
+        self.assertEqual(len(self.children),4)
+        self.assertEqual(restarted.status()['crashes'],4)
+        self.assertEqual(restarted.status()['restarts_in_window'],3)
     def test_missing_storage_stops_child_and_never_recreates_path(self):
         owner=self.supervisor(); owner.tick()
         with patch.object(Path,'stat',side_effect=FileNotFoundError): owner.tick()
@@ -60,10 +64,22 @@ class SupervisionTests(unittest.TestCase):
         self.env['IMP_PAPER_EXECUTION']='1'
         owner=self.supervisor(); owner.tick()
         self.assertEqual(self.children,[]); self.assertEqual(owner.status()['reason'],'EXECUTION_GATE_ENABLED')
-    def test_expired_lease_cannot_resume_after_sleep(self):
+    def test_lapsed_unclaimed_lease_stops_child_then_reowns_and_restarts(self):
         owner=self.supervisor(); owner.tick(); self.now+=300; owner.tick()
         self.assertTrue(self.children[-1].stopped)
+        # Unclaimed by anyone else: re-owned through the fenced write, and only a new child may run.
+        self.assertEqual(owner.status()['state'],'BACKOFF')
+        self.assertEqual(owner.status()['reason'],'SUPERVISOR_LEASE_LAPSED')
+        self.assertIn('SUPERVISION_OUTAGE_GAP_UNVERIFIED',[e['reason'] for e in owner.status()['events']])
+        self.run_for(owner,90); self.assertEqual(len(self.children),1)
+        self.run_for(owner,30); self.assertEqual(len(self.children),2)
+    def test_lease_claimed_by_another_supervisor_is_never_reacquired(self):
+        owner=self.supervisor(); owner.tick(); self.now+=300
+        replacement=self.supervisor(); owner.tick()
+        self.assertTrue(self.children[0].stopped)
+        self.assertEqual(owner.status()['state'],'BLOCKED')
         self.assertEqual(owner.status()['reason'],'OWNERSHIP_LOST')
+        self.assertEqual(replacement.status()['state'],'WAITING')
     def test_abrupt_parent_restart_records_gap_and_waits_for_child_lease(self):
         owner=self.supervisor(); owner.tick(); self.now+=121
         replacement=self.supervisor(); replacement.tick()
@@ -99,7 +115,7 @@ class HeadlessTests(unittest.TestCase):
         from market_platform_foundation.market_data import persistence
         from market_platform_foundation.news import supervision
         stop=threading.Event(); stop.set()
-        env={'IMP_NEWS_COLLECTION_ENABLED':'1','IMP_STATE_DIR':'synthetic','IMP_PERSIST_STATE':'1'}
+        env={'IMP_NEWS_COLLECTION_ENABLED':'1','IMP_NEWS_COLLECTION_PROVIDERS':'finviz','IMP_STATE_DIR':'synthetic','IMP_PERSIST_STATE':'1'}
         with patch.dict('os.environ',env,clear=True), patch.object(collection,'validate_collection_storage'), \
              patch.object(supervision,'require_current_schema'), \
              patch.object(collection,'start_collection',return_value=object()) as news, \

@@ -404,13 +404,19 @@ def collect_only(stop: threading.Event) -> None:
     acquire provider subscriptions or promise browser-independent market supply.
     """
     from market_platform_foundation.news.supervision import collection_only_reason, require_current_schema, SUPERVISION_JOB
-    from market_platform_foundation.news.collection import start_collection, validate_collection_storage, stop_collection
+    from market_platform_foundation.local_state.connection import transient_storage_error
+    from market_platform_foundation.news.collection import configured_jobs, start_collection, validate_collection_storage, stop_collection
     from market_platform_foundation.market_data.persistence import start_persistence, stop_persistence, validate_persistence_storage
     reason = collection_only_reason(os.environ)
     if reason:
         raise ValueError(reason)
     storage = None
-    if os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1': storage = validate_collection_storage(os.environ)
+    if os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1':
+        storage = validate_collection_storage(os.environ)
+        try:
+            configured_jobs(os.environ)  # an invalid selection cannot be fixed by restarting
+        except ValueError as exc:
+            raise ValueError(str(exc) if str(exc).startswith('COLLECTION_') else 'COLLECTION_INTERVAL_INVALID') from None
     if os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1': storage = validate_persistence_storage(os.environ)
     # Worker connections apply migrations on open. This entrypoint may be run
     # without the supervisor, so it refuses a store that is not already current.
@@ -422,16 +428,27 @@ def collect_only(stop: threading.Event) -> None:
         if ((os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1' and writer is None) or
                 (os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1' and collector is None)):
             raise ValueError('COLLECTION_WORKERS_BLOCKED')
+        unreadable = 0
         while not stop.wait(1):
             owner = os.environ.get('IMP_PF01_SUPERVISOR_OWNER')
             if owner:
                 connection = collector.connection if collector is not None else writer.connection
-                row = connection.execute('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
-                if row is None or row['lease_owner'] != owner or row['lease_until'] < time.time():
-                    raise ValueError('SUPERVISOR_OWNERSHIP_LOST')
+                try:
+                    row = connection.execute('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
+                except Exception as exc:
+                    # Brief contention is not lost ownership; a quarter of the parent lease is.
+                    unreadable += 1
+                    if not transient_storage_error(exc) or unreadable >= 30:
+                        raise ValueError('SUPERVISOR_LEASE_UNREADABLE') from None
+                else:
+                    unreadable = 0
+                    if row is None or row['lease_owner'] != owner or row['lease_until'] < time.time():
+                        raise ValueError('SUPERVISOR_OWNERSHIP_LOST')
             for worker in (collector, writer):
                 if worker is not None:
                     status = worker.status()
+                    # RETRYING, IDLE and WAITING_FOR_OWNERSHIP are the workers' own bounded
+                    # recovery or standby; only a worker that gave up ends the process.
                     if not status['worker_alive'] or status['state'] in {'BLOCKED','FAILED','STALE'}:
                         raise ValueError('COLLECTION_WORKER_UNHEALTHY')
     finally:
@@ -523,6 +540,14 @@ def main() -> int:
             collect_only(stop)
         except KeyboardInterrupt:
             stop.set()
+        except ValueError as exc:
+            from market_platform_foundation.news.supervision import child_exit_code
+
+            # The supervisor discards this output; the exit code tells it whether a restart can help.
+            # Only reason codes are printed; free-form exception text may quote configuration.
+            reason = str(exc) if str(exc).replace("_", "").isalnum() and str(exc).isupper() else "COLLECTION_CHILD_ERROR"
+            print(json.dumps({"event": "pf01.collect_only_exit", "reason": reason}), file=sys.stderr, flush=True)
+            return child_exit_code(reason)
         return 0
     if args.serve:
         # Before .env: records which provider settings the real environment sets (those stay read-only

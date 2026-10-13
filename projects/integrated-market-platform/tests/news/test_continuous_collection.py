@@ -132,8 +132,15 @@ class DurableCollectionTests(unittest.TestCase):
         collector = self.collector()
         with patch.object(Path, 'is_file', return_value=False):
             collector.step()
+            self.assertEqual(collector.status()['state'], 'RETRYING')
+            for _ in range(5):
+                self.now += 31
+                collector.step()
+            self.assertEqual(collector.status()['state'], 'BLOCKED')
+            self.assertEqual(collector.status()['reason'], 'COLLECTION_STORAGE_RETRY_LIMIT_EXCEEDED')
         self.assertEqual(self.calls, [])
-        self.assertEqual(collector.status()['state'], 'BLOCKED')
+        self.assertEqual(sorted(p.name for p in self.path.parent.iterdir() if not p.name.endswith(('-wal', '-shm'))),
+                         ['imp-state.sqlite3'])
 
     def test_restart_gap_is_explicit_and_only_one_catchup_attempt_runs(self):
         self.collector().step()
@@ -262,7 +269,8 @@ class DurableCollectionTests(unittest.TestCase):
         status = collector.status()['jobs'][0]
         self.assertEqual(len(self.records()), 1)
         self.assertNotIn('last_success', status)
-        self.assertEqual(status['state'], 'BACKOFF')
+        self.assertEqual(status['state'], 'PARTIAL')
+        self.assertEqual(collector.status()['coverage'], 'PARTIAL')
 
     def test_duplicate_native_identity_with_changed_headline_keeps_first_evidence(self):
         self.collector().step()

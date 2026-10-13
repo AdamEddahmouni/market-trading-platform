@@ -2,6 +2,12 @@
 
 The reserved row is control evidence, never a provider job. No scheduler/service
 registration, subscription, inference or execution dispatch lives here.
+
+Restart policy: at most RESTART_LIMIT automatic restarts per rolling
+RESTART_WINDOW_SECONDS, with doubling backoff. HEALTHY_RESET_SECONDS of
+continuous child uptime restores the allowance. COOLDOWN_LIMIT exhausted
+windows in a row, or a child that reports a configuration it cannot run, latch
+a block that only ``reset_restart_budget`` clears.
 """
 from __future__ import annotations
 import json
@@ -12,11 +18,24 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Mapping
 from uuid import uuid4
-from ..local_state.connection import LocalStateConnection
+from ..local_state.connection import LocalStateConnection, transient_storage_error
 
 SUPERVISION_JOB = '__pf01_supervision__'
 LEASE_SECONDS = 120
 RESTART_LIMIT = 3
+RESTART_WINDOW_SECONDS = 3600
+BACKOFF_CAP_SECONDS = 900
+HEALTHY_RESET_SECONDS = 1800
+COOLDOWN_LIMIT = 3
+STORAGE_GRACE_SECONDS = 900
+CHILD_EXIT_PERMANENT = 78  # the child refused its own configuration; restarting cannot help
+PERMANENT_CHILD_REASONS = frozenset({
+    'EXECUTION_GATE_ENABLED', 'REPLAY_MODE', 'DURABLE_STATE_REQUIRED', 'COLLECTION_DISABLED',
+    'APPROVED_SCHEMA_MIGRATION_REQUIRED', 'COLLECTION_ENTRYPOINT_CONFLICT',
+    'MARKET_CAPTURE_TARGETS_INVALID', 'MARKET_CAPTURE_LIMITS_INVALID',
+    'MARKET_CAPTURE_STORAGE_LIMIT_INVALID', 'MARKET_CAPTURE_REQUIRES_OBSERVATIONAL_MODE',
+    'MARKET_EXPLICIT_STATE_DIR_REQUIRED', 'COLLECTION_TARGETS_INVALID', 'COLLECTION_SYMBOLS_INVALID',
+    'COLLECTION_SYMBOLS_REQUIRED', 'COLLECTION_INTERVAL_INVALID', 'COLLECTION_TARGET_BOUND_EXCEEDED'})
 EXECUTION_GATES = ('IMP_PAPER_EXECUTION','IMP_BROKER_PAPER_EXECUTION','IMP_MOOMOO_PAPER_EXECUTION',
                    'IMP_LIVE_EXECUTION','IMP_BROKER_LIVE_EXECUTION','IMP_LIVE_INTERNAL_SIMULATION')
 
@@ -26,7 +45,9 @@ def require_current_schema(path: Path) -> None:
     try:
         with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True)) as db:
             version=db.execute('SELECT MAX(schema_version) FROM schema_meta').fetchone()[0]
-    except sqlite3.Error:
+    except sqlite3.Error as exc:
+        # A store that could not be read is not a store at the wrong schema.
+        if transient_storage_error(exc): raise ValueError('SCHEMA_CHECK_STORAGE_UNAVAILABLE') from None
         version=None
     if version != SCHEMA_VERSION: raise ValueError('APPROVED_SCHEMA_MIGRATION_REQUIRED')
 
@@ -38,13 +59,25 @@ def collection_only_reason(env: Mapping[str, str]) -> str | None:
         return 'COLLECTION_DISABLED'
     return None
 
+def child_exit_code(reason: str) -> int:
+    return CHILD_EXIT_PERMANENT if reason in PERMANENT_CHILD_REASONS else 1
+
+def _defaults(evidence: dict[str,Any]) -> dict[str,Any]:
+    """Rows written before the rolling budget carry only a lifetime crash count."""
+    for key,value in (('crashes',0),('next_start',0),('events',[]),('restarts',[]),('cooldowns',0),
+                      ('pending_restart',False),('running_since',None),('latched',None)):
+        evidence.setdefault(key,value)
+    return evidence
+
 class CollectionSupervisor:
     def __init__(self, connection: LocalStateConnection, *, spawn: Callable[[], Any],
                  env: Mapping[str,str], clock: Callable[[],float] = time.time) -> None:
         self.connection,self.spawn,self.env,self.clock = connection,spawn,env,clock
         self.owner=uuid4().hex; self.child=None; self._stopped=False
+        self._outage_since=None; self._outage_reason=None; self._outage_stopped_child=False
         stat=connection.path.stat(); self._identity=(stat.st_dev,stat.st_ino)
-        self._evidence={'state':'DISABLED','reason':None,'crashes':0,'next_start':0,'events':[]}
+        self._evidence=_defaults({'state':'DISABLED','reason':None})
+        self._saved_at=self.clock()
         if env.get('IMP_PF01_SUPERVISION_ENABLED') != '1': return
         directory=env.get('IMP_STATE_DIR','')
         if not directory or not Path(directory).is_absolute() or (Path(directory)/'imp-state.sqlite3').resolve()!=connection.path.resolve():
@@ -55,75 +88,157 @@ class CollectionSupervisor:
             row=connection.execute('SELECT * FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
             if row and row['lease_owner'] and row['lease_until']>now: raise ValueError('SUPERVISOR_OWNER_ACTIVE')
             if row:
-                self._evidence=json.loads(row['payload_json'])
+                self._evidence=_defaults(json.loads(row['payload_json']))
                 if row['lease_owner']:
                     self._event('UNCLEAN_SUPERVISOR_RESTART')
-                    self._evidence['next_start']=now+LEASE_SECONDS
-            self._evidence.update(state='WAITING',reason=None)
+                    # The orphaned child may hold its own leases for one more interval.
+                    self._evidence['next_start']=max(self._evidence['next_start'],now+LEASE_SECONDS)
+            self._evidence.update(state='WAITING',reason=None,running_since=None)
             connection.execute('INSERT OR REPLACE INTO news_collection_jobs VALUES (?,?,?,?,?)',
                 (SUPERVISION_JOB,json.dumps(self._evidence),0,self.owner,now+LEASE_SECONDS))
 
-    def _event(self, reason: str) -> None:
-        self._evidence['events']=(self._evidence.get('events',[])+[{'at':self.clock(),'reason':reason}])[-32:]
+    def _event(self, reason: str, **detail: Any) -> None:
+        self._evidence['events']=(self._evidence.get('events',[])+[{'at':self.clock(),'reason':reason,**detail}])[-32:]
 
-    def _save(self) -> None:
+    def _save(self, *, reacquire: bool = False) -> None:
         if not self._storage_ok(): raise OSError('SUPERVISOR_STORAGE_UNAVAILABLE')
+        now=self.clock()
         with self.connection.transaction():
             row=self.connection.execute('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
-            if row is None or row['lease_owner']!=self.owner or row['lease_until']<self.clock():
-                raise ValueError('OWNERSHIP_LOST')
+            if row is None or row['lease_owner']!=self.owner: raise ValueError('OWNERSHIP_LOST')
+            # A lapsed lease that nobody else claimed may only be renewed after the child is stopped.
+            if row['lease_until']<now and not reacquire: raise ValueError('LEASE_LAPSED')
             self.connection.execute('UPDATE news_collection_jobs SET payload_json=?,lease_until=? WHERE job_id=? AND lease_owner=?',
-                (json.dumps(self._evidence),self.clock()+LEASE_SECONDS,SUPERVISION_JOB,self.owner))
+                (json.dumps(self._evidence),now+LEASE_SECONDS,SUPERVISION_JOB,self.owner))
+        self._saved_at=now
+
+    def _stop_child(self) -> bool:
+        if self.child is None: return False
+        self.child.stop(); self.child=None; self._evidence['running_since']=None
+        return True
 
     def _halt(self, reason: str, state: str = 'BLOCKED') -> None:
-        if self.child is not None:
-            self.child.stop(); self.child=None
+        self._stop_child()
         self._evidence.update(state=state,reason=reason)
 
-    def _storage_ok(self) -> bool:
+    def _storage_fault(self) -> str | None:
         try:
             path=self.connection.path; stat=path.stat(); wal=Path(str(path)+'-wal')
             size=stat.st_size+(wal.stat().st_size if wal.is_file() else 0)
-            return (stat.st_dev,stat.st_ino)==self._identity and size+8*1024*1024<=512*1024*1024
-        except OSError: return False
+        except OSError: return 'STORAGE_UNAVAILABLE'  # possibly a drive that returns
+        if (stat.st_dev,stat.st_ino)!=self._identity: return 'STORAGE_REPLACED'
+        if size+8*1024*1024>512*1024*1024: return 'STORAGE_BOUND_EXCEEDED'
+        return None
+
+    def _storage_ok(self) -> bool:
+        return self._storage_fault() is None
+
+    def _outage(self, reason: str) -> None:
+        """Bounded wait. The child is stopped and nothing restarts until evidence can be written again."""
+        now=self.clock()
+        if self._outage_since is None: self._outage_since,self._outage_reason=now,reason
+        self._outage_stopped_child=self._stop_child() or self._outage_stopped_child
+        expired=now-self._outage_since>STORAGE_GRACE_SECONDS
+        self._evidence.update(state='BLOCKED' if expired else 'STORAGE_WAIT',reason=self._outage_reason)
+
+    def _failure(self, event: str, reason: str, **detail: Any) -> None:
+        """Account one unplanned child stop against the rolling restart budget."""
+        now=self.clock()
+        self._evidence['crashes']+=1
+        self._evidence['running_since']=None
+        self._event(event,**detail)
+        # A clock set backwards must not keep old restarts inside the window forever.
+        recent=[min(at,now) for at in self._evidence['restarts'] if now-min(at,now)<RESTART_WINDOW_SECONDS]
+        self._evidence.update(restarts=recent,pending_restart=True)
+        if len(recent)<RESTART_LIMIT:
+            self._evidence.update(state='BACKOFF',reason=reason,
+                next_start=now+min(BACKOFF_CAP_SECONDS,LEASE_SECONDS*2**len(recent)))
+            return
+        self._evidence['cooldowns']+=1
+        if self._evidence['cooldowns']>=COOLDOWN_LIMIT:
+            self._latch('PERSISTENT_CHILD_FAILURE')
+            return
+        self._event('RESTART_LIMIT_EXCEEDED')
+        self._evidence.update(state='COOLDOWN',reason='RESTART_LIMIT_EXCEEDED',
+            next_start=max(now+LEASE_SECONDS,recent[0]+RESTART_WINDOW_SECONDS))
+
+    def _latch(self, reason: str) -> None:
+        self._event(reason)
+        self._evidence.update(state='BLOCKED',reason=reason,latched=reason)
 
     def tick(self) -> None:
         if self._stopped: return
         if self.env.get('IMP_PF01_SUPERVISION_ENABLED') != '1':
             self._halt('SUPERVISION_DISABLED','DISABLED'); return
         if not self._storage_ok():
-            self._halt('STORAGE_UNAVAILABLE'); return
+            fault=self._storage_fault() or 'STORAGE_UNAVAILABLE'
+            if fault=='STORAGE_UNAVAILABLE': self._outage(fault)
+            else: self._halt(fault)  # a replaced or full store is an operator decision
+            return
+        now=self.clock()
         try:
-            self._save()
+            try:
+                self._save(reacquire=self._outage_since is not None)
+            except ValueError as exc:
+                if str(exc)!='LEASE_LAPSED': raise
+                # Suspend/resume or a long stall: the child may not continue on a lapsed parent lease.
+                self._outage_since,self._outage_reason=self._saved_at,'SUPERVISOR_LEASE_LAPSED'
+                self._outage_stopped_child=self._stop_child()
+                self._save(reacquire=True)
+            if self._outage_since is not None:
+                since,reason,stopped=self._outage_since,self._outage_reason,self._outage_stopped_child
+                self._outage_since=self._outage_reason=None; self._outage_stopped_child=False
+                if stopped: self._failure('SUPERVISION_OUTAGE_GAP_UNVERIFIED',reason,outage_start=since)
+                else:
+                    self._event('SUPERVISION_OUTAGE_RECOVERED',outage_start=since)
+                    if self._evidence['state'] in {'STORAGE_WAIT','BLOCKED'}: self._evidence.update(state='WAITING',reason=None)
+                self._save(); return
             reason=collection_only_reason(self.env)
             if reason: self._halt(reason); self._save(); return
-            if self._evidence['crashes']>=RESTART_LIMIT:
-                self._halt('RESTART_LIMIT_EXCEEDED'); self._save(); return
+            if self._evidence['latched']:
+                self._halt(self._evidence['latched']); self._save(); return
             if self.child is not None:
                 exit_code=self.child.poll()
-                if exit_code is None: return
-                self.child=None; self._evidence['crashes']+=1
-                self._event('CHILD_PROCESS_EXIT_GAP_UNVERIFIED')
+                if exit_code is None:
+                    since=self._evidence['running_since']
+                    if (since is not None and now-since>=HEALTHY_RESET_SECONDS
+                            and (self._evidence['restarts'] or self._evidence['cooldowns'])):
+                        self._evidence.update(restarts=[],cooldowns=0)
+                        self._event('RESTART_BUDGET_RESET_AFTER_HEALTHY_PERIOD'); self._save()
+                    return
+                self.child=None
                 # Child output is discarded; its exit code is the only durable cause evidence.
-                if isinstance(exit_code,int): self._evidence['events'][-1]['exit_code']=exit_code
-                self._evidence.update(state='BACKOFF',reason='CHILD_PROCESS_EXIT',next_start=self.clock()+LEASE_SECONDS)
-                if self._evidence['crashes']>=RESTART_LIMIT:
-                    self._evidence.update(state='BLOCKED',reason='RESTART_LIMIT_EXCEEDED')
+                detail={'exit_code':exit_code} if isinstance(exit_code,int) else {}
+                if exit_code==CHILD_EXIT_PERMANENT:
+                    self._evidence['crashes']+=1; self._evidence['running_since']=None
+                    self._event('CHILD_PROCESS_EXIT_GAP_UNVERIFIED',**detail)
+                    self._latch('CHILD_CONFIGURATION_REJECTED')
+                else: self._failure('CHILD_PROCESS_EXIT_GAP_UNVERIFIED','CHILD_PROCESS_EXIT',**detail)
                 self._save(); return
-            if self.clock()<self._evidence.get('next_start',0): return
-            self._evidence.update(state='STARTING',reason=None); self._event('CHILD_START_ATTEMPT'); self._save()
+            if now<self._evidence['next_start']: return
+            self._evidence.update(state='STARTING',reason=None); self._event('CHILD_START_ATTEMPT')
+            if self._evidence['pending_restart']:
+                self._evidence['restarts']=self._evidence['restarts']+[now]; self._evidence['pending_restart']=False
+            self._save()
             try:
                 self.child=self.spawn()
             except Exception:
-                self._evidence['crashes']+=1
-                self._evidence.update(state='BACKOFF',reason='CHILD_START_FAILED',next_start=self.clock()+LEASE_SECONDS)
-            else: self._evidence.update(state='RUNNING',reason=None)
+                self._failure('CHILD_START_FAILED','CHILD_START_FAILED')
+            else: self._evidence.update(state='RUNNING',reason=None,running_since=self.clock())
             self._save()
         except Exception as exc:
-            self._halt('OWNERSHIP_LOST' if isinstance(exc,ValueError) and str(exc)=='OWNERSHIP_LOST' else 'SUPERVISION_EVIDENCE_UNAVAILABLE')
+            if isinstance(exc,ValueError) and str(exc)=='OWNERSHIP_LOST': self._halt('OWNERSHIP_LOST')
+            # Brief contention: the lease is still valid and the child keeps its own checks.
+            elif self.child is not None and transient_storage_error(exc) and isinstance(exc,sqlite3.Error) \
+                    and now-self._saved_at<LEASE_SECONDS/2: pass
+            else: self._outage('SUPERVISION_EVIDENCE_UNAVAILABLE')
 
     def status(self) -> dict[str,Any]:
+        now=self.clock()
         return json.loads(json.dumps({**self._evidence,'restart_limit':RESTART_LIMIT,'lease_seconds':LEASE_SECONDS,
+            'restart_window_seconds':RESTART_WINDOW_SECONDS,'healthy_reset_seconds':HEALTHY_RESET_SECONDS,
+            'cooldown_limit':COOLDOWN_LIMIT,
+            'restarts_in_window':sum(now-at<RESTART_WINDOW_SECONDS for at in self._evidence['restarts']),
             'process_alive':self.child is not None and self.child.poll() is None,
             'execution_authority':'NONE','ai_required':False}))
 
@@ -139,6 +254,22 @@ class CollectionSupervisor:
             self.connection.execute('UPDATE news_collection_jobs SET payload_json=?,lease_owner=NULL,lease_until=0 WHERE job_id=? AND lease_owner=?',
                 (json.dumps(self._evidence),SUPERVISION_JOB,self.owner))
         except Exception: pass  # An expired unclosed lease remains crash evidence.
+
+
+def reset_restart_budget(connection: LocalStateConnection, *, clock: Callable[[],float] = time.time) -> dict[str,Any]:
+    """Operator recovery: clear the restart window and any latched block. Refused while a supervisor owns the row."""
+    now=clock()
+    with connection.transaction():
+        row=connection.execute('SELECT * FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
+        if row is None: raise ValueError('SUPERVISION_EVIDENCE_MISSING')
+        if row['lease_owner'] and row['lease_until']>now: raise ValueError('SUPERVISOR_OWNER_ACTIVE')
+        evidence=_defaults(json.loads(row['payload_json']))
+        evidence['events']=(evidence['events']+[{'at':now,'reason':'OPERATOR_RESTART_BUDGET_RESET',
+            'cleared':evidence['latched'] or evidence.get('reason')}])[-32:]
+        evidence.update(state='STOPPED',reason='OPERATOR_RESTART_BUDGET_RESET',restarts=[],cooldowns=0,
+                        pending_restart=False,latched=None,next_start=0,running_since=None)
+        connection.execute('UPDATE news_collection_jobs SET payload_json=? WHERE job_id=?',(json.dumps(evidence),SUPERVISION_JOB))
+    return evidence
 
 
 def supervision_status(env: Mapping[str,str] | None = None, *, clock: Callable[[],float] = time.time) -> dict[str,Any]:

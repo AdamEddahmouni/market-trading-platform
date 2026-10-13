@@ -85,24 +85,67 @@ payload is bounded by 64 MiB plus Python/container overhead. No automatic
 deletion, compaction or retention policy is introduced.
 
 Producer enqueue never waits for a database transaction. Overflow rejects the
-new incoming record and marks an observed gap. A failed transaction retains its
-batch for bounded retries, leaves checkpoints unchanged and reports `FAILED`.
-Retries wait one second after failure. SQLite writer busy timeout is 250 ms.
-Disk disappearance/replacement or ceiling exhaustion refuses writes without
-creating another database. Pending gaps remain visible in memory until durable
-storage is available; they cannot be promised durable during a storage outage.
+new incoming record and marks an observed gap. A failed transaction rolls back,
+retains its batch and leaves checkpoints unchanged. SQLite writer busy timeout
+is 250 ms. Pending gaps remain visible in memory until durable storage is
+available; they cannot be promised durable during a storage outage.
 
-One durable writer owns a 120-second lease. Concurrent owners are refused.
-The worker renews its heartbeat even when idle. After an expired unclosed lease,
-a new owner records `UNCLEAN_RESTART_NO_REPLAY`; clean downtime is still marked
-unverified. The first run has unknown initial coverage. Provider disconnects,
-sequence anomalies, invalid books, ingress rejection and overflow remain visible.
-No provider replay/backfill is attempted. An expired owner fails closed and
-requires a valid restart; a reconnect alone does not establish complete coverage.
+Failures are classified:
+
+| Failure | State | Handling |
+|---|---|---|
+| Database busy or locked, I/O error, store briefly unreadable | `RETRYING` | Same batch retried after 1, 2, 4, 8, 16 s. The sixth consecutive failure is `FAILED` with `WRITER_RETRY_LIMIT_EXCEEDED` |
+| Run lease lost | `RETRYING` | The run is abandoned and never written again. Ownership is re-acquired through the normal path, which records the abandoned run as `UNCLEAN_RESTART_NO_REPLAY` |
+| Store replaced, ceiling reached, disk full, corruption, constraint failure | `FAILED` | Not retried. The worker stops accepting and records `WRITER_FAILURE` |
+| A live writer in another process holds ownership | `WAITING_FOR_OWNERSHIP` | Retried every 2 to 30 s without limit; the bounded queue applies meanwhile |
+
+A retry that later succeeds stores every record once (record IDs are
+idempotent) and writes no loss gap, because nothing was lost. Records rejected
+because the queue filled during the wait are counted in `QUEUE_OVERFLOW`. No
+failure creates another database.
+
+### Ownership
+
+At most one writer owns the store. Ownership is two things held together: an
+exclusive operating-system lock on the sidecar file
+`imp-state.sqlite3.market-writer.lock`, and an open row in `market_stream_runs`
+with a 120-second lease renewed on every flush. The file is empty and is created
+only beside an existing database.
+
+- The lock is released by the operating system when its process ends. A new
+  writer that obtains the lock therefore knows any run still open belongs to a
+  dead process, closes it with `UNCLEAN_RESTART_NO_REPLAY` and proceeds at
+  once, even if that run's lease has not expired. A backend restarted seconds
+  after a crash no longer waits out the lease.
+- While another process holds the lock, ownership is refused whatever the lease
+  says. A stalled but living owner is never overridden.
+- Every flush re-reads its own run inside the write transaction and refuses to
+  commit if the run was closed or its lease lapsed, so two writers cannot both
+  store records even if the lock were bypassed.
+- A writer started by the backend or the headless entry point owns nothing until
+  it has an observation or a gap to store (`state: IDLE`,
+  `ownership: NOT_HELD`). After 120 seconds with nothing to store it closes its
+  run cleanly and releases the lock; the next observation re-acquires. Clean
+  downtime between runs is still marked `CAPTURE_DOWNTIME_UNVERIFIED`.
+- A backend that starts while another process owns the writer starts normally.
+  Its writer reports `WAITING_FOR_OWNERSHIP` with
+  `error: MARKET_CAPTURE_OWNER_ACTIVE` and `collecting: false`, and takes over
+  automatically when the owner stops.
+
+A lock call that fails for any reason other than contention is a storage
+fault and takes the bounded retry path; it is not reported as a live owner.
+Each idle release and re-acquisition adds one run row and one downtime gap row,
+so very sparse supply grows those two tables by at most one pair per 120
+seconds. All writer processes on one store must run this source. The first run has
+unknown initial coverage. Provider disconnects, sequence anomalies, invalid
+books, ingress rejection and overflow remain visible. No provider replay or
+backfill is attempted; a reconnect alone does not establish complete coverage.
 
 Shutdown stops accepting records, joins the owned worker with a bounded wait and
 drains pending batches for up to five seconds. A failed/incomplete drain leaves
-the run unclosed for recovery diagnosis. Startup exceptions close resources owned
+the run unclosed for recovery diagnosis, and records still queued by a writer
+that never obtained ownership are reported as
+`MARKET_CAPTURE_UNPERSISTED_AT_SHUTDOWN`. Startup exceptions close resources owned
 by that startup. Abrupt process exit loses uncommitted queue contents; restart
 evidence marks this uncertainty rather than fabricating those observations.
 
@@ -111,7 +154,9 @@ evidence marks this uncertainty rather than fabricating those observations.
 The existing authenticated `/provider/health` payload contains
 `market_persistence`: state, selected targets, receipt/commit clocks, last durable
 checkpoint, queue backlog/peak, rejection/dedupe counts, known/pending gap classes,
-limits, write duration and explicit `OBSERVED_ONLY_NOT_COMPLETE` coverage.
+limits, write duration and explicit `OBSERVED_ONLY_NOT_COMPLETE` coverage. It
+also reports `ownership`, `collecting`, `transient_failures`, `ownership_waits`
+and `idle_releases`.
 Received and committed data are separate. No second dashboard, start route,
 provider control or credential output is added.
 
