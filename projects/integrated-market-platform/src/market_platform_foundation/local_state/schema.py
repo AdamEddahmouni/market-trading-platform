@@ -2,10 +2,57 @@
 
 from __future__ import annotations
 
-SCHEMA_VERSION = 11
+SCHEMA_VERSION = 13
 PAPER_EVENT_SCHEMA_VERSION = 1
 LAYOUT_SCHEMA_VERSION = 1
 RECENT_INSTRUMENT_LIMIT = 24
+
+MARKET_STREAM_V13: tuple[str, ...] = (
+    """CREATE TABLE market_stream_records (
+        record_id TEXT PRIMARY KEY, provider TEXT NOT NULL, symbol TEXT NOT NULL,
+        capability TEXT NOT NULL, event_ns INTEGER, provider_ns INTEGER,
+        received_ns INTEGER NOT NULL, normalized_ns INTEGER, persisted_ns INTEGER NOT NULL,
+        source_identity TEXT NOT NULL, payload_json TEXT NOT NULL
+    )""",
+    "CREATE INDEX market_stream_history ON market_stream_records(provider,symbol,capability,event_ns,received_ns)",
+    """CREATE TABLE market_stream_checkpoints (
+        stream_id TEXT PRIMARY KEY, event_ns INTEGER, received_ns INTEGER NOT NULL,
+        commit_ns INTEGER NOT NULL, last_record_id TEXT NOT NULL
+    )""",
+    """CREATE TABLE market_stream_runs (
+        run_id TEXT PRIMARY KEY, started_ns INTEGER NOT NULL, heartbeat_ns INTEGER NOT NULL,
+        lease_until_ns INTEGER NOT NULL, closed_ns INTEGER
+    )""",
+    """CREATE TABLE market_stream_gaps (
+        run_id TEXT NOT NULL, stream_id TEXT NOT NULL, reason TEXT NOT NULL,
+        start_ns INTEGER NOT NULL, end_ns INTEGER NOT NULL, observations INTEGER NOT NULL,
+        PRIMARY KEY(run_id,stream_id,reason)
+    )""",
+)
+
+NEWS_COLLECTION_V12: tuple[str, ...] = (
+    """
+    CREATE TABLE news_collection_records (
+        record_id TEXT PRIMARY KEY,
+        provider_id TEXT NOT NULL,
+        source_id TEXT NOT NULL,
+        published_time TEXT NOT NULL,
+        retrieved_time TEXT NOT NULL,
+        ingested_time REAL NOT NULL,
+        payload_json TEXT NOT NULL
+    )
+    """,
+    "CREATE INDEX news_collection_retrieved ON news_collection_records(retrieved_time)",
+    """
+    CREATE TABLE news_collection_jobs (
+        job_id TEXT PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        next_due REAL NOT NULL,
+        lease_owner TEXT,
+        lease_until REAL NOT NULL DEFAULT 0
+    )
+    """,
+)
 
 WORKSPACE_INVESTIGATIONS_V10: tuple[str, ...] = (
     """

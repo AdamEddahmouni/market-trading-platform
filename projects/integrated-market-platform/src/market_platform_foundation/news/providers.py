@@ -55,6 +55,8 @@ def _default_get(
 
 
 def _network_error(exc: BaseException) -> str:
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"HTTP_{exc.code}"
     if isinstance(exc, (urllib.error.URLError, http.client.HTTPException, OSError)):
         return "NETWORK_ERROR"
     return "PROVIDER_ERROR"

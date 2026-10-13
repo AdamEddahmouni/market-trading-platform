@@ -6771,6 +6771,33 @@ failures/errors); final incremental checks cover these subsequent corrections.
 The 514-second checkpoint crossed the stored severe performance-regression
 threshold; this sprint does not claim workstation performance qualification.
 
+# 2026-10-12 — PF-01 isolated raw collection implementation
+
+Recovered the Samsung SSD baseline and verified that locally accepted
+`b4743f68c4f213358dacb6207572a12079602b00` contains the autonomous Paper branch.
+The serving non-Git source copy remains at that older Paper implementation;
+unfinished spending-authorization and Screener/launcher worktrees are preserved.
+
+Added opt-in raw collection through existing S11 adapters/cache and local_state
+SQLite, without AI, sentiment, opportunity detection or trading dispatch.
+Schema v12 adds immutable raw article receipts and transactional job progress.
+Bounded jobs, restart leases, backoff, explicit downtime gaps, storage refusal
+and evidence-based status extend the existing backend lifecycle. NewsAPI quota
+persistence fails closed; raised HTTP errors retain their status classification.
+
+Final isolated FULL passed 8,786 tests with 59 classified skips, zero failures
+and zero errors. The selected existing-news/PF-01 regression passed all 94 tests.
+Three stale schema-version assertions were advanced to v12 with prior-table
+checks preserved. Separate read-only review findings about pending leases,
+backoff and initial gaps were reproduced and corrected before final validation.
+
+Focused regressions retain the initial missing-path failure and the duplicate /
+HTTP-429 reproductions. Verification uses disposable databases and preserved SSD
+Python dependencies; no normal-state migration, provider probe, deployment,
+OS registration, Paper activation or order is performed. Actual overnight,
+entitlement, complete market capture and physical SSD remount remain separate
+acceptance gaps. See [PF-01 operation](../operations/PF01_RAW_COLLECTION.md).
+
 # 2026-10-10 — Portable sprint recovery and replay startup closure
 
 Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
@@ -6849,3 +6876,40 @@ and the complete 1,427-test UI suite passed during recovery. Exact final
 CHANGED/FULL, independent review, paired timings, protected integration and
 portable runtime acceptance require their own final receipts; the earlier
 2,880-test checkpoint and provisional speedups do not establish acceptance.
+
+## 2026-10-12 — PF-01B isolated market-stream persistence
+
+Continued accepted base with all 15 verified PF-01 news files in a separate SSD
+worktree. Added default-off, bounded SQLite capture at existing moomoo/current-bar
+and Kraken selected-pair boundaries, immutable revisions, committed watermarks,
+writer leases, gap evidence and existing provider-health projection. Schema 13
+retains news schema 12 and all earlier state. Fixed failed-begin lock release and
+failed-commit rollback in the shared transaction helper, with offline regressions.
+See the [operating contract](../operations/PF01B_MARKET_PERSISTENCE.md) and task
+PF-01B evidence report for exact final commands/results. No merge, deployment,
+production migration, provider activation, AI call or trading activation.
+
+## 2026-10-13 — PF-01 integration hardening and collection supervision
+
+Continued the combined PF-01A/PF-01B tree in a third SSD worktree. Added a
+default-off headless `--collect-only` entry point and a bounded-restart
+supervisor (`tools/platform/pf01_supervisor.py`, plan-only unless `--run`) that
+keeps durable lease, crash and exit-code evidence and registers no task or
+service. Neither entry point migrates a store; both refuse one that is not at
+the current schema.
+
+Corrected lifecycle and evidence defects found by reproduction and independent
+review: a second writer worker on repeated start, news shutdown reported paused
+with a live worker, undercounted overflow rejections, malformed selected Kraken
+trades without gap evidence (including targets selected by provider symbol),
+news writes after lease expiry, a news startup race that could recreate a
+missing store, unclosed read-only supervisor connections, repeated bar windows
+overflowing the writer queue, and gap hooks firing for unselected sources.
+`run_ui_api.main` selects the headless path only for an explicit flag.
+
+The headless process acquires no market subscriptions, so it does not supply the
+market writer; continuous headless market capture remains unimplemented and
+needs a separately approved source-demand design and provider entitlement. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md).
+No merge, deployment, canonical migration, provider request, AI call, trading
+activation or real overnight run.

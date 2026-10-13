@@ -27,6 +27,7 @@ authenticates orders.
 from __future__ import annotations
 
 import json
+import math
 import random
 import threading
 import time
@@ -284,6 +285,11 @@ class KrakenStreamRuntime:
         self._wait(delay * (0.8 + 0.4 * self._jitter()))
 
     def _disconnect(self, state: str, *, error: str | None = None) -> None:
+        from ..market_data.persistence import active_writer
+
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources and self._connection is not None:
+            writer.gap('KRAKEN_DISCONNECT_NO_REPLAY')
         with self._lock:
             self.state.flow_history.interrupt(self._now_ns())
             connection, self._connection = self._connection, None
@@ -409,8 +415,10 @@ class KrakenStreamRuntime:
             try:
                 price, qty = float(item["price"]), float(item["qty"])
             except (KeyError, TypeError, ValueError):
+                self._invalid_trade_gap(instrument, item.get("symbol"), received_ns)
                 continue
-            if event_ns is None or price <= 0 or qty <= 0 or not isinstance(item.get("trade_id"), int):
+            if event_ns is None or not math.isfinite(price) or not math.isfinite(qty) or price <= 0 or qty <= 0 or type(item.get("trade_id")) is not int:
+                self._invalid_trade_gap(instrument, item.get("symbol"), received_ns)
                 continue
             row = {
                 "trade_id": str(item["trade_id"]), "event_time_ns": event_ns, "available_time_ns": received_ns,
@@ -421,10 +429,26 @@ class KrakenStreamRuntime:
             }
             self.state.flow_history.append(instrument, row)
             self._trades.setdefault(instrument, deque(maxlen=self.max_trades)).append(row)
+            from ..market_data.persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None:
+                writer.submit({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': item['symbol'],
+                               'capability': TRADES, 'sequence': item['trade_id'],
+                               'clocks': {'event_time_ns': event_ns, 'provider_time_ns': None, 'received_time_ns': received_ns},
+                               'raw_payload': dict(item), 'market_session': 'CONTINUOUS'})
+
+    def _invalid_trade_gap(self, instrument: str, symbol: Any, received_ns: int) -> None:
+        from ..market_data.persistence import active_writer
+        writer = active_writer()
+        # Targets may be selected by canonical instrument or provider symbol, exactly as submit() accepts.
+        if writer is not None and writer.selects({'provider': PROVIDER, 'instrument_id': instrument,
+                                                  'provider_symbol': symbol}):
+            writer.gap('INVALID_OBSERVATION', stream=f'{PROVIDER}:{instrument}:{TRADES}', received_ns=received_ns)
 
     def _handle_book(self, message: dict[str, Any], received_ns: int) -> None:
         kind = message.get("type")
-        for item in message.get("data") or []:
+        for message_index, item in enumerate(message.get("data") or []):
             if not isinstance(item, dict):
                 continue
             symbol = item.get("symbol")
@@ -444,6 +468,21 @@ class KrakenStreamRuntime:
                 ok = book.apply_update(item, received_ns=received_ns)
             else:
                 continue
+            from ..market_data.persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None:
+                if ok:
+                    writer.submit({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': symbol,
+                                   'capability': BOOK, 'sequence': None,
+                                   'clocks': {'event_time_ns': iso_ns(item.get('timestamp')), 'provider_time_ns': None,
+                                              'received_time_ns': received_ns}, 'raw_payload': dict(item),
+                                   'message_type': kind, 'message_index': message_index,
+                                   'subscription_id': f'kraken:{self.lifecycle.connected_ns}:{symbol}',
+                                   'market_session': 'CONTINUOUS'}, {'checksum': 'VALID'})
+                elif writer.selects({'provider': PROVIDER, 'instrument_id': instrument, 'provider_symbol': symbol}):
+                    writer.gap('KRAKEN_BOOK_INVALID_REQUIRES_SNAPSHOT', stream=f'KRAKEN:{instrument}:CRYPTO_BOOK',
+                               received_ns=received_ns)
             if not ok and instrument not in self._resync_due:
                 # Rate-limited so a persistent integrity fault cannot spin the connection.
                 last = self._resync_last.get(instrument)

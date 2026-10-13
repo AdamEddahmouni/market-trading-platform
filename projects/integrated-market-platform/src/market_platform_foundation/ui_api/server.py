@@ -223,7 +223,16 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         try:
             if path == "/provider/health":
-                self._send_json(live_projections.build_provider_health_payload(self.store))
+                from ..news.collection import collection_status
+
+                health = live_projections.build_provider_health_payload(self.store)
+                health["raw_collection"] = collection_status()
+                from ..market_data.persistence import persistence_status
+
+                health["market_persistence"] = persistence_status()
+                from ..news.supervision import supervision_status
+                health["collection_supervision"] = supervision_status()
+                self._send_json(health)
                 return
             if path == "/provider/finviz/health":
                 from .discovery_projections import build_finviz_diagnostics_payload

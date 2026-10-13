@@ -369,15 +369,74 @@ def _install_process_diagnostics() -> None:
 
 
 def serve(*, host: str, port: int) -> None:
+    from market_platform_foundation.news.collection import start_collection, stop_collection, validate_collection_storage
+    from market_platform_foundation.market_data.persistence import start_persistence, stop_persistence, validate_persistence_storage
+
     os.environ.setdefault("IMP_PERSIST_STATE", "1")
     _install_process_diagnostics()
+    if os.environ.get("IMP_NEWS_COLLECTION_ENABLED") == "1":
+        validate_collection_storage(os.environ)
+    if os.environ.get("IMP_MARKET_PERSISTENCE_ENABLED") == "1":
+        validate_persistence_storage(os.environ)
     store = _load_store()
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
-    start_screener_warmup(store=store)
-    print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
-    server.serve_forever()
+    writer = collector = None
+    try:
+        writer = start_persistence(store.data_mode)
+        start_screener_warmup(store=store)
+        print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
+        collector = start_collection(store.data_mode)
+        server.serve_forever()
+    finally:
+        if collector is not None:
+            stop_collection()
+        if writer is not None:
+            stop_persistence()
+        server.server_close()
+
+
+def collect_only(stop: threading.Event) -> None:
+    """Headless raw workers; no store, frontend, Paper recovery or AI warmup.
+
+    Market writer remains a sink for existing ingress. This entrypoint does not
+    acquire provider subscriptions or promise browser-independent market supply.
+    """
+    from market_platform_foundation.news.supervision import collection_only_reason, require_current_schema, SUPERVISION_JOB
+    from market_platform_foundation.news.collection import start_collection, validate_collection_storage, stop_collection
+    from market_platform_foundation.market_data.persistence import start_persistence, stop_persistence, validate_persistence_storage
+    reason = collection_only_reason(os.environ)
+    if reason:
+        raise ValueError(reason)
+    storage = None
+    if os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1': storage = validate_collection_storage(os.environ)
+    if os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1': storage = validate_persistence_storage(os.environ)
+    # Worker connections apply migrations on open. This entrypoint may be run
+    # without the supervisor, so it refuses a store that is not already current.
+    require_current_schema(storage)
+    writer = collector = None
+    try:
+        writer = start_persistence('LIVE_OBSERVATIONAL')
+        collector = start_collection('LIVE_OBSERVATIONAL')
+        if ((os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1' and writer is None) or
+                (os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1' and collector is None)):
+            raise ValueError('COLLECTION_WORKERS_BLOCKED')
+        while not stop.wait(1):
+            owner = os.environ.get('IMP_PF01_SUPERVISOR_OWNER')
+            if owner:
+                connection = collector.connection if collector is not None else writer.connection
+                row = connection.execute('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
+                if row is None or row['lease_owner'] != owner or row['lease_until'] < time.time():
+                    raise ValueError('SUPERVISOR_OWNERSHIP_LOST')
+            for worker in (collector, writer):
+                if worker is not None:
+                    status = worker.status()
+                    if not status['worker_alive'] or status['state'] in {'BLOCKED','FAILED','STALE'}:
+                        raise ValueError('COLLECTION_WORKER_UNHEALTHY')
+    finally:
+        if collector is not None: stop_collection()
+        if writer is not None: stop_persistence()
 
 
 def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:
@@ -442,6 +501,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", help="Build acceptance evidence to directory")
     parser.add_argument("--serve", action="store_true", help="Start read-only HTTP API")
+    parser.add_argument("--collect-only", action="store_true", help="Explicit headless raw collection; no trading/AI startup")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8766)
     return parser.parse_args()
@@ -449,6 +509,21 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
+    # Strict identity: callers that stub parse_args must never enter the headless path by accident.
+    if getattr(args, 'collect_only', False) is True:
+        if args.serve:
+            raise ValueError('COLLECTION_ENTRYPOINT_CONFLICT')
+        stop = threading.Event()
+        def input_stop() -> None:
+            # Parent pipe closure also prevents an orphan continuing unattended.
+            sys.stdin.readline()
+            stop.set()
+        threading.Thread(target=input_stop, name='pf01-parent-stop', daemon=True).start()
+        try:
+            collect_only(stop)
+        except KeyboardInterrupt:
+            stop.set()
+        return 0
     if args.serve:
         # Before .env: records which provider settings the real environment sets (those stay read-only
         # in Setup), then applies the private provider file the Setup panel and CLI write.

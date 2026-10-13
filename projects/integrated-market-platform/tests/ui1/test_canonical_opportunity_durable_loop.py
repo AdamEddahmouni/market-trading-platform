@@ -122,8 +122,8 @@ class CanonicalOpportunityDurableLoopTests(unittest.TestCase):
     def test_schema_v11_workspace_investigation_tables(self) -> None:
         local = open_local_state(force=True)
         assert local is not None
-        self.assertEqual(SCHEMA_VERSION, 11)
-        self.assertEqual(local.connection.schema_version(), 11)
+        self.assertEqual(SCHEMA_VERSION, 13)
+        self.assertEqual(local.connection.schema_version(), SCHEMA_VERSION)
         tables = {
             str(row[0])
             for row in local.connection.execute(

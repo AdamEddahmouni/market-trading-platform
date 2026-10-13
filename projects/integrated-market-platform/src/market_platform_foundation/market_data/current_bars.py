@@ -336,6 +336,16 @@ class CurrentBarsService:
                     result = (received, [], None, str(reason or "MOOMOO_PROTOCOL_ERROR"))
                 else:
                     complete, forming, _rejected = normalize_vendor_1m(rows, as_of_ns=received)
+                    from .persistence import active_writer
+
+                    writer = active_writer()
+                    if writer is not None:
+                        symbol = instrument_id.strip().upper()
+                        writer.submit_bars(symbol, complete, received)
+                        if _rejected and writer.selects({'provider': 'MOOMOO_OPEND', 'instrument_id': symbol,
+                                                         'provider_symbol': code}):
+                            writer.gap('BAR_NORMALIZATION_REJECTED', stream=f'MOOMOO_OPEND:{symbol}:CURRENT_BAR_1M',
+                                       received_ns=received)
                     result = (received, complete, forming, None)
             self._cache[instrument_id] = (self._monotonic(), *result)
             return result

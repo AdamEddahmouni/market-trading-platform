@@ -16,17 +16,27 @@ class CorruptStateError(ValueError):
 
 
 class LocalStateConnection:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, require_existing: bool = False,
+                 expected_identity: tuple[int, int] | None = None) -> None:
         self.path = path
         self._lock = threading.RLock()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if require_existing:
+            if not self.path.is_file():
+                raise FileNotFoundError("STATE_STORAGE_MISSING")
+        else:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(
-            str(self.path),
+            self.path.resolve().as_uri() + "?mode=rw" if require_existing else str(self.path),
+            uri=require_existing,
             check_same_thread=False,
             isolation_level=None,
         )
         self._conn.row_factory = sqlite3.Row
         try:
+            if expected_identity is not None:
+                stat = self.path.stat()
+                if (stat.st_dev, stat.st_ino) != expected_identity:
+                    raise FileNotFoundError('STATE_STORAGE_REPLACED')
             self._configure()
             self._verify_or_raise()
             apply_migrations(self._conn)
@@ -101,13 +111,22 @@ class StateTransaction:
 
     def __enter__(self) -> LocalStateConnection:
         self.connection._lock.acquire()
-        self.connection._conn.execute("BEGIN IMMEDIATE")
+        try:
+            self.connection._conn.execute("BEGIN IMMEDIATE")
+        except Exception:
+            self.connection._lock.release()
+            raise
         return self.connection
 
     def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
         try:
             if exc_type is None:
-                self.connection._conn.execute("COMMIT")
+                try:
+                    self.connection._conn.execute("COMMIT")
+                except Exception:
+                    if self.connection._conn.in_transaction:
+                        self.connection._conn.execute("ROLLBACK")
+                    raise
             else:
                 self.connection._conn.execute("ROLLBACK")
         finally:
