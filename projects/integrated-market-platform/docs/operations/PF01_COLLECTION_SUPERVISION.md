@@ -304,7 +304,11 @@ supply, the writer's queue and provider state are reported separately in
 ## Stop and recovery
 
 Stop the foreground supervisor with Ctrl-C. It writes `stop` to the child's
-stdin, waits up to 15 seconds, then terminates only that child. Closing the
+stdin, waits up to the child's own summed stop bound (59.25 seconds), then
+terminates only that child and exits 1 with
+`OPERATOR_STOP_CHILD_EXIT_UNVERIFIED`. `--preflight` reports the operational
+prerequisites read-only before a run; both are described in
+[PF01G_RELEASE_CANDIDATE.md](PF01G_RELEASE_CANDIDATE.md). Closing the
 parent's pipe also stops the child, so an orphan cannot continue unattended.
 A blocked or disabled state keeps its original reason when the lease is released.
 

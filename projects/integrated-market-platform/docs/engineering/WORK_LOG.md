@@ -7029,3 +7029,35 @@ unclassified `tools/market_data_capacity.py`; it is now classified with the
 other operations tooling.
 Remaining limits are stated in PF01B_MARKET_PERSISTENCE.md. Synthetic
 transports only; no provider, subscription, migration, deployment or trading.
+
+## 2026-10-13 — PF-01G release candidate hardening
+
+Continued from PF-01F 512d0fac. The supervisor's fixed 15 s stop wait was
+shorter than the child's own bounded stop stages; it is now derived from those
+stage constants (59.25 s, below the 120 s lease), with a repeated OpenD stop, an
+unbounded stalled-reconcile lock wait and an uninterruptible reconnect backoff
+removed. An independent review of the last PF-01F corrections found no high
+finding; its medium and low findings (unacknowledged Kraken subscribe closed as
+acknowledged, CLI exit code after an unverified stop, missing exit code
+accepted) are corrected with regressions.
+
+The intermittent real-process supervision test was a product defect: a fetch
+on the shared SQLite connection outside its lock overwrote the result code of
+another thread's failing BEGIN IMMEDIATE, so a busy store was reported as
+"not an error", classified unrecoverable and ended the child. Status and lease
+reads now fetch inside the lock, a transaction that did not start raises, and a
+lost code is retried within the existing bound.
+
+Added a read-only `pf01_supervisor.py --preflight` (READY, BLOCKED, UNKNOWN,
+NOT VERIFIED) that contacts no provider and starts nothing, capacity readiness
+profiles, provider prerequisites and the attended sequence in
+PF01G_RELEASE_CANDIDATE.md. Synthetic transports and disposable stores only; no
+provider, subscription, canonical migration, deployment or trading.
+
+A final independent review (accept with fixes, no high finding) led to: an
+interrupt during an in-loop child stop keeps the child handle and is recorded
+as unverified instead of a clean operator stop; a news worker that outlives
+its join ends the child non-zero; the preflight validates the stored market
+selection, requires real hashes in the release manifest, separates UNKNOWN
+(unreadable, exit 2) from NOT VERIFIED (operator evidence, exit 3) and lists
+what it does not inspect.

@@ -263,8 +263,7 @@ The writer's `capacity` warning reports `UNAVAILABLE` with
 fail the status call the child polls.
 
 Known limits: the final supply evidence row is best-effort (0.25 s busy
-timeout) and may be missing while the gap row and exit code remain; and the
-worst-case sum of the bounded stop waits (reconcile join 10 s, Kraken receiver
-join 5 s and drain 5 s, OpenD up to 11 s, final writer drain) can exceed the
-supervisor's 15 s stop wait, in which case the child is terminated and the stop
-is recorded as unverified rather than drained.
+timeout) and may be missing while the gap row and exit code remain. The
+supervisor's stop wait is now the sum of these bounded stop waits (59.25 s, see
+[PF01G_RELEASE_CANDIDATE.md](PF01G_RELEASE_CANDIDATE.md)); a child that still
+exceeds it is terminated and the stop is recorded as unverified, not drained.
