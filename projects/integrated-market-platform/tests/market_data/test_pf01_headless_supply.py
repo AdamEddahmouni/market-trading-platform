@@ -145,6 +145,11 @@ class ConfigurationTests(unittest.TestCase):
                         'moomoo:AAPL@US_EQUITY_L1,moomoo:AAPL@US_EQUITY_TICKS'):
             self.assertEqual(self.reason(IMP_MARKET_SUPPLY_TARGETS=targets), 'MARKET_SUPPLY_TARGETS_INVALID', targets)
 
+    def test_dotted_ticker_the_feed_would_store_under_another_name_is_refused(self):
+        # The feed keeps only the last segment of US.BRK.B, so the stream would be subscribed and never stored.
+        self.assertEqual(self.reason(IMP_MARKET_PERSISTENCE_SYMBOLS='BRK.B', IMP_MARKET_SUPPLY_TARGETS='moomoo:BRK.B@US_EQUITY_L1'),
+                         'MARKET_SUPPLY_TARGETS_INVALID')
+
     def test_target_bound_is_the_writer_selection_bound(self):
         symbols = [f'S{index}' for index in range(21)]
         targets = ','.join(f'moomoo:{symbol}@US_EQUITY_L1' for symbol in symbols)
@@ -159,8 +164,11 @@ class ConfigurationTests(unittest.TestCase):
     def test_provider_live_gates_are_required_and_other_feeds_conflict(self):
         for change in ({'IMP_MOOMOO_LIVE': '0'}, {'IMP_LIVE_OBSERVATIONAL': '0'}, {'IMP_CRYPTO_LIVE': '0'}):
             self.assertEqual(self.reason(**change), 'MARKET_SUPPLY_PROVIDER_GATE_CLOSED', change)
-        for change in ({'IMP_IBKR_LIVE': '1'}, {'IMP_OBSERVATIONAL_PROVIDER': 'ibkr'}, {'IMP_SHADOW_RECORDING': 'true'}):
+        for change in ({'IMP_IBKR_LIVE': '1'}, {'IMP_OBSERVATIONAL_PROVIDER': 'ibkr'}, {'IMP_SHADOW_RECORDING': 'true'},
+                       # No OpenD feed would start, or a fixture file would be replayed into the store.
+                       {'IMP_OBSERVATIONAL_PROVIDER': 'none'}, {'IMP_LIVE_FIXTURE_FEED': 'fixture.jsonl'}):
             self.assertEqual(self.reason(**change), 'MARKET_SUPPLY_PROVIDER_CONFLICT', change)
+        self.assertEqual(len(validate_supply({**BASE, 'IMP_OBSERVATIONAL_PROVIDER': 'Auto'})), 2)
         # A Kraken-only selection needs neither OpenD gate.
         kraken = {**BASE, 'IMP_MOOMOO_LIVE': '0', 'IMP_LIVE_OBSERVATIONAL': '0',
                   'IMP_MARKET_SUPPLY_TARGETS': f'kraken:{BTC}@CRYPTO_TRADES'}
@@ -212,6 +220,77 @@ class LifecycleTests(SupplyCase):
         supply.step()
         self.assertEqual(moomoo.requests, [('AAPL', 'US_EQUITY_L1')])
         self.assertEqual(self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_TICKS')], ('BLOCKED', 'ENTITLEMENT_NOT_VERIFIED'))
+
+    def test_source_with_nothing_verified_opens_no_provider_session(self):
+        blocked = {name: 'ENTITLEMENT_PROBE_STALE' for name in ('US_EQUITY_L1', 'US_EQUITY_TICKS')}
+        moomoo = StubProvider(entitlement=blocked)
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        supply.step()
+        supply.step()
+        self.assertEqual((moomoo.opened, moomoo.requests), (0, []))
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
+        self.assertEqual(supply.status()['providers']['moomoo']['connection'], 'NOT_OPENED')
+
+    def test_request_that_fails_part_way_is_still_released(self):
+        moomoo = StubProvider()
+        moomoo.fail = True
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        supply.step()
+        supply.stop()
+        self.assertEqual(sorted(moomoo.releases), [('AAPL', 'US_EQUITY_L1'), ('AAPL', 'US_EQUITY_TICKS')])
+
+    def test_checkpoint_from_before_this_demand_is_not_reported_as_collecting(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        stream = f'KRAKEN:{BTC}:CRYPTO_TRADES'
+        def checkpoint(seconds):
+            stamp = int((self.now[0] + seconds) * 1e9)
+            with closing(sqlite3.connect(self.path)) as db:
+                db.execute('INSERT OR REPLACE INTO market_stream_checkpoints VALUES (?,?,?,?,?)', (stream, stamp, stamp, stamp, 'r'))
+                db.commit()
+        checkpoint(-10)  # a previous run, or another process, committed ten seconds ago
+        supply.step()
+        status = supply.status()
+        self.assertEqual((status['targets'][0]['state'], status['targets'][0]['committed_recently'], status['state']),
+                         ('ACTIVE_NO_DATA', False, 'SUBSCRIBED_NO_DATA'))
+        checkpoint(1)
+        self.now[0] += 2
+        self.assertEqual((supply.status()['targets'][0]['state'], supply.status()['state']), ('COLLECTING', 'COLLECTING'))
+
+    def test_year_without_a_calendar_is_not_labelled_a_closed_session(self):
+        moomoo = StubProvider()
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        self.now[0] = epoch('2027-03-01T15:00:00')
+        supply.step()
+        self.now[0] += headless_supply.STALE_SECONDS + 1
+        status = supply.status()
+        self.assertEqual(status['providers']['moomoo']['session']['label'], 'CALENDAR_UNAVAILABLE')
+        self.assertEqual({row['state'] for row in status['targets']}, {'ACTIVE_NO_DATA'})
+
+    def test_writer_that_acquires_during_the_owner_probe_is_not_mistaken_for_another_process(self):
+        from types import SimpleNamespace
+
+        owner = MarketStreamWriter(self.path, sources=('kraken',), symbols=(BTC,))  # the open run and the held lock
+        self.addCleanup(owner.stop)
+        writer = SimpleNamespace(run_id=None)
+        supply = HeadlessMarketSupply(self.path, self.TARGETS[1:], writer=writer, providers={'kraken': StubProvider()})
+        self.assertTrue(supply._foreign_writer())
+        def acquired(_path):
+            writer.run_id = owner.run_id  # the writer thread recorded its run while the lock was being probed
+            return True
+        with patch.object(persistence, 'owner_lock_held', acquired):
+            self.assertFalse(supply._foreign_writer())
+
+    def test_step_that_outlives_stop_does_not_overwrite_the_final_evidence(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        supply.step()
+        supply._stop.set()
+        with closing(sqlite3.connect(self.path)) as db:
+            db.execute('DELETE FROM news_collection_jobs WHERE job_id=?', (SUPPLY_JOB,))
+            db.commit()
+        supply.step()
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM news_collection_jobs WHERE job_id=?', SUPPLY_JOB), [(0,)])
 
     def test_entitlement_withdrawn_later_releases_the_held_subscription(self):
         moomoo = StubProvider()
@@ -329,6 +408,8 @@ class LifecycleTests(SupplyCase):
         # A child that stopped reporting must not look subscribed for ever.
         expired = supply_status(env, clock=lambda: self.now[0] + headless_supply.STATUS_LEASE_SECONDS + 1)
         self.assertEqual((expired['state'], expired['reason']), ('STALE', 'SUPPLY_STATUS_EXPIRED'))
+        self.assertEqual((expired['summary']['active'], expired['summary']['collecting']), (0, 0))
+        self.assertEqual({(row['state'], row['subscription_active']) for row in expired['targets']}, {('UNKNOWN', False)})
         supply.stop()
         stopped = supply_status(env, clock=lambda: self.now[0])
         self.assertEqual((stopped['enabled'], stopped['state']), (False, 'STOPPED'))
@@ -570,9 +651,60 @@ class MoomooFeedSupplyTests(SupplyCase):
         self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
         time.sleep(1.2)  # two feed sync rounds
         self.assertEqual((opend.subscribed(), runtime.subscriptions.active_subscriptions()), (set(), []))
-        runtime.capability_registry.load_error = 'PROBE_REPORT_MISSING'
+        (Path(self.temp.name) / 'probe.json').unlink()
+        supply.providers['moomoo']._probe = None
         supply.step()
         self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_MISSING')})
+
+    def test_opend_is_not_contacted_until_the_probe_verifies_a_target(self):
+        opend = SyntheticOpenD()
+        report = synthetic_probe(Path(self.temp.name) / 'probe.json', verified_at='2026-01-01T00:00:00+00:00')
+        item = patch.dict(os.environ, {**self.ENV, 'IMP_MOOMOO_PROBE_REPORT': str(report)})
+        item.start()
+        self.addCleanup(item.stop)
+        for started in opend.install():
+            self.addCleanup(started.stop)
+        created = []
+        def factory():
+            from market_platform_foundation.market_data.live_runtime import LiveObservationalRuntime
+
+            runtime = LiveObservationalRuntime()
+            runtime.configure()
+            self.addCleanup(runtime.stop)
+            created.append(runtime)
+            return runtime
+        provider = _MoomooSupply(runtime=factory)
+        supply = self.supply((SupplyTarget('moomoo', 'AAPL', ('US_EQUITY_L1',)),), {'moomoo': provider})
+        for _ in range(3):
+            supply.step()
+        time.sleep(0.3)
+        # Operator confirmation alone: no runtime, no feed thread, no OpenD session.
+        self.assertEqual((created, opend.contexts), ([], []))
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
+        # A probe refreshed while the child runs is picked up without a restart.
+        synthetic_probe(report)
+        provider._probe = None
+        self.active(supply, 1)
+        self.assertEqual((len(created), opend.subscribed()), (1, {('US.AAPL', 'QUOTE')}))
+        # And one that ages past the limit while running releases what it allowed.
+        synthetic_probe(report, verified_at='2026-01-01T00:00:00+00:00')
+        provider._probe = None
+        supply.step()
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
+        self.assertEqual(created[0].subscriptions.active_subscriptions(), [])
+
+    def test_unreachable_opend_does_not_keep_an_idle_writer_owning_the_store(self):
+        opend = SyntheticOpenD()
+        opend.drop()
+        runtime = self.runtime(opend)
+        supply = self.make(runtime, capabilities=('US_EQUITY_TICKS',))
+        supply.step()
+        time.sleep(0.6)  # a dozen failed connection attempts at the test backoff
+        self.writer.flush()
+        # Nothing was lost, so nothing is recorded and the writer still owns nothing another process could want.
+        self.assertIsNone(self.writer.run_id)
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_gaps'), [(0,)])
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_runs'), [(0,)])
 
     def test_only_capabilities_the_probe_verified_are_requested(self):
         opend = SyntheticOpenD()
@@ -614,12 +746,17 @@ class MoomooFeedSupplyTests(SupplyCase):
             return supply.status()['providers']['moomoo']['recovery_pending']
         self.wait_until(pending)
         self.assertEqual(supply.status()['state'], 'RECOVERY_PENDING')
+        # Disconnected is not an active subscription, whatever the feed still remembers.
+        self.assertEqual(self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_TICKS')], ('REQUESTED', None))
         self.assertFalse(opend.push_tick('US.AAPL'))
+        time.sleep(0.6)  # many failed retries
         opend.restore()
         self.wait_until(lambda: len(opend.contexts) == 2 and opend.subscribed() == {('US.AAPL', 'TICKER')})
         opend.push_tick('US.AAPL')
         self.wait_until(lambda: self.writer.flush() >= 0 and self.writer.status()['committed'] == 2)
-        self.assertIn(('*', 'MOOMOO_DISCONNECT_NO_REPLAY'), self.rows('SELECT stream_id,reason FROM market_stream_gaps'))
+        # One gap for the one lost session, not one per failed retry.
+        self.assertEqual(self.rows('SELECT stream_id,observations FROM market_stream_gaps WHERE reason=?', 'MOOMOO_DISCONNECT_NO_REPLAY'),
+                         [('*', 1)])
         self.active(supply, 1)
 
     def test_serving_consumers_keep_their_subscriptions_when_the_collector_stops(self):

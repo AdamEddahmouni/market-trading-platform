@@ -6970,6 +6970,15 @@ runs; `pf01_supervisor.py --status` includes `market_supply`; the plan's
 `market_source_demand` is `DISABLED`, `EXPLICIT_TARGETS_CONFIGURED` or the
 refusal reason. No schema change.
 
+A final independent review of the first implementation led to these
+corrections before closure: the OpenD disconnect gap is written once per lost
+session instead of on every failed retry (retries were renewing an idle
+writer's ownership for the length of an outage); the moomoo probe is read from
+its file before the OpenD runtime is created and re-read while running; other
+provider preferences, a fixture feed and dotted tickers are refused; a
+disconnected feed's remembered subscriptions and checkpoints from an earlier
+run no longer read as `COLLECTING`.
+
 Offline only, against synthetic provider transports: no deployment, migration,
 provider request, subscription, entitlement probe, paid call or trading. No
 account entitlement is verified and no real overnight run has been observed.

@@ -30,12 +30,15 @@ SUPPLY_CONSUMER = 'pf01-headless-collector'
 SUPPLY_JOB = '__pf01_market_supply__'  # reserved evidence row, never a provider job
 SOURCE_CAPABILITIES = {'moomoo': ('US_EQUITY_L1', 'US_EQUITY_TICKS', 'US_EQUITY_DEPTH'),
                        'kraken': ('CRYPTO_TRADES', 'CRYPTO_BOOK')}
-SYMBOL_PATTERNS = {'moomoo': re.compile(r'[A-Z][A-Z0-9.\-]{0,9}'), 'kraken': re.compile(r'XA01:[0-9A-F]{16}')}
+# Plain tickers only: the feed stores a dotted code (BRK.B) under another instrument id, so it would
+# be subscribed and never persisted.
+SYMBOL_PATTERNS = {'moomoo': re.compile(r'[A-Z][A-Z0-9]{0,9}'), 'kraken': re.compile(r'XA01:[0-9A-F]{16}')}
 MAX_TARGETS = 20  # the writer's selection bound; supply can never exceed what is stored
 RECONCILE_SECONDS = 5.0
 STATUS_SECONDS = 30.0
 STATUS_LEASE_SECONDS = 120.0
 STALE_SECONDS = 300.0
+PROBE_RELOAD_SECONDS = 1.0
 _SUPPLY: HeadlessMarketSupply | None = None
 _GLOBAL_LOCK = threading.Lock()
 
@@ -86,7 +89,10 @@ def validate_supply(env: Mapping[str, str]) -> tuple[SupplyTarget, ...]:
         if env.get('IMP_LIVE_OBSERVATIONAL') != '1' or env.get('IMP_MOOMOO_LIVE') != '1':
             raise ValueError('MARKET_SUPPLY_PROVIDER_GATE_CLOSED')
         # The shared runtime would also start these; a collection-only process must not.
-        if (env.get('IMP_IBKR_LIVE', '').strip() == '1' or env.get('IMP_OBSERVATIONAL_PROVIDER', 'auto').strip().lower() == 'ibkr'
+        # Any other provider preference leaves the runtime with no OpenD feed, or replaying a fixture.
+        if (env.get('IMP_IBKR_LIVE', '').strip() == '1'
+                or env.get('IMP_OBSERVATIONAL_PROVIDER', 'auto').strip().lower() not in {'auto', 'moomoo'}
+                or env.get('IMP_LIVE_FIXTURE_FEED', '').strip()
                 or env.get('IMP_SHADOW_RECORDING', '').strip().lower() in {'1', 'true', 'yes'}):
             raise ValueError('MARKET_SUPPLY_PROVIDER_CONFLICT')
     if 'kraken' in sources and env.get('IMP_CRYPTO_LIVE') != '1':
@@ -116,6 +122,7 @@ class _MoomooSupply:
 
     def __init__(self, runtime: Callable[[], Any] | None = None, close: Callable[[], None] | None = None) -> None:
         self._factory, self._close, self.runtime = runtime, close, None
+        self._probe, self._probe_at = None, 0.0
 
     def open(self) -> bool:
         if self.runtime is None:
@@ -128,7 +135,15 @@ class _MoomooSupply:
         return self.runtime is not None
 
     def entitlement(self, capability: str) -> str | None:
-        registry = self.runtime.capability_registry
+        """Read from the probe file itself, so it is decided before OpenD is contacted and tracks the file's age."""
+        if self._probe is None or time.monotonic() - self._probe_at >= PROBE_RELOAD_SECONDS:
+            from .capability_registry import VerifiedCapabilityRegistry
+            from .live_config import probe_report_path, probe_staleness_seconds
+
+            self._probe = VerifiedCapabilityRegistry.from_probe_file(probe_report_path(),
+                                                                     max_staleness_seconds=probe_staleness_seconds())
+            self._probe_at = time.monotonic()
+        registry = self._probe
         if registry.load_error:
             return 'ENTITLEMENT_PROBE_MISSING'
         if registry.is_stale:
@@ -147,7 +162,9 @@ class _MoomooSupply:
         state = feed.subscription_state(symbol, capability) if feed is not None else 'PENDING'
         if state == 'REFUSED':
             return 'REFUSED', 'PROVIDER_REFUSED_SUBSCRIPTION'
-        return ('ACTIVE', None) if state == 'ACTIVE' else ('REQUESTED', None)
+        # The feed remembers its subscriptions until the next session; without a connection none is active.
+        connected = self.connection() in {'CONNECTED', 'CONNECTED_DEGRADED'}
+        return ('ACTIVE', None) if state == 'ACTIVE' and connected else ('REQUESTED', None)
 
     def release(self, symbol: str, capability: str) -> None:
         self.runtime.unsubscribe(instrument_id=symbol, capabilities=[capability], consumer_id=SUPPLY_CONSUMER)
@@ -223,7 +240,8 @@ class HeadlessMarketSupply:
         self._held: set[tuple[str, str, str]] = set()
         #: (source, symbol, capability) -> {'state', 'reason', 'active_since'}
         self._rows: dict[tuple[str, str, str], dict[str, Any]] = {
-            (target.source, target.symbol, capability): {'state': 'PENDING', 'reason': None, 'active_since': None}
+            (target.source, target.symbol, capability): {'state': 'PENDING', 'reason': None, 'active_since': None,
+                                                         'requested_since': None}
             for target in targets for capability in target.capabilities}
         self._provider_rows: dict[str, dict[str, Any]] = {}
         self._saved_at = 0.0
@@ -249,9 +267,11 @@ class HeadlessMarketSupply:
         from .persistence import owner_lock_held
 
         try:
-            return owner_lock_held(self.path)
+            held = owner_lock_held(self.path)
         except OSError:
             return None
+        # The run row is committed just before this writer records it as its own; the lock is then ours.
+        return held and self.writer.run_id is None
 
     def _set(self, key: tuple[str, str, str], state: str, reason: str | None = None) -> None:
         row = self._rows[key]
@@ -259,6 +279,10 @@ class HeadlessMarketSupply:
             row['active_since'] = self.clock()
         elif state != 'ACTIVE':
             row['active_since'] = None
+        if state not in {'REQUESTED', 'ACTIVE'}:
+            row['requested_since'] = None
+        elif row['requested_since'] is None:
+            row['requested_since'] = self.clock()
         if state == 'REFUSED' and row['state'] != 'REFUSED':
             # Durable evidence that a selected stream was declined, written once per refusal.
             self.writer.gap('SUPPLY_SUBSCRIPTION_REFUSED', stream=f'{key[0]}:{key[1]}:{key[2]}')
@@ -294,6 +318,13 @@ class HeadlessMarketSupply:
                         self._set(key, 'BLOCKED', 'ENTITLEMENT_NOT_CONFIRMED' if provider is not None else 'PROVIDER_UNSUPPORTED')
                     continue
                 try:
+                    reasons = {key: provider.entitlement(key[2]) for key in keys}
+                    if all(reasons.values()):
+                        # Nothing is verified for this source, so no provider session is opened for it.
+                        for key in keys:
+                            self._release(key)
+                            self._set(key, 'BLOCKED', reasons[key])
+                        continue
                     if not provider.open():
                         raise LookupError
                     row['connection'] = provider.connection()
@@ -305,21 +336,20 @@ class HeadlessMarketSupply:
                     continue
                 for key in keys:
                     try:
-                        reason = provider.entitlement(key[2])
-                        if reason is not None:
+                        if reasons[key] is not None:
                             self._release(key)
-                            self._set(key, 'BLOCKED', reason)
+                            self._set(key, 'BLOCKED', reasons[key])
                             continue
+                        self._held.add(key)  # before the call, so a request that fails part-way is still released
                         state, reason = provider.request(key[1], key[2])
                         if state == 'BLOCKED':
                             self._held.discard(key)  # the authority refused; nothing is held
-                        else:
-                            self._held.add(key)
                         self._set(key, state, reason)
                     except Exception:  # noqa: BLE001
                         self._errors += 1
                         self._set(key, 'BLOCKED', 'PROVIDER_REQUEST_FAILED')
-        self._save()
+        if not self._stop.is_set():  # a step that outlived stop() must not overwrite the final evidence
+            self._save()
 
     # --------------------------------------------------------------- status
 
@@ -341,11 +371,15 @@ class HeadlessMarketSupply:
             for (source, symbol, capability), row in sorted(self._rows.items()):
                 received, committed = (checkpoints or {}).get(f'{source}:{symbol}:{capability}'.lower(), (None, None))
                 active = row['state'] == 'ACTIVE'
-                fresh = committed is not None and now - committed / 1e9 <= STALE_SECONDS
+                # Committed under this demand: an earlier run's or another process's checkpoint is not collection now.
+                fresh = (committed is not None and now - committed / 1e9 <= STALE_SECONDS
+                         and row['requested_since'] is not None and committed / 1e9 >= row['requested_since'])
                 waited = active and now - row['active_since'] > STALE_SECONDS
                 state = row['state']
                 if active:
-                    state = ('COLLECTING' if fresh else 'SESSION_CLOSED' if not sessions[source]['data_expected']
+                    state = ('COLLECTING' if fresh
+                             else 'ACTIVE_NO_DATA' if sessions[source]['label'] == 'CALENDAR_UNAVAILABLE'
+                             else 'SESSION_CLOSED' if not sessions[source]['data_expected']
                              else 'STALE' if waited and checkpoints is not None else 'ACTIVE_NO_DATA')
                 targets.append({'source': source, 'symbol': symbol, 'capability': capability, 'state': state,
                                 'reason': row['reason'], 'subscription_requested': row['state'] in {'REQUESTED', 'ACTIVE', 'REFUSED'},
@@ -410,6 +444,9 @@ class HeadlessMarketSupply:
             self._errors += 1
 
     # ------------------------------------------------------------ lifecycle
+
+    def alive(self) -> bool:
+        return bool(self._thread and self._thread.is_alive())
 
     def start(self) -> None:
         def run() -> None:
@@ -498,6 +535,9 @@ def supply_status(env: Mapping[str, str] | None = None, *, clock: Callable[[], f
         if row[1] and row[2] < clock():
             # The child stopped reporting; its last view of subscriptions proves nothing now.
             evidence.update(state='STALE', reason='SUPPLY_STATUS_EXPIRED')
+            for target in evidence.get('targets') or []:
+                target.update(state='UNKNOWN', subscription_active=False, committed_recently=False)
+            evidence['summary'] = {**(evidence.get('summary') or {}), 'active': 0, 'collecting': 0}
         return {**evidence, 'enabled': bool(row[1]), 'reported_by': 'HEADLESS_CHILD_EVIDENCE'}
     except Exception:  # noqa: BLE001
         return {'enabled': False, 'state': 'UNKNOWN', 'reason': 'SUPPLY_STATUS_UNAVAILABLE'}

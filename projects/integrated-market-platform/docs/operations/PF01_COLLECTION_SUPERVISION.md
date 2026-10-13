@@ -49,16 +49,21 @@ entitlement has been verified.
 Example of the format only, not a recommendation of what to collect:
 `moomoo:AAPL@US_EQUITY_L1+US_EQUITY_TICKS`.
 
-- moomoo symbols are US equity tickers; capabilities are `US_EQUITY_L1`,
-  `US_EQUITY_TICKS`, `US_EQUITY_DEPTH`. Kraken symbols are the canonical
+- moomoo symbols are plain US equity tickers (letters and digits);
+  capabilities are `US_EQUITY_L1`, `US_EQUITY_TICKS`, `US_EQUITY_DEPTH`. A
+  dotted or hyphenated ticker such as `BRK.B` is refused: the existing feed
+  would store it under a different instrument name, so it would be subscribed
+  and never persisted. Kraken symbols are the canonical
   `XA01:` instrument ID; capabilities are `CRYPTO_TRADES`, `CRYPTO_BOOK`.
 - Every target's source must be in `IMP_MARKET_PERSISTENCE_SOURCES` and its
   symbol in `IMP_MARKET_PERSISTENCE_SYMBOLS`. Supply never subscribes to
   something that is not stored, and nothing is expanded to other instruments.
 - moomoo targets need `IMP_LIVE_OBSERVATIONAL=1` and `IMP_MOOMOO_LIVE=1`;
-  Kraken targets need `IMP_CRYPTO_LIVE=1`. With `IMP_IBKR_LIVE=1`,
-  `IMP_OBSERVATIONAL_PROVIDER=ibkr` or shadow recording on, moomoo supply is
-  refused, because the shared runtime would start those too.
+  Kraken targets need `IMP_CRYPTO_LIVE=1`. moomoo supply is refused with
+  `IMP_IBKR_LIVE=1`, shadow recording on, `IMP_LIVE_FIXTURE_FEED` set, or
+  `IMP_OBSERVATIONAL_PROVIDER` set to anything but `auto` or `moomoo`, because
+  the shared runtime would then start another feed, replay a fixture into the
+  store, or start no OpenD feed at all.
 - A rejected target list ends the child with exit code 78 before any worker
   starts, and the supervisor latches `CHILD_CONFIGURATION_REJECTED`.
 
@@ -67,17 +72,25 @@ serving backend and are not supplied headlessly. IBKR is not supplied.
 
 ### Entitlement gate
 
-Nothing is requested from a source until both of these hold:
+No provider session is opened and nothing is requested from a source until
+both of these hold:
 
 1. The source is listed in `IMP_MARKET_SUPPLY_ENTITLED_SOURCES`. This is the
    operator's statement that the account or the venue's terms permit collecting
    and storing that data. It is not a credential and nothing infers it.
-2. For moomoo, the existing capability probe report is present, less than 24
-   hours old and marks that capability `account_entitled`. A missing or stale
-   report, or a capability the probe did not verify, keeps that stream
-   `BLOCKED`. Running the probe contacts OpenD and is a separate decision.
+2. For moomoo, the existing capability probe report is present, younger than
+   `IMP_MOOMOO_PROBE_STALENESS_SEC` (24 hours by default) and marks that
+   capability `account_entitled`. A missing or stale report, or a capability
+   the probe did not verify, keeps that stream `BLOCKED`. The report file is
+   read before the OpenD runtime is created and re-read while the child runs: a
+   report that ages past the limit releases the streams it allowed, and a
+   refreshed report is picked up without a restart. Running the probe contacts
+   OpenD and is a separate decision.
 
 Kraken public market data has no account, so only the first condition applies.
+The first Kraken request resolves the pair through the existing resolver, which
+fetches Kraken's public `AssetPairs` catalog once over HTTPS (retried at most
+every 30 seconds on failure) before the WebSocket is opened.
 A configured key, a reachable OpenD or a passing synthetic test satisfies
 neither. A closed gate does not end the child: news keeps running and the
 supply reports `BLOCKED` with the reason.
@@ -89,8 +102,10 @@ supply reports `BLOCKED` with the reason.
 - Provider loss: reconnect is the existing runtime's. Kraken retries with
   backoff 1, 2, 4, 8, 16, 30 s (jittered, capped at 30 s) and resubscribes every
   demanded channel on the new connection. The OpenD feed retries on its
-  configured schedule and resubscribes from the subscription manager. Each loss
-  writes `KRAKEN_DISCONNECT_NO_REPLAY` or `MOOMOO_DISCONNECT_NO_REPLAY`; nothing
+  configured schedule and resubscribes from the subscription manager. Each lost
+  session writes one `KRAKEN_DISCONNECT_NO_REPLAY` or
+  `MOOMOO_DISCONNECT_NO_REPLAY`; failed retries write nothing more, so an
+  unreachable provider does not keep an idle writer owning the store. Nothing
   is backfilled.
 - One provider failing does not stop the other or the news collector.
 - Restart: a restarted child subscribes again from the same configuration. The
@@ -143,11 +158,14 @@ not refreshed for 120 seconds is shown as `STALE`.
 | `providers.<source>.available`, `recovery_pending`, `maintenance` | Connected, reconnecting, or venue maintenance |
 | `targets[].subscription_requested`, `subscription_active` | Asked of the authority; acknowledged by the provider |
 | `targets[].last_received_ns`, `last_commit_ns` | From the durable checkpoint for that stream |
-| `targets[].state` | `BLOCKED`, `STANDBY`, `REQUESTED`, `REFUSED`, `ACTIVE_NO_DATA`, `COLLECTING`, `STALE`, `SESSION_CLOSED` |
+| `targets[].state` | `BLOCKED`, `STANDBY`, `REQUESTED`, `REFUSED`, `ACTIVE_NO_DATA`, `COLLECTING`, `STALE`, `SESSION_CLOSED`; `UNKNOWN` once the saved row has expired |
 | `writer`, `writer_degraded` | The writer's own state, backlog, rejections and commit clocks |
 | `state` | `BLOCKED`, `STANDBY`, `DEGRADED`, `RECOVERY_PENDING`, `STALE`, `COLLECTING`, `SUBSCRIBED_NO_DATA`, `WAITING`, `STOPPED` |
 
-`COLLECTING` requires a commit for that stream within the last 300 seconds. A
+`COLLECTING` requires a commit for that stream within the last 300 seconds and
+since this child requested it; a checkpoint left by an earlier run or another
+process does not count. A subscription is `subscription_active` only while its
+provider is connected. A
 running process, a requested subscription or an active subscription is never
 reported as collecting on its own. `STALE` means a stream was active for more
 than 300 seconds in a session that expects data and nothing was committed; for
@@ -320,8 +338,16 @@ connection and would upgrade it.
 - Headless market supply has run only against synthetic transports. OpenD and
   Kraken behaviour under real load, real entitlement refusals and real session
   changes are not observed.
-- The moomoo entitlement probe is read when the child starts. A probe that goes
-  stale while the child runs is noticed at the next child start.
+- The Kraken pair resolver and its public catalog request are replaced by a
+  fixed table in every test, so that path and its failure handling are not
+  exercised here.
+- Stopping a child whose supply is mid-request can take longer than the
+  supervisor's 15-second wait. The child is then terminated; the writer's run
+  is recorded as `UNCLEAN_RESTART_NO_REPLAY` on the next start and the status
+  row expires to `STALE`.
+- After the moomoo probe goes stale the OpenD session this child already opened
+  stays open with no subscriptions until the child stops.
+- The supply status row is written without the writer's store-identity check.
 - With L1 selected, the existing feed polls a quote snapshot every 2 seconds per
   subscribed symbol and every snapshot is stored. See the capacity figures in
   [PF01B_MARKET_PERSISTENCE.md](PF01B_MARKET_PERSISTENCE.md) before selecting

@@ -276,6 +276,7 @@ class LiveObservationalRuntime:
             provider_generation_id=generation,
         )
         self.admission.on_connect()
+        self._feed_session_open = True
         self.execution_buffer.on_generation_change(generation)
         self._update_execution_use()
 
@@ -283,7 +284,10 @@ class LiveObservationalRuntime:
         from .persistence import active_writer
 
         writer = active_writer()
-        if writer is not None and 'moomoo' in writer.sources:
+        # Once per lost session. The feed also reports every failed retry; a gap for each would
+        # renew an idle writer's ownership for the whole outage and add nothing to the record.
+        lost, self._feed_session_open = getattr(self, '_feed_session_open', False), False
+        if lost and writer is not None and 'moomoo' in writer.sources:
             writer.gap('MOOMOO_DISCONNECT_NO_REPLAY')
         self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_disconnected(reason)

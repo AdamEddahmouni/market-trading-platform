@@ -456,7 +456,7 @@ def collect_only(stop: threading.Event) -> None:
                     if not status['worker_alive'] or status['state'] in {'BLOCKED','FAILED','STALE'}:
                         raise ValueError('COLLECTION_WORKER_UNHEALTHY')
             # Blocked, standby or stale supply is reported, not fatal: news and the writer keep running.
-            if supply is not None and not supply.status()['worker_alive']:
+            if supply is not None and not supply.alive():
                 raise ValueError('COLLECTION_WORKER_UNHEALTHY')
     finally:
         # Producers first, so the writer drains what they already delivered.
