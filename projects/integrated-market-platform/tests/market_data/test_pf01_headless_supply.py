@@ -11,6 +11,7 @@ import os
 import socket
 import sqlite3
 import tempfile
+import threading
 import time
 import unittest
 from contextlib import closing
@@ -415,6 +416,26 @@ class LifecycleTests(SupplyCase):
         self.assertEqual((stopped['enabled'], stopped['state']), (False, 'STOPPED'))
         self.assertEqual(self.rows('SELECT lease_owner FROM news_collection_jobs WHERE job_id=?', SUPPLY_JOB), [(None,)])
 
+    def test_status_evidence_never_writes_into_a_replacement_store(self):
+        supply = self.supply(self.TARGETS[1:], {'kraken': StubProvider()})
+        supply.step()
+        self.writer.stop()  # release handles before replacing this disposable database on Windows
+        self.path.rename(self.path.with_name('original.sqlite3'))
+        LocalStateConnection(self.path).close()
+        supply._save(final=True)
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM news_collection_jobs WHERE job_id=?', SUPPLY_JOB), [(0,)])
+
+    def test_owned_provider_drains_before_selected_demand_is_released(self):
+        class DrainingProvider(StubProvider):
+            def prepare_stop(provider):
+                provider.demand_at_drain = set(supply._held)
+        provider = DrainingProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': provider})
+        supply.step()
+        supply.stop()
+        self.assertEqual(getattr(provider, 'demand_at_drain', set()), {('kraken', BTC, 'CRYPTO_TRADES')})
+        self.assertEqual(provider.releases, [(BTC, 'CRYPTO_TRADES')])
+
     def test_unreadable_status_store_never_stops_supply(self):
         kraken = StubProvider()
         supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
@@ -423,6 +444,43 @@ class LifecycleTests(SupplyCase):
             status = supply.status()
         self.assertEqual((len(kraken.requests), status['checkpoints_readable']), (1, False))
         self.assertNotEqual(status['targets'][0]['state'], 'STALE')
+
+    def test_concurrent_stop_waits_for_inflight_request_and_preserves_final_evidence(self):
+        entered, release = threading.Event(), threading.Event()
+        class WaitingProvider(StubProvider):
+            def request(provider, symbol, capability):
+                entered.set()
+                if not release.wait(5):
+                    raise RuntimeError('synthetic blocked request timeout')
+                return super().request(symbol, capability)
+        provider = WaitingProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': provider})
+        self.addCleanup(release.set)
+        supply.start()
+        self.assertTrue(entered.wait(2))
+        stopping = threading.Thread(target=supply.stop)
+        stopping.start()
+        self.assertTrue(supply._stop.wait(2))
+        release.set()
+        stopping.join(3)
+        self.assertFalse(stopping.is_alive())
+        evidence = supply_status({'IMP_STATE_DIR': str(self.path.parent)})
+        self.assertEqual((evidence['state'], evidence['enabled'], evidence['summary']['active']), ('STOPPED', False, 0))
+        supply.step()
+        self.assertEqual(supply_status({'IMP_STATE_DIR': str(self.path.parent)})['state'], 'STOPPED')
+        self.assertEqual(provider.releases, [(BTC, 'CRYPTO_TRADES')])
+
+    def test_status_exception_does_not_kill_reconciliation_worker(self):
+        provider = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': provider})
+        supply.interval = 0.01
+        with patch.object(self.writer, 'status', side_effect=RuntimeError('synthetic status failure')):
+            supply.start()
+            self.wait_until(lambda: len(provider.requests) >= 3)
+            self.assertTrue(supply.alive())
+        status = supply.status()
+        self.assertGreaterEqual(status['reconcile_errors'], 3)
+        self.assertEqual(status['summary']['active'], 1)
 
     def test_start_supply_is_single_and_requires_the_writer(self):
         with self.assertRaisesRegex(ValueError, 'MARKET_SUPPLY_REQUIRES_PERSISTENCE'):
@@ -693,6 +751,23 @@ class MoomooFeedSupplyTests(SupplyCase):
         self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
         self.assertEqual(created[0].subscriptions.active_subscriptions(), [])
 
+    def test_entitlement_file_cache_reloads_without_manual_invalidation(self):
+        report = synthetic_probe(Path(self.temp.name) / 'reload-probe.json')
+        provider = _MoomooSupply(runtime=lambda: None)
+        moment = [10.0]
+        with patch.dict(os.environ, {'IMP_MOOMOO_PROBE_REPORT': str(report)}), \
+             patch.object(headless_supply.time, 'monotonic', side_effect=lambda: moment[0]):
+            self.assertIsNone(provider.entitlement('US_EQUITY_L1'))
+            synthetic_probe(report, verified_at='2026-01-01T00:00:00+00:00')
+            moment[0] = 10.5
+            self.assertIsNone(provider.entitlement('US_EQUITY_L1'))  # bounded cache window
+            moment[0] = 11.1
+            self.assertEqual(provider.entitlement('US_EQUITY_L1'), 'ENTITLEMENT_PROBE_STALE')
+            synthetic_probe(report)
+            moment[0] = 12.2
+            self.assertIsNone(provider.entitlement('US_EQUITY_L1'))
+        self.assertIsNone(provider.runtime)  # reload itself never opens a provider
+
     def test_unreachable_opend_does_not_keep_an_idle_writer_owning_the_store(self):
         opend = SyntheticOpenD()
         opend.drop()
@@ -759,6 +834,24 @@ class MoomooFeedSupplyTests(SupplyCase):
                          [('*', 1)])
         self.active(supply, 1)
 
+    def test_owned_opend_stops_while_selected_demand_is_still_present(self):
+        from market_platform_foundation.market_data import live_runtime
+        opend = SyntheticOpenD()
+        runtime = self.runtime(opend)
+        supply = self.make(runtime)
+        self.active(supply, 2)
+        supply.providers['moomoo']._factory = None  # model the headless process-owned runtime
+        active_at_stop = []
+        original_stop = runtime.stop
+        def stop_runtime():
+            active_at_stop.append(len(runtime.subscriptions.active_keys))
+            original_stop()
+        with patch.object(runtime, 'stop', stop_runtime), patch.object(live_runtime, '_RUNTIME', runtime):
+            supply.stop()
+        self.assertEqual(active_at_stop[0], 2)
+        self.assertEqual(runtime.subscriptions.active_keys, set())
+        self.wait_until(lambda: all(context.closed for context in opend.contexts))
+
     def test_serving_consumers_keep_their_subscriptions_when_the_collector_stops(self):
         opend = SyntheticOpenD()
         runtime = self.runtime(opend)
@@ -772,6 +865,40 @@ class MoomooFeedSupplyTests(SupplyCase):
         self.wait_until(lambda: opend.subscribed() == {('US.AAPL', 'QUOTE')})
         self.assertFalse(opend.context.closed)  # an injected runtime is its owner's to close
         self.assertEqual(opend.context.unsubscribe_calls, [('US.AAPL', 'TICKER')])
+
+
+class KrakenCatalogSupplyTests(SupplyCase):
+    def test_real_pair_resolver_uses_bounded_public_catalog_request(self):
+        from market_platform_foundation.ui_api import screener_crypto
+        payload = {'error': [], 'result': {'BTC/USD': {'base': 'BTC', 'quote': 'USD', 'status': 'online',
+            'aclass_base': 'currency', 'aclass_quote': 'currency', 'pair_decimals': 1, 'lot_decimals': 8}}}
+        requests = []
+        class Response:
+            status = 200
+            def __enter__(response): return response
+            def __exit__(response, *args): return False
+            def read(response, bound):
+                self.assertEqual(bound, 10_000_001)
+                return json.dumps(payload).encode()
+        def offline_urlopen(request, timeout):
+            requests.append((request.full_url, timeout))
+            return Response()
+        service = screener_crypto.CryptoScreener(env={'IMP_CRYPTO_LIVE': '1'})
+        with patch.object(screener_crypto.urllib.request, 'urlopen', offline_urlopen), \
+             patch.object(screener_crypto, 'crypto_screener_service', return_value=service):
+            rows, _, error = service._catalog()
+            self.assertIsNone(error)
+            instrument = rows[0]['instrument']['instrument_id']
+            self.assertEqual(screener_crypto._stream_pair(instrument), ('BTC/USD', 1, 8))
+            self.assertIsNone(screener_crypto._stream_pair('XA01:0000000000000000'))
+        self.assertEqual(requests, [('https://api.kraken.com/0/public/AssetPairs?assetVersion=1', 10)])
+
+    def test_pair_catalog_failure_refuses_unknown_stream_without_network(self):
+        from market_platform_foundation.ui_api import screener_crypto
+        service = screener_crypto.CryptoScreener(env={'IMP_CRYPTO_LIVE': '1'})
+        with patch.object(screener_crypto.urllib.request, 'urlopen', side_effect=OSError('synthetic unavailable')), \
+             patch.object(screener_crypto, 'crypto_screener_service', return_value=service):
+            self.assertIsNone(screener_crypto._stream_pair('XA01:0000000000000000'))
 
 
 if __name__ == '__main__':

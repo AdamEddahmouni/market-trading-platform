@@ -172,6 +172,11 @@ class _MoomooSupply:
     def connection(self) -> str:
         return str(getattr(self.runtime.lifecycle.connection_state, 'value', self.runtime.lifecycle.connection_state))
 
+    def prepare_stop(self) -> None:
+        # Keep selected demand intact while the owned feed drains already observed callbacks.
+        if self.runtime is not None and self._factory is None:
+            self.runtime.stop()
+
     def close(self) -> None:
         if self._close is not None:
             self._close()
@@ -216,6 +221,11 @@ class _KrakenSupply:
     def connection(self) -> str:
         return str(self.runtime.lifecycle.connection_state)
 
+    def prepare_stop(self) -> None:
+        # Drain the owned socket while routing still sees selected demand. Shared test/serving runtimes stay open.
+        if self.runtime is not None and self._factory is None:
+            self.runtime.shutdown()
+
     def close(self) -> None:
         if self.runtime is not None and self._factory is None:
             self.runtime.shutdown()  # only the stream this process's supply opened
@@ -229,6 +239,8 @@ class HeadlessMarketSupply:
         if not targets or len(targets) > MAX_TARGETS:
             raise ValueError('MARKET_SUPPLY_TARGETS_INVALID')
         self.path, self.targets, self.writer, self.clock, self.interval = path, targets, writer, clock, interval
+        stat = path.stat()
+        self._storage_identity = (stat.st_dev, stat.st_ino)
         self.entitled_sources = frozenset(entitled_sources)
         self.providers = dict(providers) if providers is not None else {'moomoo': _MoomooSupply(), 'kraken': _KrakenSupply()}
         self._lock = threading.Lock()
@@ -430,6 +442,9 @@ class HeadlessMarketSupply:
     def _save(self, *, final: bool = False) -> None:
         """Best-effort evidence for the existing health route; never blocks or fails supply."""
         try:
+            stat = self.path.stat()
+            if (stat.st_dev, stat.st_ino) != self._storage_identity:
+                raise OSError('SUPPLY_STATUS_STORAGE_REPLACED')
             status = self.status()
             now = self.clock()
             if not final and status['state'] == self._saved_state and now - self._saved_at < STATUS_SECONDS:
@@ -463,13 +478,20 @@ class HeadlessMarketSupply:
             self._thread.start()
 
     def stop(self) -> None:
-        """Release this consumer's demand, then close only the provider sessions this process opened."""
+        """Drain owned provider supply, release demand, then close the sessions this process opened."""
         if self._stopped:
             return
         self._stop.set()
         if self._thread is not None:
             self._thread.join(timeout=10)
         with self._lock:
+            for provider in self.providers.values():
+                try:
+                    prepare = getattr(provider, 'prepare_stop', None)
+                    if prepare is not None:
+                        prepare()
+                except Exception:  # noqa: BLE001 - a failed drain must not keep other provider demand alive
+                    self._errors += 1
             for key in list(self._held):
                 self._release(key)
             for key in self._rows:
