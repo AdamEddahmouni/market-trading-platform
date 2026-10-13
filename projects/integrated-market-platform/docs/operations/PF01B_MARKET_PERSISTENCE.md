@@ -203,3 +203,37 @@ traffic.
 The fixture benchmark measured 10,000 synthetic trades in controlled batches on
 the SSD. See the task evidence report for throughput, storage and memory results;
 these do not qualify live traffic, all symbols or simultaneous workloads.
+
+## PF-01F observation accounting and shutdown
+
+Process-local writer health exposes `selected_received`, `accepted`, `rejected`,
+`normalizing`, `committed`, `duplicates`, `backlog` and `unreconciled`. The
+boundary is `SELECTED_WRITER_SUBMIT_THIS_PROCESS`. The invariants are
+`selected_received = accepted + rejected + normalizing` and
+`accepted = committed + duplicates + backlog`; pending normalization/queue
+work is not loss. `unreconciled` is the sum of absolute residuals. Reject/gap
+counts must not be subtracted twice, and mixed-capability gaps must be split
+before comparing trade-only counters.
+
+Synthetic producer generation/callback/enqueue is a separate boundary from
+socket/ingest receipt. The previous high-rate 38-record discrepancy consisted
+of 36 OpenD queued ticks and two Kraken inbox trades. Owned-provider shutdown
+quiesces callbacks and drains already observed work while selected demand and
+the writer remain alive. Socket shutdown is bounded; it does not establish
+external exactly-once delivery or invent counts for bytes never observed.
+Counters are not a durable ingress journal. Abrupt interruption leaves an
+unknown tail and unclean-restart evidence; no replay is promised.
+
+The collection-only child returns failure when final writer drain fails or
+supply reports `SUPPLY_SHUTDOWN_INCOMPLETE`. Stopped supply with a drain,
+release or close failure reports `BLOCKED`, `shutdown_incomplete=true` and
+`shutdown_error=SUPPLY_SHUTDOWN_INCOMPLETE`. Historical reconcile errors alone
+do not classify a later successful shutdown as incomplete. A permanently
+stuck provider may still require the supervisor's bounded forced termination,
+which is unclean rather than a successful graceful stop.
+
+Writer health includes read-only DB/WAL/free-space `capacity` status: `READY`,
+`WARNING` or `STOP_REQUIRED`; unavailable/replaced files report `UNAVAILABLE`.
+The warning is a resource signal, not collection or entitlement certification.
+See [capacity planning](PF01_STORAGE_CAPACITY.md) and
+[deployment and acceptance](PF01F_DEPLOYMENT_ACCEPTANCE.md).

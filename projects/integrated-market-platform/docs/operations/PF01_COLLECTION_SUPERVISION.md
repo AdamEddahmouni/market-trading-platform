@@ -363,3 +363,14 @@ connection and would upgrade it.
 - An invalid market-persistence configuration still stops serving-backend
   startup. Only a live owner or a busy database is deferred.
 - The restart thresholds are not configurable without a code change.
+
+## PF-01F capacity and acceptance preparation
+
+Read-only shared-store accounting and explicit workload forecasts are available
+through `python tools/market_data_capacity.py`. See
+[storage capacity](PF01_STORAGE_CAPACITY.md) for rates, record sizing, warning
+and stop semantics, and [deployment/acceptance](PF01F_DEPLOYMENT_ACCEPTANCE.md)
+for the inert configuration, protected source/state integration, migration,
+rollback and real overnight prerequisites. Forecasts do not activate a source
+or certify an account entitlement. The shared DB+WAL ceiling stays 512 MiB;
+all history is preserved and collection stops before the existing reserve.

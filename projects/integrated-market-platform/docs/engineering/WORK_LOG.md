@@ -6984,3 +6984,27 @@ provider request, subscription, entitlement probe, paid call or trading. No
 account entitlement is verified and no real overnight run has been observed.
 See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md)
 and [market persistence](../operations/PF01B_MARKET_PERSISTENCE.md).
+
+## 2026-10-13 — PF-01F observation accounting and bounded capacity
+
+Continued from verified PF-01E commit 3578d5b0 in isolated SSD worktrees. The
+previous 38-observation high-rate discrepancy split into 36 OpenD ticks and
+two Kraken trades. Producer callback/enqueue counts were not an external
+exactly-once delivery boundary. Bounded provider draining retains selected
+demand until already observed work is drained; writer admission/status
+reconciliation and incomplete-shutdown evidence preserve uncertainty.
+
+Added read-only SQLite page/index/WAL and per-source accounting, pure runtime
+capacity decisions and explicit workload forecasts. The 512 MiB default and
+8 MiB reserve remain; no history is expired/deleted, raw data is not sampled,
+and no independent historical store is introduced. Smaller synthetic payload
+measurements are separate from conservative planning assumptions. Current bar
+updates/revisions are not advertised as a completed-bar-only capture profile.
+
+Independently re-reviewed PF-01E high/medium fixes; the four original Windows
+spawn tests passed unchanged in the authorized shell. A further supply status
+file-identity issue was corrected. Deployment/rollback and default-off overnight
+acceptance artifacts preserve serving source differences and explicit provider,
+target, cost, storage and host prerequisites. Actual account entitlements,
+production deployment and a real overnight run remain unverified; no provider
+probe, live subscription, paid request, trading or canonical migration occurred.

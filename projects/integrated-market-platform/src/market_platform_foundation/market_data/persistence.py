@@ -450,7 +450,25 @@ class MarketStreamWriter:
     def checkpoints(self) -> list[dict[str, Any]]:
         return [dict(row) for row in self.connection.execute('SELECT * FROM market_stream_checkpoints').fetchall()]
 
+    def _capacity_status(self) -> dict[str, Any]:
+        """Cheap read-only resource warning; no database scan, checkpoint or retention action."""
+        from .capacity import capacity_status
+        import shutil
+
+        path = self.connection.path
+        try:
+            stat = path.stat()
+            if (stat.st_dev, stat.st_ino) != self._identity:
+                return {'state': 'UNAVAILABLE', 'reason': 'MARKET_STORAGE_REPLACED'}
+            wal = Path(str(path) + '-wal')
+            return capacity_status(stat.st_size, wal_bytes=wal.stat().st_size if wal.exists() else 0,
+                                   max_database_bytes=self.max_database_bytes,
+                                   free_disk_bytes=shutil.disk_usage(path.parent).free)
+        except OSError:
+            return {'state': 'UNAVAILABLE', 'reason': 'MARKET_STORAGE_UNAVAILABLE'}
+
     def status(self) -> dict[str, Any]:
+        capacity = self._capacity_status()
         with self._lock:
             state = 'STOPPED' if self._closed and self._state != 'FAILED' else self._state
             if self._thread is not None and not self._thread.is_alive() and not self._closed and not self._stop.is_set():
@@ -477,6 +495,7 @@ class MarketStreamWriter:
                     'pending_gap_classes': len(self._gaps), 'known_gaps': self._known_gaps,
                     'queue_limit': self.queue_limit, 'batch_limit': self.batch_limit,
                     'max_database_bytes': self.max_database_bytes, 'max_flush_seconds': self._max_flush_seconds,
+                    'capacity': capacity,
                     'consecutive_failures': self._consecutive_failures, 'retry_limit': RETRY_LIMIT,
                     'coverage': 'OBSERVED_ONLY_NOT_COMPLETE', 'recovery': 'NO_PROVIDER_REPLAY',
                     'checkpoint_semantics': 'COMMITTED_WATERMARK_NOT_REPLAY_CURSOR'}
