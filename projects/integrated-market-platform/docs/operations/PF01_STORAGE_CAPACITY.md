@@ -54,7 +54,10 @@ concurrent writer can change them after inspection. Use the pure helper for
 frequent status, not full database scans.
 
 `forecast` uses explicitly declared rates per target, physical bytes per record,
-and maximum active seconds per day. It includes all updates and revisions,
+and maximum active seconds in any rolling 24 hours (`active_seconds_per_day`).
+This is stronger than a per-calendar-date limit: a short window can cross
+midnight. Declare continuous activity if the rolling bound is unknown.
+It includes all updates and revisions,
 additional shared-state growth and a default 25% growth margin. Partial-day
 windows can contain a whole session: it uses the session upper bound rather than
 a daily average that would understate a short window. It reports per-source/type

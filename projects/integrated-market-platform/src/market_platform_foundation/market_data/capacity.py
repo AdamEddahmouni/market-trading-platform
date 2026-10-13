@@ -64,8 +64,8 @@ def capacity_status(database_bytes: int, *, wal_bytes: int = 0,
 class Workload:
     """Operator-declared rates per target, including all revisions/updates.
 
-    active_seconds_per_day is an explicit upper activity bound for every day in
-    the modeled window; weekends, holidays and session alignment are not inferred.
+    active_seconds_per_day is an upper activity bound in ANY rolling 24 hours,
+    not merely each calendar date. Holidays/session alignment are not inferred.
     bytes_per_record must include measured SQLite indexes/page overhead, not only
     payload length. Sources/types are labels, not provider activation authority.
     """
@@ -143,7 +143,7 @@ def forecast(workloads: tuple[Workload, ...], *, duration_seconds: float,
             'continuous_peak_growth_bytes': math.ceil(peak_rate * duration),
             'seconds_to_bound_at_peak_rate': remaining / peak_rate if peak_rate else None,
             'retention_action': 'PRESERVE_ALL_STOP_BEFORE_BOUND',
-            'assumptions': 'DECLARED_DAILY_ACTIVITY_UPPER_BOUND_NO_HOLIDAY_OR_SESSION_ALIGNMENT_INFERRED'}
+            'assumptions': 'DECLARED_ROLLING_24H_ACTIVITY_UPPER_BOUND_NO_HOLIDAY_OR_SESSION_ALIGNMENT_INFERRED'}
 
 
 def inspect_storage(path: Path, *, max_database_bytes: int = DEFAULT_MAX_DATABASE_BYTES,
