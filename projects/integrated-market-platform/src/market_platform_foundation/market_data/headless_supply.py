@@ -1,0 +1,503 @@
+"""PF-01 default-off headless market supply for the collection-only process.
+
+The collection-only child has no browser demand, so the durable writer would
+receive nothing. This module keeps explicitly configured demand alive on the
+existing subscription authorities (``LiveObservationalRuntime`` for
+moomoo/OpenD, ``KrakenStreamRuntime`` for Kraken) under one consumer id. It adds
+no provider, transport, normalisation or storage path: records still reach the
+writer through the existing ingress.
+
+Nothing is requested unless supply is enabled, the provider's own live gate is
+open, the operator has confirmed the source's data rights, and (moomoo) the
+existing capability probe verifies the account entitlement. A key, a reachable
+OpenD or a passing fixture is never treated as a right.
+"""
+from __future__ import annotations
+
+import json
+import os
+import re
+import sqlite3
+import threading
+import time
+from contextlib import closing
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Mapping
+
+SUPPLY_CONSUMER = 'pf01-headless-collector'
+SUPPLY_JOB = '__pf01_market_supply__'  # reserved evidence row, never a provider job
+SOURCE_CAPABILITIES = {'moomoo': ('US_EQUITY_L1', 'US_EQUITY_TICKS', 'US_EQUITY_DEPTH'),
+                       'kraken': ('CRYPTO_TRADES', 'CRYPTO_BOOK')}
+SYMBOL_PATTERNS = {'moomoo': re.compile(r'[A-Z][A-Z0-9.\-]{0,9}'), 'kraken': re.compile(r'XA01:[0-9A-F]{16}')}
+MAX_TARGETS = 20  # the writer's selection bound; supply can never exceed what is stored
+RECONCILE_SECONDS = 5.0
+STATUS_SECONDS = 30.0
+STATUS_LEASE_SECONDS = 120.0
+STALE_SECONDS = 300.0
+_SUPPLY: HeadlessMarketSupply | None = None
+_GLOBAL_LOCK = threading.Lock()
+
+
+@dataclass(frozen=True, slots=True)
+class SupplyTarget:
+    source: str
+    symbol: str
+    capabilities: tuple[str, ...]
+
+
+def _list(env: Mapping[str, str], key: str) -> tuple[str, ...]:
+    return tuple(item.strip() for item in env.get(key, '').split(',') if item.strip())
+
+
+def validate_supply(env: Mapping[str, str]) -> tuple[SupplyTarget, ...]:
+    """Parse ``source:symbol@CAPABILITY+CAPABILITY`` targets. Empty unless supply is enabled.
+
+    Every refusal here is a configuration the operator must change, so the
+    child reports it as permanent. Rights are not decided here.
+    """
+    if env.get('IMP_MARKET_SUPPLY_ENABLED') != '1':
+        return ()
+    if env.get('IMP_MARKET_PERSISTENCE_ENABLED') != '1':
+        raise ValueError('MARKET_SUPPLY_REQUIRES_PERSISTENCE')
+    entries = _list(env, 'IMP_MARKET_SUPPLY_TARGETS')
+    if not entries:
+        raise ValueError('MARKET_SUPPLY_TARGETS_REQUIRED')
+    stored_sources = set(_list(env, 'IMP_MARKET_PERSISTENCE_SOURCES'))
+    stored_symbols = set(_list(env, 'IMP_MARKET_PERSISTENCE_SYMBOLS'))
+    targets, seen = [], set()
+    for entry in entries:
+        source, _, rest = entry.partition(':')
+        symbol, _, names = rest.rpartition('@')
+        capabilities = tuple(names.split('+'))
+        if (source not in SOURCE_CAPABILITIES or not SYMBOL_PATTERNS[source].fullmatch(symbol)
+                or len(set(capabilities)) != len(capabilities)
+                or set(capabilities) - set(SOURCE_CAPABILITIES[source]) or (source, symbol) in seen):
+            raise ValueError('MARKET_SUPPLY_TARGETS_INVALID')
+        if source not in stored_sources or symbol not in stored_symbols:
+            raise ValueError('MARKET_SUPPLY_TARGET_NOT_PERSISTED')  # never subscribe what is not stored
+        seen.add((source, symbol))
+        targets.append(SupplyTarget(source, symbol, capabilities))
+    if len(targets) > MAX_TARGETS:
+        raise ValueError('MARKET_SUPPLY_TARGETS_INVALID')
+    sources = {target.source for target in targets}
+    if 'moomoo' in sources:
+        if env.get('IMP_LIVE_OBSERVATIONAL') != '1' or env.get('IMP_MOOMOO_LIVE') != '1':
+            raise ValueError('MARKET_SUPPLY_PROVIDER_GATE_CLOSED')
+        # The shared runtime would also start these; a collection-only process must not.
+        if (env.get('IMP_IBKR_LIVE', '').strip() == '1' or env.get('IMP_OBSERVATIONAL_PROVIDER', 'auto').strip().lower() == 'ibkr'
+                or env.get('IMP_SHADOW_RECORDING', '').strip().lower() in {'1', 'true', 'yes'}):
+            raise ValueError('MARKET_SUPPLY_PROVIDER_CONFLICT')
+    if 'kraken' in sources and env.get('IMP_CRYPTO_LIVE') != '1':
+        raise ValueError('MARKET_SUPPLY_PROVIDER_GATE_CLOSED')
+    return tuple(targets)
+
+
+def collection_session(source: str, epoch: float) -> dict[str, Any]:
+    """Whether a source is expected to produce data now. Collection eligibility only; not an AI or trading window."""
+    if source == 'kraken':
+        return {'label': 'CONTINUOUS', 'data_expected': True}
+    from ..intelligence.forward_qualification.evidence01.continuity import _DEFAULT_HOLIDAYS, is_trading_day
+    from ..market_sessions import ET, us_equity_screener_session
+
+    moment = datetime.fromtimestamp(epoch, timezone.utc).astimezone(ET)
+    if moment.year not in {int(day[:4]) for day in _DEFAULT_HOLIDAYS}:
+        return {'label': 'CALENDAR_UNAVAILABLE', 'data_expected': False}
+    label = us_equity_screener_session(moment)
+    if label in {'PREMARKET', 'REGULAR', 'AFTER_HOURS'} and not is_trading_day(moment.date()):
+        label = 'CLOSED'
+    # Overnight quotes may arrive and are stored; their absence is not a fault.
+    return {'label': label, 'data_expected': label in {'PREMARKET', 'REGULAR', 'AFTER_HOURS'}}
+
+
+class _MoomooSupply:
+    """Demand on the process's existing OpenD runtime and its reference-counted subscription manager."""
+
+    def __init__(self, runtime: Callable[[], Any] | None = None, close: Callable[[], None] | None = None) -> None:
+        self._factory, self._close, self.runtime = runtime, close, None
+
+    def open(self) -> bool:
+        if self.runtime is None:
+            if self._factory is None:
+                from .live_runtime import get_live_runtime
+
+                self.runtime = get_live_runtime(create=True)
+            else:
+                self.runtime = self._factory()
+        return self.runtime is not None
+
+    def entitlement(self, capability: str) -> str | None:
+        registry = self.runtime.capability_registry
+        if registry.load_error:
+            return 'ENTITLEMENT_PROBE_MISSING'
+        if registry.is_stale:
+            return 'ENTITLEMENT_PROBE_STALE'
+        row = registry.get(capability)
+        return None if row is not None and row.account_entitled else 'ENTITLEMENT_NOT_VERIFIED'
+
+    def request(self, symbol: str, capability: str) -> tuple[str, str | None]:
+        from .subscription_manager import SubscriptionPriority
+
+        result = self.runtime.subscribe(instrument_id=symbol, capabilities=[capability], consumer_id=SUPPLY_CONSUMER,
+                                        priority=SubscriptionPriority.BACKGROUND_RESEARCH)[0]
+        if not result['accepted']:
+            return 'BLOCKED', str(result.get('reason') or 'SUBSCRIPTION_REJECTED')
+        feed = self.runtime.feed
+        state = feed.subscription_state(symbol, capability) if feed is not None else 'PENDING'
+        if state == 'REFUSED':
+            return 'REFUSED', 'PROVIDER_REFUSED_SUBSCRIPTION'
+        return ('ACTIVE', None) if state == 'ACTIVE' else ('REQUESTED', None)
+
+    def release(self, symbol: str, capability: str) -> None:
+        self.runtime.unsubscribe(instrument_id=symbol, capabilities=[capability], consumer_id=SUPPLY_CONSUMER)
+
+    def connection(self) -> str:
+        return str(getattr(self.runtime.lifecycle.connection_state, 'value', self.runtime.lifecycle.connection_state))
+
+    def close(self) -> None:
+        if self._close is not None:
+            self._close()
+        elif self._factory is None:
+            from .live_runtime import reset_live_runtime
+
+            reset_live_runtime()  # closes only this process's OpenD connection
+        self.runtime = None
+
+
+class _KrakenSupply:
+    """Demand on the process's existing Kraken selected-pair stream. Public data; no account exists to verify."""
+
+    def __init__(self, runtime: Callable[[], Any] | None = None) -> None:
+        self._factory, self.runtime = runtime, None
+
+    def open(self) -> bool:
+        if self.runtime is None:
+            if self._factory is None:
+                from ..ui_api.screener_crypto import _stream_runtime
+
+                self.runtime = _stream_runtime()
+            else:
+                self.runtime = self._factory()
+        return self.runtime is not None
+
+    def entitlement(self, capability: str) -> str | None:
+        return None
+
+    def request(self, symbol: str, capability: str) -> tuple[str, str | None]:
+        result = self.runtime.subscribe(instrument_id=symbol, capabilities=[capability], consumer_id=SUPPLY_CONSUMER)[0]
+        if not result['accepted']:
+            return 'BLOCKED', str(result.get('reason') or 'SUBSCRIPTION_REJECTED')
+        if self.runtime.subscription_refusal(symbol, capability):
+            return 'REFUSED', 'PROVIDER_REFUSED_SUBSCRIPTION'
+        active = self.runtime.subscriptions.activated_at(instrument_id=symbol, capability=capability) is not None
+        return ('ACTIVE', None) if active else ('REQUESTED', None)
+
+    def release(self, symbol: str, capability: str) -> None:
+        self.runtime.unsubscribe(instrument_id=symbol, capabilities=[capability], consumer_id=SUPPLY_CONSUMER)
+
+    def connection(self) -> str:
+        return str(self.runtime.lifecycle.connection_state)
+
+    def close(self) -> None:
+        if self.runtime is not None and self._factory is None:
+            self.runtime.shutdown()  # only the stream this process's supply opened
+        self.runtime = None
+
+
+class HeadlessMarketSupply:
+    def __init__(self, path: Path, targets: tuple[SupplyTarget, ...], *, writer: Any, entitled_sources: tuple[str, ...] = (),
+                 providers: Mapping[str, Any] | None = None, clock: Callable[[], float] = time.time,
+                 interval: float = RECONCILE_SECONDS) -> None:
+        if not targets or len(targets) > MAX_TARGETS:
+            raise ValueError('MARKET_SUPPLY_TARGETS_INVALID')
+        self.path, self.targets, self.writer, self.clock, self.interval = path, targets, writer, clock, interval
+        self.entitled_sources = frozenset(entitled_sources)
+        self.providers = dict(providers) if providers is not None else {'moomoo': _MoomooSupply(), 'kraken': _KrakenSupply()}
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._stopped = False
+        self._standby = False
+        self._errors = 0
+        self._held: set[tuple[str, str, str]] = set()
+        #: (source, symbol, capability) -> {'state', 'reason', 'active_since'}
+        self._rows: dict[tuple[str, str, str], dict[str, Any]] = {
+            (target.source, target.symbol, capability): {'state': 'PENDING', 'reason': None, 'active_since': None}
+            for target in targets for capability in target.capabilities}
+        self._provider_rows: dict[str, dict[str, Any]] = {}
+        self._saved_at = 0.0
+        self._saved_state: str | None = None
+        self._owner = f'{os.getpid()}:{id(self):x}'
+
+    # ------------------------------------------------------------ ownership
+
+    def _foreign_writer(self) -> bool | None:
+        """True while another process holds the market writer. None when the store could not be read."""
+        try:
+            with closing(sqlite3.connect(self.path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+                rows = db.execute('SELECT run_id FROM market_stream_runs WHERE closed_ns IS NULL AND lease_until_ns>?',
+                                  (time.time_ns(),)).fetchall()
+        except (sqlite3.Error, OSError):
+            return None
+        # Read after the query, so a run this writer acquired meanwhile is recognised as its own.
+        own = self.writer.run_id
+        if own is not None or not rows:
+            return any(row[0] != own for row in rows)
+        # An open run that is not ours: a live owner, or one that died inside its lease.
+        # Only the owner lock tells them apart; a dead owner must not delay recovery.
+        from .persistence import owner_lock_held
+
+        try:
+            return owner_lock_held(self.path)
+        except OSError:
+            return None
+
+    def _set(self, key: tuple[str, str, str], state: str, reason: str | None = None) -> None:
+        row = self._rows[key]
+        if state == 'ACTIVE' and row['state'] != 'ACTIVE':
+            row['active_since'] = self.clock()
+        elif state != 'ACTIVE':
+            row['active_since'] = None
+        if state == 'REFUSED' and row['state'] != 'REFUSED':
+            # Durable evidence that a selected stream was declined, written once per refusal.
+            self.writer.gap('SUPPLY_SUBSCRIPTION_REFUSED', stream=f'{key[0]}:{key[1]}:{key[2]}')
+        row['state'], row['reason'] = state, reason
+
+    def _release(self, key: tuple[str, str, str]) -> None:
+        if key in self._held:
+            try:
+                self.providers[key[0]].release(key[1], key[2])
+            except Exception:  # noqa: BLE001 - one provider's failure must not keep another's demand alive
+                self._errors += 1
+            self._held.discard(key)
+
+    def step(self) -> None:
+        """One bounded reconciliation of configured targets against the existing subscription authorities."""
+        with self._lock:
+            if self._stopped:
+                return
+            foreign = self._foreign_writer()
+            if foreign is not None:
+                self._standby = foreign
+            for source in {target.source for target in self.targets}:
+                provider, attested = self.providers.get(source), source in self.entitled_sources
+                keys = [key for key in self._rows if key[0] == source]
+                row = self._provider_rows.setdefault(source, {'connection': 'NOT_OPENED', 'entitlement_confirmed': attested})
+                if self._standby:
+                    for key in keys:
+                        self._release(key)
+                        self._set(key, 'STANDBY', 'MARKET_WRITER_OWNED_BY_ANOTHER_PROCESS')
+                    continue
+                if not attested or provider is None:
+                    for key in keys:
+                        self._set(key, 'BLOCKED', 'ENTITLEMENT_NOT_CONFIRMED' if provider is not None else 'PROVIDER_UNSUPPORTED')
+                    continue
+                try:
+                    if not provider.open():
+                        raise LookupError
+                    row['connection'] = provider.connection()
+                except Exception:  # noqa: BLE001 - reported, retried on the next step
+                    self._errors += 1
+                    row['connection'] = 'UNAVAILABLE'
+                    for key in keys:
+                        self._set(key, 'BLOCKED', 'PROVIDER_RUNTIME_UNAVAILABLE')
+                    continue
+                for key in keys:
+                    try:
+                        reason = provider.entitlement(key[2])
+                        if reason is not None:
+                            self._release(key)
+                            self._set(key, 'BLOCKED', reason)
+                            continue
+                        state, reason = provider.request(key[1], key[2])
+                        if state == 'BLOCKED':
+                            self._held.discard(key)  # the authority refused; nothing is held
+                        else:
+                            self._held.add(key)
+                        self._set(key, state, reason)
+                    except Exception:  # noqa: BLE001
+                        self._errors += 1
+                        self._set(key, 'BLOCKED', 'PROVIDER_REQUEST_FAILED')
+        self._save()
+
+    # --------------------------------------------------------------- status
+
+    def _checkpoints(self) -> dict[str, tuple[int, int]] | None:
+        try:
+            with closing(sqlite3.connect(self.path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+                return {str(row[0]).lower(): (row[1], row[2]) for row in
+                        db.execute('SELECT stream_id,received_ns,commit_ns FROM market_stream_checkpoints').fetchall()}
+        except (sqlite3.Error, OSError):
+            return None
+
+    def status(self) -> dict[str, Any]:
+        now = self.clock()
+        checkpoints = self._checkpoints()
+        writer = self.writer.status()
+        with self._lock:
+            sessions = {source: collection_session(source, now) for source in {target.source for target in self.targets}}
+            targets = []
+            for (source, symbol, capability), row in sorted(self._rows.items()):
+                received, committed = (checkpoints or {}).get(f'{source}:{symbol}:{capability}'.lower(), (None, None))
+                active = row['state'] == 'ACTIVE'
+                fresh = committed is not None and now - committed / 1e9 <= STALE_SECONDS
+                waited = active and now - row['active_since'] > STALE_SECONDS
+                state = row['state']
+                if active:
+                    state = ('COLLECTING' if fresh else 'SESSION_CLOSED' if not sessions[source]['data_expected']
+                             else 'STALE' if waited and checkpoints is not None else 'ACTIVE_NO_DATA')
+                targets.append({'source': source, 'symbol': symbol, 'capability': capability, 'state': state,
+                                'reason': row['reason'], 'subscription_requested': row['state'] in {'REQUESTED', 'ACTIVE', 'REFUSED'},
+                                'subscription_active': active, 'last_received_ns': received, 'last_commit_ns': committed,
+                                'committed_recently': fresh})
+            providers = {}
+            for source, row in sorted(self._provider_rows.items()):
+                connection = row['connection']
+                providers[source] = {**row, 'session': sessions[source],
+                                     'available': connection in {'CONNECTED', 'CONNECTED_DEGRADED'},
+                                     'recovery_pending': connection in {'CONNECTING', 'RECONNECTING', 'DISCONNECTED'},
+                                     'maintenance': connection == 'MAINTENANCE'}
+            states = [target['state'] for target in targets]
+            degraded = writer['state'] in {'RETRYING', 'FAILED', 'WAITING_FOR_OWNERSHIP'}
+            if self._stopped:
+                state = 'STOPPED'
+            elif self._standby:
+                state = 'STANDBY'
+            elif states and all(item == 'BLOCKED' for item in states):
+                state = 'BLOCKED'
+            elif degraded or any(item in {'BLOCKED', 'REFUSED'} for item in states):
+                state = 'DEGRADED'
+            elif any(row['recovery_pending'] for row in providers.values()):
+                state = 'RECOVERY_PENDING'
+            elif 'STALE' in states:
+                state = 'STALE'
+            elif 'COLLECTING' in states:
+                state = 'COLLECTING'
+            elif any(item in {'ACTIVE_NO_DATA', 'SESSION_CLOSED'} for item in states):
+                state = 'SUBSCRIBED_NO_DATA'
+            else:
+                state = 'WAITING'
+            count = lambda *names: sum(item in names for item in states)  # noqa: E731
+            return {'enabled': True, 'configured': True, 'state': state, 'consumer_id': SUPPLY_CONSUMER,
+                    'worker_alive': bool(self._thread and self._thread.is_alive()),
+                    'entitled_sources': sorted(self.entitled_sources), 'providers': providers, 'targets': targets,
+                    'summary': {'streams': len(states), 'blocked': count('BLOCKED'), 'refused': count('REFUSED'),
+                                'standby': count('STANDBY'), 'requested': count('REQUESTED', 'PENDING'),
+                                'active': sum(target['subscription_active'] for target in targets),
+                                'collecting': count('COLLECTING'), 'stale': count('STALE')},
+                    'writer': {key: writer.get(key) for key in ('state', 'error', 'ownership', 'collecting', 'backlog',
+                               'rejected', 'committed', 'duplicates', 'known_gaps', 'received_ns', 'last_commit_ns')},
+                    'writer_degraded': degraded, 'checkpoints_readable': checkpoints is not None,
+                    'reconcile_errors': self._errors, 'stale_after_seconds': STALE_SECONDS, 'updated_at': now,
+                    'health_basis': 'COMMITTED_CHECKPOINTS_NOT_PROCESS_LIVENESS', 'coverage': 'OBSERVED_ONLY_NOT_COMPLETE',
+                    'collection_only': True, 'execution_authority': 'NONE', 'ai_required': False}
+
+    def _save(self, *, final: bool = False) -> None:
+        """Best-effort evidence for the existing health route; never blocks or fails supply."""
+        try:
+            status = self.status()
+            now = self.clock()
+            if not final and status['state'] == self._saved_state and now - self._saved_at < STATUS_SECONDS:
+                return
+            with closing(sqlite3.connect(self.path.resolve().as_uri() + '?mode=rw', uri=True, timeout=.25)) as db:
+                db.execute('INSERT OR REPLACE INTO news_collection_jobs(job_id,payload_json,next_due,lease_owner,lease_until) '
+                           'VALUES (?,?,0,?,?)', (SUPPLY_JOB, json.dumps(status), None if final else self._owner,
+                                                  0 if final else now + STATUS_LEASE_SECONDS))
+                db.commit()
+            self._saved_at, self._saved_state = now, status['state']
+        except Exception:  # noqa: BLE001 - status evidence is secondary to collection
+            self._errors += 1
+
+    # ------------------------------------------------------------ lifecycle
+
+    def start(self) -> None:
+        def run() -> None:
+            while not self._stop.is_set():
+                try:
+                    self.step()
+                except Exception:  # noqa: BLE001 - reconciliation must outlive one bad step
+                    self._errors += 1
+                self._stop.wait(self.interval)
+        if self._stopped:
+            raise ValueError('MARKET_SUPPLY_STOPPED')
+        if self._thread is None or not self._thread.is_alive():
+            self._thread = threading.Thread(target=run, name='imp-market-supply', daemon=True)
+            self._thread.start()
+
+    def stop(self) -> None:
+        """Release this consumer's demand, then close only the provider sessions this process opened."""
+        if self._stopped:
+            return
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=10)
+        with self._lock:
+            for key in list(self._held):
+                self._release(key)
+            for key in self._rows:
+                self._set(key, 'STOPPED')
+            for provider in self.providers.values():
+                try:
+                    provider.close()
+                except Exception:  # noqa: BLE001
+                    self._errors += 1
+            self._stopped = True
+        self._save(final=True)
+
+
+def active_supply() -> HeadlessMarketSupply | None:
+    return _SUPPLY
+
+
+def start_supply(writer: Any, env: Mapping[str, str] | None = None, *,
+                 providers: Mapping[str, Any] | None = None) -> HeadlessMarketSupply | None:
+    """Collection-only entry point. Returns None unless supply is explicitly enabled."""
+    global _SUPPLY
+    env = os.environ if env is None else env
+    targets = validate_supply(env)
+    if not targets:
+        return None
+    if writer is None:
+        raise ValueError('MARKET_SUPPLY_REQUIRES_PERSISTENCE')
+    with _GLOBAL_LOCK:
+        if _SUPPLY is not None:
+            raise ValueError('MARKET_SUPPLY_ALREADY_STARTED')
+        supply = HeadlessMarketSupply(writer.connection.path, targets, writer=writer, providers=providers,
+                                      entitled_sources=_list(env, 'IMP_MARKET_SUPPLY_ENTITLED_SOURCES'))
+        supply.start()
+        _SUPPLY = supply
+        return supply
+
+
+def stop_supply() -> None:
+    global _SUPPLY
+    with _GLOBAL_LOCK:
+        if _SUPPLY is not None:
+            _SUPPLY.stop()
+            _SUPPLY = None
+
+
+def supply_status(env: Mapping[str, str] | None = None, *, clock: Callable[[], float] = time.time) -> dict[str, Any]:
+    """In-process status, else the evidence a headless child last saved. Read-only; never migrates."""
+    supply = active_supply()
+    if supply is not None:
+        return supply.status()
+    values = os.environ if env is None else env
+    directory = values.get('IMP_STATE_DIR', '')
+    path = Path(directory) / 'imp-state.sqlite3'
+    if not directory or not Path(directory).is_absolute() or not path.is_file():
+        return {'enabled': False, 'state': 'DISABLED'}
+    try:
+        with closing(sqlite3.connect(path.resolve().as_uri() + '?mode=ro', uri=True, timeout=.1)) as db:
+            row = db.execute('SELECT payload_json,lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',
+                             (SUPPLY_JOB,)).fetchone()
+        if row is None:
+            return {'enabled': False, 'state': 'DISABLED'}
+        evidence = json.loads(row[0])
+        if row[1] and row[2] < clock():
+            # The child stopped reporting; its last view of subscriptions proves nothing now.
+            evidence.update(state='STALE', reason='SUPPLY_STATUS_EXPIRED')
+        return {**evidence, 'enabled': bool(row[1]), 'reported_by': 'HEADLESS_CHILD_EVIDENCE'}
+    except Exception:  # noqa: BLE001
+        return {'enabled': False, 'state': 'UNKNOWN', 'reason': 'SUPPLY_STATUS_UNAVAILABLE'}

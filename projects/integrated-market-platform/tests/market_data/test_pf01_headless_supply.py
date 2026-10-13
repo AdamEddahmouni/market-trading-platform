@@ -1,0 +1,641 @@
+"""PF-01 headless market supply: default-off demand on the existing subscription authorities.
+
+Offline. The moomoo and Kraken runtimes, feed, admission and writer are real;
+only the vendor transport is synthetic. Any real socket use fails the test.
+Synthetic entitlement fixtures prove the gate logic, not any account's rights.
+"""
+from __future__ import annotations
+
+import json
+import os
+import socket
+import sqlite3
+import tempfile
+import time
+import unittest
+from contextlib import closing
+from datetime import datetime, timezone
+from pathlib import Path
+from unittest.mock import patch
+
+from market_platform_foundation.crypto_market.kraken_stream import KrakenStreamRuntime
+from market_platform_foundation.local_state.connection import LocalStateConnection
+from market_platform_foundation.market_data import headless_supply, persistence
+from market_platform_foundation.market_data.headless_supply import (SUPPLY_CONSUMER, SUPPLY_JOB, HeadlessMarketSupply,
+    SupplyTarget, _KrakenSupply, _MoomooSupply, collection_session, start_supply, supply_status, validate_supply)
+from market_platform_foundation.market_data.persistence import MarketStreamWriter
+from market_platform_foundation.news.supervision import CHILD_EXIT_PERMANENT, child_exit_code
+from tests.support.pf01_synthetic_providers import KRAKEN_PAIRS, SyntheticKraken, SyntheticOpenD, synthetic_probe
+
+BTC, ETH = sorted(KRAKEN_PAIRS)
+BASE = {'IMP_MARKET_SUPPLY_ENABLED': '1', 'IMP_MARKET_PERSISTENCE_ENABLED': '1',
+        'IMP_MARKET_PERSISTENCE_SOURCES': 'moomoo,kraken', 'IMP_MARKET_PERSISTENCE_SYMBOLS': f'AAPL,MSFT,{BTC}',
+        'IMP_LIVE_OBSERVATIONAL': '1', 'IMP_MOOMOO_LIVE': '1', 'IMP_CRYPTO_LIVE': '1',
+        'IMP_MARKET_SUPPLY_TARGETS': f'moomoo:AAPL@US_EQUITY_L1+US_EQUITY_TICKS,kraken:{BTC}@CRYPTO_TRADES'}
+
+
+def epoch(text: str) -> float:
+    return datetime.fromisoformat(text).replace(tzinfo=timezone.utc).timestamp()
+
+
+class StubProvider:
+    """Records what supply asks of a subscription authority."""
+
+    def __init__(self, *, entitlement=None, state='ACTIVE', available=True):
+        self.entitlements, self.state, self.available = entitlement or {}, state, available
+        self.opened = self.closed = 0
+        self.requests, self.releases = [], []
+        self.fail = False
+
+    def open(self):
+        self.opened += 1
+        return self.available
+
+    def entitlement(self, capability):
+        return self.entitlements.get(capability)
+
+    def request(self, symbol, capability):
+        if self.fail:
+            raise RuntimeError('boom')
+        self.requests.append((symbol, capability))
+        return (self.state, None if self.state in {'ACTIVE', 'REQUESTED'} else 'STUB_REASON')
+
+    def release(self, symbol, capability):
+        self.releases.append((symbol, capability))
+
+    def connection(self):
+        return 'CONNECTED'
+
+    def close(self):
+        self.closed += 1
+
+
+class SupplyCase(unittest.TestCase):
+    SYMBOLS = ('AAPL', 'MSFT', BTC)
+
+    def setUp(self):
+        blocked = AssertionError('real network use in an offline test')
+        for target in ('create_connection', 'getaddrinfo'):
+            item = patch.object(socket, target, side_effect=blocked)
+            item.start()
+            self.addCleanup(item.stop)
+        item = patch.object(socket.socket, 'connect', side_effect=blocked)
+        item.start()
+        self.addCleanup(item.stop)
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.path = Path(self.temp.name) / 'imp-state.sqlite3'
+        LocalStateConnection(self.path).close()
+        self.writer = MarketStreamWriter(self.path, sources=('moomoo', 'kraken'), symbols=self.SYMBOLS, acquire=False)
+        self.addCleanup(self.writer.stop)
+        item = patch.object(persistence, '_WRITER', self.writer)
+        item.start()
+        self.addCleanup(item.stop)
+        self.now = [time.time()]
+
+    def supply(self, targets, providers, entitled=('moomoo', 'kraken')):
+        supply = HeadlessMarketSupply(self.path, targets, writer=self.writer, providers=providers,
+                                      entitled_sources=entitled, clock=lambda: self.now[0])
+        self.addCleanup(supply.stop)
+        return supply
+
+    def rows(self, sql, *args):
+        with closing(sqlite3.connect(self.path)) as db:
+            return db.execute(sql, args).fetchall()
+
+    def states(self, supply):
+        return {(row['source'], row['symbol'], row['capability']): (row['state'], row['reason'])
+                for row in supply.status()['targets']}
+
+    def wait_until(self, condition, seconds=15.0):
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            if condition():
+                return
+            time.sleep(0.05)
+        self.fail('condition not reached')
+
+
+class ConfigurationTests(unittest.TestCase):
+    def reason(self, **changes):
+        with self.assertRaises(ValueError) as raised:
+            validate_supply({**BASE, **changes})
+        return str(raised.exception)
+
+    def test_default_is_off_and_touches_no_provider(self):
+        self.assertEqual(validate_supply({}), ())
+        self.assertEqual(validate_supply({**BASE, 'IMP_MARKET_SUPPLY_ENABLED': '0'}), ())
+        provider = StubProvider()
+        self.assertIsNone(start_supply(object(), {}, providers={'moomoo': provider, 'kraken': provider}))
+        self.assertEqual((provider.opened, provider.requests), (0, []))
+        self.assertEqual(supply_status({}), {'enabled': False, 'state': 'DISABLED'})
+
+    def test_valid_targets_are_exactly_what_was_listed(self):
+        self.assertEqual(validate_supply(BASE), (SupplyTarget('moomoo', 'AAPL', ('US_EQUITY_L1', 'US_EQUITY_TICKS')),
+                                                 SupplyTarget('kraken', BTC, ('CRYPTO_TRADES',))))
+
+    def test_enabled_without_targets_or_persistence_is_refused(self):
+        self.assertEqual(self.reason(IMP_MARKET_SUPPLY_TARGETS=''), 'MARKET_SUPPLY_TARGETS_REQUIRED')
+        self.assertEqual(self.reason(IMP_MARKET_PERSISTENCE_ENABLED='0'), 'MARKET_SUPPLY_REQUIRES_PERSISTENCE')
+
+    def test_unsupported_combinations_are_refused(self):
+        for targets in ('ibkr:AAPL@US_EQUITY_L1', 'moomoo:aapl@US_EQUITY_L1', 'moomoo:AAPL@CRYPTO_TRADES',
+                        f'kraken:{BTC}@US_EQUITY_L1', 'kraken:BTC/USD@CRYPTO_TRADES', 'moomoo:AAPL@CURRENT_BAR_1M',
+                        'moomoo:AAPL', 'moomoo:AAPL@', 'moomoo:*@US_EQUITY_L1', 'moomoo:AAPL@US_EQUITY_L1+US_EQUITY_L1',
+                        'moomoo:AAPL@US_EQUITY_L1,moomoo:AAPL@US_EQUITY_TICKS'):
+            self.assertEqual(self.reason(IMP_MARKET_SUPPLY_TARGETS=targets), 'MARKET_SUPPLY_TARGETS_INVALID', targets)
+
+    def test_target_bound_is_the_writer_selection_bound(self):
+        symbols = [f'S{index}' for index in range(21)]
+        targets = ','.join(f'moomoo:{symbol}@US_EQUITY_L1' for symbol in symbols)
+        stored = {'IMP_MARKET_PERSISTENCE_SYMBOLS': ','.join(symbols)}
+        self.assertEqual(self.reason(IMP_MARKET_SUPPLY_TARGETS=targets, **stored), 'MARKET_SUPPLY_TARGETS_INVALID')
+        self.assertEqual(len(validate_supply({**BASE, **stored, 'IMP_MARKET_SUPPLY_TARGETS': targets.rsplit(',', 1)[0]})), 20)
+
+    def test_supply_never_exceeds_what_is_selected_for_persistence(self):
+        self.assertEqual(self.reason(IMP_MARKET_SUPPLY_TARGETS='moomoo:TSLA@US_EQUITY_L1'), 'MARKET_SUPPLY_TARGET_NOT_PERSISTED')
+        self.assertEqual(self.reason(IMP_MARKET_PERSISTENCE_SOURCES='moomoo'), 'MARKET_SUPPLY_TARGET_NOT_PERSISTED')
+
+    def test_provider_live_gates_are_required_and_other_feeds_conflict(self):
+        for change in ({'IMP_MOOMOO_LIVE': '0'}, {'IMP_LIVE_OBSERVATIONAL': '0'}, {'IMP_CRYPTO_LIVE': '0'}):
+            self.assertEqual(self.reason(**change), 'MARKET_SUPPLY_PROVIDER_GATE_CLOSED', change)
+        for change in ({'IMP_IBKR_LIVE': '1'}, {'IMP_OBSERVATIONAL_PROVIDER': 'ibkr'}, {'IMP_SHADOW_RECORDING': 'true'}):
+            self.assertEqual(self.reason(**change), 'MARKET_SUPPLY_PROVIDER_CONFLICT', change)
+        # A Kraken-only selection needs neither OpenD gate.
+        kraken = {**BASE, 'IMP_MOOMOO_LIVE': '0', 'IMP_LIVE_OBSERVATIONAL': '0',
+                  'IMP_MARKET_SUPPLY_TARGETS': f'kraken:{BTC}@CRYPTO_TRADES'}
+        self.assertEqual(len(validate_supply(kraken)), 1)
+
+    def test_every_configuration_refusal_is_permanent_for_the_supervisor(self):
+        for reason in ('MARKET_SUPPLY_TARGETS_REQUIRED', 'MARKET_SUPPLY_TARGETS_INVALID', 'MARKET_SUPPLY_REQUIRES_PERSISTENCE',
+                       'MARKET_SUPPLY_TARGET_NOT_PERSISTED', 'MARKET_SUPPLY_PROVIDER_GATE_CLOSED',
+                       'MARKET_SUPPLY_PROVIDER_CONFLICT'):
+            self.assertEqual(child_exit_code(reason), CHILD_EXIT_PERMANENT, reason)
+
+    def test_collection_eligibility_follows_the_market_not_an_ai_window(self):
+        self.assertEqual(collection_session('kraken', epoch('2026-10-17T03:00:00')), {'label': 'CONTINUOUS', 'data_expected': True})
+        for stamp, label, expected in (('2026-10-13T15:00:00', 'REGULAR', True),      # Tuesday 11:00 ET
+                                       ('2026-10-13T09:00:00', 'PREMARKET', True),    # 05:00 ET
+                                       ('2026-10-13T22:00:00', 'AFTER_HOURS', True),  # 18:00 ET
+                                       ('2026-10-14T02:00:00', 'OVERNIGHT', False),   # 22:00 ET
+                                       ('2026-10-17T15:00:00', 'CLOSED', False),      # Saturday
+                                       ('2026-11-26T16:00:00', 'CLOSED', False),      # Thanksgiving
+                                       ('2031-03-04T16:00:00', 'CALENDAR_UNAVAILABLE', False)):
+            self.assertEqual(collection_session('moomoo', epoch(stamp)), {'label': label, 'data_expected': expected}, stamp)
+        # 07:00 UTC is 03:00 ET: inside no AI window anyone proposed, and still collected.
+        self.assertTrue(collection_session('kraken', epoch('2026-10-13T07:00:00'))['data_expected'])
+
+
+class LifecycleTests(SupplyCase):
+    TARGETS = (SupplyTarget('moomoo', 'AAPL', ('US_EQUITY_L1', 'US_EQUITY_TICKS')), SupplyTarget('kraken', BTC, ('CRYPTO_TRADES',)))
+
+    def test_unconfirmed_entitlement_requests_nothing(self):
+        moomoo, kraken = StubProvider(), StubProvider()
+        supply = self.supply(self.TARGETS, {'moomoo': moomoo, 'kraken': kraken}, entitled=())
+        supply.step()
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_NOT_CONFIRMED')})
+        self.assertEqual((moomoo.opened, kraken.opened, moomoo.requests, kraken.requests), (0, 0, [], []))
+        status = supply.status()
+        self.assertEqual((status['state'], status['summary']['active'], status['summary']['blocked']), ('BLOCKED', 0, 3))
+        self.assertFalse(status['providers']['moomoo']['entitlement_confirmed'])
+
+    def test_confirmation_is_per_source(self):
+        moomoo, kraken = StubProvider(), StubProvider()
+        supply = self.supply(self.TARGETS, {'moomoo': moomoo, 'kraken': kraken}, entitled=('kraken',))
+        supply.step()
+        self.assertEqual((moomoo.requests, kraken.requests), ([], [(BTC, 'CRYPTO_TRADES')]))
+        self.assertEqual(supply.status()['state'], 'DEGRADED')
+
+    def test_unverified_capability_is_blocked_while_verified_ones_are_requested(self):
+        moomoo = StubProvider(entitlement={'US_EQUITY_TICKS': 'ENTITLEMENT_NOT_VERIFIED'})
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        supply.step()
+        self.assertEqual(moomoo.requests, [('AAPL', 'US_EQUITY_L1')])
+        self.assertEqual(self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_TICKS')], ('BLOCKED', 'ENTITLEMENT_NOT_VERIFIED'))
+
+    def test_entitlement_withdrawn_later_releases_the_held_subscription(self):
+        moomoo = StubProvider()
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        supply.step()
+        moomoo.entitlements['US_EQUITY_L1'] = 'ENTITLEMENT_PROBE_STALE'
+        supply.step()
+        self.assertEqual(moomoo.releases, [('AAPL', 'US_EQUITY_L1')])
+        self.assertEqual(self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_L1')], ('BLOCKED', 'ENTITLEMENT_PROBE_STALE'))
+
+    def test_one_failing_provider_does_not_stop_the_other(self):
+        moomoo, kraken = StubProvider(), StubProvider()
+        moomoo.fail = True
+        supply = self.supply(self.TARGETS, {'moomoo': moomoo, 'kraken': kraken})
+        supply.step()
+        states = self.states(supply)
+        self.assertEqual(states[('moomoo', 'AAPL', 'US_EQUITY_L1')], ('BLOCKED', 'PROVIDER_REQUEST_FAILED'))
+        self.assertEqual(states[('kraken', BTC, 'CRYPTO_TRADES')][1], None)
+        unavailable = StubProvider(available=False)
+        other = self.supply(self.TARGETS, {'moomoo': unavailable, 'kraken': kraken})
+        other.step()
+        self.assertEqual(self.states(other)[('moomoo', 'AAPL', 'US_EQUITY_TICKS')], ('BLOCKED', 'PROVIDER_RUNTIME_UNAVAILABLE'))
+        self.assertTrue(other.status()['summary']['active'])
+
+    def test_running_process_alone_is_never_reported_as_collecting(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        supply.start()
+        self.wait_until(lambda: kraken.requests)
+        status = supply.status()
+        self.assertTrue(status['worker_alive'])
+        self.assertEqual((status['state'], status['summary']['collecting']), ('SUBSCRIBED_NO_DATA', 0))
+        self.assertEqual(status['targets'][0]['state'], 'ACTIVE_NO_DATA')
+        self.assertEqual(status['health_basis'], 'COMMITTED_CHECKPOINTS_NOT_PROCESS_LIVENESS')
+        # Active with nothing committed for longer than the stale window, in a session that expects data.
+        self.now[0] += headless_supply.STALE_SECONDS + 1
+        self.assertEqual((supply.status()['state'], supply.status()['targets'][0]['state']), ('STALE', 'STALE'))
+
+    def test_closed_market_is_not_reported_as_stale(self):
+        moomoo = StubProvider()
+        supply = self.supply(self.TARGETS[:1], {'moomoo': moomoo})
+        self.now[0] = epoch('2026-10-17T15:00:00')  # Saturday
+        supply.step()
+        self.now[0] += headless_supply.STALE_SECONDS + 1
+        status = supply.status()
+        self.assertEqual({row['state'] for row in status['targets']}, {'SESSION_CLOSED'})
+        self.assertEqual((status['state'], status['providers']['moomoo']['session']['label']), ('SUBSCRIBED_NO_DATA', 'CLOSED'))
+
+    def test_another_process_owning_the_writer_puts_supply_on_standby_without_tearing_anything_down(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        supply.step()
+        self.assertEqual(len(kraken.requests), 1)
+        other = MarketStreamWriter(self.path, sources=('kraken',), symbols=(BTC,))  # a live owner elsewhere
+        try:
+            supply.step()
+            self.assertEqual(kraken.releases, [(BTC, 'CRYPTO_TRADES')])
+            self.assertEqual(self.states(supply)[('kraken', BTC, 'CRYPTO_TRADES')],
+                             ('STANDBY', 'MARKET_WRITER_OWNED_BY_ANOTHER_PROCESS'))
+            supply.step()
+            self.assertEqual((len(kraken.requests), len(kraken.releases), supply.status()['state']), (1, 1, 'STANDBY'))
+            # The owner was never touched: its run is still open and its lease intact.
+            self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_runs WHERE closed_ns IS NULL')[0][0], 1)
+            self.assertEqual(other.status()['ownership'], 'HELD')
+        finally:
+            other.stop()
+        supply.step()
+        self.assertEqual((len(kraken.requests), supply.status()['state']), (2, 'SUBSCRIBED_NO_DATA'))
+
+    def test_run_left_open_by_a_dead_owner_does_not_put_supply_on_standby(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        dead = MarketStreamWriter(self.path, sources=('kraken',), symbols=(BTC,))
+        dead._owner_lock.release()  # what the operating system does when the owning process dies
+        dead.connection.close()
+        dead._closed = True
+        (lease,), = self.rows('SELECT lease_until_ns FROM market_stream_runs WHERE closed_ns IS NULL')
+        self.assertGreater(lease, time.time_ns())  # its lease is still running
+        supply.step()
+        self.assertEqual((len(kraken.requests), kraken.releases, supply.status()['state']), (1, [], 'SUBSCRIBED_NO_DATA'))
+
+    def test_own_writer_run_is_not_mistaken_for_another_owner(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        self.writer.gap('TEST_GAP')
+        self.writer.flush()
+        self.assertEqual(self.writer.status()['ownership'], 'HELD')
+        supply.step()
+        self.assertEqual((kraken.releases, supply.status()['state']), ([], 'SUBSCRIBED_NO_DATA'))
+
+    def test_stop_releases_demand_closes_sessions_and_is_idempotent(self):
+        moomoo, kraken = StubProvider(), StubProvider()
+        supply = self.supply(self.TARGETS, {'moomoo': moomoo, 'kraken': kraken})
+        supply.start()
+        self.wait_until(lambda: kraken.requests and len(moomoo.requests) >= 2)
+        supply.stop()
+        supply.stop()
+        self.assertEqual(sorted(moomoo.releases), [('AAPL', 'US_EQUITY_L1'), ('AAPL', 'US_EQUITY_TICKS')])
+        self.assertEqual((kraken.releases, moomoo.closed, kraken.closed), ([(BTC, 'CRYPTO_TRADES')], 1, 1))
+        self.assertEqual((supply.status()['state'], supply.status()['worker_alive']), ('STOPPED', False))
+        requests = len(kraken.requests)
+        supply.step()
+        self.assertEqual(len(kraken.requests), requests)
+        with self.assertRaisesRegex(ValueError, 'MARKET_SUPPLY_STOPPED'):
+            supply.start()
+
+    def test_status_evidence_reaches_the_existing_health_reader_and_expires(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        supply.step()
+        env = {'IMP_STATE_DIR': self.temp.name}
+        saved = supply_status(env, clock=lambda: self.now[0])
+        self.assertEqual((saved['enabled'], saved['state'], saved['reported_by']), (True, 'SUBSCRIBED_NO_DATA', 'HEADLESS_CHILD_EVIDENCE'))
+        self.assertEqual(saved['execution_authority'], 'NONE')
+        # A child that stopped reporting must not look subscribed for ever.
+        expired = supply_status(env, clock=lambda: self.now[0] + headless_supply.STATUS_LEASE_SECONDS + 1)
+        self.assertEqual((expired['state'], expired['reason']), ('STALE', 'SUPPLY_STATUS_EXPIRED'))
+        supply.stop()
+        stopped = supply_status(env, clock=lambda: self.now[0])
+        self.assertEqual((stopped['enabled'], stopped['state']), (False, 'STOPPED'))
+        self.assertEqual(self.rows('SELECT lease_owner FROM news_collection_jobs WHERE job_id=?', SUPPLY_JOB), [(None,)])
+
+    def test_unreadable_status_store_never_stops_supply(self):
+        kraken = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
+        with patch.object(headless_supply.sqlite3, 'connect', side_effect=sqlite3.OperationalError('database is locked')):
+            supply.step()
+            status = supply.status()
+        self.assertEqual((len(kraken.requests), status['checkpoints_readable']), (1, False))
+        self.assertNotEqual(status['targets'][0]['state'], 'STALE')
+
+    def test_start_supply_is_single_and_requires_the_writer(self):
+        with self.assertRaisesRegex(ValueError, 'MARKET_SUPPLY_REQUIRES_PERSISTENCE'):
+            start_supply(None, BASE, providers={})
+        providers = {'moomoo': StubProvider(), 'kraken': StubProvider()}
+        supply = start_supply(self.writer, BASE, providers=providers)
+        self.addCleanup(headless_supply.stop_supply)
+        self.assertIs(headless_supply.active_supply(), supply)
+        self.assertEqual(supply.entitled_sources, frozenset())  # no confirmation in BASE: nothing may be requested
+        with self.assertRaisesRegex(ValueError, 'MARKET_SUPPLY_ALREADY_STARTED'):
+            start_supply(self.writer, BASE, providers=providers)
+        headless_supply.stop_supply()
+        self.assertIsNone(headless_supply.active_supply())
+        self.assertEqual(providers['kraken'].requests, [])
+
+
+class KrakenStreamSupplyTests(SupplyCase):
+    """Real KrakenStreamRuntime over a synthetic socket, real writer."""
+
+    def setUp(self):
+        super().setUp()
+        self.venue = SyntheticKraken()
+        self.waits = []
+        self.runtime = KrakenStreamRuntime(resolve=KRAKEN_PAIRS.get, connect=self.venue.connect, start_worker=False,
+                                           jitter=lambda: 0.5, wait=self.waits.append)
+        self.target = SupplyTarget('kraken', BTC, ('CRYPTO_TRADES',))
+        self.key = ('kraken', BTC, 'CRYPTO_TRADES')
+
+    def make(self, targets=None, **kwargs):
+        return self.supply(targets or (self.target,), {'kraken': _KrakenSupply(runtime=lambda: self.runtime)}, **kwargs)
+
+    def pump(self, supply, steps=6):
+        supply.step()
+        for _ in range(steps):
+            self.runtime.step()
+        supply.step()
+
+    def test_subscription_trades_commit_and_checkpoint(self):
+        supply = self.make()
+        supply.step()
+        self.assertEqual(self.states(supply)[self.key], ('REQUESTED', None))
+        self.pump(supply)
+        self.assertEqual(self.venue.subscribed(), {('trade', 'BTC/USD')})
+        self.assertEqual(self.states(supply)[self.key][0], 'ACTIVE_NO_DATA')
+        for _ in range(5):
+            self.assertTrue(self.venue.push_trade('BTC/USD'))
+        self.pump(supply)
+        self.assertEqual(self.writer.flush(), 5)
+        status = supply.status()
+        self.assertEqual((status['state'], status['targets'][0]['state'], status['writer']['committed']), ('COLLECTING', 'COLLECTING', 5))
+        self.assertTrue(status['targets'][0]['subscription_active'])
+        stored = self.rows('SELECT provider,symbol,capability FROM market_stream_records')
+        self.assertEqual(set(stored), {('KRAKEN', BTC, 'CRYPTO_TRADES')})
+        checkpoint = self.rows('SELECT stream_id,last_record_id FROM market_stream_checkpoints')
+        self.assertEqual(checkpoint[0][0], f'KRAKEN:{BTC}:CRYPTO_TRADES')
+
+    def test_repeated_requests_send_one_subscription_and_replayed_trades_are_deduplicated(self):
+        supply = self.make()
+        for _ in range(4):
+            self.pump(supply)
+        subscribes = [m for m in self.venue.connection.sent if m['method'] == 'subscribe']
+        self.assertEqual(len(subscribes), 1)
+        self.assertEqual(self.runtime.subscriptions.ref_count(instrument_id=BTC, capability='CRYPTO_TRADES'), 1)
+        self.venue.push_trade('BTC/USD')
+        replay = json.loads(self.venue.connection.inbox[-1])
+        self.pump(supply)
+        self.venue.connection.deliver(replay)  # the venue repeats the same trade
+        self.pump(supply)
+        self.writer.flush()
+        status = self.writer.status()
+        self.assertEqual((status['committed'], status['duplicates']), (1, 1))
+
+    def test_unselected_pair_traffic_is_neither_subscribed_nor_stored(self):
+        supply = self.make()
+        self.pump(supply)
+        self.assertFalse(self.venue.push_trade('ETH/USD'))
+        self.assertEqual({symbol for _, symbol in self.venue.subscribed()}, {'BTC/USD'})
+
+    def test_disconnect_records_a_gap_reconnects_with_bounded_backoff_and_restores_the_subscription(self):
+        supply = self.make()
+        self.pump(supply)
+        self.venue.push_trade('BTC/USD')
+        self.pump(supply)
+        self.writer.flush()
+        self.venue.drop()
+        self.pump(supply, steps=1)
+        self.assertEqual(supply.status()['providers']['kraken']['connection'], 'RECONNECTING')
+        self.assertEqual(supply.status()['state'], 'RECOVERY_PENDING')
+        self.assertEqual(self.states(supply)[self.key][0], 'REQUESTED')
+        self.pump(supply)
+        self.assertEqual(len(self.venue.connections), 2)
+        self.assertEqual(self.venue.subscribed(), {('trade', 'BTC/USD')})
+        self.assertTrue(self.venue.push_trade('BTC/USD'))
+        self.pump(supply)
+        self.writer.flush()
+        self.assertEqual(self.writer.status()['committed'], 2)
+        self.assertIn(('*', 'KRAKEN_DISCONNECT_NO_REPLAY'), self.rows('SELECT stream_id,reason FROM market_stream_gaps'))
+        self.assertTrue(self.waits and max(self.waits) <= 36)
+
+    def test_venue_that_will_not_accept_connections_is_retried_at_a_capped_rate(self):
+        self.venue.fail_connects = 9
+        supply = self.make()
+        for _ in range(9):
+            self.pump(supply, steps=1)
+        self.assertEqual((len(self.venue.connections), self.venue.connect_attempts), (0, 9))
+        self.assertEqual(self.waits[:6], [1.0, 2.0, 4.0, 8.0, 16.0, 30.0])
+        self.assertEqual(set(self.waits[6:]), {30.0})
+        self.assertEqual(supply.status()['state'], 'RECOVERY_PENDING')
+        self.pump(supply)
+        self.assertEqual(self.states(supply)[self.key][0], 'ACTIVE_NO_DATA')
+
+    def test_refused_subscription_is_reported_and_recorded_once(self):
+        self.venue.refuse = {('trade', 'BTC/USD')}
+        supply = self.make()
+        for _ in range(3):
+            self.pump(supply)
+        self.assertEqual(self.states(supply)[self.key], ('REFUSED', 'PROVIDER_REFUSED_SUBSCRIPTION'))
+        self.assertEqual(supply.status()['state'], 'DEGRADED')
+        self.writer.flush()
+        self.assertEqual(self.rows('SELECT stream_id,observations FROM market_stream_gaps WHERE reason=?', 'SUPPLY_SUBSCRIPTION_REFUSED'),
+                         [(f'kraken:{BTC}:CRYPTO_TRADES', 1)])
+
+    def test_unknown_pair_is_blocked_by_the_existing_resolver(self):
+        unknown = 'XA01:00000000000000FF'
+        supply = self.make((SupplyTarget('kraken', unknown, ('CRYPTO_TRADES',)),))
+        self.pump(supply)
+        self.assertEqual(self.states(supply)[('kraken', unknown, 'CRYPTO_TRADES')], ('BLOCKED', 'UNKNOWN_INSTRUMENT'))
+        self.assertEqual(self.venue.connect_attempts, 0)
+
+    def test_maintenance_is_its_own_provider_state(self):
+        supply = self.make()
+        self.pump(supply)
+        self.venue.status('maintenance')
+        self.pump(supply)
+        provider = supply.status()['providers']['kraken']
+        self.assertEqual((provider['connection'], provider['maintenance'], provider['available']), ('MAINTENANCE', True, False))
+
+    def test_serving_demand_on_the_same_stream_survives_the_collector_and_the_reverse(self):
+        screener = 'screener:order-flow'
+        self.runtime.subscribe(instrument_id=BTC, capabilities=['CRYPTO_TRADES'], consumer_id=screener)
+        supply = self.make()
+        self.pump(supply)
+        self.assertEqual(self.runtime.subscriptions.ref_count(instrument_id=BTC, capability='CRYPTO_TRADES'), 2)
+        self.assertEqual(len([m for m in self.venue.connection.sent if m['method'] == 'subscribe']), 1)
+        supply.stop()
+        self.pump(supply)
+        self.assertEqual(self.runtime.subscriptions.ref_count(instrument_id=BTC, capability='CRYPTO_TRADES'), 1)
+        self.assertEqual(self.venue.subscribed(), {('trade', 'BTC/USD')})
+        self.assertFalse(self.venue.connection.closed)
+        self.assertEqual([m for m in self.venue.connection.sent if m['method'] == 'unsubscribe'], [])
+        # The other direction: the screener leaving does not drop a collector's stream.
+        again = self.make()
+        self.pump(again)
+        self.runtime.unsubscribe(instrument_id=BTC, capabilities=['CRYPTO_TRADES'], consumer_id=screener)
+        self.pump(again)
+        self.assertEqual(self.venue.subscribed(), {('trade', 'BTC/USD')})
+
+    def test_stop_removes_the_last_subscription_from_the_venue(self):
+        supply = self.make()
+        self.pump(supply)
+        supply.stop()
+        self.runtime.step()
+        self.assertEqual(self.venue.subscribed(), set())
+        self.assertEqual([m['method'] for m in self.venue.connection.sent], ['subscribe', 'unsubscribe'])
+
+
+class MoomooFeedSupplyTests(SupplyCase):
+    """Real LiveObservationalRuntime, subscription manager, push feed and admission over a synthetic OpenD."""
+
+    ENV = {'IMP_LIVE_OBSERVATIONAL': '1', 'IMP_MOOMOO_LIVE': '1', 'IMP_LIVE_RECONNECT_BACKOFF_SEC': '0.05',
+           'IMP_OBSERVATIONAL_PROVIDER': 'moomoo', 'IMP_IBKR_LIVE': '0', 'IMP_SHADOW_RECORDING': '0'}
+
+    def runtime(self, opend, *, env=None, **probe):
+        from market_platform_foundation.market_data.live_runtime import LiveObservationalRuntime
+
+        report = synthetic_probe(Path(self.temp.name) / 'probe.json', **probe)
+        item = patch.dict(os.environ, {**self.ENV, 'IMP_MOOMOO_PROBE_REPORT': str(report), **(env or {})})
+        item.start()
+        self.addCleanup(item.stop)
+        for started in opend.install():
+            self.addCleanup(started.stop)
+        runtime = LiveObservationalRuntime()
+        runtime.configure()
+        self.addCleanup(runtime.stop)
+        return runtime
+
+    def make(self, runtime, capabilities=('US_EQUITY_L1', 'US_EQUITY_TICKS'), symbols=('AAPL',)):
+        targets = tuple(SupplyTarget('moomoo', symbol, capabilities) for symbol in symbols)
+        return self.supply(targets, {'moomoo': _MoomooSupply(runtime=lambda: runtime)})
+
+    def active(self, supply, count):
+        def ready():
+            supply.step()
+            return supply.status()['summary']['active'] == count
+        self.wait_until(ready)
+
+    def test_verified_targets_are_subscribed_once_and_their_data_is_committed(self):
+        opend = SyntheticOpenD()
+        runtime = self.runtime(opend)
+        supply = self.make(runtime)
+        self.active(supply, 2)
+        self.assertEqual(opend.subscribed(), {('US.AAPL', 'QUOTE'), ('US.AAPL', 'TICKER')})
+        for _ in range(3):
+            supply.step()
+        self.assertEqual(sorted(opend.context.subscribe_calls), [('US.AAPL', 'QUOTE'), ('US.AAPL', 'TICKER')])
+        self.assertEqual(runtime.subscriptions.active_subscriptions()[0]['consumers'], [SUPPLY_CONSUMER])
+        for _ in range(4):
+            self.assertTrue(opend.push_tick('US.AAPL'))
+        self.assertFalse(opend.push_tick('US.MSFT'))  # never requested, so never delivered
+        self.wait_until(lambda: self.writer.flush() >= 0 and self.writer.status()['committed'] >= 5)
+        stored = dict(self.rows('SELECT capability,COUNT(*) FROM market_stream_records GROUP BY capability'))
+        self.assertEqual(stored['US_EQUITY_TICKS'], 4)
+        self.assertGreaterEqual(stored['US_EQUITY_L1'], 1)
+        self.assertEqual(self.rows('SELECT DISTINCT symbol FROM market_stream_records'), [('AAPL',)])
+        status = supply.status()
+        self.assertEqual((status['state'], status['summary']['collecting']), ('COLLECTING', 2))
+        self.assertEqual(runtime.feed.trade_api_counters, {'broker_cancels': 0, 'broker_modifications': 0,
+                         'broker_orders_submitted': 0, 'trade_contexts_created': 0, 'trade_unlock_calls': 0})
+        self.assertEqual(runtime.lifecycle.execution_use, 'DISPLAY_ONLY')
+
+    def test_stale_missing_or_partial_probe_keeps_the_gate_closed(self):
+        opend = SyntheticOpenD()
+        runtime = self.runtime(opend, verified_at='2026-01-01T00:00:00+00:00')
+        supply = self.make(runtime)
+        supply.step()
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_STALE')})
+        time.sleep(1.2)  # two feed sync rounds
+        self.assertEqual((opend.subscribed(), runtime.subscriptions.active_subscriptions()), (set(), []))
+        runtime.capability_registry.load_error = 'PROBE_REPORT_MISSING'
+        supply.step()
+        self.assertEqual(set(self.states(supply).values()), {('BLOCKED', 'ENTITLEMENT_PROBE_MISSING')})
+
+    def test_only_capabilities_the_probe_verified_are_requested(self):
+        opend = SyntheticOpenD()
+        runtime = self.runtime(opend, entitled=('US_EQUITY_L1',))
+        supply = self.make(runtime, capabilities=('US_EQUITY_L1', 'US_EQUITY_DEPTH'))
+        self.active(supply, 1)
+        self.assertEqual(self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_DEPTH')][0], 'BLOCKED')
+        time.sleep(0.7)
+        self.assertEqual(opend.subscribed(), {('US.AAPL', 'QUOTE')})
+
+    def test_provider_refusal_and_quota_are_reported_not_retried_in_a_loop(self):
+        opend = SyntheticOpenD(refuse=(('US.AAPL', 'TICKER'),))
+        runtime = self.runtime(opend, env={'IMP_MOOMOO_SUBSCRIPTION_QUOTA': '2'})
+        supply = self.make(runtime, symbols=('AAPL', 'MSFT'))
+        def refused():
+            supply.step()
+            return self.states(supply)[('moomoo', 'AAPL', 'US_EQUITY_TICKS')][0] == 'REFUSED'
+        self.wait_until(refused)
+        states = self.states(supply)
+        self.assertEqual(states[('moomoo', 'AAPL', 'US_EQUITY_TICKS')], ('REFUSED', 'PROVIDER_REFUSED_SUBSCRIPTION'))
+        # The existing quota of two is spent on AAPL; MSFT is rejected by the manager, never sent to OpenD.
+        self.assertEqual({states[('moomoo', 'MSFT', name)] for name in ('US_EQUITY_L1', 'US_EQUITY_TICKS')},
+                         {('BLOCKED', 'QUOTA_EXHAUSTED')})
+        time.sleep(1.2)
+        self.assertEqual(opend.context.subscribe_calls.count(('US.AAPL', 'TICKER')), 1)  # 15 s retry spacing, not every sync
+        self.assertFalse(any(code == 'US.MSFT' for code, _ in opend.context.subscribe_calls))
+        self.assertEqual(supply.status()['state'], 'DEGRADED')
+
+    def test_opend_loss_records_a_gap_and_the_subscription_is_restored_on_reconnect(self):
+        opend = SyntheticOpenD(snapshots=False)
+        runtime = self.runtime(opend)
+        supply = self.make(runtime, capabilities=('US_EQUITY_TICKS',))
+        self.active(supply, 1)
+        opend.push_tick('US.AAPL')
+        opend.drop()
+        self.wait_until(lambda: opend.context is None)
+        def pending():
+            supply.step()
+            return supply.status()['providers']['moomoo']['recovery_pending']
+        self.wait_until(pending)
+        self.assertEqual(supply.status()['state'], 'RECOVERY_PENDING')
+        self.assertFalse(opend.push_tick('US.AAPL'))
+        opend.restore()
+        self.wait_until(lambda: len(opend.contexts) == 2 and opend.subscribed() == {('US.AAPL', 'TICKER')})
+        opend.push_tick('US.AAPL')
+        self.wait_until(lambda: self.writer.flush() >= 0 and self.writer.status()['committed'] == 2)
+        self.assertIn(('*', 'MOOMOO_DISCONNECT_NO_REPLAY'), self.rows('SELECT stream_id,reason FROM market_stream_gaps'))
+        self.active(supply, 1)
+
+    def test_serving_consumers_keep_their_subscriptions_when_the_collector_stops(self):
+        opend = SyntheticOpenD()
+        runtime = self.runtime(opend)
+        runtime.subscribe(instrument_id='AAPL', capabilities=['US_EQUITY_L1'], consumer_id='workspace:1')
+        supply = self.make(runtime)
+        self.active(supply, 2)
+        self.assertEqual(runtime.subscriptions.ref_count(instrument_id='AAPL', capability='US_EQUITY_L1'), 2)
+        supply.stop()
+        self.assertEqual(runtime.subscriptions.ref_count(instrument_id='AAPL', capability='US_EQUITY_L1'), 1)
+        self.assertEqual(runtime.subscriptions.ref_count(instrument_id='AAPL', capability='US_EQUITY_TICKS'), 0)
+        self.wait_until(lambda: opend.subscribed() == {('US.AAPL', 'QUOTE')})
+        self.assertFalse(opend.context.closed)  # an injected runtime is its owner's to close
+        self.assertEqual(opend.context.unsubscribe_calls, [('US.AAPL', 'TICKER')])
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -6941,3 +6941,37 @@ overnight run has been observed. See
 [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md),
 [market persistence](../operations/PF01B_MARKET_PERSISTENCE.md) and
 [raw collection](../operations/PF01_RAW_COLLECTION.md).
+
+## 2026-10-13 — PF-01 certification follow-up and headless market supply
+
+From `89647a61` in a fifth SSD worktree. Two things.
+
+Supervision. An independent re-review confirmed the six medium fixes and the
+five supervision behaviours, and confirmed one reliability defect: a child that
+fails after 16 to 29 minutes never filled the rolling window and never reached
+the 30-minute healthy reset, so it was restarted for ever. The supervisor now
+also counts child failures since the last healthy period and latches
+`PERSISTENT_CHILD_FAILURE` at nine. Three smaller review findings were fixed: a
+corrupt store is `SCHEMA_CHECK_STORAGE_INVALID` rather than a missing migration,
+`--serve` with `--collect-only` exits with the permanent code, and a writer that
+owns nothing no longer spends its retry budget during a storage outage.
+
+Headless market supply. The collection-only child can now hold explicitly
+configured demand on the existing OpenD and Kraken subscription authorities, so
+the durable writer receives data without a browser. It is default off, bounded
+by the persistence selection, and gated by the provider live flags, an operator
+confirmation of data rights per source and, for moomoo, the existing capability
+probe. While another process owns the market writer it stands by without
+subscribing. `/provider/health` reports it as `market_supply`.
+
+Changed behaviour to know about: evidence rows gain `unhealthy_failures`; the
+state database gains a reserved `__pf01_market_supply__` job row when supply
+runs; `pf01_supervisor.py --status` includes `market_supply`; the plan's
+`market_source_demand` is `DISABLED`, `EXPLICIT_TARGETS_CONFIGURED` or the
+refusal reason. No schema change.
+
+Offline only, against synthetic provider transports: no deployment, migration,
+provider request, subscription, entitlement probe, paid call or trading. No
+account entitlement is verified and no real overnight run has been observed.
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md)
+and [market persistence](../operations/PF01B_MARKET_PERSISTENCE.md).

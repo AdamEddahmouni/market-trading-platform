@@ -7,7 +7,9 @@ Restart policy: at most RESTART_LIMIT automatic restarts per rolling
 RESTART_WINDOW_SECONDS, with doubling backoff. HEALTHY_RESET_SECONDS of
 continuous child uptime restores the allowance. COOLDOWN_LIMIT exhausted
 windows in a row, or a child that reports a configuration it cannot run, latch
-a block that only ``reset_restart_budget`` clears.
+a block that only ``reset_restart_budget`` clears. So do UNHEALTHY_FAILURE_LIMIT
+child failures with no healthy period between them: a child that fails every
+twenty-odd minutes never fills a window, and must not restart for ever.
 """
 from __future__ import annotations
 import json
@@ -27,11 +29,15 @@ RESTART_WINDOW_SECONDS = 3600
 BACKOFF_CAP_SECONDS = 900
 HEALTHY_RESET_SECONDS = 1800
 COOLDOWN_LIMIT = 3
+# The most restarts the windows above grant a child that never stays healthy.
+UNHEALTHY_FAILURE_LIMIT = RESTART_LIMIT * COOLDOWN_LIMIT
 STORAGE_GRACE_SECONDS = 900
 CHILD_EXIT_PERMANENT = 78  # the child refused its own configuration; restarting cannot help
 PERMANENT_CHILD_REASONS = frozenset({
     'EXECUTION_GATE_ENABLED', 'REPLAY_MODE', 'DURABLE_STATE_REQUIRED', 'COLLECTION_DISABLED',
-    'APPROVED_SCHEMA_MIGRATION_REQUIRED', 'COLLECTION_ENTRYPOINT_CONFLICT',
+    'APPROVED_SCHEMA_MIGRATION_REQUIRED', 'SCHEMA_CHECK_STORAGE_INVALID', 'COLLECTION_ENTRYPOINT_CONFLICT',
+    'MARKET_SUPPLY_TARGETS_REQUIRED', 'MARKET_SUPPLY_TARGETS_INVALID', 'MARKET_SUPPLY_REQUIRES_PERSISTENCE',
+    'MARKET_SUPPLY_TARGET_NOT_PERSISTED', 'MARKET_SUPPLY_PROVIDER_GATE_CLOSED', 'MARKET_SUPPLY_PROVIDER_CONFLICT',
     'MARKET_CAPTURE_TARGETS_INVALID', 'MARKET_CAPTURE_LIMITS_INVALID',
     'MARKET_CAPTURE_STORAGE_LIMIT_INVALID', 'MARKET_CAPTURE_REQUIRES_OBSERVATIONAL_MODE',
     'MARKET_EXPLICIT_STATE_DIR_REQUIRED', 'COLLECTION_TARGETS_INVALID', 'COLLECTION_SYMBOLS_INVALID',
@@ -48,6 +54,8 @@ def require_current_schema(path: Path) -> None:
     except sqlite3.Error as exc:
         # A store that could not be read is not a store at the wrong schema.
         if transient_storage_error(exc): raise ValueError('SCHEMA_CHECK_STORAGE_UNAVAILABLE') from None
+        # A corrupt file is not waiting for a migration; only a readable store without the table is.
+        if not isinstance(exc,sqlite3.OperationalError): raise ValueError('SCHEMA_CHECK_STORAGE_INVALID') from None
         version=None
     if version != SCHEMA_VERSION: raise ValueError('APPROVED_SCHEMA_MIGRATION_REQUIRED')
 
@@ -65,7 +73,8 @@ def child_exit_code(reason: str) -> int:
 def _defaults(evidence: dict[str,Any]) -> dict[str,Any]:
     """Rows written before the rolling budget carry only a lifetime crash count."""
     for key,value in (('crashes',0),('next_start',0),('events',[]),('restarts',[]),('cooldowns',0),
-                      ('pending_restart',False),('running_since',None),('latched',None)):
+                      ('pending_restart',False),('running_since',None),('latched',None),
+                      ('unhealthy_failures',0)):
         evidence.setdefault(key,value)
     return evidence
 
@@ -141,12 +150,18 @@ class CollectionSupervisor:
         expired=now-self._outage_since>STORAGE_GRACE_SECONDS
         self._evidence.update(state='BLOCKED' if expired else 'STORAGE_WAIT',reason=self._outage_reason)
 
-    def _failure(self, event: str, reason: str, **detail: Any) -> None:
+    def _failure(self, event: str, reason: str, *, child_fault: bool = True, **detail: Any) -> None:
         """Account one unplanned child stop against the rolling restart budget."""
         now=self.clock()
         self._evidence['crashes']+=1
         self._evidence['running_since']=None
         self._event(event,**detail)
+        if child_fault:
+            # Spaced-out failures never exhaust a window; the streak since the last healthy period does.
+            self._evidence['unhealthy_failures']+=1
+            if self._evidence['unhealthy_failures']>=UNHEALTHY_FAILURE_LIMIT:
+                self._evidence['pending_restart']=False
+                self._latch('PERSISTENT_CHILD_FAILURE'); return
         # A clock set backwards must not keep old restarts inside the window forever.
         recent=[min(at,now) for at in self._evidence['restarts'] if now-min(at,now)<RESTART_WINDOW_SECONDS]
         self._evidence.update(restarts=recent,pending_restart=True)
@@ -188,7 +203,7 @@ class CollectionSupervisor:
             if self._outage_since is not None:
                 since,reason,stopped=self._outage_since,self._outage_reason,self._outage_stopped_child
                 self._outage_since=self._outage_reason=None; self._outage_stopped_child=False
-                if stopped: self._failure('SUPERVISION_OUTAGE_GAP_UNVERIFIED',reason,outage_start=since)
+                if stopped: self._failure('SUPERVISION_OUTAGE_GAP_UNVERIFIED',reason,child_fault=False,outage_start=since)
                 else:
                     self._event('SUPERVISION_OUTAGE_RECOVERED',outage_start=since)
                     if self._evidence['state'] in {'STORAGE_WAIT','BLOCKED'}: self._evidence.update(state='WAITING',reason=None)
@@ -202,8 +217,9 @@ class CollectionSupervisor:
                 if exit_code is None:
                     since=self._evidence['running_since']
                     if (since is not None and now-since>=HEALTHY_RESET_SECONDS
-                            and (self._evidence['restarts'] or self._evidence['cooldowns'])):
-                        self._evidence.update(restarts=[],cooldowns=0)
+                            and (self._evidence['restarts'] or self._evidence['cooldowns']
+                                 or self._evidence['unhealthy_failures'])):
+                        self._evidence.update(restarts=[],cooldowns=0,unhealthy_failures=0)
                         self._event('RESTART_BUDGET_RESET_AFTER_HEALTHY_PERIOD'); self._save()
                     return
                 self.child=None
@@ -237,7 +253,7 @@ class CollectionSupervisor:
         now=self.clock()
         return json.loads(json.dumps({**self._evidence,'restart_limit':RESTART_LIMIT,'lease_seconds':LEASE_SECONDS,
             'restart_window_seconds':RESTART_WINDOW_SECONDS,'healthy_reset_seconds':HEALTHY_RESET_SECONDS,
-            'cooldown_limit':COOLDOWN_LIMIT,
+            'cooldown_limit':COOLDOWN_LIMIT,'unhealthy_failure_limit':UNHEALTHY_FAILURE_LIMIT,
             'restarts_in_window':sum(now-at<RESTART_WINDOW_SECONDS for at in self._evidence['restarts']),
             'process_alive':self.child is not None and self.child.poll() is None,
             'execution_authority':'NONE','ai_required':False}))
@@ -266,7 +282,7 @@ def reset_restart_budget(connection: LocalStateConnection, *, clock: Callable[[]
         evidence=_defaults(json.loads(row['payload_json']))
         evidence['events']=(evidence['events']+[{'at':now,'reason':'OPERATOR_RESTART_BUDGET_RESET',
             'cleared':evidence['latched'] or evidence.get('reason')}])[-32:]
-        evidence.update(state='STOPPED',reason='OPERATOR_RESTART_BUDGET_RESET',restarts=[],cooldowns=0,
+        evidence.update(state='STOPPED',reason='OPERATOR_RESTART_BUDGET_RESET',restarts=[],cooldowns=0,unhealthy_failures=0,
                         pending_restart=False,latched=None,next_start=0,running_since=None)
         connection.execute('UPDATE news_collection_jobs SET payload_json=? WHERE job_id=?',(json.dumps(evidence),SUPERVISION_JOB))
     return evidence

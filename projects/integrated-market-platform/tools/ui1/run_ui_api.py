@@ -400,13 +400,15 @@ def serve(*, host: str, port: int) -> None:
 def collect_only(stop: threading.Event) -> None:
     """Headless raw workers; no store, frontend, Paper recovery or AI warmup.
 
-    Market writer remains a sink for existing ingress. This entrypoint does not
-    acquire provider subscriptions or promise browser-independent market supply.
+    The market writer is a sink for existing ingress. Provider demand is held only
+    when IMP_MARKET_SUPPLY_ENABLED=1 names explicit targets and every provider and
+    entitlement gate in market_data.headless_supply is open; otherwise none is.
     """
     from market_platform_foundation.news.supervision import collection_only_reason, require_current_schema, SUPERVISION_JOB
     from market_platform_foundation.local_state.connection import transient_storage_error
     from market_platform_foundation.news.collection import configured_jobs, start_collection, validate_collection_storage, stop_collection
     from market_platform_foundation.market_data.persistence import start_persistence, stop_persistence, validate_persistence_storage
+    from market_platform_foundation.market_data.headless_supply import start_supply, stop_supply, validate_supply
     reason = collection_only_reason(os.environ)
     if reason:
         raise ValueError(reason)
@@ -418,13 +420,15 @@ def collect_only(stop: threading.Event) -> None:
         except ValueError as exc:
             raise ValueError(str(exc) if str(exc).startswith('COLLECTION_') else 'COLLECTION_INTERVAL_INVALID') from None
     if os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1': storage = validate_persistence_storage(os.environ)
+    validate_supply(os.environ)  # a rejected target list cannot be fixed by restarting
     # Worker connections apply migrations on open. This entrypoint may be run
     # without the supervisor, so it refuses a store that is not already current.
     require_current_schema(storage)
-    writer = collector = None
+    writer = collector = supply = None
     try:
         writer = start_persistence('LIVE_OBSERVATIONAL')
         collector = start_collection('LIVE_OBSERVATIONAL')
+        supply = start_supply(writer)
         if ((os.environ.get('IMP_MARKET_PERSISTENCE_ENABLED') == '1' and writer is None) or
                 (os.environ.get('IMP_NEWS_COLLECTION_ENABLED') == '1' and collector is None)):
             raise ValueError('COLLECTION_WORKERS_BLOCKED')
@@ -451,7 +455,12 @@ def collect_only(stop: threading.Event) -> None:
                     # recovery or standby; only a worker that gave up ends the process.
                     if not status['worker_alive'] or status['state'] in {'BLOCKED','FAILED','STALE'}:
                         raise ValueError('COLLECTION_WORKER_UNHEALTHY')
+            # Blocked, standby or stale supply is reported, not fatal: news and the writer keep running.
+            if supply is not None and not supply.status()['worker_alive']:
+                raise ValueError('COLLECTION_WORKER_UNHEALTHY')
     finally:
+        # Producers first, so the writer drains what they already delivered.
+        if supply is not None: stop_supply()
         if collector is not None: stop_collection()
         if writer is not None: stop_persistence()
 
@@ -528,8 +537,6 @@ def main() -> int:
     args = parse_args()
     # Strict identity: callers that stub parse_args must never enter the headless path by accident.
     if getattr(args, 'collect_only', False) is True:
-        if args.serve:
-            raise ValueError('COLLECTION_ENTRYPOINT_CONFLICT')
         stop = threading.Event()
         def input_stop() -> None:
             # Parent pipe closure also prevents an orphan continuing unattended.
@@ -537,6 +544,8 @@ def main() -> int:
             stop.set()
         threading.Thread(target=input_stop, name='pf01-parent-stop', daemon=True).start()
         try:
+            if args.serve:
+                raise ValueError('COLLECTION_ENTRYPOINT_CONFLICT')
             collect_only(stop)
         except KeyboardInterrupt:
             stop.set()

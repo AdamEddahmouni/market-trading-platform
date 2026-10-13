@@ -9,8 +9,8 @@ from unittest.mock import patch
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.news import supervision
 from market_platform_foundation.news.supervision import (CHILD_EXIT_PERMANENT, COOLDOWN_LIMIT, HEALTHY_RESET_SECONDS,
-    RESTART_LIMIT, RESTART_WINDOW_SECONDS, STORAGE_GRACE_SECONDS, SUPERVISION_JOB, CollectionSupervisor,
-    reset_restart_budget)
+    RESTART_LIMIT, RESTART_WINDOW_SECONDS, STORAGE_GRACE_SECONDS, SUPERVISION_JOB, UNHEALTHY_FAILURE_LIMIT,
+    CollectionSupervisor, reset_restart_budget)
 
 
 class Process:
@@ -270,6 +270,94 @@ class SupervisorStorageOutageTests(SupervisorCase):
         owner.tick()
         self.assertEqual((owner.status()['state'], owner.status()['crashes']), ('BACKOFF', 1))
         self.run_for(owner, 120); self.assertEqual(len(self.children), 2)
+
+
+class MediumDurationFailureTests(SupervisorCase):
+    """A child that fails after 20 to 29 minutes never fills a rolling window and never reaches 30 healthy minutes."""
+
+    def fail_after(self, owner, uptime):
+        """Wait out the backoff, let the child run for `uptime` seconds, then exit 1."""
+        self.run_for(owner, max(0, owner.status()['next_start']-self.now))
+        self.run_for(owner, uptime); self.crash(owner)
+
+    def test_child_failing_every_25_minutes_is_latched_and_stops_restarting(self):
+        owner = self.supervisor(); owner.tick(); states = []
+        for _ in range(UNHEALTHY_FAILURE_LIMIT):
+            self.fail_after(owner, 1500); states.append(owner.status()['state'])
+        # The rolling window alone never notices: no failure reached a cooldown.
+        self.assertEqual(states[:-1], ['BACKOFF']*(UNHEALTHY_FAILURE_LIMIT-1))
+        status = owner.status()
+        self.assertEqual((status['state'], status['reason'], status['latched'], status['cooldowns']),
+                         ('BLOCKED', 'PERSISTENT_CHILD_FAILURE', 'PERSISTENT_CHILD_FAILURE', 0))
+        self.assertLess(status['restarts_in_window'], RESTART_LIMIT)
+        total = len(self.children)
+        self.assertEqual(total, UNHEALTHY_FAILURE_LIMIT)
+        self.run_for(owner, 3*RESTART_WINDOW_SECONDS)
+        self.assertEqual(len(self.children), total)
+        reasons = [event['reason'] for event in self.saved()['events']]
+        self.assertEqual(reasons.count('CHILD_PROCESS_EXIT_GAP_UNVERIFIED'), UNHEALTHY_FAILURE_LIMIT)
+        self.assertEqual(reasons[-1], 'PERSISTENT_CHILD_FAILURE')
+        # Restarting the supervisor does not clear it; the operator reset does.
+        owner.stop(); replacement = self.supervisor(); self.run_for(replacement, 600)
+        self.assertEqual((replacement.status()['latched'], len(self.children)), ('PERSISTENT_CHILD_FAILURE', total))
+        replacement.stop()
+        self.assertEqual(reset_restart_budget(self.db, clock=lambda: self.now)['unhealthy_failures'], 0)
+        recovered = self.supervisor(); recovered.tick()
+        self.assertEqual((recovered.status()['state'], len(self.children)), ('RUNNING', total+1))
+
+    def test_starts_stay_inside_the_window_limit_and_backoff_until_the_latch(self):
+        owner = self.supervisor(); owner.tick()
+        for _ in range(UNHEALTHY_FAILURE_LIMIT):
+            self.fail_after(owner, 1260)
+        starts = [event['at'] for event in self.saved()['events'] if event['reason'] == 'CHILD_START_ATTEMPT']
+        self.assertEqual(len(starts), UNHEALTHY_FAILURE_LIMIT)
+        for at in starts:
+            self.assertLessEqual(sum(at < other <= at+RESTART_WINDOW_SECONDS for other in starts), RESTART_LIMIT)
+        self.assertGreaterEqual(min(b-a for a, b in zip(starts, starts[1:])), 1260+supervision.LEASE_SECONDS)
+
+    def test_one_healthy_period_clears_the_streak(self):
+        owner = self.supervisor(); owner.tick()
+        for _ in range(UNHEALTHY_FAILURE_LIMIT-1):
+            self.fail_after(owner, 1500)
+        self.assertEqual(owner.status()['unhealthy_failures'], UNHEALTHY_FAILURE_LIMIT-1)
+        self.fail_after(owner, HEALTHY_RESET_SECONDS)
+        self.assertEqual((owner.status()['state'], owner.status()['unhealthy_failures']), ('BACKOFF', 1))
+        self.assertEqual(owner.status()['next_start']-self.now, 120)
+
+    def test_uptime_one_tick_short_of_healthy_does_not_clear_the_streak(self):
+        owner = self.supervisor(); owner.tick()
+        self.fail_after(owner, 0); self.fail_after(owner, HEALTHY_RESET_SECONDS-30)
+        self.assertEqual(owner.status()['unhealthy_failures'], 2)
+
+    def test_restart_leaves_the_window_exactly_at_its_boundary(self):
+        owner = self.supervisor(); owner.tick(); self.crash(owner)
+        self.run_for(owner, 120); restarted = self.now
+        self.assertEqual(owner.status()['restarts'], [restarted])
+        self.now = restarted+RESTART_WINDOW_SECONDS-1
+        self.assertEqual(owner.status()['restarts_in_window'], 1)
+        self.now = restarted+RESTART_WINDOW_SECONDS
+        self.assertEqual(owner.status()['restarts_in_window'], 0)
+        self.crash(owner)
+        # The expired restart no longer lengthens the backoff.
+        self.assertEqual((owner.status()['restarts'], owner.status()['next_start']-self.now), ([], 120))
+
+    def test_supervisor_side_outages_are_not_counted_as_child_failures(self):
+        owner = self.supervisor(); owner.tick()
+        for _ in range(UNHEALTHY_FAILURE_LIMIT+1):
+            with patch.object(owner, '_storage_fault', return_value='STORAGE_UNAVAILABLE'):
+                self.run_for(owner, 60)
+            self.assertTrue(self.children[-1].stopped)
+            self.run_for(owner, 30)
+            self.run_for(owner, max(0, owner.status()['next_start']-self.now)+RESTART_WINDOW_SECONDS)
+        status = owner.status()
+        self.assertEqual((status['unhealthy_failures'], status['latched']), (0, None))
+
+    def test_evidence_written_before_the_streak_counter_loads_with_zero(self):
+        owner = self.supervisor(); owner.tick(); owner.stop()
+        saved = self.saved(); saved.pop('unhealthy_failures')
+        self.db.execute('UPDATE news_collection_jobs SET payload_json=? WHERE job_id=?', (json.dumps(saved), SUPERVISION_JOB))
+        replacement = self.supervisor(); replacement.tick()
+        self.assertEqual((replacement.status()['unhealthy_failures'], replacement.status()['state']), (0, 'RUNNING'))
 
 
 class SupervisorCliTests(unittest.TestCase):

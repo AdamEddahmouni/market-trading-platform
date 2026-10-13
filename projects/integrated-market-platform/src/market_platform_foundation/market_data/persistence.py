@@ -91,6 +91,19 @@ class _OwnerLock:
             handle.close()  # closing the handle releases the lock on every platform
 
 
+def owner_lock_held(path: Path) -> bool:
+    """True while a living process holds the writer's owner lock on this store.
+
+    For a process that owns nothing: an unexpired run lease alone cannot tell a
+    live owner from one that died. The lock is taken and dropped at once.
+    """
+    probe = _OwnerLock(Path(str(path) + OWNER_LOCK_SUFFIX))
+    if not probe.acquire():
+        return True
+    probe.release()
+    return False
+
+
 class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
                  queue_limit: int = 512, batch_limit: int = 64,
@@ -361,15 +374,17 @@ class MarketStreamWriter:
             started = time.perf_counter()
             committed = duplicates = 0
             try:
+                if self.run_id is None and not batch and not gaps:
+                    # Nothing owned and nothing to store: an outage costs this writer nothing,
+                    # so it must not spend the retry budget and stop before supply arrives.
+                    with self._lock:
+                        if self._state != 'FAILED':
+                            self._state, self._error = 'IDLE', None
+                            self._consecutive_failures = 0
+                    return 0
                 if not self._storage_ok():
                     raise ValueError(self._storage_fault() or 'MARKET_STORAGE_UNAVAILABLE')
                 if self.run_id is None:
-                    if not batch and not gaps:
-                        with self._lock:
-                            if self._state != 'FAILED':
-                                self._state, self._error = 'IDLE', None
-                                self._consecutive_failures = 0
-                        return 0
                     self._acquire()
                 now = time.time_ns()
                 with self.connection.transaction():

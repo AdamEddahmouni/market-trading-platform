@@ -374,6 +374,20 @@ class IdleOwnershipTests(WriterCase):
         self.addCleanup(persistence.stop_persistence)
         return writer
 
+    def test_idle_writer_that_owns_nothing_survives_a_storage_outage_and_stores_the_next_record(self):
+        writer = self.writer(acquire=False)
+        with patch.object(writer, '_storage_fault', return_value='MARKET_STORAGE_UNAVAILABLE'):
+            for _ in range(2 * persistence.RETRY_LIMIT):
+                self.assertEqual(writer.flush(), 0)
+            status = writer.status()
+            self.assertEqual((status['state'], status['consecutive_failures'], status['accepting']), ('IDLE', 0, True))
+            # With something to store the outage is a real, bounded retry again.
+            writer.submit(record(1))
+            writer.flush()
+            self.assertEqual((writer.status()['state'], writer.status()['consecutive_failures']), ('RETRYING', 1))
+        self.assertEqual(writer.flush(), 1)
+        self.assertEqual(writer.status()['state'], 'READY')
+
     def test_idle_market_only_startup_owns_nothing(self):
         writer = self.started()
         time.sleep(0.05)

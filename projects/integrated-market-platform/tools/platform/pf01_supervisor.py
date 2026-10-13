@@ -22,6 +22,7 @@ from market_platform_foundation.news.supervision import (CollectionSupervisor, c
     require_current_schema, reset_restart_budget, supervision_status, LEASE_SECONDS, RESTART_LIMIT,
     RESTART_WINDOW_SECONDS, HEALTHY_RESET_SECONDS, COOLDOWN_LIMIT)
 from market_platform_foundation.local_state.connection import LocalStateConnection
+from market_platform_foundation.market_data.headless_supply import supply_status, validate_supply
 
 OWNER_WAIT_SECONDS=LEASE_SECONDS+30  # one full lease interval of a dead owner, plus margin
 
@@ -47,10 +48,15 @@ class OwnedProcess:
         finally:
             if self.process.stdin is not None: self.process.stdin.close()
 
+def market_source_demand(env) -> str:
+    """What the child would be asked to hold. Read-only; rights and provider state are decided in the child."""
+    try: return 'EXPLICIT_TARGETS_CONFIGURED' if validate_supply(env) else 'DISABLED'
+    except ValueError as exc: return str(exc)
+
 def plan(env) -> dict:
     return {'activation_requested':False,'enabled':env.get('IMP_PF01_SUPERVISION_ENABLED')=='1',
             'collection_only_blocker':collection_only_reason(env),'services_registered':False,
-            'market_source_demand':'NOT_ACQUIRED_BY_THIS_ENTRYPOINT','restart_limit':RESTART_LIMIT,
+            'market_source_demand':market_source_demand(env),'restart_limit':RESTART_LIMIT,
             'restart_window_seconds':RESTART_WINDOW_SECONDS,'healthy_reset_seconds':HEALTHY_RESET_SECONDS,
             'cooldown_limit':COOLDOWN_LIMIT,
             'default_action':'READ_ONLY_PLAN','execution_authority':'NONE','ai_required':False}
@@ -75,7 +81,7 @@ def main(argv=None) -> int:
     group.add_argument('--reset-restart-budget',action='store_true')
     args=parser.parse_args(argv)
     if args.status:
-        print(json.dumps(supervision_status(os.environ))); return 0
+        print(json.dumps({**supervision_status(os.environ),'market_supply':supply_status(os.environ)})); return 0
     if args.reset_restart_budget:
         with LocalStateConnection(storage_path(os.environ),require_existing=True) as connection:
             print(json.dumps(reset_restart_budget(connection)))

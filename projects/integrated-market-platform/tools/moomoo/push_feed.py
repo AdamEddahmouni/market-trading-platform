@@ -142,6 +142,16 @@ class MoomooPushFeed:
     def stop(self) -> None:
         self._stop_event.set()
 
+    def subscription_state(self, instrument_id: str, capability: str) -> str:
+        """ACTIVE once OpenD accepted the subscription on this connection; REFUSED while it declines; else PENDING."""
+
+        instrument = instrument_id.upper()
+        code = KNOWN_INSTRUMENTS.get(instrument, {}).get("provider_symbol") or f"US.{instrument}"
+        key = (code, CAP_TO_SUBTYPE_NAME.get(capability, ""))
+        if key in self._subscribed_subtypes:
+            return "ACTIVE"
+        return "REFUSED" if key in self.subscription_errors else "PENDING"
+
     def metrics(self) -> dict[str, Any]:
         quote_lag = list(self._lag_samples.get("US_EQUITY_L1") or [])
         trade_lag = list(self._lag_samples.get("US_EQUITY_TICKS") or [])

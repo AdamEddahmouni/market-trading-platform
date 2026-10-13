@@ -8,8 +8,9 @@ market persistence in [PF01B_MARKET_PERSISTENCE.md](PF01B_MARKET_PERSISTENCE.md)
 
 ## What exists
 
-- `tools/ui1/run_ui_api.py --collect-only` starts only the raw news collector and
-  the market writer. It loads no store, private `.env` or saved provider
+- `tools/ui1/run_ui_api.py --collect-only` starts only the raw news collector,
+  the market writer and, when explicitly enabled, the headless market supply
+  described below. It loads no store, private `.env` or saved provider
   settings, serves no HTTP, and never runs Paper recovery, Screener warmup or AI.
   It cannot be combined with `--serve`.
 - `tools/platform/pf01_supervisor.py` prints a read-only plan by default. With
@@ -20,22 +21,137 @@ market persistence in [PF01B_MARKET_PERSISTENCE.md](PF01B_MARKET_PERSISTENCE.md)
 - `src/market_platform_foundation/news/supervision.py` holds the supervisor
   logic and its durable evidence row.
 
-## Headless market supply is not provided
+## Headless market supply (default off)
 
 The market writer is a sink for observations that existing producers already
-receive. Provider subscriptions are acquired only by the serving backend's
-request-driven projections. The collection-only process creates no moomoo
-runtime, no Kraken connection and no bar polling, so a headless writer receives
-nothing.
+receive. In the serving backend those producers are subscribed by
+request-driven projections. A collection-only process has no such demand, so by
+default it creates no moomoo runtime and no Kraken connection, and its writer
+receives nothing and owns nothing (`IDLE`, `ownership: NOT_HELD`).
 
-A writer that receives nothing owns nothing. It takes the owner lock and the run
-lease only when it has an observation or a gap to store, so an unsupplied
-headless process reports `IDLE` with `ownership: NOT_HELD` and does not stand in
-the way of a serving backend's writer. Enabling `IMP_MARKET_PERSISTENCE_ENABLED`
-for the headless entry point is therefore harmless but still collects nothing.
-A `RUNNING` supervisor or an `IDLE` writer is not evidence of market coverage;
-`collecting: true` in `market_persistence` is the only state that says
-observations are being stored.
+`market_data/headless_supply.py` can hold that demand instead. It adds no
+provider, transport or storage path. It asks the existing subscription
+authorities (the OpenD runtime's reference-counted subscription manager and the
+Kraken selected-pair stream) for explicitly listed streams under one consumer
+id, `pf01-headless-collector`, and records reach the writer through the
+existing ingress. It is implemented and verified offline against synthetic
+transports only. No real subscription has been requested and no account
+entitlement has been verified.
+
+### Configuration
+
+| Variable | Meaning |
+|---|---|
+| `IMP_MARKET_SUPPLY_ENABLED=1` | Opt in. Default off |
+| `IMP_MARKET_SUPPLY_TARGETS` | `source:symbol@CAPABILITY+CAPABILITY`, comma separated. Empty by default. At most 20 targets |
+| `IMP_MARKET_SUPPLY_ENTITLED_SOURCES` | Sources (`moomoo`, `kraken`) whose data rights the operator has confirmed. Empty by default |
+
+Example of the format only, not a recommendation of what to collect:
+`moomoo:AAPL@US_EQUITY_L1+US_EQUITY_TICKS`.
+
+- moomoo symbols are US equity tickers; capabilities are `US_EQUITY_L1`,
+  `US_EQUITY_TICKS`, `US_EQUITY_DEPTH`. Kraken symbols are the canonical
+  `XA01:` instrument ID; capabilities are `CRYPTO_TRADES`, `CRYPTO_BOOK`.
+- Every target's source must be in `IMP_MARKET_PERSISTENCE_SOURCES` and its
+  symbol in `IMP_MARKET_PERSISTENCE_SYMBOLS`. Supply never subscribes to
+  something that is not stored, and nothing is expanded to other instruments.
+- moomoo targets need `IMP_LIVE_OBSERVATIONAL=1` and `IMP_MOOMOO_LIVE=1`;
+  Kraken targets need `IMP_CRYPTO_LIVE=1`. With `IMP_IBKR_LIVE=1`,
+  `IMP_OBSERVATIONAL_PROVIDER=ibkr` or shadow recording on, moomoo supply is
+  refused, because the shared runtime would start those too.
+- A rejected target list ends the child with exit code 78 before any worker
+  starts, and the supervisor latches `CHILD_CONFIGURATION_REJECTED`.
+
+1-minute bars (`CURRENT_BAR_1M`) are produced by a request-driven cache in the
+serving backend and are not supplied headlessly. IBKR is not supplied.
+
+### Entitlement gate
+
+Nothing is requested from a source until both of these hold:
+
+1. The source is listed in `IMP_MARKET_SUPPLY_ENTITLED_SOURCES`. This is the
+   operator's statement that the account or the venue's terms permit collecting
+   and storing that data. It is not a credential and nothing infers it.
+2. For moomoo, the existing capability probe report is present, less than 24
+   hours old and marks that capability `account_entitled`. A missing or stale
+   report, or a capability the probe did not verify, keeps that stream
+   `BLOCKED`. Running the probe contacts OpenD and is a separate decision.
+
+Kraken public market data has no account, so only the first condition applies.
+A configured key, a reachable OpenD or a passing synthetic test satisfies
+neither. A closed gate does not end the child: news keeps running and the
+supply reports `BLOCKED` with the reason.
+
+### Lifecycle
+
+- Start: the child validates the target list, starts the writer and collector,
+  then reconciles demand every 5 seconds.
+- Provider loss: reconnect is the existing runtime's. Kraken retries with
+  backoff 1, 2, 4, 8, 16, 30 s (jittered, capped at 30 s) and resubscribes every
+  demanded channel on the new connection. The OpenD feed retries on its
+  configured schedule and resubscribes from the subscription manager. Each loss
+  writes `KRAKEN_DISCONNECT_NO_REPLAY` or `MOOMOO_DISCONNECT_NO_REPLAY`; nothing
+  is backfilled.
+- One provider failing does not stop the other or the news collector.
+- Restart: a restarted child subscribes again from the same configuration. The
+  writer records the dead run as `UNCLEAN_RESTART_NO_REPLAY`.
+- Stop: demand is released first, then the provider sessions this process
+  opened are closed, then the writer drains.
+- Target changes take effect by changing the configuration and restarting the
+  child. There is no runtime control route.
+- A provider refusal is reported as `REFUSED` and recorded once as a
+  `SUPPLY_SUBSCRIPTION_REFUSED` gap. The existing feed retries a refused OpenD
+  subscription every 15 seconds, not on every sync.
+
+### Ownership with a serving backend
+
+The serving backend and a headless child are separate processes with separate
+provider sessions; neither can remove the other's subscriptions. Only one
+process can own the market writer. While another living process owns it, the
+headless supply releases its demand and reports `STANDBY`, so it never holds
+subscriptions it could not store. It subscribes again within one reconcile
+interval after that owner stops or releases. An owner that died inside its
+lease is recognised through the owner lock and does not cause a standby.
+
+While the serving backend owns the writer it stores only what its own screens
+demand. To make the headless child the collector, leave
+`IMP_MARKET_PERSISTENCE_ENABLED` off in the serving backend.
+
+### Sessions
+
+Subscriptions are held continuously; the provider decides when data flows.
+Market hours are used only to decide whether silence is a fault. US equities
+expect data in the pre-market, regular and after-hours sessions on trading days
+in the repository's holiday calendar. Overnight quotes are stored if they
+arrive, and their absence is not reported as stale. Kraken is continuous, with
+venue maintenance as its own state. No AI or trading window applies to
+collection. The calendar has no early-close list and covers 2025 and 2026 only;
+outside those years the session is `CALENDAR_UNAVAILABLE` and silence is not
+flagged.
+
+### Status
+
+`/provider/health` gains `market_supply`, and `pf01_supervisor.py --status`
+prints the same object. The child saves it in a reserved row,
+`__pf01_market_supply__`, at most every 30 seconds or on a state change; a row
+not refreshed for 120 seconds is shown as `STALE`.
+
+| Field | Says |
+|---|---|
+| `enabled`, `configured` | Supply was explicitly enabled with a valid target list |
+| `providers.<source>.entitlement_confirmed` | The operator confirmation for that source |
+| `providers.<source>.available`, `recovery_pending`, `maintenance` | Connected, reconnecting, or venue maintenance |
+| `targets[].subscription_requested`, `subscription_active` | Asked of the authority; acknowledged by the provider |
+| `targets[].last_received_ns`, `last_commit_ns` | From the durable checkpoint for that stream |
+| `targets[].state` | `BLOCKED`, `STANDBY`, `REQUESTED`, `REFUSED`, `ACTIVE_NO_DATA`, `COLLECTING`, `STALE`, `SESSION_CLOSED` |
+| `writer`, `writer_degraded` | The writer's own state, backlog, rejections and commit clocks |
+| `state` | `BLOCKED`, `STANDBY`, `DEGRADED`, `RECOVERY_PENDING`, `STALE`, `COLLECTING`, `SUBSCRIBED_NO_DATA`, `WAITING`, `STOPPED` |
+
+`COLLECTING` requires a commit for that stream within the last 300 seconds. A
+running process, a requested subscription or an active subscription is never
+reported as collecting on its own. `STALE` means a stream was active for more
+than 300 seconds in a session that expects data and nothing was committed; for
+a thinly traded instrument that can be normal.
 
 ## Activation requirements
 
@@ -48,14 +164,17 @@ All of the following must hold; each is checked before a child is spawned:
   collection-only entry point check this through a read-only connection and
   refuse with `APPROVED_SCHEMA_MIGRATION_REQUIRED`; neither migrates a store.
 - At least one of `IMP_NEWS_COLLECTION_ENABLED=1` or
-  `IMP_MARKET_PERSISTENCE_ENABLED=1`.
+  `IMP_MARKET_PERSISTENCE_ENABLED=1`. Market supply additionally needs the
+  settings in the section above; without them the child holds no provider
+  demand.
 - Every execution gate off (`IMP_PAPER_EXECUTION`, `IMP_BROKER_PAPER_EXECUTION`,
   `IMP_MOOMOO_PAPER_EXECUTION`, `IMP_LIVE_EXECUTION`,
   `IMP_BROKER_LIVE_EXECUTION`, `IMP_LIVE_INTERNAL_SIMULATION`) and controlled
   replay off.
 
-The collection-only entry point does not check `IMP_LIVE_OBSERVATIONAL`; each
-news provider keeps its own live gate and credentials. The child inherits the
+The collection-only entry point does not itself check `IMP_LIVE_OBSERVATIONAL`;
+each news provider keeps its own live gate and credentials, and market supply
+checks the provider gates listed above. The child inherits the
 supervisor's environment except Anthropic, OpenAI, Azure OpenAI and Gemini
 variables. Supply only the settings the collectors need.
 
@@ -84,6 +203,7 @@ and the last 32 events.
 | Backoff | 120, 240, 480 s | Doubles with each restart in the window |
 | `HEALTHY_RESET_SECONDS` | 1,800 | Continuous child uptime that restores the full allowance |
 | `COOLDOWN_LIMIT` | 3 | Exhausted windows in a row before the block latches |
+| `UNHEALTHY_FAILURE_LIMIT` | 9 | Child failures with no healthy period between them before the block latches (`RESTART_LIMIT` x `COOLDOWN_LIMIT`) |
 | `STORAGE_GRACE_SECONDS` | 900 | How long the supervisor waits for unavailable storage |
 
 These are constants in `news/supervision.py`; there is no environment override.
@@ -94,15 +214,24 @@ These are constants in `news/supervision.py`; there is no environment override.
 - When the window's restarts are used up the state is `COOLDOWN`
   (`RESTART_LIMIT_EXCEEDED`). The supervisor keeps running and keeps its lease
   but starts nothing until the oldest restart leaves the window.
-- A child that stays up for 30 minutes clears the window and the cooldown count
-  (`RESTART_BUDGET_RESET_AFTER_HEALTHY_PERIOD`). "Healthy" means the process
+- A child that stays up for 30 minutes clears the window, the cooldown count
+  and the failure streak (`RESTART_BUDGET_RESET_AFTER_HEALTHY_PERIOD`). "Healthy" means the process
   stayed alive; the child ends itself when a worker gives up, as described below.
 - Three exhausted windows without a healthy period latch `BLOCKED` with
-  `PERSISTENT_CHILD_FAILURE`. A child that exits with code 78 has refused its
-  own configuration (execution gate, a store read successfully at the wrong
-  schema, invalid market targets or news selection); that latches
-  `CHILD_CONFIGURATION_REJECTED` at once and spends no restart. A store that
-  could not be read at child start is an ordinary failure, not a rejection.
+  `PERSISTENT_CHILD_FAILURE`. So do nine child exits or failed starts with no
+  healthy period between them, however far apart. A child that fails after 16
+  to 29 minutes never fills a window (its restarts leave the hour before a
+  third joins them), so the window alone restarted it for ever; the streak
+  stops it after nine starts, about four to five hours. Stops the supervisor
+  itself causes (storage outage, lapsed lease) are charged to the window but
+  not to the streak.
+- A child that exits with code 78 has refused its own configuration (execution
+  gate, a store read successfully at the wrong schema, a corrupt store, invalid
+  market targets, supply targets or news selection); that latches
+  `CHILD_CONFIGURATION_REJECTED` at once and spends no restart. A corrupt store
+  is reported as `SCHEMA_CHECK_STORAGE_INVALID`, not as a missing migration. A
+  store that could not be read at child start is an ordinary failure, not a
+  rejection.
 - A latched block survives supervisor restarts. Nothing restarts until the
   operator clears it.
 
@@ -132,13 +261,17 @@ cooldowns) before the block latches. It is never restarted in a tight loop.
 ### What ends the child
 
 The child stops when its parent's lease is lost, when a worker reports
-`BLOCKED`, `FAILED` or `STALE`, or when a worker thread is no longer alive.
+`BLOCKED`, `FAILED` or `STALE`, or when a worker thread (including the supply
+reconciler) is no longer alive. Blocked, standby or stale market supply is
+reported and does not end the child.
 `RETRYING`, `IDLE` and `WAITING_FOR_OWNERSHIP` do not end it: those are the
 workers' own bounded recovery and standby states. A locked database or a
 briefly unreadable store is retried by the worker (six attempts over about 30
 seconds for the market writer, the same for news storage) and reaches the
 supervisor only if the worker gives up. A replaced store, the 512 MiB ceiling,
-a full disk, corruption and constraint failures are not retried. Child output is discarded; the exit
+a full disk, corruption and constraint failures are not retried. A writer that
+owns nothing and has nothing to store ignores a storage outage instead of
+spending its retries on it. Child output is discarded; the exit
 code and the durable job rows are the available cause evidence.
 
 ## Status
@@ -146,8 +279,9 @@ code and the durable job rows are the available cause evidence.
 The serving backend's `/provider/health` adds `collection_supervision`, read
 from the evidence row through a read-only connection. An expired lease is shown
 as `STALE`. `health_basis` is `PERSISTED_PARENT_LEASE_NOT_SOURCE_COVERAGE`: it
-describes the supervising process, not provider or feed coverage. The headless
-process exports no queue, backlog or provider diagnostics of its own.
+describes the supervising process, not provider or feed coverage. Market
+supply, the writer's queue and provider state are reported separately in
+`market_supply` (see above).
 
 ## Stop and recovery
 
@@ -163,7 +297,7 @@ To recover from a latched block, first find and correct the cause, using
 python tools/platform/pf01_supervisor.py --reset-restart-budget
 ```
 
-This clears the restart window, the cooldown count and the latch, records
+This clears the restart window, the cooldown count, the failure streak and the latch, records
 `OPERATOR_RESTART_BUDGET_RESET` with the reason it cleared, and keeps the crash
 total and event history. It is refused while a supervisor owns the lease, it
 needs the same `IMP_STATE_DIR` and current schema as `--run`, and it starts
@@ -179,9 +313,19 @@ connection and would upgrade it.
 - No physical drive removal, forced termination of the serving application,
   Windows sleep or real provider failure has been exercised. Storage outages
   and lease lapses are simulated.
-- A child that fails repeatedly but only after 20 minutes or more never uses up
-  a window, and one that survives 30 minutes resets its allowance. Either is
-  restarted about twice an hour indefinitely.
+- A child that survives 30 minutes before each failure counts as healthy every
+  time and is restarted about twice an hour indefinitely. That is the meaning
+  of the 30-minute threshold; changing it is an operating decision. The
+  lifetime `crashes` count and the event history show it.
+- Headless market supply has run only against synthetic transports. OpenD and
+  Kraken behaviour under real load, real entitlement refusals and real session
+  changes are not observed.
+- The moomoo entitlement probe is read when the child starts. A probe that goes
+  stale while the child runs is noticed at the next child start.
+- With L1 selected, the existing feed polls a quote snapshot every 2 seconds per
+  subscribed symbol and every snapshot is stored. See the capacity figures in
+  [PF01B_MARKET_PERSISTENCE.md](PF01B_MARKET_PERSISTENCE.md) before selecting
+  many L1 targets.
 - `STORAGE_WAIT` recovery is exercised only in simulation. After a real drive
   removal Windows invalidates the open database handles, so expect the
   supervisor to block after the grace period and need a restart.

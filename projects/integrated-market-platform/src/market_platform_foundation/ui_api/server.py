@@ -230,6 +230,9 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from ..market_data.persistence import persistence_status
 
                 health["market_persistence"] = persistence_status()
+                from ..market_data.headless_supply import supply_status
+
+                health["market_supply"] = supply_status()
                 from ..news.supervision import supervision_status
                 health["collection_supervision"] = supervision_status()
                 self._send_json(health)

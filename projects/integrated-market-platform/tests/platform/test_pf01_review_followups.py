@@ -66,6 +66,40 @@ class ChildExitClassificationTests(ReviewCase):
                 start.assert_not_called()
                 self.assertNotIn('soon', printed)
 
+    def test_corrupt_store_is_permanent_but_is_not_called_a_missing_migration(self):
+        self.path.write_bytes(b'not a database ' * 400)
+        with self.assertRaisesRegex(ValueError, 'SCHEMA_CHECK_STORAGE_INVALID'):
+            supervision.require_current_schema(self.path)
+        code, printed = self.child_exit(self.env)
+        self.assertEqual(code, CHILD_EXIT_PERMANENT)
+        self.assertIn('SCHEMA_CHECK_STORAGE_INVALID', printed)
+        self.assertNotIn('MIGRATION', printed)
+
+    def test_store_without_the_schema_table_still_asks_for_the_approved_migration(self):
+        db = sqlite3.connect(self.path)
+        db.execute('DROP TABLE schema_meta'); db.commit(); db.close()
+        with self.assertRaisesRegex(ValueError, 'APPROVED_SCHEMA_MIGRATION_REQUIRED'):
+            supervision.require_current_schema(self.path)
+
+    def test_serve_combined_with_collect_only_exits_with_the_permanent_code(self):
+        args = type('Args', (), {'collect_only': True, 'serve': True})()
+        with patch.dict(os.environ, self.env, clear=True), patch.object(run_ui_api, 'parse_args', return_value=args),              patch.object(run_ui_api.sys, 'stdin'), patch('builtins.print') as out,              patch.object(run_ui_api, 'collect_only') as started:
+            self.assertEqual(run_ui_api.main(), CHILD_EXIT_PERMANENT)
+        self.assertIn('COLLECTION_ENTRYPOINT_CONFLICT', out.call_args.args[0])
+        started.assert_not_called()
+
+    def test_rejected_market_supply_targets_exit_permanent_before_any_worker_starts(self):
+        env = {**self.env, 'IMP_MARKET_PERSISTENCE_ENABLED': '1', 'IMP_MARKET_PERSISTENCE_SOURCES': 'moomoo',
+               'IMP_MARKET_PERSISTENCE_SYMBOLS': 'AAPL', 'IMP_MARKET_SUPPLY_ENABLED': '1'}
+        for change, reason in (({}, 'MARKET_SUPPLY_TARGETS_REQUIRED'),
+                               ({'IMP_MARKET_SUPPLY_TARGETS': 'moomoo:AAPL@US_EQUITY_L1'}, 'MARKET_SUPPLY_PROVIDER_GATE_CLOSED'),
+                               ({'IMP_MARKET_SUPPLY_TARGETS': 'moomoo:MSFT@US_EQUITY_L1'}, 'MARKET_SUPPLY_TARGET_NOT_PERSISTED')):
+            with self.subTest(reason=reason), patch.object(collection, 'start_collection') as news,                  patch.object(persistence, 'start_persistence') as market:
+                code, printed = self.child_exit({**env, **change})
+                self.assertEqual(code, CHILD_EXIT_PERMANENT, printed)
+                self.assertIn(reason, printed)
+                news.assert_not_called(); market.assert_not_called()
+
     def test_execution_gate_still_refuses_the_child(self):
         code, printed = self.child_exit({**self.env, 'IMP_PAPER_EXECUTION': '1'})
         self.assertEqual(code, CHILD_EXIT_PERMANENT)

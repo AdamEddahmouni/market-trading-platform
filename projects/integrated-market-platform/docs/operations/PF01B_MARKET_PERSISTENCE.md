@@ -1,9 +1,12 @@
 # PF-01B market-stream persistence
 
 This extension is default off. It records eligible observations already received
-by existing producers. It does not subscribe to instruments, keep Kraken demand
-alive, contact providers, backfill, infer entitlement, dispatch AI, or change
-Paper/Live authority. PF-01 remains partial; this code is not overnight acceptance.
+by existing producers. The writer itself does not subscribe to instruments, keep
+Kraken demand alive, contact providers, backfill, infer entitlement, dispatch AI,
+or change Paper/Live authority. Demand for a headless process is a separate,
+also default-off component described in
+[PF01_COLLECTION_SUPERVISION.md](PF01_COLLECTION_SUPERVISION.md). PF-01 remains
+partial; this code is not overnight acceptance.
 
 ## Sources and selection
 
@@ -94,7 +97,7 @@ Failures are classified:
 
 | Failure | State | Handling |
 |---|---|---|
-| Database busy or locked, I/O error, store briefly unreadable | `RETRYING` | Same batch retried after 1, 2, 4, 8, 16 s. The sixth consecutive failure is `FAILED` with `WRITER_RETRY_LIMIT_EXCEEDED` |
+| Database busy or locked, I/O error, store briefly unreadable | `RETRYING` | Same batch retried after 1, 2, 4, 8, 16 s. The sixth consecutive failure is `FAILED` with `WRITER_RETRY_LIMIT_EXCEEDED`. A writer that owns nothing and has nothing queued stays `IDLE` through an outage |
 | Run lease lost | `RETRYING` | The run is abandoned and never written again. Ownership is re-acquired through the normal path, which records the abandoned run as `UNCLEAN_RESTART_NO_REPLAY` |
 | Store replaced, ceiling reached, disk full, corruption, constraint failure | `FAILED` | Not retried. The worker stops accepting and records `WRITER_FAILURE` |
 | A live writer in another process holds ownership | `WAITING_FOR_OWNERSHIP` | Retried every 2 to 30 s without limit; the bounded queue applies meanwhile |
@@ -165,9 +168,37 @@ use this code. No restart, deployment, production migration or activation was
 performed during implementation. Closing UI demand can still stop subscriptions;
 the writer alone does not collect overnight. Provider entitlement, retention
 decisions for higher volumes and actual overnight observation remain separate
-PF-01 concerns. The headless supervisor in
-[PF01_COLLECTION_SUPERVISION.md](PF01_COLLECTION_SUPERVISION.md) does not supply
-market observations to this writer.
+PF-01 concerns. A headless child supplies this writer only when the default-off
+market supply in [PF01_COLLECTION_SUPERVISION.md](PF01_COLLECTION_SUPERVISION.md)
+is enabled and its entitlement gate is open.
+
+### Headless supply load (synthetic)
+
+The real collection-only child was run on the SSD with the maximum 20 selected
+targets against synthetic transports, at the shipped limits, 15 seconds per
+rate:
+
+| Offered trades/s (20 streams) | Committed/s | Overflow | Database bytes per stored record |
+|---|---|---|---|
+| 99 | 98 | 0 | 1,578 |
+| 284 | 289 | 0 | 1,445 |
+| 747 | 740 | 0 | 1,466 |
+
+Higher rates, bursts, depth and real provider payloads were not measured. A
+7-second database lock at 60 trades/s per stream did fill the 512-record queue;
+the rejected records were counted in `QUEUE_OVERFLOW` and the child kept
+running.
+
+Storage is the binding limit, not throughput. At about 1.5 KB per stored
+record the 512 MiB ceiling holds roughly 350,000 records, and nothing is ever
+deleted. That is about one hour at 100 trades per second. Each L1 target adds a
+stored quote snapshot every 2 seconds whether or not the price moved: 20 L1
+targets alone are about 36,000 records and 50 MiB per hour, which reaches the
+ceiling in about 10 hours. When the ceiling is reached the writer stops with
+`MARKET_STORAGE_FULL`; the supervisor blocks on `STORAGE_BOUND_EXCEEDED`. A
+retention decision is needed before a selection of that size can run for a
+night. These figures come from synthetic payloads and do not qualify live
+traffic.
 
 The fixture benchmark measured 10,000 synthetic trades in controlled batches on
 the SSD. See the task evidence report for throughput, storage and memory results;
