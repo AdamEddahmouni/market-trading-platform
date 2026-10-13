@@ -39,6 +39,20 @@ STATUS_SECONDS = 30.0
 STATUS_LEASE_SECONDS = 120.0
 STALE_SECONDS = 300.0
 PROBE_RELOAD_SECONDS = 1.0
+# Stop bounds, spent one after another by stop(). The supervisor waits for their sum
+# (news.supervision.child_stop_bound_seconds) so a slow drain is not cut short by its parent.
+RECONCILE_JOIN_SECONDS = 10.0
+MOOMOO_STOP_SECONDS = 11.0  # tools/moomoo/push_feed.py: connection join 5 s + processor drain and join 6 s
+STALLED_LOCK_SECONDS = 0.25
+
+
+def stop_bound_seconds() -> float:
+    """Worst case of one stop(): reconcile join, then each owned provider's bounded drain."""
+    from ..crypto_market.kraken_stream import DRAIN_SECONDS, RECEIVER_JOIN_SECONDS
+
+    return RECONCILE_JOIN_SECONDS + STALLED_LOCK_SECONDS + MOOMOO_STOP_SECONDS + RECEIVER_JOIN_SECONDS + DRAIN_SECONDS
+
+
 _SUPPLY: HeadlessMarketSupply | None = None
 _GLOBAL_LOCK = threading.Lock()
 
@@ -505,8 +519,19 @@ class HeadlessMarketSupply:
             return
         self._stop.set()
         if self._thread is not None:
-            self._thread.join(timeout=10)
-        with self._lock:
+            self._thread.join(timeout=RECONCILE_JOIN_SECONDS)
+        stalled = self._thread is not None and self._thread.is_alive()
+        if not self._lock.acquire(timeout=STALLED_LOCK_SECONDS if stalled else -1):
+            # A reconciliation still inside a provider call owns the lock and the provider sessions.
+            # Waiting for it has no bound, and draining beside it would use those sessions concurrently.
+            # Report the stop as incomplete and let the writer drain what was already delivered;
+            # process exit closes the sessions. The saved status row expires instead of being finalised.
+            self._errors += 1
+            self.shutdown_error = 'SUPPLY_SHUTDOWN_INCOMPLETE'
+            self.writer.gap('SUPPLY_SHUTDOWN_INCOMPLETE')
+            self._stopped = True  # one attempt: a repeat would spend the bound again
+            return
+        try:
             for provider in self.providers.values():
                 try:
                     prepare = getattr(provider, 'prepare_stop', None)
@@ -530,6 +555,8 @@ class HeadlessMarketSupply:
                 if drained is not None and source in self._provider_rows:
                     self._provider_rows[source]['shutdown'] = dict(drained)  # which provider left the tail unknown
             self._stopped = True
+        finally:
+            self._lock.release()
         self._save(final=True)
 
 

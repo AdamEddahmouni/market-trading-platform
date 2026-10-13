@@ -30,6 +30,9 @@ MAX_BATCH_BYTES = 2 * 1024 * 1024
 LEASE_NS = 120 * 1_000_000_000
 IDLE_RELEASE_SECONDS = 120.0  # one lease interval without supply returns ownership
 RETRY_LIMIT = 6  # consecutive recoverable failures before the writer stops
+# Stop bounds; part of news.supervision.child_stop_bound_seconds.
+WORKER_JOIN_SECONDS = 5.0
+FINAL_DRAIN_SECONDS = 5.0
 OWNER_LOCK_SUFFIX = '.market-writer.lock'
 MAX_SEEN_BARS = 2048  # per selected symbol; above the provider's 1000-bar current window
 CAPABILITIES = {'US_EQUITY_L1', 'US_EQUITY_TICKS', 'US_EQUITY_DEPTH',
@@ -104,13 +107,24 @@ def owner_lock_held(path: Path) -> bool:
     return False
 
 
+def validate_capture_selection(sources: tuple[str, ...], symbols: tuple[str, ...]) -> None:
+    if not sources or set(sources) - {'moomoo', 'kraken'} or not symbols or len(symbols) > 20:
+        raise ValueError('MARKET_CAPTURE_TARGETS_INVALID')
+
+
+def configured_selection(env: Mapping[str, str]) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """The stored sources and symbols as the writer will read them. Parses only; nothing is opened."""
+    sources, symbols = (tuple(x.strip() for x in env.get(name, '').split(',') if x.strip())
+                        for name in ('IMP_MARKET_PERSISTENCE_SOURCES', 'IMP_MARKET_PERSISTENCE_SYMBOLS'))
+    return sources, symbols
+
+
 class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
                  queue_limit: int = 512, batch_limit: int = 64,
                  max_database_bytes: int = 512 * 1024 * 1024, acquire: bool = True,
                  idle_release_seconds: float | None = IDLE_RELEASE_SECONDS) -> None:
-        if not sources or set(sources) - {'moomoo', 'kraken'} or not symbols or len(symbols) > 20:
-            raise ValueError('MARKET_CAPTURE_TARGETS_INVALID')
+        validate_capture_selection(sources, symbols)
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
             raise ValueError('MARKET_CAPTURE_LIMITS_INVALID')
         if not MAX_BATCH_BYTES <= max_database_bytes <= 512 * 1024 * 1024:
@@ -448,7 +462,7 @@ class MarketStreamWriter:
                 return 0
 
     def checkpoints(self) -> list[dict[str, Any]]:
-        return [dict(row) for row in self.connection.execute('SELECT * FROM market_stream_checkpoints').fetchall()]
+        return [dict(row) for row in self.connection.fetchall('SELECT * FROM market_stream_checkpoints')]
 
     def _capacity_status(self) -> dict[str, Any]:
         """Cheap read-only resource warning; no database scan, checkpoint or retention action."""
@@ -546,13 +560,13 @@ class MarketStreamWriter:
         self._stop.set()
         self._wake.set()
         if self._thread is not None:
-            self._thread.join(timeout=5)
+            self._thread.join(timeout=WORKER_JOIN_SECONDS)
             if self._thread.is_alive():
                 self.gap('SHUTDOWN_INCOMPLETE')
                 with self._lock:
                     self._state, self._error = 'FAILED', 'SHUTDOWN_INCOMPLETE'
                 return  # Never close a connection still owned by a running writer.
-        deadline = time.monotonic()+5
+        deadline = time.monotonic()+FINAL_DRAIN_SECONDS
         while self._queue and time.monotonic() < deadline:
             self.flush()
             if self._state != 'READY':
@@ -610,8 +624,7 @@ def start_persistence(data_mode: str, env: Mapping[str, str] | None = None) -> M
     if data_mode not in {'LIVE_OBSERVATIONAL', 'BROKER_DELAYED'}:
         raise ValueError('MARKET_CAPTURE_REQUIRES_OBSERVATIONAL_MODE')
     path = validate_persistence_storage(env)
-    sources = tuple(x.strip() for x in env.get('IMP_MARKET_PERSISTENCE_SOURCES', '').split(',') if x.strip())
-    symbols = tuple(x.strip() for x in env.get('IMP_MARKET_PERSISTENCE_SYMBOLS', '').split(',') if x.strip())
+    sources, symbols = configured_selection(env)
     with _GLOBAL_LOCK:
         if _WRITER is not None:
             raise ValueError('MARKET_CAPTURE_ALREADY_STARTED')

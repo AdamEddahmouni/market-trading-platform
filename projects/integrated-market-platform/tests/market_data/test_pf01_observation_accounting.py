@@ -363,3 +363,30 @@ class ShutdownResultTests(unittest.TestCase):
             with patch.object(stop, 'wait', side_effect=KeyboardInterrupt), \
                     self.assertRaisesRegex(ValueError, 'SUPPLY_SHUTDOWN_INCOMPLETE'):
                 run_ui_api.collect_only(stop)
+
+    def test_collection_only_refuses_success_when_the_news_worker_outlives_its_stop(self):
+        import os, threading
+        from unittest.mock import MagicMock
+        from tools.ui1 import run_ui_api
+        stop = threading.Event()
+        stop.set()
+        collector, writer = MagicMock(), MagicMock()
+        collector.status.return_value = {'worker_alive': True, 'state': 'RUNNING'}
+        writer.status.return_value = {'state': 'STOPPED'}
+        for stopped, outcome in ((False, self.assertRaisesRegex(ValueError, 'COLLECTION_SHUTDOWN_INCOMPLETE')), (True, None)):
+            with patch.dict(os.environ, {}, clear=True), \
+                    patch('market_platform_foundation.news.supervision.collection_only_reason', return_value=None), \
+                    patch('market_platform_foundation.news.supervision.require_current_schema'), \
+                    patch('market_platform_foundation.news.collection.start_collection', return_value=collector), \
+                    patch('market_platform_foundation.news.collection.stop_collection', return_value=stopped) as quiesce, \
+                    patch('market_platform_foundation.market_data.headless_supply.validate_supply', return_value=()), \
+                    patch('market_platform_foundation.market_data.headless_supply.start_supply', return_value=None), \
+                    patch('market_platform_foundation.market_data.persistence.start_persistence', return_value=writer), \
+                    patch('market_platform_foundation.market_data.persistence.stop_persistence') as finish:
+                if outcome is None:
+                    run_ui_api.collect_only(stop)
+                else:
+                    with outcome:
+                        run_ui_api.collect_only(stop)
+                quiesce.assert_called_once()
+                finish.assert_called_once()  # the writer still drains what the worker already delivered

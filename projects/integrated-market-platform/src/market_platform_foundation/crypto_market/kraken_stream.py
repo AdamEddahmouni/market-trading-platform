@@ -49,6 +49,9 @@ IDLE_LINGER_SECONDS = 30.0
 BACKOFF_SECONDS = (1.0, 2.0, 4.0, 8.0, 16.0, 30.0)
 RESYNC_MIN_INTERVAL_SECONDS = 2.0
 RECEIVE_SLICE_SECONDS = 0.25
+# Stop bounds. The collection supervisor waits for their sum (news.supervision.child_stop_bound_seconds).
+RECEIVER_JOIN_SECONDS = 5.0
+DRAIN_SECONDS = 5.0
 
 
 class _Lifecycle:
@@ -211,7 +214,7 @@ class KrakenStreamRuntime:
                 self._worker = threading.Thread(target=self._run, name="imp-kraken-stream", daemon=True)
                 self._worker.start()
 
-    def shutdown(self, *, drain_seconds: float = 5.0) -> dict[str, Any]:
+    def shutdown(self, *, drain_seconds: float = DRAIN_SECONDS) -> dict[str, Any]:
         """Stop the receiver, then consume the ordered tail through unsubscribe acknowledgements.
 
         An acknowledgement bounds this connection's tail; producer enqueue is
@@ -219,13 +222,13 @@ class KrakenStreamRuntime:
         A deadline or transport failure leaves an unknown tail, not a made-up
         number of lost observations. Call before removing the final consumer.
         """
-        if not math.isfinite(drain_seconds) or not 0 <= drain_seconds <= 5:
+        if not math.isfinite(drain_seconds) or not 0 <= drain_seconds <= DRAIN_SECONDS:
             raise ValueError('KRAKEN_DRAIN_BOUND_INVALID')
         self._stop.set()
         self._wake.set()
         worker = self._worker
         if worker is not None and worker is not threading.current_thread():
-            worker.join(timeout=5)
+            worker.join(timeout=RECEIVER_JOIN_SECONDS)
             if worker.is_alive():
                 self._shutdown_uncertain('RECEIVER_STILL_RUNNING', 0, 0)
                 # The connection still belongs to its receiver: do not use it concurrently.
@@ -238,18 +241,18 @@ class KrakenStreamRuntime:
                     self._shutdown_status = {'state': 'UNVERIFIED', 'reason': 'DISCONNECTED_BEFORE_SHUTDOWN',
                                              'messages_drained': 0, 'pending_unsubscribes': 0, 'tail_observations': 'UNKNOWN'}
                 return dict(self._shutdown_status)
-            # Only acknowledged channels carry data. A refused or unanswered request has no tail to bound,
-            # and the venue would refuse its unsubscribe.
-            targets = sorted(self._acked)
+            # A refused request has no tail to bound, and the venue would refuse its unsubscribe. A request
+            # still unanswered is different: its acknowledgement and first data may already be in the socket.
+            targets = sorted(self._sent - set(self._refused))
         deadline = time.monotonic() + drain_seconds
-        pending: set[int] = set()
+        pending: dict[int, tuple[str, str]] = {}
         received = 0
         reason = None
         try:
             with self._lock:
                 for channel, symbol in targets:
                     self._send('unsubscribe', channel, symbol)
-                    pending.add(self._request_id)
+                    pending[self._request_id] = (channel, symbol)
             while pending and time.monotonic() < deadline:
                 message = connection.receive(min(RECEIVE_SLICE_SECONDS, max(0, deadline-time.monotonic())))
                 if message is None:
@@ -260,10 +263,12 @@ class KrakenStreamRuntime:
                 except ValueError:
                     decoded = None
                 if isinstance(decoded, dict) and decoded.get('req_id') in pending and decoded.get('method') == 'unsubscribe':
-                    if decoded.get('success') is not True:
+                    # The venue declines to unsubscribe a channel whose subscribe it refused during this
+                    # drain: that channel never carried data. Any other refusal leaves a live channel.
+                    if decoded.get('success') is not True and pending[decoded['req_id']] not in self._refused:
                         reason = 'UNSUBSCRIBE_REFUSED'
                         break
-                    pending.discard(decoded['req_id'])
+                    del pending[decoded['req_id']]
                 self.handle(message, received_ns=self._now_ns())
             if pending and reason is None:
                 reason = 'DRAIN_DEADLINE'

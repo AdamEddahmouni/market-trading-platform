@@ -33,6 +33,9 @@ COOLDOWN_LIMIT = 3
 UNHEALTHY_FAILURE_LIMIT = RESTART_LIMIT * COOLDOWN_LIMIT
 STORAGE_GRACE_SECONDS = 900
 CHILD_EXIT_PERMANENT = 78  # the child refused its own configuration; restarting cannot help
+# Beyond the workers' own stop bounds: the child's 1 s stop poll, one 5 s storage busy wait in the
+# iteration in flight, the final evidence writes and interpreter exit.
+CHILD_STOP_MARGIN_SECONDS = 8.0
 PERMANENT_CHILD_REASONS = frozenset({
     'EXECUTION_GATE_ENABLED', 'REPLAY_MODE', 'DURABLE_STATE_REQUIRED', 'COLLECTION_DISABLED',
     'APPROVED_SCHEMA_MIGRATION_REQUIRED', 'SCHEMA_CHECK_STORAGE_INVALID', 'COLLECTION_ENTRYPOINT_CONFLICT',
@@ -42,6 +45,7 @@ PERMANENT_CHILD_REASONS = frozenset({
     'MARKET_CAPTURE_STORAGE_LIMIT_INVALID', 'MARKET_CAPTURE_REQUIRES_OBSERVATIONAL_MODE',
     'MARKET_EXPLICIT_STATE_DIR_REQUIRED', 'COLLECTION_TARGETS_INVALID', 'COLLECTION_SYMBOLS_INVALID',
     'COLLECTION_SYMBOLS_REQUIRED', 'COLLECTION_INTERVAL_INVALID', 'COLLECTION_TARGET_BOUND_EXCEEDED'})
+AI_CREDENTIAL_PREFIXES = ('ANTHROPIC_','OPENAI_','AZURE_OPENAI_','GEMINI_')  # never forwarded to the child
 EXECUTION_GATES = ('IMP_PAPER_EXECUTION','IMP_BROKER_PAPER_EXECUTION','IMP_MOOMOO_PAPER_EXECUTION',
                    'IMP_LIVE_EXECUTION','IMP_BROKER_LIVE_EXECUTION','IMP_LIVE_INTERNAL_SIMULATION')
 
@@ -66,6 +70,18 @@ def collection_only_reason(env: Mapping[str, str]) -> str | None:
     if not any(env.get(k) == '1' for k in ('IMP_NEWS_COLLECTION_ENABLED','IMP_MARKET_PERSISTENCE_ENABLED')):
         return 'COLLECTION_DISABLED'
     return None
+
+def child_stop_bound_seconds() -> float:
+    """How long a requested stop may legitimately take in the collection-only child.
+
+    Its workers stop one after another (producers, then the writer's final drain), each within its
+    own bound. A parent that waits less terminates a healthy drain and leaves an unknown tail, so
+    the supervisor's wait is derived from the same constants instead of chosen separately.
+    """
+    from ..market_data import headless_supply, persistence
+    from . import collection
+    return (headless_supply.stop_bound_seconds() + collection.WORKER_JOIN_SECONDS
+            + persistence.WORKER_JOIN_SECONDS + persistence.FINAL_DRAIN_SECONDS + CHILD_STOP_MARGIN_SECONDS)
 
 def child_exit_code(reason: str) -> int:
     return CHILD_EXIT_PERMANENT if reason in PERMANENT_CHILD_REASONS else 1
@@ -124,12 +140,17 @@ class CollectionSupervisor:
 
     def _stop_child(self) -> bool:
         if self.child is None: return False
-        child=self.child; self.child=None; self._evidence['running_since']=None
+        child=self.child; self._evidence['running_since']=None
         try: child.stop(); exit_code=child.poll()
         except Exception: exit_code=None; failed=True  # the handle could not confirm the stop either way
+        except BaseException:
+            # An interrupted stop proves nothing about the child. Keep the handle so the next stop finishes it.
+            self._event('CHILD_STOP_EXIT_GAP_UNVERIFIED'); self._unclean_stop=True
+            raise
         else: failed=False
+        self.child=None
         # Exit 0 is the child's only confirmation that producers drained and the final commit landed.
-        if failed or (isinstance(exit_code,int) and exit_code!=0):
+        if failed or exit_code!=0:
             self._event('CHILD_STOP_EXIT_GAP_UNVERIFIED',**({'exit_code':exit_code} if isinstance(exit_code,int) else {}))
             self._unclean_stop=True
         return True

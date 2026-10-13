@@ -46,6 +46,10 @@ SUBSCRIBE_RETRY_NS = 15_000_000_000
 UNSUBSCRIBE_RETRY_NS = 5_000_000_000
 SNAPSHOT_INTERVAL_NS = 2_000_000_000  # 15 calls / 30 s, under OpenD's 60 / 30 s snapshot limit
 SNAPSHOT_MAX_CODES = 400  # OpenD's per-call snapshot code limit
+# Stop bounds. headless_supply.MOOMOO_STOP_SECONDS is their sum.
+CONNECTION_JOIN_SECONDS = 5.0
+PROCESSOR_DRAIN_SECONDS = 5.0
+PROCESSOR_JOIN_SECONDS = 6.0  # the drain, plus one batch in flight
 
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
@@ -135,7 +139,7 @@ class MoomooPushFeed:
             kwargs={
                 "queue": self.queue,
                 "stop_event": self._processor_stop_event,
-                "drain_seconds": 5.0,
+                "drain_seconds": PROCESSOR_DRAIN_SECONDS,
                 "handler": self._process_envelope,
             },
             name="moomoo-ingest-processor",
@@ -147,21 +151,24 @@ class MoomooPushFeed:
 
     def stop(self) -> None:
         """Quiesce callbacks before draining accepted ingest; keep the writer alive until this returns."""
+        # A stop that already spent its bound is only re-checked: waiting again would double the
+        # delay and count one uncertainty interval twice.
+        repeated = self._shutdown_state == "UNVERIFIED"
         self._stop_event.set()
         connection = self._connection_thread
         if connection is not None and connection is not threading.current_thread():
-            connection.join(timeout=5)
+            connection.join(timeout=0 if repeated else CONNECTION_JOIN_SECONDS)
         self._processor_stop_event.set()
         processor = self._processor_thread
         if processor is not None and processor is not threading.current_thread():
-            processor.join(timeout=6)
+            processor.join(timeout=0 if repeated else PROCESSOR_JOIN_SECONDS)
         incomplete = bool((connection and connection.is_alive()) or (processor and processor.is_alive()) or self.queue.depth())
         self._shutdown_state = "UNVERIFIED" if incomplete else "DRAINED"
         if incomplete:
             self.last_error = "MOOMOO_SHUTDOWN_INCOMPLETE"
             from market_platform_foundation.market_data.persistence import active_writer
             writer = active_writer()
-            if writer is not None and 'moomoo' in writer.sources:
+            if writer is not None and 'moomoo' in writer.sources and not repeated:
                 writer.gap('MOOMOO_SHUTDOWN_INCOMPLETE')  # uncertainty interval, not a fabricated trade count
             raise RuntimeError("MOOMOO_SHUTDOWN_INCOMPLETE")
 
@@ -215,7 +222,8 @@ class MoomooPushFeed:
                 self.last_error = f"OpenD not reachable at {moomoo_host()}:{moomoo_port()}"
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                # Interruptible: a stop during a reconnect backoff has no session and nothing to drain.
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
                 continue
             if self.on_reconnecting and attempt > 0:
@@ -227,7 +235,7 @@ class MoomooPushFeed:
                 self.last_error = str(exc)
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
 
     def _run_session(self) -> None:

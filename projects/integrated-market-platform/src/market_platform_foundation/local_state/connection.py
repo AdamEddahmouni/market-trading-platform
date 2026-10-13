@@ -26,6 +26,10 @@ def transient_storage_error(exc: BaseException) -> bool:
     """
     if isinstance(exc, sqlite3.OperationalError):
         code = getattr(exc, "sqlite_errorcode", None)
+        if code == 0:
+            # "not an error": another thread used this shared connection before the failing call's
+            # code was read, so the real code is gone. Seen only under contention; retry is bounded.
+            return True
         if code is not None:
             return code & 0xFF in _TRANSIENT_SQLITE_CODES
         text = str(exc).lower()
@@ -77,6 +81,19 @@ class LocalStateConnection:
     def execute(self, sql: str, params: tuple[Any, ...] = ()) -> sqlite3.Cursor:
         with self._lock:
             return self._conn.execute(sql, params)
+
+    def fetchone(self, sql: str, params: tuple[Any, ...] = ()) -> Any:
+        """Read one row with the fetch inside the connection lock.
+
+        Fetching from the cursor ``execute`` returned steps the shared connection outside the lock,
+        which can replace the result code of another thread's failing statement.
+        """
+        with self._lock:
+            return self._conn.execute(sql, params).fetchone()
+
+    def fetchall(self, sql: str, params: tuple[Any, ...] = ()) -> list[Any]:
+        with self._lock:
+            return self._conn.execute(sql, params).fetchall()
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]]) -> sqlite3.Cursor:
         with self._lock:
@@ -131,6 +148,9 @@ class StateTransaction:
         self.connection._lock.acquire()
         try:
             self.connection._conn.execute("BEGIN IMMEDIATE")
+            if not self.connection._conn.in_transaction:
+                # A refused BEGIN whose failure was lost must not let the body run in autocommit.
+                raise sqlite3.OperationalError("database is locked: transaction did not start")
         except Exception:
             self.connection._lock.release()
             raise

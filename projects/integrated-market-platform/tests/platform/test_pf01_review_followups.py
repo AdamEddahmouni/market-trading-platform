@@ -117,6 +117,76 @@ class FailureClassTests(ReviewCase):
     def test_disk_full_is_not_retried(self):
         self.assertFalse(transient_storage_error(sqlite3.OperationalError('database or disk is full')))
 
+    def test_lock_failure_whose_result_code_was_lost_is_retried_not_blocked(self):
+        # A busy BEGIN reported as code 0 "not an error" ended the collection child in ScenarioA.
+        lost = sqlite3.OperationalError('not an error')
+        lost.sqlite_errorcode = 0
+        self.assertTrue(transient_storage_error(lost))
+        connection = LocalStateConnection(self.path, require_existing=True)
+        self.addCleanup(connection.close)
+        collector = NewsCollector(connection, [CollectionJob('rss', 'coindesk', 'CRYPTO', 300)], lambda job: ([], {}),
+                                  clock=lambda: 1791867600.0)
+        self.addCleanup(collector.stop)
+        with patch.object(connection, 'transaction', side_effect=lost):
+            collector.step()
+        self.assertEqual(collector.status()['state'], 'RETRYING')
+
+    def test_status_reads_fetch_inside_the_shared_connection_lock(self):
+        connection = LocalStateConnection(self.path, require_existing=True)
+        self.addCleanup(connection.close)
+        fetched_unlocked = []
+
+        class Cursor:
+            def __init__(self, cursor): self.cursor = cursor
+            def fetchone(self):
+                fetched_unlocked.append(not connection._lock._is_owned())
+                return self.cursor.fetchone()
+            def fetchall(self):
+                fetched_unlocked.append(not connection._lock._is_owned())
+                return self.cursor.fetchall()
+
+        class Probe:
+            def __init__(self, real): self.real = real
+            def execute(self, *args): return Cursor(self.real.execute(*args))
+            def __getattr__(self, name): return getattr(self.real, name)
+
+        collector = NewsCollector(connection, [CollectionJob('rss', 'coindesk', 'CRYPTO', 300)], lambda job: ([], {}),
+                                  clock=lambda: 1791867600.0)
+        self.addCleanup(collector.stop)
+        writer = persistence.MarketStreamWriter(self.path, sources=('moomoo',), symbols=('AAPL',), acquire=False)
+        self.addCleanup(writer.stop)
+        real, writer_real = connection._conn, writer.connection._conn
+        connection._conn = Probe(real)
+        try:
+            collector.status()
+            connection.fetchone('SELECT 1')
+            lock, writer.connection._lock, writer.connection._conn = writer.connection._lock, connection._lock, Probe(writer_real)
+            try:
+                writer.checkpoints()
+            finally:
+                writer.connection._lock, writer.connection._conn = lock, writer_real
+        finally:
+            connection._conn = real
+        self.assertEqual(fetched_unlocked, [False, False, False])
+
+    def test_begin_that_did_not_start_a_transaction_never_runs_the_body(self):
+        connection = LocalStateConnection(self.path, require_existing=True)
+        self.addCleanup(connection.close)
+
+        class SilentBegin:
+            in_transaction = False
+            def execute(self, sql, *args): return None
+
+        real, connection._conn = connection._conn, SilentBegin()
+        try:
+            with self.assertRaises(sqlite3.OperationalError) as raised:
+                with connection.transaction():
+                    self.fail('body ran without a transaction')
+        finally:
+            connection._conn = real
+        self.assertTrue(transient_storage_error(raised.exception))
+        self.assertFalse(connection._lock._is_owned())
+
     def test_feed_that_worked_then_hits_a_rate_limit_keeps_the_operator_backoff(self):
         now = [1791867600.0]
         failure = []
@@ -179,10 +249,10 @@ class CollectorBlockTests(ReviewCase):
         collector, connection = self.collector()
         collector.step()
         known = collector.status()
-        with patch.object(connection, 'execute', side_effect=sqlite3.OperationalError('database is locked')):
+        with patch.object(connection, 'fetchone', side_effect=sqlite3.OperationalError('database is locked')):
             busy = collector.status()
         self.assertEqual((busy['state'], busy['jobs']), (known['state'], known['jobs']))
-        with patch.object(connection, 'execute', side_effect=sqlite3.DatabaseError('database disk image is malformed')):
+        with patch.object(connection, 'fetchone', side_effect=sqlite3.DatabaseError('database disk image is malformed')):
             self.assertEqual(collector.status()['reason'], 'COLLECTION_STATUS_STORAGE_FAILED')
 
     def test_unrecoverable_storage_failure_stays_blocked_and_stops_polling(self):

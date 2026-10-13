@@ -438,7 +438,7 @@ def collect_only(stop: threading.Event) -> None:
             if owner:
                 connection = collector.connection if collector is not None else writer.connection
                 try:
-                    row = connection.execute('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()
+                    row = connection.fetchone('SELECT lease_owner,lease_until FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,))
                 except Exception as exc:
                     # Brief contention is not lost ownership; a quarter of the parent lease is.
                     unreadable += 1
@@ -461,7 +461,7 @@ def collect_only(stop: threading.Event) -> None:
     finally:
         # Producers first, so the writer drains what they already delivered.
         if supply is not None: stop_supply()
-        if collector is not None: stop_collection()
+        news_stopped = stop_collection() if collector is not None else True
         if writer is not None:
             stop_persistence()
             if writer.status().get('state') == 'FAILED' and sys.exc_info()[0] in (None, KeyboardInterrupt):
@@ -470,6 +470,9 @@ def collect_only(stop: threading.Event) -> None:
         if (supply is not None and getattr(supply, 'shutdown_error', None) == 'SUPPLY_SHUTDOWN_INCOMPLETE'
                 and sys.exc_info()[0] in (None, KeyboardInterrupt)):  # an interrupt is a stop request, not a cause
             raise ValueError('SUPPLY_SHUTDOWN_INCOMPLETE')
+        if news_stopped is False and sys.exc_info()[0] in (None, KeyboardInterrupt):
+            # A news worker that outlived its join may hold an uncommitted batch: not a verified drain.
+            raise ValueError('COLLECTION_SHUTDOWN_INCOMPLETE')
 
 
 def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:

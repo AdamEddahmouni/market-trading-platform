@@ -26,6 +26,7 @@ MAX_JOBS = 64
 MAX_BATCH_BYTES = 2 * 1024 * 1024
 LEASE_SECONDS = 120
 RETRY_LIMIT = 6  # consecutive recoverable storage failures before the collector reports BLOCKED
+WORKER_JOIN_SECONDS = 10.0  # stop bound; part of news.supervision.child_stop_bound_seconds
 OUTAGE_BACKOFF_CAP = 3600  # an unreachable source is retried at least hourly
 OPERATOR_BACKOFF_CAP = 86400  # credentials, quota or configuration: at most daily until corrected
 _OPERATOR_STATES = {"AUTH_FAILED": "PROVIDER_AUTH_FAILED", "RATE_LIMITED": "PROVIDER_RATE_LIMITED",
@@ -292,7 +293,7 @@ class NewsCollector:
         rows = []
         try:
             for job in self.jobs:
-                row = self.connection.execute("SELECT * FROM news_collection_jobs WHERE job_id=?", (job.id,)).fetchone()
+                row = self.connection.fetchone("SELECT * FROM news_collection_jobs WHERE job_id=?", (job.id,))
                 rows.append({"id": job.id, "provider": job.provider, "interval": job.interval, "next_due": row['next_due'],
                              "lease_until": row['lease_until'], **json.loads(row['payload_json'])})
             self._rows = rows
@@ -334,7 +335,7 @@ class NewsCollector:
     def stop(self) -> None:
         self._stop.set()
         if self._thread and self._thread is not threading.current_thread():
-            self._thread.join(timeout=10)
+            self._thread.join(timeout=WORKER_JOIN_SECONDS)
         if self._thread is not None and self._thread.is_alive():
             self._set_state('BLOCKED', 'COLLECTION_SHUTDOWN_INCOMPLETE')
             return
@@ -407,12 +408,14 @@ def collection_status() -> dict[str, Any]:
     return _COLLECTOR.status() if _COLLECTOR is not None else dict(_STARTUP_STATUS)
 
 
-def stop_collection() -> None:
+def stop_collection() -> bool:
+    """False when the worker outlived its bounded join; the collector then stays visible as the owner."""
     global _COLLECTOR, _STARTUP_STATUS
     with _STARTUP_LOCK:
         if _COLLECTOR is not None:
             _COLLECTOR.stop()
             if _COLLECTOR.status()['worker_alive']:
-                return
+                return False
             _COLLECTOR = None
         _STARTUP_STATUS = {'enabled': False, 'state': 'DISABLED'}
+        return True
