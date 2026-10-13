@@ -526,11 +526,35 @@ class LifecycleTests(SupplyCase):
         supply.interval = 0.01
         with patch.object(self.writer, 'status', side_effect=RuntimeError('synthetic status failure')):
             supply.start()
-            self.wait_until(lambda: len(provider.requests) >= 3)
+            # A step requests first and publishes status after releasing the lock, so the third request
+            # is visible before its failure is counted. Wait for the failures, not for the requests.
+            self.wait_until(lambda: supply._errors >= 3)
             self.assertTrue(supply.alive())
+        self.assertGreaterEqual(len(provider.requests), 3)
         status = supply.status()
         self.assertGreaterEqual(status['reconcile_errors'], 3)
         self.assertEqual(status['summary']['active'], 1)
+
+    def test_status_failure_is_counted_after_the_request_of_the_same_step(self):
+        # The ordering the test above depends on: a request is on record while its step's status
+        # publication is still running, and that publication's failure is counted only when it returns.
+        provider = StubProvider()
+        supply = self.supply(self.TARGETS[1:], {'kraken': provider})
+        publishing, release = threading.Event(), threading.Event()
+        self.addCleanup(release.set)
+        def failing_status():
+            publishing.set()
+            release.wait(5)
+            raise RuntimeError('synthetic status failure')
+        with patch.object(self.writer, 'status', side_effect=failing_status):
+            stepping = threading.Thread(target=supply.step)
+            stepping.start()
+            self.assertTrue(publishing.wait(5))
+            self.assertEqual((len(provider.requests), supply._errors), (1, 0))
+            release.set()
+            stepping.join(5)
+        self.assertFalse(stepping.is_alive())
+        self.assertEqual((len(provider.requests), supply._errors), (1, 1))
 
     def test_start_supply_is_single_and_requires_the_writer(self):
         with self.assertRaisesRegex(ValueError, 'MARKET_SUPPLY_REQUIRES_PERSISTENCE'):
