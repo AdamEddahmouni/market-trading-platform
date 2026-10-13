@@ -7024,5 +7024,8 @@ also corrected: a venue-refused pair made every clean stop read incomplete, and
 a socket lost by the receiver thread just before the stop read clean. A console
 interrupt no longer masks an incomplete drain, a failing child handle is
 recorded, and a reused stream does not inherit an earlier shutdown verdict.
+Changed-suite validation then showed the repository closure audit rejecting the
+unclassified `tools/market_data_capacity.py`; it is now classified with the
+other operations tooling.
 Remaining limits are stated in PF01B_MARKET_PERSISTENCE.md. Synthetic
 transports only; no provider, subscription, migration, deployment or trading.
