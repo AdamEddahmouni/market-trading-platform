@@ -131,6 +131,7 @@ class MarketStreamWriter:
         self._gaps: dict[tuple[str, str], list[int]] = {}
         self._bars_seen: dict[str, dict[int, str]] = {}
         self._state, self._error = 'IDLE', None
+        self._selected_received = self._accepted = self._normalizing = 0
         self._committed = self._duplicates = self._rejected = self._peak_backlog = 0
         self._last_received = self._last_commit = None
         self._max_flush_seconds = 0.0
@@ -221,6 +222,9 @@ class MarketStreamWriter:
         source = _source(provider)
         if source not in self.sources or not ({symbol, provider_symbol} & self.symbols):
             return False  # Out-of-scope traffic is intentionally not selected.
+        with self._lock:
+            self._selected_received += 1
+            self._normalizing += 1
         capability = record.get('capability')
         stream = f'{provider}:{symbol}:{capability}'
         try:
@@ -277,18 +281,22 @@ class MarketStreamWriter:
         except (ValueError, TypeError, KeyError, OverflowError):
             with self._lock:
                 self._rejected += 1
+                self._normalizing -= 1
             self.gap('INVALID_OBSERVATION', stream=stream)
             return False
         with self._lock:
             self._last_received = received if self._last_received is None else max(received, self._last_received)
-            accepted = self._accepting and len(self._queue) < self.queue_limit
+            accepting = self._accepting
+            accepted = accepting and len(self._queue) < self.queue_limit
+            self._normalizing -= 1
             if accepted:
+                self._accepted += 1
                 self._queue.append(row)
                 self._peak_backlog = max(self._peak_backlog, len(self._queue))
-        if not accepted:
-            with self._lock:
+            else:
                 self._rejected += 1
-            self.gap('QUEUE_OVERFLOW' if self._accepting else 'WRITER_STOPPED', stream=stream, received_ns=received)
+        if not accepted:
+            self.gap('QUEUE_OVERFLOW' if accepting else 'WRITER_STOPPED', stream=stream, received_ns=received)
         self._wake.set()
         return accepted
 
@@ -451,13 +459,19 @@ class MarketStreamWriter:
                     'sources': sorted(self.sources), 'symbols': sorted(self.symbols),
                     'received_ns': self._last_received, 'last_commit_ns': self._last_commit,
                     'accepting': self._accepting,
-                    'ownership': 'HELD' if self.run_id is not None else 'NOT_HELD',
+                    'ownership': 'HELD' if self.run_id is not None and not self._closed else 'NOT_HELD',
                     'collecting': self.run_id is not None and state == 'READY',
                     'idle_release_seconds': self._idle_release, 'idle_releases': self._idle_releases,
                     'ownership_waits': self._ownership_waits, 'transient_failures': self._transient_failures,
                     'worker_alive': bool(self._thread and self._thread.is_alive()),
                     'last_checkpoint': dict(self._last_checkpoint) if self._last_checkpoint else None,
                     'received_age_seconds': (time.time_ns()-self._last_received)/1e9 if self._last_received else None,
+                    'selected_received': self._selected_received, 'accepted': self._accepted,
+                    'normalizing': self._normalizing,
+                    'unreconciled': abs(self._selected_received-self._accepted-self._rejected-self._normalizing)
+                        + abs(self._accepted-self._committed-self._duplicates-len(self._queue)),
+                    'accounting_boundary': 'SELECTED_WRITER_SUBMIT_THIS_PROCESS',
+                    'interruption_tail': 'UNKNOWN_NO_DURABLE_INGRESS_JOURNAL',
                     'committed': self._committed, 'duplicates': self._duplicates, 'rejected': self._rejected,
                     'backlog': len(self._queue), 'peak_backlog': self._peak_backlog,
                     'pending_gap_classes': len(self._gaps), 'known_gaps': self._known_gaps,

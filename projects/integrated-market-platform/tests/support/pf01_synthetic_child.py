@@ -70,6 +70,9 @@ def main() -> int:
                                       catalog=lambda _universe: [], synthesizer_factory=lambda: None)
         patch.object(screener_news, 'news_service', lambda: service).start()
 
+    generator_stop = threading.Event()
+    writer_ref = [None]
+    feed_ref = [None]
     counts = {'moomoo_ticks': 0, 'kraken_trades': 0, 'undelivered': 0, 'started': time.time()}
 
     def command(name: str) -> bool:
@@ -79,8 +82,20 @@ def main() -> int:
         path.unlink()
         return True
 
+    def _opend_metrics():
+        from market_platform_foundation.market_data import live_runtime
+        runtime = live_runtime._RUNTIME
+        feed_ref[0] = runtime.feed if runtime is not None and runtime.feed is not None else feed_ref[0]
+        return feed_ref[0].metrics() if feed_ref[0] is not None else {}
+
     def save() -> None:
+        from market_platform_foundation.market_data.persistence import active_writer
+        writer_ref[0] = active_writer() or writer_ref[0]
         snapshot = {**counts, 'opend_sessions': len(opend.contexts), 'kraken_connections': len(venue.connections),
+                    'writer_accounting': writer_ref[0].status() if writer_ref[0] is not None else {},
+                    'opend_ingest': _opend_metrics(),
+                    'kraken_transport': venue.transport_counts(), 'kraken_shutdown': dict(stream._shutdown_status),
+                    'count_semantics': {'moomoo_ticks': 'CALLBACK_RETURNED', 'kraken_trades': 'TRANSPORT_ENQUEUED'},
                     'opend_subscribed': sorted(map(list, opend.subscribed())),
                     'kraken_subscribed': sorted(map(list, venue.subscribed())), 'pid': os.getpid()}
         temporary = CONTROL / f'counts.{os.getpid()}.tmp'
@@ -95,7 +110,8 @@ def main() -> int:
 
     def generate() -> None:
         saved = 0.0
-        while True:
+        next_due = time.monotonic()
+        while not generator_stop.is_set():
             if command('crash'):
                 save()  # the harness's own counters only; the collector gets no chance to drain
                 os._exit(3)  # abrupt: no drain, no lease release
@@ -116,16 +132,27 @@ def main() -> int:
             if time.time() - saved >= 0.5:
                 saved = time.time()
                 save()
-            time.sleep(1 / RATE)
+            next_due = max(next_due + 1 / RATE, time.monotonic())
+            delay = max(0, next_due - time.monotonic())
+            if delay <= .05:
+                time.sleep(delay)  # Windows high-resolution sleep avoids coarse Event.wait rate rounding.
+            else:
+                generator_stop.wait(delay)
 
-    threading.Thread(target=generate, name='pf01-synthetic-generator', daemon=True).start()
+    generator = threading.Thread(target=generate, name='pf01-synthetic-generator', daemon=True)
+    generator.start()
     import atexit
 
     atexit.register(save)  # exact delivery counters after a clean stop
     sys.argv = [str(ROOT / 'tools/ui1/run_ui_api.py'), '--collect-only']
     from tools.ui1 import run_ui_api
 
-    return run_ui_api.main()
+    try:
+        return run_ui_api.main()
+    finally:
+        generator_stop.set()
+        generator.join(timeout=2)
+        save()
 
 
 if __name__ == '__main__':

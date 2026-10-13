@@ -94,6 +94,9 @@ class MoomooPushFeed:
         default_factory=lambda: BoundedIngestQueue(max_size=ingest_queue_max_size())
     )
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _processor_stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _shutdown_state: str = field(default="NOT_REQUESTED", repr=False)
+    _processed_records: int = 0
     _connection_thread: threading.Thread | None = field(default=None, repr=False)
     _processor_thread: threading.Thread | None = field(default=None, repr=False)
     _subscribed_subtypes: set[tuple[str, str]] = field(default_factory=set, repr=False)
@@ -125,11 +128,14 @@ class MoomooPushFeed:
         if self._connection_thread and self._connection_thread.is_alive():
             return
         self._stop_event.clear()
+        self._processor_stop_event.clear()
+        self._shutdown_state = "NOT_REQUESTED"
         self._processor_thread = threading.Thread(
             target=drain_queue_worker,
             kwargs={
                 "queue": self.queue,
-                "stop_event": self._stop_event,
+                "stop_event": self._processor_stop_event,
+                "drain_seconds": 5.0,
                 "handler": self._process_envelope,
             },
             name="moomoo-ingest-processor",
@@ -140,7 +146,24 @@ class MoomooPushFeed:
         self._connection_thread.start()
 
     def stop(self) -> None:
+        """Quiesce callbacks before draining accepted ingest; keep the writer alive until this returns."""
         self._stop_event.set()
+        connection = self._connection_thread
+        if connection is not None and connection is not threading.current_thread():
+            connection.join(timeout=5)
+        self._processor_stop_event.set()
+        processor = self._processor_thread
+        if processor is not None and processor is not threading.current_thread():
+            processor.join(timeout=6)
+        incomplete = bool((connection and connection.is_alive()) or (processor and processor.is_alive()) or self.queue.depth())
+        self._shutdown_state = "UNVERIFIED" if incomplete else "DRAINED"
+        if incomplete:
+            self.last_error = "MOOMOO_SHUTDOWN_INCOMPLETE"
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and 'moomoo' in writer.sources:
+                writer.gap('MOOMOO_SHUTDOWN_INCOMPLETE')  # uncertainty interval, not a fabricated trade count
+            raise RuntimeError("MOOMOO_SHUTDOWN_INCOMPLETE")
 
     def subscription_state(self, instrument_id: str, capability: str) -> str:
         """ACTIVE once OpenD accepted the subscription on this connection; REFUSED while it declines; else PENDING."""
@@ -159,6 +182,8 @@ class MoomooPushFeed:
         processing = list(self._processing_lag_ns)
         return {
             **self.queue.metrics(),
+            "records_processed": self._processed_records,
+            "shutdown_state": self._shutdown_state,
             "callback_lag_ms_max": _percentile_ms(quote_lag + trade_lag + book_lag, 1.0),
             "callback_lag_ms_p50": _percentile_ms(quote_lag + trade_lag + book_lag, 0.5),
             "callback_lag_ms_p95": _percentile_ms(quote_lag + trade_lag + book_lag, 0.95),
@@ -425,5 +450,12 @@ class MoomooPushFeed:
             self._processing_lag_ns = self._processing_lag_ns[-500:]
         try:
             self.on_record(record)
+            self._processed_records += 1
         except Exception:
             self._handler_errors += 1
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and writer.selects(record):
+                writer.gap('MOOMOO_INGEST_FAILURE',
+                           stream=f"moomoo:{record.get('instrument_id')}:{record.get('capability')}",
+                           received_ns=record.get('clocks', {}).get('received_time_ns'))

@@ -462,7 +462,14 @@ def collect_only(stop: threading.Event) -> None:
         # Producers first, so the writer drains what they already delivered.
         if supply is not None: stop_supply()
         if collector is not None: stop_collection()
-        if writer is not None: stop_persistence()
+        if writer is not None:
+            stop_persistence()
+            if writer.status().get('state') == 'FAILED' and sys.exc_info()[0] is None:
+                # The final drain is part of success, even when the parent requested stop.
+                raise ValueError('MARKET_CAPTURE_UNPERSISTED_AT_SHUTDOWN')
+        if (supply is not None and getattr(supply, 'shutdown_error', None) == 'SUPPLY_SHUTDOWN_INCOMPLETE'
+                and sys.exc_info()[0] is None):
+            raise ValueError('SUPPLY_SHUTDOWN_INCOMPLETE')
 
 
 def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:

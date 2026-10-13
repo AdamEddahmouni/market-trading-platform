@@ -137,6 +137,7 @@ class KrakenStreamRuntime:
         self._idle_since: float | None = None
         self._worker: threading.Thread | None = None
         self._start_worker = start_worker
+        self._shutdown_status: dict[str, Any] = {'state': 'NOT_REQUESTED'}
 
     # ------------------------------------------------------------ demand side
 
@@ -205,13 +206,75 @@ class KrakenStreamRuntime:
                 self._worker = threading.Thread(target=self._run, name="imp-kraken-stream", daemon=True)
                 self._worker.start()
 
-    def shutdown(self) -> None:
+    def shutdown(self, *, drain_seconds: float = 5.0) -> dict[str, Any]:
+        """Stop the receiver, then consume the ordered tail through unsubscribe acknowledgements.
+
+        An acknowledgement bounds this connection's tail; producer enqueue is
+        never treated as process receipt. Routing remains active while draining.
+        A deadline or transport failure leaves an unknown tail, not a made-up
+        number of lost observations. Call before removing the final consumer.
+        """
+        if not math.isfinite(drain_seconds) or not 0 <= drain_seconds <= 5:
+            raise ValueError('KRAKEN_DRAIN_BOUND_INVALID')
         self._stop.set()
         self._wake.set()
         worker = self._worker
         if worker is not None and worker is not threading.current_thread():
             worker.join(timeout=5)
+            if worker.is_alive():
+                self._shutdown_uncertain('RECEIVER_STILL_RUNNING', 0, 0)
+                # The connection still belongs to its receiver: do not use it concurrently.
+                raise RuntimeError('KRAKEN_SHUTDOWN_INCOMPLETE')
+        with self._lock:
+            connection = self._connection
+            if connection is None:
+                return dict(self._shutdown_status)
+            targets = sorted(self._sent)
+        deadline = time.monotonic() + drain_seconds
+        pending: set[int] = set()
+        received = 0
+        reason = None
+        try:
+            with self._lock:
+                for channel, symbol in targets:
+                    self._send('unsubscribe', channel, symbol)
+                    pending.add(self._request_id)
+            while pending and time.monotonic() < deadline:
+                message = connection.receive(min(RECEIVE_SLICE_SECONDS, max(0, deadline-time.monotonic())))
+                if message is None:
+                    continue
+                received += 1
+                try:
+                    decoded = parse_message(message)
+                except ValueError:
+                    decoded = None
+                if isinstance(decoded, dict) and decoded.get('req_id') in pending and decoded.get('method') == 'unsubscribe':
+                    if decoded.get('success') is not True:
+                        reason = 'UNSUBSCRIBE_REFUSED'
+                        break
+                    pending.discard(decoded['req_id'])
+                self.handle(message, received_ns=self._now_ns())
+            if pending and reason is None:
+                reason = 'DRAIN_DEADLINE'
+        except Exception:  # noqa: BLE001 - shutdown failure must preserve uncertainty and close the owned socket
+            reason = 'TRANSPORT_OR_DRAIN_FAILURE'
+        if reason is not None:
+            self._shutdown_uncertain(reason, received, len(pending))
+        else:
+            self._shutdown_status = {'state': 'ACKNOWLEDGED', 'messages_drained': received,
+                                     'pending_unsubscribes': 0, 'tail_observations': 'UNKNOWN_BEYOND_CONNECTION'}
         self._disconnect("IDLE")
+        return dict(self._shutdown_status)
+
+    def _shutdown_uncertain(self, reason: str, received: int, pending: int) -> None:
+        from ..market_data.persistence import active_writer
+
+        self._shutdown_status = {'state': 'UNVERIFIED', 'reason': reason, 'messages_drained': received,
+                                 'pending_unsubscribes': pending, 'tail_observations': 'UNKNOWN'}
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources:
+            # One uncertainty interval, not a count of trades that IMP never received.
+            writer.gap('KRAKEN_SHUTDOWN_TAIL_UNVERIFIED')
 
     def _run(self) -> None:
         while not self._stop.is_set():

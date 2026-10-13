@@ -52,6 +52,25 @@ def synthetic_sdk() -> types.ModuleType:
     return sdk
 
 
+class _SDKModulePatch:
+    """Restore only our SDK key; runtime imports during a test must survive cleanup."""
+    def __init__(self, sdk: types.ModuleType) -> None:
+        self.sdk = sdk
+        self.previous = None
+        self.present = False
+
+    def start(self) -> None:
+        self.present = 'moomoo' in sys.modules
+        self.previous = sys.modules.get('moomoo')
+        sys.modules['moomoo'] = self.sdk
+
+    def stop(self) -> None:
+        if self.present:
+            sys.modules['moomoo'] = self.previous
+        else:
+            sys.modules.pop('moomoo', None)
+
+
 class SyntheticOpenD:
     """One synthetic OpenD: every quote context the feed opens is recorded here."""
 
@@ -60,7 +79,7 @@ class SyntheticOpenD:
         self.refuse, self.snapshots, self.quota = set(refuse), snapshots, quota
         self.reachable = True
         self.contexts: list[SyntheticQuoteContext] = []
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.sequences: dict[str, int] = {}
 
     def open(self, _sdk: Any = None, **_kwargs: Any) -> SyntheticQuoteContext | None:
@@ -80,15 +99,17 @@ class SyntheticOpenD:
         return set(context.subscribed) if context is not None else set()
 
     def push_tick(self, code: str, *, price: float = 190.0, volume: int = 5) -> bool:
-        """Deliver one trade through the feed's own ticker handler, if that stream is subscribed."""
+        """Synchronously invoke one trade through the feed's own ticker handler, if that stream is subscribed."""
         context = self.context
         if context is None or (code, 'TICKER') not in context.subscribed:
             return False
         with self.lock:
+            if context.closed or (code, 'TICKER') not in context.subscribed:
+                return False
             # Per instrument and contiguous, as the venue numbers them; a shared counter would look like gaps.
             sequence = self.sequences[code] = self.sequences.get(code, 0) + 1
-        context.handlers['TickerHandlerBase'].on_recv_rsp(
-            [{'code': code, 'price': price, 'volume': volume, 'sequence': sequence, 'ticker_direction': 'BUY'}])
+            context.handlers['TickerHandlerBase'].on_recv_rsp(
+                [{'code': code, 'price': price, 'volume': volume, 'sequence': sequence, 'ticker_direction': 'BUY'}])
         return True
 
     def drop(self) -> None:
@@ -108,7 +129,7 @@ class SyntheticOpenD:
 
         from market_platform_foundation.market_data import live_runtime
 
-        patches = [patch.dict(sys.modules, {'moomoo': self.sdk}),
+        patches = [_SDKModulePatch(self.sdk),
                    patch.object(push_feed, 'opend_reachable', lambda **_k: self.reachable),
                    patch.object(live_runtime, 'opend_reachable', lambda **_k: self.reachable),
                    patch.object(opend_quote_transport, 'open_quote_context', self.open)]
@@ -157,7 +178,9 @@ class SyntheticQuoteContext:
         return -1, 'synthetic: not provided'
 
     def close(self) -> None:
-        self.closed = True
+        with self.opend.lock:
+            self.closed = True
+            self.subscribed.clear()
 
 
 class SyntheticKraken:
@@ -198,10 +221,26 @@ class SyntheticKraken:
             self.trade_id += 1
             trade_id = self.trade_id
         stamp = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-        connection.deliver({'channel': 'trade', 'type': 'update', 'data': [{
-            'symbol': symbol, 'side': 'buy', 'price': price, 'qty': qty, 'ord_type': 'market',
-            'trade_id': trade_id, 'timestamp': stamp}]})
+        with connection.lock:
+            if connection.closed or ('trade', symbol) not in connection.subscribed:
+                return False
+            connection.deliver({'channel': 'trade', 'type': 'update', 'data': [{
+                'symbol': symbol, 'side': 'buy', 'price': price, 'qty': qty, 'ord_type': 'market',
+                'trade_id': trade_id, 'timestamp': stamp}]})
         return True
+
+    def transport_counts(self) -> dict[str, int]:
+        """Producer enqueue and receiver return are distinct observable boundaries."""
+        totals = {name: 0 for name in ('enqueued_messages', 'received_messages', 'enqueued_bytes',
+                  'received_bytes', 'enqueued_trades', 'received_trades', 'backlog_messages', 'backlog_trades')}
+        for connection in self.connections:
+            with connection.lock:
+                for name in totals:
+                    if not name.startswith('backlog'):
+                        totals[name] += getattr(connection, name)
+                totals['backlog_messages'] += len(connection.inbox)
+                totals['backlog_trades'] += connection.enqueued_trades - connection.received_trades
+        return totals
 
     def drop(self) -> None:
         """The venue closes the socket; the runtime's own reconnect takes over."""
@@ -222,30 +261,39 @@ class SyntheticKrakenConnection:
         self.sent: list[dict[str, Any]] = []
         self.subscribed: set[tuple[str, str]] = set()
         self.closed = self.broken = False
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
+        self.enqueued_messages = self.received_messages = 0
+        self.enqueued_bytes = self.received_bytes = 0
+        self.enqueued_trades = self.received_trades = 0
 
     def deliver(self, message: dict[str, Any]) -> None:
         with self.lock:
-            self.inbox.append(json.dumps(message))
+            text = json.dumps(message)
+            self.inbox.append(text)
+            self.enqueued_messages += 1
+            self.enqueued_bytes += len(text.encode())
+            if message.get('channel') == 'trade':
+                self.enqueued_trades += len(message.get('data') or [])
 
     def send_text(self, text: str) -> None:
         from market_platform_foundation.crypto_market.ws_client import WebSocketError
 
         if self.broken:
             raise WebSocketError('WS_CLOSED')
-        request = json.loads(text)
-        self.sent.append(request)
-        channel, symbol = request['params']['channel'], request['params']['symbol'][0]
-        if request['method'] == 'unsubscribe':
-            self.subscribed.discard((channel, symbol))
-            self.deliver({'method': 'unsubscribe', 'req_id': request['req_id'], 'success': True})
-        elif (channel, symbol) in self.venue.refuse:
-            self.deliver({'method': 'subscribe', 'req_id': request['req_id'], 'success': False,
-                          'error': 'synthetic: currency pair not supported'})
-        else:
-            self.subscribed.add((channel, symbol))
-            self.deliver({'method': 'subscribe', 'req_id': request['req_id'], 'success': True,
-                          'result': {'channel': channel, 'symbol': symbol}})
+        with self.lock:
+            request = json.loads(text)
+            self.sent.append(request)
+            channel, symbol = request['params']['channel'], request['params']['symbol'][0]
+            if request['method'] == 'unsubscribe':
+                self.subscribed.discard((channel, symbol))
+                self.deliver({'method': 'unsubscribe', 'req_id': request['req_id'], 'success': True})
+            elif (channel, symbol) in self.venue.refuse:
+                self.deliver({'method': 'subscribe', 'req_id': request['req_id'], 'success': False,
+                              'error': 'synthetic: currency pair not supported'})
+            else:
+                self.subscribed.add((channel, symbol))
+                self.deliver({'method': 'subscribe', 'req_id': request['req_id'], 'success': True,
+                              'result': {'channel': channel, 'symbol': symbol}})
 
     def receive(self, _timeout: float) -> str | None:
         from market_platform_foundation.crypto_market.ws_client import WebSocketError
@@ -254,7 +302,13 @@ class SyntheticKrakenConnection:
             raise WebSocketError('WS_CLOSED')
         with self.lock:
             if self.inbox:
-                return self.inbox.pop(0)
+                text = self.inbox.pop(0)
+                self.received_messages += 1
+                self.received_bytes += len(text.encode())
+                message = json.loads(text)
+                if message.get('channel') == 'trade':
+                    self.received_trades += len(message.get('data') or [])
+                return text
         if self.venue.slice_seconds:
             time.sleep(self.venue.slice_seconds)  # a threaded runtime must not spin on an empty socket
             return json.dumps({'channel': 'heartbeat'})
