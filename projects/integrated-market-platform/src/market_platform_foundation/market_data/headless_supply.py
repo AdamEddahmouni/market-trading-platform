@@ -247,6 +247,7 @@ class HeadlessMarketSupply:
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None
         self._stopped = False
+        self.shutdown_error: str | None = None
         self._standby = False
         self._errors = 0
         self._held: set[tuple[str, str, str]] = set()
@@ -306,6 +307,8 @@ class HeadlessMarketSupply:
                 self.providers[key[0]].release(key[1], key[2])
             except Exception:  # noqa: BLE001 - one provider's failure must not keep another's demand alive
                 self._errors += 1
+                if self._stop.is_set():
+                    self.shutdown_error = 'SUPPLY_SHUTDOWN_INCOMPLETE'
             self._held.discard(key)
 
     def step(self) -> None:
@@ -407,7 +410,7 @@ class HeadlessMarketSupply:
             states = [target['state'] for target in targets]
             degraded = writer['state'] in {'RETRYING', 'FAILED', 'WAITING_FOR_OWNERSHIP'}
             if self._stopped:
-                state = 'STOPPED'
+                state = 'BLOCKED' if self.shutdown_error else 'STOPPED'
             elif self._standby:
                 state = 'STANDBY'
             elif states and all(item == 'BLOCKED' for item in states):
@@ -437,6 +440,7 @@ class HeadlessMarketSupply:
                     'writer_degraded': degraded, 'checkpoints_readable': checkpoints is not None,
                     'reconcile_errors': self._errors, 'stale_after_seconds': STALE_SECONDS, 'updated_at': now,
                     'health_basis': 'COMMITTED_CHECKPOINTS_NOT_PROCESS_LIVENESS', 'coverage': 'OBSERVED_ONLY_NOT_COMPLETE',
+                    'shutdown_incomplete': self.shutdown_error is not None, 'shutdown_error': self.shutdown_error,
                     'collection_only': True, 'execution_authority': 'NONE', 'ai_required': False}
 
     def _save(self, *, final: bool = False) -> None:
@@ -492,6 +496,7 @@ class HeadlessMarketSupply:
                         prepare()
                 except Exception:  # noqa: BLE001 - a failed drain must not keep other provider demand alive
                     self._errors += 1
+                    self.shutdown_error = 'SUPPLY_SHUTDOWN_INCOMPLETE'
             for key in list(self._held):
                 self._release(key)
             for key in self._rows:
@@ -501,6 +506,7 @@ class HeadlessMarketSupply:
                     provider.close()
                 except Exception:  # noqa: BLE001
                     self._errors += 1
+                    self.shutdown_error = 'SUPPLY_SHUTDOWN_INCOMPLETE'
             self._stopped = True
         self._save(final=True)
 

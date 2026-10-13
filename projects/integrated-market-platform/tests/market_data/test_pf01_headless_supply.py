@@ -436,6 +436,56 @@ class LifecycleTests(SupplyCase):
         self.assertEqual(getattr(provider, 'demand_at_drain', set()), {('kraken', BTC, 'CRYPTO_TRADES')})
         self.assertEqual(provider.releases, [(BTC, 'CRYPTO_TRADES')])
 
+    def test_failed_provider_drain_records_incomplete_shutdown_and_still_releases_all_demand(self):
+        class FailedDrain(StubProvider):
+            def prepare_stop(provider):
+                raise TimeoutError('synthetic drain timeout')
+        moomoo, kraken = FailedDrain(), StubProvider()
+        supply = self.supply(self.TARGETS, {'moomoo': moomoo, 'kraken': kraken})
+        supply.step()
+        supply.stop()
+        status = supply.status()
+        self.assertEqual(status['state'], 'BLOCKED')
+        self.assertTrue(status['shutdown_incomplete'])
+        self.assertEqual(supply.shutdown_error, 'SUPPLY_SHUTDOWN_INCOMPLETE')
+        self.assertEqual((len(moomoo.releases), len(kraken.releases), moomoo.closed, kraken.closed), (2, 1, 1, 1))
+        evidence = supply_status({'IMP_STATE_DIR': str(self.path.parent)})
+        self.assertEqual((evidence['state'], evidence['shutdown_error'], evidence['enabled']),
+                         ('BLOCKED', 'SUPPLY_SHUTDOWN_INCOMPLETE', False))
+
+    def test_failed_provider_close_records_incomplete_shutdown(self):
+        class FailedClose(StubProvider):
+            def close(provider):
+                raise OSError('synthetic close failure')
+        supply = self.supply(self.TARGETS[1:], {'kraken': FailedClose()})
+        supply.step()
+        supply.stop()
+        self.assertEqual(supply.status()['state'], 'BLOCKED')
+        self.assertEqual(supply.shutdown_error, 'SUPPLY_SHUTDOWN_INCOMPLETE')
+
+    def test_failed_demand_release_records_incomplete_shutdown(self):
+        class FailedRelease(StubProvider):
+            def release(provider, symbol, capability):
+                raise OSError('synthetic release failure')
+        supply = self.supply(self.TARGETS[1:], {'kraken': FailedRelease()})
+        supply.step()
+        supply.stop()
+        self.assertEqual(supply.status()['state'], 'BLOCKED')
+        self.assertEqual(supply.shutdown_error, 'SUPPLY_SHUTDOWN_INCOMPLETE')
+
+    def test_historical_provider_error_does_not_mark_successful_shutdown_incomplete(self):
+        provider = StubProvider()
+        provider.fail = True
+        supply = self.supply(self.TARGETS[1:], {'kraken': provider})
+        supply.step()
+        provider.fail = False
+        supply.stop()
+        status = supply.status()
+        self.assertGreater(status['reconcile_errors'], 0)
+        self.assertEqual(status['state'], 'STOPPED')
+        self.assertFalse(status['shutdown_incomplete'])
+        self.assertIsNone(supply.shutdown_error)
+
     def test_unreadable_status_store_never_stops_supply(self):
         kraken = StubProvider()
         supply = self.supply(self.TARGETS[1:], {'kraken': kraken})
