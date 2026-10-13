@@ -45,6 +45,7 @@ it in the authoritative doc — do not silently choose.
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
 | Portable SSD workstation (source vs runtime vs backup) | [PORTABLE_WORKSTATION.md](engineering/PORTABLE_WORKSTATION.md) |
 | Next US equity RTH campaign (current `main`) | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
+| Professor intelligence offline integration (October 13, 2026) | [PROFESSOR_INTELLIGENCE_INTEGRATION.md](operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md) |
 | RTH15-00 reconciliation target | [RTH15_00_TARGET_STATE.md](engineering/RTH15_00_TARGET_STATE.md) |
 | RTH15-00 reconciliation matrix | [RTH15_00_RECONCILIATION_MATRIX.md](engineering/RTH15_00_RECONCILIATION_MATRIX.md) |
 | Current agent handoff | [AGENT_HANDOFF.md](engineering/AGENT_HANDOFF.md) |

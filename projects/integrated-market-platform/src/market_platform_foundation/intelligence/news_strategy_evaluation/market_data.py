@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -20,9 +21,26 @@ class MarketBar:
     low: float
     close: float
     volume: float | None = None
+    received_time: str | None = None
+    provider_id: str = ""
+    revision_id: str = ""
+
+    def observable_at(self, as_of: str) -> bool:
+        if self.received_time is not None:
+            try:
+                received_clock = datetime.fromisoformat(self.received_time.replace('Z', '+00:00'))
+                if received_clock.tzinfo is None:
+                    return False
+            except (ValueError, TypeError, AttributeError):
+                return False
+        cutoff = epoch_ns_from_iso(as_of)
+        event = epoch_ns_from_iso(self.event_time)
+        received = event if self.received_time is None else epoch_ns_from_iso(self.received_time)
+        return (cutoff is not None and event is not None and received is not None
+                and max(event, received) <= cutoff)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        body = {
             "event_time": self.event_time,
             "open": self.open,
             "high": self.high,
@@ -30,6 +48,10 @@ class MarketBar:
             "close": self.close,
             "volume": self.volume,
         }
+        if self.received_time is not None:
+            body.update(received_time=self.received_time, provider_id=self.provider_id,
+                        revision_id=self.revision_id)
+        return body
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,13 +61,13 @@ class MarketBarSeries:
     series_ref: str
     interval: str = "1m"
 
-    def bar_at_or_before(self, as_of: str) -> MarketBar | None:
+    def bar_at_or_before(self, as_of: str, *, observation_as_of: str | None = None) -> MarketBar | None:
         as_of_ns = epoch_ns_from_iso(as_of)
         if as_of_ns is None:
             return None
         candidate: MarketBar | None = None
         candidate_ns = -1
-        for bar in self.bars:
+        for bar in self.visible_bars(observation_as_of or as_of):
             bar_ns = epoch_ns_from_iso(bar.event_time)
             if bar_ns is None or bar_ns > as_of_ns:
                 continue
@@ -54,13 +76,26 @@ class MarketBarSeries:
                 candidate_ns = bar_ns
         return candidate
 
-    def bars_in_window(self, start: str, end: str) -> tuple[MarketBar, ...]:
+    def visible_bars(self, as_of: str) -> tuple[MarketBar, ...]:
+        """Latest visible version per market timestamp; retain source series intact."""
+        versions: dict[int, MarketBar] = {}
+        for bar in self.bars:
+            if not bar.observable_at(as_of):
+                continue
+            instant = epoch_ns_from_iso(bar.event_time)
+            previous = versions.get(instant)
+            if previous is None or (epoch_ns_from_iso(bar.received_time or bar.event_time) or 0) >= (
+                    epoch_ns_from_iso(previous.received_time or previous.event_time) or 0):
+                versions[instant] = bar
+        return tuple(sorted(versions.values(), key=lambda b: epoch_ns_from_iso(b.event_time) or 0))
+
+    def bars_in_window(self, start: str, end: str, *, observation_as_of: str | None = None) -> tuple[MarketBar, ...]:
         start_ns = epoch_ns_from_iso(start)
         end_ns = epoch_ns_from_iso(end)
         if start_ns is None or end_ns is None:
             return ()
         selected: list[MarketBar] = []
-        for bar in self.bars:
+        for bar in self.visible_bars(observation_as_of or end):
             bar_ns = epoch_ns_from_iso(bar.event_time)
             if bar_ns is None:
                 continue
@@ -111,6 +146,9 @@ class FixtureMarketDataProvider:
                         low=float(row["low"]),
                         close=float(row["close"]),
                         volume=float(row["volume"]) if row.get("volume") is not None else None,
+                        received_time=str(row["received_time"]) if "received_time" in row else None,
+                        provider_id=str(row.get("provider_id", "")),
+                        revision_id=str(row.get("revision_id", "")),
                     )
                 )
             bars.sort(key=lambda b: epoch_ns_from_iso(b.event_time) or 0)

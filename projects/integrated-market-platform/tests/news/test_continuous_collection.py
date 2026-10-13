@@ -272,14 +272,15 @@ class DurableCollectionTests(unittest.TestCase):
         self.assertEqual(status['state'], 'PARTIAL')
         self.assertEqual(collector.status()['coverage'], 'PARTIAL')
 
-    def test_duplicate_native_identity_with_changed_headline_keeps_first_evidence(self):
+    def test_changed_native_identity_headline_appends_revision_and_keeps_first_evidence(self):
         self.collector().step()
         original = self.records()[0]['payload_json']
         self.now += 180
         self.response = ([{**RAW, 'headline': 'Changed title'}], {'state': 'CURRENT'})
         self.collector().step()
-        self.assertEqual(len(self.records()), 1)
+        self.assertEqual(len(self.records()), 2)
         self.assertEqual(self.records()[0]['payload_json'], original)
+        self.assertEqual(json.loads(self.records()[1]['payload_json'])['article']['headline'], 'Changed title')
 
 
 class CollectionConfigurationTests(unittest.TestCase):

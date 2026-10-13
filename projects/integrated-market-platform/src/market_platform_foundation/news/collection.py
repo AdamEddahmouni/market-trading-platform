@@ -8,7 +8,6 @@ query. A failing source backs off alone; the others keep their schedule.
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 import threading
@@ -19,7 +18,7 @@ from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from ..local_state.connection import LocalStateConnection, transient_storage_error
-from .dedupe import dedupe_identity_key
+from .knowledge import append_revision, article_identity
 from .rss_feeds import FEEDS
 
 MAX_JOBS = 64
@@ -208,8 +207,7 @@ class NewsCollector:
                     raise ValueError("COLLECTION_BATCH_BOUND_EXCEEDED")
                 encoded = []
                 for article, provenance in articles:
-                    identity = (article.provider_id, article.source_id, *dedupe_identity_key(article))
-                    record_id = hashlib.sha256(json.dumps(identity).encode()).hexdigest()
+                    record_id = article_identity(article)
                     payload = json.dumps({'article': article.to_dict(), 'provenance': provenance}, sort_keys=True)
                     encoded.append((record_id, article, payload))
                 if sum(len(payload.encode()) for _, _, payload in encoded) > MAX_BATCH_BYTES:
@@ -272,9 +270,7 @@ class NewsCollector:
                     (json.dumps(state), now + job.interval, job.id, self.owner))
             else:
                 for record_id, article, payload in encoded:
-                    cursor = self.connection.execute("INSERT OR IGNORE INTO news_collection_records VALUES (?,?,?,?,?,?,?)",
-                        (record_id, article.provider_id, article.source_id, article.published_time, article.retrieved_time, now, payload))
-                    inserted += cursor.rowcount
+                    inserted += append_revision(self.connection, record_id, article, payload, now)
                 state['inserted_count'] = inserted
                 state['duplicate_count'] = len(encoded) - inserted
                 state.pop('unpersisted_count', None)

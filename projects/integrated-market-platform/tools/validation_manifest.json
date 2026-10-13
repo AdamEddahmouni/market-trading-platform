@@ -2559,8 +2559,12 @@
       "source_globs": [
         "src/market_platform_foundation/intelligence/news_strategy_evaluation/**",
         "tests/intelligence/test_news_strategy_evaluation.py",
+        "tests/intelligence/test_market_day_replay.py",
+        "tests/intelligence/test_decision_journal.py",
+        "tests/intelligence/test_professor_integration.py",
         "tests/fixtures/news_strategy_evaluation/**",
-        "tools/research/evaluate_news_intelligence.py"
+        "tools/research/evaluate_news_intelligence.py",
+        "tools/research/professor_integration_demo.py"
       ],
       "dependent_suites": [],
       "reason": "Strategy-evaluation laboratory; no automatic upstream news/provider breadth"

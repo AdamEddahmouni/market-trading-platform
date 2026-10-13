@@ -394,6 +394,10 @@ def should_run_universe(facts):
 
     if facts.get('active_run_id'):
         return verdict(UniverseDecision.DEFER, ['UNIVERSE_RUN_ACTIVE'], run_id=facts['active_run_id'])
+    # Optional inference-only hours never change collection or legacy Paper session authority.
+    inference_hours = facts.get('inference_session')
+    if inference_hours is not None and inference_hours.get('allowed') is not True:
+        return verdict(UniverseDecision.DEFER, [inference_hours.get('reason') or 'INFERENCE_SESSION_NOT_VERIFIED'])
     if facts.get('session_label') not in (facts.get('sessions') or ()):
         return verdict(UniverseDecision.BLOCK, ['UNIVERSE_SESSION_NOT_ELIGIBLE'],
                        session_label=facts.get('session_label'))
@@ -439,3 +443,10 @@ def should_run_universe(facts):
                    next_eligible=float(complete['finished_at_epoch']) + int(max_age),
                    selection_age_seconds=int(age), max_age_seconds=int(max_age),
                    material_change=reasons or ['NO_MATERIAL_CHANGE_OBSERVED'])
+
+
+def plan_local_inference_dry_run(records, **facts):
+    """Optional offline local-record plan; retains existing adaptive/provider/budget boundaries."""
+    from ..scheduling.local_plan import plan_local_inference_dry_run as plan
+
+    return plan(records, **facts)

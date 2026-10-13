@@ -81,6 +81,36 @@ def claude_model_contracts(models: list[str]) -> list[dict[str, Any]]:
     return rows
 
 
+def offline_model_route(engine: str, model: str, *, configured: bool, available: bool | None,
+                        budget_allowed: bool = True) -> dict[str, Any]:
+    """Registry/request-shape evidence, independently from supplied availability and budget facts.
+
+    Reads no credentials, starts no runtime, and probes no endpoint. A catalog identifier alone
+    cannot prove account access, endpoint health, or provider availability.
+    """
+    spec = ENGINE_SPECS.get(engine)
+    supported = spec is not None and model in dict(spec.models)
+    if supported and engine == 'anthropic':
+        from .anthropic_models import contract_status
+        from .contracts import IntelligenceTaskType
+
+        supported = contract_status(model, IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS)['supported']
+    # The local engine has no static catalog: no invented support for arbitrary local identifiers.
+    if not supported:
+        state, reason = 'UNSUPPORTED', 'MODEL_REQUEST_CONTRACT_UNSUPPORTED'
+    elif configured is not True or available is False:
+        state, reason = 'CONFIGURED_UNAVAILABLE', 'PROVIDER_NOT_CONFIGURED' if configured is not True else 'PROVIDER_UNAVAILABLE'
+    elif not budget_allowed:
+        state, reason = 'BUDGET_BLOCKED', 'INFERENCE_BUDGET_BLOCKED'
+    elif available is not True:
+        state, reason = 'NOT_VERIFIED', 'MODEL_AVAILABILITY_NOT_VERIFIED'
+    else:
+        state, reason = 'SUPPORTED', None
+    return dict(engine=engine, model=model, state=state, reason=reason,
+                request_contract_supported=bool(supported), availability_verified=available is True,
+                evidence='OFFLINE_REGISTRY_AND_SUPPLIED_FACTS', provider_calls=0)
+
+
 def local_model(value: Value, cache_dir: Path) -> tuple[str | None, str | None]:
     """(model id, None) for a configured local model, else (None, reason). Starts nothing."""
 
@@ -209,4 +239,5 @@ class SynthesisSettings:
 
 
 __all__ = ["AUTO", "ENGINES", "ENGINE_SETTINGS_RELATIVE", "ENGINE_SPECS", "EngineSpec", "SynthesisSettings",
-           "claude_model_contracts", "engine_models", "engine_options", "local_context_window", "local_model"]
+           "claude_model_contracts", "engine_models", "engine_options", "local_context_window", "local_model",
+           "offline_model_route"]

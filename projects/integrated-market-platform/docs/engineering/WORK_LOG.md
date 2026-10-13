@@ -7061,3 +7061,9 @@ its join ends the child non-zero; the preflight validates the stored market
 selection, requires real hashes in the release manifest, separates UNKNOWN
 (unreadable, exit 2) from NOT VERIFIED (operator evidence, exit 3) and lists
 what it does not inspect.
+
+## 2026-10-13 — Professor intelligence offline integration
+
+Owner-selected four-area sprint on PF-01G `1877b8f8380c9838d44d60da0c3e7c8ab5f3b6be`, isolated integration and worker trees. Durable news revision/as-of retrieval, bounded Eastern inference planning, immutable decision/outcome/review journal, and receipt-aware selected-day replay now share an offline demonstration through existing contracts. Independent review findings received regression tests and repairs. No schema migration, deployment, source activation, inference, trading, calibration, promotion or push/merge performed. Exact final validation and preservation receipts are in the chat workspace `imp-sprint-evidence/REPORT.md` and `logs/`.
+
+Behavior and limits: [Professor intelligence integration](../operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md). Frozen research evidence and Item 9 remain unchanged. This is synthetic software evidence, not October 14 market observation or empirical strategy validation.
