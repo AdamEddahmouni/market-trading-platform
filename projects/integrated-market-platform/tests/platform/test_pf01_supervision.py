@@ -52,6 +52,42 @@ class SupervisionTests(unittest.TestCase):
         self.assertEqual(len(self.children),4)
         self.assertEqual(restarted.status()['crashes'],4)
         self.assertEqual(restarted.status()['restarts_in_window'],3)
+    def saved(self):
+        from market_platform_foundation.news.supervision import SUPERVISION_JOB
+        return json.loads(self.db.execute('SELECT payload_json FROM news_collection_jobs WHERE job_id=?',(SUPERVISION_JOB,)).fetchone()[0])
+    def test_operator_stop_records_a_child_that_did_not_confirm_its_final_drain(self):
+        owner=self.supervisor(); owner.tick()
+        child=self.children[-1]; child.stop=lambda: setattr(child,'exit',1)
+        owner.stop()
+        saved=self.saved()
+        self.assertEqual((saved['state'],saved['reason']),('STOPPED','OPERATOR_STOP_CHILD_EXIT_UNVERIFIED'))
+        self.assertEqual(saved['events'][-1]['reason'],'CHILD_STOP_EXIT_GAP_UNVERIFIED')
+        self.assertEqual(saved['events'][-1]['exit_code'],1)
+    def test_child_handle_that_fails_to_stop_is_recorded_and_the_lease_is_still_released(self):
+        owner=self.supervisor(); owner.tick()
+        def broken(): raise TimeoutError('synthetic: child did not exit')
+        self.children[-1].stop=broken
+        owner.stop()
+        saved=self.saved()
+        self.assertEqual((saved['state'],saved['reason']),('STOPPED','OPERATOR_STOP_CHILD_EXIT_UNVERIFIED'))
+        self.assertEqual(saved['events'][-1]['reason'],'CHILD_STOP_EXIT_GAP_UNVERIFIED')
+        self.assertIsNone(self.db.execute('SELECT lease_owner FROM news_collection_jobs WHERE job_id=?',('__pf01_supervision__',)).fetchone()[0])
+    def test_clean_operator_stop_stays_a_plain_stop(self):
+        owner=self.supervisor(); owner.tick(); owner.stop()
+        saved=self.saved()
+        self.assertEqual((saved['state'],saved['reason']),('STOPPED','OPERATOR_STOP'))
+        self.assertNotIn('CHILD_STOP_EXIT_GAP_UNVERIFIED',[event['reason'] for event in saved['events']])
+    def test_unclean_stop_during_an_outage_is_recorded_without_tainting_a_later_clean_stop(self):
+        owner=self.supervisor(); owner.tick()
+        child=self.children[-1]; child.stop=lambda: setattr(child,'exit',1)
+        with patch.object(Path,'stat',side_effect=FileNotFoundError): owner.tick()
+        self.run_for(owner,600)
+        self.assertEqual(len(self.children),2)
+        owner.stop()
+        saved=self.saved()
+        self.assertIn({'reason':'CHILD_STOP_EXIT_GAP_UNVERIFIED','exit_code':1},
+                      [{key:event[key] for key in event if key!='at'} for event in saved['events']])
+        self.assertEqual((saved['state'],saved['reason']),('STOPPED','OPERATOR_STOP'))
     def test_missing_storage_stops_child_and_never_recreates_path(self):
         owner=self.supervisor(); owner.tick()
         with patch.object(Path,'stat',side_effect=FileNotFoundError): owner.tick()

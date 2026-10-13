@@ -83,6 +83,7 @@ class CollectionSupervisor:
                  env: Mapping[str,str], clock: Callable[[],float] = time.time) -> None:
         self.connection,self.spawn,self.env,self.clock = connection,spawn,env,clock
         self.owner=uuid4().hex; self.child=None; self._stopped=False
+        self._unclean_stop=False
         self._outage_since=None; self._outage_reason=None; self._outage_stopped_child=False
         stat=connection.path.stat(); self._identity=(stat.st_dev,stat.st_ino)
         self._evidence=_defaults({'state':'DISABLED','reason':None})
@@ -123,7 +124,14 @@ class CollectionSupervisor:
 
     def _stop_child(self) -> bool:
         if self.child is None: return False
-        self.child.stop(); self.child=None; self._evidence['running_since']=None
+        child=self.child; self.child=None; self._evidence['running_since']=None
+        try: child.stop(); exit_code=child.poll()
+        except Exception: exit_code=None; failed=True  # the handle could not confirm the stop either way
+        else: failed=False
+        # Exit 0 is the child's only confirmation that producers drained and the final commit landed.
+        if failed or (isinstance(exit_code,int) and exit_code!=0):
+            self._event('CHILD_STOP_EXIT_GAP_UNVERIFIED',**({'exit_code':exit_code} if isinstance(exit_code,int) else {}))
+            self._unclean_stop=True
         return True
 
     def _halt(self, reason: str, state: str = 'BLOCKED') -> None:
@@ -260,10 +268,12 @@ class CollectionSupervisor:
 
     def stop(self) -> None:
         if self._stopped: return
+        self._unclean_stop=False  # only this stop's own child exit decides its reason
         if self._evidence['state'] in {'BLOCKED','DISABLED'}:
             self._halt(self._evidence['reason'],self._evidence['state'])
         else:
             self._halt('OPERATOR_STOP','STOPPED')
+            if self._unclean_stop: self._evidence['reason']='OPERATOR_STOP_CHILD_EXIT_UNVERIFIED'
         self._stopped=True
         try:
             if not self._storage_ok(): return

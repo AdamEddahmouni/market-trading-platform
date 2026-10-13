@@ -166,7 +166,14 @@ class WebSocketClient:
         """The next complete text message, or None when ``timeout`` passes first."""
 
         deadline = time.monotonic() + max(0, timeout)
+        first_iteration = True
         while True:
+            # Permit one already-buffered frame at zero timeout, but control
+            # frames and fragments must not renew the whole-call deadline.
+            # Check before parsing so an expired call consumes no next frame.
+            if not first_iteration and time.monotonic() >= deadline:
+                return None
+            first_iteration = False
             frame = parse_frame(self._buffer, max_bytes=self._max)
             if frame is None:
                 if self.closed:

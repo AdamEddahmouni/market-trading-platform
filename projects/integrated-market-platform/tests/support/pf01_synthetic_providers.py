@@ -284,7 +284,10 @@ class SyntheticKrakenConnection:
             request = json.loads(text)
             self.sent.append(request)
             channel, symbol = request['params']['channel'], request['params']['symbol'][0]
-            if request['method'] == 'unsubscribe':
+            if request['method'] == 'unsubscribe' and (channel, symbol) not in self.subscribed:
+                self.deliver({'method': 'unsubscribe', 'req_id': request['req_id'], 'success': False,
+                              'error': 'synthetic: subscription not found'})
+            elif request['method'] == 'unsubscribe':
                 self.subscribed.discard((channel, symbol))
                 self.deliver({'method': 'unsubscribe', 'req_id': request['req_id'], 'success': True})
             elif (channel, symbol) in self.venue.refuse:

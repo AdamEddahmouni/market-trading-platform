@@ -132,6 +132,53 @@ class ObservationAccountingTests(unittest.TestCase):
         self.assertEqual((result['state'], result['reason']), ('UNVERIFIED', 'DRAIN_DEADLINE'))
         self.assertEqual(self.writer.status()['selected_received'], 0)
 
+    def test_refused_pair_does_not_make_an_acknowledged_drain_unverified(self):
+        other = sorted(KRAKEN_PAIRS)[1]
+        self.venue.refuse.add(('trade', KRAKEN_PAIRS[other][0]))
+        self.runtime.subscribe(instrument_id=other, capabilities=[TRADES], consumer_id='test')
+        for _ in range(3):
+            self.runtime.step()
+        self.assertIsNotNone(self.runtime.subscription_refusal(other, TRADES))
+        self.assertTrue(self.venue.push_trade('BTC/USD'))
+        result = self.runtime.shutdown()
+        self.writer.stop()
+        self.assertEqual((result['state'], result['pending_unsubscribes'], self.count()), ('ACKNOWLEDGED', 0, 1))
+        with closing(sqlite3.connect(self.path)) as db:
+            self.assertEqual(db.execute("SELECT COUNT(*) FROM market_stream_gaps WHERE reason='KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'").fetchone()[0], 0)
+
+    def test_buffered_pings_cannot_extend_the_shutdown_drain_past_a_pending_trade_tail(self):
+        import struct
+        import time
+        self.venue.push_trade('BTC/USD')
+        raw = self.venue.connections[0].inbox[0].encode()
+        trade = b'\x81' + (bytes([len(raw)]) if len(raw) < 126 else b'\x7e' + struct.pack('!H', len(raw))) + raw
+        class Socket:
+            pongs = 0
+            def sendall(self, data):
+                if data[0] == 0x8A:
+                    self.pongs += 1
+                    time.sleep(.02)
+            def close(self):
+                pass
+            def recv(self, size):
+                raise AssertionError('The drain deadline ends before the socket is read')
+        sock = Socket()
+        self.runtime._connection = WebSocketClient(sock, initial=b'\x89\x00' * 50 + trade * 3)
+        started = time.monotonic()
+        result = self.runtime.shutdown(drain_seconds=.05)
+        self.assertLess(time.monotonic() - started, .5)  # 50 pongs alone would take a second
+        self.assertLessEqual(sock.pongs, 10)
+        self.assertEqual((result['state'], result['reason'], result['tail_observations']),
+                         ('UNVERIFIED', 'DRAIN_DEADLINE', 'UNKNOWN'))
+        self.writer.stop()
+        status = self.writer.status()
+        # The trades behind the pings never reached IMP: an unknown tail, not receipts and not counted drops.
+        self.assertEqual((self.count(), status['selected_received'], status['rejected']), (0, 0, 0))
+        with closing(sqlite3.connect(self.path)) as db:
+            gaps = db.execute("SELECT COUNT(*),COALESCE(SUM(observations),0) FROM market_stream_gaps "
+                              "WHERE reason='KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'").fetchone()
+        self.assertEqual(tuple(gaps), (1, 1))  # one interval event, not the three buffered trades
+
 
 class ReceiveDeadlineTests(unittest.TestCase):
     def test_ping_stream_cannot_extend_receive_deadline(self):
@@ -151,6 +198,46 @@ class ReceiveDeadlineTests(unittest.TestCase):
         with patch('time.monotonic', lambda: clock[0]):
             self.assertIsNone(client.receive(.25))
         self.assertLessEqual(sock.calls, 3)
+
+    def test_buffered_pings_respect_deadline_and_preserve_later_frames(self):
+        clock = [0.0]
+        class Socket:
+            sends = 0
+            def sendall(self, data):
+                self.sends += 1
+                clock[0] += .1
+            def recv(self, size):
+                raise AssertionError('Complete frames remain buffered')
+        sock = Socket()
+        client = WebSocketClient(sock, initial=b'\x89\x00\x89\x00\x81\x02{}')
+        with patch('time.monotonic', lambda: clock[0]):
+            self.assertIsNone(client.receive(.05))
+            self.assertEqual(sock.sends, 1)
+            self.assertEqual(client.receive(1), '{}')
+        self.assertEqual(sock.sends, 2)
+
+    def test_buffered_fragment_deadline_preserves_partial_message_for_next_call(self):
+        from market_platform_foundation.crypto_market import ws_client
+        clock = [0.0]
+        parser = ws_client.parse_frame
+        def parse_with_cost(buffer, **kwargs):
+            frame = parser(buffer, **kwargs)
+            clock[0] += .1
+            return frame
+        class Socket:
+            def recv(self, size):
+                raise AssertionError('Complete frames remain buffered')
+        client = WebSocketClient(Socket(), initial=b'\x01\x01{\x80\x01}')
+        with patch('time.monotonic', lambda: clock[0]), patch.object(ws_client, 'parse_frame', parse_with_cost):
+            self.assertIsNone(client.receive(.05))
+            self.assertEqual(client.receive(1), '{}')
+
+    def test_zero_timeout_can_still_read_one_complete_buffered_text_frame(self):
+        class Socket:
+            def recv(self, size):
+                raise AssertionError('Zero timeout must not read the socket')
+        client = WebSocketClient(Socket(), initial=b'\x81\x02{}')
+        self.assertEqual(client.receive(0), '{}')
 
 
 class OpenDDrainTests(unittest.TestCase):
@@ -272,3 +359,7 @@ class ShutdownResultTests(unittest.TestCase):
                 run_ui_api.collect_only(stop)
             quiesce.assert_called_once()
             finish.assert_called_once()
+            # A console interrupt is a stop request too: it must not turn an incomplete drain into success.
+            with patch.object(stop, 'wait', side_effect=KeyboardInterrupt), \
+                    self.assertRaisesRegex(ValueError, 'SUPPLY_SHUTDOWN_INCOMPLETE'):
+                run_ui_api.collect_only(stop)

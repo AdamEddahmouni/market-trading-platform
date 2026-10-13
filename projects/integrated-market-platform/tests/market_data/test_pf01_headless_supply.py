@@ -568,6 +568,131 @@ class KrakenStreamSupplyTests(SupplyCase):
             self.runtime.step()
         supply.step()
 
+    def test_owned_kraken_broken_transport_reports_incomplete_stop_and_detaches_runtime(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None  # own this real runtime, while using only synthetic venue transport
+        connection = self.venue.connection
+        self.venue.drop()
+        supply.stop()
+        self.assertEqual(supply.status()['state'], 'BLOCKED')
+        self.assertEqual(supply.shutdown_error, 'SUPPLY_SHUTDOWN_INCOMPLETE')
+        self.assertTrue(supply.status()['shutdown_incomplete'])
+        self.assertEqual(supply.status()['providers']['kraken']['shutdown'],
+                         {'state': 'UNVERIFIED', 'reason': 'TRANSPORT_OR_DRAIN_FAILURE', 'tail_observations': 'UNKNOWN'})
+        self.assertTrue(connection.closed)
+        self.assertIsNone(provider.runtime)
+        self.writer.flush()
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_gaps WHERE reason=?',
+                                   'KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'), [(1,)])
+
+    def test_owned_kraken_missing_unsubscribe_ack_reports_incomplete_stop(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None
+        connection = self.venue.connection
+        send_text = connection.send_text
+        def send_without_unsubscribe_ack(text):
+            send_text(text)
+            with connection.lock:
+                connection.inbox[:] = [message for message in connection.inbox
+                    if json.loads(message).get('method') != 'unsubscribe']
+        with patch.object(connection, 'send_text', send_without_unsubscribe_ack):
+            supply.stop()
+        self.assertEqual(supply.status()['state'], 'BLOCKED')
+        self.assertEqual(supply.shutdown_error, 'SUPPLY_SHUTDOWN_INCOMPLETE')
+        self.assertTrue(connection.closed)
+        self.assertIsNone(provider.runtime)
+        self.writer.flush()
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_gaps WHERE reason=?',
+                                   'KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'), [(1,)])
+
+    def test_owned_kraken_acknowledged_drain_stops_cleanly_and_commits_the_received_tail(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None
+        for _ in range(3):
+            self.assertTrue(self.venue.push_trade('BTC/USD'))
+        supply.stop()
+        status = supply.status()
+        self.assertEqual((status['state'], status['shutdown_incomplete'], supply.shutdown_error), ('STOPPED', False, None))
+        self.assertEqual(status['providers']['kraken']['shutdown']['state'], 'ACKNOWLEDGED')
+        self.writer.flush()
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_records'), [(3,)])
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_gaps WHERE reason=?',
+                                   'KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'), [(0,)])
+
+    def test_unverified_kraken_tail_is_saved_as_blocked_evidence_and_keeps_committed_records_distinct(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None
+        for _ in range(2):
+            self.assertTrue(self.venue.push_trade('BTC/USD'))
+        self.pump(supply)  # these two were received; anything after the break is unknown
+        self.venue.drop()
+        supply.stop()
+        self.writer.flush()
+        evidence = supply_status({'IMP_STATE_DIR': str(self.path.parent)})
+        self.assertEqual((evidence['state'], evidence['shutdown_incomplete'], evidence['shutdown_error']),
+                         ('BLOCKED', True, 'SUPPLY_SHUTDOWN_INCOMPLETE'))
+        self.assertEqual(evidence['providers']['kraken']['shutdown']['tail_observations'], 'UNKNOWN')
+        self.assertEqual(self.rows('SELECT COUNT(*) FROM market_stream_records'), [(2,)])
+        # One uncertainty interval for the tail; the two committed trades are not folded into it.
+        self.assertEqual(self.rows('SELECT COUNT(*),SUM(observations) FROM market_stream_gaps WHERE reason=?',
+                                   'KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'), [(1, 1)])
+
+    def test_socket_lost_by_the_receiver_before_stop_is_not_a_clean_stop(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None
+        self.venue.drop()
+        self.runtime.step()  # the receiver, not shutdown, discovers the loss and drops the connection
+        self.assertIsNone(self.runtime._connection)
+        supply.stop()
+        status = supply.status()
+        self.assertEqual((status['state'], status['shutdown_incomplete']), ('BLOCKED', True))
+        self.assertEqual(status['providers']['kraken']['shutdown'],
+                         {'state': 'UNVERIFIED', 'reason': 'DISCONNECTED_BEFORE_SHUTDOWN', 'tail_observations': 'UNKNOWN'})
+        self.writer.flush()
+        # The loss is the disconnect gap the receiver already recorded; shutdown adds no second interval.
+        self.assertEqual(self.rows('SELECT reason,COUNT(*) FROM market_stream_gaps WHERE reason LIKE ? GROUP BY 1', 'KRAKEN_%'),
+                         [('KRAKEN_DISCONNECT_NO_REPLAY', 1)])
+        # New demand on the same stream starts a new lifecycle and does not inherit that verdict.
+        self.runtime.subscribe(instrument_id=BTC, capabilities=['CRYPTO_TRADES'], consumer_id='later')
+        self.assertEqual(self.runtime.shutdown()['state'], 'NOT_REQUESTED')
+
+    def test_stream_that_never_connected_stops_cleanly(self):
+        self.venue.fail_connects = 99
+        supply = self.make()
+        self.pump(supply)
+        supply.providers['kraken']._factory = None
+        supply.stop()
+        self.assertEqual((supply.status()['state'], supply.shutdown_error), ('STOPPED', None))
+
+    def test_direct_close_of_an_owned_stream_also_refuses_an_unverified_tail(self):
+        supply = self.make()
+        self.pump(supply)
+        provider = supply.providers['kraken']
+        provider._factory = None
+        self.venue.drop()
+        with self.assertRaisesRegex(RuntimeError, 'KRAKEN_SHUTDOWN_TAIL_UNVERIFIED'):
+            provider.close()
+        self.assertIsNone(provider.runtime)
+
+    def test_owned_kraken_without_open_connection_stops_cleanly(self):
+        supply = self.make()
+        supply.providers['kraken'].runtime = self.runtime
+        supply.providers['kraken']._factory = None
+        supply.stop()
+        self.assertEqual(supply.status()['state'], 'STOPPED')
+        self.assertIsNone(supply.shutdown_error)
+        self.assertEqual(self.venue.connections, [])
+
     def test_subscription_trades_commit_and_checkpoint(self):
         supply = self.make()
         supply.step()

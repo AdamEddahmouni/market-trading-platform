@@ -466,6 +466,9 @@ class MarketStreamWriter:
                                    free_disk_bytes=shutil.disk_usage(path.parent).free)
         except OSError:
             return {'state': 'UNAVAILABLE', 'reason': 'MARKET_STORAGE_UNAVAILABLE'}
+        except ValueError:
+            # A warning that cannot be computed is reported; it never fails the status the child polls.
+            return {'state': 'UNAVAILABLE', 'reason': 'MARKET_CAPACITY_BOUND_INVALID'}
 
     def status(self) -> dict[str, Any]:
         capacity = self._capacity_status()

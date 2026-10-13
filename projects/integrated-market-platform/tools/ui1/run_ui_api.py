@@ -464,11 +464,11 @@ def collect_only(stop: threading.Event) -> None:
         if collector is not None: stop_collection()
         if writer is not None:
             stop_persistence()
-            if writer.status().get('state') == 'FAILED' and sys.exc_info()[0] is None:
+            if writer.status().get('state') == 'FAILED' and sys.exc_info()[0] in (None, KeyboardInterrupt):
                 # The final drain is part of success, even when the parent requested stop.
                 raise ValueError('MARKET_CAPTURE_UNPERSISTED_AT_SHUTDOWN')
         if (supply is not None and getattr(supply, 'shutdown_error', None) == 'SUPPLY_SHUTDOWN_INCOMPLETE'
-                and sys.exc_info()[0] is None):
+                and sys.exc_info()[0] in (None, KeyboardInterrupt)):  # an interrupt is a stop request, not a cause
             raise ValueError('SUPPLY_SHUTDOWN_INCOMPLETE')
 
 

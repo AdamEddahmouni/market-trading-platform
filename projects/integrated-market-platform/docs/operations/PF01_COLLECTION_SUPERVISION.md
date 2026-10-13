@@ -374,3 +374,15 @@ for the inert configuration, protected source/state integration, migration,
 rollback and real overnight prerequisites. Forecasts do not activate a source
 or certify an account entitlement. The shared DB+WAL ceiling stays 512 MiB;
 all history is preserved and collection stops before the existing reserve.
+
+## Child exit on a requested stop
+
+Exit 0 is the child's only confirmation that producers drained and the final
+commit landed. When the supervisor stops its child (operator stop, storage
+outage, lapsed lease, disabled configuration or a latched block) and the child
+exits non-zero, or its handle fails to stop it, the supervisor records
+`CHILD_STOP_EXIT_GAP_UNVERIFIED` with the exit code. An operator stop then ends
+`STOPPED` with reason `OPERATOR_STOP_CHILD_EXIT_UNVERIFIED` instead of
+`OPERATOR_STOP`. The event does not count against the restart budget. A console
+interrupt of a standalone `--collect-only` process is a stop request and no
+longer hides an incomplete drain behind exit 0.

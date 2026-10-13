@@ -7008,3 +7008,21 @@ acceptance artifacts preserve serving source differences and explicit provider,
 target, cost, storage and host prerequisites. Actual account entitlements,
 production deployment and a real overnight run remain unverified; no provider
 probe, live subscription, paid request, trading or canonical migration occurred.
+
+## 2026-10-13 — PF-01F final-review shutdown corrections
+
+Resumed the interrupted PF-01F integration at 66f30cdb. The final independent
+review had found that Kraken's `UNVERIFIED` shutdown result never reached supply
+health or the child exit, and that buffered WebSocket control frames could
+outlive the receive deadline. Both are corrected with regressions, together
+with the supervisor discarding a stopped child's exit code and a capacity
+warning that could raise out of writer status (an existing storage-ceiling test
+had been failing on the integrated source).
+
+A second independent review of those corrections reproduced two more cases,
+also corrected: a venue-refused pair made every clean stop read incomplete, and
+a socket lost by the receiver thread just before the stop read clean. A console
+interrupt no longer masks an incomplete drain, a failing child handle is
+recorded, and a reused stream does not inherit an earlier shutdown verdict.
+Remaining limits are stated in PF01B_MARKET_PERSISTENCE.md. Synthetic
+transports only; no provider, subscription, migration, deployment or trading.

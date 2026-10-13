@@ -192,6 +192,9 @@ class _KrakenSupply:
 
     def __init__(self, runtime: Callable[[], Any] | None = None) -> None:
         self._factory, self.runtime = runtime, None
+        self._drained = False
+        #: the owned stream's own account of its last drain; None until one was attempted
+        self.shutdown_status: dict[str, Any] | None = None
 
     def open(self) -> bool:
         if self.runtime is None:
@@ -201,6 +204,7 @@ class _KrakenSupply:
                 self.runtime = _stream_runtime()
             else:
                 self.runtime = self._factory()
+            self._drained = False
         return self.runtime is not None
 
     def entitlement(self, capability: str) -> str | None:
@@ -221,15 +225,29 @@ class _KrakenSupply:
     def connection(self) -> str:
         return str(self.runtime.lifecycle.connection_state)
 
+    def _drain(self) -> None:
+        self._drained = True  # one attempt: a second would repeat the wait and the gap evidence
+        try:
+            status = self.runtime.shutdown()
+        except Exception:
+            self.shutdown_status = {'state': 'UNVERIFIED', 'reason': 'SHUTDOWN_FAILED', 'tail_observations': 'UNKNOWN'}
+            raise
+        self.shutdown_status = {key: status.get(key) for key in ('state', 'reason', 'tail_observations') if key in status}
+        if status.get('state') == 'UNVERIFIED':
+            # The stream reports a deadline or transport failure by value; an unknown tail is not a clean stop.
+            raise RuntimeError('KRAKEN_SHUTDOWN_TAIL_UNVERIFIED')
+
     def prepare_stop(self) -> None:
         # Drain the owned socket while routing still sees selected demand. Shared test/serving runtimes stay open.
         if self.runtime is not None and self._factory is None:
-            self.runtime.shutdown()
+            self._drain()
 
     def close(self) -> None:
-        if self.runtime is not None and self._factory is None:
-            self.runtime.shutdown()  # only the stream this process's supply opened
-        self.runtime = None
+        try:
+            if self.runtime is not None and self._factory is None and not self._drained:
+                self._drain()  # only the stream this process's supply opened
+        finally:
+            self.runtime = None
 
 
 class HeadlessMarketSupply:
@@ -507,6 +525,10 @@ class HeadlessMarketSupply:
                 except Exception:  # noqa: BLE001
                     self._errors += 1
                     self.shutdown_error = 'SUPPLY_SHUTDOWN_INCOMPLETE'
+            for source, provider in self.providers.items():
+                drained = getattr(provider, 'shutdown_status', None)
+                if drained is not None and source in self._provider_rows:
+                    self._provider_rows[source]['shutdown'] = dict(drained)  # which provider left the tail unknown
             self._stopped = True
         self._save(final=True)
 

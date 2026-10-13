@@ -237,3 +237,34 @@ Writer health includes read-only DB/WAL/free-space `capacity` status: `READY`,
 The warning is a resource signal, not collection or entitlement certification.
 See [capacity planning](PF01_STORAGE_CAPACITY.md) and
 [deployment and acceptance](PF01F_DEPLOYMENT_ACCEPTANCE.md).
+
+### Final-review shutdown corrections
+
+The Kraken stream reports a drain deadline, transport failure or refused
+unsubscribe by returning `UNVERIFIED` rather than raising. Owned supply now
+treats that result as an incomplete stop, so it reaches `BLOCKED`,
+`shutdown_incomplete=true` and the child's failure exit like every other
+incomplete drain. `providers.<source>.shutdown` in the supply status carries the
+stream's own `state`, `reason` and `tail_observations` (`UNKNOWN`, never a
+count). A socket the receiver lost before the stop is reported as
+`DISCONNECTED_BEFORE_SHUTDOWN`; the receiver's `KRAKEN_DISCONNECT_NO_REPLAY`
+gap already covers that interval and no second gap is written. Only
+acknowledged channels are unsubscribed and awaited: a pair the venue refused has
+no tail to bound. A stream that never connected stops cleanly.
+
+`WebSocketClient.receive` applies its timeout to the whole call. Already
+buffered ping, pong and fragment frames no longer extend it; a frame not yet
+parsed when the deadline passes stays buffered for the next call, so nothing
+received is dropped. Bytes left unparsed at a shutdown deadline are part of the
+unknown tail, not receipts.
+
+The writer's `capacity` warning reports `UNAVAILABLE` with
+`MARKET_CAPACITY_BOUND_INVALID` when it cannot be computed; it can no longer
+fail the status call the child polls.
+
+Known limits: the final supply evidence row is best-effort (0.25 s busy
+timeout) and may be missing while the gap row and exit code remain; and the
+worst-case sum of the bounded stop waits (reconcile join 10 s, Kraken receiver
+join 5 s and drain 5 s, OpenD up to 11 s, final writer drain) can exceed the
+supervisor's 15 s stop wait, in which case the child is terminated and the stop
+is recorded as unverified rather than drained.

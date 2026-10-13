@@ -138,6 +138,8 @@ class KrakenStreamRuntime:
         self._worker: threading.Thread | None = None
         self._start_worker = start_worker
         self._shutdown_status: dict[str, Any] = {'state': 'NOT_REQUESTED'}
+        #: an acknowledged connection ended without a drain and none has replaced it
+        self._tail_lost = False
 
     # ------------------------------------------------------------ demand side
 
@@ -152,6 +154,9 @@ class KrakenStreamRuntime:
                     results.append({"accepted": False, "reason": "UNKNOWN_INSTRUMENT" if pair is None else "UNSUPPORTED_CAPABILITY",
                                     "ref_count": 0, "provider_subscription_active": False})
                     continue
+                if self._shutdown_status['state'] != 'NOT_REQUESTED':
+                    # Demand after a finished shutdown is a new lifecycle; its stop reports only its own tail.
+                    self._shutdown_status, self._tail_lost = {'state': 'NOT_REQUESTED'}, False
                 self._pairs[instrument_id] = pair
                 self._symbols[instrument_id] = pair[0]
                 self._by_symbol[pair[0]] = instrument_id
@@ -228,8 +233,14 @@ class KrakenStreamRuntime:
         with self._lock:
             connection = self._connection
             if connection is None:
+                if self._tail_lost and self._shutdown_status['state'] == 'NOT_REQUESTED':
+                    # The receiver already lost the socket and recorded that gap; there is nothing left to drain.
+                    self._shutdown_status = {'state': 'UNVERIFIED', 'reason': 'DISCONNECTED_BEFORE_SHUTDOWN',
+                                             'messages_drained': 0, 'pending_unsubscribes': 0, 'tail_observations': 'UNKNOWN'}
                 return dict(self._shutdown_status)
-            targets = sorted(self._sent)
+            # Only acknowledged channels carry data. A refused or unanswered request has no tail to bound,
+            # and the venue would refuse its unsubscribe.
+            targets = sorted(self._acked)
         deadline = time.monotonic() + drain_seconds
         pending: set[int] = set()
         received = 0
@@ -328,6 +339,7 @@ class KrakenStreamRuntime:
             return
         with self._lock:
             self._connection = connection
+            self._tail_lost = False  # that loss is a recorded gap; this connection has its own tail
             self._sent.clear()
             self._acked.clear()
             self._refused.clear()
@@ -356,6 +368,8 @@ class KrakenStreamRuntime:
         with self._lock:
             self.state.flow_history.interrupt(self._now_ns())
             connection, self._connection = self._connection, None
+            if connection is not None and state != "IDLE" and self._acked:
+                self._tail_lost = True
             self._sent.clear()
             self._acked.clear()
             self._pending.clear()

@@ -408,6 +408,8 @@ os._exit(7)
         self.assertEqual(writer.flush(), 0)
         self.assertEqual(len(self.rows()), 1)
         self.assertEqual(writer.status()['state'], 'FAILED')
+        # The capacity warning cannot model this bound; it says so and leaves the writer's own verdict readable.
+        self.assertEqual(writer.status()['capacity'], {'state': 'UNAVAILABLE', 'reason': 'MARKET_CAPACITY_BOUND_INVALID'})
 
     def test_queued_data_lost_on_process_exit_is_flagged_on_recovery(self):
         script = '''import os,sys,time
