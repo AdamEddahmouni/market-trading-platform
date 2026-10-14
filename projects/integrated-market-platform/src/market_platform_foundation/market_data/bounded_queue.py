@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import threading
+import time
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Any, Callable, Generic, TypeVar
@@ -101,8 +102,15 @@ def drain_queue_worker(
     stop_event: threading.Event,
     handler: Callable[[dict[str, Any]], None],
     batch_size: int = 64,
+    drain_seconds: float = 0.0,
 ) -> None:
-    while not stop_event.is_set():
+    deadline = None
+    while True:
+        if stop_event.is_set():
+            if deadline is None:
+                deadline = time.monotonic() + drain_seconds
+            if queue.depth() == 0 or time.monotonic() >= deadline:
+                return
         batch = queue.dequeue_batch_with_context(limit=batch_size, timeout=0.25)
         for item, context in batch:
             token = bind_context(context) if context is not None else None

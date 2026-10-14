@@ -276,10 +276,19 @@ class LiveObservationalRuntime:
             provider_generation_id=generation,
         )
         self.admission.on_connect()
+        self._feed_session_open = True
         self.execution_buffer.on_generation_change(generation)
         self._update_execution_use()
 
     def _on_feed_disconnected(self, reason: str) -> None:
+        from .persistence import active_writer
+
+        writer = active_writer()
+        # Once per lost session. The feed also reports every failed retry; a gap for each would
+        # renew an idle writer's ownership for the whole outage and add nothing to the record.
+        lost, self._feed_session_open = getattr(self, '_feed_session_open', False), False
+        if lost and writer is not None and 'moomoo' in writer.sources:
+            writer.gap('MOOMOO_DISCONNECT_NO_REPLAY')
         self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_disconnected(reason)
         self.admission.on_disconnect()
@@ -292,6 +301,11 @@ class LiveObservationalRuntime:
         self._update_execution_use()
 
     def _on_feed_overflow(self) -> None:
+        from .persistence import active_writer
+
+        writer = active_writer()
+        if writer is not None and 'moomoo' in writer.sources:
+            writer.gap('MOOMOO_INGEST_QUEUE_OVERFLOW')
         self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_degraded("INGEST_QUEUE_OVERFLOW")
         self._update_execution_use()
@@ -384,6 +398,19 @@ class LiveObservationalRuntime:
                 self.ingress_metrics["skipped_not_admitted"] += 1
             if self.recorder is not None and result.get("envelope"):
                 self.recorder.append(record, result)
+            from .persistence import active_writer
+
+            writer = active_writer()
+            if writer is not None and writer.selects(record):
+                if result.get("envelope"):
+                    writer.submit(record, {"quality_flags": result.get("quality_flags") or [],
+                                           "admission": result.get("admission") or {}})
+                else:
+                    writer.gap('INGRESS_REJECTED', stream=f"{record.get('provider')}:{record.get('instrument_id')}:{record.get('capability')}")
+                for observation in result.get("observations") or []:
+                    if observation.get("state") in {"GAP", "REGRESSION"}:
+                        writer.gap('PROVIDER_SEQUENCE_' + observation['state'],
+                                   stream=f"{record.get('provider')}:{record.get('instrument_id')}:{record.get('capability')}")
             if self.shadow_recorder is not None:
                 self.shadow_recorder.on_admitted(self.state, result.get("envelope") or {}, result)
             complete_ingest_spans(

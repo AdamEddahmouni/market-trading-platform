@@ -385,6 +385,38 @@ class ScreenerNewsService:
     def sentiment_model(self) -> FinbertSentiment:
         return self._sentiment or finbert_sentiment()
 
+    def collect_raw(self, provider: str, query: str, universe: str) -> tuple[list[NewsRecord], dict[str, Any]]:
+        """PF-01 acquisition only: reuse adapters/cache, never universe discovery or AI."""
+        if provider == "finviz":
+            items, status = self._finviz_items()
+            key = ("finviz",)
+        elif provider == "rss" and query:
+            items, status = self._rss_feed_items(query)
+            key = ("rss_feed", query)
+        elif provider == "rss":
+            items, status = self._rss_items(universe)
+            key = ("rss", universe)
+        elif provider in PER_SYMBOL_TTL_S:
+            items, status = self._per_symbol(provider, query)
+            key = (provider, query.upper())
+        else:
+            raise ValueError("COLLECTION_PROVIDER_INVALID")
+        entry = self._cache.peek(key)
+        if entry is not None and (entry.expires_at <= self._clock() or entry.reason):
+            status = {**status, "state": "PENDING" if not entry.reason else "ERROR",
+                      "reason": "REFRESH_PENDING" if not entry.reason else "REFRESH_FAILED"}
+        if len(items) > 1000 or any(not isinstance(item, dict) for item in items):
+            raise ValueError("COLLECTION_PAYLOAD_INVALID_OR_TOO_LARGE")
+        received = status.get("fetched_at") or (entry.fetched_at if entry else None)
+        raw = [(provider, {**item, "received_time": item.get("received_time") or item.get("received_at") or received})
+               for item in items]
+        rejected: list[str] = []
+        records = self._records(raw, universe, rejected=rejected)
+        status = {**status, "rejected_count": len(rejected)}
+        if status.get("reason") and str(status["reason"]).startswith("PARTIAL_FEEDS:"):
+            status["state"] = "PARTIAL"
+        return records, status
+
     def candidate_evidence(self, *, universe: str, rows: list[dict[str, Any]], refresh: bool = False) -> dict[str, Any]:
         """Bounded S11 projection; no per-instrument acquisition."""
         from .screener_news_evidence import project_news
@@ -439,6 +471,34 @@ class ScreenerNewsService:
                   "feeds": entry.value["feeds"]}
         return entry.value["items"], status
 
+    def _rss_feed_items(self, feed_id: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """One catalog feed with its own state, so a failing feed backs off without the others."""
+        from ..news.rss_feeds import FEEDS_BY_ID
+
+        feed = FEEDS_BY_ID.get(feed_id)
+        if feed is None:
+            raise ValueError("COLLECTION_FEED_INVALID")
+
+        def job() -> Any:
+            self.provider_requests["rss"] += 1
+            return self._rss.fetch(feed)
+
+        entry = self._await(("rss_feed", feed_id), job, ttl_s=RSS_TTL_S)
+        if entry is None:
+            return [], provider_status("rss", None, scope="FEED", pending=True)
+        if not entry.ok:
+            return [], provider_status("rss", {"success": False, "error": entry.reason}, scope="FEED")
+        result = entry.value
+        # STALE means this refresh failed and the items are the previous good fetch. Keep the
+        # failure's own class so a rate limit or rejected credential is not treated as an outage.
+        state = result.state
+        if state == "STALE":
+            state = {"HTTP_429": "RATE_LIMITED", "HTTP_401": "AUTH_FAILED", "HTTP_403": "AUTH_FAILED"}.get(
+                str(result.reason), "ERROR")
+        return list(result.items), {"id": "rss", "label": PROVIDER_LABELS["rss"], "kind": "NEWS", "scope": "FEED",
+                                    "feed_id": feed_id, "state": state, "reason": result.reason,
+                                    "fetched_at": result.fetched_at, "item_count": len(result.items)}
+
     def _newsapi_guard(self) -> bool:
         today = datetime.fromtimestamp(self._clock(), tz=UTC).date().isoformat()
         with self._lock:
@@ -455,7 +515,7 @@ class ScreenerNewsService:
                 try:
                     write_json_atomic(self._newsapi_quota_path, {"day": day, "count": count + 1, "limit": NEWSAPI_DAILY_GUARD})
                 except OSError:
-                    pass  # the in-memory guard still applies
+                    return False  # refuse the request if restart-safe quota accounting failed
             return True
 
     def _per_symbol(self, provider_id: str, query: str) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -482,7 +542,7 @@ class ScreenerNewsService:
         return list(result.get("items") or []), provider_status(provider_id, result, scope="INSTRUMENT")
 
     # ------------------------------------------------------------ normalizing
-    def _records(self, raw: list[tuple[str, dict[str, Any]]], universe: str) -> list[NewsRecord]:
+    def _records(self, raw: list[tuple[str, dict[str, Any]]], universe: str, *, rejected: list[str] | None = None) -> list[NewsRecord]:
         ingested = _iso(datetime.fromtimestamp(self._clock(), tz=UTC)) or ""
         events: list[NewsArticleEvent] = []
         meta: dict[str, tuple[str, dict[str, Any]]] = {}
@@ -493,8 +553,12 @@ class ScreenerNewsService:
                                            provider_id=provider_id, source_id=str(item.get("feed_id") or provider_id),
                                            retrieved_time=retrieved)
             except ValueError:
+                if rejected is not None:
+                    rejected.append("NEWS_IDENTITY_INVALID")
                 continue  # fail closed: no identity material
             if not event.headline.strip():
+                if rejected is not None:
+                    rejected.append("NEWS_HEADLINE_MISSING")
                 continue
             extra = tuple(str(flag) for flag in item.get("quality_flags") or ())
             if extra:

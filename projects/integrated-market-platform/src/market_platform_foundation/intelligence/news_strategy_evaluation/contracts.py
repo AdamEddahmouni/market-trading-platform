@@ -244,9 +244,10 @@ class RealizedOutcome:
     quality: OutcomeQuality
     data_provenance: str
     warnings: tuple[str, ...] = ()
+    measured_as_of: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        body = {
             "outcome_id": self.outcome_id,
             "decision_id": self.decision_id,
             "sample_id": self.sample_id,
@@ -266,6 +267,9 @@ class RealizedOutcome:
             "data_provenance": self.data_provenance,
             "warnings": list(self.warnings),
         }
+        if self.measured_as_of is not None:
+            body['measured_as_of'] = self.measured_as_of
+        return body
 
 
 @dataclass(frozen=True, slots=True)

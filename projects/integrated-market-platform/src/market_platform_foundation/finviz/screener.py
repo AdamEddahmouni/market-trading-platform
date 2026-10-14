@@ -18,6 +18,8 @@ from .config import (
     SYMBOL_CACHE_TTL_S,
     finviz_api_key,
 )
+from .config import finviz_feed_disabled
+from .http_client import FinvizLiveDisabled
 from .request_manager import FinvizRequestManager, RequestPriority, get_finviz_request_manager, redact_text
 from .symbols import finviz_to_canonical
 
@@ -222,13 +224,18 @@ class FinvizScreenerClient:
             "c": columns,
             "auth": self._api_key,
         }
-        status, body, meta = self._manager.get(
-            FINVIZ_EXPORT_URL,
-            params=params,
-            priority=RequestPriority.DISCOVERY_REFRESH,
-            cache_ttl_s=None if force else cache_ttl_s,
-            api_key=self._api_key,
-        )
+        if finviz_feed_disabled("SCREENER"):
+            return {"success": False, "error": "LIVE_DISABLED", "rows": [], "columns": [], "received_at": received_at, "available_time_ns": received_ns}
+        try:
+            status, body, meta = self._manager.get(
+                FINVIZ_EXPORT_URL,
+                params=params,
+                priority=RequestPriority.DISCOVERY_REFRESH,
+                cache_ttl_s=None if force else cache_ttl_s,
+                api_key=self._api_key,
+            )
+        except FinvizLiveDisabled:
+            return {"success": False, "error": "LIVE_DISABLED", "rows": [], "columns": [], "received_at": received_at, "available_time_ns": received_ns}
         available_ns = time.time_ns()
         if status != 200:
             return {

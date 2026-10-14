@@ -12,6 +12,7 @@ from .contracts import (
     StrategyEvaluationDecision,
 )
 from .market_data import FixtureMarketDataProvider
+from market_platform_foundation.news.timestamps import epoch_ns_from_iso
 
 
 def _directional_label(raw_return: float | None, flat_threshold_bps: float) -> DirectionalLabel | None:
@@ -31,7 +32,14 @@ def measure_outcome(
     horizon: OutcomeHorizon,
     market_provider: FixtureMarketDataProvider,
     flat_threshold_bps: float,
+    observation_as_of: str | None = None,
 ) -> RealizedOutcome:
+    if observation_as_of is not None:
+        from datetime import datetime
+        stamp = datetime.fromisoformat(observation_as_of.replace('Z', '+00:00'))
+        horizon_end = market_provider.window_end_iso(decision.as_of, horizon.duration_seconds)
+        if stamp.tzinfo is None or epoch_ns_from_iso(observation_as_of) < epoch_ns_from_iso(horizon_end):
+            raise ValueError('OUTCOME_MEASUREMENT_CLOCK_INVALID')
     series = market_provider.get_series(decision.instrument_id)
     warnings: list[str] = []
     if series is None:
@@ -57,18 +65,19 @@ def measure_outcome(
             quality=OutcomeQuality.INSUFFICIENT_MARKET_DATA,
             data_provenance="missing_series",
             warnings=("NO_MARKET_SERIES",),
+            measured_as_of=observation_as_of,
         )
 
     start_bar = series.bar_at_or_before(decision.as_of)
     end_time = market_provider.window_end_iso(decision.as_of, horizon.duration_seconds)
-    end_bar = series.bar_at_or_before(end_time)
-    window_bars = series.bars_in_window(decision.as_of, end_time)
+    end_bar = series.bar_at_or_before(end_time, observation_as_of=observation_as_of)
+    window_bars = series.bars_in_window(decision.as_of, end_time, observation_as_of=observation_as_of)
 
     if start_bar is None:
         quality = OutcomeQuality.MISSING_START_BAR
     elif end_bar is None:
         quality = OutcomeQuality.MISSING_END_BAR
-    elif not window_bars:
+    elif not window_bars or epoch_ns_from_iso(end_bar.event_time) != epoch_ns_from_iso(end_time):
         quality = OutcomeQuality.PARTIAL_HORIZON
     else:
         quality = OutcomeQuality.COMPLETE
@@ -107,6 +116,7 @@ def measure_outcome(
                 "start_time": decision.as_of,
                 "end_time": end_time,
                 "raw_return": raw_return,
+                **({'measured_as_of': observation_as_of} if observation_as_of is not None else {}),
             }
         )
     )
@@ -129,6 +139,7 @@ def measure_outcome(
         quality=quality,
         data_provenance=series.series_ref,
         warnings=tuple(warnings),
+        measured_as_of=observation_as_of,
     )
 
 

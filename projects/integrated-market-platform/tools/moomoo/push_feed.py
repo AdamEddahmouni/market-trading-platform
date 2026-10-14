@@ -8,6 +8,7 @@ Callbacks enqueue a minimal envelope and return. Normalization/admission run on 
 
 from __future__ import annotations
 
+import math
 import sys
 import threading
 import time
@@ -46,6 +47,10 @@ SUBSCRIBE_RETRY_NS = 15_000_000_000
 UNSUBSCRIBE_RETRY_NS = 5_000_000_000
 SNAPSHOT_INTERVAL_NS = 2_000_000_000  # 15 calls / 30 s, under OpenD's 60 / 30 s snapshot limit
 SNAPSHOT_MAX_CODES = 400  # OpenD's per-call snapshot code limit
+# Stop bounds. headless_supply.MOOMOO_STOP_SECONDS is their sum.
+CONNECTION_JOIN_SECONDS = 5.0
+PROCESSOR_DRAIN_SECONDS = 5.0
+PROCESSOR_JOIN_SECONDS = 6.0  # the drain, plus one batch in flight
 
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
@@ -54,22 +59,28 @@ CAP_TO_SUBTYPE_NAME = {
 }
 
 
+def _finite(row: dict[str, Any]) -> dict[str, Any]:
+    # OpenD frames mark absent numbers (e.g. a snapshot's pe_ratio overnight) as NaN. Absent is None:
+    # stored evidence is strict JSON, and one NaN would otherwise reject the whole observation.
+    return {key: None if isinstance(value, float) and not math.isfinite(value) else value for key, value in row.items()}
+
+
 def payload_rows(data: Any) -> list[dict[str, Any]]:
     if data is None:
         return []
     if hasattr(data, "to_dict") and hasattr(data, "columns"):
         records = data.to_dict(orient="records")
-        return [dict(row) for row in records]
+        return [_finite(dict(row)) for row in records]
     if isinstance(data, list):
         rows: list[dict[str, Any]] = []
         for item in data:
             if hasattr(item, "to_dict") and not hasattr(item, "columns"):
-                rows.append(dict(item.to_dict()))
+                rows.append(_finite(dict(item.to_dict())))
             elif isinstance(item, dict):
-                rows.append(item)
+                rows.append(_finite(item))
         return rows
     if isinstance(data, dict):
-        return [data]
+        return [_finite(data)]
     return []
 
 
@@ -94,6 +105,9 @@ class MoomooPushFeed:
         default_factory=lambda: BoundedIngestQueue(max_size=ingest_queue_max_size())
     )
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _processor_stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _shutdown_state: str = field(default="NOT_REQUESTED", repr=False)
+    _processed_records: int = 0
     _connection_thread: threading.Thread | None = field(default=None, repr=False)
     _processor_thread: threading.Thread | None = field(default=None, repr=False)
     _subscribed_subtypes: set[tuple[str, str]] = field(default_factory=set, repr=False)
@@ -125,11 +139,14 @@ class MoomooPushFeed:
         if self._connection_thread and self._connection_thread.is_alive():
             return
         self._stop_event.clear()
+        self._processor_stop_event.clear()
+        self._shutdown_state = "NOT_REQUESTED"
         self._processor_thread = threading.Thread(
             target=drain_queue_worker,
             kwargs={
                 "queue": self.queue,
-                "stop_event": self._stop_event,
+                "stop_event": self._processor_stop_event,
+                "drain_seconds": PROCESSOR_DRAIN_SECONDS,
                 "handler": self._process_envelope,
             },
             name="moomoo-ingest-processor",
@@ -140,7 +157,37 @@ class MoomooPushFeed:
         self._connection_thread.start()
 
     def stop(self) -> None:
+        """Quiesce callbacks before draining accepted ingest; keep the writer alive until this returns."""
+        # A stop that already spent its bound is only re-checked: waiting again would double the
+        # delay and count one uncertainty interval twice.
+        repeated = self._shutdown_state == "UNVERIFIED"
         self._stop_event.set()
+        connection = self._connection_thread
+        if connection is not None and connection is not threading.current_thread():
+            connection.join(timeout=0 if repeated else CONNECTION_JOIN_SECONDS)
+        self._processor_stop_event.set()
+        processor = self._processor_thread
+        if processor is not None and processor is not threading.current_thread():
+            processor.join(timeout=0 if repeated else PROCESSOR_JOIN_SECONDS)
+        incomplete = bool((connection and connection.is_alive()) or (processor and processor.is_alive()) or self.queue.depth())
+        self._shutdown_state = "UNVERIFIED" if incomplete else "DRAINED"
+        if incomplete:
+            self.last_error = "MOOMOO_SHUTDOWN_INCOMPLETE"
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and 'moomoo' in writer.sources and not repeated:
+                writer.gap('MOOMOO_SHUTDOWN_INCOMPLETE')  # uncertainty interval, not a fabricated trade count
+            raise RuntimeError("MOOMOO_SHUTDOWN_INCOMPLETE")
+
+    def subscription_state(self, instrument_id: str, capability: str) -> str:
+        """ACTIVE once OpenD accepted the subscription on this connection; REFUSED while it declines; else PENDING."""
+
+        instrument = instrument_id.upper()
+        code = KNOWN_INSTRUMENTS.get(instrument, {}).get("provider_symbol") or f"US.{instrument}"
+        key = (code, CAP_TO_SUBTYPE_NAME.get(capability, ""))
+        if key in self._subscribed_subtypes:
+            return "ACTIVE"
+        return "REFUSED" if key in self.subscription_errors else "PENDING"
 
     def metrics(self) -> dict[str, Any]:
         quote_lag = list(self._lag_samples.get("US_EQUITY_L1") or [])
@@ -149,6 +196,8 @@ class MoomooPushFeed:
         processing = list(self._processing_lag_ns)
         return {
             **self.queue.metrics(),
+            "records_processed": self._processed_records,
+            "shutdown_state": self._shutdown_state,
             "callback_lag_ms_max": _percentile_ms(quote_lag + trade_lag + book_lag, 1.0),
             "callback_lag_ms_p50": _percentile_ms(quote_lag + trade_lag + book_lag, 0.5),
             "callback_lag_ms_p95": _percentile_ms(quote_lag + trade_lag + book_lag, 0.95),
@@ -180,7 +229,8 @@ class MoomooPushFeed:
                 self.last_error = f"OpenD not reachable at {moomoo_host()}:{moomoo_port()}"
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                # Interruptible: a stop during a reconnect backoff has no session and nothing to drain.
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
                 continue
             if self.on_reconnecting and attempt > 0:
@@ -192,7 +242,7 @@ class MoomooPushFeed:
                 self.last_error = str(exc)
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
 
     def _run_session(self) -> None:
@@ -415,5 +465,12 @@ class MoomooPushFeed:
             self._processing_lag_ns = self._processing_lag_ns[-500:]
         try:
             self.on_record(record)
+            self._processed_records += 1
         except Exception:
             self._handler_errors += 1
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and writer.selects(record):
+                writer.gap('MOOMOO_INGEST_FAILURE',
+                           stream=f"moomoo:{record.get('instrument_id')}:{record.get('capability')}",
+                           received_ns=record.get('clocks', {}).get('received_time_ns'))

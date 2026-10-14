@@ -6771,6 +6771,33 @@ failures/errors); final incremental checks cover these subsequent corrections.
 The 514-second checkpoint crossed the stored severe performance-regression
 threshold; this sprint does not claim workstation performance qualification.
 
+# 2026-10-12 — PF-01 isolated raw collection implementation
+
+Recovered the Samsung SSD baseline and verified that locally accepted
+`b4743f68c4f213358dacb6207572a12079602b00` contains the autonomous Paper branch.
+The serving non-Git source copy remains at that older Paper implementation;
+unfinished spending-authorization and Screener/launcher worktrees are preserved.
+
+Added opt-in raw collection through existing S11 adapters/cache and local_state
+SQLite, without AI, sentiment, opportunity detection or trading dispatch.
+Schema v12 adds immutable raw article receipts and transactional job progress.
+Bounded jobs, restart leases, backoff, explicit downtime gaps, storage refusal
+and evidence-based status extend the existing backend lifecycle. NewsAPI quota
+persistence fails closed; raised HTTP errors retain their status classification.
+
+Final isolated FULL passed 8,786 tests with 59 classified skips, zero failures
+and zero errors. The selected existing-news/PF-01 regression passed all 94 tests.
+Three stale schema-version assertions were advanced to v12 with prior-table
+checks preserved. Separate read-only review findings about pending leases,
+backoff and initial gaps were reproduced and corrected before final validation.
+
+Focused regressions retain the initial missing-path failure and the duplicate /
+HTTP-429 reproductions. Verification uses disposable databases and preserved SSD
+Python dependencies; no normal-state migration, provider probe, deployment,
+OS registration, Paper activation or order is performed. Actual overnight,
+entitlement, complete market capture and physical SSD remount remain separate
+acceptance gaps. See [PF-01 operation](../operations/PF01_RAW_COLLECTION.md).
+
 # 2026-10-10 — Portable sprint recovery and replay startup closure
 
 Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
@@ -6849,3 +6876,216 @@ and the complete 1,427-test UI suite passed during recovery. Exact final
 CHANGED/FULL, independent review, paired timings, protected integration and
 portable runtime acceptance require their own final receipts; the earlier
 2,880-test checkpoint and provisional speedups do not establish acceptance.
+
+## 2026-10-12 — PF-01B isolated market-stream persistence
+
+Continued accepted base with all 15 verified PF-01 news files in a separate SSD
+worktree. Added default-off, bounded SQLite capture at existing moomoo/current-bar
+and Kraken selected-pair boundaries, immutable revisions, committed watermarks,
+writer leases, gap evidence and existing provider-health projection. Schema 13
+retains news schema 12 and all earlier state. Fixed failed-begin lock release and
+failed-commit rollback in the shared transaction helper, with offline regressions.
+See the [operating contract](../operations/PF01B_MARKET_PERSISTENCE.md) and task
+PF-01B evidence report for exact final commands/results. No merge, deployment,
+production migration, provider activation, AI call or trading activation.
+
+## 2026-10-13 — PF-01 integration hardening and collection supervision
+
+Continued the combined PF-01A/PF-01B tree in a third SSD worktree. Added a
+default-off headless `--collect-only` entry point and a bounded-restart
+supervisor (`tools/platform/pf01_supervisor.py`, plan-only unless `--run`) that
+keeps durable lease, crash and exit-code evidence and registers no task or
+service. Neither entry point migrates a store; both refuse one that is not at
+the current schema.
+
+Corrected lifecycle and evidence defects found by reproduction and independent
+review: a second writer worker on repeated start, news shutdown reported paused
+with a live worker, undercounted overflow rejections, malformed selected Kraken
+trades without gap evidence (including targets selected by provider symbol),
+news writes after lease expiry, a news startup race that could recreate a
+missing store, unclosed read-only supervisor connections, repeated bar windows
+overflowing the writer queue, and gap hooks firing for unselected sources.
+`run_ui_api.main` selects the headless path only for an explicit flag.
+
+The headless process acquires no market subscriptions, so it does not supply the
+market writer; continuous headless market capture remains unimplemented and
+needs a separately approved source-demand design and provider entitlement. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md).
+No merge, deployment, canonical migration, provider request, AI call, trading
+activation or real overnight run.
+
+## 2026-10-13 — PF-01 supervision hardening
+
+Closed the five behaviours the PF-01 review left open, from `151a8c6f` in a
+fourth SSD worktree. The supervisor's lifetime three-crash budget is now three
+restarts per rolling hour with doubling backoff, a reset after 30 minutes of
+child uptime, a latch after three exhausted windows and an operator reset
+command. Database contention is retried by the worker that hit it and no longer
+ends the child or spends a restart; replaced, full or corrupt storage still
+stops at once. The market writer takes an operating-system owner lock with its
+run lease, so a restart after a crash no longer waits out the 120-second lease
+and a live owner is still never overridden. A writer with nothing to store owns
+nothing, so an idle headless process cannot block the serving backend's writer,
+and a backend that finds a live owner starts and waits instead of failing. Each
+RSS feed is its own collection job, so one failing or unconfigured feed backs
+off alone.
+
+Changed behaviour to know about: RSS job IDs are now `rss:<feed>:<universe>`;
+a writer may report `IDLE`, `RETRYING` or `WAITING_FOR_OWNERSHIP`; the state
+directory gains an empty `imp-state.sqlite3.market-writer.lock` file; the
+supervisor may report `COOLDOWN` or `STORAGE_WAIT`. No schema change.
+
+Offline only: no deployment, migration, provider request, subscription, paid
+call or trading. Headless market supply is still not implemented and no real
+overnight run has been observed. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md),
+[market persistence](../operations/PF01B_MARKET_PERSISTENCE.md) and
+[raw collection](../operations/PF01_RAW_COLLECTION.md).
+
+## 2026-10-13 — PF-01 certification follow-up and headless market supply
+
+From `89647a61` in a fifth SSD worktree. Two things.
+
+Supervision. An independent re-review confirmed the six medium fixes and the
+five supervision behaviours, and confirmed one reliability defect: a child that
+fails after 16 to 29 minutes never filled the rolling window and never reached
+the 30-minute healthy reset, so it was restarted for ever. The supervisor now
+also counts child failures since the last healthy period and latches
+`PERSISTENT_CHILD_FAILURE` at nine. Three smaller review findings were fixed: a
+corrupt store is `SCHEMA_CHECK_STORAGE_INVALID` rather than a missing migration,
+`--serve` with `--collect-only` exits with the permanent code, and a writer that
+owns nothing no longer spends its retry budget during a storage outage.
+
+Headless market supply. The collection-only child can now hold explicitly
+configured demand on the existing OpenD and Kraken subscription authorities, so
+the durable writer receives data without a browser. It is default off, bounded
+by the persistence selection, and gated by the provider live flags, an operator
+confirmation of data rights per source and, for moomoo, the existing capability
+probe. While another process owns the market writer it stands by without
+subscribing. `/provider/health` reports it as `market_supply`.
+
+Changed behaviour to know about: evidence rows gain `unhealthy_failures`; the
+state database gains a reserved `__pf01_market_supply__` job row when supply
+runs; `pf01_supervisor.py --status` includes `market_supply`; the plan's
+`market_source_demand` is `DISABLED`, `EXPLICIT_TARGETS_CONFIGURED` or the
+refusal reason. No schema change.
+
+A final independent review of the first implementation led to these
+corrections before closure: the OpenD disconnect gap is written once per lost
+session instead of on every failed retry (retries were renewing an idle
+writer's ownership for the length of an outage); the moomoo probe is read from
+its file before the OpenD runtime is created and re-read while running; other
+provider preferences, a fixture feed and dotted tickers are refused; a
+disconnected feed's remembered subscriptions and checkpoints from an earlier
+run no longer read as `COLLECTING`.
+
+Offline only, against synthetic provider transports: no deployment, migration,
+provider request, subscription, entitlement probe, paid call or trading. No
+account entitlement is verified and no real overnight run has been observed.
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md)
+and [market persistence](../operations/PF01B_MARKET_PERSISTENCE.md).
+
+## 2026-10-13 — PF-01F observation accounting and bounded capacity
+
+Continued from verified PF-01E commit 3578d5b0 in isolated SSD worktrees. The
+previous 38-observation high-rate discrepancy split into 36 OpenD ticks and
+two Kraken trades. Producer callback/enqueue counts were not an external
+exactly-once delivery boundary. Bounded provider draining retains selected
+demand until already observed work is drained; writer admission/status
+reconciliation and incomplete-shutdown evidence preserve uncertainty.
+
+Added read-only SQLite page/index/WAL and per-source accounting, pure runtime
+capacity decisions and explicit workload forecasts. The 512 MiB default and
+8 MiB reserve remain; no history is expired/deleted, raw data is not sampled,
+and no independent historical store is introduced. Smaller synthetic payload
+measurements are separate from conservative planning assumptions. Current bar
+updates/revisions are not advertised as a completed-bar-only capture profile.
+
+Independently re-reviewed PF-01E high/medium fixes; the four original Windows
+spawn tests passed unchanged in the authorized shell. A further supply status
+file-identity issue was corrected. Deployment/rollback and default-off overnight
+acceptance artifacts preserve serving source differences and explicit provider,
+target, cost, storage and host prerequisites. Actual account entitlements,
+production deployment and a real overnight run remain unverified; no provider
+probe, live subscription, paid request, trading or canonical migration occurred.
+
+## 2026-10-13 — PF-01F final-review shutdown corrections
+
+Resumed the interrupted PF-01F integration at 66f30cdb. The final independent
+review had found that Kraken's `UNVERIFIED` shutdown result never reached supply
+health or the child exit, and that buffered WebSocket control frames could
+outlive the receive deadline. Both are corrected with regressions, together
+with the supervisor discarding a stopped child's exit code and a capacity
+warning that could raise out of writer status (an existing storage-ceiling test
+had been failing on the integrated source).
+
+A second independent review of those corrections reproduced two more cases,
+also corrected: a venue-refused pair made every clean stop read incomplete, and
+a socket lost by the receiver thread just before the stop read clean. A console
+interrupt no longer masks an incomplete drain, a failing child handle is
+recorded, and a reused stream does not inherit an earlier shutdown verdict.
+Changed-suite validation then showed the repository closure audit rejecting the
+unclassified `tools/market_data_capacity.py`; it is now classified with the
+other operations tooling.
+Remaining limits are stated in PF01B_MARKET_PERSISTENCE.md. Synthetic
+transports only; no provider, subscription, migration, deployment or trading.
+
+## 2026-10-13 — PF-01G release candidate hardening
+
+Continued from PF-01F 512d0fac. The supervisor's fixed 15 s stop wait was
+shorter than the child's own bounded stop stages; it is now derived from those
+stage constants (59.25 s, below the 120 s lease), with a repeated OpenD stop, an
+unbounded stalled-reconcile lock wait and an uninterruptible reconnect backoff
+removed. An independent review of the last PF-01F corrections found no high
+finding; its medium and low findings (unacknowledged Kraken subscribe closed as
+acknowledged, CLI exit code after an unverified stop, missing exit code
+accepted) are corrected with regressions.
+
+The intermittent real-process supervision test was a product defect: a fetch
+on the shared SQLite connection outside its lock overwrote the result code of
+another thread's failing BEGIN IMMEDIATE, so a busy store was reported as
+"not an error", classified unrecoverable and ended the child. Status and lease
+reads now fetch inside the lock, a transaction that did not start raises, and a
+lost code is retried within the existing bound.
+
+Added a read-only `pf01_supervisor.py --preflight` (READY, BLOCKED, UNKNOWN,
+NOT VERIFIED) that contacts no provider and starts nothing, capacity readiness
+profiles, provider prerequisites and the attended sequence in
+PF01G_RELEASE_CANDIDATE.md. Synthetic transports and disposable stores only; no
+provider, subscription, canonical migration, deployment or trading.
+
+A final independent review (accept with fixes, no high finding) led to: an
+interrupt during an in-loop child stop keeps the child handle and is recorded
+as unverified instead of a clean operator stop; a news worker that outlives
+its join ends the child non-zero; the preflight validates the stored market
+selection, requires real hashes in the release manifest, separates UNKNOWN
+(unreadable, exit 2) from NOT VERIFIED (operator evidence, exit 3) and lists
+what it does not inspect.
+
+## 2026-10-13 — Professor intelligence offline integration
+
+Owner-selected four-area sprint on PF-01G `1877b8f8380c9838d44d60da0c3e7c8ab5f3b6be`, isolated integration and worker trees. Durable news revision/as-of retrieval, bounded Eastern inference planning, immutable decision/outcome/review journal, and receipt-aware selected-day replay now share an offline demonstration through existing contracts. Independent review findings received regression tests and repairs. No schema migration, deployment, source activation, inference, trading, calibration, promotion or push/merge performed. Implementation-session receipts are in the chat workspace `imp-sprint-evidence/logs/`; final validation, preservation receipts and the report are in the portable workstation's `destination-tests/20261013-profint-recovery/`.
+
+The first complete FULL run failed one unchanged PF-01 test, `test_status_exception_does_not_kill_reconciliation_worker` (2 reconcile errors, 3 expected). Cause: a test race, not a worker defect. A supply step requests under the lock and publishes status after releasing it, so the third request is visible before its status failure is counted; the test waited for the request and could leave its failing-status patch inside that gap, after which the count stays at two. The original logic failed 24 of 300 isolated runs and every run with the worker held in the gap. The test now waits for the failures themselves and keeps every original assertion; a second test pins the request-before-count ordering. `headless_supply.py` is unchanged.
+
+Behavior and limits: [Professor intelligence integration](../operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md). Frozen research evidence and Item 9 remain unchanged. This is synthetic software evidence, not October 14 market observation or empirical strategy validation.
+
+## 2026-10-13 — Professor integration operator surface and release candidate
+
+On `d20e6a62`. The four sprint capabilities were libraries with no operator access. Added `ui_api/evidence_review.py` and five read-only `/evaluation/evidence/*` routes (`audit.read`), and an Evidence review section on the existing Outcome evaluation page: stored news as known at a cutoff, the catch-up dry-run plan with its deferral reasons, the day's Action Decision receipts as frozen journal entries beside later Paper and next-session evidence, and the fixture day replayed for the three policies. Nothing in it calls a provider or model, reserves budget, writes state or grants authority. The UI test fixture is the service's own output and a Python test holds it to the service.
+
+Wiring the journal to real receipts found one defect in it: it required shared evidence between a decision and its Opportunity, which the action service does not require for an operator-selected Opportunity, so every such ENTER receipt was refused (`JOURNAL_OPPORTUNITY_LINEAGE_MISMATCH`). A receipt that froze and names its Opportunity is now accepted on identity and clock; an unnamed or separately supplied Opportunity still needs shared evidence.
+
+The eleven other `wait_until` call sites in `test_pf01_headless_supply.py` were checked for the request-before-effect race corrected earlier. Ten wait on the asserted value or assert after a join. One (total committed rows, then tick rows) was suspected and could not be made to fail when forced, so it is unchanged.
+
+An independent review of the surface (accept with fixes) found that two documented plan states returned HTTP 500: deferral reason codes were response keys, and `TOKEN_BOUND` and `TOKEN_ESTIMATE_NOT_VERIFIED` look like credentials to the response secret audit. Reasons are now a list, checked over HTTP. The same review led to: assumed model access no longer reads as verified; the plan states which spending policy it consulted and which it did not, reports backlog beyond its bound, and uses limits only for a later UTC day; the knowledge view counts only what was stored by the cutoff and reports the reader's scan bound as unavailable; the replay refuses days outside the fixture and clocks the server has not reached, and says that the fixture's AI output is not admitted; an unreadable receipt can no longer fail a whole journal day; and a receipt owns its Opportunity only when it names it and its snapshot id is that snapshot's digest.
+
+No deployment, canonical migration, provider contact, inference, trading or push. Evidence, release package, rehearsal and the October 14 approval package: portable workstation `destination-tests/20261013-rc-integration/`. Behavior: [Professor intelligence integration](../operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md).
+
+### 2026-10-13 — professor release closure tooling
+
+Preserved the standalone apply/backup/migration helpers used by profint-rc1 under tools/release_candidate. The helpers exclude only their own process; failed or malformed Windows process inventories now refuse the operation. Normalize slash spelling when identifying a serving process. No application, canonical state, provider or trading activation occurred. Seven offline guard regressions passed after the expected red failures, including a separate reviewer reproduction of an unreadable process command line. The final consolidated acceptance report and package are maintained in the coordinator's release-closure evidence folder. The four prior process-spawn errors remain environment-blocked.
+
+## 2026-10-13 — Authorized operational certification correction
+
+Final candidate 2a0fbbe8 was recertified in an authorized Windows terminal: 9,203 tests, 9,135 passes, 59 skips, zero failures, nine errors, exit 1. Eight errors were Windows temporary path length failures; they pass unchanged with shorter disposable paths. The remaining existing canonical closure regression reproduced an unclassified tools/release_candidate directory. Added only that directory to the existing retained qualification/operations tooling scope; no existing classification or product behavior changed. The nine-case reproduction had eight passes and one classification error before this correction. Full recertification remains pending; no production deployment, migration, paid AI or trading is implied by this entry. Evidence is in the coordinator operational-release-20261013 directory.
