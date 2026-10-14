@@ -13,6 +13,7 @@ nothing to the canonical store, calls no model, and has no order, Paper or broke
 from __future__ import annotations
 
 import json
+import logging
 import os
 import threading
 import time
@@ -26,6 +27,7 @@ SYMBOLS_ENV = "IMP_PAPER_FORECAST_CORPUS_SYMBOLS"
 MAX_SYMBOLS = 12
 CAPABILITIES = ("BASIC_QUOTE", "TRADES")
 RUNTIME_WAIT_SECONDS = 600
+_LOG = logging.getLogger(__name__)
 
 _SERVICE: "PaperForecastCorpusService | None" = None
 
@@ -64,6 +66,8 @@ class PaperForecastCorpusService:
         self.subscriptions: dict[str, Any] = {}
         self.state = "STARTING"
         self.error: str | None = None
+        self.status_write_error: str | None = None
+        self.last_status_written_at: str | None = None
         self._stop = threading.Event()
         self.thread: threading.Thread | None = None
 
@@ -93,15 +97,32 @@ class PaperForecastCorpusService:
                                           for c, r in zip(CAPABILITIES, results)]
         return True
 
-    def write_status(self) -> dict[str, Any]:
+    def write_status(self) -> dict[str, Any] | None:
+        """Publish a heartbeat only on successful replacement; status I/O cannot stop recording."""
         status = dict(schema_version="paper-forecast-corpus-status/1.0.0", state=self.state, error=self.error,
                       at=datetime.now(UTC).isoformat(), symbols=self.symbols, subscriptions=self.subscriptions,
                       recorder={k: v for k, v in self.recorder.status.items()}, writes_canonical_store=False,
                       calls_models=False, order_capability=False)
-        self.directory.mkdir(parents=True, exist_ok=True)
-        tmp = self.directory / "status.json.tmp"
-        tmp.write_text(json.dumps(status, indent=2, default=str), encoding="utf-8")
-        os.replace(tmp, self.directory / "status.json")
+        try:
+            self.directory.mkdir(parents=True, exist_ok=True)
+            tmp = self.directory / "status.json.tmp"
+            tmp.write_text(json.dumps(status, indent=2, default=str), encoding="utf-8")
+            for attempt in range(3):
+                if attempt:
+                    time.sleep(0.05 * attempt)
+                try:
+                    os.replace(tmp, self.directory / "status.json")
+                    break
+                except PermissionError:
+                    # Windows readers may briefly deny atomic replacement. Keep retries bounded.
+                    if attempt == 2:
+                        raise
+        except OSError as exc:
+            self.status_write_error = f"{type(exc).__name__}:{str(exc)[:200]}"
+            _LOG.warning("Corpus status publication failed: %s", self.status_write_error)
+            return None
+        self.status_write_error = None
+        self.last_status_written_at = status["at"]
         return status
 
     def run(self) -> None:
@@ -113,16 +134,17 @@ class PaperForecastCorpusService:
                     self.write_status()
                     return
             self.state = "RUNNING"
-            last_status = 0.0
+            last_status_attempt = 0.0
             while not self._stop.wait(1.0):
                 try:
                     self.recorder.tick()
                     self.error = None
                 except Exception as exc:  # noqa: BLE001 - one failed tick is reported; the next grid point is independent
                     self.error = f"{type(exc).__name__}:{str(exc)[:200]}"
-                if time.monotonic() - last_status >= 10:
+                if time.monotonic() - last_status_attempt >= 10:
                     self.write_status()
-                    last_status = time.monotonic()
+                    # Failed publication does not establish a heartbeat or retry on every tick.
+                    last_status_attempt = time.monotonic()
         except Exception as exc:  # noqa: BLE001
             self.state, self.error = "FAILED", f"{type(exc).__name__}:{str(exc)[:200]}"
             self.write_status()

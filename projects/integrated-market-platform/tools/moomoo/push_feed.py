@@ -413,7 +413,7 @@ class MoomooPushFeed:
         code = str(payload.get("code") or "")
         instrument = code.split(".")[-1] if code else ""
         received = time.time_ns()
-        event_ns = event_time_ns_from_payload(payload, received_ns=received)
+        event_ns = event_time_ns_from_payload(payload, received_ns=received, quote_trade_time=capability == "US_EQUITY_L1")
         channel = f"{generation}:{instrument}:{capability}"
         is_first = channel not in self._first_push_seen
         if is_first:
@@ -434,6 +434,7 @@ class MoomooPushFeed:
                 "received_time_ns": received,
                 "ingested_time_ns": received,
             },
+            "source_time_basis": "RECEIPT_FALLBACK" if event_ns == received else "PROVIDER_EVENT_TIME",
             "first_push_class": first_kind,
             "instrument_id": instrument.upper(),
             "is_cached": first_kind == "CACHED",

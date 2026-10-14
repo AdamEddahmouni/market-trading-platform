@@ -72,6 +72,25 @@ def _midpoint(event: EventV1) -> float | None:
     return None
 
 
+def _source_reason(event: EventV1, max_lag_ns: int) -> str | None:
+    """Use source-to-receipt lag, not current receipt age, for historical feature evidence."""
+    if event.metadata.get("source_time_basis") == "RECEIPT_FALLBACK":
+        return "SOURCE_CLOCK_UNVERIFIED"
+    if event.event_time_ns > event.available_time_ns:
+        return "FUTURE_SOURCE_OBSERVATION"
+    received = event.received_time_ns or event.available_time_ns
+    if received - event.event_time_ns > max_lag_ns:
+        return "SOURCE_EVENT_STALE"
+    if str(getattr(event.quality.state, "value", event.quality.state)) != "GOOD":
+        return "SOURCE_QUALITY_NOT_GOOD"
+    return None
+
+
+def _source_lag_limit_ns() -> int:
+    from ...market_data.live_config import execution_freshness_threshold_ms
+    return execution_freshness_threshold_ms() * 1_000_000
+
+
 class _Receipt:
     """The router contract only needs ``duplicate``; the live runtime counts it."""
 
@@ -145,10 +164,18 @@ class RollingEventWindow:
                     return event
         return None
 
-    def first_quote_at_or_after(self, iid: str, available_ns: int) -> EventV1 | None:
+    def first_quote_at_or_after(self, iid: str, available_ns: int, *, available_to_ns: int | None = None) -> EventV1 | None:
+        """The first usable QUOTE at or after ``available_ns``.
+
+        An optional ``available_to_ns`` bounds what was already receivable: a quote whose
+        recorded availability is later than that bound cannot serve a label yet, however
+        far ahead its availability is. Selection stays within [available_ns, available_to_ns].
+        """
         with self._lock:
             for event in self._events.get(iid, ()):
-                if event.available_time_ns >= available_ns and event.event_type == "QUOTE" and _midpoint(event) is not None:
+                if (event.available_time_ns >= available_ns and event.event_type == "QUOTE" and _midpoint(event) is not None
+                        and event.event_time_ns >= available_ns and _source_reason(event, _source_lag_limit_ns()) is None
+                        and (available_to_ns is None or event.available_time_ns <= available_to_ns)):
                     return event
         return None
 
@@ -197,9 +224,23 @@ def decision_inputs(window: RollingEventWindow, iid: str, decision_time_ns: int,
     row["event_counts"] = dict(QUOTE=sum(e.event_type == "QUOTE" for e in events), TRADE=sum(e.event_type == "TRADE" for e in events))
     row["reference"] = None if reference is None else dict(
         event_id=reference.event_id, midpoint=_midpoint(reference), available_time_ns=reference.available_time_ns,
-        age_ms=(decision_time_ns - reference.available_time_ns) // 1_000_000)
+        event_time_ns=reference.event_time_ns, provider_time_ns=reference.provider_time_ns,
+        received_time_ns=reference.received_time_ns, source_time_basis=reference.metadata.get("source_time_basis", "EXPLICIT_EVENT_CLOCK"),
+        age_ms=(decision_time_ns - reference.event_time_ns) // 1_000_000,
+        receipt_age_ms=(decision_time_ns - reference.available_time_ns) // 1_000_000)
     if reference is None:
         row.update(accepted=False, reason="NO_REFERENCE_QUOTE")
+        return row, None, ()
+    limit_ns = _source_lag_limit_ns()
+    reason = _source_reason(reference, limit_ns)
+    if reason is None and decision_time_ns - reference.event_time_ns > limit_ns:
+        reason = "REFERENCE_SOURCE_STALE"
+    elif reason == "SOURCE_EVENT_STALE":
+        reason = "REFERENCE_SOURCE_STALE"
+    if reason is None:
+        reason = next((code for event in events if (code := _source_reason(event, limit_ns)) is not None), None)
+    if reason is not None:
+        row.update(accepted=False, reason=reason)
         return row, None, ()
     if not events:
         row.update(accepted=False, reason="NO_EVENTS_IN_WINDOW")
@@ -237,7 +278,8 @@ def settle(window: RollingEventWindow, decision: dict[str, Any], *, now_ns: int,
     due = decision["decision_time_ns"] + horizon_ns
     if now_ns < due:
         return None
-    terminal = window.first_quote_at_or_after(decision["instrument_id"], due)
+    # Availability-time correctness: only a quote already receivable by ``now_ns`` may label this decision.
+    terminal = window.first_quote_at_or_after(decision["instrument_id"], due, available_to_ns=now_ns)
     base = dict(schema_version=SCHEMA_VERSION, kind=LABEL_KIND, instrument_id=decision["instrument_id"],
                 decision_time_ns=decision["decision_time_ns"], horizon_ns=horizon_ns, label_rule=LABEL_RULE)
     if terminal is None or terminal.available_time_ns > due + tolerance_ns:
@@ -246,6 +288,8 @@ def settle(window: RollingEventWindow, decision: dict[str, Any], *, now_ns: int,
         return dict(base, label=None, status="UNLABELABLE", reason="NO_TERMINAL_QUOTE_IN_TOLERANCE")
     start, end = decision["reference"]["midpoint"], _midpoint(terminal)
     common = dict(terminal_event_id=terminal.event_id, terminal_midpoint=end, label_available_time_ns=terminal.available_time_ns,
+                  terminal_event_time_ns=terminal.event_time_ns, terminal_provider_time_ns=terminal.provider_time_ns,
+                  terminal_received_time_ns=terminal.received_time_ns, source_time_basis=terminal.metadata.get("source_time_basis", "EXPLICIT_EVENT_CLOCK"),
                   reference_midpoint=start)
     if end == start:
         return dict(base, **common, label=None, status="UNLABELABLE", reason="MIDPOINT_UNCHANGED")
