@@ -250,6 +250,7 @@ class ScreenerAiCoverage:
 
         mark = time.perf_counter()
         last: dict[str, Any] | None = None
+        sent_failure: str | None = None  # first true provider/outcome failure; reported as the terminal reason
         for index, batch in enumerate(batches):
             if should_stop():
                 self._unprocessed(run, batches[index:], "STOPPED_BY_OPERATOR")
@@ -258,6 +259,13 @@ class ScreenerAiCoverage:
                                  planned_tokens=batch["tokens"], first_pass=True, reuse_only=batch.get("cached",False))
             if outcome["failure"]:
                 self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "BATCH_FAILED:" + outcome["failure"])
+                if sent_failure is None:
+                    sent_failure = outcome["failure"]
+                if outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED":
+                    # The send-time exact-fit gate is per request. Evidence re-acquired for this batch's own cutoff
+                    # rendered over the window, but each remaining batch is its own bounded request measured again
+                    # by the same gate when it is sent, so one batch's oversize is evidence about that request only.
+                    continue
                 self._unprocessed(run, batches[index + 1:], "NOT_STARTED_AFTER_BATCH_FAILURE")
                 return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, self._partial_reason(outcome["failure"]))
             run.batches_completed += 1
@@ -271,7 +279,8 @@ class ScreenerAiCoverage:
 
         if any(name == UNPROCESSED for name, _ in run.classes.values()):
             # Every planned call ran, but a row that could not be sent (too large, thinned below sufficiency) remains.
-            return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "ELIGIBLE_ROWS_NOT_SUBMITTED")
+            reason = self._partial_reason(sent_failure) if sent_failure is not None else "ELIGIBLE_ROWS_NOT_SUBMITTED"
+            return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, reason)
         if not run.finalists:
             return self._terminal(run, COMPLETE_NO_SELECTION)
         if len(batches) == 1 and last is not None:

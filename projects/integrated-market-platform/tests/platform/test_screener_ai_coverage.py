@@ -463,6 +463,25 @@ class FailureTests(unittest.TestCase):
         self.assertTrue(h.result["provisional"])
         self.assertTrue(all(item["batch"] in (1, 2) for item in h.result["provisional"]))
 
+    def test_an_oversized_first_batch_gates_only_that_batch_and_the_rest_still_run(self):
+        """The exact-fit gate is per request: one batch rendering over the window must not cancel the
+        remaining planned batches, which each carry their own gate when they are sent."""
+        h = Harness(universe(260, strong={index: 90.0 for index in range(0, 260, 9)}),
+                    FailingProvider(fail_on=1, reason="LOCAL_CONTEXT_EXCEEDED"))
+        h.run()
+        self.partial(h, 260)
+        # Six planned batches: the failed leading batch is isolated, the remaining five still run.
+        self.assertEqual(h.block["batches_completed"], 5)
+        self.assertEqual(len(h.provider.seen), 6)
+        self.assertEqual(h.block["counts"]["evaluated"], 210)
+        reasons = h.block["counts"]["reasons"]
+        self.assertEqual(reasons["UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED"], 50)
+        self.assertNotIn("UNPROCESSED:NOT_STARTED_AFTER_BATCH_FAILURE", reasons)
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED")
+        # Finalists from the finished batches are shown as provisional and are not a selection.
+        self.assertTrue(h.result["provisional"])
+        self.assertTrue(all(item["batch"] >= 2 for item in h.result["provisional"]))
+
     def test_a_timeout_is_an_unknown_provider_outcome_and_is_not_retried(self):
         h = Harness(universe(150), FailingProvider(fail_on=2, reason="ANTHROPIC_TIMEOUT", timeout=True))
         h.run()
