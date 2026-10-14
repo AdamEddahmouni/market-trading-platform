@@ -323,6 +323,21 @@ class EvidenceReviewService:
             processed_state='NO_COMPLETED_ANALYSIS_RECORDED', collection_independent=plan['collection_independent'],
             inference_calls=plan['inference_calls'], budget_reserved=plan['budget_reserved'], authority=AUTHORITY)
 
+    # ------------------------------------------------------------------ local intelligence
+    def intelligence(self, *, as_of=None, symbol=None, limit=None) -> dict:
+        """The scheduled local worker's derived outputs known at a cutoff. Read-only; no model is loaded here."""
+        import os
+        from pathlib import Path
+
+        from ..news.local_intelligence import DIRECTORY_ENV, read_view
+
+        label, instant = self.cutoff(as_of)
+        rows = _bound(limit, 'INVALID_EVIDENCE_LIMIT', default=100, minimum=1, maximum=MAX_KNOWLEDGE_ROWS)
+        directory = (os.environ.get(DIRECTORY_ENV) or '').strip()
+        view = read_view(Path(directory) if directory else None, as_of=instant.timestamp(),
+                         symbol=symbol.strip().upper() if symbol else None, limit=rows)
+        return dict(view, schema_version='evidence-review-intelligence/1', as_of=label, authority=AUTHORITY)
+
     # ------------------------------------------------------------------ decision journal
     def journal(self, *, day=None, as_of=None, decision_id=None) -> dict:
         from ..intelligence.news_strategy_evaluation.journal import build_daily_journal, capture_decision_snapshot
@@ -480,6 +495,8 @@ def read_evidence(store, path: str, query: dict[str, list[str]]) -> dict:
         return service.plan(at=first('at'), max_requests=first('max_requests'), max_tokens=first('max_tokens'),
                             max_backlog=first('max_backlog'), request_allowance=first('request_allowance'),
                             assume_available=flag('assume_available'))
+    if view == 'intelligence':
+        return service.intelligence(as_of=first('as_of'), symbol=first('symbol'), limit=first('limit'))
     if view == 'journal':
         return service.journal(day=first('day'), as_of=first('as_of'), decision_id=first('decision_id'))
     if view == 'replay':

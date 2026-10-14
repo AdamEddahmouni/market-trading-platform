@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import EvidenceReviewPanel, { JournalView, KnowledgeView, PlanView, ReplayView, StatusView } from "./EvidenceReviewPanel";
+import EvidenceReviewPanel, { IntelligenceView, JournalView, KnowledgeView, PlanView, ReplayView, StatusView } from "./EvidenceReviewPanel";
 import fixture from "./evidenceReviewFixture.json";
-import { evidenceApi, EvidenceJournalSchema, EvidenceKnowledgeSchema, EvidencePlanSchema, EvidenceReplaySchema,
+import { evidenceApi, EvidenceIntelligenceSchema, EvidenceJournalSchema, EvidenceKnowledgeSchema, EvidencePlanSchema, EvidenceReplaySchema,
   EvidenceStatusSchema } from "../../api/evidenceReview";
 
 // The fixture is the backend's own output; tests/trading_correctness/test_evidence_review_api.py holds it to the service.
@@ -14,6 +14,28 @@ const journal = EvidenceJournalSchema.parse(fixture.journal);
 const replay = EvidenceReplaySchema.parse(fixture.replay);
 
 describe("Evidence review", () => {
+  it("shows local analysis as derived language evidence with its model, window and availability clock", () => {
+    const authority = status.authority;
+    const view = EvidenceIntelligenceSchema.parse({ schema_version: "evidence-review-intelligence/1", as_of: "2026-10-14T14:01:00Z",
+      state: "PROCESSED", status: { at: "2026-10-14T14:00:00Z", backlog: 0, processed: 2, scored: 1, session: { window: "REGULAR" } },
+      heartbeat_age_seconds: 60, evidence_class: "DERIVED_LOCAL_EVIDENCE_NOT_A_SIGNAL", label_counts: { NEGATIVE: 1, NOT_APPLICABLE: 1 },
+      outputs: [
+        { revision_id: "b", provider_id: "finnhub", source_id: "finnhub-src", headline: "Apple shares fall after downgrade",
+          instrument_ids: ["AAPL"], published_time: "2026-10-14T13:00:00Z", input_available_time: "2026-10-14T13:01:00Z",
+          processed_at: "2026-10-14T14:00:00Z", window: "REGULAR", event_categories: ["company.analyst"], status: "PROCESSED",
+          sentiment: { state: "SCORED", label: "NEGATIVE", probabilities: { positive: 0.05, neutral: 0.1, negative: 0.85 } },
+          sentiment_model: { model_id: "ProsusAI/finbert", model_revision: "abc" } },
+        { revision_id: "c", provider_id: "sec_filings", source_id: "sec", headline: "Apple Inc. filed 8-K", instrument_ids: ["AAPL"],
+          published_time: null, input_available_time: "2026-10-14T13:02:00Z", processed_at: "2026-10-14T14:00:00Z", window: "REGULAR",
+          event_categories: [], status: "PROCESSED", sentiment: { state: "NOT_APPLICABLE" }, sentiment_model: null }],
+      authority });
+    render(<IntelligenceView view={view} />);
+    expect(screen.getByText(/not a forecast or a trading signal/)).toBeInTheDocument();
+    const table = screen.getByRole("table", { name: "Local analysis outputs" });
+    expect(within(table).getByText("NEGATIVE (85%)")).toBeInTheDocument();
+    expect(within(table).getByText("Not applicable (official filing)")).toBeInTheDocument();
+    expect(screen.getByText("REGULAR", { selector: "dd" })).toBeInTheDocument();
+  });
   it("shows the AI window beside collection, which the pause does not switch off", () => {
     render(<StatusView status={status} />);
     expect(screen.getByText("CATCH_UP", { selector: "dd" })).toBeInTheDocument();

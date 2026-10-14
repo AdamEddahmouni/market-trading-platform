@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { evidenceApi, type EvidenceJournal, type EvidenceKnowledge, type EvidencePlan, type EvidenceReplay,
-  type EvidenceStatus } from "../../api/evidenceReview";
+import { evidenceApi, type EvidenceIntelligence, type EvidenceJournal, type EvidenceKnowledge, type EvidencePlan,
+  type EvidenceReplay, type EvidenceStatus } from "../../api/evidenceReview";
 
 const unavailable = "Unavailable";
 const text = (value: unknown) => value == null || value === "" ? unavailable : String(value);
-const TABS = [["news", "Stored news"], ["plan", "Morning catch-up plan"], ["journal", "Decision journal"], ["replay", "Day replay"]] as const;
+const TABS = [["news", "Stored news"], ["analysis", "Local analysis"], ["plan", "Morning catch-up plan"], ["journal", "Decision journal"], ["replay", "Day replay"]] as const;
 type Tab = typeof TABS[number][0];
 
 export function StatusView({ status }: { status: EvidenceStatus }) {
@@ -38,6 +38,26 @@ export function KnowledgeView({ knowledge }: { knowledge: EvidenceKnowledge }) {
         <td>{text(row.source_id)} / {text(row.provider_id)}</td><td>{row.instruments.join(", ") || unavailable}</td>
         <td>{row.evidence_class || row.source_reference ? <>{text(row.evidence_class)}<div>{text(row.source_reference)}</div></> : "None saved with this record"}</td></tr>)}</tbody></table></div>}
   </>;
+}
+
+export function IntelligenceView({ view }: { view: EvidenceIntelligence }) {
+  const status = (view.status ?? {}) as Record<string, unknown>;
+  const counts = Object.entries(view.label_counts ?? {});
+  return <section aria-label="Local analysis">
+    <p>Scheduled local analysis on this workstation: the event taxonomy on every stored item and FinBERT language sentiment on news headlines. No paid AI, no orders. Sentiment describes a headline's language; it is not a forecast or a trading signal.</p>
+    <dl className="evaluation-metrics">
+      <div><dt>Worker state</dt><dd>{text(view.state)}{view.reason ? ` (${view.reason})` : ""}</dd></div>
+      <div><dt>Last heartbeat</dt><dd>{text(status.at)}{view.heartbeat_age_seconds != null ? ` (${Math.round(view.heartbeat_age_seconds)} s ago)` : ""}</dd></div>
+      <div><dt>Window</dt><dd>{text((status.session as Record<string, unknown> | undefined)?.window)}</dd></div>
+      <div><dt>Backlog / last tick</dt><dd>{text(status.backlog)} waiting; {text(status.processed)} processed, {text(status.scored)} scored</dd></div>
+      <div><dt>Known as of</dt><dd>{view.as_of}</dd></div>
+      <div><dt>Shown</dt><dd>{view.outputs.length} items{counts.length ? `: ${counts.map(([label, n]) => `${label} ${n}`).join(", ")}` : ""}</dd></div>
+    </dl>
+    {view.outputs.length > 0 && <div className="evaluation-scroll"><table aria-label="Local analysis outputs"><thead><tr><th>Processed</th><th>Known from</th><th>Headline</th><th>Source</th><th>Instruments</th><th>Event categories</th><th>Sentiment (FinBERT)</th></tr></thead>
+      <tbody>{view.outputs.map(row => <tr key={row.revision_id}><td><time>{row.processed_at}</time><div>{text(row.window)}</div></td><td><time>{row.input_available_time}</time></td>
+        <td>{row.headline}</td><td>{text(row.source_id)}</td><td>{row.instrument_ids.join(", ") || "None linked"}</td><td>{row.event_categories.join(", ") || "None"}</td>
+        <td>{row.sentiment.label ? `${row.sentiment.label}${row.sentiment.probabilities ? ` (${Math.round(100 * Math.max(...Object.values(row.sentiment.probabilities)))}%)` : ""}` : row.sentiment.state === "NOT_APPLICABLE" ? "Not applicable (official filing)" : text(row.sentiment.state)}</td></tr>)}</tbody></table></div>}
+  </section>;
 }
 
 export function PlanView({ plan }: { plan: EvidencePlan }) {
@@ -110,6 +130,7 @@ function Filters<T extends Record<string, string | boolean>>({ value, onApply, f
 export default function EvidenceReviewPanel({ account }: { account?: string }) {
   const [tab, setTab] = useState<Tab>("news");
   const [news, setNews] = useState({ as_of: "", symbol: "" });
+  const [analysis, setAnalysis] = useState({ as_of: "", symbol: "" });
   const [plan, setPlan] = useState({ at: "", max_requests: "", request_allowance: "", assume_available: false });
   const [journal, setJournal] = useState({ day: "", as_of: "" });
   const [replay, setReplay] = useState({ date: "", as_of: "" });
@@ -120,13 +141,14 @@ export default function EvidenceReviewPanel({ account }: { account?: string }) {
   const once = { retry: false as const };
   const status = useQuery({ queryKey: ["evidence-review", "status"], queryFn: evidenceApi.status, ...once });
   const knowledge = useQuery({ queryKey: ["evidence-review", "knowledge", news, reads], queryFn: () => evidenceApi.knowledge(news), enabled: tab === "news", ...once });
+  const analysed = useQuery({ queryKey: ["evidence-review", "analysis", analysis, reads], queryFn: () => evidenceApi.intelligence(analysis), enabled: tab === "analysis", ...once });
   const planned = useQuery({ queryKey: ["evidence-review", "plan", plan, reads], queryFn: () => evidenceApi.plan(plan), enabled: tab === "plan", ...once });
   const entries = useQuery({ queryKey: ["evidence-review", "journal", account, journal, reads], queryFn: () => evidenceApi.journal(journal), enabled: tab === "journal", ...once });
   // The entry is read at the day and cutoff of the list it was chosen from.
   const listed = entries.data ? { day: entries.data.day, as_of: entries.data.observation_as_of } : journal;
   const entry = useQuery({ queryKey: ["evidence-review", "journal-entry", account, listed, inspect], queryFn: () => evidenceApi.journalEntry({ ...listed, decision_id: inspect }), enabled: tab === "journal" && Boolean(inspect) && Boolean(entries.data), ...once });
   const replayed = useQuery({ queryKey: ["evidence-review", "replay", replay], queryFn: () => evidenceApi.replay(replay), enabled: tab === "replay", ...once });
-  const active = { news: knowledge, plan: planned, journal: entries, replay: replayed }[tab];
+  const active = { news: knowledge, analysis: analysed, plan: planned, journal: entries, replay: replayed }[tab];
   const clocks = replayed.data?.available.find(item => item.replay_date === replayed.data?.replay_date)?.clocks ?? [];
   return <section className="evaluation-detail" aria-labelledby="evidence-review-title">
     <h2 id="evidence-review-title">Evidence review</h2>
@@ -135,12 +157,14 @@ export default function EvidenceReviewPanel({ account }: { account?: string }) {
     {status.data && <StatusView status={status.data} />}
     <div className="evaluation-toolbar" role="group" aria-label="Evidence views">{TABS.map(([id, label]) => <button key={id} aria-pressed={tab === id} onClick={() => setTab(id)}>{label}</button>)}</div>
     {tab === "news" && <Filters value={news} onApply={value => { setNews(value); reread(); }} fields={[["as_of", "Known as of (UTC, e.g. 2026-10-14T07:30:00Z)", "now"], ["symbol", "Symbol", "any"]]} />}
+    {tab === "analysis" && <Filters value={analysis} onApply={value => { setAnalysis(value); reread(); }} fields={[["as_of", "Known as of (UTC)", "now"], ["symbol", "Symbol", "any"]]} />}
     {tab === "plan" && <Filters value={plan} onApply={value => { setPlan(value); reread(); }} fields={[["at", "Preview clock (UTC, now or later)", "now"], ["max_requests", "Max requests", "budget limit"], ["request_allowance", "Your token allowance per request (prompt and answer)", "none: nothing can be planned"], ["assume_available", "Preview as if model access were confirmed"]]} />}
     {tab === "journal" && <Filters value={journal} onApply={value => { setJournal(value); setInspect(""); reread(); }} fields={[["day", "Day (New York, YYYY-MM-DD)", "today"], ["as_of", "Read as of (UTC)", "now"]]} />}
     {tab === "replay" && replayed.data && <div className="evaluation-toolbar"><label>Replay day <select value={replayed.data.replay_date} onChange={e => setReplay({ date: e.target.value, as_of: "" })}>{replayed.data.available.map(item => <option key={item.replay_date}>{item.replay_date}</option>)}</select></label><label>Clock <select value={replayed.data.as_of} onChange={e => setReplay({ date: replayed.data!.replay_date, as_of: e.target.value })}>{clocks.map(clock => <option key={clock}>{clock}</option>)}</select></label></div>}
     {active.isPending && <p>Loading…</p>}
     {active.error && <p role="alert">Unavailable: {String(active.error)}</p>}
     {tab === "news" && knowledge.data && <KnowledgeView knowledge={knowledge.data} />}
+    {tab === "analysis" && analysed.data && <IntelligenceView view={analysed.data} />}
     {tab === "plan" && planned.data && <PlanView plan={planned.data} />}
     {tab === "journal" && entries.data && <JournalView journal={entries.data} onInspect={setInspect} />}
     {tab === "journal" && inspect && <section><h3>Frozen decision and evidence</h3>{entry.error && <p role="alert">{String(entry.error)}</p>}{entry.data && <><h4>What happened afterwards (read as of {entry.data.observation_as_of}; Paper figures are simulated)</h4><pre>{JSON.stringify(entry.data.later_evidence, null, 2)}</pre><h4>Decision as recorded</h4><pre>{JSON.stringify(entry.data.entry, null, 2)}</pre></>}</section>}

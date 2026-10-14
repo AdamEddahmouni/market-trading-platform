@@ -81,7 +81,20 @@ export const EvidenceReplaySchema = z.object({ schema_version: z.literal("eviden
     ranking_status: z.literal("NOT_A_PERFORMANCE_RANKING") }),
   simulation_only: z.literal(true), authority: Authority });
 
+const Sentiment = z.object({ state: z.string(), label: z.string().nullable().optional(),
+  probabilities: z.record(z.number()).nullable().optional(), reason: z.string().optional() }).passthrough();
+const IntelligenceOutput = z.object({ revision_id: z.string(), provider_id: z.string().nullable(), source_id: z.string().nullable(),
+  headline: z.string(), instrument_ids: z.array(z.string()), published_time: z.string().nullable(),
+  input_available_time: z.string(), processed_at: z.string(), window: z.string().nullable(),
+  event_categories: z.array(z.string()), sentiment: Sentiment, status: z.string(),
+  sentiment_model: z.object({ model_id: z.string().nullable(), model_revision: z.string().nullable() }).passthrough().nullable() }).passthrough();
+export const EvidenceIntelligenceSchema = z.object({ schema_version: z.literal("evidence-review-intelligence/1"), as_of: z.string(),
+  state: z.string(), reason: z.string().nullable().optional(), status: z.record(z.unknown()).nullable().optional(),
+  heartbeat_age_seconds: z.number().nullable().optional(), evidence_class: z.string().optional(),
+  outputs: z.array(IntelligenceOutput), label_counts: z.record(z.number()).optional(), authority: Authority }).passthrough();
+
 export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
+export type EvidenceIntelligence = z.infer<typeof EvidenceIntelligenceSchema>;
 export type EvidenceKnowledge = z.infer<typeof EvidenceKnowledgeSchema>;
 export type EvidencePlan = z.infer<typeof EvidencePlanSchema>;
 export type EvidenceJournal = z.infer<typeof EvidenceJournalSchema>;
@@ -102,6 +115,8 @@ export const evidenceApi = {
   status: () => fetchJson(`${BASE}/status`, EvidenceStatusSchema),
   knowledge: (fields: { as_of?: string; symbol?: string; revisions?: boolean }) =>
     fetchJson(`${BASE}/knowledge${query(fields)}`, EvidenceKnowledgeSchema),
+  intelligence: (fields: { as_of?: string; symbol?: string }) =>
+    fetchJson(`${BASE}/intelligence${query(fields)}`, EvidenceIntelligenceSchema),
   plan: (fields: { at?: string; max_requests?: string; request_allowance?: string; assume_available?: boolean }) =>
     fetchJson(`${BASE}/plan${query(fields)}`, EvidencePlanSchema),
   journal: (fields: { day?: string; as_of?: string }) => fetchJson(`${BASE}/journal${query(fields)}`, EvidenceJournalSchema),
