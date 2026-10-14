@@ -52,6 +52,28 @@ class RollingEventWindowTests(unittest.TestCase):
         window.dispatch(book_event("b-1", event_time_ns=T, bids=[], asks=[]))
         self.assertEqual(window.counts(), {INSTRUMENT: 1})
 
+    def test_duplicate_index_is_bounded_and_forgets_oldest_first(self):
+        window = RollingEventWindow(retain_ns=3600 * ONE_SEC, max_events_per_instrument=3, clock=lambda: T)
+        for name in ("a", "b", "c", "d"):
+            self.assertFalse(window.dispatch(quote_event(name, event_time_ns=T)).duplicate)
+        order, seen = window._seen[INSTRUMENT]
+        self.assertEqual((list(order), seen), (["b", "c", "d"], {"b", "c", "d"}))
+        self.assertTrue(window.dispatch(quote_event("d", event_time_ns=T)).duplicate)
+        self.assertFalse(window.dispatch(quote_event("a", event_time_ns=T)).duplicate)
+
+    def test_dispatch_cost_does_not_grow_with_the_window(self):
+        # Regression: membership was a linear scan of a 120k-entry deque on the provider callback thread,
+        # which starved the live feed (event lag grew past four minutes at the 2026-10-14 open).
+        import time
+
+        window = RollingEventWindow(retain_ns=3600 * ONE_SEC, clock=lambda: T)
+        for i in range(100_000):
+            window.dispatch(quote_event(f"fill-{i}", event_time_ns=T))
+        started = time.perf_counter()
+        for i in range(2_000):
+            window.dispatch(quote_event(f"probe-{i}", event_time_ns=T))
+        self.assertLess(time.perf_counter() - started, 1.0)
+
     def test_old_events_are_evicted_by_retention(self):
         window = RollingEventWindow(retain_ns=60 * ONE_SEC, clock=lambda: T)
         window.dispatch(quote_event("old", event_time_ns=T - 120 * ONE_SEC))

@@ -99,7 +99,9 @@ class RollingEventWindow:
         self.max_events = int(max_events_per_instrument)
         self.clock = clock
         self._events: dict[str, deque[EventV1]] = {}
-        self._seen: dict[str, deque[str]] = {}
+        # Bounded duplicate index: the deque fixes the order of forgetting, the set answers membership in O(1).
+        # This runs on the provider callback thread for every pushed event, so it must never scan.
+        self._seen: dict[str, tuple[deque[str], set[str]]] = {}
         self._lock = threading.Lock()
         self.metrics = dict(accepted=0, duplicates=0, ignored=0, evicted=0)
 
@@ -110,11 +112,14 @@ class RollingEventWindow:
             self.metrics["ignored"] += 1
             return _Receipt(event.event_id, False)
         with self._lock:
-            seen = self._seen.setdefault(iid, deque(maxlen=self.max_events))
+            order, seen = self._seen.setdefault(iid, (deque(), set()))
             if event.event_id in seen:
                 self.metrics["duplicates"] += 1
                 return _Receipt(event.event_id, True)
-            seen.append(event.event_id)
+            order.append(event.event_id)
+            seen.add(event.event_id)
+            if len(order) > self.max_events:
+                seen.discard(order.popleft())
             rows = self._events.setdefault(iid, deque())
             rows.append(event)
             self.metrics["accepted"] += 1
