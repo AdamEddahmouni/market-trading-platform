@@ -387,6 +387,9 @@ def serve(*, host: str, port: int) -> None:
         writer = start_persistence(store.data_mode)
         start_screener_warmup(store=store)
         print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
+        from market_platform_foundation.ui_api.paper_forecast_corpus import start_paper_forecast_corpus
+
+        print(json.dumps({"event": "ui_api.paper_forecast_corpus", **start_paper_forecast_corpus(store)}), flush=True)
         collector = start_collection(store.data_mode)
         server.serve_forever()
     finally:
