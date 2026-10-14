@@ -159,7 +159,8 @@ def output_schema(candidates: list[dict]) -> dict:
     ref_list = dict(type='array', items={'type': 'integer', 'enum': refs}, description='reference_index values of the selected candidate only; at most 12 distinct.')
     properties = dict(candidate_key={'type': 'integer', 'enum': list(range(len(candidates))) or [0],
             'description': 'The candidate_key of the selected candidate. It binds the instrument and its fixed weak and missing lists.'},
-        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string'},
+        rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string',
+            'description': 'Grounded solely in cited supporting_refs: a sentence that mentions news or sentiment must have the matching NEWS or SENTIMENT reference_index in supporting_refs or conflicting_refs, and no sentence may describe evidence that is not cited.'},
         supporting_refs={**ref_list, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
         conflicting_refs=ref_list, uncertainties={'type': 'array', 'items': {'type': 'string'}, 'description': 'At most 12 distinct strings.'})
     items = dict(type='object', additionalProperties=False, required=list(properties), properties=properties)

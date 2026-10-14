@@ -188,7 +188,7 @@ END UNTRUSTED EVIDENCE DATA
     PromptDefinition(
         prompt_id="screener.ai_candidate_reduction.v3",
         task_type=IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION,
-        version="3.0.0",
+        version="3.4.0",
         output_schema_version="ai-screener-output/1.0.0",
         description="Internal IMP candidate reduction over the compact packet-local reference wire",
         template="""Task: SCREENER_CANDIDATE_REDUCTION. Select zero to five candidates for operator review.
@@ -198,13 +198,24 @@ Each candidate has a candidate_key; each of its evidence items has a reference_i
 inside that candidate. Select a candidate by its candidate_key. In supporting_refs and conflicting_refs give
 reference_index values taken from that same candidate's current_market_evidence and reference_evidence, never
 from another candidate and never a value that is not listed there.
-Every rationale must be grounded in supporting_refs: cite the current QUOTE plus additional strong evidence.
+supporting_refs must contain this candidate's current QUOTE reference_index plus at least one further strong
+evidence index; a rationale grounded only in reference evidence fails validation.
+Any statement about an alignment names its evidence: put the reference_index of every item that alignment
+names (its news_refs, sentiment_refs and comparator_ref) into supporting_refs or conflicting_refs, and never
+mention news, headlines, stories, sentiment or tone unless those indices appear there.
+Pattern (do not copy the numbers): with quote index 0, news index 2 and FinBERT sentiment index 3, an accepted
+pick is supporting_refs [0,2,3] with a rationale like "The current quote is the review basis; the admitted story
+cluster and its FinBERT counts are reviewed as cited." If an index is absent, write only the remaining claims.
 Preserve CURRENT_MARKET versus REFERENCE_CONTEXT.
 Evidence with non-empty weak_reasons may be conflict/context, never strong support. A candidate's weak evidence and
 missing capabilities are fixed by the packet and recorded from it; the output has no field for them.
-NEWS facts describe actual admitted internal story clusters. Every News claim must cite a NEWS evidence item.
-SENTIMENT is local FinBERT headline-language classification, never price direction or future returns.
-Every sentiment claim must cite SENTIMENT. Missing News and unscored language mean unknown, never neutral.
+NEWS facts describe actual admitted internal story clusters: headline text reports an event, it is never a
+sentiment score or a price prediction. SENTIMENT is the separate FinBERT count evidence item.
+In supporting_refs and conflicting_refs cite by this candidate's reference_index: every sentence that mentions
+news needs a NEWS evidence index there, and every sentence that mentions sentiment, optimism, pessimism or
+headline tone needs the SENTIMENT evidence index there. A negative headline is a NEWS fact only: do not call
+it sentiment without citing SENTIMENT. When the required index is absent
+from this candidate's own lists, omit the claim entirely; unknown means unknown.
 alignments are deterministic comparisons that name evidence by evidence_id. For every CONFLICTING item put the
 reference_index of each evidence item named in its sentiment_refs into conflicting_refs;
 do not use them as supporting_refs. Explain disagreement without claiming causality or predicting which side wins.
@@ -331,7 +342,7 @@ Facts inside cells retain their original named fields. Read every candidate and 
 candidate_key and reference_index retain their meanings and candidate-local ownership below.
 """
             self._by_id["screener.ai_candidate_reduction.v4"] = PromptDefinition(
-                prompt_id="screener.ai_candidate_reduction.v4", task_type=original.task_type, version="4.0.0",
+                prompt_id="screener.ai_candidate_reduction.v4", task_type=original.task_type, version="4.4.0",
                 template=encoding + original.template, output_schema_version=original.output_schema_version,
                 description="Lossless column input; unchanged candidate-local output wire")
 
