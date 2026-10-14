@@ -81,6 +81,7 @@ def capture_decision_snapshot(
     if mode not in ('DEMO', 'PAPER', 'LIVE'):
         raise ValueError('JOURNAL_MODE_INVALID')
     research = isinstance(decision, StrategyEvaluationDecision)
+    receipt_owned = False
     missing = []
     body = decision.to_dict() if isinstance(decision, (StrategyEvaluationDecision, ActionDecisionV1)) else dict(decision)
     decision_time = body['as_of'] if research else body['decision_time']
@@ -146,12 +147,15 @@ def capture_decision_snapshot(
             blocker_codes=body.get('blocker_codes', []))
         if opportunity is None:
             opportunity = frozen_evidence.get('context', {}).get('opportunity')
+            # The action service admits an operator-selected Opportunity by identity and gate, without
+            # shared evidence. A receipt that froze and names that Opportunity is its own lineage.
+            receipt_owned = opportunity is not None and body.get('opportunity_id') == dict(opportunity).get('opportunity_id')
     opp = opportunity_v1_to_dict(opportunity) if isinstance(opportunity, OpportunityV1) else dict(opportunity) if opportunity is not None else None
     if opp is not None:
         created = datetime.fromtimestamp(opp['created_at_ns'] / 1_000_000_000, UTC)
         evidence_ids = set(source_refs.get('evidence_ids', source_refs.get('news_event_ids', ())))
         if (body['instrument_id'] not in opp['scope']['instrument_ids'] or created > cutoff
-                or not evidence_ids.intersection(r['id'] for r in opp.get('lineage_refs', ()))
+                or not (receipt_owned or evidence_ids.intersection(r['id'] for r in opp.get('lineage_refs', ())))
                 or (body.get('opportunity_id') and body['opportunity_id'] != opp['opportunity_id'])):
             raise ValueError('JOURNAL_OPPORTUNITY_LINEAGE_MISMATCH')
     trace_body = None

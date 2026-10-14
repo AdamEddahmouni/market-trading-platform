@@ -2449,6 +2449,8 @@
         "src/market_platform_foundation/providers/adapters/moomoo_paper.py",
         "src/market_platform_foundation/ui_api/paper_projections.py",
         "src/market_platform_foundation/ui_api/server.py",
+        "src/market_platform_foundation/ui_api/evidence_review.py",
+        "ui/src/components/evaluation/evidenceReviewFixture.json",
         "tests/fixtures/providers/tradier/**",
         "tests/fixtures/providers/moomoo/**"
       ],

@@ -250,6 +250,32 @@ class DecisionJournalTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'SNAPSHOT_IDENTITY_MISMATCH'):
             journal.capture_decision_snapshot(decision=receipt, evidence_snapshot=snapshot, mode='PAPER')
 
+    def opportunity_receipt(self, *, named=True, **changes):
+        receipt = self.action_receipt()
+        opportunity = {'opportunity_id': 'OPP-1', 'created_at_ns': ns('2026-10-12T13:00:00Z'),
+                       'scope': {'instrument_ids': ['SIM:AAA']}, 'lineage_refs': [], **changes}
+        receipt['evidence_snapshot']['context'] = {'opportunity': opportunity}
+        receipt['opportunity_id'] = 'OPP-1' if named else None
+        return receipt
+
+    def test_operator_selected_opportunity_frozen_in_the_receipt_needs_no_shared_evidence(self):
+        # The action service admits a requested Opportunity by identity and gate alone.
+        entry = journal.capture_decision_snapshot(decision=self.opportunity_receipt(), mode='PAPER').to_dict()
+        self.assertEqual((entry['opportunity_id'], entry['opportunity']['opportunity_id']), ('OPP-1', 'OPP-1'))
+        for changes in ({'scope': {'instrument_ids': ['SIM:BBB']}}, {'created_at_ns': ns('2026-10-12T14:00:01Z')}):
+            with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
+                journal.capture_decision_snapshot(decision=self.opportunity_receipt(**changes), mode='PAPER')
+
+    def test_unnamed_or_separately_supplied_opportunity_still_needs_shared_evidence(self):
+        with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
+            journal.capture_decision_snapshot(decision=self.opportunity_receipt(named=False), mode='PAPER')
+        supplied = self.opportunity_receipt()['evidence_snapshot']['context']['opportunity']
+        with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
+            journal.capture_decision_snapshot(decision=self.action_receipt(), opportunity=supplied, mode='PAPER')
+        with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
+            journal.capture_decision_snapshot(decision=self.opportunity_receipt(), opportunity=dict(supplied, opportunity_id='OPP-2'),
+                                              mode='PAPER')
+
     def test_action_snapshot_rejects_wrong_selection_instrument(self):
         receipt = self.action_receipt()
         receipt['evidence_snapshot']['selection']['instrument_id'] = 'SIM:WRONG'

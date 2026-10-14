@@ -48,8 +48,28 @@ python tools/research/professor_integration_demo.py --output-dir <fresh-disposab
 
 The CLI installs the existing offline network/process guard and refuses a pre-existing fixture database. Output `demonstration.json` labels synthetic news and curated price data, simulated model/budget facts, exact source references, overnight pause, 03:30 catch-up, budget/provider refusals, immutable earlier/later journals, restart preservation and deterministic three-policy replay. No actual trading session is claimed.
 
+## Operator evidence review (read-only)
+
+Portfolio → Outcome evaluation carries an **Evidence review** section. It calls five GET routes, all `audit.read` with the Paper ledger account scope, composed in `ui_api/evidence_review.py`:
+
+| Route | Shows | Source |
+|---|---|---|
+| `/evaluation/evidence/status` | Current New York inference window, the schedule, the four collection gate states, stored-news count, the saved engine and model | `inference_session`, existing collection status functions, synthesis settings |
+| `/evaluation/evidence/knowledge?as_of=&symbol=&source=&provider=&limit=&revisions=` | Stored news as it was known at a cutoff, with source, link, rights note and correction linkage | `StoredNewsRepository.retrieve` on the application's own open local state |
+| `/evaluation/evidence/plan?at=&max_requests=&max_tokens=&max_backlog=&request_allowance=&assume_available=` | What a catch-up would plan from evidence stored now: planned and deferred records with reasons, bounds, recorded budget | `plan_local_inference_dry_run` |
+| `/evaluation/evidence/journal?day=&as_of=&decision_id=` | Action Decision receipts of one New York day as frozen journal entries, with the later Paper execution and next-session observations at the same cutoff | `capture_decision_snapshot`, `build_daily_journal`, the prospective evaluation projection |
+| `/evaluation/evidence/replay?date=&as_of=` | The curated fixture day rebuilt as of a clock and given to the three registered policies | `EvaluationReplayHarness.snapshot_at` |
+
+Every response carries an `authority` block with zero provider calls, zero inference calls, no budget reservation, no state write and no execution authority. A cutoff later than the server clock is refused. The routes open no store of their own, start no collector and create no budget file.
+
+What the plan reports honestly: model availability is never probed, so without `assume_available=1` every record defers with `MODEL_AVAILABILITY_NOT_VERIFIED`; the flag is an operator assumption for a preview and is labelled `OPERATOR_ASSUMPTION_FOR_PREVIEW`. Stored bytes are not a request budget, so without `request_allowance` (the operator's token bound for the prompt and answer of one request) every record defers with `TOKEN_ESTIMATE_NOT_VERIFIED`. Operator bounds only tighten the recorded daily budget. `at` may name the present or a later instant, for example tomorrow 03:30 New York; evidence is always read as of the present. No catch-up worker exists, so `processed_state` is `NO_COMPLETED_ANALYSIS_RECORDED`.
+
+What the journal reports honestly: a receipt the journal contract refuses is listed under `unjournaled` with its reason and is never repaired. Operator action is null unless a decision trace records one. Paper execution appears only where the ledger holds the linked episode. Realised P&L is not computed here. A receipt that froze and names an operator-selected Opportunity is accepted on identity and clock, matching the action service; an unnamed or separately supplied Opportunity still needs shared evidence.
+
+The replay view is `SOFTWARE_FIXTURE_ONLY`, states `NOT_A_PERFORMANCE_RANKING`, and offers only the days and clocks present in the fixture pack.
+
 ## Operational status and remaining work
 
-The implementation is a tested library/tool integration and is undeployed. Existing UI surfaces are retained; there is no new dashboard or endpoint. Daily journal/catch-up projections are not yet wired into the serving UI/controller or an unattended service. The demo invokes existing analysis policies directly; it does not prove live Screener/Opportunity Engine candidate generation. Fundamental/company/social document ingestion and general semantic search remain with their existing infrastructures; this increment adds the durable-news retrieval bridge only.
+The implementation is tested source and is undeployed. The evidence review section above is its only operator surface; there is no new dashboard, worker or scheduler. The catch-up plan is a projection: nothing dispatches it, and no unattended service exists. Stored news is empty until collection has been deployed, migrated to schema 13 and separately enabled. The demo invokes existing analysis policies directly; it does not prove live Screener/Opportunity Engine candidate generation. Fundamental/company/social document ingestion and general semantic search remain with their existing infrastructures; this increment adds the durable-news retrieval bridge only.
 
 Production requires explicit deployment/migration approval, real source rights/targets/capacity, model/provider availability evidence and any separately authorized operating window. Paid inference, Paper automation, Live trading and unattended registration remain independently prohibited by the sprint request.

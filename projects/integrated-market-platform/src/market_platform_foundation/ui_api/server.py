@@ -489,6 +489,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path.startswith("/evaluation/evidence/"):
+                try:
+                    from .evidence_review import read_evidence
+                    payload = read_evidence(self.store, path, query)
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("EVIDENCE_REVIEW_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path == "/screener/action-decisions":
                 from .screener_action import action_service
                 instrument = (query.get("instrument") or [""])[0]
