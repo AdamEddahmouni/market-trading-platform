@@ -18,6 +18,7 @@ from typing import Any, Callable, Mapping
 from uuid import uuid4
 
 from ..local_state.connection import LocalStateConnection, transient_storage_error
+from ..market_data.capacity import configured_max_database_bytes
 from .knowledge import append_revision, article_identity
 from .rss_feeds import FEEDS
 
@@ -83,11 +84,12 @@ def _backoff(interval: float, failures: int, provider_state: str) -> float:
 class NewsCollector:
     def __init__(self, connection: LocalStateConnection, jobs: list[CollectionJob],
                  fetch: Callable[[CollectionJob], tuple[list, dict]], *, clock: Callable[[], float] = time.time,
-                 max_database_bytes: int = 512 * 1024 * 1024) -> None:
+                 max_database_bytes: int | None = None) -> None:
         if not jobs or len(jobs) > MAX_JOBS or len({j.id for j in jobs}) != len(jobs):
             raise ValueError("COLLECTION_TARGETS_INVALID")
         self.connection, self.jobs, self.fetch, self.clock = connection, jobs, fetch, clock
-        self.max_database_bytes = max_database_bytes
+        # Same shared DB+WAL bound as the market writer (512 MiB unless the operator opted in).
+        self.max_database_bytes = configured_max_database_bytes() if max_database_bytes is None else max_database_bytes
         self.owner = uuid4().hex
         self._stop = threading.Event()
         self._thread: threading.Thread | None = None

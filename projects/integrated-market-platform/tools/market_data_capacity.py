@@ -45,8 +45,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument('--database', type=Path, help='Existing SQLite store to inspect read-only; never created/migrated')
     parser.add_argument('--profile', type=Path, help='Explicit JSON workload assumptions; no symbols selected')
     parser.add_argument('--hours', type=float, default=12, help='Modeled calendar window, default 12 hours')
-    parser.add_argument('--max-database-bytes', type=int, default=DEFAULT_MAX_DATABASE_BYTES,
-                        help='May lower the shipped ceiling, never raise it')
+    parser.add_argument('--max-database-bytes', type=int, default=None,
+                        help='May lower the configured ceiling (IMP_PF01_MAX_DATABASE_MIB, default '
+                             f'{DEFAULT_MAX_DATABASE_BYTES // 1024**2} MiB), never raise it')
     args = parser.parse_args(argv)
     if args.database is None and args.profile is None:
         parser.error('at least one of --database or --profile is required')

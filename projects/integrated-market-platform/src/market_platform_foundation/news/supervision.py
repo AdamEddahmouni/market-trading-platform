@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping
 from uuid import uuid4
 from ..local_state.connection import LocalStateConnection, transient_storage_error
+from ..market_data.capacity import DEFAULT_MAX_DATABASE_BYTES, configured_max_database_bytes
 
 SUPERVISION_JOB = '__pf01_supervision__'
 LEASE_SECONDS = 120
@@ -104,7 +105,9 @@ class CollectionSupervisor:
         stat=connection.path.stat(); self._identity=(stat.st_dev,stat.st_ino)
         self._evidence=_defaults({'state':'DISABLED','reason':None})
         self._saved_at=self.clock()
+        self._max_bytes=DEFAULT_MAX_DATABASE_BYTES
         if env.get('IMP_PF01_SUPERVISION_ENABLED') != '1': return
+        self._max_bytes=configured_max_database_bytes(env)  # malformed or unapproved: refuse to supervise
         directory=env.get('IMP_STATE_DIR','')
         if not directory or not Path(directory).is_absolute() or (Path(directory)/'imp-state.sqlite3').resolve()!=connection.path.resolve():
             raise ValueError('SUPERVISOR_STORAGE_MISMATCH')
@@ -165,7 +168,7 @@ class CollectionSupervisor:
             size=stat.st_size+(wal.stat().st_size if wal.is_file() else 0)
         except OSError: return 'STORAGE_UNAVAILABLE'  # possibly a drive that returns
         if (stat.st_dev,stat.st_ino)!=self._identity: return 'STORAGE_REPLACED'
-        if size+8*1024*1024>512*1024*1024: return 'STORAGE_BOUND_EXCEEDED'
+        if size+8*1024*1024>self._max_bytes: return 'STORAGE_BOUND_EXCEEDED'
         return None
 
     def _storage_ok(self) -> bool:

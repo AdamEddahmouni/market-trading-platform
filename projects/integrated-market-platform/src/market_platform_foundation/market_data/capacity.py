@@ -6,6 +6,7 @@ Forecasts are explicit workload models, never live-traffic qualification.
 from __future__ import annotations
 
 import math
+import os
 import shutil
 import sqlite3
 import time
@@ -16,7 +17,27 @@ from typing import Any, Mapping
 from ..local_state.migrations import current_schema_version
 
 DEFAULT_MAX_DATABASE_BYTES = 512 * 1024**2
+# Owner-approved 2026-10-14: an operator may opt one store in to at most 8 GiB through
+# IMP_PF01_MAX_DATABASE_MIB. Unset keeps the shipped 512 MiB ceiling everywhere.
+APPROVED_MAX_DATABASE_BYTES = 8 * 1024**3
+MAX_DATABASE_MIB_ENV = 'IMP_PF01_MAX_DATABASE_MIB'
 STORAGE_RESERVE_BYTES = 8 * 1024**2  # existing writer's four 2 MiB batches
+
+
+def configured_max_database_bytes(env: Mapping[str, str] | None = None) -> int:
+    """The shared DB+WAL hard bound every PF-01 writer and check enforces.
+
+    Fails closed: a malformed value or one above the approved ceiling raises
+    instead of silently falling back to either bound.
+    """
+    value = (os.environ if env is None else env).get(MAX_DATABASE_MIB_ENV, '').strip()
+    if not value:
+        return DEFAULT_MAX_DATABASE_BYTES
+    if not value.isdigit() or not 2 <= int(value):
+        raise ValueError('CAPACITY_INVALID_CONFIGURED_CEILING')
+    if int(value) * 1024**2 > APPROVED_MAX_DATABASE_BYTES:
+        raise ValueError('CAPACITY_UNAPPROVED_HIGHER_CEILING')
+    return int(value) * 1024**2
 WARNING_FRACTION = 0.8
 DAY_SECONDS = 86400
 
@@ -34,17 +55,19 @@ def _number(value: Any, name: str, minimum: float = 0) -> float:
 
 
 def capacity_status(database_bytes: int, *, wal_bytes: int = 0,
-                    max_database_bytes: int = DEFAULT_MAX_DATABASE_BYTES,
-                    free_disk_bytes: int | None = None) -> dict[str, Any]:
-    """Cheap pure runtime warning using the same shared DB+WAL hard bound.
+                    max_database_bytes: int | None = None,
+                    free_disk_bytes: int | None = None,
+                    env: Mapping[str, str] | None = None) -> dict[str, Any]:
+    """Cheap runtime warning using the same shared DB+WAL hard bound.
 
     Free disk is additional allocatable space, so subtract the emergency reserve
     once from it, not the existing database size again. No caller may raise the
-    shipped 512 MiB ceiling through this module.
+    ceiling above configured_max_database_bytes(env) through this module.
     """
+    ceiling = configured_max_database_bytes(env)
     used = _integer(database_bytes, 'DATABASE_BYTES') + _integer(wal_bytes, 'WAL_BYTES')
-    maximum = _integer(max_database_bytes, 'MAX_DATABASE_BYTES', 2 * 1024**2)
-    if maximum > DEFAULT_MAX_DATABASE_BYTES:
+    maximum = _integer(ceiling if max_database_bytes is None else max_database_bytes, 'MAX_DATABASE_BYTES', 2 * 1024**2)
+    if maximum > ceiling:
         raise ValueError('CAPACITY_UNAPPROVED_HIGHER_CEILING')
     budget_remaining = maximum - used - STORAGE_RESERVE_BYTES
     disk_remaining = None if free_disk_bytes is None else _integer(free_disk_bytes, 'FREE_DISK_BYTES') - STORAGE_RESERVE_BYTES
@@ -146,7 +169,7 @@ def forecast(workloads: tuple[Workload, ...], *, duration_seconds: float,
             'assumptions': 'DECLARED_ROLLING_24H_ACTIVITY_UPPER_BOUND_NO_HOLIDAY_OR_SESSION_ALIGNMENT_INFERRED'}
 
 
-def inspect_storage(path: Path, *, max_database_bytes: int = DEFAULT_MAX_DATABASE_BYTES,
+def inspect_storage(path: Path, *, max_database_bytes: int | None = None,
                     max_vm_steps: int = 5_000_000, timeout_seconds: float = 2.0) -> dict[str, Any]:
     """Read an existing SQLite snapshot with bounded query work and results.
 

@@ -90,11 +90,11 @@ def _schema(path: Path) -> dict[str, Any]:
     return _check('schema', READY)
 
 
-def _capacity(path: Path) -> dict[str, Any]:
+def _capacity(path: Path, env: Mapping[str, str]) -> dict[str, Any]:
     try:
         wal = Path(str(path) + '-wal')
         status = capacity_status(path.stat().st_size, wal_bytes=wal.stat().st_size if wal.is_file() else 0,
-                                 free_disk_bytes=shutil.disk_usage(path.parent).free)
+                                 free_disk_bytes=shutil.disk_usage(path.parent).free, env=env)
     except (OSError, ValueError) as exc:
         return _check('capacity', UNKNOWN, str(exc) if isinstance(exc, ValueError) else 'CAPACITY_UNAVAILABLE')
     state, reason = {'READY': (READY, None), 'WARNING': (NOT_VERIFIED, 'CAPACITY_WARNING_OPERATOR_REVIEW')}.get(
@@ -195,7 +195,7 @@ def preflight(env: Mapping[str, str], *, clock=time.time) -> dict[str, Any]:
     checks.append(storage)
     if path is not None:
         schema = _schema(path)
-        checks += [schema, _capacity(path)]
+        checks += [schema, _capacity(path, env)]
         # Owner rows exist only at the current schema; an older store is reported by the schema check.
         checks += _owners(path, env, now) if schema['state'] == READY else []
     checks += _demand(env, now)

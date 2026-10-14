@@ -24,6 +24,7 @@ from typing import Any, Mapping
 from uuid import uuid4
 
 from ..local_state.connection import LocalStateConnection, transient_storage_error
+from .capacity import configured_max_database_bytes
 
 MAX_RECORD_BYTES = 128 * 1024
 MAX_BATCH_BYTES = 2 * 1024 * 1024
@@ -122,13 +123,18 @@ def configured_selection(env: Mapping[str, str]) -> tuple[tuple[str, ...], tuple
 class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
                  queue_limit: int = 512, batch_limit: int = 64,
-                 max_database_bytes: int = 512 * 1024 * 1024, acquire: bool = True,
+                 max_database_bytes: int | None = None, acquire: bool = True,
                  idle_release_seconds: float | None = IDLE_RELEASE_SECONDS,
                  suppress_unchanged_l1: bool | None = None) -> None:
         validate_capture_selection(sources, symbols)
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
             raise ValueError('MARKET_CAPTURE_LIMITS_INVALID')
-        if not MAX_BATCH_BYTES <= max_database_bytes <= 512 * 1024 * 1024:
+        try:
+            ceiling = configured_max_database_bytes()
+        except ValueError:
+            raise ValueError('MARKET_CAPTURE_STORAGE_LIMIT_INVALID') from None
+        max_database_bytes = ceiling if max_database_bytes is None else max_database_bytes
+        if not MAX_BATCH_BYTES <= max_database_bytes <= ceiling:
             raise ValueError('MARKET_CAPTURE_STORAGE_LIMIT_INVALID')
         self.sources, self.symbols = set(sources), set(symbols)
         self.queue_limit, self.batch_limit = queue_limit, batch_limit
