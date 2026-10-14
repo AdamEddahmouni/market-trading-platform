@@ -37,6 +37,7 @@ def _day(ns: int) -> str:
 class LiveForecastHook:
     def __init__(self, root: Path, *, window_getter=None, clock=time.time_ns) -> None:
         from ..intelligence.production.model_store import load_production_specialist_model
+        from ..intelligence.production.live_training import scored_artifacts_match
         from ..strategy.path_a_forecast_producer import load_paper_demo_calibration
         from ..strategy.path_a_live_forecast import LiveForecastArtifacts, load_preregistration, preregistration_valid
 
@@ -65,7 +66,9 @@ class LiveForecastHook:
                 continue
             model = load_production_specialist_model(directory / "model")
             calibration = load_paper_demo_calibration(directory / "calibration")
-            if not evaluation.get("eligible") or model is None or calibration is None or model.model_id != evaluation.get("model_id"):
+            if (not evaluation.get("eligible") or not scored_artifacts_match(
+                    model, calibration, model_id=evaluation.get("model_id"),
+                    calibration_model_id=evaluation.get("calibration_model_id"), artifact_hashes=evaluation.get("artifact_hashes"))):
                 # Only a build that passed its preregistered holdout rule, with the very artifacts it scored, is used.
                 self.refused[iid] = "NOT_ELIGIBLE_OR_ARTIFACT_MISMATCH"
                 continue

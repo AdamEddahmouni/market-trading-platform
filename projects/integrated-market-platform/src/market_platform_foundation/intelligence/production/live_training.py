@@ -24,12 +24,13 @@ from .errors import ProductionTrainingError
 from .identity import path_a_direction_target, path_a_horizon
 from .live_feature_corpus import load_training_examples
 from .model import ProductionTrainingExample, _extract_features, fit_production_specialist
-from .model_store import load_production_specialist_model
+from .model_store import load_production_specialist_model, production_model_to_dict
 from .readiness import TRAINING_MANIFEST_KIND
 
 BUILD_SCHEMA_VERSION = "imp-live-forecast-build/1.0.0"
 CORPUS_EVIDENCE_AUTHORITY = "PROSPECTIVE_FEATURE_EVIDENCE"
 SPLIT_FRACTIONS = (0.6, 0.2, 0.2)
+EXCLUSION_SEMANTICS = "DECISION_TO_LABEL_AVAILABILITY_INCLUSIVE"
 
 # Preregistered eligibility rule. Fixed in code before any holdout is scored; a build never edits it.
 ELIGIBILITY_RULE_ID = "path-a-live-holdout-brier-skill/1"
@@ -116,12 +117,41 @@ def eligibility(scores: dict[str, Any]) -> tuple[bool, list[str]]:
     return not reasons, reasons
 
 
+def scored_artifacts_match(model, calibration, *, model_id, calibration_model_id, artifact_hashes) -> bool:
+    """Bind the consumed canonical artifacts to both identities and payload hashes recorded by the build."""
+    from ...strategy.path_a_forecast_producer import calibration_artifact_to_dict
+
+    if (model is None or calibration is None or not isinstance(artifact_hashes, dict)
+            or not model_id or not calibration_model_id
+            or model.model_id != model_id or calibration.calibration_model_id != calibration_model_id):
+        return False
+    try:
+        return (artifact_hashes.get("model_payload_sha256") == sha256_bytes(canonical_bytes(production_model_to_dict(model)))
+                and artifact_hashes.get("calibration_payload_sha256") == sha256_bytes(canonical_bytes(calibration_artifact_to_dict(calibration))))
+    except (TypeError, ValueError):
+        return False
+
+
 def build_instrument(instrument_id: str, examples: list[ProductionTrainingExample], *, output_dir: Path,
                      decision_time_ns: int, mode: str = "paper") -> dict[str, Any]:
     """One instrument's build record. Every refusal is recorded with its reason; nothing is forced."""
     from ...strategy.path_a_forecast_producer import load_paper_demo_calibration
     from .training_build import build_path_a_production_artifacts
 
+    # Validate labels in every split, including the untouched holdout, before sorting, fitting or scoring.
+    horizon = path_a_horizon()
+    invalid = dict(instrument_id=instrument_id, samples=len(examples), eligible=False, status="BLOCKED")
+    for example in examples:
+        if type(example.label) is not int or example.label not in (0, 1):
+            return dict(invalid, reason_codes=["INVALID_LABEL"])
+        if type(example.snapshot.decision_time_ns) is not int:
+            return dict(invalid, reason_codes=["DECISION_TIME_UNKNOWN"])
+        if type(example.label_available_time_ns) is not int:
+            return dict(invalid, reason_codes=["LABEL_AVAILABILITY_UNKNOWN"])
+        if example.label_available_time_ns <= example.snapshot.decision_time_ns:
+            return dict(invalid, reason_codes=["LABEL_AVAILABLE_BEFORE_FORECAST"])
+        if example.label_available_time_ns < example.snapshot.decision_time_ns + horizon.duration_ns:
+            return dict(invalid, reason_codes=["LABEL_AVAILABLE_BEFORE_HORIZON_COMPLETION"])
     split = time_ordered_split(examples)
     record: dict[str, Any] = dict(instrument_id=instrument_id, samples=len(examples), train=len(split.train),
                                   calibration=len(split.calibration), holdout=len(split.holdout),
@@ -133,6 +163,10 @@ def build_instrument(instrument_id: str, examples: list[ProductionTrainingExampl
     calibration_cutoff_ns = max(e.label_available_time_ns for e in split.calibration)
     if calibration_cutoff_ns >= decision_time_ns:
         return dict(record, status="BLOCKED", reason_codes=["CALIBRATION_LABELS_NOT_YET_AVAILABLE"])
+    if any(e.label_available_time_ns >= decision_time_ns for e in split.holdout):
+        return dict(record, status="BLOCKED", reason_codes=["HOLDOUT_LABELS_NOT_YET_AVAILABLE"])
+    if any(e.label_available_time_ns >= decision_time_ns for e in examples):
+        return dict(record, status="BLOCKED", reason_codes=["CORPUS_LABELS_NOT_YET_AVAILABLE"])
     try:
         model = fit_production_specialist(list(split.train), target=target, horizon=horizon, training_cutoff_ns=training_cutoff_ns)
     except ProductionTrainingError as error:
@@ -147,7 +181,8 @@ def build_instrument(instrument_id: str, examples: list[ProductionTrainingExampl
                     scope=dict(instrument_ids=[instrument_id], context_id=f"paper-live-corpus:{instrument_id}"),
                     examples=[_feature_row(e) for e in split.train], calibration_examples=calibration_rows,
                     source=dict(schema=BUILD_SCHEMA_VERSION, split_fractions=list(SPLIT_FRACTIONS),
-                                holdout_excluded=True, holdout_first_decision_ns=split.holdout[0].snapshot.decision_time_ns if split.holdout else None))
+                                holdout_excluded=True, exclusion_semantics=EXCLUSION_SEMANTICS,
+                                holdout_first_decision_ns=split.holdout[0].snapshot.decision_time_ns if split.holdout else None))
     directory = output_dir / instrument_id
     directory.mkdir(parents=True, exist_ok=True)
     manifest_path = directory / "training-manifest.json"
@@ -165,6 +200,9 @@ def build_instrument(instrument_id: str, examples: list[ProductionTrainingExampl
     calibration = load_paper_demo_calibration(directory / "calibration")
     if calibration is None:
         return dict(record, status="BLOCKED", reason_codes=["CALIBRATION_ARTIFACT_UNREADABLE"])
+    if not scored_artifacts_match(stored, calibration, model_id=built.model_id,
+                                  calibration_model_id=built.calibration_model_id, artifact_hashes=built.artifact_hashes):
+        return dict(record, status="BLOCKED", reason_codes=["REBUILT_ARTIFACT_IDENTITY_OR_HASH_MISMATCH"])
     base_rate = sum(e.label for e in split.train) / len(split.train)
     scores = score_holdout(stored, calibration, split.holdout, base_rate=base_rate)
     ok, reasons = eligibility(scores)
@@ -179,13 +217,15 @@ def _iso_ns(value: str) -> int:
     return (moment - datetime(1970, 1, 1, tzinfo=UTC)) // timedelta(microseconds=1) * 1_000
 
 
-def excluded(exclusions: Iterable[dict[str, Any]], instrument_id: str, decision_ns: int) -> str | None:
-    """The reason a recorded data-quality exclusion removes this decision, or ``None``. Bounds are inclusive."""
+def excluded(exclusions: Iterable[dict[str, Any]], instrument_id: str, decision_ns: int,
+             label_available_time_ns: int | None = None) -> str | None:
+    """Exclude any overlap with the decision-to-label window; decision-only callers retain inclusive bounds."""
     for rule in exclusions:
         scope = rule.get("instrument_ids")
         if scope != "ALL" and instrument_id not in (scope or ()):
             continue
-        if _iso_ns(rule["decision_time_from"]) <= decision_ns <= _iso_ns(rule["decision_time_to"]):
+        window_end = decision_ns if label_available_time_ns is None else label_available_time_ns
+        if decision_ns <= _iso_ns(rule["decision_time_to"]) and window_end >= _iso_ns(rule["decision_time_from"]):
             return str(rule.get("reason") or "EXCLUDED")
     return None
 
@@ -193,13 +233,13 @@ def excluded(exclusions: Iterable[dict[str, Any]], instrument_id: str, decision_
 def build_from_corpus(corpus_paths: Iterable[Path], *, output_root: Path, decision_time_ns: int,
                       instruments: Iterable[str] | None = None, mode: str = "paper",
                       exclusions: Iterable[dict[str, Any]] = ()) -> dict[str, Any]:
-    """``exclusions`` are data-quality intervals recorded before training; their decisions never reach any split."""
+    """Pre-recorded data-quality intervals remove all overlapping decision-to-label windows from every split."""
     paths = sorted(Path(p) for p in corpus_paths)
     exclusions = list(exclusions)
     grouped: dict[str, list[ProductionTrainingExample]] = {}
     dropped: dict[str, int] = {}
     for (instrument_id, decision_ns), example in load_training_examples(paths):
-        reason = excluded(exclusions, instrument_id, decision_ns)
+        reason = excluded(exclusions, instrument_id, decision_ns, example.label_available_time_ns)
         if reason is not None:
             dropped[reason] = dropped.get(reason, 0) + 1
             continue
@@ -214,7 +254,7 @@ def build_from_corpus(corpus_paths: Iterable[Path], *, output_root: Path, decisi
     summary = dict(schema_version=BUILD_SCHEMA_VERSION, build_id=build_id, built_at=datetime.fromtimestamp(decision_time_ns / 1e9, UTC).isoformat(),
                    corpus_files=[p.name for p in paths], corpus_digest=corpus_digest, eligibility_rule=ELIGIBILITY_RULE_ID,
                    minimum_holdout_samples=MINIMUM_HOLDOUT_SAMPLES, split_fractions=list(SPLIT_FRACTIONS),
-                   exclusions=exclusions, excluded_examples=dropped,
+                   exclusions=exclusions, exclusion_semantics=EXCLUSION_SEMANTICS, excluded_examples=dropped,
                    instruments={r["instrument_id"]: {k: r.get(k) for k in ("status", "eligible", "reason_codes", "eligibility_reasons", "samples",
                                                                           "train", "calibration", "holdout", "model_id", "calibration_model_id")}
                                 for r in results},

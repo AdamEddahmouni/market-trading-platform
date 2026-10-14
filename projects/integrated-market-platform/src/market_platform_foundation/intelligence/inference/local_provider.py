@@ -26,7 +26,7 @@ import re
 import subprocess
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
@@ -290,6 +290,17 @@ class LocalChatInferenceProvider:
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
+        return self._run(packet, rendered_prompt=rendered_prompt, config=config)
+
+    def preflight(self, packet, *, rendered_prompt, config):
+        """Count the full chat template under the same local admission controls; never generate."""
+        response = self._run(packet, rendered_prompt=rendered_prompt, config=config, preflight_only=True)
+        window = getattr(getattr(self._server, 'manifest', None), 'context', None)
+        return {'accepted': response.error_code is None, 'input_tokens': response.tokens_input,
+                'context_window': window, 'context_fit': False if response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
+                else True if response.error_code is None else None, 'reason': response.error_message or None}
+
+    def _run(self, packet, *, rendered_prompt, config, preflight_only=False):
         from .local_resources import ADMISSION, SLOT, ResourceMonitor
         started = time.perf_counter()
         if not ADMISSION.acquire(blocking=False):
@@ -319,7 +330,10 @@ class LocalChatInferenceProvider:
                     return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,self._server.last_readiness['rejection_reason'],ParsingStatus.PROVIDER_ERROR,started)
             if monitor and monitor.check():
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
-            response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
+            if preflight_only:
+                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor, preflight_only=True)
+            else:
+                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
             if monitor:
                 monitor.close()
                 if monitor.failure:
@@ -334,14 +348,17 @@ class LocalChatInferenceProvider:
                         'peak_commit_bytes':monitor.peak_commit_bytes or None,"failure": monitor.failure,
                         'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
                         'startup_ms':getattr(self._server,'last_start_ms',None)}
-                    if response is None or response.error_code or monitor.failure or stop():
+                    # Oversized count-only groups are bisected using the same owned runtime.
+                    # All operational/resource failures still stop and reap it.
+                    oversize_count = preflight_only and response is not None and response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
+                    if response is None or (response.error_code and not oversize_count) or monitor.failure or stop():
                         self._server.stop()
             finally:
                 if isinstance(self._server,LocalLlamaServer):self._server.should_stop=lambda:False
                 SLOT.release()
                 ADMISSION.release()
 
-    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None):
+    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None, preflight_only=False):
         started = time.perf_counter()
         if not is_loopback_url(self.base_url):
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_ENDPOINT_NOT_LOOPBACK",
@@ -371,22 +388,34 @@ class LocalChatInferenceProvider:
                 "chat_template_kwargs": {"enable_thinking": False},
                 "messages": [{"role": "system", "content": "Return ONLY valid JSON matching the schema in the user prompt."},
                              {"role": "user", "content": rendered_prompt}]}
-        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION:
+        if preflight_only or packet.task_type in (IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION,
+                IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, IntelligenceTaskType.SCREENER_ACTION_DECISION):
             try:
+                window = getattr(getattr(self._server, 'manifest', None), 'context', None)
+                if type(window) is not int or window <= 0:
+                    raise ValueError('LOCAL_CONTEXT_UNAVAILABLE')
                 status, templated = self._post(f"{self.base_url}/apply-template",
                     json.dumps({"messages":body["messages"],"chat_template_kwargs":body["chat_template_kwargs"]}).encode("utf-8"),config.timeout_seconds)
                 prompt=json.loads(templated)["prompt"] if status==200 else None
-                if not isinstance(prompt,str): raise ValueError("LOCAL_TEMPLATE_UNAVAILABLE")
+                if not isinstance(prompt,str) or not prompt: raise ValueError("LOCAL_TEMPLATE_UNAVAILABLE")
+                if monitor and monitor.check():
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
                 status, tokenized=self._post(f"{self.base_url}/tokenize",json.dumps({"content":prompt,"add_special":True}).encode("utf-8"),config.timeout_seconds)
                 tokens=json.loads(tokenized)["tokens"] if status==200 else None
-                if not isinstance(tokens,list):raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
-                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":config.max_tokens,"context_window":self._server.manifest.context}
-                if len(tokens)+config.max_tokens>self._server.manifest.context:
-                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_EXCEEDED",ParsingStatus.PROVIDER_ERROR,started)
+                if not isinstance(tokens,list) or not tokens or any(type(token) is not int or token < 0 for token in tokens):
+                    raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
+                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":config.max_tokens,"context_window":window}
+                if monitor and monitor.check():
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
+                if len(tokens)+config.max_tokens>window:
+                    return replace(self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_EXCEEDED",ParsingStatus.PROVIDER_ERROR,started), tokens_input=len(tokens))
             except (ValueError,KeyError,TypeError,OSError,URLError):
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_PREFLIGHT_FAILED",ParsingStatus.PROVIDER_ERROR,started)
-        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION and getattr(packet, 'should_stop', lambda: False)():
+        if getattr(packet, 'should_stop', lambda: False)():
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
+        if preflight_only:
+            return ProviderInferenceResponse(raw_text='', provider_id=self.provider_id, model_id=self.model_id,
+                                             tokens_input=len(tokens), inference_dispatched=False)
         try:
             status, raw = self._post(f"{self.base_url}/v1/chat/completions", json.dumps(body).encode("utf-8"),
                                      config.timeout_seconds)

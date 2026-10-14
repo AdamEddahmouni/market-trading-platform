@@ -216,7 +216,7 @@ class ScreenerAiCoverage:
         mark = time.perf_counter()
         report_stage("PLANNING", eligible_count=run.eligible_count)
         report_stage("TOKEN_PLANNING", eligible_count=run.eligible_count)
-        batches = self._plan(run, eligible, candidates)
+        batches = self._plan(run, eligible, candidates, should_stop=should_stop)
         del candidates
         run.timings["planning_ms"] = (time.perf_counter() - mark) * 1000
         report_stage("REUSE_ASSESSMENT", batches_planned=len(batches), required_tokens=run.plan["required"]["tokens"] if self._budget is not None else None)
@@ -396,6 +396,9 @@ class ScreenerAiCoverage:
     def _context_window(self) -> int | None:
         from ..intelligence.inference.anthropic_models import CLAUDE_MODELS
 
+        if getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL':
+            window = getattr(getattr(getattr(self._provider, '_server', None), 'manifest', None), 'context', None)
+            return window if type(window) is int and window > 0 else None
         known = CLAUDE_MODELS.get(getattr(self._provider, "model_id", "") or "")
         if known is not None:
             return known.context_window
@@ -407,7 +410,8 @@ class ScreenerAiCoverage:
         window = (current or {}).get("context_window")
         return int(window) if isinstance(window, int) and window > 0 else None
 
-    def _plan(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:
+    def _plan(self, run: _Run, eligible: list[str], candidates: dict[str, dict[str, Any]], *,
+              should_stop: Callable[[], bool] = lambda: False) -> list[dict[str, Any]]:
         """Bounded batches in an order no sort or page can bias, sized by rows, bytes and the model's window."""
         from .screener_news_evidence import attach_news, fit_news
 
@@ -419,6 +423,8 @@ class ScreenerAiCoverage:
         pending = chunks(ordered)
         batches: list[dict[str, Any]] = []
         thinned = 0
+        measured = None
+        rejected = None
         while pending:
             group = pending.pop(0)
             members = [candidates[key] for key in group]
@@ -432,13 +438,35 @@ class ScreenerAiCoverage:
                 fit_news(run.scope, members, news, now=now)
                 thinned += before - sum(len(member["reference_evidence"]) for member in members)
                 estimate = reducer.estimate(run.scope, members, now)
-                if window is not None and estimate["input_tokens"] + output > window:
+                if getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL' and not estimate['cached']:
+                    check = reducer.preflight(run.scope, members, now, should_stop=should_stop)
+                    if check is None:
+                        reason = 'LOCAL_CONTEXT_PREFLIGHT_FAILED'
+                    elif check.get('context_fit') is False:
+                        reason = 'PACKET_EXCEEDS_CONTEXT_WINDOW'
+                    elif not check.get('accepted') or type(check.get('input_tokens')) is not int:
+                        reason = check.get('reason') or 'LOCAL_CONTEXT_PREFLIGHT_FAILED'
+                    else:
+                        measured = {key: check.get(key) for key in ('accepted', 'input_tokens', 'context_window', 'context_fit', 'reason')}
+                        measured['estimated_input_tokens'] = estimate['input_tokens']
+                        estimate['input_tokens'] = check['input_tokens']
+                        estimate['tokens'] = check['input_tokens'] + output
+                elif window is not None and estimate["input_tokens"] + output > window and not (
+                        getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL' and estimate['cached']):
                     reason = "PACKET_EXCEEDS_CONTEXT_WINDOW"
             except ValueError as exc:
                 if str(exc) != "EVIDENCE_PACKET_BOUND_EXCEEDED":
                     raise
                 reason = "IRREDUCIBLE_PACKET_OVERSIZE"
             if reason is not None:
+                if getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL' and reason not in (
+                        'PACKET_EXCEEDS_CONTEXT_WINDOW', 'IRREDUCIBLE_PACKET_OVERSIZE'):
+                    # An unavailable exact tokenizer/readiness cannot be cured by splitting or restarting.
+                    rejected = reason
+                    for remaining in [group, *pending]:
+                        for key in remaining:
+                            run.classes[key] = (UNPROCESSED, [reason])
+                    break
                 if len(group) == 1:
                     run.classes[group[0]] = (UNPROCESSED, [reason])
                 else:
@@ -461,8 +489,6 @@ class ScreenerAiCoverage:
                             "tokens": estimate["tokens"] if estimate["tokens"] is not None else estimate["input_tokens"] + output,
                             "cached":estimate["cached"], "cached_selected":estimate.get("cached_selected",[]),
                             "members": members})
-        measured = None
-        rejected = None
         misses = [batch for batch in batches if not batch["cached"]]
         if misses and self._budget is not None:
             # The provider's own count of the first request, where it offers one. It bills and reserves nothing.

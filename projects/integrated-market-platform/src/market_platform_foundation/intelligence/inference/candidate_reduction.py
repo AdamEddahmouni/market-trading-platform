@@ -275,6 +275,7 @@ class ScreenerEvidencePacket:
     scope: dict
     candidates: list[dict]
     output_schema: dict
+    should_stop: Any = lambda: False
 
 
 class CandidateReducer:
@@ -438,13 +439,13 @@ class CandidateReducer:
                     cached_selected=[p['instrument_id'] for p in entry[1]['candidates']] if cached else [],
                     optimizer_version=OPTIMIZER_VERSION, input_encoding=INPUT_ENCODING_VERSION if self.compact_input else 'canonical-json/1.0.0')
 
-    def preflight(self, scope, candidates, now):
+    def preflight(self, scope, candidates, now, *, should_stop=lambda: False):
         """The engine's own free count of this exact request, or None where it offers none. Spends nothing."""
         check = getattr(self.provider, 'preflight', None)
         if not callable(check):
             return None
         digest, rendered, _, _ = self._prepare(scope, candidates, now)
-        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates))
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates), should_stop)
         return check(packet, rendered_prompt=rendered, config=self.config)
 
     def reduce(self, scope, candidates, now, *, allow_inference=True):
@@ -495,7 +496,7 @@ class CandidateReducer:
             if not getattr(self.provider, 'reports_stages', False):
                 report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
-            base['inference_dispatched'] = not (response.error_message or '').startswith('SYNTHESIS_')
+            base['inference_dispatched'] = response.inference_dispatched if response.inference_dispatched is not None else not (response.error_message or '').startswith('SYNTHESIS_')
             base.update(provider_id=response.provider_id, model_id=response.model_id, tokens_input=response.tokens_input,
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
                         provider_response_id=response.provider_response_id, simulated=response.simulated,
