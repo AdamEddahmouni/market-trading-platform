@@ -3,6 +3,7 @@ import math
 import sqlite3
 import sys
 import tempfile
+import time
 import unittest
 from contextlib import closing
 from pathlib import Path
@@ -57,6 +58,42 @@ class SnapshotNaNTests(unittest.TestCase):
 
     def test_raw_nan_row_is_what_the_writer_refused(self):
         self.assertEqual(self._store(dict(SNAPSHOT)), (False, 0, 1))
+
+    def test_unchanged_repolled_quote_is_an_accounted_duplicate_not_a_new_row(self):
+        row = push_feed.payload_rows(SNAPSHOT)[0]
+        moved = {**row, 'bid_price': 341.15, 'update_time': '2026-10-14 01:57:02.100'}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'imp-state.sqlite3'
+            LocalStateConnection(path).close()
+            writer = MarketStreamWriter(path, sources=('moomoo',), symbols=('AAPL',), suppress_unchanged_l1=True)
+            records = []
+            feed = push_feed.MoomooPushFeed(subscriptions=LiveSubscriptionManager(), on_record=records.append)
+            for payload in (row, row, row, moved, moved, row):
+                time.sleep(0.02)  # distinct receipt times; the Windows clock can repeat within one tick
+                feed._enqueue_from_payload(capability='US_EQUITY_L1', generation=1, payload=dict(payload))
+                feed._process_envelope(feed.queue.dequeue_batch(timeout=0)[0])
+            with patch('market_platform_foundation.market_data.persistence._WRITER', writer):
+                self.assertTrue(all(writer.submit(record, {}) for record in records))
+                writer.stop()
+                status = writer.status()
+            with closing(sqlite3.connect(path)) as db:
+                bids = [r[0] for r in db.execute("SELECT json_extract(payload_json,'$.raw_payload.bid_price') "
+                                                 "FROM market_stream_records ORDER BY received_ns")]
+        self.assertEqual(bids, [341.1, 341.15, 341.1])  # every change kept, including the return to 341.1
+        self.assertEqual((status['accepted'], status['unchanged_suppressed'], status['unreconciled']), (6, 3, 0))
+        self.assertEqual(status['committed'] + status['duplicates'], 6)
+
+    def test_suppression_is_off_by_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'imp-state.sqlite3'
+            LocalStateConnection(path).close()
+            states = []
+            for value in ('', '1'):
+                with patch.dict('os.environ', {'IMP_MARKET_L1_SUPPRESS_UNCHANGED': value}):
+                    writer = MarketStreamWriter(path, sources=('moomoo',), symbols=('AAPL',))
+                states.append(writer.status()['suppress_unchanged_l1'])
+                writer.stop()
+        self.assertEqual(states, [False, True])
 
 
 if __name__ == '__main__':

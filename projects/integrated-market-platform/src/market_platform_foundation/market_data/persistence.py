@@ -123,7 +123,8 @@ class MarketStreamWriter:
     def __init__(self, path: Path, *, sources: tuple[str, ...], symbols: tuple[str, ...],
                  queue_limit: int = 512, batch_limit: int = 64,
                  max_database_bytes: int = 512 * 1024 * 1024, acquire: bool = True,
-                 idle_release_seconds: float | None = IDLE_RELEASE_SECONDS) -> None:
+                 idle_release_seconds: float | None = IDLE_RELEASE_SECONDS,
+                 suppress_unchanged_l1: bool | None = None) -> None:
         validate_capture_selection(sources, symbols)
         if not 1 <= batch_limit <= 256 or not batch_limit <= queue_limit <= 4096:
             raise ValueError('MARKET_CAPTURE_LIMITS_INVALID')
@@ -147,6 +148,13 @@ class MarketStreamWriter:
         self._state, self._error = 'IDLE', None
         self._selected_received = self._accepted = self._normalizing = 0
         self._committed = self._duplicates = self._rejected = self._peak_backlog = 0
+        # Every quote receipt is its own observation by default. A storage-bounded collector may opt in
+        # (IMP_MARKET_L1_SUPPRESS_UNCHANGED=1) to count a receipt whose payload and provider clocks equal the
+        # stream's previous L1 receipt, e.g. the 2 s snapshot poll of an unchanged quote, as a duplicate.
+        self.suppress_unchanged_l1 = (os.environ.get('IMP_MARKET_L1_SUPPRESS_UNCHANGED') == '1'
+                                      if suppress_unchanged_l1 is None else bool(suppress_unchanged_l1))
+        self._last_l1_revision: dict[str, str] = {}
+        self._unchanged = 0
         self._last_received = self._last_commit = None
         self._max_flush_seconds = 0.0
         self._consecutive_failures = self._transient_failures = 0
@@ -301,9 +309,19 @@ class MarketStreamWriter:
         with self._lock:
             self._last_received = received if self._last_received is None else max(received, self._last_received)
             accepting = self._accepting
+            if (accepting and capability == 'US_EQUITY_L1' and self.suppress_unchanged_l1
+                    and self._last_l1_revision.get(stream) == revision):
+                # Accounted as an accepted duplicate, exactly like an INSERT OR IGNORE of a stored record.
+                self._normalizing -= 1
+                self._accepted += 1
+                self._duplicates += 1
+                self._unchanged += 1
+                return True
             accepted = accepting and len(self._queue) < self.queue_limit
             self._normalizing -= 1
             if accepted:
+                if capability == 'US_EQUITY_L1':
+                    self._last_l1_revision[stream] = revision
                 self._accepted += 1
                 self._queue.append(row)
                 self._peak_backlog = max(self._peak_backlog, len(self._queue))
@@ -508,6 +526,7 @@ class MarketStreamWriter:
                     'accounting_boundary': 'SELECTED_WRITER_SUBMIT_THIS_PROCESS',
                     'interruption_tail': 'UNKNOWN_NO_DURABLE_INGRESS_JOURNAL',
                     'committed': self._committed, 'duplicates': self._duplicates, 'rejected': self._rejected,
+                    'unchanged_suppressed': self._unchanged, 'suppress_unchanged_l1': self.suppress_unchanged_l1,
                     'backlog': len(self._queue), 'peak_backlog': self._peak_backlog,
                     'pending_gap_classes': len(self._gaps), 'known_gaps': self._known_gaps,
                     'queue_limit': self.queue_limit, 'batch_limit': self.batch_limit,
