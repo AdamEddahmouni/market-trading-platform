@@ -190,12 +190,11 @@ class LocalIntelligenceWorker:
                     started_at=_iso(self.started_at), session=session, paid_inference_calls=0,
                     execution_authority='NONE', canonical_store_writes=0)
         processed = self.log.processed()
-        records = StoredNewsRepository(self.store).retrieve(as_of=_iso(now), limit=1000,
-                                                            max_scan_records=MAX_SCAN_RECORDS) \
-            if session.get('allowed') or self.ticks == 1 else None
-        # The repository's output bound is 1000 latest revisions; older unprocessed work is reported, not dropped.
-        pending = [row for row in records or [] if row['revision_id'] not in processed]
-        base['backlog'] = len(pending) if records is not None else None
+        # Read in every window: the overnight backlog is reported while inference is paused. The repository's
+        # output bound is the 1000 latest revisions; older unprocessed work is reported, not dropped.
+        records = StoredNewsRepository(self.store).retrieve(as_of=_iso(now), limit=1000, max_scan_records=MAX_SCAN_RECORDS)
+        pending = [row for row in records if row['revision_id'] not in processed]
+        base['backlog'] = len(pending)
         if not session.get('allowed'):
             self.release_model()
             status = dict(base, state='PAUSED', reason=session.get('reason') or session.get('window'), processed=0)

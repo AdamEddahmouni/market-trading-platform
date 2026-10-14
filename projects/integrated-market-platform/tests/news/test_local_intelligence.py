@@ -78,10 +78,13 @@ class LocalIntelligenceTests(unittest.TestCase):
                                        scorer_factory=lambda: self.scorer, clock=lambda: self.clock[0], **kwargs)
 
     def test_pause_window_runs_no_inference_but_reports_the_backlog(self) -> None:
-        result = self.worker().tick()
+        worker = self.worker()
+        result = worker.tick()
         self.assertEqual((result["state"], result["session"]["window"], result["processed"]), ("PAUSED", "INFERENCE_PAUSE", 0))
         self.assertEqual(result["backlog"], 3)
         self.assertEqual(self.scorer.calls, [])
+        self.clock[0] = PAUSE + 60
+        self.assertEqual(worker.tick()["backlog"], 3)  # still reported on later paused ticks
         self.assertEqual(read_view(self.out)["outputs"], [])
 
     def test_catch_up_processes_with_attribution_and_without_lookahead(self) -> None:
