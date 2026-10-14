@@ -255,6 +255,7 @@ class DecisionJournalTests(unittest.TestCase):
         opportunity = {'opportunity_id': 'OPP-1', 'created_at_ns': ns('2026-10-12T13:00:00Z'),
                        'scope': {'instrument_ids': ['SIM:AAA']}, 'lineage_refs': [], **changes}
         receipt['evidence_snapshot']['context'] = {'opportunity': opportunity}
+        receipt['evidence_snapshot_id'] = 'AS-'+input_hash_from_dict(receipt['evidence_snapshot'])  # as the action service derives it
         receipt['opportunity_id'] = 'OPP-1' if named else None
         return receipt
 
@@ -269,6 +270,12 @@ class DecisionJournalTests(unittest.TestCase):
     def test_unnamed_or_separately_supplied_opportunity_still_needs_shared_evidence(self):
         with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
             journal.capture_decision_snapshot(decision=self.opportunity_receipt(named=False), mode='PAPER')
+        with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):  # no id on either side is not a name
+            journal.capture_decision_snapshot(decision=self.opportunity_receipt(named=False, opportunity_id=None), mode='PAPER')
+        swapped = self.opportunity_receipt()  # an Opportunity put into the snapshot after the receipt's digest was taken
+        swapped['evidence_snapshot']['context']['opportunity']['scope'] = {'instrument_ids': ['SIM:AAA', 'SIM:ZZZ']}
+        with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
+            journal.capture_decision_snapshot(decision=swapped, mode='PAPER')
         supplied = self.opportunity_receipt()['evidence_snapshot']['context']['opportunity']
         with self.assertRaisesRegex(ValueError, 'OPPORTUNITY_LINEAGE_MISMATCH'):
             journal.capture_decision_snapshot(decision=self.action_receipt(), opportunity=supplied, mode='PAPER')

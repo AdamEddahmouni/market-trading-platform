@@ -39,6 +39,10 @@ def epoch(text):
     return datetime.fromisoformat(text).timestamp()
 
 
+def reasons(plan):
+    return {row['reason']: row['count'] for row in plan['deferred_reasons']}
+
+
 class Settings:
     """The saved engine choice as the Screener exposes it; configuration only."""
 
@@ -178,13 +182,13 @@ class StoredEvidenceTests(unittest.TestCase):
         self.three_overnight_articles()
         options = dict(max_requests='2', request_allowance='4096', assume_available=True)
         paused = self.service(at='2026-10-14T06:00:00+00:00').plan(**options)  # 02:00 New York
-        self.assertEqual((paused['session']['window'], paused['planned_requests'], paused['deferred_reasons']),
+        self.assertEqual((paused['session']['window'], paused['planned_requests'], reasons(paused)),
                          ('INFERENCE_PAUSE', 0, {'INFERENCE_PAUSE': 3}))
         self.assertTrue(paused['collection_independent'])
         morning = self.service(at='2026-10-14T07:30:00+00:00').plan(**options)  # 03:30 New York
         self.assertEqual((morning['session']['window'], morning['candidates'], morning['planned_requests']), ('CATCH_UP', 3, 2))
         self.assertEqual([row['headline'] for row in morning['planned']], ['AAPL reports earnings', 'MSFT guidance'])
-        self.assertEqual(morning['deferred_reasons'], {'REQUEST_BOUND': 1})
+        self.assertEqual(reasons(morning), {'REQUEST_BOUND': 1})
         self.assertEqual(morning['deferred'][0]['headline'], 'NVDA supply note')
         self.assertEqual(morning['planned'][0]['available_time'], '2026-10-14T00:10:00Z')
         self.assertEqual(morning['planned_tokens'], sum(row['worst_case_tokens'] for row in morning['planned']))
@@ -195,38 +199,38 @@ class StoredEvidenceTests(unittest.TestCase):
         self.assertEqual(morning['processed_state'], 'NO_COMPLETED_ANALYSIS_RECORDED')
         tokens = self.service(at='2026-10-14T07:30:00+00:00').plan(
             max_tokens=str(morning['planned'][0]['worst_case_tokens']), request_allowance='4096', assume_available=True)
-        self.assertEqual((tokens['planned_requests'], tokens['deferred_reasons']), (1, {'TOKEN_BOUND': 2}))
+        self.assertEqual((tokens['planned_requests'], reasons(tokens)), (1, {'TOKEN_BOUND': 2}))
 
     def test_nothing_is_planned_without_a_request_bound_or_verified_availability(self):
         self.three_overnight_articles()
         svc = self.service(at='2026-10-14T07:30:00+00:00')
         unverified = svc.plan(request_allowance='4096')
-        self.assertEqual((unverified['planned_requests'], unverified['deferred_reasons'], unverified['availability_basis']),
+        self.assertEqual((unverified['planned_requests'], reasons(unverified), unverified['availability_basis']),
                          (0, {'MODEL_AVAILABILITY_NOT_VERIFIED': 3}, 'NOT_VERIFIED'))
         self.assertEqual(unverified['model_route']['state'], 'NOT_VERIFIED')
         content_only = svc.plan(assume_available=True)
-        self.assertEqual((content_only['planned_requests'], content_only['deferred_reasons'], content_only['estimate_basis']),
+        self.assertEqual((content_only['planned_requests'], reasons(content_only), content_only['estimate_basis']),
                          (0, {'TOKEN_ESTIMATE_NOT_VERIFIED': 3}, 'STORED_CONTENT_BYTES_ONLY'))
         self.settings = Settings(configured=False)
         missing = self.service(at='2026-10-14T07:30:00+00:00').plan(request_allowance='4096', assume_available=True)
-        self.assertEqual((missing['planned_requests'], missing['deferred_reasons']), (0, {'PROVIDER_NOT_CONFIGURED': 3}))
+        self.assertEqual((missing['planned_requests'], reasons(missing)), (0, {'PROVIDER_NOT_CONFIGURED': 3}))
         self.settings = Settings(model='claude-haiku-9')  # not in the catalog: no request contract on record
         unknown = self.service(at='2026-10-14T07:30:00+00:00').plan(request_allowance='4096', assume_available=True)
-        self.assertEqual(unknown['deferred_reasons'], {'MODEL_REQUEST_CONTRACT_UNSUPPORTED': 3})
+        self.assertEqual(reasons(unknown), {'MODEL_REQUEST_CONTRACT_UNSUPPORTED': 3})
 
     def test_recorded_budget_bounds_the_plan_and_operator_bounds_only_tighten_it(self):
         self.three_overnight_articles()
         options = dict(request_allowance='4096', assume_available=True)
         self.budget.update(requests=29)
         one = self.service(at='2026-10-14T07:30:00+00:00').plan(max_requests='25', **options)
-        self.assertEqual((one['planned_requests'], one['deferred_reasons'], one['bounds']['max_requests']),
+        self.assertEqual((one['planned_requests'], reasons(one), one['bounds']['max_requests']),
                          (1, {'REQUEST_BOUND': 2}, 25))
         self.budget.update(requests=30)
         spent = self.service(at='2026-10-14T07:30:00+00:00').plan(**options)
-        self.assertEqual((spent['planned_requests'], spent['deferred_reasons']), (0, {'INFERENCE_BUDGET_BLOCKED': 3}))
+        self.assertEqual((spent['planned_requests'], reasons(spent)), (0, {'INFERENCE_BUDGET_BLOCKED': 3}))
         self.budget.update(requests=0, usage_overrun=True)
         overrun = self.service(at='2026-10-14T07:30:00+00:00').plan(**options)
-        self.assertEqual(overrun['deferred_reasons'], {'INFERENCE_BUDGET_BLOCKED': 3})
+        self.assertEqual(reasons(overrun), {'INFERENCE_BUDGET_BLOCKED': 3})
         self.budget = dict(source='BUDGET_STATE_UNREADABLE', reason='SYNTHESIS_BUDGET_STATE_UNREADABLE')
         unreadable = self.service(at='2026-10-14T07:30:00+00:00').plan(**options)
         self.assertEqual((unreadable['planned_requests'], unreadable['bounds']['max_requests']), (0, 0))
@@ -253,7 +257,7 @@ class StoredEvidenceTests(unittest.TestCase):
         for value in ('2026-10-14T00:09:59Z', '2026-10-14T07:30:00', 'soon'):
             with self.assertRaisesRegex(ValueError, 'INVALID_PLAN_CLOCK'):
                 svc.plan(at=value)
-        for bound in (dict(max_requests='-1'), dict(max_tokens='x'), dict(request_allowance='0'), dict(max_backlog='201')):
+        for bound in (dict(max_requests='-1'), dict(max_tokens='x'), dict(request_allowance='0'), dict(max_backlog='1001')):
             with self.assertRaisesRegex(ValueError, 'INVALID_PLAN_BOUND'):
                 svc.plan(**bound)
 
@@ -268,7 +272,103 @@ class StoredEvidenceTests(unittest.TestCase):
         self.assertEqual((status['model']['model'], status['model']['availability']), ('claude-haiku-4-5-20251001', 'NOT_PROBED'))
         self.assertEqual([row['window'] for row in status['schedule']],
                          ['INFERENCE_PAUSE', 'CATCH_UP', 'PREMARKET', 'REGULAR', 'AFTER_HOURS'])
-        self.assertFalse(any(status['authority'].values()))
+        self.assertEqual(status['schedule_applies_to'], 'TRADING_DAYS')
+
+    def test_store_block_and_scan_bound_do_not_leak_or_fail(self):
+        self.collect('2026-10-14T00:10:00+00:00')
+        self.collect('2026-10-14T03:00:00+00:00', provider_native_id='wire-2', url='https://example.test/wire-2')
+        svc = self.service(at='2026-10-14T04:00:00+00:00')
+        early = svc.knowledge(as_of='2026-10-14T01:00:00Z')['store']
+        # A read at 01:00 does not reveal that, or when, something was stored at 03:00.
+        self.assertEqual((early['records'], early['latest_ingested_time']), (1, '2026-10-14T00:10:00Z'))
+        self.assertEqual(svc.knowledge()['store']['records'], 2)
+        self.assertEqual(svc.knowledge(as_of='2026-10-13T23:00:00Z')['store']['state'], 'EMPTY')
+        locked = SimpleNamespace(fetchone=lambda *a: (_ for _ in ()).throw(sqlite3.OperationalError('database is locked')))
+        self.assertEqual(self.service(connection=locked).knowledge_store()['reason'], 'NEWS_COLLECTION_STORE_UNREADABLE')
+        with patch('market_platform_foundation.news.knowledge.StoredNewsRepository.retrieve',
+                   side_effect=ValueError('NEWS_KNOWLEDGE_SCAN_BOUND')):
+            bound = svc.knowledge()
+            self.assertEqual((bound['store']['state'], bound['store']['reason'], bound['records']),
+                             ('UNAVAILABLE', 'NEWS_KNOWLEDGE_SCAN_BOUND', []))
+            self.assertEqual(svc.plan()['store']['reason'], 'NEWS_KNOWLEDGE_SCAN_BOUND')
+        with patch('market_platform_foundation.news.knowledge.StoredNewsRepository.retrieve',
+                   side_effect=ValueError('NEWS_KNOWLEDGE_TIME_INVALID')), self.assertRaisesRegex(ValueError, 'TIME_INVALID'):
+            svc.knowledge()
+        for value in ('0001-01-01T00:00:00+05:00', '9999-12-31T23:59:59-05:00'):  # out of range once converted
+            with self.assertRaisesRegex(ValueError, 'INVALID_EVIDENCE_CUTOFF'):
+                svc.knowledge(as_of=value)
+            with self.assertRaisesRegex(ValueError, 'INVALID_PLAN_CLOCK'):
+                svc.plan(at=value)
+
+    def test_assumed_access_and_unconsulted_gates_are_labelled_not_claimed(self):
+        self.three_overnight_articles()
+        svc = self.service(at='2026-10-14T07:30:00+00:00')
+        assumed = svc.plan(request_allowance='4096', assume_available=True)
+        self.assertEqual((assumed['model_route']['state'], assumed['model_route']['availability_verified']),
+                         ('ASSUMED_FOR_PREVIEW', False))
+        self.assertEqual((assumed['spending_basis'], assumed['resource_basis'], assumed['paid_inference_permitted']),
+                         ('RECORDED_DAILY_REQUEST_AND_TOKEN_BUDGET_ONLY', 'NOT_EVALUATED', False))
+        self.assertEqual(assumed['model']['availability'], 'NOT_PROBED')
+        honest = svc.plan(request_allowance='4096')
+        self.assertEqual((honest['model_route']['state'], honest['model_route']['availability_verified']), ('NOT_VERIFIED', False))
+
+    def test_backlog_beyond_the_bound_is_reported_not_hidden(self):
+        self.three_overnight_articles()
+        svc = self.service(at='2026-10-14T07:30:00+00:00')
+        bounded = svc.plan(max_backlog='2', request_allowance='4096', assume_available=True)
+        self.assertEqual((bounded['candidates'], bounded['unscanned_count'], bounded['unscanned_reason'], bounded['candidates_truncated']),
+                         (3, 1, 'BACKLOG_BOUND', False))
+        self.assertEqual([row['headline'] for row in bounded['planned']], ['AAPL reports earnings', 'MSFT guidance'])  # oldest first
+        none = svc.plan(max_backlog='0', request_allowance='4096', assume_available=True)
+        self.assertEqual((none['planned_requests'], none['deferred'], none['unscanned_count']), (0, [], 3))
+
+    def test_usage_of_an_earlier_day_does_not_block_a_later_planned_day(self):
+        self.three_overnight_articles()
+        self.budget.update(day='2026-10-13', requests=30, tokens=150_000)  # yesterday's budget, fully used
+        svc = self.service(at='2026-10-13T19:00:00+00:00')  # 15:00 New York on the 13th
+        self.now = epoch('2026-10-13T19:00:00+00:00')
+        today = svc.plan(at='2026-10-13T19:30:00Z', request_allowance='4096', assume_available=True)
+        self.assertEqual((today['budget_basis'], today['budget']['requests']), ('RECORDED_USAGE_OF_THE_PLANNED_DAY', 30))
+        tomorrow = svc.plan(at='2026-10-14T07:30:00Z', request_allowance='4096', assume_available=True)
+        self.assertEqual((tomorrow['budget_basis'], tomorrow['budget']['requests'], tomorrow['budget']['day'], tomorrow['budget']['max_requests']),
+                         ('LIMITS_ONLY_USAGE_RESETS_BEFORE_THE_PLANNED_DAY', 0, '2026-10-14', 30))
+        self.assertNotIn('INFERENCE_BUDGET_BLOCKED', reasons(tomorrow))
+
+    def test_every_payload_passes_the_response_secret_audit_over_http(self):
+        """The server refuses a response whose keys look like credentials; reason codes must never be keys."""
+        from market_platform_foundation.platform.security.leak_audit import assert_no_secrets_in_payload
+        import market_platform_foundation.ui_api.evidence_review as module
+
+        self.three_overnight_articles()
+        svc = self.service(at='2026-10-14T07:30:00+00:00')
+        store = SimpleNamespace()
+        prior = module._SERVICE, module._STORE
+        module._SERVICE, module._STORE = svc, store
+        self.addCleanup(lambda: (setattr(module, '_SERVICE', prior[0]), setattr(module, '_STORE', prior[1])))
+
+        class Handler(UiApiHandler):
+            def _authorize_request(self, *args, **kwargs): return True
+            def log_message(self, *args): pass
+        Handler.store = store
+        server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            def get(path):
+                with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/evaluation/evidence/{path}', timeout=10) as response:
+                    return json.load(response)
+            estimate = get('plan?assume_available=1')
+            self.assertEqual(reasons(estimate), {'TOKEN_ESTIMATE_NOT_VERIFIED': 3})
+            one = get('plan?assume_available=1&request_allowance=4096')['planned'][0]['worst_case_tokens']
+            bound = get(f'plan?assume_available=1&request_allowance=4096&max_tokens={one}')
+            self.assertEqual((bound['planned_requests'], reasons(bound)), (1, {'TOKEN_BOUND': 2}))
+            for path in ('status', 'knowledge', 'knowledge?revisions=1&symbol=AAPL', 'plan', 'plan?request_allowance=4096',
+                         'plan?max_backlog=1', 'replay'):
+                assert_no_secrets_in_payload(get(path))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join()
 
     def test_budget_read_creates_no_file_when_nothing_was_spent(self):
         cache = Path(self.temp.name) / 'cache'
@@ -285,7 +385,7 @@ class StoredEvidenceTests(unittest.TestCase):
     def test_replay_gives_one_as_of_snapshot_to_three_policies_and_ranks_nothing(self):
         svc = self.service(at='2026-10-14T04:00:00+00:00')
         full = svc.replay()
-        self.assertEqual((full['replay_date'], full['evidence_class'], full['deterministic']),
+        self.assertEqual((full['replay_date'], full['evidence_class'], full['rebuild_identical']),
                          ('2026-09-09', 'SOFTWARE_FIXTURE_ONLY', True))
         self.assertEqual(full['available'][0]['replay_date'], '2026-09-09')
         self.assertTrue(full['decisions'])
@@ -300,10 +400,18 @@ class StoredEvidenceTests(unittest.TestCase):
         self.assertLess(early['coverage']['eligible_samples'], full['coverage']['eligible_samples'])
         self.assertNotEqual(early['snapshot_hash'], full['snapshot_hash'])
         self.assertEqual(early['snapshot_hash'], svc.replay(replay_date='2026-09-09', as_of='2026-09-09T14:00:00Z')['snapshot_hash'])
+        # The curated pack's stored AI output has no article lineage, so none is admitted and the view says so.
+        self.assertEqual((full['ai_output_admitted_samples'], full['coverage']['withheld_inference'] > 0), (0, True))
+        self.assertIn('FIXTURE_AI_OUTPUT_NOT_ADMITTED_WITHOUT_ARTICLE_LINEAGE', full['limitations'])
         with self.assertRaisesRegex(ValueError, 'REPLAY_DAY_OR_TIMEZONE_MISMATCH'):
-            svc.replay(replay_date='2026-09-10', as_of='2026-09-09T14:00:00Z')
-        with self.assertRaisesRegex(ValueError, 'REPLAY_DAY_NOT_IN_FIXTURE'):
-            svc.replay(replay_date='2026-09-10')
+            svc.replay(replay_date='2026-09-09', as_of='2026-09-10T14:00:00Z')
+        for options in (dict(replay_date='2026-09-10'), dict(replay_date='2026-09-10', as_of='2026-09-10T14:00:00Z')):
+            with self.assertRaisesRegex(ValueError, 'REPLAY_DAY_NOT_IN_FIXTURE'):
+                svc.replay(**options)
+        with self.assertRaisesRegex(ValueError, 'INVALID_EVIDENCE_CUTOFF'):  # a clock the server has not reached
+            self.service(at='2026-09-09T13:00:00+00:00').replay(replay_date='2026-09-09', as_of='2026-09-09T14:00:00Z')
+        with self.assertRaisesRegex(ValueError, 'REPLAY_CLOCK_INVALID'):
+            svc.replay(replay_date='2026-09-09', as_of='2026-09-09T14:00:00')
 
 
 class DecisionJournalReviewTests(_Lifecycle):
@@ -324,7 +432,11 @@ class DecisionJournalReviewTests(_Lifecycle):
         self.assertEqual((item['evidence_snapshot_id'], item['candidate_run_id']),
                          (decision['evidence_snapshot_id'], decision['evidence_snapshot']['candidate_run_id']))
         self.assertGreater(item['evidence_count'], 0)
-        self.assertEqual((item['realized_pnl'], item['realized_pnl_status']), (None, 'NOT_MEASURED_BY_RESEARCH_JOURNAL'))
+        # Fields this view does not read are named as such, never shown as empty findings.
+        self.assertTrue({'realized_pnl', 'outcome_status', 'reviews'}.isdisjoint(item))
+        self.assertEqual((journal['operator_action_source'], journal['research_outcomes'], journal['realized_pnl_source']),
+                         ('DECISION_TRACE_NOT_READ_BY_THIS_VIEW', 'NOT_READ_BY_THIS_VIEW',
+                          'PAPER_LEDGER_EPISODE_IN_LATER_EVIDENCE_NOT_COMPUTED_HERE'))
         self.assertEqual((item['later_evidence']['status'], item['later_evidence']['execution_outcome']), ('AVAILABLE', None))
         self.assertEqual((journal['source'], journal['unjournaled']), ('ACTION_DECISION_RECEIPTS', []))
         self.assertEqual(json.dumps(self.store.paper_ledger.events), before)
@@ -363,6 +475,11 @@ class DecisionJournalReviewTests(_Lifecycle):
         self.assertNotEqual(entry_early['later_evidence']['execution_outcome'], entry_late['later_evidence']['execution_outcome'])
         self.assertIsNotNone(entry_late['later_evidence']['execution_outcome'])
         self.assertEqual(entry_late['later_evidence']['evaluation_id'], 'DE-' + decision['decision_id'])
+        self.assertEqual((entry_early['later_evidence']['execution_outcome']['state'], entry_late['later_evidence']['execution_outcome']['state']),
+                         ('OPEN', 'CLOSED'))
+        # The episode is reported on the decision that opened it; the exit decision carries none of its own.
+        closing = next(row for row in late.values() if row['action']['action_state'] == 'EXIT')
+        self.assertIsNone(closing['later_evidence']['execution_outcome'])
         detail = svc.journal(decision_id=decision['decision_id'])
         self.assertEqual(detail['entry']['decision_snapshot_hash'], entry_late['decision_snapshot_hash'])
         self.assertEqual(detail['entry']['source_decision']['decision_id'], decision['decision_id'])
@@ -383,10 +500,14 @@ class DecisionJournalReviewTests(_Lifecycle):
         broken['decision_id'] = 'broken'
         broken['evidence_snapshot']['cutoff'] = iso(self.t - 5)
         self.repo._memory['decision', 'broken'] = json.dumps(broken)
+        legacy = json.loads(json.dumps(decision))  # a legacy shape the contract cannot even read
+        legacy['decision_id'] = 'legacy'
+        legacy['evidence_snapshot']['context'] = None
+        self.repo._memory['decision', 'legacy'] = json.dumps(legacy)
         journal = svc.journal()
         self.assertEqual([row['decision_id'] for row in journal['items']], [decision['decision_id']])
-        self.assertEqual([(row['decision_id'], row['reason']) for row in journal['unjournaled']],
-                         [('broken', 'JOURNAL_SNAPSHOT_IDENTITY_MISMATCH')])
+        self.assertEqual(sorted((row['decision_id'], row['reason']) for row in journal['unjournaled']),
+                         [('broken', 'JOURNAL_SNAPSHOT_IDENTITY_MISMATCH'), ('legacy', 'AttributeError')])
 
     def test_http_views_are_reads_and_unknown_views_are_refused(self):
         self.decide(self.new_run('AAPL'), 'NO_ACTION', 'AAPL')
@@ -407,7 +528,7 @@ class DecisionJournalReviewTests(_Lifecycle):
         NewsCollector(connection, [CollectionJob('finviz', '', 'US_EQUITIES', 120)],
                       lambda job: ([(article, dict(evidence_class='SOFTWARE_FIXTURE_ONLY'))], {'state': 'CURRENT'}),
                       clock=lambda: stored_at).step()
-        module._SERVICE._budget = lambda: dict(day='2026-10-14', requests=1, tokens=500, max_requests=30, max_tokens=200_000,
+        module._SERVICE._budget = lambda: dict(day=iso(self.t)[:10], requests=1, tokens=500, max_requests=30, max_tokens=200_000,
                                                usage_overrun=False, held_requests=0, held_tokens=0)
 
         class Handler(UiApiHandler):
@@ -430,7 +551,7 @@ class DecisionJournalReviewTests(_Lifecycle):
             self.assertEqual(len(plan['planned']) + len(plan['deferred']), 1)
             self.assertEqual(len(get('/evaluation/evidence/journal')['items']), 1)
             replay = get('/evaluation/evidence/replay?date=2026-09-09&as_of=2026-09-09T14:00:00Z')
-            self.assertEqual((replay['as_of'], replay['deterministic']), ('2026-09-09T14:00:00Z', True))
+            self.assertEqual((replay['as_of'], replay['rebuild_identical']), ('2026-09-09T14:00:00Z', True))
             for path in ('/evaluation/evidence/unknown', '/evaluation/evidence/knowledge?as_of=tomorrow',
                          '/evaluation/evidence/replay?date=2026-09-10'):
                 with self.assertRaises(urllib.error.HTTPError) as refused:

@@ -148,8 +148,11 @@ def capture_decision_snapshot(
         if opportunity is None:
             opportunity = frozen_evidence.get('context', {}).get('opportunity')
             # The action service admits an operator-selected Opportunity by identity and gate, without
-            # shared evidence. A receipt that froze and names that Opportunity is its own lineage.
-            receipt_owned = opportunity is not None and body.get('opportunity_id') == dict(opportunity).get('opportunity_id')
+            # shared evidence. A receipt is its own lineage only when it names that Opportunity and its
+            # snapshot id is the digest of the snapshot that froze it.
+            receipt_owned = (opportunity is not None and bool(body.get('opportunity_id'))
+                             and body['opportunity_id'] == dict(opportunity).get('opportunity_id')
+                             and body['evidence_snapshot_id'] == 'AS-' + input_hash_from_dict(frozen_evidence))
     opp = opportunity_v1_to_dict(opportunity) if isinstance(opportunity, OpportunityV1) else dict(opportunity) if opportunity is not None else None
     if opp is not None:
         created = datetime.fromtimestamp(opp['created_at_ns'] / 1_000_000_000, UTC)
