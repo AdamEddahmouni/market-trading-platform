@@ -168,6 +168,13 @@ blockers together; the state label alone is not a complete readiness answer.
   start check passes again. A refusal is recorded (`STARTUP_RESUME_REFUSED`)
   and leaves the controller stopped. Prior authorization never overrides a
   changed safety condition.
+- A restart inside the predecessor's lease (the old process exited without
+  releasing it) is not a refusal: the resume records
+  `STARTUP_RESUME_WAITING_FOR_LEASE` with `lease_until`, waits out the lease
+  (at most 180 s plus a few seconds of grace) on a background thread, re-reads
+  the controller and then runs the normal start checks. A controller stopped,
+  disarmed or emergency-latched during the wait is not resumed; a predecessor
+  that is still renewing keeps the lease and the refusal is recorded.
 - Downtime is one `NOT_OBSERVED` event with the window and the count of missed
   slots, `evaluations_backfilled: 0` and `orders_backfilled: 0`.
 - The day's starting equity is captured at the first cycle of a session date
