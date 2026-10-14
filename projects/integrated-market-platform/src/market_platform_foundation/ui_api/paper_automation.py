@@ -35,6 +35,7 @@ HISTORY_SCHEMA = 'paper-automation-history/1.0.0'
 REPORT_SCHEMA = 'paper-automation-report/1.0.0'
 DRIVER = 'PAPER_AUTOMATION'
 LEASE_SECONDS = 180
+LEASE_GRACE_SECONDS = 5  # a restarted process retries this long after its predecessor's lease expiry
 CANDIDATE_QUOTE_CONSUMER = 'paper-automation-candidates'
 _WORKING = ('ACTIVATED', 'WORKING', 'PARTIALLY_FILLED', 'REPLACE_PENDING', 'REPLACED')
 _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
@@ -108,8 +109,9 @@ def market_session(epoch):
 
 class PaperAutomationService:
     def __init__(self, store, *, repository=None, reevaluation=None, runs=None, clock=time.time, owner_id=None,
-                 session=market_session, provider_health=None, submit_lock=None):
+                 session=market_session, provider_health=None, submit_lock=None, sleep=time.sleep):
         self.store = store
+        self.sleep = sleep
         self.repository = repository or paper_automation_repository()
         self._reevaluation, self._runs = reevaluation, runs
         self.clock = clock
@@ -415,6 +417,18 @@ class PaperAutomationService:
             self.start(threaded=threaded)
         except ValueError as exc:
             code = _code(exc)
+            remaining = (controller.get('lease_until') or 0) - self.clock()
+            if code == 'AUTOMATION_ALREADY_OWNED' and 0 < remaining <= LEASE_SECONDS and controller.get('owner_id') != self.owner_id:
+                # A restarted process meets its predecessor's unexpired lease (a stop does not run the predecessor's
+                # cleanup). The contract is to wait that lease out once, then take the same atomic start: a live
+                # owner that keeps renewing still wins, and every start check is evaluated again at that time.
+                self._event('STARTUP_RESUME_WAITING_FOR_LEASE', lease_until=_iso(controller['lease_until']),
+                            wait_seconds=round(remaining + LEASE_GRACE_SECONDS, 3))
+                if threaded:
+                    threading.Thread(target=self._resume_after_lease, args=(remaining + LEASE_GRACE_SECONDS, True),
+                                     name='paper-automation-resume', daemon=True).start()
+                    return dict(resumed=False, reason='WAITING_FOR_PREVIOUS_LEASE')
+                return self._resume_after_lease(remaining + LEASE_GRACE_SECONDS, False)
             self._event('STARTUP_RESUME_REFUSED', reason=code)
             with self.control_lock:
                 fresh = self._controller()
@@ -422,6 +436,30 @@ class PaperAutomationService:
                 self._save(fresh)
             return dict(resumed=False, reason=code)
         self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'])
+        return dict(resumed=True, reason=None)
+
+    def _resume_after_lease(self, wait_seconds, threaded):
+        """The one retry after a predecessor's lease. Re-reads everything; a refusal is recorded as before."""
+        self.sleep(max(0.0, float(wait_seconds)))
+        controller = self.repository.get_controller(self._account())
+        if controller is None or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
+            # The operator stopped, paused, disarmed or latched it while this process waited: nothing is resumed.
+            reason = 'NOT_ARMED' if controller is None or not controller.get('arming') else 'NOT_RUNNING_BEFORE_RESTART'
+            self._event('STARTUP_RESUME_REFUSED', reason=reason)
+            return dict(resumed=False, reason=reason)
+        if self.worker and self.worker.alive():
+            return dict(resumed=True, reason=None)
+        try:
+            self.start(threaded=threaded)
+        except ValueError as exc:
+            code = _code(exc)
+            self._event('STARTUP_RESUME_REFUSED', reason=code)
+            with self.control_lock:
+                fresh = self._controller()
+                fresh['last_error'] = dict(at=_iso(self.clock()), code=code)
+                self._save(fresh)
+            return dict(resumed=False, reason=code)
+        self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'], after_lease_wait=True)
         return dict(resumed=True, reason=None)
 
     # --- the cycle --------------------------------------------------------------------------

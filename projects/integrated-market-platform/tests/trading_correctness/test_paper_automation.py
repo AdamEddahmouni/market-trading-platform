@@ -992,6 +992,47 @@ class OwnershipAndRecoveryTests(AutoBase):
         self.assertEqual(b.cycle()['status'], 'RUNNING')
         self.assertEqual(len(self.automation_orders(b)), 1)
 
+    def test_a_restart_inside_the_predecessor_lease_waits_it_out_and_resumes(self):
+        self.enter()
+        self.clock.value += 30  # an operator restart: the old process is gone, its lease still has ~150 s
+        b = self.restart()
+        waited = []
+
+        def sleep(seconds):
+            waited.append(seconds)
+            self.clock.value += seconds
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=True, reason=None))
+        self.assertEqual(len(waited), 1)
+        self.assertLessEqual(waited[0], 180 + 5)
+        self.assertEqual(b.events('STARTUP_RESUME_WAITING_FOR_LEASE')[0]['wait_seconds'], round(waited[0], 3))
+        self.assertTrue(b.events('STARTUP_RESUMED')[0]['after_lease_wait'])
+        self.assertEqual((b.service.status()['status'], b.service.status()['liveness']['owner']), ('RUNNING', 'THIS_PROCESS'))
+
+    def test_a_predecessor_that_keeps_renewing_still_wins_after_the_wait(self):
+        self.enter()
+        b = self.restart()
+        account = b.service._account()
+
+        def sleep(seconds):
+            self.clock.value += seconds
+            # The old process is alive and renews its lease while the new one waits.
+            b.service.repository.heartbeat(account, 'process-a', now=self.clock.value, lease_seconds=180)
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='AUTOMATION_ALREADY_OWNED'))
+        self.assertEqual(b.events('STARTUP_RESUME_REFUSED')[0]['reason'], 'AUTOMATION_ALREADY_OWNED')
+
+    def test_a_controller_stopped_during_the_wait_is_not_resumed(self):
+        self.enter()
+        b = self.restart()
+
+        def sleep(seconds):
+            b.service.stop()  # the operator stops automation while the new process waits
+            self.clock.value += seconds
+        b.service.sleep = sleep
+        self.assertEqual(b.service.resume_on_startup(threaded=False), dict(resumed=False, reason='NOT_RUNNING_BEFORE_RESTART'))
+        self.assertNotEqual(b.service.status()['status'], 'RUNNING')
+
     def test_restart_does_not_resume_a_stopped_paused_or_disarmed_controller(self):
         a = self.auto
         a.go()
