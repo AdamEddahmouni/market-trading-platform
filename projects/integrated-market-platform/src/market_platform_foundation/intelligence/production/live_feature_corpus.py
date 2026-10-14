@@ -159,6 +159,25 @@ class RollingEventWindow:
 
 def compute_decision(window: RollingEventWindow, iid: str, decision_time_ns: int) -> dict[str, Any]:
     """One grid point: the existing snapshot builder and signal engine over the visible window only."""
+    row, snapshot, signals = decision_inputs(window, iid, decision_time_ns)
+    if snapshot is None:
+        return row
+    refs = sorted(ref.id for ref in snapshot.source_event_refs)
+    compact = snapshot_v1_to_dict(replace(snapshot, source_event_refs=()))
+    compact["metadata"] = {**compact.get("metadata", {}), "source_event_count": len(refs),
+                           "source_event_digest": hashlib.sha256("\n".join(refs).encode()).hexdigest(),
+                           "source_event_refs_omitted": True}
+    row.update(snapshot=compact, signals=[signal_v1_to_dict(s) for s in signals])
+    return row
+
+
+def decision_inputs(window: RollingEventWindow, iid: str, decision_time_ns: int, *,
+                    scope: IntelligenceScope | None = None) -> tuple[dict[str, Any], SnapshotV1 | None, tuple]:
+    """The decision row plus the snapshot and signals behind it (``None`` and ``()`` when refused).
+
+    ``scope`` lets a caller key the snapshot by an exact alias of ``iid`` (its qualified canonical id). The
+    observed events keep their own ``event_id``; only the instrument key they are filed under changes.
+    """
     from ..persistence import InMemoryIntelligenceRepository
     from ..signals.engine import compute_from_snapshot
     from ..signals.models import SignalComputationRequest
@@ -166,6 +185,10 @@ def compute_decision(window: RollingEventWindow, iid: str, decision_time_ns: int
     from ..snapshots.builder import build_snapshot
     from .model import _extract_features
 
+    scope = scope or IntelligenceScope(instrument_ids=(iid,))
+    if len(scope.instrument_ids) != 1:
+        raise ValueError("DECISION_SCOPE_MUST_NAME_ONE_INSTRUMENT")
+    key = scope.instrument_ids[0]
     row: dict[str, Any] = dict(schema_version=SCHEMA_VERSION, kind=DECISION_KIND, instrument_id=iid,
                                decision_time_ns=decision_time_ns,
                                decision_time=datetime.fromtimestamp(decision_time_ns / 1e9, UTC).isoformat())
@@ -177,18 +200,18 @@ def compute_decision(window: RollingEventWindow, iid: str, decision_time_ns: int
         age_ms=(decision_time_ns - reference.available_time_ns) // 1_000_000)
     if reference is None:
         row.update(accepted=False, reason="NO_REFERENCE_QUOTE")
-        return row
+        return row, None, ()
     if not events:
         row.update(accepted=False, reason="NO_EVENTS_IN_WINDOW")
-        return row
+        return row, None, ()
     if len(events) > MAX_WINDOW_EVENTS:
         row.update(accepted=False, reason="WINDOW_EVENT_CAP_EXCEEDED")
-        return row
+        return row, None, ()
     repository = InMemoryIntelligenceRepository()
     for event in events:
-        repository.put_event(event)
+        repository.put_event(event if key == iid else replace(event, instrument_id=key))
     request = SnapshotBuildRequest(
-        decision_time_ns=decision_time_ns, scope=IntelligenceScope(instrument_ids=(iid,)),
+        decision_time_ns=decision_time_ns, scope=scope,
         composition_policy=SnapshotCompositionPolicy(policy_id="paper-forecast-corpus", max_events=MAX_WINDOW_EVENTS,
                                                      lookback_ns=WINDOW_NS, event_types=RollingEventWindow.EVENT_TYPES,
                                                      include_signals=False))
@@ -198,20 +221,14 @@ def compute_decision(window: RollingEventWindow, iid: str, decision_time_ns: int
             window_ns=WINDOW_NS, signal_types=frozenset(s.signal_type for s in PATH_A_PRODUCTION_FEATURE_SCHEMA.selectors))).signals
     except Exception as exc:  # noqa: BLE001 - an unbuildable grid point is recorded with its reason, never forced
         row.update(accepted=False, reason=f"{type(exc).__name__}:{str(exc)[:160]}")
-        return row
+        return row, None, ()
     vector = _extract_features(snapshot, signals)
     row["features"] = {s.signal_type: s.value for s in signals}
     if vector is None:
         row.update(accepted=False, reason="SPECIALIST_FEATURE_EXTRACTION_REFUSED")
-        return row
-    refs = sorted(ref.id for ref in snapshot.source_event_refs)
-    compact = snapshot_v1_to_dict(replace(snapshot, source_event_refs=()))
-    compact["metadata"] = {**compact.get("metadata", {}), "source_event_count": len(refs),
-                           "source_event_digest": hashlib.sha256("\n".join(refs).encode()).hexdigest(),
-                           "source_event_refs_omitted": True}
-    row.update(accepted=True, reason=None, snapshot=compact, signals=[signal_v1_to_dict(s) for s in signals],
-               feature_vector=list(vector.values))
-    return row
+        return row, None, ()
+    row.update(accepted=True, reason=None, feature_vector=list(vector.values))
+    return row, snapshot, tuple(signals)
 
 
 def settle(window: RollingEventWindow, decision: dict[str, Any], *, now_ns: int,
@@ -323,6 +340,7 @@ __all__ = [
     "RollingEventWindow",
     "SCHEMA_VERSION",
     "compute_decision",
+    "decision_inputs",
     "load_training_examples",
     "settle",
 ]

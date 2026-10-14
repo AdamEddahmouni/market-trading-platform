@@ -79,16 +79,33 @@ class ScreenerActionService:
         repo = getattr(self.store,'strategy_repository',None)
         listing = getattr(repo,'list_opportunities',None)
         if not listing: return None
+        # The candidate's id, or the exact canonical id derived from its own instrument record (asset class and
+        # venue included). Both name this one instrument; no other symbol can produce either.
+        identities = {candidate['instrument']['instrument_id']}
+        try:
+            from ..strategy.path_a_live_forecast import qualified_instrument_id
+            identities.add(qualified_instrument_id(candidate['instrument']))
+        except (KeyError, ValueError):
+            pass
         if requested:
             record = repo.get_opportunity(requested)
-            if record is None or candidate['instrument']['instrument_id'] not in record.scope.instrument_ids:
+            if record is None or not identities.intersection(record.scope.instrument_ids):
                 raise ValueError('OPPORTUNITY_IDENTITY_MISMATCH')
             from ..intelligence.execution.engine import _validate_opportunity_gate
             _validate_opportunity_gate(record, decision_time_ns=cutoff, scenario_id=None)
             from ..intelligence.contracts.opportunity import opportunity_v1_to_dict
             return opportunity_v1_to_dict(record)
+        try:
+            # When an activated live forecast covers this instrument, it gets one governed chance to mint an
+            # Opportunity from this very candidate's evidence before the lookup. Off by default; never fails the lookup.
+            from .paper_live_forecast import live_forecast_hook
+            hook = live_forecast_hook()
+            if hook is not None:
+                hook.ensure_opportunity(self.store, candidate, cutoff)
+        except Exception:  # noqa: BLE001
+            pass
         refs = {e['evidence_id'] for e in (*candidate['current_market_evidence'],*candidate['reference_evidence'])}
-        matches = [o for o in listing() if candidate['instrument']['instrument_id'] in o.scope.instrument_ids
+        matches = [o for o in listing() if identities.intersection(o.scope.instrument_ids)
                    and o.created_at_ns <= cutoff and (o.valid_until_ns is None or o.valid_until_ns>cutoff)
                    and refs.intersection(r.id for r in o.lineage_refs)]
         if len(matches)!=1: return None

@@ -390,6 +390,9 @@ def serve(*, host: str, port: int) -> None:
         from market_platform_foundation.ui_api.paper_forecast_corpus import start_paper_forecast_corpus
 
         print(json.dumps({"event": "ui_api.paper_forecast_corpus", **start_paper_forecast_corpus(store)}), flush=True)
+        from market_platform_foundation.ui_api.paper_live_forecast import start_paper_live_forecast
+
+        print(json.dumps({"event": "ui_api.paper_live_forecast", **start_paper_live_forecast()}), flush=True)
         collector = start_collection(store.data_mode)
         server.serve_forever()
     finally:
