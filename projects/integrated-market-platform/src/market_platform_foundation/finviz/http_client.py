@@ -34,6 +34,23 @@ def refuse_replay_network() -> None:
         raise ReplayNetworkBlocked("FINVIZ_REPLAY_NETWORK_BLOCKED")
 
 
+class FinvizLiveDisabled(ReplayNetworkBlocked):
+    """``IMP_FINVIZ_LIVE`` is off: no Finviz request leaves the process, whatever credentials exist."""
+
+
+def refuse_disabled_network() -> None:
+    """The effective live gate, enforced at the real transport so no entry point can bypass it.
+
+    Stored or environment credentials never imply authorization. Cached responses stay readable
+    because they are served before any transport call.
+    """
+    from .config import finviz_live_enabled
+
+    refuse_replay_network()
+    if not finviz_live_enabled():
+        raise FinvizLiveDisabled("FINVIZ_LIVE_DISABLED")
+
+
 @dataclass
 class HttpResponse:
     """Minimal response surface mirroring the requests objects we replaced."""
@@ -65,7 +82,7 @@ def urllib_get(
     Raises :class:`urllib.error.URLError`, :class:`http.client.HTTPException`,
     or :class:`OSError` (timeouts) on failure.
     """
-    refuse_replay_network()
+    refuse_disabled_network()
     target = url
     if params:
         query = urllib.parse.urlencode(params)
@@ -130,7 +147,7 @@ class UrllibSession:
         timeout: float = 15.0,
         params: dict[str, Any] | None = None,
     ) -> HttpResponse:
-        refuse_replay_network()
+        refuse_disabled_network()
         target = url
         if params:
             query = urllib.parse.urlencode(params)
@@ -148,7 +165,7 @@ class UrllibSession:
         timeout: float = 15.0,
         allow_redirects: bool = True,
     ) -> HttpResponse:
-        refuse_replay_network()
+        refuse_disabled_network()
         del allow_redirects  # urllib follows redirects; cookies are preserved by the jar
         payload = urllib.parse.urlencode(data or {}).encode("utf-8")
         request = urllib.request.Request(

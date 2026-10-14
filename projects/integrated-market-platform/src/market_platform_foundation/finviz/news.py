@@ -11,7 +11,8 @@ from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
-from .config import FINVIZ_NEWS_URL, NEWS_CACHE_TTL_S, finviz_api_key
+from .config import FINVIZ_NEWS_URL, NEWS_CACHE_TTL_S, finviz_api_key, finviz_feed_disabled
+from .http_client import FinvizLiveDisabled
 from .request_manager import FinvizRequestManager, RequestPriority, get_finviz_request_manager, redact_text
 
 _FINVIZ_PROVIDER_ID = "finviz"
@@ -156,13 +157,18 @@ class FinvizNewsClient:
         if force:
             self._manager.clear_cache()
         params = {"v": 3, "auth": self._api_key}
-        status, body, meta = self._manager.get(
-            FINVIZ_NEWS_URL,
-            params=params,
-            priority=RequestPriority.NEWS_CATALYST,
-            cache_ttl_s=None if force else NEWS_CACHE_TTL_S,
-            api_key=self._api_key,
-        )
+        if finviz_feed_disabled("NEWS"):
+            return {"success": False, "error": "LIVE_DISABLED", "items": [], "received_at": received_at}
+        try:
+            status, body, meta = self._manager.get(
+                FINVIZ_NEWS_URL,
+                params=params,
+                priority=RequestPriority.NEWS_CATALYST,
+                cache_ttl_s=None if force else NEWS_CACHE_TTL_S,
+                api_key=self._api_key,
+            )
+        except FinvizLiveDisabled:
+            return {"success": False, "error": "LIVE_DISABLED", "items": [], "received_at": received_at}
         available_ns = time.time_ns()
         if status != 200:
             return {
