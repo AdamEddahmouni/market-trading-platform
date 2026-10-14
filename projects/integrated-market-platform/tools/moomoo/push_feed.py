@@ -8,6 +8,7 @@ Callbacks enqueue a minimal envelope and return. Normalization/admission run on 
 
 from __future__ import annotations
 
+import math
 import sys
 import threading
 import time
@@ -58,22 +59,28 @@ CAP_TO_SUBTYPE_NAME = {
 }
 
 
+def _finite(row: dict[str, Any]) -> dict[str, Any]:
+    # OpenD frames mark absent numbers (e.g. a snapshot's pe_ratio overnight) as NaN. Absent is None:
+    # stored evidence is strict JSON, and one NaN would otherwise reject the whole observation.
+    return {key: None if isinstance(value, float) and not math.isfinite(value) else value for key, value in row.items()}
+
+
 def payload_rows(data: Any) -> list[dict[str, Any]]:
     if data is None:
         return []
     if hasattr(data, "to_dict") and hasattr(data, "columns"):
         records = data.to_dict(orient="records")
-        return [dict(row) for row in records]
+        return [_finite(dict(row)) for row in records]
     if isinstance(data, list):
         rows: list[dict[str, Any]] = []
         for item in data:
             if hasattr(item, "to_dict") and not hasattr(item, "columns"):
-                rows.append(dict(item.to_dict()))
+                rows.append(_finite(dict(item.to_dict())))
             elif isinstance(item, dict):
-                rows.append(item)
+                rows.append(_finite(item))
         return rows
     if isinstance(data, dict):
-        return [data]
+        return [_finite(data)]
     return []
 
 
