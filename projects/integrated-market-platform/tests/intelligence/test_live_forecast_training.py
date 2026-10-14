@@ -4,6 +4,7 @@ import json
 import random
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from market_platform_foundation.intelligence.production import live_training
@@ -106,6 +107,38 @@ class BuildTests(unittest.TestCase):
         rows = examples(300)
         record = live_training.build_instrument("AAPL", list(rows), output_dir=self.root, decision_time_ns=START_NS)
         self.assertEqual(record["reason_codes"], ["CALIBRATION_LABELS_NOT_YET_AVAILABLE"])
+
+
+class ExclusionTests(unittest.TestCase):
+    RULE = dict(instrument_ids="ALL", decision_time_from="2025-10-14T13:30:00Z", decision_time_to="2025-10-14T13:39:00Z",
+                reason="FEED_LAG_DEGRADED_WINDOW")
+
+    def test_bounds_are_inclusive_and_scope_is_respected(self):
+        at = 1_760_448_600_000_000_000  # 2025-10-14T13:30:00Z
+        self.assertEqual(live_training.excluded([self.RULE], "AAPL", at), "FEED_LAG_DEGRADED_WINDOW")
+        self.assertEqual(live_training.excluded([self.RULE], "AAPL", at + 540 * 10**9), "FEED_LAG_DEGRADED_WINDOW")
+        self.assertIsNone(live_training.excluded([self.RULE], "AAPL", at + 540 * 10**9 + 1))
+        self.assertIsNone(live_training.excluded([self.RULE], "AAPL", at - 1))
+        only_nvda = dict(self.RULE, instrument_ids=["NVDA"])
+        self.assertIsNone(live_training.excluded([only_nvda], "AAPL", at))
+        self.assertEqual(live_training.excluded([only_nvda], "NVDA", at), "FEED_LAG_DEGRADED_WINDOW")
+
+    def test_excluded_decisions_reach_no_split_and_are_reported(self):
+        rows = examples(600)
+        keyed = [(("AAPL", e.snapshot.decision_time_ns), e) for e in rows]
+        rule = dict(self.RULE, decision_time_from="2025-10-14T13:30:00Z", decision_time_to="2025-10-14T13:34:30Z")
+        with tempfile.TemporaryDirectory() as tmp, unittest.mock.patch.object(live_training, "load_training_examples", return_value=keyed):
+            corpus = Path(tmp) / "feature-corpus-2025-10-14.jsonl"
+            corpus.write_text("", encoding="utf-8")
+            now = max(e.label_available_time_ns for e in rows) + 1
+            summary = live_training.build_from_corpus([corpus], output_root=Path(tmp) / "models", decision_time_ns=now,
+                                                      exclusions=[rule])
+            self.assertEqual(summary["excluded_examples"], {"FEED_LAG_DEGRADED_WINDOW": 10})
+            self.assertEqual(summary["exclusions"], [rule])
+            manifest = json.loads((Path(tmp) / "models" / summary["build_id"] / "AAPL" / "training-manifest.json").read_text(encoding="utf-8"))
+            used = {row["snapshot_id"] for row in (*manifest["examples"], *manifest["calibration_examples"])}
+            self.assertFalse(used & {f"snap-AAPL-{i}" for i in range(10)})
+            self.assertEqual(summary["instruments"]["AAPL"]["samples"], 590)
 
 
 if __name__ == "__main__":

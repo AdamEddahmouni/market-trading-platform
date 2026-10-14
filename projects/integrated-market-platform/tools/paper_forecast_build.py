@@ -4,7 +4,8 @@
 
 Per instrument: time-ordered train / calibration / holdout with a horizon embargo, the governed
 ``build_path_a_production_artifacts`` build, then one scoring of the untouched holdout against the
-preregistered eligibility rule in ``live_training``. ``--activate`` writes the strategy preregistration
+preregistered eligibility rule in ``live_training``. Decisions inside a data-quality interval recorded in
+``<corpus-dir>/quality-exclusions.json`` reach no split and are counted in ``build.json``. ``--activate`` writes the strategy preregistration
 (once; it is never re-stamped) and then ``ACTIVE.json`` naming only the instruments that passed. The serving
 hook reads ``ACTIVE.json`` at startup. Nothing here calls a model service, the canonical store or a broker.
 """
@@ -20,6 +21,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# Data-quality intervals recorded in the corpus directory before training; their decisions reach no split.
+EXCLUSIONS_FILE = "quality-exclusions.json"
 sys.path.insert(0, str(ROOT / "src"))
 
 from market_platform_foundation.intelligence.production.live_training import build_from_corpus  # noqa: E402
@@ -54,8 +57,11 @@ def main(argv=None) -> int:
         return 2
     args.models_dir.mkdir(parents=True, exist_ok=True)
     symbols = [s.strip().upper() for s in args.symbols.split(",") if s.strip()] or None
+    exclusions_path = args.corpus_dir / EXCLUSIONS_FILE
+    exclusions = json.loads(exclusions_path.read_text(encoding="utf-8")).get("exclusions", []) if exclusions_path.exists() else []
     now_ns = time.time_ns()
-    summary = build_from_corpus(paths, output_root=args.models_dir, decision_time_ns=now_ns, instruments=symbols)
+    summary = build_from_corpus(paths, output_root=args.models_dir, decision_time_ns=now_ns, instruments=symbols,
+                                exclusions=exclusions)
     result = dict(build=summary, activated=False)
     if args.activate:
         prereg_path = args.models_dir / PREREGISTRATION_FILE

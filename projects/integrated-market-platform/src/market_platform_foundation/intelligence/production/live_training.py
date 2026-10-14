@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -174,11 +174,35 @@ def build_instrument(instrument_id: str, examples: list[ProductionTrainingExampl
     return record
 
 
+def _iso_ns(value: str) -> int:
+    moment = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    return (moment - datetime(1970, 1, 1, tzinfo=UTC)) // timedelta(microseconds=1) * 1_000
+
+
+def excluded(exclusions: Iterable[dict[str, Any]], instrument_id: str, decision_ns: int) -> str | None:
+    """The reason a recorded data-quality exclusion removes this decision, or ``None``. Bounds are inclusive."""
+    for rule in exclusions:
+        scope = rule.get("instrument_ids")
+        if scope != "ALL" and instrument_id not in (scope or ()):
+            continue
+        if _iso_ns(rule["decision_time_from"]) <= decision_ns <= _iso_ns(rule["decision_time_to"]):
+            return str(rule.get("reason") or "EXCLUDED")
+    return None
+
+
 def build_from_corpus(corpus_paths: Iterable[Path], *, output_root: Path, decision_time_ns: int,
-                      instruments: Iterable[str] | None = None, mode: str = "paper") -> dict[str, Any]:
+                      instruments: Iterable[str] | None = None, mode: str = "paper",
+                      exclusions: Iterable[dict[str, Any]] = ()) -> dict[str, Any]:
+    """``exclusions`` are data-quality intervals recorded before training; their decisions never reach any split."""
     paths = sorted(Path(p) for p in corpus_paths)
+    exclusions = list(exclusions)
     grouped: dict[str, list[ProductionTrainingExample]] = {}
-    for (instrument_id, _decision_ns), example in load_training_examples(paths):
+    dropped: dict[str, int] = {}
+    for (instrument_id, decision_ns), example in load_training_examples(paths):
+        reason = excluded(exclusions, instrument_id, decision_ns)
+        if reason is not None:
+            dropped[reason] = dropped.get(reason, 0) + 1
+            continue
         grouped.setdefault(instrument_id, []).append(example)
     wanted = sorted(set(instruments) if instruments else grouped)
     corpus_digest = sha256_bytes(canonical_bytes([[p.name, sha256_bytes(p.read_bytes())] for p in paths]))
@@ -190,6 +214,7 @@ def build_from_corpus(corpus_paths: Iterable[Path], *, output_root: Path, decisi
     summary = dict(schema_version=BUILD_SCHEMA_VERSION, build_id=build_id, built_at=datetime.fromtimestamp(decision_time_ns / 1e9, UTC).isoformat(),
                    corpus_files=[p.name for p in paths], corpus_digest=corpus_digest, eligibility_rule=ELIGIBILITY_RULE_ID,
                    minimum_holdout_samples=MINIMUM_HOLDOUT_SAMPLES, split_fractions=list(SPLIT_FRACTIONS),
+                   exclusions=exclusions, excluded_examples=dropped,
                    instruments={r["instrument_id"]: {k: r.get(k) for k in ("status", "eligible", "reason_codes", "eligibility_reasons", "samples",
                                                                           "train", "calibration", "holdout", "model_id", "calibration_model_id")}
                                 for r in results},
@@ -213,6 +238,7 @@ __all__ = [
     "build_from_corpus",
     "build_instrument",
     "eligibility",
+    "excluded",
     "read_build",
     "score_holdout",
     "time_ordered_split",
