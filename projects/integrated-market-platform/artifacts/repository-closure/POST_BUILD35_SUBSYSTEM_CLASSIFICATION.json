@@ -570,6 +570,7 @@
         "tools/live_execution_safety",
         "tools/paper_execution_qualification",
         "tools/platform",
+        "tools/release_candidate",
         "tools/e2e",
         "tools/provider_readiness.py",
         "tools/ftep_campaign_status.py",
