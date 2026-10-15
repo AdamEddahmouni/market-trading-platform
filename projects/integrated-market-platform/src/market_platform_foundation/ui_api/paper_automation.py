@@ -17,13 +17,16 @@ import re
 import threading
 import time
 import uuid
+import copy
+from contextvars import ContextVar
+from decimal import Decimal
 from datetime import UTC, datetime
 
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.paper_automation import (
     ARM_ACKNOWLEDGEMENT, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
     entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
-    size_entry, spending_gate, universe_fingerprint, universe_material_change,
+    size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
 )
 from ..local_state.paper_automation import paper_automation_repository
 from ..market_data.freshness_contract import timestamp
@@ -122,14 +125,41 @@ class PaperAutomationService:
         self.cycle_lock = threading.Lock()
         self.control_lock = threading.RLock()
         self.worker = None
+        self._scope_services = {}
+        self._scope_context = ContextVar('paper_scope_' + self.owner_id, default=None)
+        self._session_context = ContextVar('paper_session_' + self.owner_id, default=None)
 
     # --- collaborators (existing authorities) ---------------------------------------
     @property
     def reevaluation(self):
+        scoped = self._scope_context.get()
+        if scoped is not None:
+            return scoped
         if self._reevaluation is None:
             from .screener_reevaluation import reevaluation_service
             self._reevaluation = reevaluation_service(self.store)
         return self._reevaluation
+
+    def _scoped_reevaluation(self, scope):
+        """A bound loop per scope, sharing account authorities and inference budgets."""
+        identity = input_hash_from_dict(scope)
+        if identity not in self._scope_services:
+            from .screener_reevaluation import ReevaluationService
+            base = self.reevaluation
+            self._scope_services[identity] = ReevaluationService(
+                self.store, repository=base.repository, actions=base.actions, ai=base.ai,
+                clock=self.clock, owner_id=self.owner_id + ':' + identity[:12], scope=scope)
+        return self._scope_services[identity]
+
+    def _scope_session(self, scope, epoch):
+        universe = scope.get('universe')
+        if universe in ('US_EQUITIES', 'US_ETFS'):
+            return self.session(epoch)
+        if universe == 'CRYPTO':
+            return dict(label='CONTINUOUS', trading_day=True, session_date=datetime.fromtimestamp(epoch, UTC).astimezone(ET).date().isoformat(),
+                        minutes_to_close=None, calendar='KRAKEN_SPOT_CONTINUOUS')
+        return dict(label='REFERENCE_ONLY' if universe == 'BONDS' else 'PROVIDER_STATE_UNAVAILABLE', trading_day=False,
+                    session_date=datetime.fromtimestamp(epoch, UTC).astimezone(ET).date().isoformat(), minutes_to_close=None)
 
     @property
     def actions(self):
@@ -192,9 +222,18 @@ class PaperAutomationService:
                 reasons.append('PAPER_RISK_POLICY_CHANGED')
         return reasons
 
-    def provider_health(self):
+    def provider_health(self, scope=None):
         if self._provider_health is not None:
             return self._provider_health()
+        if scope and scope.get('universe') == 'CRYPTO':
+            from ..crypto_market.kraken_stream import get_kraken_runtime
+            runtime = get_kraken_runtime(create=False)
+            if runtime is None:
+                return dict(state='UNAVAILABLE', reasons=['CRYPTO_RUNTIME_UNAVAILABLE'], provider='KRAKEN')
+            status = runtime.status()
+            ready = status.get('state') in ('CONNECTED', 'COLLECTING', 'RUNNING')
+            return dict(state='CONNECTED' if ready else 'UNHEALTHY', reasons=[] if ready else ['CRYPTO_FEED_UNHEALTHY'],
+                        provider='KRAKEN', detail=status)
         if self.store.data_mode != 'LIVE_OBSERVATIONAL':
             return dict(state='NOT_LIVE', data_mode=str(self.store.data_mode), reasons=[])
         from ..market_data.live_runtime import get_live_runtime
@@ -226,7 +265,10 @@ class PaperAutomationService:
                              experiment_id=experiment['experiment_id'], initial_capital_minor=experiment['initial_capital_minor'],
                              ledger_policy=ledger.policy)
             scope = self.reevaluation.ai._query(body['scope'])
-            policy = build_policy(dict(body, scope=scope), account_id=ledger.paper_account_id, experiment_id=experiment['experiment_id'],
+            normalized = dict(body, scope=scope)
+            if 'scopes' in body:
+                normalized['scopes'] = [dict(item, scope=self.reevaluation.ai._query(item['scope'])) for item in body['scopes']]
+            policy = build_policy(normalized, account_id=ledger.paper_account_id, experiment_id=experiment['experiment_id'],
                                   initial_capital_minor=experiment['initial_capital_minor'], ledger_policy=ledger.policy)
             now = self.clock()
             self.repository.put_policy(policy, now=now)
@@ -293,8 +335,12 @@ class PaperAutomationService:
             now = self.clock()
             self.repository.acquire_lease(controller['account_id'], self.owner_id, now=now, lease_seconds=LEASE_SECONDS)
             try:
-                self.reevaluation.attach_driver(DRIVER, scope=policy['scope'], requested_cadence_seconds=policy['schedule']['cadence_seconds'])
+                for item in universe_scopes(policy):
+                    service = self._scoped_reevaluation(item['scope']) if policy.get('scopes') else self.reevaluation
+                    service.attach_driver(DRIVER, scope=item['scope'], requested_cadence_seconds=policy['schedule']['cadence_seconds'])
             except Exception:
+                for service in self._scope_services.values():
+                    service.detach_driver()
                 self.repository.release_lease(controller['account_id'], self.owner_id)
                 raise
             controller = self._controller()
@@ -380,14 +426,19 @@ class PaperAutomationService:
         """Stop scheduling, stop an AI run in progress, release the loop, the quotes and the lease."""
         if self.worker:
             self.worker.stop()
-        universe = controller.get('universe') or {}
-        if universe.get('active_run_id') and universe.get('origin') == 'AUTOMATION':
-            try:
-                self.runs.stop(controller['account_id'], universe['active_run_id'])  # no further model call starts
-            except Exception:  # noqa: BLE001 - stopping never depends on the run tracker
-                pass
+        states = [controller, *(controller.get('universes') or {}).values()]
+        for state in states:
+            universe = state.get('universe') or {}
+            if universe.get('active_run_id') and universe.get('origin') == 'AUTOMATION':
+                try:
+                    self.runs.stop(controller['account_id'], universe['active_run_id'])
+                except Exception:  # noqa: BLE001 - stopping never depends on the run tracker
+                    pass
+            self._release_candidate_quotes(state.get('subscriptions') or [])
         try:
             self.reevaluation.detach_driver()
+            for service in self._scope_services.values():
+                service.detach_driver()
         except Exception:  # noqa: BLE001
             pass
         self._release_candidate_quotes(controller.get('subscriptions') or [])
@@ -497,7 +548,7 @@ class PaperAutomationService:
             session = summary['session'] or {}
             status = derive_status(configured=True, armed=True, desired='RUNNING', emergency=bool(work.get('emergency')),
                                    error=bool(summary['error']), blockers=summary['blockers'],
-                                   session_eligible=session.get('label') in policy['schedule']['sessions'])
+                                   session_eligible=summary.get('session_eligible', session.get('label') in policy['schedule']['sessions']))
             summary.update(status=str(status), completed_at=_iso(completed), duration_ms=int(round((completed - now) * 1000)))
             # Operator commands issued while the cycle ran win; only cycle-owned fields are written back. The
             # control lock makes this read-modify-write atomic against a Pause, Stop, Disarm or Emergency Stop.
@@ -512,7 +563,7 @@ class PaperAutomationService:
                               or fresh.get('desired_state') != 'RUNNING'
                               or fresh.get('owner_id') != self.owner_id)
                 if not superseded:
-                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'subscriptions', 'exit_backoff'):
+                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'universes', 'last_universe_started_epoch', 'subscriptions', 'exit_backoff'):
                         fresh[key] = work.get(key)
                     if summary['error'] is None:
                         fresh['last_error'] = None
@@ -554,9 +605,67 @@ class PaperAutomationService:
             summary['blockers'].append(dict(category=category, code=code))
 
     def _cycle(self, work, policy, summary, now, scheduled, missed):
+        if not policy.get('scopes'):
+            return self._cycle_scope(work, policy, summary, now, scheduled, missed)
         for code in self.paper_identity(policy):
             self._block(summary, 'AUTHORITY', code)
-        session = self.session(now)
+        if summary['blockers']:
+            return
+        states = copy.deepcopy(work.get('universes') or {})
+        primary = policy['scope']['universe']
+        if primary not in states:
+            states[primary] = {key: copy.deepcopy(work.get(key)) for key in ('universe', 'subscriptions', 'exit_backoff', 'last_cycle')}
+        summary['universes'], summary['session_eligible'] = {}, False
+        for item in universe_scopes(policy):
+            universe = item['scope']['universe']
+            state = states.setdefault(universe, {})
+            scoped = dict(work, **state)
+            # The day-start loss anchor and risk remain account-wide, independent of venue session boundaries.
+            scoped['day'] = work.get('day')
+            scoped['_global_universe_active'] = any((value.get('universe') or {}).get('active_run_id')
+                                                    for key, value in states.items() if key != universe)
+            scoped['last_universe_started_epoch'] = work.get('last_universe_started_epoch')
+            selected = dict(policy, scope=item['scope'], schedule=dict(policy['schedule'], sessions=item['sessions']))
+            receipt = dict(actions=[], blockers=[], error=None, session=None, universe=None, provider=None)
+            token = self._scope_context.set(self._scoped_reevaluation(item['scope']))
+            session_token = self._session_context.set(self._scope_session(item['scope'], now))
+            try:
+                self._cycle_scope(scoped, selected, receipt, now, scheduled, missed)
+                state.update(last_error=None, consecutive_failures=0)
+            except Exception as exc:
+                receipt['error'] = _code(exc)
+                self._block(receipt, 'DATA', receipt['error'])
+                state['consecutive_failures'] = int(state.get('consecutive_failures') or 0) + 1
+                state['last_error'] = dict(at=_iso(now), code=receipt['error'])
+            finally:
+                self._session_context.reset(session_token)
+                self._scope_context.reset(token)
+            for key in ('universe', 'subscriptions', 'exit_backoff'):
+                state[key] = scoped.get(key)
+            state['last_cycle'] = receipt
+            work['day'] = scoped.get('day')
+            started = (scoped.get('universe') or {}).get('last_started_epoch')
+            if started is not None:
+                work['last_universe_started_epoch'] = max(work.get('last_universe_started_epoch') or 0, started)
+            summary['universes'][universe] = receipt
+            summary['actions'].extend(receipt['actions'])
+            eligible = (receipt.get('session') or {}).get('label') in item['sessions']
+            summary['session_eligible'] |= eligible
+            if eligible:
+                for blocker in receipt['blockers']:
+                    summary['blockers'].append(dict(blocker, universe=universe))
+            if scoped.get('emergency'):
+                work['emergency'] = scoped['emergency']
+                break
+        work['universes'] = states
+        # Preserve the primary legacy projection; authoritative per-scope records are additive.
+        work['universe'] = (states.get(primary) or {}).get('universe')
+        summary['session'] = dict(label='MULTI_UNIVERSE', eligible=summary['session_eligible'])
+
+    def _cycle_scope(self, work, policy, summary, now, scheduled, missed):
+        for code in self.paper_identity(policy):
+            self._block(summary, 'AUTHORITY', code)
+        session = self._session_context.get() or self.session(now)
         summary['session'] = session
         if summary['blockers']:
             return  # the account is not the one that was armed: nothing is evaluated and nothing is ordered
@@ -578,7 +687,7 @@ class PaperAutomationService:
         paper_projections.maybe_release_execution_gate(self.store)  # the existing live-health gate; grants nothing on its own
         if not self.actions._authority():
             self._block(summary, 'AUTHORITY', 'PAPER_AUTHORITY_UNAVAILABLE')
-        health = self.provider_health()
+        health = self.provider_health(policy['scope'])
         summary['provider'] = health
         for code in health.get('reasons') or []:
             self._block(summary, 'DATA', code)
@@ -603,7 +712,8 @@ class PaperAutomationService:
         self._universe(work, policy, summary, now, session, gate)
         self._candidate_quotes(work, summary)
         from ..intelligence.inference.reevaluation import ReevaluationTrigger
-        receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=gate)
+        model_gate = dict(allowed=False, reason='UNIVERSE_RUN_ACTIVE') if (work.get('_global_universe_active') or (work.get('universe') or {}).get('active_run_id')) else gate
+        receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=model_gate)
         summary['reevaluation'] = dict(cycle_id=receipt['cycle_id'], cycle_status=receipt['cycle_status'], reason_codes=receipt['reason_codes'][:12],
                                        position_count=receipt['position_count'], candidate_count=receipt['candidate_count'],
                                        model_call_count=receipt['model_call_count'], candidate_source=receipt.get('candidate_source'),
@@ -686,6 +796,9 @@ class PaperAutomationService:
             self._block(summary, 'BUDGET', 'AI_COVERAGE_BUDGET_INSUFFICIENT')
         engine = self.reevaluation.engine_state()
         facts, fingerprint = self._universe_facts(policy, universe, now=now, session=session, gate=gate, engine=engine)
+        facts['last_started_epoch'] = max(facts.get('last_started_epoch') or 0, work.get('last_universe_started_epoch') or 0) or None
+        if work.get('_global_universe_active'):
+            facts['active_run_id'] = 'SHARED_ACCOUNT_RUN_ACTIVE'
         decision = should_run_universe(facts)
         previous = universe.get('last_decision') or {}
         universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=_iso(decision['next_eligible_epoch']))
@@ -756,13 +869,13 @@ class PaperAutomationService:
     # --- server-owned candidate quotes ----------------------------------------------------------
     def _candidate_quotes(self, work, summary):
         """Selected candidates keep a quote without any browser window. Held instruments are already owned by the loop."""
-        if self.store.data_mode != 'LIVE_OBSERVATIONAL':
+        if self.store.data_mode != 'LIVE_OBSERVATIONAL' or (self.reevaluation.bound_scope or {}).get('universe') not in (None, 'US_EQUITIES', 'US_ETFS'):
             return
         from ..market_data.live_runtime import get_live_runtime
         runtime = get_live_runtime(create=False)
         if runtime is None:
             return
-        loop = self.reevaluation.repository.latest_loop(work['account_id']) or {}
+        loop = self.reevaluation._loop() or {}
         wanted = [*(loop.get('selected') or []), *((loop.get('pending_selection') or {}).get('chosen') or [])]
         wanted = list(dict.fromkeys(wanted))[:10]
         current = list(work.get('subscriptions') or [])
@@ -812,7 +925,7 @@ class PaperAutomationService:
     def _execute_pending(self, work, policy, summary, session):
         ledger = self.store.paper_ledger
         now = _iso(self.clock())
-        loop = self.reevaluation.repository.latest_loop(work['account_id']) or {}
+        loop = self.reevaluation._loop() or {}
         positions = [p for p in ledger.project_positions() if p.get('quantity')]
         held = [p['instrument_id'] for p in positions]
         queue = []
@@ -892,7 +1005,7 @@ class PaperAutomationService:
         if state == 'ENTER':
             blockers = entry_risk_blockers(policy, positions=positions, valuation=ledger.project_valuation(),
                                            day_start_equity_minor=(work.get('day') or {}).get('start_equity_minor'),
-                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'))
+                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'), session_label=session.get('label'))
             if blockers:
                 return finish(IntentState.BLOCKED, blockers)
         backoff = work.get('exit_backoff') or {}
