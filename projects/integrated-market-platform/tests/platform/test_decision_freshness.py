@@ -119,3 +119,26 @@ class DecisionFreshnessTests(unittest.TestCase):
         evidence=project_screener_response('/screener',payload,now=NOW)['rows'][0]['decision_inputs']
         self.assertEqual([item['freshness_status'] for item in evidence],['CURRENT','STALE'])
         self.assertEqual([item['covered_fields'] for item in evidence],[['price'],['volume']])
+
+    def test_snapshot_market_fields_carry_real_staleness_authority(self):
+        """Self-refreshing snapshot quotes (Kraken Spot crypto rows) stay admissible while fresh.
+
+        Without a threshold every such row fell to UNKNOWN_FRESHNESS_POLICY, so a universal run
+        admitted no crypto candidate at all. UNAVAILABLE values and non-market fields keep
+        fail-closed UNKNOWN policy semantics.
+        """
+        payload={'rows':[{'fields':{'price':{'value':64_250.0,'state':'SNAPSHOT','source':'KRAKEN_SPOT_PUBLIC','as_of':'2026-10-02T18:31:50Z'},
+            'volume':{'value':None,'state':'UNAVAILABLE','source':'KRAKEN_SPOT_PUBLIC','as_of':'2026-10-02T18:31:50Z'},
+            'session_high':{'value':61,'state':'SNAPSHOT','source':'KRAKEN_SPOT_PUBLIC','as_of':'2026-10-02T18:31:50Z'}}}]}
+        evidence=project_screener_response('/screener',payload,now=NOW)['rows'][0]['decision_inputs']
+        price=evidence[0]
+        self.assertEqual(price['freshness_status'],'CURRENT')
+        self.assertTrue(price['eligible_for_current_decision'])
+        self.assertEqual(price['decision_admissibility'],'ADMISSIBLE')
+        self.assertEqual(price['policy'],'SNAPSHOT_REFRESH_V1')
+        self.assertEqual(price['stale_after_ms'],60_000)
+        # 10s old quote: current. A 61s-old one: stale, honestly.
+        stale=project_screener_response('/screener',{'rows':[{'fields':{'price':{'value':1,'state':'SNAPSHOT','source':'KRAKEN_SPOT_PUBLIC','as_of':'2026-10-02T18:30:10Z'}}}]},now=NOW)['rows'][0]['decision_inputs'][0]
+        self.assertEqual(stale['freshness_status'],'STALE')
+        self.assertEqual(evidence[1]['policy'],'UNKNOWN_POLICY')  # UNAVAILABLE value: fail closed
+        self.assertEqual(evidence[2]['policy'],'UNKNOWN_POLICY')  # non-market field: unchanged
