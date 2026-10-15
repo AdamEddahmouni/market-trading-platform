@@ -8,7 +8,6 @@ from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..numeric import apply_participation_cap, decimal_to_minor_units
-from ..paper.contracts import exact_quantity, serialized_quantity
 from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
 
 SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
@@ -67,6 +66,12 @@ class BarConservativeSimulator:
         assert_simulation_execution_allowed(
             intent.get("execution_mode") or self.policy.get("execution_mode")
         )
+        # Deferred import: the paper package __init__ imports this simulator
+        # through paper.execution, so binding its contracts at module import
+        # time would recreate the simulator/paper import cycle (it currently
+        # fires for ui_api-first entry orders).
+        from ..paper.contracts import exact_quantity, serialized_quantity
+
         order_body = {
             "allocation_model": SIMULATOR_VERSION,
             "created_time": intent["created_time"],
