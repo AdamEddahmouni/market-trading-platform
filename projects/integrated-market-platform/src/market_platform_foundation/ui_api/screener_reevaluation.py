@@ -52,7 +52,7 @@ def consumed_opportunities(ledger):
 
 
 class ReevaluationService:
-    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None):
+    def __init__(self, store, *, repository=None, actions=None, ai=None, clock=time.time, owner_id=None, scope=None):
         self.store = store
         self.repository = repository or reevaluation_repository()
         self._actions, self._ai = actions, ai
@@ -62,6 +62,16 @@ class ReevaluationService:
         self.worker = None
         # AUTO-01: a server-owned controller may drive this loop's cycles instead of the worker thread.
         self.external_driver = None
+        self.bound_scope = dict(scope) if scope is not None else None
+        self.bound_loop_id = None
+
+    def _current_loop(self):
+        if self.bound_loop_id is not None:
+            return self.repository.get_loop(self.bound_loop_id)
+        if self.bound_scope is not None:
+            identity, _ = loop_identity(self._account(), self.ai._query(self.bound_scope))
+            return self.repository.get_loop(identity)
+        return self.repository.latest_loop(self._account())
 
     @property
     def actions(self):
@@ -89,7 +99,7 @@ class ReevaluationService:
         return self.actions.risk_control
 
     def _loop(self):
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         if loop is None:
             raise ValueError('REEVALUATION_NOT_CONFIGURED')
         return loop
@@ -97,7 +107,7 @@ class ReevaluationService:
     def engine_lock(self):
         """The engine choice is machine-wide. While a loop holds its lease the choice is locked, so a running
         session never changes model between cycles. Reads the lease only."""
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         leased = bool(loop and loop['owner_id'] and loop['lease_until'] and loop['lease_until'] > self.clock())
         return dict(locked=leased, reason='REEVALUATION_LOOP_RUNNING' if leased else None)
 
@@ -117,6 +127,8 @@ class ReevaluationService:
     def session_state(self, scope, epoch):
         if scope.get('universe') in ('US_EQUITIES', 'US_ETFS'):
             return us_equity_session_label(datetime.fromtimestamp(epoch, UTC))
+        if scope.get('universe') == 'CRYPTO':
+            return 'CONTINUOUS'
         return 'NO_SESSION_CALENDAR'
 
     # --- operator controls ------------------------------------------------------
@@ -136,6 +148,11 @@ class ReevaluationService:
         policy = build_policy(body.get('policy'))
         cadence = effective_cadence(body.get('requested_cadence_seconds'), policy)
         loop_id, scope_hash = loop_identity(self._account(), scope)
+        if self.bound_scope is not None:
+            expected, _ = loop_identity(self._account(), self.ai._query(self.bound_scope))
+            if loop_id != expected:
+                raise ValueError('REEVALUATION_SCOPE_MISMATCH')
+            self.bound_loop_id = loop_id
         now = self.clock()
         existing = self.repository.get_loop(loop_id)
         if existing and existing['owner_id'] and existing['lease_until'] and existing['lease_until'] > now:
@@ -159,7 +176,7 @@ class ReevaluationService:
                     **cadence_readiness(states, ai_state=self.engine_state(), cadence=loop['cadence']))
 
     def status(self, *, readiness=False):
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         engine = self.engine_state()
         if loop is None:
             return dict(schema_version=STATUS_SCHEMA, worker_state='NOT_CONFIGURED', worker_label='Not configured',
@@ -245,7 +262,7 @@ class ReevaluationService:
             raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')
         if self.cycle_lock.locked():
             raise ValueError('CYCLE_IN_PROGRESS')
-        current = self.repository.latest_loop(self._account())
+        current = self._current_loop()
         wanted = self.ai._query(scope)
         if current is None or current['scope'] != wanted or current['requested_cadence_seconds'] != requested_cadence_seconds:
             self._configure(dict(scope=scope, requested_cadence_seconds=requested_cadence_seconds), readiness=False)
@@ -264,7 +281,7 @@ class ReevaluationService:
         if not self.external_driver:
             return
         self.external_driver = None
-        loop = self.repository.latest_loop(self._account())
+        loop = self._current_loop()
         if loop is None or loop['owner_id'] not in (None, self.owner_id):
             return
         loop.update(desired_state='STOPPED', clean_stop=True, updated_epoch=self.clock(), candidate_source=None,
