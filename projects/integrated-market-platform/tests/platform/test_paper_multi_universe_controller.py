@@ -30,6 +30,8 @@ class MultiUniverseControllerTests(unittest.TestCase):
 
     def service(self):
         h = Harness()
+        if not hasattr(h.store, 'data_mode'):
+            h.store.data_mode = 'LIVE_OBSERVATIONAL'
         service = PaperAutomationService(h.store, reevaluation=h.service, clock=h.clock,
                                         session=lambda _: dict(label='CLOSED', session_date='2026-10-11',
                                                                trading_day=False, minutes_to_close=None))
@@ -78,3 +80,164 @@ class MultiUniverseControllerTests(unittest.TestCase):
         self.assertEqual(len(summary['actions']), 1)
         self.assertEqual(work['universes']['US_EQUITIES']['last_error']['code'], 'EQUITY_PROVIDER_UNAVAILABLE')
         self.assertIsNone(work['universes']['CRYPTO']['last_error'])
+
+
+class CryptoEvidenceIntegrationTests(unittest.TestCase):
+    """The CRYPTO scope's provider health and candidate quotes against the real serving Kraken contracts.
+
+    Software-controlled: one stub stream runtime stands in for the observed ``_RUNTIME``. No connection,
+    no collection writer, no market data. These tests exist because the first integration regressed exactly
+    here with an ``ImportError`` recorded as a DATA blocker every cycle.
+    """
+
+    def service(self):
+        h = Harness()
+        if not hasattr(h.store, 'data_mode'):
+            h.store.data_mode = 'LIVE_OBSERVATIONAL'
+        service = PaperAutomationService(h.store, reevaluation=h.service, clock=h.clock,
+                                        session=lambda _: dict(label='CLOSED', session_date='2026-10-11',
+                                                               trading_day=False, minutes_to_close=None))
+        service.paper_identity = lambda _: []
+        return h, service
+
+    def test_provider_health_missing_runtime_is_unavailable_not_broken(self):
+        import market_platform_foundation.crypto_market.kraken_stream as ks
+        self.assertIsNone(ks._RUNTIME, msg='precondition for this test: no pre-created runtime in the test process')
+        _h, service = self.service()
+        health = service.provider_health(dict(universe='CRYPTO'))
+        self.assertEqual(health['state'], 'UNAVAILABLE')
+        self.assertEqual(health['reasons'], ['CRYPTO_RUNTIME_UNAVAILABLE'])
+        self.assertEqual(health['provider'], 'KRAKEN')
+        self.assertEqual(health['detail']['instruments'], {})
+
+    def test_provider_health_derives_from_observed_runtime_state(self):
+        import threading
+        import market_platform_foundation.crypto_market.kraken_stream as ks
+
+        class StubRuntime:
+            def __init__(self):
+                self._lock = threading.RLock()
+                self.lifecycle = SimpleNamespace(connection_state='CONNECTED', last_received_ns=42)
+                self._consumers = {('BTC/USD', 'BOOK'): {'paper-automation-candidates'},
+                                   ('BTC/USD', 'TRADES'): {'paper-automation-candidates'},
+                                   ('ETH/USD', 'TRADES'): {'paper-automation-candidates'}}
+                self.state = SimpleNamespace(trades_for=lambda iid: [1, 2, 3] if iid == 'BTC/USD' else [1])
+
+        original = getattr(ks, '_RUNTIME', None)
+        try:
+            ks._RUNTIME = StubRuntime()
+            _h, service = self.service()
+            health = service.provider_health(dict(universe='CRYPTO'))
+            self.assertEqual(health['state'], 'CONNECTED')
+            self.assertEqual(health['reasons'], [])
+            self.assertEqual(health['detail']['connection_state'], 'CONNECTED')
+            self.assertEqual(health['detail']['instruments'], {'BTC/USD': 3, 'ETH/USD': 1})
+        finally:
+            if original is None:
+                if getattr(ks, '_RUNTIME', 'sentinel') is not None:
+                    ks._RUNTIME = None
+            else:
+                ks._RUNTIME = original
+
+    def test_provider_health_disconnected_runtime_is_not_connected(self):
+        import threading
+        import market_platform_foundation.crypto_market.kraken_stream as ks
+
+        class StubRuntime:
+            def __init__(self):
+                self._lock = threading.RLock()
+                self.lifecycle = SimpleNamespace(connection_state='RECONNECTING', last_received_ns=None)
+                self._consumers = {}
+                self.state = SimpleNamespace(trades_for=lambda iid: [])
+
+        try:
+            ks._RUNTIME = StubRuntime()
+            _h, service = self.service()
+            health = service.provider_health(dict(universe='CRYPTO'))
+            self.assertEqual(health['state'], 'UNHEALTHY')
+            self.assertEqual(health['reasons'], ['CRYPTO_FEED_UNHEALTHY'])
+        finally:
+            ks._RUNTIME = None
+
+    def crypto_service(self, stub_runtime):
+        h, service = self.service()
+        service._reevaluation = Mock()
+        service._reevaluation.bound_scope = dict(universe='CRYPTO')
+        service._reevaluation._loop.return_value = dict(selected=['BTC'], pending_selection=None)
+        service._crypto_stream_runtime = lambda *, create: stub_runtime(create)
+        return h, service
+
+    def test_crypto_candidates_subscribe_their_own_pairs_once(self):
+        calls = []
+
+        class StubRuntime:
+            def subscribe(self, *, instrument_id, capabilities, consumer_id):
+                calls.append(('subscribe', instrument_id, tuple(capabilities), consumer_id))
+                return [dict(accepted=True, reason=None)]
+
+            def unsubscribe(self, **kwargs):
+                calls.append(('unsubscribe', kwargs.get('instrument_id')))
+
+        service = self.crypto_service(lambda create: StubRuntime())[1]
+        work, summary = dict(), dict(actions=[], blockers=[])
+        service._candidate_quotes(work, summary)
+        self.assertEqual(work['subscriptions'], ['BTC'])
+        self.assertNotIn('quote_refusals', summary)
+        self.assertEqual(calls, [('subscribe', 'BTC', ('BOOK', 'TRADES'), 'paper-automation-candidates')])
+        # A second cycle with the same selection subscribes nothing new.
+        service._candidate_quotes(work, summary)
+        self.assertEqual(calls, [('subscribe', 'BTC', ('BOOK', 'TRADES'), 'paper-automation-candidates')])
+
+    def test_crypto_candidate_venue_refusal_is_recorded_not_worked_around(self):
+        class StubRuntime:
+            def subscribe(self, *, instrument_id, capabilities, consumer_id):
+                if instrument_id == 'BTC':
+                    return [dict(accepted=False, reason='VETOED_AT_EVENT_TIME')]
+                return [dict(accepted=True, reason=None)]
+
+        service = self.crypto_service(lambda create: StubRuntime())[1]
+        work, summary = dict(), dict(actions=[], blockers=[])
+        service._candidate_quotes(work, summary)
+        self.assertEqual(work['subscriptions'], [])
+        self.assertEqual(summary['quote_refusals'],
+                         [dict(universe='CRYPTO', instrument_id='BTC', reason='VETOED_AT_EVENT_TIME')])
+
+    def test_crypto_release_never_creates_demand(self):
+        requests = []
+
+        class StubRuntime:
+            def unsubscribe(self, *, instrument_id, capabilities, consumer_id):
+                requests.append(('unsubscribe', instrument_id))
+
+        runtime = StubRuntime()
+        h, service = self.service()
+        service._reevaluation = Mock()
+        service._reevaluation.bound_scope = dict(universe='CRYPTO')
+        service._crypto_stream_runtime = lambda *, create: (requests.append(('get', create)), (None if False else runtime))[1]
+        service._release_candidate_quotes(['BTC'])
+        self.assertEqual(requests, [('get', False), ('unsubscribe', 'BTC')])
+
+        requests.clear()
+        service._crypto_stream_runtime = lambda *, create: (requests.append(('get', create)), None)[1]
+        service._release_candidate_quotes(['BTC'])
+        self.assertEqual(requests, [('get', False)])  # no runtime, no unsubscribe attempted, no demand created
+
+    def test_crypto_demand_is_not_created_while_the_local_writer_owns_kraken(self):
+        import market_platform_foundation.market_data.persistence as persistence
+        import market_platform_foundation.crypto_market.kraken_stream as ks
+
+        writer = SimpleNamespace(sources=('kraken', 'moomoo'))
+        original_writer, original_runtime = persistence.active_writer, getattr(ks, '_RUNTIME', None)
+        probe = []
+        try:
+            persistence.active_writer = lambda: writer
+            ks._RUNTIME = None
+            _h, service = self.service()
+            probe.append(service._crypto_stream_runtime(create=True))
+            self.assertIsNone(probe[-1], msg='a second collector stream must not be created under the owner writer')
+        finally:
+            persistence.active_writer = original_writer
+            if original_runtime is None:
+                ks._RUNTIME = None
+            else:
+                ks._RUNTIME = original_runtime

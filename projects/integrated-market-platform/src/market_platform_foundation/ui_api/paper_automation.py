@@ -13,11 +13,12 @@ simulator's active Paper experiment. No broker or live route is imported here.
 """
 from __future__ import annotations
 
+import copy
 import re
 import threading
 import time
+import traceback
 import uuid
-import copy
 from contextvars import ContextVar
 from decimal import Decimal
 from datetime import UTC, datetime
@@ -140,6 +141,10 @@ class PaperAutomationService:
             self._reevaluation = reevaluation_service(self.store)
         return self._reevaluation
 
+    def _trace_log_path(self):
+        from pathlib import Path
+        return Path(__file__).resolve().parents[3] / '.local' / 'paper-automation-scope-errors.log'
+
     def _scoped_reevaluation(self, scope):
         """A bound loop per scope, sharing account authorities and inference budgets."""
         identity = input_hash_from_dict(scope)
@@ -226,14 +231,18 @@ class PaperAutomationService:
         if self._provider_health is not None:
             return self._provider_health()
         if scope and scope.get('universe') == 'CRYPTO':
-            from ..crypto_market.kraken_stream import get_kraken_runtime
-            runtime = get_kraken_runtime(create=False)
+            from ..crypto_market import kraken_stream
+            runtime = kraken_stream._RUNTIME  # observe only; demand creation belongs to the candidate feed
             if runtime is None:
-                return dict(state='UNAVAILABLE', reasons=['CRYPTO_RUNTIME_UNAVAILABLE'], provider='KRAKEN')
-            status = runtime.status()
-            ready = status.get('state') in ('CONNECTED', 'COLLECTING', 'RUNNING')
+                return dict(state='UNAVAILABLE', reasons=['CRYPTO_RUNTIME_UNAVAILABLE'], provider='KRAKEN',
+                            detail=dict(connection_state=None, last_received_ns=None, instruments={}))
+            with runtime._lock:
+                connection = str(runtime.lifecycle.connection_state)
+                last_received = runtime.lifecycle.last_received_ns
+                instruments = {iid: len(runtime.state.trades_for(iid)) for iid, _cap in set(runtime._consumers)}
+            ready = connection == 'CONNECTED' and bool(instruments) and last_received is not None
             return dict(state='CONNECTED' if ready else 'UNHEALTHY', reasons=[] if ready else ['CRYPTO_FEED_UNHEALTHY'],
-                        provider='KRAKEN', detail=status)
+                        provider='KRAKEN', detail=dict(connection_state=connection, last_received_ns=last_received, instruments=instruments))
         if self.store.data_mode != 'LIVE_OBSERVATIONAL':
             return dict(state='NOT_LIVE', data_mode=str(self.store.data_mode), reasons=[])
         from ..market_data.live_runtime import get_live_runtime
@@ -634,6 +643,10 @@ class PaperAutomationService:
                 state.update(last_error=None, consecutive_failures=0)
             except Exception as exc:
                 receipt['error'] = _code(exc)
+                import pathlib as _pathlib
+                with _pathlib.Path(self._trace_log_path()).open('a', encoding='utf-8') as _log:
+                    _log.write('=== %s scope=%s failure=%s\n' % (_iso(now), item['scope'].get('universe'), receipt['error']))
+                    _log.write(traceback.format_exc())
                 self._block(receipt, 'DATA', receipt['error'])
                 state['consecutive_failures'] = int(state.get('consecutive_failures') or 0) + 1
                 state['last_error'] = dict(at=_iso(now), code=receipt['error'])
@@ -866,10 +879,32 @@ class PaperAutomationService:
         self._event('UNIVERSE_RUN_FINISHED', **record)
         return record
 
+    def _crypto_stream_runtime(self, *, create):
+        """The CRYPTO scope's own in-process Kraken Spot evidence stream.
+
+        Kraken Spot is public and unauthenticated, but persistence stays one-owner: when this process holds the
+        canonical kraken collector writer, only the existing runtime (if any) is observed, never a second
+        collector stream. With no local kraken writer the controller may create demand for the pairs it owns.
+        """
+        from ..market_data.persistence import active_writer
+        from ..crypto_market import kraken_stream
+        if not create:
+            return kraken_stream._RUNTIME
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources:
+            return kraken_stream._RUNTIME
+        from ..crypto_market.kraken_stream import kraken_stream_runtime
+        from .screener_crypto import _stream_pair
+        return kraken_stream_runtime(_stream_pair)
+
     # --- server-owned candidate quotes ----------------------------------------------------------
     def _candidate_quotes(self, work, summary):
         """Selected candidates keep a quote without any browser window. Held instruments are already owned by the loop."""
-        if self.store.data_mode != 'LIVE_OBSERVATIONAL' or (self.reevaluation.bound_scope or {}).get('universe') not in (None, 'US_EQUITIES', 'US_ETFS'):
+        universe = (self.reevaluation.bound_scope or {}).get('universe')
+        if self.store.data_mode != 'LIVE_OBSERVATIONAL' or universe not in (None, 'US_EQUITIES', 'US_ETFS', 'CRYPTO'):
+            return
+        if universe == 'CRYPTO':
+            self._crypto_candidate_quotes(work, summary)
             return
         from ..market_data.live_runtime import get_live_runtime
         runtime = get_live_runtime(create=False)
@@ -893,8 +928,42 @@ class PaperAutomationService:
                 summary.setdefault('quote_refusals', []).append(dict(instrument_id=iid, reason=str(results[0].get('reason'))))
         work['subscriptions'] = kept
 
+    def _crypto_candidate_quotes(self, work, summary):
+        """Crypto candidates subscribe the controller's own Kraken Spot evidence stream (BOOK+TRADES)."""
+        runtime = self._crypto_stream_runtime(create=True)
+        if runtime is None:
+            summary.setdefault('quote_refusals', []).append(dict(universe='CRYPTO', reason='CRYPTO_RUNTIME_UNAVAILABLE'))
+            return
+        loop = self.reevaluation._loop() or {}
+        wanted = [*(loop.get('selected') or []), *((loop.get('pending_selection') or {}).get('chosen') or [])]
+        wanted = list(dict.fromkeys(wanted))[:10]
+        current = list(work.get('subscriptions') or [])
+        self._release_candidate_quotes([iid for iid in current if iid not in wanted])
+        kept = [iid for iid in current if iid in wanted]
+        for iid in [i for i in wanted if i not in kept]:
+            try:
+                results = runtime.subscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+            except Exception:  # noqa: BLE001 - a failed subscribe leaves that candidate without a current quote
+                results = [dict(accepted=False, reason='SUBSCRIBE_FAILED')]
+            if all(r.get('accepted') for r in results):
+                kept.append(iid)
+            else:
+                # Venue refusal or unresolvable pair: recorded, never worked around. The candidate stays unquoted.
+                summary.setdefault('quote_refusals', []).append(dict(universe='CRYPTO', instrument_id=iid, reason=str(results[0].get('reason'))))
+        work['subscriptions'] = kept
+
     def _release_candidate_quotes(self, instruments):
         if not instruments or self.store.data_mode != 'LIVE_OBSERVATIONAL':
+            return
+        if (self.reevaluation.bound_scope or {}).get('universe') == 'CRYPTO':
+            runtime = self._crypto_stream_runtime(create=False)
+            if runtime is None:
+                return
+            for iid in instruments:
+                try:
+                    runtime.unsubscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+                except Exception:  # noqa: BLE001
+                    pass
             return
         from ..market_data.live_runtime import get_live_runtime
         runtime = get_live_runtime(create=False)
