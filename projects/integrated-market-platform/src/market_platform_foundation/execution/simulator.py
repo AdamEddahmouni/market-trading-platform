@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_FLOOR
 from typing import Any
 
 from ..canonical import canonical_bytes, sha256_bytes
 from ..numeric import apply_participation_cap, decimal_to_minor_units
+from ..paper.contracts import exact_quantity, serialized_quantity
 from .fill_model import assert_simulation_execution_allowed, stamp_fill_model_provenance
 
 SIMULATOR_VERSION = "phase7.bar-conservative/1.1.0"
@@ -26,7 +28,7 @@ class BarConservativeSimulator:
 
     def __init__(self, *, policy: dict[str, Any]) -> None:
         self.policy = policy
-        self._bar_allocations: dict[int, int] = {}
+        self._bar_allocations: dict[tuple[str, int], int | Decimal] = {}
         self._git_sha: str | None = None
 
     def reset_allocations(self) -> None:
@@ -94,7 +96,9 @@ class BarConservativeSimulator:
             order["reason_codes"] = ["SIM_RISK_NOT_APPROVED"]
             return self._finalize(order, None, intent=intent)
 
-        approved_qty = int(risk_decision["approved_quantity"])
+        instrument = intent.get("instrument") or {}
+        fractional = instrument.get("instrument_kind") == "CRYPTO_PAIR"
+        approved_qty = exact_quantity(risk_decision["approved_quantity"]) if fractional else int(risk_decision["approved_quantity"])
         if approved_qty <= 0:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_ZERO_APPROVED_QUANTITY"]
@@ -128,27 +132,43 @@ class BarConservativeSimulator:
             order["reason_codes"] = ["SIM_INVALID_BAR_PAYLOAD"]
             return self._finalize(order, None, intent=intent)
 
+        if fractional and (fill_bar.get("complete") is False or payload.get("complete") is False):
+            order.update(state="REJECTED", reason_codes=["SIM_INCOMPLETE_BAR"])
+            return self._finalize(order, None, intent=intent)
+        if fractional and intent.get("order_type", "MARKET") != "MARKET":
+            order.update(state="REJECTED", reason_codes=["SIM_ORDER_TYPE_UNSUPPORTED"])
+            return self._finalize(order, None, intent=intent)
+
         direction = str(intent["direction"])
         price_key = "high" if direction == "long" else "low"
         price_str = str(payload.get(price_key, ""))
         try:
             fill_price_minor = decimal_to_minor_units(
                 price_str,
-                scale=int(self.policy["price_scale"]),
+                scale=int(instrument.get("price_scale", self.policy["price_scale"])),
             )
         except ValueError:
             order["state"] = "REJECTED"
             order["reason_codes"] = ["SIM_INVALID_FILL_PRICE"]
             return self._finalize(order, None, intent=intent)
 
-        bar_volume = int(payload.get("volume", 0))
+        bar_volume = exact_quantity(payload.get("volume", "0")) if fractional else int(payload.get("volume", 0))
         cap_num, cap_den = self._effective_participation_policy(squeeze_context)
         eligible = apply_participation_cap(
             bar_volume,
             numerator=cap_num,
             denominator=cap_den,
-        )
-        prior = self._bar_allocations.get(fill_time, 0)
+        ) if not fractional else bar_volume * Decimal(cap_num) / Decimal(cap_den)
+        if fractional:
+            step = exact_quantity(instrument["quantity_step"])
+            eligible = (eligible / step).to_integral_value(rounding=ROUND_FLOOR) * step
+            raw_price = Decimal(price_str)
+            tick = Decimal(instrument["tick_size"])
+            if raw_price <= 0 or raw_price % tick or raw_price * instrument["price_scale"] != fill_price_minor:
+                order.update(state="REJECTED", reason_codes=["SIM_INVALID_FILL_PRICE"])
+                return self._finalize(order, None, intent=intent)
+        allocation_key = (str(intent["instrument_id"]), fill_time)
+        prior = self._bar_allocations.get(allocation_key, 0)
         remaining = max(eligible - prior, 0)
         fill_qty = min(approved_qty, remaining)
         if fill_qty <= 0:
@@ -156,17 +176,19 @@ class BarConservativeSimulator:
             order["reason_codes"] = ["SIM_NO_ELIGIBLE_VOLUME"]
             return self._finalize(order, None, intent=intent)
 
-        self._bar_allocations[fill_time] = prior + fill_qty
+        self._bar_allocations[allocation_key] = prior + fill_qty
         fill_body = {
             "activation_time": activation_time,
             "direction": direction,
             "fill_price_minor": fill_price_minor,
-            "fill_quantity": fill_qty,
+            "fill_quantity": serialized_quantity(fill_qty, instrument),
             "fill_time": fill_time,
             "instrument_id": intent["instrument_id"],
             "normalized_event_id": fill_bar.get("normalized_event_id"),
             "order_id": order_id,
         }
+        if fractional:
+            fill_body["price_scale"] = instrument["price_scale"]
         if squeeze_context and squeeze_context.get("available"):
             fill_body["squeeze_context"] = order_body.get("squeeze_context")
         fill = {
@@ -174,7 +196,7 @@ class BarConservativeSimulator:
             "fill_id": sha256_bytes(canonical_bytes(fill_body)),
         }
         order["state"] = "FILLED" if fill_qty == approved_qty else "PARTIALLY_FILLED"
-        order["filled_quantity"] = fill_qty
+        order["filled_quantity"] = serialized_quantity(fill_qty, instrument)
         return self._finalize(order, fill, intent=intent)
 
     def _effective_participation_policy(
