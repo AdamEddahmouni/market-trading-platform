@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 import uuid
-from decimal import Decimal
+from decimal import Decimal, ROUND_CEILING
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterator
@@ -22,6 +22,8 @@ from .contracts import (
     decimal_minor_to_display,
     next_event_sequence,
     validate_order_transition,
+    exact_quantity,
+    serialized_quantity,
 )
 
 
@@ -206,6 +208,17 @@ class PaperExecutionLedger:
                 )
             )
             self._canonical_portfolio = portfolio
+            # Restored ledgers rebuild exact non-equity state from immutable fills.
+            for event in self.events:
+                if event["event_type"] != "FillRecorded":
+                    continue
+                payload = event.get("payload") or {}
+                fill = payload.get("fill") or {}
+                intent = self._lookup_intent_for_fill(fill, {"order_id": payload.get("order_id")})
+                if not self._is_derivative_fill(fill, intent):
+                    continue
+                apply_paper_fill_to_portfolio(portfolio, fill=fill, intent=intent, policy=self.policy, applied_fill_ids=self._applied_fill_ids)
+                self._derivative_fill_ids.add(str(fill["fill_id"]))
         return self._canonical_portfolio
 
     @property
@@ -233,17 +246,18 @@ class PaperExecutionLedger:
         instrument = fill.get("instrument")
         if isinstance(instrument, dict):
             kind = str(instrument.get("instrument_kind", "")).upper()
-            if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+            if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT", "CRYPTO_PAIR"}:
                 return True
         if intent is not None:
             candidate = intent.get("instrument")
             if isinstance(candidate, dict):
                 kind = str(candidate.get("instrument_kind", "")).upper()
-                if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+                if kind in {"OPTION_CONTRACT", "FUTURE_CONTRACT", "CRYPTO_PAIR"}:
                     return True
         return False
 
     def _uses_canonical_authority(self) -> bool:
+        self._ensure_canonical_portfolio()
         return bool(self._derivative_fill_ids)
 
     def _append(self, event_type: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -344,15 +358,72 @@ class PaperExecutionLedger:
         value = self._account_created_payload().get("experiment_id")
         return str(value) if value else None
 
-    def position_shares_for(self, instrument_id: str) -> int:
+    def position_shares_for(self, instrument_id: str) -> int | Decimal:
+        position = self.canonical_portfolio.get_position(instrument_id)
+        if position is not None and position.instrument_kind == "CRYPTO_PAIR":
+            return position.quantity
         return int(self._project_ledger(instrument_id=instrument_id)["position_shares"])
+
+    def instrument_for(self, instrument_id: str) -> dict[str, Any]:
+        for event in reversed(self.events):
+            if event["event_type"] == "OrderIntentCreated":
+                intent = (event.get("payload") or {}).get("intent") or {}
+                if intent.get("instrument_id") == instrument_id:
+                    return dict(intent.get("instrument") or {})
+        return {}
+
+    def reserved_sell_quantity(self, instrument_id: str) -> Decimal:
+        return sum((exact_quantity(order.get("working_remaining", 0)) for order in self.project_orders()
+            if order.get("instrument_id") == instrument_id and order.get("direction") == "short"
+            and order.get("state") in OPEN_ORDER_STATES), Decimal(0))
+
+    def working_order_obligations_by_currency(self, *, exclude_order_id: str | None = None) -> dict[str, int]:
+        """Conservative settlement-money obligations, derived from working orders."""
+        buckets: dict[str, int] = {}
+        money_scale = Decimal(self.policy["price_scale"])
+        for order in self.project_orders():
+            if order.get("state") not in OPEN_ORDER_STATES or order.get("direction") != "long" or order.get("order_id") == exclude_order_id:
+                continue
+            quantity = exact_quantity(order.get("working_remaining", 0))
+            if quantity <= 0:
+                continue
+            intent = self.lookup_intent_for_order(str(order["order_id"])) or {}
+            instrument = intent.get("instrument") or {}
+            currency = str(instrument.get("currency") or self.policy["currency"]).upper()
+            if instrument.get("instrument_kind") == "FUTURE_CONTRACT":
+                from ..risk.margin_facts import MarginRequirementFacts, required_margin_minor
+                if not intent.get("margin_facts"):
+                    raise ValueError("MARGIN_MISSING")
+                facts = MarginRequirementFacts.from_dict(intent["margin_facts"])
+                required = Decimal(required_margin_minor(facts=facts, contracts=int(quantity), scale=int(money_scale)))
+            else:
+                # Same price-resolution chain as the baseline financial
+                # resolver: an order projection does not persist its limit
+                # price (that lives on the intent), so a LIMIT order without a
+                # persisted fill must fall through to its partial-fill price,
+                # then the mark — never resolve straight to a raise.
+                if order.get("order_type") == "LIMIT" and order.get("limit_price_minor") is not None:
+                    price = order.get("limit_price_minor")
+                else:
+                    price = order.get("average_fill_minor")
+                if price is None:
+                    price = order.get("fill_price_minor")
+                if price is None:
+                    mark = self.mark_for(str(order.get("instrument_id")))
+                    price = (mark or {}).get("mark_minor")
+                if price is None:
+                    raise ValueError("REQUIRED_PRICE_MISSING: working order has no price")
+                price_scale = Decimal(instrument.get("price_scale", self.policy["price_scale"]))
+                multiplier = Decimal(str(instrument.get("contract_multiplier", "1")))
+                required = quantity * Decimal(price) / price_scale * money_scale * multiplier
+            required += quantity * Decimal(self.policy.get("commission_minor_per_share", 0)) + Decimal(self.policy.get("fee_minor_per_order", 0))
+            buckets[currency] = buckets.get(currency, 0) + int(required.to_integral_value(rounding=ROUND_CEILING))
+        return buckets
 
     def reserved_cash_minor(self) -> int:
         """Cash obligated to working long orders (existing financial-enforcement rule)."""
-        from ..risk.financial import working_order_obligations_by_currency
-
         currency = str(self.policy.get("currency", "USD")).upper()
-        return int(working_order_obligations_by_currency(self).get(currency, 0))
+        return int(self.working_order_obligations_by_currency().get(currency, 0))
 
     def project_account(self) -> dict[str, Any]:
         projection = self._project_ledger()
@@ -496,7 +567,7 @@ class PaperExecutionLedger:
         if not self.is_portfolio_scoped():
             raise ValueError("PORTFOLIO_VALUATION_REQUIRES_PORTFOLIO_ACCOUNT")
         projection = self._project_ledger()
-        positions = self._project_portfolio_positions()
+        positions = self.project_positions()
         initial = int(self.policy["initial_cash_minor"])
         cash = int(projection["cash_minor"])
         reserved = self.reserved_cash_minor()
@@ -700,20 +771,31 @@ class PaperExecutionLedger:
         rows: list[dict[str, Any]] = []
         for instrument_id in sorted(portfolio.positions):
             position = portfolio.positions[instrument_id]
-            if position.instrument_kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT"}:
+            if position.instrument_kind not in {"OPTION_CONTRACT", "FUTURE_CONTRACT", "CRYPTO_PAIR"}:
                 continue
             if position.quantity == 0:
                 continue
+            instrument = self.instrument_for(instrument_id)
+            price_scale = int(instrument.get("price_scale", scale))
             avg_minor = (
-                int((position.average_cost or Decimal("0")) * Decimal(scale))
+                int((position.average_cost or Decimal("0")) * Decimal(price_scale))
                 if position.average_cost is not None
                 else None
             )
-            mark = self._latest_mark_minor()
-            unrealized_minor = 0
+            own_mark = self._marks.get(instrument_id)
+            mark = own_mark.get("mark_minor") if own_mark else None
+            if mark is None and not self.is_portfolio_scoped():
+                mark = self._latest_mark_minor()
+            unrealized_minor = None
+            market_value = None
             if mark is not None and avg_minor is not None:
-                signed_qty = int(position.quantity)
-                unrealized_minor = (mark - avg_minor) * signed_qty
+                mark_price = Decimal(mark) / Decimal(price_scale)
+                unrealized = (mark_price - position.average_cost) * position.quantity * position.multiplier
+                unrealized_minor = int(unrealized * scale)
+                value = position.quantity * mark_price * position.multiplier
+                if position.instrument_kind == "FUTURE_CONTRACT":
+                    value = (position.reserved_margin_native or Decimal(0)) + unrealized
+                market_value = int(value * scale)
             rows.append(
                 {
                     "asset_class": position.asset_class,
@@ -721,13 +803,27 @@ class PaperExecutionLedger:
                     "contract_multiplier": str(position.multiplier),
                     "instrument_id": position.instrument_id,
                     "instrument_kind": position.instrument_kind,
+                    "instrument": instrument,
+                    "currency": position.native_currency,
+                    "price_scale": price_scale,
+                    "average_fill_display": decimal_minor_to_display(avg_minor, scale=price_scale) if avg_minor is not None else None,
+                    "cost_basis_minor": int((position.cost_basis or Decimal(0)) * scale),
                     "mark_minor": mark,
-                    "quantity": int(position.quantity),
+                    "mark_display": decimal_minor_to_display(mark, scale=price_scale) if mark is not None else None,
+                    "mark_as_of_ns": (own_mark or {}).get("mark_as_of_ns"),
+                    "mark_freshness_ms": (own_mark or {}).get("freshness_ms"),
+                    "mark_quality": (own_mark or {}).get("mark_quality", "UNAVAILABLE"),
+                    "mark_provider": (own_mark or {}).get("mark_provider", "MARK_UNAVAILABLE"),
+                    "mark_source": (own_mark or {}).get("mark_provider", "MARK_UNAVAILABLE"),
+                    "market_value_minor": market_value,
+                    "notional_minor": abs(market_value) if market_value is not None else None,
+                    "quantity": serialized_quantity(position.quantity, instrument),
                     "quantity_unit": position.quantity_unit.value,
                     "realized_pnl_minor": int(position.realized_pnl_native * Decimal(scale)),
                     "side": "LONG" if position.quantity > 0 else "SHORT",
                     "symbol": instrument_id,
                     "unrealized_pnl_minor": unrealized_minor,
+                    "unrealized_pnl_display": decimal_minor_to_display(unrealized_minor, scale=scale) if unrealized_minor is not None else None,
                 }
             )
         return rows
@@ -833,13 +929,19 @@ class PaperExecutionLedger:
                         order["contract_multiplier"] = instrument.get("contract_multiplier")
                     if instrument.get("currency"):
                         order["currency"] = instrument.get("currency")
+                    for key in ("price_scale", "quantity_step", "minimum_quantity"):
+                        if key in instrument:
+                            order[key] = instrument[key]
                 order["intent_digest"] = build_semantic_intent_digest(intent)
         fills_by_order = self._fills_by_order()
         for order in orders_by_id.values():
             order_id = str(order.get("order_id", ""))
             totals = fills_by_order.get(order_id)
-            filled = int((totals or {}).get("filled_quantity", 0))
-            base = int(
+            fractional = order.get("instrument_kind") == "CRYPTO_PAIR"
+            parse_quantity = exact_quantity if fractional else int
+            wire = lambda value: format(value.normalize(), "f") if fractional and value else ("0" if fractional else int(value))
+            filled = parse_quantity((totals or {}).get("filled_quantity", 0))
+            base = parse_quantity(
                 order.get("authorized_quantity")
                 or order.get("submitted_quantity")
                 or order.get("approved_quantity")
@@ -847,8 +949,8 @@ class PaperExecutionLedger:
                 or order.get("desired_quantity")
                 or 0
             )
-            order["cumulative_filled_quantity"] = filled
-            order["working_remaining"] = max(0, base - filled)
+            order["cumulative_filled_quantity"] = wire(filled)
+            order["working_remaining"] = wire(max(0, base - filled))
             order["fill_count"] = int((totals or {}).get("fill_count", 0))
             if totals and totals.get("average_fill_minor") is not None:
                 order["average_fill_minor"] = totals["average_fill_minor"]
@@ -914,7 +1016,9 @@ class PaperExecutionLedger:
             fill = payload.get("fill")
             if not isinstance(fill, dict) or not order_id:
                 continue
-            quantity = int(fill.get("fill_quantity") or 0)
+            intent = self.lookup_intent_for_order(order_id) or {}
+            fractional = (intent.get("instrument") or {}).get("instrument_kind") == "CRYPTO_PAIR"
+            quantity = exact_quantity(fill.get("fill_quantity") or 0) if fractional else int(fill.get("fill_quantity") or 0)
             price = int(fill.get("fill_price_minor") or 0)
             bucket = totals.setdefault(
                 order_id,
@@ -926,11 +1030,11 @@ class PaperExecutionLedger:
         result: dict[str, dict[str, Any]] = {}
         for order_id, bucket in totals.items():
             filled = bucket["filled_quantity"]
-            average_fill_minor = bucket["average_notional_minor"] // filled if filled else None
+            average_fill_minor = int(bucket["average_notional_minor"] // filled) if filled else None
             result[order_id] = {
                 "average_fill_minor": average_fill_minor,
                 "fill_count": bucket["fill_count"],
-                "filled_quantity": filled,
+                "filled_quantity": format(filled.normalize(), "f") if isinstance(filled, Decimal) else filled,
             }
         return result
 
@@ -1583,6 +1687,18 @@ class PaperExecutionLedger:
         merged_cash = legacy_equity_only + (derivative_cash - initial)
         state = dict(state)
         state["cash_minor"] = int(merged_cash * Decimal(scale))
+        state["realized_pnl_minor"] += int(sum((p.realized_pnl_native for p in portfolio.positions.values()), Decimal(0)) * scale)
+        from .cost_friction import resolve_paper_cost_friction
+        for event in self.events:
+            if event["event_type"] != "FillRecorded":
+                continue
+            payload = event.get("payload") or {}
+            fill = payload.get("fill") or {}
+            intent = self._lookup_intent_for_fill(fill, {"order_id": payload.get("order_id")})
+            if self._is_derivative_fill(fill, intent):
+                commission, fees = resolve_paper_cost_friction(fill=fill, policy=self.policy, quantity=int(Decimal(str(fill["fill_quantity"]))))
+                state["total_commission_minor"] += commission
+                state["total_fees_minor"] += fees
         return state
 
     def _primary_instrument_id(self) -> str:
