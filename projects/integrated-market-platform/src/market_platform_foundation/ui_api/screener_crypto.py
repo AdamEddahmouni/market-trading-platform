@@ -465,3 +465,28 @@ def crypto_screener_service() -> CryptoScreener:
         if _SERVICE is None:
             _SERVICE = CryptoScreener()
     return _SERVICE
+
+
+def crypto_supply_health() -> tuple[str, tuple[str, ...], dict[str, Any]]:
+    """Supply-health verdict for controllers: each probe is one cached read, at most one REST hit.
+
+    ``CONNECTED`` means the catalog is admitted and the ticker snapshot covered it (the same ingest
+    contract the Screener rows use, so this can never contradict what a candidate read would see).
+    All failures carry the upstream's own error code verbatim as the reason, so the operator reads the
+    exact origin and never an invented one.
+    """
+    source = crypto_screener_service()
+    rows, catalog_as_of, catalog_error = source._catalog()
+    if catalog_error == "CRYPTO_NOT_CONFIGURED":
+        return ("UNAVAILABLE", ("CRYPTO_NOT_CONFIGURED",),
+                dict(catalog_as_of=catalog_as_of, instruments=0))
+    if catalog_error or not rows:
+        return ("UNAVAILABLE", (catalog_error or "CRYPTO_CATALOG_UNAVAILABLE",),
+                dict(catalog_as_of=catalog_as_of, instruments=len(rows)))
+    snapshot_as_of, values, snapshot_error = source._snapshot(rows)
+    if snapshot_error:
+        return ("UNAVAILABLE", (snapshot_error,),
+                dict(catalog_as_of=catalog_as_of, snapshot_as_of=snapshot_as_of, instruments=len(rows), priced=0))
+    return ("CONNECTED", (),
+            dict(catalog_as_of=catalog_as_of, snapshot_as_of=snapshot_as_of, instruments=len(rows),
+                 priced=len(values)))

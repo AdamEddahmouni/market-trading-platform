@@ -100,64 +100,67 @@ class CryptoEvidenceIntegrationTests(unittest.TestCase):
         service.paper_identity = lambda _: []
         return h, service
 
-    def test_provider_health_missing_runtime_is_unavailable_not_broken(self):
+    def test_provider_health_gate_off_is_unavailable_not_broken(self):
+        from unittest.mock import patch
         import market_platform_foundation.crypto_market.kraken_stream as ks
-        self.assertIsNone(ks._RUNTIME, msg='precondition for this test: no pre-created runtime in the test process')
-        _h, service = self.service()
-        health = service.provider_health(dict(universe='CRYPTO'))
+        with patch.dict('os.environ', {}, clear=False):
+            import os
+            os.environ.pop('IMP_CRYPTO_LIVE', None)
+            _h, service = self.service()
+            health = service.provider_health(dict(universe='CRYPTO'))
         self.assertEqual(health['state'], 'UNAVAILABLE')
-        self.assertEqual(health['reasons'], ['CRYPTO_RUNTIME_UNAVAILABLE'])
+        self.assertEqual(health['reasons'], ['CRYPTO_NOT_CONFIGURED'])
         self.assertEqual(health['provider'], 'KRAKEN')
-        self.assertEqual(health['detail']['instruments'], {})
+        self.assertEqual(health['detail']['stream']['instruments'], {})
 
-    def test_provider_health_derives_from_observed_runtime_state(self):
+    def test_provider_health_probes_the_authorized_supply_and_carries_upstream_verdict(self):
+        from unittest.mock import patch
+        import market_platform_foundation.ui_api.screener_crypto as screener_crypto
+        verdict = ('CONNECTED', (), dict(catalog_as_of='c', snapshot_as_of='s', instruments=2, priced=2))
+        with patch.dict('os.environ', {'IMP_CRYPTO_LIVE': '1'}), patch.object(screener_crypto, 'crypto_supply_health', return_value=verdict):
+            _h, service = self.service()
+            health = service.provider_health(dict(universe='CRYPTO'))
+        self.assertEqual(health['state'], 'CONNECTED')
+        self.assertEqual(health['reasons'], [])
+        self.assertEqual(health['detail']['instruments'], 2)
+        self.assertEqual(health['detail']['stream']['instruments'], {})
+
+        verdict = ('UNAVAILABLE', ('MARKET_SNAPSHOT_INCOMPLETE',), dict(catalog_as_of='c', instruments=2, priced=0))
+        with patch.dict('os.environ', {'IMP_CRYPTO_LIVE': '1'}), patch.object(screener_crypto, 'crypto_supply_health', return_value=verdict):
+            _h, service = self.service()
+            health = service.provider_health(dict(universe='CRYPTO'))
+        self.assertEqual(health['state'], 'UNAVAILABLE')
+        self.assertEqual(health['reasons'], ['MARKET_SNAPSHOT_INCOMPLETE'])
+
+    def test_provider_health_observed_stream_runtime_carries_execution_detail(self):
         import threading
+        from unittest.mock import patch
         import market_platform_foundation.crypto_market.kraken_stream as ks
+        import market_platform_foundation.ui_api.screener_crypto as screener_crypto
 
         class StubRuntime:
             def __init__(self):
                 self._lock = threading.RLock()
                 self.lifecycle = SimpleNamespace(connection_state='CONNECTED', last_received_ns=42)
                 self._consumers = {('BTC/USD', 'BOOK'): {'paper-automation-candidates'},
-                                   ('BTC/USD', 'TRADES'): {'paper-automation-candidates'},
-                                   ('ETH/USD', 'TRADES'): {'paper-automation-candidates'}}
-                self.state = SimpleNamespace(trades_for=lambda iid: [1, 2, 3] if iid == 'BTC/USD' else [1])
+                                   ('BTC/USD', 'TRADES'): {'paper-automation-candidates'}}
+                self.state = SimpleNamespace(trades_for=lambda iid: [1, 2, 3])
 
+        verdict = ('CONNECTED', (), dict(catalog_as_of='c', snapshot_as_of='s', instruments=2, priced=2))
         original = getattr(ks, '_RUNTIME', None)
         try:
             ks._RUNTIME = StubRuntime()
-            _h, service = self.service()
-            health = service.provider_health(dict(universe='CRYPTO'))
+            with patch.dict('os.environ', {'IMP_CRYPTO_LIVE': '1'}), patch.object(screener_crypto, 'crypto_supply_health', return_value=verdict):
+                _h, service = self.service()
+                health = service.provider_health(dict(universe='CRYPTO'))
             self.assertEqual(health['state'], 'CONNECTED')
-            self.assertEqual(health['reasons'], [])
-            self.assertEqual(health['detail']['connection_state'], 'CONNECTED')
-            self.assertEqual(health['detail']['instruments'], {'BTC/USD': 3, 'ETH/USD': 1})
+            self.assertEqual(health['detail']['stream'], dict(connection_state='CONNECTED', last_received_ns=42,
+                                                             instruments={'BTC/USD': 3}))
         finally:
             if original is None:
-                if getattr(ks, '_RUNTIME', 'sentinel') is not None:
-                    ks._RUNTIME = None
+                ks._RUNTIME = None
             else:
                 ks._RUNTIME = original
-
-    def test_provider_health_disconnected_runtime_is_not_connected(self):
-        import threading
-        import market_platform_foundation.crypto_market.kraken_stream as ks
-
-        class StubRuntime:
-            def __init__(self):
-                self._lock = threading.RLock()
-                self.lifecycle = SimpleNamespace(connection_state='RECONNECTING', last_received_ns=None)
-                self._consumers = {}
-                self.state = SimpleNamespace(trades_for=lambda iid: [])
-
-        try:
-            ks._RUNTIME = StubRuntime()
-            _h, service = self.service()
-            health = service.provider_health(dict(universe='CRYPTO'))
-            self.assertEqual(health['state'], 'UNHEALTHY')
-            self.assertEqual(health['reasons'], ['CRYPTO_FEED_UNHEALTHY'])
-        finally:
-            ks._RUNTIME = None
 
     def crypto_service(self, stub_runtime):
         h, service = self.service()

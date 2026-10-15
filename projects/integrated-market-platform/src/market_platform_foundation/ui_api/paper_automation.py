@@ -231,18 +231,20 @@ class PaperAutomationService:
         if self._provider_health is not None:
             return self._provider_health()
         if scope and scope.get('universe') == 'CRYPTO':
+            # The controller's usable crypto supply is the owner-authorized Kraken Spot source (IMP_CRYPTO_LIVE);
+            # a verdict without it would strand the scope: candidate demand creation itself needs an admitted run.
+            # The observed in-process stream runtime carries execution-grade forward detail (never a verdict).
             from ..crypto_market import kraken_stream
             runtime = kraken_stream._RUNTIME  # observe only; demand creation belongs to the candidate feed
-            if runtime is None:
-                return dict(state='UNAVAILABLE', reasons=['CRYPTO_RUNTIME_UNAVAILABLE'], provider='KRAKEN',
-                            detail=dict(connection_state=None, last_received_ns=None, instruments={}))
-            with runtime._lock:
-                connection = str(runtime.lifecycle.connection_state)
-                last_received = runtime.lifecycle.last_received_ns
-                instruments = {iid: len(runtime.state.trades_for(iid)) for iid, _cap in set(runtime._consumers)}
-            ready = connection == 'CONNECTED' and bool(instruments) and last_received is not None
-            return dict(state='CONNECTED' if ready else 'UNHEALTHY', reasons=[] if ready else ['CRYPTO_FEED_UNHEALTHY'],
-                        provider='KRAKEN', detail=dict(connection_state=connection, last_received_ns=last_received, instruments=instruments))
+            stream = dict(connection_state=None, last_received_ns=None, instruments={})
+            if runtime is not None:
+                with runtime._lock:
+                    stream = dict(connection_state=str(runtime.lifecycle.connection_state),
+                                  last_received_ns=runtime.lifecycle.last_received_ns,
+                                  instruments={iid: len(runtime.state.trades_for(iid)) for iid, _cap in set(runtime._consumers)})
+            from .screener_crypto import crypto_supply_health
+            state, reasons, detail = crypto_supply_health()
+            return dict(state=state, reasons=list(reasons), provider='KRAKEN', detail=dict(detail, stream=stream))
         if self.store.data_mode != 'LIVE_OBSERVATIONAL':
             return dict(state='NOT_LIVE', data_mode=str(self.store.data_mode), reasons=[])
         from ..market_data.live_runtime import get_live_runtime
