@@ -52,15 +52,18 @@ class InstrumentAdmissionError(ValueError):
         self.code = code
 
 
-def _resolution(store: Any, symbol: str):
+def _resolution(store: Any, symbol: str, provider_id: str | None = None):
     # Canonical ticker aliases are registered under the empty provider scope
     # (``register_equity`` etc.); provider symbols live under their provider.
     # Try the canonical ticker scope first, then the INTERNAL execution scope.
-    for provider_id, identifier_type in (
+    scopes = (
         ("", ExternalIdentifierType.TICKER),
         (EXECUTION_PROVIDER_SCOPE, ExternalIdentifierType.TICKER),
         (EXECUTION_PROVIDER_SCOPE, ExternalIdentifierType.PROVIDER_SYMBOL),
-    ):
+    )
+    if provider_id:
+        scopes = ((provider_id, ExternalIdentifierType.PROVIDER_SYMBOL), *scopes)
+    for provider_id, identifier_type in scopes:
         resolution = resolve_alias(
             provider_id=provider_id,
             alias_value=symbol,
@@ -91,6 +94,7 @@ def admit_order_instrument(
     symbol: str,
     *,
     registry: Any = None,
+    provider_id: str | None = None,
 ) -> dict[str, Any]:
     """Admit an order-target symbol and build its runtime instrument ref.
 
@@ -108,10 +112,15 @@ def admit_order_instrument(
     store = registry or get_registry()
     if normalized in OPERATOR_FIXTURE_SYMBOLS:
         ensure_operator_fixture_registered(registry=store)
-    resolution = _resolution(store, normalized)
-    if resolution is not None:
+    resolution = _resolution(store, normalized, provider_id)
+    canonical_id = resolution.canonical_id if resolution is not None else normalized
+    try:
+        record = store.get(canonical_id)
+    except Xa01Error:
+        record = None
+    if record is not None:
         try:
-            record = store.get(resolution.canonical_id)
+            record = store.get(canonical_id)
         except Xa01Error:
             raise InstrumentAdmissionError(UNKNOWN_INSTRUMENT, "unresolved canonical instrument") from None
         kind = record.descriptor.identity.instrument_kind
@@ -150,14 +159,18 @@ def admit_order_instrument(
                 )
             multiplier = "1"
         return build_instrument_ref(
-            instrument_id=resolution.canonical_id,
+            instrument_id=canonical_id,
             symbol=normalized,
             asset_class=record.descriptor.identity.asset_class.value,
-            venue=str(record.descriptor.venue_id or "US_EQUITY"),
+            venue=str(record.descriptor.venue_id or ("US_EQUITY" if kind == InstrumentKind.TRADABLE_SECURITY else "")),
             currency=str(getattr(denomination, "currency", "USD") or "USD"),
             contract_multiplier=str(multiplier),
             instrument_kind=kind.value,
             tradability=tradability.value,
+            tick_size=str(denomination.tick_size or ("0.01" if kind == InstrumentKind.TRADABLE_SECURITY else "")),
+            expiration=record.descriptor.expiration or None,
+            strike=record.descriptor.strike or None,
+            option_right=record.descriptor.call_put or None,
         )
 
     # Compatibility bridge — CLOSED. Operator fixtures are registered
