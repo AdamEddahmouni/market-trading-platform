@@ -21,7 +21,19 @@ ARCHIVE_HASH = '34a27c239727047adc5aed80b656b13373ff136b27d28bd898a14b7b7283695a
 PROFILES = {
     'cpu-8192/1': (8192, 128, 64, 4, 0),
     'cpu-4096/1': (4096, 128, 64, 4, 0),
+    # Dedicated-VRAM discrete GPU through the Vulkan device of the same pinned archive. Same model, runtime,
+    # context, f16 KV, single slot and memory floors; batch/ubatch measured with the pinned llama-bench
+    # (destination-tests/20261016-paper-ai-throughput/baseline). Never promoted on shared-memory claims.
+    'vulkan-8192/1': (8192, 512, 512, 4, 99),
 }
+# llama.cpp device per profile; profiles not listed run on the CPU only.
+PROFILE_DEVICES = {'vulkan-8192/1': 'Vulkan0'}
+# A GPU profile that cannot start falls back, visibly, to the CPU profile with the same context.
+CPU_FALLBACK = {'vulkan-8192/1': 'cpu-8192/1'}
+
+
+def profile_device(name):
+    return PROFILE_DEVICES.get(name, 'none')
 _VERIFIED = {}
 _VERIFY_LOCK = threading.Lock()
 
@@ -150,7 +162,8 @@ def readiness(manifest, *, sample=None, process=None):
         'profile_validation':'CANDIDATE_NOT_EMPIRICALLY_VALIDATED',
         'context_configuration':{'context':manifest.context if manifest else None,
                                  'batch':manifest.batch if manifest else None, 'ubatch':manifest.ubatch if manifest else None,
-                                 'kv_type':'f16', 'parallel_slots':1, 'mmap':True, 'host_prompt_cache_bytes':0},
+                                 'kv_type':'f16', 'parallel_slots':1, 'mmap':True, 'host_prompt_cache_bytes':0,
+                                 'device':profile_device(manifest.execution_profile) if manifest else None},
         'context_window':manifest.context if manifest else None,
         'available_memory':available, 'available_memory_bytes':available,
         'required_memory':required, 'minimum_available_bytes':MIN_AVAILABLE_BYTES,

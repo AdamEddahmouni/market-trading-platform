@@ -78,6 +78,26 @@ class RuntimeAdmissionTests(unittest.TestCase):
         changed = replace(small, context=1024)
         self.assertEqual(runtime.profile_reason(changed), 'LOCAL_RUNTIME_PROFILE_MISMATCH')
 
+    def test_gpu_profile_keeps_model_context_and_the_unchanged_memory_admission(self):
+        from market_platform_foundation.intelligence.inference import local_runtime as runtime
+        base = self.manifest()
+        gpu = runtime.apply_profile(base, 'vulkan-8192/1')
+        self.assertEqual((gpu.model_id, gpu.revision, gpu.runtime_version, gpu.context), (base.model_id, base.revision, base.runtime_version, 8192))
+        self.assertEqual(gpu.gpu_layers, 99)
+        self.assertIsNone(runtime.profile_reason(gpu))
+        self.assertEqual(runtime.profile_device('vulkan-8192/1'), 'Vulkan0')
+        self.assertEqual(runtime.profile_device('cpu-8192/1'), 'none')
+        sample = {'available_bytes': 12*resources.GIB, 'commit_available_bytes': 12*resources.GIB}
+        with patch.object(runtime, 'verify_artifacts', return_value=None):
+            gpu_status, cpu_status = runtime.readiness(gpu, sample=sample), runtime.readiness(base, sample=sample)
+        self.assertEqual(gpu_status['context_configuration']['device'], 'Vulkan0')
+        # GPU residency is never credited as host capacity: the conservative full-RAM estimate is unchanged.
+        self.assertEqual(gpu_status['estimated_peak_memory'], cpu_status['estimated_peak_memory'])
+        self.assertEqual(gpu_status['minimum_available_bytes'], 4*resources.GIB)
+        with patch.object(runtime, 'verify_artifacts', return_value=None):
+            self.assertEqual(runtime.readiness(gpu, sample={**sample, 'available_bytes': 9*resources.GIB})['rejection_reason'],
+                             'LOCAL_RESOURCE_PREDICTED_UNSAFE')
+
     def test_cold_prediction_accounts_for_observed_cpu_repacking_overhead(self):
         value=self.status(available_bytes=9*resources.GIB)
         self.assertEqual(value['rejection_reason'],'LOCAL_RESOURCE_PREDICTED_UNSAFE')
@@ -385,6 +405,72 @@ class ControlledLifecycleTests(unittest.TestCase):
         self.assertEqual(args[args.index('--device')+1],'none')
         self.assertEqual(args[args.index('--ubatch-size')+1],'64')
         self.assertTrue(process.terminated)
+
+    def _gpu_server(self, getter, spawn):
+        from market_platform_foundation.intelligence.inference import local_runtime
+        server=self.harness.server(getter,spawn)
+        server.manifest=local_runtime.apply_profile(server.manifest,'vulkan-8192/1')
+        server.enforce_admission=True
+        return server
+
+    def test_gpu_profile_names_its_one_device_and_keeps_every_other_bound(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        launches=[]
+        server=self._gpu_server(lambda *a:(503,b''),lambda command,**kw:(launches.append(list(command)) or FakeProcess()))
+        server._ours=lambda:None
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            server.ensure_running()
+        args=launches[0]  # the start timeout then falls back to the CPU profile (covered below)
+        self.assertEqual(args[args.index('--device')+1],'Vulkan0')
+        self.assertEqual(args[args.index('-ngl')+1],'99')
+        self.assertNotIn('--no-kv-offload',args)
+        self.assertEqual(args[args.index('-c')+1],'8192')
+        self.assertEqual(args[args.index('--fit')+1],'off')
+        self.assertEqual(args[args.index('--cache-ram')+1],'0')
+        self.assertEqual(args[args.index('--cache-type-k')+1],'f16')
+        self.assertEqual(args[args.index('-np')+1],'1')
+
+    def test_gpu_start_failure_falls_back_visibly_to_cpu_then_retries_gpu_after_cooldown(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        from market_platform_foundation.intelligence.inference.local_provider import SERVER_ALIAS, GPU_FALLBACK_COOLDOWN_S
+        from urllib.error import URLError
+        launches=[];up={'on':False}
+        def spawn(command,**kw):
+            device=command[command.index('--device')+1]
+            launches.append(device)
+            if device=='Vulkan0':
+                return FakeProcess(exits=True)  # e.g. a failed device allocation under --fit off
+            up['on']=True
+            return FakeProcess()
+        def getter(url,timeout):
+            if not up['on']:
+                raise URLError('refused')
+            return (200,json_bytes({'data':[{'id':SERVER_ALIAS}]})) if url.endswith('/v1/models') else (200,b'{}')
+        server=self._gpu_server(getter,spawn)
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertIsNone(server.ensure_running())
+            self.assertEqual(launches,['Vulkan0','none'])
+            self.assertEqual(server.manifest.execution_profile,'cpu-8192/1')
+            self.assertEqual(server.manifest.context,8192)
+            self.assertEqual((server.gpu_fallback['from_profile'],server.gpu_fallback['reason']),('vulkan-8192/1','LOCAL_RUNTIME_EXITED'))
+            server.stop();up['on']=False
+            self.assertEqual(server.ensure_running(),None)  # inside the cooldown the CPU profile is reused
+            self.assertEqual(launches,['Vulkan0','none','none'])
+            server.stop();up['on']=False
+            self.harness.clock[0]+=GPU_FALLBACK_COOLDOWN_S+1
+            server.ensure_running()
+            self.assertEqual(launches[3],'Vulkan0')
+
+    def test_cpu_profile_start_failure_is_not_reported_as_gpu_fallback(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        launches=[]
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:(launches.append(command) or FakeProcess(exits=True)))
+        server._ours=lambda:None
+        server.enforce_admission=True
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_EXITED')
+        self.assertEqual(len(launches),1)
+        self.assertIsNone(server.gpu_fallback)
 
     def test_profile_does_not_inherit_host_prompt_cache_larger_than_process_budget(self):
         from tests.intelligence.test_local_synthesis_provider import FakeProcess

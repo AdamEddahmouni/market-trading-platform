@@ -30,7 +30,7 @@ and the unchanged monitor remain independent requirements.
 
 Candidate profiles `cpu-8192/1` and `cpu-4096/1` use one slot, four generation
 and prompt threads, 128 batch / 64 microbatch, f16 KV and mmap. Device and
-operation/KV offload and automatic fitting are OFF. Full chat-template tokens
+operation/KV offload and automatic fitting are OFF (the GPU profile below differs only in its device). Full chat-template tokens
 plus 384 output tokens must fit; otherwise the evidence is refused intact.
 The pinned managed runtime uses bounded flags for ordinary synthesis too,
 so warm reuse cannot represent a different qualification profile.
@@ -47,6 +47,30 @@ KV dimensions agree with the
 [Qwen configuration](https://huggingface.co/Qwen/Qwen3-4B/blob/main/config.json).
 Integrated GPU budgets draw on shared system RAM and add no admission capacity.
 Profiles are not accepted optimizations until real memory and quality are measured.
+
+### Discrete-GPU profile `vulkan-8192/1` (2026-10-16)
+
+The serving workstation has a discrete NVIDIA RTX 2070 SUPER with 8 GiB of
+dedicated VRAM (`uma: 0`). The CPU-only decision was made for the earlier laptop's
+integrated GPU. `vulkan-8192/1` runs the same pinned model, the same pinned b11269
+Vulkan archive, 8192 context, f16 KV, one slot and `--fit off --cache-ram 0
+--load-mode mmap`. It names one device (`--device Vulkan0`), offloads all layers
+(`-ngl 99`) and keeps KV on that device. Batch/microbatch are 512/512.
+
+The pinned `llama-bench`, run on this host (evidence
+`destination-tests/20261016-paper-ai-throughput/baseline/`), measured:
+- prefill: 2,153–2,605 tok/s at 4,096–6,000 tokens on the GPU, against 42 tok/s
+  on the CPU profile;
+- generation: about 100 tok/s, against 12.7 tok/s on the CPU;
+- peak working set: 3.2 GB;
+- peak total VRAM: 5.1 GB, which includes 1.4 GB the desktop already uses.
+
+Admission is unchanged: the full-weight host estimate, the 4 GiB floor and the 6 GiB
+process and commit ceilings still apply, and GPU residency is never credited as host
+capacity. A GPU start failure (exit, start failure or start timeout) is recorded as
+`gpu_fallback` on the runtime receipt. The request is then retried once on
+`cpu-8192/1`, and the GPU is retried after a 30-minute cooldown. The active profile is
+part of the engine identity, so cached results never cross profiles.
 
 ## Lifecycle
 

@@ -51,6 +51,8 @@ LOCAL_UNAVAILABLE = "LOCAL_MODEL_UNAVAILABLE"
 _LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 _THINK = re.compile(r"<think>.*?</think>", re.DOTALL)
 _CREATE_NO_WINDOW = 0x08000000
+_GPU_START_FAILURES = frozenset({"LOCAL_RUNTIME_EXITED", "LOCAL_RUNTIME_START_FAILED", "LOCAL_RUNTIME_START_TIMEOUT"})
+GPU_FALLBACK_COOLDOWN_S = 30 * 60
 
 
 def is_loopback_url(url: str) -> bool:
@@ -142,6 +144,8 @@ class LocalLlamaServer:
         self.last_readiness = None
         self.should_stop = lambda: False
         self._runtime_lease = None
+        self.gpu_fallback: dict[str, Any] | None = None  # last GPU start failure; receipts carry it
+        self._preferred: tuple[LocalModelManifest, float] | None = None
 
     def _ours(self) -> bool | None:
         """True: our alias answers; False: something else holds the port; None: nothing answers."""
@@ -162,79 +166,108 @@ class LocalLlamaServer:
         return self._process is not None and self._process.poll() is None
 
     def ensure_running(self) -> str | None:
-        """None when the server answers as ours; otherwise a stable reason code."""
+        """None when the server answers as ours; otherwise a stable reason code.
+
+        A GPU profile that cannot start (exit, start failure or start timeout) is recorded in
+        ``gpu_fallback`` and retried once on its CPU profile; the GPU is tried again after the cooldown."""
 
         with self._lock:
             self._last_used = self._clock()
             if self.should_stop():return 'STOPPED_BY_OPERATOR'
-            if self.enforce_admission:
-                from .local_runtime import readiness
-                self.last_readiness=readiness(self.manifest,process=self._process)
-                if self.last_readiness['rejection_reason']:return self.last_readiness['rejection_reason']
-            if self.running() and self._ours():
-                return None
-            if self._process is not None:
-                self._stop_locked()  # never overwrite an unreaped owned instance
-            missing = self.manifest.missing()
-            if missing:
-                return missing
-            owner = self._ours()
-            if owner is True:
-                if self.enforce_admission:return 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME'
-                return None  # started by an earlier IMP process; reuse it
-            if owner is False:
-                return "LOCAL_MODEL_PORT_IN_USE"
-            started = self._clock()
-            args = [str(self.manifest.runtime_path), "-m", str(self.manifest.model_path), "--alias", SERVER_ALIAS,
-                    "--host", "127.0.0.1", "--port", str(self._port), "-c", str(self.manifest.context),
-                    "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui", "-t", str(self.manifest.threads)]
-            if self.enforce_admission:
-                args += ['--device','none','--no-kv-offload','--no-op-offload','--fit','off',
-                         '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
-                         '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads),
-                         # b11269 defaults to 8 GiB of extra host prompt snapshots. Saving a
-                         # warm slot can exceed the process ceiling before cache eviction.
-                         '--cache-ram','0']
-                lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
-                try:
-                    with lease.open('x',encoding='utf-8') as stream:
-                        stream.write(json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile}))
-                except FileExistsError:
-                    return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
-                except OSError:
-                    return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
-                self._runtime_lease=lease
-            log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
+            self._restore_preferred_locked()
+            reason = self._ensure_locked()
+            if reason in _GPU_START_FAILURES and self._fallback_locked(reason):
+                reason = self._ensure_locked()
+            return reason
+
+    def _fallback_locked(self, reason: str) -> bool:
+        from .local_runtime import CPU_FALLBACK, apply_profile, profile_device
+        profile = self.manifest.execution_profile
+        if not self.enforce_admission or profile_device(profile) == 'none' or profile not in CPU_FALLBACK:
+            return False
+        self.gpu_fallback = {'from_profile': profile, 'to_profile': CPU_FALLBACK[profile], 'reason': reason,
+                             'at': datetime.now(UTC).isoformat(), 'cooldown_s': GPU_FALLBACK_COOLDOWN_S}
+        self._preferred = (self.manifest, self._clock() + GPU_FALLBACK_COOLDOWN_S)
+        self.manifest = apply_profile(self.manifest, CPU_FALLBACK[profile])
+        return True
+
+    def _restore_preferred_locked(self) -> None:
+        if self._preferred is not None and not self.running() and self._clock() >= self._preferred[1]:
+            self.manifest, self._preferred = self._preferred[0], None
+
+    def _ensure_locked(self) -> str | None:
+        if self.enforce_admission:
+            from .local_runtime import readiness
+            self.last_readiness=readiness(self.manifest,process=self._process)
+            if self.last_readiness['rejection_reason']:return self.last_readiness['rejection_reason']
+        if self.running() and self._ours():
+            return None
+        if self._process is not None:
+            self._stop_locked()  # never overwrite an unreaped owned instance
+        missing = self.manifest.missing()
+        if missing:
+            return missing
+        owner = self._ours()
+        if owner is True:
+            if self.enforce_admission:return 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME'
+            return None  # started by an earlier IMP process; reuse it
+        if owner is False:
+            return "LOCAL_MODEL_PORT_IN_USE"
+        started = self._clock()
+        args = [str(self.manifest.runtime_path), "-m", str(self.manifest.model_path), "--alias", SERVER_ALIAS,
+                "--host", "127.0.0.1", "--port", str(self._port), "-c", str(self.manifest.context),
+                "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui", "-t", str(self.manifest.threads)]
+        if self.enforce_admission:
+            from .local_runtime import profile_device
+            device = profile_device(self.manifest.execution_profile)
+            # A CPU profile keeps every allocation in host RAM; a GPU profile names its one device explicitly.
+            args += ['--device',device] + (['--no-kv-offload','--no-op-offload'] if device == 'none' else [])
+            args += ['--fit','off',
+                     '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
+                     '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads),
+                     # b11269 defaults to 8 GiB of extra host prompt snapshots. Saving a
+                     # warm slot can exceed the process ceiling before cache eviction.
+                     '--cache-ram','0']
+            lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
             try:
-                self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                            creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0,
-                                            env={k:v for k,v in os.environ.items() if not k.startswith(('LLAMA_ARG_','GGML_'))})
+                with lease.open('x',encoding='utf-8') as stream:
+                    stream.write(json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile}))
+            except FileExistsError:
+                return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
             except OSError:
-                self._stop_locked()
-                return "LOCAL_RUNTIME_START_FAILED"
-            finally:
-                if log is not subprocess.DEVNULL:
-                    log.close()
-            self.starts += 1
-            deadline = started + self._startup_timeout_s
-            while self._clock() < deadline:
-                if self.should_stop():
-                    self._stop_locked()
-                    return 'STOPPED_BY_OPERATOR'
-                if self._process.poll() is not None:
-                    self._stop_locked()
-                    return "LOCAL_RUNTIME_EXITED"
-                try:
-                    status, _ = self._get(f"{self.base_url}/health", 2.0)
-                except (URLError, OSError, ValueError):
-                    status = 0
-                if status == 200 and self._ours():
-                    self.last_start_ms = round((self._clock() - started) * 1000)
-                    self._start_watcher()
-                    return None
-                self._sleep(0.5)
+                return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
+            self._runtime_lease=lease
+        log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
+        try:
+            self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                        creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0,
+                                        env={k:v for k,v in os.environ.items() if not k.startswith(('LLAMA_ARG_','GGML_'))})
+        except OSError:
             self._stop_locked()
-            return "LOCAL_RUNTIME_START_TIMEOUT"
+            return "LOCAL_RUNTIME_START_FAILED"
+        finally:
+            if log is not subprocess.DEVNULL:
+                log.close()
+        self.starts += 1
+        deadline = started + self._startup_timeout_s
+        while self._clock() < deadline:
+            if self.should_stop():
+                self._stop_locked()
+                return 'STOPPED_BY_OPERATOR'
+            if self._process.poll() is not None:
+                self._stop_locked()
+                return "LOCAL_RUNTIME_EXITED"
+            try:
+                status, _ = self._get(f"{self.base_url}/health", 2.0)
+            except (URLError, OSError, ValueError):
+                status = 0
+            if status == 200 and self._ours():
+                self.last_start_ms = round((self._clock() - started) * 1000)
+                self._start_watcher()
+                return None
+            self._sleep(0.5)
+        self._stop_locked()
+        return "LOCAL_RUNTIME_START_TIMEOUT"
 
     def touch(self) -> None:
         self._last_used = self._clock()
@@ -373,7 +406,9 @@ class LocalChatInferenceProvider:
                     self.last_resource_sample = {"peak_process_bytes": monitor.peak_bytes or None,
                         'peak_commit_bytes':monitor.peak_commit_bytes or None,"failure": monitor.failure,
                         'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
-                        'startup_ms':getattr(self._server,'last_start_ms',None)}
+                        'startup_ms':getattr(self._server,'last_start_ms',None),
+                        'execution_profile':getattr(getattr(self._server,'manifest',None),'execution_profile',None),
+                        'gpu_fallback':getattr(self._server,'gpu_fallback',None)}
                     diagnostics['resources'] = self.last_resource_sample
                     # A count refusal dispatched no generation and leaves the owned runtime healthy.
                     # All operational/resource failures still stop and reap it.
