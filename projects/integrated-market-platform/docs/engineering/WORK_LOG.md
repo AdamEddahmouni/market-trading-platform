@@ -7184,3 +7184,12 @@ would have deferred CRYPTO until the next regular equity session. The existing
 reconciliation (finished, gone or running) now also runs in the closed-session
 branch; it starts, evaluates and orders nothing, and a running run still defers
 the other scopes. A new regression failed before the repair.
+
+The operator Stop of ordinary CRYPTO run 7a349123 during exact token planning
+ended it 387 milliseconds after the request and reaped the owned model process,
+but the run was recorded FAILED and 1,288 already-planned rows were labelled
+UNPROCESSED:PROVIDER_PREFLIGHT_REJECTED. The count refusal carried the Stop
+reason, and the planning caller treated every refusal as a provider rejection.
+A Stop reaching the exact count now classifies planned rows STOPPED_BY_OPERATOR
+and ends the run STOPPED, matching the batch and comparison stop paths. A new
+regression failed before the repair. The historical receipt is unchanged.

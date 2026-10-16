@@ -276,6 +276,8 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
   packets. For a managed local model the existing resource monitor terminates
   the owned process, and cleanup confirms exit before releasing its runtime lease.
   A cancelled in-flight row remains unprocessed and the terminal status is `STOPPED`.
+  A Stop during exact token planning is also `STOPPED`: planned rows are
+  `UNPROCESSED:STOPPED_BY_OPERATOR`, never a provider preflight rejection.
   Hosted requests have no confirmed cancellation: they finish, are recorded and
   stay charged. Stop is checked again after the last batch or comparison
   request, before finalization. Finished receipts are kept; the unused hold is released.

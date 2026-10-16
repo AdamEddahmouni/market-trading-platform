@@ -660,6 +660,32 @@ class StopTests(unittest.TestCase):
         self.assertEqual(h.block["counts"]["unprocessed"], 120)
         self.assertEqual(h.block["status"], "STOPPED")
 
+    def test_stop_during_local_exact_token_planning_is_a_stop_not_a_provider_rejection(self):
+        stop = [False]
+
+        class LocalCount(RankingProvider):
+            runtime = "LOCAL_MODEL"
+            counts = 0
+
+            def preflight(inner, packet, *, rendered_prompt, config):
+                inner.counts += 1
+                if inner.counts == 2:
+                    stop[0] = True
+                if packet.should_stop():
+                    return {"accepted": False, "input_tokens": None, "context_window": 8192, "context_fit": None,
+                            "reason": "STOPPED_BY_OPERATOR"}
+                return {"accepted": True, "input_tokens": 1000, "context_window": 8192, "context_fit": True, "reason": None}
+
+        h = Harness(universe(120), LocalCount())
+        h.run(should_stop=lambda: stop[0])
+        self.assertEqual(h.provider.counts, 2)
+        self.assertEqual(h.provider.calls, 0)
+        self.assertEqual(h.block["status"], "STOPPED")
+        self.assertEqual(h.block["reason"], "STOPPED_BY_OPERATOR")
+        self.assertEqual(h.block["counts"]["by_class"], {"UNPROCESSED": 120})
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:STOPPED_BY_OPERATOR": 120})
+        self.assertEqual(h.ledger.open_runs(), [])
+
 
 class BudgetTests(unittest.TestCase):
     def budgeted(self, rows, *, max_tokens, max_requests=1000, inner=None):

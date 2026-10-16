@@ -221,6 +221,10 @@ class ScreenerAiCoverage:
         run.timings["planning_ms"] = (time.perf_counter() - mark) * 1000
         report_stage("REUSE_ASSESSMENT", batches_planned=len(batches), required_tokens=run.plan["required"]["tokens"] if self._budget is not None else None)
         if run.plan.get("preflight_rejected"):
+            if should_stop():
+                # A Stop reached the exact count: planned rows were cancelled, not rejected by the provider.
+                self._unprocessed(run, batches, "STOPPED_BY_OPERATOR")
+                return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             self._unprocessed(run, batches, "PROVIDER_PREFLIGHT_REJECTED")
             return self._terminal(run, FAILED, run.plan["preflight_rejected"])
         if not batches:
