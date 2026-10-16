@@ -207,6 +207,17 @@ support and missing-list checks. A rejection records `validation.stage`:
 `DECODE` or `CANONICAL_VALIDATION`. Output already in the stored shape is still
 accepted by the parser and passes the same canonical gates.
 
+The v3.4.1 prompt removes the copied news/FinBERT sample answer demonstrated in
+the October 15 BILLY/USD rejection. Market-only packets must describe their own
+quote and additional strong evidence; UNKNOWN alignments grant no support.
+The flat generation schema excludes positions that are weak in every packet
+candidate. Its structural minimum remains one for shared strict-provider
+compatibility; the canonical validator requires two strong references.
+Its union remains flat:
+the unchanged canonical validator independently checks the chosen candidate's
+own indices, weak support, current-market basis and news/sentiment attribution.
+No generated claim is repaired or given references after validation.
+
 Prompt `screener.ai_candidate_reduction.v3` describes this wire. It lists the
 output fields by name, and a regression compares that list with the schema and
 checks that every field name in the prompt exists in the schema or the packet.

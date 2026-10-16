@@ -1,5 +1,31 @@
 # IMP Work Log
 
+## 2026-10-15 — Post-memory-recovery activation repairs
+
+Reproduced the October 15 crypto failure from its immutable packet: Qwen copied
+the v3.4.0 news/FinBERT example into a market-only BILLY/USD result and cited
+weak volume as support. v3.4.1 replaces that example with evidence-conditional
+instructions. The flat generation schema excludes universally weak positions while preserving
+the existing strict-provider grammar bound; the canonical validator is unchanged
+and still requires two strong support references.
+Unsupported claims, weak support and cross-instrument references remain rejected.
+
+Warm-runtime allocation logging identified b11269's default 8 GiB host prompt
+cache and a 6.24 GiB working-set transient while saving snapshots. Managed
+profiles disable only that extra cache. The CPU-repacking allocation exceeded
+the original 1.5 GiB overhead prediction, so admission uses a 2 GiB allowance.
+Model artifact, 8192 context, batch/threads/GPU, 6 GiB process/commit ceilings and
+4 GiB system floor are preserved. New tests were observed failing before fixes.
+Operational completion, real responses, deployment hashes and any remaining
+blocker are recorded separately in the task's activation-completion evidence;
+engineering test success does not claim autonomous selection or trading success.
+Final focused verification: 192 inference/grounding/resource tests and 262
+Paper/universe/authority/journal/isolation tests passed. Fresh final-schema
+BTC/USD was CURRENT after real local inference; ETH/USD grounded output expired
+under the unchanged quote lifetime. Broader baseline failures remain separately
+recorded; the temporary shared-schema minimum regression was corrected.
+
+
 ## 2026-10-12 — Autonomous Paper operations (AUTO-01)
 
 Added one server-owned controller that runs the existing authorities

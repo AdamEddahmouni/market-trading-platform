@@ -78,6 +78,12 @@ class RuntimeAdmissionTests(unittest.TestCase):
         changed = replace(small, context=1024)
         self.assertEqual(runtime.profile_reason(changed), 'LOCAL_RUNTIME_PROFILE_MISMATCH')
 
+    def test_cold_prediction_accounts_for_observed_cpu_repacking_overhead(self):
+        value=self.status(available_bytes=9*resources.GIB)
+        self.assertEqual(value['rejection_reason'],'LOCAL_RESOURCE_PREDICTED_UNSAFE')
+        self.assertGreater(value['estimated_peak_memory'],5*resources.GIB)
+        self.assertEqual(value['minimum_available_bytes'],4*resources.GIB)
+
     def test_wrong_identity_is_rejected_before_hashing(self):
         from market_platform_foundation.intelligence.inference import local_runtime as runtime
         self.assertEqual(runtime.verify_artifacts(replace(self.manifest(), revision='wrong')), 'PINNED_LOCAL_MODEL_REQUIRED')
@@ -271,6 +277,20 @@ class ControlledLifecycleTests(unittest.TestCase):
         self.assertEqual(args[args.index('--device')+1],'none')
         self.assertEqual(args[args.index('--ubatch-size')+1],'64')
         self.assertTrue(process.terminated)
+
+    def test_profile_does_not_inherit_host_prompt_cache_larger_than_process_budget(self):
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        process=FakeProcess(); args=[]
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:(args.extend(command) or process))
+        server._ours=lambda:None
+        server.enforce_admission=True
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_START_TIMEOUT')
+        self.assertIn('--cache-ram',args)
+        self.assertEqual(args[args.index('--cache-ram')+1],'0')
+        self.assertEqual(args[args.index('-c')+1],'8192')
+        self.assertTrue(process.terminated)
+        self.assertIsNone(server._runtime_lease)
 
     def test_foreign_alias_is_not_reused_or_killed(self):
         from market_platform_foundation.intelligence.inference.local_provider import SERVER_ALIAS

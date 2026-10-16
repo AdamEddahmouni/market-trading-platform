@@ -188,7 +188,7 @@ END UNTRUSTED EVIDENCE DATA
     PromptDefinition(
         prompt_id="screener.ai_candidate_reduction.v3",
         task_type=IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION,
-        version="3.4.0",
+        version="3.4.1",
         output_schema_version="ai-screener-output/1.0.0",
         description="Internal IMP candidate reduction over the compact packet-local reference wire",
         template="""Task: SCREENER_CANDIDATE_REDUCTION. Select zero to five candidates for operator review.
@@ -203,9 +203,11 @@ evidence index; a rationale grounded only in reference evidence fails validation
 Any statement about an alignment names its evidence: put the reference_index of every item that alignment
 names (its news_refs, sentiment_refs and comparator_ref) into supporting_refs or conflicting_refs, and never
 mention news, headlines, stories, sentiment or tone unless those indices appear there.
-Pattern (do not copy the numbers): with quote index 0, news index 2 and FinBERT sentiment index 3, an accepted
-pick is supporting_refs [0,2,3] with a rationale like "The current quote is the review basis; the admitted story
-cluster and its FinBERT counts are reviewed as cited." If an index is absent, write only the remaining claims.
+Choose support from the selected candidate's actual strong evidence, not from a sample answer.
+For market-only evidence, cite the current QUOTE plus additional strong non-QUOTE evidence (TECHNICALS only
+when present), and describe only the facts those cited items contain. If NEWS or SENTIMENT is absent, do not describe story clusters, FinBERT counts or tone.
+An UNKNOWN alignment is not supporting evidence. If every rationale clause cannot be supported by the cited
+items, select zero candidates and explain the evidence limitation without inventing a claim.
 Preserve CURRENT_MARKET versus REFERENCE_CONTEXT.
 Evidence with non-empty weak_reasons may be conflict/context, never strong support. A candidate's weak evidence and
 missing capabilities are fixed by the packet and recorded from it; the output has no field for them.

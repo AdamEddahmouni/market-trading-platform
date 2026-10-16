@@ -123,7 +123,7 @@ class GroundedClaimTests(unittest.TestCase):
         # local gate: that packet measured 4594 exact input tokens with v3.0.0 against the
         # 8192-token window with a 2600-token output allowance.
         self.assertLess(len(prompt.template.encode('utf-8')), 6600)
-        self.assertEqual(prompt.version, '3.4.0')
+        self.assertEqual(prompt.version, '3.4.1')
 
 
 class ReductionContractTests(unittest.TestCase):

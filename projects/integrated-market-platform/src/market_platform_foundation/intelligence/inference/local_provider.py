@@ -189,7 +189,10 @@ class LocalLlamaServer:
             if self.enforce_admission:
                 args += ['--device','none','--no-kv-offload','--no-op-offload','--fit','off',
                          '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
-                         '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads)]
+                         '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads),
+                         # b11269 defaults to 8 GiB of extra host prompt snapshots. Saving a
+                         # warm slot can exceed the process ceiling before cache eviction.
+                         '--cache-ram','0']
                 lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
                 try:
                     with lease.open('x',encoding='utf-8') as stream:

@@ -114,9 +114,11 @@ def readiness(manifest, *, sample=None, process=None):
     pin = model_pin(manifest)
     # Model-specific f16 K+V dimensions from the official architecture.
     # Count the FULL weight artifact even with mmap, plus conservative uncalibrated
-    # 1.5 GiB runtime/graph/buffer reserve; shared GPU budgets never add capacity.
+    # 2 GiB runtime/repacking/graph/buffer allowance; b11269 repacks the pinned
+    # 4B weights into 1683.28 MiB, already exceeding the old 1.5 GiB allowance.
+    # Extra host prompt snapshots are disabled; shared GPU budgets add no capacity.
     kv = pin.layers * pin.kv_heads * pin.head_dim * 4 * manifest.context if pin else None
-    peak = pin.weight_bytes + kv + 3*GIB//2 if kv is not None else None
+    peak = pin.weight_bytes + kv + 2*GIB if kv is not None else None
     resident = min(sample.get('process_bytes') or 0, sample.get('process_commit_bytes') or 0)
     additional = max(0, peak-resident) if peak is not None else None
     required = MIN_AVAILABLE_BYTES + additional if additional is not None else None
@@ -148,12 +150,12 @@ def readiness(manifest, *, sample=None, process=None):
         'profile_validation':'CANDIDATE_NOT_EMPIRICALLY_VALIDATED',
         'context_configuration':{'context':manifest.context if manifest else None,
                                  'batch':manifest.batch if manifest else None, 'ubatch':manifest.ubatch if manifest else None,
-                                 'kv_type':'f16', 'parallel_slots':1, 'mmap':True},
+                                 'kv_type':'f16', 'parallel_slots':1, 'mmap':True, 'host_prompt_cache_bytes':0},
         'context_window':manifest.context if manifest else None,
         'available_memory':available, 'available_memory_bytes':available,
         'required_memory':required, 'minimum_available_bytes':MIN_AVAILABLE_BYTES,
         'estimated_peak_memory':peak, 'estimated_kv_bytes':kv,
-        'estimate_basis':'FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE',
+        'estimate_basis':'FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_2_GIB_RUNTIME_ALLOWANCE',
         'observed_peak_memory':sample.get('process_peak_bytes'), 'resource_sample':sample,
         'readiness_status':status, 'state':{'LOCAL_RUNTIME_READY':'READY',
             'LOCAL_RUNTIME_RESOURCE_BLOCKED':'RESOURCE_BLOCKED'}.get(status,'UNAVAILABLE'),

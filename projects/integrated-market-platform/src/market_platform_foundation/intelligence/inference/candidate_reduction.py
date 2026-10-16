@@ -156,12 +156,16 @@ def output_schema(candidates: list[dict]) -> dict:
     # Flat and instrument-independent: per-instrument branches and long reference enums exceed the vendor
     # grammar compiler. Evidence positions are candidate-local, so the enum is the largest single list.
     refs = list(range(max((len(reference_ids(c)) for c in candidates), default=0))) or [0]
+    # The grammar is flat across candidates; canonical validation still checks the selected
+    # candidate's own references. Do not invite the model to use weak context as support.
+    strong_refs = sorted({i for c in candidates for i, e in enumerate(
+        (*c['current_market_evidence'], *c['reference_evidence'])) if not e['weak_reasons']}) or [0]
     ref_list = dict(type='array', items={'type': 'integer', 'enum': refs}, description='reference_index values of the selected candidate only; at most 12 distinct.')
     properties = dict(candidate_key={'type': 'integer', 'enum': list(range(len(candidates))) or [0],
             'description': 'The candidate_key of the selected candidate. It binds the instrument and its fixed weak and missing lists.'},
         rank={'type': 'integer', 'enum': list(range(1, MAX_SELECTED+1))}, rationale={'type': 'string',
             'description': 'Grounded solely in cited supporting_refs: a sentence that mentions news or sentiment must have the matching NEWS or SENTIMENT reference_index in supporting_refs or conflicting_refs, and no sentence may describe evidence that is not cited.'},
-        supporting_refs={**ref_list, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
+        supporting_refs={**ref_list, 'items': {'type': 'integer', 'enum': strong_refs}, 'minItems': 1, 'description': 'reference_index values of the selected candidate: at least two strong references including a current quote; at most 12 distinct.'},
         conflicting_refs=ref_list, uncertainties={'type': 'array', 'items': {'type': 'string'}, 'description': 'At most 12 distinct strings.'})
     items = dict(type='object', additionalProperties=False, required=list(properties), properties=properties)
     return dict(type='object', additionalProperties=False, required=['schema_version', 'candidates', 'limitations'],

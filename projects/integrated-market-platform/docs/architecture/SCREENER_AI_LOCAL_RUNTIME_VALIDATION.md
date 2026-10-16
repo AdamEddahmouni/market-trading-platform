@@ -22,8 +22,11 @@ The **4 GiB available physical-memory floor** and **6 GiB process ceiling** are
 unchanged. Process committed memory also has a 6 GiB ceiling. Startup reserves
 estimated allocation plus the 4 GiB floor in physical and commit headroom.
 The estimate counts all 2,497,280,256 weight bytes, f16 K+V for 36 layers / 8 KV
-heads / 128 head dimension, and 1.5 GiB uncalibrated runtime/graph/buffer reserve.
-This is a conservative prediction, not measured peak allocation.
+heads / 128 head dimension, and a 2 GiB runtime/repacking/graph/buffer allowance. The October 15 allocation
+log measured 1,683.28 MiB of CPU-repacked weights in addition to mapped weights
+and 1,152 MiB of KV for 8192 context. The former 1.5 GiB allowance understated
+this overhead. Prediction is an admission estimate; measured high-water marks
+and the unchanged monitor remain independent requirements.
 
 Candidate profiles `cpu-8192/1` and `cpu-4096/1` use one slot, four generation
 and prompt threads, 128 batch / 64 microbatch, f16 KV and mmap. Device and
@@ -31,6 +34,12 @@ operation/KV offload and automatic fitting are OFF. Full chat-template tokens
 plus 384 output tokens must fit; otherwise the evidence is refused intact.
 The pinned managed runtime uses bounded flags for ordinary synthesis too,
 so warm reuse cannot represent a different qualification profile.
+Managed profiles explicitly use `--cache-ram 0`: b11269 otherwise enables an
+8 GiB host prompt cache. Saving warm slot snapshots caused a measured 6.24 GiB
+working-set transient; those extra snapshots are outside the fixed KV allocation.
+Disabling them preserves the model, context, batch, threads, GPU and all ceilings.
+Slot-local prefix reuse and the application's validated inference cache remain
+under their existing contracts.
 
 Flags were verified against the installed runtime and
 [pinned llama.cpp argument source](https://github.com/ggml-org/llama.cpp/blob/b11269/common/arg.cpp).
@@ -131,13 +140,14 @@ no automatic fitting. Startup/inference deadlines remain 180/120 seconds.
 KV estimates use 28 layers, eight KV heads, head dimension 128, as recorded in
 the official [0.6B configuration](https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/config.json)
 and [1.7B configuration](https://huggingface.co/Qwen/Qwen3-1.7B/blob/main/config.json).
-The unchanged 1.5 GiB graph/buffer reserve and 4 GiB free-memory floor produce
-startup requirements of **6.53 GiB (0.6B)** and **7.65 GiB (1.7B)**.
-These are conservative estimates, not measured peaks or accepted optimizations.
-Evidence exceeding context is refused intact. The unchanged 4B requirements are
-8.39 GiB at 4096 context and 8.95 GiB at 8192 context. The earlier 8.39 GiB pilot
-used `cpu-4096/1`; the legacy manifest retains its 8192 context. The process and
-process-commit ceilings remain 6 GiB.
+The initial 1.5 GiB graph/buffer allowance and 4 GiB free-memory floor produced
+startup estimates of 6.53 GiB (0.6B), 7.65 GiB (1.7B), and 8.39/8.95 GiB for 4B
+at 4096/8192 context. Those remain the historical pilot's estimates. The October
+15 correction uses a 2 GiB overhead allowance, increasing each cold-start
+requirement by 0.5 GiB. These are estimates, not measured peaks or accepted
+optimizations. Evidence exceeding context is refused intact. The earlier 8.39 GiB
+pilot used `cpu-4096/1`; the legacy manifest retains its 8192 context. The process
+and process-commit ceilings remain 6 GiB; the system floor remains 4 GiB.
 
 The existing AI Screener panel exposes an **Experimental local model** selector
 when the operator chooses Local-first experimental. It submits `local_model_id`
