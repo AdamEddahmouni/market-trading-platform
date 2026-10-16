@@ -7160,3 +7160,18 @@ candidate-task packet has a candidates attribute. Existing minimal packets have
 only a placeholder schema. The provider now treats the absent list as empty for
 the private optional schema bound; production packets retain their actual count.
 No existing test or validation assertion was changed to accommodate the repair.
+
+Canonical ordinary equity acceptance on release 0240518a returned a grounded
+response in 236.914 seconds, including 200.726 seconds of prefill and 30.786 of
+generation; its evidence correctly expired. The next request-time exact-context
+refusal discarded the healthy runtime before dispatch, forcing a cold restart.
+Extended the existing count-refusal retention rule to this same no-dispatch case;
+all resource, operational and Stop failures still terminate the process. A new
+regression failed before repair; 69 lifecycle/capacity checks then passed.
+
+The actual Stop check ended the coverage run 125 milliseconds after its request,
+with owned model exit confirmed. It also revealed that the cancelled in-flight
+row retained the ELIGIBLE display class although aggregate unprocessed accounting
+was conservative. A strengthened regression reproduced 70 unprocessed rows instead
+of all 120. The stop branch now classifies submitted cancelled rows UNPROCESSED too.
+Immutable historical receipts are retained; no old coverage result is rewritten.

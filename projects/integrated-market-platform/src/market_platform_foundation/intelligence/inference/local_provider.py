@@ -375,9 +375,10 @@ class LocalChatInferenceProvider:
                         'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
                         'startup_ms':getattr(self._server,'last_start_ms',None)}
                     diagnostics['resources'] = self.last_resource_sample
-                    # Oversized count-only groups are bisected using the same owned runtime.
+                    # A count refusal dispatched no generation and leaves the owned runtime healthy.
                     # All operational/resource failures still stop and reap it.
-                    oversize_count = preflight_only and response is not None and response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
+                    oversize_count = (response is not None and response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
+                                      and response.inference_dispatched is False)
                     if response is None or (response.error_code and not oversize_count) or monitor.failure or stop():
                         self._server.stop()
             finally:

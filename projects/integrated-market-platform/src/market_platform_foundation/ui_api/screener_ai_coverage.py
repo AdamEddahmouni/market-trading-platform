@@ -259,6 +259,7 @@ class ScreenerAiCoverage:
                                  planned_tokens=batch["tokens"], first_pass=True, reuse_only=batch.get("cached",False), should_stop=should_stop)
             if outcome["failure"]:
                 if should_stop():
+                    self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "STOPPED_BY_OPERATOR")
                     self._unprocessed(run, batches[index + 1:], "STOPPED_BY_OPERATOR")
                     return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                 self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "BATCH_FAILED:" + outcome["failure"])

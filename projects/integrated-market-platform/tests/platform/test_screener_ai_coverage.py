@@ -574,6 +574,8 @@ class StopTests(unittest.TestCase):
         self.assertEqual(h.calls()[0]['reason'], 'STOPPED_BY_OPERATOR')
         self.assertEqual(h.block['status'], 'STOPPED')
         self.assertEqual(h.block['counts']['evaluated'], 0)
+        self.assertEqual(h.block['counts']['by_class'].get('UNPROCESSED'), 120)
+        self.assertNotIn('ELIGIBLE', h.block['counts']['by_class'])
         self.assertEqual(provider.calls, 1)
         self.assertEqual(h.ledger.open_runs(), [])
         self.assertIsNone(action_repository().get('candidate_run', 'CU-' + h.run_id))

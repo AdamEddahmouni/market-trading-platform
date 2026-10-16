@@ -42,6 +42,39 @@ def packet(task=IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION):
 
 
 class LocalContextTests(unittest.TestCase):
+    def test_request_time_context_refusal_keeps_healthy_runtime_for_next_packet(self):
+        from tests.intelligence.test_local_synthesis_provider import ServerLifecycleTests, FakeProcess
+        from market_platform_foundation.intelligence.inference.local_provider import SERVER_ALIAS
+        from market_platform_foundation.intelligence.inference import local_resources as resources
+        harness = ServerLifecycleTests()
+        harness.setUp()
+        server = None
+        try:
+            server = harness.server(lambda *a: (200, json.dumps({'data': [{'id': SERVER_ALIAS}]}).encode()),
+                lambda *a, **k: self.fail('an exact count refusal must not force a cold restart'))
+            process = FakeProcess()
+            server._process = process
+            server.enforce_admission = True
+            transport = Transport(count=6000)
+            local = LocalChatInferenceProvider(base_url=server.base_url, model_id='fixture', server=server, poster=transport)
+            sample = {'available_bytes': 12 * resources.GIB, 'commit_available_bytes': 12 * resources.GIB,
+                'process_bytes': resources.GIB, 'process_commit_bytes': resources.GIB}
+            with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness', return_value={'rejection_reason': None}), \
+                 patch.object(resources, 'memory_sample', return_value=sample):
+                refused = local.infer(packet(), rendered_prompt='CURRENT EVIDENCE', config=IntelligenceInferenceConfig(max_tokens=2600))
+                self.assertEqual(refused.error_message, 'LOCAL_CONTEXT_EXCEEDED')
+                self.assertFalse(refused.inference_dispatched)
+                self.assertTrue(server.running(), 'count refusal discarded a healthy owned runtime')
+                transport.count = 5500
+                accepted = local.infer(packet(), rendered_prompt='NEXT CURRENT PACKET', config=IntelligenceInferenceConfig(max_tokens=2600))
+                self.assertIsNone(accepted.error_code)
+                self.assertIs(server._process, process)
+                self.assertEqual(sum(url.endswith('/completions') for url, _ in transport.requests), 1)
+        finally:
+            if server is not None:
+                server.stop()
+            harness.tearDown()
+
     def test_baseline_reduction_measures_serialized_chat_before_generation(self):
         transport = Transport(count=5592)
         value = provider(transport).infer(packet(), rendered_prompt='FULL BASELINE EVIDENCE', config=IntelligenceInferenceConfig(max_tokens=2600))

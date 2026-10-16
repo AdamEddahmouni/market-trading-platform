@@ -299,6 +299,11 @@ are unchanged. `canonical-parser-bounds/1` is part of local provider identity so
 answers generated under the old grammar are not reused as new-contract answers.
 These generation bounds do not extend a quote's lifetime or make a historical
 model response actionable.
+An exact `LOCAL_CONTEXT_EXCEEDED` refusal with `inference_dispatched=false`
+retains the healthy owned runtime for the next packet, including a request-time
+count after current evidence acquisition. Cancellation, resource failures and
+operational failures still stop and reap it. This preserves slot prefix reuse
+without dispatching an oversized prompt or enabling host prompt snapshots.
 - **Client disconnect.** The run lives on the server; a reloaded page
   re-attaches.
 - **Restart.** Receipts are appended to the coverage ledger
