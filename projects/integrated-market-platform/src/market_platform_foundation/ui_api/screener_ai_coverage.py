@@ -256,8 +256,11 @@ class ScreenerAiCoverage:
                 self._unprocessed(run, batches[index:], "STOPPED_BY_OPERATOR")
                 return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
             outcome = self._call(run, batch["instrument_ids"], stage="BATCH_INFERENCE", index=index, total=len(batches),
-                                 planned_tokens=batch["tokens"], first_pass=True, reuse_only=batch.get("cached",False))
+                                 planned_tokens=batch["tokens"], first_pass=True, reuse_only=batch.get("cached",False), should_stop=should_stop)
             if outcome["failure"]:
+                if should_stop():
+                    self._unprocessed(run, batches[index + 1:], "STOPPED_BY_OPERATOR")
+                    return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                 self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "BATCH_FAILED:" + outcome["failure"])
                 if sent_failure is None:
                     sent_failure = outcome["failure"]
@@ -301,8 +304,10 @@ class ScreenerAiCoverage:
                     return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                 outcome = self._call(run, group, stage="GLOBAL_REDUCTION", index=index, total=len(groups),
                                      planned_tokens=run.plan["largest_batch_tokens"], first_pass=False, round_number=number,
-                                     reuse_only=run.plan.get("global_reuse_only",False))
+                                     reuse_only=run.plan.get("global_reuse_only",False), should_stop=should_stop)
                 if outcome["failure"]:
+                    if should_stop():
+                        return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                     return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "GLOBAL_REDUCTION_INCOMPLETE:" + outcome["failure"])
                 final = outcome["result"]
                 admitted = admitted or bool(outcome["submitted"])
@@ -581,7 +586,8 @@ class ScreenerAiCoverage:
     # ------------------------------------------------------------ model call
 
     def _call(self, run: _Run, instrument_ids: list[str], *, stage: str, index: int, total: int, planned_tokens: int,
-              first_pass: bool, round_number: int | None = None, reuse_only: bool = False) -> dict[str, Any]:
+              first_pass: bool, round_number: int | None = None, reuse_only: bool = False,
+              should_stop: Callable[[], bool] = lambda: False) -> dict[str, Any]:
         """One bounded request on evidence acquired for it. Never retried."""
         from ..intelligence.inference.anthropic_synthesis import drawing_from_hold
         from .screener_news_evidence import attach_news, fit_news
@@ -631,9 +637,9 @@ class ScreenerAiCoverage:
                 with relabelled(stage, round=round_number, **position):
                     if run.hold:
                         with drawing_from_hold(run.run_id, planned_tokens):
-                            result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only)
+                            result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
                     else:
-                        result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only)
+                        result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
                 # A request answered from the reducer's cache was not sent again and is not counted as a model call.
                 if result.get("cache") == "HIT":
                     run.cache_hits += 1
@@ -669,6 +675,7 @@ class ScreenerAiCoverage:
                 "reuse":result.get("reuse"), "manifest_hash":semantic_hash(manifest),
                 "tokens_input": result.get("tokens_input"), "tokens_output": result.get("tokens_output"),
                 "latency_ms": result.get("latency_ms"), "provider_request_id": result.get("provider_request_id"),
+                "provider_diagnostics": result.get("provider_diagnostics"),
                 "evidence_cutoff": now, "completed_at": result.get("generated_at"), "valid_until": result.get("valid_until"),
                 "instrument_ids": submitted, "dropped": dropped,
                 "selected": [{"instrument_id": pick["instrument_id"], "rank": pick["rank"]} for pick in picks]})

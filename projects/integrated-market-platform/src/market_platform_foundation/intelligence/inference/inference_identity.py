@@ -7,6 +7,8 @@ def provider_identity(provider):
     identity = {'provider_class':type(engine).__module__+'.'+type(engine).__qualname__}
     for name in ('provider_id','model_id','runtime','reasoning_effort','reasoning_headroom','base_url','_request_model'):
         identity[name] = getattr(engine,name,None)
+    if hasattr(engine, 'candidate_schema_contract'):
+        identity['candidate_schema_contract'] = engine.candidate_schema_contract
     manifest = getattr(getattr(engine,'_server',None),'manifest',None)
     if manifest is not None:
         identity['manifest'] = {key:str(getattr(manifest,key,None)) for key in

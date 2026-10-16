@@ -272,10 +272,33 @@ Stages (`screener-ai-screener-run/2.0.0`): `ENUMERATION`, `ELIGIBILITY`,
 - **Duplicate Run.** One run per account; a second POST joins it and starts
   and spends nothing.
 - **Stop.** `POST /screener/ai-screener/runs/{run_id}/stop` (`state.write`).
-  No further request starts. A request already sent is not claimed cancelled:
-  the provider offers no confirmed cancellation, so it finishes, is recorded
-  and stays charged. Stop is checked again after the last batch or comparison
+  No further request starts. The run signal reaches first-pass and comparison
+  packets. For a managed local model the existing resource monitor terminates
+  the owned process, and cleanup confirms exit before releasing its runtime lease.
+  A cancelled in-flight row remains unprocessed and the terminal status is `STOPPED`.
+  Hosted requests have no confirmed cancellation: they finish, are recorded and
+  stay charged. Stop is checked again after the last batch or comparison
   request, before finalization. Finished receipts are kept; the unused hold is released.
+
+Local batch receipts include additive `provider_diagnostics`: actual HTTP start/end
+clocks and elapsed times for chat templating, exact token counting, and generation;
+slot wait and runtime readiness time; API-thread CPU time; runtime-reported prefill
+and generation timings when supplied; finish reason; cancellation state; and the
+existing resource-monitor sample. These clocks describe work performed, not an
+estimate of universe progress. A timeout with missing usage still has unknown token
+usage. The 300-second candidate-reduction timeout belongs to each generation HTTP
+request, not the entire universe. Startup retains its separate 180-second bound;
+the monitor retains its existing combined startup/request safety ceiling.
+
+The local candidate generation grammar privately copies the shared output schema
+and enforces the canonical parser's existing bounds: at most 1,200 characters per
+string, 12 list items, and at most five selected candidates (also bounded by the
+request's candidate count). This prevents a repeating string from continuing
+beyond a length the parser would reject. The hosted schema and canonical parser
+are unchanged. `canonical-parser-bounds/1` is part of local provider identity so
+answers generated under the old grammar are not reused as new-contract answers.
+These generation bounds do not extend a quote's lifetime or make a historical
+model response actionable.
 - **Client disconnect.** The run lives on the server; a reloaded page
   re-attaches.
 - **Restart.** Receipts are appended to the coverage ledger

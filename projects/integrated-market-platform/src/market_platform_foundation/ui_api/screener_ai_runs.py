@@ -7,8 +7,8 @@ account: a second start joins the run in progress.
 
 A run is ``ScreenerAiService.run_universe`` for the scope: the full-universe method. Its receipts are
 written to the coverage ledger as it goes, so a restart finds the run it killed and closes it as
-INTERRUPTED; nothing is resumed. Stop prevents the next model call; a call already sent is not cancelled,
-because the provider offers no confirmed cancellation, and its tokens stay charged.
+INTERRUPTED; nothing is resumed. Stop reaches owned local generation and its resource monitor reaps the
+owned process. Hosted calls have no confirmed cancellation and their tokens stay charged.
 
 A service without ``run_universe`` (an acceptance harness carrying a prebuilt result) runs its ``run``.
 """
@@ -259,7 +259,7 @@ class AiScreenerRuns:
                 "result": restored if result else None, "error": None}
 
     def stop(self, account_id: str, run_id: str) -> dict[str, Any] | None:
-        """Ask this account's run to start no further model call. A call already sent finishes and stays charged;
+        """Stop further calls and signal owned local generation. Hosted calls remain charged;
         completed receipts are kept. Stopping a finished run changes nothing."""
         self._recover(self._service())
         with self._lock:

@@ -7115,3 +7115,48 @@ Preserved the standalone apply/backup/migration helpers used by profint-rc1 unde
 ## 2026-10-13 — Authorized operational certification correction
 
 Final candidate 2a0fbbe8 was recertified in an authorized Windows terminal: 9,203 tests, 9,135 passes, 59 skips, zero failures, nine errors, exit 1. Eight errors were Windows temporary path length failures; they pass unchanged with shorter disposable paths. The remaining existing canonical closure regression reproduced an unclassified tools/release_candidate directory. Added only that directory to the existing retained qualification/operations tooling scope; no existing classification or product behavior changed. The nine-case reproduction had eight passes and one classification error before this correction. Full recertification remains pending; no production deployment, migration, paid AI or trading is implied by this entry. Evidence is in the coordinator operational-release-20261013 directory.
+
+## 2026-10-16 — Paper coverage cancellation and measured inference receipts
+
+Recovered deployed baseline `ecd6fe2e` and the original Paper experiment without a reset.
+Coverage planning already reacquires evidence per request and final comparison; final expired
+selections still fail closed. The 300-second limit is per local generation HTTP request,
+not a universe deadline. Ten later successful crypto batches averaged 83.577 seconds;
+the 1,463-request plan projects to 33.965 serial hours, before added acquisition/failures.
+This is a measured capacity mismatch with the existing 1,800-second interval, not activation success.
+
+Corrected a demonstrated dropped Stop callback between coverage and CandidateReducer generation.
+Cancellation now reaches first-pass and comparison inference, stops slot/shared-result waiting,
+and is not cached as a provider failure that poisons the next run. A cancelled request is
+unprocessed; a stopped run cannot persist an actionable selection. Added additive local request
+receipts separating slot wait, readiness, exact templating/tokenization, generation, runtime
+prefill/decode timings when available, grounding validation, thread CPU, and resource samples.
+No raw model text is persisted by this instrumentation. Hosted cancellation/accounting is unchanged.
+
+Regressions were observed failing before correction for generation/comparison Stop propagation,
+slot cancellation, shared-result waiting, and cancellation-cache isolation. Independent read-only
+review identified the latter two and accepted the corrected combined diff. Runtime acceptance
+and final test/deployment counts are recorded in the coordinator's `activation-timeout-20261016`
+evidence directory; no full-universe completion or Paper order is implied by fixture tests.
+Model/runtime pins, 8,192 context, 300-second generation timeout, 6 GiB process ceiling,
+4 GiB reserve, source clocks, quote freshness, grounding, account, policy and schedule remain unchanged.
+
+A frozen replay of the first deployed timeout then reproduced the semantic cause:
+one limitation string repeated to 6,277 characters (37 repeated phrases) until the
+unchanged 300-second generation deadline. The canonical parser already rejects
+strings longer than 1,200 characters, but the local grammar had no matching bound.
+The local provider now copies the shared schema and applies those existing string,
+list and candidate-count bounds; hosted schemas and the parser are unchanged.
+The grammar revision participates in local cache identity. Both new regressions
+failed before the correction; 103 relevant tests then passed. The same frozen
+packet returned 233 tokens in 156.642 seconds and passed unchanged validation;
+peak process memory was 5,638,422,528 bytes. This was a historical streaming
+diagnostic, with concurrent offline verification, not a current-market selection
+or a controlled benchmark speedup. Its 111.383-second prefill still exceeds the
+60-second quote lifetime; expiry continues to reject stale final selections.
+
+The broad check caught six capacity-fixture errors introduced by assuming every
+candidate-task packet has a candidates attribute. Existing minimal packets have
+only a placeholder schema. The provider now treats the absent list as empty for
+the private optional schema bound; production packets retain their actual count.
+No existing test or validation assertion was changed to accommodate the repair.

@@ -453,7 +453,7 @@ class CandidateReducer:
         packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'preflight', digest, now, scope, candidates, output_schema(candidates), should_stop)
         return check(packet, rendered_prompt=rendered, config=self.config)
 
-    def reduce(self, scope, candidates, now, *, allow_inference=True):
+    def reduce(self, scope, candidates, now, *, allow_inference=True, should_stop=lambda: False):
         report_stage('PACKET')
         digest, rendered, prompt, size = self._prepare(scope, candidates, now)
         report_stage('PACKET', packet_bytes=size, intake_count=len(candidates), sufficient_count=sum(bool(c['sufficient']) for c in candidates))
@@ -480,6 +480,8 @@ class CandidateReducer:
                     'compatibility': {k: contract[k] for k in ('selected_model', 'required_contract', 'unsupported_capability')}}
         if not any(c['sufficient'] for c in candidates):
             return {**base, 'state': 'NO_GROUNDED_CANDIDATES', 'reason': 'INSUFFICIENT_EVIDENCE', 'limitations': ['No admissible current price plus additional strong evidence.']}
+        if should_stop():
+            return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
         with self.lock:
             cached = self._entry(digest, candidates)
             if cached:
@@ -490,14 +492,21 @@ class CandidateReducer:
         if waiter is not None:
             # Another caller already holds this exact packet's model call; this run waits for that answer.
             report_stage('MODEL_CALL', shared=True)
-            waiter.wait(self.config.timeout_seconds + 5)
+            deadline = time.monotonic() + self.config.timeout_seconds + 5
+            while not should_stop() and time.monotonic() < deadline:
+                if waiter.wait(min(.25, max(0, deadline-time.monotonic()))):
+                    break
+            if should_stop():
+                return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
             with self.lock:
                 cached = self._entry(digest, candidates)
             return self._hit(cached[1], now) if cached else {**base, 'state': 'UNAVAILABLE', 'reason': 'SYNTHESIS_IN_PROGRESS_OR_EXPIRED'}
         try:
+            if should_stop():
+                return {**base, 'state': 'UNAVAILABLE', 'reason': 'STOPPED_BY_OPERATOR'}
             if not allow_inference:
                 return {**base,'state':'UNAVAILABLE','reason':'REUSE_INVALIDATED_AFTER_PLANNING'}
-            packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates))
+            packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, base['run_id'], digest, now, scope, candidates, output_schema(candidates), should_stop)
             if not getattr(self.provider, 'reports_stages', False):
                 report_stage('MODEL_CALL')
             response = self.provider.infer(packet, rendered_prompt=rendered, config=self.config)
@@ -506,6 +515,8 @@ class CandidateReducer:
                         tokens_output=response.tokens_output, latency_ms=response.latency_ms, provider_request_id=response.provider_request_id,
                         provider_response_id=response.provider_response_id, simulated=response.simulated,
                         generated_at=datetime.fromtimestamp(self.clock(), UTC).isoformat().replace('+00:00', 'Z'))
+            if response.diagnostics is not None:
+                base['provider_diagnostics'] = response.diagnostics
             if response.error_code:
                 # Only stable reason codes; provider error bodies can include private information.
                 message = response.error_message
@@ -513,7 +524,10 @@ class CandidateReducer:
                 result = {**base, 'state': 'UNAVAILABLE', 'reason': reason}
             else:
                 report_stage('VALIDATION')
+                validation_started = time.perf_counter()
                 parsed, reason = parse_reduction(response.raw_text, candidates)
+                if 'provider_diagnostics' in base:
+                    base['provider_diagnostics']['grounding_validation_ms'] = round((time.perf_counter()-validation_started)*1000, 3)
                 if parsed and parsed['candidates']:
                     # Unselected observations cannot shorten the lifetime of valid selected evidence.
                     by_id = {c['instrument']['instrument_id']: c for c in candidates}
@@ -527,10 +541,11 @@ class CandidateReducer:
                 if reason:
                     result['validation'] = {'stage': rejection_stage(reason), **rejection_details(response.raw_text, candidates, reason)}
                 result['coverage']['selected'] = len(result['candidates'])
-            # Cache failures too: repeated explicit clicks never automatically re-bill invalid output.
+            # Cache provider failures too, but cancellation belongs only to the stopped caller.
             with self.lock:
                 cache_expiry = min(reuse_expiry, expiry, self.clock() + (60 if result['state'] == 'UNAVAILABLE' else 1800))
-                self._remember(digest, cache_expiry, result)
+                if result.get('reason') != 'STOPPED_BY_OPERATOR':
+                    self._remember(digest, cache_expiry, result)
                 if self.cache_store is not None and result['state'] in ('CURRENT','NO_GROUNDED_CANDIDATES'):
                     try:
                         self.cache_store.put(digest, cache_expiry, result, self.clock())

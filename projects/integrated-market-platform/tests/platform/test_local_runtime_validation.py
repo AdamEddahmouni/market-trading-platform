@@ -207,6 +207,114 @@ class BenchmarkSafetyTests(unittest.TestCase):
 
 
 class ControlledLifecycleTests(unittest.TestCase):
+    def test_changed_local_grammar_contract_cannot_reuse_an_old_candidate_digest(self):
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer
+        from tests.intelligence.test_ai_screener import candidate, NOW
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture')
+        reducer = CandidateReducer(provider=provider)
+        first = reducer.estimate({}, [candidate()], NOW)
+        provider.candidate_schema_contract = 'changed-local-generation-contract'
+        second = reducer.estimate({}, [candidate()], NOW)
+        self.assertNotEqual(first['input_hash'], second['input_hash'])
+
+    def test_local_generation_cannot_request_text_or_arrays_beyond_canonical_parser_bounds(self):
+        import copy
+        import json
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket, output_schema
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        from tests.intelligence.test_ai_screener import candidate
+        candidates = [candidate()]
+        shared = output_schema(candidates)
+        before = copy.deepcopy(shared)
+        requests = []
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1]})
+            requests.append(json.loads(body))
+            return 200, json_bytes({'choices': [{'message': {'content': '{}'}}]})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, candidates, shared)
+        provider.infer(packet, rendered_prompt='prompt', config=IntelligenceInferenceConfig())
+        schema = requests[0]['response_format']['json_schema']['schema']['properties']
+        self.assertEqual(schema['limitations']['items'].get('maxLength'), 1200)
+        self.assertEqual(schema['limitations'].get('maxItems'), 12)
+        self.assertEqual(schema['candidates'].get('maxItems'), 1)
+        pick = schema['candidates']['items']['properties']
+        self.assertEqual(pick['rationale'].get('maxLength'), 1200)
+        self.assertEqual(pick['uncertainties']['items'].get('maxLength'), 1200)
+        self.assertEqual(pick['supporting_refs'].get('maxItems'), 12)
+        self.assertEqual(shared, before, 'local grammar bounds must not mutate the shared hosted-provider schema')
+
+    def test_cancelled_waiter_releases_admission_without_waiting_for_generation_slot(self):
+        import threading
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture',
+            poster=lambda *args: self.fail('cancelled request must not use transport'))
+        queued, stop = threading.Event(), threading.Event()
+        packet = SimpleNamespace(task_type=IntelligenceTaskType.NEWS_SENTIMENT, should_stop=stop.is_set)
+        slot = resources.SLOT
+        class ObservedSlot:
+            def acquire(self, *args, **kwargs):
+                queued.set()
+                return slot.acquire(*args, **kwargs)
+            def release(self):
+                return slot.release()
+        slot.acquire()
+        with ThreadPoolExecutor(max_workers=1) as pool, patch.object(resources, 'SLOT', ObservedSlot()):
+            future = pool.submit(provider.infer, packet, rendered_prompt='unused', config=IntelligenceInferenceConfig(timeout_seconds=2))
+            try:
+                self.assertTrue(queued.wait(1))
+                stop.set()
+                try:
+                    result = future.result(timeout=.75)
+                    completed_before_release = True
+                except TimeoutError:
+                    completed_before_release = False
+            finally:
+                slot.release()
+            result = future.result(timeout=2)
+        self.assertTrue(completed_before_release)
+        self.assertEqual(result.error_message, 'STOPPED_BY_OPERATOR')
+        self.assertFalse(result.inference_dispatched)
+        self.assertTrue(resources.ADMISSION.acquire(blocking=False))
+        resources.ADMISSION.release()
+
+    def test_request_receipt_separates_exact_count_generation_and_runtime_timings(self):
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'exact full prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1, 2, 3]})
+            return 200, json_bytes({'choices': [{'message': {'content': '{}'}, 'finish_reason': 'stop'}],
+                'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+                'timings': {'prompt_n': 3, 'prompt_ms': 7.0, 'predicted_n': 2, 'predicted_ms': 11.0}})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, [], {})
+        result = provider.infer(packet, rendered_prompt='exact full prompt', config=IntelligenceInferenceConfig())
+        receipt = getattr(result, 'diagnostics', None) or {}
+        self.assertEqual([x['stage'] for x in receipt.get('http', [])], ['CHAT_TEMPLATE', 'EXACT_TOKEN_COUNT', 'GENERATION'])
+        self.assertEqual(receipt.get('runtime_timings', {}).get('predicted_ms'), 11.0)
+        self.assertEqual(receipt.get('finish_reason'), 'stop')
+        self.assertGreaterEqual(receipt.get('elapsed_ms', -1), 0)
+        self.assertTrue(all(x['started_at'] <= x['ended_at'] and x['elapsed_ms'] >= 0 for x in receipt['http']))
+
     def test_context_overflow_preserves_input_and_never_dispatches_generation(self):
         from types import SimpleNamespace
         from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider

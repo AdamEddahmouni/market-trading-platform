@@ -562,6 +562,40 @@ class FailureTests(unittest.TestCase):
 
 
 class StopTests(unittest.TestCase):
+    def test_generation_receives_the_run_stop_signal_and_cancelled_rows_are_not_evaluated(self):
+        stop = [False]
+        provider = RankingProvider()
+        def cancel_during_generation(call, packet):
+            stop[0] = True
+            return provider.failure('STOPPED_BY_OPERATOR') if packet.should_stop() else provider.respond(packet)
+        provider.on_call = cancel_during_generation
+        h = Harness(universe(120), provider)
+        h.run(should_stop=lambda: stop[0])
+        self.assertEqual(h.calls()[0]['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(h.block['status'], 'STOPPED')
+        self.assertEqual(h.block['counts']['evaluated'], 0)
+        self.assertEqual(provider.calls, 1)
+        self.assertEqual(h.ledger.open_runs(), [])
+        self.assertIsNone(action_repository().get('candidate_run', 'CU-' + h.run_id))
+
+    def test_stop_inside_global_comparison_reaches_the_provider_and_never_stores_selection(self):
+        stop = [False]
+        provider = RankingProvider()
+        def cancel_comparison(call, packet):
+            if call == 4:
+                stop[0] = True
+                if packet.should_stop():
+                    return provider.failure('STOPPED_BY_OPERATOR')
+            return provider.respond(packet)
+        provider.on_call = cancel_comparison
+        h = Harness(universe(120, strong={119: 95.0}), provider)
+        h.run(should_stop=lambda: stop[0])
+        self.assertEqual(h.calls()[-1]['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(h.block['status'], 'STOPPED')
+        self.assertEqual(h.block['counts']['evaluated'], 120)
+        self.assertFalse(h.block['selection_complete'])
+        self.assertIsNone(action_repository().get('candidate_run', 'CU-' + h.run_id))
+
     def test_stop_during_the_last_inflight_call_prevents_finalization(self):
         for size, final_call in ((40, 1), (120, 4)):
             with self.subTest(size=size):

@@ -1932,7 +1932,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
         if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
-            # Operator Stop: no further model call starts. A call already sent is not cancelled and stays charged.
+            # Stop reaches owned local generation; hosted calls have no confirmed cancellation and stay charged.
             from .screener_ai_runs import ai_screener_runs
 
             stopped = ai_screener_runs().stop(self.store.paper_ledger.paper_account_id,

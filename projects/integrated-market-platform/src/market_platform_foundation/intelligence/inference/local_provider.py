@@ -26,7 +26,9 @@ import re
 import subprocess
 import threading
 import time
+from copy import deepcopy
 from dataclasses import dataclass, replace
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
@@ -277,6 +279,7 @@ class LocalChatInferenceProvider:
 
     provider_id = LOCAL_PROVIDER_ID
     runtime = "LOCAL_MODEL"
+    candidate_schema_contract = 'canonical-parser-bounds/1'
 
     def __init__(self, *, base_url: str, model_id: str, server: LocalLlamaServer | None = None,
                  request_model: str | None = None, poster: Poster = _http_post) -> None:
@@ -304,15 +307,35 @@ class LocalChatInferenceProvider:
                 else True if response.error_code is None else None, 'reason': response.error_message or None}
 
     def _run(self, packet, *, rendered_prompt, config, preflight_only=False):
+        started, cpu = time.perf_counter(), time.thread_time()
+        diagnostics = {'started_at': datetime.now(UTC).isoformat(), 'http': [],
+                       'generation_timeout_seconds': config.timeout_seconds, 'preflight_only': preflight_only}
+        if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION:
+            diagnostics['candidate_schema_contract'] = self.candidate_schema_contract
+        response = self._run_owned(packet, rendered_prompt=rendered_prompt, config=config,
+                                   preflight_only=preflight_only, diagnostics=diagnostics)
+        diagnostics.update(ended_at=datetime.now(UTC).isoformat(), elapsed_ms=round((time.perf_counter()-started)*1000, 3),
+                           thread_cpu_ms=round((time.thread_time()-cpu)*1000, 3),
+                           cancelled=bool(getattr(packet, 'should_stop', lambda: False)()))
+        return replace(response, diagnostics=diagnostics)
+
+    def _run_owned(self, packet, *, rendered_prompt, config, preflight_only=False, diagnostics=None):
         from .local_resources import ADMISSION, SLOT, ResourceMonitor
         started = time.perf_counter()
+        stop = getattr(packet, 'should_stop', lambda: False)
+        if stop():
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
         if not ADMISSION.acquire(blocking=False):
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_INFERENCE_QUEUE_FULL', ParsingStatus.PROVIDER_ERROR, started)
-        if not SLOT.acquire(timeout=config.timeout_seconds):
-            ADMISSION.release()
-            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_INFERENCE_BUSY", ParsingStatus.PROVIDER_ERROR, started)
+        deadline = time.monotonic() + config.timeout_seconds
+        while not SLOT.acquire(timeout=min(.25, max(0, deadline-time.monotonic()))):
+            if stop() or time.monotonic() >= deadline:
+                ADMISSION.release()
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,
+                    'STOPPED_BY_OPERATOR' if stop() else 'LOCAL_INFERENCE_BUSY', ParsingStatus.PROVIDER_ERROR, started)
+        diagnostics = diagnostics if diagnostics is not None else {}
+        diagnostics['slot_wait_ms'] = round((time.perf_counter()-started)*1000, 3)
         qualification = packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION
-        stop = getattr(packet, 'should_stop', lambda: False)
         managed = isinstance(self._server,LocalLlamaServer) and self._server.enforce_admission
         monitor = ResourceMonitor(self._server, stop, time.monotonic()+STARTUP_TIMEOUT_S+config.timeout_seconds) if (qualification or managed) and self._server is not None else None
         self.last_resource_sample = {}
@@ -334,9 +357,9 @@ class LocalChatInferenceProvider:
             if monitor and monitor.check():
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
             if preflight_only:
-                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor, preflight_only=True)
+                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor, preflight_only=True, diagnostics=diagnostics)
             else:
-                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
+                response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor, diagnostics=diagnostics)
             if monitor:
                 monitor.close()
                 if monitor.failure:
@@ -351,6 +374,7 @@ class LocalChatInferenceProvider:
                         'peak_commit_bytes':monitor.peak_commit_bytes or None,"failure": monitor.failure,
                         'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
                         'startup_ms':getattr(self._server,'last_start_ms',None)}
+                    diagnostics['resources'] = self.last_resource_sample
                     # Oversized count-only groups are bisected using the same owned runtime.
                     # All operational/resource failures still stop and reap it.
                     oversize_count = preflight_only and response is not None and response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
@@ -361,8 +385,17 @@ class LocalChatInferenceProvider:
                 SLOT.release()
                 ADMISSION.release()
 
-    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None, preflight_only=False):
+    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None, preflight_only=False, diagnostics=None):
         started = time.perf_counter()
+        diagnostics = diagnostics if diagnostics is not None else {}
+        def post(stage, url, body):
+            begin = time.perf_counter()
+            record = {'stage': stage, 'started_at': datetime.now(UTC).isoformat()}
+            try:
+                return self._post(url, body, config.timeout_seconds)
+            finally:
+                record.update(ended_at=datetime.now(UTC).isoformat(), elapsed_ms=round((time.perf_counter()-begin)*1000, 3))
+                diagnostics.setdefault('http', []).append(record)
         if not is_loopback_url(self.base_url):
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_ENDPOINT_NOT_LOOPBACK",
                                ParsingStatus.PROVIDER_ERROR, started)
@@ -371,7 +404,9 @@ class LocalChatInferenceProvider:
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME', ParsingStatus.PROVIDER_ERROR, started)
         if monitor: monitor.start()
         if self._server is not None:
+            startup = time.perf_counter()
             reason = self._server.ensure_running()
+            diagnostics['ensure_runtime_ms'] = round((time.perf_counter()-startup)*1000, 3)
             if reason is not None:
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, reason, ParsingStatus.PROVIDER_ERROR, started)
         if monitor:
@@ -382,9 +417,12 @@ class LocalChatInferenceProvider:
             from .schema_dispatch import schema_for_packet
 
             # Grammar-constrained structure (refs limited to the packet's story ids); content is still validated.
+            schema = schema_for_packet(packet)
+            if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION:
+                schema = _bounded_candidate_schema(schema, len(getattr(packet, 'candidates', ())))
             response_format = {"type": "json_schema", "json_schema": {
                 "name": "screener_synthesis", "strict": True,
-                "schema": schema_for_packet(packet)}}
+                "schema": schema}}
         body = {"model": self._request_model, "temperature": 0, "max_tokens": config.max_tokens,
                 "response_format": response_format,
                 # Qwen3-family reasoning models: answer directly; servers without the option ignore it.
@@ -397,13 +435,13 @@ class LocalChatInferenceProvider:
                 window = getattr(getattr(self._server, 'manifest', None), 'context', None)
                 if type(window) is not int or window <= 0:
                     raise ValueError('LOCAL_CONTEXT_UNAVAILABLE')
-                status, templated = self._post(f"{self.base_url}/apply-template",
-                    json.dumps({"messages":body["messages"],"chat_template_kwargs":body["chat_template_kwargs"]}).encode("utf-8"),config.timeout_seconds)
+                status, templated = post('CHAT_TEMPLATE', f"{self.base_url}/apply-template",
+                    json.dumps({"messages":body["messages"],"chat_template_kwargs":body["chat_template_kwargs"]}).encode("utf-8"))
                 prompt=json.loads(templated)["prompt"] if status==200 else None
                 if not isinstance(prompt,str) or not prompt: raise ValueError("LOCAL_TEMPLATE_UNAVAILABLE")
                 if monitor and monitor.check():
                     return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
-                status, tokenized=self._post(f"{self.base_url}/tokenize",json.dumps({"content":prompt,"add_special":True}).encode("utf-8"),config.timeout_seconds)
+                status, tokenized=post('EXACT_TOKEN_COUNT', f"{self.base_url}/tokenize",json.dumps({"content":prompt,"add_special":True}).encode("utf-8"))
                 tokens=json.loads(tokenized)["tokens"] if status==200 else None
                 if not isinstance(tokens,list) or not tokens or any(type(token) is not int or token < 0 for token in tokens):
                     raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
@@ -420,8 +458,7 @@ class LocalChatInferenceProvider:
             return ProviderInferenceResponse(raw_text='', provider_id=self.provider_id, model_id=self.model_id,
                                              tokens_input=len(tokens), inference_dispatched=False)
         try:
-            status, raw = self._post(f"{self.base_url}/v1/chat/completions", json.dumps(body).encode("utf-8"),
-                                     config.timeout_seconds)
+            status, raw = post('GENERATION', f"{self.base_url}/v1/chat/completions", json.dumps(body).encode("utf-8"))
         except TimeoutError:
             return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started, dispatched=True)
         except (URLError, OSError) as exc:
@@ -443,11 +480,42 @@ class LocalChatInferenceProvider:
             return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "LOCAL_MODEL_RESPONSE_MALFORMED",
                                ParsingStatus.MALFORMED, started, dispatched=True)
         usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
+        diagnostics['finish_reason'] = payload['choices'][0].get('finish_reason')
+        diagnostics['runtime_timings'] = {key: value for key, value in (payload.get('timings') or {}).items()
+            if key in ('prompt_n', 'prompt_ms', 'prompt_per_second', 'predicted_n', 'predicted_ms', 'predicted_per_second')
+            and type(value) in (int, float)} if isinstance(payload.get('timings'), dict) else {}
         return ProviderInferenceResponse(raw_text=text if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION else _THINK.sub("", text).strip(), provider_id=self.provider_id,
                                          model_id=self.model_id, tokens_input=usage.get("prompt_tokens"),
                                          tokens_output=usage.get("completion_tokens"),
                                          latency_ms=int((time.perf_counter() - started) * 1000),
                                          provider_response_id=str(payload.get("id") or ""),inference_dispatched=True)
+
+
+def _bounded_candidate_schema(shared_schema, candidate_count):
+    """Give llama.cpp only bounds already enforced by the canonical candidate parser.
+
+    Keep the shared schema untouched: hosted strict-schema dialects have different support.
+    An unbounded local string can repeat past the parser's 1,200-character rejection bound
+    until the HTTP deadline, even when its short prefix already expressed an abstention.
+    """
+    from .candidate_reduction import MAX_SELECTED
+    schema = deepcopy(shared_schema)
+    def bound(node):
+        if isinstance(node, dict):
+            if node.get('type') == 'string':
+                node['maxLength'] = 1200
+            elif node.get('type') == 'array':
+                node['maxItems'] = 12
+            for value in node.values():
+                bound(value)
+        elif isinstance(node, list):
+            for value in node:
+                bound(value)
+    bound(schema)
+    candidates = schema.get('properties', {}).get('candidates')
+    if isinstance(candidates, dict):
+        candidates['maxItems'] = min(MAX_SELECTED, candidate_count)
+    return schema
 
 
 @dataclass(frozen=True, slots=True)
