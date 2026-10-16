@@ -697,6 +697,7 @@ class PaperAutomationService:
                 summary['blockers'].extend(blocker for blocker in carried if blocker not in summary['blockers'])
                 summary['blockers_from_cycle_id'] = previous.get('blockers_from_cycle_id') or previous.get('cycle_id')
                 summary['blockers_observed_at'] = previous.get('blockers_observed_at') or previous.get('completed_at')
+            self._reconcile_universe_run(work, policy, summary, now)
             return
         from . import paper_projections
         paper_projections.maybe_release_execution_gate(self.store)  # the existing live-health gate; grants nothing on its own
@@ -790,13 +791,16 @@ class PaperAutomationService:
             backoff_until=failure.get('backoff_until'), consecutive_failures=failure.get('count'), last_failure_code=failure.get('code'))
         return facts, fingerprint
 
-    def _universe(self, work, policy, summary, now, session, gate):
-        """One adaptive scheduling decision, then at most one run. Never a fixed timer dressed up as one."""
+    def _reconcile_universe_run(self, work, policy, summary, now):
+        """Close this scope's run handle once its run has finished or its owner is gone; a running run keeps it.
+
+        Runs outside the scope's session too: another scope reads this handle as the shared account's active run,
+        so a finished run must not keep it after the close. Nothing is started, evaluated or ordered here.
+        """
         universe = dict(work.get('universe') or {})
-        account = work['account_id']
         active = universe.get('active_run_id')
         if active:
-            snapshot = self.runs.read(account, active)
+            snapshot = self.runs.read(work['account_id'], active)
             if snapshot is None:
                 # The process that owned the run is gone. The run tracker closes it INTERRUPTED on its next write.
                 universe.update(active_run_id=None, last_result=dict(run_id=active, status='INTERRUPTED', reason='SERVER_RESTARTED_DURING_RUN',
@@ -806,6 +810,13 @@ class PaperAutomationService:
                 summary['universe'] = dict(state='RUNNING', run_id=active, stage=snapshot.get('stage'), progress=snapshot.get('progress'))
             else:
                 universe.update(active_run_id=None, last_result=self._finish_universe(snapshot, universe, now=now, policy=policy))
+        work['universe'] = universe
+        return universe
+
+    def _universe(self, work, policy, summary, now, session, gate):
+        """One adaptive scheduling decision, then at most one run. Never a fixed timer dressed up as one."""
+        universe = self._reconcile_universe_run(work, policy, summary, now)
+        account = work['account_id']
         result = universe.get('last_result') or {}
         if result.get('status') == 'AI_COVERAGE_BUDGET_INSUFFICIENT':
             self._block(summary, 'BUDGET', 'AI_COVERAGE_BUDGET_INSUFFICIENT')

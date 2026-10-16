@@ -192,6 +192,11 @@ blockers together; the state label alone is not a complete readiness answer.
   partial, stopped, failed, budget-refused or interrupted run is recorded with
   `adopted: false` and contributes no candidates. A complete run that selected
   nothing clears the selection; held positions stay monitored.
+- With several scopes, one scope's unfinished run defers the others
+  (`SHARED_ACCOUNT_RUN_ACTIVE`). Each cycle closes a scope's run handle once
+  that run has finished or its owning process is gone, including outside the
+  scope's session; nothing is started or evaluated there, and a still-running
+  run keeps deferring the others.
 - `spending_gate` decides whether the selected engine may be called at all:
   local inference needs `allow_local_inference`; paid inference needs
   `allow_paid_inference`, a readable shared budget, and usage below the tighter

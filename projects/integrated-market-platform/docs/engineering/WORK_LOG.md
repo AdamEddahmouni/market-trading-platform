@@ -7175,3 +7175,12 @@ row retained the ELIGIBLE display class although aggregate unprocessed accountin
 was conservative. A strengthened regression reproduced 70 unprocessed rows instead
 of all 120. The stop branch now classifies submitted cancelled rows UNPROCESSED too.
 Immutable historical receipts are retained; no old coverage result is rewritten.
+
+After release e02e7c82 restarted the controller at 16:40 ET, CRYPTO deferred with
+SHARED_ACCOUNT_RUN_ACTIVE although no AI run existed. The persisted US_EQUITIES
+scope still held the handle of an equity run stopped at 17:09:57Z; outside its
+session the scope returned before reconciling that handle, so the finished run
+would have deferred CRYPTO until the next regular equity session. The existing
+reconciliation (finished, gone or running) now also runs in the closed-session
+branch; it starts, evaluates and orders nothing, and a running run still defers
+the other scopes. A new regression failed before the repair.

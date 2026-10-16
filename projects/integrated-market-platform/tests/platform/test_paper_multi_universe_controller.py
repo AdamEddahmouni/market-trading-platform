@@ -81,6 +81,40 @@ class MultiUniverseControllerTests(unittest.TestCase):
         self.assertEqual(work['universes']['US_EQUITIES']['last_error']['code'], 'EQUITY_PROVIDER_UNAVAILABLE')
         self.assertIsNone(work['universes']['CRYPTO']['last_error'])
 
+    def closed_equity_cycle(self, equity_run):
+        """One cycle with the real closed-session equity scope and a recording CRYPTO scope."""
+        h, service = self.service()
+        service._runs = Mock()
+        service._runs.read.return_value = equity_run
+        real, crypto_saw = service._cycle_scope, []
+        def cycle(work, policy, summary, now, scheduled, missed):
+            if policy['scope']['universe'] == 'US_EQUITIES':
+                return real(work, policy, summary, now, scheduled, missed)
+            summary['session'] = service._scope_session(policy['scope'], now)
+            crypto_saw.append(work['_global_universe_active'])
+        service._cycle_scope = cycle
+        work = dict(account_id='controlled', universes=dict(US_EQUITIES=dict(universe=dict(active_run_id='equity-run'))))
+        summary = dict(actions=[], blockers=[], error=None)
+        service._cycle(work, self.policy(), summary, h.clock(), h.clock(), 0)
+        return work, summary, crypto_saw
+
+    def test_finished_equity_run_after_the_close_no_longer_holds_the_shared_run_slot(self):
+        stopped = dict(run_id='equity-run', state='COMPLETED', error=None, finished_at='2026-10-11T17:09:57Z',
+                       result=dict(universe_coverage=dict(status='STOPPED', reason='STOPPED_BY_OPERATOR')))
+        work, summary, crypto_saw = self.closed_equity_cycle(stopped)
+        equity = work['universes']['US_EQUITIES']['universe']
+        self.assertIsNone(equity['active_run_id'])
+        self.assertEqual(equity['last_result']['status'], 'STOPPED')
+        self.assertFalse(equity['last_result']['adopted'])
+        self.assertEqual(crypto_saw, [False])
+        self.assertEqual(summary['actions'], [])
+
+    def test_running_equity_run_after_the_close_still_holds_the_shared_run_slot(self):
+        work, summary, crypto_saw = self.closed_equity_cycle(dict(run_id='equity-run', state='RUNNING', stage='BATCH_INFERENCE', progress={}))
+        self.assertEqual(work['universes']['US_EQUITIES']['universe']['active_run_id'], 'equity-run')
+        self.assertEqual(crypto_saw, [True])
+        self.assertEqual(summary['universes']['US_EQUITIES']['universe']['state'], 'RUNNING')
+
 
 class CryptoEvidenceIntegrationTests(unittest.TestCase):
     """The CRYPTO scope's provider health and candidate quotes against the real serving Kraken contracts.
