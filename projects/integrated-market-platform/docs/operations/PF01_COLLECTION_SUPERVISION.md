@@ -87,6 +87,17 @@ both of these hold:
    refreshed report is picked up without a restart. Running the probe contacts
    OpenD and is a separate decision.
 
+   The platform's live runtime (Paper authority, health, capability rows) does
+   the same: it re-reads and re-ages its report at most every 30 seconds, so a
+   report past the limit fails closed without a restart, a renewed report takes
+   effect without one, and a report older than the loaded one never replaces
+   it while the loaded one is still fresh. The SSD launcher (`RUN_COLLECTOR.py`,
+   operator file) renews the read-only quote probe whenever it is older than
+   `probe_max_age_hours` and OpenD answers, in or out of a market session, and
+   publishes it atomically to the collector's report and to the platform's
+   default report path (only when newer); a failed renewal is retried after
+   `retry_minutes`.
+
 Kraken public market data has no account, so only the first condition applies.
 The first Kraken request resolves the pair through the existing resolver, which
 fetches Kraken's public `AssetPairs` catalog once over HTTPS (retried at most

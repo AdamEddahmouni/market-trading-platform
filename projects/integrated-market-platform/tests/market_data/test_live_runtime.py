@@ -178,6 +178,88 @@ class LiveRuntimeTests(unittest.TestCase):
         self.assertEqual(off_rows["TRADES"]["state"], "NOT_CONFIGURED")
         self.assertEqual(off_rows["INTERNAL_PAPER"]["state"], "NOT_CONFIGURED")
 
+    def _probe_runtime(self, directory: Path, verified_at: str) -> LiveObservationalRuntime:
+        report = directory / "capability-report.json"
+        self._write_probe(report, verified_at)
+        runtime = LiveObservationalRuntime()
+        with mock.patch.dict(os.environ, {"IMP_MOOMOO_PROBE_REPORT": str(report), "IMP_MOOMOO_LIVE": "1"}), \
+                mock.patch("market_platform_foundation.market_data.live_runtime.opend_reachable", return_value=True):
+            runtime._load_verified_capabilities()
+        return runtime
+
+    @staticmethod
+    def _write_probe(path: Path, verified_at: str) -> None:
+        import json
+
+        entitled = {"account_entitled": True, "provider_supports": True, "runtime_tested": True}
+        path.write_text(json.dumps({"verified_at": verified_at, "connectivity": {"ret": 0},
+                                    "capabilities": {"US_EQUITY_L1": entitled}}), encoding="utf-8")
+
+    @staticmethod
+    def _iso(seconds_ago: float) -> str:
+        from datetime import datetime, timezone
+        import time as _time
+
+        return datetime.fromtimestamp(_time.time() - seconds_ago, timezone.utc).isoformat().replace("+00:00", "Z")
+
+    def _refresh(self, runtime: LiveObservationalRuntime, report: Path, *, staleness: int = 86400) -> None:
+        env = {"IMP_MOOMOO_PROBE_REPORT": str(report), "IMP_MOOMOO_LIVE": "1", "IMP_MOOMOO_PROBE_STALENESS_SEC": str(staleness)}
+        with mock.patch.dict(os.environ, env), \
+                mock.patch("market_platform_foundation.market_data.live_runtime.opend_reachable", return_value=True):
+            runtime.refresh_capabilities(force=True)
+
+    def test_a_probe_that_ages_past_its_limit_fails_closed_without_a_restart(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            runtime = self._probe_runtime(directory, self._iso(100))
+            self.assertFalse(runtime.capability_registry.is_stale)
+            # The same unchanged report, asked again once its limit has passed in this process.
+            self._refresh(runtime, directory / "capability-report.json", staleness=60)
+            self.assertTrue(runtime.capability_registry.is_stale)
+            self.assertEqual(runtime.lifecycle.entitlement_state, "PROBE_STALE")
+
+    def test_a_renewed_probe_takes_effect_and_an_older_one_never_replaces_a_fresh_one(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            report = directory / "capability-report.json"
+            runtime = self._probe_runtime(directory, self._iso(90000))
+            self.assertTrue(runtime.capability_registry.is_stale)
+            renewed = self._iso(5)
+            self._write_probe(report, renewed)
+            self._refresh(runtime, report)
+            self.assertFalse(runtime.capability_registry.is_stale)
+            self.assertEqual(runtime.capability_registry.verified_at, renewed)
+            self.assertEqual(runtime.lifecycle.entitlement_state, "PROBE_VERIFIED")
+            self._write_probe(report, self._iso(3600))
+            self._refresh(runtime, report)
+            self.assertEqual(runtime.capability_registry.verified_at, renewed)
+            self.assertEqual(runtime.probe_refusals, 1)
+
+    def test_a_failed_renewal_stays_closed(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as raw:
+            directory = Path(raw)
+            report = directory / "capability-report.json"
+            runtime = self._probe_runtime(directory, self._iso(90000))
+            report.write_text("{truncated", encoding="utf-8")
+            self._refresh(runtime, report)
+            self.assertTrue(runtime.capability_registry.is_stale or runtime.capability_registry.load_error)
+            self.assertFalse(runtime.capability_registry.dimensions.entitled)
+
+    def test_a_directly_supplied_registry_is_never_reloaded(self) -> None:
+        from market_platform_foundation.market_data.capability_registry import VerifiedCapabilityRegistry
+
+        runtime = LiveObservationalRuntime()
+        supplied = VerifiedCapabilityRegistry()
+        runtime.capability_registry = supplied
+        runtime.refresh_capabilities(force=True)
+        self.assertIs(runtime.capability_registry, supplied)
+
     def test_internal_paper_capability_follows_env_not_fill_gate(self) -> None:
         runtime = LiveObservationalRuntime()
         runtime.lifecycle.execution_use = "DISPLAY_ONLY"

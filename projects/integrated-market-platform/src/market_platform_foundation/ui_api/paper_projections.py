@@ -351,6 +351,9 @@ def _assert_live_execution_allowed(store: ReplayStore, *, submit: bool = False) 
     # Explicit over inherited: no deployment-level PIT adversarial verification
     # exists at runtime, so pass None (gate records ATTESTED, never a fake
     # PASS). Flip to True only when a verified PIT result backs this deployment.
+    refresh = getattr(runtime, "refresh_capabilities", None)
+    if callable(refresh):
+        refresh()  # the probe's freshness is decided now, not when the process started
     gate = evaluate_internal_simulation_gates(
         runtime=runtime,
         probe_stale=runtime.capability_registry.is_stale,
