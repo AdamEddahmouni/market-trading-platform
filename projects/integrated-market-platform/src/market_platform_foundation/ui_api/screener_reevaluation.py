@@ -304,7 +304,10 @@ class ReevaluationService:
         if not (complete or sliced) or (run.get('candidates') and (
                 run.get('state') != 'CURRENT' or coverage.get('status') not in ('GLOBAL_SELECTION_COMPLETE', 'SLICE_SELECTION_COMPLETE'))):
             raise ValueError('SELECTION_COVERAGE_INCOMPLETE')
-        symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') for e in run.get('evidence', [])}
+        # The search text for a selection's targeted read. Crypto candidates carry their pair only as ``company``
+        # (the Screener's crypto symbol); the read keeps only the row with this exact instrument id.
+        symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') or e['instrument'].get('company')
+                   for e in run.get('evidence', [])}
         picks = run.get('candidates', [])[:5]
         loop = self._loop()
         now = self.clock()

@@ -412,6 +412,18 @@ class ReevaluationDriverTests(unittest.TestCase):
                          ('US:NVDA', ['SELECTION_HYPOTHESIS_EXPIRED', 'FULL_UNIVERSE_SELECTION']))
         self.assertEqual(receipt['candidate_count'], 0)
 
+    def test_a_selection_whose_evidence_names_no_symbol_is_read_by_its_pair_label(self):
+        # Crypto candidates carry the pair only as ``company``; without it the selection was never decided.
+        self.attach()
+        self.h.ai.off_intake.add('US:NVDA')
+        run = complete('CU-1', ['US:NVDA'])
+        run['evidence'] = [dict(instrument=dict(instrument_id='US:NVDA', company='NVDA'))]
+        self.h.service.adopt_selection(run)
+        receipt = self.cycle()
+        self.assertEqual(self.h.service._loop()['symbols'], {'US:NVDA': 'NVDA'})
+        self.assertEqual(self.h.history()[0]['instrument_id'], 'US:NVDA')
+        self.assertEqual(receipt['model_call_count'], 1)
+
     def test_a_selected_candidate_outside_the_intake_gets_a_targeted_read(self):
         self.attach()
         self.h.ai.off_intake.add('US:NVDA')
