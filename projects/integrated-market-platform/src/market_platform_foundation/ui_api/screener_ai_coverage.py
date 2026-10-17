@@ -129,6 +129,10 @@ class _Run:
         self.counted_not_sent = 0
         self.rejected = 0
         self.first_rejection: str | None = None
+        # Local comparisons: the smallest group the exact send-time count refused in this run, and how many groups
+        # were split before sending because they were at least that large.
+        self.refused_group: int | None = None
+        self.presplit = 0
         # True once this run, under a slice plan, ends with eligible rows the model did not answer.
         self.sliced = False
         self.timings: dict[str, float] = {}
@@ -368,6 +372,14 @@ class ScreenerAiCoverage:
                 group = groups[index]
                 if should_stop():
                     return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
+                if local and run.refused_group is not None and len(group) > 1 and len(group) >= run.refused_group:
+                    # The send-time count already refused a comparison this large in this run: split it without
+                    # another request that would be refused. The halves keep the fair order and each is still counted
+                    # exactly when it is sent, so a group that fits is never skipped on a guess.
+                    half = math.ceil(len(group) / 2)
+                    groups[index:index + 1] = [group[:half], group[half:]]
+                    run.presplit += 1
+                    continue
                 outcome = self._call(run, group, stage="GLOBAL_REDUCTION", index=sequence, total=len(groups),
                                      planned_tokens=run.plan["largest_batch_tokens"], first_pass=False, round_number=number,
                                      reuse_only=run.plan.get("global_reuse_only",False), should_stop=should_stop)
@@ -376,6 +388,7 @@ class ScreenerAiCoverage:
                     if should_stop():
                         return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
                     if local and outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED" and len(group) > 1 and not outcome["dropped"]:
+                        run.refused_group = min(run.refused_group or len(group), len(group))
                         # The exact send-time gate refused this comparison even after thinning: compare it in two
                         # halves, in the same fair order. Each half is its own request on evidence acquired for it.
                         half = math.ceil(len(group) / 2)
@@ -992,7 +1005,8 @@ class ScreenerAiCoverage:
                                            "rounds_completed": run.rounds_completed,
                                            # Finalists whose evidence was no longer admissible when a comparison was due.
                                            "finalists_excluded": run.excluded_finalists[:MAX_EXCLUDED_LISTED],
-                                           "finalists_excluded_count": len(run.excluded_finalists)},
+                                           "finalists_excluded_count": len(run.excluded_finalists),
+                                           "presplit_groups": run.presplit, "smallest_refused_group": run.refused_group},
             "finalist_count": len({item["instrument_id"] for item in run.finalists}),
             "budget": {**run.budget, "tokens_input": run.tokens_input, "tokens_output": run.tokens_output},
             "coverage_complete": coverage_complete, "selection_complete": coverage_complete and status in SELECTION_COMPLETE,

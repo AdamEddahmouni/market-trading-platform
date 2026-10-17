@@ -1269,6 +1269,36 @@ class ReductionSplitTests(unittest.TestCase):
         reductions = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"]
         self.assertEqual(len({r["call_id"] for r in reductions}), len(reductions), "call ids repeat across a split")
 
+    def test_once_a_comparison_size_is_refused_larger_groups_are_split_before_sending(self):
+        class Narrow(Ticking):
+            refused = 0
+
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    Narrow.refused += 1
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                self.clock[0] += self.step
+                if len(packet.candidates) == 2:
+                    # A discriminating comparison: only the stronger of two advances.
+                    from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+                    from tests.support.coverage_universe import strength
+                    best = max(packet.candidates, key=lambda c: (strength(c), c["instrument"]["instrument_id"]))
+                    return ProviderInferenceResponse(answer(packet.candidates, [best]), self.provider_id, self.model_id,
+                                                     tokens_input=1000, tokens_output=100, latency_ms=1, simulated=True)
+                return self.respond(packet)
+
+        clock = [NOW]
+        h = Harness(universe(8, strong={index: 90.0 + index for index in range(8)}), Narrow(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run()
+        reconciled(self, h.block, 8)
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(7)])
+        # 8 is refused, then 4; every later group of 4 is split without a request (two in round 1, one in round 2).
+        self.assertEqual(Narrow.refused, 2)
+        self.assertEqual((h.block["reduction"]["smallest_refused_group"], h.block["reduction"]["presplit_groups"]), (4, 2))
+
     def test_a_refused_comparison_of_several_finalists_is_split_not_thinned(self):
         from types import SimpleNamespace
         from unittest.mock import patch
