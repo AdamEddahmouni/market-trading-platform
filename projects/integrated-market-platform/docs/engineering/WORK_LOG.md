@@ -21,6 +21,22 @@ Decisions during universe runs. RED: 18 new tests failed on `a3c0432e`; GREEN:
 407 focused tests, one baseline error (`StagedTests` Monitor). Evidence:
 `destination-tests/20261016-paper-ai-throughput/`.
 
+Production observation drove four further releases the same evening. R2 also
+re-ages the Moomoo probe in-process; the collector renewed it outside a session
+(19:54:53Z) and the running platform adopted it without a restart. The first
+slice (`d9b3fe3e`) produced the first governed selection
+(`SLICE_SELECTION_COMPLETE`, adopted), which exposed: the run read refused by the
+leak audit (`token_basis`, fixed in R2), crypto picks never decided because
+adoption stored no search text (R3), Action Decision answers the validator always
+rejected because the grammar was looser than it (R4, per-field bounds), a
+50→3 refusal cascade in comparisons (R4, pre-split), and news-heavy rows whose
+pairs do not fit and whose rejected comparison answers ended the slice (R5,
+slice-only deferral and pair thinning). Remaining: no instrument passes the
+forecast holdout rule (holdout 10 of the required 60), so ENTER stays
+`NO_GOVERNED_OPPORTUNITY`; news-bearing rows draw `UNGROUNDED_NEWS_CLAIM` on
+about 45% of answers; Action Decisions still fail `INVALID_SUPPORT` when the
+model lists a reference as both supporting and conflicting.
+
 ## 2026-10-15 — Post-memory-recovery activation repairs
 
 Reproduced the October 15 crypto failure from its immutable packet: Qwen copied
