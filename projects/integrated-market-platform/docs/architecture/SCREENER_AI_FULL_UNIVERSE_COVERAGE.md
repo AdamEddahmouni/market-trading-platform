@@ -201,6 +201,38 @@ at that cutoff is not sent; it becomes `UNPROCESSED` with
 evidence cutoff, completion time, expiry, input hash and tokens. No
 observation later than a request's cutoff can enter it.
 
+### Row-level rejection
+
+A batch answer the unchanged canonical validator rejects (`INVALID_OUTPUT`), or
+one that reached its output allowance (`LOCAL_OUTPUT_LIMIT_REACHED`), is that
+batch's outcome only: its rows become `AI_REJECTED` with the rejection code (an
+evaluated bucket, never a finalist, never grounded) and the run continues with
+the next batch. Provider failures (timeout, runtime exit, unavailable) and
+evidence failures still end the run as before. A run with at least 10 rejected
+requests and more than half of its answered requests rejected ends
+`PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_RATE_EXCEEDED`); its remaining rows
+are `UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE`. A run without a slice plan
+that rejected any row is never a global selection: it ends
+`PROVISIONAL_PARTIAL_COVERAGE` with `BATCH_FAILED:<first rejection code>`.
+
+### Rolling slices (local engine, automation only)
+
+The Paper automation controller starts local-engine runs with a **slice plan**:
+a first-pass deadline (40% of the scope's minimum separation) and, for each
+row, when the scope's recent runs last evaluated it (read from those runs'
+immutable `rows` records). Every row is still enumerated and classified
+deterministically. The first pass sends rows never evaluated by those runs
+first, then the least recently evaluated, then the fair order; this adds no
+score and no threshold. When the deadline passes, the remaining rows become
+`UNPROCESSED:DEFERRED_TO_NEXT_SLICE` and the finalists already found are
+compared as usual (the comparison is not cut short). A slice ends
+`SLICE_SELECTION_COMPLETE` or `SLICE_COMPLETE_NO_SELECTION`, with
+`slice_complete: true`, `coverage_complete: false` and a `slice` block (epoch,
+deadline, deferred, rejected and evaluated counts). It is never labelled
+`GLOBAL_SELECTION_COMPLETE`; a slice that reached every row with no rejection
+is an ordinary complete run. Paid engines are never sliced. Operator runs carry
+no slice plan.
+
 ## Global comparison
 
 Batch answers are **finalists**, not results. They are recorded as batch
@@ -221,6 +253,18 @@ has expired, it is not a selection: the run is `PROVISIONAL_PARTIAL_COVERAGE`
 provisional and nothing is stored. Quotes live 60 seconds, so a slow engine
 will meet this often; that is reported, not hidden.
 
+On the local engine a comparison the exact send-time count refuses (after the
+usual context-fit thinning) is split into two halves in the same fair order,
+each its own request on evidence acquired for it; a group of one cannot be
+split and ends the run partial. If a round of two or more groups advances every
+entrant, another round cannot reduce the pool: when the winners fit the
+selection cap (5) the result is the **union** of the group answers, ranked by
+each pick's own group rank with ties in the fair order, labelled
+`composition.method: UNION_OF_GROUP_ANSWERS_WITHIN_SELECTION_CAP` with every
+member answer id; it is `CURRENT` only while every member answer is current,
+and its lifetime is the shortest of theirs. Otherwise the run ends
+`PROVISIONAL_PARTIAL_COVERAGE` (`GLOBAL_COMPARISON_NO_PROGRESS`).
+
 "Selected" means selected by this documented tournament of bounded comparisons
 made by the configured model. It is not a ranking score and not a claim of
 best return. A model may choose differently in a different comparison context;
@@ -231,7 +275,9 @@ the receipts record every group, cutoff and answer.
 | Terminal status | Meaning | Stored candidate run |
 |---|---|---|
 | `GLOBAL_SELECTION_COMPLETE` | Complete coverage and a finished comparison with at least one selection whose evidence is current | Yes, as `CU-<run id>` |
+| `SLICE_SELECTION_COMPLETE` | A rolling slice: every row classified, the rows the slice reached answered and compared, a current selection | Yes, as `CU-<run id>`, labelled with its `slice` block |
 | `COMPLETE_NO_SELECTION` | Complete coverage; nothing selected | No |
+| `SLICE_COMPLETE_NO_SELECTION` | A rolling slice that selected nothing; says nothing about rows outside the slice | No |
 | `NO_ELIGIBLE_ROWS` | Every row assessed; none eligible; no model called | No |
 | `EMPTY_UNIVERSE` | The query matched no rows | No |
 | `EVIDENCE_PROVIDER_UNAVAILABLE` | The quote source returned nothing; no row could be assessed as eligible | No |
@@ -242,7 +288,7 @@ the receipts record every group, cutoff and answer.
 | `INTERRUPTED` | A server restart ended the run | No |
 | `FAILED` | Engine refused, or an unexpected error | No |
 
-Only the first status stores anything the Action Decision layer can load. The
+Only the two selection statuses store anything the Action Decision layer can load. The
 stored record is an ordinary candidate run whose picks and evidence both come
 from the final comparison, with an additive `universe_coverage` block (method,
 software SHA, counts, plan, budget, cutoffs). Its `valid_until` is bounded by

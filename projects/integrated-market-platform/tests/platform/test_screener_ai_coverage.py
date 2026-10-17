@@ -40,9 +40,9 @@ class Harness:
         self.ledger = CoverageLedger()
         self.run_id = run_id()
 
-    def run(self, *, should_stop=lambda: False, scope=SCOPE):
+    def run(self, *, should_stop=lambda: False, scope=SCOPE, slice_plan=None):
         self.result = ScreenerAiCoverage(self.service, ledger=self.ledger, software_sha=SHA).run(
-            scope, run_id=self.run_id, account_id="PAPER-1", should_stop=should_stop)
+            scope, run_id=self.run_id, account_id="PAPER-1", should_stop=should_stop, slice_plan=slice_plan)
         self.block = self.result["universe_coverage"]
         return self.result
 
@@ -1125,6 +1125,146 @@ class ActionBoundaryTests(unittest.TestCase):
         self.assertEqual(legacy["matched_count"], 200)
         self.assertNotIn("universe_coverage", legacy)
         self.assertEqual(legacy["candidates"], [])
+
+
+class Ticking(RankingProvider):
+    """A local engine whose every request takes ``step`` seconds of the run's clock; ``raw`` answers every call."""
+
+    runtime = "LOCAL_MODEL"
+
+    def __init__(self, clock, *, step=10.0, raw=None) -> None:
+        super().__init__()
+        self.clock, self.step, self.raw = clock, step, raw
+
+    def on_call(self, call, packet):
+        self.clock[0] += self.step
+        if self.raw is None:
+            return self.respond(packet)
+        from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+        return ProviderInferenceResponse(self.raw, self.provider_id, self.model_id, tokens_input=1000, tokens_output=100,
+                                         latency_ms=1, simulated=True)
+
+
+def ticking(rows, **kwargs):
+    clock = [NOW]
+    return Harness(rows, Ticking(clock, **kwargs), clock=lambda: clock[0]), clock
+
+
+class RowLevelRejectionTests(unittest.TestCase):
+    def test_a_rejected_answer_is_that_rows_outcome_and_later_batches_still_run(self):
+        h = Harness(universe(120, strong={110: 90.0}), FailingProvider(fail_on=1, raw="{not json"))
+        h.run()
+        reconciled(self, h.block, 120)
+        first = [r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]
+        self.assertEqual(len(first), 3, "a rejection ended the run")
+        self.assertEqual(first[0]["state"], "INVALID_OUTPUT")
+        self.assertEqual(h.block["ai_rejected_count"], len(first[0]["instrument_ids"]))
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], len(first[0]["instrument_ids"]))
+        # Never a global result: the rejected rows were not compared.
+        self.assertEqual(h.block["status"], "PROVISIONAL_PARTIAL_COVERAGE")
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:MALFORMED_JSON")
+        self.assertFalse(h.block["selection_complete"])
+        self.assertEqual(h.result["candidates"], [])
+
+    def test_a_rejection_rate_above_half_after_ten_requests_ends_the_run(self):
+        h, _ = ticking(universe(14), step=0.0, raw="{not json")
+        h.run()
+        reconciled(self, h.block, 14)
+        self.assertEqual(h.provider.calls, 10)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "AI_REJECTION_RATE_EXCEEDED"))
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE"], 4)
+
+    def test_a_provider_failure_still_ends_the_run(self):
+        h = Harness(universe(120), FailingProvider(fail_on=1))
+        h.run()
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 1)
+        self.assertEqual(h.block["reason"], "BATCH_FAILED:ANTHROPIC_OVERLOADED_ERROR")
+
+
+class RollingSliceTests(unittest.TestCase):
+    def test_the_deadline_defers_the_rest_and_the_slice_is_labelled_a_slice(self):
+        h, _ = ticking(universe(12, strong={index: 90.0 + index for index in range(12)}))
+        h.run(slice_plan={"deadline_epoch": NOW + 25, "epoch": 3, "last_evaluated": {}})
+        reconciled(self, h.block, 12)
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 3)
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:DEFERRED_TO_NEXT_SLICE": 9})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertFalse(h.block["coverage_complete"] or h.block["selection_complete"])
+        self.assertEqual(h.block["slice"]["deferred_count"], 9)
+        self.assertEqual(h.block["slice"]["epoch"], 3)
+        self.assertEqual(h.result["state"], "CURRENT")
+        self.assertEqual(len(h.result["candidates"]), 3)
+        terminal = h.ledger.terminal(h.run_id)
+        self.assertEqual(terminal["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(terminal["candidate_run_id"], h.result["run_id"])
+
+    def test_rows_not_yet_evaluated_in_the_epoch_go_first_then_the_oldest(self):
+        rows = universe(6, strong={index: 90.0 for index in range(6)})
+        last = {instrument_id(0): NOW - 100, instrument_id(1): NOW - 900, instrument_id(2): NOW - 50, instrument_id(3): NOW - 400}
+        h, _ = ticking(rows)
+        h.run(slice_plan={"deadline_epoch": NOW + 35, "epoch": 1, "last_evaluated": last})
+        first = [seen[0] for seen in h.provider.seen[:4]]
+        self.assertEqual(sorted(first[:2]), [instrument_id(4), instrument_id(5)])
+        self.assertEqual(first[2:], [instrument_id(1), instrument_id(3)])
+        self.assertEqual(h.block["plan"]["slice"]["evaluated_in_epoch"], 4)
+
+    def test_a_slice_that_selects_nothing_says_so_and_stores_nothing(self):
+        h, _ = ticking(universe(8))
+        h.run(slice_plan={"deadline_epoch": NOW + 25, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_COMPLETE_NO_SELECTION")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertIsNone(h.ledger.terminal(h.run_id)["candidate_run_id"])
+        self.assertEqual(h.result["state"], "NO_GROUNDED_CANDIDATES")
+
+    def test_a_slice_that_reaches_every_row_is_a_global_selection(self):
+        h, _ = ticking(universe(4, strong={1: 95.0}))
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertTrue(h.block["coverage_complete"] and h.block["selection_complete"])
+        self.assertEqual(h.selected(), [instrument_id(1)])
+
+    def test_a_rejected_row_in_a_slice_is_not_evaluated_for_the_epoch(self):
+        class OneBad(Ticking):
+            def on_call(self, call, packet):
+                self.raw = "{not json" if call == 1 else None
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(3, strong={0: 90.0, 1: 91.0, 2: 92.0}), OneBad(clock), clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], 1)
+        self.assertEqual(h.block["slice"]["rejected_requests"], 1)
+        self.assertEqual(len(h.result["candidates"]), 2)
+
+    def test_a_manual_run_without_a_slice_plan_never_defers(self):
+        h, _ = ticking(universe(5))
+        h.run()
+        self.assertEqual(h.block["status"], "COMPLETE_NO_SELECTION")
+        self.assertIsNone(h.block["slice"])
+
+
+class ReductionSplitTests(unittest.TestCase):
+    def test_a_comparison_over_the_window_is_split_and_a_union_within_the_cap_is_labelled(self):
+        class Wide(Ticking):
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), Wide(clock, step=1.0), clock=lambda: clock[0])
+        h.run()
+        reconciled(self, h.block, 4)
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(len(h.result["candidates"]), 4)
+        self.assertEqual([pick["rank"] for pick in h.result["candidates"]], [1, 2, 3, 4])
+        self.assertEqual(h.result["composition"]["method"], "UNION_OF_GROUP_ANSWERS_WITHIN_SELECTION_CAP")
+        self.assertEqual(len(h.result["composition"]["member_reduction_run_ids"]), 2)
+        reductions = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"]
+        self.assertEqual(len({r["call_id"] for r in reductions}), len(reductions), "call ids repeat across a split")
 
 
 if __name__ == "__main__":
