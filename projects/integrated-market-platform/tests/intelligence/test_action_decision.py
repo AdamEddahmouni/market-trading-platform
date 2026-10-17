@@ -50,6 +50,35 @@ class ActionDecisionTests(unittest.TestCase):
                   dict(proposal(), rationale='Entry price should be fifty dollars.')]:
             self.assertIsNotNone(parse_proposal(json.dumps(p), candidate(), build_conditions(candidate(), self.context(), NOW))[1])
 
+    def test_the_schema_offers_only_values_the_validator_accepts(self):
+        # A constrained decoder offered every condition id for every list, and weak evidence as support; the
+        # unchanged validator rejected those answers (October 17 crypto decisions). Each bound is the validator's.
+        from market_platform_foundation.intelligence.inference.action_decision import ALLOWED_CONDITIONS, output_schema
+        c = candidate()
+        c['reference_evidence'] = [dict(evidence_id='w', capability='NEWS', as_of=NOW, valid_until=END, role='REFERENCE',
+                                        decision_admissibility='ADMISSIBLE', weak_reasons=['LOW_RELEVANCE'], facts={})]
+        c['missing'] = [dict(capability='ORDER_FLOW')]
+        conditions = build_conditions(c, self.context(), NOW)
+        schema = output_schema(c, conditions)['properties']
+        for name, ids in ALLOWED_CONDITIONS.items():
+            self.assertTrue(set(schema[name].get('items', {}).get('enum', [])) <= ids, name)
+        self.assertEqual(schema['supporting_refs']['items']['enum'], ['q', 't'])
+        self.assertEqual(schema['weak_refs']['items']['enum'], ['w'])
+        self.assertEqual(schema['missing_capabilities']['items']['enum'], ['ORDER_FLOW'])
+        # Everything the schema allows together is accepted.
+        everything = dict(proposal(), supporting_refs=['q', 't'], weak_refs=['w'], missing_capabilities=['ORDER_FLOW'],
+                          **{name: list(schema[name].get('items', {}).get('enum', [])) for name in ALLOWED_CONDITIONS})
+        value, reason = parse_proposal(json.dumps(everything), c, conditions)
+        self.assertIsNone(reason)
+        self.assertIsNotNone(value)
+
+    def test_a_list_with_no_admissible_value_must_be_empty(self):
+        from market_platform_foundation.intelligence.inference.action_decision import output_schema
+        c = candidate()
+        schema = output_schema(c, build_conditions(c, self.context(), NOW))['properties']
+        self.assertEqual(schema['weak_refs'], dict(type='array', maxItems=0))
+        self.assertEqual(schema['missing_capabilities'], dict(type='array', maxItems=0))
+
     def test_flat_no_action_and_consider(self):
         for state in ['NO_ACTION', 'CONSIDER_ENTRY']:
             self.assertEqual(self.gate(proposal(state))['action_state'], state)

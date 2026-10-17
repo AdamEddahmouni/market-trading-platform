@@ -127,19 +127,39 @@ def server_exit_condition(conditions):
                  and c['status'] == 'MET'), None)
 
 
+# The condition ids each list may name. ``parse_proposal`` enforces exactly these; the schema states them too.
+ALLOWED_CONDITIONS = {'entry_conditions': frozenset({'CURRENT_QUOTE', 'DIRECTION_SUPPORTED'}),
+                      'hold_conditions': frozenset({'THESIS_CONTINUES'}),
+                      'exit_conditions': frozenset({'THESIS_REVERSED', 'DECISION_EXPIRED'})}
+
+
 def output_schema(candidate, conditions):
-    refs = [e['evidence_id'] for e in (*candidate['current_market_evidence'], *candidate['reference_evidence'])]
+    """The proposal shape, bounded by what ``parse_proposal`` accepts and never tighter.
+
+    A constrained decoder given only the looser shape produced answers the unchanged validator always rejects
+    (October 17: condition ids outside their list, weak evidence cited as support). Each bound below is one of
+    the validator's own rules, so it changes which outputs can be generated, not which outputs are accepted."""
+    evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
+    refs = [e['evidence_id'] for e in evidence]
+    weak = [e['evidence_id'] for e in evidence if e.get('weak_reasons')]
+    strong = [e['evidence_id'] for e in evidence if not e.get('weak_reasons')]
     strings = dict(type='array', items=dict(type='string'), maxItems=24)
+
+    def bounded(values, limit):
+        # No admissible value: the list must be empty.
+        return dict(type='array', items=dict(type='string', enum=list(values)), maxItems=limit) if values else dict(type='array', maxItems=0)
+
     ref_array = dict(type='array', items=dict(type='string', enum=refs or ['NO_EVIDENCE']), maxItems=24)
     # Risk-control conditions are server facts the model may read but can never select.
-    condition_array = dict(type='array', items=dict(type='string', enum=[c['condition_id'] for c in conditions if c['source'] != RISK_CONTROL_SOURCE]), maxItems=5)
+    selectable = [c['condition_id'] for c in conditions if c['source'] != RISK_CONTROL_SOURCE]
+    missing = sorted({e['capability'] for e in candidate['missing']})
     properties = dict(schema_version=dict(type='string', enum=[PROPOSAL_SCHEMA]),
                       proposal_state=dict(type='string', enum=[s.value for s in ActionState if s != ActionState.REVALIDATION_REQUIRED]),
                       direction=dict(type=['string', 'null'], enum=['LONG', 'SHORT', None]),
                       rationale=dict(type='string', maxLength=1200),
-                      supporting_refs=ref_array, conflicting_refs=ref_array, weak_refs=ref_array,
-                      missing_capabilities=strings, uncertainties=strings,
-                      entry_conditions=condition_array, hold_conditions=condition_array, exit_conditions=condition_array)
+                      supporting_refs=bounded(strong, 24), conflicting_refs=ref_array, weak_refs=bounded(weak, 24),
+                      missing_capabilities=bounded(missing, 24), uncertainties=strings,
+                      **{name: bounded([c for c in selectable if c in ids], 5) for name, ids in ALLOWED_CONDITIONS.items()})
     return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
 
 
@@ -173,9 +193,7 @@ def parse_proposal(raw, candidate, conditions):
             return None, 'WEAK_EVIDENCE_MISMATCH'
         if set(value['missing_capabilities']) != {e['capability'] for e in candidate['missing']}:
             return None, 'MISSING_EVIDENCE_MISMATCH'
-        allowed = {'entry_conditions':{'CURRENT_QUOTE','DIRECTION_SUPPORTED'}, 'hold_conditions':{'THESIS_CONTINUES'},
-                   'exit_conditions':{'THESIS_REVERSED','DECISION_EXPIRED'}}
-        if any(not set(value[k]) <= ids for k,ids in allowed.items()):
+        if any(not set(value[k]) <= ids for k,ids in ALLOWED_CONDITIONS.items()):
             return None, 'UNSUPPORTED_CONDITION'
         import re
         for text in [value['rationale'], *value['uncertainties']]:
