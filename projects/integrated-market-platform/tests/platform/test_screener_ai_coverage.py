@@ -1299,6 +1299,52 @@ class ReductionSplitTests(unittest.TestCase):
         self.assertEqual(Narrow.refused, 2)
         self.assertEqual((h.block["reduction"]["smallest_refused_group"], h.block["reduction"]["presplit_groups"]), (4, 2))
 
+    def _rejecting(self, bad):
+        class RejectsOne(Ticking):
+            def on_call(self, call, packet):
+                ids = [c["instrument"]["instrument_id"] for c in packet.candidates]
+                if bad in ids and len(packet.candidates) > 1 or ids == [bad] and call > 4:
+                    self.clock[0] += self.step
+                    from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+                    return ProviderInferenceResponse("{not json", self.provider_id, self.model_id, tokens_input=1000,
+                                                     tokens_output=100, latency_ms=1, simulated=True)
+                return super().on_call(call, packet)
+        return RejectsOne
+
+    def test_in_a_slice_a_rejected_comparison_is_split_and_a_rejected_finalist_is_deferred(self):
+        bad = instrument_id(2)
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), self._rejecting(bad)(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 4)
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertTrue(h.block["slice_complete"])
+        self.assertNotIn(bad, h.selected())
+        self.assertEqual(sorted(h.selected()), sorted(instrument_id(i) for i in (0, 1, 3)))
+        self.assertEqual(h.block["slice"]["comparison_rejected"], 1)
+        self.assertEqual(h.block["counts"]["reasons"]["AI_REJECTED:COMPARISON:MALFORMED_JSON"], 1)
+
+    def test_without_a_slice_a_rejected_comparison_still_ends_the_run_partial(self):
+        bad = instrument_id(2)
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), self._rejecting(bad)(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run()
+        self.assertEqual((h.block["status"], h.block["reason"]),
+                         ("PROVISIONAL_PARTIAL_COVERAGE", "GLOBAL_REDUCTION_INCOMPLETE:MALFORMED_JSON"))
+        self.assertEqual(h.result["candidates"], [])
+
+    def test_in_a_slice_a_finalist_not_comparable_at_its_cutoff_is_deferred_not_excluded(self):
+        from market_platform_foundation.ui_api.screener_ai_coverage import _Run
+        run = _Run("r", "a")
+        run.classes = {"X": ("AI_EVALUATED", []), "Y": ("AI_EVALUATED", [])}
+        run.excluded_finalists = [{"instrument_id": "X", "round": 1, "class": "EVIDENCE_STALE", "reasons": ["STALE"]}]
+        ScreenerAiCoverage._defer_finalists(run, {"X": ["EVIDENCE_STALE", ["STALE"]]})
+        self.assertEqual(run.excluded_finalists, [])
+        self.assertEqual(run.classes["X"], ("UNPROCESSED", ["DEFERRED_FROM_COMPARISON", "EVIDENCE_STALE_AT_COMPARISON_CUTOFF", "STALE"]))
+        self.assertEqual((run.deferred_finalists, run.sliced), (1, True))
+
     def test_a_refused_comparison_of_several_finalists_is_split_not_thinned(self):
         from types import SimpleNamespace
         from unittest.mock import patch

@@ -233,6 +233,18 @@ deadline, deferred, rejected and evaluated counts). It is never labelled
 is an ordinary complete run. Paid engines are never sliced. Operator runs carry
 no slice plan.
 
+Inside a slice's comparison, a finalist that cannot be compared (not admissible
+at the comparison cutoff, or thinned below sufficiency) is deferred:
+`UNPROCESSED:DEFERRED_FROM_COMPARISON` with its own reasons, never selected. A
+comparison answer the validator rejects is compared again in halves; a single
+finalist whose comparison answer is rejected becomes
+`AI_REJECTED:COMPARISON:<code>`. Either makes the result a slice, never a global
+selection; the `slice` block counts `deferred_finalists` and
+`comparison_rejected`. Runs without a slice plan keep ending partial on these.
+A refused pair is thinned like a single row, since halving a pair compares
+nothing; larger refused comparisons are split, and once a size is refused,
+comparisons at least that large are split before sending.
+
 ## Global comparison
 
 Batch answers are **finalists**, not results. They are recorded as batch

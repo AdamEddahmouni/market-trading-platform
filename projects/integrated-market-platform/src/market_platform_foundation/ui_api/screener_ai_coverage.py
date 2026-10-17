@@ -133,6 +133,10 @@ class _Run:
         # were split before sending because they were at least that large.
         self.refused_group: int | None = None
         self.presplit = 0
+        # Slices only: finalists that could not be compared (not admissible at the comparison cutoff, thinned below
+        # sufficiency, or whose single-finalist comparison answer was rejected). They are deferred, never selected.
+        self.deferred_finalists = 0
+        self.comparison_rejected = 0
         # True once this run, under a slice plan, ends with eligible rows the model did not answer.
         self.sliced = False
         self.timings: dict[str, float] = {}
@@ -384,9 +388,26 @@ class ScreenerAiCoverage:
                                      planned_tokens=run.plan["largest_batch_tokens"], first_pass=False, round_number=number,
                                      reuse_only=run.plan.get("global_reuse_only",False), should_stop=should_stop)
                 sequence += 1
+                if self._slice and outcome["dropped"]:
+                    # In a slice, a finalist that cannot be compared at this cutoff is deferred to a later slice with
+                    # its reason; it is never selected, and the slice stays a selection among the rows it compared.
+                    self._defer_finalists(run, outcome["dropped"])
                 if outcome["failure"]:
                     if should_stop():
                         return self._terminal(run, STOPPED, "STOPPED_BY_OPERATOR")
+                    if self._slice and outcome["invalid"]:
+                        # The unchanged validator rejected a comparison answer: compare the group in halves (new requests
+                        # on evidence acquired for each); a single finalist whose answer was rejected is deferred.
+                        if len(outcome["submitted"]) > 1:
+                            half = math.ceil(len(group) / 2)
+                            groups[index:index + 1] = [group[:half], group[half:]]
+                            continue
+                        for key in outcome["submitted"]:
+                            run.classes[key] = (AI_REJECTED, ["COMPARISON:" + str(outcome["failure"])])
+                        run.comparison_rejected += len(outcome["submitted"])
+                        run.sliced = True  # not every eligible row was compared: never a global selection
+                        index += 1
+                        continue
                     if local and outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED" and len(group) > 1 and not outcome["dropped"]:
                         run.refused_group = min(run.refused_group or len(group), len(group))
                         # The exact send-time gate refused this comparison even after thinning: compare it in two
@@ -826,7 +847,8 @@ class ScreenerAiCoverage:
                 call_id = attempt_id
                 # A comparison of several finalists is split, never thinned: thinning could remove a finalist's only
                 # second strong item and exclude it. One row (any first-pass request, or a group of one) is thinned.
-                target = self._context_fit_target(result, fitted) if first_pass or len(keep) == 1 else None
+                # A pair is the smallest comparison: halving it compares nothing, so a pair is thinned like one row.
+                target = self._context_fit_target(result, fitted) if first_pass or len(keep) <= 2 else None
                 if target is None:
                     break
                 # The exact send-time count refused this packet before any generation. The existing deterministic
@@ -916,10 +938,10 @@ class ScreenerAiCoverage:
                                            "evidence_cutoff": now} for key, value in dropped.items())
         # The model answered and the unchanged validator refused the answer, or the answer reached its output
         # allowance: a row-level outcome of a first-pass request. Provider and evidence failures are not.
-        rejected = (first_pass and failure is not None and result is not None and bool(result.get("inference_dispatched", True))
-                    and (result.get("state") == "INVALID_OUTPUT" or result.get("reason") == "LOCAL_OUTPUT_LIMIT_REACHED"))
+        invalid = (failure is not None and result is not None and bool(result.get("inference_dispatched", True))
+                   and (result.get("state") == "INVALID_OUTPUT" or result.get("reason") == "LOCAL_OUTPUT_LIMIT_REACHED"))
         return {"result": result if failure is None else None, "failure": failure, "submitted": submitted, "dropped": dropped,
-                "rejected": rejected}
+                "rejected": first_pass and invalid, "invalid": invalid}
 
     def _context_fit_target(self, result: dict[str, Any] | None, fitted: list[dict[str, Any]]) -> int | None:
         """The canonical packet byte budget for a thinned resend, or None when this answer stands.
@@ -944,6 +966,16 @@ class ScreenerAiCoverage:
             return None
         # Remove the excess at a conservative CONTEXT_FIT_BYTES_PER_TOKEN; the next exact count decides again.
         return max(0, size - int(excess * CONTEXT_FIT_BYTES_PER_TOKEN))
+
+    @staticmethod
+    def _defer_finalists(run: _Run, dropped: dict[str, list[Any]]) -> None:
+        """Slices: move finalists the comparison could not include from the exclusions to deferred rows."""
+        run.excluded_finalists = [item for item in run.excluded_finalists if item["instrument_id"] not in dropped]
+        for key, value in dropped.items():
+            reasons = list(value[1]) if value[0] == UNPROCESSED else [f"{value[0]}_AT_COMPARISON_CUTOFF", *value[1]]
+            run.classes[key] = (UNPROCESSED, ["DEFERRED_FROM_COMPARISON", *reasons])
+        run.deferred_finalists += len(dropped)
+        run.sliced = True
 
     @staticmethod
     def _partial_reason(failure: str) -> str:
@@ -1016,6 +1048,7 @@ class ScreenerAiCoverage:
                 "epoch": self._slice.get("epoch"),
                 "deadline": _iso(float(self._slice["deadline_epoch"])) if self._slice.get("deadline_epoch") is not None else None,
                 "deferred_count": deferred, "rejected_requests": run.rejected,
+                "deferred_finalists": run.deferred_finalists, "comparison_rejected": run.comparison_rejected,
                 "evaluated_count": counts["by_class"].get(AI_EVALUATED, 0)},
         }
 
