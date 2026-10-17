@@ -335,6 +335,51 @@ class ControlledLifecycleTests(unittest.TestCase):
         self.assertGreaterEqual(receipt.get('elapsed_ms', -1), 0)
         self.assertTrue(all(x['started_at'] <= x['ended_at'] and x['elapsed_ms'] >= 0 for x in receipt['http']))
 
+    def _reduction_request(self, *, input_tokens, finish='stop', max_tokens=2600, candidates=1):
+        import json
+        from types import SimpleNamespace
+        from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider
+        from market_platform_foundation.intelligence.inference.candidate_reduction import ScreenerEvidencePacket
+        from market_platform_foundation.intelligence.inference.contracts import IntelligenceTaskType
+        from market_platform_foundation.intelligence.inference.config import IntelligenceInferenceConfig
+        sent = []
+        def post(url, body, timeout):
+            if url.endswith('/apply-template'):
+                return 200, json_bytes({'prompt': 'exact full prompt'})
+            if url.endswith('/tokenize'):
+                return 200, json_bytes({'tokens': [1] * input_tokens})
+            sent.append(json.loads(body))
+            return 200, json_bytes({'choices': [{'message': {'content': '{"schema_version":'}, 'finish_reason': finish}],
+                                    'usage': {'prompt_tokens': input_tokens, 'completion_tokens': 9}})
+        server = SimpleNamespace(manifest=SimpleNamespace(context=8192), ensure_running=lambda: None, touch=lambda: None)
+        provider = LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=post)
+        packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, 'i', 'h', 't', {}, [{}] * candidates, {})
+        result = provider.infer(packet, rendered_prompt='exact full prompt', config=IntelligenceInferenceConfig(max_tokens=max_tokens))
+        return result, sent
+
+    def test_output_allowance_is_what_the_window_leaves_up_to_the_configured_maximum(self):
+        # The October 16 crypto packets counted ~6,000 tokens: refused under a fixed 2,600 reserve, sent now.
+        result, sent = self._reduction_request(input_tokens=6000)
+        self.assertEqual(sent[0]['max_tokens'], 8192 - 6000)
+        self.assertEqual(result.diagnostics['context']['output_floor'], 768)
+        small, sent = self._reduction_request(input_tokens=1000)
+        self.assertEqual(sent[0]['max_tokens'], 2600)  # never above the configured maximum
+
+    def test_input_leaving_less_than_the_floor_is_refused_before_generation(self):
+        result, sent = self._reduction_request(input_tokens=8192 - 767)
+        self.assertEqual(result.error_message, 'LOCAL_CONTEXT_EXCEEDED')
+        self.assertFalse(result.inference_dispatched)
+        self.assertEqual(sent, [])
+        five, sent = self._reduction_request(input_tokens=8192 - 1700, candidates=5)
+        self.assertEqual(five.error_message, 'LOCAL_CONTEXT_EXCEEDED')  # 5 candidates need 512 + 5*256
+
+    def test_a_reply_that_reaches_its_allowance_is_refused_never_parsed(self):
+        result, sent = self._reduction_request(input_tokens=6000, finish='length')
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(result.error_message, 'LOCAL_OUTPUT_LIMIT_REACHED')
+        self.assertTrue(result.inference_dispatched)
+        self.assertEqual(result.raw_text, '')
+
     def test_context_overflow_preserves_input_and_never_dispatches_generation(self):
         from types import SimpleNamespace
         from market_platform_foundation.intelligence.inference.local_provider import LocalChatInferenceProvider

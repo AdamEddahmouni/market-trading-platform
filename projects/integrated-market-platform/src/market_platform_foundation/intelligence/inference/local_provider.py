@@ -414,7 +414,9 @@ class LocalChatInferenceProvider:
                     # All operational/resource failures still stop and reap it.
                     oversize_count = (response is not None and response.error_message == 'LOCAL_CONTEXT_EXCEEDED'
                                       and response.inference_dispatched is False)
-                    if response is None or (response.error_code and not oversize_count) or monitor.failure or stop():
+                    # A reply that used its whole allowance completed normally on a healthy runtime.
+                    output_limit = response is not None and response.error_message == 'LOCAL_OUTPUT_LIMIT_REACHED'
+                    if response is None or (response.error_code and not (oversize_count or output_limit)) or monitor.failure or stop():
                         self._server.stop()
             finally:
                 if isinstance(self._server,LocalLlamaServer):self._server.should_stop=lambda:False
@@ -481,11 +483,19 @@ class LocalChatInferenceProvider:
                 tokens=json.loads(tokenized)["tokens"] if status==200 else None
                 if not isinstance(tokens,list) or not tokens or any(type(token) is not int or token < 0 for token in tokens):
                     raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
-                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":config.max_tokens,"context_window":window}
+                # The output allowance is what the window leaves, never more than the task's configured maximum,
+                # and the request is refused intact when that is under the measured floor. A reply that reaches
+                # the allowance is refused as LOCAL_OUTPUT_LIMIT_REACHED, never parsed or truncated into acceptance.
+                floor=output_floor(packet,config)
+                allowance=min(int(config.max_tokens),window-len(tokens))
+                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":allowance,"output_floor":floor,
+                                          "configured_max_tokens":int(config.max_tokens),"context_window":window}
+                diagnostics['context']=dict(self.last_context_sample)
                 if monitor and monitor.check():
                     return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
-                if len(tokens)+config.max_tokens>window:
+                if allowance<floor:
                     return replace(self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_EXCEEDED",ParsingStatus.PROVIDER_ERROR,started), tokens_input=len(tokens))
+                body["max_tokens"]=allowance
             except (ValueError,KeyError,TypeError,OSError,URLError):
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_PREFLIGHT_FAILED",ParsingStatus.PROVIDER_ERROR,started)
         if getattr(packet, 'should_stop', lambda: False)():
@@ -518,13 +528,32 @@ class LocalChatInferenceProvider:
         usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
         diagnostics['finish_reason'] = payload['choices'][0].get('finish_reason')
         diagnostics['runtime_timings'] = {key: value for key, value in (payload.get('timings') or {}).items()
-            if key in ('prompt_n', 'prompt_ms', 'prompt_per_second', 'predicted_n', 'predicted_ms', 'predicted_per_second')
+            if key in ('prompt_n', 'prompt_ms', 'prompt_per_second', 'predicted_n', 'predicted_ms', 'predicted_per_second', 'cache_n')
             and type(value) in (int, float)} if isinstance(payload.get('timings'), dict) else {}
+        if diagnostics['finish_reason'] == 'length':
+            return replace(self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, 'LOCAL_OUTPUT_LIMIT_REACHED',
+                                       ParsingStatus.MALFORMED, started, dispatched=True),
+                           tokens_input=usage.get("prompt_tokens"), tokens_output=usage.get("completion_tokens"))
         return ProviderInferenceResponse(raw_text=text if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION else _THINK.sub("", text).strip(), provider_id=self.provider_id,
                                          model_id=self.model_id, tokens_input=usage.get("prompt_tokens"),
                                          tokens_output=usage.get("completion_tokens"),
                                          latency_ms=int((time.perf_counter() - started) * 1000),
                                          provider_response_id=str(payload.get("id") or ""),inference_dispatched=True)
+
+
+LOCAL_OUTPUT_FLOOR_BASE = 512
+LOCAL_OUTPUT_FLOOR_PER_CANDIDATE = 256
+
+
+def output_floor(packet, config) -> int:
+    """Smallest output allowance a local request is sent with, never above the task's configured maximum.
+
+    Measured local candidate replies were 42-173 tokens for one candidate (October 14-16 receipts): the floor
+    is 768 tokens for one candidate and grows 256 per further candidate. It is an admission threshold; the
+    allowance actually sent is everything the window leaves, up to the configured maximum. Tasks configured
+    below the floor keep their configured maximum."""
+    count = len(getattr(packet, 'candidates', ()) or ()) if packet.task_type == IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION else 1
+    return min(int(config.max_tokens), LOCAL_OUTPUT_FLOOR_BASE + LOCAL_OUTPUT_FLOOR_PER_CANDIDATE * max(1, count))
 
 
 def _bounded_candidate_schema(shared_schema, candidate_count):

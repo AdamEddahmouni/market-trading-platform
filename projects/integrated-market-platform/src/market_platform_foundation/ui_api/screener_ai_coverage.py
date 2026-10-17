@@ -56,6 +56,10 @@ ROWS_PER_RECORD = 2000
 # Evidence is re-acquired for every request, so a request can be slightly larger than the packet it was planned
 # from. Each planned call is held with this margin; a call that still exceeds its hold ends the run as partial.
 PLAN_DRIFT_MARGIN = 1.05
+# Local context-fit resends: canonical JSON measured 2.86 bytes per Qwen token on the October 16 crypto packet;
+# a lower ratio removes more evidence per attempt, so fewer attempts are needed.
+CONTEXT_FIT_ATTEMPTS = 2
+CONTEXT_FIT_BYTES_PER_TOKEN = 2.5
 _LIMITATIONS = {
     COMPLETE_NO_SELECTION: "Every eligible row was evaluated and compared; no candidate was selected.",
     NO_ELIGIBLE_ROWS: "Every row was assessed; none had an admissible current price plus additional strong evidence, so no model was called.",
@@ -110,6 +114,8 @@ class _Run:
         self.budget: dict[str, Any] = {"capped": False}
         self.hold = False
         self.tokens_input = self.tokens_output = 0
+        # Exact counts of requests refused before generation (context fit). Never model input or spend.
+        self.counted_not_sent = 0
         self.timings: dict[str, float] = {}
         self.terminal: dict[str, Any] | None = None
         self.cutoffs: dict[str, str | None] = {"classification": None, "first_batch": None, "last_batch": None, "final": None}
@@ -434,6 +440,8 @@ class ScreenerAiCoverage:
         """Bounded batches in an order no sort or page can bias, sized by rows, bytes and the model's window."""
         from .screener_news_evidence import attach_news, fit_news
 
+        if getattr(self._provider, 'runtime', None) == 'LOCAL_MODEL':
+            return self._plan_local(run, eligible)
         service, reducer = self.service, self._reducer
         now = run.cutoffs["classification"]
         window = self._context_window()
@@ -588,6 +596,42 @@ class ScreenerAiCoverage:
                      new_inference_requests=0, required_tokens=required["tokens"])
         return batches
 
+    def _plan_local(self, run: _Run, eligible: list[str]) -> list[dict[str, Any]]:
+        """One row per request for the local engine, counted exactly once: by the send-time gate.
+
+        Planning-time counts were never authoritative for a local request. Evidence is re-acquired for each
+        request, so the packet that is sent differs from the one planned: run 97fae8e2 counted about 3,800
+        tokens at planning and about 6,000 at send. Counting every row up front, by bisection from 50-row
+        groups, cost 400-1,700 s before the first call. A single row is the only grouping that reliably fits
+        the 8,192-token window, and the reducer's own cache still answers unchanged packets at send time.
+        A local engine carries no token budget, so nothing is reserved from these figures."""
+        reducer = self._reducer
+        ordered = fair_order(str(run.scope["result_set"]), eligible)
+        batches = [{"instrument_ids": [key], "packet_bytes": None, "input_tokens": None, "tokens": None,
+                    "cached": False, "cached_selected": []} for key in ordered]
+        rounds = reduction_rounds(len(batches))
+        calls = len(batches) + sum(rounds)
+        window = self._context_window()
+        run.plan = {
+            "order": "sha256(result_set|instrument_id)", "batches_planned": len(batches), "reduction_rounds_planned": rounds,
+            "rows_planned": len(batches), "batch_rows_max": 1 if batches else 0, "batch_rows_average": 1 if batches else 0,
+            "packet_bytes_max": None, "batch_tokens_max": None, "largest_batch_tokens": None,
+            "context_window": window, "reserved_output_tokens": int(reducer.config.max_tokens),
+            "reference_evidence_thinned": 0, "drift_margin": None, "optimizer_version": OPTIMIZER_VERSION,
+            "cached_batches": 0, "batch_optimizer": "LOCAL_ONE_ROW_EXACT_AT_SEND",
+            "token_basis": "EXACT_AT_SEND_ONLY", "new_inference_batches": len(batches), "global_reuse_only": False,
+            "expected_input_tokens": None, "total_eligible_candidates": len(eligible), "expected_requests": calls,
+            "reserved_output_tokens_total": None, "reserved_reasoning_tokens_total": 0, "estimated_total_tokens": None,
+            "available_request_budget": None, "available_token_budget": None, "feasible_under_current_limits": None,
+            "reserved_batch_output_tokens": None, "reserved_reasoning_tokens": 0,
+            "estimated_provider_cost": None, "cost_basis": "LOCAL_ENGINE_NO_CHARGE",
+            "required": {"tokens": None, "requests": calls, "batch_tokens": None, "reduction_tokens": None,
+                         "reduction_calls": sum(rounds)},
+            "budget_basis": "UNCAPPED_ENGINE", "provider_count": None, "preflight_rejected": None,
+        }
+        report_stage("REUSE_ASSESSMENT", reused_batches=0, new_inference_requests=len(batches), required_tokens=None)
+        return batches
+
     # ------------------------------------------------------------ model call
 
     def _call(self, run: _Run, instrument_ids: list[str], *, stage: str, index: int, total: int, planned_tokens: int,
@@ -627,15 +671,18 @@ class ScreenerAiCoverage:
                 keep.remove(candidate)
                 dropped[candidate["instrument"]["instrument_id"]] = [UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
             submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
-            if keep:
+            fitted: list[dict[str, Any]] = []
+            base_call_id = call_id
+            while keep:
                 if self._reducer.compact_input:
                     report_stage("COMPACTION", intake_count=len(keep))
                 from ..intelligence.inference.candidate_reduction import packet_candidates
                 manifest = {"scope":run.scope, "decision_cutoff":now, "candidates":packet_candidates(keep)}
-                self.ledger().append(run.run_id,"manifest",{"call_id":call_id, "semantic_hash":semantic_hash(manifest),
+                attempt_id = base_call_id + (f":fit{len(fitted)}" if fitted else "")
+                self.ledger().append(run.run_id,"manifest",{"call_id":attempt_id, "semantic_hash":semantic_hash(manifest),
                     "optimizer_version":OPTIMIZER_VERSION, "canonical":manifest})
                 self.ledger().append(run.run_id, "batch_started", {
-                    "call_id": call_id, "stage": stage, "round": round_number, "index": index, "of": total,
+                    "call_id": attempt_id, "stage": stage, "round": round_number, "index": index, "of": total,
                     "instrument_ids": submitted, "evidence_cutoff": now, "planned_tokens": planned_tokens,
                     "request_started_at": _iso(service._clock())})
                 position = {"batch": index + 1, "batches_planned": total} if first_pass else {"group": index + 1, "groups": total}
@@ -645,6 +692,37 @@ class ScreenerAiCoverage:
                             result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
                     else:
                         result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
+                call_id = attempt_id
+                target = self._context_fit_target(result, fitted)
+                if target is None:
+                    break
+                # The exact send-time count refused this packet before any generation. The existing deterministic
+                # reference-evidence thinning, given the byte budget the count implies, removes stories from the row
+                # with the most; current-market evidence is never thinned and every remaining reference keeps its
+                # own clocks. A packet thinning cannot change is never resent; a refused attempt keeps one receipt.
+                attempted = semantic_hash(packet_candidates(keep))
+                fit_news(run.scope, keep, news, now=now, max_bytes=target)
+                if semantic_hash(packet_candidates(keep)) == attempted:
+                    break
+                run.counted_not_sent += int(result.get("tokens_input") or 0)
+                fitted.append({"call_id": attempt_id, "input_tokens": result.get("tokens_input"),
+                               "packet_bytes": result.get("packet_bytes"), "target_bytes": target})
+                self.ledger().append(run.run_id, "batch", {
+                    "call_id": attempt_id, "stage": stage, "round": round_number, "index": index, "of": total,
+                    "outcome": "NOT_SENT", "state": result["state"], "reason": result.get("reason"),
+                    "tokens_input": result.get("tokens_input"), "packet_bytes": result.get("packet_bytes"),
+                    "superseded_by": "CONTEXT_FIT_THINNING", "target_bytes": target, "evidence_cutoff": now,
+                    "instrument_ids": submitted, "dropped": dict(dropped), "selected": []})
+                for candidate in [item for item in keep if not item["sufficient"]]:
+                    keep.remove(candidate)
+                    dropped[candidate["instrument"]["instrument_id"]] = [UNPROCESSED, ["EVIDENCE_THINNED_BY_PACKET_CAP"]]
+                submitted = [candidate["instrument"]["instrument_id"] for candidate in keep]
+                if not keep:
+                    # Every row lost its second strong item to thinning: nothing is sent and each row keeps its reason.
+                    # The refused attempt's receipt above is the closing record; the run continues like any oversize.
+                    result, failure = None, "LOCAL_CONTEXT_EXCEEDED"
+                    break
+            if keep:
                 # A request answered from the reducer's cache was not sent again and is not counted as a model call.
                 if result.get("cache") == "HIT":
                     run.cache_hits += 1
@@ -665,9 +743,12 @@ class ScreenerAiCoverage:
                 "state": "FAILED", "reason": failure, "evidence_cutoff": now, "instrument_ids": submitted, "dropped": dropped, "selected": []})
         picks = (result or {}).get("candidates", []) if failure is None else []
         if result is not None:
-            if result.get("cache") == "MISS":
+            if result.get("cache") == "MISS" and result.get("inference_dispatched", True):
                 run.tokens_input += int(result.get("tokens_input") or 0)
                 run.tokens_output += int(result.get("tokens_output") or 0)
+            elif result.get("cache") == "MISS":
+                # Counted by the exact send-time gate and refused before generation: never model input.
+                run.counted_not_sent += int(result.get("tokens_input") or 0)
             report_stage(stage,reused_batches=run.cache_hits,new_inference_requests=run.calls,
                          actual_tokens=run.tokens_input+run.tokens_output)
             unknown = failure is not None and failure.endswith("TIMEOUT")
@@ -701,6 +782,30 @@ class ScreenerAiCoverage:
             run.excluded_finalists.extend({"instrument_id": key, "round": round_number, "class": value[0], "reasons": list(value[1]),
                                            "evidence_cutoff": now} for key, value in dropped.items())
         return {"result": result if failure is None else None, "failure": failure, "submitted": submitted, "dropped": dropped}
+
+    def _context_fit_target(self, result: dict[str, Any] | None, fitted: list[dict[str, Any]]) -> int | None:
+        """The canonical packet byte budget for a thinned resend, or None when this answer stands.
+
+        Only for the local engine's exact send-time refusal (nothing generated), at most CONTEXT_FIT_ATTEMPTS times,
+        and only while each attempt actually shrinks the packet."""
+        if (getattr(self._provider, "runtime", None) != "LOCAL_MODEL" or result is None
+                or result.get("reason") != "LOCAL_CONTEXT_EXCEEDED" or result.get("inference_dispatched")
+                or len(fitted) >= CONTEXT_FIT_ATTEMPTS):
+            return None
+        counted, size, window = result.get("tokens_input"), result.get("packet_bytes"), self._context_window()
+        if not isinstance(counted, int) or not isinstance(size, int) or counted <= 0 or size <= 0 or window is None:
+            return None
+        if fitted and size >= int(fitted[-1]["packet_bytes"] or 0):
+            return None  # the last thinning removed nothing: no further budget can change the answer
+        from ..intelligence.inference.local_provider import LOCAL_OUTPUT_FLOOR_BASE, LOCAL_OUTPUT_FLOOR_PER_CANDIDATE
+
+        rows = len((result.get("evidence") or [None]))
+        floor = min(int(self._reducer.config.max_tokens), LOCAL_OUTPUT_FLOOR_BASE + LOCAL_OUTPUT_FLOOR_PER_CANDIDATE * rows)
+        excess = counted - (window - floor)
+        if excess <= 0:
+            return None
+        # Remove the excess at a conservative CONTEXT_FIT_BYTES_PER_TOKEN; the next exact count decides again.
+        return max(0, size - int(excess * CONTEXT_FIT_BYTES_PER_TOKEN))
 
     @staticmethod
     def _partial_reason(failure: str) -> str:
@@ -750,6 +855,7 @@ class ScreenerAiCoverage:
             "optimizer_version":OPTIMIZER_VERSION,
             "efficiency":{"reused_batches":run.cache_hits, "new_inference_requests":run.calls,
                           "actual_input_tokens":run.tokens_input, "actual_output_tokens":run.tokens_output,
+                          "counted_not_sent_tokens":run.counted_not_sent,
                           "required_tokens":(run.plan or {}).get("required",{}).get("tokens"),
                           "estimated_provider_cost":(run.plan or {}).get("estimated_provider_cost"),
                           "cost_basis":(run.plan or {}).get("cost_basis","UNAVAILABLE_PRICE_CONFIGURATION")},

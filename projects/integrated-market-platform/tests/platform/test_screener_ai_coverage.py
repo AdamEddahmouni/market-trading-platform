@@ -660,31 +660,115 @@ class StopTests(unittest.TestCase):
         self.assertEqual(h.block["counts"]["unprocessed"], 120)
         self.assertEqual(h.block["status"], "STOPPED")
 
-    def test_stop_during_local_exact_token_planning_is_a_stop_not_a_provider_rejection(self):
-        stop = [False]
-
-        class LocalCount(RankingProvider):
-            runtime = "LOCAL_MODEL"
-            counts = 0
-
-            def preflight(inner, packet, *, rendered_prompt, config):
-                inner.counts += 1
-                if inner.counts == 2:
-                    stop[0] = True
-                if packet.should_stop():
-                    return {"accepted": False, "input_tokens": None, "context_window": 8192, "context_fit": None,
-                            "reason": "STOPPED_BY_OPERATOR"}
-                return {"accepted": True, "input_tokens": 1000, "context_window": 8192, "context_fit": True, "reason": None}
-
+    def test_stop_before_a_local_request_is_a_stop_not_a_provider_rejection(self):
+        # Local planning makes no count (the exact gate runs at send); a Stop still ends STOPPED, never FAILED.
         h = Harness(universe(120), LocalCount())
-        h.run(should_stop=lambda: stop[0])
-        self.assertEqual(h.provider.counts, 2)
-        self.assertEqual(h.provider.calls, 0)
+        h.run(should_stop=lambda: True)
+        self.assertEqual((h.provider.counts, h.provider.calls), (0, 0))
         self.assertEqual(h.block["status"], "STOPPED")
         self.assertEqual(h.block["reason"], "STOPPED_BY_OPERATOR")
         self.assertEqual(h.block["counts"]["by_class"], {"UNPROCESSED": 120})
         self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:STOPPED_BY_OPERATOR": 120})
         self.assertEqual(h.ledger.open_runs(), [])
+
+
+class LocalCount(RankingProvider):
+    """A local engine whose exact count is observable; with ``refuse`` it refuses every send before generation."""
+
+    runtime = "LOCAL_MODEL"
+
+    def __init__(self, *, refuse=False, window=None) -> None:
+        super().__init__()
+        self.counts, self.refuse = 0, refuse
+        if window is not None:
+            from types import SimpleNamespace
+            self._server = SimpleNamespace(manifest=SimpleNamespace(context=window, revision="r", runtime_version="b1"))
+
+    def preflight(self, packet, *, rendered_prompt, config):
+        self.counts += 1
+        return {"accepted": True, "input_tokens": 1000, "context_window": 8192, "context_fit": True, "reason": None}
+
+    def on_call(self, call, packet):
+        if not self.refuse:
+            return self.respond(packet)
+        from dataclasses import replace
+        return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+
+
+class LocalSendTimeCountTests(unittest.TestCase):
+    def test_local_planning_counts_nothing_and_plans_one_row_per_request(self):
+        h = Harness(universe(120, strong={7: 90.0}), LocalCount())
+        h.run()
+        self.assertEqual(h.provider.counts, 0)
+        self.assertEqual(h.block["plan"]["batch_optimizer"], "LOCAL_ONE_ROW_EXACT_AT_SEND")
+        self.assertEqual(h.block["plan"]["token_basis"], "EXACT_AT_SEND_ONLY")
+        self.assertEqual(h.block["batches_planned"], 120)
+        self.assertTrue(all(len(seen) == 1 for seen in h.provider.seen[:120]))
+        self.assertEqual(h.block["ai_evaluated_count"], 120)
+        reconciled(self, h.block, 120)
+
+    def test_a_request_refused_before_generation_is_not_model_input(self):
+        h = Harness(universe(3), LocalCount(refuse=True))
+        h.run()
+        efficiency = h.block["efficiency"]
+        self.assertEqual(efficiency["actual_input_tokens"], 0)
+        self.assertEqual(efficiency["counted_not_sent_tokens"], 3 * 9000)
+        self.assertEqual(h.block["model_calls"], 0)
+        self.assertEqual(h.block["budget"]["tokens_input"], 0)
+
+    def test_a_packet_thinning_cannot_change_is_never_resent(self):
+        # These rows carry no story, so thinning changes nothing: one refused send per row, one receipt each.
+        h = Harness(universe(2), LocalCount(refuse=True, window=8192))
+        h.run()
+        self.assertEqual(h.provider.calls, 2)
+        records = h.calls()
+        self.assertEqual(len(records), 2)
+        self.assertFalse(any(r.get("superseded_by") for r in records))
+        self.assertEqual(h.ledger.unfinished_batches(h.run_id), [])
+        self.assertEqual(h.block["counts"]["reasons"], {"UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED": 2})
+
+    def test_a_thinned_packet_is_resent_once_and_both_attempts_keep_receipts(self):
+        from unittest.mock import patch
+
+        class RefuseUnthinned(LocalCount):
+            def on_call(inner, call, packet):
+                if all(c["instrument"].get("thinned") for c in packet.candidates):
+                    return inner.respond(packet)
+                from dataclasses import replace
+                return replace(inner.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+
+        def thin(scope, candidates, projections, *, now, max_bytes=None):
+            if max_bytes is None:
+                return  # the ordinary MAX_PACKET_BYTES fit before the first send
+            for candidate in candidates:
+                candidate["instrument"]["thinned"] = True
+
+        h = Harness(universe(1, strong={0: 90.0}), RefuseUnthinned(window=8192))
+        with patch("market_platform_foundation.ui_api.screener_news_evidence.fit_news", thin):
+            h.run()
+        self.assertEqual(h.provider.calls, 2)
+        records = h.calls()
+        self.assertEqual([r.get("superseded_by") for r in records], ["CONTEXT_FIT_THINNING", None])
+        self.assertEqual(records[0]["outcome"], "NOT_SENT")
+        self.assertEqual(records[1]["call_id"], records[0]["call_id"] + ":fit1")
+        self.assertEqual(h.ledger.unfinished_batches(h.run_id), [])
+        self.assertEqual(h.block["ai_evaluated_count"], 1)
+        self.assertEqual(h.block["efficiency"]["counted_not_sent_tokens"], 9000)
+
+    def test_context_fit_target_removes_the_counted_excess(self):
+        from market_platform_foundation.ui_api.screener_ai_coverage import CONTEXT_FIT_BYTES_PER_TOKEN
+        h = Harness(universe(1), LocalCount(window=8192))
+        coverage = ScreenerAiCoverage(h.service, ledger=h.ledger, software_sha=SHA)
+        coverage._provider, coverage._reducer = h.provider, h.service._provider_reducer()
+        refused = {"reason": "LOCAL_CONTEXT_EXCEEDED", "inference_dispatched": False, "tokens_input": 6000,
+                   "packet_bytes": 11374, "evidence": [{}]}
+        # 6,000 counted + the one-candidate floor of 768 exceeds 8,192 by nothing; 7,600 exceeds it by 176.
+        self.assertIsNone(coverage._context_fit_target(refused, []))
+        target = coverage._context_fit_target({**refused, "tokens_input": 7600}, [])
+        self.assertEqual(target, 11374 - int(176 * CONTEXT_FIT_BYTES_PER_TOKEN))
+        self.assertIsNone(coverage._context_fit_target({**refused, "tokens_input": 7600, "inference_dispatched": True}, []))
+        self.assertIsNone(coverage._context_fit_target({**refused, "tokens_input": 7600},
+                                                       [{"packet_bytes": 11374}]))  # no shrink since the last attempt
 
 
 class BudgetTests(unittest.TestCase):

@@ -212,6 +212,29 @@ class NewsCandidateEvidenceTests(unittest.TestCase):
         attach_news(c,values['EQ:AAPL'],now='2026-09-28T14:16:40Z')
         self.assertFalse(any(e['capability']=='NEWS' for e in c['reference_evidence']))
 
+    def test_a_send_time_byte_budget_thins_only_reference_stories_and_never_loosens(self):
+        rows=[{'instrument':{'instrument_id':'EQ:X0'},'symbol':'X0','company':'Example company 0'}]
+        # Distinct stories (different events, sources and times) so clustering keeps more than one.
+        topics=['raises full-year guidance','announces a new chief financial officer','settles a patent dispute']
+        items=[finviz_row(f'Example company 0 {topic} '+(chr(97+j)*300),['X0'],f'2026-09-28 09:{j*9+30:02d}:00',f'https://fixture{j}.test/0/{j}') for j,topic in enumerate(topics)]
+        values=project_news(service(finviz={**FINVIZ,'items':items}),universe='US_EQUITIES',rows=rows,refresh=True)
+        c=grounded('EQ:X0')
+        attach_news(c,values['EQ:X0'],now=NEWS_ISO)
+        size=lambda: CandidateReducer().estimate({},[c],NEWS_ISO)['packet_bytes']
+        market=copy.deepcopy(c['current_market_evidence'])
+        stories, before = c['news']['story_count'], size()
+        self.assertGreater(stories,1)
+        fit_news({},[c],values,now=NEWS_ISO,max_bytes=10**9)  # a budget above MAX_PACKET_BYTES never loosens the cap
+        self.assertEqual((c['news']['story_count'],size()),(stories,before))
+        fit_news({},[c],values,now=NEWS_ISO,max_bytes=before-1)
+        self.assertLess(c['news']['story_count'],stories)
+        self.assertLessEqual(size(),before-1)
+        self.assertEqual(c['current_market_evidence'],market)  # current-market evidence is never thinned
+        self.assertIn('GLOBAL_PACKET_STORY_CAP',c['news']['limitations'])
+        refs={e['evidence_id'] for e in c['reference_evidence']}
+        self.assertTrue(all(ref in refs for a in c['alignments'] for ref in a['news_refs']))
+        self.assertTrue(c['sufficient'])  # quote + technicals still ground the row
+
     def test_maximum_intake_thins_packet_deterministically(self):
         rows=[{'instrument':{'instrument_id':f'EQ:X{i}'},'symbol':f'X{i}','company':f'Example company {i}'} for i in range(MAX_INTAKE)]
         items=[finviz_row(f'Example company {i} announces event {j} '+('x'*300),[f'X{i}'],f'2026-09-28 09:{j+30:02d}:00',f'https://fixture.test/{i}/{j}') for i in range(MAX_INTAKE) for j in range(3)]
