@@ -706,6 +706,9 @@ class LocalSendTimeCountTests(unittest.TestCase):
         self.assertTrue(all(len(seen) == 1 for seen in h.provider.seen[:120]))
         self.assertEqual(h.block["ai_evaluated_count"], 120)
         reconciled(self, h.block, 120)
+        # The run read route audits the whole result; a local plan's enum fields must pass it.
+        assert_no_secrets_in_payload(h.result)
+        assert_no_secrets_in_payload({"result": h.result})
 
     def test_a_request_refused_before_generation_is_not_model_input(self):
         h = Harness(universe(3), LocalCount(refuse=True))

@@ -54,6 +54,8 @@ _PUBLIC_POLICY_TOKEN_KEYS: frozenset[str] = frozenset(
         "boundary_token",
         "provider_status_token",
         "token_status",
+        # AI Screener plan: how input tokens were counted (EXACT_AT_SEND_ONLY, ...).
+        "token_basis",
     )
 )
 
