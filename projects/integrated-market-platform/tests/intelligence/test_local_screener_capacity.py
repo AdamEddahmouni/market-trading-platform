@@ -37,6 +37,10 @@ def provider(transport, context=8192):
     return LocalChatInferenceProvider(base_url='http://127.0.0.1:19999', model_id='fixture', server=server, poster=transport)
 
 
+# The window minus the 768-token output floor for one candidate (512 + 256): one more input token is refused.
+OVERFLOW = 8192 - 768 + 1
+
+
 def packet(task=IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION):
     return SimpleNamespace(task_type=task, output_schema={'type': 'object'})
 
@@ -55,7 +59,7 @@ class LocalContextTests(unittest.TestCase):
             process = FakeProcess()
             server._process = process
             server.enforce_admission = True
-            transport = Transport(count=6000)
+            transport = Transport(count=OVERFLOW)
             local = LocalChatInferenceProvider(base_url=server.base_url, model_id='fixture', server=server, poster=transport)
             sample = {'available_bytes': 12 * resources.GIB, 'commit_available_bytes': 12 * resources.GIB,
                 'process_bytes': resources.GIB, 'process_commit_bytes': resources.GIB}
@@ -86,11 +90,17 @@ class LocalContextTests(unittest.TestCase):
 
     def test_overflow_never_dispatches_candidate_or_action_generation(self):
         for task in (IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, IntelligenceTaskType.SCREENER_ACTION_DECISION):
-            transport = Transport(count=5593)
+            transport = Transport(count=OVERFLOW)
             value = provider(transport).infer(packet(task), rendered_prompt='FULL', config=IntelligenceInferenceConfig(max_tokens=2600))
             self.assertEqual(value.error_message, 'LOCAL_CONTEXT_EXCEEDED')
             self.assertFalse(value.inference_dispatched)
             self.assertEqual(len(transport.requests), 2)
+
+    def test_input_that_leaves_exactly_the_floor_is_sent_with_the_floor_as_its_allowance(self):
+        transport = Transport(count=OVERFLOW - 1)
+        value = provider(transport).infer(packet(), rendered_prompt='FULL', config=IntelligenceInferenceConfig(max_tokens=2600))
+        self.assertFalse(value.error_code)
+        self.assertEqual(transport.requests[2][1]['max_tokens'], 768)
 
     def test_unavailable_or_malformed_exact_count_fails_closed(self):
         for status, tokens in ((404, None), (200, []), (200, ['invalid']), (200, [True])):
@@ -128,7 +138,7 @@ class LocalContextTests(unittest.TestCase):
             process = FakeProcess()
             server._process = process
             server.enforce_admission = True
-            transport = Transport(count=6000)
+            transport = Transport(count=OVERFLOW)
             local = LocalChatInferenceProvider(base_url=server.base_url, model_id='fixture', server=server, poster=transport)
             self.assertTrue(callable(getattr(local, 'preflight', None)))
             sample = {'available_bytes': 12 * resources.GIB, 'commit_available_bytes': 12 * resources.GIB,
@@ -156,11 +166,13 @@ class CoverageContextTests(unittest.TestCase):
             h.run()
         self.assertEqual(h.block['status'], 'COMPLETE_NO_SELECTION')
         self.assertEqual(h.block['ai_evaluated_count'], 1)
-        self.assertEqual(h.block['plan']['expected_input_tokens'], 5500)
+        # Local plans count exactly at send only; the conservative estimate never decides the row.
+        self.assertEqual(h.block['plan']['token_basis'], 'EXACT_AT_SEND_ONLY')
+        self.assertIsNone(h.block['plan']['expected_input_tokens'])
         self.assertTrue(any(url.endswith('/completions') for url, _ in transport.requests))
 
     def test_exact_overflow_accounts_row_without_generation(self):
-        transport = Transport(count=5593)
+        transport = Transport(count=OVERFLOW)
         h = Harness(universe(1), provider(transport))
         h.run()
         self.assertEqual(h.block['counts']['unprocessed'], 1)
