@@ -1266,6 +1266,37 @@ class ReductionSplitTests(unittest.TestCase):
         reductions = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION"]
         self.assertEqual(len({r["call_id"] for r in reductions}), len(reductions), "call ids repeat across a split")
 
+    def test_a_refused_comparison_of_several_finalists_is_split_not_thinned(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from market_platform_foundation.ui_api import screener_news_evidence
+
+        class Wide(Ticking):
+            def __init__(self, clock):
+                super().__init__(clock, step=1.0)
+                self._server = SimpleNamespace(manifest=SimpleNamespace(context=8192, revision="r", runtime_version="b1"))
+
+            def on_call(self, call, packet):
+                if len(packet.candidates) > 2:
+                    from dataclasses import replace
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                return super().on_call(call, packet)
+
+        budgets, real = [], screener_news_evidence.fit_news
+
+        def recording(scope, candidates, news, *, now, max_bytes=None):
+            if max_bytes is not None:
+                budgets.append(len(candidates))
+            return real(scope, candidates, news, now=now, max_bytes=max_bytes)
+
+        clock = [NOW]
+        h = Harness(universe(4, strong={0: 90.0, 1: 91.0, 2: 92.0, 3: 93.0}), Wide(clock), clock=lambda: clock[0])
+        with patch("market_platform_foundation.ui_api.screener_news_evidence.fit_news", recording):
+            h.run()
+        self.assertEqual(budgets, [], "a multi-finalist comparison was thinned")
+        self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
+        self.assertEqual(h.block["reduction"]["finalists_excluded_count"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

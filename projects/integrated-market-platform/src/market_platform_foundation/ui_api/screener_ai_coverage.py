@@ -811,7 +811,9 @@ class ScreenerAiCoverage:
                     else:
                         result = self._reducer.reduce(run.scope, keep, now, allow_inference=not reuse_only, should_stop=should_stop)
                 call_id = attempt_id
-                target = self._context_fit_target(result, fitted)
+                # A comparison of several finalists is split, never thinned: thinning could remove a finalist's only
+                # second strong item and exclude it. One row (any first-pass request, or a group of one) is thinned.
+                target = self._context_fit_target(result, fitted) if first_pass or len(keep) == 1 else None
                 if target is None:
                     break
                 # The exact send-time count refused this packet before any generation. The existing deterministic
