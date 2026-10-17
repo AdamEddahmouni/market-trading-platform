@@ -1133,6 +1133,60 @@ class WorkerScheduleTests(AutoBase):
         self.assertEqual(controller['last_cycle']['missed_cycles_before'], 2)
         self.assertTrue(worker.alive())
 
+    def _fault_log(self):
+        import tempfile
+        from pathlib import Path
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.auto.service._trace_log_path = lambda: Path(folder.name) / 'paper-automation-scope-errors.log'
+        return Path(folder.name) / 'paper-automation-worker-errors.log'
+
+    def test_a_busy_store_during_lease_renewal_is_retried_with_its_traceback_retained(self):
+        import sqlite3
+        a = self.auto
+        a.go()
+        log = self._fault_log()
+        worker = a.service.worker
+        worker.wait = lambda seconds: setattr(self.clock, 'value', self.clock.value + seconds)
+        real, failures = a.service.heartbeat, [2]
+
+        def heartbeat():
+            if failures[0]:
+                failures[0] -= 1
+                raise sqlite3.OperationalError('database is locked')
+            return real()
+        a.service.heartbeat = heartbeat
+        before = a.service._controller()['cycle_count']
+        worker.run(max_cycles=3)
+        # The worker's renewal fails once; the cycle's own renewal fails once, so that slot is unobserved, not run.
+        self.assertEqual(a.service._controller()['cycle_count'], before + 2)
+        self.assertTrue(worker.alive())
+        self.assertEqual(worker.transient_failures, 0)
+        text = log.read_text(encoding='utf-8')
+        self.assertEqual((text.count('"phase": "HEARTBEAT"'), text.count('"phase": "CYCLE"')), (1, 1))
+        self.assertIn('sqlite3.OperationalError: database is locked', text)
+        self.assertIn('"owner_id": "%s"' % a.service.owner_id, text)
+
+    def test_persistent_store_errors_end_the_worker_and_say_why(self):
+        import sqlite3
+        from market_platform_foundation.ui_api.paper_automation import TRANSIENT_STORE_RETRIES
+        a = self.auto
+        a.go()
+        log = self._fault_log()
+        worker = a.service.worker
+        worker.wait = lambda seconds: setattr(self.clock, 'value', self.clock.value + seconds)
+
+        def heartbeat():
+            raise sqlite3.OperationalError('database is locked')
+        a.service.heartbeat = heartbeat
+        worker.run(max_cycles=3)
+        self.assertFalse(worker.alive())
+        self.assertEqual(a.service._controller()['last_error']['code'], 'WORKER_OperationalError')
+        text = log.read_text(encoding='utf-8')
+        self.assertEqual(text.count('"transient": true'), TRANSIENT_STORE_RETRIES)
+        self.assertIn('"phase": "WORKER_EXIT"', text)
+        self.assertIn('Traceback (most recent call last)', text)
+
     def test_a_worker_that_loses_its_lease_stops_scheduling(self):
         a = self.auto
         a.go()

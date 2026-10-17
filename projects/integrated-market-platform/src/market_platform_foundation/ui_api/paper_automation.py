@@ -14,7 +14,9 @@ simulator's active Paper experiment. No broker or live route is imported here.
 from __future__ import annotations
 
 import copy
+import json
 import re
+import sqlite3
 import threading
 import time
 import traceback
@@ -39,6 +41,8 @@ HISTORY_SCHEMA = 'paper-automation-history/1.0.0'
 REPORT_SCHEMA = 'paper-automation-report/1.0.0'
 DRIVER = 'PAPER_AUTOMATION'
 LEASE_SECONDS = 180
+# Consecutive busy/locked shared-store errors outside a cycle's own accounting before the worker ends.
+TRANSIENT_STORE_RETRIES = 5
 LEASE_GRACE_SECONDS = 5  # a restarted process retries this long after its predecessor's lease expiry
 CANDIDATE_QUOTE_CONSUMER = 'paper-automation-candidates'
 _WORKING = ('ACTIVATED', 'WORKING', 'PARTIALLY_FILLED', 'REPLACE_PENDING', 'REPLACED')
@@ -1409,6 +1413,7 @@ class AutomationWorker:
         self.finished = False
         self.exit_reason = None
         self.slot, self.missed = anchor, 0
+        self.transient_failures = 0
 
     def start(self):
         self.thread = threading.Thread(target=self.run, name='imp-paper-automation', daemon=True)
@@ -1420,13 +1425,30 @@ class AutomationWorker:
     def alive(self):
         return not self.finished and not self.stop_event.is_set() and (self.thread is None or self.thread.is_alive())
 
+    def _heartbeat(self):
+        """The lease renewal; a transient shared-store error is retried at the next wait, never fatal at once."""
+        try:
+            alive = self.service.heartbeat()
+        except sqlite3.OperationalError as exc:
+            self._transient(exc, 'HEARTBEAT')
+            return True  # the lease is unchanged by a failed write; its expiry still bounds every other owner
+        self.transient_failures = 0
+        return alive
+
+    def _transient(self, exc, phase):
+        """Record a busy/locked shared-store error with its traceback; end the worker after too many in a row."""
+        self.transient_failures += 1
+        _record_worker_fault(self.service, exc, phase=phase, transient=True, consecutive=self.transient_failures, slot=self.slot)
+        if self.transient_failures >= TRANSIENT_STORE_RETRIES:
+            raise exc
+
     def run(self, max_cycles=None):
         service, done = self.service, 0
         try:
             while not self.stop_event.is_set() and (max_cycles is None or done < max_cycles):
                 while not self.stop_event.is_set() and self.slot - service.clock() > 0:
                     self.wait(min(self.slot - service.clock(), LEASE_SECONDS / 3))
-                    if not service.heartbeat():
+                    if not self._heartbeat():
                         self.exit_reason = 'AUTOMATION_LEASE_LOST'
                         return
                 if self.stop_event.is_set():
@@ -1436,12 +1458,13 @@ class AutomationWorker:
                 if stalled > 0:
                     self.missed += stalled  # the runtime was not scheduling: unobserved, never reconstructed
                     self.slot += stalled * self.cadence
-                if not service.heartbeat():
+                if not self._heartbeat():
                     self.exit_reason = 'AUTOMATION_LEASE_LOST'
                     return
                 try:
                     summary = service.run_cycle(scheduled=self.slot, missed=self.missed)
                     self.missed = 0
+                    self.transient_failures = 0
                     if summary.get('skipped') and service._controller()['desired_state'] == 'STOPPED':
                         break
                 except ValueError as exc:
@@ -1449,12 +1472,18 @@ class AutomationWorker:
                         self.exit_reason = _code(exc)
                         return
                     self.missed += 1
+                except sqlite3.OperationalError as exc:
+                    # Raised outside the cycle's own failure accounting (lease renewal, controller read or the
+                    # cycle-owned write-back). That slot is unobserved, like a missed slot; nothing is backfilled.
+                    self._transient(exc, 'CYCLE')
+                    self.missed += 1
                 done += 1
                 finished = service.clock()
                 steps = max(1, -int(-(finished - self.slot) // self.cadence))  # first slot at or after the finish
                 self.missed += steps - 1
                 self.slot += steps * self.cadence
         except Exception as exc:  # the worker died: say so in liveness instead of looking merely idle
+            _record_worker_fault(service, exc, phase='WORKER_EXIT', transient=False, consecutive=self.transient_failures, slot=self.slot)
             try:
                 with service.control_lock:
                     current = service._controller()
@@ -1465,6 +1494,25 @@ class AutomationWorker:
             self.finished = True
         finally:
             self.finished = self.finished or max_cycles is None or self.stop_event.is_set() or self.exit_reason is not None
+
+
+def _record_worker_fault(service, exc, *, phase, transient, consecutive, slot):
+    """Append one traceback with its lease context to the worker fault log. Never raises.
+
+    Holds the exception class, its message (bounded), the stack, the owner, the lease expiry in memory and the
+    slot; no environment, credential or request body is read."""
+    try:
+        from pathlib import Path
+        path = Path(service._trace_log_path()).with_name('paper-automation-worker-errors.log')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        header = dict(at=_iso(service.clock()), phase=phase, transient=transient, consecutive=consecutive,
+                      exception=type(exc).__name__, message=str(exc)[:300], owner_id=getattr(service, 'owner_id', None),
+                      slot=_iso(slot) if isinstance(slot, (int, float)) else None, thread=threading.current_thread().name)
+        with path.open('a', encoding='utf-8') as log:
+            log.write('=== ' + json.dumps(header, sort_keys=True) + '\n')
+            log.write(''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    except Exception:  # noqa: BLE001 - the fault record never replaces the fault
+        pass
 
 
 def paper_automation_service(store):
