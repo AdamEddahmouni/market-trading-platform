@@ -535,6 +535,25 @@ class RollingSliceControllerTests(AutoBase):
         self.assertEqual(expired['reevaluation']['candidate_count'], 0)
         self.assertEqual(self.automation_orders(), [])
 
+    def test_a_slice_selection_reaches_a_simulated_fill_only_through_a_fresh_action_decision(self):
+        a = self.start_run()
+        a.select('AAPL', rows={'AAPL': 'AI_EVALUATED'}, **self.SLICE)
+        adopted = a.cycle()
+        self.assertTrue(adopted['universe']['last_result']['adopted'])
+        deferred = adopted['actions'][0]
+        self.assertEqual((deferred['outcome'], deferred['quantity']), ('DEFERRED', 6))  # the risk engine sizes it first
+        self.assertEqual(self.automation_orders(), [])
+        entry = a.cycle()['actions'][0]
+        self.assertEqual((entry['outcome'], entry['action'], entry['filled_quantity']), ('SUBMITTED', 'ENTER', 6))
+        order = self.automation_orders()[0]
+        reasons = {r['code']: r['label'] for r in order['decision_source_snapshot']['reasons']}
+        self.assertEqual(reasons['ACTION_DECISION'], entry['decision_id'])
+        decision = a.actions.history('AAPL')[0]
+        self.assertEqual(decision['decision_id'], entry['decision_id'])
+        self.assertEqual(a.position('AAPL')['quantity'], 6)
+        self.assertEqual(a.cycle()['actions'], [])  # never a second entry
+        self.assertEqual(len(self.automation_orders()), 1)
+
     def test_action_decisions_are_not_withheld_while_a_universe_run_is_active(self):
         self.enter()
         a = self.auto
