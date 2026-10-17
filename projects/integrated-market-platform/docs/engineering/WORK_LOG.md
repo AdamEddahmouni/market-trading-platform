@@ -1,5 +1,26 @@
 # IMP Work Log
 
+## 2026-10-17 — Paper AI throughput: GPU profile, send-time counts, rolling slices
+
+Production runs on the CPU profile answered one crypto row in about 87 s
+(median, run `65210e15`, 118/118 batches EXPIRED against the unchanged 60 s
+quote lifetime), and two equity/crypto runs refused 1,333 of 1,334 packets
+with `LOCAL_CONTEXT_EXCEEDED` after about 415 s of up-front token planning.
+R1 (`a3c0432e`) adds the benchmarked `vulkan-8192/1` profile (all layers on the
+RTX 2070 SUPER, CPU as the visible fail-closed fallback; context, model,
+runtime pin, timeout and memory ceilings unchanged), counts local requests
+exactly once at send with a window-sized output allowance and a per-candidate
+floor, thins reference news to fit, counts only dispatched tokens, and records
+worker fault tracebacks with a transient-store retry. In production the first
+R1 crypto run answered 375/375 batches inside the TTL (p50 1.6 s, 0 EXPIRED,
+0 refused). R2 makes validator rejections row-level, splits over-window
+comparisons, adds rolling slices with coverage epochs for automation runs,
+adopts completed slices as labelled hypotheses with a two-separation lifetime,
+separates scopes by their own last start and stops withholding Action
+Decisions during universe runs. RED: 18 new tests failed on `a3c0432e`; GREEN:
+407 focused tests, one baseline error (`StagedTests` Monitor). Evidence:
+`destination-tests/20261016-paper-ai-throughput/`.
+
 ## 2026-10-15 — Post-memory-recovery activation repairs
 
 Reproduced the October 15 crypto failure from its immutable packet: Qwen copied

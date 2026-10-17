@@ -115,6 +115,22 @@ class MultiUniverseControllerTests(unittest.TestCase):
         self.assertEqual(crypto_saw, [True])
         self.assertEqual(summary['universes']['US_EQUITIES']['universe']['state'], 'RUNNING')
 
+    def test_each_scope_is_separated_from_its_own_last_start_not_the_accounts(self):
+        # Rolling slices alternate: an equity run started a minute ago does not make crypto wait a full separation.
+        from unittest.mock import patch
+        h, service = self.service()
+        seen = []
+        service._universe_facts = lambda policy, universe, **_: (dict(last_started_epoch=universe.get('last_started_epoch'),
+                                                                      active_run_id=None), 'fingerprint')
+        service._event = lambda *args, **kwargs: None
+        decided = dict(decision='DEFER', reason_codes=['UNIVERSE_MIN_SEPARATION'], next_eligible_epoch=h.clock(), detail={})
+        with patch('market_platform_foundation.ui_api.paper_automation.should_run_universe',
+                   side_effect=lambda facts: seen.append(dict(facts)) or decided):
+            work = dict(account_id='controlled', last_universe_started_epoch=h.clock() - 60, universe=dict(last_started_epoch=None))
+            service._universe(work, dict(scope=dict(universe='CRYPTO')), dict(blockers=[]), h.clock(), dict(label='CONTINUOUS'),
+                              dict(allowed=True))
+        self.assertIsNone(seen[0]['last_started_epoch'])
+
 
 class CryptoEvidenceIntegrationTests(unittest.TestCase):
     """The CRYPTO scope's provider health and candidate quotes against the real serving Kraken contracts.

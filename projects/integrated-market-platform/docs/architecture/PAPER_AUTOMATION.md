@@ -188,15 +188,42 @@ blockers together; the state label alone is not a complete readiness answer.
 - A run is started (or an operator's run joined) when
   `universe_evaluation_interval_seconds` has passed. Its terminal coverage is
   recorded as it is: counts, percentage, status, model, tokens.
-- Only `coverage_complete` and `selection_complete` results are adopted. A
-  partial, stopped, failed, budget-refused or interrupted run is recorded with
-  `adopted: false` and contributes no candidates. A complete run that selected
-  nothing clears the selection; held positions stay monitored.
+- On the local engine every run is a **rolling slice**: its first pass ends at
+  40% of the scope's `universe_evaluation_interval_seconds`, rows never or least
+  recently evaluated go first (see
+  [coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#rolling-slices-local-engine-automation-only)).
+  Each scope keeps a **coverage epoch** in its controller state: the ids of its
+  last 16 finished runs (each row's last evaluation is read from those runs'
+  immutable ledger rows, so the controller record stays small), the epoch
+  number, its start and the count of completed epochs. An epoch completes
+  (`UNIVERSE_EPOCH_COMPLETED`) when every row the latest run found eligible has
+  been evaluated since the epoch began. `UNIVERSE_RUN_FINISHED` carries the
+  slice and epoch counts.
+- Only `coverage_complete` and `selection_complete` results, or a
+  `SLICE_SELECTION_COMPLETE` result with `slice_complete`, are adopted, and only
+  while the selection's state is `CURRENT`. A partial, stopped, failed,
+  budget-refused or interrupted run is recorded with `adopted: false` and
+  contributes no candidates. A complete run that selected nothing clears the
+  selection; a slice that selected nothing does not (it says nothing about rows
+  it did not reach) and is not backed off. Held positions stay monitored.
+- An adopted selection is a **hypothesis**: it carries its provenance (run,
+  status, reduction answer, decision cutoff, evidence expiry, model, prompt,
+  slice) and lives two separations. When its lifetime ends without a newer
+  adoption, its instruments are removed (`SELECTION_HYPOTHESIS_EXPIRED`). An
+  entry still needs a fresh Action Decision on newly acquired evidence, the
+  governed opportunity, risk and preview revalidation; adoption grants none of
+  them.
 - With several scopes, one scope's unfinished run defers the others
-  (`SHARED_ACCOUNT_RUN_ACTIVE`). Each cycle closes a scope's run handle once
-  that run has finished or its owning process is gone, including outside the
-  scope's session; nothing is started or evaluated there, and a still-running
-  run keeps deferring the others.
+  (`SHARED_ACCOUNT_RUN_ACTIVE`): the account has one run tracker slot. Each
+  scope is separated from **its own** last start, so time-boxed slices of two
+  scopes alternate instead of one scope waiting a full separation after the
+  other. Each cycle closes a scope's run handle once that run has finished or
+  its owning process is gone, including outside the scope's session; nothing is
+  started or evaluated there, and a still-running run keeps deferring the
+  others.
+- Action Decisions are **not** withheld while a universe run is active. The
+  local runtime admits one request at a time, so a decision waits at most for
+  the batch in flight and then reads its own fresh evidence.
 - `spending_gate` decides whether the selected engine may be called at all:
   local inference needs `allow_local_inference`; paid inference needs
   `allow_paid_inference`, a readable shared budget, and usage below the tighter

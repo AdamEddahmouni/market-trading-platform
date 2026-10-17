@@ -110,25 +110,32 @@ class FixtureRuns:
 
     def __init__(self, clock):
         self.clock = clock
-        self.started, self.stopped, self.snapshots = [], [], {}
+        self.started, self.stopped, self.snapshots, self.rows = [], [], {}, {}
 
-    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR'):
+    def start(self, account_id, body, *, spend_limit=None, origin='OPERATOR', slice_plan=None):
         run_id = f'AIR-{len(self.started) + 1}'
-        self.started.append(dict(run_id=run_id, account_id=account_id, scope=dict(body), spend_limit=spend_limit, origin=origin))
+        self.started.append(dict(run_id=run_id, account_id=account_id, scope=dict(body), spend_limit=spend_limit, origin=origin,
+                                 slice_plan=slice_plan))
         self.snapshots[run_id] = dict(run_id=run_id, state='RUNNING', stage='EVALUATING', progress=dict(evaluated=0), origin=origin)
         return dict(run_id=run_id, state='RUNNING', engine=dict(runtime='LOCAL_MODEL'))
 
     def read(self, account_id, run_id):
         return self.snapshots.get(run_id)
 
+    def row_outcomes(self, run_id):
+        return dict(self.rows.get(run_id) or {})
+
     def stop(self, account_id, run_id):
         self.stopped.append(run_id)
         return self.snapshots.get(run_id)
 
     def finish(self, run_id, chosen, *, status='GLOBAL_SELECTION_COMPLETE', coverage_complete=True, selection_complete=True,
-               universe=7000, evaluated=None, reason=None):
+               universe=7000, evaluated=None, reason=None, slice_complete=False, rows=None):
         evaluated = universe if evaluated is None else evaluated
+        if rows is not None:
+            self.rows[run_id] = dict(rows)
         coverage = dict(status=status, reason=reason, coverage_complete=coverage_complete, selection_complete=selection_complete,
+                        slice_complete=slice_complete,
                         universe_count=universe, eligible_count=universe, ai_evaluated_count=evaluated,
                         ai_coverage_pct=round(100 * evaluated / universe, 2), model_calls=3,
                         budget=dict(tokens_input=1200, tokens_output=300))

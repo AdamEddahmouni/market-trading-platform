@@ -289,21 +289,35 @@ class ReevaluationService:
         self.repository.save_loop(loop)
         self.repository.release_lease(loop['loop_id'], self.owner_id)
 
-    def adopt_selection(self, run):
-        """Queue a completed full-universe selection; the next cycle applies it and records the change."""
+    def adopt_selection(self, run, *, ttl_seconds=None):
+        """Queue a completed full-universe selection, or a completed rolling slice's selection; the next cycle
+        applies it and records the change. The selection is a hypothesis: every entry still needs a fresh Action
+        Decision on newly acquired evidence. With ``ttl_seconds`` it is dropped once that long has passed."""
         if not self.external_driver:
             raise ValueError('REEVALUATION_DRIVER_REQUIRED')
         coverage = run.get('universe_coverage') or {}
+        complete = coverage.get('selection_complete') and coverage.get('coverage_complete')
+        # A slice is adopted only for what it selected on current evidence; a slice that selected nothing says nothing
+        # about the rows it did not reach, so it never clears the previous selection.
+        sliced = coverage.get('slice_complete') and coverage.get('status') == 'SLICE_SELECTION_COMPLETE' and run.get('candidates')
         # A complete run that selected nothing is also a result: it clears the previous selection.
-        if not coverage.get('selection_complete') or not coverage.get('coverage_complete') \
-                or (run.get('candidates') and (run.get('state') != 'CURRENT' or coverage.get('status') != 'GLOBAL_SELECTION_COMPLETE')):
+        if not (complete or sliced) or (run.get('candidates') and (
+                run.get('state') != 'CURRENT' or coverage.get('status') not in ('GLOBAL_SELECTION_COMPLETE', 'SLICE_SELECTION_COMPLETE'))):
             raise ValueError('SELECTION_COVERAGE_INCOMPLETE')
         symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') for e in run.get('evidence', [])}
         picks = run.get('candidates', [])[:5]
         loop = self._loop()
+        now = self.clock()
         loop['pending_selection'] = dict(run_id=run['run_id'], chosen=[p['instrument_id'] for p in picks],
                                          ranks={p['instrument_id']: p['rank'] for p in picks},
-                                         symbols={p['instrument_id']: symbols.get(p['instrument_id']) for p in picks})
+                                         symbols={p['instrument_id']: symbols.get(p['instrument_id']) for p in picks},
+                                         valid_until_epoch=now + float(ttl_seconds) if ttl_seconds else None,
+                                         provenance=dict(run_id=run['run_id'], status=coverage.get('status'),
+                                                         reduction_run_id=coverage.get('reduction_run_id'),
+                                                         decision_cutoff=run.get('decision_cutoff'), evidence_valid_until=run.get('valid_until'),
+                                                         state=run.get('state'), model_id=run.get('model_id'), runtime=run.get('runtime'),
+                                                         prompt_id=run.get('prompt_id'), prompt_version=run.get('prompt_version'),
+                                                         slice=coverage.get('slice'), adopted_at=_iso(now)))
         loop['updated_epoch'] = self.clock()
         self.repository.save_loop(loop, owner_id=self.owner_id)
 
@@ -741,6 +755,16 @@ class ReevaluationService:
         intake_changed = set(intake) != set(loop['intake']) or any(material_change(loop['intake'][i], intake[i], policy) for i in intake)
         if external:
             # AUTO-01: candidates come only from an adopted full-universe selection, never the intake head.
+            expiry = loop.get('selection_valid_until_epoch')
+            if not pending_selection and expiry is not None and started >= float(expiry) and loop['selected']:
+                # The adopted hypothesis outlived its lifetime: it is dropped, not acted on. Held positions are untouched.
+                state['material'] += 1
+                for iid in loop['selected']:
+                    note(iid, TransitionClass.CANDIDATE_REMOVED, ['SELECTION_HYPOTHESIS_EXPIRED', 'FULL_UNIVERSE_SELECTION'],
+                         candidate_run_id=loop.get('last_reduction_run_id'))
+                    if iid not in held:
+                        loop['tracked'].pop(iid, None)
+                loop.update(selected=[], ranks={}, symbols={}, selection_valid_until_epoch=None)
             if pending_selection:
                 state['material'] += 1
                 chosen, run_id = list(pending_selection['chosen']), pending_selection['run_id']
@@ -753,7 +777,9 @@ class ReevaluationService:
                         if iid not in held:
                             loop['tracked'].pop(iid, None)
                 loop.update(selected=chosen, ranks=dict(pending_selection['ranks']), symbols=dict(pending_selection['symbols']),
-                            last_reduction_epoch=started, last_reduction_run_id=run_id, intake=intake, pending_selection=None)
+                            last_reduction_epoch=started, last_reduction_run_id=run_id, intake=intake, pending_selection=None,
+                            selection_valid_until_epoch=pending_selection.get('valid_until_epoch'),
+                            selection_provenance=pending_selection.get('provenance'))
         elif loop['last_reduction_epoch'] is None or intake_changed:
             if loop['last_reduction_epoch'] is not None and started - loop['last_reduction_epoch'] < policy['candidate_refresh_min_seconds']:
                 reasons.append('CANDIDATE_REFRESH_DEFERRED')

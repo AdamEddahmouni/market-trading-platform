@@ -464,6 +464,94 @@ class UniverseAndBudgetTests(AutoBase):
         self.assertEqual(a.cycle().get('skipped'), 'NOT_RUNNING')
 
 
+class RollingSliceControllerTests(AutoBase):
+    """Rolling slices on the local engine: time-boxed runs, coverage epochs, labelled adoption, hypothesis lifetime."""
+
+    SLICE = dict(status='SLICE_SELECTION_COMPLETE', coverage_complete=False, selection_complete=False, slice_complete=True)
+
+    def start_run(self):
+        a = self.auto
+        a.quote('AAPL', 150, 2)
+        a.opportunity('AAPL')
+        a.go()
+        a.cycle()
+        return a
+
+    def controller(self):
+        return self.auto.service._controller()
+
+    def test_a_local_universe_run_is_a_time_boxed_slice(self):
+        a = self.start_run()
+        plan = a.runs.started[0]['slice_plan']
+        # 40% of the owner's 1,800 s separation, from the cycle that started it.
+        self.assertLessEqual(plan['deadline_epoch'], self.clock.value + 720)
+        self.assertGreater(plan['deadline_epoch'], self.clock.value + 720 - 60)
+        self.assertEqual((plan['epoch'], plan['last_evaluated']), (1, {}))
+        started = a.events('UNIVERSE_RUN_STARTED')[0]
+        self.assertEqual(started['slice']['epoch'], 1)
+
+    def test_a_completed_slice_is_adopted_as_a_slice_and_orders_the_next_one(self):
+        a = self.start_run()
+        a.select('AAPL', evaluated=2, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'UNPROCESSED', 'MSFT': 'AI_EVALUATED'}, **self.SLICE)
+        cycle = a.cycle()
+        result = cycle['universe']['last_result']
+        self.assertEqual((result['status'], result['adopted'], result['slice_complete']), ('SLICE_SELECTION_COMPLETE', True, True))
+        self.assertEqual((result['epoch']['number'], result['epoch']['eligible'], result['epoch']['evaluated_in_epoch']), (1, 3, 2))
+        self.assertIsNone(self.controller()['universe'].get('failure'))
+        self.assertEqual(cycle['reevaluation']['candidate_count'], 1)
+        provenance = a.reevaluation._loop()['selection_provenance']
+        self.assertEqual((provenance['status'], provenance['state']), ('SLICE_SELECTION_COMPLETE', 'CURRENT'))
+        a.cycle(1800)
+        self.assertEqual(len(a.runs.started), 2)
+        self.assertEqual(set(a.runs.started[1]['slice_plan']['last_evaluated']), {'AAPL', 'MSFT'})
+        a.select('AAPL', rows={'NVDA': 'AI_EVALUATED', 'AAPL': 'INELIGIBLE', 'MSFT': 'INELIGIBLE'}, **self.SLICE)
+        finished = a.cycle()['universe']['last_result']
+        self.assertTrue(finished['epoch']['epoch_completed'])
+        self.assertEqual(self.controller()['universe']['epoch']['number'], 2)
+        self.assertEqual(a.events('UNIVERSE_EPOCH_COMPLETED')[0]['number'], 1)
+
+    def test_a_slice_that_selected_nothing_is_not_adopted_and_does_not_back_off(self):
+        a = self.start_run()
+        a.select(status='SLICE_COMPLETE_NO_SELECTION', coverage_complete=False, selection_complete=False, slice_complete=True,
+                 rows={'AAPL': 'AI_EVALUATED'})
+        result = a.cycle()['universe']['last_result']
+        self.assertEqual((result['adopted'], result.get('adoption_refused')), (False, None))
+        self.assertIsNone(self.controller()['universe'].get('failure'))
+
+    def test_an_incomplete_slice_is_never_adopted(self):
+        a = self.start_run()
+        a.select('AAPL', status='PROVISIONAL_PARTIAL_COVERAGE', coverage_complete=False, selection_complete=False, slice_complete=False)
+        cycle = a.cycle()
+        self.assertFalse(cycle['universe']['last_result']['adopted'])
+        self.assertEqual(cycle['reevaluation']['candidate_count'], 0)
+
+    def test_an_adopted_selection_expires_after_two_separations(self):
+        a = self.start_run()
+        a.select('AAPL', rows={'AAPL': 'AI_EVALUATED'}, **self.SLICE)
+        self.assertEqual(a.cycle()['reevaluation']['candidate_count'], 1)
+        a.cycle(1800)  # the next slice starts and is still running
+        self.assertEqual(a.service.status()['universe']['active_run_id'], a.runs.started[1]['run_id'])
+        expired = a.cycle(1800)
+        self.assertEqual(expired['reevaluation']['candidate_count'], 0)
+        self.assertEqual(self.automation_orders(), [])
+
+    def test_action_decisions_are_not_withheld_while_a_universe_run_is_active(self):
+        self.enter()
+        a = self.auto
+        gates, driven = [], a.reevaluation.driven_cycle
+
+        def recording(*args, **kwargs):
+            gates.append(kwargs.get('model_gate'))
+            return driven(*args, **kwargs)
+        a.reevaluation.driven_cycle = recording
+        a.cycle(1800)  # the next slice starts and stays running
+        self.assertEqual(len(a.runs.started), 2)
+        cycle = a.cycle()
+        self.assertEqual(cycle['universe']['state'], 'RUNNING')
+        self.assertTrue(gates and all(gate['allowed'] for gate in gates), gates)
+        self.assertNotEqual(cycle['reevaluation']['cycle_status'], 'REEVALUATION_BLOCKED')
+
+
 class RiskTests(AutoBase):
     def two_candidates(self, **sections):
         a = self.auto

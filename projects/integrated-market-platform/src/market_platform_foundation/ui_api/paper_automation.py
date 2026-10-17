@@ -53,6 +53,14 @@ EXIT_BACKOFF_CAP_SECONDS = 900
 # After a full-universe run ends without adopting a selection, the next attempt waits cadence * 2^n, capped here.
 # A run that fails for a lasting reason is not relaunched every cycle.
 UNIVERSE_BACKOFF_CAP_SECONDS = 900
+# Rolling slices (local engine): the first pass of a universe run ends at this fraction of the scope's minimum
+# separation, so the slice, its comparison and the other scope's slice all fit one interval. A run that reaches
+# every row inside that time is an ordinary complete run.
+SLICE_FRACTION = 0.4
+# Finished runs a scope keeps for its coverage epoch: their immutable ledger rows give each row's last evaluation.
+EPOCH_RUNS_KEPT = 16
+# An adopted selection is a hypothesis for this many separations; after that it is dropped, never acted on.
+SELECTION_TTL_SEPARATIONS = 2
 # The refusal reasons an unrunnable plan is recorded with: a plan over the owner's cap or the shared allowance.
 UNIVERSE_BUDGET_REASONS = ('AUTONOMOUS_SPENDING_NOT_AUTHORIZED', 'AUTONOMOUS_SPENDING_LIMIT_REACHED',
                            'AUTONOMOUS_SPENDING_BUDGET_UNREADABLE', 'SYNTHESIS_DAILY_REQUEST_LIMIT',
@@ -639,7 +647,6 @@ class PaperAutomationService:
             scoped['day'] = work.get('day')
             scoped['_global_universe_active'] = any((value.get('universe') or {}).get('active_run_id')
                                                     for key, value in states.items() if key != universe)
-            scoped['last_universe_started_epoch'] = work.get('last_universe_started_epoch')
             selected = dict(policy, scope=item['scope'], schedule=dict(policy['schedule'], sessions=item['sessions']))
             receipt = dict(actions=[], blockers=[], error=None, session=None, universe=None, provider=None)
             token = self._scope_context.set(self._scoped_reevaluation(item['scope']))
@@ -732,7 +739,9 @@ class PaperAutomationService:
         self._universe(work, policy, summary, now, session, gate)
         self._candidate_quotes(work, summary)
         from ..intelligence.inference.reevaluation import ReevaluationTrigger
-        model_gate = dict(allowed=False, reason='UNIVERSE_RUN_ACTIVE') if (work.get('_global_universe_active') or (work.get('universe') or {}).get('active_run_id')) else gate
+        # Action decisions are not withheld while a universe run is active: the local runtime admits one request at a
+        # time, so a decision waits behind at most the batch in flight and is then measured on its own fresh evidence.
+        model_gate = gate
         receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=model_gate)
         summary['reevaluation'] = dict(cycle_id=receipt['cycle_id'], cycle_status=receipt['cycle_status'], reason_codes=receipt['reason_codes'][:12],
                                        position_count=receipt['position_count'], candidate_count=receipt['candidate_count'],
@@ -826,7 +835,6 @@ class PaperAutomationService:
             self._block(summary, 'BUDGET', 'AI_COVERAGE_BUDGET_INSUFFICIENT')
         engine = self.reevaluation.engine_state()
         facts, fingerprint = self._universe_facts(policy, universe, now=now, session=session, gate=gate, engine=engine)
-        facts['last_started_epoch'] = max(facts.get('last_started_epoch') or 0, work.get('last_universe_started_epoch') or 0) or None
         if work.get('_global_universe_active'):
             facts['active_run_id'] = 'SHARED_ACCOUNT_RUN_ACTIVE'
         decision = should_run_universe(facts)
@@ -834,11 +842,15 @@ class PaperAutomationService:
         universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=_iso(decision['next_eligible_epoch']))
         if decision['decision'] == 'RUN' and not universe.get('active_run_id') and gate['allowed']:
             limit = self._remaining_allowance(policy, engine)
-            started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION')
+            slice_plan = self._slice_plan(universe, policy, now, engine)
+            started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION',
+                                      **({'slice_plan': slice_plan} if slice_plan else {}))
             universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None, run_fingerprint=fingerprint,
                             origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
             self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
-                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'])
+                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'],
+                        slice=None if not slice_plan else dict(epoch=slice_plan['epoch'], deadline=_iso(slice_plan['deadline_epoch']),
+                                                               rows_with_prior_evaluation=len(slice_plan['last_evaluated'])))
             summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
         elif decision['decision'] != 'RUN':
             kind = {'DEFER': 'UNIVERSE_RUN_DEFERRED', 'SKIP': 'UNIVERSE_RUN_SKIPPED', 'BLOCK': 'UNIVERSE_RUN_BLOCKED'}[decision['decision']]
@@ -857,6 +869,47 @@ class PaperAutomationService:
                                        decision=decision, next_due=_iso(decision['next_eligible_epoch']))
         work['universe'] = universe
 
+    def _slice_plan(self, universe, policy, now, engine):
+        """A rolling slice for the local engine: a first-pass deadline and each row's last evaluation. None otherwise."""
+        if engine.get('runtime') != 'LOCAL_MODEL':
+            return None
+        epoch = universe.get('epoch') or dict(number=1, started_at=_iso(now), started_epoch=now, completed=0, runs=[])
+        universe['epoch'] = epoch
+        separation = int(policy['schedule']['universe_evaluation_interval_seconds'])
+        return dict(deadline_epoch=now + separation * SLICE_FRACTION, epoch=epoch['number'], last_evaluated=self._last_evaluated(epoch))
+
+    def _last_evaluated(self, epoch):
+        """Instrument id -> when its most recent kept run evaluated it, from those runs' immutable ledger rows."""
+        outcomes = getattr(self.runs, 'row_outcomes', None)
+        last = {}
+        for item in epoch.get('runs') or []:
+            for key, name in (outcomes(item['run_id']) if callable(outcomes) else {}).items():
+                if name == 'AI_EVALUATED':
+                    last[key] = float(item['evaluated_epoch'])
+        return last
+
+    def _advance_epoch(self, universe, record, now):
+        """Add a finished run to the scope's coverage epoch; the epoch completes when every row this run found
+        eligible has been evaluated since the epoch began. Returns what the receipt reports."""
+        epoch = universe.get('epoch')
+        if epoch is None:
+            return None
+        # A row this run evaluated was evaluated no earlier than the run started, on this controller's clock.
+        evaluated_at = float(universe.get('last_started_epoch') or now)
+        epoch['runs'] = [*(epoch.get('runs') or []), dict(run_id=record['run_id'], evaluated_epoch=evaluated_at)][-EPOCH_RUNS_KEPT:]
+        outcomes = getattr(self.runs, 'row_outcomes', None)
+        rows = outcomes(record['run_id']) if callable(outcomes) else {}
+        eligible = [key for key, name in rows.items() if name in ('AI_EVALUATED', 'AI_REJECTED', 'UNPROCESSED', 'ELIGIBLE')]
+        last = self._last_evaluated(epoch)
+        evaluated = sum(1 for key in eligible if last.get(key, -1.0) >= float(epoch['started_epoch']))
+        report = dict(number=epoch['number'], eligible=len(eligible), evaluated_in_epoch=evaluated, completed=epoch.get('completed', 0))
+        if eligible and evaluated == len(eligible):
+            epoch.update(number=epoch['number'] + 1, started_epoch=now, started_at=_iso(now), completed=int(epoch.get('completed') or 0) + 1,
+                         last_completed_at=_iso(now))
+            report.update(epoch_completed=True, completed=epoch['completed'])
+            self._event('UNIVERSE_EPOCH_COMPLETED', number=report['number'], eligible=report['eligible'], run_id=record['run_id'])
+        return report
+
     def _finish_universe(self, snapshot, universe, *, now, policy):
         """Record what the run really covered. Only a complete selection is adopted; a partial one never is."""
         result = snapshot.get('result') or {}
@@ -872,22 +925,31 @@ class PaperAutomationService:
                       tokens_input=(coverage.get('budget') or {}).get('tokens_input'),
                       tokens_output=(coverage.get('budget') or {}).get('tokens_output'),
                       model_calls=coverage.get('model_calls'), candidate_run_id=result.get('run_id') if result.get('candidates') else None,
-                      required=(coverage.get('plan') or {}).get('required'), adopted=False)
-        if record['coverage_complete'] and record['selection_complete']:
+                      required=(coverage.get('plan') or {}).get('required'), adopted=False,
+                      slice_complete=bool(coverage.get('slice_complete')), slice=coverage.get('slice'),
+                      ai_rejected_count=coverage.get('ai_rejected_count'))
+        record['epoch'] = self._advance_epoch(universe, record, now)
+        complete = record['coverage_complete'] and record['selection_complete']
+        if complete or (record['slice_complete'] and record['status'] == 'SLICE_SELECTION_COMPLETE'):
             try:
-                self.reevaluation.adopt_selection(result)
+                ttl = SELECTION_TTL_SEPARATIONS * int(policy['schedule']['universe_evaluation_interval_seconds'])
+                self.reevaluation.adopt_selection(result, ttl_seconds=ttl)
                 record['adopted'] = True
                 universe.update(adopted_run_id=result.get('run_id'), adopted_at=record['finished_at'])
-                # The selection is only valid for the inputs it was produced from, so the fingerprint observed when
-                # the run started becomes the baseline the next decision compares against.
-                universe.update(last_complete=dict(run_id=record['run_id'], finished_at_epoch=min(_epoch(record['finished_at'], now), now),
-                                                   finished_at=record['finished_at'], universe_count=record['universe_count'],
-                                                   candidate_run_id=record['candidate_run_id']),
-                                last_complete_fingerprint=universe.get('run_fingerprint'))
                 universe.pop('failure', None)
             except ValueError as exc:
                 record['adoption_refused'] = _code(exc)
-        else:
+        if complete and record['adopted']:
+            # The selection is only valid for the inputs it was produced from, so the fingerprint observed when
+            # the run started becomes the baseline the next decision compares against.
+            universe.update(last_complete=dict(run_id=record['run_id'], finished_at_epoch=min(_epoch(record['finished_at'], now), now),
+                                               finished_at=record['finished_at'], universe_count=record['universe_count'],
+                                               candidate_run_id=record['candidate_run_id']),
+                            last_complete_fingerprint=universe.get('run_fingerprint'))
+        elif record['slice_complete']:
+            # A finished slice is the method working as designed; the next slice starts after the separation.
+            universe.pop('failure', None)
+        elif not complete:
             # A partial, failed, stopped or interrupted run is not retried every cycle: it backs off.
             failure = universe.get('failure') or {}
             count = int(failure.get('count') or 0) + 1
