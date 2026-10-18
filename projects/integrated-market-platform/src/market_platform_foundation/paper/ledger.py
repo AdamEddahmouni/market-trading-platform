@@ -640,6 +640,55 @@ class PaperExecutionLedger:
             "valuation_cutoff_ns": as_of_ns if as_of_ns is not None else monotonic_wall_ns(),
         }
 
+    def _project_crypto_trade_entries(self) -> dict[str, dict[str, Any]]:
+        """Replay canonical fills for read-only crypto trade facts.
+
+        Crypto is excluded from the legacy equity projection. Reuse its
+        existing canonical accounting authority, on a fresh portfolio, so
+        history cannot mutate the serving account or invent another P&L rule.
+        """
+        from ..portfolio.ledger import position_effect
+        from .cost_friction import resolve_paper_cost_friction
+
+        portfolio = CanonicalPortfolio(PortfolioKey(
+            account_id=self.paper_account_id, mode="PAPER", broker="internal.simulation",
+            portfolio_id=self.paper_account_id))
+        scale = int(self.policy.get("price_scale", 100))
+        portfolio.set_cash(CashBalance(currency=str(self.policy.get("currency", "USD")).upper(),
+            settled=Decimal(int(self.policy["initial_cash_minor"])) / Decimal(scale)))
+        entries: dict[str, dict[str, Any]] = {}
+        applied: set[str] = set()
+        realized_native = Decimal(0)
+        for event in self.events:
+            if event["event_type"] != "FillRecorded":
+                continue
+            payload = event.get("payload") or {}
+            fill = payload.get("fill") or {}
+            intent = self._lookup_intent_for_fill(fill, {"order_id": payload.get("order_id")})
+            if not self._is_derivative_fill(fill, intent):
+                continue
+            if str(fill.get("fill_id")) in applied:
+                continue
+            instrument = fill.get("instrument") or (intent or {}).get("instrument") or {}
+            instrument_id = str(instrument.get("instrument_id") or fill["instrument_id"])
+            position = portfolio.get_position(instrument_id)
+            before = position.quantity if position is not None else Decimal(0)
+            result = apply_paper_fill_to_portfolio(portfolio, fill=fill, intent=intent,
+                policy=self.policy, applied_fill_ids=applied)
+            if instrument.get("instrument_kind") != "CRYPTO_PAIR":
+                continue
+            commission, fees = resolve_paper_cost_friction(fill=fill, policy=self.policy,
+                quantity=int(exact_quantity(fill["fill_quantity"])))
+            realized_before_minor = int(realized_native * Decimal(scale))
+            realized_native += result.realized_pnl_delta_native
+            entries[result.fill_id] = dict(instrument_id=instrument_id,
+                commission_minor=commission, fees_minor=fees, position_before=before,
+                position_after=result.position_quantity_after,
+                position_effect=position_effect(position_before=before, position_after=result.position_quantity_after),
+                realized_pnl_delta_native=result.realized_pnl_delta_native,
+                realized_pnl_delta_minor=int(realized_native * Decimal(scale)) - realized_before_minor)
+        return entries
+
     def project_trades(self) -> list[dict[str, Any]]:
         """Fill-level trade history: one row per position-changing fill.
 
@@ -650,9 +699,11 @@ class PaperExecutionLedger:
             raise ValueError("TRADE_HISTORY_REQUIRES_PORTFOLIO_ACCOUNT")
         projection = self._project_ledger()
         entries = {str(entry["fill_id"]): entry for entry in projection["entries"]}
+        entries.update(self._project_crypto_trade_entries())
         orders = {str(order.get("order_id")): order for order in self.project_orders()}
         scale = int(self.policy["price_scale"])
         trades: list[dict[str, Any]] = []
+        emitted_crypto_fills: set[str] = set()
         for event in self.events:
             if event["event_type"] != "FillRecorded":
                 continue
@@ -675,6 +726,14 @@ class PaperExecutionLedger:
             instrument_id = str(entry["instrument_id"])
             effect = str(entry["position_effect"])
             closing = effect in {"REDUCE", "CLOSE", "REVERSE"}
+            instrument = fill.get("instrument") or intent.get("instrument") or {}
+            fractional = instrument.get("instrument_kind") == "CRYPTO_PAIR"
+            if fractional:
+                fill_id = str(fill["fill_id"])
+                if fill_id in emitted_crypto_fills:
+                    continue
+                emitted_crypto_fills.add(fill_id)
+            price_scale = int(instrument.get("price_scale", scale)) if fractional else scale
             trades.append(
                 {
                     "approved_quantity": order.get("approved_quantity", order.get("quantity")),
@@ -686,18 +745,18 @@ class PaperExecutionLedger:
                     "fees_minor": int(entry["fees_minor"]),
                     "fill_id": str(fill.get("fill_id")),
                     "fill_kind": "SIMULATED_FILL",
-                    "fill_price_display": decimal_minor_to_display(int(fill["fill_price_minor"]), scale=scale),
+                    "fill_price_display": decimal_minor_to_display(int(fill["fill_price_minor"]), scale=price_scale),
                     "fill_price_minor": int(fill["fill_price_minor"]),
                     "fill_time_ns": fill.get("fill_time"),
-                    "filled_quantity": int(fill["fill_quantity"]),
+                    "filled_quantity": serialized_quantity(fill["fill_quantity"], instrument) if fractional else int(fill["fill_quantity"]),
                     "instrument_id": instrument_id,
                     "intent_id": intent.get("intent_id"),
                     "is_market_truth": False,
                     "lineage_refs": list(fill.get("lineage_refs") or intent.get("lineage_refs") or []),
                     "order_id": order_id,
                     "order_type": intent.get("order_type") or order.get("order_type"),
-                    "position_after": int(entry["position_after"]),
-                    "position_before": int(entry["position_before"]),
+                    "position_after": serialized_quantity(entry["position_after"], instrument) if fractional else int(entry["position_after"]),
+                    "position_before": serialized_quantity(entry["position_before"], instrument) if fractional else int(entry["position_before"]),
                     "position_effect": effect,
                     # Realized P&L on the closed quantity, net of this fill's
                     # costs. Opening fills realize only their own costs.
@@ -1687,7 +1746,13 @@ class PaperExecutionLedger:
         merged_cash = legacy_equity_only + (derivative_cash - initial)
         state = dict(state)
         state["cash_minor"] = int(merged_cash * Decimal(scale))
-        state["realized_pnl_minor"] += int(sum((p.realized_pnl_native for p in portfolio.positions.values()), Decimal(0)) * scale)
+        # Closed spot positions leave the canonical open-position map. Their
+        # realized result remains an immutable fill fact, including across reopen.
+        realized_native = sum((p.realized_pnl_native for p in portfolio.positions.values()
+                               if p.instrument_kind != "CRYPTO_PAIR"), Decimal(0))
+        realized_native += sum((entry["realized_pnl_delta_native"]
+                                for entry in self._project_crypto_trade_entries().values()), Decimal(0))
+        state["realized_pnl_minor"] += int(realized_native * scale)
         from .cost_friction import resolve_paper_cost_friction
         for event in self.events:
             if event["event_type"] != "FillRecorded":

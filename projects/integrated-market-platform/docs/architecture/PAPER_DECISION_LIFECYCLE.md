@@ -165,6 +165,21 @@ deterministic IDs and content are idempotent, while changed content for an
 existing ID is an immutable conflict. Missing, expired, future, mismatched,
 or unauthorized inputs stop before downstream Paper mutation.
 
+## Exact spot trade-history projection
+
+Crypto spot fills use the canonical Decimal accounting path rather than the
+legacy equity fill projection. `PaperExecutionLedger.project_trades()` replays
+those immutable fills through the same canonical accounting function on a fresh
+read-only portfolio. Trade rows preserve exact native quantities as decimal
+strings and use the instrument's price scale; legacy equity quantities remain
+integers. Closed crypto realized P&L remains in the account projection after the
+open position disappears and after restart. Integer minor-unit trade deltas use
+cumulative conversion so subminor gains are retained in the account total.
+
+This reporting contract does not change order admission, preview authority,
+BUILD 22 minimum size, owner limits, or forecast requirements. It is not proof
+that the autonomous fractional crypto admission path is complete.
+
 ## Stages
 
 ### 1. Attention / lane origin

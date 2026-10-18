@@ -120,3 +120,101 @@ class ExactPaperExecutionTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "INSUFFICIENT_SETTLEMENT_CURRENCY"):
             submit(book, instrument=ref)
         self.assertEqual(len(book.events), 2)
+
+
+class CryptoTradeHistoryTests(unittest.TestCase):
+    def test_fractional_history_preserves_fill_quantities_prices_and_net_pnl(self):
+        book = ledger()
+        book.policy["fee_minor_per_order"] = 2
+        submit(book, quantity="0.2", feed=bars("10.0000"))
+        submit(book, quantity="0.05", side="SELL", key="partial", feed=bars("12.0000", available_time=300))
+        book.apply_live_mark(instrument_id="BTC/USD", mark_minor=120000,
+            mark_provider="CONTROLLED_FIXTURE", mark_as_of_ns=300, mark_quality="PASS")
+        self.assertEqual(book.project_account()["realized_pnl_minor"], 6)
+        self.assertEqual(book.project_account()["cash_minor"], 99856)
+        self.assertEqual(book.project_valuation(as_of_ns=300)["equity_minor"], 100036)
+        self.assertEqual(sum(t["realized_pnl_delta_minor"] for t in book.project_trades()), 6)
+        submit(book, quantity="0.15", side="SELL", key="close", feed=bars("12.0000", available_time=400))
+        trades = book.project_trades()
+        self.assertEqual(len(trades), 3)
+        self.assertEqual([t["filled_quantity"] for t in trades], ["0.2", "0.05", "0.15"])
+        self.assertEqual([t["position_before"] for t in trades], ["0", "0.2", "0.15"])
+        self.assertEqual([t["position_after"] for t in trades], ["0.2", "0.15", "0"])
+        self.assertEqual([t["position_effect"] for t in trades], ["OPEN", "REDUCE", "CLOSE"])
+        self.assertEqual([t["fill_price_display"] for t in trades], ["10", "12", "12"])
+        self.assertEqual([t["realized_pnl_delta_minor"] for t in trades], [-2, 8, 28])
+        self.assertEqual(sum(t["realized_pnl_delta_minor"] for t in trades), 34)
+        self.assertEqual(book.project_account()["realized_pnl_minor"], 34)
+        self.assertEqual(book.project_account()["cash_minor"], 100034)
+        self.assertEqual(book.project_valuation()["equity_minor"], 100034)
+        restored = PaperExecutionLedger(paper_account_id=book.paper_account_id, session_id=book.session_id,
+            policy=book.policy.copy(), events=copy.deepcopy(book.events), execution_mode="INTERNAL_SIMULATION", execution_authority="PAPER_ONLY")
+        self.assertEqual(restored.project_account(), book.project_account())
+        self.assertEqual(restored.project_trades(), trades)
+        self.assertEqual(restored.project_valuation()["equity_minor"], 100034)
+        self.assertEqual([t["costs_minor"] for t in trades], [2, 2, 2])
+        self.assertTrue(all(t["fill_kind"] == "SIMULATED_FILL" and not t["is_market_truth"] for t in trades))
+
+    def test_trade_history_is_read_only_duplicate_safe_and_restart_exact(self):
+        book = ledger()
+        result = submit(book, quantity="0.2", feed=bars("10.0000"))
+        again = submit(book, quantity="0.2", feed=bars("10.0000"))
+        self.assertTrue(again["duplicate"])
+        events = copy.deepcopy(book.events)
+        trades = book.project_trades()
+        self.assertEqual(len(trades), 1)
+        self.assertEqual(trades[0]["fill_id"], result["fill"]["fill_id"])
+        self.assertEqual(book.project_trades(), trades)
+        self.assertEqual(book.events, events)
+        restored = PaperExecutionLedger(paper_account_id=book.paper_account_id, session_id=book.session_id,
+            policy=book.policy.copy(), events=copy.deepcopy(events), execution_mode="INTERNAL_SIMULATION", execution_authority="PAPER_ONLY")
+        self.assertEqual(restored.project_trades(), trades)
+        self.assertEqual(restored.project_account(), book.project_account())
+
+    def test_crypto_partial_fill_history_counts_only_filled_units(self):
+        book = ledger()
+        result = submit(book, quantity="0.2", feed=bars("10.0000", volume="0.1"))
+        self.assertEqual(result["fill"]["fill_quantity"], "0.1")
+        trades = book.project_trades()
+        self.assertEqual(len(trades), 1)
+        self.assertEqual((trades[0]["requested_quantity"], trades[0]["filled_quantity"], trades[0]["position_after"]),
+                         ("0.2", "0.1", "0.1"))
+
+
+    def test_subminor_close_pnl_accumulates_without_losing_account_reconciliation(self):
+        book = ledger()
+        submit(book, quantity="0.005", feed=bars("10.0000"))
+        for index in range(5):
+            submit(book, quantity="0.001", side="SELL", key=f"close-{index}",
+                   feed=bars("12.0000", available_time=300 + index))
+        trades = book.project_trades()
+        self.assertEqual(len(trades), 6)
+        self.assertEqual(sum(t["realized_pnl_delta_minor"] for t in trades), 1)
+        self.assertEqual(book.project_account()["realized_pnl_minor"], 1)
+        self.assertEqual(book.project_account()["cash_minor"], 100001)
+        self.assertEqual(book.project_positions(), [])
+        restored = PaperExecutionLedger(paper_account_id=book.paper_account_id, session_id=book.session_id,
+            policy=book.policy.copy(), events=copy.deepcopy(book.events), execution_mode="INTERNAL_SIMULATION", execution_authority="PAPER_ONLY")
+        self.assertEqual(restored.project_trades(), trades)
+        self.assertEqual(restored.project_account(), book.project_account())
+
+    def test_crypto_history_keeps_existing_equity_row_unchanged(self):
+        book = ledger()
+        submit_interactive_order(ledger=book, bars=bars("20.00"), symbol="AAPL", instrument_id="AAPL",
+            quantity=1, side="BUY", observation_time=100, client_order_id="equity", idempotency_key="equity")
+        equity = book.project_trades()[0]
+        submit(book, quantity="0.1", feed=bars("10.0000"))
+        trades = book.project_trades()
+        self.assertEqual(len(trades), 2)
+        self.assertEqual(trades[0], equity)
+        self.assertEqual(trades[0]["filled_quantity"], 1)
+        self.assertEqual(trades[1]["filled_quantity"], "0.1")
+        self.assertEqual(book.project_account()["cash_minor"], 97900)
+
+
+    def test_duplicate_crypto_fill_receipt_does_not_duplicate_trade_history(self):
+        book = ledger()
+        result = submit(book, quantity="0.1", feed=bars("10.0000"))
+        book.append_fill(result["fill"], order=result["order"])
+        self.assertEqual(len(book.project_trades()), 1)
+        self.assertEqual(book.project_account()["cash_minor"], 99900)

@@ -7275,3 +7275,11 @@ reason, and the planning caller treated every refusal as a provider rejection.
 A Stop reaching the exact count now classifies planned rows STOPPED_BY_OPERATOR
 and ends the run STOPPED, matching the batch and comparison stop paths. A new
 regression failed before the repair. The historical receipt is unchanged.
+
+
+## 2026-10-18 — Crypto fill-history and closed realized-P&L projection
+
+- Reproduced canonical crypto fills missing from trade history because the legacy equity entry projection excludes them. Added exact crypto read-side replay through the existing canonical fill accounting function; no execution, risk, admission, forecast, controller, or account mutation was introduced.
+- Reproduced closed crypto realized P&L disappearing when the zero position leaves the canonical open-position map. Account reporting now retains immutable crypto fill deltas, including partial close, restart and subminor accumulation. Existing equity history representation remains unchanged.
+- Added controlled regressions for exact quantity/price/cost/P&L history, partial fills, duplicate/read-only/restart behavior, subminor P&L accumulation, and mixed equity compatibility. RED evidence is retained. Final combined exact-crypto/controller/accounting/governance/market/derivative/parity/P3.1 suites passed 251/251, including six new regression tests. Documentation link validation checked 308 files successfully. Full integrated closure remains the release coordinator checkpoint.
+- Fractional autonomous admission remains incomplete: Workspace quantity parsing/preview, Action and stop position handling, BUILD22 quantity contracts and its native-unit minimum, admitted instrument economics, and cancellation receipts still require coherent treatment. This projection repair does not relax or reinterpret those gates.
