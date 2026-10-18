@@ -1754,6 +1754,7 @@ class PaperExecutionLedger:
                                 for entry in self._project_crypto_trade_entries().values()), Decimal(0))
         state["realized_pnl_minor"] += int(realized_native * scale)
         from .cost_friction import resolve_paper_cost_friction
+        cost_fill_ids: set[str] = set()
         for event in self.events:
             if event["event_type"] != "FillRecorded":
                 continue
@@ -1761,6 +1762,10 @@ class PaperExecutionLedger:
             fill = payload.get("fill") or {}
             intent = self._lookup_intent_for_fill(fill, {"order_id": payload.get("order_id")})
             if self._is_derivative_fill(fill, intent):
+                fill_id = str(fill["fill_id"])
+                if fill_id in cost_fill_ids:
+                    continue
+                cost_fill_ids.add(fill_id)
                 commission, fees = resolve_paper_cost_friction(fill=fill, policy=self.policy, quantity=int(Decimal(str(fill["fill_quantity"]))))
                 state["total_commission_minor"] += commission
                 state["total_fees_minor"] += fees

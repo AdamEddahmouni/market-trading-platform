@@ -214,7 +214,11 @@ class CryptoTradeHistoryTests(unittest.TestCase):
 
     def test_duplicate_crypto_fill_receipt_does_not_duplicate_trade_history(self):
         book = ledger()
+        book.policy["fee_minor_per_order"] = 2
         result = submit(book, quantity="0.1", feed=bars("10.0000"))
         book.append_fill(result["fill"], order=result["order"])
         self.assertEqual(len(book.project_trades()), 1)
-        self.assertEqual(book.project_account()["cash_minor"], 99900)
+        self.assertEqual(book.project_account()["cash_minor"], 99898)
+        self.assertEqual(book.project_account()["total_fees_minor"], 2)
+        self.assertEqual(book.project_account()["realized_pnl_minor"], -2)
+        self.assertEqual(book.project_trades()[0]["costs_minor"], 2)

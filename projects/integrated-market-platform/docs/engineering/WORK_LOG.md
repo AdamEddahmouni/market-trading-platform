@@ -7308,3 +7308,4 @@ acceptance; now these fail closed under the current whole-unit boundary rather
 than changing requested quantity. The guarded boundary does not claim complete
 crypto quantity compatibility. No protected policy, model pin, resource ceiling,
 quote lifetime, account reset, Live route or paid inference was introduced.
+- Review follow-up: a duplicate crypto fill with explicit two-cent fees exposed aggregate fees being counted twice while canonical cash and history remained idempotent. Added the nonzero-cost assertion (RED), deduplicated derivative account cost projection by immutable fill id, and passed 82/82 exact-crypto/derivative/equity-accounting focused tests.
