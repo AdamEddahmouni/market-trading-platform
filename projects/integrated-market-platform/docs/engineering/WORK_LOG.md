@@ -1,5 +1,34 @@
 # IMP Work Log
 
+## 2026-10-18 — Action Decision stance wire and slice starvation
+
+All 46 production Action Decisions after R4 were `INVALID_SUPPORT`: the model
+listed one reference as both supporting and conflicting, which two free lists
+cannot prevent in a grammar. R6 (`f3859ab1`, prompt `screener.action_decision.v2`)
+asks for one stance per evidence reference; `decode_wire` rebuilds the canonical
+proposal and the unchanged validator decides. After R6 every crypto slice ended
+within about 14 requests on the half-rejected breaker: the epoch's remaining
+rows were news-heavy (about two thirds `UNGROUNDED_NEWS_CLAIM`), rejected rows
+never counted as evaluated, so they headed every slice and held the epoch open.
+R7 (`8f4c0721`) orders slices by each row's last turn (answered, rejected or
+refused at send), completes an epoch when every row has had its turn (evaluated
+and turns reported apart), and in a slice stops dispatch only when 20 answers
+include none accepted. The next slice (`f46d8737`) finished in about 19 minutes
+with 5 picks adopted. Replaying the first v2 decisions against the loopback
+model at temperature 0 reproduced them: one repeated condition ids in
+`uncertainties` to the 24-item cap (`LIST_INVALID`), one quoted evidence values
+in its rationale (`UNSUPPORTED_EXECUTION_OR_LEVEL`, correctly rejected). R8
+(`211823e6`) bounds the wire's uncertainties to six distinct strings; the next
+decision on that pick was the first accepted proposal, a governed `NO_ACTION`.
+A prompt style example removed quoted values but was copied verbatim into
+unrelated decisions and was not adopted. RED→GREEN for each release; focused
+suites 433/434, 256/256 and 229/229 (the one error is the inherited
+`StagedTests` Monitor); `validate changed` failures all on the recorded
+baseline. A one-time read-only check of the Monday 2026-10-19 equity open is
+scheduled (`equity_open_check.py`). Evidence:
+`destination-tests/20261016-paper-ai-throughput/` (`release-r6..r8`,
+`r7-decision-replay*`).
+
 ## 2026-10-17 — Paper AI throughput: GPU profile, send-time counts, rolling slices
 
 Production runs on the CPU profile answered one crypto row in about 87 s
