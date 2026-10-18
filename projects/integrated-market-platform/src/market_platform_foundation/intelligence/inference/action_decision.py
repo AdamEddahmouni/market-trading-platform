@@ -191,7 +191,10 @@ def wire_schema(candidate, conditions):
                       rationale=canonical['rationale'],
                       evidence_stance=dict(type='object', properties={r: dict(type='string', enum=o) for r, o in stance.items()},
                                            required=list(stance), additionalProperties=False),
-                      uncertainties=canonical['uncertainties'], **{name: canonical[name] for name in ALLOWED_CONDITIONS})
+                      # At temperature 0 the model repeated condition ids up to the 24-item cap and the validator
+                      # rejected the duplicates (October 18, LIST_INVALID). A few distinct bounded strings.
+                      uncertainties=dict(type='array', items=dict(type='string', maxLength=400), maxItems=6, uniqueItems=True),
+                      **{name: canonical[name] for name in ALLOWED_CONDITIONS})
     return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
 
 

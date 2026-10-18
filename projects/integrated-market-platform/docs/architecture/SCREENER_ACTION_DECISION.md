@@ -34,6 +34,13 @@ rules: weak evidence offers only CONFLICTING/CONTEXT, and a conflicting sentimen
 reference offers only CONFLICTING. `weak_refs` and `missing_capabilities` had
 exactly one acceptable value, the candidate's own sets, so the server states
 them. A missing, extra, duplicated or unknown stance key is `SCHEMA_INVALID`.
+The wire's `uncertainties` is at most six distinct strings of at most 400
+characters: at temperature 0 the model repeated condition ids up to the 24-item
+cap and the validator rejected the duplicates (`LIST_INVALID`, October 18). The
+validator's own bounds are unchanged. A replay of production inputs also showed
+the model quoting evidence values in its rationale (correctly rejected as
+`UNSUPPORTED_EXECUTION_OR_LEVEL`); a style example in the prompt removed the
+values but was copied verbatim into unrelated decisions, so it was not adopted.
 The v1 prompt stays registered so earlier records keep their prompt identity.
 
 Local and hosted adapters use the dedicated JSON schema; hosted calls use the

@@ -110,6 +110,14 @@ class ActionDecisionTests(unittest.TestCase):
         self.assertNotIn('supporting_refs', schema['properties'])
         self.assertNotIn('conflicting_refs', schema['properties'])
 
+    def test_the_wire_bounds_uncertainties_to_a_few_distinct_bounded_strings(self):
+        # October 18: at temperature 0 the model repeated condition ids until the 24-item cap, and the validator
+        # rejected the duplicates (LIST_INVALID). Each item stays within the validator's 400 characters.
+        from market_platform_foundation.intelligence.inference.action_decision import wire_schema
+        c, conditions = self._mixed()
+        bound = wire_schema(c, conditions)['properties']['uncertainties']
+        self.assertEqual(bound, dict(type='array', items=dict(type='string', maxLength=400), maxItems=6, uniqueItems=True))
+
     def test_a_wire_answer_is_rebuilt_and_the_unchanged_validator_still_decides(self):
         from market_platform_foundation.intelligence.inference.action_decision import decode_wire
         c, conditions = self._mixed()
