@@ -345,6 +345,17 @@ preserves integer labels and nanosecond times without coercion, binds snapshots
 to row identity and decision time, and rejects unknown schemas or conflicting
 duplicate rows. Identical duplicate rows remain idempotent.
 
+On its first tick after restart, the recorder joins existing decision/label
+identities one daily file at a time, retaining only compact references and
+capping each recovery index and the pending list at 10,000 decisions. It restores
+only unresolved decisions whose horizon is still in the future, with their
+original reference and clocks, and restores the last recorded grid to avoid
+duplicate capture. A past horizon without the lost window's terminal evidence
+is explicitly `UNLABELABLE` with
+`RECORDER_RESTART_TERMINAL_EVIDENCE_UNAVAILABLE` and the actual `recovered_at_ns`;
+it never becomes a training label. Existing labels are preserved. An oversized
+recovery file fails closed before that file's recovery outcomes are written.
+
 The current live strategy and recorder are equity-specific: Moomoo quote/trade
 observations during the regular US session, with a 300-second feature window,
 30-second decision grid, and 300-second direction horizon. The terminal quote

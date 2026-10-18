@@ -1,5 +1,21 @@
 # IMP Work Log
 
+## 2026-10-18 — Forecast pending-label recovery across restart
+
+Read-only corpus reconciliation found 52 accepted decisions without any label,
+all October 14 and inside existing quality exclusions. The recorder's pending
+list was memory-only. Startup recovery now restores unresolved future horizons
+from compact durable decision references, preserves their original clocks and
+existing labels, and restores the last recorded grid. Past horizons are explicitly
+unlabelable with a current recovery timestamp; lost terminal evidence is never
+invented. Recovery has a hard 10,000-decision per-file/pending bound. Corrected
+grid-aligned regression cases fail 4/4 on the preceding implementation and pass
+4/4 after repair; the combined forecast suite passes 86/86. No canonical corpus
+was modified in development; controlled restart artifacts stayed in temporary
+fixture directories. Raw-stream SQL audit also found equity L1 without ticks and
+crypto trades without quote/book records, so no additional complete compatible
+feature corpus was established.
+
 ## 2026-10-18 — Forecast runtime admission and lossless corpus guards
 
 Isolated copies of real W11 artifacts reproduced a runtime admission gap: changing

@@ -55,6 +55,9 @@ DEFAULT_GRID_SECONDS = 30
 DEFAULT_TERMINAL_TOLERANCE_NS = 60 * 1_000_000_000
 # Liquid names print thousands of trades in five minutes; the snapshot must see the whole window.
 MAX_WINDOW_EVENTS = 60_000
+# One regular session at the bounded service's 12 instruments has at most 9,360 decisions.
+# Recovery indexes one daily file at a time and refuses rather than exceed this bound.
+MAX_RECOVERY_DECISIONS = 10_000
 
 
 def _now_ns() -> int:
@@ -311,6 +314,7 @@ class LiveFeatureCorpusRecorder:
     last_grid_ns: int | None = None
     status: dict[str, Any] = field(default_factory=lambda: dict(decisions=0, accepted=0, settled=0, unlabelable=0, refusals={}))
     _lock: threading.Lock = field(default_factory=threading.Lock)
+    _recovery_complete: bool = False
 
     def _path(self, at_ns: int) -> Path:
         day = datetime.fromtimestamp(at_ns / 1e9, UTC).strftime("%Y-%m-%d")
@@ -322,9 +326,59 @@ class LiveFeatureCorpusRecorder:
         with path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
 
+    def _recover_pending(self, now: int) -> None:
+        """Called under the tick lock, once. Existing labels are immutable.
+
+        A new window cannot establish the first terminal quote for a horizon already
+        reached during the outage. Those rows get an explicit missing-evidence outcome
+        with the actual recovery clock; only future horizons can rejoin ``pending``.
+        """
+        wanted = set(self.instruments())
+        for path in sorted(Path(self.directory).glob("feature-corpus-*.jsonl")):
+            decisions: dict[tuple[str, int], dict[str, Any]] = {}
+            labeled: set[tuple[str, int]] = set()
+            with path.open(encoding="utf-8") as handle:
+                for line in handle:
+                    row = json.loads(line)
+                    if row.get("instrument_id") not in wanted:
+                        continue
+                    if row.get("schema_version") != SCHEMA_VERSION or type(row.get("decision_time_ns")) is not int:
+                        raise ValueError("CORPUS_RECOVERY_IDENTITY_INVALID")
+                    key = (row["instrument_id"], row["decision_time_ns"])
+                    if row.get("kind") == LABEL_KIND:
+                        labeled.add(key)
+                    elif row.get("kind") == DECISION_KIND:
+                        self.last_grid_ns = max(self.last_grid_ns or key[1], key[1])
+                        if row.get("accepted") is True:
+                            decisions[key] = dict(instrument_id=key[0], decision_time_ns=key[1],
+                                                  reference=row["reference"])
+                    if len(decisions.keys() | labeled) > MAX_RECOVERY_DECISIONS:
+                        raise ValueError("CORPUS_RECOVERY_CAP_EXCEEDED")
+            unresolved = [row for key, row in sorted(decisions.items(), key=lambda item: (item[0][1], item[0][0]))
+                          if key not in labeled]
+            if len(self.pending) + sum(row["decision_time_ns"] + self.horizon_ns > now for row in unresolved) > MAX_RECOVERY_DECISIONS:
+                raise ValueError("CORPUS_RECOVERY_CAP_EXCEEDED")
+            for row in unresolved:
+                decision_ns = row["decision_time_ns"]
+                if decision_ns + self.horizon_ns > now:
+                    self.pending.append(dict(instrument_id=row["instrument_id"], decision_time_ns=decision_ns,
+                                             reference=row["reference"]))
+                    self.status["recovered_pending"] = self.status.get("recovered_pending", 0) + 1
+                else:
+                    self._write(dict(schema_version=SCHEMA_VERSION, kind=LABEL_KIND,
+                                     instrument_id=row["instrument_id"], decision_time_ns=decision_ns,
+                                     horizon_ns=self.horizon_ns, label_rule=LABEL_RULE, label=None,
+                                     status="UNLABELABLE", reason="RECORDER_RESTART_TERMINAL_EVIDENCE_UNAVAILABLE",
+                                     recovered_at_ns=now))
+                    self.status["unlabelable"] += 1
+                    self.status["restart_unlabelable"] = self.status.get("restart_unlabelable", 0) + 1
+        self._recovery_complete = True
+
     def tick(self) -> None:
         with self._lock:
             now = self.clock()
+            if not self._recovery_complete:
+                self._recover_pending(now)
             for decision in list(self.pending):
                 label = settle(self.window, decision, now_ns=now, horizon_ns=self.horizon_ns)
                 if label is not None:
