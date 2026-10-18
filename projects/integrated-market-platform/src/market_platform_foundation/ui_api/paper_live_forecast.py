@@ -37,7 +37,7 @@ def _day(ns: int) -> str:
 class LiveForecastHook:
     def __init__(self, root: Path, *, window_getter=None, clock=time.time_ns) -> None:
         from ..intelligence.production.model_store import load_production_specialist_model
-        from ..intelligence.production.live_training import scored_artifacts_match
+        from ..intelligence.production.live_training import ELIGIBILITY_RULE_ID, eligibility, scored_artifacts_match
         from ..strategy.path_a_forecast_producer import load_paper_demo_calibration
         from ..strategy.path_a_live_forecast import LiveForecastArtifacts, load_preregistration, preregistration_valid
 
@@ -63,6 +63,16 @@ class LiveForecastHook:
                 evaluation = json.loads((directory / "evaluation.json").read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 self.refused[iid] = "EVALUATION_UNREADABLE"
+                continue
+            scores = evaluation.get("holdout_scores")
+            if (evaluation.get("eligible") is not True
+                    or evaluation.get("instrument_id") != iid
+                    or evaluation.get("eligibility_rule") != ELIGIBILITY_RULE_ID
+                    or not isinstance(scores, dict)
+                    or type(evaluation.get("holdout")) is not int
+                    or evaluation.get("holdout") != scores.get("samples")
+                    or not eligibility(scores)[0]):
+                self.refused[iid] = "HOLDOUT_POLICY_NOT_SATISFIED"
                 continue
             model = load_production_specialist_model(directory / "model")
             calibration = load_paper_demo_calibration(directory / "calibration")

@@ -354,26 +354,53 @@ class LiveFeatureCorpusRecorder:
 
 def load_training_examples(paths: Iterable[Path]):
     """Join decision and SETTLED label rows into ``ProductionTrainingExample`` values, in decision-time order."""
+    from .errors import ProductionTrainingError
     from .model import ProductionTrainingExample
 
+    seen: dict[tuple[str, int, str], str] = {}
     decisions: dict[tuple[str, int], dict[str, Any]] = {}
     labels: dict[tuple[str, int], dict[str, Any]] = {}
     for path in paths:
         with Path(path).open(encoding="utf-8") as handle:
             for line in handle:
                 row = json.loads(line)
+                if not isinstance(row, dict) or row.get("schema_version") != SCHEMA_VERSION:
+                    raise ProductionTrainingError("CORPUS_SCHEMA_MISMATCH")
+                if (not isinstance(row.get("instrument_id"), str) or not row["instrument_id"]
+                        or type(row.get("decision_time_ns")) is not int):
+                    raise ProductionTrainingError("CORPUS_IDENTITY_OR_DECISION_TIME_INVALID")
+                kind = row.get("kind")
+                if kind not in (DECISION_KIND, LABEL_KIND):
+                    raise ProductionTrainingError("CORPUS_ROW_KIND_INVALID")
                 key = (row["instrument_id"], row["decision_time_ns"])
-                if row.get("kind") == DECISION_KIND and row.get("accepted"):
+                identity = (*key, kind)
+                digest = hashlib.sha256(json.dumps(row, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+                previous = seen.get(identity)
+                if previous is not None:
+                    if previous != digest:
+                        raise ProductionTrainingError("CONFLICTING_CORPUS_ROW")
+                    continue
+                seen[identity] = digest
+                if kind == DECISION_KIND and row.get("accepted") is True:
                     decisions[key] = row
-                elif row.get("kind") == LABEL_KIND and row.get("status") == "SETTLED":
+                elif kind == LABEL_KIND and row.get("status") == "SETTLED":
+                    if type(row.get("label")) is not int or row["label"] not in (0, 1):
+                        raise ProductionTrainingError("INVALID_LABEL")
+                    if type(row.get("label_available_time_ns")) is not int:
+                        raise ProductionTrainingError("LABEL_AVAILABILITY_UNKNOWN")
+                    if (row.get("horizon_ns") != path_a_horizon().duration_ns
+                            or row.get("label_rule") != LABEL_RULE):
+                        raise ProductionTrainingError("CORPUS_LABEL_CONTRACT_MISMATCH")
                     labels[key] = row
     examples = []
     for key in sorted(set(decisions) & set(labels), key=lambda k: (k[1], k[0])):
         decision, label = decisions[key], labels[key]
         snapshot: SnapshotV1 = snapshot_v1_from_dict(decision["snapshot"])
+        if snapshot.decision_time_ns != key[1] or snapshot.scope.instrument_ids != (key[0],):
+            raise ProductionTrainingError("CORPUS_SNAPSHOT_IDENTITY_MISMATCH")
         signals = tuple(signal_v1_from_dict(s) for s in decision["signals"])
-        examples.append((key, ProductionTrainingExample(snapshot=snapshot, signals=signals, label=int(label["label"]),
-                                                       label_available_time_ns=int(label["label_available_time_ns"]))))
+        examples.append((key, ProductionTrainingExample(snapshot=snapshot, signals=signals, label=label["label"],
+                                                       label_available_time_ns=label["label_available_time_ns"])))
     return examples
 
 

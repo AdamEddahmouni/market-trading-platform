@@ -326,6 +326,35 @@ persisted snapshots, refusals by reason, decision origin and AI usage. It is
 accounting of simulated fills, not evidence of a profitable strategy or a
 durable edge.
 
+## Governed live forecast admission
+
+The optional `paper_forecast_build.py` path consumes the prospective live
+feature corpus, separately from historical development corpora and Item 9
+calibration receipts. It splits each instrument chronologically 60/20/20,
+embargoes later decisions through earlier label availability, and requires
+at least 60 untouched holdout outcomes with strictly positive Brier skill
+against the training base rate (`path-a-live-holdout-brier-skill/1`). It does
+not change the independent Action Decision, Opportunity, Paper risk or submit
+gates. No eligible artifact means no forecast-backed entry Opportunity.
+
+At runtime `LiveForecastHook` checks the stored holdout scores against that
+same rule, exact instrument identity, integral sample count, finite skill and
+matching reported holdout count before loading the hash-bound specialist and
+calibrator. An `eligible` flag alone cannot admit an artifact. Corpus loading
+preserves integer labels and nanosecond times without coercion, binds snapshots
+to row identity and decision time, and rejects unknown schemas or conflicting
+duplicate rows. Identical duplicate rows remain idempotent.
+
+The current live strategy and recorder are equity-specific: Moomoo quote/trade
+observations during the regular US session, with a 300-second feature window,
+30-second decision grid, and 300-second direction horizon. The terminal quote
+must arrive within the existing 60-second tolerance. This path does not confer
+crypto compatibility or relabel historical evidence as prospective evidence.
+
+Regression coverage: `tests/intelligence/test_live_forecast_boundary_checks.py`,
+`test_live_forecast_admission_integrity.py`, `test_live_forecast_training.py`
+and `test_live_feature_corpus.py`.
+
 ## Limitations
 
 - Regular US session, US equities and ETFs, market orders, the experiment

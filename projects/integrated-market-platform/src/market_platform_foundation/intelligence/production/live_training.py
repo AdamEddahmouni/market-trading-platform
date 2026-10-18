@@ -109,10 +109,11 @@ def score_holdout(model, calibration, holdout: tuple[ProductionTrainingExample, 
 
 def eligibility(scores: dict[str, Any]) -> tuple[bool, list[str]]:
     reasons = []
-    if scores.get("samples", 0) < MINIMUM_HOLDOUT_SAMPLES:
+    samples = scores.get("samples")
+    if type(samples) is not int or samples < MINIMUM_HOLDOUT_SAMPLES:
         reasons.append("HOLDOUT_TOO_SMALL")
     skill = scores.get("brier_skill")
-    if skill is None or not skill > MINIMUM_BRIER_SKILL:
+    if type(skill) not in (int, float) or not math.isfinite(skill) or not skill > MINIMUM_BRIER_SKILL:
         reasons.append("NO_HOLDOUT_SKILL_OVER_BASE_RATE")
     return not reasons, reasons
 

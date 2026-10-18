@@ -1,5 +1,21 @@
 # IMP Work Log
 
+## 2026-10-18 — Forecast runtime admission and lossless corpus guards
+
+Isolated copies of real W11 artifacts reproduced a runtime admission gap: changing
+only `eligible` to true loaded an artifact with ten holdout samples despite the
+unchanged minimum of sixty. Runtime now independently checks stored holdout
+scores, the fixed rule, instrument identity, finite skill and matching integer
+counts before existing artifact hash checks. Corpus tests reproduced silent
+boolean/string/float coercion and conflicting duplicate replacement; the loader
+now rejects these inputs, unknown schemas and mismatched snapshot identities.
+Identical duplicates remain idempotent. RED: 22 failed subcases, no errors;
+GREEN: 82 selected forecast tests passed. The real three-file corpus was rebuilt
+without activation before and after these changes; no artifact qualifies.
+Evidence is under the task workspace `forecast-closure-20261018/`; the preexisting
+W11 build and canonical corpus remain unchanged. Historical development work was
+excluded. No model service, production activation or order submission occurred.
+
 ## 2026-10-18 — Action Decision stance wire and slice starvation
 
 All 46 production Action Decisions after R4 were `INVALID_SUPPORT`: the model
