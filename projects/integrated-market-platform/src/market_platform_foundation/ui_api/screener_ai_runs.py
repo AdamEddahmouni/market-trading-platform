@@ -195,6 +195,16 @@ class AiScreenerRuns:
         threading.Thread(target=self._work, args=(service, run, scope), name="imp-ai-screener-run", daemon=True).start()
         return snapshot
 
+    def row_records(self, run_id: str) -> dict[str, tuple[str, list[str]]]:
+        """Each row's final class and reasons in a finished run, from its immutable ledger rows."""
+        from ..local_state.ai_screener_coverage import coverage_ledger
+
+        records: dict[str, tuple[str, list[str]]] = {}
+        for record in coverage_ledger().records(run_id, "rows"):
+            if record.get("phase") == "FINAL":
+                records.update((row[0], (row[1], list(row[2] if len(row) > 2 else []))) for row in record.get("rows") or [])
+        return records
+
     def row_outcomes(self, run_id: str) -> dict[str, str]:
         """Each row's final class in a finished run, from its immutable ledger rows. Empty when there are none."""
         from ..local_state.ai_screener_coverage import coverage_ledger

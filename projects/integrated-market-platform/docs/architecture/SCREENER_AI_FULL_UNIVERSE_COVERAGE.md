@@ -208,10 +208,16 @@ one that reached its output allowance (`LOCAL_OUTPUT_LIMIT_REACHED`), is that
 batch's outcome only: its rows become `AI_REJECTED` with the rejection code (an
 evaluated bucket, never a finalist, never grounded) and the run continues with
 the next batch. Provider failures (timeout, runtime exit, unavailable) and
-evidence failures still end the run as before. A run with at least 10 rejected
-requests and more than half of its answered requests rejected ends
-`PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_RATE_EXCEEDED`); its remaining rows
-are `UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE`. A run without a slice plan
+evidence failures still end the run as before. A run without a slice plan
+with at least 10 rejected requests and more than half of its answered requests
+rejected ends `PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_RATE_EXCEEDED`). In
+a slice the time box already bounds the cost, so only a systemic failure stops
+dispatch: 20 answered requests and every one rejected ends
+`PROVISIONAL_PARTIAL_COVERAGE` (`AI_REJECTION_SYSTEMIC`). On October 17–18
+about two thirds of the news-heavy crypto rows were rejected
+(`UNGROUNDED_NEWS_CLAIM`), and the half-rejected rule ended every slice after
+about 14 requests with nothing adopted. Either way the remaining rows are
+`UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE`. A run without a slice plan
 that rejected any row is never a global selection: it ends
 `PROVISIONAL_PARTIAL_COVERAGE` with `BATCH_FAILED:<first rejection code>`.
 
@@ -219,11 +225,14 @@ that rejected any row is never a global selection: it ends
 
 The Paper automation controller starts local-engine runs with a **slice plan**:
 a first-pass deadline (40% of the scope's minimum separation) and, for each
-row, when the scope's recent runs last evaluated it (read from those runs'
-immutable `rows` records). Every row is still enumerated and classified
-deterministically. The first pass sends rows never evaluated by those runs
-first, then the least recently evaluated, then the fair order; this adds no
-score and no threshold. When the deadline passes, the remaining rows become
+row, when the scope's recent runs last evaluated it and when they last gave it
+a turn (`last_evaluated`, `last_turn`, read from those runs' immutable `rows`
+records). A turn is an answer, accepted or rejected, or a refusal to send the
+row alone. Every row is still enumerated and classified deterministically. The
+first pass sends rows with no turn in those runs first, then the least recent
+turn, then the fair order; this adds no score and no threshold. A row whose
+answer was just rejected therefore waits behind the rest instead of heading
+every slice. When the deadline passes, the remaining rows become
 `UNPROCESSED:DEFERRED_TO_NEXT_SLICE` and the finalists already found are
 compared as usual (the comparison is not cut short). A slice ends
 `SLICE_SELECTION_COMPLETE` or `SLICE_COMPLETE_NO_SELECTION`, with

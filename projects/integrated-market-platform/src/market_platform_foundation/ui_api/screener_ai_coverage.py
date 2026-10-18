@@ -53,6 +53,8 @@ SLICE_STATUSES = frozenset({SLICE_SELECTION_COMPLETE, SLICE_COMPLETE_NO_SELECTIO
 # the row is AI_REJECTED and the run continues. Too many in one run end it, as a provider fault would.
 REJECTION_BREAKER_MIN_REJECTED = 10
 REJECTION_BREAKER_RATE = 0.5
+# In a slice the time box bounds the cost, so only an engine that answers nothing acceptably stops dispatch.
+REJECTION_SYSTEMIC_MIN_REJECTED = 20
 # A batch answer the run can build on. EXPIRED is a valid answer whose evidence aged out while the model worked;
 # its picks are still finalists, because the final round re-acquires evidence for every finalist.
 _ANSWERED = frozenset({"CURRENT", "NO_GROUNDED_CANDIDATES", "EXPIRED"})
@@ -170,8 +172,10 @@ class ScreenerAiCoverage:
         # AUTO-01: an owner cap on what an unattended run may hold. It can only refuse a plan, never enlarge one.
         self._spend_limit = spend_limit
         # A rolling slice, local engine only: ``deadline_epoch`` ends the first pass on the service clock, and
-        # ``last_evaluated`` (instrument id -> epoch seconds, this coverage epoch) orders rows not yet evaluated in
-        # the epoch first, then the oldest. The fair order breaks every tie. It adds no score and no threshold.
+        # ``last_turn`` (instrument id -> epoch seconds of the row's last evaluated, rejected or refused outcome)
+        # orders rows with no recent turn first, then the oldest turn, so a row whose answer was just rejected waits
+        # behind the rest instead of heading every slice. ``last_evaluated`` (AI_EVALUATED only) is reported, and
+        # orders the slice when no turns are given. The fair order breaks every tie. No score, no threshold.
         self._slice = dict(slice_plan) if slice_plan else None
         service = self.service
         query = service._query(body)
@@ -318,9 +322,18 @@ class ScreenerAiCoverage:
                     run.rejected += 1
                     run.first_rejection = run.first_rejection or outcome["failure"]
                     run.batches_completed += 1
-                    if run.rejected >= REJECTION_BREAKER_MIN_REJECTED and run.rejected > REJECTION_BREAKER_RATE * run.batches_completed:
+                    if self._slice:
+                        # October 17-18: about two thirds of the news-heavy rows were rejected, so the half-rejected
+                        # breaker ended every slice after 14 requests. The time box bounds a slice; only an engine
+                        # whose every answer is rejected is stopped.
+                        tripped = run.rejected >= REJECTION_SYSTEMIC_MIN_REJECTED and run.rejected == run.batches_completed
+                        reason = "AI_REJECTION_SYSTEMIC"
+                    else:
+                        tripped = run.rejected >= REJECTION_BREAKER_MIN_REJECTED and run.rejected > REJECTION_BREAKER_RATE * run.batches_completed
+                        reason = "AI_REJECTION_RATE_EXCEEDED"
+                    if tripped:
                         self._unprocessed(run, batches[index + 1:], "NOT_STARTED_AFTER_REJECTION_RATE")
-                        return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "AI_REJECTION_RATE_EXCEEDED")
+                        return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, reason)
                     continue
                 self._unprocessed(run, [{"instrument_ids": outcome["submitted"]}], "BATCH_FAILED:" + outcome["failure"])
                 if sent_failure is None:
@@ -751,8 +764,9 @@ class ScreenerAiCoverage:
         reducer = self._reducer
         ordered = fair_order(str(run.scope["result_set"]), eligible)
         if self._slice:
-            last = self._slice.get("last_evaluated") or {}
-            # Stable over the fair order: never evaluated in this epoch first, then least recently evaluated.
+            turns = self._slice.get("last_turn")
+            last = (self._slice.get("last_evaluated") or {}) if turns is None else turns
+            # Stable over the fair order: no recent turn first, then the least recent turn.
             ordered.sort(key=lambda key: (key in last, float(last.get(key) or 0)))
         batches = [{"instrument_ids": [key], "packet_bytes": None, "input_tokens": None, "tokens": None,
                     "cached": False, "cached_selected": []} for key in ordered]
@@ -777,7 +791,7 @@ class ScreenerAiCoverage:
             "budget_basis": "UNCAPPED_ENGINE", "provider_count": None, "preflight_rejected": None,
             "slice": None if not self._slice else {
                 "deadline": _iso(float(self._slice["deadline_epoch"])) if self._slice.get("deadline_epoch") else None,
-                "order": "NOT_EVALUATED_IN_EPOCH_FIRST_THEN_OLDEST_THEN_FAIR_ORDER",
+                "order": "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_FAIR_ORDER",
                 "epoch": self._slice.get("epoch"),
                 "evaluated_in_epoch": sum(1 for key in eligible if key in (self._slice.get("last_evaluated") or {}))},
         }

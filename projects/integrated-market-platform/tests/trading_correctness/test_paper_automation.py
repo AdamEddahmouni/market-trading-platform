@@ -510,6 +510,36 @@ class RollingSliceControllerTests(AutoBase):
         self.assertEqual(self.controller()['universe']['epoch']['number'], 2)
         self.assertEqual(a.events('UNIVERSE_EPOCH_COMPLETED')[0]['number'], 1)
 
+    def test_a_rejected_row_has_had_its_turn_but_is_not_evaluated(self):
+        a = self.start_run()
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': 'UNPROCESSED'}, **self.SLICE)
+        a.cycle()
+        a.cycle(1800)
+        plan = a.runs.started[1]['slice_plan']
+        self.assertEqual(set(plan['last_evaluated']), {'AAPL'})
+        # The next slice takes MSFT (deferred, no turn yet) before NVDA, whose answer was just rejected.
+        self.assertEqual(set(plan['last_turn']), {'AAPL', 'NVDA'})
+
+    def test_an_epoch_completes_when_every_row_has_had_a_turn_and_says_how_many_were_evaluated(self):
+        # A row the validator keeps rejecting, or one too large to send, would otherwise hold the epoch open for
+        # ever, and every slice would start on it again instead of refreshing the rows already evaluated.
+        a = self.start_run()
+        refused = ('UNPROCESSED', ['BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED'])
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': refused}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertTrue(epoch['epoch_completed'])
+        self.assertEqual((epoch['eligible'], epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (3, 1, 3))
+        event = a.events('UNIVERSE_EPOCH_COMPLETED')[0]
+        self.assertEqual((event['eligible'], event['evaluated'], event['turns']), (3, 1, 3))
+
+    def test_a_deferred_row_keeps_the_epoch_open(self):
+        a = self.start_run()
+        deferred = ('UNPROCESSED', ['DEFERRED_TO_NEXT_SLICE'])
+        a.select('AAPL', evaluated=1, rows={'AAPL': 'AI_EVALUATED', 'NVDA': 'AI_REJECTED', 'MSFT': deferred}, **self.SLICE)
+        epoch = a.cycle()['universe']['last_result']['epoch']
+        self.assertFalse(epoch.get('epoch_completed'))
+        self.assertEqual((epoch['evaluated_in_epoch'], epoch['turns_in_epoch']), (1, 2))
+
     def test_a_slice_that_selected_nothing_is_not_adopted_and_does_not_back_off(self):
         a = self.start_run()
         a.select(status='SLICE_COMPLETE_NO_SELECTION', coverage_complete=False, selection_complete=False, slice_complete=True,

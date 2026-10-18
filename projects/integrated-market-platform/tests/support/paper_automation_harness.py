@@ -123,7 +123,12 @@ class FixtureRuns:
         return self.snapshots.get(run_id)
 
     def row_outcomes(self, run_id):
-        return dict(self.rows.get(run_id) or {})
+        return {key: value if isinstance(value, str) else value[0] for key, value in (self.rows.get(run_id) or {}).items()}
+
+    def row_records(self, run_id):
+        # A row is 'CLASS' or ('CLASS', [reasons]), as the ledger's FINAL rows record it.
+        return {key: (value, []) if isinstance(value, str) else (value[0], list(value[1]))
+                for key, value in (self.rows.get(run_id) or {}).items()}
 
     def stop(self, account_id, run_id):
         self.stopped.append(run_id)

@@ -189,16 +189,23 @@ blockers together; the state label alone is not a complete readiness answer.
   `universe_evaluation_interval_seconds` has passed. Its terminal coverage is
   recorded as it is: counts, percentage, status, model, tokens.
 - On the local engine every run is a **rolling slice**: its first pass ends at
-  40% of the scope's `universe_evaluation_interval_seconds`, rows never or least
-  recently evaluated go first (see
+  40% of the scope's `universe_evaluation_interval_seconds`, rows with no recent
+  turn go first, then the least recent turn (see
   [coverage](SCREENER_AI_FULL_UNIVERSE_COVERAGE.md#rolling-slices-local-engine-automation-only)).
   Each scope keeps a **coverage epoch** in its controller state: the ids of its
-  last 16 finished runs (each row's last evaluation is read from those runs'
-  immutable ledger rows, so the controller record stays small), the epoch
-  number, its start and the count of completed epochs. An epoch completes
-  (`UNIVERSE_EPOCH_COMPLETED`) when every row the latest run found eligible has
-  been evaluated since the epoch began. `UNIVERSE_RUN_FINISHED` carries the
-  slice and epoch counts.
+  last 16 finished runs (each row's last evaluation and last turn are read from
+  those runs' immutable ledger rows, so the controller record stays small), the
+  epoch number, its start and the count of completed epochs. A row has had its
+  **turn** when the model answered it (`AI_EVALUATED` or `AI_REJECTED`) or it
+  could not be sent alone (`UNPROCESSED:BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED`); a
+  row only deferred or stopped has not. An epoch completes
+  (`UNIVERSE_EPOCH_COMPLETED`, with `eligible`, `evaluated` and `turns`) when
+  every row the latest run found eligible has had its turn since the epoch
+  began. Under the earlier rule (evaluated only), rows the validator kept
+  rejecting held the epoch open and headed every slice, and the rows already
+  evaluated were never refreshed (October 17–18). `UNIVERSE_RUN_FINISHED`
+  carries the slice and epoch counts, with `evaluated_in_epoch` and
+  `turns_in_epoch` apart.
 - Only `coverage_complete` and `selection_complete` results, or a
   `SLICE_SELECTION_COMPLETE` result with `slice_complete`, are adopted, and only
   while the selection's state is `CURRENT`. A partial, stopped, failed,

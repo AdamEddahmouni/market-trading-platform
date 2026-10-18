@@ -59,6 +59,8 @@ UNIVERSE_BACKOFF_CAP_SECONDS = 900
 SLICE_FRACTION = 0.4
 # Finished runs a scope keeps for its coverage epoch: their immutable ledger rows give each row's last evaluation.
 EPOCH_RUNS_KEPT = 16
+# A row too large to send alone has had its turn: it cannot be answered this epoch, and waiting on it would starve the rest.
+REFUSED_AT_SEND = 'BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED'
 # An adopted selection is a hypothesis for this many separations; after that it is dropped, never acted on.
 SELECTION_TTL_SEPARATIONS = 2
 # The refusal reasons an unrunnable plan is recorded with: a plan over the owner's cap or the shared allowance.
@@ -876,38 +878,57 @@ class PaperAutomationService:
         epoch = universe.get('epoch') or dict(number=1, started_at=_iso(now), started_epoch=now, completed=0, runs=[])
         universe['epoch'] = epoch
         separation = int(policy['schedule']['universe_evaluation_interval_seconds'])
-        return dict(deadline_epoch=now + separation * SLICE_FRACTION, epoch=epoch['number'], last_evaluated=self._last_evaluated(epoch))
+        return dict(deadline_epoch=now + separation * SLICE_FRACTION, epoch=epoch['number'], last_evaluated=self._last_evaluated(epoch),
+                    last_turn=self._last_evaluated(epoch, turns=True))
 
-    def _last_evaluated(self, epoch):
-        """Instrument id -> when its most recent kept run evaluated it, from those runs' immutable ledger rows."""
+    def _row_records(self, run_id):
+        records = getattr(self.runs, 'row_records', None)
+        if callable(records):
+            return records(run_id)
         outcomes = getattr(self.runs, 'row_outcomes', None)
+        return {key: (name, []) for key, name in (outcomes(run_id) if callable(outcomes) else {}).items()}
+
+    @staticmethod
+    def _had_turn(name, reasons):
+        """The model answered (accepted or rejected), or the row alone could not be sent. A row merely not reached
+        (deferred, stopped) has not had its turn."""
+        return name in ('AI_EVALUATED', 'AI_REJECTED') or name == 'UNPROCESSED' and REFUSED_AT_SEND in reasons
+
+    def _last_evaluated(self, epoch, *, turns=False):
+        """Instrument id -> when its most recent kept run evaluated it (or, with ``turns``, gave it its turn), from
+        those runs' immutable ledger rows."""
         last = {}
         for item in epoch.get('runs') or []:
-            for key, name in (outcomes(item['run_id']) if callable(outcomes) else {}).items():
-                if name == 'AI_EVALUATED':
+            for key, (name, reasons) in self._row_records(item['run_id']).items():
+                if name == 'AI_EVALUATED' or turns and self._had_turn(name, reasons):
                     last[key] = float(item['evaluated_epoch'])
         return last
 
     def _advance_epoch(self, universe, record, now):
         """Add a finished run to the scope's coverage epoch; the epoch completes when every row this run found
-        eligible has been evaluated since the epoch began. Returns what the receipt reports."""
+        eligible has had its turn since the epoch began. A row the validator keeps rejecting, or one too large to
+        send, would otherwise hold the epoch open for ever and head every slice. The report keeps evaluated and
+        turns apart. Returns what the receipt reports."""
         epoch = universe.get('epoch')
         if epoch is None:
             return None
         # A row this run evaluated was evaluated no earlier than the run started, on this controller's clock.
         evaluated_at = float(universe.get('last_started_epoch') or now)
         epoch['runs'] = [*(epoch.get('runs') or []), dict(run_id=record['run_id'], evaluated_epoch=evaluated_at)][-EPOCH_RUNS_KEPT:]
-        outcomes = getattr(self.runs, 'row_outcomes', None)
-        rows = outcomes(record['run_id']) if callable(outcomes) else {}
-        eligible = [key for key, name in rows.items() if name in ('AI_EVALUATED', 'AI_REJECTED', 'UNPROCESSED', 'ELIGIBLE')]
-        last = self._last_evaluated(epoch)
-        evaluated = sum(1 for key in eligible if last.get(key, -1.0) >= float(epoch['started_epoch']))
-        report = dict(number=epoch['number'], eligible=len(eligible), evaluated_in_epoch=evaluated, completed=epoch.get('completed', 0))
-        if eligible and evaluated == len(eligible):
+        rows = self._row_records(record['run_id'])
+        eligible = [key for key, (name, _) in rows.items() if name in ('AI_EVALUATED', 'AI_REJECTED', 'UNPROCESSED', 'ELIGIBLE')]
+        start = float(epoch['started_epoch'])
+        last, turns = self._last_evaluated(epoch), self._last_evaluated(epoch, turns=True)
+        evaluated = sum(1 for key in eligible if last.get(key, -1.0) >= start)
+        taken = sum(1 for key in eligible if turns.get(key, -1.0) >= start)
+        report = dict(number=epoch['number'], eligible=len(eligible), evaluated_in_epoch=evaluated, turns_in_epoch=taken,
+                      completed=epoch.get('completed', 0))
+        if eligible and taken == len(eligible):
             epoch.update(number=epoch['number'] + 1, started_epoch=now, started_at=_iso(now), completed=int(epoch.get('completed') or 0) + 1,
                          last_completed_at=_iso(now))
             report.update(epoch_completed=True, completed=epoch['completed'])
-            self._event('UNIVERSE_EPOCH_COMPLETED', number=report['number'], eligible=report['eligible'], run_id=record['run_id'])
+            self._event('UNIVERSE_EPOCH_COMPLETED', number=report['number'], eligible=report['eligible'], evaluated=evaluated,
+                        turns=taken, run_id=record['run_id'])
         return report
 
     def _finish_universe(self, snapshot, universe, *, now, policy):

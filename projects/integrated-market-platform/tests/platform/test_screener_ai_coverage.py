@@ -1241,6 +1241,45 @@ class RollingSliceTests(unittest.TestCase):
         self.assertEqual(h.block["slice"]["rejected_requests"], 1)
         self.assertEqual(len(h.result["candidates"]), 2)
 
+    def test_in_a_slice_a_high_rejection_rate_does_not_end_dispatch_before_the_time_box(self):
+        # October 17-18: the epoch's remaining rows were news-heavy and about two thirds were rejected
+        # (UNGROUNDED_NEWS_CLAIM), so every slice stopped after 14 requests on the half-rejected breaker and adopted
+        # nothing. In a slice the time box already bounds the cost; each rejection stays that row's outcome.
+        class MostlyBad(Ticking):
+            def on_call(self, call, packet):
+                self.raw = "{not json" if call <= 15 and call % 3 else None  # first pass only
+                return super().on_call(call, packet)
+
+        clock = [NOW]
+        h = Harness(universe(15, strong={index: 90.0 + index for index in range(15)}), MostlyBad(clock, step=1.0),
+                    clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 15)
+        self.assertEqual(len([r for r in h.calls() if r["stage"] == "BATCH_INFERENCE"]), 15)
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.block["slice"]["rejected_requests"], 10)
+        self.assertEqual(h.block["counts"]["by_class"]["AI_REJECTED"], 10)
+
+    def test_in_a_slice_only_a_systemic_rejection_stops_dispatch(self):
+        h, _ = ticking(universe(24), step=0.0, raw="{not json")
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {}})
+        reconciled(self, h.block, 24)
+        self.assertEqual(h.provider.calls, 20)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "AI_REJECTION_SYSTEMIC"))
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:NOT_STARTED_AFTER_REJECTION_RATE"], 4)
+
+    def test_a_slice_orders_rows_by_their_last_turn_so_a_rejected_row_waits_its_turn(self):
+        rows = universe(4, strong={index: 90.0 for index in range(4)})
+        # Row 0 was rejected a moment ago; row 1 was evaluated long ago; rows 2 and 3 have had no turn.
+        turns = {instrument_id(0): NOW - 10, instrument_id(1): NOW - 900}
+        h, _ = ticking(rows)
+        h.run(slice_plan={"deadline_epoch": NOW + 1000, "epoch": 1, "last_evaluated": {instrument_id(1): NOW - 900},
+                          "last_turn": turns})
+        first = [seen[0] for seen in h.provider.seen[:4]]
+        self.assertEqual(sorted(first[:2]), [instrument_id(2), instrument_id(3)])
+        self.assertEqual(first[2:], [instrument_id(1), instrument_id(0)])
+        self.assertEqual(h.block["plan"]["slice"]["order"], "NO_RECENT_TURN_FIRST_THEN_OLDEST_TURN_THEN_FAIR_ORDER")
+
     def test_a_manual_run_without_a_slice_plan_never_defers(self):
         h, _ = ticking(universe(5))
         h.run()
