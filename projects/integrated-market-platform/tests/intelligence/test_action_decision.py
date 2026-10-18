@@ -34,6 +34,17 @@ def proposal(state='ENTER', direction='LONG'):
         exit_conditions=['THESIS_REVERSED', 'DECISION_EXPIRED'])
 
 
+def wire(p, c=None):
+    """The model's answer for a canonical fixture proposal: one stance per supplied evidence reference."""
+    c = c or candidate()
+    refs = [e['evidence_id'] for e in (*c['current_market_evidence'], *c['reference_evidence'])]
+    stance = {r: 'SUPPORTING' if r in p['supporting_refs'] else 'CONFLICTING' if r in p['conflicting_refs'] else 'CONTEXT' for r in refs}
+    return json.dumps(dict(schema_version='action-proposal-wire/2.0.0', proposal_state=p['proposal_state'], direction=p['direction'],
+                           rationale=p['rationale'], evidence_stance=stance, uncertainties=p['uncertainties'],
+                           entry_conditions=p['entry_conditions'], hold_conditions=p['hold_conditions'],
+                           exit_conditions=p['exit_conditions']))
+
+
 class ActionDecisionTests(unittest.TestCase):
     def context(self, quantity=0):
         return dict(position=dict(state='LONG' if quantity > 0 else 'SHORT' if quantity < 0 else 'FLAT',
@@ -71,6 +82,65 @@ class ActionDecisionTests(unittest.TestCase):
         value, reason = parse_proposal(json.dumps(everything), c, conditions)
         self.assertIsNone(reason)
         self.assertIsNotNone(value)
+
+    def _mixed(self):
+        c = candidate()
+        c['reference_evidence'] = [dict(evidence_id='w', capability='TECHNICALS', as_of=NOW, valid_until=END, role='REFERENCE',
+                                        decision_admissibility='ADMISSIBLE', weak_reasons=['STALE_BAR'], facts={}),
+                                   dict(evidence_id='s', capability='SENTIMENT', as_of=NOW, valid_until=END, role='REFERENCE',
+                                        decision_admissibility='ADMISSIBLE', weak_reasons=[], facts={})]
+        c['missing'] = [dict(capability='ORDER_FLOW'), dict(capability='NEWS')]
+        c['alignments'] = [dict(result='CONFLICTING', sentiment_refs=['s'])]
+        return c, build_conditions(c, self.context(), NOW)
+
+    def test_the_wire_gives_every_reference_exactly_one_stance(self):
+        # October 17-18: every production decision after R4 (46 of 46) was INVALID_SUPPORT because the model listed
+        # one reference as both supporting and conflicting. Two independent lists cannot express "disjoint" in a
+        # grammar; one stance per reference can, so the overlap is no longer expressible at all.
+        from market_platform_foundation.intelligence.inference.action_decision import wire_schema
+        c, conditions = self._mixed()
+        schema = wire_schema(c, conditions)
+        stance = schema['properties']['evidence_stance']
+        self.assertEqual(stance['required'], ['q', 't', 'w', 's'])
+        self.assertFalse(stance['additionalProperties'])
+        self.assertEqual(stance['properties']['q']['enum'], ['SUPPORTING', 'CONFLICTING', 'CONTEXT'])
+        # Each narrower stance is one of the validator's own rules: weak is never support, a conflict is disclosed.
+        self.assertEqual(stance['properties']['w']['enum'], ['CONFLICTING', 'CONTEXT'])
+        self.assertEqual(stance['properties']['s']['enum'], ['CONFLICTING'])
+        self.assertNotIn('supporting_refs', schema['properties'])
+        self.assertNotIn('conflicting_refs', schema['properties'])
+
+    def test_a_wire_answer_is_rebuilt_and_the_unchanged_validator_still_decides(self):
+        from market_platform_foundation.intelligence.inference.action_decision import decode_wire
+        c, conditions = self._mixed()
+        answer = dict(json.loads(wire(proposal(), c)), evidence_stance=dict(q='SUPPORTING', t='SUPPORTING', w='CONTEXT', s='CONFLICTING'))
+        canonical, reason = decode_wire(json.dumps(answer), c, conditions)
+        self.assertIsNone(reason)
+        value, reason = parse_proposal(canonical, c, conditions)
+        self.assertIsNone(reason)
+        self.assertEqual((value['supporting_refs'], value['conflicting_refs']), (['q', 't'], ['s']))
+        # The validator required these to equal the candidate's own sets, so the server states them.
+        self.assertEqual((value['weak_refs'], value['missing_capabilities']), (['w'], ['NEWS', 'ORDER_FLOW']))
+        # Outside the grammar, the validator's rejections are unchanged.
+        for stance, code in ((dict(q='SUPPORTING', t='SUPPORTING', w='SUPPORTING', s='CONFLICTING'), 'INVALID_SUPPORT'),
+                             (dict(q='SUPPORTING', t='SUPPORTING', w='CONTEXT', s='CONTEXT'), 'NEWS_CONFLICT_NOT_DISCLOSED')):
+            canonical, reason = decode_wire(json.dumps(dict(answer, evidence_stance=stance)), c, conditions)
+            self.assertIsNone(reason)
+            self.assertEqual(parse_proposal(canonical, c, conditions)[1], code)
+
+    def test_a_wire_answer_must_classify_every_reference_once(self):
+        from market_platform_foundation.intelligence.inference.action_decision import decode_wire
+        c, conditions = self._mixed()
+        answer = json.loads(wire(proposal(), c))
+        bad = [dict(answer, evidence_stance=dict(q='SUPPORTING', t='SUPPORTING', w='CONTEXT')),
+               dict(answer, evidence_stance=dict(answer['evidence_stance'], unknown='CONTEXT')),
+               dict(answer, evidence_stance=dict(answer['evidence_stance'], q='BOTH')),
+               dict(answer, supporting_refs=['q', 't']),
+               dict(answer, schema_version='action-proposal/1.0.0')]
+        for value in bad:
+            self.assertEqual(decode_wire(json.dumps(value), c, conditions), (None, 'SCHEMA_INVALID'), value)
+        duplicate = json.dumps(answer).replace('"q": "SUPPORTING"', '"q": "SUPPORTING", "q": "CONFLICTING"')
+        self.assertEqual(decode_wire(duplicate, c, conditions), (None, 'SCHEMA_INVALID'))
 
     def test_a_list_with_no_admissible_value_must_be_empty(self):
         from market_platform_foundation.intelligence.inference.action_decision import output_schema
@@ -163,7 +233,7 @@ class ActionServiceTests(unittest.TestCase):
             evidence=[candidate()],candidates=[dict(proposal(),instrument_id='US:NVDA',rank=1)]))
         self.body=dict(run_id='run',instrument_id='US:NVDA')
         from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
-        self.response=ProviderInferenceResponse(raw_text=json.dumps(proposal()),provider_id='fixture',model_id='controlled',simulated=True)
+        self.response=ProviderInferenceResponse(raw_text=wire(proposal()),provider_id='fixture',model_id='controlled',simulated=True)
         self.provider.infer.return_value=self.response
 
     def test_preview_zero_inference_and_run_zero_ledger_mutations(self):
@@ -176,13 +246,21 @@ class ActionServiceTests(unittest.TestCase):
         self.assertEqual(trace.rule_evaluations[0].evidence_refs[0].id,d['decision_id'])
         self.assertEqual(d['evidence_snapshot']['context']['position']['quantity'],0)
 
+    def test_the_model_is_given_the_stance_wire_and_its_answer_is_accepted(self):
+        d = self.service.run(self.body)
+        packet = self.provider.infer.call_args.args[0]
+        self.assertIn('evidence_stance', packet.output_schema['properties'])
+        self.assertIn('evidence_stance', self.provider.infer.call_args.kwargs['rendered_prompt'])
+        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v2')
+        self.assertEqual((d['action_state'], d['supporting_refs']), ('ENTER', ['q', 't']))
+
     def test_idempotency_and_position_change_new_transition(self):
         first=self.service.run(self.body); second=self.service.run(self.body)
         self.assertEqual(first['decision_id'],second['decision_id']); self.assertEqual(second['cache'],'HIT')
         self.assertEqual(self.provider.infer.call_count,1)
         self.ledger.project_positions=Mock(return_value=[dict(instrument_id='US:NVDA',quantity=10)])
         from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
-        self.provider.infer.return_value=ProviderInferenceResponse(json.dumps(proposal('HOLD')),'fixture','controlled',simulated=True)
+        self.provider.infer.return_value=ProviderInferenceResponse(wire(proposal('HOLD')),'fixture','controlled',simulated=True)
         held=self.service.run(self.body)
         self.assertEqual(held['action_state'],'HOLD'); self.assertEqual(held['previous_decision_id'],first['decision_id'])
         self.assertEqual(len(self.repo.history('US:NVDA')),2)
@@ -232,7 +310,7 @@ class ActionServiceTests(unittest.TestCase):
         c=candidate(); c['current_market_evidence'][1]['facts']['change_pct']=-2
         self.repo.put('candidate_run','exit-run',dict(run_id='exit-run',state='CURRENT',valid_until=END,input_hash='exit-input',evidence=[c],candidates=[dict(proposal(),instrument_id='US:NVDA',rank=1)]))
         from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
-        self.provider.infer.return_value=ProviderInferenceResponse(json.dumps(proposal('EXIT')),'fixture','controlled',simulated=True)
+        self.provider.infer.return_value=ProviderInferenceResponse(wire(proposal('EXIT')),'fixture','controlled',simulated=True)
         with patch('market_platform_foundation.operating_modes.paper_execution_env_enabled',return_value=True):
             d=self.service.run(dict(run_id='exit-run',instrument_id='US:NVDA'))
             self.assertEqual(d['action_state'],'EXIT')

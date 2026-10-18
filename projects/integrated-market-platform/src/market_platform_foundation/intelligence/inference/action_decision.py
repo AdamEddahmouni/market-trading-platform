@@ -14,13 +14,16 @@ from ...market_data.freshness_contract import timestamp
 from .hashing import input_hash_from_dict
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.action_decision.v1'
+PROMPT_ID = 'screener.action_decision.v2'
 POLICY_ID = 'action-decision-policy/1.0.0'
 # OCT1-08: a deterministic risk fact. The server establishes it; a model can neither select nor veto it.
 STOP_BREACH_CONDITION = 'SMA_TRAILING_STOP_BREACHED'
 RISK_CONTROL_SOURCE = 'SERVER_RISK_CONTROL'
 SCHEMA = 'action-decision/1.0.0'
 PROPOSAL_SCHEMA = 'action-proposal/1.0.0'
+# What the model writes. ``decode_wire`` rebuilds the canonical proposal from it; ``parse_proposal`` still decides.
+WIRE_SCHEMA = 'action-proposal-wire/2.0.0'
+STANCES = ('SUPPORTING', 'CONFLICTING', 'CONTEXT')
 
 
 class ActionState(StrEnum):
@@ -161,6 +164,65 @@ def output_schema(candidate, conditions):
                       missing_capabilities=bounded(missing, 24), uncertainties=strings,
                       **{name: bounded([c for c in selectable if c in ids], 5) for name, ids in ALLOWED_CONDITIONS.items()})
     return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
+
+
+def _stance_options(candidate):
+    conflicts = {r for a in candidate.get('alignments', []) if a['result'] == 'CONFLICTING' for r in a['sentiment_refs']}
+
+    def options(e):
+        # The validator's rules again: a disclosed conflict stays a conflict, weak evidence is never support.
+        if e['evidence_id'] in conflicts:
+            return ['CONFLICTING']
+        return ['CONFLICTING', 'CONTEXT'] if e.get('weak_reasons') else list(STANCES)
+    return {e['evidence_id']: options(e) for e in (*candidate['current_market_evidence'], *candidate['reference_evidence'])}
+
+
+def wire_schema(candidate, conditions):
+    """The model's answer shape: one stance for every supplied reference instead of two free lists.
+
+    Two independent ref lists cannot say "disjoint" in a grammar, and the model listed the same reference as
+    both supporting and conflicting (every October 17-18 decision after R4 was INVALID_SUPPORT). A stance per
+    reference makes that answer inexpressible. ``weak_refs`` and ``missing_capabilities`` had exactly one
+    acceptable value, the candidate's own sets, so the server states them rather than asking for an echo."""
+    canonical = output_schema(candidate, conditions)['properties']
+    stance = _stance_options(candidate)
+    properties = dict(schema_version=dict(type='string', enum=[WIRE_SCHEMA]),
+                      proposal_state=canonical['proposal_state'], direction=canonical['direction'],
+                      rationale=canonical['rationale'],
+                      evidence_stance=dict(type='object', properties={r: dict(type='string', enum=o) for r, o in stance.items()},
+                                           required=list(stance), additionalProperties=False),
+                      uncertainties=canonical['uncertainties'], **{name: canonical[name] for name in ALLOWED_CONDITIONS})
+    return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
+
+
+def decode_wire(raw, candidate, conditions):
+    """Canonical proposal JSON from a wire answer. Shape only: acceptance stays with ``parse_proposal``."""
+    def unique(pairs):
+        if len({k for k, _ in pairs}) != len(pairs):
+            raise ValueError('DUPLICATE_KEY')
+        return dict(pairs)
+    try:
+        if len(raw.encode('utf-8')) > 24000:
+            return None, 'OUTPUT_BOUND_EXCEEDED'
+        value = json.loads(raw, object_pairs_hook=unique)
+        schema = wire_schema(candidate, conditions)
+        if not isinstance(value, dict) or set(value) != set(schema['required']) or value['schema_version'] != WIRE_SCHEMA:
+            return None, 'SCHEMA_INVALID'
+        refs = schema['properties']['evidence_stance']['required']
+        stance = value['evidence_stance']
+        if not isinstance(stance, dict) or set(stance) != set(refs) or any(s not in STANCES for s in stance.values()):
+            return None, 'SCHEMA_INVALID'
+        evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
+        proposal = dict(schema_version=PROPOSAL_SCHEMA, proposal_state=value['proposal_state'], direction=value['direction'],
+                        rationale=value['rationale'],
+                        supporting_refs=[r for r in refs if stance[r] == 'SUPPORTING'],
+                        conflicting_refs=[r for r in refs if stance[r] == 'CONFLICTING'],
+                        weak_refs=[e['evidence_id'] for e in evidence if e.get('weak_reasons')],
+                        missing_capabilities=sorted({e['capability'] for e in candidate['missing']}),
+                        uncertainties=value['uncertainties'], **{name: value[name] for name in ALLOWED_CONDITIONS})
+        return json.dumps(proposal), None
+    except (ValueError, TypeError, KeyError, AttributeError):
+        return None, 'SCHEMA_INVALID'
 
 
 def parse_proposal(raw, candidate, conditions):

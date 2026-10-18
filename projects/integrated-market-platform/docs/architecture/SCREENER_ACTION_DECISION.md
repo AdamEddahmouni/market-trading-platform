@@ -20,8 +20,22 @@ Preview, opening panels, history reads, navigation and the expiry clock never
 infer. Candidate reduction retains its separate task and prompt. No new provider,
 budget, subscription, scheduler, broker path or risk engine is introduced.
 
-`SCREENER_ACTION_DECISION` uses `screener.action_decision.v1` (prompt 1.0.0),
+`SCREENER_ACTION_DECISION` uses `screener.action_decision.v2` (prompt 2.0.0),
 `action-proposal/1.0.0` and server policy `action-decision-policy/1.0.0`.
+
+The model writes the wire `action-proposal-wire/2.0.0`, not the proposal itself:
+`evidence_stance` gives every supplied evidence ID exactly one of SUPPORTING,
+CONFLICTING or CONTEXT. `decode_wire` rebuilds the canonical
+`action-proposal/1.0.0`, and the unchanged `parse_proposal` still decides
+acceptance. Under v1 the model wrote two free lists, which a grammar cannot keep
+disjoint, and every October 17–18 decision was rejected as `INVALID_SUPPORT`
+because one reference sat in both. The stance enums restate the validator's own
+rules: weak evidence offers only CONFLICTING/CONTEXT, and a conflicting sentiment
+reference offers only CONFLICTING. `weak_refs` and `missing_capabilities` had
+exactly one acceptable value, the candidate's own sets, so the server states
+them. A missing, extra, duplicated or unknown stance key is `SCHEMA_INVALID`.
+The v1 prompt stays registered so earlier records keep their prompt identity.
+
 Local and hosted adapters use the dedicated JSON schema; hosted calls use the
 same persisted daily budget as News and candidate reduction. The browser supplies
 only run/instrument IDs and an optional existing Opportunity ID. It cannot supply

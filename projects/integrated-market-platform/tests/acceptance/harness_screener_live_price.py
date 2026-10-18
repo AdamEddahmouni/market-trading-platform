@@ -46,8 +46,9 @@ class Fixture(CandidateProvider):
             # Action prompt uses its own production packet; bounded no-action output.
             refs=[e['evidence_id'] for e in packet.candidates[0]['current_market_evidence']]
             self.action_calls+=1
-            payload=dict(schema_version='action-proposal/1.0.0',proposal_state='NO_ACTION',direction=None,rationale='Controlled observation for review.',
-                supporting_refs=refs,conflicting_refs=[],weak_refs=[],missing_capabilities=[x['capability'] for x in packet.candidates[0]['missing']],uncertainties=[],entry_conditions=[],hold_conditions=[],exit_conditions=[])
+            payload=dict(schema_version='action-proposal-wire/2.0.0',proposal_state='NO_ACTION',direction=None,rationale='Controlled observation for review.',
+                evidence_stance={**{e['evidence_id']:'CONTEXT' for e in candidate['reference_evidence']},**{r:'SUPPORTING' for r in refs}},
+                uncertainties=[],entry_conditions=[],hold_conditions=[],exit_conditions=[])
             return ProviderInferenceResponse(json.dumps(payload),self.provider_id,self.model_id,simulated=True)
         packet=SimpleNamespace(**{**packet.__dict__,'candidates':[c for c in packet.candidates if c['sufficient']]})
         return super().infer(packet,**kwargs)

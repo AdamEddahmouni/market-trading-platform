@@ -404,7 +404,7 @@ class StagedFixtureCompatibilityTests(_Lifecycle):
         from market_platform_foundation.local_state.staged_screener import StagedRepository
         from tests.support.local_first import QualificationProvider,ExperimentalFixtureAuthority
         from tests.support.coverage_universe import row
-        from tests.intelligence.test_action_decision import proposal
+        from tests.intelligence.test_action_decision import proposal, wire
         from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
         from market_platform_foundation.intelligence.contracts.opportunity import OpportunityV1
         from market_platform_foundation.intelligence.contracts.common import IntelligenceScope,QualitySummary
@@ -425,7 +425,7 @@ class StagedFixtureCompatibilityTests(_Lifecycle):
             value=proposal("ENTER","LONG")
             value["supporting_refs"]=[e["evidence_id"] for e in c["current_market_evidence"] if not e["weak_reasons"]]
             value["missing_capabilities"]=[m["capability"] for m in c["missing"]]
-            return ProviderInferenceResponse(json.dumps(value),"fixture","controlled",simulated=True)
+            return ProviderInferenceResponse(wire(value,c),"fixture","controlled",simulated=True)
         self.model.infer=fixture
         self.assertTrue(self.actions.preview({"run_id":run_id,"instrument_id":A})["candidate_current"])
         decision=self.actions.run({"run_id":run_id,"instrument_id":A,"opportunity_id":"opp-"+run_id})
@@ -441,7 +441,7 @@ class StagedFixtureCompatibilityTests(_Lifecycle):
         evaluation=paper_experiment.current_experiment_payload(self.store)
         self.assertIsNotNone(evaluation)
         # Reassessment consumes the fixture-authorized record and the actual fixture-owned position.
-        self.model.infer=lambda packet, **kwargs: ProviderInferenceResponse(json.dumps({**proposal("HOLD",None),"supporting_refs":[e["evidence_id"] for e in packet.candidates[0]["current_market_evidence"]], "missing_capabilities":[m["capability"] for m in packet.candidates[0]["missing"]]}),"fixture","controlled",simulated=True)
+        self.model.infer=lambda packet, **kwargs: ProviderInferenceResponse(wire({**proposal("HOLD",None),"supporting_refs":[e["evidence_id"] for e in packet.candidates[0]["current_market_evidence"]]},packet.candidates[0]),"fixture","controlled",simulated=True)
         held=self.actions.run({"run_id":run_id,"instrument_id":A})
         self.assertEqual(held["action_state"],"HOLD")
         self.assertFalse(result["operationally_approved"])

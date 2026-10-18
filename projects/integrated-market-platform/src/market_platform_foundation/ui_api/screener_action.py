@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from ..intelligence.contracts.common import ContractReference
 from ..intelligence.inference.action_decision import (
     ActionDecisionV1, POLICY_ID, PROMPT_ID, SCHEMA, build_conditions,
-    gate_proposal, output_schema, parse_proposal, server_exit_condition, snapshot_evidence,
+    decode_wire, gate_proposal, parse_proposal, server_exit_condition, snapshot_evidence, wire_schema,
 )
 from ..intelligence.inference.candidate_reduction import ScreenerEvidencePacket
 from ..intelligence.inference.config import IntelligenceInferenceConfig
@@ -189,7 +189,7 @@ class ScreenerActionService:
             elif revalidation_reason: error=str(revalidation_reason)[:64]
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
-                schema = output_schema(b['candidate'],b['conditions'])
+                schema = wire_schema(b['candidate'],b['conditions'])
                 rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema))
                 config = IntelligenceInferenceConfig(prompt_id=PROMPT_ID,default_task_type=IntelligenceTaskType.SCREENER_ACTION_DECISION,
                     max_tokens=2000, timeout_seconds=300 if getattr(provider,'runtime','')=='LOCAL_MODEL' else 45)
@@ -197,7 +197,9 @@ class ScreenerActionService:
                     b['context'],[b['candidate']],schema)
                 response = provider.infer(packet,rendered_prompt=rendered,config=config)
                 if response.error_code: error=response.error_code.value
-                else: proposal,error=parse_proposal(response.raw_text,b['candidate'],b['conditions'])
+                else:
+                    canonical,error=decode_wire(response.raw_text,b['candidate'],b['conditions'])
+                    if not error: proposal,error=parse_proposal(canonical,b['candidate'],b['conditions'])
             finished = _iso(self.clock())
             if not error and self._build(body)['digest'] != b['digest']:
                 error = 'ACTION_INPUT_CHANGED_DURING_INFERENCE'

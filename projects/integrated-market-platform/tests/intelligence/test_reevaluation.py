@@ -14,7 +14,7 @@ from market_platform_foundation.intelligence.inference.reevaluation import (
 from market_platform_foundation.local_state.action_decisions import ActionDecisionRepository
 from market_platform_foundation.local_state.connection import LocalStateConnection
 from market_platform_foundation.local_state.reevaluation import ReevaluationRepository
-from tests.intelligence.test_action_decision import proposal
+from tests.intelligence.test_action_decision import proposal, wire
 
 T0 = 1791208800.0  # 2026-10-05T14:00:00Z, Monday 10:00 ET (regular session)
 SCOPE = dict(universe='US_EQUITIES', search='', sort='symbol', descending=False, filters=[], result_set=None, view='Overview', screen='')
@@ -53,7 +53,7 @@ class FixtureProvider:
             value = proposal('ENTER') if change > 0 else proposal('NO_ACTION', None)
         else:
             value = proposal('HOLD' if (change > 0) == (held == 'LONG') else 'EXIT')
-        return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id, simulated=True,
+        return ProviderInferenceResponse(wire(value, packet.candidates[0]), self.provider_id, self.model_id, simulated=True,
                                          tokens_input=250, tokens_output=120, latency_ms=1)
 
 
