@@ -277,14 +277,18 @@ def build_paper_trace_payload(
     )
 
 
-def _parse_order_body(body: dict[str, Any], store: ReplayStore, *, instrument: dict[str, Any] | None = None) -> dict[str, Any]:
+def _parse_order_body(body: dict[str, Any], store: ReplayStore, *, instrument: dict[str, Any] | None = None,
+                      validate_quantity: bool = True) -> dict[str, Any]:
     from ..paper.decision_source import (
         parse_decision_source_snapshot,
         validate_snapshot_against_correlation,
     )
 
     side = str(body.get("side", "")).upper()
-    if instrument and instrument.get("instrument_kind") == "CRYPTO_PAIR":
+    if not validate_quantity:
+        # Body checks that precede instrument resolution; quantity needs the admitted instrument.
+        quantity = None
+    elif instrument and instrument.get("instrument_kind") == "CRYPTO_PAIR":
         from ..paper.contracts import order_quantity, serialized_quantity
         quantity = serialized_quantity(order_quantity(body.get("quantity", 0), instrument), instrument)
     else:
@@ -607,6 +611,7 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
     _assert_live_execution_allowed(store, submit=False)
+    _parse_order_body(body, store, validate_quantity=False)
     focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
     instrument = _admit_focus_instrument(store, focus)
     parsed = _parse_order_body(body, store, instrument=instrument)
@@ -785,6 +790,7 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     paper_experiment.assert_experiment_order_allowed(store)
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
+    _parse_order_body(body, store, validate_quantity=False)
     _assert_live_execution_allowed(store, submit=True)
     focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
     from .screener_action import action_service
