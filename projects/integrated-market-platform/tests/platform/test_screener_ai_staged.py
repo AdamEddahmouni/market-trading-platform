@@ -313,6 +313,8 @@ class StagedTests(unittest.TestCase):
             failure=None
             def __init__(self,*args):pass
             def start(self):pass
+            # Match the passive resource-monitor interface; the real packet Stop gate below must still refuse generation.
+            def check(self):return self.failure
         def post(url,body,timeout):
             posts.append(url)
             return (200,b'{"prompt":"data"}') if url.endswith("apply-template") else (200,b'{"tokens":[1,2]}')
