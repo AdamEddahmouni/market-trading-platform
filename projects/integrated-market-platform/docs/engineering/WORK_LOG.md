@@ -1,5 +1,28 @@
 # IMP Work Log
 
+## 2026-10-19 — R9: Paper universe gate, order-parse order, Moomoo feed self-healing
+
+Production crypto and equity provider rows carry no `instrument.universe`, so
+`decision_permitted` refused every production ENTER as
+`AUTOMATION_INSTRUMENT_NOT_ALLOWED` and the crypto handoff never loaded pair
+economics; the shared test fixture adds a universe, which hid it. Candidates now
+record the universe of the run that built them; a missing universe still fails
+closed. The fractional-quantity integration parsed order bodies only after
+instrument admission; non-quantity body checks run in their original position
+again.
+
+On 2026-10-19 OpenD hung at 04:06 ET and was relaunched at 04:10. The collector
+and platform quote contexts stayed CONNECTED with no data for the rest of the
+session (Moomoo stream records: none between about 05:00 and 19:15 ET; all
+7,800 forecast-corpus decisions refused `REFERENCE_SOURCE_STALE`). The push feed
+now audits this connection's subscriptions with OpenD every 60 s and
+re-subscribes any it no longer holds, and ends the session for a fresh
+reconnect after 120 s without a successful quote poll. Regression tests cover
+both paths. Fresh paired benchmark of the compact structured rationale wire:
+27/27 valid proposals against 13/27 for v2. Changed validation against R8:
+6,622 tests, only the two inherited `test_git_ref` failures.
+Evidence: `destination-tests/20261019-r9-closure-release/`.
+
 ## 2026-10-18 — Explicit forecast admission evidence in Action Decisions
 
 Forecast absence, artifact rejection and unexpected failure were discarded by

@@ -47,6 +47,10 @@ SUBSCRIBE_RETRY_NS = 15_000_000_000
 UNSUBSCRIBE_RETRY_NS = 5_000_000_000
 SNAPSHOT_INTERVAL_NS = 2_000_000_000  # 15 calls / 30 s, under OpenD's 60 / 30 s snapshot limit
 SNAPSHOT_MAX_CODES = 400  # OpenD's per-call snapshot code limit
+# An OpenD relaunch can leave this context connected while the new OpenD holds none of its subscriptions;
+# audit what OpenD actually holds, and treat a run of failed polls as a dead session that must reconnect.
+SUBSCRIPTION_AUDIT_NS = 60_000_000_000
+FEED_STALL_NS = 120_000_000_000
 # Stop bounds. headless_supply.MOOMOO_STOP_SECONDS is their sum.
 CONNECTION_JOIN_SECONDS = 5.0
 PROCESSOR_DRAIN_SECONDS = 5.0
@@ -124,6 +128,9 @@ class MoomooPushFeed:
     subscription_errors: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict, repr=False)
     _retry_after_ns: dict[tuple[str, str], int] = field(default_factory=dict, repr=False)
     _next_snapshot_ns: int = field(default=0, repr=False)
+    _next_audit_ns: int | None = field(default=None, repr=False)
+    _last_poll_ok_ns: int | None = field(default=None, repr=False)
+    subscription_audit_repairs: int = 0
     clock: Callable[[], int] = field(default=time.time_ns, repr=False)
     trade_api_counters: dict[str, int] = field(
         default_factory=lambda: {
@@ -252,6 +259,8 @@ class MoomooPushFeed:
         self._subscribed_subtypes.clear()
         self._retry_after_ns.clear()
         self._next_snapshot_ns = 0
+        self._next_audit_ns = None
+        self._last_poll_ok_ns = None
         self._first_push_seen.clear()
         self._last_sequence.clear()
         from opend_quote_transport import open_quote_context  # same directory; never the leaking sync ctor
@@ -347,6 +356,7 @@ class MoomooPushFeed:
             if subtype_name:
                 desired.add((code, subtype_name))
         now = self.clock()
+        self._audit_subscriptions(quote_ctx, ft, now)
         for key in sorted(desired - self._subscribed_subtypes):
             code, subtype_name = key
             if self._retry_after_ns.get(key, 0) > now:
@@ -377,11 +387,18 @@ class MoomooPushFeed:
             # provider update_time. OpenD allows 60 snapshot calls per 30 s, so poll on a fixed cadence.
             self._next_snapshot_ns = now + SNAPSHOT_INTERVAL_NS
             ret_s, snapshot = quote_ctx.get_market_snapshot(quote_codes[:SNAPSHOT_MAX_CODES])
+            ret_q = None
             if ret_s == ft.RET_OK:
                 rows = payload_rows(snapshot)
             else:
                 ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
                 rows = payload_rows(quote_data) if ret_q == ft.RET_OK else []
+            if ft.RET_OK in (ret_s, ret_q):
+                self._last_poll_ok_ns = now
+            elif self._last_poll_ok_ns is None:
+                self._last_poll_ok_ns = now  # the stall interval starts at the first failed poll
+            elif now - self._last_poll_ok_ns >= FEED_STALL_NS:
+                raise RuntimeError("MOOMOO_FEED_STALLED: no successful quote poll for %ds" % ((now - self._last_poll_ok_ns) // 1_000_000_000))
             for payload in rows:
                 self._enqueue_from_payload(
                     capability="US_EQUITY_L1",
@@ -401,6 +418,27 @@ class MoomooPushFeed:
                 # subscribe. The provider slot is still held, so keep tracking
                 # it and retry; discarding it here would leak provider quota.
                 self._retry_after_ns[key] = now + UNSUBSCRIBE_RETRY_NS
+
+    def _audit_subscriptions(self, quote_ctx: Any, ft: Any, now: int) -> None:
+        """Forget subscriptions OpenD no longer holds for this connection, so the sync re-subscribes them."""
+        if self._next_audit_ns is None:
+            self._next_audit_ns = now + SUBSCRIPTION_AUDIT_NS
+        if not self._subscribed_subtypes or now < self._next_audit_ns:
+            return
+        self._next_audit_ns = now + SUBSCRIPTION_AUDIT_NS
+        try:
+            ret, data = quote_ctx.query_subscription(is_all_conn=False)  # this connection only
+            held_lists = data["sub_list"] if ret == ft.RET_OK else None
+            held = {(str(code), str(name)) for name, codes in held_lists.items() for code in codes} if held_lists is not None else None
+        except (TypeError, ValueError, KeyError, AttributeError):
+            held = None  # an unreadable answer proves nothing; the poll-stall check still covers a dead context
+        if held is None:
+            return
+        lost = self._subscribed_subtypes - held
+        if lost:
+            self._subscribed_subtypes -= lost
+            self.subscription_audit_repairs += len(lost)
+            self.last_error = "MOOMOO_SUBSCRIPTIONS_LOST: %d re-subscribing" % len(lost)
 
     def _enqueue_from_payload(
         self,
