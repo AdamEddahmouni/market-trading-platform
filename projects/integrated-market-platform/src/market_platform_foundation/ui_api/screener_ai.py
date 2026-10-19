@@ -262,6 +262,8 @@ class ScreenerAiService:
                 observations.extend(flow_observation(row, universe, now=now))
             candidate = build_candidate(row.get('instrument', {}), observations, now=now)
             candidate['instrument']['company'] = str(row.get('company') or '')[:120]
+            # Provider rows omit the screener universe; policy and handoff gates read it from the candidate.
+            candidate['instrument'].setdefault('universe', universe)
             candidates.append(candidate)
         return candidates, rows
 
