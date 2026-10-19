@@ -353,7 +353,10 @@ original reference and clocks, and restores the last recorded grid to avoid
 duplicate capture. A past horizon without the lost window's terminal evidence
 is explicitly `UNLABELABLE` with
 `RECORDER_RESTART_TERMINAL_EVIDENCE_UNAVAILABLE` and the actual `recovered_at_ns`;
-it never becomes a training label. Existing labels are preserved. An oversized
+it never becomes a training label. Restored pending rows, grid state and recovery counters become visible only after
+the entire scan succeeds. A later-file failure cannot leak pending rows into a
+retry; already-appended past outcomes are discovered as existing labels and
+preserved. An oversized
 recovery file fails closed before that file's recovery outcomes are written.
 
 The current live strategy and recorder are equity-specific: Moomoo quote/trade

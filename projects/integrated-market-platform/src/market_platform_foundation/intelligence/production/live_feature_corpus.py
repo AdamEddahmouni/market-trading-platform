@@ -334,6 +334,9 @@ class LiveFeatureCorpusRecorder:
         with the actual recovery clock; only future horizons can rejoin ``pending``.
         """
         wanted = set(self.instruments())
+        restored: list[dict[str, Any]] = []
+        last_grid_ns = self.last_grid_ns
+        unlabelable = 0
         for path in sorted(Path(self.directory).glob("feature-corpus-*.jsonl")):
             decisions: dict[tuple[str, int], dict[str, Any]] = {}
             labeled: set[tuple[str, int]] = set()
@@ -348,7 +351,7 @@ class LiveFeatureCorpusRecorder:
                     if row.get("kind") == LABEL_KIND:
                         labeled.add(key)
                     elif row.get("kind") == DECISION_KIND:
-                        self.last_grid_ns = max(self.last_grid_ns or key[1], key[1])
+                        last_grid_ns = max(last_grid_ns or key[1], key[1])
                         if row.get("accepted") is True:
                             decisions[key] = dict(instrument_id=key[0], decision_time_ns=key[1],
                                                   reference=row["reference"])
@@ -356,22 +359,27 @@ class LiveFeatureCorpusRecorder:
                         raise ValueError("CORPUS_RECOVERY_CAP_EXCEEDED")
             unresolved = [row for key, row in sorted(decisions.items(), key=lambda item: (item[0][1], item[0][0]))
                           if key not in labeled]
-            if len(self.pending) + sum(row["decision_time_ns"] + self.horizon_ns > now for row in unresolved) > MAX_RECOVERY_DECISIONS:
+            if len(self.pending) + len(restored) + sum(row["decision_time_ns"] + self.horizon_ns > now for row in unresolved) > MAX_RECOVERY_DECISIONS:
                 raise ValueError("CORPUS_RECOVERY_CAP_EXCEEDED")
             for row in unresolved:
                 decision_ns = row["decision_time_ns"]
                 if decision_ns + self.horizon_ns > now:
-                    self.pending.append(dict(instrument_id=row["instrument_id"], decision_time_ns=decision_ns,
+                    restored.append(dict(instrument_id=row["instrument_id"], decision_time_ns=decision_ns,
                                              reference=row["reference"]))
-                    self.status["recovered_pending"] = self.status.get("recovered_pending", 0) + 1
                 else:
                     self._write(dict(schema_version=SCHEMA_VERSION, kind=LABEL_KIND,
                                      instrument_id=row["instrument_id"], decision_time_ns=decision_ns,
                                      horizon_ns=self.horizon_ns, label_rule=LABEL_RULE, label=None,
                                      status="UNLABELABLE", reason="RECORDER_RESTART_TERMINAL_EVIDENCE_UNAVAILABLE",
                                      recovered_at_ns=now))
-                    self.status["unlabelable"] += 1
-                    self.status["restart_unlabelable"] = self.status.get("restart_unlabelable", 0) + 1
+                    unlabelable += 1
+        # A later-file read/parse/write failure must not publish a partial pending
+        # list. Already-appended outcomes are found as existing labels on retry.
+        self.pending.extend(restored)
+        self.last_grid_ns = last_grid_ns
+        self.status["recovered_pending"] = self.status.get("recovered_pending", 0) + len(restored)
+        self.status["unlabelable"] += unlabelable
+        self.status["restart_unlabelable"] = self.status.get("restart_unlabelable", 0) + unlabelable
         self._recovery_complete = True
 
     def tick(self) -> None:

@@ -1,5 +1,16 @@
 # IMP Work Log
 
+## 2026-10-18 — Retry-safe forecast recovery publication
+
+Independent review reproduced a partial-scan defect: recovery appended pending
+rows before later files were validated. Retries could duplicate pending identities
+and, after expiry, append two conflicting unlabelable outcomes. Recovery now stages
+pending rows, grid state and counters until the full scan succeeds. Existing
+append-written outcomes are rediscovered on retry, including a simulated close
+failure after append. RED: two failing cases and one idempotence control passing;
+GREEN: 89 focused forecast tests pass. No corpus, policy or production state was
+modified during repair.
+
 ## 2026-10-18 — Forecast pending-label recovery across restart
 
 Read-only corpus reconciliation found 52 accepted decisions without any label,

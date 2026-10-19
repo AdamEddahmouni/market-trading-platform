@@ -84,3 +84,58 @@ class CorpusRestartRecoveryTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "CORPUS_RECOVERY_CAP_EXCEEDED"):
                 self.recorder().tick()
         self.assertEqual(self.rows(), before)
+
+    def test_failed_later_file_retry_publishes_one_pending_identity_and_one_outcome(self):
+        later = self.directory / "feature-corpus-9999-12-31.jsonl"
+        later.write_text("{invalid", encoding="utf-8")
+        self.now = T + ONE_SEC
+        restarted = self.recorder()
+        original_status = dict(restarted.status)
+        for _attempt in range(2):
+            with self.assertRaises(ValueError):
+                restarted.tick()
+            self.assertEqual(restarted.pending, [])
+            self.assertEqual(restarted.status, original_status)
+        later.write_text("", encoding="utf-8")
+        restarted.tick()
+        self.assertEqual(len(restarted.pending), 1)
+        self.assertEqual(restarted.status["recovered_pending"], 1)
+        due = self.decision_ns + self.horizon
+        self.now = due + ONE_SEC
+        restarted.window.dispatch(quote_event("retry-terminal", event_time_ns=due,
+                                             bid=self.reference["midpoint"] + 1,
+                                             ask=self.reference["midpoint"] + 2))
+        restarted.tick()
+        self.assertEqual(len(self.labels()), 1)
+        self.assertEqual(self.labels()[0]["status"], "SETTLED")
+
+    def test_appended_past_outcome_survives_io_failure_without_duplicate_on_retry(self):
+        self.now = self.decision_ns + self.horizon + ONE_SEC
+        restarted = self.recorder()
+        original_write = restarted._write
+
+        def appended_then_failed(row):
+            original_write(row)
+            raise OSError("simulated close failure after append")
+
+        with mock.patch.object(restarted, "_write", side_effect=appended_then_failed):
+            with self.assertRaises(OSError):
+                restarted.tick()
+        [before] = self.labels()
+        restarted.tick()
+        self.assertEqual(self.labels(), [before])
+        self.assertEqual(restarted.pending, [])
+
+    def test_failed_scan_repaired_after_expiry_never_writes_conflicting_outcomes(self):
+        later = self.directory / "feature-corpus-9999-12-31.jsonl"
+        later.write_text("{invalid", encoding="utf-8")
+        self.now = T + ONE_SEC
+        restarted = self.recorder()
+        with self.assertRaises(ValueError):
+            restarted.tick()
+        self.now = self.decision_ns + self.horizon + corpus.DEFAULT_TERMINAL_TOLERANCE_NS + ONE_SEC
+        later.write_text("", encoding="utf-8")
+        restarted.tick()
+        self.assertEqual(len(self.labels()), 1)
+        self.assertEqual(self.labels()[0]["reason"], "RECORDER_RESTART_TERMINAL_EVIDENCE_UNAVAILABLE")
+        self.assertEqual(corpus.load_training_examples(self.directory.glob("feature-corpus-*.jsonl")), [])
