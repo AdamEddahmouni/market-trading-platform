@@ -1668,6 +1668,13 @@ class PaperExecutionLedger:
             fill_instrument_id = str(fill.get("instrument_id", ""))
             projection = self._project_ledger(instrument_id=fill_instrument_id)
             position_payload: dict[str, Any] = {}
+            position_quantity = int(projection["position_shares"])
+            position_basis = int(projection["position_cost_basis_minor"])
+            instrument = fill.get("instrument") or (intent or {}).get("instrument") or {}
+            if instrument.get("instrument_kind") == "CRYPTO_PAIR":
+                position = self.canonical_portfolio.get_position(fill_instrument_id)
+                position_quantity = serialized_quantity(position.quantity if position else Decimal(0), instrument)
+                position_basis = int((position.cost_basis if position else Decimal(0)) * self.policy["price_scale"])
             if self.is_portfolio_scoped():
                 position_payload["instrument_id"] = fill_instrument_id
             return self._append(
@@ -1676,8 +1683,8 @@ class PaperExecutionLedger:
                     **position_payload,
                     "cash_minor": int(projection["cash_minor"]),
                     "fill_id": fill.get("fill_id"),
-                    "position_cost_basis_minor": int(projection["position_cost_basis_minor"]),
-                    "position_shares": int(projection["position_shares"]),
+                    "position_cost_basis_minor": position_basis,
+                    "position_shares": position_quantity,
                     "realized_pnl_minor": int(projection["realized_pnl_minor"]),
                 },
             )

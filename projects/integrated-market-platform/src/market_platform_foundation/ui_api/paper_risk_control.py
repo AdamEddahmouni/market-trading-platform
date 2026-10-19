@@ -8,6 +8,8 @@ monitor, not a resting broker stop order.
 """
 from __future__ import annotations
 
+from ..paper.contracts import quantity_number, quantity_wire
+
 import threading
 import time
 from datetime import UTC, datetime
@@ -108,8 +110,8 @@ class SmaStopService:
             raise ValueError('AMBIGUOUS_POSITION')
         if not rows:
             return dict(state='FLAT', quantity=0, symbol=None)
-        short = rows[0].get('side') == 'SHORT' or rows[0]['quantity'] < 0
-        return dict(state='SHORT' if short else 'LONG', quantity=abs(int(rows[0]['quantity'])), symbol=rows[0].get('symbol'))
+        short = rows[0].get('side') == 'SHORT' or quantity_number(rows[0]['quantity']) < 0
+        return dict(state='SHORT' if short else 'LONG', quantity=quantity_wire(abs(quantity_number(rows[0]['quantity']))), symbol=rows[0].get('symbol'))
 
     def _epoch(self, instrument, side, watch):
         ledger = self.store.paper_ledger

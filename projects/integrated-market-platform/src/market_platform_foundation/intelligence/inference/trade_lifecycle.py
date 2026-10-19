@@ -7,6 +7,8 @@ only; a shared ticker never joins two records.
 """
 from __future__ import annotations
 
+from ...paper.contracts import quantity_number, quantity_wire
+
 from datetime import UTC, datetime
 
 from .hashing import input_hash_from_dict
@@ -80,7 +82,7 @@ def episodes_from_trades(trades, *, account_id, experiment_id):
             episode_id=episode_identity(account_id=account_id, experiment_id=experiment_id, instrument_id=fill['instrument_id'], opening_fill_id=fill['fill_id']),
             instrument_id=fill['instrument_id'], symbol=fill.get('symbol') or fill['instrument_id'], fills=[], open=True,
             opening_fill_id=fill['fill_id'], opening_basis=basis, opening_sequence=fill['sequence'],
-            side='LONG' if fill['position_after'] > 0 else 'SHORT')
+            side='LONG' if quantity_number(fill['position_after']) > 0 else 'SHORT')
         episodes.append(episode)
         current[fill['instrument_id']] = episode
         return episode
@@ -268,8 +270,8 @@ def _fill_view(fill):
 
 
 def _average(fills):
-    quantity = sum(int(f['filled_quantity']) for f in fills)
-    return sum(int(f['fill_price_minor']) * int(f['filled_quantity']) for f in fills) // quantity if quantity else None
+    quantity = sum(quantity_number(f['filled_quantity']) for f in fills)
+    return int(sum(int(f['fill_price_minor']) * quantity_number(f['filled_quantity']) for f in fills) // quantity) if quantity else None
 
 
 def _reference(decision):
@@ -289,9 +291,9 @@ def entry_block(decisions, episode, orders, *, now_ns):
         entries = episode['entry_fills']
         first = entries[0]
         requested = first.get('requested_quantity')
-        partial = isinstance(requested, int) and requested > int(first['filled_quantity'])
+        partial = requested is not None and quantity_number(requested) > quantity_number(first['filled_quantity'])
         return dict(base, status='PARTIALLY_FILLED' if partial else 'FILLED', fill=_fill_view(first), fills=[_fill_view(f) for f in entries],
-                    fill_count=len(entries), quantity=sum(int(f['filled_quantity']) for f in entries),
+                    fill_count=len(entries), quantity=quantity_wire(sum(quantity_number(f['filled_quantity']) for f in entries)),
                     average_price_minor=_average(entries), paper='SIMULATED_FILL')
     latest = decisions[-1] if decisions else None
     if latest is None:
@@ -315,7 +317,7 @@ def exit_block(decisions, episode, orders):
     closing = exits[-1] if episode and not episode['open'] and exits else None
     reference = decided or next((d for d in reversed(decisions) if d['action_state'] == 'EXIT'), None) if episode else None
     base = dict(decision_reference=_reference(reference), fill=_fill_view(closing) if closing else None, fills=[_fill_view(f) for f in exits],
-                fill_count=len(exits), closed_quantity=sum(int(f['filled_quantity']) for f in exits) or None,
+                fill_count=len(exits), closed_quantity=quantity_wire(sum(quantity_number(f['filled_quantity']) for f in exits)) if exits else None,
                 average_price_minor=_average(exits), paper_close='NOT_APPLICABLE')
     if episode is None:
         return dict(base, status='NO_EXIT')

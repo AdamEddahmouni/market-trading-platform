@@ -90,8 +90,17 @@ def _enforce_pretrade_admission(
     costs_minor = int(costs.to_integral_value(rounding=ROUND_CEILING))
     if fractional:
         currency = str(instrument["currency"]).upper()
-        if currency != str(ledger.policy["currency"]).upper():
+        if currency != "USD" or currency != str(ledger.policy["currency"]).upper():
             raise ValueError("INSUFFICIENT_SETTLEMENT_CURRENCY")
+        if instrument.get("minimum_notional") is not None:
+            if not bars:
+                raise ValueError("REQUIRED_PRICE_MISSING")
+            payload = bars[-1].get("bar_payload") or {}
+            raw = payload.get("low" if side == "SELL" else "high") or payload.get("close")
+            if raw is None:
+                raise ValueError("REQUIRED_PRICE_MISSING")
+            if quantity * exact_quantity(str(raw)) < exact_quantity(instrument["minimum_notional"]):
+                raise ValueError("ORDER_NOTIONAL_MINIMUM_INVALID")
         if side == "SELL":
             reserved = ledger.reserved_sell_quantity(str(intent["instrument_id"]))
             if quantity > max(Decimal(0), position_qty - reserved):
@@ -463,6 +472,8 @@ def preview_interactive_order(
             intent["margin_facts"] = margin_facts.to_dict()
         else:
             intent["margin_facts"] = margin_facts
+    if intent["instrument"].get("instrument_kind") == "CRYPTO_PAIR":
+        _enforce_pretrade_admission(intent=intent, ledger=ledger, bars=bars)
     # Dry-run: a preview fill is never recorded, so it must not consume the
     # session's per-bar participation capacity (E9) — use a throwaway simulator.
     decision, order, fill = execute_order_intent(
@@ -650,7 +661,7 @@ def cancel_interactive_order(
         cancelled = ledger.cancel_order(order_id=order_id, prior_state=state)
         return {
             "duplicate": False,
-            "filled_quantity": int(order.get("cumulative_filled_quantity", 0)),
+            "filled_quantity": serialized_quantity(order.get("cumulative_filled_quantity", 0), ledger.instrument_for(str(order.get("instrument_id")))),
             "order": cancelled,
             "order_id": order_id,
             "state": "CANCELLED",

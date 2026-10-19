@@ -7,6 +7,8 @@ for evidence, and no order can be prepared or submitted from here.
 """
 from __future__ import annotations
 
+from ..paper.contracts import quantity_number, quantity_wire
+
 import time
 from datetime import UTC, datetime
 
@@ -172,8 +174,8 @@ class TradeLifecycleService:
             source_quality=quality, age_ms=max(0, int(ctx.now * 1000 - int(as_of) / 1e6)) if as_of else None,
             quality='UNAVAILABLE' if row.get('mark_minor') is None else 'CURRENT' if quality in CURRENT_MARK_QUALITIES
             else 'STALE' if quality in ('STALE', 'RESTORED', 'DISCONNECTED') else 'DEGRADED')
-        short = row.get('side') == 'SHORT' or int(row['quantity']) < 0
-        return dict(state='SHORT' if short else 'LONG', quantity=abs(int(row['quantity'])), average_entry_minor=row.get('average_fill_minor'),
+        short = row.get('side') == 'SHORT' or quantity_number(row['quantity']) < 0
+        return dict(state='SHORT' if short else 'LONG', quantity=quantity_wire(abs(quantity_number(row['quantity']))), average_entry_minor=row.get('average_fill_minor'),
                     first_entry_time=iso_ns(row.get('first_entry_time_ns')), latest_fill_time=iso_ns(row.get('latest_fill_time_ns')),
                     market_value_minor=row.get('market_value_minor'), mark=mark), row
 

@@ -145,6 +145,18 @@ def exact_quantity(value: Any) -> Decimal:
     return number
 
 
+def quantity_number(value: Any) -> int | Decimal:
+    """Exact arithmetic value; preserve historical integer quantities."""
+    number = exact_quantity(value)
+    return value if type(value) is int else number.normalize()
+
+
+def quantity_wire(value: Any) -> int | str:
+    """Stable JSON quantity without introducing binary float arithmetic."""
+    number = quantity_number(value)
+    return number if type(number) is int else (format(number, "f") if number else "0")
+
+
 def order_quantity(value: Any, instrument: Mapping[str, Any]) -> int | Decimal:
     """Validate order size against canonical units and verified venue increments."""
     if instrument.get("instrument_kind") != "CRYPTO_PAIR":
@@ -275,9 +287,18 @@ def _quantity_facts_to_dict(value: Mapping[str, Any] | None) -> dict[str, int]:
             raise ValueError("PAPER_QUANTITY_FACT_KEY_INVALID")
         if key not in allowed:
             raise ValueError("PAPER_QUANTITY_FACT_KEY_UNSUPPORTED")
-        if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
-            raise ValueError("PAPER_QUANTITY_FACT_INVALID")
-        facts[key] = raw
+        if key.endswith("_notional_minor"):
+            if type(raw) is not int or raw < 0:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID")
+            facts[key] = raw
+        else:
+            try:
+                amount = quantity_number(raw)
+            except ValueError:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID") from None
+            if amount < 0:
+                raise ValueError("PAPER_QUANTITY_FACT_INVALID")
+            facts[key] = quantity_wire(amount)
     return facts
 
 

@@ -10,6 +10,8 @@ fact that a governed EXIT decision may cite. Nothing here submits anything.
 """
 from __future__ import annotations
 
+from ..paper.contracts import quantity_number
+
 from decimal import ROUND_HALF_EVEN, Decimal
 
 from ..intelligence.inference.hashing import input_hash_from_dict
@@ -368,7 +370,7 @@ def position_epoch(events, *, account_id, session_id, instrument_id, side, exper
             continue
         if payload.get('fill_id') in fills and fills[payload['fill_id']] != instrument:
             raise ValueError('POSITION_FILL_LINEAGE_AMBIGUOUS')
-        shares = int(payload.get('position_shares', 0))
+        shares = quantity_number(payload.get('position_shares', 0))
         if shares == 0:
             opening = None
         elif previous == 0 or (previous > 0) != (shares > 0):

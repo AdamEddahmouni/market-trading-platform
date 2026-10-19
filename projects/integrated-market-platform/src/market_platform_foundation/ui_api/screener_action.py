@@ -1,6 +1,9 @@
 """Explicit decision requests, server reconstruction, history and Paper drafts."""
 from __future__ import annotations
 
+from decimal import Decimal, ROUND_CEILING
+from ..paper.contracts import quantity_number, quantity_wire
+
 import json
 import copy
 import threading
@@ -48,12 +51,12 @@ class ScreenerActionService:
         ledger = self.store.paper_ledger
         rows = [p for p in ledger.project_positions() if p['instrument_id']==instrument]
         if len(rows)>1: raise ValueError('AMBIGUOUS_POSITION')
-        quantity = rows[0]['quantity'] if rows else 0
+        quantity = quantity_number(rows[0]['quantity']) if rows else 0
         if rows and rows[0].get('side')=='SHORT': quantity=-abs(quantity)
         pending = any(o.get('instrument_id')==instrument and o.get('state') not in ('FILLED','CANCELLED','REJECTED','EXPIRED','RISK_REJECTED') for o in ledger.project_orders())
         # The internal ledger is projected synchronously. Deferred restoration is
         # explicitly unavailable until the existing runtime revalidates it.
-        return dict(state='LONG' if quantity>0 else 'SHORT' if quantity<0 else 'FLAT', quantity=quantity,
+        return dict(state='LONG' if quantity>0 else 'SHORT' if quantity<0 else 'FLAT', quantity=quantity_wire(quantity),
                     snapshot_at=None if getattr(self.store,'execution_deferred',False) else now,
                     account_id=ledger.paper_account_id, session_id=ledger.session_id,
                     source='PAPER_LEDGER', pending=pending)
@@ -337,7 +340,7 @@ class ScreenerActionService:
         if current['execution_readiness']!='PREVIEW_ALLOWED': raise ValueError('ACTION_HANDOFF_BLOCKED')
         state=record['action_state']
         if state not in ('ENTER','EXIT'): raise ValueError('ACTION_NOT_HANDOFF_ELIGIBLE')
-        quantity=abs(b['context']['position']['quantity']) if state=='EXIT' else 1
+        quantity=quantity_wire(abs(quantity_number(b['context']['position']['quantity']))) if state=='EXIT' else 1
         # Entry uses the existing minimal operator draft (one unit), not model
         # sizing. Workspace always runs its independent preview/risk pipeline.
         side=('SELL' if b['context']['position']['state']=='LONG' else 'BUY') if state=='EXIT' else ('BUY' if record['direction']=='LONG' else 'SELL')
@@ -363,7 +366,7 @@ class ScreenerActionService:
         draft=self.handoff(dict(decision_id=ids[0]))
         if draft['instrumentId']!=instrument or draft['side']!=parsed['side']:
             raise ValueError('ACTION_ORDER_IDENTITY_MISMATCH')
-        if record['action_state']=='EXIT' and draft['quantity']!=parsed['quantity']:
+        if record['action_state']=='EXIT' and quantity_number(draft['quantity'])!=quantity_number(parsed['quantity']):
             raise ValueError('ACTION_EXIT_QUANTITY_CHANGED')
         return record
 
@@ -383,7 +386,15 @@ class ScreenerActionService:
         ledger=self.store.paper_ledger
         now=int(timestamp(_iso(self.clock())).timestamp()*1e9)
         scale=int(ledger.policy.get('price_scale',100))
-        price=decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
+        from .paper_projections import _admit_focus_instrument
+        instrument = parsed.get('_instrument') or (_admit_focus_instrument(self.store, record['instrument_id']) if record['instrument'].get('universe') == 'CRYPTO' else {})
+        fractional = instrument.get('instrument_kind') == 'CRYPTO_PAIR'
+        if fractional:
+            native_scale = int(instrument['price_scale'])
+            native_price = int((Decimal(str(record['reference_quote']['source_value'])) * native_scale).to_integral_value(rounding=ROUND_CEILING))
+            price = int((Decimal(native_price) * scale / native_scale).to_integral_value(rounding=ROUND_CEILING))
+        else:
+            price = decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
         # Existing BUILD 22 defaults govern NAV/exposure; ledger hard caps remain
         # an additional independent authority in the interactive preview below.
         policy=build_execution_policy(allow_short=bool(ledger.policy.get('allow_short',False)),
@@ -398,7 +409,7 @@ class ScreenerActionService:
         proposal=engine.build_proposal(opportunity=opportunity,policy=policy,portfolio=portfolio,
             quote=MarketQuoteV1(record['instrument_id'],price,price,int(timestamp(record['reference_quote']['as_of']).timestamp()*1e9)),proposal_time_ns=now,
             instrument_id=record['instrument_id'],symbol=record['instrument']['symbol'],
-            allocation_desired_quantity=parsed['quantity'],lineage_refs=(ContractReference('ActionDecisionV1',record['decision_id']),))
+            allocation_desired_quantity=parsed['quantity'],instrument=instrument if fractional else None,lineage_refs=(ContractReference('ActionDecisionV1',record['decision_id']),))
         submitted=set()
         for order in ledger.project_orders():
             source=order.get('decision_source_snapshot') or {}

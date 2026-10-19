@@ -13,6 +13,8 @@ simulator's active Paper experiment. No broker or live route is imported here.
 """
 from __future__ import annotations
 
+from ..paper.contracts import quantity_number, quantity_wire
+
 import copy
 import json
 import re
@@ -1125,6 +1127,7 @@ class PaperAutomationService:
 
     def execute_decision(self, decision, policy, work, session):
         """Walk one gated Action Decision through the canonical Paper preview and submit. Never a second time."""
+        from . import paper_projections
         ledger, repo = self.store.paper_ledger, self.repository
         account, decision_id, state = ledger.paper_account_id, decision['decision_id'], decision['action_state']
         intent_id = intent_identity(account, decision_id)
@@ -1146,12 +1149,12 @@ class PaperAutomationService:
         def finish(state_name, codes, **extra):
             codes = list(dict.fromkeys(codes))
             previous = (existing or {}).get('state'), tuple((existing or {}).get('reason_codes') or [])
-            intent.update(state=str(state_name), reason_codes=codes, updated_at=_iso(self.clock()), updated_epoch=self.clock(), **extra)
+            intent.update(state=str(state_name), reason_codes=codes, updated_at=_iso(self.clock()), updated_epoch=self.clock(), **{k: quantity_wire(v) if k in ('quantity', 'filled_quantity') else v for k,v in extra.items()})
             repo.put_intent(intent, now=self.clock())
             if previous == (str(state_name), tuple(codes)):
                 return None  # the same refusal for the same reason is recorded once, not every cycle
             outcome = dict(base, outcome=str(state_name), reason_codes=codes,
-                           **{k: extra[k] for k in ('quantity', 'side', 'order_id', 'order_state', 'filled_quantity', 'fill_price_minor', 'sizing') if k in extra})
+                           **{k: quantity_wire(extra[k]) if k in ('quantity', 'filled_quantity') else extra[k] for k in ('quantity', 'side', 'order_id', 'order_state', 'filled_quantity', 'fill_price_minor', 'sizing') if k in extra})
             self._event('PAPER_INTENT_' + str(state_name), **outcome)
             return outcome
 
@@ -1160,7 +1163,7 @@ class PaperAutomationService:
             # A crash after the ledger wrote the order and before this record: adopt it, never submit again.
             order = ledger.lookup_order(recorded) or {}
             return finish(IntentState.SUBMITTED, ['RECOVERED_EXISTING_ORDER'], order_id=recorded, order_state=order.get('state'),
-                          filled_quantity=int(order.get('cumulative_filled_quantity') or 0))
+                          filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or 0))
         identity = self.paper_identity(policy)
         if identity or not self.actions._authority():
             return finish(IntentState.BLOCKED, identity or ['PAPER_AUTHORITY_UNAVAILABLE'])
@@ -1192,20 +1195,21 @@ class PaperAutomationService:
                 # asked to decide again from current inputs, and that new decision gets its own single order.
                 self.reevaluation.request_redecision(decision['instrument_id'], code)
             return finish(IntentState.DEFERRED, [code])
-        quantity, sizing = int(draft['quantity']), None
+        quantity, sizing = quantity_number(draft['quantity']), None
+        instrument = paper_projections._admit_focus_instrument(self.store, draft['instrumentId'])
         if state == 'ENTER':
             from ..numeric import decimal_to_minor_units
-            scale = int(ledger.policy.get('price_scale', 100))
+            scale = int(instrument.get('price_scale', ledger.policy.get('price_scale', 100)))
             reference = (decision.get('reference_quote') or {}).get('source_value')
             price = decimal_to_minor_units(str(reference), scale=scale) if isinstance(reference, (int, float)) and reference > 0 else None
             sizing = size_entry(policy, price_minor=price, positions=positions,
-                                buying_power_minor=ledger.project_account()['buying_power_minor'], ledger_policy=ledger.policy)
-            quantity = sizing['quantity']
+                                buying_power_minor=ledger.project_account()['buying_power_minor'], ledger_policy=ledger.policy, instrument=instrument)
+            quantity = quantity_number(sizing['quantity'])
             carried = intent.get('pretrade_approved_quantity')
-            if isinstance(carried, int) and 0 < carried < quantity:
+            if carried is not None and 0 < quantity_number(carried) < quantity:
                 # An earlier attempt was reduced by the pre-trade risk engine and could not be re-previewed then.
-                sizing = dict(sizing, pretrade_reduced_from=quantity, binding='PRETRADE_RISK_ENGINE')
-                quantity = carried
+                sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
+                quantity = quantity_number(carried)
             if quantity < 1:
                 return finish(IntentState.BLOCKED, ['SIZING_BELOW_MINIMUM', sizing['binding']], sizing=sizing)
         correlation = str(draft['sourceAttentionId'])
@@ -1219,7 +1223,7 @@ class PaperAutomationService:
             snapshot['source_module'] = snapshot['source_id']
 
         def body(units):
-            return dict(instrument_id=draft['instrumentId'], side=draft['side'], quantity=units, order_type='MARKET',
+            return dict(instrument_id=draft['instrumentId'], side=draft['side'], quantity=quantity_wire(units), order_type='MARKET',
                         client_order_id=intent_id, idempotency_key=intent_id, correlation_id=correlation, decision_source_snapshot=snapshot)
 
         from ..intelligence.persistence.errors import RepositoryError
@@ -1227,12 +1231,12 @@ class PaperAutomationService:
         try:
             preview = paper_projections.preview_paper_order(self.store, body(quantity))['preview']
             risk = preview.get('action_risk_decision') or {}
-            approved = int(risk.get('approved_quantity') or 0)
+            approved = quantity_number(risk.get('approved_quantity') or 0)
             if state == 'ENTER' and risk.get('decision') in ('APPROVE', 'REDUCE') and 0 < approved < quantity:
                 # The existing sizing authority reduced the order: the documented step is a fresh preview at that size.
-                sizing = dict(sizing, pretrade_reduced_from=quantity, binding='PRETRADE_RISK_ENGINE')
+                sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
                 quantity = approved
-                intent['pretrade_approved_quantity'] = approved
+                intent['pretrade_approved_quantity'] = quantity_wire(approved)
                 try:
                     preview = paper_projections.preview_paper_order(self.store, body(quantity))['preview']
                 except RepositoryError:
@@ -1243,7 +1247,7 @@ class PaperAutomationService:
             if preview.get('risk_status') != 'PASS':
                 return finish(IntentState.BLOCKED, ['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8],
                               quantity=quantity, side=draft['side'], sizing=sizing)
-            intent.update(state=str(IntentState.PREVIEWED), preview_id=preview['preview_id'], quantity=quantity, side=draft['side'],
+            intent.update(state=str(IntentState.PREVIEWED), preview_id=preview['preview_id'], quantity=quantity_wire(quantity), side=draft['side'],
                           updated_at=_iso(self.clock()), updated_epoch=self.clock())
             repo.put_intent(intent, now=self.clock())
             with self.submit_lock():
@@ -1260,7 +1264,7 @@ class PaperAutomationService:
         fill = submission.get('fill') or {}
         outcome = finish(IntentState.SUBMITTED, ['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION', *(order.get('reason_codes') or [])][:8],
                          quantity=quantity, side=draft['side'], sizing=sizing, order_id=submission.get('order_id'), order_state=order.get('state'),
-                         filled_quantity=int(order.get('cumulative_filled_quantity') or fill.get('fill_quantity') or 0),
+                         filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or fill.get('fill_quantity') or 0),
                          fill_price_minor=fill.get('fill_price_minor'), preview_id=preview['preview_id'],
                          risk_decision_id=submission.get('risk_decision_id'), fill_kind='SIMULATED_FILL', is_market_truth=False)
         if str(order.get('state')) in _WORKING:

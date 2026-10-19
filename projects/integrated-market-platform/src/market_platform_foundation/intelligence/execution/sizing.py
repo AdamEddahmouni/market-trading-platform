@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING
 
 from .exposure import (
     projected_positions_after_trade,
@@ -34,6 +35,7 @@ def size_fixed_fraction_nav_with_caps(
     symbol: str,
     side: str,
     reference_price_minor: int,
+    quantity_step: Decimal | None = None,
 ) -> SizingResult:
     if policy.sizing_policy != SizingPolicyKind.FIXED_FRACTION_NAV_WITH_CAPS:
         raise ValueError("SIZING_POLICY_UNSUPPORTED")
@@ -119,8 +121,12 @@ def size_fixed_fraction_nav_with_caps(
             target_notional = max(0, available_cash)
             capped_by.append("INSUFFICIENT_PAPER_CASH")
 
-    quantity = target_notional // reference_price_minor if reference_price_minor > 0 else 0
-    notional = quantity * reference_price_minor
+    if quantity_step is not None:
+        quantity = ((Decimal(target_notional) / reference_price_minor / quantity_step).to_integral_value(rounding=ROUND_FLOOR) * quantity_step) if reference_price_minor > 0 else Decimal(0)
+        notional = int((quantity * reference_price_minor).to_integral_value(rounding=ROUND_CEILING))
+    else:
+        quantity = target_notional // reference_price_minor if reference_price_minor > 0 else 0
+        notional = quantity * reference_price_minor
     return SizingResult(quantity=quantity, notional_minor=notional, capped_by=tuple(capped_by))
 
 
