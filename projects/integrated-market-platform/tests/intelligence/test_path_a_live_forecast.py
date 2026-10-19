@@ -231,7 +231,9 @@ class LiveForecastHookTests(unittest.TestCase):
         path.write_text(json.dumps(dict(record, eligible=False)), encoding="utf-8")
         hook = self.hook()
         self.assertEqual(hook.artifacts, {})
-        self.assertIsNone(hook.ensure_opportunity(self.store, self.candidate, T))
+        outcome = hook.ensure_opportunity(self.store, self.candidate, T)
+        self.assertEqual(outcome["status"], "REJECTED")
+        self.assertEqual(outcome["reason_codes"], ["HOLDOUT_POLICY_NOT_SATISFIED"])
 
     def test_a_tampered_preregistration_disables_the_hook(self):
         import json

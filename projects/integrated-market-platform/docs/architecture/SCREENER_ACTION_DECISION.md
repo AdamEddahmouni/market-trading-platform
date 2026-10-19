@@ -127,6 +127,24 @@ retries return the prior acknowledgement; fresh submissions recheck action,
 preview and authority again after waiting for an eligible bar. EXIT reuses existing
 Paper close risk; it never fabricates a new entry Opportunity for liquidation.
 
+## Forecast admission evidence
+
+Every reconstructed Action context records `forecast_admission`
+(`paper-forecast-admission/1.0.0`) with the actual instrument, candidate run,
+decision cutoff and evidence identities. Disabled forecasting and instruments
+without a model are `UNAVAILABLE`; refused artifacts and negative mint outcomes
+are `REJECTED` with their existing reason codes. Unexpected failures are `ERROR`
+with a safe exception type. The complete mint outcome, when present, is retained
+under `outcome`; unavailable forecasts cannot be mistaken for policy rejections.
+
+An explicitly requested repository Opportunity is validated through the existing
+gate and records `NOT_REQUESTED` for forecasting, plus its matched Opportunity
+identity. Diagnostics never create an Opportunity or bypass identity, evidence,
+freshness, risk or submit checks. The immutable Action evidence snapshot keeps
+these diagnostics. Attempt clocks and transitions such as `MINTED` to `EXISTING`
+are excluded from the stable inference-input hash; the actual Opportunity stays
+in that hash and under all existing revalidation gates.
+
 ## Immutable evidence, history and API
 
 ActionDecisionV1 (`action-decision/1.0.0`) contains action/previous state and IDs,

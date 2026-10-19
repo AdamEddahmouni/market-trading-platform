@@ -109,22 +109,36 @@ class LiveForecastHook:
                    and (o.valid_until_ns is None or o.valid_until_ns > cutoff_ns)
                    and evidence.intersection(r.id for r in o.lineage_refs) for o in repository.list_opportunities())
 
-    def ensure_opportunity(self, store, candidate, cutoff_ns: int) -> dict[str, Any] | None:
+    def ensure_opportunity(self, store, candidate, cutoff_ns: int) -> dict[str, Any]:
         from ..strategy.path_a_live_forecast import mint_live_opportunity
 
         iid = str(candidate["instrument"]["instrument_id"])
         artifacts = self.artifacts.get(iid)
         repository = getattr(store, "strategy_repository", None)
-        if artifacts is None or repository is None or not hasattr(repository, "list_opportunities"):
-            return None
+        def finish(outcome):
+            outcome.update(instrument_id=iid, build_id=self.build_id, decision_time_ns=cutoff_ns,
+                           candidate_run_id=candidate.get("run_id"),
+                           evidence_ids=sorted({str(e["evidence_id"]) for e in
+                                               (*candidate.get("current_market_evidence", ()),
+                                                *candidate.get("reference_evidence", ())) if e.get("evidence_id")}),
+                           at=datetime.fromtimestamp(cutoff_ns / 1e9, UTC).isoformat())
+            self._journal(outcome)
+            return outcome
+
+        if artifacts is None:
+            reason = self.refused.get(iid)
+            return finish(dict(status="REJECTED" if reason else "UNAVAILABLE",
+                               reason_codes=[reason or "INSTRUMENT_NOT_COVERED"]))
+        if repository is None or not hasattr(repository, "list_opportunities"):
+            return finish(dict(status="UNAVAILABLE", reason_codes=["STRATEGY_REPOSITORY_UNAVAILABLE"]))
         with self.lock:
             if self._existing(repository, candidate, cutoff_ns):
                 self.counters["existing"] += 1
-                return dict(instrument_id=iid, status="EXISTING")
+                return finish(dict(status="EXISTING", reason_codes=["EXISTING_GOVERNED_OPPORTUNITY"]))
             last = self.last_attempt.get(iid)
             if last is not None and cutoff_ns - last < MIN_MINT_INTERVAL_NS:
                 self.counters["throttled"] += 1
-                return dict(instrument_id=iid, status="THROTTLED")
+                return finish(dict(status="THROTTLED", reason_codes=["FORECAST_THROTTLED"]))
             window = self._window()
             if window is None:
                 outcome = dict(instrument_id=iid, status="FORECAST_UNAVAILABLE", reason_codes=["LIVE_WINDOW_UNAVAILABLE"])
@@ -138,15 +152,13 @@ class LiveForecastHook:
                         forecast_dir=self.root / "forecasts" / _day(cutoff_ns))
                 except Exception as exc:  # noqa: BLE001 - recorded; the gate then finds no Opportunity
                     self.counters["errors"] += 1
-                    outcome = dict(instrument_id=iid, status="ERROR", reason_codes=[f"{type(exc).__name__}:{str(exc)[:160]}"])
+                    outcome = dict(instrument_id=iid, status="ERROR", reason_codes=["FORECAST_ADMISSION_UNEXPECTED_ERROR"],
+                                   error_type=type(exc).__name__)
             if outcome.get("status") == "MINTED":
                 self.counters["minted"] += 1
             elif outcome.get("status") != "ERROR":
                 self.counters["refused"] += 1
-            outcome.update(evidence_ids=[e.get("evidence_id") for e in candidate.get("current_market_evidence", ())][:8],
-                           at=datetime.fromtimestamp(cutoff_ns / 1e9, UTC).isoformat())
-            self._journal(outcome)
-            return outcome
+            return finish(outcome)
 
     def status(self) -> dict[str, Any]:
         return dict(schema_version="paper-live-forecast-status/1.0.0", build_id=self.build_id,
@@ -154,7 +166,7 @@ class LiveForecastHook:
                     calls_models=False, order_capability=False)
 
 
-def live_forecast_hook(environ=os.environ) -> "LiveForecastHook | None":
+def live_forecast_hook(environ=os.environ, *, admission: dict[str, Any] | None = None) -> "LiveForecastHook | None":
     """The configured hook, loaded once; ``None`` when off or when its artifacts cannot be trusted."""
     global _HOOK
     with _HOOK_LOCK:
@@ -162,10 +174,18 @@ def live_forecast_hook(environ=os.environ) -> "LiveForecastHook | None":
             return _HOOK
         root = str(environ.get(MODELS_ENV) or "").strip()
         if not root or not Path(root).is_absolute() or not (Path(root) / ACTIVE_FILE).is_file():
+            if admission is not None:
+                admission.update(status="REJECTED" if root and not Path(root).is_absolute() else "UNAVAILABLE",
+                                 reason_codes=["FORECAST_DISABLED" if not root else
+                                               "FORECAST_MODELS_DIRECTORY_INVALID" if not Path(root).is_absolute() else
+                                               "ACTIVE_FORECAST_UNAVAILABLE"])
             return None
         try:
             _HOOK = LiveForecastHook(Path(root))
-        except Exception:  # noqa: BLE001 - an untrusted build is not used; status reports it through start
+        except Exception as exc:  # noqa: BLE001 - an untrusted build is not used
+            if admission is not None:
+                admission.update(status="REJECTED", reason_codes=["FORECAST_REGISTRY_INVALID"],
+                                 error_type=type(exc).__name__)
             return None
         return _HOOK
 

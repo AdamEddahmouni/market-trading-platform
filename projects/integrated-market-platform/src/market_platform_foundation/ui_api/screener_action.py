@@ -71,14 +71,24 @@ class ScreenerActionService:
         return bool(paper_execution_env_enabled() and ledger.execution_authority in PAPER_EXECUTION_AUTHORITIES
                     and ledger.execution_mode=='INTERNAL_SIMULATION' and not getattr(self.store,'execution_deferred',False))
 
-    def _opportunity(self, candidate, cutoff, requested=None):
+    def _opportunity(self, candidate, cutoff, requested=None, *, admission=None):
         """Require shared immutable evidence lineage AND exact instrument identity.
 
         Symbol similarity alone never creates Opportunity authority.
         """
+        evidence = admission if admission is not None else {}
+        evidence.update(schema_version='paper-forecast-admission/1.0.0',
+                        instrument_id=candidate['instrument']['instrument_id'], decision_time_ns=cutoff,
+                        evidence_ids=sorted({e['evidence_id'] for e in
+                                             (*candidate.get('current_market_evidence',()),
+                                              *candidate.get('reference_evidence',())) if e.get('evidence_id')}),
+                        status='UNAVAILABLE', reason_codes=['FORECAST_DISABLED'])
+        evidence.setdefault('candidate_run_id',candidate.get('run_id'))
         repo = getattr(self.store,'strategy_repository',None)
         listing = getattr(repo,'list_opportunities',None)
-        if not listing: return None
+        if not listing:
+            evidence['reason_codes']=['STRATEGY_REPOSITORY_UNAVAILABLE']
+            return None
         # The candidate's id, or the exact canonical id derived from its own instrument record (asset class and
         # venue included). Both name this one instrument; no other symbol can produce either.
         identities = {candidate['instrument']['instrument_id']}
@@ -88,28 +98,41 @@ class ScreenerActionService:
         except (KeyError, ValueError):
             pass
         if requested:
+            evidence.update(status='NOT_REQUESTED',reason_codes=['EXPLICIT_OPPORTUNITY_LOOKUP'])
             record = repo.get_opportunity(requested)
             if record is None or not identities.intersection(record.scope.instrument_ids):
                 raise ValueError('OPPORTUNITY_IDENTITY_MISMATCH')
             from ..intelligence.execution.engine import _validate_opportunity_gate
             _validate_opportunity_gate(record, decision_time_ns=cutoff, scenario_id=None)
             from ..intelligence.contracts.opportunity import opportunity_v1_to_dict
+            evidence['matched_opportunity_id']=record.opportunity_id
             return opportunity_v1_to_dict(record)
         try:
             # When an activated live forecast covers this instrument, it gets one governed chance to mint an
             # Opportunity from this very candidate's evidence before the lookup. Off by default; never fails the lookup.
             from .paper_live_forecast import live_forecast_hook
-            hook = live_forecast_hook()
+            hook = live_forecast_hook(admission=evidence)
             if hook is not None:
-                hook.ensure_opportunity(self.store, candidate, cutoff)
-        except Exception:  # noqa: BLE001
-            pass
+                outcome = hook.ensure_opportunity(self.store, dict(candidate,run_id=evidence.get('candidate_run_id')), cutoff)
+                statuses={'FORECAST_UNAVAILABLE':'UNAVAILABLE','NOT_MATCHED':'REJECTED','SUPPRESSED':'REJECTED'}
+                if (not isinstance(outcome,dict) or outcome.get('status') not in
+                        {'UNAVAILABLE','REJECTED','MINTED','EXISTING','THROTTLED','ERROR',*statuses}
+                        or outcome.get('instrument_id',evidence['instrument_id'])!=evidence['instrument_id']):
+                    evidence.update(status='ERROR',reason_codes=['FORECAST_OUTCOME_INVALID'])
+                else:
+                    evidence.update(status=statuses.get(outcome['status'],outcome['status']),
+                                    reason_codes=copy.deepcopy(outcome.get('reason_codes') or [outcome['status']]),
+                                    outcome=copy.deepcopy(outcome))
+        except Exception as exc:  # noqa: BLE001 - diagnostics cannot manufacture Opportunity authority
+            evidence.update(status='ERROR',reason_codes=['FORECAST_ADMISSION_UNEXPECTED_ERROR'],
+                            error_type=type(exc).__name__)
         refs = {e['evidence_id'] for e in (*candidate['current_market_evidence'],*candidate['reference_evidence'])}
         matches = [o for o in listing() if identities.intersection(o.scope.instrument_ids)
                    and o.created_at_ns <= cutoff and (o.valid_until_ns is None or o.valid_until_ns>cutoff)
                    and refs.intersection(r.id for r in o.lineage_refs)]
         if len(matches)!=1: return None
         from ..intelligence.contracts.opportunity import opportunity_v1_to_dict
+        evidence['matched_opportunity_id']=matches[0].opportunity_id
         return opportunity_v1_to_dict(matches[0])
 
     def _build(self, body):
@@ -132,8 +155,10 @@ class ScreenerActionService:
         ledger = self.store.paper_ledger
         from ..paper.preview import portfolio_state_revision
         authority = self._authority()
+        forecast_admission=dict(candidate_run_id=body['run_id'])
         context = dict(position=self._position(body['instrument_id'],now), candidate_valid_until=run['valid_until'],
-                       opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id')),
+                       opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id'),admission=forecast_admission),
+                       forecast_admission=forecast_admission,
                        authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
         risk = self._risk_facts(body['instrument_id'])
@@ -142,6 +167,9 @@ class ScreenerActionService:
         prompt = PromptRegistry().get_by_id(PROMPT_ID)
         conditions = build_conditions(candidate,context,now)
         stable_context = json.loads(json.dumps(context)); stable_context['position'].pop('snapshot_at',None)
+        # Attempt clocks and MINTED -> EXISTING are diagnostic transitions. The actual
+        # Opportunity remains in the material input hash and all existing gates.
+        stable_context.pop('forecast_admission',None)
         material = dict(candidate=candidate, candidate_input_hash=run['input_hash'], candidate_rank=pick['rank'],
                         context=stable_context, policy_id=POLICY_ID, prompt_hash=prompt.content_hash,
                         provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None))

@@ -1,5 +1,21 @@
 # IMP Work Log
 
+## 2026-10-18 — Explicit forecast admission evidence in Action Decisions
+
+Forecast absence, artifact rejection and unexpected failure were discarded by
+the Action service. Per-build local evidence now distinguishes UNAVAILABLE,
+REJECTED and ERROR, binds candidate/run/evidence identities and the decision
+clock, and preserves mint outcomes in immutable Action snapshots. Explicit
+repository Opportunity requests record NOT_REQUESTED for forecasting. Actual
+Opportunity gates and risk authority are unchanged; diagnostic clocks and
+MINTED-to-EXISTING transitions do not change the stable inference-input hash.
+Seven original regression methods failed in eight subcases before repair;
+additional registry-state and mint-status controls cover fail-closed behavior.
+Combined Action and forecast verification: 133/133 tests passed; docs links and
+diff checks passed.
+Evidence: task workspace `forecast-closure-20261018/admission-*.log` and
+`focused-tests-admission.log`. No production state or real model was touched.
+
 ## 2026-10-18 — Retry-safe forecast recovery publication
 
 Independent review reproduced a partial-scan defect: recovery appended pending
