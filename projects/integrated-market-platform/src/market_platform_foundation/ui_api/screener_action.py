@@ -10,7 +10,7 @@ from datetime import UTC, datetime
 from ..intelligence.contracts.common import ContractReference
 from ..intelligence.inference.action_decision import (
     ActionDecisionV1, POLICY_ID, PROMPT_ID, SCHEMA, build_conditions,
-    decode_wire, gate_proposal, parse_proposal, server_exit_condition, snapshot_evidence, wire_schema,
+    decode_wire, gate_proposal, parse_proposal, server_exit_condition, snapshot_evidence, reasoned_wire_schema as wire_schema,
 )
 from ..intelligence.inference.candidate_reduction import ScreenerEvidencePacket
 from ..intelligence.inference.config import IntelligenceInferenceConfig
@@ -147,7 +147,7 @@ class ScreenerActionService:
                         provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None))
         digest = input_hash_from_dict(material)
         data = dict(decision_cutoff=now,candidate=candidate,selection=pick,context=context,conditions=conditions)
-        encoded = json.dumps(data,sort_keys=True,allow_nan=False)
+        encoded = json.dumps(data,sort_keys=True,allow_nan=False,separators=(',',':'))
         if len(encoded.encode('utf-8'))>96000: raise ValueError('ACTION_PACKET_BOUND_EXCEEDED')
         return dict(run=run,pick=pick,candidate=candidate,context=context,conditions=conditions,provider=provider,
                     prompt=prompt,now=now,digest=digest,data=data,encoded=encoded,
@@ -181,6 +181,7 @@ class ScreenerActionService:
             if latest and latest[0]['input_hash']==b['digest'] and timestamp(latest[0]['valid_until'])>timestamp(now):
                 return dict(latest[0],cache='HIT')
             proposal, error, response = None,None,None
+            reasoning_wire = None
             # OCT1-08: a breached stop is a server risk exit. It needs no model call and no model can veto it;
             # the gate still reports every Paper-preview blocker without erasing the EXIT.
             server_exit = server_exit_condition(b['conditions'])
@@ -190,7 +191,7 @@ class ScreenerActionService:
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
                 schema = wire_schema(b['candidate'],b['conditions'])
-                rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema))
+                rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema,separators=(',',':')))
                 config = IntelligenceInferenceConfig(prompt_id=PROMPT_ID,default_task_type=IntelligenceTaskType.SCREENER_ACTION_DECISION,
                     max_tokens=2000, timeout_seconds=300 if getattr(provider,'runtime','')=='LOCAL_MODEL' else 45)
                 packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_ACTION_DECISION,identity,b['digest'],now,
@@ -199,7 +200,9 @@ class ScreenerActionService:
                 if response.error_code: error=response.error_code.value
                 else:
                     canonical,error=decode_wire(response.raw_text,b['candidate'],b['conditions'])
-                    if not error: proposal,error=parse_proposal(canonical,b['candidate'],b['conditions'])
+                    if not error:
+                        proposal,error=parse_proposal(canonical,b['candidate'],b['conditions'])
+                        if not error: reasoning_wire=json.loads(response.raw_text)
             finished = _iso(self.clock())
             if not error and self._build(body)['digest'] != b['digest']:
                 error = 'ACTION_INPUT_CHANGED_DURING_INFERENCE'
@@ -231,7 +234,7 @@ class ScreenerActionService:
                           instrument=b['candidate']['instrument'],decision_time=now,evaluated_at=finished,valid_until=valid_until,
                           previous_decision_id=prior['decision_id'] if prior else None,previous_state=prior['action_state'] if prior else None,
                           position=b['context']['position'],direction=proposal['direction'] if proposal else None,
-                          model_proposal=proposal,rationale=proposal['rationale'] if proposal else
+                          model_reasoning_wire=reasoning_wire,model_proposal=proposal,rationale=proposal['rationale'] if proposal else
                               'Deterministic SMA trailing-stop risk condition. Server-authored; no model call.' if server_exit else 'Decision requires revalidation: '+str(error),
                           opportunity_id=(b['context']['opportunity'] or {}).get('opportunity_id'),
                           evidence_snapshot_id=snapshot_id,evidence_snapshot=snapshot,model=model,

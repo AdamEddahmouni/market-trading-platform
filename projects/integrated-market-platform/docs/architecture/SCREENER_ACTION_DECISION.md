@@ -185,3 +185,29 @@ select it, and the prohibition on model-authored stops, SMA rules, trailing
 logic and numeric levels above is unchanged. The decision record carries
 `server_exit` (policy, stop state, active and previous stop, trigger price,
 time and evidence) and a null model.
+
+## Model-selected structured reasoning wire
+
+The local Action Decision prompt `screener.action_decision.v3` uses
+`action-proposal-wire/3.0.0`. The model chooses the proposal state, direction,
+each evidence stance, rationale basis references, assessment and applicable
+uncertainty codes. The server renders those choices as model judgments using
+bounded vocabulary. It does not add a market fact, choose an action or convert
+a refusal into permission. Numeric facts remain in the immutable cited evidence.
+
+Unknown or duplicate basis references, unknown assessments and inapplicable
+uncertainty codes are refused. An explicit insufficient or uncertain assessment
+paired with ENTER, HOLD or EXIT is rejected. A genuine NO_ACTION stays NO_ACTION.
+The selected wire is retained as `model_reasoning_wire` beside an accepted
+canonical proposal for audit. Legacy v2 wire decoding is retained and still
+passes its original free text through the same validator.
+
+The canonical `parse_proposal`, `gate_proposal`, source clock rules, evidence
+strength, position legality, forecast/opportunity requirement and execution
+authority are unchanged. A structurally valid model answer may still be blocked
+or downgraded by those independent gates. Historical model replay is software
+evaluation and cannot mint a current signal or a production order.
+
+Workspace rejects unsupported fractional or boolean quantities before integer
+conversion instead of silently truncating them. This guard preserves current
+quantity policy and is not itself complete fractional crypto admission.

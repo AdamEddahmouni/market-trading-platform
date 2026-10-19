@@ -7283,3 +7283,28 @@ regression failed before the repair. The historical receipt is unchanged.
 - Reproduced closed crypto realized P&L disappearing when the zero position leaves the canonical open-position map. Account reporting now retains immutable crypto fill deltas, including partial close, restart and subminor accumulation. Existing equity history representation remains unchanged.
 - Added controlled regressions for exact quantity/price/cost/P&L history, partial fills, duplicate/read-only/restart behavior, subminor P&L accumulation, and mixed equity compatibility. RED evidence is retained. Final combined exact-crypto/controller/accounting/governance/market/derivative/parity/P3.1 suites passed 251/251, including six new regression tests. Documentation link validation checked 308 files successfully. Full integrated closure remains the release coordinator checkpoint.
 - Fractional autonomous admission remains incomplete: Workspace quantity parsing/preview, Action and stop position handling, BUILD22 quantity contracts and its native-unit minimum, admitted instrument economics, and cancellation receipts still require coherent treatment. This projection repair does not relax or reinterpret those gates.
+
+## 2026-10-18 — Structured Action Decision reasoning and quantity refusal
+
+Recovered R8 serving hashes (2,295 files, zero differences), source4fbf1a9b and
+the original Paper account/controller. The complete since-R6 audit found88
+decisions:70 model calls,39 valid proposals,31 rejected responses and18
+deterministic no-call safety records. All22 ENTER states lacked a governed
+opportunity; no production order or fill is implied.
+
+The v3 model wire represents reasoning as selected references, stances,
+assessment and uncertainty codes. Rendering preserves those choices and refuses
+an insufficient/uncertain assessment paired with an actionable proposal. The
+canonical parser, action gate, conditions and snapshot rules are AST-identical
+to the recovered baseline. New regressions cover malformed/Unicode inputs,
+refusal preservation, evidence/stance requirements, audit representation,
+freshness and every offered uncertainty's rendered text. Historical paired
+pinned-model receipts are preserved by the coordinator under
+`imp-closure-20261018/benchmark-02`; final measurements and proof limitations
+belong to that closeout, not to generated fixture trades.
+
+Reproduced Workspace's unsupported fractional input truncation and boolean
+acceptance; now these fail closed under the current whole-unit boundary rather
+than changing requested quantity. The guarded boundary does not claim complete
+crypto quantity compatibility. No protected policy, model pin, resource ceiling,
+quote lifetime, account reset, Live route or paid inference was introduced.

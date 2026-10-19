@@ -283,7 +283,13 @@ def _parse_order_body(body: dict[str, Any], store: ReplayStore) -> dict[str, Any
     )
 
     side = str(body.get("side", "")).upper()
-    quantity = int(body.get("quantity", 0))
+    raw_quantity = body.get("quantity", 0)
+    if isinstance(raw_quantity, bool) or (isinstance(raw_quantity, float) and not raw_quantity.is_integer()):
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    try:
+        quantity = int(raw_quantity)
+    except (TypeError, ValueError, OverflowError):
+        raise ValueError("ORDER_QUANTITY_INVALID") from None
     if quantity <= 0:
         raise ValueError("ORDER_QUANTITY_INVALID")
     if side not in {"BUY", "SELL"}:

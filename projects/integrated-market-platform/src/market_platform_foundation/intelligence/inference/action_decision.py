@@ -14,7 +14,7 @@ from ...market_data.freshness_contract import timestamp
 from .hashing import input_hash_from_dict
 from .screener_synthesis import unsupported_certainty
 
-PROMPT_ID = 'screener.action_decision.v2'
+PROMPT_ID = 'screener.action_decision.v3'
 POLICY_ID = 'action-decision-policy/1.0.0'
 # OCT1-08: a deterministic risk fact. The server establishes it; a model can neither select nor veto it.
 STOP_BREACH_CONDITION = 'SMA_TRAILING_STOP_BREACHED'
@@ -198,6 +198,85 @@ def wire_schema(candidate, conditions):
     return dict(type='object', properties=properties, required=list(properties), additionalProperties=False)
 
 
+
+REASONED_WIRE_SCHEMA = 'action-proposal-wire/3.0.0'
+ASSESSMENTS = {
+    'EVIDENCE_SUFFICIENT': 'The model considers the cited evidence sufficient for its proposal.',
+    'EVIDENCE_INSUFFICIENT': 'The model considers the cited evidence insufficient for action.',
+    'EVIDENCE_MIXED': 'The model considers the cited evidence mixed.',
+    'MODEL_UNCERTAIN': 'The model remains uncertain about its proposal.',
+}
+UNCERTAINTIES = {
+    'MODEL_UNCERTAINTY': 'The model remains uncertain.',
+    'WEAK_EVIDENCE': 'The assessment has weak evidence.',
+    'MISSING_EVIDENCE': 'The assessment has missing evidence.',
+    'CONFLICTING_EVIDENCE': 'The assessment has conflicting evidence.',
+    'CONDITION_NOT_MET': 'A supplied condition is not met.',
+}
+CAPABILITY_TEXT = {'QUOTE': 'quote', 'TECHNICALS': 'technical', 'ORDER_FLOW': 'order flow',
+                   'NEWS': 'news', 'SENTIMENT': 'sentiment', 'FUNDAMENTALS': 'fundamental'}
+
+
+def _uncertainty_options(candidate, conditions):
+    evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
+    options = ['MODEL_UNCERTAINTY']
+    if any(e.get('weak_reasons') for e in evidence): options.append('WEAK_EVIDENCE')
+    if candidate['missing']: options.append('MISSING_EVIDENCE')
+    if any(a['result'] == 'CONFLICTING' for a in candidate.get('alignments', [])):
+        options.append('CONFLICTING_EVIDENCE')
+    if any(c['status'] == 'NOT_MET' for c in conditions): options.append('CONDITION_NOT_MET')
+    return options
+
+
+def reasoned_wire_schema(candidate, conditions):
+    """A model-authored assessment with explicit basis; no free-text factual claims.
+
+    This changes representation, not the canonical proposal or its validator. The model
+    chooses every action, stance, basis and assessment. Rendering discloses those choices
+    as model judgments, and does not add prices, causality, evidence or authority.
+    """
+    schema = wire_schema(candidate, conditions)
+    props = schema['properties']
+    refs = list(_stance_options(candidate))
+    props['schema_version'] = dict(type='string', enum=[REASONED_WIRE_SCHEMA])
+    props['rationale'] = dict(type='object', properties=dict(
+        basis_refs=dict(type='array', items=dict(type='string', enum=refs), minItems=1 if refs else 0,
+                        maxItems=min(6, len(refs)), uniqueItems=True) if refs else dict(type='array', maxItems=0),
+        assessment=dict(type='string', enum=list(ASSESSMENTS))),
+        required=['basis_refs', 'assessment'], additionalProperties=False)
+    props['uncertainties'] = dict(type='array', items=dict(type='string', enum=_uncertainty_options(candidate, conditions)),
+                                  maxItems=5, uniqueItems=True)
+    return schema
+
+
+def _render_reasoning(value, candidate, conditions):
+    reasoning = value['rationale']
+    refs = {e['evidence_id']: e for e in (*candidate['current_market_evidence'], *candidate['reference_evidence'])}
+    if not isinstance(reasoning, dict) or set(reasoning) != {'basis_refs', 'assessment'}:
+        raise ValueError('SCHEMA_INVALID')
+    basis, assessment = reasoning['basis_refs'], reasoning['assessment']
+    if (not isinstance(basis, list) or len(basis) > min(6, len(refs)) or
+            (refs and not basis) or any(not isinstance(r, str) or r not in refs for r in basis) or
+            len(set(basis)) != len(basis) or not isinstance(assessment, str) or assessment not in ASSESSMENTS):
+        raise ValueError('SCHEMA_INVALID')
+    if assessment in ('EVIDENCE_INSUFFICIENT', 'MODEL_UNCERTAIN') and value['proposal_state'] in ('ENTER', 'HOLD', 'EXIT'):
+        raise ValueError('REASONING_ACTION_MISMATCH')
+    uncertainty = value['uncertainties']
+    allowed = _uncertainty_options(candidate, conditions)
+    if (not isinstance(uncertainty, list) or len(uncertainty) > 5 or
+            any(not isinstance(u, str) or u not in allowed for u in uncertainty) or len(set(uncertainty)) != len(uncertainty)):
+        raise ValueError('SCHEMA_INVALID')
+    # Never put arbitrary server/provider capability text into the canonical rationale.
+    sentences = []
+    for r in basis:
+        capability = CAPABILITY_TEXT.get(refs[r]['capability'], 'supplied')
+        stance = value['evidence_stance'][r]
+        label = {'SUPPORTING': 'supporting', 'CONFLICTING': 'conflicting', 'CONTEXT': 'contextual'}[stance]
+        sentences.append(f'The model treats {capability} evidence as {label}.')
+    sentences.append(ASSESSMENTS[assessment])
+    return ' '.join(sentences), [UNCERTAINTIES[u] for u in uncertainty]
+
+
 def decode_wire(raw, candidate, conditions):
     """Canonical proposal JSON from a wire answer. Shape only: acceptance stays with ``parse_proposal``."""
     def unique(pairs):
@@ -209,20 +288,24 @@ def decode_wire(raw, candidate, conditions):
             return None, 'OUTPUT_BOUND_EXCEEDED'
         value = json.loads(raw, object_pairs_hook=unique)
         schema = wire_schema(candidate, conditions)
-        if not isinstance(value, dict) or set(value) != set(schema['required']) or value['schema_version'] != WIRE_SCHEMA:
+        if not isinstance(value, dict) or set(value) != set(schema['required']) or value['schema_version'] not in (WIRE_SCHEMA, REASONED_WIRE_SCHEMA):
             return None, 'SCHEMA_INVALID'
         refs = schema['properties']['evidence_stance']['required']
         stance = value['evidence_stance']
         if not isinstance(stance, dict) or set(stance) != set(refs) or any(s not in STANCES for s in stance.values()):
             return None, 'SCHEMA_INVALID'
+        if value['schema_version'] == REASONED_WIRE_SCHEMA:
+            rationale, uncertainties = _render_reasoning(value, candidate, conditions)
+        else:
+            rationale, uncertainties = value['rationale'], value['uncertainties']
         evidence = (*candidate['current_market_evidence'], *candidate['reference_evidence'])
         proposal = dict(schema_version=PROPOSAL_SCHEMA, proposal_state=value['proposal_state'], direction=value['direction'],
-                        rationale=value['rationale'],
+                        rationale=rationale,
                         supporting_refs=[r for r in refs if stance[r] == 'SUPPORTING'],
                         conflicting_refs=[r for r in refs if stance[r] == 'CONFLICTING'],
                         weak_refs=[e['evidence_id'] for e in evidence if e.get('weak_reasons')],
                         missing_capabilities=sorted({e['capability'] for e in candidate['missing']}),
-                        uncertainties=value['uncertainties'], **{name: value[name] for name in ALLOWED_CONDITIONS})
+                        uncertainties=uncertainties, **{name: value[name] for name in ALLOWED_CONDITIONS})
         return json.dumps(proposal), None
     except (ValueError, TypeError, KeyError, AttributeError):
         return None, 'SCHEMA_INVALID'

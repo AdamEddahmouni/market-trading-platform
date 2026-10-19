@@ -259,8 +259,19 @@ class ActionServiceTests(unittest.TestCase):
         packet = self.provider.infer.call_args.args[0]
         self.assertIn('evidence_stance', packet.output_schema['properties'])
         self.assertIn('evidence_stance', self.provider.infer.call_args.kwargs['rendered_prompt'])
-        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v2')
+        self.assertEqual(d['model']['prompt_id'], 'screener.action_decision.v3')
         self.assertEqual((d['action_state'], d['supporting_refs']), ('ENTER', ['q', 't']))
+
+    def test_structured_model_reasoning_is_preserved_beside_the_canonical_proposal(self):
+        from dataclasses import replace
+        answer = json.loads(wire(proposal()))
+        answer.update(schema_version='action-proposal-wire/3.0.0',
+                      rationale=dict(basis_refs=['q', 't'], assessment='EVIDENCE_SUFFICIENT'), uncertainties=[])
+        self.provider.infer.return_value = replace(self.response, raw_text=json.dumps(answer))
+        d = self.service.run(self.body)
+        self.assertEqual(d['model_reasoning_wire'], answer)
+        self.assertEqual(d['model_proposal']['proposal_state'], 'ENTER')
+        self.assertEqual(d['evidence_snapshot']['model']['prompt_id'], 'screener.action_decision.v3')
 
     def test_idempotency_and_position_change_new_transition(self):
         first=self.service.run(self.body); second=self.service.run(self.body)
