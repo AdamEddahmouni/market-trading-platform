@@ -651,6 +651,7 @@ class PaperAutomationService:
             scoped['day'] = work.get('day')
             scoped['_global_universe_active'] = any((value.get('universe') or {}).get('active_run_id')
                                                     for key, value in states.items() if key != universe)
+            scoped['_peer_waiting'] = self._peer_waiting(policy, states, universe, now)
             selected = dict(policy, scope=item['scope'], schedule=dict(policy['schedule'], sessions=item['sessions']))
             receipt = dict(actions=[], blockers=[], error=None, session=None, universe=None, provider=None)
             token = self._scope_context.set(self._scoped_reevaluation(item['scope']))
@@ -808,6 +809,35 @@ class PaperAutomationService:
             backoff_until=failure.get('backoff_until'), consecutive_failures=failure.get('count'), last_failure_code=failure.get('code'))
         return facts, fingerprint
 
+    def _peer_waiting(self, policy, states, universe, now):
+        """True when another scope, inside its own session, waited on the shared run slot at its latest cycle and
+        last started before this one did: this scope then yields one cycle so it cannot take the freed slot first.
+
+        Scopes run in policy order and each closes only its own run handle, so the cycle in which a run finishes
+        shows that run to every scope evaluated before its owner. Without this, a continuous scope whose slice
+        outlasts the minimum separation restarts in that same cycle and a session-limited peer never gets a turn.
+        A peer's decision older than two cadences, or a peer outside its session, never makes anyone wait.
+        """
+        mine = (states.get(universe, {}).get('universe') or {}).get('last_started_epoch') or 0
+        horizon = 2 * int(policy['schedule'].get('cadence_seconds') or 300)
+        for item in universe_scopes(policy):
+            peer = item['scope']['universe']
+            if peer == universe:
+                continue
+            state = states.get(peer, {}).get('universe') or {}
+            decision = state.get('last_decision') or {}
+            if decision.get('decision') != 'DEFER' or (decision.get('detail') or {}).get('run_id') != 'SHARED_ACCOUNT_RUN_ACTIVE':
+                continue
+            try:
+                decided = datetime.fromisoformat(str(decision.get('at_iso')).replace('Z', '+00:00')).timestamp()
+            except ValueError:
+                continue
+            if now - decided > horizon or (state.get('last_started_epoch') or 0) >= mine:
+                continue
+            if self._scope_session(item['scope'], now).get('label') in item['sessions']:
+                return True
+        return False
+
     def _reconcile_universe_run(self, work, policy, summary, now):
         """Close this scope's run handle once its run has finished or its owner is gone; a running run keeps it.
 
@@ -842,6 +872,10 @@ class PaperAutomationService:
         if work.get('_global_universe_active'):
             facts['active_run_id'] = 'SHARED_ACCOUNT_RUN_ACTIVE'
         decision = should_run_universe(facts)
+        if decision['decision'] == 'RUN' and work.get('_peer_waiting'):
+            # Only a run yields: a block or deferral keeps its own reason.
+            decision = dict(decision='DEFER', reason_codes=['UNIVERSE_PEER_WAITING'], next_eligible_epoch=None,
+                            detail=dict(run_id='SHARED_ACCOUNT_PEER_WAITING'))
         previous = universe.get('last_decision') or {}
         universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=_iso(decision['next_eligible_epoch']))
         if decision['decision'] == 'RUN' and not universe.get('active_run_id') and gate['allowed']:

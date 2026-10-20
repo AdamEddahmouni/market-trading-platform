@@ -1,5 +1,20 @@
 # IMP Work Log
 
+## 2026-10-20 — Shared universe run slot: a waiting in-session scope gets the next turn
+
+Scopes run in policy order (US_EQUITIES, then CRYPTO), and each closes only its
+own run handle. In the cycle where a crypto slice finishes, the equity scope
+still sees that run and defers `SHARED_ACCOUNT_RUN_ACTIVE`. The crypto scope
+then restarts in the same cycle whenever its slice outlasted the 30-minute
+separation. As a result, equities reached the model only after short crypto
+slices. On 2026-10-20 the first equity run of the session started at 09:53 ET,
+and only because the crypto slice failed. Now a scope that would RUN yields one
+cycle (`UNIVERSE_PEER_WAITING`) when another scope deferred on the shared slot
+at its latest cycle, is inside its own session, and last started earlier. A
+deferral older than two cadences never makes a scope wait. A blocked or deferred
+decision keeps its own reason. R10 deployed 09:12 ET.
+Evidence: `destination-tests/20261020-market-day/`.
+
 ## 2026-10-19 — R9: Paper universe gate, order-parse order, Moomoo feed self-healing
 
 Production crypto and equity provider rows carry no `instrument.universe`, so

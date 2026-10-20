@@ -131,6 +131,66 @@ class MultiUniverseControllerTests(unittest.TestCase):
                               dict(allowed=True))
         self.assertIsNone(seen[0]['last_started_epoch'])
 
+    def waiting_states(self, now, *, decided_ago=60, equity_started_ago=3600, crypto_started_ago=1900):
+        from market_platform_foundation.ui_api.paper_automation import _iso
+        waiting = dict(decision='DEFER', reason_codes=['UNIVERSE_RUN_ACTIVE'], detail=dict(run_id='SHARED_ACCOUNT_RUN_ACTIVE'),
+                       at_iso=_iso(now - decided_ago))
+        return dict(US_EQUITIES=dict(universe=dict(last_decision=waiting, last_started_epoch=now - equity_started_ago)),
+                    CRYPTO=dict(universe=dict(last_started_epoch=now - crypto_started_ago)))
+
+    def regular_session_service(self, label='REGULAR'):
+        h, service = self.service()
+        service.session = lambda _: dict(label=label, session_date='2026-10-20', trading_day=True, minutes_to_close=300)
+        return h, service
+
+    def test_a_continuous_scope_yields_the_freed_slot_to_an_in_session_peer_that_waited_longer(self):
+        # 2026-10-20: a crypto slice outlasting the 30-minute separation restarted in the cycle it finished, before
+        # the equity scope (evaluated first, still seeing the finished run's handle) could take the slot.
+        h, service = self.regular_session_service()
+        now = h.clock()
+        states = self.waiting_states(now)
+        self.assertTrue(service._peer_waiting(self.policy(), states, 'CRYPTO', now))
+        self.assertFalse(service._peer_waiting(self.policy(), states, 'US_EQUITIES', now))
+
+    def test_a_stale_or_closed_or_more_recent_peer_never_makes_a_scope_wait(self):
+        h, service = self.regular_session_service()
+        now = h.clock()
+        # Older than two cadences (policy cadence 60 s): the peer stopped evaluating, e.g. its session closed.
+        self.assertFalse(service._peer_waiting(self.policy(), self.waiting_states(now, decided_ago=121), 'CRYPTO', now))
+        # The peer started after this scope did: it already had the more recent turn.
+        self.assertFalse(service._peer_waiting(self.policy(), self.waiting_states(now, equity_started_ago=600), 'CRYPTO', now))
+        # The peer is outside its own session.
+        h, closed = self.regular_session_service('CLOSED')
+        self.assertFalse(closed._peer_waiting(self.policy(), self.waiting_states(h.clock()), 'CRYPTO', h.clock()))
+        # A peer deferred for its own reason is not waiting on the shared slot.
+        states = self.waiting_states(now)
+        states['US_EQUITIES']['universe']['last_decision']['detail'] = {}
+        self.assertFalse(service._peer_waiting(self.policy(), states, 'CRYPTO', now))
+
+    def test_only_a_run_yields_to_a_waiting_peer(self):
+        from unittest.mock import patch
+        h, service = self.service()
+        service._universe_facts = lambda policy, universe, **_: (dict(active_run_id=None), 'fingerprint')
+        service._event = lambda *args, **kwargs: None
+        service._runs = Mock()
+        verdicts = dict(RUN=dict(decision='RUN', reason_codes=['UNIVERSE_MIN_SEPARATION_ELAPSED'], next_eligible_epoch=None, detail={}),
+                        BLOCK=dict(decision='BLOCK', reason_codes=['UNIVERSE_PLAN_INFEASIBLE'], next_eligible_epoch=None, detail={}))
+        for name, verdict in verdicts.items():
+            work = dict(account_id='controlled', universe={}, _peer_waiting=True)
+            summary = dict(blockers=[])
+            with patch('market_platform_foundation.ui_api.paper_automation.should_run_universe', return_value=dict(verdict)):
+                service._universe(work, dict(scope=dict(universe='CRYPTO'), schedule=dict(universe_evaluation_interval_seconds=1800)),
+                                  summary, h.clock(), dict(label='CONTINUOUS'), dict(allowed=True))
+            decided = work['universe']['last_decision']
+            if name == 'RUN':
+                self.assertEqual((decided['decision'], decided['reason_codes']), ('DEFER', ['UNIVERSE_PEER_WAITING']))
+                self.assertEqual(decided['detail'], dict(run_id='SHARED_ACCOUNT_PEER_WAITING'))
+                self.assertIsNone(work['universe'].get('active_run_id'))
+            else:
+                self.assertEqual(decided['decision'], 'BLOCK')
+                self.assertEqual(summary['blockers'][0]['code'], 'UNIVERSE_PLAN_INFEASIBLE')
+        service._runs.start.assert_not_called()
+
 
 class CryptoEvidenceIntegrationTests(unittest.TestCase):
     """The CRYPTO scope's provider health and candidate quotes against the real serving Kraken contracts.
