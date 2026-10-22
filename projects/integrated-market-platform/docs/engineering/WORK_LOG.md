@@ -1,5 +1,43 @@
 # IMP Work Log
 
+## 2026-10-22 — Reevaluation lease held through long model calls
+
+The live Screener's AI status kept switching between "Interrupted" and "Running
+in another process" while the loop was working. The loop's 180 s lease was
+renewed only between cycles and just before each model call, so a local-model
+call longer than 180 s let it expire mid-call. A loop driven by Paper
+automation had a second gap: nothing renewed it between the controller's
+cycles, and that cadence can be up to 3600 s.
+
+- **Inside a cycle:** a scheduled cycle now runs a lease keeper that renews
+  every lease / 3. It stops when the cycle ends, and for good at the first
+  refused renewal. The repository refuses once the lease is released (Stop,
+  Emergency Stop, detach) or another process holds it, so a lost lease is
+  never taken back. A worker that dies renews nothing, and its loop reads
+  `INTERRUPTED` once the last renewal runs out. Manual cycles hold no lease
+  and start no keeper.
+- **Between automation cycles:** the Paper automation controller's own
+  heartbeat also renews the loop it drives. After Stop, Emergency Stop or
+  detach, it renews neither lease.
+- **One loop per account:** `latest_loop` could alternate between two loops
+  of one account. That needed a second process to configure another scope
+  while the first still held its lease; both then wrote the account's
+  "latest" in turn. Configure now refuses with
+  `REEVALUATION_LOOP_ALREADY_OWNED` while another process holds a different
+  loop of the same account.
+
+Deterministic regression tests pace the keeper by hand against the injected
+clock:
+- A 490 s call stays `RUNNING_ELSEWHERE` to a second process.
+- A worker that dies reads `INTERRUPTED` 181 s after its last renewal.
+- The keeper never renews after Stop or after another process takes the
+  loop.
+- A 900 s automation cadence keeps the loop held.
+
+With the keeper and driver renewal disabled, all five of these fail. The UI
+"busy · last heartbeat" wording from Screener Sprint 1 (#501) stays as a
+fallback. Not merged and not deployed.
+
 ## 2026-10-12 — Autonomous Paper operations (AUTO-01)
 
 Added one server-owned controller that runs the existing authorities

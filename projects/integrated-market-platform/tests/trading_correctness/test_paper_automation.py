@@ -1092,6 +1092,24 @@ class WorkerScheduleTests(AutoBase):
         self.assertEqual(controller['last_cycle']['missed_cycles_before'], 2)
         self.assertTrue(worker.alive())
 
+    def test_a_cadence_longer_than_the_lease_keeps_the_driven_loop_held(self):
+        a = self.auto
+        a.go(schedule=dict(cadence_seconds=900))
+        worker = a.service.worker
+        owners = []
+
+        def wait(seconds):
+            self.clock.value += seconds
+            owners.append(a.reevaluation.status()['liveness']['owner'])
+        worker.wait = wait
+        worker.run(max_cycles=2)  # 900 s between cycles against the loop's 180 s lease
+        self.assertEqual(len(owners), 15)
+        self.assertEqual(set(owners), {'THIS_PROCESS'})
+        a.service.stop()
+        self.assertFalse(a.service.heartbeat())  # a stopped controller renews neither lease
+        status = a.reevaluation.status()
+        self.assertEqual((status['worker_state'], status['liveness']['lease_until']), ('STOPPED', None))
+
     def test_a_worker_that_loses_its_lease_stops_scheduling(self):
         a = self.auto
         a.go()
