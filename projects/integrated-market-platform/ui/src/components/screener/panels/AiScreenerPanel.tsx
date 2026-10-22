@@ -7,6 +7,7 @@ import type { AiScreenerScope } from "../../../api/screenerAi";
 import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
 import { CoverageReceipts, CoverageSummary, ProvisionalFinalists } from "../ai/AiCoverage";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
+import { AiReasonChips, AiRunHistory } from "../ai/AiRunInsights";
 import { EngineSwitchConfirm, contractText, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
 import { useAiScreenerRunResult, useAiScreenerRuns } from "../ai/useAiScreenerRuns";
 import { postSynthesisEngine, type AiStatus } from "../../../api/screenerNews";
@@ -181,7 +182,9 @@ export default function AiScreenerPanel({ api }: { api: any }) {
         <PanelMessage tone="warn" role="status">This run did not finish, so it is not a selection from the whole universe. {value.limitations.join(" ")}</PanelMessage>
         <ProvisionalFinalists result={value} />
       </> : expired && (value.candidates.length > 0 || (!value.universe_coverage && !value.staged)) ? <PanelMessage tone="warn">Evidence expired — rerun AI Screener.</PanelMessage> : value.state !== "CURRENT" && value.state !== "NO_GROUNDED_CANDIDATES" ? <PanelMessage tone="error">Result rejected or unavailable{value.reason ? ` · ${value.reason}` : ""}.</PanelMessage> : <>
-        {value.candidates.length === 0 && <PanelMessage>{value.universe_coverage ? "The run finished and selected no candidate." : "No sufficiently grounded candidates were selected."} {value.limitations.join(" ")}</PanelMessage>}
+        {value.candidates.length === 0 && <PanelMessage>{value.universe_coverage ? "The run finished and selected no candidate." : "No sufficiently grounded candidates were selected."}</PanelMessage>}
+        <AiReasonChips reasons={mine?.summary?.reasons ?? []} limitations={value.candidates.length === 0 ? value.limitations : []} />
+
         {value.candidates.map((selection) => {
           const lifecycle = !experimental && lifecycles.data?.run?.run_id === value.run_id ? lifecycles.data.selected.find((item) => item.instrument_id === selection.instrument_id) : undefined;
           const controls = <>
@@ -227,5 +230,6 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       </>}
     </section>}
     {!experimental && lifecycles.data && <TradeLifecycleGroups list={lifecycles.data} runId={runId} />}
+    {!experimental && <AiRunHistory scope={screenerScope} />}
   </PanelFrame>;
 }
