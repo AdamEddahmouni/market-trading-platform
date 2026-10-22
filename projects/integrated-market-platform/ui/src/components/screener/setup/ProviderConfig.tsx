@@ -41,6 +41,7 @@ const SOURCE_TEXT: Record<ProviderField["source"], string> = {
   ENVIRONMENT: "Set by the API's environment. Change it there; IMP won't store a value that would be ignored.",
   PRIVATE_FILE: "Stored in IMP's private provider file on this computer.",
   ENV_FILE: "Read from the repository .env file. Saving here takes precedence.",
+  PROVIDER_STORE: "Held in this provider's own private store on this computer, saved when it was connected. A value saved here replaces it.",
   NONE: "Not set.",
 };
 const FREE_ACCESS = new Set(["FREE", "FREE_ACCOUNT"]);

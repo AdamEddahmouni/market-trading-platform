@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createChart, type IChartApi, type ISeriesApi, type Time } from "lightweight-charts";
+import { zoneSuffix } from "../localZone";
 
 
 type Point = { time_ms: number; cvd: number; delta?: number; segment?: number };
@@ -32,6 +33,7 @@ export default function CvdChart({ points, label, timeZone = "America/New_York",
     const element = containerRef.current;
     if (!element) return;
     const time = new Intl.DateTimeFormat("en-US", { timeZone, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+    const suffix = zoneSuffix(timeZone);
     const chart = createChart(element, {
       autoSize: true,
       layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
@@ -39,7 +41,7 @@ export default function CvdChart({ points, label, timeZone = "America/New_York",
       rightPriceScale: { borderColor: "#27323f" },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: true,
         tickMarkFormatter: (value: Time) => time.format(new Date(Number(value) * 1000)) },
-      localization: { timeFormatter: (value: Time) => `${time.format(new Date(Number(value) * 1000))} ${timeZone === "UTC" ? "UTC" : "ET"}`,
+      localization: { timeFormatter: (value: Time) => `${time.format(new Date(Number(value) * 1000))} ${suffix}`,
         ...(formatValue ? { priceFormatter: formatValue } : {}) },
       crosshair: { mode: 0 }, handleScroll: true, handleScale: true,
     });

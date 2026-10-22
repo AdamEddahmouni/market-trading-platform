@@ -8,7 +8,8 @@ five sources, never five events.
 
 Membership evidence, in order:
 
-1. the same canonical URL (scheme/host/path, query and fragment dropped);
+1. the same canonical URL (host/path; fragment and tracking query dropped, an
+   article-id parameter kept);
 2. the same provider-native id from the same provider;
 3. near-identical normalized headlines (token Jaccard >= ``SIMILARITY``) whose
    times are within ``WINDOW_S`` of the cluster's first member.
@@ -25,7 +26,7 @@ import hashlib
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
-from urllib.parse import urlparse
+from urllib.parse import parse_qsl, urlparse
 
 from .timestamps import parse_utc_iso
 
@@ -41,6 +42,8 @@ _STOPWORDS = frozenset(
     "after before over into amid says said new report reports update updates".split())
 # Publisher suffixes such as " - Reuters" or " | CNBC" are not story content.
 _SUFFIX = re.compile(r"\s+[-|–—]\s+[^-|–—]{2,40}$")
+# Query parameters that name the article itself; every other parameter is tracking and is dropped.
+_IDENTITY_PARAMS = frozenset({"id", "p", "article", "articleid", "story", "storyid"})
 
 
 def canonical_url(url: str | None) -> str:
@@ -52,7 +55,11 @@ def canonical_url(url: str | None) -> str:
         return ""
     host = parsed.netloc.lower()
     host = host[4:] if host.startswith("www.") else host
-    return f"{host}{parsed.path.rstrip('/')}".lower()
+    base = f"{host}{parsed.path.rstrip('/')}".lower()
+    # Some providers address every article through one path and an id parameter
+    # (Finnhub: /api/news?id=...). Dropping it would make all of them one URL.
+    identity = sorted((key.lower(), value) for key, value in parse_qsl(parsed.query) if key.lower() in _IDENTITY_PARAMS)
+    return base + "".join(f"?{key}={value}" for key, value in identity)
 
 
 def normalized_headline(headline: str) -> str:

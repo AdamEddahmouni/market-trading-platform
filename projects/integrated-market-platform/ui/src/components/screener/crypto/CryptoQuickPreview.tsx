@@ -7,13 +7,15 @@ import { pricePrecision } from "../panels/shared";
 import { classifyZones } from "../srClassify";
 import { PreviewNewsSection } from "../news/PreviewNewsSection";
 import "./crypto.css";
+import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 
 type Props = { row: ScreenerRow | null; filters: ScreenerFilter[]; screenLabel: string | null;
   overlay: boolean; width: number; paneRef?: Ref<HTMLElement>; onClose: () => void;
   newsSupported?: boolean; onOpenNews?: () => void };
 type Timeframe = "1m" | "5m" | "15m";
 const frames: Timeframe[] = ["1m", "5m", "15m"];
-const stamp = (value: string | null | undefined) => value ? `${new Date(value).toISOString().slice(0, 19)} UTC` : "unavailable";
+const stampFormat = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
+const stamp = (value: string | null | undefined) => value ? `${stampFormat.format(new Date(value))} ${LOCAL_SUFFIX}` : "unavailable";
 const number = (value: number | null | undefined, digits = 2) => value == null ? "—" : value.toLocaleString("en-US", { maximumFractionDigits: digits });
 
 export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, paneRef, onClose, newsSupported = false, onOpenNews }: Props) {
@@ -54,7 +56,7 @@ export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, 
           {frames.map((item) => <button key={item} type="button" aria-pressed={timeframe === item} onClick={() => setTimeframe(item)}>{item}</button>)}</div>
           {data.bars.state === "CURRENT" && data.bars.bars.length > 0
             ? <PreviewChart bars={data.bars.bars} forming={data.bars.forming} support={zones?.support ?? null} resistance={zones?.resistance ?? null}
-                label={`${row.symbol} · ${timeframe} · Kraken spot · UTC`} timeZone="UTC" precision={precision} />
+                label={`${row.symbol} · ${timeframe} · Kraken spot · ${LOCAL_SUFFIX}`} timeZone={LOCAL_ZONE} precision={precision} />
             : <p role="status">Bars unavailable · {data.bars.reason ?? data.bars.state}</p>}
           <p className="screener-preview-meta">{data.bars.bar_count} complete bars · last close {stamp(data.bars.latest_complete_bar_end)}</p>
         </section>

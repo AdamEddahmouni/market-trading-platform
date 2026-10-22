@@ -78,6 +78,13 @@ class DedupeAndClusterTests(unittest.TestCase):
                                     item("b", "Completely different wording", "https://example.com/story/", provider="newsapi")])
         self.assertEqual([sorted(cluster.member_keys) for cluster in clusters], [["a", "b"]])
 
+    def test_article_id_query_keeps_provider_redirect_links_distinct(self):
+        # Finnhub addresses every article as /api/news?id=<hash>; they are different stories.
+        clusters = cluster_stories([item("a", "Nvidia record buyback draws scrutiny", "https://finnhub.io/api/news?id=aaa"),
+                                    item("b", "Cathie Wood buys three beaten-down stocks", "https://finnhub.io/api/news?id=bbb"),
+                                    item("c", "Reprint under another title", "https://finnhub.io/api/news?utm=x&id=aaa")])
+        self.assertEqual(sorted(sorted(cluster.member_keys) for cluster in clusters), [["a", "c"], ["b"]])
+
     def test_syndicated_same_headline_is_one_story_with_all_sources(self):
         clusters = cluster_stories([
             item("a", "Fed holds rates steady, signals two cuts this year - Reuters", "https://r.test/1"),

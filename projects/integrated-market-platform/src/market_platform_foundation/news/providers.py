@@ -188,6 +188,8 @@ class NewsApiClient(_NewsClientBase):
             params={
                 "apiKey": self._api_key,
                 "q": f'"{ticker}"',
+                # A name only in the article body (a spec list, a deals page) is not company news.
+                "searchIn": "title,description",
                 "from": start,
                 "to": end,
                 "language": "en",

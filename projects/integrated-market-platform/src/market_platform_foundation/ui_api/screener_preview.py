@@ -18,7 +18,10 @@ from zoneinfo import ZoneInfo
 from ..features.auto_support_resistance import METHOD, MIN_STRENGTH, Structure, build_structure, classify
 from ..market_data.current_bars import PROVIDER as BAR_PROVIDER
 from ..market_data.current_bars import SOURCE_ID as BAR_SOURCE_ID
-from ..market_data.current_bars import BarSeries, CurrentBarsService, current_bars_service
+from ..market_data.current_bars import Bar, BarSeries, CurrentBarsService, current_bars_service
+from ..market_data.delayed_futures_bridge import PROVIDER as DELAYED_FUTURES_PROVIDER
+from ..market_data.delayed_futures_bridge import SOURCE_ID as DELAYED_FUTURES_SOURCE
+from ..market_data.delayed_futures_bridge import delayed_futures_source
 from ..market_sessions import us_equity_session_label
 from .screener_filters import catalog_entry, filter_catalog, rule_matches, validate_filters
 from .screener_futures_context import FuturesContextService
@@ -365,6 +368,32 @@ class ScreenerPreviewService:
             "futures": futures,
         }
 
+    def _delayed_futures_bars(self, row: dict[str, Any], timeframe: str,
+                              quote: dict[str, Any]) -> tuple[dict[str, Any], dict[str, Any]] | None:
+        """Delayed bars and levels from the second futures source, when one is connected and knows the contract."""
+
+        from .screener_multi import futures_contract_ref
+
+        source = delayed_futures_source()
+        if source is None:
+            return None
+        try:
+            raw = source.bars(futures_contract_ref(row), timeframe)
+        except Exception:  # noqa: BLE001 — provider boundary fails closed
+            raw = None
+        if not raw:
+            return None
+        series = BarSeries(
+            instrument_id=row["instrument"]["instrument_id"], timeframe=timeframe, session_scope="PROVIDER_SPECIFIC",
+            state="DELAYED", reason="DELAYED_PROVIDER", provider_reason=None, received_ns=self._now_ns(),
+            bars=tuple(Bar(start_ns=int(bar["start_s"] * 1_000_000_000), end_ns=int(bar["end_s"] * 1_000_000_000),
+                           open=bar["open"], high=bar["high"], low=bar["low"], close=bar["close"],
+                           volume=bar.get("volume"), session="ELECTRONIC") for bar in raw),
+            forming=None)
+        source_labels = {"provider": DELAYED_FUTURES_PROVIDER, "source_id": DELAYED_FUTURES_SOURCE}
+        levels = {**self.levels(series, quote), "provider": DELAYED_FUTURES_PROVIDER, "bar_source": DELAYED_FUTURES_SOURCE}
+        return {**series.to_dict(), **source_labels}, levels
+
     def _read_other(self, instrument_id: str, *, universe: str, timeframe: str,
                     scope: str, rules: list[dict[str, Any]], snapshot_id: str | None = None) -> dict[str, Any] | None:
         from .screener_multi import multi_screener_service
@@ -398,6 +427,9 @@ class ScreenerPreviewService:
                       "min_strength": MIN_STRENGTH, "strength_semantics": STRENGTH_SEMANTICS,
                       "zones": [], "price": None, "support": None, "resistance": None, "testing": None}
             quote = multi_screener_service().quote_for(instrument_id, universe=FUTURES)
+            delayed = self._delayed_futures_bars(row, timeframe, quote)
+            if delayed is not None:
+                bars, levels = delayed
             session = "PROVIDER_SPECIFIC"
             key_fields = ("dte", "lead", "tick_size", "multiplier", "price", "volume", "open_interest")
         labels = {"dte": ("Days to Expiry", "days"), "lead": ("Lead Contract", "boolean"),

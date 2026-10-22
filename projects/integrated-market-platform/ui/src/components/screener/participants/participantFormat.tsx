@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 import type { CongressMember, CongressTransaction, DisclosedAmount, ParticipantProvider } from "../../../api/screenerParticipants";
 
 /** Plain-language states. A provider state is never presented as an absence of disclosures. */
@@ -55,8 +56,16 @@ export const signed = (value: number | null | undefined) => (value == null ? "�
 export const short = (value: number | null | undefined) => (value == null ? "—" : compact.format(value));
 /** A disclosed band, never a point value. */
 export const amountText = (amount: DisclosedAmount | null | undefined) => amount?.display ?? "Amount not parsed";
-/** Timestamps print as UTC dates with time; dates print as given. */
-export const stamp = (iso: string | null | undefined) => (iso ? iso.replace("T", " ").replace(/:\d\dZ$/, "Z").replace("Z", " UTC") : "—");
+const stampFormat = new Intl.DateTimeFormat("en-CA", { timeZone: LOCAL_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
+  hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+/** Timestamps print as a date and time on the machine's own clock; dates print as given. */
+export function stamp(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const moment = new Date(iso);
+  if (Number.isNaN(moment.getTime())) return iso;
+  const part = Object.fromEntries(stampFormat.formatToParts(moment).map((item) => [item.type, item.value]));
+  return `${part.year}-${part.month}-${part.day} ${part.hour}:${part.minute} ${LOCAL_SUFFIX}`;
+}
 
 export const OWNER_TEXT: Record<string, string> = { SELF: "Member", SPOUSE: "Spouse", JOINT: "Joint", DEPENDENT_CHILD: "Dependent child" };
 export const TYPE_TEXT: Record<string, string> = { PURCHASE: "Purchase", SALE: "Sale", SALE_PARTIAL: "Partial sale", EXCHANGE: "Exchange" };

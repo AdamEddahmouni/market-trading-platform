@@ -255,6 +255,17 @@ class PrecedenceTests(StoreCase):
         self.assertFalse(self.private.exists())
         self.assertEqual(self.environ["SEC_USER_AGENT"], "Ops Env env@acme.test")
 
+    def test_provider_own_store_is_reported_configured_without_a_value(self) -> None:
+        # Finviz validates and keeps its token in its own store; Setup must not call a working provider "not set".
+        store = self.store(provider_stores={"FINVIZ_API_KEY": lambda: True})
+        payload = store.payload()
+        field = _field(payload, "finviz", "FINVIZ_API_KEY")
+        self.assertEqual((field["configured"], field["source"], field["editable"], field["removable"]),
+                         (True, "PROVIDER_STORE", True, False))
+        self.assertEqual(_provider(payload, "finviz")["state"], "CONFIGURED")
+        assert_no_secrets_in_payload(payload)
+        self.assertEqual(_provider(self.store().payload(), "finviz")["state"], "NEEDS_SETUP")
+
     def test_bootstrap_applies_private_values_without_overriding_the_environment(self) -> None:
         self.private.write_text(
             f"SEC_USER_AGENT={IDENTITY}\nFINNHUB_API_KEY={SECRET}\nUNREGISTERED_THING=1\nIMP_EDGAR_LIVE=1\n",

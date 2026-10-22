@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ScreenerPage } from "../ScreenerPage";
+import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 import { marketClock, marketPrice, marketVolume, pricePrecision, providerLabel, signedMarketVolume, spreadBps } from "../panels/shared";
 
 const mocks = vi.hoisted(() => ({
@@ -46,6 +47,8 @@ beforeAll(() => {
 });
 
 const AS_OF = "2026-09-27T12:00:00Z"; // a Sunday: Crypto is open, US equities are not
+// Crypto clocks read the machine's own time zone, so expectations are computed in it.
+const localHms = (iso: string) => new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso));
 const f = (value: number | null, basis?: string) => ({ value, source: "KRAKEN_SPOT_PUBLIC", state: value === null ? "UNAVAILABLE" : "SNAPSHOT",
   as_of: value === null ? null : AS_OF, ...(basis ? { basis } : {}) });
 const pair = (symbol: string, id: string, base: string, quote: string, increment: string, price: number | null) => ({
@@ -186,7 +189,7 @@ describe("Crypto universe", () => {
     expect(screen.getAllByText("24/7").length).toBeGreaterThan(0);
     expect(screen.queryByText(/RTH|Pre-market|After hours|Market Cap|Float|Sector/)).not.toBeInTheDocument();
     expect(screen.getAllByText("KRAKEN").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && /^Universe as of \d{2}:\d{2}:\d{2} UTC \(\S+ ago\)$/.test(element.textContent ?? ""))).toBeInTheDocument(); // venue UTC, like every Crypto clock
+    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && /^Universe as of \d{1,2}:\d{2}:\d{2}.* \(\S+ ago\)$/.test(element.textContent ?? ""))).toBeInTheDocument(); // the machine's wall clock, like every universe
   });
 
   it("labels visible-row venue REST quotes as snapshots, never as live or unavailable", async () => {
@@ -284,7 +287,7 @@ describe("Crypto universe", () => {
     }
   });
 
-  it("renders Kraken order flow as the venue taker side on UTC clocks", async () => {
+  it("renders Kraken order flow as the venue taker side on the machine clock", async () => {
     mount();
     await select("BTC/USD");
     fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
@@ -296,10 +299,9 @@ describe("Crypto universe", () => {
     expect(within(panel).queryByText(/not a known buyer or seller/)).not.toBeInTheDocument();
     expect(within(panel).getByText("Buy")).toBeInTheDocument(); // native, not "Inf. Buy"
     expect(within(panel).getByText("+0.3")).toBeInTheDocument(); // fractional BTC net, not "+0"
-    expect(within(panel).getByText("12:00:05")).toBeInTheDocument(); // UTC tape time
+    expect(within(panel).getByText(localHms("2026-09-27T12:00:05Z"))).toBeInTheDocument(); // tape time
     expect(within(panel).getByText(/Kraken/)).toBeInTheDocument();
-    expect(within(panel).getByText(/last print 12:00:05 UTC/)).toBeInTheDocument();
-    expect(within(panel).queryByText(/ ET\b/)).not.toBeInTheDocument();
+    expect(within(panel).getByText(new RegExp(`last print ${localHms("2026-09-27T12:00:05Z")} ${LOCAL_SUFFIX}`))).toBeInTheDocument();
   });
 
   it("shows the checksummed venue book and hides a book that failed the checksum", async () => {
@@ -334,7 +336,7 @@ describe("Crypto universe", () => {
     expect(mocks.chart).toHaveBeenCalledWith("XA01:BTC", "5m", "EXTENDED", expect.anything(), "CRYPTO");
     expect(within(panel).queryByRole("group", { name: "Session scope" })).toBeNull();
     expect(within(panel).getByText(/24\/7 · Kraken public OHLC/)).toBeInTheDocument();
-    expect(within(panel).queryByText(/Moomoo|RTH| ET\b/)).not.toBeInTheDocument();
+    expect(within(panel).queryByText(/Moomoo|RTH/)).not.toBeInTheDocument();
   });
 });
 
@@ -346,8 +348,8 @@ describe("Crypto presentation helpers", () => {
     expect(marketPrice(83000.1, { price_increment: "0.1" } as never, "CRYPTO")).toBe("83,000.10");
     expect(marketPrice(12.345, null, "US_EQUITIES")).toBe("12.35");
   });
-  it("reads UTC for Crypto and ET for US markets, and names providers", () => {
-    expect(marketClock("CRYPTO").clock("2026-09-27T12:00:05Z")).toBe("12:00:05 UTC");
+  it("reads the machine clock for Crypto and ET for US markets, and names providers", () => {
+    expect(marketClock("CRYPTO").clock("2026-09-27T12:00:05Z")).toBe(`${localHms("2026-09-27T12:00:05Z")} ${LOCAL_SUFFIX}`);
     expect(marketClock("US_EQUITIES").clock("2026-09-27T12:00:05Z")).toBe("08:00:05 ET");
     expect(providerLabel("KRAKEN")).toBe("Kraken");
     expect(providerLabel(null)).toBe("No provider");
