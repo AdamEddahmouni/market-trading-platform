@@ -184,7 +184,9 @@ describe("Screener Quick Preview", () => {
     mount();
     await clickRow("AAPL");
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
-    fireEvent.click(within(pane).getByRole("button", { name: "Close quick preview" }));
+    // With the AI tab beside it, the rail's own bar carries the close button.
+    expect(pane.closest(".screener-rail")).toHaveClass("with-tabs");
+    fireEvent.click(screen.getByRole("button", { name: "Close right rail" }));
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
     expect(screen.getByRole("grid")).toHaveFocus();
     await waitFor(() => expect(mocks.layout).toHaveBeenCalledWith({ open: false, width: 400 }));
@@ -206,7 +208,7 @@ describe("Screener Quick Preview", () => {
     fireEvent.keyDown(splitter, { key: "ArrowRight" });
     expect(splitter).toHaveAttribute("aria-valuenow", "320");
     await waitFor(() => expect(mocks.layout).toHaveBeenLastCalledWith({ open: true, width: 320 }));
-    expect(screen.getByRole("complementary", { name: "Quick preview" })).toHaveStyle({ width: "320px" });
+    expect(screen.getByRole("complementary", { name: "Quick preview" }).closest(".screener-rail")).toHaveStyle({ width: "320px" });
   });
 
   it("uses an overlay drawer at narrow desktop widths", async () => {
@@ -217,7 +219,7 @@ describe("Screener Quick Preview", () => {
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("AAPL"));
     const pane = await screen.findByRole("complementary", { name: "Quick preview" });
-    expect(pane).toHaveClass("overlay");
+    expect(pane.closest(".screener-rail")).toHaveClass("overlay");
     fireEvent.keyDown(pane, { key: "Escape" });
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
   });

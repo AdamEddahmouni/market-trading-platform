@@ -24,6 +24,8 @@ export type SpecialistSelection = {
   openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   demand: PanelDemand | null;
   actions: PanelActions;
+  /** Shows the AI Screener in the right rail's AI tab, opening the rail if it is closed. */
+  openAiRail?: () => void;
 };
 export type PanelActions = {
   close: (id: PanelId) => void;

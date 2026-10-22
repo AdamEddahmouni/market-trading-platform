@@ -14,7 +14,7 @@ export type BondQuickPreviewProps = {
   filters: ScreenerFilter[];
   screenLabel: string | null;
   overlay: boolean;
-  width: number;
+  width?: number;
   paneRef?: React.Ref<HTMLElement>;
   onClose: () => void;
   ratesSupported: boolean;
@@ -71,7 +71,7 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
   const observed = row?.fields.observed_price;
   const fundValue = row?.fields.fund_value_pct;
   return <aside className={`screener-preview bond-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef as React.Ref<HTMLElement>}
-    tabIndex={-1} style={overlay ? undefined : { width }}
+    tabIndex={-1} style={overlay || width === undefined ? undefined : { width }}
     onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); onClose(); } }}>
     <header className="screener-preview-header">
       <span className="screener-preview-kicker">Quick Preview · Bond</span>

@@ -1,5 +1,45 @@
 # IMP Work Log
 
+## 2026-10-22 — Screener: AI Screener in the right rail (Phase 1c, part 2)
+
+The follow-up #479 promised: plan
+`docs/superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md`
+1c, "an AI tab beside Quick Preview in the right rail". Stacked on Sprint 1
+(#501) with #479 merged in. UI only; no API or methodology change.
+
+- The right rail has two tabs, Preview and AI (`RightRail.tsx`). The AI tab
+  is the home for run controls, results, decisions, reevaluation, Paper
+  automation and run history. It needs no selected row, loads its code on
+  first visit, and stays mounted while hidden, so switching tabs keeps a
+  run's progress and any open decision. Hidden, it stops polling.
+- The panel body moved, unchanged, from the dock panel to
+  `ai/AiScreenerWorkspace.tsx`. It now takes its scope and callbacks as
+  props instead of reading the dock's context. Every React Query key is
+  unchanged.
+- The dock's AI Screener panel is now a shortcut: one status line read from
+  the AI strip's cache (it starts no request) and Show in right rail. The
+  controls are never mounted twice, so the reevaluation, Paper automation
+  and decision timers run once. Saved layouts with the panel still load.
+- The AI strip's Open, the dock shortcut, and opening AI Screener from the
+  Open Panels row all select the AI tab, open the rail if it is closed, and
+  move focus there. None of them closes it.
+- The rail owns the width and overlay that Quick Preview had. With the AI
+  tab present, the rail's bar carries the close button. The last tab is
+  remembered per viewer in localStorage (`imp.screener.railTab`), and a
+  blocked storage is tolerated. The server-saved preview layout is still
+  `{open, width}`.
+- Universes without the AI Screener show the Quick Preview alone, with no
+  tabs.
+- Fixed on the way: the server's panel-layout check did not list
+  `ai_screener`. Any dock arrangement with the AI Screener open was refused
+  (`INVALID_PANEL_IDS`) and silently never saved. A new test reads the UI's
+  `PANEL_IDS` and requires that the server accepts exactly that set
+  (`test_screener_s4`).
+- Checked in a browser against an isolated backend at 1600×900, 1280×720 and
+  800×600: fixture store, session flag only, every provider and execution
+  gate 0, every socket connection refused. The live API was in collect-only
+  mode after the close.
+
 ## 2026-10-22 — Screener Sprint 1: broken behaviour and accessibility
 
 The first batch from the 2026-10-22 visual pass of the live Screener (items

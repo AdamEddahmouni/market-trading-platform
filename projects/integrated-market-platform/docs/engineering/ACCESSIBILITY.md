@@ -13,6 +13,7 @@
 - Tables: `th` scope, captions where helpful
 - Modals/dialogs: focus trap and escape dismiss where implemented
 - Non-modal popovers (`ui/src/lib/useDismiss.ts`): focus moves into the popover on open; Escape anywhere or a press outside closes it; keyboard closes return focus to the trigger
+- Tab sets (`role="tablist"`, e.g. the Screener's right rail Preview | AI and Quick Preview's detail tabs): one tab in the Tab order; Left/Right/Home/End move and select; hidden panels keep their state. A shortcut that opens a tab (the AI strip's Open, the dock's Show in right rail) selects it and moves focus to its panel; Escape in the rail closes it and returns focus to the grid
 - A tooltip never replaces a control's name: put hints in `aria-describedby`, not `title` on the control
 - Color not sole indicator of state (use text/icons/badges)
 - NavShell: `aria-label` on mode-specific link descriptions
