@@ -8,12 +8,12 @@ import type { AiScreenerPreview, AiScreenerResult, AiScreenerRun, AiScreenerRuns
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { lifecycle, lifecycleList, openPosition } from "../lifecycle/lifecycleFixture";
 
-const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn(),
+const mocks = vi.hoisted(() => ({ preview: vi.fn(), run: vi.fn(), post: vi.fn(), runs: vi.fn(), detail: vi.fn(), history: vi.fn(), engine: vi.fn(), lifecycles: vi.fn(), lifecycle: vi.fn(),
   stop: vi.fn(), receipts: vi.fn(), automationStatus: vi.fn(), automationHistory: vi.fn(), automationReport: vi.fn() }));
 vi.mock("../../../api/screenerLifecycle", () => ({ tradeLifecycles: mocks.lifecycles, tradeLifecycle: mocks.lifecycle }));
 vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),
   fetchAiScreenerPreview: mocks.preview, postAiScreener: mocks.post, fetchAiScreenerRuns: mocks.runs, fetchAiScreenerRun: mocks.detail,
-  postStopAiScreenerRun: mocks.stop, fetchAiScreenerCoverage: mocks.receipts }));
+  fetchAiScreenerHistory: mocks.history, postStopAiScreenerRun: mocks.stop, fetchAiScreenerCoverage: mocks.receipts }));
 vi.mock("../../../api/screenerNews", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerNews")>(), postSynthesisEngine: mocks.engine }));
 // Only the reads the automation panel performs are replaced; every writer keeps its real signature.
 vi.mock("../../../api/paperAutomation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/paperAutomation")>(),
@@ -274,6 +274,25 @@ describe("AI Screener panel", () => {
     expect(screen.queryByRole("region", { name: "AI Screener run progress" })).toBeNull();
     expect(screen.getByRole("button", { name: "Run AI Screener" })).toBeEnabled();
     expect(mocks.post).toHaveBeenCalledTimes(1);
+  });
+
+  it("explains an empty selection with evidence-derived chips and keeps the model's prose behind a disclosure", async () => {
+    mocks.preview.mockResolvedValue(preview);
+    const empty = finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z", limitations: ["Only price and volume were available."] });
+    finish({ ...empty, summary: { ...empty.summary!, reasons: [
+      { kind: "BLOCKED", capability: "TECHNICALS", reason: "NO_OBSERVATION_TIME", count: 4, of: 4, symbols: ["A", "B", "C"] },
+      { kind: "BLOCKED", capability: "QUOTE", reason: "AGE_EXCEEDS_POLICY", count: 1, of: 4, symbols: ["LABT"] }] } });
+    renderPanel();
+    const shown = await screen.findByRole("region", { name: "AI Screener result" });
+    expect(shown).toHaveTextContent("No sufficiently grounded candidates were selected.");
+    expect(within(within(shown).getByRole("list", { name: "What limited this pass" })).getAllByRole("listitem").map((chip) => chip.textContent))
+      .toEqual(["Technicals blocked: no observation time · all 4", "Quote blocked: too old · LABT"]);
+    const prose = within(shown).getByText("The model's own explanation").closest("details")!;
+    expect(prose).not.toHaveAttribute("open");
+    expect(prose).toHaveTextContent("Only price and volume were available.");
+    // History is offered but not read until it is opened.
+    expect(screen.getByText("Run history")).toBeInTheDocument();
+    expect(mocks.history).not.toHaveBeenCalled();
   });
 
   it("re-attaches to a run already in progress after a reload without starting anything", async () => {

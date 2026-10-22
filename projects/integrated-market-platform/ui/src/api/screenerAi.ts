@@ -110,9 +110,15 @@ export function fetchAiScreenerPreview(scope: AiScreenerScope, signal?: AbortSig
 }
 
 const RunStageSchema = z.object({ stage: z.string(), started_at: z.string(), elapsed_ms: z.number(), detail: z.record(z.unknown()) });
+const ReasonSchema = z.object({ kind: z.enum(["BLOCKED", "NO_NEWS", "INSUFFICIENT"]), capability: z.string().nullable(), reason: z.string().nullable(),
+  count: z.number(), of: z.number(), symbols: z.array(z.string()) });
+/** Why a pass had little to select from, read by the server from the evidence packet (never from model prose). */
+export type AiScreenerReason = z.infer<typeof ReasonSchema>;
 // `candidate_run_id` is null unless a candidate run was stored: only a completed global selection stores one.
+// `intake` is the rows the model compared in the selection it made: for a full-universe run, the finalists.
 const RunSummarySchema = z.object({ staged: StagedSchema.nullable().optional(), method: MethodSchema.optional(), state: z.string(), reason: z.string().nullable().optional(), candidate_run_id: z.string().nullable(),
   selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), intake_count: z.number().nullable().optional(),
+  intake: z.array(z.string()).optional(), reasons: z.array(ReasonSchema).optional(),
   cache: z.string().nullable().optional(), simulated: z.boolean().nullable().optional(), provider_id: z.string().nullable(), model_id: z.string().nullable(),
   runtime: z.string().nullable(), tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(),
   latency_ms: z.number().nullable().optional(), packet_bytes: z.number().nullable().optional(), decision_cutoff: z.string().nullable().optional(),
@@ -153,7 +159,7 @@ function sorted(value: unknown): unknown {
 
 /** Identity of the Screener query a run answers. The list snapshot (`result_set`) is not part of it: the same query
  *  after a list refresh is still the same question, and a result states its own cutoff. */
-export function aiScopeKey(scope: { universe: string; search: string; sort?: string | null; descending: boolean; filters: unknown; view?: unknown; screen?: unknown; method?: string; local_model_id?: string }) {
+export function aiScopeKey(scope: { universe?: string | null; search?: string | null; sort?: string | null; descending?: boolean | null; filters?: unknown; view?: unknown; screen?: unknown; method?: string | null; local_model_id?: string | null }) {
   return JSON.stringify(sorted({ universe: scope.universe, search: scope.search, sort: scope.sort ?? null, descending: scope.descending,
     filters: scope.filters, view: scope.view ?? "Overview", screen: scope.screen ?? "", ...(scope.method === "STAGED_LOCAL_FIRST_EXPERIMENTAL" ? { method: scope.method, local_model_id: scope.local_model_id ?? "Qwen/Qwen3-4B-GGUF:Q4_K_M" } : {}) }));
 }
@@ -167,6 +173,21 @@ export function postAiScreener(scope: AiScreenerScope, signal?: AbortSignal) {
 /** Read-only: the run in progress and the latest finished run for this account, without result bodies. */
 export function fetchAiScreenerRuns(signal?: AbortSignal) {
   return fetchJson("/screener/ai-screener/runs/active", AiScreenerRunsSchema, signal ? { signal } : undefined);
+}
+
+const HistoryRunSchema = z.object({ candidate_run_id: z.string(), generated_at: z.string().nullable(), state: z.string(), reason: z.string().nullable().optional(),
+  provider_id: z.string().nullable(), model_id: z.string().nullable(), runtime: z.string().nullable(), cache: z.string().nullable().optional(),
+  tokens_input: z.number().nullable().optional(), tokens_output: z.number().nullable().optional(), latency_ms: z.number().nullable().optional(),
+  selected: z.array(z.object({ instrument_id: z.string(), rank: z.number() })), selected_count: z.number(), intake_count: z.number().nullable().optional(),
+  scope: z.object({ universe: z.string().nullable().optional(), search: z.string().nullable().optional(), sort: z.string().nullable().optional(),
+    descending: z.boolean().nullable().optional(), filters: z.unknown().optional(), view: z.string().nullable().optional(), screen: z.string().nullable().optional() }).passthrough(),
+  previous_run_id: z.string().nullable(), added: z.array(z.string()).nullable(), removed: z.array(z.string()).nullable() }).passthrough();
+export type AiScreenerHistoryRun = z.infer<typeof HistoryRunSchema>;
+export const AiScreenerHistorySchema = z.object({ schema_version: z.literal("screener-ai-screener-history/1.0.0"), runs: z.array(HistoryRunSchema), limit: z.number() }).passthrough();
+
+/** Read-only: stored passes, newest first, each with its change against the previous pass of the same query. */
+export function fetchAiScreenerHistory(limit = 20, signal?: AbortSignal) {
+  return fetchJson(`/screener/ai-screener/runs/history?limit=${limit}`, AiScreenerHistorySchema, signal ? { signal } : undefined);
 }
 
 /** Read-only: one tracked run, with its full result once finished. */

@@ -12,6 +12,8 @@ import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type Screener
 import type { AiScreenerScope } from "../../api/screenerAi";
 import { QuickPreview } from "./QuickPreview";
 import AiStatusStrip from "./ai/AiStatusStrip";
+import { AiRowBadge, useAiRowMarks } from "./ai/aiRowMarks";
+import { useAiScreenerRuns } from "./ai/useAiScreenerRuns";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
 import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
@@ -652,13 +654,20 @@ export function ScreenerPage() {
   }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
   // The name under the symbol is dropped when its own column is already on screen.
   const inlineName = columnVisibility[universe === "CRYPTO" ? "venue" : "company"] !== true;
+  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
+    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
+    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
+  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
+  // Results where the rows are: the same status read the strip uses marks the rows of the latest pass for this query.
+  const aiRuns = useAiScreenerRuns(supportedPanels.has("ai_screener")).runs;
+  const aiMarks = useAiRowMarks(aiRuns.data?.latest, aiScreenerScope);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
-          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<AiRowBadge marks={aiMarks} instrumentId={item.instrument.instrument_id} />{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
         const raw = item[definition.key as TextKey] ?? null;
         // Venue codes arrive market-prefixed ("US_NASDAQ"); the universe already says the market.
@@ -674,7 +683,7 @@ export function ScreenerPage() {
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName]);
+  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName, aiMarks]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -970,10 +979,6 @@ export function ScreenerPage() {
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
   const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
-  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
-    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
-    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
-  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
   // Crypto is continuous: "24/7", never an equity session label.
   const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
