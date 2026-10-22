@@ -14,6 +14,11 @@ from urllib.parse import parse_qs, urlparse
 from ..canonical import canonical_bytes, write_canonical_json
 from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
 from ..platform.security.leak_audit import assert_no_secrets_in_payload
+from ..platform.security.route_policy import (
+    PAPER_AUTOMATION_BASE,
+    PAPER_AUTOMATION_READ_PATHS,
+    paper_automation_operations,
+)
 from . import broker_projections
 from . import canary_projections
 from . import controlled_replay as controlled_replay_api
@@ -56,6 +61,11 @@ from .request_auth import (
     loopback_request_origin,
 )
 from .store import ReplayStore
+
+# AUTO-01 dispatch, derived from the single capability table in platform.security.route_policy. The dispatch
+# tables and the capability resolver can no longer disagree, and an operation that is in neither is refused
+# here before it could reach the resolver and inherit the read-only default.
+PAPER_AUTOMATION_POST_OPERATIONS = paper_automation_operations("POST")
 
 
 def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, Any]:
@@ -169,6 +179,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 auth.code.value,
                 auth.message,
                 status=authorization_http_status(auth),
+            )
+            return False
+        # Current-market Screener/discovery has no admitted replay implementation.
+        # Refuse before imports, singleton caches, provider demand, or mutations;
+        # serving store authority outranks browser state and configured credentials.
+        current_market_route = (
+            path == "/screener" or path.startswith("/screener/")
+            or path == "/discover" or path.startswith("/discover/")
+        )
+        if current_market_route and (
+            getattr(self.store, "controlled_replay", False)
+            or getattr(self.store, "data_mode", "UNKNOWN") not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}
+        ):
+            self._send_error_json(
+                "MODE_BLOCKED", "Current-market Screener is unavailable in replay; no provider request was made.",
+                status=HTTPStatus.FORBIDDEN,
             )
             return False
         return True
@@ -501,6 +527,26 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(payload)
                 return
+            if path in PAPER_AUTOMATION_READ_PATHS:
+                # AUTO-01 reads: controller state, audit history and the behaviour report. No model, no provider, no mutation.
+                # The set is derived from the same capability table that authorizes them.
+                try:
+                    from .paper_automation import paper_automation_service
+                    first = lambda key: (query.get(key) or [None])[0]
+                    service = paper_automation_service(self.store)
+                    operation = path.rsplit("/", 1)[1]
+                    if operation == "status":
+                        payload = service.status()
+                    elif operation == "report":
+                        payload = service.report()
+                    else:
+                        payload = service.history(limit=int(first("limit") or 50), before=int(first("before")) if first("before") else None,
+                                                  kind=first("kind"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
             if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history"):
                 # OCT1-07 reads: frozen snapshots, loop liveness and bounded cycle receipts. No model, no mutation.
                 try:
@@ -533,13 +579,17 @@ class UiApiHandler(BaseHTTPRequestHandler):
 
                 try:
                     body = {key: (json.loads((query.get(key) or ["null"])[0]) if key == "filters" else (query.get(key) or [None])[0])
-                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen")}
+                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen", "method")}
                     body["universe"] = body["universe"] or "US_EQUITIES"
                     body["search"] = body["search"] or ""
                     body["view"] = body["view"] or "Overview"
                     body["screen"] = body["screen"] or ""
                     body["descending"] = body["descending"] not in ("0", "false", "no")
                     body["filters"] = body["filters"] if isinstance(body["filters"], list) else []
+                    if body['method'] is None:
+                        body.pop('method')
+                    if query.get('local_model_id'):
+                        body['local_model_id'] = query['local_model_id'][0]
                     self._send_json(read_ai_screener_preview(body))
                 except (ValueError, TypeError, json.JSONDecodeError) as exc:
                     self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
@@ -556,13 +606,35 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 if run_id == "history":
                     # Stored candidate runs, newest first, with the change against the previous run of the same query.
                     from ..local_state.action_decisions import action_repository
+                    from ..local_state.ai_screener_coverage import coverage_ledger
                     from .screener_ai_runs import run_history
 
+                    def query_of(record: dict) -> dict | None:
+                        # A full-universe record's query is on its coverage terminal, not on the reduction result.
+                        coverage_run_id = (record.get("universe_coverage") or {}).get("coverage_run_id")
+                        terminal = coverage_ledger().terminal(coverage_run_id) if coverage_run_id else None
+                        return (terminal or {}).get("scope")
+
                     try:
-                        self._send_json(run_history(action_repository(), limit=int((query.get("limit") or ["20"])[0])))
+                        self._send_json(run_history(action_repository(), limit=int((query.get("limit") or ["20"])[0]), scope_for=query_of))
                     except (ValueError, TypeError) as exc:
                         self._send_error_json("SCREENER_AI_INVALID", str(exc) if str(exc) == "INVALID_HISTORY_LIMIT" else "INVALID_HISTORY_LIMIT",
                                               status=HTTPStatus.BAD_REQUEST)
+                    return
+                if run_id.endswith("/coverage"):
+                    # One run's receipts and per-row accounting, from the ledger. Reads only.
+                    try:
+                        receipts = ai_screener_runs().coverage(
+                            account, run_id.removesuffix("/coverage"), row_class=(query.get("class") or [None])[0],
+                            offset=int((query.get("offset") or ["0"])[0]), limit=int((query.get("limit") or ["200"])[0]))
+                    except ValueError as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                        return
+                    if receipts is None:
+                        self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "No full-universe run with this id exists for this account",
+                                              status=HTTPStatus.NOT_FOUND)
+                        return
+                    self._send_json(receipts)
                     return
                 run = ai_screener_runs().read(account, run_id)
                 if run is None:
@@ -1816,6 +1888,30 @@ class UiApiHandler(BaseHTTPRequestHandler):
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
+        if path.startswith(PAPER_AUTOMATION_BASE):
+            # AUTO-01: owner policy, explicit arming and controls for unattended internal Paper simulation.
+            # The controller reaches orders only through the canonical preview and submit; no broker route exists here.
+            # The dispatchable set is derived from the single capability table (route_policy.PAPER_AUTOMATION_CAPABILITIES),
+            # so a POST can never reach a read operation. Authorization already ran in policy_for_route: an operation absent
+            # from that table, or a wrong method on a real one, matches no entry and keeps the global read-only fallthrough
+            # capability. Fail-closed for mutations therefore rests on this refusal, made before any service call.
+            from .paper_automation import paper_automation_service
+            operation = path.removeprefix(PAPER_AUTOMATION_BASE)
+            if operation not in PAPER_AUTOMATION_POST_OPERATIONS:
+                self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
+                return
+            try:
+                service = paper_automation_service(self.store)
+                if operation in ("configure", "arm", "emergency-stop"):
+                    result = getattr(service, operation.replace("-", "_"))(body)
+                elif body not in ({}, None):
+                    raise ValueError("INVALID_AUTOMATION_REQUEST")
+                else:
+                    result = getattr(service, operation)()
+                self._send_json(result)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
         if path in ("/screener/reevaluation/configure", "/screener/reevaluation/start", "/screener/reevaluation/stop", "/screener/reevaluation/run-once"):
             # OCT1-07: operator-controlled cadence. Nothing here starts on its own or submits anything.
             from .screener_reevaluation import reevaluation_service
@@ -1831,6 +1927,18 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(result)
             except (ValueError, TypeError, KeyError) as exc:
                 self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
+            # Operator Stop: no further model call starts. A call already sent is not cancelled and stays charged.
+            from .screener_ai_runs import ai_screener_runs
+
+            stopped = ai_screener_runs().stop(self.store.paper_ledger.paper_account_id,
+                                              path.removeprefix("/screener/ai-screener/runs/").removesuffix("/stop"))
+            if stopped is None:
+                self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
+                                      status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(stopped)
             return
         if path == "/screener/ai-screener":
             # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.

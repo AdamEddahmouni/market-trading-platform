@@ -1,0 +1,794 @@
+{
+  "schema_version": "ai-screener-local-first-acceptance/1.0.0",
+  "generated_at": "2026-10-08T16:56:56.148560+00:00",
+  "verdict": "LOCAL_FIRST_ENGINE_IMPLEMENTED_QUALITY_UNPROVEN",
+  "base_sha": "6bd88f7a30fad2c30ab9320bcd0c893dd15b6007",
+  "base_tree": "9050f8ea113f44e3b2c7e4dd17b02b61d3aba275",
+  "method": "ai-screener-local-first/1.0.0",
+  "engineering_verdict": "LOCAL_VALIDATION_COMPLETE_PROTECTED_INTEGRATION_RECORDED_BY_MERGE",
+  "economic_verdict": "NOT_PROVEN",
+  "methodology_verdict": "NOT_PROVEN",
+  "methodology_approval": "OFF",
+  "operational_activation": "OFF",
+  "paid_generations": 0,
+  "production_paper_submissions": 0,
+  "live_submissions": 0,
+  "prospective_campaign_starts": 0,
+  "model": {
+    "capability": "LOCAL_AI_SYNTHESIS",
+    "context": 8192,
+    "cost_usd": 0,
+    "gpu_layers": 99,
+    "licenses": {
+      "model": "Apache-2.0 (Qwen/Qwen3-4B-GGUF LICENSE)",
+      "runtime": "MIT (ggml-org/llama.cpp)"
+    },
+    "model_bytes": 2497280256,
+    "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+    "model_path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--Qwen--Qwen3-4B-GGUF\\snapshots\\bc640142c66e1fdd12af0bd68f40445458f3869b\\Qwen3-4B-Q4_K_M.gguf",
+    "model_sha256": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+    "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "runtime": "llama.cpp llama-server",
+    "runtime_path": "C:\\Users\\adame\\AppData\\Local\\IMP\\runtimes\\llama.cpp\\b11269-win-vulkan-x64\\llama-server.exe",
+    "runtime_sha256_archive": "34a27c239727047adc5aed80b656b13373ff136b27d28bd898a14b7b7283695a",
+    "runtime_version": "b11269",
+    "schema_version": "imp-local-model/1.0.0",
+    "verified_at": "2026-10-08T16:08:00Z",
+    "runtime_executable_sha256": "9d7ec1f038329210f6be353a89752ea4a762f9defa80560d37102ccce7b09a06",
+    "runtime_executable_bytes": 9216,
+    "source": "https://huggingface.co/Qwen/Qwen3-4B-GGUF/tree/bc640142c66e1fdd12af0bd68f40445458f3869b",
+    "runtime_source": "https://github.com/ggml-org/llama.cpp/releases/tag/b11269",
+    "runtime_files": {
+      "ggml-base.dll": {
+        "bytes": 800768,
+        "sha256": "28a14ca75b4383616c44fbfabb4000260845891905be3e243f6d48249f8f495b"
+      },
+      "ggml-cpu-alderlake.dll": {
+        "bytes": 1424384,
+        "sha256": "632e8dd4f10e6e11359574359c5c7e9a37b35f939dd99b2b5ae28cd502cc2a66"
+      },
+      "ggml-cpu-cannonlake.dll": {
+        "bytes": 1649664,
+        "sha256": "31acdb332de779dff7d8f5aad85fd653dc61dddde7df68ef832fa348cec0df71"
+      },
+      "ggml-cpu-cascadelake.dll": {
+        "bytes": 1634304,
+        "sha256": "6505c85092ae537a83943740e25314bbaf05343a0fc52931c2eddce4e8dd3663"
+      },
+      "ggml-cpu-cooperlake.dll": {
+        "bytes": 1634816,
+        "sha256": "36c6d387799cd30c83f0b668887e5ac6603443836359204f712a11acda9484b1"
+      },
+      "ggml-cpu-haswell.dll": {
+        "bytes": 1428992,
+        "sha256": "faa5d18d89bf5eb93e2bebd7cb727a1539922154fb5bec73418f7005cbad26b8"
+      },
+      "ggml-cpu-icelake.dll": {
+        "bytes": 1640448,
+        "sha256": "b71c0376be9515ade0eacdd83ab8163a592a165022b8934a9c0ececa596f6e2e"
+      },
+      "ggml-cpu-ivybridge.dll": {
+        "bytes": 1298944,
+        "sha256": "a770877528efb8d7d045a6e063ce5147e4e027c0ea8bf5294f5cb4c0c757726e"
+      },
+      "ggml-cpu-piledriver.dll": {
+        "bytes": 1303040,
+        "sha256": "631f72b106a93910da17987e1d61b072e2314a82ef9ba789e2e867c554c6d364"
+      },
+      "ggml-cpu-sandybridge.dll": {
+        "bytes": 1278976,
+        "sha256": "186756518a0337a1a1a0d53cb81e6e90d3bf1397c1adaf24d609350a25131023"
+      },
+      "ggml-cpu-sapphirerapids.dll": {
+        "bytes": 1911296,
+        "sha256": "2e34a276583e14580bd6c0a9852c0d0e544d1172729f891f558edf8655f4f663"
+      },
+      "ggml-cpu-skylakex.dll": {
+        "bytes": 1643008,
+        "sha256": "c421dec11a1cf84a617411149a99ac47d3388137c5da984fe14efeb97f3b8174"
+      },
+      "ggml-cpu-sse42.dll": {
+        "bytes": 909312,
+        "sha256": "fe2480ed438f7ea26e081d67b865b3ce20b801cfe69b31a8b34fff7ad7ccef59"
+      },
+      "ggml-cpu-x64.dll": {
+        "bytes": 901632,
+        "sha256": "3e7d3405834404b2cc491dcc488f877d7ff48b62c6f96ce7d0a68279f8c284d6"
+      },
+      "ggml-cpu-zen4.dll": {
+        "bytes": 1641472,
+        "sha256": "860ae0816ea9ae896e919282d827a7f596cbc307271d908dc01a4e7113075417"
+      },
+      "ggml-rpc-server.exe": {
+        "bytes": 117248,
+        "sha256": "a7f259138e28862b232103d12f67dbc72c9b327d6502813fbef1db69eebb1aa5"
+      },
+      "ggml-rpc.dll": {
+        "bytes": 168448,
+        "sha256": "fa9cc84b6ccc4d66b2f27f13065430841cc8fd18848e972179540162991c4a68"
+      },
+      "ggml-vulkan.dll": {
+        "bytes": 45306880,
+        "sha256": "f7cbaf4c10ca4f7781bc1caf58a5dc087890b76a9a7ad74a35ae477bea7aa05e"
+      },
+      "ggml.dll": {
+        "bytes": 79872,
+        "sha256": "ace1d47daf81a21439dad784ca6803b88b2a32629ec5bb192a5ed266c8c51e8c"
+      },
+      "libomp.dll": {
+        "bytes": 768000,
+        "sha256": "a12116ba72d1d6820407cf30be23da04ce79d6bb8a71a5ee71759c5a1faa6f1c"
+      },
+      "LICENSE-LLVM-OpenMP": {
+        "bytes": 19741,
+        "sha256": "fdad1758a9e1f9d5a81e18879b3406772115edc92c24bfa36b70c654f325e8e4"
+      },
+      "llama-batched-bench-impl.dll": {
+        "bytes": 63488,
+        "sha256": "f1a4fce249509ad9b7ef4a91871bb223657ffcbcde11d2e304d50a4501f7f6da"
+      },
+      "llama-batched-bench.exe": {
+        "bytes": 9216,
+        "sha256": "0dc7223de14531e10184339f7d3f066669084e2497a0f74bcf12109b84d251a9"
+      },
+      "llama-bench-impl.dll": {
+        "bytes": 401408,
+        "sha256": "6f121eeb2b641af9a81740b3614107bb6c0a9c3f1b824b0472af8aca591e86b7"
+      },
+      "llama-bench.exe": {
+        "bytes": 9216,
+        "sha256": "92932524e9bb14c79b821bf59d4a9c7f832ba34393c45a5c57d8eb647f6f4f6e"
+      },
+      "llama-cli-impl.dll": {
+        "bytes": 3297792,
+        "sha256": "c980bea25cbb1559929bc37396bee97b545bdd136c72e4b9478ebbb8e5678ff2"
+      },
+      "llama-cli.exe": {
+        "bytes": 9216,
+        "sha256": "3ad1327601c28ebdd26461b77a8074b5e7658bcd695146457927b907969a08d7"
+      },
+      "llama-common.dll": {
+        "bytes": 7849472,
+        "sha256": "6bb2ae768b8277fa83beeb1f4f565ddd65bb3db7cfd977254ee0735264c3d2ed"
+      },
+      "llama-completion-impl.dll": {
+        "bytes": 135168,
+        "sha256": "ae9d207d069189cc12b4e18f33118e258480f2e9e430fbaf78b01a015e8d4d70"
+      },
+      "llama-completion.exe": {
+        "bytes": 9216,
+        "sha256": "bd000f09ecddfc30413d266dd9ae1250aca5f36421b1e67dd7383916cd26466e"
+      },
+      "llama-fit-params-impl.dll": {
+        "bytes": 43008,
+        "sha256": "fc2de662b46c064edf2036b8bfe4c17c833d0a49cdf4d266f901e8b6d9b59c33"
+      },
+      "llama-fit-params.exe": {
+        "bytes": 9216,
+        "sha256": "b0df27e59a0ff2e292151b50a3ddb4796e2392d3abe484d8287a28ff64c878fe"
+      },
+      "llama-gemma3-cli.exe": {
+        "bytes": 27136,
+        "sha256": "95ba82975bb1bc3445f12bbd368d0c6c92ca0083e8b28c332cc61be6d9f3c0ef"
+      },
+      "llama-gguf-split.exe": {
+        "bytes": 60416,
+        "sha256": "415b77fea3aa57cd593a18890f81f963d81828d3908bf88a541f12d0c7c69ad0"
+      },
+      "llama-imatrix.exe": {
+        "bytes": 256000,
+        "sha256": "c91f907d0af50a48d30c909671ef8cd7cdc1d650615973c73199267d0931fe2e"
+      },
+      "llama-llava-cli.exe": {
+        "bytes": 27136,
+        "sha256": "95ba82975bb1bc3445f12bbd368d0c6c92ca0083e8b28c332cc61be6d9f3c0ef"
+      },
+      "llama-minicpmv-cli.exe": {
+        "bytes": 27136,
+        "sha256": "95ba82975bb1bc3445f12bbd368d0c6c92ca0083e8b28c332cc61be6d9f3c0ef"
+      },
+      "llama-mtmd-cli.exe": {
+        "bytes": 91136,
+        "sha256": "1c984293418dbfbe3e58d242a94029e1e155f5beaea721570e27300f1adf086c"
+      },
+      "llama-mtmd-debug.exe": {
+        "bytes": 55808,
+        "sha256": "870beb9261230ff3dcc437e774520de918fd2a12066afaeee3c60d861d6e1375"
+      },
+      "llama-perplexity-impl.dll": {
+        "bytes": 196096,
+        "sha256": "34988a9631fa376e4dcf70bca0fb2070d447f7d054ce5ca2621f9a19ddef8690"
+      },
+      "llama-perplexity.exe": {
+        "bytes": 9216,
+        "sha256": "f61ba173021920eee0332052b311c6862b3d0844e54a523ac3f6f8a248d1473e"
+      },
+      "llama-quantize-impl.dll": {
+        "bytes": 137216,
+        "sha256": "1b47c036e7fcb16eaeb10385a062352301238e2453f5a9346c6c1680e83f31bd"
+      },
+      "llama-quantize.exe": {
+        "bytes": 9216,
+        "sha256": "ddc01b95b2b639a446958e964ac986dd38cf503d1ce986757dd353f0a2647a7d"
+      },
+      "llama-qwen2vl-cli.exe": {
+        "bytes": 27136,
+        "sha256": "95ba82975bb1bc3445f12bbd368d0c6c92ca0083e8b28c332cc61be6d9f3c0ef"
+      },
+      "llama-results.exe": {
+        "bytes": 46592,
+        "sha256": "0d49263f19b592413f05d855aa973f837be419d7d419cb9abf79cc2d23bdf4ec"
+      },
+      "llama-server-impl.dll": {
+        "bytes": 8922624,
+        "sha256": "bd42db709e21d4ded9e4f3daee893c7f154d9372a50aba4b5c7d83926a751925"
+      },
+      "llama-server.exe": {
+        "bytes": 9216,
+        "sha256": "9d7ec1f038329210f6be353a89752ea4a762f9defa80560d37102ccce7b09a06"
+      },
+      "llama-tokenize.exe": {
+        "bytes": 58880,
+        "sha256": "51b3bafded47d6944b788d2899b32c2b721f87bd0f3ff7abd2d0e34b9b985694"
+      },
+      "llama-tts.exe": {
+        "bytes": 41984,
+        "sha256": "4e68bad783b460b3d0b4ab4259b100d02483e553d35083560bc8a37d89ccd6fa"
+      },
+      "llama.dll": {
+        "bytes": 3203072,
+        "sha256": "d6a740f91d704897b57881cdfc2a867fbf59c0a172e025d830200c4252c4f878"
+      },
+      "llama.exe": {
+        "bytes": 104448,
+        "sha256": "63f775e671c5abe5ebc33676a965595ad03502c369e7f23c4e6c825c54a3896e"
+      },
+      "mtmd.dll": {
+        "bytes": 1787904,
+        "sha256": "18badf1db28cd42cb4f3ffbda677bbbaa17df1769b45a17668e7a58477f581fe"
+      }
+    },
+    "runtime_installed_bytes": 94496029
+  },
+  "hardware": {
+    "cpu": "Intel Core Ultra 7 256V",
+    "cpu_threads": 8,
+    "ram_bytes": 16687722496,
+    "gpu": "Intel Arc 140V integrated; shared system memory",
+    "inference_threads": 4,
+    "process_ceiling_bytes": 6442450944,
+    "available_memory_floor_bytes": 4294967296,
+    "source": "Windows registry and GlobalMemoryStatusEx; no model process loaded",
+    "available_memory_observations": [
+      {
+        "observed": "six refused CPU/Vulkan pilot admissions (file written 2026-10-08T16:59Z)",
+        "available_bytes_min": 2147827712,
+        "available_bytes_max": 2148179968,
+        "source": "artifacts/ai-screener-local-first/pilot-resource-observations.json",
+        "admitted": false
+      },
+      {
+        "observed_at": "2026-10-08T19:24:53Z (session recovery recheck)",
+        "available_bytes": 2000310272,
+        "source": "local_resources.memory_sample()",
+        "admitted": false
+      }
+    ]
+  },
+  "benchmark_manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "research_results": "artifacts/ai-screener-local-first/research-results.json",
+  "gates": {
+    "G1": {
+      "requirement": "Existing exhaustive method preserved",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G2": {
+      "requirement": "Complete-universe accounting preserved",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/engineering-scales.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G3": {
+      "requirement": "Local model compatibility established",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/real-summary.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G4": {
+      "requirement": "Local hardware requirements measured",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/real-summary.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G5": {
+      "requirement": "Local evidence contract valid",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G6": {
+      "requirement": "Local output canonically validated",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G7": {
+      "requirement": "No fabricated/cross-instrument evidence",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G8": {
+      "requirement": "Experimental method versioned",
+      "disposition": "PASS",
+      "source": "src/market_platform_foundation/intelligence/inference/local_qualification.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G9": {
+      "requirement": "Qualification uncertainty preserved",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G10": {
+      "requirement": "Shortlist outcomes fully accounted for",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/engineering-scales.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G11": {
+      "requirement": "No arbitrary first-N universe cutoff",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/engineering-scales.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G12": {
+      "requirement": "Premium model configuration preserved",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G13": {
+      "requirement": "Premium budget planning correct",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G14": {
+      "requirement": "No unauthorized spending",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/real-summary.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G15": {
+      "requirement": "Staged global 0-5 reduction valid",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G16": {
+      "requirement": "No false exhaustive-premium coverage claims",
+      "disposition": "PASS",
+      "source": "docs/architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G17": {
+      "requirement": "Point-in-time correctness preserved",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G18": {
+      "requirement": "Cache/reuse validity preserved",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G19": {
+      "requirement": "Cold-scan cost reduction measured",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G20": {
+      "requirement": "Local latency and memory measured",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G21": {
+      "requirement": "Candidate-quality comparison conducted",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G22": {
+      "requirement": "False exclusions reported",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G23": {
+      "requirement": "Batch bias assessed",
+      "disposition": "NOT_PROVEN",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G24": {
+      "requirement": "Unsupported universes explicit",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G25": {
+      "requirement": "Benchmark contamination controls applied",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/manifest.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G26": {
+      "requirement": "Async Stop/restart safe",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G27": {
+      "requirement": "UI/API status truthful",
+      "disposition": "PASS",
+      "source": "ui/src/components/screener/panels/AiScreenerPanel.test.tsx",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G28": {
+      "requirement": "Downstream controlled compatibility",
+      "disposition": "PASS",
+      "source": "tests/platform/test_screener_ai_staged.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G29": {
+      "requirement": "No Paper/Live trading authority",
+      "disposition": "PASS",
+      "source": "src/market_platform_foundation/ui_api/screener_action.py",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G30": {
+      "requirement": "Independent review completed",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/independent-review.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G31": {
+      "requirement": "Required validation green",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/validation-changed.json; artifacts/ai-screener-local-first/closure.json; artifacts/ai-screener-local-first/frontend-validation.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G32": {
+      "requirement": "Protected integration verified",
+      "disposition": "RECORDED_ON_PULL_REQUEST",
+      "source": "pull request protected checks and merge commit",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G33": {
+      "requirement": "Operational activation remains OFF",
+      "disposition": "PASS",
+      "source": "docs/architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    },
+    "G34": {
+      "requirement": "Methodology approval status explicit",
+      "disposition": "PASS",
+      "source": "artifacts/ai-screener-local-first/research-results.json",
+      "scope": "Software controls; empirical measurements unavailable where marked"
+    }
+  },
+  "validation": {
+    "source_basis": "Backend and UI source last changed 2026-10-08T18:06:50Z; FAST, CHANGED and FULL below all started afterwards on that working tree. implementation_sha equals that tree plus one later change: the benchmark tool resolves the local model manifest through imp_cache_dir() instead of a machine-specific path. Focused tests, FAST, lint and docs links were rerun after that change; CHANGED/FULL were not rerun locally and protected CI validates the exact PR head.",
+    "focused_engine": {
+      "status": "PASS",
+      "tests": 36,
+      "command": "python -m unittest tests/platform/test_screener_ai_staged.py tests/phase0/test_analysis.py",
+      "run_at": "2026-10-08T19:33Z",
+      "after_final_source_change": true
+    },
+    "fast": {
+      "status": "PASS",
+      "tests": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "receipt": "artifacts/ai-screener-local-first/validation-fast.json",
+      "started_at": "2026-10-08T18:07:28Z",
+      "rerun_after_final_source_change": {
+        "status": "PASS",
+        "tests": 23,
+        "run_at": "2026-10-08T19:34Z",
+        "perf_note": "wall-time classifier reported SEVERE_REGRESSION (4.9s vs 1.8s median) on a loaded workstation; no test failed"
+      }
+    },
+    "changed": {
+      "status": "PASS",
+      "tests": 6270,
+      "passes": 6235,
+      "skips": 35,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 776.654,
+      "workers": 1,
+      "exit_code": 0,
+      "started_at": "2026-10-08T18:14:24Z",
+      "suites": 22,
+      "receipt": "artifacts/ai-screener-local-first/validation-changed.json",
+      "receipt_sha256": "c67da0650a693451c2ca45f270793e774d246a63179cb75dcf4a0e4b1bb9c0cc",
+      "recovery": "Outcome was unknown when the prior session ended; the detached process record shows COMPLETED exit 0."
+    },
+    "full": {
+      "status": "PASS",
+      "tests": 8431,
+      "skips": 53,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 931.212,
+      "workers": 1,
+      "exit_code": 0,
+      "suites": 71,
+      "command": "python tools/imp.py closure --workers 1 --skip-ui",
+      "started_at": "2026-10-08T18:34:23Z",
+      "receipt": "artifacts/ai-screener-local-first/closure.json",
+      "receipt_sha256": "fbca5e2538fff15e5514d14a99bb3d944fd8e6bde7f00bdb897e04a3a72fc4b9"
+    },
+    "interrupted_attempts_not_counted": [
+      "artifacts/ai-screener-local-first/validation-interruption.json",
+      "artifacts/ai-screener-local-first/validation-recovery.json"
+    ],
+    "ui": {
+      "status": "PASS",
+      "tests": 1414,
+      "files": 180,
+      "workers": 2,
+      "seconds": 99.37,
+      "started_at_local": "13:45:20",
+      "ui_source_last_changed_local": "12:50",
+      "receipt": "artifacts/ai-screener-local-first/frontend-validation.json",
+      "typecheck": "PASS (rerun 2026-10-08T19:33Z via tools/imp.py lint)",
+      "build": "PASS",
+      "bundle_budget": "PASS",
+      "initial_default_worker_attempt": "1410/1414; four App lazy-route timing failures under default worker load, passing isolated on base and feature"
+    },
+    "static": {
+      "lint": "PASS",
+      "format": "PASS",
+      "docs_links": "PASS (295 governance markdown files)",
+      "diff_check": "PASS",
+      "secret_scan_of_committed_files": "PASS",
+      "encoding_scan": "PASS (no mojibake in changed text)"
+    },
+    "protected_ci": "Recorded on the pull request; not restated here because this receipt is part of the validated commit."
+  },
+  "integration": {
+    "status": "RECORDED_BY_PULL_REQUEST_AND_MERGE_COMMIT",
+    "note": "A receipt inside the merged tree cannot contain its own merge SHA. Protected CI results, the merge commit and canonical-main verification are recorded on the pull request."
+  },
+  "historical_evidence_preserved": true,
+  "implementation_file_hashes": {
+    "basis": "git blob ids at implementation_sha (LF-normalized)",
+    "src/market_platform_foundation/intelligence/inference/local_qualification.py": "f84cde478fffa612fa320dedf6a50aa4ee911ce2",
+    "src/market_platform_foundation/intelligence/inference/local_resources.py": "75eb2b08b4f6f622675dfa51d9e6686034749d82",
+    "src/market_platform_foundation/ui_api/screener_ai_staged.py": "74effd95e9ae9a87bdc6b6d9908f2df52dd03c03",
+    "src/market_platform_foundation/local_state/staged_screener.py": "4df2596f5bdd042eab78ab10b3da5c846109064f",
+    "src/market_platform_foundation/ui_api/screener_action.py": "63b5a600f5e7c487ab3866d6d2800c5fada79451",
+    "tools/ai_screener_local_first_benchmark.py": "428b1fca724477ea4524845c893934d87c65e49f",
+    "tests/platform/test_screener_ai_staged.py": "9b4806d49dbdbe5fbb75872a29c6772864324cac"
+  },
+  "finbert": {
+    "bytes": 438225383,
+    "capability": "FINBERT_SENTIMENT",
+    "files": {
+      "config.json": {
+        "bytes": 758,
+        "sha256": "f6449ddda85eb726207a40be59c0cd3bd4b142ccb27298d5e45f9ae3396b1abe"
+      },
+      "pytorch_model.bin": {
+        "bytes": 437992753,
+        "sha256": "e15a7b5738df7f17553399b6d94c6e2ff69c89245d066e8e5d183f5803a554e3"
+      },
+      "special_tokens_map.json": {
+        "bytes": 112,
+        "sha256": "303df45a03609e4ead04bc3dc1536d0ab19b5358db685b6f3da123d05ec200e3"
+      },
+      "tokenizer_config.json": {
+        "bytes": 252,
+        "sha256": "ffc7913f6084b138dad68de5a0c2f0ee25ac983709260901e01f53be5796b9d9"
+      },
+      "vocab.txt": {
+        "bytes": 231508,
+        "sha256": "07eced375cec144d27c900241f3e339478dec958f92fddbc551f295c992038a3"
+      }
+    },
+    "license_note": "Publisher ProsusAI distributes FinBERT from its Apache-2.0 GitHub repository (ProsusAI/finBERT), which names this Hugging Face repository as the model's release location; the Hub card itself declares no license. Fine-tuned on Financial PhraseBank (Malo et al. 2014, CC BY-NC-SA 3.0): suitable for this private, non-commercial workstation; commercial redistribution needs review.",
+    "model_id": "ProsusAI/finbert",
+    "path": "C:\\Users\\adame\\.cache\\huggingface\\hub\\models--ProsusAI--finbert\\snapshots\\4556d13015211d73dccd3fdd39d39232506f3e43",
+    "revision": "4556d13015211d73dccd3fdd39d39232506f3e43",
+    "schema_version": "imp-local-model/1.0.0",
+    "verified_at": "2026-10-08T16:38:12Z"
+  },
+  "finalized_at": "2026-10-08T19:40:00+00:00",
+  "empirical_verdict": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+  "implementation_sha": "231be2ddf66b7236fec02947b7eb2c2424cca77d",
+  "implementation_tree": "4107535a36985706e33cf5008dc2f064c8323ac4",
+  "implementation_branch": "codex/ai-screener-local-first-intelligence",
+  "exhaustive_default_preserved": true,
+  "evidence_classes": {
+    "measured": [
+      "validation counts",
+      "UI/build results",
+      "hardware and available-memory samples",
+      "pinned model/runtime checksums",
+      "fixture engineering scales"
+    ],
+    "mocked": [
+      "all local qualification outputs",
+      "all premium responses",
+      "downstream fixture decision/submit/lifecycle"
+    ],
+    "estimated": [],
+    "not_run": [
+      "real Qwen qualification",
+      "real premium reference",
+      "frozen 52-case benchmark with a real model"
+    ],
+    "resource_blocked": [
+      "CPU and Vulkan pilot admissions",
+      "all real benchmark scales"
+    ],
+    "not_proven": [
+      "local-model candidate recall",
+      "local-model quality",
+      "premium ranking quality",
+      "paid-token savings",
+      "cold-budget economic feasibility",
+      "batch-composition bias"
+    ]
+  },
+  "model_execution": {
+    "status": "RESOURCE_BLOCKED",
+    "real_generations": 0,
+    "paid_generations": 0,
+    "pilot_admissions_refused": 6,
+    "floor_bytes": 4294967296,
+    "floor_changed_or_bypassed": false,
+    "note": "The 4 GiB available-memory floor was not lowered. No fixture output is presented as Qwen output."
+  },
+  "benchmark": {
+    "manifest": "artifacts/ai-screener-local-first/manifest.json",
+    "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+    "cases": 52,
+    "universes": [
+      "US_EQUITIES",
+      "US_ETFS"
+    ],
+    "splits": [
+      "development",
+      "holdout"
+    ],
+    "regenerated_or_relabeled_after_freeze": false,
+    "real_model_results": null,
+    "status": "FROZEN_NOT_EXECUTED_WITH_REAL_MODEL"
+  },
+  "engineering_scales": {
+    "source": "artifacts/ai-screener-local-first/engineering-scales.json",
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "rows": [
+      20,
+      50,
+      100,
+      500,
+      4630,
+      20000
+    ],
+    "result": "All scales reconcile with fixture engines and isolated stores; these establish orchestration, not model quality or savings."
+  },
+  "historical_diagnostics": {
+    "initial_admission_attempts": "artifacts/ai-screener-local-first/initial-admission-attempts.json",
+    "raw_receipt_archive": {
+      "name": "initial-admission-receipts.jsonl.gz",
+      "records": 25367,
+      "bytes": 3958623,
+      "sha256": "7657fb41c353d371413c7e2ce1518f373e98b16438fbb8788837211aa1ffa34d",
+      "committed": false,
+      "note": "Raw refused-admission receipts from the initial mislabeled harness loop; summarized by the committed attempts file and retained outside the repository."
+    }
+  },
+  "independent_review": {
+    "source": "artifacts/ai-screener-local-first/independent-review.json",
+    "rounds": 8,
+    "findings": {
+      "F1": {
+        "title": "Excluded-candidate temporal validity",
+        "disposition": "FIXED",
+        "regression": [
+          "test_expired_local_answer_is_not_a_valid_exclusion",
+          "test_changed_exclusion_cannot_complete_empty_pool"
+        ]
+      },
+      "F2": {
+        "title": "Premium-pool evidence refresh",
+        "disposition": "FIXED",
+        "regression": [
+          "test_current_source_replacement_invalidates_advanced_assessment",
+          "test_premium_response_material_change_is_rejected_with_usage_receipt"
+        ]
+      },
+      "F3": {
+        "title": "Provider/model identity",
+        "disposition": "FIXED",
+        "regression": [
+          "test_foreign_premium_identity_is_rejected_with_usage_receipt",
+          "test_local_identity_changes_are_not_valid_assessments"
+        ]
+      },
+      "F4": {
+        "title": "Exhaustive progress-stage regression",
+        "disposition": "FIXED",
+        "regression": [
+          "test_exhaustive_and_staged_progress_orders_are_separate"
+        ]
+      },
+      "F5": {
+        "title": "Windows memory-monitor source audit",
+        "disposition": "FIXED",
+        "regression": [
+          "tests/phase0/test_analysis.py::test_ctypes_exception_is_limited_to_audited_local_memory_bridge"
+        ],
+        "note": "Exception is limited to one file and two read-only Win32 queries; alias, getattr, subscript and namespace bypasses fail the audit."
+      },
+      "F6": {
+        "title": "Wall-clock-dependent quote test",
+        "disposition": "FIXED",
+        "regression": [
+          "tests/platform/test_screener_s1.py (fixture wall clock pinned; production freshness rules unchanged)"
+        ]
+      },
+      "F7": {
+        "title": "Credential-audit snapshot collision",
+        "disposition": "FIXED",
+        "regression": [
+          "tests/phase0/test_pipeline.py::test_collector_excludes_generated_environment_paths passes in CHANGED and FULL"
+        ],
+        "note": "Environmental: the temporary base snapshot was moved outside the audit root; no source-audit rule changed."
+      },
+      "F8": {
+        "title": "Windows UI workload sensitivity",
+        "disposition": "NOT_REPRODUCIBLE_WITH_EVIDENCE",
+        "note": "Four App failures appeared only at default worker concurrency; App tests pass isolated on base and feature and the complete suite passes at two workers with no test change."
+      },
+      "F9": {
+        "title": "Text encoding",
+        "disposition": "FIXED",
+        "note": "Affected text restored from Git; scan of changed text finds no remaining damage."
+      },
+      "S1": {
+        "title": "Machine-specific manifest path in benchmark tool",
+        "disposition": "FIXED",
+        "note": "Found during session recovery; the tool now resolves the manifest through imp_cache_dir()."
+      }
+    },
+    "unresolved_engineering": [],
+    "unresolved_methodology": [
+      "No safely admitted generation",
+      "No real exhaustive premium reference",
+      "Synthetic holdout independence limited",
+      "No empirical economic or premium batch verdict",
+      "P2 batch-composition limitation remains open"
+    ]
+  },
+  "limitations": [
+    "Real local-model quality, recall, false-exclusion rate and latency are unmeasured (resource blocked).",
+    "No real premium reference exists for agreement or rank comparison.",
+    "Cold-budget feasibility and paid-token savings rest on fixtures only and are not proven.",
+    "The 52 frozen cases share synthetic templates, limiting independent generalization.",
+    "Batch-composition bias in premium evaluation is not assessed.",
+    "Experimental scope is US equities and ETFs only."
+  ]
+}

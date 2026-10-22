@@ -10,11 +10,12 @@ from market_platform_foundation.canonical import write_canonical_json
 from market_platform_foundation.hot_path_telemetry.baseline import build_replay_latency_baseline, fixture_sha256
 from market_platform_foundation.hot_path_telemetry.exercise import validate_baseline_document
 from market_platform_foundation.rt01.workloads import fixture_path
+from tools.tracked_evidence import evidence_output_path
 
 ACCEPTANCE_NAME = "HOT_PATH_TELEMETRY_BASELINE_READY"
 ARTIFACT_DIR = Path(__file__).resolve().parent
-BASELINE_PATH = ARTIFACT_DIR / "replay_latency_baseline.json"
-ACCEPTANCE_PATH = ARTIFACT_DIR / "hot_path_telemetry_baseline_acceptance.json"
+BASELINE_PATH = evidence_output_path(ARTIFACT_DIR / "replay_latency_baseline.json")
+ACCEPTANCE_PATH = evidence_output_path(ARTIFACT_DIR / "hot_path_telemetry_baseline_acceptance.json")
 
 
 class HotPathTelemetryBaselineAcceptanceTests(unittest.TestCase):

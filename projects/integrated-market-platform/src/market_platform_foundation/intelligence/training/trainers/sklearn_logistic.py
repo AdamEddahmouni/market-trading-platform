@@ -5,9 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
 
 from ...baselines.errors import BaselineTrainingError
 from ...baselines.identity import parameter_fingerprint_from_payload
@@ -71,6 +68,11 @@ class SklearnLogisticCandidateTrainer:
 
             x_rows = [list(example.feature_vector.values) for example in baseline_dataset.examples]
             y_rows = [1 if label == BaselineClassLabel.UP else 0 for label in labels]
+            # scikit-learn loads when a candidate is trained, not at registration.
+            from sklearn.linear_model import LogisticRegression
+            from sklearn.pipeline import Pipeline
+            from sklearn.preprocessing import StandardScaler
+
             pipeline = Pipeline(
                 [
                     ("scaler", StandardScaler()),

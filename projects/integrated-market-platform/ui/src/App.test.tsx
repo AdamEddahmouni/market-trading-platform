@@ -706,12 +706,33 @@ describe("App mode launcher integration", () => {
   it("opens the first-class standalone Screener from primary navigation", async () => {
     render(<App />);
     await enterMode("Paper");
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "LIVE", data_mode: "LIVE_OBSERVATIONAL", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
     fireEvent.click(screen.getByRole("link", { name: "Screener" }));
     expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Session environment" })).not.toBeInTheDocument();
   });
 
+  it("blocks the standalone Screener when the backend session is replay", async () => {
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "REPLAY", data_mode: "FIXTURE_REPLAY", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
+    window.history.pushState({}, "", "/screener");
+    render(<App />);
+    expect(await screen.findByRole("heading", { name: /Screener unavailable/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Main Screener" })).not.toBeInTheDocument();
+  });
   it("loads Screener directly without the old mode launcher", async () => {
+    vi.spyOn(api, "getContext").mockResolvedValue({
+      as_of_context: { mode: "LIVE", data_mode: "LIVE_OBSERVATIONAL", execution_mode: "NONE",
+        execution_authority: "BLOCKED", as_of_time: "2026-10-10T13:00:00Z", timezone: "America/New_York" },
+      capability_states: [], quality_summary: { state: "GOOD" },
+    });
     window.history.pushState({}, "", "/screener");
     render(<App />);
     expect(await screen.findByRole("heading", { name: "Main Screener" })).toBeInTheDocument();
@@ -780,7 +801,7 @@ describe("App mode launcher integration", () => {
   it("opens the Demo dashboard", async () => {
     render(<App />);
     await enterMode("Demo");
-    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
+    expect(await screen.findByRole("region", { name: "Session environment" })).toHaveTextContent("DEMO");
     expect(await screen.findByRole("heading", { name: "See the market unfold" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Paper Command" })).not.toBeInTheDocument();
@@ -789,7 +810,7 @@ describe("App mode launcher integration", () => {
   it("opens Paper Command in Paper mode", async () => {
     render(<App />);
     await enterMode("Paper");
-    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("PAPER");
+    expect(await screen.findByRole("region", { name: "Session environment" })).toHaveTextContent("PAPER");
     expect(await screen.findByRole("heading", { name: "Paper Command" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
@@ -797,7 +818,7 @@ describe("App mode launcher integration", () => {
   it("opens Live Watch in Live mode", async () => {
     render(<App />);
     await enterMode("Live");
-    expect(screen.getByRole("region", { name: "Session environment" })).toHaveTextContent("LIVE");
+    expect(await screen.findByRole("region", { name: "Session environment" })).toHaveTextContent("LIVE");
     expect(await screen.findByRole("heading", { name: "Live Watch" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Command Center" })).not.toBeInTheDocument();
   });
@@ -805,7 +826,7 @@ describe("App mode launcher integration", () => {
   it("opens the Signals desk without duplicating the overview decision board", async () => {
     render(<App />);
     await enterMode("Demo");
-    fireEvent.click(screen.getByRole("link", { name: "Signals" }));
+    fireEvent.click(await screen.findByRole("link", { name: "Signals" }));
     expect(await screen.findByRole("heading", { name: "Signals desk" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Decision metrics" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "Primary review queue" })).not.toBeInTheDocument();

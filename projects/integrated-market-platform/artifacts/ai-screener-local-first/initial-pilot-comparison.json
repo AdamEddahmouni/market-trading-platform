@@ -1,0 +1,31 @@
+{
+  "integrated_gpu": "Shared system memory; adapter marketing capacity is not dedicated VRAM.",
+  "pilots": [
+    {
+      "backend": "VULKAN",
+      "elapsed_seconds": 0.006455700007791165,
+      "gpu_layers": 99,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    },
+    {
+      "backend": "CPU",
+      "elapsed_seconds": 0.003523699997458607,
+      "gpu_layers": 0,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    }
+  ],
+  "selected_for_measurement": {
+    "backend": "CPU",
+    "elapsed_seconds": 0.003523699997458607,
+    "gpu_layers": 0,
+    "resource_failures": 3,
+    "startup_ms": null,
+    "valid": 0
+  },
+  "selection_basis": "Fastest reliable contract-compliant pilot, else diagnostic speed only.",
+  "suitability": "UNPROVEN"
+}

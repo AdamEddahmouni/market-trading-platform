@@ -1,133 +1,293 @@
 """Governed opportunity engine (BUILD 21)."""
 
-from .engine import OpportunityEngine, forecast_expiry_ns, forecast_matches_champion
-from .errors import OpportunityError
-from .bridge import (
-    OpportunityBridgeError,
-    OpportunityBridgeResult,
-    bridge_strategy_match_to_opportunity,
-    canonical_strategy_match_opportunity_bridge,
-)
-from .decision_provenance import (
-    DECISION_PROVENANCE_METADATA_KEY,
-    DECISION_PROVENANCE_SCHEMA_VERSION,
-    ActionabilityAudit,
-    ActionabilityStatus,
-    EvidenceHonesty,
-    LineageStatus,
-    OpportunityDecisionProvenanceV1,
-    OriginKind,
-    attach_decision_provenance,
-    audit_opportunity_state_change,
-    build_decision_provenance_from_strategy_match,
-    decision_provenance_from_dict,
-    decision_provenance_to_dict,
-    evaluate_actionability,
-    extract_decision_provenance,
-    route_discovery_candidate_to_oe,
-)
-from .clustering import (
-    DuplicateExposureEntry,
-    DuplicateExposureView,
-    OpportunityClusterCandidate,
-    OpportunityClusterMemberV1,
-    OpportunityClusterV1,
-    OpportunityClusteringError,
-    OpportunityClusteringRequest,
-    OpportunityClusteringResult,
-    build_opportunity_clusters,
-    derive_thesis_identity,
-    duplicate_exposure_view,
-)
-from .comparison import (
-    ALLOCATOR_IMPLEMENTATION_VERSION,
-    COMPARATOR_IMPLEMENTATION_VERSION,
-    AccountComparisonConstraintsV1,
-    AllocationEvaluationV1,
-    AllocationIntentV1,
-    CapitalAllocationBudgetV1,
-    CapitalAllocationConstraintsV1,
-    CapitalAllocationIntentV1,
-    CapitalAllocationResultV1,
-    CapitalAllocator,
-    ComparisonCandidateV1,
-    ComparisonConstraintsV1,
-    ComparisonEvaluationV1,
-    ComparisonObservabilityV1,
-    ComparisonReasonCode,
-    ComparisonVectorV1,
-    allocate_capital,
-    allocation_constraints_to_dict,
-    comparison_constraints_to_dict,
-    comparison_vector_to_dict,
-    compare_opportunities,
-    GlobalOpportunityComparator,
-    GlobalOpportunityComparisonResultV1,
-    OpportunityComparisonCandidateV1,
-    OpportunityComparisonConstraintsV1,
-    OpportunityComparisonError,
-    OpportunityComparisonInputV1,
-    OpportunityComparisonResultV1,
-    opportunity_comparison_identity_hash,
-    opportunity_comparison_identity_payload,
-)
-from .allocation_persistence import (
-    ALLOCATION_DECISION_IMPLEMENTATION_VERSION,
-    AllocationDecisionStatus,
-    AllocationPersistenceError,
-    CapitalAllocationDecisionV1,
-    allocation_decision_identity_hash,
-    allocation_decision_set_id,
-    allocation_decision_v1_from_dict,
-    allocation_decision_v1_to_dict,
-    build_allocation_decisions,
-)
-from .economic_assessment import (
-    AccountActionability,
-    EconomicAssessmentSidecarV1,
-    EconomicAssessmentV1,
-    EconomicAssumptionsV1,
-    EconomicUncertaintyV1,
-    FactorExposureV1,
-    LiquidityCapacityV1,
-    LiquidityState,
-    MoneyMinorUnits,
-    UniversalEconomicAssessmentV1,
-    UniversalEconomicAssessmentSidecarV1,
-    economic_assessment_identity_hash,
-    economic_assessment_v1_from_dict,
-    economic_assessment_v1_to_dict,
-)
-from .identity import (
-    context_identity_payload,
-    derive_opportunity_assessment_id,
-    derive_opportunity_id,
-    derive_opportunity_policy_id,
-    opportunity_policy_identity_payload,
-)
-from .policy import build_opportunity_policy
-from .p4_adapter import (
-    adapt_shared_p4_decomposition,
-    universal_economic_assessment_from_shared_p4,
-)
-from .serialization import (
-    opportunity_assessment_v1_from_dict,
-    opportunity_assessment_v1_to_dict,
-    opportunity_context_from_dict,
-    opportunity_context_to_dict,
-    opportunity_policy_v1_from_dict,
-    opportunity_policy_v1_to_dict,
-)
-from .types import (
-    OPPORTUNITY_IMPLEMENTATION_VERSION,
-    AssessmentAction,
-    AssessmentReasonCode,
-    EconomicValueStatus,
-    OpportunityAssessmentResult,
-    OpportunityAssessmentV1,
-    OpportunityContext,
-    OpportunityPolicyV1,
-)
+from importlib import import_module as _import_module
+from typing import Any as _Any, TYPE_CHECKING as _TYPE_CHECKING
+
+# Keep static typing and the public facade while comparison and contract
+# consumers avoid initializing the engine, evaluation, fusion, and promotion.
+# Each owning module's own initialization remains unchanged on first use.
+if _TYPE_CHECKING:
+    from .engine import OpportunityEngine, forecast_expiry_ns, forecast_matches_champion
+    from .errors import OpportunityError
+    from .bridge import (
+        OpportunityBridgeError,
+        OpportunityBridgeResult,
+        bridge_strategy_match_to_opportunity,
+        canonical_strategy_match_opportunity_bridge,
+    )
+    from .decision_provenance import (
+        DECISION_PROVENANCE_METADATA_KEY,
+        DECISION_PROVENANCE_SCHEMA_VERSION,
+        ActionabilityAudit,
+        ActionabilityStatus,
+        EvidenceHonesty,
+        LineageStatus,
+        OpportunityDecisionProvenanceV1,
+        OriginKind,
+        attach_decision_provenance,
+        audit_opportunity_state_change,
+        build_decision_provenance_from_strategy_match,
+        decision_provenance_from_dict,
+        decision_provenance_to_dict,
+        evaluate_actionability,
+        extract_decision_provenance,
+        route_discovery_candidate_to_oe,
+    )
+    from .clustering import (
+        DuplicateExposureEntry,
+        DuplicateExposureView,
+        OpportunityClusterCandidate,
+        OpportunityClusterMemberV1,
+        OpportunityClusterV1,
+        OpportunityClusteringError,
+        OpportunityClusteringRequest,
+        OpportunityClusteringResult,
+        build_opportunity_clusters,
+        derive_thesis_identity,
+        duplicate_exposure_view,
+    )
+    from .comparison import (
+        ALLOCATOR_IMPLEMENTATION_VERSION,
+        COMPARATOR_IMPLEMENTATION_VERSION,
+        AccountComparisonConstraintsV1,
+        AllocationEvaluationV1,
+        AllocationIntentV1,
+        CapitalAllocationBudgetV1,
+        CapitalAllocationConstraintsV1,
+        CapitalAllocationIntentV1,
+        CapitalAllocationResultV1,
+        CapitalAllocator,
+        ComparisonCandidateV1,
+        ComparisonConstraintsV1,
+        ComparisonEvaluationV1,
+        ComparisonObservabilityV1,
+        ComparisonReasonCode,
+        ComparisonVectorV1,
+        allocate_capital,
+        allocation_constraints_to_dict,
+        comparison_constraints_to_dict,
+        comparison_vector_to_dict,
+        compare_opportunities,
+        GlobalOpportunityComparator,
+        GlobalOpportunityComparisonResultV1,
+        OpportunityComparisonCandidateV1,
+        OpportunityComparisonConstraintsV1,
+        OpportunityComparisonError,
+        OpportunityComparisonInputV1,
+        OpportunityComparisonResultV1,
+        opportunity_comparison_identity_hash,
+        opportunity_comparison_identity_payload,
+    )
+    from .allocation_persistence import (
+        ALLOCATION_DECISION_IMPLEMENTATION_VERSION,
+        AllocationDecisionStatus,
+        AllocationPersistenceError,
+        CapitalAllocationDecisionV1,
+        allocation_decision_identity_hash,
+        allocation_decision_set_id,
+        allocation_decision_v1_from_dict,
+        allocation_decision_v1_to_dict,
+        build_allocation_decisions,
+    )
+    from .economic_assessment import (
+        AccountActionability,
+        EconomicAssessmentSidecarV1,
+        EconomicAssessmentV1,
+        EconomicAssumptionsV1,
+        EconomicUncertaintyV1,
+        FactorExposureV1,
+        LiquidityCapacityV1,
+        LiquidityState,
+        MoneyMinorUnits,
+        UniversalEconomicAssessmentV1,
+        UniversalEconomicAssessmentSidecarV1,
+        economic_assessment_identity_hash,
+        economic_assessment_v1_from_dict,
+        economic_assessment_v1_to_dict,
+    )
+    from .identity import (
+        context_identity_payload,
+        derive_opportunity_assessment_id,
+        derive_opportunity_id,
+        derive_opportunity_policy_id,
+        opportunity_policy_identity_payload,
+    )
+    from .policy import build_opportunity_policy
+    from .p4_adapter import (
+        adapt_shared_p4_decomposition,
+        universal_economic_assessment_from_shared_p4,
+    )
+    from .serialization import (
+        opportunity_assessment_v1_from_dict,
+        opportunity_assessment_v1_to_dict,
+        opportunity_context_from_dict,
+        opportunity_context_to_dict,
+        opportunity_policy_v1_from_dict,
+        opportunity_policy_v1_to_dict,
+    )
+    from .types import (
+        OPPORTUNITY_IMPLEMENTATION_VERSION,
+        AssessmentAction,
+        AssessmentReasonCode,
+        EconomicValueStatus,
+        OpportunityAssessmentResult,
+        OpportunityAssessmentV1,
+        OpportunityContext,
+        OpportunityPolicyV1,
+    )
+
+_EXPORT_GROUPS = {
+    '.engine': (
+        'OpportunityEngine',
+        'forecast_expiry_ns',
+        'forecast_matches_champion',
+    ),
+    '.errors': (
+        'OpportunityError',
+    ),
+    '.bridge': (
+        'OpportunityBridgeError',
+        'OpportunityBridgeResult',
+        'bridge_strategy_match_to_opportunity',
+        'canonical_strategy_match_opportunity_bridge',
+    ),
+    '.decision_provenance': (
+        'DECISION_PROVENANCE_METADATA_KEY',
+        'DECISION_PROVENANCE_SCHEMA_VERSION',
+        'ActionabilityAudit',
+        'ActionabilityStatus',
+        'EvidenceHonesty',
+        'LineageStatus',
+        'OpportunityDecisionProvenanceV1',
+        'OriginKind',
+        'attach_decision_provenance',
+        'audit_opportunity_state_change',
+        'build_decision_provenance_from_strategy_match',
+        'decision_provenance_from_dict',
+        'decision_provenance_to_dict',
+        'evaluate_actionability',
+        'extract_decision_provenance',
+        'route_discovery_candidate_to_oe',
+    ),
+    '.clustering': (
+        'DuplicateExposureEntry',
+        'DuplicateExposureView',
+        'OpportunityClusterCandidate',
+        'OpportunityClusterMemberV1',
+        'OpportunityClusterV1',
+        'OpportunityClusteringError',
+        'OpportunityClusteringRequest',
+        'OpportunityClusteringResult',
+        'build_opportunity_clusters',
+        'derive_thesis_identity',
+        'duplicate_exposure_view',
+    ),
+    '.comparison': (
+        'ALLOCATOR_IMPLEMENTATION_VERSION',
+        'COMPARATOR_IMPLEMENTATION_VERSION',
+        'AccountComparisonConstraintsV1',
+        'AllocationEvaluationV1',
+        'AllocationIntentV1',
+        'CapitalAllocationBudgetV1',
+        'CapitalAllocationConstraintsV1',
+        'CapitalAllocationIntentV1',
+        'CapitalAllocationResultV1',
+        'CapitalAllocator',
+        'ComparisonCandidateV1',
+        'ComparisonConstraintsV1',
+        'ComparisonEvaluationV1',
+        'ComparisonObservabilityV1',
+        'ComparisonReasonCode',
+        'ComparisonVectorV1',
+        'allocate_capital',
+        'allocation_constraints_to_dict',
+        'comparison_constraints_to_dict',
+        'comparison_vector_to_dict',
+        'compare_opportunities',
+        'GlobalOpportunityComparator',
+        'GlobalOpportunityComparisonResultV1',
+        'OpportunityComparisonCandidateV1',
+        'OpportunityComparisonConstraintsV1',
+        'OpportunityComparisonError',
+        'OpportunityComparisonInputV1',
+        'OpportunityComparisonResultV1',
+        'opportunity_comparison_identity_hash',
+        'opportunity_comparison_identity_payload',
+    ),
+    '.allocation_persistence': (
+        'ALLOCATION_DECISION_IMPLEMENTATION_VERSION',
+        'AllocationDecisionStatus',
+        'AllocationPersistenceError',
+        'CapitalAllocationDecisionV1',
+        'allocation_decision_identity_hash',
+        'allocation_decision_set_id',
+        'allocation_decision_v1_from_dict',
+        'allocation_decision_v1_to_dict',
+        'build_allocation_decisions',
+    ),
+    '.economic_assessment': (
+        'AccountActionability',
+        'EconomicAssessmentSidecarV1',
+        'EconomicAssessmentV1',
+        'EconomicAssumptionsV1',
+        'EconomicUncertaintyV1',
+        'FactorExposureV1',
+        'LiquidityCapacityV1',
+        'LiquidityState',
+        'MoneyMinorUnits',
+        'UniversalEconomicAssessmentV1',
+        'UniversalEconomicAssessmentSidecarV1',
+        'economic_assessment_identity_hash',
+        'economic_assessment_v1_from_dict',
+        'economic_assessment_v1_to_dict',
+    ),
+    '.identity': (
+        'context_identity_payload',
+        'derive_opportunity_assessment_id',
+        'derive_opportunity_id',
+        'derive_opportunity_policy_id',
+        'opportunity_policy_identity_payload',
+    ),
+    '.policy': (
+        'build_opportunity_policy',
+    ),
+    '.p4_adapter': (
+        'adapt_shared_p4_decomposition',
+        'universal_economic_assessment_from_shared_p4',
+    ),
+    '.serialization': (
+        'opportunity_assessment_v1_from_dict',
+        'opportunity_assessment_v1_to_dict',
+        'opportunity_context_from_dict',
+        'opportunity_context_to_dict',
+        'opportunity_policy_v1_from_dict',
+        'opportunity_policy_v1_to_dict',
+    ),
+    '.types': (
+        'OPPORTUNITY_IMPLEMENTATION_VERSION',
+        'AssessmentAction',
+        'AssessmentReasonCode',
+        'EconomicValueStatus',
+        'OpportunityAssessmentResult',
+        'OpportunityAssessmentV1',
+        'OpportunityContext',
+        'OpportunityPolicyV1',
+    ),
+}
+_LAZY_EXPORTS = {name: module for module, names in _EXPORT_GROUPS.items() for name in names}
+
+
+def __getattr__(name: str) -> _Any:
+    module = _LAZY_EXPORTS.get(name)
+    if module is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    value = getattr(_import_module(module, __name__), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_LAZY_EXPORTS))
 
 __all__ = [
     "OPPORTUNITY_IMPLEMENTATION_VERSION",

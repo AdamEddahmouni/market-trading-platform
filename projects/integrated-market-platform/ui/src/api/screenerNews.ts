@@ -123,6 +123,9 @@ const Engine = z.object({ id: z.string(), label: z.string(), runtime: z.enum(["L
   models: z.array(z.string()), default_model: z.string().nullable(),
   // The context window IMP starts the model with; null where none is recorded (never "unlimited").
   context_window: z.number().nullable().optional(),
+  // Per offered model, whether the AI Screener's request contract can run on it; null where the server states none.
+  model_contracts: z.array(z.object({ model: z.string(), ai_screener_compatible: z.boolean(), reason: z.string().nullable(),
+    unsupported_capability: z.string().nullable().optional() }).passthrough()).nullable().optional(),
   state: z.enum(["AVAILABLE", "NOT_CONFIGURED"]), reason: z.string().nullable() }).passthrough();
 export type SynthesisEngine = z.infer<typeof Engine>;
 const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),

@@ -48,8 +48,11 @@ bid/ask/spread retain their own provider/event/receive provenance; reference
 caches are immutable. Finviz fundamentals and discovery fields remain Finviz
 reference data. Missing L1 values do not erase reference values, and a stale
 L1 price remains visibly stale instead of reverting to a timeless export.
-The existing 32-symbol expiring window also warms the first 20 equity/ETF intake
-rows; AI reads do not acquire subscriptions or issue per-symbol provider calls.
+The existing 32-symbol expiring window serves the selection and the visible
+rows. Historical: it also warmed the first 20 equity/ETF rows when an AI run
+read only the head of the sorted result. An AI run now takes its own bounded
+vendor snapshot of every row it assesses; AI reads do not acquire
+subscriptions or issue per-symbol provider calls.
 
 A book carried through a newer last-price push has only a retained book receipt
 clock in the existing cache. Its provider event clock is therefore unknown,

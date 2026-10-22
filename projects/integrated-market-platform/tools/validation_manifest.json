@@ -530,7 +530,14 @@
         ".github/workflows/imp-validate.yml",
         "fixtures/auth/**",
         "tests/fixtures/providers/moomoo/**",
-        "tests/fixtures/providers/tradier/**"
+        "tests/fixtures/providers/tradier/**",
+        "src/market_platform_foundation/intelligence/inference/local_qualification.py",
+        "src/market_platform_foundation/intelligence/inference/local_resources.py",
+        "src/market_platform_foundation/local_state/staged_screener.py",
+        "src/market_platform_foundation/ui_api/screener_ai_staged.py",
+        "tools/ai_screener_local_first_benchmark.py",
+        "tools/local_runtime_benchmark.py",
+        "tests/support/local_first.py"
       ],
       "test_globs": [
         "tests/platform/test_*.py"
@@ -1705,7 +1712,9 @@
         "tools/parallel_safety_audit.py",
         "tools/repository_closure.py",
         "artifacts/repository-closure/**",
-        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md"
+        "docs/engineering/POST_BUILD35_REPOSITORY_CLOSURE_AUDIT.md",
+        "tools/screener_ai_perf_profile.py",
+        "tools/screener_ai_perf_compare.py"
       ],
       "test_globs": [
         "tests/validation/test_*.py"

@@ -60,6 +60,8 @@ class ReevaluationService:
         self.owner_id = owner_id or uuid.uuid4().hex
         self.cycle_lock = threading.Lock()
         self.worker = None
+        # AUTO-01: a server-owned controller may drive this loop's cycles instead of the worker thread.
+        self.external_driver = None
 
     @property
     def actions(self):
@@ -125,6 +127,11 @@ class ReevaluationService:
             raise ValueError('CYCLE_IN_PROGRESS')
         if self.worker and self.worker.alive():
             raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')  # one loop per process; never retarget a running worker
+        if self.external_driver:
+            raise ValueError('REEVALUATION_DRIVEN_BY_' + self.external_driver)
+        return self._configure(body)
+
+    def _configure(self, body, *, readiness=True):
         scope = self.ai._query(body['scope'])
         policy = build_policy(body.get('policy'))
         cadence = effective_cadence(body.get('requested_cadence_seconds'), policy)
@@ -142,7 +149,7 @@ class ReevaluationService:
                     requested_cadence_seconds=cadence['requested_cadence_seconds'],
                     effective_cadence_seconds=cadence['effective_cadence_seconds'], cadence=cadence)
         self.repository.save_loop(loop)
-        return self.status(readiness=True)
+        return self.status(readiness=readiness)
 
     def _readiness(self, loop):
         """Deterministic evidence read only; no model, no provider refresh."""
@@ -156,11 +163,11 @@ class ReevaluationService:
         engine = self.engine_state()
         if loop is None:
             return dict(schema_version=STATUS_SCHEMA, worker_state='NOT_CONFIGURED', worker_label='Not configured',
-                        engine=engine, durability=self.repository.durability, paper_execution='MANUAL_ONLY')
+                        engine=engine, durability=self.repository.durability, paper_execution='MANUAL_ONLY', driver=None)
         now = self.clock()
         leased = bool(loop['owner_id'] and loop['lease_until'] and loop['lease_until'] > now)
         mine = leased and loop['owner_id'] == self.owner_id
-        alive = bool(self.worker and self.worker.alive() and self.worker.loop_id == loop['loop_id'])
+        alive = bool(self.external_driver) or bool(self.worker and self.worker.alive() and self.worker.loop_id == loop['loop_id'])
         effective = loop['effective_cadence_seconds']
         if mine and alive:
             # Measured from this run's own start: a pre-stop cycle is not evidence of delay.
@@ -195,14 +202,26 @@ class ReevaluationService:
             readiness=preview or (dict(evaluated_at=last['evidence_cutoff'], provider_states=last['provider_states'], **last['readiness'])
                                   if last and last.get('readiness') else None),
             projection=worst_case_calls(loop['policy'], effective), tracked_candidates=loop['selected'],
-            durability=self.repository.durability, paper_execution='MANUAL_ONLY', live_execution='UNCHANGED',
-            evaluated_at=_iso(now))
+            durability=self.repository.durability, live_execution='UNCHANGED',
+            # The loop itself still submits nothing. A driver is the separately armed Paper automation controller.
+            paper_execution='AUTOMATION_POLICY' if self.external_driver else 'MANUAL_ONLY', driver=self.external_driver,
+            candidate_source=loop.get('candidate_source') or 'INTAKE_HEAD', evaluated_at=_iso(now))
 
     def start(self, *, wait=None, threaded=True):
         loop = self._loop()
         now = self.clock()
         if self.worker and self.worker.alive():
             raise ValueError('REEVALUATION_ALREADY_RUNNING')
+        if self.external_driver:
+            raise ValueError('REEVALUATION_DRIVEN_BY_' + self.external_driver)
+        loop = self._begin(loop, now)
+        self.worker = ReevaluationWorker(self, loop['loop_id'], wait=wait)
+        if threaded:
+            self.worker.start()
+        return self.status()
+
+    def _begin(self, loop, now):
+        """Take the lease and record any gap. Shared by the worker start and an external driver."""
         self.repository.acquire_lease(loop['loop_id'], self.owner_id, now=now, lease_seconds=loop['policy']['lease_seconds'])
         loop = self.repository.get_loop(loop['loop_id'])
         last = loop['last_scheduled_epoch']
@@ -213,12 +232,91 @@ class ReevaluationService:
             loop['missed_ticks'] += missed
         loop.update(desired_state='RUNNING', clean_stop=False, anchor_epoch=now, updated_epoch=now, heartbeat_at=now)
         self.repository.save_loop(loop, owner_id=self.owner_id)
-        self.worker = ReevaluationWorker(self, loop['loop_id'], wait=wait)
-        if threaded:
-            self.worker.start()
-        return self.status()
+        return loop
+
+    # --- AUTO-01: cycles driven by the armed Paper automation controller ------------
+    def attach_driver(self, name, *, scope, requested_cadence_seconds):
+        """Bind this loop to a server-owned controller: same lease, same cycle, no worker thread.
+
+        Candidates then come only from an adopted full-universe selection; the first-50
+        intake reduction is not run in its place.
+        """
+        if self.worker and self.worker.alive():
+            raise ValueError('REEVALUATION_RUNNING_STOP_FIRST')
+        if self.cycle_lock.locked():
+            raise ValueError('CYCLE_IN_PROGRESS')
+        current = self.repository.latest_loop(self._account())
+        wanted = self.ai._query(scope)
+        if current is None or current['scope'] != wanted or current['requested_cadence_seconds'] != requested_cadence_seconds:
+            self._configure(dict(scope=scope, requested_cadence_seconds=requested_cadence_seconds), readiness=False)
+        loop = self._begin(self._loop(), self.clock())
+        if loop.get('candidate_source') != 'FULL_UNIVERSE_SELECTION':
+            # The previous selection came from the intake head: it is not carried under the coverage label.
+            held = {p['instrument_id'] for p in self.store.paper_ledger.project_positions() if p.get('quantity')}
+            loop.update(candidate_source='FULL_UNIVERSE_SELECTION', selected=[], ranks={}, symbols={}, pending_selection=None,
+                        last_reduction_run_id=None, tracked={k: v for k, v in loop['tracked'].items() if k in held})
+            self.repository.save_loop(loop, owner_id=self.owner_id)
+        self.external_driver = str(name)
+        return loop['loop_id']
+
+    def detach_driver(self):
+        """Release the loop. The next operator Start uses the documented intake-head method again."""
+        if not self.external_driver:
+            return
+        self.external_driver = None
+        loop = self.repository.latest_loop(self._account())
+        if loop is None or loop['owner_id'] not in (None, self.owner_id):
+            return
+        loop.update(desired_state='STOPPED', clean_stop=True, updated_epoch=self.clock(), candidate_source=None,
+                    selected=[], ranks={}, symbols={}, pending_selection=None)
+        self.repository.save_loop(loop)
+        self.repository.release_lease(loop['loop_id'], self.owner_id)
+
+    def adopt_selection(self, run):
+        """Queue a completed full-universe selection; the next cycle applies it and records the change."""
+        if not self.external_driver:
+            raise ValueError('REEVALUATION_DRIVER_REQUIRED')
+        coverage = run.get('universe_coverage') or {}
+        # A complete run that selected nothing is also a result: it clears the previous selection.
+        if not coverage.get('selection_complete') or not coverage.get('coverage_complete') \
+                or (run.get('candidates') and (run.get('state') != 'CURRENT' or coverage.get('status') != 'GLOBAL_SELECTION_COMPLETE')):
+            raise ValueError('SELECTION_COVERAGE_INCOMPLETE')
+        symbols = {e['instrument']['instrument_id']: e['instrument'].get('symbol') for e in run.get('evidence', [])}
+        picks = run.get('candidates', [])[:5]
+        loop = self._loop()
+        loop['pending_selection'] = dict(run_id=run['run_id'], chosen=[p['instrument_id'] for p in picks],
+                                         ranks={p['instrument_id']: p['rank'] for p in picks},
+                                         symbols={p['instrument_id']: symbols.get(p['instrument_id']) for p in picks})
+        loop['updated_epoch'] = self.clock()
+        self.repository.save_loop(loop, owner_id=self.owner_id)
+
+    def request_redecision(self, instrument_id, reason):
+        """The driver found the latest decision for this instrument bound to inputs that have since changed.
+
+        The next cycle evaluates it again instead of suppressing it as a duplicate. This never executes
+        anything and never skips the Action Decision gate; for a flat instrument it also never skips the dwell.
+        """
+        if not self.external_driver:
+            raise ValueError('REEVALUATION_DRIVER_REQUIRED')
+        loop = self._loop()
+        pending = dict(loop.get('redecide') or {})
+        if instrument_id not in pending and len(pending) < 50:
+            pending[str(instrument_id)[:120]] = str(reason)[:64]
+            loop.update(redecide=pending, updated_epoch=self.clock())
+            self.repository.save_loop(loop, owner_id=self.owner_id)
+
+    def driven_cycle(self, trigger, scheduled_for, *, missed=0, model_gate=None):
+        """One scheduled cycle on behalf of the driver. ``model_gate`` can only withhold model calls."""
+        if not self.external_driver:
+            raise ValueError('REEVALUATION_DRIVER_REQUIRED')
+        loop = self._loop()
+        if not self.heartbeat(loop['loop_id']):
+            raise ValueError('REEVALUATION_LEASE_LOST')
+        return self.evaluate_cycle(trigger, scheduled_for, missed=missed, loop_id=loop['loop_id'], model_gate=model_gate)
 
     def stop(self):
+        if self.external_driver:
+            raise ValueError('REEVALUATION_DRIVEN_BY_' + self.external_driver)  # the controller's own Stop releases it
         loop = self._loop()
         if loop['owner_id'] and loop['owner_id'] != self.owner_id and loop['lease_until'] and loop['lease_until'] > self.clock():
             raise ValueError('REEVALUATION_LOOP_ALREADY_OWNED')  # only the owning process can stop its worker
@@ -234,6 +332,8 @@ class ReevaluationService:
         return self.status()
 
     def run_once(self):
+        if self.external_driver:
+            raise ValueError('REEVALUATION_DRIVEN_BY_' + self.external_driver)  # a manual cycle would feed the adapter unscheduled
         loop = self._loop()
         now = self.clock()
         if loop['owner_id'] and loop['owner_id'] != self.owner_id and loop['lease_until'] and loop['lease_until'] > now:
@@ -283,7 +383,7 @@ class ReevaluationService:
         return receipt
 
     # --- the single core cycle --------------------------------------------------
-    def evaluate_cycle(self, trigger, scheduled_for, *, missed=0, overran=False, loop_id=None):
+    def evaluate_cycle(self, trigger, scheduled_for, *, missed=0, overran=False, loop_id=None, model_gate=None):
         """Used unchanged by Run Once and by the worker. Never overlaps itself."""
         trigger = ReevaluationTrigger(trigger)
         if not self.cycle_lock.acquire(blocking=False):
@@ -305,7 +405,7 @@ class ReevaluationService:
                 if fence and not self.heartbeat(loop['loop_id']) and self.repository.get_loop(loop['loop_id'])['owner_id'] is not None:
                     raise ValueError('REEVALUATION_LEASE_LOST')  # an operator Stop releases the lease; that cycle still finishes
             try:
-                receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent)
+                receipt = self._cycle(loop, trigger, scheduled_for, started, guard=guard, spent=spent, model_gate=model_gate)
             except Exception as exc:  # a failed cycle is recorded, never silently retried
                 code = str(exc) if _CODE.fullmatch(str(exc)) else type(exc).__name__
                 receipt = self._receipt(loop, trigger=trigger, scheduled=scheduled_for, started=started, status=CycleStatus.FAILED)
@@ -374,7 +474,7 @@ class ReevaluationService:
         loop['last_error'] = dict(at=_iso(started), code=reasons[1])
         return receipt
 
-    def _cycle(self, loop, trigger, scheduled, started, *, guard=lambda: None, spent=None):
+    def _cycle(self, loop, trigger, scheduled, started, *, guard=lambda: None, spent=None, model_gate=None):
         policy, scope, actions = loop['policy'], loop['scope'], self.actions
         ledger = self.store.paper_ledger
         positions = [p for p in ledger.project_positions() if p.get('quantity')]
@@ -405,7 +505,22 @@ class ReevaluationService:
                 except Exception:
                     continue  # recorded below as HELD_INSTRUMENT_EVIDENCE_UNAVAILABLE; the stop is still evaluated
                 by_id.update({c['instrument']['instrument_id']: c for c in extra if c['instrument']['instrument_id'] == position['instrument_id']})
+        external = loop.get('candidate_source') == 'FULL_UNIVERSE_SELECTION'
+        pending_selection = loop.get('pending_selection') if external else None
+        if external:
+            # A full-universe selection may sit outside the sorted intake head: each gets one targeted read.
+            wanted = dict(loop.get('symbols') or {}, **((pending_selection or {}).get('symbols') or {}))
+            targets = [*loop['selected'], *((pending_selection or {}).get('chosen') or [])]
+            for iid in [i for i in dict.fromkeys(targets) if i not in by_id and wanted.get(i)][:10]:
+                try:
+                    _, extra, _, _ = self.ai._packet(dict(scope, search=str(wanted[iid])[:120], filters=[], result_set=None), include_flow=True)
+                except Exception:
+                    continue  # no evidence: the candidate is simply not evaluated this cycle
+                by_id.update({c['instrument']['instrument_id']: c for c in extra if c['instrument']['instrument_id'] == iid})
         engine = self.engine_state()
+        if model_gate is not None and not model_gate.get('allowed'):
+            # The driver's owner policy withholds model calls. Deterministic work, including stops, continues.
+            engine = dict(engine, state='UNAVAILABLE', reason=str(model_gate.get('reason') or 'MODEL_CALLS_WITHHELD'))
         usable = engine['state'] == 'AVAILABLE'
         hour = self.repository.model_calls_since(loop['account_id'], started - 3600)
         day = self.repository.model_calls_since(loop['account_id'], started - 86400)
@@ -429,12 +544,16 @@ class ReevaluationService:
         for iid in stops.open_instruments():
             if iid not in held:
                 stops.evaluate(iid)
-        blocked_class = TransitionClass.BUDGET_BLOCKED if engine['reason'] == 'SYNTHESIS_DAILY_BUDGET_EXHAUSTED' or (usable and window_left <= 0) else TransitionClass.MODEL_UNAVAILABLE
+        budget_reason = engine['reason'] == 'SYNTHESIS_DAILY_BUDGET_EXHAUSTED' or str(engine['reason'] or '').startswith('AUTONOMOUS_SPENDING')
+        blocked_class = TransitionClass.BUDGET_BLOCKED if budget_reason or (usable and window_left <= 0) else TransitionClass.MODEL_UNAVAILABLE
 
         def note(instrument, classification, codes, **extra):
             transitions.append(dict(dict(instrument_id=instrument, classification=str(classification), reason_codes=list(dict.fromkeys(codes)),
                                          prior_decision_id=None, new_decision_id=None, prior_state=None, new_state=None,
                                          position_state=None, model_call=False, safety=False), **extra))
+
+        # AUTO-01: instruments whose latest decision the driver found bound to inputs that have since changed.
+        redecide = loop.setdefault('redecide', {}) if loop.get('candidate_source') == 'FULL_UNIVERSE_SELECTION' else {}
 
         def plan(iid):
             candidate = by_id.get(iid)
@@ -453,7 +572,10 @@ class ReevaluationService:
             changes = material_change(baseline if isinstance(baseline, dict) else None, fingerprint, policy)
             if not changes and history and (timestamp(now) - timestamp(history[0]['decision_time'])).total_seconds() >= policy['decision_max_age_seconds']:
                 changes = ['DECISION_AGED_OUT']
-            return dict(iid=iid, candidate=candidate, history=history, reasons=changes, fingerprint=fingerprint, context=context)
+            stale = bool(external and iid in redecide)
+            if stale and 'DECISION_INPUT_CHANGED' not in changes:
+                changes = [*changes, 'DECISION_INPUT_CHANGED']
+            return dict(iid=iid, candidate=candidate, history=history, reasons=changes, fingerprint=fingerprint, context=context, stale=stale)
 
         def execute(item):
             iid, history, changes, fingerprint = item['iid'], item['history'], item['reasons'], item['fingerprint']
@@ -488,7 +610,8 @@ class ReevaluationService:
             # A breached stop is a server risk exit: no forced revalidation, no model budget, no model veto.
             server_exit = (fingerprint.get('stop') or [None])[0] == 'BREACHED'
             recorded = (prior or {}).get('server_exit') or {}
-            if server_exit and recorded.get('stop_state_id') == item['context']['risk_control']['stop_state_id']                     and prior['position']['quantity'] == position['quantity'] and timestamp(prior['valid_until']) > timestamp(now):
+            if server_exit and not item.get('stale') and recorded.get('stop_state_id') == item['context']['risk_control']['stop_state_id'] \
+                    and prior['position']['quantity'] == position['quantity'] and timestamp(prior['valid_until']) > timestamp(now):
                 # The same breach on the same holding already has its current EXIT record: do not fork a second one.
                 counters['duplicate_suppressions'] += 1; counters['model_calls_avoided'] += 1
                 transitions.append(dict(instrument_id=iid, classification=str(TransitionClass.DUPLICATE_SUPPRESSED),
@@ -502,6 +625,9 @@ class ReevaluationService:
             # flapping quote buys at most one model call per dwell instead of one per recovery.
             since = changed_at if committed else prior['decision_time'] if prior and 'QUOTE_RESTORED' in changes else None
             stability = stability_decision(changes, now=now, last_state_change=since, policy=policy)
+            if item.get('stale') and position['state'] != 'FLAT' and not stability['safety']:
+                # A held position whose decision went stale is downside control: it is decided again now.
+                stability = dict(evaluate=True, safety=True, reason_codes=['SAFETY_PRECEDENCE', 'DECISION_INPUT_CHANGED'])
             if not stability['evaluate']:
                 counters['churn_suppressions'] += 1; counters['model_calls_avoided'] += 1
                 transitions.append(dict(instrument_id=iid, classification=str(TransitionClass.CHURN_SUPPRESSED),
@@ -586,6 +712,7 @@ class ReevaluationService:
                                     new_decision_id=decision['decision_id'], new_state=decision['action_state'], model_call=called,
                                     safety=stability['safety'], execution_readiness=decision['execution_readiness'], **base))
             loop['tracked'][iid] = fingerprint
+            redecide.pop(iid, None)
 
         # 1. Existing positions first: HOLD/EXIT work is never starved by new candidates.
         for iid in watched:
@@ -595,7 +722,22 @@ class ReevaluationService:
         flat = dict(position=dict(state='FLAT', quantity=0, pending=False), candidate_valid_until=None)
         intake = {c['instrument']['instrument_id']: material_fingerprint(c, flat, now) for c in candidates}
         intake_changed = set(intake) != set(loop['intake']) or any(material_change(loop['intake'][i], intake[i], policy) for i in intake)
-        if loop['last_reduction_epoch'] is None or intake_changed:
+        if external:
+            # AUTO-01: candidates come only from an adopted full-universe selection, never the intake head.
+            if pending_selection:
+                state['material'] += 1
+                chosen, run_id = list(pending_selection['chosen']), pending_selection['run_id']
+                for iid in chosen:
+                    if iid not in loop['selected']:
+                        note(iid, TransitionClass.CANDIDATE_ADDED, ['AI_SCREENER_SELECTED', 'FULL_UNIVERSE_SELECTION'], candidate_run_id=run_id)
+                for iid in loop['selected']:
+                    if iid not in chosen:
+                        note(iid, TransitionClass.CANDIDATE_REMOVED, ['AI_SCREENER_NO_LONGER_SELECTED', 'FULL_UNIVERSE_SELECTION'], candidate_run_id=run_id)
+                        if iid not in held:
+                            loop['tracked'].pop(iid, None)
+                loop.update(selected=chosen, ranks=dict(pending_selection['ranks']), symbols=dict(pending_selection['symbols']),
+                            last_reduction_epoch=started, last_reduction_run_id=run_id, intake=intake, pending_selection=None)
+        elif loop['last_reduction_epoch'] is None or intake_changed:
             if loop['last_reduction_epoch'] is not None and started - loop['last_reduction_epoch'] < policy['candidate_refresh_min_seconds']:
                 reasons.append('CANDIDATE_REFRESH_DEFERRED')
             elif not usable or window_left <= 0:
@@ -638,6 +780,7 @@ class ReevaluationService:
         receipt.update(position_count=len(held), candidate_count=len(loop['selected']), intake_count=len(candidates),
                        material_change_count=state['material'], unchanged_count=state['unchanged'],
                        model_call_count=state['model_calls'], provider_states=states,
+                       candidate_source=loop.get('candidate_source') or 'INTAKE_HEAD',
                        readiness=cadence_readiness(states, ai_state=engine, cadence=loop['cadence']),
                        budget_state=dict(engine_state=engine['state'], engine_reason=engine['reason'], provider_budget=engine['budget'],
                                          calls_last_hour=hour + state['model_calls'], calls_last_day=day + state['model_calls'],

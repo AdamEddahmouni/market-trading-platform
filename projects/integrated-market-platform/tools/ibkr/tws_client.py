@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from copy import copy
 from types import SimpleNamespace
 from typing import Any, Callable, Mapping
 
@@ -63,7 +64,7 @@ def _simple_contract(symbol: str) -> object:
 def _finite(value: object) -> object | None:
     if value is None:
         return None
-    if isinstance(value, float) and math.isnan(value):
+    if isinstance(value, float) and not math.isfinite(value):
         return None
     return value
 
@@ -169,7 +170,10 @@ class TwsIbkrClient:
         if callable(set_market_data_type):
             set_market_data_type(3)
         for conid in conids:
-            contract = self._contract(conid)
+            # ib_insync keys tickers by contract object identity and retains prices
+            # after cancellation. A fresh identity prevents a prior snapshot from
+            # satisfying this request or cancelling another demand on that contract.
+            contract = copy(self._contract(conid))
             ticker = self._broker.reqMktData(
                 contract,
                 "",
@@ -178,9 +182,26 @@ class TwsIbkrClient:
                 mktDataOptions=[],
             )
             sleep = getattr(self._broker, "sleep", None)
-            if callable(sleep):
-                sleep(min(0.5, self.config.timeout_seconds))
-            row: dict[str, object] = {"conid": conid}
+            cancel = getattr(self._broker, "cancelMktData", None)
+            remaining = self.config.timeout_seconds
+            try:
+                # Delayed snapshots commonly arrive after the old fixed 0.5s wait.
+                # Keep demand bounded and report absent prices honestly at timeout.
+                while callable(sleep) and remaining > 0:
+                    if any(isinstance(value := getattr(ticker, field, None), (int, float))
+                           and not isinstance(value, bool) and math.isfinite(value) and value > 0
+                           for field in ("last", "bid", "ask")):
+                        break
+                    interval = min(0.25, remaining)
+                    sleep(interval)
+                    remaining -= interval
+                row: dict[str, object] = {"conid": conid}
+                data_type = getattr(ticker, "marketDataType", None)
+                if type(data_type) is int and data_type in {1, 2, 3, 4}:
+                    row["market_data_type"] = data_type
+            finally:
+                if callable(cancel):
+                    cancel(contract)
             for output_key, attribute in (
                 ("31", "last"),
                 ("84", "bid"),

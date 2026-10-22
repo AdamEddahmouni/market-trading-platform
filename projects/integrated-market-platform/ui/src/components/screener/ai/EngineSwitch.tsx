@@ -19,6 +19,13 @@ export function fitText(fit: EngineFit | undefined) {
   return fit.fits ? "current packet fits" : `current packet does not fit: needs ~${compactTokens(fit.packet_size)} tokens, model context ${compactTokens(fit.context_window)}`;
 }
 
+/** "cannot run the AI Screener (REASON: CAPABILITY)" when the server says this model cannot carry its request contract, else null. */
+export function contractText(engine: SynthesisEngine | undefined, model: string | null | undefined) {
+  const row = engine?.model_contracts?.find((item) => item.model === (model ?? engine.default_model));
+  if (!row || row.ai_screener_compatible) return null;
+  return `cannot run the AI Screener (${row.reason ?? "UNSUPPORTED"}${row.unsupported_capability ? `: ${row.unsupported_capability}` : ""})`;
+}
+
 /**
  * The engine choice is saved for the whole machine and takes effect at once, so it is confirmed first. Nothing is
  * sent until the operator confirms.
@@ -26,11 +33,13 @@ export function fitText(fit: EngineFit | undefined) {
 export function EngineSwitchConfirm({ pending, fit, busy, onConfirm, onCancel }: {
   pending: PendingEngine; fit?: EngineFit; busy: boolean; onConfirm: () => void; onCancel: () => void }) {
   const unfit = fit?.fits === false ? fitText(fit) : null;
+  const unsupported = contractText(pending.engine, pending.model);
   return <div className="engine-switch-confirm" role="alertdialog" aria-label="Confirm AI engine change">
     <p><strong>Switch the AI engine to {pending.engine.label}{pending.model ? ` · ${pending.model}` : ""}?</strong></p>
     <p>This applies to every AI panel on this machine (News synthesis, AI Screener, Action Decisions and automatic passes), starting with the next request. A call already in flight finishes on the current engine.</p>
     {pending.engine.runtime === "PAID_API" ? <p>This is a paid API: its calls count against the shared daily budget.</p> : <p>This is the local model: no API cost.</p>}
     {unfit && <p className="engine-switch-warning">The {unfit}. An AI Screener run on it would be refused or cut short.</p>}
+    {unsupported && <p className="engine-switch-warning">This model {unsupported}. An AI Screener run on it is refused before any request; no other model is used in its place.</p>}
     <div><button type="button" disabled={busy} onClick={onConfirm}>Switch engine</button> <button type="button" disabled={busy} onClick={onCancel}>Keep current engine</button></div>
   </div>;
 }

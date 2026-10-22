@@ -1,0 +1,1985 @@
+{
+  "accepted_profiles": [],
+  "actual_generation_requests": 0,
+  "actual_inference_attempts": 0,
+  "admission_policy": {
+    "lowered_floor": false,
+    "maximum_process_resident_and_commit_bytes": 6442450944,
+    "minimum_available_bytes": 4294967296,
+    "physical_and_commit_reserve": "estimated additional allocation plus unchanged physical floor",
+    "predicted_peak_is_measured": false,
+    "unknown_telemetry": "REFUSE"
+  },
+  "attempts": [
+    "artifacts\\ai-screener-local-runtime\\attempt-20261008T231936-d608898c\\summary.json",
+    "artifacts\\ai-screener-local-runtime\\attempt-20261009T002839-0e8beb7f\\summary.json"
+  ],
+  "authority": {
+    "action_decision_rejection": "ENFORCED",
+    "exhaustive_default": true,
+    "live_submissions": 0,
+    "methodology_approval": "OFF",
+    "operational_staged_activation": "OFF",
+    "paid_generations": 0,
+    "paper_submissions": 0,
+    "prospective_campaign_starts": 0,
+    "separate_experimental_persistence": true
+  },
+  "available_memory_measurements": [
+    {
+      "available_bytes": 2670833664,
+      "commit_available_bytes": 16436027392,
+      "commit_total_bytes": 40195850240,
+      "memory_load_percent": 83,
+      "process_bytes": null,
+      "process_commit_bytes": null,
+      "process_peak_bytes": null,
+      "process_peak_commit_bytes": null,
+      "total_bytes": 16687722496
+    },
+    {
+      "available_bytes": 3640451072,
+      "commit_available_bytes": 16400461824,
+      "commit_total_bytes": 40195850240,
+      "memory_load_percent": 78,
+      "process_bytes": null,
+      "process_commit_bytes": null,
+      "process_peak_bytes": null,
+      "process_peak_commit_bytes": null,
+      "total_bytes": 16687722496
+    }
+  ],
+  "benchmark": {
+    "case_count": 52,
+    "cases_resource_blocked": 52,
+    "dataset_hash": "9accf87fbb23fc6c9414e38808a44e0c08c5f3c5988701891a4697b151c59a84",
+    "development_cases": 26,
+    "holdout_cases": 26,
+    "holdout_executions": 0,
+    "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+    "maximum_cumulative_seconds": 7200,
+    "prompt_hash": "62754efd07ca9a2db3ed9527646d7d98616aaf869e5c8c2ab8bdb1e2edd05dd9",
+    "real_cases_completed": 0,
+    "rewritten": false,
+    "rubric": {
+      "disagreement": "Different categories or validation result for preassigned repetitions.",
+      "exclusions": "Only explicitly stale inputs excluded from labeled recall denominator; reported independently.",
+      "false_exclusions": "Valid NO_SUPPORTED_CASE on labeled POSITIVE.",
+      "precision": "Positive advanced / all labeled advanced.",
+      "recall": "Advanced positive / eligible labeled positive; uncertain/invalid advance; invalid separately reported.",
+      "ties": "No local rank; premium ties instrument identity; real rank correlation unavailable."
+    },
+    "targets": {
+      "invalid_output_rate": 0.01,
+      "invalid_refs_accepted": 0,
+      "labeled_positive_recall": 0.95,
+      "paid_token_reduction": 0.9,
+      "qualification_disagreement": 0.05,
+      "reference_top5_recall": 1.0
+    }
+  },
+  "benchmark_attempts": [
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 2670833664,
+        "available_memory_bytes": 2670833664,
+        "context_configuration": {
+          "batch": 128,
+          "context": 8192,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 8192,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 1207959552,
+        "estimated_peak_memory": 5315852544,
+        "execution_profile": "cpu-8192/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-08T23:19:39.247568+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 9610819840,
+        "resource_sample": {
+          "available_bytes": 2670833664,
+          "commit_available_bytes": 16436027392,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 83,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 31.06763739973394
+      },
+      "elapsed_seconds": 2.6560000000026776,
+      "ended_at": "2026-10-08T23:19:39.301006+00:00",
+      "execution_profile": "cpu-8192/1",
+      "phase": "pilot",
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "receipt": "artifacts\\ai-screener-local-runtime\\attempt-20261008T231936-d608898c\\summary.json",
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "source_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+      "started_at": "2026-10-08T23:19:36.607457+00:00"
+    },
+    {
+      "admission": {
+        "artifact_verified": true,
+        "available_memory": 3640451072,
+        "available_memory_bytes": 3640451072,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 603979776,
+        "estimated_peak_memory": 4711872768,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-09T00:28:42.816353+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 9006840064,
+        "resource_sample": {
+          "available_bytes": 3640451072,
+          "commit_available_bytes": 16400461824,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 78,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      "budget": {
+        "limit_seconds": 7200,
+        "used_seconds": 34.0836373997372
+      },
+      "elapsed_seconds": 3.0160000000032596,
+      "ended_at": "2026-10-09T00:28:42.857731+00:00",
+      "execution_profile": "cpu-4096/1",
+      "phase": "pilot",
+      "quality": {
+        "cases_not_completed": 3,
+        "evidence_grounding_failures": null,
+        "failed": 0,
+        "false_exclusions": null,
+        "fixture_cases_completed": 0,
+        "inconsistent_decisions": null,
+        "intentional_stale_exclusions": 0,
+        "invalid_output_rate": null,
+        "missing_capability_errors": null,
+        "operational_advancement_recall": null,
+        "operational_advancement_recall_basis": "DISPATCHED_SUBSET_ONLY",
+        "proposed_premium_count": null,
+        "qualification_accuracy": null,
+        "qualified": 0,
+        "quality_complete": false,
+        "quality_status": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+        "real_cases_completed": 0,
+        "recall": null,
+        "recall_basis": "Original controlled-label advancement rubric; invalid and uncertain advance, invalid reported separately.",
+        "reference_top5_recall": null,
+        "timeout_or_failure_count": null,
+        "unavailable_metrics_reason": "No independent trade ground truth or premium reference; no repetition measurements.",
+        "uncertain": 0,
+        "valid_outputs": 0
+      },
+      "real_generation_requests": 0,
+      "receipt": "artifacts\\ai-screener-local-runtime\\attempt-20261009T002839-0e8beb7f\\summary.json",
+      "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+      "runtime_starts": 0,
+      "source_sha": "b9ae89263d5816ba5a043c359143ef30fe16b030",
+      "started_at": "2026-10-09T00:28:39.806083+00:00"
+    }
+  ],
+  "canonical_base_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+  "empirical_verdict": "LOCAL_MODEL_QUALITY_NOT_PROVEN_RESOURCE_BLOCKED",
+  "engineering_verdict": "LOCAL_RUNTIME_VALIDATION_READY_FOR_PROTECTED_INTEGRATION",
+  "evidence_grounding_failures": null,
+  "false_exclusions": null,
+  "final_pilot_invocation": {
+    "command": "python tools/local_runtime_benchmark.py --phase pilot --profile cpu-4096/1",
+    "invoker": "primary agent",
+    "outcome": "ADMISSION_REFUSED_BEFORE_LAUNCH",
+    "real_generation_requests": 0,
+    "runtime_starts": 0,
+    "tool_reported_shell_exit_code": 1
+  },
+  "fixture_cases_completed": 0,
+  "fixture_evidence": "Engineering tests only; no fixture value substituted for real model quality.",
+  "gates": {
+    "G1": {
+      "status": "PASS"
+    },
+    "G10": {
+      "status": "PASS"
+    },
+    "G11": {
+      "status": "PASS"
+    },
+    "G12": {
+      "status": "PASS"
+    },
+    "G13": {
+      "reason": "Bounded real pilot invoked by primary agent; refused before runtime launch, not a successful inference.",
+      "status": "BLOCKED"
+    },
+    "G14": {
+      "status": "PASS"
+    },
+    "G15": {
+      "reason": "Real runtime admission refused; no observed runtime or quality measurement.",
+      "status": "BLOCKED"
+    },
+    "G16": {
+      "reason": "No real local qualification output; unknown metrics preserved as null.",
+      "status": "NOT PROVEN"
+    },
+    "G17": {
+      "reason": "Real runtime admission refused; no observed runtime or quality measurement.",
+      "status": "BLOCKED"
+    },
+    "G18": {
+      "reason": "No real local qualification output; unknown metrics preserved as null.",
+      "status": "NOT PROVEN"
+    },
+    "G19": {
+      "reason": "No real local qualification output; unknown metrics preserved as null.",
+      "status": "NOT PROVEN"
+    },
+    "G2": {
+      "status": "PASS"
+    },
+    "G20": {
+      "status": "PASS"
+    },
+    "G21": {
+      "status": "PASS"
+    },
+    "G22": {
+      "status": "PASS"
+    },
+    "G23": {
+      "status": "PASS"
+    },
+    "G24": {
+      "status": "PASS"
+    },
+    "G25": {
+      "status": "PASS"
+    },
+    "G26": {
+      "status": "PASS"
+    },
+    "G27": {
+      "reason": "Pending protected CI and actual merge at this versioned receipt cutoff; final Git/GitHub integration verification is separate.",
+      "status": "NOT PROVEN"
+    },
+    "G28": {
+      "reason": "Pending protected CI and actual merge at this versioned receipt cutoff; final Git/GitHub integration verification is separate.",
+      "status": "NOT PROVEN"
+    },
+    "G3": {
+      "status": "PASS"
+    },
+    "G4": {
+      "status": "PASS"
+    },
+    "G5": {
+      "status": "PASS"
+    },
+    "G6": {
+      "status": "PASS"
+    },
+    "G7": {
+      "status": "PASS"
+    },
+    "G8": {
+      "status": "PASS"
+    },
+    "G9": {
+      "reason": "Two versioned candidate profiles evaluated and resource-blocked; no accepted optimization.",
+      "status": "BLOCKED"
+    }
+  },
+  "generated_at": "2026-10-09T00:30:18.184463+00:00",
+  "hardware_profile": {
+    "cpu": {
+      "Name": "Intel(R) Core(TM) Ultra 7 256V",
+      "NumberOfCores": 8,
+      "NumberOfLogicalProcessors": 8
+    },
+    "gpu": {
+      "AdapterRAM": 2147479552,
+      "DriverVersion": "32.0.101.8626",
+      "Name": "Intel(R) Arc(TM) 140V GPU (8GB)"
+    },
+    "limitation": "Runtime startup refused; no model allocation profile observed. Vulkan budget is shared-system memory, not added capacity.",
+    "measured_at": "2026-10-08T23:23:05.3167622Z",
+    "measuring_process": {
+      "PeakWorkingSet64": 105299968,
+      "PrivateMemorySize64": 37199872,
+      "WorkingSet64": 105299968
+    },
+    "method": "Windows CIM and PowerShell Get-Process; GPU AdapterRAM is a legacy reported field, not dedicated/shared allocation proof",
+    "model_idle_consumption": null,
+    "model_load_time": null,
+    "model_process_committed_memory": null,
+    "model_process_working_set": null,
+    "os": {
+      "FreePhysicalMemory": 3333548,
+      "FreeVirtualMemory": 17311476,
+      "TotalVirtualMemorySize": 39253760,
+      "TotalVisibleMemorySize": 16296604
+    },
+    "storage": {
+      "Free": 69856026624,
+      "Used": 932586819584
+    }
+  },
+  "implementation_sha": "b9ae89263d5816ba5a043c359143ef30fe16b030",
+  "independent_review": {
+    "evidence": "artifacts/ai-screener-local-runtime/independent-review.json",
+    "findings_closed": [
+      "Pinned warm launch profile",
+      "Eligible-case completeness/holdout gate",
+      "OS high-water RSS",
+      "Final monitor failure propagation",
+      "Unconditional semaphore release",
+      "Owned process retained until reaped",
+      "Unsupported profile diagnostics",
+      "Stale exclusions separate",
+      "Corrupt empty ledger refusal",
+      "Selected executable identity before verification cache",
+      "Windows validator console isolation and cancellation cleanup",
+      "Windows validator console isolation and cancellation cleanup"
+    ],
+    "remaining_P1_P2": 0,
+    "reviewer": "runtime_review independent read-only subagent",
+    "reviewer_mutations": 0,
+    "reviewer_runtime_launches": 0,
+    "rounds": 6,
+    "status": "CLOSED"
+  },
+  "limitations": [
+    "Final pilot available RAM 3.39 GiB; LOCAL_RESOURCE_INSUFFICIENT_MEMORY; no model started.",
+    "Candidate runtime reserve is conservative and uncalibrated; not an empirical memory improvement",
+    "Abrupt API termination may leave an owned runtime; interrupted lease refuses redispatch pending explicit recovery",
+    "No real qualification, premium reference, economic savings or cold-scan feasibility evidence"
+  ],
+  "model_execution_policy_deviation": "Composer/Grok unavailable in Codex; inherited session model used; one implementation owner plus required read-only review.",
+  "model_idle_memory": null,
+  "model_load_seconds": null,
+  "objective_a": {
+    "ancestry_verified": true,
+    "checks_successful": 9,
+    "implementation_sha": "231be2ddf66b7236fec02947b7eb2c2424cca77d",
+    "merge_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+    "merged_source_and_acceptance_verified": true,
+    "parents": [
+      "6bd88f7a30fad2c30ab9320bcd0c893dd15b6007",
+      "74775e934a49383263a5017a4944910a6eec8805"
+    ],
+    "pr": 487,
+    "verdict": "LOCAL_FIRST_EXPERIMENTAL_ENGINE_INTEGRATED"
+  },
+  "peak_model_committed_memory": null,
+  "peak_model_working_set": null,
+  "performance_measurements": {
+    "per_candidate_latency": null,
+    "projected_50_100_500_4630_seconds": null,
+    "throughput": null
+  },
+  "premium_budget_projection": {
+    "budget_sufficient": null,
+    "failed": null,
+    "global_comparison_cost": null,
+    "locally_assessed": 0,
+    "proposed_premium_count": null,
+    "provider_input": null,
+    "qualified": null,
+    "requests": null,
+    "reserved_output_reasoning": null,
+    "state": "STAGED_BUDGET_NOT_MEASURED",
+    "uncertain": null
+  },
+  "profile_evaluation": {
+    "accepted_profiles": [],
+    "profiles": [
+      {
+        "artifact_verified": true,
+        "available_memory": 3381661696,
+        "available_memory_bytes": 3381661696,
+        "context_configuration": {
+          "batch": 128,
+          "context": 8192,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 8192,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 1207959552,
+        "estimated_peak_memory": 5315852544,
+        "execution_profile": "cpu-8192/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-08T23:23:09.075762+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 9610819840,
+        "resource_sample": {
+          "available_bytes": 3381661696,
+          "commit_available_bytes": 17691140096,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 79,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      },
+      {
+        "artifact_verified": true,
+        "available_memory": 3444068352,
+        "available_memory_bytes": 3444068352,
+        "context_configuration": {
+          "batch": 128,
+          "context": 4096,
+          "kv_type": "f16",
+          "mmap": true,
+          "parallel_slots": 1,
+          "ubatch": 64
+        },
+        "context_window": 4096,
+        "estimate_basis": "FULL_WEIGHT_BYTES_PLUS_F16_KV_PLUS_1_5_GIB_UNCALIBRATED_RESERVE",
+        "estimated_kv_bytes": 603979776,
+        "estimated_peak_memory": 4711872768,
+        "execution_profile": "cpu-4096/1",
+        "inference_occurred": false,
+        "measurement_timestamp": "2026-10-08T23:23:09.108417+00:00",
+        "minimum_available_bytes": 4294967296,
+        "model_hash": "7485fe6f11af29433bc51cab58009521f205840f5b4ae3a32fa7f92e8534fdf5",
+        "model_id": "Qwen/Qwen3-4B-GGUF:Q4_K_M",
+        "model_revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "observed_peak_memory": null,
+        "premium_generation_attempted": false,
+        "profile_validation": "CANDIDATE_NOT_EMPIRICALLY_VALIDATED",
+        "quality_status": "LOCAL_QUALITY_NOT_PROVEN",
+        "readiness_status": "LOCAL_RUNTIME_RESOURCE_BLOCKED",
+        "reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "rejection_reason": "LOCAL_RESOURCE_INSUFFICIENT_MEMORY",
+        "required_memory": 9006840064,
+        "resource_sample": {
+          "available_bytes": 3444068352,
+          "commit_available_bytes": 17703448576,
+          "commit_total_bytes": 40195850240,
+          "memory_load_percent": 79,
+          "process_bytes": null,
+          "process_commit_bytes": null,
+          "process_peak_bytes": null,
+          "process_peak_commit_bytes": null,
+          "total_bytes": 16687722496
+        },
+        "results_produced": false,
+        "retry_requires_fresh_resource_measurement": true,
+        "revision": "bc640142c66e1fdd12af0bd68f40445458f3869b",
+        "runtime_launched": false,
+        "runtime_version": "b11269",
+        "schema_version": "local-runtime-readiness/1.0.0",
+        "state": "RESOURCE_BLOCKED"
+      }
+    ],
+    "reason": "No profile safely admitted; no claimed memory or quality improvement.",
+    "runtime_version_observed": "0.5.0-dev (build 11269, commit cee37ffea)",
+    "supported_backend_observation": "Vulkan0 Intel Arc 140V: 9071 MiB budget / 8361 MiB free; shared system budget, not dedicated VRAM"
+  },
+  "protected_integration": {
+    "branch": "codex/ai-screener-local-runtime-validation",
+    "protection_bypass": false,
+    "status": "PENDING"
+  },
+  "real_cases_completed": 0,
+  "recall": null,
+  "schema_version": "ai-screener-local-runtime-validation/1.0.0",
+  "selected_validated_execution_profile": null,
+  "startup_attempts_launched": 0,
+  "validation": {
+    "acceptance_worker": {
+      "exit_code": 0,
+      "passed": 79
+    },
+    "changed": {
+      "errors": 0,
+      "exit_code": 0,
+      "failures": 0,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "passes": 5388,
+      "performance_classification": "INSUFFICIENT_DATA",
+      "raw_receipt_archive": "artifacts\\ai-screener-local-runtime\\validation-changed.json.gz",
+      "raw_receipt_sha256": "850491475a153347f7cb5542154b3a2b67dc51af6cd84cbecd4c6fa080516cf1",
+      "skip_details": [
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/integration/test_catalyst_lane_acceptance_tool.py::CatalystLaneAcceptanceToolTests::test_live_projection_when_state_seeded",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "FuturesX bridge not running on :8788",
+          "selector": "tests/integration/test_futures_lane_acceptance_tool.py::FuturesLaneAcceptanceToolTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/integration/test_squeeze_lane_acceptance.py::SqueezeLaneAcceptanceTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "fixture produced clean report",
+          "selector": "tests/intelligence/test_build01_20_lifecycle.py::Build0120LifecycleTests::test_contaminated_candidate_blocked",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::DurableEnrichmentOutboxBehaviorTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::MemoryDurableEnrichmentOutboxTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_duplicate_key_idempotency",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_indexes_exist",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_inmemory_mongo_parity",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_malformed_direct_insert_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_schema_bootstrap_twice",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_batch_getters",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_delayed_event_excluded",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_event_as_of_boundary",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_health",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_not_mutated_on_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_order_independence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_invalid_limit_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_iter_events_by_availability_range",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_limit_enforced",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_round_trip_all_record_types",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_secondary_queries",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_snapshot_does_not_embed_events",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no automated findings for baseline report",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_identity_deterministic",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_round_trip",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_conflict_on_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_idempotent_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected",
+          "suite_id": "phase0"
+        },
+        {
+          "reason": "foreign-platform classification is for non-Windows hosts",
+          "selector": "tests/platform/test_artifact_path_resolver.py::ArtifactPathResolverTests::test_foreign_windows_path_classified_on_linux",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "v3 run artifacts not present on this host",
+          "selector": "tests/platform/test_fill_price_realism_v1.py::FillPriceRealismUnitTests::test_resolve_v3_run_dir_from_sibling_worktree",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "upstream provider unavailable in offline audit run",
+          "selector": "tests/synthetic/test_skip.py::SkippedTests::test_offline",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "probe fixture must be skipped",
+          "selector": "tests/synthetic/test_skip.py::_SkippedProbe::test_later",
+          "suite_id": "platform"
+        }
+      ],
+      "skips": 35,
+      "started_at": "2026-10-09T00:02:42.785442+00:00",
+      "status": "passed",
+      "suites": [
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 1,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mandatory-isolated-security-offline-network-denial",
+          "tests_run": 1
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 22,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mandatory-shared",
+          "tests_run": 22
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 51,
+          "skips": 1,
+          "status": "passed",
+          "suite_id": "phase0",
+          "tests_run": 52
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 66,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "finviz",
+          "tests_run": 66
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 3,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase7",
+          "tests_run": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 1785,
+          "skips": 4,
+          "status": "passed",
+          "suite_id": "platform",
+          "tests_run": 1789
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 10,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "execution",
+          "tests_run": 10
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 46,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "contracts",
+          "tests_run": 46
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 2566,
+          "skips": 27,
+          "status": "passed",
+          "suite_id": "intelligence",
+          "tests_run": 2593
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 20,
+          "skips": 3,
+          "status": "passed",
+          "suite_id": "integration",
+          "tests_run": 23
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 512,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "providers",
+          "tests_run": 512
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 22,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "runtime",
+          "tests_run": 22
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 67,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "ui1",
+          "tests_run": 67
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 5,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "ui2",
+          "tests_run": 5
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 212,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "validation",
+          "tests_run": 212
+        }
+      ],
+      "tested_git_environment": {
+        "baseline_logical_cpu_count": 8,
+        "ci": false,
+        "environment_class": "local_windows_warm_venv",
+        "logical_cpu_count": 8,
+        "os_family": "windows",
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python_version": "3.11.15",
+        "recorded_at": "2026-10-09T00:06:36.920977+00:00",
+        "repository_branch": "codex/ai-screener-local-runtime-validation",
+        "repository_dirty": true,
+        "repository_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+        "telemetry_schema_version": "1.0"
+      },
+      "tests_run": 5423,
+      "wall_seconds": 234.13774840001133
+    },
+    "earlier_attempts": {
+      "changed_workspace_temp": "4 repository discovery failures; exact four passed with normal OS TEMP; corrected authoritative CHANGED passed.",
+      "fast_performance": "OBSERVE_ONLY final classification retained in FAST receipt against provisional 1.821s baseline; initial SEVERE_REGRESSION preserved, not concealed or overridden.",
+      "full_interrupted": "Four incomplete executions: shared Windows console control during owned-process acceptance cleanup; isolated worker probe and corrected authoritative 79-test worker passed; no test removed.",
+      "full_loopback_abort": "Complete two-worker FULL: 8462 tests, 53 skips, zero failures, one WinError 10053 connection-abort error. Exact failed selector passed in isolation; unchanged complete inventory rerun serially.",
+      "ui_typecheck": "unknown ReactNode narrowing corrected; final typecheck, focused panel and build passed."
+    },
+    "fast": {
+      "errors": 0,
+      "exit_code": 0,
+      "failures": 0,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "passes": 23,
+      "performance_classification": "REGRESSION",
+      "raw_receipt_archive": "artifacts\\ai-screener-local-runtime\\validation-fast.json.gz",
+      "raw_receipt_sha256": "22afc60808d58502a7f43a44e316f79b6dbcb64c44f65eb23677f82509d35bd2",
+      "skip_details": [],
+      "skips": 0,
+      "started_at": "2026-10-09T00:02:39.170138+00:00",
+      "status": "passed",
+      "suites": [
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 1,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mandatory-isolated-security-offline-network-denial",
+          "tests_run": 1
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 22,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mandatory-shared",
+          "tests_run": 22
+        }
+      ],
+      "tested_git_environment": {
+        "baseline_logical_cpu_count": 8,
+        "ci": false,
+        "environment_class": "local_windows_warm_venv",
+        "logical_cpu_count": 8,
+        "os_family": "windows",
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python_version": "3.11.15",
+        "recorded_at": "2026-10-09T00:02:41.707332+00:00",
+        "repository_branch": "codex/ai-screener-local-runtime-validation",
+        "repository_dirty": true,
+        "repository_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+        "telemetry_schema_version": "1.0"
+      },
+      "tests_run": 23,
+      "wall_seconds": 2.5309044000023277
+    },
+    "focused_backend": {
+      "exit_code": 0,
+      "passed": 29
+    },
+    "focused_validator": {
+      "exit_code": 0,
+      "passed": 2
+    },
+    "full": {
+      "errors": 0,
+      "exit_code": 0,
+      "failures": 0,
+      "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+      "passes": 8409,
+      "performance_classification": "INCOMPATIBLE_BASELINE",
+      "raw_receipt_archive": "artifacts\\ai-screener-local-runtime\\validation-full.json.gz",
+      "raw_receipt_sha256": "90dceec56df176ceca0b9a0b1f2e99813d0edaec83bd3518f0100650b5aca6c0",
+      "skip_details": [
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_attention_items",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_available_with_seeded_demo_state",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_workspace_symbol_detail",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_workspace_unknown_symbol",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_explore_bridge.py::ExploreBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "futures bridge not running on :8788",
+          "selector": "tests/donor_bridge/test_futures_bridge.py::FuturesBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_workspace_squeeze.py::WorkspaceSqueezeBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_workspace_squeeze.py::WorkspaceSqueezeBridgeTests::test_biya_replay_only_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/integration/test_catalyst_lane_acceptance_tool.py::CatalystLaneAcceptanceToolTests::test_live_projection_when_state_seeded",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "FuturesX bridge not running on :8788",
+          "selector": "tests/integration/test_futures_lane_acceptance_tool.py::FuturesLaneAcceptanceToolTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/integration/test_squeeze_lane_acceptance.py::SqueezeLaneAcceptanceTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "fixture produced clean report",
+          "selector": "tests/intelligence/test_build01_20_lifecycle.py::Build0120LifecycleTests::test_contaminated_candidate_blocked",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::DurableEnrichmentOutboxBehaviorTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::MemoryDurableEnrichmentOutboxTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_duplicate_key_idempotency",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_indexes_exist",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_inmemory_mongo_parity",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_malformed_direct_insert_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_schema_bootstrap_twice",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_batch_getters",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_delayed_event_excluded",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_event_as_of_boundary",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_health",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_not_mutated_on_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_order_independence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_invalid_limit_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_iter_events_by_availability_range",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_limit_enforced",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_round_trip_all_record_types",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_secondary_queries",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_snapshot_does_not_embed_events",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no automated findings for baseline report",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_identity_deterministic",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_round_trip",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_conflict_on_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_idempotent_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestCorruptionResponse::test_fatal_blocks_mode_transition",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestCorruptionResponse::test_fatal_blocks_mode_transition",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestIntegrity::test_record_hash_mismatch_detected",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected",
+          "suite_id": "phase0"
+        },
+        {
+          "reason": "foreign-platform classification is for non-Windows hosts",
+          "selector": "tests/platform/test_artifact_path_resolver.py::ArtifactPathResolverTests::test_foreign_windows_path_classified_on_linux",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "v3 run artifacts not present on this host",
+          "selector": "tests/platform/test_fill_price_realism_v1.py::FillPriceRealismUnitTests::test_resolve_v3_run_dir_from_sibling_worktree",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "upstream provider unavailable in offline audit run",
+          "selector": "tests/synthetic/test_skip.py::SkippedTests::test_offline",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "probe fixture must be skipped",
+          "selector": "tests/synthetic/test_skip.py::_SkippedProbe::test_later",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_health",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_latest_scalar_preserves_pit_and_skips_missing_values",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_round_trip_vertical_slice_records",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoRestartDurabilityTests::test_restart_preserves_semantic_state",
+          "suite_id": "xa04"
+        }
+      ],
+      "skips": 53,
+      "started_at": "2026-10-09T00:14:07.895928+00:00",
+      "status": "passed",
+      "suites": [
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 40,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "postroot",
+          "tests_run": 40
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 51,
+          "skips": 1,
+          "status": "passed",
+          "suite_id": "phase0",
+          "tests_run": 52
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 9,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase0a",
+          "tests_run": 9
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 6,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase1",
+          "tests_run": 6
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 6,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase2",
+          "tests_run": 6
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 8,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase3",
+          "tests_run": 8
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 11,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase4",
+          "tests_run": 11
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 13,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase5",
+          "tests_run": 13
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 14,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase5r",
+          "tests_run": 14
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 66,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "finviz",
+          "tests_run": 66
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 139,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "news",
+          "tests_run": 139
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 182,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "research",
+          "tests_run": 182
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 7,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase6",
+          "tests_run": 7
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 3,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase7",
+          "tests_run": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 1785,
+          "skips": 4,
+          "status": "passed",
+          "suite_id": "platform",
+          "tests_run": 1789
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 5,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "phase8",
+          "tests_run": 5
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 9,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "storage",
+          "tests_run": 9
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 17,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "assistant",
+          "tests_run": 17
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 82,
+          "skips": 8,
+          "status": "passed",
+          "suite_id": "donor_bridge",
+          "tests_run": 90
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 14,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "donor_patterns",
+          "tests_run": 14
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 10,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "execution",
+          "tests_run": 10
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 156,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "order_flow",
+          "tests_run": 156
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 46,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "contracts",
+          "tests_run": 46
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 2566,
+          "skips": 27,
+          "status": "passed",
+          "suite_id": "intelligence",
+          "tests_run": 2593
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 11,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "opportunity_watch_dismiss_acceptance",
+          "tests_run": 11
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 79,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "software_fullstack_acceptance",
+          "tests_run": 79
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 100,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "cross_lane",
+          "tests_run": 100
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 9,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "distribution",
+          "tests_run": 9
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 65,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "futures",
+          "tests_run": 65
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 11,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "gridiq",
+          "tests_run": 11
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 20,
+          "skips": 3,
+          "status": "passed",
+          "suite_id": "integration",
+          "tests_run": 23
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 147,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "options",
+          "tests_run": 147
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 30,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "formulas",
+          "tests_run": 30
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 512,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "providers",
+          "tests_run": 512
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 22,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "runtime",
+          "tests_run": 22
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 11,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "squeeze_models",
+          "tests_run": 11
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 67,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "ui1",
+          "tests_run": 67
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 5,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "ui2",
+          "tests_run": 5
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 3,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mra001",
+          "tests_run": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 3,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "mra002",
+          "tests_run": 3
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 123,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "market_context",
+          "tests_run": 123
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 76,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "participant",
+          "tests_run": 76
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 154,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "market_data",
+          "tests_run": 154
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 73,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "ibkr",
+          "tests_run": 73
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 82,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "sec_edgar",
+          "tests_run": 82
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 37,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "short_intelligence",
+          "tests_run": 37
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 16,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "sec_ftd",
+          "tests_run": 16
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 129,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "market_trackers",
+          "tests_run": 129
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 63,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "cftc",
+          "tests_run": 63
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 30,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "fred",
+          "tests_run": 30
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 26,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "crypto_market",
+          "tests_run": 26
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 14,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "public_records",
+          "tests_run": 14
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 82,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "fixed_income",
+          "tests_run": 82
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 23,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "eia",
+          "tests_run": 23
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 41,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "weather",
+          "tests_run": 41
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 57,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "cboe_options",
+          "tests_run": 57
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 212,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "validation",
+          "tests_run": 212
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 81,
+          "skips": 3,
+          "status": "passed",
+          "suite_id": "of01",
+          "tests_run": 84
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 33,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "of02",
+          "tests_run": 33
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 51,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "of03",
+          "tests_run": 51
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 41,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "rt01",
+          "tests_run": 41
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 15,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "hot_path_telemetry",
+          "tests_run": 15
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 9,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "latency_instrumentation_v1",
+          "tests_run": 9
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 2,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "hot_path_telemetry_artifact",
+          "tests_run": 2
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 72,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "xa01",
+          "tests_run": 72
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 161,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "portfolio",
+          "tests_run": 161
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 33,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "xa02",
+          "tests_run": 33
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 31,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "xa03",
+          "tests_run": 31
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 27,
+          "skips": 7,
+          "status": "passed",
+          "suite_id": "xa04",
+          "tests_run": 34
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 15,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "xa05",
+          "tests_run": 15
+        },
+        {
+          "errors": 0,
+          "failures": 0,
+          "passes": 260,
+          "skips": 0,
+          "status": "passed",
+          "suite_id": "trading_correctness",
+          "tests_run": 260
+        }
+      ],
+      "tested_git_environment": {
+        "baseline_logical_cpu_count": 8,
+        "ci": false,
+        "environment_class": "local_windows_warm_venv",
+        "logical_cpu_count": 8,
+        "os_family": "windows",
+        "platform": "Windows-10-10.0.26300-SP0",
+        "python_version": "3.11.15",
+        "recorded_at": "2026-10-09T00:25:57.142748+00:00",
+        "repository_branch": "codex/ai-screener-local-runtime-validation",
+        "repository_dirty": true,
+        "repository_sha": "930c0e0bfc51d3283bbd66baf49fe0f09d86acec",
+        "telemetry_schema_version": "1.0"
+      },
+      "tests_run": 8462,
+      "wall_seconds": 709.2407606000052
+    },
+    "implementation_sha": "b9ae89263d5816ba5a043c359143ef30fe16b030",
+    "source_binding_explanation": "Tests ran on the stabilized working source based on 930c0e0b; these exact code contents were then committed at implementation_sha. Receipt telemetry preserves the dirty-tree base identity.",
+    "source_content_hashes": {
+      "src/market_platform_foundation/intelligence/inference/inference_identity.py": "4e9940c0e45dce003bc8d9a74aa65897b715a704510921a59d496144c1d8fa82",
+      "src/market_platform_foundation/intelligence/inference/local_provider.py": "827a7294c70767af7aecf759729bd34694c22bd7e7ffa5fcdc50661a08c911ad",
+      "src/market_platform_foundation/intelligence/inference/local_qualification.py": "19ac81b28ee3b2fe4339b4c87d677cf2e098499dc27123de3dcc6458db7dc036",
+      "src/market_platform_foundation/intelligence/inference/local_resources.py": "e3e9f4404323bee94a41c09cccc9c4bc04e5e1415dd8878d745b2b19a8779343",
+      "src/market_platform_foundation/intelligence/inference/local_runtime.py": "8b5f5ccbc767a35b6938d2ee2966fd4da3d24c87213549259bace0028cf049e3",
+      "src/market_platform_foundation/ui_api/screener_ai_staged.py": "b4b164a895024fea72c21e5faf01e6a7807f7193a356a3332f2cd98cacc5491e",
+      "tests/platform/test_local_runtime_validation.py": "7c7b26ca1781826b72cba2670e2bf231af322764fe3d6b962380feabf0e4eed6",
+      "tests/validation/test_validate_orchestration.py": "754c3c906a19a544fa975b26b7024ac3e516232d76bc17eaae6ce4e80e5c37f5",
+      "tools/ai_screener_local_first_benchmark.py": "aefb44170a200e661b59411e41b8ff3cb60f5dc9dec1825ecb0bf1ef50b69a97",
+      "tools/local_runtime_benchmark.py": "1d2b527cdbeddc06da504ec03e35f770a7e72d6cba7ef9c712ed8b0176e02362",
+      "tools/validate.py": "a7a386195f16e9f12b8fdf7319b9ea8d885ad759b7bc8f5a6a8b2b2350e7461f",
+      "tools/validation_manifest.json": "2b24afac67e6172251ba98d455a96bafa0311eb695ab16221c75c7b0b377436f",
+      "ui/src/components/screener/panels/AiScreenerPanel.test.tsx": "864bad6e87bac5e8d15cb144305281f3e2ef2bef503ab06bc06a41f27f459376",
+      "ui/src/components/screener/panels/AiScreenerPanel.tsx": "6202a290fe45366058103d5ffd444df1062c58d907991f05311ba50da3fcd78a"
+    },
+    "static": {
+      "closure_classified": 256,
+      "closure_discovered": 256,
+      "closure_exit_code": 0,
+      "documentation_exit_code": 0,
+      "documentation_files_checked": 296,
+      "format_exit_code": 0,
+      "lint_exit_code": 0,
+      "monorepo_ci_guard_exit_code": 0,
+      "python_compile_exit_code": 0
+    },
+    "status": "PASS",
+    "ui": {
+      "bundle_budget_exit_code": 0,
+      "complete_exit_code": 0,
+      "complete_test_files": 180,
+      "complete_tests_passed": 1415,
+      "final_panel_exit_code": 0,
+      "final_panel_tests_passed": 32,
+      "initial_gzip_kib": 100.76,
+      "production_build_exit_code": 0,
+      "typecheck_exit_code": 0
+    }
+  }
+}

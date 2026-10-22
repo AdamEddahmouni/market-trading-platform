@@ -116,6 +116,26 @@ class RunHistoryTests(unittest.TestCase):
         self.assertEqual(runs["run-other"]["previous_run_id"], None)
         self.assertEqual(runs["run-2"]["scope"]["sort"], "volume")
 
+    def test_a_full_universe_run_is_grouped_by_the_query_on_its_coverage_terminal(self):
+        # A full-universe record stores its final reduction's result: that scope is not the operator's query, and its
+        # intake is the finalists. The query comes from the coverage terminal; the intake is every evaluated row.
+        reducer_scope = {**SCOPE, "result_set": "reduction-round-1", "sort": None}
+        ledger = {"cov-1": SCOPE, "cov-2": {**SCOPE, "result_set": "set-2"}}
+        self.put(stored("CU-cov-1", selected=["EQ:AAA"], at="2026-10-07T13:40:00Z", scope=reducer_scope,
+                        universe_coverage={"coverage_run_id": "cov-1", "ai_evaluated_count": 812}))
+        self.put(stored("CU-cov-2", selected=["EQ:BBB"], at="2026-10-07T13:50:00Z", scope=reducer_scope,
+                        universe_coverage={"coverage_run_id": "cov-2", "ai_evaluated_count": 809}))
+
+        def query_of(record):
+            return ledger.get((record.get("universe_coverage") or {}).get("coverage_run_id"))
+
+        runs = {item["candidate_run_id"]: item for item in run_history(self.repository, limit=20, scope_for=query_of)["runs"]}
+
+        self.assertEqual(runs["CU-cov-2"]["scope"]["sort"], "volume")
+        self.assertEqual((runs["CU-cov-2"]["previous_run_id"], runs["CU-cov-2"]["added"], runs["CU-cov-2"]["removed"]),
+                         ("CU-cov-1", ["EQ:BBB"], ["EQ:AAA"]))
+        self.assertEqual((runs["CU-cov-1"]["intake_count"], runs["CU-cov-2"]["intake_count"]), (812, 809))
+
     def test_history_is_bounded_and_empty_history_says_so(self):
         self.assertEqual(run_history(self.repository, limit=20)["runs"], [])
         for index in range(8):

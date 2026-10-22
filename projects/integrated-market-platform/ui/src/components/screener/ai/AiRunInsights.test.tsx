@@ -87,7 +87,7 @@ describe("run history", () => {
 });
 
 describe("row marks", () => {
-  const run = (overrides: Partial<AiScreenerRun> = {}, summary: Record<string, unknown> = {}): AiScreenerRun => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper",
+  const run = (overrides: Partial<AiScreenerRun> = {}, summary: Record<string, unknown> = {}): AiScreenerRun => ({ schema_version: "screener-ai-screener-run/2.0.0", run_id: "track-1", account_id: "paper",
     state: "COMPLETED", joined: false, scope, stage: null, stage_order: [], stages: [], started_at: "2026-10-07T13:58:00Z", finished_at: "2026-10-07T13:58:12Z", elapsed_ms: 12_000,
     engine: { provider_id: "p", model_id: "m", runtime: "PAID_API" }, timeout_seconds: 45, typical_latency_ms: null, typical_latency_samples: 0, intake_count: 3, sufficient_count: 1, packet_bytes: 1,
     result: null, error: null, summary: { state: "CURRENT", reason: null, candidate_run_id: "run-1", selected: [{ instrument_id: "EQ:AAA", rank: 1 }], intake: ["EQ:AAA", "EQ:BBB"],
@@ -108,6 +108,15 @@ describe("row marks", () => {
     expect(renderHook(() => useAiRowMarks(null, scope)).result.current).toBeNull();
     // The same query after a list refresh keeps its marks.
     expect(renderHook(() => useAiRowMarks(run(), { ...scope, result_set: "set-2" })).result.current?.ranks.get("EQ:AAA")).toBe(1);
+  });
+
+  it("call a full-universe row that was not selected a finalist, and mark nothing for an experimental pass", () => {
+    // A full-universe run showed every eligible row to its batches; its intake is the finalists of the last call.
+    const { result } = renderHook(() => useAiRowMarks(run({}, { method: "EXHAUSTIVE_EXISTING", coverage: { status: "GLOBAL_SELECTION_COMPLETE" } }), scope));
+    render(<AiRowBadge marks={result.current} instrumentId="EQ:BBB" />);
+    expect(screen.getByText("AI")).toHaveAttribute("title", "An AI Screener finalist, compared in the final selection and not selected · pass finished 09:58:12 ET.");
+    // A local-first experimental pass stores no candidate run.
+    expect(renderHook(() => useAiRowMarks(run({}, { method: "STAGED_LOCAL_FIRST_EXPERIMENTAL" }), scope)).result.current).toBeNull();
   });
 
   it("strike a mark through at the moment its evidence expires, without a ticking clock", () => {

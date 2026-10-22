@@ -78,4 +78,14 @@ describe("Reevaluation controls", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Start" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("REEVALUATION_LOOP_ALREADY_OWNED");
   });
+  it("shows a loop driven by Paper automation without offering manual controls or calling execution manual", async () => {
+    const driven = { ...configured, worker_state: "RUNNING", worker_label: "Running", paper_execution: "AUTOMATION_POLICY", driver: "PAPER_AUTOMATION", candidate_source: "FULL_UNIVERSE_SELECTION" };
+    api.status.mockResolvedValue(driven); api.history.mockResolvedValue({ cycles: [] });
+    render(<ReevaluationPanel scope={scope} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open reevaluation controls" }));
+    expect(await screen.findByText(/driven by the armed Paper automation controller/)).toHaveTextContent("may be submitted as internal Paper orders under the owner policy");
+    expect(screen.queryByText(/Paper execution remains manual/)).not.toBeInTheDocument();
+    for (const name of ["Start", "Stop", "Run Reevaluation Now"]) expect(screen.queryByRole("button", { name })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Configure" })).toBeDisabled();
+  });
 });

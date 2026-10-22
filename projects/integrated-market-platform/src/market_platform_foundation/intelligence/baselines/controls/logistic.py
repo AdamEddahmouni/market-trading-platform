@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sklearn.linear_model import LogisticRegression
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
+
+if TYPE_CHECKING:
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import Pipeline
+    from sklearn.preprocessing import StandardScaler
 
 from ...contracts.common import ForecastTarget
 from ..errors import BaselineTrainingError
@@ -65,6 +67,11 @@ class LogisticRegressionBaseline:
             raise BaselineTrainingError("SINGLE_CLASS_TRAINING_DATA")
         x_rows = [list(example.feature_vector.values) for example in dataset.examples]
         y_rows = [1 if label == BaselineClassLabel.UP else 0 for label in labels]
+        # scikit-learn loads when a model is fitted, not when contracts import.
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.pipeline import Pipeline
+        from sklearn.preprocessing import StandardScaler
+
         pipeline = Pipeline(
             [
                 ("scaler", StandardScaler()),

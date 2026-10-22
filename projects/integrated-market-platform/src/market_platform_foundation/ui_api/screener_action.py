@@ -99,7 +99,12 @@ class ScreenerActionService:
         started = time.perf_counter()
         if not isinstance(body,dict) or not {'run_id','instrument_id'} <= set(body) or set(body)-{'run_id','instrument_id','opportunity_id'} or any(not isinstance(v,str) or not v or len(v)>120 for v in body.values()):
             raise ValueError('INVALID_ACTION_REQUEST')
+        if body["run_id"].startswith("LF-"):
+            raise ValueError("EXPERIMENTAL_METHOD_UNAPPROVED")
         run = self.repository.get('candidate_run',body['run_id'])
+        if run and (run.get("method") == "STAGED_LOCAL_FIRST_EXPERIMENTAL" or
+                    run.get("staged") or str(run.get("method_version", "")).startswith("ai-screener-local-first/")):
+            raise ValueError("EXPERIMENTAL_METHOD_UNAPPROVED")
         if run is None: raise ValueError('CANDIDATE_RUN_NOT_FOUND')
         pick = next((p for p in run['candidates'] if p['instrument_id']==body['instrument_id']),None)
         original = next((p for p in run['evidence'] if p['instrument']['instrument_id']==body['instrument_id']),None)
@@ -276,7 +281,9 @@ class ScreenerActionService:
         if record['opportunity_id']: request['opportunity_id']=record['opportunity_id']
         b=self._build(request)
         if b['digest']!=record['input_hash']: raise ValueError('ACTION_INPUT_CHANGED')
-        current=gate_proposal(record['model_proposal'],b['candidate'],b['context'],now=now)
+        # Gated at the cutoff the position snapshot was just taken at: an earlier clock read would make that
+        # snapshot look like it came from the future and fail POSITION_SNAPSHOT_STALE on any ticking clock.
+        current=gate_proposal(record['model_proposal'],b['candidate'],b['context'],now=b['now'])
         if current['execution_readiness']!='PREVIEW_ALLOWED': raise ValueError('ACTION_HANDOFF_BLOCKED')
         state=record['action_state']
         if state not in ('ENTER','EXIT'): raise ValueError('ACTION_NOT_HANDOFF_ELIGIBLE')

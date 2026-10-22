@@ -118,6 +118,8 @@ def session_record_from_ledger(ledger: PaperExecutionLedger, *, status: str = SE
 
 
 def persist_ledger(ledger: PaperExecutionLedger, *, events: list[dict[str, Any]] | None = None) -> None:
+    if ledger._ephemeral_startup_projection:
+        return
     repo = open_local_state()
     if repo is None:
         return

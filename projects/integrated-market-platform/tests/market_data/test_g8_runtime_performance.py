@@ -35,13 +35,14 @@ from market_platform_foundation.providers.ibkr_observational.constants import ( 
     IB_SIDE_BID,
 )
 from tools.ibkr.config import IbkrConfig  # noqa: E402
+from tools.tracked_evidence import evidence_output_path  # noqa: E402
 from tools.ibkr.observational_transport import IbkrObservationalTransport  # noqa: E402
 
 from ibkr_observational_support import FakeLookup, FakeTransport, connected_adapter, make_record  # noqa: E402
 
 AAPL = make_record("AAPL")
 N = 5_000
-EVIDENCE_PATH = ROOT / "artifacts" / "g8-runtime-performance.json"
+EVIDENCE_PATH = evidence_output_path(ROOT / "artifacts" / "g8-runtime-performance.json")
 _RESULTS: dict[str, float] = {}
 
 

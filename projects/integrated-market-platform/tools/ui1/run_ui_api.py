@@ -57,9 +57,16 @@ def _load_local_env() -> None:
 
 
 def _load_store() -> ReplayStore:
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+    from market_platform_foundation.market_data.live_config import moomoo_live_enabled
+
+    live = os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1" and not is_controlled_replay_enabled()
+    # Persistence must see the intended data identity, never the default replay identity.
     store = ReplayStore(
         collection_root=COLLECTION_ROOT,
         assistant_audit_root=TRACKED_ASSISTANT_AUDIT_ROOT,
+        data_mode="LIVE_OBSERVATIONAL" if live else "FIXTURE_REPLAY",
+        data_provider="MOOMOO" if live and moomoo_live_enabled() else "INTERNAL",
     )
     store.load()
     from market_platform_foundation.ui_api.live_intelligence import bind_ui_api_intelligence
@@ -69,12 +76,10 @@ def _load_store() -> ReplayStore:
         from market_platform_foundation.ui_api.cockpit_admit import register_cockpit_replay_store
 
         register_cockpit_replay_store(store)
-    if os.environ.get("IMP_LIVE_OBSERVATIONAL") == "1":
+    if live:
         from market_platform_foundation.market_data.live_runtime import get_live_runtime
         from tools.ibkr.runtime_bootstrap import install_ibkr_observational_provider
 
-        store.data_mode = "LIVE_OBSERVATIONAL"
-        store.data_provider = "MOOMOO"
         install_ibkr_observational_provider()
         get_live_runtime(create=True)
     return store
@@ -370,8 +375,23 @@ def serve(*, host: str, port: int) -> None:
     handler = type("BoundUiApiHandler", (UiApiHandler,), {"store": store})
     server = SingleBindHTTPServer((host, port), handler)
     print(json.dumps({"host": host, "instrument_id": store.instrument_id, "port": port, "status": "serving"}))
-    start_screener_warmup()
+    start_screener_warmup(store=store)
+    print(json.dumps({"event": "ui_api.paper_automation_startup", **resume_paper_automation(store)}), flush=True)
     server.serve_forever()
+
+
+def resume_paper_automation(store: ReplayStore) -> dict[str, Any]:
+    """Continue an armed, running Paper automation policy after a restart, if every check still passes.
+
+    Nothing is configured, armed or started here: with no persisted armed policy this is a read.
+    A failure is reported and leaves the controller stopped; it never prevents serving.
+    """
+    try:
+        from market_platform_foundation.ui_api.paper_automation import paper_automation_service
+
+        return paper_automation_service(store).resume_on_startup()
+    except Exception as exc:  # noqa: BLE001 - startup recovery never blocks the API
+        return {"resumed": False, "reason": type(exc).__name__}
 
 
 WARMUP_UNIVERSES = ("US_EQUITIES", "US_ETFS", "FUTURES")
@@ -400,7 +420,11 @@ def warm_screener(read: Any = None, universes: tuple[str, ...] = WARMUP_UNIVERSE
     return timings
 
 
-def start_screener_warmup() -> threading.Thread | None:
+def start_screener_warmup(*, store: ReplayStore | None = None) -> threading.Thread | None:
+    from tools.controlled_replay.env import is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled() or (store is not None and store.data_mode not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}):
+        return None
     # Only a live launch (the launcher sets these gates) warms; tests and replay never reach providers.
     live = any(os.environ.get(gate) == "1" for gate in ("IMP_FINVIZ_LIVE", "IMP_MOOMOO_LIVE"))
     if not live or os.environ.get("IMP_SCREENER_WARMUP", "1") == "0":
@@ -430,6 +454,13 @@ def main() -> int:
         # in Setup), then applies the private provider file the Setup panel and CLI write.
         bootstrap_process_environment()
     _load_local_env()
+    from tools.controlled_replay.env import build_controlled_replay_environment, is_controlled_replay_enabled
+
+    if is_controlled_replay_enabled():
+        # Saved provider settings and .env cannot override the launch profile.
+        replay_environment = build_controlled_replay_environment(os.environ, root=ROOT)
+        os.environ.clear()
+        os.environ.update(replay_environment)
     configure_login_transport()
     if not args.serve:
         install_guard([])

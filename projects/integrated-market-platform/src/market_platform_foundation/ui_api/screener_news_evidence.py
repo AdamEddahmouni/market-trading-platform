@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 from ..market_data.freshness_contract import evaluate, timestamp
 from ..news.finbert_sentiment import BASIS, SENTIMENT_VERSION, summarize
 from ..news.instrument_matching import EXACT, CONTEXT, match_profile, profile_for_row, entity_name, CRYPTO_ASSET_NAMES
-from ..intelligence.inference.candidate_reduction import build_candidate, MAX_PACKET_BYTES, packet_candidates
+from ..intelligence.inference.candidate_reduction import build_candidate, MAX_INTAKE, MAX_PACKET_BYTES, packet_candidates
 from ..intelligence.inference.hashing import input_hash_from_dict
 
 VERSION = 'screener-news-evidence/1.0.0'
@@ -54,13 +54,13 @@ def _coverage(service, provider, query, applicable):
 
 
 def project_news(service, *, universe: str, rows: list[dict], refresh: bool = False) -> dict:
-    """<=20 candidates, <=60 unique scores; zero instrument provider calls.
+    """Bounded candidates and at most MAX_INTAKE * MAX_STORIES unique scores; zero instrument provider calls.
 
     Candidate profiles reuse canonical matching. S11 cache receipts supply the
     ingestion clock for this projection, so identical receipts preserve identity.
     """
     from .screener_news import WINDOWS, provider_status, aggregate_state, _finviz_published
-    if len(rows) > 20:
+    if len(rows) > MAX_INTAKE:
         raise ValueError('INTAKE_BOUND_EXCEEDED')
     shared = []
     statuses = []
@@ -226,16 +226,28 @@ def attach_news(candidate: dict, news: dict, *, now: str) -> None:
 
 
 def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str) -> None:
-    """Deterministic global thinning before inference, never raise the 96KB cap.
+    """Deterministic global thinning before inference, never raise MAX_PACKET_BYTES.
 
     Rebuild NEWS/SENTIMENT/alignments after each removal so refs and counts agree.
     Reserve bytes for cutoff and scope serialization; aliases are not copied in packets.
-    When no story is left and the packet is still over, thin the per-provider status detail of
-    candidates that carry no story. Evidence is never removed here.
+    Thin per-provider status detail on candidates carrying no story before
+    removing reference evidence. Repeat after each story removal, since a
+    newly empty candidate can release coverage metadata without losing facts.
     """
     def over():
         return len(json.dumps(dict(scope=scope, decision_cutoff=now, candidates=packet_candidates(candidates)), ensure_ascii=False, sort_keys=True).encode('utf-8')) > MAX_PACKET_BYTES
 
+    def thin_empty_coverage():
+        for candidate in sorted(candidates, key=lambda c: c['instrument']['instrument_id'], reverse=True):
+            status = candidate.get('news')
+            if not status or status['story_count'] or not status['providers']:
+                continue
+            if not over():
+                break
+            status['providers'] = []
+            status['limitations'] = [*status['limitations'], 'GLOBAL_PACKET_STATUS_CAP']
+
+    thin_empty_coverage()
     while over():
         target = max((c for c in candidates if projections.get(c['instrument']['instrument_id'],{}).get('stories')), key=lambda c: (len(projections[c['instrument']['instrument_id']]['stories']), c['instrument']['instrument_id']), default=None)
         if target is None:
@@ -254,12 +266,4 @@ def fit_news(scope: dict, candidates: list[dict], projections: dict, *, now: str
             if not any(m['capability']==capability for m in target['missing']):
                 target['missing'].append({'capability':capability,'reason':'NO_INTERNAL_EVIDENCE'})
         attach_news(target, news, now=now)
-    # A full live window: current evidence alone fills the packet and there is no story to thin.
-    for candidate in sorted(candidates, key=lambda c: c['instrument']['instrument_id'], reverse=True):
-        status = candidate.get('news')
-        if not status or status['story_count'] or not status['providers']:
-            continue
-        if not over():
-            break
-        status['providers'] = []
-        status['limitations'] = [*status['limitations'], 'GLOBAL_PACKET_STATUS_CAP']
+        thin_empty_coverage()

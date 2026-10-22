@@ -1,5 +1,101 @@
 # IMP Work Log
 
+## 2026-10-12 — Autonomous Paper operations (AUTO-01)
+
+Added one server-owned controller that runs the existing authorities
+unattended for internal Paper simulation: the full-universe AI run, the
+reevaluation cycle, the Action Decision gate, the SMA stop monitor and the
+canonical Paper handoff, preview, risk and submit. It needs a complete owner
+policy (no defaults) and a separate recorded arming; it holds a per-account
+lease, renews it inside the cycle, records downtime without backfill, and
+resumes after a restart only if every start check passes again. Candidates
+come only from complete full-universe selections; unattended model calls need
+the owner's local or paid authorization and a paid run carries an owner cap
+that refuses before any hold. One Action Decision is one order; an exit whose
+order ended unfilled is decided again with backoff. Emergency Stop latches,
+cancels working automation orders and never liquidates.
+
+Three existing behaviours changed. Action handoff now gates at the cutoff of
+its own position snapshot (it failed `POSITION_SNAPSHOT_STALE` whenever the
+clock advanced between two reads). The reevaluation status field
+`paper_execution` may be `AUTOMATION_POLICY`. The response leak guard treats
+`max_paid_tokens_per_day` as a whole-number count.
+
+Integration closed the same day: PR #496 merged normally into `origin/main` at
+`bb46e716` after every protected CI check passed. Two review findings were
+repaired before merge — a superseded generation could lose its self-latch to
+`disarm → configure → re-arm → start` while its cycle was finishing (now fenced
+by the arming+run generation, with the latch recorded as
+`EMERGENCY_LATCH_SUPERSEDED` and a deterministic regression test), and a closed
+session could hide a simultaneous blocker (the last evaluating cycle's blockers
+are now carried into the read with provenance, so the panel names both). The
+automation capability table and the route dispatch were reduced to one source,
+so an operation can no longer drift into read-only privilege. Focused AUTO-01
+suites are 117 backend tests; `validate full` is 8,728 tests / 59 skipped / 0
+failures / 0 errors and `imp.py closure` exits 0; the UI suite is 1,440 tests
+with typecheck and production build clean. The portable runtime source was then
+synchronized from the accepted git objects (186 files, 78 preimages, every
+hash verified, UI rebuilt and re-verified). Live-provider unattended behaviour
+remains `NOT_OBSERVED`, and the workstation restart that loads the synchronized
+source is the one outstanding owner action.
+
+Not implemented: any liquidation rule (daily-loss, close or emergency), and
+any way to mint the governed Opportunity an ENTER still requires. 106 new
+backend tests (35 policy, 8 universe, 63 trading-correctness) and 12 UI tests use
+controlled fixtures; a live regular-session run is `NOT_OBSERVED`. See
+[Autonomous Paper operations](../architecture/PAPER_AUTOMATION.md).
+
+## 2026-10-11 — Performance comparability and import boundaries (P8)
+
+Recovered an interrupted performance sprint and finished it on the portable
+SSD from short-path worktrees. The budget reporter no longer compares a run
+against a baseline taken on a different test population: it reports
+`INSUFFICIENT_DATA` with the reason and both raw timings; the recorded
+baseline is unchanged. Intelligence facades export lazily, and scikit-learn
+loads when a model is fitted instead of at backend API import (3.78 s to
+1.47 s). Finviz recovery waiters return when the in-flight recovery ends
+instead of polling for 60 s. Tests that reproduce tracked evidence write to
+the temporary directory unless `IMP_REFRESH_TRACKED_EVIDENCE=1`.
+
+FULL on unchanged `a1f9a3a1`: 8,513 tests, 523.6 s. FULL on this branch:
+8,528 tests, 434.9 s, 0 failures, 0 tracked files modified. Live Screener,
+local-model inference, paid inference, and frontend were not measured and no
+improvement is claimed for them. See
+[P8 evidence](../audits/performance-engineering-p8/README.md) and the
+[portable workstation runbook](PORTABLE_WORKSTATION.md).
+
+## 2026-10-11 — Live startup identity recovery
+
+Resolve the serving data identity before loading persistent Paper state. Keep
+live research operational and Paper execution blocked when no compatible
+active session exists, without creating an account or reopening closed history.
+Focused loading regressions cover live and controlled replay startup, absent
+admission, incompatible replay history, and closed simulated-capital history.
+Existing preview, risk, freshness, execution, and provider gates remain in force.
+
+## 2026-10-08 — Local runtime safety and validation
+
+PR #487 merged at `930c0e0b` after nine successful checks; merge parents and
+implementation ancestry verified. The next focused feature extends the existing
+local adapter with pinned artifact verification, bounded CPU candidate profiles,
+one resource-readiness contract, commit/OS-peak monitoring, owned startup/Stop
+cleanup and cross-process launch lease. The original frozen 52-case benchmark
+gains append-only attempts, shared cumulative budget, once-only frozen holdout
+and offline economic planning. Staged preview displays resource refusal.
+
+Actual pilot: 2.49 GiB available, below unchanged 4 GiB floor; zero starts and
+generation requests. No accepted profile or quality/savings claim. Exhaustive
+default, experimental isolation and activation OFF preserved. See
+[runtime contract](../architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md) and
+[acceptance receipt](../../artifacts/ai-screener-local-runtime-validation.json).
+
+FULL closure exposed an existing Windows shared-console interruption during
+process-supervision acceptance cleanup. The unchanged 23-test module passes
+with an isolated worker process group. Added that Windows-only launch isolation
+to the validator and a regression that failed before the fix; test inventory,
+assertions and safety gates are unchanged. Earlier interrupted FULL receipts
+are retained and do not count as completion.
+
 > **Donor-era entries: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
 >
 > Entries from the donor era (2026-08-14 through the correction) predate the
@@ -34,6 +130,65 @@ For large features, also add or update a completion note under `docs/superpowers
 
 ---
 
+## 2026-10-08 — Local-first experimental AI Screener
+
+| Field | Value |
+|-------|-------|
+| **Status** | implemented — local validation complete; experimental, methodology approval and operational activation OFF |
+| **Area** | Screener intelligence, local state, UI, controlled research |
+| **Summary** | Separate versioned qualification/premium engine preserves exhaustive defaults and Action rejection. Full fixture accounting through 20,000 passes; Qwen admission resource blocked, quality/economics unproven, approval/activation OFF. |
+| **Key files** | [Method](../architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md), [acceptance](../../artifacts/ai-screener-local-first-acceptance.json), staged orchestration/qualification/storage and Main Screener UI |
+| **Tests** | FAST 23 passed; CHANGED 6,270 run (35 skipped, 0 failures, 0 errors); FULL 8,431 run (53 skipped, 0 failures, 0 errors); UI 1,414 tests / 180 files at two workers; typecheck, build, bundle budget, lint, docs links pass. Implementation commit `231be2dd`. |
+| **Evidence** | Frozen protocol; zero paid/real local generations; resource refusal and review retained. October 7 evidence and dirty original preserved. |
+
+
+## 2026-10-08 — Full-universe AI inference budget efficiency
+
+| Field | Value |
+|-------|-------|
+| **Status** | implementation complete; validation and protected integration recorded in the acceptance receipt |
+| **Area** | AI Screener inference, evidence, shared quota and UI accounting |
+| **Summary** | Exact context reuse persists successful answers and avoids buying reusable batch/global comparisons. Each request retains its canonical manifest. Quota transactions coordinate processes and fail closed on malformed state; unknown usage remains charged. Optional lossless input columns and context fitting remain off pending real-provider quality controls. |
+| **Key files** | Candidate reducer, evidence compaction, inference identity, durable inference cache, shared quota, coverage planner/ledger, run progress and existing Screener UI |
+| **Tests** | Focused regression and downstream controlled lifecycle tests; complete validation and benchmark totals in the new acceptance receipt. Initial integration failures and their repair are retained there. Oversized-length HTTP fixtures now require rejection before any payload arrives, eliminating a reproduced Windows unread-body close race without changing production HTTP handling or weakening the 413 assertions. |
+| **Related** | [Budget-efficiency contract](../architecture/SCREENER_AI_BUDGET_EFFICIENCY.md), [acceptance receipt](../../artifacts/ai-screener-budget-efficiency-acceptance.json) |
+| **Notes** | SOFTWARE_CONTROLLED. Cold 4,630-row runs remain above default allowance; 94 cold calls become zero fully reusable calls and two after one changed candidate. No paid generation, model switch, active Paper campaign or Live authority. Historical October 7 evidence is preserved. |
+
+## 2026-10-07 — Full-universe Screener final defect closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (implementation, final local validation and observed protected CI; canonical integration verified separately after normal merge) |
+| **Area** | AI Screener completeness, budget, persistence and restart diagnostics |
+| **Summary** | Retrieved the original independent review. Finalists excluded from global comparison now block a completed selection. Candidate publication and the terminal receipt roll back together. Budget instances reload shared usage and releases, local-engine recovery releases paid holds, and failed reservation persistence blocks generation. Completed selection reads survive tracker restart. Provider-count context overflow and Stop during the final in-flight request cannot publish a completed selection. |
+| **Key files** | `screener_ai_coverage.py`, `screener_ai_runs.py`, `screener_ai.py`, `anthropic_synthesis.py`, `ai_screener_coverage.py`, `action_decisions.py`, associated regression tests and acceptance tool |
+| **Tests** | Red/green controlled regressions; final exact-source totals and original failed-run disposition are recorded in `artifacts/ai-screener-full-universe-acceptance.json`. Final checks include the corrected partial-selection UI copy, isolated durable-ledger route fixtures, and fail-closed unreadable persisted quota state. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md) |
+| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. [PR #485](https://github.com/AdamEddahmouni/market-trading-platform/pull/485) records normal protected integration. |
+
+## 2026-10-07 — AI Screener full-universe coverage, bounded batches and global selection
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui/screener`, `docs` |
+| **Summary** | An AI Screener run read only the first 50 rows of the sorted Screener result, so about 99% of a 4,630-row universe never reached the model and "no candidates" described only the head of the list. A run now enumerates the whole pinned result set, classifies every row with the existing evidence gates, sends each eligible row to the model in bounded batches ordered by identity, and compares batch finalists until one request holds them all (`ai-screener-coverage/1.0.0`). Only that final answer is stored as a candidate run. The whole plan is held against the shared budget before the first call; a plan that does not fit calls no model. |
+| **Key files** | New: `src/market_platform_foundation/ui_api/screener_ai_coverage.py`, `ui_api/screener_ai_universe.py`, `intelligence/inference/coverage_plan.py`, `local_state/ai_screener_coverage.py`, `tools/ai_screener_full_universe_acceptance.py`, `ui/src/components/screener/ai/AiCoverage.tsx`, `docs/architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md`. Changed: `ui_api/screener_ai.py`, `ui_api/screener_ai_runs.py`, `ui_api/server.py`, `intelligence/inference/anthropic_synthesis.py`, `candidate_reduction.py`, `run_progress.py`, `platform/security/route_policy.py`, `platform/security/leak_audit.py`, `ui/src/api/screenerAi.ts`, `AiStatusStrip.tsx`, `AiRunProgress.tsx`, `AiScreenerPanel.tsx`, `ScreenerPage.tsx`. |
+| **Tests** | Recorded in `artifacts/ai-screener-full-universe-acceptance.json` (`validation`), from runs on the implementation commit. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md); [single-request contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md); the PR 484 entry below, whose "NOT closure of the full-universe blind-spot issue" this closes. |
+| **Notes** | Token estimates changed for every paid AI operation: input is now bounded from UTF-8 bytes below the provider's measured bytes per token (the former three-characters rule under-counted every Claude model), so reservations are larger and refusals come earlier. Measured limit: a controlled 50-row packet is about 96,000 bytes, so under the default 200,000-token / 30-request allowance only a query with about 50 eligible rows (Sonnet/Opus) or about 100 (Haiku) completes; larger queries end `AI_COVERAGE_BUDGET_INSUFFICIENT` before any call. A local model has no cap. Not done: no paid generation under this method; no resume after restart; automatic reevaluation passes keep the single-request method; the packet shape (about a third of a candidate is its fixed missing-capability list) is unchanged, so a more compact wire remains a separate, unstarted change. `ui/ai-right-rail-tab` (unmerged) edits the same UI files and will need a rebase. |
+
+## 2026-10-07 — Preserve usable news before empty candidate coverage during packing
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented in isolated repair checkout; live deployment requires protected integration and an explicit new software epoch |
+| **Area** | backend AI Screener evidence packing |
+| **Summary** | The active campaign's 20-row packet had no news or sentiment references because packing removed all stories before thinning provider status. Packing now releases coverage detail on candidates without admitted stories first, and repeats that step when story thinning empties another candidate. The 96 KB bound and deterministic story ordering remain enforced. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_news_evidence.py`, `tests/intelligence/test_news_candidate_evidence.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | New controlled 20-row price/volume regression failed with zero retained stories before the correction; afterward it retains 3 NEWS and 3 SENTIMENT items in a 93,489-byte packet. All 29 tests in the two directly affected candidate/evidence modules passed; documentation links passed for 292 governance files. Broader manifest-selected validation is delegated to protected CI to avoid contention with the active RTH runtime. |
+| **Related** | [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#limits-and-lifecycle) |
+| **Notes** | Controlled fixtures remain separate from prospective receipts. No live runtime, historical input, model, prompt, candidate cap, source-time gate, risk rule or Paper account was changed during preparation. This repairs evidence delivery and makes no claim that the model must select candidates. |
 ## 2026-10-07 — AI Screener results where the rows are (Phase 1c, part 1)
 
 | Field | Value |
@@ -44,7 +199,7 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Key files** | `src/market_platform_foundation/ui_api/{screener_ai_runs,server}.py`, `src/market_platform_foundation/local_state/action_decisions.py` (`recent`), `ui/src/components/screener/ai/{aiRowMarks.tsx,AiRunInsights.tsx,AiRunInsights.test.tsx}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/components/screener/panels/{AiScreenerPanel.tsx,AiScreenerPanel.test.tsx,dock.css}`, `ui/src/api/screenerAi.ts`, `tests/platform/test_screener_ai_history.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
 | **Tests** | `tests/platform/test_screener_ai_history.py` (8, written before the implementation: reasons with counts and named exceptions, bounded chips, summary intake, history order, diff only within one query, page bound, durable store order, read-only route policy); `AiRunInsights.test.tsx` (9: chip wording, history table, row marks including the expiry instant); `ScreenerPage.test.tsx` (+1) and `AiScreenerPanel.test.tsx` (+1) |
 | **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1c; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#results-where-the-rows-are) |
-| **Notes** | No methodology change: reasons and history are read models over records the run already stored; nothing new reaches the model. The plan's "in the current shortlist" marker is shown as "shown to the AI Screener, not selected", because the shortlist itself belongs to Phase 3, which is not approved. History rows are ordered by when they were stored, not by a run's own clock. Not in this change: the AI tab beside Quick Preview in the right rail (the rest of Phase 1c). |
+| **Notes** | No methodology change: reasons and history are read models over records the run already stored; nothing new reaches the model. The plan's "in the current shortlist" marker is shown as "shown to the AI Screener, not selected", because the shortlist itself belongs to Phase 3, which is not approved. History rows are ordered by when they were stored, not by a run's own clock. Not in this change: the AI tab beside Quick Preview in the right rail (the rest of Phase 1c). Merged with main on 2026-10-22 (full-universe runs, Stop, local-first experimental): `intake` and `reasons` describe a full-universe run's final selection, so its not-selected mark says "finalist"; experimental passes mark nothing; history reads a full-universe run's query from the coverage terminal and its intake from `ai_evaluated_count` (`tests/platform/test_screener_ai_history.py` +1, `AiRunInsights.test.tsx` +1). |
 
 ---
 
@@ -6502,3 +6657,206 @@ intersecting buckets. No unrelated persistence or baseline fixes were added.
 | Item | Area | Notes |
 |------|------|-------|
 | Master-account login before Mode Launcher | `ui/auth` | User idea: single login provisions connected broker/data APIs; not concrete yet |
+# 2026-10-07 — Repair AI candidate contracts and missing market evidence
+
+The live Screener had repeated zero results and an INVALID_OUTPUT /
+MISSING_EVIDENCE_MISMATCH after the prior news-packing correction. Candidate
+output schemas allowed arbitrary missing strings and cross-instrument references,
+and the Claude tool was forced but not strict. Corrected instrument-specific
+strict schemas preserve all backend validation and now retain bounded rejection
+diagnostics. Result expiry now follows selected cited evidence rather than an
+unselected intake row's deadline. The existing OpenD snapshot adapter supplies
+provider-clocked current change versus previous close on explicit Run; Preview
+stays cache-only and unknown/stale/future observations stay blocked. The user's
+explicit follow-up authorized resolving remaining runtime issues and the
+previously flagged intake limit: intake is 50 with a matching320KB packet, still
+at most 5 selected and no broker authority. This is a new software/method epoch;
+previous prospective evidence and budget usage must remain immutable.
+
+Validation: regression reproductions failed on the old schema, expiry, intake,
+diagnostics and absent snapshot integration; 89 focused offline tests passed
+across candidate/news/provider/async/live-price modules. Protected CI owns
+manifest affected suites and mandatory fast invariants before deployment.
+
+## 2026-10-07 — Live strict-schema compatibility correction
+
+PR481's first real50-instrument scan had48 sufficient candidates and318356 packet bytes but was refused before generation: no tokens billed, request count8 preserved. A free count diagnostic reproduced Anthropic's precise rejection: complex array constants are unsupported. Encode only fixed missing/weak lists as scalar JSON constants and decode before unchanged canonical validation. The corrected request is accepted by the free count endpoint at174375 input tokens. News refresh took30 seconds; acquire provider-timed snapshots afterwards to preserve their60-second lifetime. No thresholds, model, prompt version, Paper account or live-capital authority change.90 focused regressions passed; acquisition-order assertions and protected CI cover the follow-up. Preserve SHA1e247065 and its restart interval as an intermediate software epoch.
+
+## 2026-10-07 — Bounded candidate grammar correction
+
+PR482's real 50-instrument request was rejected before generation because the
+vendor could not compile its large strict grammar. Token counting had accepted
+the request but did not establish grammar compatibility. Replace repeated
+per-instrument branches and long reference enums with a flat strict schema:
+packet-local integer candidate keys and integer evidence references. Each key
+explicitly binds the instrument and fixed missing/weak metadata carried in the
+packet. Decode those bindings and apply every existing canonical evidence,
+ownership, conflict, freshness, rank and action-language guard. The output
+schema hash remains in receipt/cache lineage. Preserve the model, prompt
+version, evidence/risk thresholds, intake bound and Paper authority.
+
+Validation: 91 focused offline regressions passed, including cross-instrument
+references, invalid key types and canonical metadata decoding. The exact
+replacement schema compiled in a vendor schema-only request (HTTP 200;
+2,276 input tokens and one truncated output token). This probe produced no
+canonical candidates and is not a successful live-market workflow. Shared
+usage remains 310,047 tokens and 13 requests. The Codex usage interruption
+prevented deployment during RTH; October 7 was finalized at its fixed 20:00Z
+cutoff with zero decisions/trades, insufficient evidence and matching source
+and metric reproduction. Later deployment must remain outside that closed
+prospective epoch. Protected CI owns affected suites and mandatory invariants.
+
+## 2026-10-07 — AI candidate wire and Claude request compatibility closure
+
+PR483 shipped a flat schema with packet-global evidence indices under prompt
+v2, which still told the model to list `weak_refs` and `missing_capabilities`
+that the schema no longer had. The provider also sent every Claude model one
+body: temperature 0 and a forced tool call, which Sonnet 5.5 (the default) and
+Opus 5.5 reject with a 400 for every task. Replace global indices with
+candidate-local ones (`ai-screener-wire/3.0.0`), so no wire value can name
+another instrument's evidence; decode exactly, then run the unchanged canonical
+validator; record the decode or validation stage of a rejection. Add prompt v3
+for this wire with a field-list regression against the schema and packet; v1
+and v2 are untouched. Build Claude requests from one capability table
+(`anthropic_models.py`); refuse a model with no known request shape with
+`MODEL_REQUEST_CONTRACT_UNSUPPORTED` before any request, never substituting
+another; reject a reply without the tool call. Add a free token-count
+preflight built from the same request. The stored result shape, thresholds,
+intake bound, Paper, Action Decision, reevaluation and SMA are unchanged. The
+October 7 Haiku request is byte-identical. See
+[SCREENER_AI_CANDIDATE_REDUCTION.md](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md).
+
+Provider diagnostics on the controlled 50-candidate packet (319,719 bytes),
+recorded in `artifacts/ai-screener-provider-contract-closure.json`: the exact
+request counts 120,235 input tokens on Haiku 4.5 and 177,826 on Sonnet 5.5 and
+Opus 5.5; the schema is accepted and its grammar compiles on all three. The
+two superseded schemas fail as they did live (complex constants refused;
+per-instrument branches counted, then refused as too large to compile). Both
+5.5 models refuse the old forced tool call and temperature. The probes billed
+3,494 input tokens and one output token; no candidate generation ran, so the
+reasoning headroom, the 45-second timeout on the reasoning models and
+end-to-end output on any model remain unmeasured. The 50-row intake is NOT
+closure of the full-universe blind-spot issue.
+# 2026-10-09 — Laptop local Qwen registry
+
+Added explicit experimental Screener selection for official Qwen3-0.6B and
+Qwen3-1.7B Q8_0 pins alongside preserved Qwen3-4B Q4_K_M. Official smaller GGUF
+repositories expose Q8_0 only at the verified revisions. New installer verifies
+artifact/runtime integrity in the external IMP cache, using relative manifests.
+Model-specific KV/weight estimates preserve the 4 GiB floor, 6 GiB process cap
+and 1.5 GiB uncalibrated reserve. Pilot/development admission refused both models;
+zero launches/generations and holdout unconsumed. Quality and premium savings
+remain NOT PROVEN. Independent review fixes cover owned runtime handoff,
+per-identity verification caching and persisted-manifest offline validation.
+No paid engine setting, operational methodology approval, trading authority,
+campaign state or PC migration changed. Validation and acceptance evidence:
+[laptop model receipt](../../artifacts/ai-screener-laptop-local-models-acceptance.json).
+
+# 2026-10-10 — Portable workstation readiness corrections
+
+Closed controlled-replay current-market Screener/discovery access at the HTTP
+authority boundary and frontend entry. Added fresh-context, authority-loss,
+Finviz sink/credential recovery and replay provider-health regressions.
+Restricted public Finviz secret-audit exceptions to finite status values and
+integer counters. Fixed the IBKR delayed snapshot race with bounded polling,
+request cancellation and a fresh contract identity for repeated snapshots.
+Existing current-market route fixtures now declare observational authority.
+
+Independent review caught the low-level Finviz recovery bypass and reused IBKR
+ticker risk; both corrections passed regression coverage. Complete frontend
+tests, typecheck and production bundle-budget build passed locally. Backend
+checkpoint and protected integration receipts are tracked with the sprint.
+OpenD's existing listener failed a fresh API handshake before lifecycle testing;
+operator vendor restart/login remains required. No order submission was added
+to provider probes. The migration backup and unrelated source work remain
+preserved; SSD launchers and workstation-specific dependency repairs are
+separate from these canonical source changes.
+
+Follow-up independent lifecycle review reproduced a stale-PID/other-checkout
+ownership match. Launcher v2 now saves birth identity and exact command paths;
+partial cleanup remains visible and blocks restart/update. Control status uses
+the same ownership check. Direct custom Finviz login transports now check
+replay authority before construction and every request, including mode changes.
+The source checkpoint at 4f0e5214 passed 8,471 tests (59 classified skips, no
+failures/errors); final incremental checks cover these subsequent corrections.
+The 514-second checkpoint crossed the stored severe performance-regression
+threshold; this sprint does not claim workstation performance qualification.
+
+# 2026-10-10 — Portable sprint recovery and replay startup closure
+
+Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
+38075666627 artifact imp-python-changed (11678149758) contains 19 platform
+failures: the fake npm path was Windows-absolute but host-relative on Linux,
+and the strengthened process ownership predicate correctly rejected it. The
+host-native absolute fixture retains spaces and all shutdown safety assertions;
+relative runtime identities have explicit rejection coverage.
+
+Independent review identified a further replay startup bypass. Settings loaders
+could restore Live gates removed by the launch profile and promote the serving
+store to Live despite controlled replay. Synthetic regressions reproduced this
+without provider calls. Startup now reapplies replay restrictions after both
+settings loaders, strips restored provider/execution gates, independently refuses
+Live store composition, and denies current-market routes for replay-marked stores
+even when a contradictory Live data-mode label is present.
+
+Isolated changed validation exposed two news-fixture errors and one Windows
+job-probe false positive. The news fixture now explicitly supplies its intended
+in-memory repository, avoiding inherited SQLite selection and recursion through
+its InMemory put_event spy. The Windows probe checks STILL_ACTIVE using the
+actual exit code; an openable retained process object is not a surviving process.
+Both fixtures passed focused reproduction after correction; no production
+security/correctness assertion was weakened.
+
+Historical restoration is verified read-only against recorded hash and every
+pre-test table/row, with the affected audit copy retained. Recovery validation
+never loads operator settings, isolates state/cache/secrets and fails on any
+historical hash change. Fresh OpenD authentication/SPY reads recovered after
+vendor restart. IBKR read-only SPY history and two delayed snapshots passed.
+Final exact-source closure and protected integration evidence remain separate
+receipts; physical drive remount/second-PC and full entitlement certification
+are not inferred from local fixtures.
+
+
+## Portable Finviz health authority audit follow-up
+
+Actual SSD acceptance after PR #490 integration reproduced HTTP 500 for Finviz health: the fail-closed response audit rejected the documented source authority matrix. The source now admits only exact field/value assignments at authority.matrix.<field>.authority; generic paths, unknown fields/enums, wrong assignments, numeric values and credential strings remain blocked. A real-handler regression uses synthetic isolated credentials and forbids provider requests. The initial seven-test reproduction had two failures; the completed regression covers nine cases. Credentials and historical hashes remained unchanged during the stopped acceptance.
+
+The subsequent branch checkout traversed the development fixture junction and removed its 12-file thin runtime target. All 12 files (8,068,648 bytes) were restored byte-for-byte from the preserved backup; historical state, credentials and models were outside that operation. RUN_DEV now uses an independently owned managed copy, with source hashes, alias refusal and pruning/relocation tests, so Git can prune developer fixtures without reaching runtime data. Launcher/config preimages and incident receipts are retained. The final focused health/operator/discovery regression passed all 17 tests with isolated state and unchanged historical hashes.
+
+
+## Portable Finviz exact-path acceptance closure
+
+Independent continuation review reproduced a dotted-key collision in the PR #491 public authority exception. The audit now retains actual mapping/list path segments for that exception, rejects unsupported matrix authority value types and placeholders, and keeps recursive and textual secret scanning active. Scoped regressions retain the initial failures and cover dotted lookalikes, unsupported values and sensitive sibling metadata. This only completes the portable workstation health acceptance; no provider execution or adjacent feature is enabled.
+
+
+### Portable aggregate provider health audit recovery
+
+The SSD observational acceptance exposed `/provider/health` nesting the documented Finviz authority matrix under `finviz`. Accept the same exact public field/value assignments at this second documented structural path. Keep arbitrary nesting, dotted/case/list lookalikes, unsupported values, unknown fields, credentials and sibling secrets blocked. Add real aggregate HTTP coverage without provider calls and nested negative regressions; no execution or provider authority change.
+
+
+## 2026-10-12 — Screener/AI performance sprint recovery
+
+Recovered the original `codex/screener-ai-performance-20261012` worktree from
+the accepted PR #494 merge `d47e3c9e`. Preserved all prior measurements and
+unrelated historical artifacts. New regressions reproduced missed dynamic
+credential regex matches, malformed AI membership behavior and filter error
+timing changes. Removed the unsafe credential prefilter and restored baseline
+AI projection; retained direct filter branches with baseline short-circuit
+semantics. Unicode audit rendering now scans actual characters. Bounded key
+classification caching includes policy identity and handles string subclasses.
+
+Performance tools now record complete fixture/value, method, environment and
+clean measured-source identities. Full-universe production paging must match
+all admitted values and order. UI measurements use shared production hooks,
+real React memo invalidation and source-derived fixtures (62 entries / 73
+columns), replacing the earlier synthetic constant counts. Historical audit
+findings remain intact; the executable closure inventory appends the two new
+tool paths to its existing performance owner. Current ownership routes are in
+`SCREENER_AI_PERFORMANCE.md` and the existing validation manifest.
+
+All 12 restored runtime fixtures matched backup hashes (8,068,648 bytes), with
+independent validation copies and no runtime junction. Focused parity/tooling
+and the complete 1,427-test UI suite passed during recovery. Exact final
+CHANGED/FULL, independent review, paired timings, protected integration and
+portable runtime acceptance require their own final receipts; the earlier
+2,880-test checkpoint and provisional speedups do not establish acceptance.
