@@ -1,5 +1,31 @@
 # IMP Work Log
 
+## 2026-10-22 — Paper automation lease held through driven cycles
+
+The Paper automation controller has a 180 s lease. It was renewed only at
+three points: the start of its cycle, the order checks, and the cycle's end.
+A driven reevaluation with a long local-model call let it lapse mid-cycle,
+with two effects:
+- The controller's own status read `ERROR` / `CONTROLLER_NOT_ALIVE` while the
+  cycle was working.
+- Another process could start the controller and run beside it.
+
+`run_cycle` now runs the same `LeaseKeeper` as the reevaluation loop (#502).
+- It renews every lease / 3 through the controller heartbeat, which also
+  renews the driven loop.
+- It stops when the cycle ends, and for good at the first refused renewal.
+  Stop, Emergency Stop and Disarm release the lease through `_halt`, and a
+  takeover changes its owner, so neither is ever renewed afterwards.
+
+Deterministic tests, paced by hand against the injected clock:
+- A 490 s driven call keeps the controller `THIS_PROCESS` with no authority
+  blocker, and a second process's Start is refused at every step.
+- A Stop mid-call ends the renewals.
+- A takeover is never reversed.
+
+With the renewal made a no-op, all three fail: the second process's Start
+succeeds mid-cycle. Stacked on #502. Not merged and not deployed.
+
 ## 2026-10-22 — Reevaluation lease held through long model calls
 
 The live Screener's AI status kept switching between "Interrupted" and "Running
