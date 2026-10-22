@@ -461,7 +461,8 @@ For large features, also add or update a completion note under `docs/superpowers
   refuses to sort without the date partition key, so short interest came from 2019-2020 and short-sale volume from
   January. The probes now pass a date window (75 days / 10 days).
 - **IBKR delayed futures.** `tools/ibkr/futures_delayed.py` holds one read-only IB Gateway connection requesting delayed
-  data only and is injected through `market_data/delayed_futures_bridge.py`. It fills Futures grid quotes, the Futures
+  data only and is injected through `market_data/delayed_futures_bridge.py` by `tools/ibkr/runtime_bootstrap.py`
+  (the one IBKR tool allowed to import `src`; `ib_insync` is reached through `tws_client.py`). It fills Futures grid quotes, the Futures
   preview chart and the Futures Context panel only where OpenD supplies nothing; values are `DELAYED` with source
   `IBKR_DELAYED`, never live. A contract is used only on a unique USD match of root, month and expiry. Off unless
   `IMP_IBKR_LIVE=1` and `IMP_IBKR_TRANSPORT=tws` (local `.env`); Moomoo remains primary and execution authority is unchanged.

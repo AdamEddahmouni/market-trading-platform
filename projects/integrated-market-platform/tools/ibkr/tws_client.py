@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 from copy import copy
 from types import SimpleNamespace
@@ -55,6 +56,29 @@ def _default_contract_factory(symbol: str) -> object:
             "optional ib_insync dependency is required for IMP_IBKR_TRANSPORT=tws"
         ) from exc
     return Stock(symbol, "SMART", "USD")
+
+
+def new_delayed_ib() -> Any:
+    """A bare ``IB`` for ``futures_delayed`` (it connects read-only and requests delayed data only)."""
+
+    try:
+        from ib_insync import IB
+    except ImportError as exc:
+        raise TwsDependencyError(
+            "optional ib_insync dependency is required for IBKR delayed futures"
+        ) from exc
+    logging.getLogger("ib_insync").setLevel(logging.CRITICAL)
+    return IB()
+
+
+def new_future_contract(root: str, contract_month: str) -> object:
+    try:
+        from ib_insync import Future
+    except ImportError as exc:
+        raise TwsDependencyError(
+            "optional ib_insync dependency is required for IBKR delayed futures"
+        ) from exc
+    return Future(symbol=root, lastTradeDateOrContractMonth=contract_month, currency="USD")
 
 
 def _simple_contract(symbol: str) -> object:
@@ -352,4 +376,4 @@ class TwsIbkrClient:
         self._broker.disconnect()
 
 
-__all__ = ["TwsCapabilityUnavailable", "TwsDependencyError", "TwsIbkrClient"]
+__all__ = ["TwsCapabilityUnavailable", "TwsDependencyError", "TwsIbkrClient", "new_delayed_ib", "new_future_contract"]

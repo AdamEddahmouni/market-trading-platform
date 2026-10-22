@@ -12,7 +12,8 @@ from market_platform_foundation.market_data.delayed_futures_bridge import (
     inject_delayed_futures_source,
 )
 from market_platform_foundation.ui_api.screener_multi import MultiUniverseScreener, _quote_from_delayed_source
-from tools.ibkr.futures_delayed import DELAYED_MARKET_DATA, IDLE_SECONDS, IbkrDelayedFutures, install_delayed_futures_source
+from tools.ibkr.futures_delayed import DELAYED_MARKET_DATA, IDLE_SECONDS, IbkrDelayedFutures
+from tools.ibkr.runtime_bootstrap import install_delayed_futures_source
 
 NOW = datetime(2026, 10, 1, 22, 30, tzinfo=UTC).timestamp()
 ES = FuturesContractRef(key="XA01:ESZ26", root="ES", contract_month="202612", expiry="2026-12-18")

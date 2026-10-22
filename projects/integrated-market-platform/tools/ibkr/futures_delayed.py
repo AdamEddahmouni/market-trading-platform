@@ -2,8 +2,11 @@
 
 Implements ``DelayedFuturesSource`` over one read-only IB Gateway/TWS connection that
 lives on its own thread. It requests *delayed* market data only (market data type 3),
-places no orders, and reads no account data. ``src/market_platform_foundation`` never
-imports this module; ``install_delayed_futures_source`` injects it.
+places no orders, and reads no account data. The canonical ``src`` runtime never imports
+this module; ``runtime_bootstrap.install_delayed_futures_source`` injects it.
+Contract references are duck-typed (``key``, ``root``, ``contract_month``, ``expiry``) so
+this module imports nothing from ``src``, and ``ib_insync`` is reached only through
+``tws_client``.
 
 A contract is used only when IBKR returns exactly one USD future for the catalog's
 root and contract month whose last trade date is within a week of the catalog's
@@ -12,24 +15,24 @@ expiry. Anything ambiguous or unknown stays unavailable; nothing is guessed.
 
 from __future__ import annotations
 
-import logging
 import math
-import os
 import queue
 import threading
 import time
 from datetime import date, datetime
-from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Protocol
 
-from market_platform_foundation.market_data.delayed_futures_bridge import (
-    FuturesContractRef,
-    inject_delayed_futures_source,
-)
+from .tws_client import new_delayed_ib, new_future_contract
 
-from .config import IbkrConfig
 
-ROOT = Path(__file__).resolve().parents[2]
+class FuturesContractRef(Protocol):
+    """The fields this source reads from the foundation's ``FuturesContractRef``."""
+
+    key: str
+    root: str
+    contract_month: str
+    expiry: str
+
 DELAYED_MARKET_DATA = 3
 MAX_LINES = 60                 # concurrent delayed subscriptions (IBKR allows 100 lines by default)
 IDLE_SECONDS = 90.0            # a contract nobody asked for in this long is unsubscribed
@@ -50,19 +53,6 @@ def _finite(value: Any) -> float | None:
     return number if math.isfinite(number) and number >= 0 else None
 
 
-def _default_ib() -> Any:
-    from ib_insync import IB
-
-    logging.getLogger("ib_insync").setLevel(logging.CRITICAL)
-    return IB()
-
-
-def _default_future(root: str, contract_month: str) -> Any:
-    from ib_insync import Future
-
-    return Future(symbol=root, lastTradeDateOrContractMonth=contract_month, currency="USD")
-
-
 def _expiry_of(contract: Any) -> date | None:
     raw = str(getattr(contract, "lastTradeDateOrContractMonth", "") or "")[:8]
     try:
@@ -73,8 +63,8 @@ def _expiry_of(contract: Any) -> date | None:
 
 class IbkrDelayedFutures:
     def __init__(self, *, host: str, port: int, client_id: int,
-                 ib_factory: Callable[[], Any] = _default_ib,
-                 future_factory: Callable[[str, str], Any] = _default_future,
+                 ib_factory: Callable[[], Any] = new_delayed_ib,
+                 future_factory: Callable[[str, str], Any] = new_future_contract,
                  clock: Callable[[], float] = time.time) -> None:
         self._host, self._port, self._client_id = host, port, client_id
         self._ib_factory, self._future_factory, self._clock = ib_factory, future_factory, clock
@@ -244,16 +234,4 @@ class IbkrDelayedFutures:
                 self._bars[(ref.key, timeframe)] = (now, bars)
 
 
-def install_delayed_futures_source(env: Any = os.environ) -> IbkrDelayedFutures | None:
-    """Inject the delayed source when IBKR TWS access is explicitly enabled; otherwise leave it absent."""
-
-    cfg = IbkrConfig.from_env(env, root=ROOT)
-    if not cfg.live_enabled or str(env.get("IMP_IBKR_TRANSPORT", "")).strip().lower() != "tws":
-        return None
-    source = IbkrDelayedFutures(host=cfg.tws_host, port=cfg.tws_port, client_id=cfg.tws_client_id + CLIENT_ID_OFFSET)
-    inject_delayed_futures_source(source)
-    source.start()
-    return source
-
-
-__all__ = ["IbkrDelayedFutures", "install_delayed_futures_source"]
+__all__ = ["DELAYED_MARKET_DATA", "CLIENT_ID_OFFSET", "FuturesContractRef", "IbkrDelayedFutures"]
