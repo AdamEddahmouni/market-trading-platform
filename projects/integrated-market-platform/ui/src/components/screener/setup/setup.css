@@ -1,31 +1,31 @@
 .setup-remedy{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
 .setup-remedy strong{font-weight:700}
-.setup-remedy.compact{font-size:10px}
+.setup-remedy.compact{font-size:11px}
 .setup-connect{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
 .setup-connect-button{padding:3px 9px;border-color:#4b7bb0;background:#1d3246;color:#dcebff;font-weight:600}
 .setup-connect-button:hover:not(:disabled){background:#264262}
 .setup-connect-status{color:#b8c8d8}
 .setup-command{display:inline-flex;align-items:center;gap:4px;min-width:0}
-.setup-command code{overflow:hidden;padding:1px 5px;border:1px solid #2e3d4e;border-radius:2px;background:#0d131a;color:#cfe0f2;font-size:10px;text-overflow:ellipsis;white-space:nowrap}
-.setup-copy{border:1px solid #35475b;border-radius:2px;padding:0 6px;background:#1a2531;color:#9fc9ff;font:inherit;font-size:10px;cursor:pointer}
+.setup-command code{overflow:hidden;padding:1px 5px;border:1px solid #2e3d4e;border-radius:2px;background:#0d131a;color:#cfe0f2;font-size:11px;text-overflow:ellipsis;white-space:nowrap}
+.setup-copy{border:1px solid #35475b;border-radius:2px;padding:0 6px;background:#1a2531;color:#9fc9ff;font:inherit;font-size:11px;cursor:pointer}
 .setup-copy:focus-visible,.setup-connect-button:focus-visible{outline:2px solid #70afff;outline-offset:1px}
 .setup-panel{display:flex;flex-direction:column;min-height:0;overflow:auto;font-size:11px;color:#d4dfeb}
 .setup-summary{padding:6px 10px;border-bottom:1px solid #27313d;color:#9fb2c6}
 .setup-list{margin:0;padding:0;list-style:none}
 .setup-row{display:grid;grid-template-columns:minmax(150px,220px) 104px minmax(0,1fr);gap:4px 10px;align-items:start;padding:6px 10px;border-bottom:1px solid #1f2a36}
 .setup-row-label{color:#e1eaf4;font-weight:600}
-.setup-pill{justify-self:start;padding:1px 6px;border:1px solid #344355;border-radius:2px;font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
+.setup-pill{justify-self:start;padding:1px 6px;border:1px solid #344355;border-radius:2px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap}
 .setup-pill.ready{border-color:#2f6a52;color:#78d6ad}
 .setup-pill.off{color:#9fb2c6}
 .setup-pill.down{border-color:#7a3f47;color:#f0a0a8}
 .setup-pill.wait{border-color:#7a5c24;color:#f0c36b}
 .setup-ready{color:#78d6ad}
 @media (max-width:640px){.setup-row{grid-template-columns:1fr auto}.setup-row>.setup-row-step{grid-column:1/-1}}
-.setup-section-title{margin:0;padding:8px 10px 4px;border-top:1px solid #27313d;color:#9fb2c6;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.setup-section-title{margin:0;padding:8px 10px 4px;border-top:1px solid #27313d;color:#9fb2c6;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .setup-group>summary{display:flex;justify-content:space-between;gap:8px;padding:5px 10px;border-bottom:1px solid #1f2a36;color:#d4dfeb;font-weight:600;cursor:pointer}
 .setup-group>summary:focus-visible{outline:2px solid #70afff;outline-offset:-2px}
 .setup-group-count{color:#8ea3b8;font-weight:400}
-.setup-row-access{display:block;color:#8ea3b8;font-weight:400;font-size:10px}
+.setup-row-access{display:block;color:#8ea3b8;font-weight:400;font-size:11px}
 .setup-row-unlocks{color:#9fb2c6}
 .setup-config-backdrop{position:fixed;inset:0;z-index:1000;display:flex;align-items:flex-start;justify-content:center;padding:8vh 16px 16px;background:rgba(4,8,12,.62)}
 .setup-config-dialog{position:relative;width:min(520px,100%);max-height:84vh;overflow:auto;padding:14px 16px;border:1px solid #35475b;border-radius:4px;background:#111922;color:#d4dfeb;font-size:12px;box-shadow:0 12px 32px rgba(0,0,0,.5)}
@@ -37,7 +37,7 @@
 .setup-config-access.paid{color:#f0c36b}
 .setup-config-about{margin:8px 0;color:#b8c8d8;line-height:1.45}
 .setup-config-unlocks{margin:6px 0 10px}
-.setup-config-unlocks strong{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#9fb2c6}
+.setup-config-unlocks strong{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#9fb2c6}
 .setup-config-unlocks ul{margin:3px 0 0;padding-left:18px;color:#d4dfeb}
 .setup-config-restart{margin:6px 0;color:#f0c36b}
 .setup-config-external{margin:6px 0;color:#b8c8d8}

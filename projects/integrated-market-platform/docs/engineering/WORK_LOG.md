@@ -1,5 +1,52 @@
 # IMP Work Log
 
+## 2026-10-22 — Screener Sprint 2: layout
+
+Items 19–26 of the 2026-10-22 visual pass, stacked on the right-rail AI tab
+branch. UI only; no API change.
+
+- **Grid room (19).** With no selection, a dock whose open panels all need an
+  instrument shrinks to its tab strip (`DOCK_SLIM_HEIGHT`). A selection, a
+  press or focus in the dock, or opening a panel expands it to the saved
+  height, which is never changed. Clearing the selection shrinks it again.
+  Setup and the AI Screener shortcut keep it open. At 1280×720 the grid shows
+  about 11 rows with nothing selected, up from 3.
+- **Narrow windows (20).** Below 1280px the right rail is a drawer over a dimmed
+  backdrop, not a pane floating over the rows. A press on the backdrop or
+  Escape closes it and returns focus to the grid. The toolbar and the AI line
+  already fit at 800×600 after Sprint 1, so no "More" menu was needed. The
+  plan proposed raising the breakpoint to 1400px. At 1280×720 the grid and
+  the rail fit side by side (about 870px of grid), and a drawer there would
+  cover 400px of rows on every selection, so the breakpoint stays at 1280px.
+- **Scrollbars (21).** Thin and dark across the page (`scrollbar-color`
+  inherits from `.screener-page`; `scrollbar-width: thin` on every element).
+- **Quick Preview chart (22).** The canvas is sized inside its border and
+  isolated, so it no longer paints over the sticky Open Instrument footer.
+  The TradingView logo is off and a "Charts by TradingView" link sits under
+  the chart, which the library's licence accepts in place of the logo. The
+  dock charts keep the logo. The price scale has a minimum width, so labels
+  are not clipped.
+- **Dock columns (23).** A new panel gets its own column only when every
+  column can stay at least 480px wide (`maxColumns`); after that it becomes a
+  tab, with dockview's overflow list for tabs that do not fit. Before, five
+  columns at 1600px meant about 265px each and titles cut to "evel 2". A
+  layout saved with more columns keeps them until Reset Panel Layout.
+- **Overview width (24).** The default widths of six Overview columns were
+  trimmed (1,190px → 1,126px), and the last header's resize handle no longer
+  sticks out. At 1600px with the rail open the grid no longer scrolls
+  sideways. The Symbol column stays pinned for narrower windows. Saved
+  screens keep their own widths.
+- **Type scale (25).** Every Screener stylesheet has an 11px minimum (106
+  declarations raised from 8–10.5px), as do the chart axes.
+  `screenerTypeScale.test.ts` fails on any smaller size.
+- **Fonts and controls (26).** Buttons, inputs and selects on the page take
+  the page font through a zero-specificity rule, so every styled control keeps
+  its own size. Unstyled controls inside panels (decision, reevaluation,
+  Paper automation, AI method) use the dark theme instead of white browser
+  defaults.
+- Checked in a browser at 1600×900, 1280×720 and 800×600, against the
+  isolated backend described in the previous entry.
+
 ## 2026-10-22 — Screener: AI Screener in the right rail (Phase 1c, part 2)
 
 The follow-up #479 promised: plan

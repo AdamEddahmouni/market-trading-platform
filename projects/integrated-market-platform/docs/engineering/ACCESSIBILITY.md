@@ -14,6 +14,8 @@
 - Modals/dialogs: focus trap and escape dismiss where implemented
 - Non-modal popovers (`ui/src/lib/useDismiss.ts`): focus moves into the popover on open; Escape anywhere or a press outside closes it; keyboard closes return focus to the trigger
 - Tab sets (`role="tablist"`, e.g. the Screener's right rail Preview | AI and Quick Preview's detail tabs): one tab in the Tab order; Left/Right/Home/End move and select; hidden panels keep their state. A shortcut that opens a tab (the AI strip's Open, the dock's Show in right rail) selects it and moves focus to its panel; Escape in the rail closes it and returns focus to the grid
+- Drawers (the Screener's right rail below 1280px): a dimmed backdrop marks the rest of the page as inactive; Escape or a press on the backdrop closes the drawer and returns focus to where the user was (the grid)
+- Text is never smaller than 11px in the Screener (`screenerTypeScale.test.ts`); controls inherit the page font
 - A tooltip never replaces a control's name: put hints in `aria-describedby`, not `title` on the control
 - Color not sole indicator of state (use text/icons/badges)
 - NavShell: `aria-label` on mode-specific link descriptions

@@ -17,7 +17,7 @@ import { AiRowBadge, useAiRowMarks } from "./ai/aiRowMarks";
 import { useAiScreenerRuns } from "./ai/useAiScreenerRuns";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
-import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
+import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, DOCK_SLIM_HEIGHT, lastScreenFor, panelLayoutFor, WORKSTATION_PANELS } from "./panels/registry";
 import { NewsBadge } from "./news/NewsBadge";
 import type { NewsActivityRow } from "../../api/screenerNews";
 import type { DockHandle } from "./panels/ScreenerDock";
@@ -77,14 +77,14 @@ type ColumnKey = "symbol" | "company" | "sector" | "industry" | "country" | "pri
 type SortKey = ColumnKey;
 type ColumnDefinition = { key: ColumnKey; label: string; width: number; format: "text" | "price" | "percent" | "compact" | "decimal" | "fixed2" | "rate" | "billions" | "millions" | "per100" | "bp"; title?: string };
 const definitions: ColumnDefinition[] = [
-  { key: "symbol", label: "Symbol", width: 190, format: "text" },
+  { key: "symbol", label: "Symbol", width: 170, format: "text" },
   { key: "company", label: "Company", width: 180, format: "text" },
   { key: "sector", label: "Sector", width: 140, format: "text" },
   { key: "industry", label: "Industry", width: 170, format: "text" },
   { key: "country", label: "Country", width: 90, format: "text" },
-  { key: "price", label: "Price", width: 92, format: "price" },
+  { key: "price", label: "Price", width: 84, format: "price" },
   { key: "change_pct", label: "Chg %", width: 86, format: "percent" },
-  { key: "volume", label: "Volume", width: 103, format: "compact" },
+  { key: "volume", label: "Volume", width: 94, format: "compact" },
   { key: "avg_volume", label: "Avg Volume", width: 108, format: "compact" },
   { key: "rel_volume", label: "RVOL", width: 76, format: "decimal" },
   { key: "float_shares", label: "Float", width: 93, format: "compact" },
@@ -92,10 +92,10 @@ const definitions: ColumnDefinition[] = [
   { key: "market_cap", label: "Mkt Cap", width: 95, format: "compact" },
   { key: "short_float_pct", label: "Short Float", width: 94, format: "percent" },
   { key: "short_ratio", label: "Short Ratio", width: 100, format: "decimal" },
-  { key: "bid", label: "Bid", width: 90, format: "price" },
-  { key: "ask", label: "Ask", width: 90, format: "price" },
+  { key: "bid", label: "Bid", width: 82, format: "price" },
+  { key: "ask", label: "Ask", width: 82, format: "price" },
   // Liquid names quote spreads of a few thousandths of a percent; two decimals would show 0.00%.
-  { key: "spread_pct", label: "Spread %", width: 97, format: "rate" },
+  { key: "spread_pct", label: "Spread %", width: 86, format: "rate" },
   { key: "rsi_14", label: "RSI (14)", width: 84, format: "decimal" },
   { key: "eps_ttm", label: "EPS TTM", width: 90, format: "price" },
   { key: "pe", label: "P/E", width: 72, format: "decimal" },
@@ -353,6 +353,10 @@ export function ScreenerPage() {
   // Specialist panel dock. Arrangement changes are written to a ref and persisted
   // without React state, so moving or resizing panels never re-renders the table.
   const [openPanels, setOpenPanels] = useState<PanelId[]>([]);
+  // With no selection, panels that need an instrument have nothing to show, so the dock shrinks to its tab strip until
+  // it is used or a row is selected. A cleared selection shrinks it again.
+  const [dockUsed, setDockUsed] = useState(false);
+  useEffect(() => { if (!selected) setDockUsed(false); }, [selected]);
   const [pendingPanel, setPendingPanel] = useState<PanelId | null>(null);
   const [dockHeight, setDockHeight] = useState(DOCK_HEIGHT_DEFAULT);
   const dockHeightRef = useRef(DOCK_HEIGHT_DEFAULT);
@@ -424,6 +428,7 @@ export function ScreenerPage() {
     if (!ids.length) { panelLayout.current = { ...panelLayout.current, open_panels: [], active_panel: null, dockview_layout: null }; persistPanels(); }
   }, [persistPanels]);
   const launchPanel = useCallback((id: PanelId) => {
+    setDockUsed(true);
     if (dockHandle.current) { dockHandle.current.openOrFocus(id); return; }
     setPendingPanel(id);
     setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
@@ -477,6 +482,7 @@ export function ScreenerPage() {
     commitDockHeight(event.key === "Home" ? 1200 : event.key === "End" ? 0 : dockHeightRef.current + steps[event.key]);
   };
   const dockVisible = (openPanels.length > 0 || pendingPanel !== null) && dockUniverse === universe;
+  const dockSlim = dockVisible && !selected && !dockUsed && pendingPanel === null && openPanels.every((id) => !WORKSTATION_PANELS.has(id));
   useEffect(() => {
     const layout = config.data?.preview_layout;
     if (!layout || layoutRestored.current) return;
@@ -1157,6 +1163,10 @@ export function ScreenerPage() {
     {previewOpen && !narrow && <div className="screener-splitter" role="separator" aria-orientation="vertical" aria-label="Resize quick preview"
       aria-valuemin={PREVIEW_MIN} aria-valuemax={PREVIEW_MAX} aria-valuenow={previewWidth} tabIndex={0}
       onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
+    {/* Too narrow for the grid and the rail side by side: the rail is a drawer, and pressing outside it closes it. */}
+    {narrow && previewOpen && (selectedRow || (aiRailTab === "ai" && aiRequested)) && <div className="screener-rail-backdrop" aria-hidden="true"
+      // preventDefault: the press must not move focus to the page after closing has returned it to the grid.
+      onPointerDown={(event) => { event.preventDefault(); closePreview(); }} />}
     {previewOpen && (!narrow || selectedRow || (aiRailTab === "ai" && aiRequested)) && <RightRail tab={aiRailTab} onTab={setRailTab}
       aiSupported={aiSupported} overlay={narrow} width={previewWidth} paneRef={previewRef} onClose={closePreview}
       screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openPanel={launchPanel}
@@ -1171,10 +1181,12 @@ export function ScreenerPage() {
         onOpenParticipants={openParticipantPanel} />} />}
     </div>
     {dockVisible && <>
-      <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
+      {!dockSlim && <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
         aria-valuemin={140} aria-valuemax={1200} aria-valuenow={dockHeight} tabIndex={0}
-        onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />
-      <section className="screener-dock" aria-label="Specialist panels" ref={dockRef} style={{ height: dockHeight }}>
+        onPointerDown={onDockSplitterPointerDown} onKeyDown={onDockSplitterKeyDown} />}
+      <section className={`screener-dock${dockSlim ? " slim" : ""}`} aria-label="Specialist panels" ref={dockRef} style={{ height: dockSlim ? DOCK_SLIM_HEIGHT : dockHeight }}
+        title={dockSlim ? "Select a row, or choose a panel tab, to show the panels" : undefined}
+        onPointerDown={() => { if (dockSlim) setDockUsed(true); }} onFocus={() => { if (dockSlim) setDockUsed(true); }}>
         {/* The dock as a whole is contained too: a failure outside any one panel (e.g. a saved arrangement
             the dock cannot restore) never blanks the table, and the layout can be reset from here. */}
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
