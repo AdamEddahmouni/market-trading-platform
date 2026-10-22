@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes, useNavigate } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { StrictMode } from "react";
 import { ScreenerPage, fieldFor } from "./ScreenerPage";
+import { RAIL_TAB_KEY } from "./RightRail";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -18,9 +19,14 @@ vi.mock("../../api/screener", () => ({
   saveScreenerScreen: mocks.save,
   deleteScreenerScreen: mocks.remove,
   persistLastScreenerConfig: mocks.last,
+  persistScreenerPreviewLayout: () => Promise.resolve(),
   updateScreenerWindow: mocks.window,
   releaseScreenerWindow: mocks.release,
   releaseScreenerWindowOnUnload: mocks.release,
+}));
+// The AI tab's own content is covered by AiScreenerWorkspace.test.tsx; here only where it lives and when it shows.
+vi.mock("./ai/AiScreenerWorkspace", () => ({
+  default: ({ visible }: { visible: boolean }) => <section aria-label="AI Screener workspace" data-visible={String(visible)} />,
 }));
 vi.mock("@tanstack/react-virtual", () => ({
   useVirtualizer: ({ count }: { count: number }) => ({
@@ -137,6 +143,7 @@ function HistoryBack() {
 
 describe("ScreenerPage", () => {
   beforeEach(() => {
+    window.localStorage.removeItem(RAIL_TAB_KEY);
     mocks.config.mockReset().mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [equitySpec],
       catalog: [
         { field: "price", label: "Price", category: "Price & Movement", type: "number", unit: "USD", operators: ["gt", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" },
@@ -175,7 +182,119 @@ describe("ScreenerPage", () => {
     expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull();
     expect(within(strip).getByRole("button", { name: "Run now" })).toBeEnabled();
     fireEvent.click(within(strip).getByRole("button", { name: "Open" }));
-    expect(await screen.findByRole("region", { name: "Specialist panels" })).toBeInTheDocument();
+    // Open shows the AI tab of the right rail and moves focus there; the dock stays as it was.
+    await waitFor(() => expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true"));
+    await waitFor(() => expect(screen.getByRole("tabpanel", { name: "AI" })).toHaveFocus());
+    expect(screen.getByRole("region", { name: "AI Screener workspace" })).toHaveAttribute("data-visible", "true");
+    expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull();
+    // A second Open never closes it.
+    fireEvent.click(within(strip).getByRole("button", { name: "Open" }));
+    expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+  });
+
+  describe("right rail AI tab", () => {
+    const aiConfig = () => mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true,
+      universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    beforeEach(() => {
+      window.localStorage.removeItem(RAIL_TAB_KEY);
+      mocks.aiRuns.mockResolvedValue({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: null,
+        ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+      mocks.aiLoop.mockResolvedValue({ schema_version: "reevaluation-status/1.0.0", worker_state: "NOT_CONFIGURED", worker_label: "Not configured",
+        engine: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", budget: null }, durability: "DURABLE", paper_execution: "MANUAL_ONLY" });
+    });
+
+    it("sits beside Quick Preview, needs no selected row, and switches by click and arrow keys", async () => {
+      aiConfig();
+      mount();
+      await screen.findByText("AAPL");
+      const tabs = await screen.findByRole("tablist", { name: "Right rail" });
+      const preview = within(tabs).getByRole("tab", { name: "Preview" });
+      const ai = within(tabs).getByRole("tab", { name: "AI" });
+      expect(preview).toHaveAttribute("aria-selected", "true");
+      // Loaded on first visit only.
+      expect(screen.queryByRole("region", { name: "AI Screener workspace" })).toBeNull();
+      fireEvent.click(ai);
+      expect(ai).toHaveAttribute("aria-selected", "true");
+      expect(await screen.findByRole("region", { name: "AI Screener workspace" })).toHaveAttribute("data-visible", "true");
+      expect(screen.getByRole("tabpanel", { name: "AI" })).toBeVisible();
+      expect(window.localStorage.getItem(RAIL_TAB_KEY)).toBe("ai");
+      fireEvent.keyDown(ai, { key: "ArrowLeft" });
+      expect(preview).toHaveAttribute("aria-selected", "true");
+      expect(preview).toHaveFocus();
+      // Hidden, not unmounted: a run's progress and an open decision survive the switch, and polling stops.
+      expect(screen.getByRole("region", { name: "AI Screener workspace", hidden: true })).toHaveAttribute("data-visible", "false");
+      fireEvent.keyDown(preview, { key: "End" });
+      expect(ai).toHaveAttribute("aria-selected", "true");
+      expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+    });
+
+    it("restores the last tab, and still switches when storage is blocked", async () => {
+      aiConfig();
+      window.localStorage.setItem(RAIL_TAB_KEY, "ai");
+      const first = mount();
+      await screen.findByText("AAPL");
+      expect(await screen.findByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+      first.unmount();
+      const read = vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => { throw new Error("blocked"); });
+      const write = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("blocked"); });
+      try {
+        mount();
+        await screen.findByText("AAPL");
+        const ai = await screen.findByRole("tab", { name: "AI" });
+        expect(screen.getByRole("tab", { name: "Preview" })).toHaveAttribute("aria-selected", "true");
+        fireEvent.click(ai);
+        expect(ai).toHaveAttribute("aria-selected", "true");
+      } finally { read.mockRestore(); write.mockRestore(); }
+    });
+
+    it("has no tabs for a universe without the AI Screener", async () => {
+      mount();
+      await screen.findByText("AAPL");
+      expect(await screen.findByRole("complementary", { name: "Quick preview" })).toBeInTheDocument();
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+    });
+
+    it("closes from its own bar and with Escape on the AI tab", async () => {
+      aiConfig();
+      mount();
+      await screen.findByText("AAPL");
+      fireEvent.click(await screen.findByRole("tab", { name: "AI" }));
+      const panel = screen.getByRole("tabpanel", { name: "AI" });
+      fireEvent.keyDown(panel, { key: "Escape" });
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+      expect(screen.getByRole("grid")).toHaveFocus();
+      fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+      fireEvent.click(await screen.findByRole("button", { name: "Close right rail" }));
+      expect(screen.queryByRole("tablist", { name: "Right rail" })).toBeNull();
+    });
+  });
+
+  it("marks the rows of the latest pass for this query: the rank it selected and the rows it was shown", async () => {
+    const run = (search: string) => ({ schema_version: "screener-ai-screener-run/1.0.0", run_id: "track-1", account_id: "paper", state: "COMPLETED", joined: false,
+      scope: { universe: "US_EQUITIES", search, sort: "volume", descending: true, filters: [], view: "Overview", screen: "", result_set: null }, stage: null, stage_order: [], stages: [],
+      started_at: "2026-10-07T13:58:00Z", finished_at: "2026-10-07T13:58:12Z", elapsed_ms: 12_000, engine: { provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" },
+      timeout_seconds: 300, typical_latency_ms: null, typical_latency_samples: 0, intake_count: 2, sufficient_count: 1, packet_bytes: 1, result: null, error: null,
+      summary: { state: "CURRENT", reason: null, candidate_run_id: "run-1", selected: [{ instrument_id: "MSFT", rank: 1 }], intake: ["AAPL", "MSFT"], reasons: [],
+        provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL", valid_until: "2099-01-01T00:00:00Z", limitations: [] } });
+    const status = (search: string) => ({ schema_version: "screener-ai-screener-runs/1.2.0", state: "IDLE", budget: null, active: null, latest: run(search),
+      ai: { state: "AVAILABLE", reason: null, provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } });
+    mocks.config.mockResolvedValue({ schema_version: 1, persistence_available: true, universes: [{ ...equitySpec, panels: [...equitySpec.panels, "ai_screener"] }], catalog: [], presets: [], saved: [] });
+    mocks.aiRuns.mockResolvedValue(status(""));
+    const view = mount();
+    // Cells re-render as quotes and marks arrive, so each look reads the table afresh.
+    await waitFor(() => expect(screen.getByText("AI 1").closest('[role="row"]')).toHaveTextContent("MSFT"));
+    expect(screen.getByText("AI", { selector: ".ai-row-seen" }).closest('[role="row"]')).toHaveTextContent("AAPL");
+    expect(screen.getByText("AI 1")).toHaveAttribute("title", expect.stringContaining("A candidate for review, not an instruction to trade."));
+    view.unmount();
+    // A pass that answered a different Screener query marks nothing here.
+    mocks.aiRuns.mockResolvedValue(status("other"));
+    mount();
+    await screen.findByText("AAPL");
+    await waitFor(() => expect(mocks.aiRuns.mock.calls.length).toBeGreaterThan(1));
+    await screen.findByText(/Idle · last pass/);
+    expect(screen.queryByText("AI 1")).toBeNull();
+    expect(document.querySelector(".ai-row-seen")).toBeNull();
   });
 
   it("shows no AI strip for a universe that does not offer the AI Screener", async () => {

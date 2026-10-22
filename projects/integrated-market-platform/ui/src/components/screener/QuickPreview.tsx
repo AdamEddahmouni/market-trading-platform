@@ -63,7 +63,8 @@ export type QuickPreviewProps = {
   filters: ScreenerFilter[];
   screenLabel: string | null;
   overlay: boolean;
-  width: number;
+  /** Omitted inside the right rail, which owns the width. */
+  width?: number;
   paneRef?: React.Ref<HTMLElement>;
   onClose: () => void;
   onOpen: (row: ScreenerRow) => void;
@@ -240,7 +241,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
   const bars = data?.bars;
   const chartLabel = bars && bars.bars.length ? `${data.instrument.symbol} ${bars.timeframe} candles, ${bars.bar_count} completed bars to ${time(bars.latest_complete_bar_end, true)}, last close ${money(bars.bars[bars.bars.length - 1].close)}` : "";
   return <aside className={`screener-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef as React.Ref<HTMLElement>} tabIndex={-1}
-    style={overlay ? undefined : { width }}
+    style={overlay || width === undefined ? undefined : { width }}
     onKeyDown={(event) => { if (event.key === "Escape" && !(event.target instanceof HTMLInputElement)) { event.stopPropagation(); onClose(); } }}>
     <header className="screener-preview-header">
       <span className="screener-preview-kicker">Quick Preview</span>

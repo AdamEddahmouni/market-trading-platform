@@ -1,5 +1,45 @@
 # IMP Work Log
 
+## 2026-10-22 — Screener: AI Screener in the right rail (Phase 1c, part 2)
+
+The follow-up #479 promised: plan
+`docs/superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md`
+1c, "an AI tab beside Quick Preview in the right rail". Stacked on Sprint 1
+(#501) with #479 merged in. UI only; no API or methodology change.
+
+- The right rail has two tabs, Preview and AI (`RightRail.tsx`). The AI tab
+  is the home for run controls, results, decisions, reevaluation, Paper
+  automation and run history. It needs no selected row, loads its code on
+  first visit, and stays mounted while hidden, so switching tabs keeps a
+  run's progress and any open decision. Hidden, it stops polling.
+- The panel body moved, unchanged, from the dock panel to
+  `ai/AiScreenerWorkspace.tsx`. It now takes its scope and callbacks as
+  props instead of reading the dock's context. Every React Query key is
+  unchanged.
+- The dock's AI Screener panel is now a shortcut: one status line read from
+  the AI strip's cache (it starts no request) and Show in right rail. The
+  controls are never mounted twice, so the reevaluation, Paper automation
+  and decision timers run once. Saved layouts with the panel still load.
+- The AI strip's Open, the dock shortcut, and opening AI Screener from the
+  Open Panels row all select the AI tab, open the rail if it is closed, and
+  move focus there. None of them closes it.
+- The rail owns the width and overlay that Quick Preview had. With the AI
+  tab present, the rail's bar carries the close button. The last tab is
+  remembered per viewer in localStorage (`imp.screener.railTab`), and a
+  blocked storage is tolerated. The server-saved preview layout is still
+  `{open, width}`.
+- Universes without the AI Screener show the Quick Preview alone, with no
+  tabs.
+- Fixed on the way: the server's panel-layout check did not list
+  `ai_screener`. Any dock arrangement with the AI Screener open was refused
+  (`INVALID_PANEL_IDS`) and silently never saved. A new test reads the UI's
+  `PANEL_IDS` and requires that the server accepts exactly that set
+  (`test_screener_s4`).
+- Checked in a browser against an isolated backend at 1600×900, 1280×720 and
+  800×600: fixture store, session flag only, every provider and execution
+  gate 0, every socket connection refused. The live API was in collect-only
+  mode after the close.
+
 ## 2026-10-22 — Screener Sprint 1: broken behaviour and accessibility
 
 The first batch from the 2026-10-22 visual pass of the live Screener (items
@@ -224,6 +264,17 @@ For large features, also add or update a completion note under `docs/superpowers
 | **Tests** | New controlled 20-row price/volume regression failed with zero retained stories before the correction; afterward it retains 3 NEWS and 3 SENTIMENT items in a 93,489-byte packet. All 29 tests in the two directly affected candidate/evidence modules passed; documentation links passed for 292 governance files. Broader manifest-selected validation is delegated to protected CI to avoid contention with the active RTH runtime. |
 | **Related** | [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#limits-and-lifecycle) |
 | **Notes** | Controlled fixtures remain separate from prospective receipts. No live runtime, historical input, model, prompt, candidate cap, source-time gate, risk rule or Paper account was changed during preparation. This repairs evidence delivery and makes no claim that the model must select candidates. |
+## 2026-10-07 — AI Screener results where the rows are (Phase 1c, part 1)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | `ui/screener` (row marks, reason chips, run history), backend `ui_api/screener_ai_runs.py`, `local_state/action_decisions.py` |
+| **Summary** | Results lived only in the bottom panel, and "nothing selected" was one long paragraph of model prose. Screener rows now carry the latest pass's rank (`AI 1`) or a "shown, not selected" mark; an empty or thin selection is explained by short chips the server derives from the evidence packet (blocked evidence by capability and reason, no news story, insufficient evidence) with the model's own text behind a disclosure; and a run history lists stored passes with engine, result, tokens, model time and what each added or removed against the previous pass of the same query. |
+| **Key files** | `src/market_platform_foundation/ui_api/{screener_ai_runs,server}.py`, `src/market_platform_foundation/local_state/action_decisions.py` (`recent`), `ui/src/components/screener/ai/{aiRowMarks.tsx,AiRunInsights.tsx,AiRunInsights.test.tsx}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/components/screener/panels/{AiScreenerPanel.tsx,AiScreenerPanel.test.tsx,dock.css}`, `ui/src/api/screenerAi.ts`, `tests/platform/test_screener_ai_history.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_history.py` (8, written before the implementation: reasons with counts and named exceptions, bounded chips, summary intake, history order, diff only within one query, page bound, durable store order, read-only route policy); `AiRunInsights.test.tsx` (9: chip wording, history table, row marks including the expiry instant); `ScreenerPage.test.tsx` (+1) and `AiScreenerPanel.test.tsx` (+1) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1c; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#results-where-the-rows-are) |
+| **Notes** | No methodology change: reasons and history are read models over records the run already stored; nothing new reaches the model. The plan's "in the current shortlist" marker is shown as "shown to the AI Screener, not selected", because the shortlist itself belongs to Phase 3, which is not approved. History rows are ordered by when they were stored, not by a run's own clock. Not in this change: the AI tab beside Quick Preview in the right rail (the rest of Phase 1c). Merged with main on 2026-10-22 (full-universe runs, Stop, local-first experimental): `intake` and `reasons` describe a full-universe run's final selection, so its not-selected mark says "finalist"; experimental passes mark nothing; history reads a full-universe run's query from the coverage terminal and its intake from `ai_evaluated_count` (`tests/platform/test_screener_ai_history.py` +1, `AiRunInsights.test.tsx` +1). |
 
 ---
 

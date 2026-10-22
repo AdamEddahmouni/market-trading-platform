@@ -11,7 +11,10 @@ import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
 import type { AiScreenerScope } from "../../api/screenerAi";
 import { QuickPreview } from "./QuickPreview";
+import RightRail, { RAIL_AI_PANEL_ID, readRailTab, writeRailTab, type RailTab } from "./RightRail";
 import AiStatusStrip from "./ai/AiStatusStrip";
+import { AiRowBadge, useAiRowMarks } from "./ai/aiRowMarks";
+import { useAiScreenerRuns } from "./ai/useAiScreenerRuns";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
 import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
@@ -339,8 +342,12 @@ export function ScreenerPage() {
   const narrow = useNarrow();
   const [previewOpen, setPreviewOpen] = useState(true);
   const [previewWidth, setPreviewWidth] = useState(400);
+  const [railTab, setRailTabState] = useState<RailTab>(readRailTab);
+  const setRailTab = useCallback((tab: RailTab) => { setRailTabState(tab); writeRailTab(tab); }, []);
+  // An overlay rail shows only with a selected row, unless the AI tab was asked for explicitly.
+  const [aiRequested, setAiRequested] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<HTMLElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   const layoutRestored = useRef(false);
   const layoutTimer = useRef<number | undefined>(undefined);
   // Specialist panel dock. Arrangement changes are written to a ref and persisted
@@ -433,7 +440,6 @@ export function ScreenerPage() {
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
   const openNewsPanel = useCallback(() => launchPanel("news"), [launchPanel]);
-  const openAiPanel = useCallback(() => launchPanel("ai_screener"), [launchPanel]);
   const openNewsFor = useCallback((instrumentId: string) => { setSelected(instrumentId); launchPanel("news"); }, [launchPanel]);
   const openParticipantPanel = useCallback((lens: "institutional" | "congress_gov") => launchPanel(lens), [launchPanel]);
   const resetPanels = useCallback(() => {
@@ -652,13 +658,20 @@ export function ScreenerPage() {
   }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
   // The name under the symbol is dropped when its own column is already on screen.
   const inlineName = columnVisibility[universe === "CRYPTO" ? "venue" : "company"] !== true;
+  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
+    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
+    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
+  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
+  // Results where the rows are: the same status read the strip uses marks the rows of the latest pass for this query.
+  const aiRuns = useAiScreenerRuns(supportedPanels.has("ai_screener")).runs;
+  const aiMarks = useAiRowMarks(aiRuns.data?.latest, aiScreenerScope);
   const columns = useMemo(() => definitions.map((definition) => helper.display({
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
-          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<AiRowBadge marks={aiMarks} instrumentId={item.instrument.instrument_id} />{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
         const raw = item[definition.key as TextKey] ?? null;
         // Venue codes arrive market-prefixed ("US_NASDAQ"); the universe already says the market.
@@ -674,7 +687,7 @@ export function ScreenerPage() {
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
-  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName]);
+  })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName, aiMarks]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
     state: { columnVisibility, columnOrder, columnSizing, columnPinning },
     onColumnVisibilityChange: setColumnVisibility, onColumnOrderChange: setColumnOrder,
@@ -815,10 +828,25 @@ export function ScreenerPage() {
     openNewsFor(instrumentId);
   }, [rows, universe, openNewsFor]);
   useEffect(() => { aiNewsSelection.current = null; }, [universe, search, sort, descending, filters]);
+  const aiSupported = supportedPanels.has("ai_screener");
+  const aiRailTab: RailTab = aiSupported ? railTab : "preview";
   const closePreview = useCallback(() => {
-    setPreviewOpen(false); persistLayout(false, previewWidth);
+    setPreviewOpen(false); persistLayout(false, previewWidth); setAiRequested(false);
     scrollRef.current?.focus();
   }, [previewWidth, config.data?.persistence_available]);
+  // The AI Screener's home is the right rail's AI tab: open (or focus), never close, from the strip or the dock shortcut.
+  const openAiRail = useCallback(() => {
+    setRailTab("ai"); setAiRequested(true);
+    if (!previewOpen) { setPreviewOpen(true); persistLayout(true, previewWidth); }
+    window.requestAnimationFrame(() => document.getElementById(RAIL_AI_PANEL_ID)?.focus());
+  }, [setRailTab, previewOpen, previewWidth, config.data?.persistence_available]);
+  // The Open Panels row toggles the dock entry; opening the AI Screener's shortcut also shows the AI tab itself.
+  const onLauncher = useCallback((id: PanelId) => {
+    const opening = id === "ai_screener" && !openPanels.includes(id);
+    togglePanel(id);
+    // After the dock's own focus request, so focus lands on the AI tab rather than on the shortcut.
+    if (opening) openAiRail();
+  }, [openPanels, openAiRail, togglePanel]);
   const togglePreview = () => { const next = !previewOpen; setPreviewOpen(next); persistLayout(next, previewWidth); };
   const commitWidth = (width: number) => {
     const next = clampPreview(width, bodyRef.current?.clientWidth ?? 0);
@@ -970,10 +998,6 @@ export function ScreenerPage() {
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
   const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
-  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
-    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
-    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
-  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
   // Crypto is continuous: "24/7", never an equity session label.
   const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
@@ -992,7 +1016,7 @@ export function ScreenerPage() {
           placeholder={universe === "FUTURES" ? "Search root, contract or description /" : universe === "CRYPTO" ? "Search pair, base or quote /" : referenceOnly ? "Search CUSIP, description, type or maturity /" : "Search symbol or name /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
       <ExitPlatformButton className="screener-control" /></header>
     {supportedPanels.has("ai_screener") && <ScreenerErrorBoundary label="AI status" resetKey={universe}>
-      <AiStatusStrip scope={aiScreenerScope} onOpen={openAiPanel} /></ScreenerErrorBoundary>}
+      <AiStatusStrip scope={aiScreenerScope} onOpen={openAiRail} /></ScreenerErrorBoundary>}
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
@@ -1133,15 +1157,18 @@ export function ScreenerPage() {
     {previewOpen && !narrow && <div className="screener-splitter" role="separator" aria-orientation="vertical" aria-label="Resize quick preview"
       aria-valuemin={PREVIEW_MIN} aria-valuemax={PREVIEW_MAX} aria-valuenow={previewWidth} tabIndex={0}
       onPointerDown={onSplitterPointerDown} onKeyDown={onSplitterKeyDown} />}
-    {previewOpen && (!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
-      screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={narrow} width={previewWidth}
-      paneRef={previewRef} onClose={closePreview} onOpen={open}
-      optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
-      ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
-      squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel}
-      newsSupported={supportedPanels.has("news")} onOpenNews={openNewsPanel}
-      institutionalSupported={supportedPanels.has("institutional")} governmentSupported={supportedPanels.has("congress_gov")}
-      onOpenParticipants={openParticipantPanel} />}
+    {previewOpen && (!narrow || selectedRow || (aiRailTab === "ai" && aiRequested)) && <RightRail tab={aiRailTab} onTab={setRailTab}
+      aiSupported={aiSupported} overlay={narrow} width={previewWidth} paneRef={previewRef} onClose={closePreview}
+      screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openPanel={launchPanel}
+      preview={(!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
+        screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={false}
+        onClose={closePreview} onOpen={open}
+        optionsSupported={supportedPanels.has("options")} onOpenOptions={openOptionsPanel}
+        ratesSupported={supportedPanels.has("rates_curve")} onOpenRates={openRatesPanel}
+        squeezeSupported={universe === "US_EQUITIES" && supportedPanels.has("short_squeeze")} onOpenSqueeze={openSqueezePanel}
+        newsSupported={supportedPanels.has("news")} onOpenNews={openNewsPanel}
+        institutionalSupported={supportedPanels.has("institutional")} governmentSupported={supportedPanels.has("congress_gov")}
+        onOpenParticipants={openParticipantPanel} />} />}
     </div>
     {dockVisible && <>
       <div className="screener-dock-splitter" role="separator" aria-orientation="horizontal" aria-label="Resize specialist panels"
@@ -1153,14 +1180,14 @@ export function ScreenerPage() {
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
           actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
           <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews}
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openAiRail={openAiRail}
               clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
               onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
           </Suspense>
         </ScreenerErrorBoundary>
       </section>
     </>}
-    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={togglePanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
+    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={onLauncher} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
       {truncated && <span className="screener-truncated" role="status">{truncated}</span>}
       {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} (<Age iso={firstPage.snapshot.as_of} staleMs={300_000} /> ago) · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}

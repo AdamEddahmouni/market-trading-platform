@@ -35,6 +35,9 @@ vi.mock("@tanstack/react-virtual", () => ({
     getTotalSize: () => count * 34, scrollToIndex: vi.fn(),
   }),
 }));
+vi.mock("../ai/AiScreenerWorkspace", () => ({
+  default: ({ visible }: { visible: boolean }) => <section aria-label="AI Screener workspace" data-visible={String(visible)} />,
+}));
 vi.mock("lightweight-charts", () => {
   const series = () => ({ setData: vi.fn(), createPriceLine: vi.fn((options: unknown) => options), removePriceLine: vi.fn() });
   return {
@@ -237,6 +240,22 @@ describe("S4 Screener dock", () => {
     await waitFor(() => expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull());
     expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("aria-pressed", "false");
     expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("title", "Open CVD");
+  });
+
+  it("opens the AI tab beside the dock shortcut from the panel bar, and the shortcut returns to it", async () => {
+    window.localStorage.removeItem("imp.screener.railTab");
+    renderPage();
+    await screen.findByText("AAPL", { selector: "strong" });
+    fireEvent.click(launcher().getByRole("button", { name: "AI Screener" }));
+    await waitFor(() => expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true"));
+    const shortcut = await screen.findByRole("button", { name: "Show in right rail" });
+    expect(launcher().getByRole("button", { name: "AI Screener" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "Preview" }));
+    fireEvent.click(shortcut);
+    expect(screen.getByRole("tab", { name: "AI" })).toHaveAttribute("aria-selected", "true");
+    // The controls exist once, in the rail; the dock holds only the shortcut.
+    expect(screen.getAllByRole("region", { name: "AI Screener workspace" })).toHaveLength(1);
+    expect(within(screen.getByRole("region", { name: "Specialist panels" })).queryByRole("region", { name: "AI Screener workspace" })).toBeNull();
   });
 
   it("closes only the pressed panel and keeps the others open", async () => {

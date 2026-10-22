@@ -10,7 +10,7 @@ import "./crypto.css";
 import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 
 type Props = { row: ScreenerRow | null; filters: ScreenerFilter[]; screenLabel: string | null;
-  overlay: boolean; width: number; paneRef?: Ref<HTMLElement>; onClose: () => void;
+  overlay: boolean; width?: number; paneRef?: Ref<HTMLElement>; onClose: () => void;
   newsSupported?: boolean; onOpenNews?: () => void };
 type Timeframe = "1m" | "5m" | "15m";
 const frames: Timeframe[] = ["1m", "5m", "15m"];
@@ -33,7 +33,7 @@ export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, 
   const precision = pricePrecision(row, last ?? 1);
   const zones = useMemo(() => data ? classifyZones(data.levels.zones, data.levels.price?.value ?? null, data.levels.min_strength) : null, [data]);
   return <aside className={`screener-preview crypto-preview${overlay ? " overlay" : ""}`} aria-label="Quick preview" ref={paneRef}
-    tabIndex={-1} style={overlay ? undefined : { width }} onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}>
+    tabIndex={-1} style={overlay || width === undefined ? undefined : { width }} onKeyDown={(event) => { if (event.key === "Escape") onClose(); }}>
     <header className="screener-preview-header"><span className="screener-preview-kicker">Quick Preview · Crypto Spot</span>
       <button type="button" className="screener-preview-close" onClick={onClose} aria-label="Close quick preview">×</button></header>
     {!row ? <p className="screener-preview-empty">Select a spot pair to inspect its venue market.</p> : <>
