@@ -8,6 +8,7 @@ import { sideLabel, windowLabel } from "./OrderFlowPanel";
 import { anchorLabel } from "./CvdPanel";
 import { perSecond } from "./CvdChart";
 import ScreenerDock, { serializeLayout, type DockHandle } from "./ScreenerDock";
+import { BOOK_WAIT_MS } from "./Level2Panel";
 
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
@@ -208,7 +209,6 @@ describe("S4 Screener dock", () => {
     expect(await screen.findByText("Loading AAPL squeeze evidence…")).toBeInTheDocument();
     await waitFor(() => expect(mocks.squeeze).toHaveBeenCalledWith("AAPL", expect.objectContaining({ view: "detail", universe: "US_EQUITIES" })));
     await waitFor(() => expect(mocks.demand).toHaveBeenCalledWith(expect.any(String), "AAPL", ["short_squeeze"]));
-    fireEvent.click(launcher().getByRole("button", { name: "Short Squeeze" }));
     expect(document.querySelectorAll("#screener-panel-short_squeeze")).toHaveLength(1);
   });
 
@@ -223,15 +223,52 @@ describe("S4 Screener dock", () => {
     expect(mocks.cvd).not.toHaveBeenCalled();
   });
 
-  it("opens a panel, focuses instead of duplicating, and asks for a selection", async () => {
+  it("opens a panel, asks for a selection, and a second press of the pressed button closes it", async () => {
     renderPage();
     await screen.findByText("AAPL", { selector: "strong" });
     fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
     expect(await screen.findByText("Select an instrument to view CVD.")).toBeInTheDocument();
-    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
-    await waitFor(() => expect(document.querySelectorAll("#screener-panel-cvd")).toHaveLength(1));
+    const cvd = launcher().getByRole("button", { name: "CVD" });
+    expect(cvd).toHaveAttribute("aria-pressed", "true");
+    expect(cvd).toHaveAttribute("title", "Close CVD");
+    expect(document.querySelectorAll("#screener-panel-cvd")).toHaveLength(1);
     expect(mocks.cvd).not.toHaveBeenCalled(); // no selection → nothing requested
+    fireEvent.click(cvd);
+    await waitFor(() => expect(screen.queryByRole("region", { name: "Specialist panels" })).toBeNull());
+    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("aria-pressed", "false");
+    expect(launcher().getByRole("button", { name: "CVD" })).toHaveAttribute("title", "Open CVD");
+  });
+
+  it("closes only the pressed panel and keeps the others open", async () => {
+    renderPage();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
+    fireEvent.click(await screen.findByRole("button", { name: "CVD" }));
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith(expect.any(String), "AAPL", ["order_flow", "cvd"]));
+    fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
+    await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith(expect.any(String), "AAPL", ["cvd"]));
+    expect(screen.getByRole("region", { name: "CVD for AAPL" })).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Order Flow for AAPL" })).toBeNull();
+  });
+
+  it("says when no order book has arrived after the wait, with the reason and a way to check again", async () => {
+    vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+    mocks.depth.mockImplementation(async (id: string) => ({ ...depthPayload(id, "CONNECTING"), bids: [], asks: [], best_bid: null, best_ask: null,
+      spread: null, mid: null, spread_bps: null, imbalance: [], completeness: null, freshness: null, latest_event_at: null, latest_received_at: null,
+      reason: "AWAITING_BOOK_SNAPSHOT" }));
+    mocks.demand.mockImplementation(async (_client: string, instrument: string | null, panels: string[]) => ({
+      schema_version: "screener-specialist/1.0.0", instrument_id: instrument, panels, cap: { max_instruments: 6, occupied_instruments: 1 },
+      capabilities: [{ panel: "level2", capability: "DEPTH", accepted: false, reason: "PROVIDER_QUOTA_EXHAUSTED", ref_count: 1, provider_subscription_active: false }] }));
+    renderPage();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "Level 2" }));
+    const panel = await screen.findByRole("region", { name: "Level 2 for AAPL" });
+    expect(await within(panel).findByText("Waiting for a current book snapshot")).toBeInTheDocument();
+    await act(async () => { vi.advanceTimersByTime(BOOK_WAIT_MS + 1_000); });
+    expect(await within(panel).findByText(/No order book from Moomoo after \d+s · Provider subscription quota exhausted\./)).toBeInTheDocument();
+    const calls = mocks.depth.mock.calls.length;
+    fireEvent.click(within(panel).getByRole("button", { name: "Check again" }));
+    await waitFor(() => expect(mocks.depth.mock.calls.length).toBeGreaterThan(calls));
   });
 
   it("drives Order Flow and CVD from one demand and renders truthful wording", async () => {

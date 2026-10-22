@@ -266,8 +266,8 @@ describe("S7 Options panel", () => {
   it("restores a saved Options panel without duplicating it", async () => {
     renderPage({ version: 1, open_panels: ["options"], active_panel: "options", dock_height: 300, dockview_layout: null });
     expect(await screen.findByText("Select an instrument to view Options.")).toBeInTheDocument();
-    fireEvent.click(launcher().getByRole("button", { name: "Options" }));
     await waitFor(() => expect(document.querySelectorAll("#screener-panel-options")).toHaveLength(1));
+    expect(launcher().getByRole("button", { name: "Options" })).toHaveAttribute("aria-pressed", "true");
     expect(mocks.options).not.toHaveBeenCalled();
   });
 });

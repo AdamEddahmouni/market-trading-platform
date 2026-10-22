@@ -280,8 +280,8 @@ describe("Bonds universe", () => {
     expect(within(panel).getAllByText(/licensed TRACE feed required/).length).toBeGreaterThan(0);
     expect(within(panel).getByRole("table", { name: "Published par yields by tenor" })).toBeInTheDocument();
     await waitFor(() => expect(mocks.rates).toHaveBeenLastCalledWith("XA01:NOTE", expect.anything()));
-    fireEvent.click(within(launcher).getByRole("button", { name: "Rates & Curve" }));
     expect(screen.getAllByRole("region", { name: /Rates & Curve for/ })).toHaveLength(1);
+    expect(within(launcher).getByRole("button", { name: "Rates & Curve" })).toHaveAttribute("aria-pressed", "true");
     // Selection change: the panel follows the settled selection.
     fireEvent.click(within(screen.getByRole("grid")).getByText("912797WA1"));
     await waitFor(() => expect(mocks.rates).toHaveBeenLastCalledWith("XA01:BILL", expect.anything()), { timeout: 5000 });

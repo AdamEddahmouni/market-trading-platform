@@ -23,6 +23,7 @@ import { readLastSeen } from "./news/newsSeen";
 import { exitIntelUpdates, INTEL_LABELS, intelView, resetIntelUpdates, type IntelView } from "./participants/participantParams";
 import { ExitPlatformButton } from "../shared/ExitPlatformButton";
 import { csvFileName, csvText, downloadCsv } from "./screenerCsv";
+import { useDismiss } from "../../lib/useDismiss";
 import "./screener.css";
 
 // Dockview and the specialist panels load only when a panel is first opened.
@@ -38,6 +39,8 @@ const SOURCE_LABELS: Record<string, string> = { FINVIZ_ELITE: "Finviz Elite", MO
   MOOMOO_OPEND_ETF_CATALOG: "moomoo OpenD ETF catalog", US_TREASURY_FISCAL_DATA: "U.S. Treasury Fiscal Data", KRAKEN_SPOT_PUBLIC: "Kraken public spot" };
 const sourceLabel = (id: string | undefined) => id ? SOURCE_LABELS[id] ?? id.replace(/_/g, " ").toLowerCase() : "Finviz Elite";
 const DOCK_TABLE_RESERVE = 420;
+const NOT_SORTABLE_HINT = "Not sortable";
+const LIVE_WINDOW_HINT = "Current quotes for visible rows only; not sortable across the universe";
 /** Best-effort layout write: never throws, even if the client call does not return a promise. */
 const flushPanelLayout = (layout: PanelLayout, universe: ScreenerUniverse) => { void Promise.resolve().then(() => persistScreenerPanelLayout(layout, universe)).catch(() => undefined); };
 /** One news-activity request per grid page: its row ids are stable while the page is loaded. */
@@ -198,8 +201,9 @@ function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow 
   const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.find((item) => (item.covered_fields as string[] | undefined)?.includes("price")) ?? row.decision_inputs?.[0];
   const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
   if (evidence) {
-    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${currentFreshness(evidence, now).replace(/_/g, " ")}`;
-    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{label}</span>;
+    const freshness = currentFreshness(evidence, now).replace(/_/g, " ");
+    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${freshness}`;
+    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{freshness}</span>;
   }
   if (!quote) return null;
   const label = FRESHNESS[quote.state] ?? "Quote unavailable";
@@ -276,6 +280,7 @@ export function ScreenerPage() {
   const previousUniverse = useRef(universe);
   const forceNextRefresh = useRef(false);
   const transientTrigger = useRef<HTMLElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const initialized = useRef(false);
   const loadedScreen = useRef<string | null>(null);
   const config = useQuery({ queryKey: ["main-screener-config"], queryFn: fetchScreenerConfig, staleTime: 60_000 });
@@ -416,6 +421,14 @@ export function ScreenerPage() {
     setPendingPanel(id);
     setOpenPanels((current) => current.includes(id) ? current : [...current, id]);
   }, []);
+  // The Open Panels row only: its buttons show pressed while open, so a second press closes. Links elsewhere
+  // (preview tabs, news, AI) keep open-or-focus through launchPanel.
+  const togglePanel = useCallback((id: PanelId) => {
+    if (!openPanels.includes(id)) { launchPanel(id); return; }
+    if (dockHandle.current) { dockHandle.current.close(id); return; }
+    setPendingPanel((current) => current === id ? null : current);
+    setOpenPanels((current) => current.filter((item) => item !== id));
+  }, [openPanels, launchPanel]);
   const openOptionsPanel = useCallback(() => launchPanel("options"), [launchPanel]);
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
@@ -880,10 +893,18 @@ export function ScreenerPage() {
     setFilterOpen(false); setDraftField(""); setEditFilterId(null);
     transientTrigger.current?.focus();
   };
-  const closeTransient = () => {
+  const closeTransient = (restoreFocus = true) => {
     setFilterOpen(false); setColumnOpen(false); setScreenOpen(false); setSaveMode(null);
-    transientTrigger.current?.focus();
+    if (restoreFocus) transientTrigger.current?.focus();
   };
+  // Escape anywhere, or a press outside, closes the open popover (Screens, Columns, Add Filter).
+  useDismiss(filterOpen || columnOpen || screenOpen, popoverRef, transientTrigger, closeTransient);
+  // The Screens list has no search box to autofocus: focus its first available screen (else its close button).
+  useEffect(() => {
+    if (!screenOpen) return;
+    const popover = popoverRef.current;
+    (popover?.querySelector<HTMLElement>("h3 ~ button:not(:disabled)") ?? popover?.querySelector<HTMLElement>("button"))?.focus();
+  }, [screenOpen]);
   const modifyColumn = (key: ColumnKey, visible: boolean) => {
     if (key === "symbol" && !visible) return;
     setColumnVisibility((current) => ({ ...current, [key]: visible }));
@@ -937,7 +958,7 @@ export function ScreenerPage() {
     try {
       const response = await deleteScreenerScreen(selectedSaved.id);
       queryClient.setQueryData(["main-screener-config"], (old: typeof config.data) => old ? { ...old, saved: response.saved } : old);
-      setSelectedScreenId(""); setSavedBase(""); setScreenOpen(false);
+      setSelectedScreenId(""); setSavedBase(""); closeTransient();
       loadedScreen.current = null;
       urlUpdate({ screen: null });
     } catch { setConfigError("Unable to delete this screen."); }
@@ -968,7 +989,7 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description /" : universe === "CRYPTO" ? "Search pair, base or quote /" : referenceOnly ? "Search CUSIP, description, type or maturity /" : "Search symbol or name /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
       <ExitPlatformButton className="screener-control" /></header>
     {supportedPanels.has("ai_screener") && <ScreenerErrorBoundary label="AI status" resetKey={universe}>
       <AiStatusStrip scope={aiScreenerScope} onOpen={openAiPanel} /></ScreenerErrorBoundary>}
@@ -1002,8 +1023,8 @@ export function ScreenerPage() {
       <button type="button" className="screener-add" onClick={(event) => { transientTrigger.current = event.currentTarget; setFilterOpen(!filterOpen); setColumnOpen(false); setScreenOpen(false); setDraftField(""); setFilterSearch(""); }} aria-expanded={filterOpen} aria-haspopup="dialog">+ Add Filter</button>
       {filters.length > 0 && <button type="button" className="screener-clear" onClick={() => setFilters([])}>Clear All</button>}
     </div>
-    {filterOpen && <div className="screener-popover screener-filter-popover" role="dialog" aria-label={draftField ? "Edit filter" : "Add filter"} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close filter picker">×</button>
+    {filterOpen && <div ref={popoverRef} className="screener-popover screener-filter-popover" role="dialog" aria-label={draftField ? "Edit filter" : "Add filter"}>
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close filter picker">×</button>
       {!draftField ? <><input autoFocus aria-label="Search filters" placeholder="Search filters..." value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} />
         <div className="screener-picker-list">{[...new Set(availableFilters.map((item) => item.category))].map((category) => <div key={category}><h3>{category}</h3>{availableFilters.filter((item) => item.category === category && item.label.toLowerCase().includes(filterSearch.toLowerCase())).map((item) => <button key={item.field} type="button" onClick={() => beginFilter(item.field)}>{item.label}</button>)}</div>)}</div></> : <>
         <h3>{catalogEntry(draftField)?.label}</h3>
@@ -1012,27 +1033,27 @@ export function ScreenerPage() {
         {draftOperator === "between" && <label>Maximum <input aria-label="Filter maximum" type="number" value={draftSecond} onChange={(event) => setDraftSecond(event.target.value)} /></label>}
         <div className="screener-popover-actions"><button type="button" onClick={() => setDraftField("")}>Back</button><button type="button" className="screener-primary" onClick={applyFilter} disabled={!draftValue.trim() || (draftOperator === "between" && !draftSecond.trim())}>Apply Filter</button></div></>}
     </div>}
-    {screenOpen && <div className="screener-popover screener-screen-popover" role="dialog" aria-label="Saved screens" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close saved screens">×</button>
-      <h3>My Screens</h3>{config.data?.saved.length ? config.data.saved.map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe, view: null, sort: null, dir: null }); setScreenOpen(false); }}>{item.name} · {config.data?.universes?.find((spec) => spec.id === item.universe)?.label ?? item.universe}</button>) : <span className="screener-popover-note">No personal screens</span>}
-      <h3>Built-in</h3>{config.data?.presets.map((item) => <button key={item.id} type="button" disabled={item.status !== "SUPPORTED"} title={item.reason ?? undefined} onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); setScreenOpen(false); }}>{item.name}{item.status !== "SUPPORTED" ? " · unavailable" : ""}</button>)}
+    {screenOpen && <div ref={popoverRef} className="screener-popover screener-screen-popover" role="dialog" aria-label="Saved screens">
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close saved screens">×</button>
+      <h3>My Screens</h3>{config.data?.saved.length ? config.data.saved.map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe, view: null, sort: null, dir: null }); closeTransient(); }}>{item.name} · {config.data?.universes?.find((spec) => spec.id === item.universe)?.label ?? item.universe}</button>) : <span className="screener-popover-note">No personal screens</span>}
+      <h3>Built-in</h3>{config.data?.presets.map((item) => <button key={item.id} type="button" disabled={item.status !== "SUPPORTED"} title={item.reason ?? undefined} onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); closeTransient(); }}>{item.name}{item.status !== "SUPPORTED" ? " · unavailable" : ""}</button>)}
       {selectedSaved && <div className="screener-popover-actions"><button type="button" onClick={() => { setSaveName(selectedSaved.name); setSaveMode("rename"); setScreenOpen(false); }}>Rename</button><button type="button" onClick={() => { void removeSaved(); }}>Delete</button></div>}
-      {selectedPreset && changed && <button type="button" onClick={() => { setFilters(selectedPreset.filters); setView("Overview"); setColumnVisibility(viewVisibility("Overview", activeViews)); setScreenOpen(false); }}>Reset preset</button>}
+      {selectedPreset && changed && <button type="button" onClick={() => { setFilters(selectedPreset.filters); setView("Overview"); setColumnVisibility(viewVisibility("Overview", activeViews)); closeTransient(); }}>Reset preset</button>}
     </div>}
-    {columnOpen && <div className="screener-popover screener-column-popover" role="dialog" aria-label="Configure columns" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
-      <button type="button" className="screener-popover-close" onClick={closeTransient} aria-label="Close columns">×</button>
+    {columnOpen && <div ref={popoverRef} className="screener-popover screener-column-popover" role="dialog" aria-label="Configure columns">
+      <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close columns">×</button>
       <input autoFocus aria-label="Search columns" placeholder="Search columns..." value={columnSearch} onChange={(event) => setColumnSearch(event.target.value)} />
       <div className="screener-column-list">{columnOrder.filter((key) => availableKeys.includes(key as ColumnKey) && columnByKey[key as ColumnKey]?.label.toLowerCase().includes(columnSearch.toLowerCase())).map((key) => <div className="screener-column-item" key={key}>
         <label><input type="checkbox" checked={columnVisibility[key] !== false} disabled={key === "symbol"} onChange={(event) => modifyColumn(key as ColumnKey, event.target.checked)} />{columnByKey[key as ColumnKey].label}</label>
-        <button type="button" onClick={() => moveColumn(key as ColumnKey, -1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} left`}>↑</button><button type="button" onClick={() => moveColumn(key as ColumnKey, 1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} right`}>↓</button>
+        <button type="button" onClick={() => moveColumn(key as ColumnKey, -1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} up`}>↑</button><button type="button" onClick={() => moveColumn(key as ColumnKey, 1)} aria-label={`Move ${columnByKey[key as ColumnKey].label} down`}>↓</button>
         <button type="button" onClick={() => { setColumnPinning((current) => ({ left: current.left?.includes(key) ? current.left.filter((item) => item !== key) : [...(current.left ?? []), key], right: [] })); setView("Custom"); }} aria-label={`${columnPinning.left?.includes(key) ? "Unpin" : "Pin"} ${columnByKey[key as ColumnKey].label}`}>{columnPinning.left?.includes(key) ? "●" : "○"}</button>
-      </div>)}</div><button type="button" onClick={() => { chooseView(view === "Custom" ? "Overview" : view); setColumnOpen(false); }}>Reset to view default</button>
+      </div>)}</div><button type="button" onClick={() => { chooseView(view === "Custom" ? "Overview" : view); closeTransient(); }}>Reset to view default</button>
     </div>}
     {saveMode && <div className="screener-modal-backdrop"><div className="screener-save-dialog" role="dialog" aria-modal="true" aria-label="Save screen" onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); closeTransient(); } }}>
       <h2>{saveMode === "rename" ? "Rename Screen" : saveMode === "save-as" ? "Save As" : "Save Screen"}</h2>
       <label>Screen name <input autoFocus aria-label="Screen name" value={saveName} onChange={(event) => setSaveName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") void saveCurrent(); }} /></label>
       {configError && <p role="alert">{configError}</p>}
-      <div className="screener-popover-actions"><button type="button" onClick={closeTransient}>Cancel</button><button type="button" className="screener-primary" disabled={!saveName.trim()} onClick={() => void saveCurrent()}>Save</button></div>
+      <div className="screener-popover-actions"><button type="button" onClick={() => closeTransient()}>Cancel</button><button type="button" className="screener-primary" disabled={!saveName.trim()} onClick={() => void saveCurrent()}>Save</button></div>
       {selectedSaved && saveMode === "save" && <button type="button" onClick={() => { setSaveName(""); setSaveMode("save-as"); }}>Save As</button>}
     </div></div>}
     <div className="screener-body" ref={bodyRef}>
@@ -1043,6 +1064,7 @@ export function ScreenerPage() {
     </Suspense></ScreenerErrorBoundary> :
     <div className="screener-grid" role="grid" aria-label={universe === "US_EQUITIES" ? "US equity screener" : `${activeSpec?.label ?? universe} screener`} aria-rowcount={(resultCount ?? rows.length) + 1} aria-busy={query.isFetching} tabIndex={0}
       onKeyDown={onGridKeyDown} ref={scrollRef}>
+      <span id="screener-hint-not-sortable" hidden>{NOT_SORTABLE_HINT}</span><span id="screener-hint-live-window" hidden>{LIVE_WINDOW_HINT}</span>
       <div className="screener-header" role="row" style={{ width: table.getTotalSize() }}>
         {table.getHeaderGroups()[0]?.headers.map((header) => {
           const key = header.id as ColumnKey;
@@ -1052,10 +1074,9 @@ export function ScreenerPage() {
             style={{ width: header.getSize(), ...(pinned ? { position: "sticky", left: header.column.getStart("left"), zIndex: 4, background: "#1b2530" } : {}) }}
             aria-sort={isSortable(key) ? effectiveSort === key ? descending ? "descending" : "ascending" : "none" : undefined}
             aria-disabled={isSortable(key) ? undefined : true}
-            title={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW"
-              ? "Current quotes for visible rows only; not sortable across the universe" : "Not sortable"}
+            aria-describedby={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW" ? "screener-hint-live-window" : "screener-hint-not-sortable"}
             onClick={() => { if (availableKeys.includes(key) && isSortable(key)) sortBy(key as SortKey); }}>
-            {flexRender(header.column.columnDef.header, header.getContext())}
+            <span title={isSortable(key) ? undefined : fieldCaps?.[key]?.execution === "LIVE_WINDOW" ? LIVE_WINDOW_HINT : NOT_SORTABLE_HINT}>{flexRender(header.column.columnDef.header, header.getContext())}</span>
             <span className="screener-sort">{effectiveSort === key ? descending ? "▼" : "▲" : ""}</span>
             <span className="screener-resize" role="separator" tabIndex={0} aria-orientation="vertical" aria-valuenow={header.getSize()} aria-label={`Resize ${typeof header.column.columnDef.header === "string" ? header.column.columnDef.header : columnByKey[key].label}`}
               onKeyDown={(event) => { if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); const width = Math.max(50, header.getSize() + (event.key === "ArrowRight" ? 10 : -10)); setColumnSizing((current) => ({ ...current, [key]: width })); setView("Custom"); } }}
@@ -1139,7 +1160,7 @@ export function ScreenerPage() {
         </ScreenerErrorBoundary>
       </section>
     </>}
-    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={launchPanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
+    <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={togglePanel} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
       {truncated && <span className="screener-truncated" role="status">{truncated}</span>}
       {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} (<Age iso={firstPage.snapshot.as_of} staleMs={300_000} /> ago) · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}
