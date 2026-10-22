@@ -222,6 +222,22 @@ describe("Screener Quick Preview", () => {
     expect(pane.closest(".screener-rail")).toHaveClass("overlay");
     fireEvent.keyDown(pane, { key: "Escape" });
     expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
+    // A drawer, not a pane floating over the rows: the rest of the page is dimmed and a press there closes it.
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    await screen.findByRole("complementary", { name: "Quick preview" });
+    const backdrop = document.querySelector(".screener-rail-backdrop")!;
+    expect(backdrop).toHaveAttribute("aria-hidden", "true");
+    fireEvent.pointerDown(backdrop);
+    expect(screen.queryByRole("complementary", { name: "Quick preview" })).not.toBeInTheDocument();
+    expect(document.querySelector(".screener-rail-backdrop")).toBeNull();
+    expect(screen.getByRole("grid")).toHaveFocus();
+  });
+
+  it("has no backdrop when the grid and the rail fit side by side", async () => {
+    mount();
+    await clickRow("AAPL");
+    await screen.findByRole("complementary", { name: "Quick preview" });
+    expect(document.querySelector(".screener-rail-backdrop")).toBeNull();
   });
 
   it("switches timeframe and shows an unavailable chart and levels without fallback", async () => {

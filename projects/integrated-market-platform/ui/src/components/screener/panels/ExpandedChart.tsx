@@ -40,7 +40,7 @@ export default function ExpandedChart({ bars, forming, support, resistance, live
     const suffix = zoneSuffix(timeZone || "America/New_York");
     const chart = createChart(element, {
       autoSize: true,
-      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
+      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 11 },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
       rightPriceScale: { borderColor: "#27323f", scaleMargins: { top: 0.08, bottom: 0.24 } },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: false, rightOffset: 3,

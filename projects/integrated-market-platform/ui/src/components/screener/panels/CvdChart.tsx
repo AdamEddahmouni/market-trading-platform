@@ -36,7 +36,7 @@ export default function CvdChart({ points, label, timeZone = "America/New_York",
     const suffix = zoneSuffix(timeZone);
     const chart = createChart(element, {
       autoSize: true,
-      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
+      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 11 },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
       rightPriceScale: { borderColor: "#27323f" },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: true,

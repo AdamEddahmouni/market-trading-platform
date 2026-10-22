@@ -7,7 +7,7 @@ import { ScreenerPage } from "../ScreenerPage";
 import { sideLabel, windowLabel } from "./OrderFlowPanel";
 import { anchorLabel } from "./CvdPanel";
 import { perSecond } from "./CvdChart";
-import ScreenerDock, { serializeLayout, type DockHandle } from "./ScreenerDock";
+import ScreenerDock, { maxColumns, MIN_COLUMN_WIDTH, serializeLayout, type DockHandle } from "./ScreenerDock";
 import { BOOK_WAIT_MS } from "./Level2Panel";
 
 const mocks = vi.hoisted(() => ({
@@ -402,6 +402,29 @@ describe("S4 Screener dock", () => {
     expect(await screen.findByRole("region", { name: "Level 2 for NVDA" })).toBeInTheDocument();
   });
 
+  it("keeps a dock of instrument panels to its tab strip until a row is selected, and again once it is cleared", async () => {
+    renderPage({ version: 1, open_panels: ["order_flow"], active_panel: "order_flow", dock_height: 320, dockview_layout: null });
+    const dock = await screen.findByRole("region", { name: "Specialist panels" });
+    await waitFor(() => expect(dock).toHaveClass("slim"));
+    await selectRow("AAPL");
+    await waitFor(() => expect(dock).not.toHaveClass("slim"));
+    expect(dock).toHaveStyle({ height: "320px" });
+    fireEvent.keyDown(screen.getByRole("grid"), { key: "Escape" });
+    await waitFor(() => expect(dock).toHaveClass("slim"));
+  });
+
+  it("keeps the dock open with no selection when a workstation panel is open", async () => {
+    renderPage({ version: 1, open_panels: ["order_flow", "setup"], active_panel: "setup", dock_height: 320, dockview_layout: null });
+    const dock = await screen.findByRole("region", { name: "Specialist panels" });
+    expect(dock).not.toHaveClass("slim");
+    expect(screen.getByRole("separator", { name: "Resize specialist panels" })).toBeInTheDocument();
+  });
+
+  it("opens a dock column only when it can be at least 480px wide; further panels become tabs", () => {
+    expect([1920, 1600, 1280, 960, 800, 400].map(maxColumns)).toEqual([4, 3, 2, 2, 1, 1]);
+    expect(MIN_COLUMN_WIDTH).toBe(480);
+  });
+
   it("persists presentation only, restores a saved layout, and resets", async () => {
     renderPage({ version: 1, open_panels: ["level2"], active_panel: "level2", dock_height: 360,
       dockview_layout: { grid: { root: { type: "branch", data: [{ type: "leaf", data: { views: ["cvd"], activeView: "cvd", id: "1" }, size: 100 }], size: 360 },
@@ -409,6 +432,13 @@ describe("S4 Screener dock", () => {
     // The saved arrangement names another panel set, so it is ignored for a default arrangement of the open panels.
     expect(await screen.findByText("Select an instrument to view Level 2.")).toBeInTheDocument();
     expect(screen.queryByText("Select an instrument to view CVD.")).toBeNull();
+    // Nothing selected and only an instrument panel open: the dock is its tab strip until it is used.
+    const dock = screen.getByRole("region", { name: "Specialist panels" });
+    expect(dock).toHaveClass("slim");
+    expect(screen.queryByRole("separator", { name: "Resize specialist panels" })).toBeNull();
+    fireEvent.pointerDown(dock);
+    expect(dock).not.toHaveClass("slim");
+    expect(dock).toHaveStyle({ height: "360px" });
     const splitter = screen.getByRole("separator", { name: "Resize specialist panels" });
     expect(splitter).toHaveAttribute("aria-valuenow", "360");
     fireEvent.keyDown(splitter, { key: "ArrowDown" });

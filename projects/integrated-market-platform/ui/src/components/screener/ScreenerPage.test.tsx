@@ -370,6 +370,16 @@ describe("ScreenerPage", () => {
     await waitFor(() => expect(mocks.release).toHaveBeenCalledWith("abc123"));
   });
 
+  it("fits the Overview columns beside the default preview at 1600px, so the grid needs no sideways scroll", async () => {
+    mount();
+    await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
+    const width = Number.parseFloat((document.querySelector(".screener-virtual") as HTMLElement).style.width);
+    // 1600 wide, less the 400px default rail, its splitter and a thin vertical scrollbar.
+    expect(width).toBeLessThanOrEqual(1600 - 400 - 5 - 12);
+    // The symbol column stays pinned, so narrower windows scroll with the symbol in view.
+    expect(screen.getAllByRole("gridcell")[0]).toHaveStyle({ position: "sticky" });
+  });
+
   it("labels source failure without fixture fallback", async () => {
     mocks.fetch.mockResolvedValueOnce({ ...payload, rows: [], result_count: 0, source_error: "NOT_CONFIGURED" });
     mount();

@@ -36,10 +36,14 @@ export default function PreviewChart({ bars, forming, support, resistance, label
     const dayFormat = eastern ? etDay : new Intl.DateTimeFormat("en-US", { timeZone, month: "short", day: "numeric" });
     const suffix = zoneSuffix(timeZone || "America/New_York");
     const chart = createChart(element, {
-      width: element.clientWidth || 360, height: 188,
-      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 10 },
+      // Inside the border, so the canvas never paints past its box onto the controls below.
+      width: element.clientWidth || 360, height: element.clientHeight || 186,
+      // The logo sat over the latest candles; the preview links TradingView in text under the chart instead,
+      // which the library's licence accepts in place of the logo.
+      layout: { background: { color: "#0f151c" }, textColor: "#8fa1b4", fontSize: 11, attributionLogo: false },
       grid: { vertLines: { color: "#18212b" }, horzLines: { color: "#18212b" } },
-      rightPriceScale: { borderColor: "#27323f" },
+      // Wide enough for a five-digit price at two decimals, so axis labels are never clipped.
+      rightPriceScale: { borderColor: "#27323f", minimumWidth: 58 },
       timeScale: { borderColor: "#27323f", timeVisible: true, secondsVisible: false, rightOffset: 2,
         tickMarkFormatter: (time: Time) => timeFormat.format(new Date(Number(time) * 1000)) },
       localization: { timeFormatter: (time: Time) => `${dayFormat.format(new Date(Number(time) * 1000))} ${timeFormat.format(new Date(Number(time) * 1000))} ${suffix}` },
@@ -78,5 +82,8 @@ export default function PreviewChart({ bars, forming, support, resistance, label
     if (resistance) { add(resistance.lower, RESISTANCE, "R"); add(resistance.upper, RESISTANCE, ""); }
   }, [support?.lower, support?.upper, resistance?.lower, resistance?.upper, timeZone, precision]);
 
-  return <div className="screener-preview-chart" ref={containerRef} role="img" aria-label={label} />;
+  return <>
+    <div className="screener-preview-chart" ref={containerRef} role="img" aria-label={label} />
+    <a className="screener-chart-credit" href="https://www.tradingview.com/" target="_blank" rel="noreferrer">Charts by TradingView</a>
+  </>;
 }
