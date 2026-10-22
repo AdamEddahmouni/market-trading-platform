@@ -238,6 +238,11 @@ describe("Screener Quick Preview", () => {
     expect(within(pane).getByText("Auto S/R · 15m · Extended")).toBeInTheDocument();
     expect(mocks.preview).toHaveBeenCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null);
     expect(within(pane).queryByRole("img", { name: /candles/ })).not.toBeInTheDocument();
+    // An unavailable chart can be asked for again now instead of waiting for the next refresh.
+    const calls = mocks.preview.mock.calls.length;
+    fireEvent.click(within(within(pane).getByRole("region", { name: "Current chart" })).getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(mocks.preview.mock.calls.length).toBeGreaterThan(calls));
+    expect(mocks.preview).toHaveBeenLastCalledWith("AAPL", "15m", "EXTENDED", [], expect.anything(), "US_EQUITIES", null);
   });
 
   it("moves the live price marker from L1 while levels keep their own clock", async () => {

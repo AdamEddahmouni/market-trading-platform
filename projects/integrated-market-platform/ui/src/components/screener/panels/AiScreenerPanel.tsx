@@ -4,7 +4,8 @@ import PaperAutomationPanel from "./PaperAutomationPanel";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { AiScreenerScope } from "../../../api/screenerAi";
-import { aiScopeKey, fetchAiScreenerPreview } from "../../../api/screenerAi";
+import { aiScopeKey } from "../../../api/screenerAi";
+import { blockingFit, useAiScreenerPreview } from "../ai/useAiScreenerPreview";
 import { CoverageReceipts, CoverageSummary, ProvisionalFinalists } from "../ai/AiCoverage";
 import AiRunProgress, { STAGE_LABEL } from "../ai/AiRunProgress";
 import { EngineSwitchConfirm, contractText, engineLockText, fitText, type EngineFit, type PendingEngine } from "../ai/EngineSwitch";
@@ -95,9 +96,10 @@ export default function AiScreenerPanel({ api }: { api: any }) {
   const value = mine?.state === "COMPLETED" ? detail.data?.result ?? null : null;
   const running = Boolean(active) || start.isPending;
   const resetStart = start.reset;
-  const preview = useQuery({ queryKey: ["screener-ai-screener-preview", scopeKey], queryFn: ({ signal }) => fetchAiScreenerPreview(screenerScope, signal), enabled: visible && screenerScope.settled !== false,
-    staleTime: 30_000, retry: false });
+  const preview = useAiScreenerPreview(screenerScope, visible);
   const ai = aiOverride ?? preview.data?.ai;
+  // A packet the selected engine cannot hold is refused before it starts, not after the run has planned its cost.
+  const tooLarge = blockingFit(preview.data, ai?.engine);
   const now = useNow(1_000, Boolean(value));
   const expired = Boolean(value) && Date.parse(value!.valid_until) <= now;
   useEffect(() => { setAiOverride(null); resetStart(); }, [scopeKey, resetStart]);
@@ -152,7 +154,8 @@ export default function AiScreenerPanel({ api }: { api: any }) {
       {preview.data.news_coverage.map((item) => <p key={item.instrument_id}>{item.instrument_id} · {item.state} · {item.story_count} stories · {item.window} · sentiment {item.sentiment.state} · {item.providers.map((p) => `${p.id}: ${p.state}`).join(" · ")}</p>)}
     </details>}
     {status !== "AVAILABLE" && ai && <PanelMessage>{status === "NOT_CONFIGURED" ? "AI Screener is not configured; no inference was attempted." : `AI Screener unavailable${ai.reason ? ` · ${ai.reason}` : ""}.`}</PanelMessage>}
-    {status === "AVAILABLE" && <button type="button" className="screener-primary ai-screener-run" onClick={run} disabled={running || preview.isPending || preview.isError || screenerScope.settled === false}>
+    {status === "AVAILABLE" && <button type="button" className="screener-primary ai-screener-run" onClick={run} disabled={running || preview.isPending || preview.isError || screenerScope.settled === false || Boolean(tooLarge)}
+      title={tooLarge ? `The ${fitText(tooLarge)}. Choose another engine or narrow the Screener scope.` : undefined}>
       {running ? "Running AI Screener…" : "Run AI Screener"}
     </button>}
     {active && <AiRunProgress run={active} />}

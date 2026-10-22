@@ -213,10 +213,21 @@ describe("AI Screener panel", () => {
       expect(mocks.engine).not.toHaveBeenCalled();
     });
 
-    it("warns when the engine already selected cannot hold the current packet", async () => {
+    it("warns when the engine already selected cannot hold the current packet, and does not offer the run", async () => {
       mocks.preview.mockResolvedValue({ ...preview, ai: { ...paid, runtime: "LOCAL_MODEL", engine: "local", engine_model: "small-4b" }, engine_fit });
       renderPanel();
       expect(await screen.findByText("The current packet does not fit: needs ~37k tokens, model context 8k. Choose another engine or narrow the Screener scope.")).toBeInTheDocument();
+      const button = screen.getByRole("button", { name: "Run AI Screener" });
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute("title", "The current packet does not fit: needs ~37k tokens, model context 8k. Choose another engine or narrow the Screener scope.");
+      fireEvent.click(button);
+      expect(mocks.post).not.toHaveBeenCalled();
+    });
+
+    it("offers the run when the selected engine's fit is unknown, even if another engine does not fit", async () => {
+      mocks.preview.mockResolvedValue({ ...preview, ai: paid, engine_fit });
+      renderPanel();
+      expect(await screen.findByRole("button", { name: "Run AI Screener" })).toBeEnabled();
     });
 
     it("says when the server reports a model cannot run the AI Screener", async () => {

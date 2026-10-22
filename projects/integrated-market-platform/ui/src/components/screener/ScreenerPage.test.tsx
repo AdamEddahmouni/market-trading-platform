@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
   aiRuns: vi.fn(), aiLoop: vi.fn(),
 }));
-vi.mock("../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerAi")>(), fetchAiScreenerRuns: mocks.aiRuns }));
+vi.mock("../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerAi")>(), fetchAiScreenerRuns: mocks.aiRuns,
+  fetchAiScreenerPreview: () => Promise.reject(new Error("AI preview not under test")) }));
 vi.mock("../../api/screenerReevaluation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../api/screenerReevaluation")>(), reevaluationStatus: mocks.aiLoop }));
 vi.mock("../../api/screener", () => ({
   fetchScreener: mocks.fetch,
@@ -126,6 +127,8 @@ function mount(path = "/screener") {
     <Routes><Route path="/screener" element={<ScreenerPage />} /><Route path="/workspace/:symbol" element={<div>Instrument workspace</div>} /></Routes>
   </MemoryRouter></QueryClientProvider>);
 }
+
+const rowOf = (symbol: string) => screen.getByText(symbol, { selector: ".screener-symbol strong" }).closest("[role=row]")!;
 
 function HistoryBack() {
   const navigate = useNavigate();
@@ -302,11 +305,116 @@ describe("ScreenerPage", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Price" }));
     expect(screen.queryByRole("columnheader", { name: /Price/ })).not.toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Custom" })).toHaveAttribute("aria-selected", "true");
-    fireEvent.click(screen.getByRole("button", { name: "Move Volume left" }));
+    fireEvent.click(screen.getByRole("button", { name: "Move Volume up" }));
     fireEvent.click(screen.getByRole("button", { name: "Pin Volume" }));
     expect(screen.getByRole("button", { name: "Unpin Volume" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Reset to view default" }));
     expect(screen.getByRole("columnheader", { name: /Price/ })).toBeInTheDocument();
+  });
+
+  it("moves focus into the Screens menu and closes popovers on Escape, a press outside, or a second press of the trigger", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const trigger = screen.getByRole("button", { name: /Unsaved Screen/ });
+    fireEvent.click(trigger);
+    const menu = screen.getByRole("dialog", { name: "Saved screens" });
+    expect(within(menu).getByRole("button", { name: "Unusual Volume" })).toHaveFocus();
+    fireEvent.keyDown(document.activeElement!, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    expect(trigger).toHaveFocus();
+    // Escape works with focus still on the trigger (the menu's own key handler never saw it before).
+    fireEvent.click(trigger);
+    trigger.focus();
+    fireEvent.keyDown(trigger, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    // A press on the open trigger toggles it closed instead of closing and reopening.
+    fireEvent.click(trigger);
+    fireEvent.pointerDown(trigger);
+    fireEvent.click(trigger);
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    // A press anywhere outside closes it, and focus stays where the user pressed.
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    expect(screen.getByRole("dialog", { name: "Configure columns" })).toBeInTheDocument();
+    fireEvent.pointerDown(screen.getByRole("grid"));
+    expect(screen.queryByRole("dialog", { name: "Configure columns" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "+ Add Filter" }));
+    fireEvent.pointerDown(screen.getByRole("dialog", { name: "Add filter" }));
+    expect(screen.getByRole("dialog", { name: "Add filter" })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "Add filter" })).toBeNull();
+    // Picking a screen closes the menu and returns focus to its trigger.
+    fireEvent.click(trigger);
+    fireEvent.click(within(screen.getByRole("dialog", { name: "Saved screens" })).getByRole("button", { name: "Unusual Volume" }));
+    expect(screen.queryByRole("dialog", { name: "Saved screens" })).toBeNull();
+    expect(screen.getByRole("button", { name: /Unusual Volume ▾/ })).toHaveFocus();
+  });
+
+  it("closes an open popover on Escape without also clearing the grid selection", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const grid = screen.getByRole("grid");
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("button", { name: "Columns" }));
+    grid.focus();
+    fireEvent.keyDown(grid, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "Configure columns" })).toBeNull();
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("names non-sortable headers by their column and gives the reason as their description", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const bid = screen.getByRole("columnheader", { name: /^Bid/ });
+    expect(bid).not.toHaveAttribute("title");
+    expect(bid).toHaveAccessibleDescription("Current quotes for visible rows only; not sortable across the universe");
+    expect(screen.getByRole("columnheader", { name: /^Price/ })).not.toHaveAccessibleDescription();
+  });
+
+  it("never leaves the Screener on a repeated click or double click of the selected row", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const row = rowOf("AAPL")!;
+    fireEvent.click(row);
+    fireEvent.click(row);
+    fireEvent.doubleClick(row);
+    expect(screen.queryByText("Instrument workspace")).toBeNull();
+    expect(row).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("returns to the opened row after browser Back", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    const grid = screen.getByRole("grid");
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "ArrowDown" });
+    fireEvent.keyDown(grid, { key: "Enter" });
+    expect(await screen.findByText("Instrument workspace")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Browser back" }));
+    await screen.findByText("MSFT", { selector: ".screener-symbol strong" });
+    await waitFor(() => expect(mocks.fetch).toHaveBeenCalled());
+    await waitFor(() => expect(rowOf("MSFT")).toHaveAttribute("aria-selected", "true"));
+    expect(rowOf("AAPL")).toHaveAttribute("aria-selected", "false");
+  });
+
+  it("shows a row's freshness as one short word and keeps the full detail in its name and tooltip", async () => {
+    const evidence = { capability: "quote", source: "Finviz Elite", delivery_mode: "PUBLICATION_BASED", freshness_status: "UNKNOWN",
+      decision_admissibility: "DEGRADED", eligible_for_current_decision: false, eligible_for_reference: true, basis: "SNAPSHOT_TIME",
+      as_of: "2026-09-25T13:00:00Z", received_at: null, fetched_at: null, age_ms: null, stale_after_ms: null, policy: "quote/v1",
+      policy_version: "v1", evaluated_at: "2026-09-25T13:00:01Z", valid_until: null, reason_codes: ["NO_PROVIDER_CLOCK"] };
+    mocks.fetch.mockResolvedValue({ ...payload, rows: [{ ...rows[0], decision_inputs: [evidence] }], result_count: 1 });
+    mount();
+    await screen.findByText("AAPL");
+    const badge = document.querySelector(".screener-row-freshness")!;
+    expect(badge).toHaveTextContent(/^UNKNOWN$/);
+    expect(badge).toHaveAttribute("aria-label", "PUBLICATION BASED · UNKNOWN");
+    expect(badge).toHaveAttribute("title", expect.stringContaining("PUBLICATION BASED · UNKNOWN · Finviz Elite · SNAPSHOT_TIME"));
+  });
+
+  it("keeps the search hint to one space before the slash", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    expect(screen.getByRole("textbox", { name: "Search instruments" })).toHaveAttribute("placeholder", "Search symbol or name /");
   });
 
   it("loads a built-in preset and saves edits as a personal screen", async () => {

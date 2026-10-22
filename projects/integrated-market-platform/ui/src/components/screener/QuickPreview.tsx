@@ -267,7 +267,9 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
           <section className="screener-preview-chart-wrap" aria-label="Current chart">
             {bars && bars.bars.length ? <Suspense fallback={<div className="screener-preview-chart" />}>
               <PreviewChart bars={bars.bars} forming={bars.forming} support={classified?.support ?? null} resistance={classified?.resistance ?? null} label={chartLabel} />
-            </Suspense> : <div className="screener-preview-chart unavailable" role="status">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason)}</div>}
+            </Suspense> : <div className="screener-preview-chart unavailable" role="status">Chart unavailable · {reasonText(bars?.provider_reason ?? bars?.reason)}
+              {/* The preview refreshes every 15s on its own; Retry asks now instead of waiting. */}
+              {" "}<button type="button" onClick={() => void preview.refetch()} disabled={preview.isFetching}>{preview.isFetching ? "Retrying…" : "Retry"}</button></div>}
             <p className="screener-preview-meta">{bars?.timeframe} · {bars?.session_scope === "RTH" ? "RTH" : bars?.session_scope === "PROVIDER_SPECIFIC" ? "Futures session" : "Extended"} · {barStateLabel(bars?.state ?? "UNAVAILABLE")}{universe !== "FUTURES" ? " · Moomoo OpenD" : bars?.provider === "IBKR" ? " · IBKR delayed data" : ""}{bars?.latest_complete_bar_end ? ` · last bar ${time(bars.latest_complete_bar_end, true)}` : ""}</p>
           </section>
           <DecisionFreshness inputs={[...(quote?.decision_inputs ?? []), ...(data.decision_inputs ?? []).filter(item => item.capability !== "quote")]} />

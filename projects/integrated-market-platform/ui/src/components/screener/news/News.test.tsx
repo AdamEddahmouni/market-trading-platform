@@ -438,13 +438,14 @@ describe("S11 Screener News view", () => {
 });
 
 describe("S11 News & Analysis panel", () => {
-  it("is in the launcher, opens one instance, and asks for a selection", async () => {
+  it("is in the launcher, opens one instance, asks for a selection, and closes on a second press", async () => {
     mount();
     await screen.findByText("AAPL", { selector: ".screener-symbol strong" });
     fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
     expect(await screen.findByText("Select an instrument to view News & Analysis.")).toBeInTheDocument();
+    expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(1);
     fireEvent.click(launcher().getByRole("button", { name: "News & Analysis" }));
-    await waitFor(() => expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(1));
+    await waitFor(() => expect(document.querySelectorAll("#screener-panel-news")).toHaveLength(0));
     expect(mocks.instrumentNews).not.toHaveBeenCalled();
     // Not a live panel: no provider demand.
     expect(mocks.demand).not.toHaveBeenCalledWith(expect.anything(), expect.anything(), expect.arrayContaining(["news"]));
@@ -1061,7 +1062,7 @@ describe("News feed: partial sentiment filter", () => {
     const select = screen.getByRole("combobox", { name: "News sentiment" }) as HTMLSelectElement;
     expect(select).not.toBeDisabled();
     expect(select.value).toBe("POSITIVE");
-    expect([...select.options].map((option) => option.textContent)).toEqual(["Any language", "Positive (2)", "Neutral (0)", "Negative (1)"]);
+    expect([...select.options].map((option) => option.textContent)).toEqual(["Any sentiment", "Positive (2)", "Neutral (0)", "Negative (1)"]);
     expect(screen.getByText("12 unscored hidden")).toHaveAttribute("title", expect.stringContaining("hidden, not dropped"));
     expect(screen.queryByText(/Sentiment filter unavailable/)).toBeNull();
   });

@@ -12,6 +12,8 @@
 - Control (`/control`): skip link first; hash deep-links move keyboard focus; loading uses `role="status"` / `aria-busy`; failures use `ErrorState` (`role="alert"`); empty/unavailable providers and feed stay distinct from calendar IDLE waits
 - Tables: `th` scope, captions where helpful
 - Modals/dialogs: focus trap and escape dismiss where implemented
+- Non-modal popovers (`ui/src/lib/useDismiss.ts`): focus moves into the popover on open; Escape anywhere or a press outside closes it; keyboard closes return focus to the trigger
+- A tooltip never replaces a control's name: put hints in `aria-describedby`, not `title` on the control
 - Color not sole indicator of state (use text/icons/badges)
 - NavShell: `aria-label` on mode-specific link descriptions
 

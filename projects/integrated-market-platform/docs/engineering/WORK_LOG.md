@@ -1,5 +1,40 @@
 # IMP Work Log
 
+## 2026-10-22 — Screener Sprint 1: broken behaviour and accessibility
+
+The first batch from the 2026-10-22 visual pass of the live Screener (items
+11–18 and 36–39), stacked on the demo-polish branch. UI only; no API change.
+
+- The Screens, Columns and Add Filter popovers close on Escape wherever focus
+  is and on a press outside (`ui/src/lib/useDismiss.ts`). Escape is taken in
+  the capture phase, so it closes the popover without also clearing the grid
+  selection. The Screens list moves focus to its first screen, and picking,
+  resetting or deleting returns focus to the trigger.
+- Open Panels buttons are toggles: a pressed button closes its panel
+  (`DockHandle.close`). Links from the preview, news and AI still open or
+  focus.
+- Run now (strip) and Run AI Screener (panel) are refused when the preview
+  reports that the packet does not fit the selected engine, with the sizes
+  stated. Both read one shared preview query
+  (`ai/useAiScreenerPreview.ts`). An unknown fit never blocks.
+- The worker's 180 s lease can lapse during one long model call, so the
+  reevaluation status alternated between INTERRUPTED and RUNNING_ELSEWHERE.
+  An INTERRUPTED status with a heartbeat under 10 minutes old now reads
+  "busy · last heartbeat N min ago". The strip's main line is one line with
+  the full text as its tooltip, so a state change no longer shifts the page.
+  The server-side lease renewal is still open.
+- Quick Preview's unavailable chart has Retry. Level 2 says "No order book
+  from {provider} after Ns" with the demand reason and Check again, once
+  `AWAITING_BOOK_SNAPSHOT` has lasted 20 s for the selection.
+- Non-sortable headers are named by their column; "Not sortable" is now
+  their description, not their name. Row freshness badges show one word,
+  with the full line in the accessible name and tooltip. Column-move buttons
+  say up/down to match their arrows. The search hint has one space before
+  "/", and the sentiment filter's default reads "Any sentiment".
+- Back to the row an instrument was opened from, and a repeated click never
+  leaving the Screener, were already fixed on the base branch; regression
+  tests now cover both.
+
 ## 2026-10-12 — Autonomous Paper operations (AUTO-01)
 
 Added one server-owned controller that runs the existing authorities

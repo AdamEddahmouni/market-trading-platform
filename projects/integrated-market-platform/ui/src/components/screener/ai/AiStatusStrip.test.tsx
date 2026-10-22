@@ -12,9 +12,9 @@ it("shows measured reuse and new requests without claiming dollar savings", () =
   expect(screen.getByLabelText("AI Screener coverage")).toHaveTextContent("Dollar estimate unavailable");
 });
 
-const api = vi.hoisted(() => ({ runs: vi.fn(), post: vi.fn(), loop: vi.fn(), stop: vi.fn(), stopRun: vi.fn() }));
+const api = vi.hoisted(() => ({ runs: vi.fn(), post: vi.fn(), loop: vi.fn(), stop: vi.fn(), stopRun: vi.fn(), preview: vi.fn() }));
 vi.mock("../../../api/screenerAi", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerAi")>(),
-  fetchAiScreenerRuns: api.runs, postAiScreener: api.post, postStopAiScreenerRun: api.stopRun }));
+  fetchAiScreenerRuns: api.runs, postAiScreener: api.post, postStopAiScreenerRun: api.stopRun, fetchAiScreenerPreview: api.preview }));
 vi.mock("../../../api/screenerReevaluation", async (importOriginal) => ({ ...await importOriginal<typeof import("../../../api/screenerReevaluation")>(),
   reevaluationStatus: api.loop, stopReevaluation: api.stop }));
 
@@ -54,7 +54,10 @@ const mount = (value = scope) => render(<QueryClientProvider client={new QueryCl
   <AiStatusStrip scope={value} onOpen={onOpen} /></QueryClientProvider>);
 const strip = () => screen.getByRole("region", { name: "AI status" });
 
-beforeEach(() => { api.loop.mockResolvedValue(loop("NOT_CONFIGURED", "Not configured")); });
+beforeEach(() => {
+  api.loop.mockResolvedValue(loop("NOT_CONFIGURED", "Not configured"));
+  api.preview.mockRejectedValue(new Error("preview not under test"));
+});
 afterEach(() => vi.resetAllMocks());
 
 describe("AI status strip", () => {
@@ -195,6 +198,46 @@ describe("AI status strip", () => {
     mount();
     fireEvent.click(await within(strip()).findByRole("button", { name: "Run now" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Could not start a run.");
+  });
+
+  it("refuses Run now when the server says the run cannot fit the selected engine, and says why", async () => {
+    api.runs.mockResolvedValue(status({ budget: null, ai: { state: "AVAILABLE", reason: null, provider_id: "local.openai_compatible", model_id: "qwen3-4b", runtime: "LOCAL_MODEL" } }));
+    const preview = (fits: boolean) => ({ ai: { state: "AVAILABLE", engine: "local" }, matched_count: 4_630,
+      engine_fit: [{ engine: "local", fits, packet_size: 196_000, context_window: 8_000 }, { engine: "anthropic", fits: true, packet_size: 196_000, context_window: 200_000 }] });
+    api.preview.mockResolvedValue(preview(false));
+    const view = mount();
+    await waitFor(() => expect(within(strip()).getByRole("button", { name: "Run now" })).toBeDisabled());
+    expect(strip()).toHaveTextContent("Too large for qwen3-4b: needs ~196k, holds 8k");
+    expect(within(strip()).getByRole("button", { name: "Run now" })).toHaveAttribute("title", expect.stringContaining("current packet does not fit: needs ~196k tokens, model context 8k"));
+    expect(api.preview).toHaveBeenCalledWith(scope, expect.anything());
+    view.unmount();
+    api.preview.mockResolvedValue(preview(true));
+    mount();
+    await waitFor(() => expect(api.preview).toHaveBeenCalledTimes(2));
+    expect(await within(strip()).findByRole("button", { name: "Run now" })).toBeEnabled();
+    expect(strip()).not.toHaveTextContent("Too large");
+  });
+
+  it("does not block Run now when the fit is unknown or the preview fails", async () => {
+    api.runs.mockResolvedValue(status());
+    mount();
+    await waitFor(() => expect(api.preview).toHaveBeenCalled());
+    expect(within(strip()).getByRole("button", { name: "Run now" })).toBeEnabled();
+  });
+
+  it("calls a worker with a recent heartbeat busy instead of interrupted, and keeps the line to one line with the full text on hover", async () => {
+    api.runs.mockResolvedValue(status());
+    const label = "Interrupted — not running; start explicitly to resume";
+    api.loop.mockResolvedValue(loop("INTERRUPTED", label, { liveness: { heartbeat_at: ahead(-4 * 60_000 - 5_000), missed_ticks: 0, cycle_count: 3 } }));
+    const view = mount();
+    await waitFor(() => expect(strip()).toHaveTextContent("automatic passes: busy · last heartbeat 4 min ago"));
+    expect(strip()).not.toHaveTextContent("Interrupted");
+    expect(strip().querySelector(".ai-strip-main")).toHaveAttribute("title", expect.stringContaining("automatic passes: busy · last heartbeat 4 min ago"));
+    view.unmount();
+    // A heartbeat that old is a worker that has really stopped.
+    api.loop.mockResolvedValue(loop("INTERRUPTED", label, { liveness: { heartbeat_at: ahead(-20 * 60_000), missed_ticks: 0, cycle_count: 3 } }));
+    mount();
+    await waitFor(() => expect(strip()).toHaveTextContent("automatic passes: interrupted — not running; start explicitly to resume"));
   });
 
   it("says status is unavailable instead of showing idle, and is not a live region", async () => {

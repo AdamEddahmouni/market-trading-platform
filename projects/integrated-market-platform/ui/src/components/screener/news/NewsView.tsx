@@ -214,7 +214,7 @@ export default function NewsView({ universe, universeLabel, search, onUpdate }: 
         {filters?.categories.map((item) => <option key={item.id} value={item.id}>{item.label} ({item.count})</option>)}</select></label>
       <label title={sentimentReason}>Sentiment <select aria-label="News sentiment" value={sentimentEnabled ? state.sentiment ?? "" : ""} disabled={!sentimentEnabled}
         aria-describedby={sentimentReason ? "news-sentiment-reason" : undefined} onChange={(event) => onUpdate({ nsent: event.target.value || null })}>
-        <option value="">Any language</option>
+        <option value="">Any sentiment</option>
         {SENTIMENTS.map((item) => <option key={item.id} value={item.id}>{item.label}{sentimentEnabled && sentimentInfo?.counts
           ? ` (${sentimentInfo.counts[item.id.toLowerCase() as "positive" | "neutral" | "negative"]})` : ""}</option>)}</select></label>
       {sentimentReason && <span id="news-sentiment-reason" className="news-meta">{sentimentReason}</span>}

@@ -71,7 +71,7 @@ const COMPONENTS: Record<PanelId, FunctionComponent<IDockviewPanelProps>> = {
   setup: contained("setup", SetupPanel),
 };
 
-export type DockHandle = { openOrFocus: (id: PanelId) => void; reset: () => void };
+export type DockHandle = { openOrFocus: (id: PanelId) => void; close: (id: PanelId) => void; reset: () => void };
 type Props = {
   /** Read once when the dock mounts. */
   layout: PanelLayout;
@@ -195,6 +195,8 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     if (existing) existing.api.setActive(); else addPanel(api, id);
     focusPanel(id);
   }, [addPanel, focusPanel]);
+  // Removing a panel fires onDidRemovePanel, which reports the open set and saves the layout.
+  const close = useCallback((id: PanelId) => { apiRef.current?.getPanel(id)?.api.close(); }, []);
   const reset = useCallback(() => {
     const api = apiRef.current;
     if (!api) return;
@@ -203,9 +205,9 @@ export default function ScreenerDock({ layout, row, quote, filters = [], screene
     if (active) api.getPanel(active)?.api.setActive();
   }, [arrange]);
   useEffect(() => {
-    handleRef.current = { openOrFocus, reset };
+    handleRef.current = { openOrFocus, close, reset };
     return () => { handleRef.current = null; };
-  }, [handleRef, openOrFocus, reset]);
+  }, [handleRef, openOrFocus, close, reset]);
 
   const onReady = useCallback((event: DockviewReadyEvent) => {
     const api = event.api;
