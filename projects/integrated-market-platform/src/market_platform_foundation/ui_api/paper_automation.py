@@ -1160,9 +1160,12 @@ class PaperAutomationService:
     def heartbeat(self):
         try:
             self.repository.heartbeat(self._account(), self.owner_id, now=self.clock(), lease_seconds=LEASE_SECONDS)
-            return True
         except ValueError:
             return False
+        if self._reevaluation is not None:
+            # The loop this controller drives is held on the same beat: a cadence longer than its lease is not a lapse.
+            self._reevaluation.renew_driver_lease()
+        return True
 
 
 class AutomationWorker:
