@@ -1,0 +1,1560 @@
+{
+  "package": "OCT1-11",
+  "status": "SOFTWARE_ACCEPTED",
+  "base": "cdcaca246e815f328ff96384b208ab2c07937ee2",
+  "branch": "codex/oct1-11-prospective-evaluation",
+  "environment": {
+    "python": "3.11.15",
+    "os": "Windows"
+  },
+  "metric_version": "prospective-metrics/1.0.0",
+  "policy": "outcome-evaluation/1.0.0",
+  "source_hashes": {
+    "src/market_platform_foundation/evaluation/prospective.py": "a7a24aacf5f38123418255299303b223d85fe4c6b7435f75bab14aec8ddf4128",
+    "src/market_platform_foundation/evaluation/sources.py": "3d4fe23dcb44e2b441561976c1c8e3373c3658a9527dc572bc99a3bde8774047",
+    "src/market_platform_foundation/ui_api/prospective_evaluation.py": "826d8abd9acf1d9cdf8ef17c11d7449c87cf6b1541806f76ef58fce14ff971ce",
+    "src/market_platform_foundation/local_state/evaluations.py": "8115e38e9558c741e201f326886beb52d9fd6078842fe0403d9e8115f9570fd3"
+  },
+  "controlled": {
+    "focused": {
+      "status": "passed",
+      "started_at": null,
+      "tests_run": 31,
+      "passes": 31,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 10.022643499949481,
+      "performance_telemetry": null
+    },
+    "final_service": {
+      "status": "passed",
+      "tests_run": 7,
+      "passes": 7,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 8.123525800008792
+    },
+    "ui_full": {
+      "status": "passed",
+      "tests": 1372,
+      "files": 179
+    },
+    "browser": {
+      "classification": "SOFTWARE_CONTROLLED",
+      "steps": [
+        {
+          "name": "fixture excluded from prospective aggregate",
+          "status": "PASS"
+        },
+        {
+          "name": "Net completed Paper P&L",
+          "status": "PASS"
+        },
+        {
+          "name": "Average win / loss",
+          "status": "PASS"
+        },
+        {
+          "name": "Expectancy / completed trade",
+          "status": "PASS"
+        },
+        {
+          "name": "Profit factor",
+          "status": "PASS"
+        },
+        {
+          "name": "Maximum observed drawdown",
+          "status": "PASS"
+        },
+        {
+          "name": "Peak / trough / recovery / duration seconds",
+          "status": "PASS"
+        },
+        {
+          "name": "Longest / current losing streak",
+          "status": "PASS"
+        },
+        {
+          "name": "Exposure seconds / elapsed time in market",
+          "status": "PASS"
+        },
+        {
+          "name": "Executed notional / turnover",
+          "status": "PASS"
+        },
+        {
+          "name": "Explicit costs",
+          "status": "PASS"
+        },
+        {
+          "name": "Wins / losses / flat",
+          "status": "PASS"
+        },
+        {
+          "name": "Win rate (completed nonflat)",
+          "status": "PASS"
+        },
+        {
+          "name": "weekly results",
+          "status": "PASS"
+        },
+        {
+          "name": "stored segment setup",
+          "status": "PASS"
+        },
+        {
+          "name": "stored segment asset",
+          "status": "PASS"
+        },
+        {
+          "name": "stored segment regime",
+          "status": "PASS"
+        },
+        {
+          "name": "stored segment model",
+          "status": "PASS"
+        },
+        {
+          "name": "stored segment direction",
+          "status": "PASS"
+        },
+        {
+          "name": "segment N changes truthfully",
+          "status": "PASS"
+        },
+        {
+          "name": "evidence classification / cutoff / sample sizes",
+          "status": "PASS"
+        },
+        {
+          "name": "manual unlinked activity separated",
+          "status": "PASS"
+        },
+        {
+          "name": "open trade excluded from completed wins/losses",
+          "status": "PASS"
+        },
+        {
+          "name": "original decision and PIT evidence",
+          "status": "PASS"
+        },
+        {
+          "name": "preserved provider/freshness/model/prompt/action/outcome",
+          "status": "PASS"
+        },
+        {
+          "name": "lifecycle drilldown",
+          "status": "PASS"
+        },
+        {
+          "name": "finalize immutable run",
+          "status": "PASS"
+        },
+        {
+          "name": "rerun metrics and sources match",
+          "status": "PASS"
+        },
+        {
+          "name": "unchanged fills/model calls; zero Paper/Live submit requests",
+          "status": "PASS"
+        }
+      ],
+      "before": {
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "fills": 8,
+        "live_submissions": 0,
+        "model_calls": 8,
+        "paper_submission_requests": 0
+      },
+      "after": {
+        "evidence_class": "SOFTWARE_CONTROLLED",
+        "fills": 8,
+        "live_submissions": 0,
+        "model_calls": 8,
+        "paper_submission_requests": 0
+      },
+      "metrics": {
+        "action_counts": {
+          "ENTER": 4,
+          "EXIT": 3,
+          "NO_ACTION": 1
+        },
+        "average_gross_notional_to_equity": null,
+        "average_loss_minor": "-1200",
+        "average_win_minor": "1200",
+        "commission_minor": 0,
+        "completed_trades": 3,
+        "cost_drag_minor": 0,
+        "costs_minor": 0,
+        "current_losing_streak": 0,
+        "decisions": 8,
+        "executed_notional_minor": 630000,
+        "expectancy_minor": "0",
+        "exposure_seconds": "242.999994",
+        "fees_minor": 0,
+        "flat": 1,
+        "gross_pnl_minor": 0,
+        "longest_losing_streak": 1,
+        "losses": 1,
+        "median_loss_minor": "-1200",
+        "median_win_minor": "1200",
+        "net_pnl_minor": 0,
+        "open_censored": 1,
+        "payoff_ratio": "1",
+        "peak_gross_notional_to_equity": null,
+        "profit_factor": "1",
+        "profit_factor_status": "DEFINED",
+        "quality_counts": {
+          "COMPLETE": 8
+        },
+        "signal_directional_return_mean": null,
+        "signal_market_return_mean": null,
+        "signal_outcomes": 0,
+        "slippage": "NOT_SEPARATELY_MODELED",
+        "time_in_market_fraction": "0.5664335524475524475524475524",
+        "turnover": "0.063",
+        "turnover_reference_equity_minor": 10000000,
+        "unavailable": 4,
+        "win_rate": "0.5",
+        "wins": 1
+      },
+      "admission": {
+        "admitted": 8,
+        "excluded": 1,
+        "reasons": {
+          "MANUAL_UNLINKED_NOT_AI": 1
+        },
+        "total_considered": 9
+      },
+      "console_errors": [],
+      "production_bundle": true,
+      "requested_scenarios": 40,
+      "scenario_coverage": "40 requested scenarios exercised in grouped steps; all metric components, provenance fields and side effects have assertions",
+      "screenshots": [
+        "artifacts/oct1-11-desktop.png",
+        "artifacts/oct1-11-mobile.png"
+      ]
+    }
+  },
+  "prospective": {
+    "date_range": [
+      "2026-10-06T18:05:00Z",
+      "2026-10-06T19:22:14Z"
+    ],
+    "class_": "PROSPECTIVE_PAPER_WITH_LIVE_OBSERVATIONAL_DATA",
+    "decisions": 0,
+    "completed": 0,
+    "open": 0,
+    "no_action": 0,
+    "admitted": 0,
+    "excluded": 0,
+    "collection_outcome": "NO_QUALIFYING_ENTRY",
+    "conclusion": "INSUFFICIENT_EVIDENCE",
+    "equity_snapshots": 1,
+    "profitability_claim": false
+  },
+  "validation": {
+    "fast": {
+      "status": "passed",
+      "started_at": "2026-10-07T01:21:09.340132+00:00",
+      "tests_run": 23,
+      "passes": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 2.963643499999307,
+      "performance_telemetry": {
+        "budget": {
+          "absolute_delta_seconds": 1.142643,
+          "baseline_identity": {
+            "baseline_median_seconds": 1.821,
+            "baseline_sample_count": 3,
+            "reference_test_count": 21,
+            "reference_workers": 1,
+            "workload_id": "fast"
+          },
+          "baseline_median_seconds": 1.821,
+          "budget_version": "p7-bl-0910-2",
+          "classification": "SEVERE_REGRESSION",
+          "environment_comparison": {
+            "compatible": true,
+            "observed": {
+              "baseline_logical_cpu_count": 8,
+              "ci": false,
+              "environment_class": "local_windows_warm_venv",
+              "logical_cpu_count": 8,
+              "os_family": "windows",
+              "platform": "Windows-10-10.0.26300-SP0",
+              "python_version": "3.11.15",
+              "recorded_at": "2026-10-07T01:21:12.311292+00:00",
+              "repository_branch": "codex/oct1-11-prospective-evaluation",
+              "repository_dirty": true,
+              "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+              "telemetry_schema_version": "1.0"
+            }
+          },
+          "explain": [],
+          "gating_policy": "OBSERVE_ONLY",
+          "inherited_baseline_comparison": {
+            "absolute_delta_seconds": -0.547357,
+            "baseline_seconds": 3.511,
+            "baseline_status": "MEASURED_COMPATIBLE",
+            "classification": "NORMAL",
+            "ratio": 0.844102,
+            "threshold_crossed": null
+          },
+          "maturity_status": "PROVISIONAL",
+          "observed_wall_seconds": 2.963643,
+          "percentage_delta": 62.748,
+          "ratio": 1.627481,
+          "regression_masking_risk": false,
+          "telemetry_schema_version": "1.0",
+          "threshold_crossed": "severe_regression_ratio",
+          "thresholds": {
+            "regression_ratio": 1.3,
+            "severe_regression_ratio": 1.5,
+            "warning_ratio": 1.15
+          },
+          "trustworthy_for_action": true,
+          "workload_id": "fast"
+        },
+        "effective_workers": 1,
+        "ended_at": "2026-10-07T01:21:12.592558+00:00",
+        "environment": {
+          "baseline_logical_cpu_count": 8,
+          "ci": false,
+          "environment_class": "local_windows_warm_venv",
+          "logical_cpu_count": 8,
+          "os_family": "windows",
+          "platform": "Windows-10-10.0.26300-SP0",
+          "python_version": "3.11.15",
+          "recorded_at": "2026-10-07T01:21:12.311292+00:00",
+          "repository_branch": "codex/oct1-11-prospective-evaluation",
+          "repository_dirty": true,
+          "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+          "telemetry_schema_version": "1.0"
+        },
+        "errors": 0,
+        "failures": 0,
+        "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+        "regression_explain": "classification=SEVERE_REGRESSION; wall_seconds=2.963643; baseline_median_seconds=1.821; absolute_delta_seconds=1.142643; percentage_delta=62.748%; threshold_crossed=severe_regression_ratio; slowest_suites=mandatory-shared:0.006844s, mandatory-isolated-security-offline-network-denial:0.000147s; tests_run=23 failures=0",
+        "requested_workers": 1,
+        "scheduler_version": "p2-bl-0901-1",
+        "selected_suite_count": 0,
+        "selector_version": "p3-bl-0801-1",
+        "skips": 0,
+        "started_at": "2026-10-07T01:21:09.340132+00:00",
+        "suite_timing": {
+          "slowest_suites": [
+            {
+              "discovery_seconds": 2.435722,
+              "process_wall_seconds": 2.754872,
+              "status": "passed",
+              "suite_id": "mandatory-shared",
+              "tests_run": 22,
+              "wall_seconds": 0.006844
+            },
+            {
+              "discovery_seconds": 0.010779,
+              "process_wall_seconds": 0.207571,
+              "status": "passed",
+              "suite_id": "mandatory-isolated-security-offline-network-denial",
+              "tests_run": 1,
+              "wall_seconds": 0.000147
+            }
+          ],
+          "suite_timings": [
+            {
+              "discovery_seconds": 2.435722,
+              "process_wall_seconds": 2.754872,
+              "status": "passed",
+              "suite_id": "mandatory-shared",
+              "tests_run": 22,
+              "wall_seconds": 0.006844
+            },
+            {
+              "discovery_seconds": 0.010779,
+              "process_wall_seconds": 0.207571,
+              "status": "passed",
+              "suite_id": "mandatory-isolated-security-offline-network-denial",
+              "tests_run": 1,
+              "wall_seconds": 0.000147
+            }
+          ],
+          "wave_summary": []
+        },
+        "telemetry_schema_version": "1.0",
+        "tests_run": 23,
+        "validation_mode": "fast",
+        "wall_seconds": 2.963643
+      }
+    },
+    "changed": {
+      "status": "passed",
+      "started_at": "2026-10-07T01:13:10.207061+00:00",
+      "tests_run": 6042,
+      "passes": 6007,
+      "skips": 35,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 297.11997359996894,
+      "performance_telemetry": {
+        "budget": {
+          "baseline_identity": {
+            "baseline_median_seconds": 173.199,
+            "baseline_sample_count": 1,
+            "reference_test_count": 2812,
+            "reference_workers": 2,
+            "workload_id": "changed_product_paths"
+          },
+          "budget_version": "p7-bl-0910-2",
+          "classification": "INSUFFICIENT_DATA",
+          "environment_comparison": {
+            "compatible": true,
+            "observed": {
+              "baseline_logical_cpu_count": 8,
+              "ci": false,
+              "environment_class": "local_windows_warm_venv",
+              "logical_cpu_count": 8,
+              "os_family": "windows",
+              "platform": "Windows-10-10.0.26300-SP0",
+              "python_version": "3.11.15",
+              "recorded_at": "2026-10-07T01:18:07.333062+00:00",
+              "repository_branch": "codex/oct1-11-prospective-evaluation",
+              "repository_dirty": true,
+              "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+              "telemetry_schema_version": "1.0"
+            }
+          },
+          "explain": [
+            "test count mismatch: 6042 vs reference 2812 (delta 1.149 > tolerance 0.02)",
+            "skipped count mismatch: 35 vs reference 38"
+          ],
+          "gating_policy": "OBSERVE_ONLY",
+          "maturity_status": "PROVISIONAL",
+          "telemetry_schema_version": "1.0",
+          "thresholds": {
+            "regression_ratio": 1.3,
+            "severe_regression_ratio": 1.5,
+            "warning_ratio": 1.15
+          },
+          "trustworthy_for_action": false,
+          "workload_id": "changed_product_paths"
+        },
+        "effective_workers": 2,
+        "ended_at": "2026-10-07T01:18:07.540691+00:00",
+        "environment": {
+          "baseline_logical_cpu_count": 8,
+          "ci": false,
+          "environment_class": "local_windows_warm_venv",
+          "logical_cpu_count": 8,
+          "os_family": "windows",
+          "platform": "Windows-10-10.0.26300-SP0",
+          "python_version": "3.11.15",
+          "recorded_at": "2026-10-07T01:18:07.333062+00:00",
+          "repository_branch": "codex/oct1-11-prospective-evaluation",
+          "repository_dirty": true,
+          "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+          "telemetry_schema_version": "1.0"
+        },
+        "errors": 0,
+        "failures": 0,
+        "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+        "requested_workers": 2,
+        "scheduler_version": "p2-bl-0901-1",
+        "selected_suite_count": 23,
+        "selector_version": "p3-bl-0801-1",
+        "skips": 35,
+        "started_at": "2026-10-07T01:13:10.207061+00:00",
+        "suite_timing": {
+          "slowest_suites": [
+            {
+              "discovery_seconds": 4.489269,
+              "process_wall_seconds": 115.356754,
+              "status": "passed",
+              "suite_id": "intelligence",
+              "tests_run": 2458,
+              "wall_seconds": 110.030681
+            },
+            {
+              "discovery_seconds": 3.566924,
+              "process_wall_seconds": 79.108361,
+              "status": "passed",
+              "suite_id": "platform",
+              "tests_run": 1614,
+              "wall_seconds": 74.779736
+            },
+            {
+              "discovery_seconds": 2.967249,
+              "process_wall_seconds": 64.959321,
+              "status": "passed",
+              "suite_id": "software_fullstack_acceptance",
+              "tests_run": 79,
+              "wall_seconds": 61.58195
+            },
+            {
+              "discovery_seconds": 2.529827,
+              "process_wall_seconds": 30.398127,
+              "status": "passed",
+              "suite_id": "providers",
+              "tests_run": 512,
+              "wall_seconds": 27.361265
+            },
+            {
+              "discovery_seconds": 2.918861,
+              "process_wall_seconds": 28.814168,
+              "status": "passed",
+              "suite_id": "trading_correctness",
+              "tests_run": 256,
+              "wall_seconds": 24.715404
+            }
+          ],
+          "suite_timings": [
+            {
+              "discovery_seconds": 4.489269,
+              "process_wall_seconds": 115.356754,
+              "status": "passed",
+              "suite_id": "intelligence",
+              "tests_run": 2458,
+              "wall_seconds": 110.030681
+            },
+            {
+              "discovery_seconds": 3.566924,
+              "process_wall_seconds": 79.108361,
+              "status": "passed",
+              "suite_id": "platform",
+              "tests_run": 1614,
+              "wall_seconds": 74.779736
+            },
+            {
+              "discovery_seconds": 2.967249,
+              "process_wall_seconds": 64.959321,
+              "status": "passed",
+              "suite_id": "software_fullstack_acceptance",
+              "tests_run": 79,
+              "wall_seconds": 61.58195
+            },
+            {
+              "discovery_seconds": 2.529827,
+              "process_wall_seconds": 30.398127,
+              "status": "passed",
+              "suite_id": "providers",
+              "tests_run": 512,
+              "wall_seconds": 27.361265
+            },
+            {
+              "discovery_seconds": 2.918861,
+              "process_wall_seconds": 28.814168,
+              "status": "passed",
+              "suite_id": "trading_correctness",
+              "tests_run": 256,
+              "wall_seconds": 24.715404
+            },
+            {
+              "discovery_seconds": 2.301375,
+              "process_wall_seconds": 27.174362,
+              "status": "passed",
+              "suite_id": "validation",
+              "tests_run": 210,
+              "wall_seconds": 24.518115
+            },
+            {
+              "discovery_seconds": 2.735064,
+              "process_wall_seconds": 27.652874,
+              "status": "passed",
+              "suite_id": "ui1",
+              "tests_run": 67,
+              "wall_seconds": 24.286776
+            },
+            {
+              "discovery_seconds": 0.187294,
+              "process_wall_seconds": 23.013368,
+              "status": "passed",
+              "suite_id": "integration",
+              "tests_run": 23,
+              "wall_seconds": 22.442545
+            },
+            {
+              "discovery_seconds": 0.459451,
+              "process_wall_seconds": 15.12866,
+              "status": "passed",
+              "suite_id": "phase0",
+              "tests_run": 51,
+              "wall_seconds": 14.507842
+            },
+            {
+              "discovery_seconds": 2.839921,
+              "process_wall_seconds": 14.582431,
+              "status": "passed",
+              "suite_id": "news",
+              "tests_run": 139,
+              "wall_seconds": 11.088142
+            },
+            {
+              "discovery_seconds": 2.876153,
+              "process_wall_seconds": 13.654155,
+              "status": "passed",
+              "suite_id": "opportunity_watch_dismiss_acceptance",
+              "tests_run": 11,
+              "wall_seconds": 10.339997
+            },
+            {
+              "discovery_seconds": 2.613709,
+              "process_wall_seconds": 12.01067,
+              "status": "passed",
+              "suite_id": "rt01",
+              "tests_run": 41,
+              "wall_seconds": 8.993734
+            },
+            {
+              "discovery_seconds": 2.521996,
+              "process_wall_seconds": 11.195251,
+              "status": "passed",
+              "suite_id": "hot_path_telemetry_artifact",
+              "tests_run": 2,
+              "wall_seconds": 8.300555
+            },
+            {
+              "discovery_seconds": 2.177565,
+              "process_wall_seconds": 10.059585,
+              "status": "passed",
+              "suite_id": "hot_path_telemetry",
+              "tests_run": 15,
+              "wall_seconds": 7.498009
+            },
+            {
+              "discovery_seconds": 2.693662,
+              "process_wall_seconds": 9.167649,
+              "status": "passed",
+              "suite_id": "ui2",
+              "tests_run": 5,
+              "wall_seconds": 6.077822
+            },
+            {
+              "discovery_seconds": 0.155151,
+              "process_wall_seconds": 5.283479,
+              "status": "passed",
+              "suite_id": "finviz",
+              "tests_run": 66,
+              "wall_seconds": 4.785795
+            },
+            {
+              "discovery_seconds": 0.539505,
+              "process_wall_seconds": 0.761801,
+              "status": "passed",
+              "suite_id": "runtime",
+              "tests_run": 22,
+              "wall_seconds": 0.058979
+            },
+            {
+              "discovery_seconds": 0.532546,
+              "process_wall_seconds": 0.731379,
+              "status": "passed",
+              "suite_id": "order_flow",
+              "tests_run": 156,
+              "wall_seconds": 0.04065
+            },
+            {
+              "discovery_seconds": 2.044223,
+              "process_wall_seconds": 2.418327,
+              "status": "passed",
+              "suite_id": "portfolio",
+              "tests_run": 161,
+              "wall_seconds": 0.038309
+            },
+            {
+              "discovery_seconds": 0.43967,
+              "process_wall_seconds": 0.626611,
+              "status": "passed",
+              "suite_id": "xa01",
+              "tests_run": 72,
+              "wall_seconds": 0.016752
+            },
+            {
+              "discovery_seconds": 2.409024,
+              "process_wall_seconds": 2.744491,
+              "status": "passed",
+              "suite_id": "phase7",
+              "tests_run": 3,
+              "wall_seconds": 0.012152
+            },
+            {
+              "discovery_seconds": 0.453425,
+              "process_wall_seconds": 0.621461,
+              "status": "passed",
+              "suite_id": "execution",
+              "tests_run": 10,
+              "wall_seconds": 0.010814
+            },
+            {
+              "discovery_seconds": 0.584268,
+              "process_wall_seconds": 0.749632,
+              "status": "passed",
+              "suite_id": "contracts",
+              "tests_run": 46,
+              "wall_seconds": 0.00974
+            },
+            {
+              "discovery_seconds": 2.289309,
+              "process_wall_seconds": 2.597703,
+              "status": "passed",
+              "suite_id": "mandatory-shared",
+              "tests_run": 22,
+              "wall_seconds": 0.006134
+            },
+            {
+              "discovery_seconds": 0.011659,
+              "process_wall_seconds": 0.148345,
+              "status": "passed",
+              "suite_id": "mandatory-isolated-security-offline-network-denial",
+              "tests_run": 1,
+              "wall_seconds": 8.6e-05
+            }
+          ],
+          "wave_summary": [
+            {
+              "concurrency": 1,
+              "policy": "SERIAL_REQUIRED",
+              "suite_count": 1,
+              "wave_id": 0
+            },
+            {
+              "concurrency": 2,
+              "policy": "PARALLEL_SAFE",
+              "suite_count": 20,
+              "wave_id": 1
+            },
+            {
+              "concurrency": 2,
+              "policy": "RESOURCE_HEAVY",
+              "suite_count": 2,
+              "wave_id": 2
+            }
+          ]
+        },
+        "telemetry_schema_version": "1.0",
+        "tests_run": 6042,
+        "validation_mode": "changed",
+        "wall_seconds": 297.119974
+      }
+    },
+    "full": {
+      "status": "passed",
+      "started_at": "2026-10-07T01:18:08.040097+00:00",
+      "tests_run": 8143,
+      "passes": 8090,
+      "skips": 53,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 421.31717090000166,
+      "performance_telemetry": {
+        "budget": {
+          "absolute_delta_seconds": 222.435171,
+          "baseline_identity": {
+            "baseline_median_seconds": 198.882,
+            "baseline_sample_count": 1,
+            "reference_test_count": 4528,
+            "reference_workers": 2,
+            "workload_id": "full"
+          },
+          "baseline_median_seconds": 198.882,
+          "budget_version": "p7-bl-0910-2",
+          "classification": "SEVERE_REGRESSION",
+          "environment_comparison": {
+            "compatible": true,
+            "observed": {
+              "baseline_logical_cpu_count": 8,
+              "ci": false,
+              "environment_class": "local_windows_warm_venv",
+              "logical_cpu_count": 8,
+              "os_family": "windows",
+              "platform": "Windows-10-10.0.26300-SP0",
+              "python_version": "3.11.15",
+              "recorded_at": "2026-10-07T01:25:09.369173+00:00",
+              "repository_branch": "codex/oct1-11-prospective-evaluation",
+              "repository_dirty": true,
+              "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+              "telemetry_schema_version": "1.0"
+            }
+          },
+          "explain": [],
+          "gating_policy": "OBSERVE_ONLY",
+          "inherited_baseline_comparison": {
+            "absolute_delta_seconds": 224.570171,
+            "baseline_seconds": 196.747,
+            "baseline_status": "MEASURED_COMPATIBLE",
+            "classification": "SEVERE_REGRESSION",
+            "ratio": 2.141416,
+            "threshold_crossed": "severe_regression_ratio"
+          },
+          "maturity_status": "PROVISIONAL",
+          "observed_wall_seconds": 421.317171,
+          "percentage_delta": 111.843,
+          "ratio": 2.118428,
+          "regression_masking_risk": false,
+          "telemetry_schema_version": "1.0",
+          "threshold_crossed": "severe_regression_ratio",
+          "thresholds": {
+            "regression_ratio": 1.3,
+            "severe_regression_ratio": 1.5,
+            "warning_ratio": 1.15
+          },
+          "trustworthy_for_action": true,
+          "workload_id": "full"
+        },
+        "effective_workers": 2,
+        "ended_at": "2026-10-07T01:25:09.595977+00:00",
+        "environment": {
+          "baseline_logical_cpu_count": 8,
+          "ci": false,
+          "environment_class": "local_windows_warm_venv",
+          "logical_cpu_count": 8,
+          "os_family": "windows",
+          "platform": "Windows-10-10.0.26300-SP0",
+          "python_version": "3.11.15",
+          "recorded_at": "2026-10-07T01:25:09.369173+00:00",
+          "repository_branch": "codex/oct1-11-prospective-evaluation",
+          "repository_dirty": true,
+          "repository_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+          "telemetry_schema_version": "1.0"
+        },
+        "errors": 0,
+        "failures": 0,
+        "manifest_hash": "a843532d307d9253b5ed9c010bbcd4f120f6238088ea2a2446f092e9721b4f13",
+        "regression_explain": "classification=SEVERE_REGRESSION; wall_seconds=421.317171; baseline_median_seconds=198.882; absolute_delta_seconds=222.435171; percentage_delta=111.843%; threshold_crossed=severe_regression_ratio; slowest_suites=intelligence:143.920696s, platform:73.104714s, software_fullstack_acceptance:61.494377s; tests_run=8143 failures=0",
+        "requested_workers": 2,
+        "scheduler_version": "p2-bl-0901-1",
+        "selected_suite_count": 71,
+        "selector_version": "p3-bl-0801-1",
+        "skips": 53,
+        "started_at": "2026-10-07T01:18:08.040097+00:00",
+        "suite_timing": {
+          "slowest_suites": [
+            {
+              "discovery_seconds": 4.013689,
+              "process_wall_seconds": 149.176077,
+              "status": "passed",
+              "suite_id": "intelligence",
+              "tests_run": 2458,
+              "wall_seconds": 143.920696
+            },
+            {
+              "discovery_seconds": 3.602924,
+              "process_wall_seconds": 77.539645,
+              "status": "passed",
+              "suite_id": "platform",
+              "tests_run": 1614,
+              "wall_seconds": 73.104714
+            },
+            {
+              "discovery_seconds": 2.819909,
+              "process_wall_seconds": 64.727213,
+              "status": "passed",
+              "suite_id": "software_fullstack_acceptance",
+              "tests_run": 79,
+              "wall_seconds": 61.494377
+            },
+            {
+              "discovery_seconds": 2.441884,
+              "process_wall_seconds": 37.420449,
+              "status": "passed",
+              "suite_id": "donor_bridge",
+              "tests_run": 90,
+              "wall_seconds": 34.437113
+            },
+            {
+              "discovery_seconds": 2.593893,
+              "process_wall_seconds": 37.714265,
+              "status": "passed",
+              "suite_id": "providers",
+              "tests_run": 512,
+              "wall_seconds": 34.403522
+            }
+          ],
+          "suite_timings": [
+            {
+              "discovery_seconds": 4.013689,
+              "process_wall_seconds": 149.176077,
+              "status": "passed",
+              "suite_id": "intelligence",
+              "tests_run": 2458,
+              "wall_seconds": 143.920696
+            },
+            {
+              "discovery_seconds": 3.602924,
+              "process_wall_seconds": 77.539645,
+              "status": "passed",
+              "suite_id": "platform",
+              "tests_run": 1614,
+              "wall_seconds": 73.104714
+            },
+            {
+              "discovery_seconds": 2.819909,
+              "process_wall_seconds": 64.727213,
+              "status": "passed",
+              "suite_id": "software_fullstack_acceptance",
+              "tests_run": 79,
+              "wall_seconds": 61.494377
+            },
+            {
+              "discovery_seconds": 2.441884,
+              "process_wall_seconds": 37.420449,
+              "status": "passed",
+              "suite_id": "donor_bridge",
+              "tests_run": 90,
+              "wall_seconds": 34.437113
+            },
+            {
+              "discovery_seconds": 2.593893,
+              "process_wall_seconds": 37.714265,
+              "status": "passed",
+              "suite_id": "providers",
+              "tests_run": 512,
+              "wall_seconds": 34.403522
+            },
+            {
+              "discovery_seconds": 2.06145,
+              "process_wall_seconds": 29.840085,
+              "status": "passed",
+              "suite_id": "phase5",
+              "tests_run": 13,
+              "wall_seconds": 27.334807
+            },
+            {
+              "discovery_seconds": 3.661779,
+              "process_wall_seconds": 29.849753,
+              "status": "passed",
+              "suite_id": "trading_correctness",
+              "tests_run": 256,
+              "wall_seconds": 25.085289
+            },
+            {
+              "discovery_seconds": 0.16934,
+              "process_wall_seconds": 25.270068,
+              "status": "passed",
+              "suite_id": "integration",
+              "tests_run": 23,
+              "wall_seconds": 24.566364
+            },
+            {
+              "discovery_seconds": 2.698517,
+              "process_wall_seconds": 27.522404,
+              "status": "passed",
+              "suite_id": "ui1",
+              "tests_run": 67,
+              "wall_seconds": 24.218913
+            },
+            {
+              "discovery_seconds": 2.389554,
+              "process_wall_seconds": 26.584301,
+              "status": "passed",
+              "suite_id": "validation",
+              "tests_run": 210,
+              "wall_seconds": 23.873675
+            },
+            {
+              "discovery_seconds": 2.463462,
+              "process_wall_seconds": 25.363986,
+              "status": "passed",
+              "suite_id": "research",
+              "tests_run": 182,
+              "wall_seconds": 22.469785
+            },
+            {
+              "discovery_seconds": 2.691217,
+              "process_wall_seconds": 18.232273,
+              "status": "passed",
+              "suite_id": "opportunity_watch_dismiss_acceptance",
+              "tests_run": 11,
+              "wall_seconds": 14.933167
+            },
+            {
+              "discovery_seconds": 2.141326,
+              "process_wall_seconds": 17.192566,
+              "status": "passed",
+              "suite_id": "phase8",
+              "tests_run": 5,
+              "wall_seconds": 14.747637
+            },
+            {
+              "discovery_seconds": 0.463592,
+              "process_wall_seconds": 15.270867,
+              "status": "passed",
+              "suite_id": "phase0",
+              "tests_run": 51,
+              "wall_seconds": 14.637506
+            },
+            {
+              "discovery_seconds": 2.860372,
+              "process_wall_seconds": 18.158525,
+              "status": "passed",
+              "suite_id": "news",
+              "tests_run": 139,
+              "wall_seconds": 14.453115
+            },
+            {
+              "discovery_seconds": 2.612503,
+              "process_wall_seconds": 14.56041,
+              "status": "passed",
+              "suite_id": "rt01",
+              "tests_run": 41,
+              "wall_seconds": 11.346061
+            },
+            {
+              "discovery_seconds": 2.295638,
+              "process_wall_seconds": 13.960583,
+              "status": "passed",
+              "suite_id": "gridiq",
+              "tests_run": 11,
+              "wall_seconds": 11.278544
+            },
+            {
+              "discovery_seconds": 2.326393,
+              "process_wall_seconds": 12.543801,
+              "status": "passed",
+              "suite_id": "assistant",
+              "tests_run": 17,
+              "wall_seconds": 9.62451
+            },
+            {
+              "discovery_seconds": 3.693298,
+              "process_wall_seconds": 13.323572,
+              "status": "passed",
+              "suite_id": "latency_instrumentation_v1",
+              "tests_run": 9,
+              "wall_seconds": 9.02688
+            },
+            {
+              "discovery_seconds": 0.341233,
+              "process_wall_seconds": 9.444891,
+              "status": "passed",
+              "suite_id": "market_data",
+              "tests_run": 152,
+              "wall_seconds": 8.757539
+            },
+            {
+              "discovery_seconds": 2.174965,
+              "process_wall_seconds": 11.204544,
+              "status": "passed",
+              "suite_id": "hot_path_telemetry_artifact",
+              "tests_run": 2,
+              "wall_seconds": 8.586083
+            },
+            {
+              "discovery_seconds": 2.255806,
+              "process_wall_seconds": 10.32484,
+              "status": "passed",
+              "suite_id": "hot_path_telemetry",
+              "tests_run": 15,
+              "wall_seconds": 7.681918
+            },
+            {
+              "discovery_seconds": 2.206247,
+              "process_wall_seconds": 9.660213,
+              "status": "passed",
+              "suite_id": "mra002",
+              "tests_run": 3,
+              "wall_seconds": 7.090867
+            },
+            {
+              "discovery_seconds": 2.313172,
+              "process_wall_seconds": 8.93782,
+              "status": "passed",
+              "suite_id": "mra001",
+              "tests_run": 3,
+              "wall_seconds": 6.273417
+            },
+            {
+              "discovery_seconds": 3.074724,
+              "process_wall_seconds": 9.606527,
+              "status": "passed",
+              "suite_id": "ui2",
+              "tests_run": 5,
+              "wall_seconds": 6.10942
+            },
+            {
+              "discovery_seconds": 0.158025,
+              "process_wall_seconds": 5.483412,
+              "status": "passed",
+              "suite_id": "finviz",
+              "tests_run": 66,
+              "wall_seconds": 4.97746
+            },
+            {
+              "discovery_seconds": 0.264782,
+              "process_wall_seconds": 5.059777,
+              "status": "passed",
+              "suite_id": "sec_edgar",
+              "tests_run": 82,
+              "wall_seconds": 4.607455
+            },
+            {
+              "discovery_seconds": 0.140329,
+              "process_wall_seconds": 2.824208,
+              "status": "passed",
+              "suite_id": "of01",
+              "tests_run": 84,
+              "wall_seconds": 2.516423
+            },
+            {
+              "discovery_seconds": 0.259461,
+              "process_wall_seconds": 2.758387,
+              "status": "passed",
+              "suite_id": "ibkr",
+              "tests_run": 73,
+              "wall_seconds": 2.331148
+            },
+            {
+              "discovery_seconds": 0.081838,
+              "process_wall_seconds": 2.037513,
+              "status": "passed",
+              "suite_id": "of03",
+              "tests_run": 51,
+              "wall_seconds": 1.811636
+            },
+            {
+              "discovery_seconds": 0.030774,
+              "process_wall_seconds": 1.875349,
+              "status": "passed",
+              "suite_id": "postroot",
+              "tests_run": 40,
+              "wall_seconds": 1.704314
+            },
+            {
+              "discovery_seconds": 2.142371,
+              "process_wall_seconds": 4.27581,
+              "status": "passed",
+              "suite_id": "market_trackers",
+              "tests_run": 129,
+              "wall_seconds": 1.615443
+            },
+            {
+              "discovery_seconds": 0.166297,
+              "process_wall_seconds": 1.584307,
+              "status": "passed",
+              "suite_id": "short_intelligence",
+              "tests_run": 37,
+              "wall_seconds": 1.27789
+            },
+            {
+              "discovery_seconds": 0.578321,
+              "process_wall_seconds": 1.474712,
+              "status": "passed",
+              "suite_id": "futures",
+              "tests_run": 65,
+              "wall_seconds": 0.725696
+            },
+            {
+              "discovery_seconds": 2.363688,
+              "process_wall_seconds": 3.339751,
+              "status": "passed",
+              "suite_id": "fixed_income",
+              "tests_run": 82,
+              "wall_seconds": 0.648289
+            },
+            {
+              "discovery_seconds": 0.438096,
+              "process_wall_seconds": 0.897704,
+              "status": "passed",
+              "suite_id": "phase3",
+              "tests_run": 8,
+              "wall_seconds": 0.28626
+            },
+            {
+              "discovery_seconds": 0.060808,
+              "process_wall_seconds": 0.45391,
+              "status": "passed",
+              "suite_id": "of02",
+              "tests_run": 33,
+              "wall_seconds": 0.256057
+            },
+            {
+              "discovery_seconds": 0.684995,
+              "process_wall_seconds": 1.07166,
+              "status": "passed",
+              "suite_id": "market_context",
+              "tests_run": 123,
+              "wall_seconds": 0.213003
+            },
+            {
+              "discovery_seconds": 2.301925,
+              "process_wall_seconds": 2.804794,
+              "status": "passed",
+              "suite_id": "cross_lane",
+              "tests_run": 100,
+              "wall_seconds": 0.18867
+            },
+            {
+              "discovery_seconds": 0.436531,
+              "process_wall_seconds": 0.723572,
+              "status": "passed",
+              "suite_id": "xa04",
+              "tests_run": 34,
+              "wall_seconds": 0.112837
+            },
+            {
+              "discovery_seconds": 2.296833,
+              "process_wall_seconds": 2.709593,
+              "status": "passed",
+              "suite_id": "participant",
+              "tests_run": 76,
+              "wall_seconds": 0.07173
+            },
+            {
+              "discovery_seconds": 0.470005,
+              "process_wall_seconds": 0.686719,
+              "status": "passed",
+              "suite_id": "runtime",
+              "tests_run": 22,
+              "wall_seconds": 0.056418
+            },
+            {
+              "discovery_seconds": 0.237298,
+              "process_wall_seconds": 0.447906,
+              "status": "passed",
+              "suite_id": "xa02",
+              "tests_run": 33,
+              "wall_seconds": 0.055733
+            },
+            {
+              "discovery_seconds": 0.513244,
+              "process_wall_seconds": 0.746645,
+              "status": "passed",
+              "suite_id": "cboe_options",
+              "tests_run": 57,
+              "wall_seconds": 0.052997
+            },
+            {
+              "discovery_seconds": 0.541345,
+              "process_wall_seconds": 0.750849,
+              "status": "passed",
+              "suite_id": "options",
+              "tests_run": 147,
+              "wall_seconds": 0.051502
+            },
+            {
+              "discovery_seconds": 0.434999,
+              "process_wall_seconds": 0.643348,
+              "status": "passed",
+              "suite_id": "xa05",
+              "tests_run": 15,
+              "wall_seconds": 0.049991
+            },
+            {
+              "discovery_seconds": 0.001985,
+              "process_wall_seconds": 0.189991,
+              "status": "passed",
+              "suite_id": "phase1",
+              "tests_run": 6,
+              "wall_seconds": 0.047788
+            },
+            {
+              "discovery_seconds": 0.564676,
+              "process_wall_seconds": 0.786913,
+              "status": "passed",
+              "suite_id": "order_flow",
+              "tests_run": 156,
+              "wall_seconds": 0.039426
+            },
+            {
+              "discovery_seconds": 2.430739,
+              "process_wall_seconds": 2.819464,
+              "status": "passed",
+              "suite_id": "portfolio",
+              "tests_run": 161,
+              "wall_seconds": 0.037664
+            },
+            {
+              "discovery_seconds": 0.037988,
+              "process_wall_seconds": 0.220708,
+              "status": "passed",
+              "suite_id": "phase5r",
+              "tests_run": 14,
+              "wall_seconds": 0.037485
+            },
+            {
+              "discovery_seconds": 0.18747,
+              "process_wall_seconds": 0.385834,
+              "status": "passed",
+              "suite_id": "xa03",
+              "tests_run": 31,
+              "wall_seconds": 0.02865
+            },
+            {
+              "discovery_seconds": 0.002912,
+              "process_wall_seconds": 0.180787,
+              "status": "passed",
+              "suite_id": "phase0a",
+              "tests_run": 9,
+              "wall_seconds": 0.028536
+            },
+            {
+              "discovery_seconds": 2.247614,
+              "process_wall_seconds": 2.572897,
+              "status": "passed",
+              "suite_id": "crypto_market",
+              "tests_run": 26,
+              "wall_seconds": 0.023202
+            },
+            {
+              "discovery_seconds": 0.145214,
+              "process_wall_seconds": 0.317743,
+              "status": "passed",
+              "suite_id": "cftc",
+              "tests_run": 63,
+              "wall_seconds": 0.02312
+            },
+            {
+              "discovery_seconds": 0.181884,
+              "process_wall_seconds": 0.349299,
+              "status": "passed",
+              "suite_id": "weather",
+              "tests_run": 41,
+              "wall_seconds": 0.021454
+            },
+            {
+              "discovery_seconds": 0.037233,
+              "process_wall_seconds": 0.208258,
+              "status": "passed",
+              "suite_id": "storage",
+              "tests_run": 9,
+              "wall_seconds": 0.018216
+            },
+            {
+              "discovery_seconds": 0.443531,
+              "process_wall_seconds": 0.609114,
+              "status": "passed",
+              "suite_id": "xa01",
+              "tests_run": 72,
+              "wall_seconds": 0.014521
+            },
+            {
+              "discovery_seconds": 0.451701,
+              "process_wall_seconds": 0.618847,
+              "status": "passed",
+              "suite_id": "execution",
+              "tests_run": 10,
+              "wall_seconds": 0.014009
+            },
+            {
+              "discovery_seconds": 2.283394,
+              "process_wall_seconds": 2.602284,
+              "status": "passed",
+              "suite_id": "formulas",
+              "tests_run": 30,
+              "wall_seconds": 0.013418
+            },
+            {
+              "discovery_seconds": 0.599974,
+              "process_wall_seconds": 0.800845,
+              "status": "passed",
+              "suite_id": "contracts",
+              "tests_run": 46,
+              "wall_seconds": 0.010292
+            },
+            {
+              "discovery_seconds": 2.631275,
+              "process_wall_seconds": 3.009193,
+              "status": "passed",
+              "suite_id": "phase7",
+              "tests_run": 3,
+              "wall_seconds": 0.009423
+            },
+            {
+              "discovery_seconds": 0.140868,
+              "process_wall_seconds": 0.312054,
+              "status": "passed",
+              "suite_id": "fred",
+              "tests_run": 30,
+              "wall_seconds": 0.008947
+            },
+            {
+              "discovery_seconds": 0.055971,
+              "process_wall_seconds": 0.219654,
+              "status": "passed",
+              "suite_id": "public_records",
+              "tests_run": 14,
+              "wall_seconds": 0.008331
+            },
+            {
+              "discovery_seconds": 0.182472,
+              "process_wall_seconds": 0.351151,
+              "status": "passed",
+              "suite_id": "sec_ftd",
+              "tests_run": 16,
+              "wall_seconds": 0.006911
+            },
+            {
+              "discovery_seconds": 0.189411,
+              "process_wall_seconds": 0.362716,
+              "status": "passed",
+              "suite_id": "eia",
+              "tests_run": 23,
+              "wall_seconds": 0.006736
+            },
+            {
+              "discovery_seconds": 0.071759,
+              "process_wall_seconds": 0.2114,
+              "status": "passed",
+              "suite_id": "donor_patterns",
+              "tests_run": 14,
+              "wall_seconds": 0.00448
+            },
+            {
+              "discovery_seconds": 2.056441,
+              "process_wall_seconds": 2.347348,
+              "status": "passed",
+              "suite_id": "phase4",
+              "tests_run": 11,
+              "wall_seconds": 0.004225
+            },
+            {
+              "discovery_seconds": 0.434511,
+              "process_wall_seconds": 0.591337,
+              "status": "passed",
+              "suite_id": "squeeze_models",
+              "tests_run": 11,
+              "wall_seconds": 0.004057
+            },
+            {
+              "discovery_seconds": 2.1629,
+              "process_wall_seconds": 2.470527,
+              "status": "passed",
+              "suite_id": "phase6",
+              "tests_run": 7,
+              "wall_seconds": 0.002586
+            },
+            {
+              "discovery_seconds": 0.168386,
+              "process_wall_seconds": 0.312485,
+              "status": "passed",
+              "suite_id": "distribution",
+              "tests_run": 9,
+              "wall_seconds": 0.001846
+            },
+            {
+              "discovery_seconds": 0.012678,
+              "process_wall_seconds": 0.216879,
+              "status": "passed",
+              "suite_id": "phase2",
+              "tests_run": 6,
+              "wall_seconds": 0.001726
+            }
+          ],
+          "wave_summary": [
+            {
+              "concurrency": 1,
+              "policy": "SERIAL_REQUIRED",
+              "suite_count": 1,
+              "wave_id": 0
+            },
+            {
+              "concurrency": 2,
+              "policy": "PARALLEL_SAFE",
+              "suite_count": 65,
+              "wave_id": 1
+            },
+            {
+              "concurrency": 2,
+              "policy": "RESOURCE_HEAVY",
+              "suite_count": 5,
+              "wave_id": 2
+            }
+          ]
+        },
+        "telemetry_schema_version": "1.0",
+        "tests_run": 8143,
+        "validation_mode": "full",
+        "wall_seconds": 421.317171
+      }
+    },
+    "previous_full": {
+      "status": "failed",
+      "tests_run": 8143,
+      "passes": 8089,
+      "skips": 53,
+      "failures": 0,
+      "errors": 1,
+      "wall_seconds": 427.3712603999884
+    },
+    "previous_full_error": "WinError 10053 in existing oversized news HTTP body test; isolated recheck passed; final gates remain required",
+    "ui_initial": {
+      "status": "failed",
+      "tests": 1372,
+      "failures": 4,
+      "reason": "App lazy-route wait failures under load; isolated App 76 passed and complete bounded-worker rerun 1372 passed"
+    },
+    "format": "passed",
+    "lint": "passed",
+    "docs_links": {
+      "status": "passed",
+      "files": 292
+    },
+    "monorepo": "passed",
+    "supplemental_open_exposure": "Passed after FULL discovered its 8143 cases; production evaluator unchanged; final 31 focused cases all passed.",
+    "commands": [
+      "python tools/imp.py validate fast",
+      "python tools/imp.py validate changed",
+      "python tools/imp.py validate full",
+      "python tools/imp.py test focused (31 exact selectors)",
+      "npm test -- --maxWorkers=2 --minWorkers=1",
+      "npm run typecheck",
+      "npm run build",
+      "python tools/imp.py lint",
+      "python tools/imp.py format",
+      "python tools/check_docs_links.py",
+      "python ../../tools/monorepo_guard.py --root ../.. validate --ci",
+      "node tools/ui1/oct1_11_browser.cjs"
+    ]
+  },
+  "performance": {
+    "measurements": [
+      {
+        "n": 100,
+        "aggregate_and_segment_seconds": 0.008918899984564632,
+        "rerun_seconds": 0.010530799976550043,
+        "rerun": "MATCH",
+        "artifact_bytes": 124973,
+        "summary_bytes": 13266
+      },
+      {
+        "n": 1000,
+        "aggregate_and_segment_seconds": 0.10069509997265413,
+        "rerun_seconds": 0.10689960001036525,
+        "rerun": "MATCH",
+        "artifact_bytes": 1128631,
+        "summary_bytes": 20624
+      }
+    ],
+    "initial_bundle_gzip_kib": 100.77,
+    "evaluation_chunk_gzip_kib": 4.96,
+    "policy": "observe-only; severe-regression timings retained",
+    "full_seconds": 421.31717090000166
+  },
+  "authority": {
+    "live_capital": false,
+    "paper_submit": false,
+    "live_submit": false,
+    "model_calls": false,
+    "ftep_activation": false,
+    "automatic_policy_change": false
+  },
+  "limitations": [
+    "Actual audited prospective window contains no qualifying AI decision or trade; no performance estimate is available.",
+    "Paper fills are simulated; software fixtures are excluded from prospective performance.",
+    "Model version and segment labels remain UNAVAILABLE when not stored.",
+    "Sparse equity points do not establish a continuous return/drawdown history.",
+    "Historical synchronized unrealized marks and gross notional/equity exposure remain unavailable.",
+    "Bounded cohort source reads fail on truncation; account decisions/equity at most 10000, next-session source cap100.",
+    "Recorded model outputs are preserved; stochastic model generation is not reproduced.",
+    "Timing comparisons reflect this Windows development environment and are not strategy evidence."
+  ],
+  "implementation_sha": "634439dd12a6579dfec0fa35d023384e2f5dd1c1",
+  "integration": {
+    "pr": "https://github.com/AdamEddahmouni/market-trading-platform/pull/467",
+    "phase": "PROTECTED_INTEGRATION_PENDING",
+    "completion_authority": "Verified merged PR plus post-merge tracker receipt; frozen local acceptance predates merge"
+  }
+}

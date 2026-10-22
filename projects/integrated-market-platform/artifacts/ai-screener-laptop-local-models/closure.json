@@ -1,0 +1,296 @@
+{
+  "baseline": {
+    "classification": "pre_existing_dirty_tree",
+    "failures": [
+      {
+        "areas": [
+          "finviz",
+          "platform",
+          "intelligence",
+          "ui1",
+          "validation"
+        ],
+        "errors": 91,
+        "failures": 1,
+        "mode": "changed",
+        "wall_seconds": 530.542
+      },
+      {
+        "areas": [
+          "finviz",
+          "platform",
+          "intelligence",
+          "ui1",
+          "ui2",
+          "validation"
+        ],
+        "errors": 92,
+        "failures": 1,
+        "mode": "full",
+        "wall_seconds": 734.902
+      }
+    ]
+  },
+  "changed_areas": [
+    "backend",
+    "developer-tooling",
+    "documentation",
+    "other",
+    "tests",
+    "ui"
+  ],
+  "changed_files": [
+    "artifacts/ai-screener-laptop-local-models-acceptance.json",
+    "artifacts/ai-screener-laptop-local-models/format.json",
+    "artifacts/ai-screener-laptop-local-models/frontend-exits.json",
+    "artifacts/ai-screener-laptop-local-models/hardware.json",
+    "artifacts/ai-screener-laptop-local-models/independent-review.json",
+    "artifacts/ai-screener-laptop-local-models/validation-changed-socket-abort.json",
+    "artifacts/ai-screener-laptop-local-models/validation-changed-worktree-temp.json",
+    "artifacts/ai-screener-laptop-local-models/validation-changed.json",
+    "artifacts/ai-screener-laptop-local-models/validation-fast.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135149-3b95426c/admission.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135149-3b95426c/summary.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135333-fa5f4454/admission.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135333-fa5f4454/summary.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135723-f959d421/admission.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135723-f959d421/summary.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135728-b03c5b71/admission.json",
+    "artifacts/ai-screener-local-runtime/attempt-20261009T135728-b03c5b71/summary.json",
+    "artifacts/g13-runtime-performance.json",
+    "artifacts/historical-development/demo-runs/hist-rth-AAPL-0306296002/e2e_result.json",
+    "artifacts/historical-development/demo-runs/hist-rth-AAPL-67bc155304/e2e_result.json",
+    "artifacts/historical-development/demo-runs/hist-rth-AAPL-915e359ab8/e2e_result.json",
+    "artifacts/historical-development/demo-runs/hist-rth-AAPL-ac4381c080/e2e_result.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-0306296002/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-1de4d6bd4c/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-37c45b747f/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-407e9dcc4a/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-67bc155304/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-8142459058/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-915e359ab8/raw/AAPL_2026-09-15.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/manifests/dataset_manifest.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/normalized/AAPL_normalized.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/quality/quality_report.json",
+    "artifacts/historical-rth-development/runs/hist-rth-AAPL-ac4381c080/raw/AAPL_2026-09-15.json",
+    "artifacts/p3-plan-cli-check.json",
+    "docs/architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md",
+    "docs/engineering/WORK_LOG.md",
+    "src/market_platform_foundation/intelligence/inference/inference_identity.py",
+    "src/market_platform_foundation/intelligence/inference/local_models.py",
+    "src/market_platform_foundation/intelligence/inference/local_provider.py",
+    "src/market_platform_foundation/intelligence/inference/local_runtime.py",
+    "src/market_platform_foundation/ui_api/screener_ai.py",
+    "src/market_platform_foundation/ui_api/screener_ai_staged.py",
+    "src/market_platform_foundation/ui_api/server.py",
+    "tests/platform/test_local_runtime_validation.py",
+    "tests/platform/test_screener_ai_runs.py",
+    "tools/local_runtime_benchmark.py",
+    "tools/news/setup_laptop_models.py",
+    "ui/src/App.test.tsx",
+    "ui/src/api/screenerAi.ts",
+    "ui/src/components/screener/panels/AiScreenerPanel.test.tsx",
+    "ui/src/components/screener/panels/AiScreenerPanel.tsx"
+  ],
+  "documentation_changes": [
+    "docs/architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md",
+    "docs/engineering/WORK_LOG.md"
+  ],
+  "environment": {
+    "environment": {
+      "environment_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv",
+      "local_venv_present": true,
+      "shared_candidates": [
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\finviz-leftover-discovery-d1ba\\projects\\integrated-market-platform\\.venv",
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\phase4-lane-h-strategy-runtime\\projects\\integrated-market-platform\\.venv",
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\phase5-lane-h-rth-ops\\projects\\integrated-market-platform\\.venv",
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\rebase-pr-121\\projects\\integrated-market-platform\\.venv"
+      ]
+    },
+    "imp_project_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform",
+    "next_commands": [
+      "python tools/imp.py validate fast"
+    ],
+    "python": {
+      "current_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+      "current_version": "3.11.15",
+      "resolution_source": "local_venv",
+      "resolved_executable": "C:\\Users\\adame\\Desktop\\market-trading-platform\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+      "resolved_version": "3.11.15",
+      "supported": true
+    },
+    "timezone": {
+      "detail": "America/New_York available",
+      "ready": true
+    },
+    "tools": {
+      "git_available": true,
+      "node_available": true,
+      "npm_available": true
+    },
+    "worktree": {
+      "branch": "codex/ai-screener-laptop-local-models",
+      "git_metadata_dir": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.git\\worktrees\\ai-screener-laptop-local-models",
+      "is_linked_worktree": true,
+      "root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models"
+    }
+  },
+  "generated_at": "2026-10-09T14:50:01.994667+00:00",
+  "report_type": "imp_closure",
+  "repository_root": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform",
+  "risk": {
+    "live_execution_authorized": false,
+    "paper_authority_changed": false,
+    "status": "review_required"
+  },
+  "schema_version": "1.0",
+  "telemetry": {
+    "enabled": true,
+    "path": "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.local\\developer-workflow\\telemetry.jsonl",
+    "summary": {
+      "agent_iterations": [],
+      "ci_wall_seconds": 0,
+      "command_counts": {
+        "closure docs": 1,
+        "closure format": 1,
+        "format": 1,
+        "lint python": 2,
+        "lint ui": 2,
+        "test focused": 11,
+        "validate changed": 3,
+        "validate fast": 2,
+        "validate full": 1
+      },
+      "events": 24,
+      "redundant_command_events": 15,
+      "validation_wall_seconds": 2508.040462
+    }
+  },
+  "validation": {
+    "documentation": {
+      "argv": [
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\.venv\\Scripts\\python.exe",
+        "C:\\Users\\adame\\Desktop\\market-trading-platform\\.worktrees\\ai-screener-laptop-local-models\\projects\\integrated-market-platform\\tools\\check_docs_links.py"
+      ],
+      "command": "closure docs",
+      "exit_code": 0,
+      "status": "passed",
+      "wall_seconds": 1.637955
+    },
+    "format": {
+      "argv": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "command": "closure format",
+      "exit_code": 0,
+      "status": "passed",
+      "wall_seconds": 0.142967
+    },
+    "full": {
+      "core_checkpoint_required": false,
+      "errors": 0,
+      "failures": 0,
+      "mode": "full",
+      "selected_suites": [
+        "postroot",
+        "phase0",
+        "phase0a",
+        "phase1",
+        "phase2",
+        "phase3",
+        "phase4",
+        "phase5",
+        "phase5r",
+        "finviz",
+        "news",
+        "research",
+        "phase6",
+        "phase7",
+        "platform",
+        "phase8",
+        "storage",
+        "assistant",
+        "donor_bridge",
+        "donor_patterns",
+        "execution",
+        "order_flow",
+        "contracts",
+        "intelligence",
+        "opportunity_watch_dismiss_acceptance",
+        "software_fullstack_acceptance",
+        "cross_lane",
+        "distribution",
+        "futures",
+        "gridiq",
+        "integration",
+        "options",
+        "formulas",
+        "providers",
+        "runtime",
+        "squeeze_models",
+        "ui1",
+        "ui2",
+        "mra001",
+        "mra002",
+        "market_context",
+        "participant",
+        "market_data",
+        "ibkr",
+        "sec_edgar",
+        "short_intelligence",
+        "sec_ftd",
+        "market_trackers",
+        "cftc",
+        "fred",
+        "crypto_market",
+        "public_records",
+        "fixed_income",
+        "eia",
+        "weather",
+        "cboe_options",
+        "validation",
+        "of01",
+        "of02",
+        "of03",
+        "rt01",
+        "hot_path_telemetry",
+        "latency_instrumentation_v1",
+        "hot_path_telemetry_artifact",
+        "xa01",
+        "portfolio",
+        "xa02",
+        "xa03",
+        "xa04",
+        "xa05",
+        "trading_correctness"
+      ],
+      "skips": 53,
+      "status": "passed",
+      "tests_run": 8474,
+      "wall_seconds": 867.5334447000059
+    }
+  }
+}

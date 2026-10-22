@@ -1,3 +1,4 @@
+import { DecisionEvidenceSchema, DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
 import { authHeaders } from "../auth/session";
@@ -8,10 +9,14 @@ const FieldSchema = z.object({
   state: z.string(),
   as_of: z.string().nullable().optional(),
   as_of_ns: z.number().optional(),
+  provider_as_of: z.string().nullable().optional(),
+  event_time_ns: z.number().nullable().optional(),
+  received_ns: z.number().optional(),
   /** S9: what the number is (e.g. HIGH_YIELD vs HIGH_INVESTMENT_RATE, NOMINAL_PAR_10Y). */
   basis: z.string().optional(),
 });
 const RowSchema = z.object({
+  decision_inputs: DecisionInputs,
   instrument: z.object({
     instrument_id: z.string(),
     venue_id: z.string(),
@@ -102,6 +107,7 @@ const ScreenerSchema = z.object({
   rows: z.array(RowSchema),
 });
 const QuoteSchema = z.object({
+  decision_inputs: DecisionInputs,
   state: z.string(),
   session_state: z.string().optional(),
   reason: z.string().nullable().optional(),
@@ -166,7 +172,7 @@ const ScreenerConfigSchema = z.object({
 });
 export type ScreenerConfig = z.infer<typeof ScreenerConfigSchema>;
 export const PANEL_IDS = ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "rates_curve", "news",
-  "institutional", "congress_gov", "setup"] as const;
+  "institutional", "congress_gov", "setup", "connectivity", "ai_screener"] as const;
 export type PanelId = (typeof PANEL_IDS)[number];
 // Presentation only: which specialist panels are open and how they are arranged.
 // Market observations never enter this record.
@@ -240,10 +246,12 @@ const ZoneSchema = z.object({
 });
 const SideSchema = ZoneSchema.extend({ distance_pct: z.number() }).nullable();
 const EvidenceSchema = z.object({
+  decision_evidence: DecisionEvidenceSchema.optional(),
   class: z.enum(["OBSERVED", "DERIVED", "AI_SYNTHESIS", "UNAVAILABLE", "INSUFFICIENT_EVIDENCE"]),
   kind: z.string(), text: z.string(), source: z.string(), as_of: z.string().nullable(),
 });
 const PreviewSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-preview/1.0.0"),
   generated_at: z.string(),
   market_session: ScreenerSchema.shape.market_session,

@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson } from "./fetchJson";
 import type { ScreenerFilter } from "./screener";
@@ -25,6 +26,7 @@ const Field = z.object({ value: z.number().nullable(), source: z.string(), state
   as_of: z.string().nullable(), basis: z.string().optional() }).strict();
 
 export const BondPreviewSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-bond-preview/1.0.0"), universe: z.literal("BONDS"), generated_at: z.string(),
   market_session: z.string(),
   instrument: z.object({
@@ -82,6 +84,7 @@ const BreadthCategory = z.object({ state: z.string(), reason: z.string().nullabl
 const Breadth = z.object({ state: z.string(), reason: z.string().nullable(), categories: z.record(BreadthCategory) }).passthrough();
 
 export const RatesCurveSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-rates-curve/1.0.0"), universe: z.literal("BONDS"), generated_at: z.string(),
   instrument_id: z.string().nullable(), nominal: Curve, real: Curve,
   spreads: z.array(z.object({ id: z.string(), long_tenor: z.string(), short_tenor: z.string(), formula: z.string(),

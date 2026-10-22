@@ -1,0 +1,196 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "steps": [
+    {
+      "name": "fixture excluded from prospective aggregate",
+      "status": "PASS"
+    },
+    {
+      "name": "Net completed Paper P&L",
+      "status": "PASS"
+    },
+    {
+      "name": "Average win / loss",
+      "status": "PASS"
+    },
+    {
+      "name": "Expectancy / completed trade",
+      "status": "PASS"
+    },
+    {
+      "name": "Profit factor",
+      "status": "PASS"
+    },
+    {
+      "name": "Maximum observed drawdown",
+      "status": "PASS"
+    },
+    {
+      "name": "Peak / trough / recovery / duration seconds",
+      "status": "PASS"
+    },
+    {
+      "name": "Longest / current losing streak",
+      "status": "PASS"
+    },
+    {
+      "name": "Exposure seconds / elapsed time in market",
+      "status": "PASS"
+    },
+    {
+      "name": "Executed notional / turnover",
+      "status": "PASS"
+    },
+    {
+      "name": "Explicit costs",
+      "status": "PASS"
+    },
+    {
+      "name": "Wins / losses / flat",
+      "status": "PASS"
+    },
+    {
+      "name": "Win rate (completed nonflat)",
+      "status": "PASS"
+    },
+    {
+      "name": "weekly results",
+      "status": "PASS"
+    },
+    {
+      "name": "stored segment setup",
+      "status": "PASS"
+    },
+    {
+      "name": "stored segment asset",
+      "status": "PASS"
+    },
+    {
+      "name": "stored segment regime",
+      "status": "PASS"
+    },
+    {
+      "name": "stored segment model",
+      "status": "PASS"
+    },
+    {
+      "name": "stored segment direction",
+      "status": "PASS"
+    },
+    {
+      "name": "segment N changes truthfully",
+      "status": "PASS"
+    },
+    {
+      "name": "evidence classification / cutoff / sample sizes",
+      "status": "PASS"
+    },
+    {
+      "name": "manual unlinked activity separated",
+      "status": "PASS"
+    },
+    {
+      "name": "open trade excluded from completed wins/losses",
+      "status": "PASS"
+    },
+    {
+      "name": "original decision and PIT evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "preserved provider/freshness/model/prompt/action/outcome",
+      "status": "PASS"
+    },
+    {
+      "name": "lifecycle drilldown",
+      "status": "PASS"
+    },
+    {
+      "name": "finalize immutable run",
+      "status": "PASS"
+    },
+    {
+      "name": "rerun metrics and sources match",
+      "status": "PASS"
+    },
+    {
+      "name": "unchanged fills/model calls; zero Paper/Live submit requests",
+      "status": "PASS"
+    }
+  ],
+  "before": {
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "fills": 8,
+    "live_submissions": 0,
+    "model_calls": 8,
+    "paper_submission_requests": 0
+  },
+  "after": {
+    "evidence_class": "SOFTWARE_CONTROLLED",
+    "fills": 8,
+    "live_submissions": 0,
+    "model_calls": 8,
+    "paper_submission_requests": 0
+  },
+  "metrics": {
+    "action_counts": {
+      "ENTER": 4,
+      "EXIT": 3,
+      "NO_ACTION": 1
+    },
+    "average_gross_notional_to_equity": null,
+    "average_loss_minor": "-1200",
+    "average_win_minor": "1200",
+    "commission_minor": 0,
+    "completed_trades": 3,
+    "cost_drag_minor": 0,
+    "costs_minor": 0,
+    "current_losing_streak": 0,
+    "decisions": 8,
+    "executed_notional_minor": 630000,
+    "expectancy_minor": "0",
+    "exposure_seconds": "242.999994",
+    "fees_minor": 0,
+    "flat": 1,
+    "gross_pnl_minor": 0,
+    "longest_losing_streak": 1,
+    "losses": 1,
+    "median_loss_minor": "-1200",
+    "median_win_minor": "1200",
+    "net_pnl_minor": 0,
+    "open_censored": 1,
+    "payoff_ratio": "1",
+    "peak_gross_notional_to_equity": null,
+    "profit_factor": "1",
+    "profit_factor_status": "DEFINED",
+    "quality_counts": {
+      "COMPLETE": 8
+    },
+    "signal_directional_return_mean": null,
+    "signal_market_return_mean": null,
+    "signal_outcomes": 0,
+    "slippage": "NOT_SEPARATELY_MODELED",
+    "time_in_market_fraction": "0.5664335524475524475524475524",
+    "turnover": "0.063",
+    "turnover_reference_equity_minor": 10000000,
+    "unavailable": 4,
+    "win_rate": "0.5",
+    "wins": 1
+  },
+  "admission": {
+    "admitted": 8,
+    "excluded": 1,
+    "reasons": {
+      "MANUAL_UNLINKED_NOT_AI": 1
+    },
+    "total_considered": 9
+  },
+  "console_errors": [],
+  "production_bundle": true,
+  "requested_scenarios": 40,
+  "scenario_coverage": "40 requested scenarios exercised in grouped steps; all metric components, provenance fields and side effects have assertions",
+  "screenshots": [
+    "artifacts/oct1-11-desktop.png",
+    "artifacts/oct1-11-mobile.png"
+  ]
+}

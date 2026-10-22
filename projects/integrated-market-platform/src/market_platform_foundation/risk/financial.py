@@ -170,6 +170,7 @@ def order_intent_financial_check(
     currency: str = "USD",
     account_currency: str = "USD",
     currency_cash_minor: Mapping[str, int] | None = None,
+    instrument_id: str | None = None,
 ) -> tuple[str | None, dict[str, Any]]:
     """Fail-closed financial availability gate for one order intent.
 
@@ -221,8 +222,14 @@ def order_intent_financial_check(
         return None, facts
 
     if side == "SELL":
-        position_shares = int(ledger._project_ledger().get("position_shares", 0))
-        reserved_sell = _reserved_sell_quantity(ledger)
+        if ledger.is_portfolio_scoped():
+            # Unknown instrument owns nothing: fail closed, never pooled.
+            order_instrument_id = str(instrument_id or "")
+            position_shares = ledger.position_shares_for(order_instrument_id)
+            reserved_sell = reserved_sell_quantity_for(ledger, order_instrument_id)
+        else:
+            position_shares = int(ledger._project_ledger().get("position_shares", 0))
+            reserved_sell = _reserved_sell_quantity(ledger)
         owned = max(0, position_shares)
         available_to_sell = max(0, owned - reserved_sell)
         facts["owned_quantity"] = owned
@@ -251,6 +258,21 @@ def _order_working_remaining(order: Mapping[str, Any]) -> int:
     if legacy is not None:
         return max(0, int(legacy))
     return max(0, int(order.get("desired_quantity", 0)))
+
+
+def reserved_sell_quantity_for(ledger: Any, instrument_id: str) -> int:
+    """Quantity of one instrument already reserved by its open sell orders."""
+    total = 0
+    for order in ledger.project_orders():
+        state = str(order.get("state", ""))
+        if state not in {"ACTIVATED", "WORKING", "PARTIALLY_FILLED", "REPLACE_PENDING", "REPLACED"}:
+            continue
+        if str(order.get("direction", "")) != "short":
+            continue
+        if str(order.get("instrument_id", "")) != str(instrument_id):
+            continue
+        total += _order_working_remaining(order)
+    return total
 
 
 def _reserved_sell_quantity(ledger: Any) -> int:

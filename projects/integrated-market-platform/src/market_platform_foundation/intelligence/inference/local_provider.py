@@ -89,13 +89,18 @@ class LocalModelManifest:
     runtime_version: str
     context: int = 8192
     gpu_layers: int = 99
+    threads: int = 4
+    execution_profile: str = 'cpu-8192/1'
+    batch: int = 128
+    ubatch: int = 64
 
     @classmethod
     def from_dict(cls, payload: dict[str, Any]) -> LocalModelManifest | None:
         try:
             return cls(Path(str(payload["runtime_path"])), Path(str(payload["model_path"])), str(payload["model_id"]),
                        str(payload.get("revision") or ""), str(payload.get("runtime_version") or ""),
-                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)))
+                       int(payload.get("context") or 8192), int(payload.get("gpu_layers", 99)), int(payload.get("threads", 4)),
+                       str(payload.get('execution_profile') or 'cpu-8192/1'), int(payload.get('batch',128)), int(payload.get('ubatch',64)))
         except (KeyError, TypeError, ValueError):
             return None
 
@@ -130,6 +135,11 @@ class LocalLlamaServer:
         self._watcher: threading.Thread | None = None
         self.starts = 0
         self.last_start_ms: float | None = None
+        from .local_models import MODELS
+        self.enforce_admission = manifest.model_id in MODELS
+        self.last_readiness = None
+        self.should_stop = lambda: False
+        self._runtime_lease = None
 
     def _ours(self) -> bool | None:
         """True: our alias answers; False: something else holds the port; None: nothing answers."""
@@ -154,25 +164,48 @@ class LocalLlamaServer:
 
         with self._lock:
             self._last_used = self._clock()
+            if self.should_stop():return 'STOPPED_BY_OPERATOR'
+            if self.enforce_admission:
+                from .local_runtime import readiness
+                self.last_readiness=readiness(self.manifest,process=self._process)
+                if self.last_readiness['rejection_reason']:return self.last_readiness['rejection_reason']
             if self.running() and self._ours():
                 return None
+            if self._process is not None:
+                self._stop_locked()  # never overwrite an unreaped owned instance
             missing = self.manifest.missing()
             if missing:
                 return missing
             owner = self._ours()
             if owner is True:
+                if self.enforce_admission:return 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME'
                 return None  # started by an earlier IMP process; reuse it
             if owner is False:
                 return "LOCAL_MODEL_PORT_IN_USE"
             started = self._clock()
             args = [str(self.manifest.runtime_path), "-m", str(self.manifest.model_path), "--alias", SERVER_ALIAS,
                     "--host", "127.0.0.1", "--port", str(self._port), "-c", str(self.manifest.context),
-                    "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui"]
+                    "-ngl", str(self.manifest.gpu_layers), "-np", "1", "--jinja", "--reasoning", "off", "--no-webui", "-t", str(self.manifest.threads)]
+            if self.enforce_admission:
+                args += ['--device','none','--no-kv-offload','--no-op-offload','--fit','off',
+                         '--batch-size',str(self.manifest.batch),'--ubatch-size',str(self.manifest.ubatch),
+                         '--cache-type-k','f16','--cache-type-v','f16','--load-mode','mmap','--threads-batch',str(self.manifest.threads)]
+                lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
+                try:
+                    with lease.open('x',encoding='utf-8') as stream:
+                        stream.write(json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile}))
+                except FileExistsError:
+                    return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
+                except OSError:
+                    return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
+                self._runtime_lease=lease
             log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
             try:
                 self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
-                                            creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0)
+                                            creationflags=_CREATE_NO_WINDOW if os.name == "nt" else 0,
+                                            env={k:v for k,v in os.environ.items() if not k.startswith(('LLAMA_ARG_','GGML_'))})
             except OSError:
+                self._stop_locked()
                 return "LOCAL_RUNTIME_START_FAILED"
             finally:
                 if log is not subprocess.DEVNULL:
@@ -180,7 +213,11 @@ class LocalLlamaServer:
             self.starts += 1
             deadline = started + self._startup_timeout_s
             while self._clock() < deadline:
+                if self.should_stop():
+                    self._stop_locked()
+                    return 'STOPPED_BY_OPERATOR'
                 if self._process.poll() is not None:
+                    self._stop_locked()
                     return "LOCAL_RUNTIME_EXITED"
                 try:
                     status, _ = self._get(f"{self.base_url}/health", 2.0)
@@ -214,13 +251,18 @@ class LocalLlamaServer:
                     return
 
     def _stop_locked(self) -> None:
-        process, self._process = self._process, None
+        process = self._process
         if process is not None and process.poll() is None:
             process.terminate()
             try:
                 process.wait(timeout=10)
             except subprocess.TimeoutExpired:
                 process.kill()
+                process.wait(timeout=10)
+        self._process = None  # ownership ends only after confirmed exit
+        if self._runtime_lease is not None:
+            self._runtime_lease.unlink(missing_ok=True)
+            self._runtime_lease=None
 
     def stop(self) -> None:
         with self._lock:
@@ -241,62 +283,139 @@ class LocalChatInferenceProvider:
         self._request_model = request_model or model_id
         self._post = poster
 
-    def _error(self, code: InferenceErrorCode, message: str, status: ParsingStatus, started: float) -> ProviderInferenceResponse:
+    def _error(self, code: InferenceErrorCode, message: str, status: ParsingStatus, started: float, *, dispatched: bool = False) -> ProviderInferenceResponse:
         return ProviderInferenceResponse(raw_text="", provider_id=self.provider_id, model_id=self.model_id, error_code=code,
-                                         error_message=message, parsing_status=status,
+                                         error_message=message, parsing_status=status, inference_dispatched=dispatched,
                                          latency_ms=int((time.perf_counter() - started) * 1000))
 
     def infer(self, packet: IntelligenceInputPacket, *, rendered_prompt: str,
               config: IntelligenceInferenceConfig) -> ProviderInferenceResponse:
+        from .local_resources import ADMISSION, SLOT, ResourceMonitor
+        started = time.perf_counter()
+        if not ADMISSION.acquire(blocking=False):
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_INFERENCE_QUEUE_FULL', ParsingStatus.PROVIDER_ERROR, started)
+        if not SLOT.acquire(timeout=config.timeout_seconds):
+            ADMISSION.release()
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_INFERENCE_BUSY", ParsingStatus.PROVIDER_ERROR, started)
+        qualification = packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION
+        stop = getattr(packet, 'should_stop', lambda: False)
+        managed = isinstance(self._server,LocalLlamaServer) and self._server.enforce_admission
+        monitor = ResourceMonitor(self._server, stop, time.monotonic()+STARTUP_TIMEOUT_S+config.timeout_seconds) if (qualification or managed) and self._server is not None else None
+        self.last_resource_sample = {}
+        self.last_context_sample = None
+        response = None
+        try:
+            if isinstance(self._server, LocalLlamaServer):
+                # SLOT is held: no other inference can still be using an owned prior model.
+                _stop_other_managed_servers(self._server)
+            if qualification and getattr(packet, 'should_stop', lambda: False)():
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
+            if (qualification or managed) and isinstance(self._server, LocalLlamaServer):
+                self._server.enforce_admission=True
+                self._server.should_stop=stop
+                from .local_runtime import readiness
+                self._server.last_readiness=readiness(self._server.manifest,process=self._server._process)
+                if self._server.last_readiness['rejection_reason']:
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,self._server.last_readiness['rejection_reason'],ParsingStatus.PROVIDER_ERROR,started)
+            if monitor and monitor.check():
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
+            response=self._infer_locked(packet, rendered_prompt=rendered_prompt, config=config, monitor=monitor)
+            if monitor:
+                monitor.close()
+                if monitor.failure:
+                    response=self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,monitor.failure,ParsingStatus.PROVIDER_ERROR,started,
+                                         dispatched=bool(response.inference_dispatched))
+            return response
+        finally:
+            try:
+                if monitor:
+                    monitor.close()
+                    self.last_resource_sample = {"peak_process_bytes": monitor.peak_bytes or None,
+                        'peak_commit_bytes':monitor.peak_commit_bytes or None,"failure": monitor.failure,
+                        'samples':monitor.samples,'final_sample':monitor.last_sample,'readiness':getattr(self._server,'last_readiness',None),
+                        'startup_ms':getattr(self._server,'last_start_ms',None)}
+                    if response is None or response.error_code or monitor.failure or stop():
+                        self._server.stop()
+            finally:
+                if isinstance(self._server,LocalLlamaServer):self._server.should_stop=lambda:False
+                SLOT.release()
+                ADMISSION.release()
+
+    def _infer_locked(self, packet, *, rendered_prompt, config, monitor=None):
         started = time.perf_counter()
         if not is_loopback_url(self.base_url):
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, "LOCAL_ENDPOINT_NOT_LOOPBACK",
                                ParsingStatus.PROVIDER_ERROR, started)
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION:
+            if self._server is None or (not self._server.running() and self._server._ours() is True):
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'LOCAL_QUALIFICATION_REQUIRES_OWNED_PINNED_RUNTIME', ParsingStatus.PROVIDER_ERROR, started)
+        if monitor: monitor.start()
         if self._server is not None:
             reason = self._server.ensure_running()
             if reason is not None:
                 return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, reason, ParsingStatus.PROVIDER_ERROR, started)
+        if monitor:
+            if monitor.failure:
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started)
         response_format: dict[str, Any] = {"type": "json_object"}
-        if packet.task_type == IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS:
-            from .screener_synthesis import output_json_schema
+        if packet.task_type in (IntelligenceTaskType.NEWS_SCREENER_SYNTHESIS, IntelligenceTaskType.SCREENER_CANDIDATE_REDUCTION, IntelligenceTaskType.SCREENER_ACTION_DECISION, IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION):
+            from .schema_dispatch import schema_for_packet
 
             # Grammar-constrained structure (refs limited to the packet's story ids); content is still validated.
             response_format = {"type": "json_schema", "json_schema": {
                 "name": "screener_synthesis", "strict": True,
-                "schema": output_json_schema([article.event_id for article in packet.articles])}}
+                "schema": schema_for_packet(packet)}}
         body = {"model": self._request_model, "temperature": 0, "max_tokens": config.max_tokens,
                 "response_format": response_format,
                 # Qwen3-family reasoning models: answer directly; servers without the option ignore it.
                 "chat_template_kwargs": {"enable_thinking": False},
                 "messages": [{"role": "system", "content": "Return ONLY valid JSON matching the schema in the user prompt."},
                              {"role": "user", "content": rendered_prompt}]}
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION:
+            try:
+                status, templated = self._post(f"{self.base_url}/apply-template",
+                    json.dumps({"messages":body["messages"],"chat_template_kwargs":body["chat_template_kwargs"]}).encode("utf-8"),config.timeout_seconds)
+                prompt=json.loads(templated)["prompt"] if status==200 else None
+                if not isinstance(prompt,str): raise ValueError("LOCAL_TEMPLATE_UNAVAILABLE")
+                status, tokenized=self._post(f"{self.base_url}/tokenize",json.dumps({"content":prompt,"add_special":True}).encode("utf-8"),config.timeout_seconds)
+                tokens=json.loads(tokenized)["tokens"] if status==200 else None
+                if not isinstance(tokens,list):raise ValueError("LOCAL_TOKENIZER_UNAVAILABLE")
+                self.last_context_sample={"input_tokens":len(tokens),"output_allowance":config.max_tokens,"context_window":self._server.manifest.context}
+                if len(tokens)+config.max_tokens>self._server.manifest.context:
+                    return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_EXCEEDED",ParsingStatus.PROVIDER_ERROR,started)
+            except (ValueError,KeyError,TypeError,OSError,URLError):
+                return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE,"LOCAL_CONTEXT_PREFLIGHT_FAILED",ParsingStatus.PROVIDER_ERROR,started)
+        if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION and getattr(packet, 'should_stop', lambda: False)():
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, 'STOPPED_BY_OPERATOR', ParsingStatus.PROVIDER_ERROR, started)
         try:
             status, raw = self._post(f"{self.base_url}/v1/chat/completions", json.dumps(body).encode("utf-8"),
                                      config.timeout_seconds)
         except TimeoutError:
-            return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started)
+            return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started, dispatched=True)
         except (URLError, OSError) as exc:
             if "timed out" in str(exc).lower():
-                return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started)
-            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, LOCAL_UNAVAILABLE, ParsingStatus.PROVIDER_ERROR, started)
+                return self._error(InferenceErrorCode.PROVIDER_TIMEOUT, "LOCAL_MODEL_TIMEOUT", ParsingStatus.TIMEOUT, started, dispatched=True)
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, LOCAL_UNAVAILABLE, ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         finally:
             if self._server is not None:
                 self._server.touch()
+        if monitor and monitor.failure:
+            return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, monitor.failure, ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         if status != 200:
             return self._error(InferenceErrorCode.PROVIDER_UNAVAILABLE, f"LOCAL_MODEL_HTTP_{status}",
-                               ParsingStatus.PROVIDER_ERROR, started)
+                               ParsingStatus.PROVIDER_ERROR, started, dispatched=True)
         try:
             payload = json.loads(raw.decode("utf-8"))
             text = str(payload["choices"][0]["message"]["content"] or "")
         except (ValueError, KeyError, IndexError, TypeError, AttributeError):
             return self._error(InferenceErrorCode.PROVIDER_RESPONSE_MALFORMED, "LOCAL_MODEL_RESPONSE_MALFORMED",
-                               ParsingStatus.MALFORMED, started)
+                               ParsingStatus.MALFORMED, started, dispatched=True)
         usage = payload.get("usage") if isinstance(payload.get("usage"), dict) else {}
-        return ProviderInferenceResponse(raw_text=_THINK.sub("", text).strip(), provider_id=self.provider_id,
+        return ProviderInferenceResponse(raw_text=text if packet.task_type == IntelligenceTaskType.SCREENER_LOCAL_QUALIFICATION else _THINK.sub("", text).strip(), provider_id=self.provider_id,
                                          model_id=self.model_id, tokens_input=usage.get("prompt_tokens"),
                                          tokens_output=usage.get("completion_tokens"),
                                          latency_ms=int((time.perf_counter() - started) * 1000),
-                                         provider_response_id=str(payload.get("id") or ""))
+                                         provider_response_id=str(payload.get("id") or ""),inference_dispatched=True)
 
 
 @dataclass(frozen=True, slots=True)
@@ -312,7 +431,8 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
     """Provider priority: the operator's ``engine`` (UI choice), else ``IMP_SYNTHESIS_PROVIDER``
     (local | anthropic | openai | gemini), else Anthropic when its key is configured, else a configured local model.
     A missing paid key never disables local synthesis in automatic mode. ``model`` must be in the engine's catalog
-    (``synthesis_engines``); anything else falls back to the engine's default."""
+    (``synthesis_engines``). A Claude model outside the catalog selects no provider: it is never replaced by the
+    default. For OpenAI and Gemini anything else still falls back to the engine's default."""
 
     from ...local_state.external_cache import read_manifest
     from .synthesis_engines import engine_models
@@ -324,9 +444,12 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
             from .anthropic_synthesis import build_paid_provider
 
             offered = [item[0] for item in engine_models("anthropic", value)]
+            if model and model not in offered:
+                return SynthesisSelection(None, "SYNTHESIS_MODEL_NOT_IN_CATALOG", None)
             # Key from the same source that selected it (env or private provider file), behind the daily budget.
-            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir,
-                                                          model=model if model in offered else None), None, "PAID_API")
+            # With no model chosen, the catalog's first entry: IMP_SYNTHESIS_ANTHROPIC_MODEL when set, else the default.
+            return SynthesisSelection(build_paid_provider(value, cache_dir=cache_dir, model=model or offered[0]),
+                                      None, "PAID_API")
         return SynthesisSelection(anthropic_factory(), None, "PAID_API")
     if choice == "anthropic":
         return SynthesisSelection(None, "ANTHROPIC_API_KEY_NOT_SET", None)
@@ -358,17 +481,32 @@ def select_synthesis_provider(value: Callable[[str], str | None], *, cache_dir: 
     missing = manifest.missing()
     if missing:
         return SynthesisSelection(None, missing, None)
-    server = _managed_server(manifest, cache_dir)
+    try:
+        server = _managed_server(manifest, cache_dir)
+    except ValueError as exc:
+        return SynthesisSelection(None,str(exc),None)
     return SynthesisSelection(LocalChatInferenceProvider(base_url=server.base_url, model_id=manifest.model_id,
                                                          server=server, request_model=SERVER_ALIAS), None, "LOCAL_MODEL")
 
 
-_SERVERS: dict[tuple[str, str], LocalLlamaServer] = {}
+_SERVERS: dict[tuple[LocalModelManifest, str], LocalLlamaServer] = {}
 _SERVERS_LOCK = threading.Lock()
 
 
+def _stop_other_managed_servers(selected):
+    with _SERVERS_LOCK:
+        others = [server for server in _SERVERS.values() if server is not selected and server._port == selected._port]
+    for server in others:
+        # These are owned objects from this API process, never foreign port/PID discovery.
+        server.stop()
+
+
 def _managed_server(manifest: LocalModelManifest, cache_dir: Path) -> LocalLlamaServer:
-    key = (str(manifest.runtime_path), str(manifest.model_path))
+    from .local_models import MODELS
+    from .local_runtime import apply_profile
+    if manifest.model_id in MODELS:
+        manifest=apply_profile(manifest,manifest.execution_profile)
+    key = (manifest, str(cache_dir))
     with _SERVERS_LOCK:
         server = _SERVERS.get(key)
         if server is None:
@@ -379,6 +517,17 @@ def _managed_server(manifest: LocalModelManifest, cache_dir: Path) -> LocalLlama
         return server
 
 
+def registered_local_provider(cache_dir: Path, model_id: str | None = None):
+    from .local_models import DEFAULT_MODEL_ID, model_manifest
+    chosen = model_id or DEFAULT_MODEL_ID
+    manifest = model_manifest(cache_dir, chosen)
+    if manifest is None or manifest.model_id != chosen or manifest.missing():
+        return None
+    server = _managed_server(manifest, cache_dir)
+    return LocalChatInferenceProvider(base_url=server.base_url, model_id=chosen,
+        server=server, request_model=SERVER_ALIAS)
+
+
 __all__ = ["DEFAULT_PORT", "LOCAL_PROVIDER_ID", "LOCAL_UNAVAILABLE", "LocalChatInferenceProvider", "LocalLlamaServer",
            "LocalModelManifest", "MANIFEST_RELATIVE", "SERVER_ALIAS", "SynthesisSelection", "is_loopback_url",
-           "select_synthesis_provider"]
+           "select_synthesis_provider", "registered_local_provider"]

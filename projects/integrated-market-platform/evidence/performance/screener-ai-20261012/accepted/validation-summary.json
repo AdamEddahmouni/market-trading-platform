@@ -1,0 +1,28 @@
+{
+  "changed-final-green": {
+    "status": "passed",
+    "tests_run": 2901,
+    "skips": 9,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 234.6156970000011
+  },
+  "full-accepted": {
+    "status": "passed",
+    "tests_run": 8611,
+    "skips": 59,
+    "failures": 0,
+    "errors": 0,
+    "wall_seconds": 508.25688509998145
+  },
+  "ui": {
+    "test_files": 182,
+    "tests": 1427,
+    "failures": 0,
+    "typecheck": "passed",
+    "build": "passed",
+    "initial_bundle_gzip_kib": 100.77,
+    "final_memo_tests": 2
+  },
+  "review": "independent read-only final review: no blockers"
+}

@@ -1,0 +1,79 @@
+{
+  "inference_budget": {
+    "calls": 25367,
+    "limit_seconds": 7200,
+    "used_seconds": 28.402011099737138
+  },
+  "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "operationally_approved": false,
+  "paid_generations": 0,
+  "pilot_comparison": [
+    {
+      "backend": "VULKAN",
+      "elapsed_seconds": 0.006455700007791165,
+      "gpu_layers": 99,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    },
+    {
+      "backend": "CPU",
+      "elapsed_seconds": 0.003523699997458607,
+      "gpu_layers": 0,
+      "resource_failures": 3,
+      "startup_ms": null,
+      "valid": 0
+    }
+  ],
+  "scales": [
+    {
+      "elapsed_seconds": 0.03830359999847133,
+      "scale": 20,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 20,
+      "completed": 0
+    },
+    {
+      "elapsed_seconds": 0.14387659999920288,
+      "scale": 50,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 50,
+      "completed": 0
+    },
+    {
+      "elapsed_seconds": 0.21464059999561869,
+      "scale": 100,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 100,
+      "completed": 0
+    },
+    {
+      "elapsed_seconds": 1.0296289999969304,
+      "scale": 500,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 500,
+      "completed": 0
+    },
+    {
+      "elapsed_seconds": 12.387530300002254,
+      "scale": 4630,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 4630,
+      "completed": 0
+    },
+    {
+      "elapsed_seconds": 50.23794359999738,
+      "scale": 20000,
+      "state": "RESOURCE_ADMISSION_DENIED",
+      "admission_attempts": 20000,
+      "completed": 0
+    }
+  ],
+  "correction": "Counts were admission attempts, not model generations; all requests failed the 4GiB available-memory gate. No latency/quality inference may be drawn.",
+  "real_generations": 0,
+  "preserved_raw_local_path": ".local/ai-screener-local-first/real-results.jsonl",
+  "preserved_raw_local_sha256": "9940243afe9a96de12fd22eb5a251ecc0188002a21c08bdb409fb38bd5de5bbc",
+  "preserved_pilot_diagnostic": "artifacts/ai-screener-local-first/initial-pilot-comparison.json",
+  "pilot_diagnostic_sha256": "b7e5cfade2eda7bcba74133b0f714689761617bcb353900a6f026eeb83f52461",
+  "pilot_diagnostic_warning": "Historical admission timing only. Its selected_for_measurement field is invalidated: no model inference ran and no backend was selected. The current real-summary receipt supersedes it."
+}

@@ -42,6 +42,25 @@ describe("paperDecisionSourceSnapshot", () => {
     });
   });
 
+  it("keeps action-decision references on a lane handoff (governed EXIT without Opportunity lineage)", () => {
+    const draft = {
+      ...createLanePaperOrderDraft("AAPL", "order-flow", { now: () => 1_700_000_100_000 }),
+      side: "SELL" as const,
+      quantity: 4,
+      sourceContext: {
+        source_time: 1_700_000_100_000_000_000,
+        reasons: [
+          { code: "ACTION_DECISION", label: "AD-1" },
+          { code: "ACTION_SNAPSHOT", label: "AS-1" },
+        ],
+      },
+    };
+    expect(buildPaperDecisionSourceSnapshot(draft)?.reasons).toEqual([
+      { code: "ACTION_DECISION", label: "AD-1" },
+      { code: "ACTION_SNAPSHOT", label: "AS-1" },
+    ]);
+  });
+
   it("builds watched-opportunity snapshot with opportunity correlation identity", () => {
     const draft = createWatchedOpportunityPaperOrderDraft(
       {

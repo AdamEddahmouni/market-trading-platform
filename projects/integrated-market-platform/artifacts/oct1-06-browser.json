@@ -1,0 +1,91 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "scenarios": [
+    {
+      "state": "NO_ACTION",
+      "expected": "NO ACTION",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "CONSIDER_ENTRY",
+      "expected": "CONSIDER ENTRY",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "HOLD",
+      "expected": "HOLD",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "EXIT",
+      "expected": "EXIT",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "STALE",
+      "expected": "REVALIDATION REQUIRED",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "ENTER",
+      "expected": "ENTER",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "ENTER_HANDOFF",
+      "url": "http://127.0.0.1:15106/workspace/AAPL"
+    },
+    {
+      "state": "ENTER_RISK",
+      "expected": "ENTER",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "RISK_BLOCKED",
+      "submit_disabled": true
+    },
+    {
+      "state": "EXIT",
+      "expected": "EXIT",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "EXIT_HANDOFF",
+      "url": "http://127.0.0.1:15106/workspace/AAPL",
+      "held_quantity": 7
+    },
+    {
+      "state": "ENTER",
+      "expected": "ENTER",
+      "zero_implicit_inference": true,
+      "ledger_unchanged": true,
+      "conflict_visible": true
+    },
+    {
+      "state": "EXPIRED_HANDOFF",
+      "blocked": true
+    },
+    {
+      "state": "LATE_SCOPE_RESPONSE",
+      "isolated": true
+    }
+  ],
+  "live_submissions": 0,
+  "paper_submissions": 0
+}

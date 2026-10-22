@@ -1,0 +1,18 @@
+[
+  {
+    "n": 100,
+    "aggregate_and_segment_seconds": 0.008918899984564632,
+    "rerun_seconds": 0.010530799976550043,
+    "rerun": "MATCH",
+    "artifact_bytes": 124973,
+    "summary_bytes": 13266
+  },
+  {
+    "n": 1000,
+    "aggregate_and_segment_seconds": 0.10069509997265413,
+    "rerun_seconds": 0.10689960001036525,
+    "rerun": "MATCH",
+    "artifact_bytes": 1128631,
+    "summary_bytes": 20624
+  }
+]

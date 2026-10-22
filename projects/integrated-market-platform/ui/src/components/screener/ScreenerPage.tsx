@@ -1,3 +1,5 @@
+import { useAvailableFilters, useScreenSnapshot } from "./screenerRenderMemo";
+import { currentFreshness, useDecisionNow } from "./DecisionFreshness";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -7,7 +9,9 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { workspacePathForInstrument } from "../../api/instrumentIdentity";
 import { deleteScreenerScreen, fetchScreener, fetchScreenerConfig, type ScreenerPageParam, persistLastScreenerConfig, persistScreenerPanelLayout, persistScreenerPreviewLayout, releaseScreenerWindow, releaseScreenerWindowOnUnload, saveScreenerScreen, updateScreenerWindow, type PanelId, type PanelLayout, type ScreenerFilter, type ScreenerField, type ScreenerQuote, type ScreenerRow, type ScreenerScreen, type ScreenerUniverse } from "../../api/screener";
+import type { AiScreenerScope } from "../../api/screenerAi";
 import { QuickPreview } from "./QuickPreview";
+import AiStatusStrip from "./ai/AiStatusStrip";
 import { PanelLauncher } from "./panels/PanelLauncher";
 import { Age, marketPrice, reloadableLazy, ScreenerErrorBoundary } from "./panels/shared";
 import { ALWAYS_PANELS, clampDockHeight, DEFAULT_PANEL_LAYOUT, DOCK_HEIGHT_DEFAULT, lastScreenFor, panelLayoutFor } from "./panels/registry";
@@ -183,14 +187,20 @@ const resultSetChanged = (error: unknown) => (error as { code?: string } | null)
 const clock = (value: string, _universe?: ScreenerUniverse) => new Date(value).toLocaleTimeString();
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
-function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
+export function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
   const current = quote?.fields[key];
-  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT") && current.value !== null) return current;
+  if (quoteKeys.has(key) && (current?.state === "LIVE" || current?.state === "DELAYED" || current?.state === "SNAPSHOT" || key === "price" && current?.state === "STALE") && current.value !== null) return current;
   return row.fields[key];
 }
 const FRESHNESS: Record<string, string> = { LIVE: "Live quote", DELAYED: "Delayed quote", SNAPSHOT: "Snapshot quote", STALE: "Stale quote" };
 /** Quote freshness for a row in the visible window; rows outside it have no quote and show no dot. */
-function FreshnessDot({ quote }: { quote?: ScreenerQuote }) {
+function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow }) {
+  const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.find((item) => (item.covered_fields as string[] | undefined)?.includes("price")) ?? row.decision_inputs?.[0];
+  const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
+  if (evidence) {
+    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${currentFreshness(evidence, now).replace(/_/g, " ")}`;
+    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{label}</span>;
+  }
   if (!quote) return null;
   const label = FRESHNESS[quote.state] ?? "Quote unavailable";
   const detail = [label, quote.reason?.replace(/_/g, " ").toLowerCase(), quote.age_ms != null ? `${Math.round(quote.age_ms / 1000)}s old` : null].filter(Boolean).join(" · ");
@@ -253,6 +263,7 @@ export function ScreenerPage() {
   });
   // The selected row survives page boundaries: Preview and panels never depend on page presence.
   const [selectedCache, setSelectedCache] = useState<ScreenerRow | null>(null);
+  const aiNewsSelection = useRef<string | null>(null);
   const selectedRef = useRef<string | null>(null);
   selectedRef.current = selected;
   const [quotes, setQuotes] = useState<Record<string, ScreenerQuote>>({});
@@ -270,8 +281,8 @@ export function ScreenerPage() {
   const config = useQuery({ queryKey: ["main-screener-config"], queryFn: fetchScreenerConfig, staleTime: 60_000 });
   const activeSpec = config.data?.universes?.find((item) => item.id === universe);
   const activeViews = activeSpec?.views ?? views;
-  const availableKeys = activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
-    Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys;
+  const availableKeys = useMemo(() => activeSpec?.default_columns ? allKeys.filter((key) => activeSpec.views.Custom?.includes(key) ||
+    Object.values(activeSpec.views).some((fields) => fields.includes(key))) : allKeys, [activeSpec]);
   // Sort/filter support is server metadata: a live-window column may display but never order the universe.
   const fieldCaps = activeSpec?.fields;
   // The universe's own label/unit for a shared field (Crypto change is a UTC-day change).
@@ -280,8 +291,7 @@ export function ScreenerPage() {
     const own = fieldCaps?.[name];
     return entry && own?.label ? { ...entry, label: own.label, unit: own.unit ?? entry.unit } : entry;
   };
-  const availableFilters = config.data?.catalog.filter((item) => (item.universes ?? ["US_EQUITIES"]).includes(universe))
-    .map((item) => catalogEntry(item.field) ?? item) ?? [];
+  const availableFilters = useAvailableFilters(config.data?.catalog, universe, fieldCaps);
   const isSortable = (key: string) => Boolean(fieldCaps?.[key]?.sortable);
   const effectiveSort = fieldCaps && !isSortable(sort) ? (activeSpec?.default_sort ?? "volume") as SortKey : sort;
   // Equities are one Finviz export; only their bid/ask/spread come from an OpenD market snapshot.
@@ -289,7 +299,9 @@ export function ScreenerPage() {
     (universe !== "US_EQUITIES" || field === "bid" || field === "ask" || field === "spread_pct");
   const snapshotQuery = Boolean(fieldCaps) && (fromMarketSnapshot(effectiveSort) || filters.some((rule) => fromMarketSnapshot(rule.field)));
   // News & Analysis is universe-agnostic; the server lists it for every universe.
-  const supportedPanels = new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news"] : ["news"])), ...ALWAYS_PANELS] as PanelId[]);
+  // Stable identity: this set is passed to panels and gates a query, so rebuilding it
+  // every render defeats every downstream memo comparison.
+  const supportedPanels = useMemo(() => new Set([...(activeSpec?.panels ?? (universe === "US_EQUITIES" ? ["connectivity", "order_flow", "cvd", "level2", "charts", "futures", "options", "short_squeeze", "news", "ai_screener"] : ["news", "ai_screener"])), ...ALWAYS_PANELS] as PanelId[]), [activeSpec?.panels, universe]);
   // News is a view inside the active universe (URL `news=1`), never a universe.
   // S12 intelligence views live inside the active universe (URL `intel=…`), only where the registry lists them.
   const intel = intelView(location.search, activeSpec?.intelligence_views);
@@ -408,6 +420,7 @@ export function ScreenerPage() {
   const openSqueezePanel = useCallback(() => launchPanel("short_squeeze"), [launchPanel]);
   const openRatesPanel = useCallback(() => launchPanel("rates_curve"), [launchPanel]);
   const openNewsPanel = useCallback(() => launchPanel("news"), [launchPanel]);
+  const openAiPanel = useCallback(() => launchPanel("ai_screener"), [launchPanel]);
   const openNewsFor = useCallback((instrumentId: string) => { setSelected(instrumentId); launchPanel("news"); }, [launchPanel]);
   const openParticipantPanel = useCallback((lens: "institutional" | "congress_gov") => launchPanel(lens), [launchPanel]);
   const resetPanels = useCallback(() => {
@@ -630,7 +643,7 @@ export function ScreenerPage() {
     id: definition.key, header: definition.key === "symbol" && referenceOnly ? "Security · CUSIP" : definition.key === "symbol" && universe === "CRYPTO" ? "Pair" : definition.key === "change_pct" && universe === "CRYPTO" ? "UTC day %" : definition.label, size: definition.width,
     cell: ({ row }) => {
       const item = row.original;
-      if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} /><strong>{item.symbol}</strong>
+      if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
           symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
@@ -644,7 +657,7 @@ export function ScreenerPage() {
       const field = fieldFor(item, definition.key, quotes[item.instrument.instrument_id]);
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
-      const detail = field ? [field.source, field.state, field.basis, field.as_of ? `as of ${field.as_of}` : null].filter(Boolean).join(" · ") : "Unavailable";
+      const detail = field ? [field.source, field.state, field.basis, field.provider_as_of || field.as_of ? `observed ${field.provider_as_of ?? field.as_of}` : "observation time unknown", field.received_ns ? `received ${new Date(field.received_ns / 1e6).toISOString()}` : null].filter(Boolean).join(" · ") : "Unavailable";
       return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
         ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
     },
@@ -684,7 +697,8 @@ export function ScreenerPage() {
     if (!query.hasNextPage || query.isFetchingNextPage || query.isFetchNextPageError || query.isRefetching) return;
     if (lastVirtual >= rows.length - PREFETCH_ROWS) void query.fetchNextPage();
   }, [lastVirtual, rows.length, query.hasNextPage, query.isFetchingNextPage, query.isFetchNextPageError, query.isRefetching]);
-  // Loaded rows are not subscribed: only visible rows plus the selection acquire L1.
+  // One bounded owner keeps live quotes for the selection and the visible rows. The AI Screener does not depend on
+  // this window: a run takes its own bounded vendor snapshot of every row it assesses, wherever the row is sorted.
   const visible = useMemo(() => {
     const ids = virtualRows.slice(0, 26).map((item) => rows[item.index]?.instrument.instrument_id).filter((id): id is string => Boolean(id));
     if (selected) ids.unshift(selected);
@@ -743,6 +757,7 @@ export function ScreenerPage() {
   // position) stays selected.
   useEffect(() => {
     if (!selected || !query.isSuccess || query.isFetching || rows.some((row) => row.instrument.instrument_id === selected)) return;
+    if (aiNewsSelection.current === selected) return;
     if (firstPage?.selected_id === selected && firstPage.selected_index != null) return;
     setSelected(null);
   }, [rows, selected, query.isSuccess, query.isFetching, firstPage]);
@@ -770,6 +785,23 @@ export function ScreenerPage() {
     navigate({ pathname: location.pathname, search: location.search }, { replace: true, state: { screenerSelected: row.instrument.instrument_id } });
     navigate(workspacePathForInstrument(row.instrument.instrument_id, row.instrument.asset_class === "FUTURE" ? "futures" : ""));
   }, [navigate, referenceOnly, location.pathname, location.search]);
+  const openAiInstrument = useCallback((instrumentId: string) => {
+    const row = rows.find((item) => item.instrument.instrument_id === instrumentId);
+    if (row) { open(row); return; }
+    if (referenceOnly) { setSelected(instrumentId); setPreviewOpen(true); return; }
+    navigate(workspacePathForInstrument(instrumentId));
+  }, [navigate, open, referenceOnly, rows]);
+  const openAiNews = useCallback((instrumentId: string, identity: Record<string, string>) => {
+    if (identity.instrument_id !== instrumentId || identity.universe !== universe) return;
+    const row = rows.find((item) => item.instrument.instrument_id === instrumentId);
+    if (!row && (!identity.venue_id || !identity.asset_class || !identity.symbol)) return;
+    // Canonical evidence identity can select an outside-page candidate. No market values are invented.
+    setSelectedCache(row ?? { instrument: { instrument_id: instrumentId, venue_id: identity.venue_id, asset_class: identity.asset_class },
+      symbol: identity.symbol, company: identity.company ?? "", sector: null, industry: null, fields: {}, decision_inputs: [] });
+    aiNewsSelection.current = instrumentId;
+    openNewsFor(instrumentId);
+  }, [rows, universe, openNewsFor]);
+  useEffect(() => { aiNewsSelection.current = null; }, [universe, search, sort, descending, filters]);
   const closePreview = useCallback(() => {
     setPreviewOpen(false); persistLayout(false, previewWidth);
     scrollRef.current?.focus();
@@ -864,11 +896,10 @@ export function ScreenerPage() {
     [order[index], order[next]] = [order[next], order[index]];
     setColumnOrder(order); setView("Custom"); urlUpdate({ view: "Custom" });
   };
-  const currentSnapshot = () => ({ filters, view, sort: { field: sort, descending },
-    columns: { visible: availableKeys.filter((key) => columnVisibility[key] !== false), order: columnOrder.filter((key) => availableKeys.includes(key as ColumnKey)),
-      widths: Object.fromEntries(Object.entries(columnSizing).filter(([key]) => availableKeys.includes(key as ColumnKey))),
-      pinned: (columnPinning.left ?? []).filter((key) => availableKeys.includes(key as ColumnKey)) } });
-  const lastSerialized = JSON.stringify(currentSnapshot());
+  const { snapshot: currentSnapshot, serialized: lastSerialized } = useScreenSnapshot({
+    filters, view, sort, descending, keys: availableKeys, visibility: columnVisibility,
+    order: columnOrder, sizing: columnSizing, pinning: columnPinning,
+  });
   useEffect(() => {
     if (!restored || !config.data?.persistence_available) return;
     const timer = window.setTimeout(() => {
@@ -881,7 +912,7 @@ export function ScreenerPage() {
     }, 600);
     return () => window.clearTimeout(timer);
   }, [lastSerialized, restored, config.data?.persistence_available, universe]);
-  const changed = Boolean(selectedScreenId && savedBase && savedBase !== JSON.stringify(currentSnapshot()));
+  const changed = Boolean(selectedScreenId && savedBase && savedBase !== lastSerialized);
   const selectedSaved = config.data?.saved.find((item) => item.id === selectedScreenId);
   const selectedPreset = config.data?.presets.find((item) => item.id === selectedScreenId);
   const selectedName = selectedSaved?.name ?? selectedPreset?.name ?? "Unsaved Screen";
@@ -918,6 +949,10 @@ export function ScreenerPage() {
     return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
   };
   const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
+  const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
+    universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
+    view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
+  }), [universe, search, effectiveSort, descending, filters, firstPage?.result_set_id, view, selectedScreenId, query.isSuccess, query.isFetching, firstPage?.source_error]);
   // Crypto is continuous: "24/7", never an equity session label.
   const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
@@ -935,6 +970,8 @@ export function ScreenerPage() {
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
           placeholder={universe === "FUTURES" ? "Search root, contract or description  /" : universe === "CRYPTO" ? "Search pair, base or quote  /" : referenceOnly ? "Search CUSIP, description, type or maturity  /" : "Search symbol or name  /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
       <ExitPlatformButton className="screener-control" /></header>
+    {supportedPanels.has("ai_screener") && <ScreenerErrorBoundary label="AI status" resetKey={universe}>
+      <AiStatusStrip scope={aiScreenerScope} onOpen={openAiPanel} /></ScreenerErrorBoundary>}
     <div className="screener-toolbar"><label>Universe <select aria-label="Screener universe" value={universe} onChange={(event) => {
       const next = event.target.value as ScreenerUniverse;
       setSelectedScreenId(""); loadedScreen.current = null; setSavedBase("");
@@ -1095,7 +1132,7 @@ export function ScreenerPage() {
         <ScreenerErrorBoundary label="Specialist panels" resetKey={`${universe}|${dockGeneration}`}
           actions={<> <button type="button" onClick={resetDockAfterError}>Reset layout</button></>}>
           <Suspense fallback={<div className="screener-dock-loading" role="status">Loading panels…</div>}>
-            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels}
+            <ScreenerDock key={`${universe}|${dockGeneration}`} layout={panelLayout.current} row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe} supportedPanels={supportedPanels} screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews}
               clientId={clientId.current} pending={pendingPanel} handleRef={dockHandle}
               onOpenChange={(ids) => { onOpenPanels(ids); if (pendingPanel) setPendingPanel(null); }} onLayout={onPanelLayout} />
           </Suspense>

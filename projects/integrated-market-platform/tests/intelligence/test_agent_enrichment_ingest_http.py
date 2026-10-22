@@ -108,10 +108,11 @@ class AgentEnrichmentIngestHttpTests(unittest.TestCase):
     @patch.object(UiApiHandler, "_authorize_request", return_value=True)
     def test_http_post_rejects_oversized_content_length_before_read(self, _auth) -> None:
         over = AGENT_ENRICHMENT_INGEST_MAX_BODY_BYTES + 1
+        # A header-only request proves rejection precedes body reading and avoids an unread-body TCP reset.
         response = self._request(
             "POST",
             "/intelligence/ingest/enrichment",
-            body=b"{}",
+            body=b"",
             content_length=over,
         )
         self.assertEqual(response.status, 413)
@@ -124,7 +125,7 @@ class AgentEnrichmentIngestHttpTests(unittest.TestCase):
         response = self._request(
             "PUT",
             "/intelligence/ingest/enrichment/aer-http-1",
-            body=b"{}",
+            body=b"",
             content_length=over,
         )
         self.assertEqual(response.status, 413)

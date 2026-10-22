@@ -33,6 +33,11 @@ const mocks = vi.hoisted(() => ({
   submitPaperOrder: vi.fn(),
 }));
 
+// OCT1-08: the stop panel reads on open; these suites are not about it, so its reads never settle here.
+vi.mock("../../api/paperRiskControl", () => {
+  const pending = () => new Promise(() => {});
+  return { smaStopStatus: pending, smaStopConfig: pending, configureSmaStop: pending, evaluateSmaStop: pending, smaStopHistory: pending, smaStopEvaluation: pending };
+});
 vi.mock("../../api/hooks", () => ({
   usePreviewPaperOrderMutation: () => ({ mutateAsync: mocks.previewPaperOrder, isPending: false }),
   useSubmitPaperOrderMutation: () => ({ mutateAsync: mocks.submitPaperOrder, isPending: false }),

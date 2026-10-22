@@ -1,0 +1,66 @@
+[
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/validation-changed-socket-abort.json.gz",
+    "uncompressed_sha256": "d71e7bdb2077012b451dcf73bf979d8bc260358186c7c63cf03a7b2586c84c5b",
+    "compressed_sha256": "e3ea391747de3824ed8d657928bc9718079b6e1896bfd0f60547d7dcae9e3f8b"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/validation-changed-worktree-temp.json.gz",
+    "uncompressed_sha256": "60f4ff1e36b350f38f1953c5a88271fb78818c3f6f87831025b928384a08e616",
+    "compressed_sha256": "eb8551b59e66dedb4a86e0cd0b8c6ee52554504640e26b8c46d6cf8b8d563663"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/validation-changed.json.gz",
+    "uncompressed_sha256": "e1e2e9d97ff8268d7a2760556c715e60d44300aee7566dc2cc840d58eb969e85",
+    "compressed_sha256": "2077be0e4a5dad01618866a885f2405576b3265ea59f3a77e849034a3367200c"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/validation-full.json.gz",
+    "uncompressed_sha256": "0ba7e814a853fadcaa0fe81b528d896e547e5b7dcd5f85deab09cf214ab8e7b3",
+    "compressed_sha256": "0e137040c08d99297588cc576e72f19ff51880ef88e7cba733302751976170b1"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-backend.log.gz",
+    "uncompressed_sha256": "03385674592f196450d1c1e221c2612b25995146fc3bc89d1f39c25da24ad9ed"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-ui-green.log.gz",
+    "uncompressed_sha256": "fe1bc92998a346b7ab8f803b96c6042e3ac246d8347c18eb8c79ae77ea594ac1"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-ui-all.log.gz",
+    "uncompressed_sha256": "3328fd59a2ed8021721ef6f6f853d941742dcedd3c71db33e134ccbedad85081"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-ui-typecheck.log.gz",
+    "uncompressed_sha256": "7123c3dc16a32d5f0351eaa185ee2204fb69e06606a4e606c37d10936e36df81"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-ui-build.log.gz",
+    "uncompressed_sha256": "0c554d80b1c013f774e084d8e192d4914db3ce7f259b968c2364380a6c7a2313"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-lint-final.log.gz",
+    "uncompressed_sha256": "7123c3dc16a32d5f0351eaa185ee2204fb69e06606a4e606c37d10936e36df81"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-changed-sandbox-failed.log.gz",
+    "uncompressed_sha256": "2f6c949daf18fec27859f9b139845ced722b88fa83cb8e2c386d39c497544445"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-temp-regressions.log.gz",
+    "uncompressed_sha256": "99ffb299a43acc049afbae0277a97f008a9283448dde31232dc11e9604fe37ac"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-fullstack-focused.log.gz",
+    "uncompressed_sha256": "a6c1360de986ac8104e3f1d4d09076b58fd957c5f517787aa4eae0e9d054bb2b"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-changed-retry.log.gz",
+    "uncompressed_sha256": "4cf60119dc65870391d081d89567335438d0249a2e22f6855b275147abf95b7a"
+  },
+  {
+    "path": "artifacts/ai-screener-laptop-local-models/laptop-closure.log.gz",
+    "uncompressed_sha256": "dbc5220279be64d632d97bdc8ee34e2e6486fad446f3477f6d3b6bbb9713223c"
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "notes": [
+    "Cycle timings use controlled in-memory fixtures; the with-stop mean includes the first-evaluation cost and the fixture bar builder.",
+    "Replay timing excludes interpreter start; the CLI runs the evaluation twice to prove reproducibility."
+  ],
+  "persistence": {
+    "durability": "SQLITE_LOCAL_STATE",
+    "state_read": {
+      "mean_ms": 0.0113,
+      "p95_ms": 0.0139,
+      "samples": 200
+    },
+    "state_write": {
+      "mean_ms": 0.0444,
+      "p95_ms": 0.0795,
+      "samples": 200
+    }
+  },
+  "reevaluation_cycle": {
+    "added_mean_ms": 6.2428,
+    "extra_model_calls": 0,
+    "with_stop": {
+      "mean_ms": 6.9784,
+      "p95_ms": 3.3344,
+      "samples": 40
+    },
+    "without_stop": {
+      "mean_ms": 0.7356,
+      "p95_ms": 1.7904,
+      "samples": 40
+    }
+  },
+  "replay": {
+    "bars": 1950,
+    "episodes": 120,
+    "episodes_per_second": 1087.8,
+    "result_hash": "2b77ff44aafb503c94b7a359e31c32adb2fe0802a09438b483b4244eb63d24e0",
+    "seconds": 0.11
+  },
+  "schema_version": "oct1-08-performance/1.0.0",
+  "scope": "local timing only",
+  "stop_calculation": {
+    "bars_processed": 390,
+    "mean_ms": 0.0111,
+    "p95_ms": 0.0141,
+    "samples": 390,
+    "sma_window_bars": 20
+  },
+  "ui_bundle": {
+    "budget_gzip_kib": 130,
+    "initial_gzip_kib": 99.73,
+    "paper_workspace_chunk_gzip_kb": 18.91,
+    "previous_initial_gzip_kib": 99.71
+  }
+}

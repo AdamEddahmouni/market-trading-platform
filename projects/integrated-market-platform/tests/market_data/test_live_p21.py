@@ -308,6 +308,73 @@ class SnapshotQuotePollTests(unittest.TestCase):
         quote = state.quote_for("NVDA")
         self.assertEqual((quote.last_price, quote.bid_price, quote.ask_price), (230.4, None, None))
 
+    def _l1_store(self):
+        from market_platform_foundation.market_data.observational_state import ObservationalStateStore
+
+        state = ObservationalStateStore()
+
+        def l1(payload: dict, received_ns: int, *, event_ns: int | None = None) -> None:
+            # The push feed stamps event == received when the payload has no clock it can parse.
+            state.apply_admitted({
+                "admission": {"display": "DISPLAY_ADMITTED"},
+                "envelope": {"instrument_id": "NVDA", "event_time": event_ns or received_ns, "available_time": received_ns},
+                "record": {"capability": "US_EQUITY_L1", "raw_payload": payload,
+                           "clocks": {"received_time_ns": received_ns}},
+            })
+
+        return state, l1
+
+    def test_quote_push_dates_its_regular_session_last_price_from_data_time(self) -> None:
+        from market_platform_foundation.market_data.provider_time import parse_provider_datetime_ns
+
+        state, l1 = self._l1_store()
+        polled = parse_provider_datetime_ns("2026-10-06 14:12:29.000")
+        traded = parse_provider_datetime_ns("2026-10-06 14:12:30.250")
+        received = traded + 300_000_000
+        book = {"bid_price": 240.22, "ask_price": 240.24, "bid_vol": 100.0, "ask_vol": 200.0}
+        l1({"last_price": 240.20, "overnight_price": 0.0, "update_time": "2026-10-06 14:12:29.000", **book},
+           polled + 200_000_000, event_ns=polled)
+        # Live OpenD, regular session (2026-10-06 14:12 ET): the QUOTE push for an actively traded
+        # symbol has data_date/data_time and no update_time. It used to leave the quote with no
+        # provider clock, so NVDA, INTC and MRVL were BLOCKED: NO_OBSERVATION_TIME between polls.
+        l1({"last_price": 240.23, "overnight_price": 0.0, "data_date": "2026-10-06", "data_time": "14:12:30.250"}, received)
+        quote = state.quote_for("NVDA")
+        self.assertEqual(quote.last_price, 240.23)
+        self.assertEqual(quote.event_time_ns, traded)
+        self.assertEqual(quote.received_ns, received)
+        # The carried book keeps its own receipt clock; it does not borrow the push's trade time.
+        self.assertEqual(quote.book_received_ns, polled + 200_000_000)
+        # Second resolution is still a provider clock.
+        l1({"last_price": 240.25, "data_date": "2026-10-06", "data_time": "14:12:31"}, received + 1_000_000_000)
+        self.assertEqual(state.quote_for("NVDA").event_time_ns, parse_provider_datetime_ns("2026-10-06 14:12:31"))
+
+    def test_quote_push_never_dates_an_extended_hours_price_or_a_clock_it_cannot_trust(self) -> None:
+        from market_platform_foundation.market_data.provider_time import parse_provider_datetime_ns
+
+        state, l1 = self._l1_store()
+        received = parse_provider_datetime_ns("2026-10-07 08:51:38.000")
+        undated = lambda: state.quote_for("NVDA").event_time_ns == state.quote_for("NVDA").received_ns
+        # Live OpenD, 08:51 ET pre-market: data_time is still yesterday's close. The price shown is the
+        # after-hours print, which that clock does not describe.
+        l1({"last_price": 239.24, "pre_price": 237.17, "after_price": 239.86, "overnight_price": 239.84,
+            "data_date": "2026-10-06", "data_time": "16:00:00"}, received)
+        self.assertEqual(state.quote_for("NVDA").last_price, 239.86)
+        self.assertTrue(undated())
+        # A clock ahead of receipt, a bare time with no date, and an unreadable time stay undated.
+        for clock in ({"data_date": "2026-10-07", "data_time": "08:51:39.500"}, {"data_time": "08:51:37"},
+                      {"data_date": "2026-10-07", "data_time": "N/A"}):
+            with self.subTest(clock=clock):
+                l1({"last_price": 239.24, **clock}, received)
+                self.assertTrue(undated())
+        # Yesterday's regular-session print is dated as yesterday's, so it reads stale, not live.
+        l1({"last_price": 0.1116, "pre_price": 0.2527, "data_date": "2026-10-06", "data_time": "14:47:40.142"}, received)
+        self.assertEqual(state.quote_for("NVDA").event_time_ns, parse_provider_datetime_ns("2026-10-06 14:47:40.142"))
+        # A snapshot's own update_time is never replaced.
+        polled = parse_provider_datetime_ns("2026-10-07 08:51:37.500")
+        l1({"last_price": 239.24, "pre_price": 237.17, "update_time": "2026-10-07 08:51:37.500",
+            "data_date": "2026-10-06", "data_time": "16:00:00"}, received, event_ns=polled)
+        self.assertEqual(state.quote_for("NVDA").event_time_ns, polled)
+
     def test_overnight_snapshot_drops_the_frozen_after_hours_book(self) -> None:
         from market_platform_foundation.market_data.observational_state import _overnight_snapshot
 

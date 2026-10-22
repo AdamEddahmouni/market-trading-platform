@@ -1,16 +1,13 @@
-import { lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchCvd, type CvdPayload } from "../../../api/screenerPanels";
 import { Age, EntitlementNote, ErrorDetail, etClock, marketClock, marketVolume, PanelFrame, PanelMessage, providerLabel, reasonText, selectionGate, signedMarketVolume, usePanelVisible, useSelection } from "./shared";
 import { OpenDConnect } from "../setup/Remedy";
 import type { ScreenerUniverse } from "../../../api/screener";
+import FlowHistory from "./FlowHistory";
 
-const CvdChart = lazy(() => import("./CvdChart"));
 const BLOCKED = new Set(["UNAVAILABLE", "NOT_ENTITLED", "DISCONNECTED", "CONNECTING", "SUBSCRIPTION_BUSY"]);
 const LOW_COVERAGE = 70;
-/** Module-level so the chart is not rebuilt each render: fractional base units keep significant digits. */
-const cryptoAxis = (value: number) => signedMarketVolume(value, "CRYPTO");
 
 /** The CVD anchor is stated exactly; it is never called a session CVD. */
 export function anchorLabel(window: CvdPayload["window"], clock: (iso: string | null | undefined) => string = etClock) {
@@ -20,7 +17,7 @@ export function anchorLabel(window: CvdPayload["window"], clock: (iso: string | 
 
 type BodyProps = { data: CvdPayload; clock: (iso: string | null | undefined) => string; unit: string; zone: string; universe: ScreenerUniverse };
 
-function Body({ data, clock, unit, zone, universe }: BodyProps) {
+function Body({ data, clock, unit, universe }: BodyProps) {
   const signed = (value: number) => signedMarketVolume(value, universe);
   const summary = data.summary!;
   const coverage = summary.classified_volume_pct;
@@ -35,7 +32,6 @@ function Body({ data, clock, unit, zone, universe }: BodyProps) {
         <strong className={coverage != null && coverage < LOW_COVERAGE ? "screener-warn" : undefined}>{coverage == null ? "—" : `${coverage.toFixed(0)}%`}</strong></div>
     </div>
     {coverage != null && coverage < LOW_COVERAGE && <PanelMessage tone="warn">{(100 - coverage).toFixed(0)}% of volume ({marketVolume(summary.unknown_volume, universe)}) has no side and is excluded; CVD is partial.</PanelMessage>}
-    <Suspense fallback={<div className="screener-cvd-chart" />}><CvdChart points={data.points} label={text} timeZone={zone} formatValue={universe === "CRYPTO" ? cryptoAxis : undefined} /></Suspense>
     <p className="sr-only">{text}</p>
     <p className="screener-panel-note">Derived estimate: sides are {summary.aggressor_states.NATIVE && !summary.aggressor_states.INFERRED ? "the venue-reported taker side" : summary.aggressor_states.NATIVE ? "partly exchange-native, partly inferred" : "inferred"} ({summary.methods.join(", ").replace(/_/g, " ").toLowerCase() || "none"}). A rising CVD is not a forecast.</p>
   </>;
@@ -56,7 +52,7 @@ export default function CvdPanel({ api }: IDockviewPanelProps) {
   const market = marketClock(universe);
   const unit = universe === "CRYPTO" ? row?.base_asset ?? "base units" : "shares";
   const clock = data?.latest_received_at ? <>latest trade {market.clock(data.latest_event_at)} · rcvd <Age iso={data.latest_received_at} staleMs={10_000} /> ago</> : null;
-  return <PanelFrame id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="cvd" state={data?.state} detail={data ? `Derived · ${providerLabel(data.provider)}` : "Derived"} clock={clock}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">CVD request failed.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol}…</PanelMessage>
       : BLOCKED.has(data.state) ? <PanelMessage tone={data.state === "CONNECTING" ? "muted" : "warn"}>{reasonText(data.reason) || data.state}<OpenDConnect reason={data.reason} /></PanelMessage>
@@ -64,6 +60,7 @@ export default function CvdPanel({ api }: IDockviewPanelProps) {
         {data.state !== "CURRENT" && <PanelMessage tone="warn">{data.state === "SESSION_CLOSED" ? "Session closed · last captured window" : reasonText(data.reason)}</PanelMessage>}
         {data.summary && data.summary.trade_count > 0 ? <Body data={data} clock={market.clock} unit={unit} zone={market.zone} universe={universe} />
           : <PanelMessage>{data.state === "SESSION_CLOSED" ? "No trades captured this session; no CVD to show." : "Subscribed; no trades printed yet."}</PanelMessage>}
+        <FlowHistory key={`${universe}:${settledId}`} instrument={settledId!} universe={universe} visible={visible} mode="cvd" />
         <EntitlementNote entitlement={data.entitlement} />
       </>)}
   </PanelFrame>;

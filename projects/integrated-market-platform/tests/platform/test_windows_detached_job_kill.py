@@ -95,11 +95,24 @@ class PROCESS_INFORMATION(ctypes.Structure):
 
 
 def _alive(kernel32, pid: int) -> bool:
+    kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    kernel32.OpenProcess.restype = wintypes.HANDLE
+    kernel32.GetExitCodeProcess.argtypes = [wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD)]
+    kernel32.GetExitCodeProcess.restype = wintypes.BOOL
+    kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+    kernel32.CloseHandle.restype = wintypes.BOOL
     handle = kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     if not handle:
         return False
-    kernel32.CloseHandle(handle)
-    return True
+    try:
+        exit_code = wintypes.DWORD()
+        if not kernel32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+            raise OSError(ctypes.get_last_error())
+        # An exited process can still be opened while another handle retains its
+        # kernel object. Opening it does not prove it survived job cleanup.
+        return exit_code.value == 259  # STILL_ACTIVE
+    finally:
+        kernel32.CloseHandle(handle)
 
 
 def _job_close_kills_child(*, breakaway: bool) -> bool:

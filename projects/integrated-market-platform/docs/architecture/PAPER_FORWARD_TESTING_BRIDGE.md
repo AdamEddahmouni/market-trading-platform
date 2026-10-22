@@ -8,6 +8,14 @@ Connect governed research/strategy decisions to **prospective Paper evaluation**
 
 This is **not** backtesting, **not** Live trading, and **not** autonomous execution.
 
+**OCT1-07 reuse.** Screener next-session snapshots reuse this bridge's
+`ForwardTestState` names and transition table, the `temporal.py` anti-look-ahead
+guards, and the signal/execution outcome split (`SIGNAL_ONLY` ⇒ execution
+`NOT_APPLICABLE`). They do **not** use `ForwardTestService`, sessions, campaign
+binding, activation manifests, cohorts or sample floors, and they are stored in
+their own local-state tables, so no campaign record or FTEP methodology is
+affected. See [SCREENER_REEVALUATION.md](SCREENER_REEVALUATION.md).
+
 ```text
 research/strategy decision
   → time-locked forward-test decision (DRAFT → LOCKED)

@@ -1,3 +1,4 @@
+import { DecisionFreshness } from "../DecisionFreshness";
 import { memo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { ScreenerFilter, ScreenerRow } from "../../../api/screener";
@@ -87,7 +88,7 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
           <div><dt>Maturity</dt><dd>{isoDate(row.maturity)}</dd></div>
           <div><dt>Years</dt><dd>{bondValue(row.fields.years_to_maturity?.value ?? null, "years")}</dd></div>
           {observed?.value != null
-            ? <div><dt>Obs. price</dt><dd title={`${observed.basis ?? ""} · dated observation, not a quote`}>{observed.value.toFixed(3)} <small>{isoDate(observed.as_of ?? null)}</small></dd></div>
+            ? <div><dt>Obs. price</dt><dd title={`${observed.basis ?? ""} · dated observation, not a quote`}>{observed.value.toFixed(3)} <small>Observed {isoDate(observed.as_of ?? null)}</small></dd></div>
             : !treasury && fundValue?.value != null
               ? <div><dt>Fund value</dt><dd title="Median fund fair value per 100 of par at the funds' report dates: stale, never a price">{fundValue.value.toFixed(2)} <small>stale · {isoDate(fundValue.as_of ?? null)}</small></dd></div>
               : <div><dt>Price</dt><dd title="No permitted security-level price source is integrated">—</dd></div>}
@@ -96,6 +97,7 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
       {preview.isError && !data ? <p className="screener-preview-note" role="alert">Preview unavailable for {row.cusip}. <button type="button" onClick={() => void preview.refetch()}>Retry</button></p> :
         !data ? <p className="screener-preview-note" aria-live="polite">Loading {row.cusip}…</p> :
         <div className="bond-preview-body" tabIndex={0} aria-label={`${row.company} details`}>
+          <DecisionFreshness inputs={data.decision_inputs} />
           {matched && matched.state !== "NO_ACTIVE_FILTERS" && <section className="bond-preview-section" aria-label="Why it matched">
             <h3>Why it matched{screenLabel ? <span className="screener-muted"> · {screenLabel}</span> : null}</h3>
             <ul className="screener-why-list">{matched.items.map((item) => <li key={item.filter_id} className={item.passed ? "pass" : "fail"}>

@@ -1,0 +1,382 @@
+{
+  "adverse_scenarios": [
+    "similar_competitors",
+    "weak_positive_news",
+    "strong_little_news",
+    "incomplete_flow",
+    "unusual_risk",
+    "stale_evidence",
+    "tail_strong",
+    "below_cutoff",
+    "provider_disagreement",
+    "rapid_price",
+    "no_direction",
+    "sentiment_technical_conflict",
+    "categorical_uncertainty"
+  ],
+  "economic_verdict": "UNPROVEN",
+  "evidence_class": "SOFTWARE_CONTROLLED_AND_LOCAL_RESOURCE_OBSERVATION",
+  "false_exclusions": {
+    "cases_excluded_by_protocol": [
+      "US_EQUITIES:development:stale_evidence",
+      "US_EQUITIES:holdout:stale_evidence",
+      "US_ETFS:development:stale_evidence",
+      "US_ETFS:holdout:stale_evidence"
+    ],
+    "count": null,
+    "denominator": 0,
+    "verdict": "UNAVAILABLE"
+  },
+  "frozen_targets": {
+    "invalid_output_rate": 0.01,
+    "invalid_refs_accepted": 0,
+    "labeled_positive_recall": 0.95,
+    "paid_token_reduction": 0.9,
+    "qualification_disagreement": 0.05,
+    "reference_top5_recall": 1.0
+  },
+  "holdout_inspected_for_tuning": false,
+  "local_suitability": "UNPROVEN_RESOURCE_BLOCKED",
+  "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+  "metrics": {
+    "invalid_output_rate": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 0.01,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "invalid_refs_accepted": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 0,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "labeled_positive_recall": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 0.95,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "paid_token_reduction": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 0.9,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "qualification_disagreement": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 0.05,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "reference_top5_recall": {
+      "denominator": 0,
+      "reason": "No safely admitted real model response; matching premium reference absent.",
+      "target": 1.0,
+      "uncertainty": "UNAVAILABLE",
+      "value": null,
+      "verdict": "NOT_PROVEN"
+    },
+    "precision": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    },
+    "false_exclusion_rate": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    },
+    "selection_agreement": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    },
+    "rank_correlation": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    },
+    "premium_batch_sensitivity": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    },
+    "premium_tail_sensitivity": {
+      "value": null,
+      "denominator": 0,
+      "uncertainty": "UNAVAILABLE",
+      "verdict": "NOT_PROVEN",
+      "reason": "No safely admitted real qualification or matching real premium comparison; fixtures establish software behavior only."
+    }
+  },
+  "paid_generations": 0,
+  "per_universe": {
+    "US_EQUITIES": {
+      "eligible_labeled_positive": 22,
+      "frozen_development_cases": 13,
+      "frozen_holdout_cases": 13,
+      "labeled_negative": 2,
+      "model_responses": 0,
+      "stale_exclusions": 2,
+      "metrics": {
+        "invalid_output_rate": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "invalid_refs_accepted": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "labeled_positive_recall": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "paid_token_reduction": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "qualification_disagreement": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "reference_top5_recall": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "precision": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "false_exclusion_rate": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "selection_agreement": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "rank_correlation": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "premium_batch_sensitivity": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "premium_tail_sensitivity": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        }
+      }
+    },
+    "US_ETFS": {
+      "eligible_labeled_positive": 22,
+      "frozen_development_cases": 13,
+      "frozen_holdout_cases": 13,
+      "labeled_negative": 2,
+      "model_responses": 0,
+      "stale_exclusions": 2,
+      "metrics": {
+        "invalid_output_rate": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "invalid_refs_accepted": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "labeled_positive_recall": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "paid_token_reduction": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "qualification_disagreement": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "reference_top5_recall": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "precision": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "false_exclusion_rate": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "selection_agreement": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "rank_correlation": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "premium_batch_sensitivity": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        },
+        "premium_tail_sensitivity": {
+          "value": null,
+          "denominator": 0,
+          "uncertainty": "UNAVAILABLE",
+          "verdict": "NOT_PROVEN"
+        }
+      }
+    }
+  },
+  "premium_reference_hierarchy": {
+    "controlled_labels": "FROZEN_NOT_EVALUATED",
+    "exact_context_replay": "UNAVAILABLE",
+    "matching_valid_premium": "UNAVAILABLE"
+  },
+  "quality_verdict": "UNPROVEN",
+  "real_local_generations": 0,
+  "real_resource_summary": {
+    "inference_budget": {
+      "calls": 25373,
+      "limit_seconds": 7200,
+      "used_seconds": 28.411637399731262
+    },
+    "manifest_hash": "d17e9921713c75058f96c4a9ff77d9abee148f38c913d35f425a44515afd9644",
+    "operationally_approved": false,
+    "paid_generations": 0,
+    "pilot_comparison": [
+      {
+        "backend": "VULKAN",
+        "elapsed_seconds": 0.005303599995386321,
+        "gpu_layers": 99,
+        "resource_failures": 3,
+        "startup_ms": null,
+        "valid": 0
+      },
+      {
+        "backend": "CPU",
+        "elapsed_seconds": 0.004322699998738244,
+        "gpu_layers": 0,
+        "resource_failures": 3,
+        "startup_ms": null,
+        "valid": 0
+      }
+    ],
+    "real_generations": 0,
+    "scales": [
+      {
+        "completed": 0,
+        "scale": 20,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      },
+      {
+        "completed": 0,
+        "scale": 50,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      },
+      {
+        "completed": 0,
+        "scale": 100,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      },
+      {
+        "completed": 0,
+        "scale": 500,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      },
+      {
+        "completed": 0,
+        "scale": 4630,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      },
+      {
+        "completed": 0,
+        "scale": 20000,
+        "state": "BLOCKED_RESOURCE_OR_RELIABILITY"
+      }
+    ],
+    "suitability": "UNPROVEN"
+  },
+  "schema_version": "ai-screener-local-first-research/1.0.0",
+  "source_exhaustive_receipt": "artifacts/ai-screener-budget-efficiency-acceptance.json",
+  "unavailable_metrics": [
+    "premium_reference_top5_recall",
+    "selection_agreement",
+    "rank_correlation",
+    "premium_batch_tail_sensitivity",
+    "precision",
+    "false_exclusion_rate",
+    "throughput",
+    "process_model_memory",
+    "local_context_fit"
+  ]
+}

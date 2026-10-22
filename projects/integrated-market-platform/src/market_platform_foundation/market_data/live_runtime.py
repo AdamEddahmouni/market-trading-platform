@@ -280,16 +280,19 @@ class LiveObservationalRuntime:
         self._update_execution_use()
 
     def _on_feed_disconnected(self, reason: str) -> None:
+        self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_disconnected(reason)
         self.admission.on_disconnect()
         self._update_execution_use()
 
     def _on_feed_reconnecting(self) -> None:
+        self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_reconnecting()
         self.admission.on_reconnect()
         self._update_execution_use()
 
     def _on_feed_overflow(self) -> None:
+        self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_degraded("INGEST_QUEUE_OVERFLOW")
         self._update_execution_use()
 
@@ -497,6 +500,7 @@ class LiveObservationalRuntime:
         return results
 
     def simulate_disconnect(self) -> None:
+        self.state.flow_history.interrupt(monotonic_wall_ns())
         self.lifecycle.mark_disconnected("SIMULATED_DISCONNECT")
         self.admission.on_disconnect()
 

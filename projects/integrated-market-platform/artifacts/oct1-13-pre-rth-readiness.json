@@ -1,0 +1,193 @@
+{
+  "schema_version": "oct1-13-pre-rth-readiness/1.0.0",
+  "date": "2026-10-07",
+  "scope": "Screener and the AI decision/execution layer on top of it. Internal Paper simulation only.",
+  "canonical_sha_at_open": "746b93f8d944d2c025f12bf637c7dfae9ff87b59",
+  "canonical_sha_from_0942_et": "0d745925a4e96669f938d06eb95bf30e686875d0",
+  "gates": {
+    "G1_CANONICAL_MAIN": {
+      "status": "PASS",
+      "basis": "746b93f8 was origin/main at the open. The runtime moved to 0d745925 (origin/main after PR #472) at 09:42 ET."
+    },
+    "G2_CLEAN_RUNTIME_TREE": {
+      "status": "PASS",
+      "basis": "git status --short empty before each start and after the AI Screener run."
+    },
+    "G3_PROVIDER_CONNECTIVITY": {
+      "status": "PASS",
+      "basis": "OpenD, Finviz reference, Finnhub, NewsAPI (delayed), SEC user agent, FinBERT, Anthropic. Optional providers absent and reported as such."
+    },
+    "G4_LIVE_PRICE_PIT": {
+      "status": "PASS",
+      "basis": "At 09:30:18 ET 20 of 20 window rows ADMISSIBLE / CURRENT from Moomoo with provider clocks, including symbols blocked on 2026-10-06."
+    },
+    "G5_AI_PROVIDER": {
+      "status": "PASS",
+      "basis": "anthropic.messages / claude-haiku-4-5-20251001, operator-selected; budget 30 requests and 200,000 tokens per UTC day."
+    },
+    "G6_AI_CANDIDATE_PATH": {
+      "status": "PASS",
+      "basis": "Controlled tests and the read-only preview passed before the open. The first live run found a defect (see post_open); after PR #472 the real run completed."
+    },
+    "G7_ACTION_DECISION": {
+      "status": "PASS",
+      "basis": "Controlled: OCT1-10 browser acceptance and focused tests. Not exercised live: no candidate was selected."
+    },
+    "G8_PAPER_100K": {
+      "status": "PASS",
+      "basis": "29 focused service tests; live experiment created at exactly $100,000.00 and restored unchanged across a real runtime restart."
+    },
+    "G9_REEVALUATION": {
+      "status": "PASS",
+      "basis": "Controlled: OCT1-07 browser acceptance and 61 focused tests on the OCT1-12 head. Live worker NOT_CONFIGURED: no position."
+    },
+    "G10_HELD_QUOTE_CONTINUITY": {
+      "status": "PASS",
+      "basis": "Controlled OCT1-12 tests only. Not exercised live: no position."
+    },
+    "G11_SMA_STOP": {
+      "status": "PASS",
+      "basis": "Controlled: OCT1-08 browser acceptance on the 746b93f8 bundle."
+    },
+    "G12_LIFECYCLE": {
+      "status": "PASS",
+      "basis": "Controlled: OCT1-10 browser acceptance, 39 steps and 6 extra scenarios, on the 746b93f8 bundle."
+    },
+    "G13_EVALUATION": {
+      "status": "PASS",
+      "basis": "7 focused service tests including HTTP finalize and rerun. The OCT1-11 browser script did not run (ENVIRONMENT)."
+    },
+    "G14_NO_LIVE_CAPITAL_AUTHORITY": {
+      "status": "PASS",
+      "basis": "IMP_LIVE_EXECUTION set nowhere; start script removes it; runtime context INTERNAL_SIMULATION / PAPER_ONLY; experiment live_capital false."
+    },
+    "G15_RTH_STATE_NAMESPACE": {
+      "status": "PASS",
+      "basis": "C:\\Users\\adame\\.imp-state\\prospective-rth-2026-10-07, empty before the 09:28:33 ET start."
+    },
+    "G16_CLOCK_SESSION_BOUNDARY": {
+      "status": "PASS",
+      "basis": "Host within about 14 ms of NTP; server label PREMARKET at 09:29:47 and REGULAR at 09:30:19 ET."
+    },
+    "G17_BROWSER_CONTROLLED_E2E": {
+      "status": "BLOCKED",
+      "basis": "3 of 5 scripts passed (OCT1-07, 08, 10). OCT1-09 failed at step 24 on a stale locator; OCT1-11 could not launch its browser. Operator ruling: not a start blocker once the service smokes pass."
+    },
+    "G18_VALIDATION": {
+      "status": "PASS",
+      "basis": "On the 746b93f8 tree: FULL 8,195 run / 53 skipped / 0 failures / 0 errors; UI 179 files / 1,374 tests; production build. 0d745925 adds PR #472: protected CI 9 of 9, 110 focused tests, FAST; FULL not rerun on it."
+    }
+  },
+  "verdict": {
+    "original_18_gate_standard": "PRE_RTH_BLOCKED",
+    "reason": "G17 only: two browser acceptance scripts did not complete.",
+    "operator_ruling_before_open": "The standard was replaced by the operator's ready rule: classify the two script failures, run direct Paper and evaluator smokes, start on time.",
+    "READY_TO_START_RTH": "YES"
+  },
+  "browser_failures": [
+    {
+      "script": "tools/ui1/oct1_09_browser.cjs",
+      "classification": "STALE_ACCEPTANCE_HARNESS",
+      "detail": "Line 302 locator 'Prepare Paper Exit' matches two buttons since OCT1-10 added one to the lifecycle card. Steps 1 to 23 passed; steps 24 to 33 not reached.",
+      "covered_by": "tests/trading_correctness/test_paper_experiment_api.py, 29 tests: exact $100k, restart without reseed, duplicate submit idempotent after restart, Live and broker modes refused."
+    },
+    {
+      "script": "tools/ui1/oct1_11_browser.cjs",
+      "classification": "ENVIRONMENT",
+      "detail": "Launches Chromium without the configured executable path; the build Playwright expects is not installed on this machine.",
+      "covered_by": "tests/trading_correctness/test_prospective_evaluation_api.py, 7 tests: finalize, frozen run, HTTP finalize and rerun, no orders."
+    }
+  ],
+  "integrated_today": [
+    {
+      "pr": 470,
+      "merge": "5ffbe1552b760faf1592fcec9060311f5ae9c7d2",
+      "what": "OCT1-12 scheduled reevaluation hardening"
+    },
+    {
+      "pr": 471,
+      "merge": "746b93f8d944d2c025f12bf637c7dfae9ff87b59",
+      "what": "QUOTE pushes dated so live quotes keep their observation time"
+    },
+    {
+      "pr": 472,
+      "merge": "0d745925a4e96669f938d06eb95bf30e686875d0",
+      "what": "AI Screener packet fits a full live window (found after the open)"
+    }
+  ],
+  "post_open": {
+    "classification": "PROSPECTIVE_RTH operational record; no performance claim",
+    "runtime_started_et": "09:28:33",
+    "rth_start_et": "09:30:00",
+    "first_regular_read": {
+      "at_utc": "2026-10-07T13:30:19Z",
+      "rows": 20,
+      "admissible_current": 20,
+      "no_observation_time": 0
+    },
+    "paper_experiment": {
+      "experiment_id": "PPE-057A0EAD0E004F40887DFD6DDBB36234",
+      "created_at_ns": 1791379854186614418,
+      "initial_capital_minor": 10000000,
+      "cash_minor": 10000000,
+      "currency": "USD",
+      "execution_mode": "INTERNAL_SIMULATION",
+      "execution_authority": "PAPER_ONLY",
+      "live_capital": false,
+      "controlled_trades": 0
+    },
+    "ai_screener": [
+      {
+        "at_utc": "2026-10-07T13:31:16Z",
+        "sha": "746b93f8",
+        "outcome": "REFUSED_BEFORE_INFERENCE",
+        "error": "EVIDENCE_PACKET_BOUND_EXCEEDED",
+        "model_calls": 0
+      },
+      {
+        "at_utc": "2026-10-07T13:32:55Z",
+        "sha": "746b93f8",
+        "outcome": "REFUSED_BEFORE_INFERENCE",
+        "error": "EVIDENCE_PACKET_BOUND_EXCEEDED",
+        "model_calls": 0
+      },
+      {
+        "cutoff_utc": "2026-10-07T13:43:54.373371Z",
+        "sha": "0d745925",
+        "outcome": "NO_GROUNDED_CANDIDATES",
+        "selected": 0,
+        "intake": 20,
+        "sufficiently_grounded": 19,
+        "model": "claude-haiku-4-5-20251001",
+        "prompt": "screener.ai_candidate_reduction.v2 v2.0.0",
+        "latency_ms": 10783,
+        "budget_after": {
+          "requests": 1,
+          "tokens": 43638
+        }
+      }
+    ],
+    "not_observed": [
+      {
+        "from_utc": "2026-10-07T13:42:18Z",
+        "to_utc": "2026-10-07T13:42:47Z",
+        "reason": "Runtime restart onto 0d745925. Same namespace; nothing reseeded or backfilled."
+      }
+    ],
+    "action_decisions": 0,
+    "paper_orders": 0,
+    "positions": 0,
+    "live_capital_submissions": 0
+  },
+  "known_limitations": [
+    "Non-held candidate quotes are page-driven: keep the Main Screener open during candidate selection.",
+    "A full live window reaches the model with no news stories: stories are thinned before provider status detail (existing behaviour, left as is).",
+    "Finviz technicals (change %, relative volume, RSI) carry no observation time and stay BLOCKED; the model saw price and volume only.",
+    "Mark-age and cost/slippage policies are unchanged and remain future lanes.",
+    "The session label is not holiday-aware.",
+    "The Radar investigation screener read returns 500: the secret-leak guard refuses its payload (fail-closed). Not on the Main Screener path; not fixed.",
+    "While its window is hidden, the Screener page does not refresh the universe list or session label; window quote subscriptions kept flowing.",
+    "oct1_09 and oct1_11 browser scripts need the repairs listed under browser_failures.",
+    "The primary checkout's Desktop launcher is not the certified runtime; use the start script."
+  ]
+}

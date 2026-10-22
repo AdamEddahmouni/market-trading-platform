@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { authHeaders } from "../auth/session";
 import { fetchJson, postJson } from "./fetchJson";
@@ -9,6 +10,7 @@ const PanelState = z.enum(["CURRENT", "SESSION_CLOSED", "STALE", "PARTIAL", "INV
   "UNAVAILABLE", "CONNECTING", "SUBSCRIPTION_BUSY"]);
 export type PanelState = z.infer<typeof PanelState>;
 const Base = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-specialist/1.0.0"),
   instrument_id: z.string(), provider: z.string().nullable(), generated_at: z.string().nullable(),
   market_session: z.string(), state: PanelState, reason: z.string().nullable(),
@@ -59,6 +61,7 @@ const Zone = z.object({ lower: z.number(), upper: z.number(), center: z.number()
   last_touch_end_ns: z.number(), kinds: z.array(z.string()) });
 const QuoteField = z.object({ value: z.number().nullable(), source: z.string(), state: z.string(), as_of_ns: z.number().optional() });
 const ChartSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-chart/1.0.0"), generated_at: z.string(), market_session: z.string(),
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), company: z.string() }),
   quote: z.object({ state: z.string(), age_ms: z.number().optional(), fields: z.record(QuoteField) }),
@@ -70,6 +73,7 @@ const ChartSchema = z.object({
     price: z.object({ value: z.number(), source: z.string(), state: z.string(), as_of: z.string() }).nullable() }),
 });
 const FuturesSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-futures-context/1.0.0"), generated_at: z.string(),
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), company: z.string(), sector: z.string().nullable(), industry: z.string().nullable() }),
   futures: z.object({ mapping_version: z.string(), causal_note: z.string(), items: z.array(z.object({
@@ -84,6 +88,30 @@ const FuturesSchema = z.object({
 
 export type OrderFlowPayload = z.infer<typeof OrderFlowSchema>;
 export type CvdPayload = z.infer<typeof CvdSchema>;
+const FlowSeriesSchema = Base.extend({
+  panel: z.literal("order_flow_series"), range: z.string(), resolution_seconds: z.number().positive(),
+  coverage: z.object({ requested_start_ms: z.number(), requested_end_ms: z.number(),
+    actual_start_ms: z.number().nullable(), actual_end_ms: z.number().nullable(), anchor_at: z.string().nullable(),
+    basis: z.enum(["SINCE_SUBSCRIPTION", "PARTIAL_CAPTURE"]), complete: z.boolean(), truncated: z.boolean(),
+    persistence: z.literal("RUNTIME_LOCAL"), dropped_late_trades: z.number(),
+    gaps: z.array(z.object({ start_ms: z.number(), end_ms: z.number(), reason: z.string() })) }).nullable(),
+  points: z.array(z.object({ time_ms: z.number(), end_ms: z.number(), delta: z.number(), cvd: z.number(),
+    buy_volume: z.number(), sell_volume: z.number(), unknown_volume: z.number(), trade_count: z.number(),
+    classified_volume: z.number(), classified_volume_pct: z.number().nullable(), native_count: z.number(),
+    inferred_count: z.number(), unknown_count: z.number(), segment: z.number(), providers: z.array(z.string()), event_at: z.string().nullable(), received_at: z.string().nullable() })),
+  latest: z.object({ event_at: z.string().nullable(), received_at: z.string().nullable(), cvd: z.number(),
+    recent_delta: z.number(), trades_per_minute: z.number() }).nullable(),
+});
+export type FlowSeriesPayload = z.infer<typeof FlowSeriesSchema>;
+export type FlowRange = "1m" | "5m" | "15m" | "1h" | "session";
+export type FlowResolution = "auto" | "1s" | "5s" | "15s" | "1m" | "5m";
+export async function fetchFlowSeries(instrumentId: string, universe: ScreenerUniverse, range: FlowRange,
+  resolution: FlowResolution, window?: { start: number; end?: number }, signal?: AbortSignal) {
+  const query = new URLSearchParams({ instrument: instrumentId, universe, range, resolution });
+  if (window) { query.set("start", String(Math.floor(window.start))); if (window.end != null) query.set("end", String(Math.floor(window.end))); }
+  const payload = await fetchJson(`/screener/order-flow-series?${query}`, FlowSeriesSchema, { signal });
+  return guard(payload, instrumentId, payload.instrument_id);
+}
 export type DepthPayload = z.infer<typeof DepthSchema>;
 export type PanelDemand = z.infer<typeof DemandSchema>;
 export type ChartPayload = z.infer<typeof ChartSchema>;

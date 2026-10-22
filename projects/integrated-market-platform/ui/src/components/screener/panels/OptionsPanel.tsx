@@ -163,7 +163,7 @@ export default function OptionsPanel({ api }: IDockviewPanelProps) {
     <span className={`screener-panel-state state-${OPTIONS_BADGE[data.state].toLowerCase()}`}>{OPTIONS_STATE_LABELS[data.state]}</span>
     {age != null ? <span title={`Fetched ${etTime(data.clock?.fetched_at)}`}>Updated {ago(age)} ago</span> : null}</> : null;
   const chain = data && hasChain(data.state) && data.summary ? data : undefined;
-  return <PanelFrame id="options" detail={data?.provider ? `${data.provider.label} · snapshot` : null} clock={status}>
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="options" detail={data?.provider ? `${data.provider.label} · snapshot` : null} clock={status}>
     {gate ?? (query.isError && !data ? <PanelMessage tone="error" role="alert">Current option chain unavailable.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>
       : !data ? <PanelMessage>Loading {row!.symbol} options…</PanelMessage>
       : !chain ? <PanelMessage tone={data.state === "NO_CHAIN" ? "muted" : "warn"}>{stateMessage(data)}</PanelMessage>

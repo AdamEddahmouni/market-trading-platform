@@ -113,29 +113,39 @@ def quote_view(runtime: Any, quote: Any) -> dict[str, Any]:
     bid, ask = _number(quote.bid_price), _number(quote.ask_price)
     spread = (ask - bid) / ((ask + bid) / 2) * 100 if bid is not None and ask is not None and ask >= bid and ask + bid > 0 else None
     values = {"price": _number(quote.last_price), "volume": _number(quote.volume), "bid": bid, "ask": ask, "spread_pct": spread}
+    book_received_ns = int(getattr(quote, "book_received_ns", 0) or quote.received_ns)
+    # The cache retains only receipt time for a book carried through a later
+    # last-price push. Never manufacture its provider clock from that push.
+    def field(name: str, value: float | None) -> dict[str, Any]:
+        is_book = name in ("bid", "ask", "spread_pct")
+        received_ns = book_received_ns if is_book else int(quote.received_ns)
+        observed_ns = event_ns if has_event_time and (not is_book or received_ns == int(quote.received_ns)) else None
+        return {"value": value, "source": str(quote.provider or "MOOMOO"),
+                "state": state if value is not None else "UNAVAILABLE",
+                "as_of_ns": observed_ns or received_ns,
+                "event_time_ns": observed_ns,
+                "provider_as_of": datetime.fromtimestamp(observed_ns / 1e9, UTC).isoformat().replace("+00:00", "Z") if observed_ns else None,
+                "received_ns": received_ns}
     return {
         "state": state, "age_ms": age_ms, "reason": None if state == "LIVE" else reason,
         "quality": quality, "admission": admission,
-        "fields": {
-            name: {"value": value, "source": str(quote.provider or "MOOMOO"),
-                   "state": state if value is not None else "UNAVAILABLE",
-                   "as_of_ns": int(quote.available_time_ns)}
-            for name, value in values.items()
-        },
+        "fields": {name: field(name, value) for name, value in values.items()},
     }
 
 
 def _snapshot_row(row: FinvizScreenerRow, as_of: str, classification: dict[str, Any] | None = None) -> dict[str, Any]:
     identity = finviz_to_canonical(row.ticker)
-    fields = {
-        name: {
-            "value": getattr(row, name),
+    # One attribute read per field: the universe refresh reads this for every listing,
+    # so a repeated getattr is a repeated cost across the whole admitted universe.
+    fields = {}
+    for name in FIELD_NAMES:
+        value = getattr(row, name)
+        fields[name] = {
+            "value": value,
             "source": "FINVIZ_ELITE",
-            "state": "SNAPSHOT" if getattr(row, name) is not None else "UNAVAILABLE",
+            "state": "SNAPSHOT" if value is not None else "UNAVAILABLE",
             "as_of": as_of,
         }
-        for name in FIELD_NAMES
-    }
     return {
         "instrument": {
             "instrument_id": identity.instrument_id,
@@ -174,6 +184,19 @@ def _with_quote_snapshot(row: dict[str, Any], snapshot: MarketSnapshot) -> dict[
                         "state": "SNAPSHOT" if value is not None else "UNAVAILABLE",
                         "as_of": as_of if value is not None else None}
     return {**row, "fields": fields}
+
+
+def with_current_quote(row: dict[str, Any], quote: dict[str, Any]) -> dict[str, Any]:
+    """Join trusted, already-owned L1 fields without mutating reference/order caches.
+
+    A retained stale/delayed/timeless observation remains visibly its own source;
+    decision eligibility is independently evaluated at the consumer cutoff.
+    Missing quote fields do not erase legitimate reference fields.
+    """
+    live = {name: value for name, value in quote.get("fields", {}).items()
+            if name in ("price", "volume", "bid", "ask", "spread_pct")
+            and value.get("value") is not None}
+    return {**row, "fields": {**row["fields"], **live}} if live else row
 
 
 class ScreenerService:
@@ -327,6 +350,9 @@ class ScreenerService:
         page = page_payload(query, ordered)
         if snapshot is not None:
             page["rows"] = [_with_quote_snapshot(row, snapshot) for row in page["rows"]]
+        # Ordering/filtering stays on the universe snapshot; only returned cells go live.
+        page["rows"] = [with_current_quote(row, self.quote_for(row["instrument"]["instrument_id"]))
+                        for row in page["rows"]]
         return {**envelope, "result_set_id": f"{as_of}|{snapshot.id}" if snapshot else as_of,
                 "source_error": error if not source_rows else None, **page}
 
@@ -352,7 +378,8 @@ class ScreenerService:
         with self._lock:
             self._refresh()
             row = next((item for item in self._rows if item["instrument"]["instrument_id"] == instrument_id), None)
-            return row, self._error if not self._rows else None
+            error = self._error if not self._rows else None
+        return (with_current_quote(row, self.quote_for(instrument_id)) if row else None), error
 
     def quote_for(self, instrument_id: str) -> dict[str, Any]:
         runtime = self._runtime_getter(create=False)

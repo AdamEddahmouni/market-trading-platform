@@ -1,0 +1,234 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "clock": "STEPPED_CONTROLLED",
+  "fixtures": [
+    "completed bars",
+    "last-trade quote",
+    "held position",
+    "model proposal",
+    "auth"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Open Paper position context",
+      "url": "http://127.0.0.1:15108/workspace/US%3ANVDA",
+      "position": "LONG 7",
+      "source": "Paper ledger projection (controlled fixture)"
+    },
+    {
+      "step": 2,
+      "name": "Open SMA stop risk-control view",
+      "status": "NOT_CONFIGURED",
+      "monitor_only": true
+    },
+    {
+      "step": 3,
+      "name": "Configure the bounded reference SMA policy",
+      "policy_id": "STP-d5f913fc11923c4d7c133b0f5e452c76",
+      "sma_window_bars": 20,
+      "bar_interval": "1m",
+      "config_label": "REFERENCE_TEST_CONFIG"
+    },
+    {
+      "step": 4,
+      "name": "Warm-up state",
+      "completed_bars": 5,
+      "required": 20,
+      "stop": null
+    },
+    {
+      "step": 5,
+      "name": "Feed enough controlled completed bars",
+      "completed_bars": 20
+    },
+    {
+      "step": 6,
+      "name": "Active stop",
+      "active_stop": "148.00",
+      "label": "LONG stop",
+      "status": "Status: ACTIVE — Active · LONG stop"
+    },
+    {
+      "step": 7,
+      "name": "SMA value",
+      "sma": "148.0000"
+    },
+    {
+      "step": 8,
+      "name": "Long monotonic tightening",
+      "sma": "$148.1000 · bar complete 2026-10-12 10:51:00 ET",
+      "active_stop": "148.10",
+      "previous_stop": "148.00"
+    },
+    {
+      "step": 9,
+      "name": "Falling SMA does not loosen the long stop",
+      "candidate_stop": "148.00",
+      "active_stop": "148.10",
+      "reason": "MONOTONIC_CLAMP"
+    },
+    {
+      "step": 10,
+      "name": "Short monotonic behaviour (controlled fixture)",
+      "first_stop": "147.9",
+      "tightened_stop": "147.5",
+      "rising_candidate": "148.1",
+      "held_stop": "147.5",
+      "long_episode_closed_as": "POSITION_REVERSED",
+      "paper_short_authority": "UNCHANGED"
+    },
+    {
+      "step": 11,
+      "name": "Stale-bar state",
+      "status": "STALE",
+      "last_legitimate_stop": "148.10",
+      "reason": "STALE_BAR_SOURCE"
+    },
+    {
+      "step": 12,
+      "name": "Valid bars restored",
+      "status": "ACTIVE",
+      "active_stop": "148.10"
+    },
+    {
+      "step": "12b",
+      "name": "Stop state recovered from SQLite by a fresh service",
+      "stop_state_id": "STS-602f5afb692aab5069ec33997d5d8a63",
+      "active_stop": "148.1",
+      "durability": "SQLITE_LOCAL_STATE"
+    },
+    {
+      "step": 13,
+      "name": "Controlled long breach",
+      "stop": "148.10",
+      "observed": "148.05",
+      "basis": "LAST_TRADE_PRICE",
+      "status": "BREACHED"
+    },
+    {
+      "step": 14,
+      "name": "Deterministic EXIT decision",
+      "decision_id": "AD-832279bc095c4a6966ce6defc119307a55c2554ba214f7cff3614d9d5d0f3158",
+      "previous_state": "HOLD",
+      "model_call": false,
+      "origin": "SERVER_RISK_CONTROL",
+      "paper_close": "NOT_SUBMITTED"
+    },
+    {
+      "step": 15,
+      "name": "Stop policy and evidence in decision history",
+      "policy_id": "STP-d5f913fc11923c4d7c133b0f5e452c76",
+      "active_stop": "148.1",
+      "previous_stop": "148",
+      "trigger_price": "148.05",
+      "triggered_at": "2026-10-12T14:54:00Z",
+      "evidence_ref": "q",
+      "decision_trace_id": "EDTR-0F52F974737FE06092485A09A7D32610E7C3CE27D818D2101604B60DCF48D0AA",
+      "prior_hold_unchanged": true
+    },
+    {
+      "step": 16,
+      "name": "Dwell did not block the safety exit",
+      "seconds_since_hold": 60,
+      "dwell_seconds": 300,
+      "classification": "STATE_CHANGED",
+      "reason_codes": [
+        "SMA_TRAILING_STOP_BREACHED",
+        "PRICE_MOVED",
+        "SAFETY_PRECEDENCE"
+      ],
+      "model_call": false,
+      "cycle_id": 2
+    },
+    {
+      "step": 17,
+      "name": "Existing Paper exit handoff opened",
+      "url": "http://127.0.0.1:15108/workspace/US%3ANVDA"
+    },
+    {
+      "step": 18,
+      "name": "Ticket carries the current ledger quantity",
+      "quantity": "7",
+      "side": "SELL",
+      "quantity_authority": "Paper ledger"
+    },
+    {
+      "step": 19,
+      "name": "No automatic Paper submit",
+      "submit_route_attempts": 0,
+      "ledger_events_added": 0,
+      "ticket_revalidation_previews": 1
+    },
+    {
+      "step": 20,
+      "name": "No Live submit",
+      "live_route_attempts": 0,
+      "live_env_enabled": false
+    },
+    {
+      "step": 21,
+      "name": "Replay evaluation comparison opened",
+      "evidence_class": "HISTORICAL_REPLAY",
+      "result_status": "REPLAY_EVALUATED",
+      "episodes": 120,
+      "evaluable": 59
+    },
+    {
+      "step": 22,
+      "name": "SMA trail compared with raw-price trail",
+      "sma": "SMA trail 31 100.0% 7.34 bps 12.18 bps 30.22 bps -8.86 bps -1.53 bps -11.53 bps 48.4% 7.42",
+      "raw": "Raw-price trail 31 100.0% 8.26 bps 12.33 bps 30.22 bps -11.01 bps -2.78 bps -12.78 bps 48.4% 5.23",
+      "sma_mean_mae_bps": 7.34,
+      "raw_mean_mae_bps": 8.26
+    },
+    {
+      "step": 23,
+      "name": "Fixed initial stop compared",
+      "fixed": "Fixed initial stop 31 93.5% 10.97 bps 25.59 bps 141.59 bps -11.27 bps -2.52 bps -12.52 bps 41.9% 25",
+      "fixed_mean_mae_bps": 10.97
+    },
+    {
+      "step": 24,
+      "name": "No-trail / existing exit compared",
+      "no_trail": "Existing / no-trail exit 31 0.0% 47.16 bps 75.05 bps 157.23 bps -46.43 bps 16.17 bps 6.17 bps 0.0% 206.45",
+      "no_trail_mean_gross_return_bps": 16.17,
+      "sma_mean_gross_return_bps": -1.53
+    },
+    {
+      "step": 25,
+      "name": "No-superiority conclusion",
+      "conclusion": "INSUFFICIENT_EVIDENCE",
+      "in_sample_pattern": "NO_CLEAR_DIFFERENCE",
+      "superiority_claim": "NONE"
+    },
+    {
+      "step": 26,
+      "name": "Provenance and config hash",
+      "definition_hash": "48769d3d422944d0455c5936840b309c450aecae06f6672ada9617221b399883",
+      "input_hash": "745a2a99b0fef405d3f5ce550b8f1894568685ff41249f60072a396efc2147b8",
+      "result_hash": "2b77ff44aafb503c94b7a359e31c32adb2fe0802a09438b483b4244eb63d24e0",
+      "dataset_fingerprint": "B655E90C3BC4789F8A437DB08CA9CD4F3E12417E88879AE4A9BDFF19BE067D46"
+    },
+    {
+      "step": 27,
+      "name": "Historical bars unchanged",
+      "corpus_sha256_before": "a4a2f656537c73ed9188510bbe285e1998300e174c290898b0b64cf25e8184d2",
+      "corpus_sha256_after": "a4a2f656537c73ed9188510bbe285e1998300e174c290898b0b64cf25e8184d2",
+      "matches_receipt": true
+    }
+  ],
+  "paper_submissions": 0,
+  "live_submissions": 0,
+  "metrics": {
+    "model_calls": 1,
+    "decisions": 2,
+    "cycles": 2,
+    "stop_events": 14,
+    "completed_bars_fed": 27,
+    "paper_submit_attempts": 0,
+    "live_attempts": 0,
+    "ticket_revalidation_previews": 1,
+    "ledger_events_added": 0
+  }
+}

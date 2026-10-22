@@ -34,6 +34,7 @@ class ProviderInferenceResponse:
     error_message: str = ""
     parsing_status: ParsingStatus = ParsingStatus.VALID
     simulated: bool = False
+    inference_dispatched: bool | None = None
 
 
 class InferenceProvider(Protocol):

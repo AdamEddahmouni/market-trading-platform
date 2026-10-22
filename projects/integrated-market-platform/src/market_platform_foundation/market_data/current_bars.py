@@ -240,7 +240,7 @@ def _segment_start_ns(now: datetime, session: str) -> int:
     return int((midnight + timedelta(minutes=start_minute)).timestamp()) * 1_000_000_000
 
 
-def freshness(latest_end_ns: int | None, *, now_ns: int, scope: str) -> tuple[str, str | None]:
+def freshness(latest_end_ns: int | None, *, now_ns: int, scope: str, timeframe: str = "1m") -> tuple[str, str | None]:
     """Series state relative to the bars that could exist now for ``scope``.
 
     CURRENT: the scope's session is open and the latest complete bar is within
@@ -255,7 +255,8 @@ def freshness(latest_end_ns: int | None, *, now_ns: int, scope: str) -> tuple[st
     now = _et(now_ns)
     label = us_equity_session_label(now)
     if label in SCOPE_SESSIONS[scope]:
-        expected = now_ns - now_ns % MINUTE_NS
+        interval_ns = TIMEFRAMES[timeframe] * MINUTE_NS
+        expected = now_ns - now_ns % interval_ns
         if latest_end_ns >= expected - STALE_TOLERANCE_NS:
             return "CURRENT", None
         if now_ns - _segment_start_ns(now, label) < STALE_TOLERANCE_NS:
@@ -351,7 +352,7 @@ class CurrentBarsService:
         scoped = scope_filter(complete_1m, scope)
         scoped_forming = forming_1m if forming_1m is not None and forming_1m.session in SCOPE_SESSIONS[scope] else None
         bars, forming = aggregate(scoped, TIMEFRAMES[timeframe], as_of_ns=received, forming=scoped_forming)
-        state, reason = freshness(bars[-1].end_ns if bars else None, now_ns=received, scope=scope)
+        state, reason = freshness(bars[-1].end_ns if bars else None, now_ns=self._now_ns(), scope=scope, timeframe=timeframe)
         return BarSeries(instrument_id, timeframe, scope, state, reason, None, received, tuple(bars), forming)
 
 

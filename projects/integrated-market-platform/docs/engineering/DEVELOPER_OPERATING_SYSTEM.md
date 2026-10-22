@@ -53,6 +53,11 @@ serial. `PARALLEL_SAFE` work may use the configured worker count.
 `RESOURCE_HEAVY` work is capped by the existing validator. Live validation is
 opt-in and never substitutes for offline FULL.
 
+Windows validation workers use a separate process group with no console window.
+This isolates the validator from console-control events during owned-process
+cleanup in lifecycle acceptance tests. It does not change test selection,
+assertions, network gates, failure reporting, or worker ownership.
+
 For UI changes, add `cd ui && npm test`, `npm run typecheck`, and
 `npm run build`; the build retains the 200 KiB gzip budget. For documentation
 changes, run `tools/check_docs_links.py`.
@@ -148,6 +153,17 @@ Forensic baselines and optimization ledgers live under
 [performance-engineering-p0](../audits/performance-engineering-p0/README.md).
 Optimize measured hotspots only; preserve assurance invariants. Performance work
 is secondary/enabling and must not displace primary product increments.
+
+A timing is compared with a budget baseline only when the workload identity
+matches. Declared reference test and skip counts apply to every workload,
+including FAST and FULL; a changed selection reports `INSUFFICIENT_DATA` with
+raw timings and no ratio. Re-baselining requires explicit provenance under the
+budget's promotion policy. Current comparability evidence:
+[performance-engineering-p8](../audits/performance-engineering-p8/README.md).
+
+Tests that reproduce a tracked evidence artifact write to the temporary
+directory (`tools/tracked_evidence.py`). Set `IMP_REFRESH_TRACKED_EVIDENCE=1`
+only to re-record that evidence deliberately.
 
 ## Local lane topology (historical 2026-09-10)
 

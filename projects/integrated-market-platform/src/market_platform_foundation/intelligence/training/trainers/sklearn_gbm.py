@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-from sklearn.ensemble import GradientBoostingClassifier
 
 from ...baselines.errors import BaselineTrainingError
 from ...baselines.identity import parameter_fingerprint_from_payload
@@ -68,6 +67,9 @@ class SklearnGbmCandidateTrainer:
 
         x_rows = [list(example.feature_vector.values) for example in baseline_dataset.examples]
         y_rows = [1 if label == BaselineClassLabel.UP else 0 for label in labels]
+        # scikit-learn loads when a candidate is trained, not at registration.
+        from sklearn.ensemble import GradientBoostingClassifier
+
         estimator = GradientBoostingClassifier(
             n_estimators=int(hyperparams["n_estimators"]),
             max_depth=int(hyperparams["max_depth"]),

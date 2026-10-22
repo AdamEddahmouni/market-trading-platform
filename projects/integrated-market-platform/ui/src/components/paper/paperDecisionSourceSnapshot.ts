@@ -164,6 +164,9 @@ export function buildPaperDecisionSourceSnapshot(draft: PaperOrderDraft): PaperD
     };
     if (contextFields.headline) snapshot.headline = contextFields.headline;
     if (contextFields.source_time !== undefined) snapshot.source_time = contextFields.source_time;
+    // A governed EXIT without Opportunity lineage is handed off on a lane. Its action-decision references
+    // must reach the server, or the exit is neither revalidated nor attributed to its decision.
+    if (contextFields.reasons) snapshot.reasons = contextFields.reasons;
     return snapshot;
   }
   if (provenance.type === "ATTENTION") {

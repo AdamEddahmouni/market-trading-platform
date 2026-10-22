@@ -2,9 +2,24 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+
+
+def response_provenance(provenance: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Candidate provenance as an operator response carries it.
+
+    A capture records the export's per-column field inventory once per candidate. That table is a
+    capture record: a response states how many columns the export had and of which kind, and does not
+    repeat the table for every candidate.
+    """
+    result = dict(provenance or {})
+    inventory = result.get("field_inventory")
+    if isinstance(inventory, Mapping):
+        result["field_inventory"] = {key: inventory[key] for key in ("field_count", "categories") if key in inventory}
+    return result
 
 
 class CandidateTransition(str, Enum):

@@ -1,0 +1,59 @@
+{
+  "browser": {
+    "fixtures": [
+      "completed bars",
+      "last-trade quote",
+      "held position",
+      "model proposal",
+      "auth"
+    ],
+    "metrics": {
+      "completed_bars_fed": 27,
+      "cycles": 2,
+      "decisions": 2,
+      "ledger_events_added": 0,
+      "live_attempts": 0,
+      "model_calls": 1,
+      "paper_submit_attempts": 0,
+      "stop_events": 14,
+      "ticket_revalidation_previews": 1
+    },
+    "receipt": "artifacts/oct1-08-browser.json",
+    "steps": 28
+  },
+  "classification": "SOFTWARE_CONTROLLED",
+  "not_executed": [
+    "PAPER_PROSPECTIVE stop observation on a real open Paper position",
+    "live provider bar and quote cadence",
+    "real one-minute scheduled loop",
+    "process-kill restart in the browser run (covered by SQLite reopen tests)",
+    "accepted Paper preview of the exit draft in the harness (fixture instrument is unknown to the replay store)"
+  ],
+  "replay": {
+    "calibration_status": "NOT_CALIBRATED",
+    "conclusion": "INSUFFICIENT_EVIDENCE",
+    "definition_frozen_in_commit": "83a227f6 (before any comparative run)",
+    "definition_hash": "48769d3d422944d0455c5936840b309c450aecae06f6672ada9617221b399883",
+    "evidence_class": "HISTORICAL_REPLAY",
+    "receipt": "artifacts/oct1-08-evaluation.json",
+    "result_hash": "2b77ff44aafb503c94b7a359e31c32adb2fe0802a09438b483b4244eb63d24e0",
+    "result_status": "REPLAY_EVALUATED",
+    "superiority_claim": "NONE"
+  },
+  "schema_version": "oct1-08-acceptance/1.0.0",
+  "source_sha256": {
+    "evidence/historical-research/oct1-08-sma-trailing-stop-replay-v1/pre_execution_frozen_experiment_definition.json": "7e35eb008cf1b4e1d093619ca84113ad2866e53d6d9633e8d1f1970b58ad1093",
+    "src/market_platform_foundation/intelligence/inference/action_decision.py": "284ea60838d40405c160e70ff3d8fc34f10ce2dad64731a693ec6dec24bf0170",
+    "src/market_platform_foundation/intelligence/inference/reevaluation.py": "ea3156c67c28a87c540f94f3eb510b9e171e076f166a3a3ad780260fd1713e82",
+    "src/market_platform_foundation/local_state/sma_trailing_stop.py": "9b06e1952eeea9d4e87f6de4a9d5b131416ee60d5e94438f7f2f0d582b88b154",
+    "src/market_platform_foundation/research/sma_stop_evaluation.py": "b2ba2c0d099616e727e9a6e314d25659c6fe03d9cc5fc379d4f219266683c81e",
+    "src/market_platform_foundation/risk/sma_trailing_stop.py": "b2324b82df8612084d074e75975cc5a99f21ff1b31b4a87958b6ec88b0259db1",
+    "src/market_platform_foundation/ui_api/paper_risk_control.py": "3da542e4f14a432da4dcdd1578679c11c5ed8deaab369837fa262154d12e1c63",
+    "src/market_platform_foundation/ui_api/screener_action.py": "cd4561a2956ea395c552ed27582ce48f8e0ca169bb937fed216e7e11d34ecdfc",
+    "src/market_platform_foundation/ui_api/screener_reevaluation.py": "2b5daa052f25bad774144bd0fb5d8c9cd7df4539c01e001bd863924ded2cdf45",
+    "tests/acceptance/harness_sma_trailing_stop.py": "3ed266a6905e077219d6f36647894a22b865f3fd83494e9ca4b94ea465ca5775",
+    "tools/ui1/oct1_08_browser.cjs": "1a73eebb8382e683a8586422d6419b9486cf69d4e4a84984fb9e75bb2fb9f8d4",
+    "ui/src/components/paper-workspace/PaperTrailingStopPanel.tsx": "7b22f512e4040fc3a77b31b205e805ea329925bc075c3087479456fdfbf65ca2",
+    "ui/src/components/paper-workspace/SmaStopEvaluationTable.tsx": "180d353df172a5a90318d7627110010246f6cf8b4c8adc0b2f7a27753a20f312"
+  }
+}

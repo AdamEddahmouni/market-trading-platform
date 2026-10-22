@@ -43,6 +43,7 @@ it in the authoritative doc — do not silently choose.
 | FTEP / Paper-validation doctrine | [IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md](architecture/IMP_SCOPE_FTEP_PAPER_VALIDATION_DOCTRINE.md) |
 | Developer operating system | [DEVELOPER_OPERATING_SYSTEM.md](engineering/DEVELOPER_OPERATING_SYSTEM.md) |
 | Developer runbook (current commands) | [DEVELOPER_RUNBOOK.md](engineering/DEVELOPER_RUNBOOK.md) |
+| Portable SSD workstation (source vs runtime vs backup) | [PORTABLE_WORKSTATION.md](engineering/PORTABLE_WORKSTATION.md) |
 | Next US equity RTH campaign (current `main`) | [NEXT_RTH_CAMPAIGN_RUNBOOK.md](engineering/NEXT_RTH_CAMPAIGN_RUNBOOK.md) |
 | RTH15-00 reconciliation target | [RTH15_00_TARGET_STATE.md](engineering/RTH15_00_TARGET_STATE.md) |
 | RTH15-00 reconciliation matrix | [RTH15_00_RECONCILIATION_MATRIX.md](engineering/RTH15_00_RECONCILIATION_MATRIX.md) |
@@ -54,6 +55,10 @@ it in the authoritative doc — do not silently choose.
 | FTEP-V1 activation blockers | [FTEP_V1_ACTIVATION_BLOCKER_REPORT.md](engineering/FTEP_V1_ACTIVATION_BLOCKER_REPORT.md) |
 | Provider universe / audit / integration strategy | [PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md](providers/PROVIDER_UNIVERSE_AUDIT_INTEGRATION_STRATEGY.md) |
 | Developer setup | [LOCAL_DEVELOPMENT.md](engineering/LOCAL_DEVELOPMENT.md) |
+| Screener decision freshness and consumer gate | [SCREENER_DECISION_FRESHNESS.md](architecture/SCREENER_DECISION_FRESHNESS.md) |
+| Screener explicit action decisions and Paper handoff | [SCREENER_ACTION_DECISION.md](architecture/SCREENER_ACTION_DECISION.md) |
+| Screener next-session snapshots and governed reevaluation loop | [SCREENER_REEVALUATION.md](architecture/SCREENER_REEVALUATION.md) |
+| Screener trade lifecycle (candidate → decision → Paper position → stop → exit → P&L, read-only) | [SCREENER_TRADE_LIFECYCLE.md](architecture/SCREENER_TRADE_LIFECYCLE.md) |
 | System architecture | [ARCHITECTURE.md](architecture/ARCHITECTURE.md) |
 | Demo / Paper / Live safety | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Engineering rules | [ENGINEERING_HANDBOOK.md](engineering/ENGINEERING_HANDBOOK.md) |
@@ -64,6 +69,12 @@ it in the authoritative doc — do not silently choose.
 ---
 
 ## Architecture
+
+Local inference safety and real-model validation:
+[SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md](architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md).
+
+Order-flow chart navigation and captured-history contract:
+[ORDER_FLOW_TEMPORAL_HISTORY.md](architecture/ORDER_FLOW_TEMPORAL_HISTORY.md).
 
 | Topic | Document |
 |-------|----------|
@@ -82,6 +93,9 @@ it in the authoritative doc — do not silently choose.
 | Strategy readiness model | [STRATEGY_READINESS_MODEL.md](research/STRATEGY_READINESS_MODEL.md) |
 | Mode authority (Demo/Paper/Live) | [MODE_AUTHORITY.md](architecture/MODE_AUTHORITY.md) |
 | Paper decision lifecycle | [PAPER_DECISION_LIFECYCLE.md](architecture/PAPER_DECISION_LIFECYCLE.md) |
+| Paper SMA trailing-stop risk control and its replay evaluation | [PAPER_SMA_TRAILING_STOP.md](architecture/PAPER_SMA_TRAILING_STOP.md) |
+| Autonomous Paper operations: owner policy, arming, schedule, AI gating, Paper adapter, recovery | [PAPER_AUTOMATION.md](architecture/PAPER_AUTOMATION.md) |
+| Paper portfolio experiment ($100,000 simulated account, per-instrument accounting, P&L lifecycle) | [PAPER_PORTFOLIO_EXPERIMENT.md](architecture/PAPER_PORTFOLIO_EXPERIMENT.md) |
 | Data contracts & timestamps | [DATA_CONTRACTS.md](architecture/DATA_CONTRACTS.md) |
 | News/event foundation (deterministic) | [NEWS_EVENT_FOUNDATION.md](architecture/NEWS_EVENT_FOUNDATION.md) |
 | News AI intelligence (analysis only) | [NEWS_AI_INTELLIGENCE.md](architecture/NEWS_AI_INTELLIGENCE.md) |
@@ -115,6 +129,7 @@ it in the authoritative doc — do not silently choose.
 | Validation system internals | [VALIDATION_ARCHITECTURE.md](engineering/VALIDATION_ARCHITECTURE.md) |
 | Current workflow audit | [DEVELOPER_OPERATING_SYSTEM_AUDIT.md](engineering/DEVELOPER_OPERATING_SYSTEM_AUDIT.md) |
 | Performance P0 forensic baseline | [performance-engineering-p0/](audits/performance-engineering-p0/README.md) |
+| Performance P8 baseline comparability and import boundary | [performance-engineering-p8/](audits/performance-engineering-p8/README.md) |
 | Definition of done | [DEFINITION_OF_DONE.md](engineering/DEFINITION_OF_DONE.md) |
 | Coding standards | [CODING_STANDARDS.md](engineering/CODING_STANDARDS.md) |
 | Dependencies | [DEPENDENCIES.md](engineering/DEPENDENCIES.md) |
@@ -223,3 +238,7 @@ MATLAB consumes Research Export v1 JSON. The overnight Parquet-bridge blueprint 
 | Sep 15 Item 9 kline P12 review | [ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md](engineering/ITEM9_KLINE_WINDOW_DIAGNOSIS_P12_REVIEW.md) |
 | Sep 15 live OE P12/P13 reviews | [reviews/](engineering/reviews/) |
 | Sep 15 Item 7 / provider drafts | [drafts/20260915-rth-runbook-item7-provider/](engineering/drafts/20260915-rth-runbook-item7-provider/README.md) |
+
+- [Prospective outcome evaluation](architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) — OCT1-11 contracts, admission, formulas and frozen reproduction.
+
+- [Local-first experimental AI Screener](architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md) — methodology approval OFF.

@@ -933,3 +933,117 @@ a.portfolio-instrument-link:hover {
     max-height: 100vh;
   }
 }
+
+/* OCT1-09 Paper experiment */
+.experiment-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.experiment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.experiment-header h2,
+.experiment-panel h3 {
+  margin: 0;
+}
+
+.experiment-eyebrow {
+  margin: 0 0 2px;
+  color: var(--text-muted, #9db0bd);
+  font: 0.65rem var(--font-mono, monospace);
+  letter-spacing: 0.08em;
+}
+
+.experiment-identity {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--text-muted, #9db0bd);
+}
+
+.experiment-boundary {
+  padding: 8px 12px;
+  border: 1px solid var(--border-subtle);
+  border-left-width: 3px;
+}
+
+.experiment-boundary ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-size: 0.8rem;
+}
+
+.experiment-summary {
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+}
+
+.experiment-quality,
+.experiment-context p {
+  margin: 0;
+  font-size: 0.8rem;
+}
+
+.experiment-quality:not([data-quality="CURRENT"]) {
+  padding: 6px 10px;
+  border: 1px dashed var(--border-subtle);
+}
+
+.experiment-table-scroll {
+  overflow-x: auto;
+}
+
+.experiment-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.experiment-table th,
+.experiment-table td {
+  padding: 5px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.experiment-table .num {
+  text-align: right;
+}
+
+.experiment-trade-lineage td {
+  white-space: normal;
+}
+
+.experiment-lineage {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px 16px;
+  margin: 6px 0;
+  font-size: 0.78rem;
+}
+
+.experiment-lineage dt {
+  color: var(--text-muted, #9db0bd);
+  text-transform: capitalize;
+}
+
+.experiment-lineage dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.experiment-signed-gain {
+  color: var(--state-positive, #4fbf8a);
+}
+
+.experiment-signed-loss {
+  color: var(--state-negative, #e0736b);
+}

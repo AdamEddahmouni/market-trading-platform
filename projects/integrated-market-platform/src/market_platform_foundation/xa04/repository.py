@@ -47,6 +47,12 @@ class CrossAssetCatalogRepository(Protocol):
 
     def put_admission_envelope(self, envelope: AdmissionEnvelope) -> RepositoryPutResult: ...
 
+    def latest_scalar_observation_as_of(
+        self, decision_time: str, *, canonical_indicator_id: str
+    ) -> AdmittedObservation | None:
+        """Latest admitted, nonmissing scalar available at the decision clock."""
+        ...
+
     def get_admission_envelope(self, observation_id: str) -> AdmissionEnvelope | None: ...
 
     def list_admission_envelopes_for_subject(

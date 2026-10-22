@@ -91,8 +91,74 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
         "tokens_output",
         "total_tokens_input",
         "worst_case_tokens",
+        # Full-universe AI Screener plan and shared-budget hold counters.
+        "required_tokens",
+        "available_tokens",
+        "held_tokens",
+        "planned_tokens",
+        "batch_tokens",
+        "batch_tokens_max",
+        "largest_batch_tokens",
+        "reduction_tokens",
+        "reserved_output_tokens",
+        "estimated_input_tokens",
+        "actual_input_tokens",
+        "actual_output_tokens",
+        "actual_tokens",
+        "estimated_total_tokens",
+        "expected_input_tokens",
+        "reserved_batch_output_tokens",
+        "reserved_output_tokens_total",
+        "reserved_reasoning_tokens",
+        "reserved_reasoning_tokens_total",
+        "available_token_budget",
+        # AUTO-01 owner policy: the daily paid-inference allowance, a whole-number count.
+        "max_paid_tokens_per_day",
     )
 )
+
+# Finviz diagnostics publish finite status enums and integer counters, never tokens.
+_PUBLIC_FINVIZ_ENUMS = {
+    "authentication": frozenset({"UNCONFIGURED", "LOADED", "VALIDATING", "HEALTHY", "AUTH_INVALID",
+        "AUTH_EXPIRED", "AUTH_REVOKED", "AUTH_OPERATOR_ACTION_REQUIRED", "REFRESHING", "RATE_LIMITED",
+        "PROVIDER_UNAVAILABLE", "ERROR"}),
+    "credentialsource": frozenset({"ENVIRONMENT", "PRIVATE_FILE", "WINDOWS_CREDENTIAL_MANAGER", "PROVIDER_ENV_FILE", "NONE"}),
+    "lastautherror": frozenset({"AUTH_OK", "AUTH_INVALID", "AUTH_EXPIRED", "AUTH_REVOKED", "SUBSCRIPTION_NOT_ELITE",
+        "RATE_LIMITED", "NETWORK_ERROR", "PROVIDER_ERROR", "UNKNOWN", "REFRESHED", "MANUAL_AUTH_REQUIRED",
+        "INVALID_EXPORT", "CONFIG_MISSING", "AUTH_FAILED", "TOKEN_NOT_FOUND", "DEPENDENCY_MISSING",
+        "REDIRECT_REJECTED", "LOGIN_CREDENTIALS_MISSING", "MFA_OR_CAPTCHA"}),
+}
+_PUBLIC_FINVIZ_COUNTERS = frozenset({"finvizcredentialgeneration", "authrecoveries"})
+
+# Exact public source assignments from the Finviz health authority matrix.
+# Both the full response path and its field/value pair must match; generic
+# authority fields and unknown assignments continue to fail closed.
+_PUBLIC_FINVIZ_SOURCE_AUTHORITIES = {
+    "broad_screening": "FINVIZ_ELITE",
+    "candidate_discovery": "FINVIZ_ELITE",
+    "fundamental_snapshot": "FINVIZ_ELITE",
+    "technical_screening": "FINVIZ_ELITE",
+    "relative_volume": "FINVIZ_ELITE",
+    "short_float_discovery": "FINVIZ_ELITE",
+    "official_short_interest": "FINRA",
+    "threshold_status": "OFFICIAL_REGSHO",
+    "fail_to_deliver": "SEC",
+    "sec_filings": "SEC_EDGAR",
+    "filing_discovery_alert": "FINVIZ_ELITE",
+    "news_discovery": "FINVIZ_ELITE",
+    "original_news": "ORIGINAL_PUBLISHER",
+    "insider_discovery": "FINVIZ_ELITE",
+    "insider_filing_truth": "SEC",
+    "analyst_events": "FINVIZ_ELITE",
+    "sector_industry_breadth": "FINVIZ_ELITE",
+    "etf_holdings": "FINVIZ_ELITE",
+    "live_bbo": "MOOMOO",
+    "live_trades": "MOOMOO",
+    "l2_depth": "MOOMOO",
+    "cvd": "IMP_DERIVED",
+    "internal_fill": "EXECUTION_ADMITTED",
+    "execution": "INTERNAL",
+}
 
 _FINGERPRINT_HEX_CHARS = 12
 
@@ -169,8 +235,29 @@ def _is_model_token_count(key: str, value: Any) -> bool:
     )
 
 
-def _structural_secret_key_is_benign(path: str, key: str, value: Any) -> bool:
+def _is_finviz_matrix_authority_path(segments: tuple[str | int, ...]) -> bool:
+    """Only the standalone and aggregate provider-health response structures."""
+    if len(segments) == 5 and segments[0] == "finviz":
+        segments = segments[1:]
+    return (
+        len(segments) == 4 and segments[:2] == ("authority", "matrix")
+        and segments[-1] == "authority"
+    )
+
+
+def _structural_secret_key_is_benign(
+    path: str, key: str, value: Any, *, segments: tuple[str | int, ...] = (),
+) -> bool:
     normalized = normalize_key(str(key))
+    if (
+        _is_finviz_matrix_authority_path(segments) and isinstance(value, str)
+        and _PUBLIC_FINVIZ_SOURCE_AUTHORITIES.get(segments[-2]) == value
+    ):
+        return True
+    if normalized in _PUBLIC_FINVIZ_ENUMS and isinstance(value, str) and value in _PUBLIC_FINVIZ_ENUMS[normalized]:
+        return True
+    if normalized in _PUBLIC_FINVIZ_COUNTERS and type(value) is int and value >= 0:
+        return True
     if normalized in BENIGN_SECRET_SHAPED_KEYS:
         return True
     if _is_model_token_count(str(key), value):
@@ -190,6 +277,7 @@ def scan_snapshot(
     snapshot: Any,
     *,
     path: str = "",
+    _segments: tuple[str | int, ...] | None = None,
 ) -> tuple[SecretFinding, ...]:
     """Scan a config dict / env snapshot recursively for live secrets.
 
@@ -200,13 +288,46 @@ def scan_snapshot(
     """
 
     findings: list[SecretFinding] = []
+    segments = (() if not path else (path,)) if _segments is None else _segments
     if isinstance(snapshot, Mapping):
         for key, value in snapshot.items():
+            name = key if type(key) is str else str(key)
+            if not isinstance(value, (Mapping, list, tuple)):
+                # A scalar has no children, so its path is built only to report a finding.
+                if not is_secret_key(name):
+                    continue
+                child_segments = (*segments, name)
+                child_path = f"{path}.{key}" if path else str(key)
+                if _structural_secret_key_is_benign(child_path, name, value, segments=child_segments):
+                    continue
+                if _is_finviz_matrix_authority_path(child_segments):
+                    findings.append(SecretFinding(
+                        path=child_path, reason="UNSUPPORTED_PUBLIC_AUTHORITY_ASSIGNMENT",
+                        fingerprint=_fingerprint(str(value))))
+                elif isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
+                    findings.append(SecretFinding(
+                        path=child_path,
+                        reason="SECRET_SHAPED_KEY_WITH_LIVE_VALUE",
+                        fingerprint=_fingerprint(value),
+                    ))
+                elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                    findings.append(SecretFinding(
+                        path=child_path,
+                        reason="SECRET_SHAPED_KEY_WITH_NON_STRING_VALUE",
+                        fingerprint=_fingerprint(str(value)),
+                    ))
+                continue
             child_path = f"{path}.{key}" if path else str(key)
-            if is_secret_key(str(key)) and not _structural_secret_key_is_benign(
-                child_path, str(key), value
+            child_segments = (*segments, name)
+            if is_secret_key(name) and not _structural_secret_key_is_benign(
+                child_path, name, value, segments=child_segments
             ):
-                if isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
+                if _is_finviz_matrix_authority_path(child_segments):
+                    findings.append(SecretFinding(
+                        path=child_path, reason="UNSUPPORTED_PUBLIC_AUTHORITY_ASSIGNMENT",
+                        fingerprint=_fingerprint(str(value)),
+                    ))
+                elif isinstance(value, str) and value.strip().upper() not in PLACEHOLDER_VALUES:
                     findings.append(
                         SecretFinding(
                             path=child_path,
@@ -222,10 +343,10 @@ def scan_snapshot(
                             fingerprint=_fingerprint(str(value)),
                         )
                     )
-            findings.extend(scan_snapshot(value, path=child_path))
+            findings.extend(scan_snapshot(value, path=child_path, _segments=child_segments))
     elif isinstance(snapshot, (list, tuple)):
         for index, item in enumerate(snapshot):
-            findings.extend(scan_snapshot(item, path=f"{path}[{index}]"))
+            findings.extend(scan_snapshot(item, path=f"{path}[{index}]", _segments=(*segments, index)))
     return tuple(findings)
 
 
@@ -253,7 +374,7 @@ def assert_no_secrets_in_payload(payload: Any, *, context: str = "payload") -> N
     findings = scan_snapshot(payload)
     textual_rules: tuple[str, ...] = ()
     try:
-        rendered = json.dumps(payload, sort_keys=True, default=str)
+        rendered = json.dumps(payload, sort_keys=True, default=str, ensure_ascii=False)
     except (TypeError, ValueError):
         rendered = ""
     if rendered:

@@ -7,6 +7,13 @@
 
 ## Flow
 
+OCT1-06 adds explicit Screener ActionDecision assessment before a draft. ENTER
+and EXIT can prepare the existing Workspace preview/close flow, with bounded
+action/snapshot refs. Both preview and submit revalidate those refs; governed
+entry additionally reuses BUILD 22 PreTradeRiskEngine and the existing Paper
+risk path. A reduced approved quantity requires a new preview. No state triggers
+submission. See [Screener action decisions](SCREENER_ACTION_DECISION.md).
+
 ```mermaid
 flowchart LR
   A[Paper Command / Lane / Watched Radar opportunity] --> B[Draft + provenance]
@@ -178,6 +185,24 @@ or unauthorized inputs stop before downstream Paper mutation.
 - Handoff panel, decision snapshot, risk context, preview status
 - Order ticket embedded; `showLaneBanner=false` in cockpit
 - Observability layer (`WorkspaceObservability`) unchanged below
+
+#### Risk control panel (OCT1-08)
+
+The cockpit shows the [SMA trailing-stop monitor](PAPER_SMA_TRAILING_STOP.md)
+for the instrument's Paper position: status, direction in words, policy,
+SMA, candidate, active and previous stop, distance, update time and
+monitoring liveness. On a breach it shows the server EXIT decision and
+`Paper close: NOT SUBMITTED`; `Prepare Paper Exit` is the existing action
+handoff and only fills the ticket with the current ledger quantity. Preview and
+submit stay in the ticket.
+
+#### Lifecycle view in the Screener (OCT1-10)
+
+After a submit, the AI Screener shows the resulting position as a
+[trade lifecycle](SCREENER_TRADE_LIFECYCLE.md): simulated fill, position, mark,
+stop, exit and P&L, joined to the decision that authorized the order through the
+`ACTION_DECISION` reason on the intent. The view is read-only. Its
+`Prepare Paper Exit` is the same handoff as above and still ends in this ticket.
 
 ### 4. Preview
 

@@ -1,0 +1,32 @@
+{
+  "started_at": "2026-10-08T17:52:39.329191+00:00",
+  "status": "interrupted",
+  "interrupted": true,
+  "tests_run": 233,
+  "passes": 233,
+  "failures": 0,
+  "errors": 0,
+  "skips": 0,
+  "wall_seconds": 72.42856380000012,
+  "not_run_suites": [
+    "phase0",
+    "finviz",
+    "news",
+    "phase7",
+    "platform",
+    "execution",
+    "order_flow",
+    "contracts",
+    "intelligence",
+    "opportunity_watch_dismiss_acceptance",
+    "software_fullstack_acceptance",
+    "integration",
+    "providers",
+    "runtime",
+    "ui1",
+    "ui2",
+    "xa01",
+    "portfolio",
+    "trading_correctness"
+  ]
+}

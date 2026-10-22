@@ -1097,13 +1097,26 @@ def run_worker_process(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        # Process-lifecycle acceptance tests must not interrupt the validator's
+        # console when their owned Windows child processes are cleaned up.
+        creationflags=(subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.CREATE_NO_WINDOW)
+        if os.name == "nt" else 0,
     )
     if registry is not None:
         registry.add(process)
     try:
         stdout, stderr = process.communicate()
+    except KeyboardInterrupt:
+        if process.poll() is None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait(timeout=5)
+        raise
     finally:
-        if registry is not None:
+        if registry is not None and process.poll() is not None:
             registry.discard(process)
     elapsed = time.perf_counter() - started
     stripped = stdout.strip()
@@ -1808,6 +1821,8 @@ def main(argv: list[str] | None = None) -> int:
     regression_explain = perf.get("regression_explain")
     if regression_explain:
         print(f"PERF: {regression_explain}")
+    elif budget.get("classification") == "INSUFFICIENT_DATA" and budget.get("explain"):
+        print(f"PERF: not comparable to baseline: {'; '.join(budget['explain'])}")
     if result["core_checkpoint_required"]:
         print("core_checkpoint_required=true (core checkpoint = mandatory invariants + "
               "core diagnostics; full suite still requires `validate full` at closure)")

@@ -12,6 +12,8 @@ from enum import Enum
 from typing import Any, Callable, Protocol
 from urllib.parse import urlparse
 
+from .http_client import ReplayNetworkBlocked, refuse_replay_network
+
 LOGIN_PAGE_URL = "https://finviz.com/login-email?remember=true"
 LOGIN_SUBMIT_URL = "https://finviz.com/login_submit"
 TOKEN_PAGE_URL = "https://elite.finviz.com/api_explanation"
@@ -155,6 +157,7 @@ def recover_token_via_login(
     password: str,
     session_factory: Callable[[], Any] | None = None,
 ) -> LoginRecoveryResult:
+    refuse_replay_network()
     if not username or not password:
         return LoginRecoveryResult(LoginRecoveryStatus.CONFIG_MISSING)
     factory = session_factory or _registered_session_factory() or _default_session_factory
@@ -163,6 +166,7 @@ def recover_token_via_login(
     session: Any | None = None
     try:
         session = factory()
+        refuse_replay_network()
         login_page = session.get(LOGIN_PAGE_URL, timeout=15)
         if not validate_host(str(login_page.url)):
             return LoginRecoveryResult(
@@ -179,6 +183,7 @@ def recover_token_via_login(
                 http_status=int(login_page.status_code),
             )
 
+        refuse_replay_network()
         login = session.post(
             LOGIN_SUBMIT_URL,
             data={"email": username, "password": password, "remember": "on"},
@@ -200,6 +205,7 @@ def recover_token_via_login(
                 http_status=int(login.status_code),
             )
 
+        refuse_replay_network()
         token_page = session.get(TOKEN_PAGE_URL, timeout=15)
         if not validate_host(str(token_page.url)):
             return LoginRecoveryResult(
@@ -220,6 +226,7 @@ def recover_token_via_login(
         if not TOKEN_VALUE_PATTERN.fullmatch(token):
             return LoginRecoveryResult(LoginRecoveryStatus.TOKEN_NOT_FOUND)
 
+        refuse_replay_network()
         validation_response = session.get(
             EXPORT_URL,
             params={
@@ -250,6 +257,8 @@ def recover_token_via_login(
             token=token,
             http_status=int(validation_response.status_code),
         )
+    except ReplayNetworkBlocked:
+        raise
     except Exception:
         return LoginRecoveryResult(LoginRecoveryStatus.NETWORK_ERROR)
     finally:

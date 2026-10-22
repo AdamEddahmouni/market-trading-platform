@@ -117,6 +117,207 @@ def provider_keys(runtime) -> set[str]:
     return set(runtime.subscriptions.active_keys)
 
 
+class FlowHistoryTests(unittest.TestCase):
+    def setUp(self):
+        self.clock = Clock()
+        self.runtime = make_runtime(self.clock, max_trades=3)
+        self.service, self.session = make_service(self.clock, self.runtime)
+        self.service.demand("history", "NVDA", ["cvd", "order_flow"])
+
+    def print(self, seq, seconds, volume=10, direction="BUY"):
+        tick(self.runtime, "NVDA", seq=seq, price=100, volume=volume,
+             direction=direction, event_ns=T0 + int(seconds * SECOND))
+        self.clock.now = max(self.clock.now, T0 + int(seconds * SECOND) + SECOND)
+        self.runtime.lifecycle.last_received_ns = self.clock.now
+
+    def series(self, **kwargs):
+        return self.service.order_flow_series("NVDA", **kwargs)
+
+    def test_history_survives_raw_tape_rollover(self):
+        for i in range(10):
+            self.print(i, i)
+        self.assertEqual(len(self.runtime.state.trades_for("NVDA")), 3)
+        result = self.series(range_name="session", resolution="1s")
+        self.assertEqual(sum(p["trade_count"] for p in result["points"]), 10)
+        self.assertEqual(result["points"][-1]["cvd"], 100)
+        self.assertEqual(result["coverage"]["basis"], "PARTIAL_CAPTURE")
+        self.assertFalse(result["coverage"]["complete"])
+
+    def test_buckets_sum_delta_unknown_and_keep_cvd_anchor_when_window_changes(self):
+        self.print(1, 1, 10)
+        self.print(2, 2, 4, "SELL")
+        self.print(3, 3, 6, "NEUTRAL")
+        self.print(4, 6, 3)
+        result = self.series(resolution="5s")
+        first = result["points"][0]
+        self.assertEqual((first["delta"], first["cvd"], first["unknown_volume"], first["trade_count"]), (6, 6, 6, 3))
+        narrow = self.series(start_ms=(T0 // 1_000_000) + 5000, end_ms=self.clock.now // 1_000_000, resolution="1s")
+        self.assertEqual(narrow["points"][-1]["cvd"], 9)
+        self.assertEqual(narrow["points"][-1]["delta"], 3)
+        minute = self.series(resolution="1m")
+        self.assertEqual(minute["points"][0]["delta"], 9)
+
+    def test_out_of_order_and_duplicates_after_tape_rollover(self):
+        self.print(1, 1, 10)
+        self.print(2, 3, 4, "SELL")
+        self.print(3, 2, 7)
+        self.print(4, 4, 2)
+        self.print(1, 1, 10)
+        result = self.series(resolution="1s")
+        self.assertEqual([p["cvd"] for p in result["points"]], [10, 17, 13, 15])
+        self.assertEqual(sum(p["trade_count"] for p in result["points"]), 4)
+
+    def test_partial_session_never_claims_market_open_capture(self):
+        self.print(1, 0)
+        coverage = self.series(range_name="session")["coverage"]
+        self.assertLess(coverage["requested_start_ms"], coverage["actual_start_ms"])
+        self.assertFalse(coverage["complete"])
+        self.assertEqual(coverage["anchor_at"], self.service.cvd("NVDA")["window"]["anchor_at"])
+
+    def test_subscription_gap_is_explicit_and_not_aggregated_away(self):
+        self.print(1, 1)
+        self.service.release("history")
+        self.clock.advance(120)
+        self.service.demand("history", "NVDA", ["cvd"])
+        self.print(2, 125)
+        result = self.series(range_name="session", resolution="5m")
+        self.assertTrue(result["coverage"]["gaps"])
+        self.assertFalse(result["coverage"]["complete"])
+        self.assertGreater(len({p["segment"] for p in result["points"]}), 1)
+
+    def test_state_and_authority_gates_preserved(self):
+        self.print(1, 1)
+        self.clock.advance(40)
+        self.assertEqual(self.series()["state"], "STALE")
+        self.session["label"] = "CLOSED"
+        self.assertEqual(self.series()["state"], "SESSION_CLOSED")
+        self.runtime.lifecycle.mark_disconnected("test")
+        self.assertEqual(self.series()["state"], "DISCONNECTED")
+        self.assertEqual(self.series()["points"], [])
+
+    def test_large_range_is_bounded_and_reports_effective_resolution(self):
+        for i in range(2100):
+            self.print(i, i)
+        result = self.series(range_name="1h", resolution="1s")
+        self.assertLessEqual(len(result["points"]), 2000)
+        self.assertGreater(result["resolution_seconds"], 1)
+
+    def test_invalid_ranges_are_rejected(self):
+        for kwargs in ({"range_name": "forever"}, {"resolution": "tick"},
+                       {"start_ms": 5, "end_ms": 1}):
+            with self.assertRaises(ValueError):
+                self.series(**kwargs)
+
+    def test_retention_bounds_keep_absolute_cvd_and_report_truncation(self):
+        self.runtime.state.flow_history.max_buckets = 2
+        for i in range(4):
+            self.print(i, i)
+        result = self.series(resolution="1s")
+        self.assertEqual(len(result["points"]), 2)
+        self.assertEqual(result["points"][-1]["cvd"], 40)
+        self.assertTrue(result["coverage"]["truncated"])
+
+    def test_provider_disconnect_even_short_gap_breaks_capture(self):
+        self.print(1, 1)
+        self.runtime.simulate_disconnect()
+        self.clock.advance(5)
+        self.runtime.simulate_reconnect()
+        self.runtime.lifecycle.connected_ns = self.clock.now
+        self.print(2, 10)
+        result = self.series(range_name="session")
+        self.assertTrue(any(g["reason"] == "PROVIDER_INTERRUPTION" for g in result["coverage"]["gaps"]))
+
+    def test_unknown_volume_and_low_classification_are_retained(self):
+        self.print(1, 1, 90, "NEUTRAL")
+        self.print(2, 2, 10)
+        point = self.series(resolution="1m")["points"][0]
+        self.assertEqual(point["classified_volume_pct"], 10)
+        self.assertEqual(point["unknown_volume"], 90)
+        self.assertEqual(point["inferred_count"], 1)
+        self.assertEqual(point["native_count"], 0)
+
+    def test_day_rollover_resets_capture_without_old_session_claim(self):
+        self.print(1, 1)
+        self.clock.advance(86400)
+        tick(self.runtime, "NVDA", seq=2, price=100, volume=7, direction="BUY",
+             event_ns=self.clock.now, received_ns=self.clock.now)
+        self.clock.advance(1)
+        result = self.series(range_name="session")
+        self.assertFalse(result["coverage"]["complete"])
+        self.assertGreater(result["coverage"]["actual_start_ms"], T0 // 1_000_000 + 86400000)
+        self.assertEqual(result["latest"]["cvd"], 7)
+
+    def test_late_events_outside_dedupe_horizon_are_excluded_visibly(self):
+        self.print(1, 1)
+        self.print(2, 180)
+        self.print(3, 2)
+        result = self.series(range_name="session")
+        self.assertEqual(result["coverage"]["dropped_late_trades"], 1)
+        self.assertFalse(result["coverage"]["complete"])
+        self.assertEqual(result["latest"]["cvd"], 20)
+
+    def test_complete_recent_subscribed_window_and_crypto_clock(self):
+        for i in range(61):
+            self.print(i, i)
+        self.assertTrue(self.series(range_name="1m")["coverage"]["complete"])
+        from market_platform_foundation.order_flow.history import request_window
+
+        start, end, _seconds = request_window(self.clock.now, "24_7", "session", None, None, "auto")
+        from datetime import UTC, datetime
+
+        self.assertEqual(datetime.fromtimestamp(start / SECOND, UTC).hour, 0)
+        self.assertEqual(end, self.clock.now)
+
+    def test_provider_change_is_visible_in_history_provenance(self):
+        self.print(1, 1)
+        row = dict(self.runtime.state.trades_for("NVDA")[-1], trade_id="other",
+                   provider="OTHER_PROVIDER", event_time_ns=T0 + 2 * SECOND,
+                   available_time_ns=T0 + 2 * SECOND, received_ns=T0 + 2 * SECOND)
+        self.runtime.state.flow_history.append("NVDA", row)
+        self.clock.now = T0 + 3 * SECOND
+        result = self.series(resolution="1m")
+        self.assertTrue(any(g["reason"] == "PROVIDER_CHANGE" for g in result["coverage"]["gaps"]))
+        self.assertEqual({source for p in result["points"] for source in p["providers"]}, {"moomoo", "OTHER_PROVIDER"})
+
+    def test_evicted_instrument_restarts_capture_anchor(self):
+        store = self.runtime.state.flow_history
+        store.max_instruments = 1
+        self.print(1, 1)
+        store.begin("AAPL", T0 + 2 * SECOND)
+        row = dict(self.runtime.state.trades_for("NVDA")[-1], trade_id="aapl",
+                   event_time_ns=T0 + 2 * SECOND, received_ns=T0 + 2 * SECOND)
+        store.append("AAPL", row)
+        # Demand heartbeats reuse the original subscription activation time.
+        self.service.demand("history", "NVDA", ["cvd", "order_flow"])
+        self.print(3, 3)
+        result = store.project("NVDA", start=T0, end=T0 + 5 * SECOND,
+                               seconds=1, now_ns=T0 + 5 * SECOND)
+        self.assertFalse(result["coverage"]["complete"])
+        self.assertGreater(result["coverage"]["anchor_at"], self.service.cvd("NVDA")["window"]["anchor_at"])
+        # Repeated eviction without an intervening A heartbeat must retain loss.
+        row.update(trade_id="aapl-again", event_time_ns=T0 + 4 * SECOND,
+                   received_ns=T0 + 4 * SECOND)
+        store.append("AAPL", row)
+        self.service.demand("history", "NVDA", ["cvd", "order_flow"])
+        self.print(5, 5)
+        result = store.project("NVDA", start=T0, end=T0 + 7 * SECOND,
+                               seconds=1, now_ns=T0 + 7 * SECOND)
+        self.assertFalse(result["coverage"]["complete"])
+        self.assertGreater(result["coverage"]["anchor_at"], self.service.cvd("NVDA")["window"]["anchor_at"])
+
+    def test_late_arrival_keeps_event_time_segment_before_gap(self):
+        self.print(1, 100)
+        self.print(2, 110)
+        self.runtime.state.flow_history.interrupt(T0 + 111 * SECOND)
+        self.print(3, 150)
+        tick(self.runtime, "NVDA", seq=4, price=100, volume=7, direction="BUY",
+             event_ns=T0 + 105 * SECOND, received_ns=T0 + 151 * SECOND)
+        result = self.series(range_name="session", resolution="1s")
+        segments = {p["time_ms"]: p["segment"] for p in result["points"]}
+        self.assertEqual(segments[T0 // 1_000_000 + 105000], segments[T0 // 1_000_000 + 100000])
+        self.assertNotEqual(segments[T0 // 1_000_000 + 105000], segments[T0 // 1_000_000 + 150000])
+
+
 class DemandAndSubscriptionTests(unittest.TestCase):
     def setUp(self):
         self.clock = Clock()

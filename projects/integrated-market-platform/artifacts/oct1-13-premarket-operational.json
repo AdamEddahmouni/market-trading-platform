@@ -1,0 +1,100 @@
+{
+  "schema_version": "oct1-13-premarket-operational/1.0.0",
+  "classification": "PREMARKET_OPERATIONAL",
+  "statement": "Provider and projection health before the 2026-10-07 regular session. Health only: nothing here is RTH empirical evidence.",
+  "date": "2026-10-07",
+  "checks": [
+    {
+      "at_utc": "2026-10-07T12:11:52Z",
+      "check": "OpenD capability probe through IMP",
+      "result": {
+        "opend_version": "10.10.7008",
+        "quote_login": true,
+        "trade_login": true,
+        "market_us": "PRE_MARKET_BEGIN",
+        "healthy": [
+          "US_EQUITY_L1",
+          "US_EQUITY_TICKS",
+          "US_EQUITY_DEPTH"
+        ],
+        "not_entitled": [
+          "US futures quotes",
+          "US options quotes"
+        ],
+        "subscription_quota": 100,
+        "server_minus_local_seconds": -0.29
+      }
+    },
+    {
+      "check": "Host clock and session authority",
+      "result": {
+        "ntp_offset_ms": 14,
+        "timezone": "Eastern",
+        "session_labels": "CLOSED <04:00, PREMARKET 04:00-09:29:59, REGULAR 09:30-15:59:59, AFTER_HOURS 16:00-19:59:59 ET",
+        "limitation": "The session label is not holiday-aware."
+      }
+    },
+    {
+      "check": "Provider configuration through IMP (no values read back)",
+      "result": {
+        "sec": "CONFIGURED (SEC_USER_AGENT in the User environment)",
+        "finnhub": "CONFIGURED",
+        "newsapi": "CONFIGURED, DELAYED by contract",
+        "finra": "CONFIGURED",
+        "fred": "CONFIGURED",
+        "eia": "CONFIGURED",
+        "openfigi": "CONFIGURED",
+        "anthropic": "CONFIGURED",
+        "openai": "NEEDS_SETUP",
+        "gemini": "NEEDS_SETUP",
+        "tradier": "NEEDS_SETUP",
+        "ibkr": "EXTERNAL, ports closed",
+        "finviz": "HEALTHY at runtime once IMP_FINVIZ_SECRET_DIR points at the operator's private store; 4,630 US equity rows"
+      }
+    },
+    {
+      "check": "FinBERT smoke",
+      "result": {
+        "state": "READY",
+        "model": "ProsusAI/finbert",
+        "runtime_model_revision": "f6449ddda85e",
+        "labels_seen": [
+          "POSITIVE",
+          "NEGATIVE",
+          "NEUTRAL"
+        ]
+      }
+    },
+    {
+      "check": "News probe, one symbol (AAPL), bounded",
+      "result": {
+        "finnhub_items": 245,
+        "newsapi_items": 30,
+        "finviz_items": 1
+      }
+    },
+    {
+      "check": "Screener window on merged main 5ffbe155, premarket",
+      "symbols_checked": 20,
+      "result": {
+        "reference_rows_before_subscription": "FINVIZ_ELITE SNAPSHOT, BLOCKED NO_OBSERVATION_TIME (reference only, never labelled realtime)",
+        "after_window_subscription": "12 of 20 ADMISSIBLE; 8 of 20 BLOCKED NO_OBSERVATION_TIME on rows with a legitimate current Moomoo quote",
+        "finding": "Blocking defect: clock-less QUOTE pushes replaced snapshot-clocked quotes. Fixed in PR #471 (746b93f8)."
+      }
+    },
+    {
+      "at_utc": "2026-10-07T13:29:47Z",
+      "check": "Screener read on 746b93f8 in the prospective namespace, 13 seconds before the open, before the page subscribed",
+      "result": {
+        "session": "PREMARKET",
+        "universe_rows": 4630,
+        "source_error": null,
+        "window_rows": "20 of 20 FINVIZ_ELITE SNAPSHOT, BLOCKED (reference only)"
+      }
+    }
+  ],
+  "limits": [
+    "A regular-session QUOTE push could not be observed before the open.",
+    "In premarket a push still shows an undated extended-hours price where the provider gives no clock for it; that is intended and unchanged."
+  ]
+}

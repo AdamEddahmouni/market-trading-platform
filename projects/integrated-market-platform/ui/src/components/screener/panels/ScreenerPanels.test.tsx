@@ -12,7 +12,7 @@ import ScreenerDock, { serializeLayout, type DockHandle } from "./ScreenerDock";
 const mocks = vi.hoisted(() => ({
   fetch: vi.fn(), window: vi.fn(), release: vi.fn(), config: vi.fn(), save: vi.fn(), remove: vi.fn(), last: vi.fn(),
   preview: vi.fn(), layout: vi.fn(), panelLayout: vi.fn(),
-  flow: vi.fn(), cvd: vi.fn(), depth: vi.fn(), chart: vi.fn(), futures: vi.fn(), squeeze: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(),
+  flow: vi.fn(), cvd: vi.fn(), flowSeries: vi.fn(), depth: vi.fn(), chart: vi.fn(), futures: vi.fn(), squeeze: vi.fn(), demand: vi.fn(), releasePanels: vi.fn(),
 }));
 vi.mock("../../../api/screener", async (original) => ({
   ...(await original<typeof import("../../../api/screener")>()),
@@ -23,6 +23,7 @@ vi.mock("../../../api/screener", async (original) => ({
 }));
 vi.mock("../../../api/screenerPanels", () => ({
   fetchOrderFlow: mocks.flow, fetchCvd: mocks.cvd, fetchDepth: mocks.depth, fetchChart: mocks.chart,
+  fetchFlowSeries: mocks.flowSeries,
   fetchFuturesContext: mocks.futures, demandPanels: mocks.demand, releasePanels: mocks.releasePanels,
   releasePanelsOnUnload: mocks.releasePanels,
 }));
@@ -40,7 +41,10 @@ vi.mock("lightweight-charts", () => {
     createChart: vi.fn(() => ({
       addCandlestickSeries: vi.fn(series), addHistogramSeries: vi.fn(series), addBaselineSeries: vi.fn(series),
       priceScale: vi.fn(() => ({ applyOptions: vi.fn() })),
-      timeScale: vi.fn(() => ({ setVisibleLogicalRange: vi.fn(), fitContent: vi.fn() })), applyOptions: vi.fn(), remove: vi.fn(),
+      timeScale: vi.fn(() => ({ setVisibleLogicalRange: vi.fn(), fitContent: vi.fn(), getVisibleRange: () => null,
+        setVisibleRange: vi.fn(), getVisibleLogicalRange: () => null, scrollToRealTime: vi.fn(),
+        subscribeVisibleTimeRangeChange: vi.fn(), unsubscribeVisibleTimeRangeChange: vi.fn() })),
+      removeSeries: vi.fn(), applyOptions: vi.fn(), remove: vi.fn(),
     })),
   };
 });
@@ -124,6 +128,17 @@ beforeEach(() => {
   mocks.releasePanels.mockResolvedValue({ released: true });
   mocks.flow.mockImplementation(async (id: string) => flowPayload(id));
   mocks.cvd.mockImplementation(async (id: string) => cvdPayload(id));
+  mocks.flowSeries.mockImplementation(async (id: string, _universe: string, range: string) => ({
+    ...base(id, "order_flow_series"), range, resolution_seconds: 1,
+    coverage: { requested_start_ms: now - 300000, requested_end_ms: now, actual_start_ms: now - 3000, actual_end_ms: now,
+      anchor_at: iso(60000), basis: "PARTIAL_CAPTURE", complete: false, truncated: false, gaps: [],
+      persistence: "RUNTIME_LOCAL", dropped_late_trades: 0 },
+    points: cvdPayload(id).points.map((p, i) => ({ ...p, end_ms: p.time_ms + 1000, trade_count: 1, buy_volume: i ? 0 : 100,
+      sell_volume: i === 1 ? 300 : 0, unknown_volume: i === 2 ? 50 : 0, classified_volume: i === 0 ? 100 : i === 1 ? 300 : 0,
+      classified_volume_pct: i === 2 ? 0 : 100, native_count: 0, inferred_count: i === 2 ? 0 : 1,
+      unknown_count: i === 2 ? 1 : 0, segment: 0, providers: ["MOOMOO"], event_at: iso(), received_at: iso() })),
+    latest: { cvd: -200, recent_delta: -200, trades_per_minute: 3, event_at: iso(), received_at: iso() },
+  }));
   mocks.depth.mockImplementation(async (id: string) => depthPayload(id));
   mocks.chart.mockReturnValue(new Promise(() => undefined));
   mocks.futures.mockReturnValue(new Promise(() => undefined));
@@ -264,6 +279,29 @@ describe("S4 Screener dock", () => {
     expect(screen.getByRole("region", { name: "Level 2 for NVDA" })).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "Level 2 for AAPL" })).toBeNull();
     await waitFor(() => expect(mocks.demand).toHaveBeenLastCalledWith(expect.any(String), "NVDA", ["level2"]));
+  });
+
+  it("resets temporal controls on symbol change and rejects a late history response", async () => {
+    const buildSeries = mocks.flowSeries.getMockImplementation()!;
+    let resolveAapl: (value: unknown) => void = () => undefined;
+    mocks.flowSeries.mockImplementation((id: string, ...args: unknown[]) => id === "AAPL"
+      ? new Promise(resolve => { resolveAapl = resolve; }) : buildSeries(id, ...args));
+    renderPage();
+    await selectRow("AAPL");
+    fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
+    const oldHistory = await screen.findByRole("region", { name: "Captured CVD history" });
+    fireEvent.click(within(oldHistory).getByRole("button", { name: "Session", exact: true }));
+    fireEvent.change(within(oldHistory).getByRole("combobox", { name: "Resolution" }), { target: { value: "5m" } });
+    await waitFor(() => expect(mocks.flowSeries).toHaveBeenCalledWith("AAPL", "US_EQUITIES", "session", "5m", undefined, expect.anything()));
+    await selectRow("NVDA");
+    const history = await screen.findByRole("region", { name: "Captured CVD history" });
+    await within(history).findByText(/Captured CVD now/);
+    expect(within(history).getByRole("button", { name: "5m", exact: true })).toHaveAttribute("aria-pressed", "true");
+    expect(within(history).getByRole("combobox", { name: "Resolution" })).toHaveValue("auto");
+    await act(async () => { resolveAapl({ ...await buildSeries("AAPL", "US_EQUITIES", "session"),
+      latest: { cvd: 987654321, recent_delta: 0, trades_per_minute: 0, event_at: iso(), received_at: iso() } }); });
+    expect(within(history).getByText(/Captured CVD now/)).toHaveTextContent("\u2212200");
+    expect(screen.queryByRole("region", { name: "CVD for AAPL" })).toBeNull();
   });
 
   it("renders a semantic ladder and hides invalid books", async () => {

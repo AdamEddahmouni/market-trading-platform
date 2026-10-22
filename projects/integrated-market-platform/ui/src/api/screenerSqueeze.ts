@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson } from "./fetchJson";
 import type { ScreenerFilter, ScreenerUniverse } from "./screener";
@@ -43,6 +44,7 @@ const WhyListed = z.object({ state: z.enum(["NO_ACTIVE_FILTERS", "MATCHED", "NOT
   observed: z.union([NumberValue, z.string()]).nullable(), passed: z.boolean(), missing: z.boolean(), text: z.string(),
 }).strict()) }).strict();
 export const SqueezeSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-squeeze/1.0.0"), generated_at: z.string(),
   instrument_id: z.string().min(1), universe: z.literal("US_EQUITIES"), symbol: z.string().min(1),
   company: z.string().nullable(), view: z.enum(["summary", "detail"]), market_session: z.string(),

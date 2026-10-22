@@ -400,6 +400,12 @@ class ScreenerNewsService:
     def sentiment_model(self) -> FinbertSentiment:
         return self._sentiment or finbert_sentiment()
 
+    def candidate_evidence(self, *, universe: str, rows: list[dict[str, Any]], refresh: bool = False) -> dict[str, Any]:
+        """Bounded S11 projection; no per-instrument acquisition."""
+        from .screener_news_evidence import project_news
+
+        return project_news(self, universe=universe, rows=rows, refresh=refresh)
+
     def _await(self, key: tuple[Any, ...], job: Callable[[], Any], ttl_s: float) -> Any:
         """Background fetch with a bounded wait; returns the entry or None while still pending."""
 
@@ -1175,6 +1181,11 @@ class ScreenerNewsService:
 
         provider = getattr(self._get_synthesizer(), "_provider", None)
         return getattr(provider, "_server", None)
+
+    def synthesis_provider(self) -> Any:
+        """Return the selected provider instance for sibling governed inference tasks."""
+
+        return getattr(self._get_synthesizer(), "_provider", None)
 
     def ai_status(self) -> dict[str, Any]:
         return self._ai_status()

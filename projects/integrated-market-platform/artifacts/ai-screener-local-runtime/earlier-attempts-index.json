@@ -1,0 +1,91 @@
+[
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-changed-pre-console-fix.json.gz",
+    "errors": 0,
+    "failures": 0,
+    "passes": 5386,
+    "raw_sha256": "202852e18a2a4bc533544e286be1f7fca79d37206911169abfdd4229c67bea75",
+    "skips": 35,
+    "status": "passed",
+    "tests_run": 5421,
+    "wall_seconds": 235.22507059999043
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-changed-temp-contaminated.json.gz",
+    "errors": 0,
+    "failures": 4,
+    "passes": 5382,
+    "raw_sha256": "6c368a89e8dd7e896b954dfa8dd1bd5660836f2cfe6d35334c1c2599305457c1",
+    "skips": 35,
+    "status": "failed",
+    "tests_run": 5421,
+    "wall_seconds": 374.131816100009
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-full-interrupted-second.json.gz",
+    "errors": 0,
+    "failures": 0,
+    "passes": 210,
+    "raw_sha256": "ba3489a47f4d396f400daf0fd93b2b91ed66fbcedfe0aaad77fabacb0425e42f",
+    "skips": 0,
+    "status": "interrupted",
+    "tests_run": 210,
+    "wall_seconds": 79.0960303000029
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-full-interrupted-serial.json.gz",
+    "errors": 0,
+    "failures": 0,
+    "passes": 2220,
+    "raw_sha256": "f76bc78061ab3fa730283bc3b11a647d0ab08fe59e9170bc899a2ccbbb2778e9",
+    "skips": 5,
+    "status": "interrupted",
+    "tests_run": 2225,
+    "wall_seconds": 219.69102909999492
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-full-interrupted-third.json.gz",
+    "errors": 0,
+    "failures": 0,
+    "passes": 210,
+    "raw_sha256": "aa61809088211dfef1b35b0ff744b4a03925dfad1103f2eb274cc055f7437a01",
+    "skips": 0,
+    "status": "interrupted",
+    "tests_run": 210,
+    "wall_seconds": 79.07329360001313
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-full-interrupted.json.gz",
+    "errors": 0,
+    "failures": 0,
+    "passes": 210,
+    "raw_sha256": "dc454af8ebc25b9cad85adfd854bec79e6088cccf3d08464adbc6337134f60f4",
+    "skips": 0,
+    "status": "interrupted",
+    "tests_run": 210,
+    "wall_seconds": 78.55845640000189
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\validation-full-loopback-abort.json.gz",
+    "errors": 1,
+    "failures": 0,
+    "passes": 8408,
+    "raw_sha256": "2cdd7d6dabb5ae1300a931a11fb5af04c04d64ad6da995bdfe64dcec953a92f0",
+    "skips": 53,
+    "status": "failed",
+    "tests_run": 8462,
+    "wall_seconds": 399.25106830000004
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\ui-test.log.gz",
+    "raw_sha256": "51314bf18086eda9a2feaae3622945a5e6546b8ff8c6295993432c45cfa8c647"
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\ui-test-earlier.log.gz",
+    "raw_sha256": "69afba6f66e725310520d5cf2c0d841f1cd2d4e0641a5759320a347e368c0e50"
+  },
+  {
+    "archive": "artifacts\\ai-screener-local-runtime\\ui-build.log.gz",
+    "raw_sha256": "924c43fa4dc7a78564eb04f901c341b3ec02170b667c50580cb6e819829074c6"
+  }
+]

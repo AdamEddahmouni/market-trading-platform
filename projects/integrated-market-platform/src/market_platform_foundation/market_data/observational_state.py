@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ..clock import monotonic_wall_ns
+from ..order_flow.history import FlowHistoryStore
 from ..order_flow.order_book.engine import IncrementalOrderBook
 from ..order_flow.order_book.freshness import FreshnessPolicy, evaluate_book_freshness
 from ..order_flow.order_book.projection import project_book_snapshot
@@ -15,6 +16,7 @@ from .depth_admission import DepthAdmissionContext, DepthAdmissibilityResult, ev
 from .live_config import depth_freshness_policy
 from .normalization import classified_trade_from_ticker, levels_from_order_book, l1_from_quote
 from .live_admission import ADMISSION_BLOCKED, ADMISSION_DISPLAY
+from .provider_time import parse_provider_datetime_ns
 
 
 # The snapshot poll refreshes the book every 2 s; a book that missed five polls is dropped, not carried.
@@ -64,6 +66,7 @@ class ObservationalStateStore:
     max_trades: int = 500
     quotes: dict[str, QuoteSnapshot] = field(default_factory=dict)
     trades: dict[str, deque[dict[str, Any]]] = field(default_factory=dict)
+    flow_history: FlowHistoryStore = field(default_factory=FlowHistoryStore)
     books: dict[str, dict[str, Any]] = field(default_factory=dict)
     #: Canonical provider-neutral incremental book engines (G5 / ARCH-003).
     #: The engine is the authoritative book state; ``books`` holds the
@@ -110,7 +113,12 @@ class ObservationalStateStore:
 
         if "L1" in capability or "SNAPSHOT" in capability:
             l1 = l1_from_quote(payload)
-            last_price = _session_last_price(payload)
+            last_price, price_field = _session_price(payload)
+            if event_time_ns == received_ns and price_field == "last_price":
+                # The feed found no clock on this payload: a QUOTE push, which has no update_time.
+                traded_ns = _quote_push_trade_time_ns(payload)
+                if traded_ns is not None and traded_ns <= received_ns:
+                    event_time_ns = traded_ns
             bid = None if l1 is None else l1.best_bid
             ask = None if l1 is None else l1.best_ask
             if bid is None:
@@ -158,12 +166,12 @@ class ObservationalStateStore:
         elif "TICK" in capability:
             trade = classified_trade_from_ticker(payload, provider=provider)
             tape = self.trades.setdefault(instrument_id, deque(maxlen=self.max_trades))
-            tape.append(
-                {
+            row = {
                     "admission": admission,
                     "aggressor_provenance": trade.aggressor_source.value,
                     "aggressor_side": trade.aggressor_side.value.upper(),
                     "available_time_ns": available_ns,
+                    "received_ns": received_ns,
                     "classification_method": trade.classification_method,
                     "condition": str(payload.get("type") or "") or None,
                     "event_time_ns": event_time_ns,
@@ -173,7 +181,8 @@ class ObservationalStateStore:
                     "quantity": trade.quantity,
                     "trade_id": trade.trade_id,
                 }
-            )
+            self.flow_history.append(instrument_id, row)
+            tape.append(row)
             if trade.aggressor_side.value.upper() == "UNKNOWN":
                 self.metrics["unknown_aggressor"] += 1
             else:
@@ -479,12 +488,12 @@ class ObservationalStateStore:
             return False
         event_ns = event_time_ns if event_time_ns is not None else now_ns
         available_ns = available_time_ns if available_time_ns is not None else now_ns
-        tape.append(
-            {
+        row = {
                 "admission": admission,
                 "aggressor_provenance": trade.aggressor_source.value,
                 "aggressor_side": trade.aggressor_side.value.upper(),
                 "available_time_ns": available_ns,
+                "received_ns": now_ns,
                 "classification_confidence": trade.classification_confidence,
                 "classification_method": trade.classification_method,
                 "event_time_ns": event_ns,
@@ -495,7 +504,8 @@ class ObservationalStateStore:
                 "signed_volume": trade.signed_volume,
                 "trade_id": trade.trade_id,
             }
-        )
+        self.flow_history.append(key, row)
+        tape.append(row)
         self.metrics["events_received"] += 1
         self.metrics["events_admitted"] += 1
         if trade.aggressor_side.value.upper() == "UNKNOWN":
@@ -522,30 +532,58 @@ def _overnight_snapshot(payload: dict[str, Any]) -> bool:
     return clock >= "20:00" or clock < "04:00"
 
 
+def _quote_push_trade_time_ns(payload: dict[str, Any]) -> int | None:
+    """When a QUOTE push's ``last_price`` traded: its ``data_date`` and ``data_time`` (ET wall clock).
+
+    It dates the regular-session print only. Outside the regular session it stays at the last
+    regular trade while ``pre_price``/``after_price``/``overnight_price`` move without a clock of
+    their own, so the caller uses it only when ``last_price`` is the price shown.
+    """
+
+    if payload.get("update_time") or payload.get("time"):
+        return None
+    data_date, data_time = str(payload.get("data_date") or "").strip(), str(payload.get("data_time") or "").strip()
+    if not data_date or not data_time:
+        return None
+    return parse_provider_datetime_ns(f"{data_date} {data_time}")
+
+
 def _session_last_price(payload: dict[str, Any]) -> float | None:
-    last = _optional_float(payload, "last_price", "last")
-    after = _optional_float(payload, "after_price")
-    overnight = _optional_float(payload, "overnight_price")
-    pre = _optional_float(payload, "pre_price")
+    return _session_price(payload)[0]
+
+
+def _session_price(payload: dict[str, Any]) -> tuple[float | None, str]:
+    """The price for the payload's session and the provider field it came from."""
+
+    last = ("last_price", _optional_float(payload, "last_price", "last"))
+    after = ("after_price", _optional_float(payload, "after_price"))
+    overnight = ("overnight_price", _optional_float(payload, "overnight_price"))
+    pre = ("pre_price", _optional_float(payload, "pre_price"))
+
+    def first(*choices: tuple[str, float | None]) -> tuple[float | None, str]:
+        name, value = next((choice for choice in choices if choice[1]), choices[-1])
+        return value, name
+
+    regular = first(last) if last[1] is not None else first(after, overnight, pre)
     update_time = str(payload.get("update_time") or "")
     if len(update_time) >= 16:
         # A snapshot's update_time (ET wall clock) says which session the quote belongs to.
         clock = update_time[11:16]
         if clock >= "20:00" or clock < "04:00":
-            return overnight or after or last
+            return first(overnight, after, last)
         if clock >= "16:00":
-            return after or last
+            return first(after, last)
         if clock < "09:30":
-            return pre or last
-        return last if last is not None else after or overnight or pre
+            return first(pre, last)
+        return regular
     data_time = str(payload.get("data_time") or "")
-    if after is not None and data_time.startswith("16:00"):
-        return after
-    if overnight is not None and data_time.startswith("20:00"):
-        return overnight
-    if pre is not None and len(data_time) >= 2 and data_time[:2] < "09":
-        return pre
-    return last if last is not None else after or overnight or pre
+    if after[1] is not None and data_time.startswith("16:00"):
+        return first(after)
+    if overnight[1] is not None and data_time.startswith("20:00"):
+        return first(overnight)
+    if pre[1] is not None and len(data_time) >= 2 and data_time[:2] < "09":
+        return first(pre)
+    return regular
 
 
 def _optional_float(payload: dict[str, Any], *keys: str) -> float | None:

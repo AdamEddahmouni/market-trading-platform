@@ -1,0 +1,30 @@
+{
+  "schema_version": "local-runtime-independent-review/1.0.0",
+  "reviewer": "runtime_review",
+  "mode": "READ_ONLY",
+  "rounds": 6,
+  "remaining_P1": 0,
+  "remaining_P2": 0,
+  "runtime_launches": 0,
+  "test_launches": 0,
+  "edits": 0,
+  "dispositions": [
+    "Pinned warm runtime profile enforced for synthesis",
+    "Eligible dispatched-case completeness required before holdout",
+    "OS high-water RSS captured",
+    "Final monitor failure propagated before validation/cache",
+    "Inference semaphores released despite cleanup errors",
+    "Unreaped process ownership retained",
+    "Unsupported profile refusal displayed",
+    "Stale exclusions accounted separately",
+    "Corrupt budget bytes preserved and dispatch refused",
+    "Selected executable checked before verification cache",
+    "Generated p3 artifacts excluded; new benchmark classification registration reviewed",
+    "Windows validation-worker console isolation reviewed",
+    "Interrupted isolated validator worker reaped before propagation; P2 closed",
+    "Final committed source and exact 22-path scope matched reviewed implementation; no uncommitted implementation differences"
+  ],
+  "final_review": "No remaining high-severity findings; empirical uncertainty remains separate.",
+  "committed_source_sha": "b9ae89263d5816ba5a043c359143ef30fe16b030",
+  "committed_path_count": 22
+}

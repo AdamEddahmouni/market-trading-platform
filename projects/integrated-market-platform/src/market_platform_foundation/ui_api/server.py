@@ -14,6 +14,11 @@ from urllib.parse import parse_qs, urlparse
 from ..canonical import canonical_bytes, write_canonical_json
 from ..platform.security.access_control import AuthorizationFailure, authenticate_session_token
 from ..platform.security.leak_audit import assert_no_secrets_in_payload
+from ..platform.security.route_policy import (
+    PAPER_AUTOMATION_BASE,
+    PAPER_AUTOMATION_READ_PATHS,
+    paper_automation_operations,
+)
 from . import broker_projections
 from . import canary_projections
 from . import controlled_replay as controlled_replay_api
@@ -57,6 +62,11 @@ from .request_auth import (
 )
 from .store import ReplayStore
 
+# AUTO-01 dispatch, derived from the single capability table in platform.security.route_policy. The dispatch
+# tables and the capability resolver can no longer disagree, and an operation that is in neither is refused
+# here before it could reach the resolver and inherit the read-only default.
+PAPER_AUTOMATION_POST_OPERATIONS = paper_automation_operations("POST")
+
 
 def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, Any]:
     return attach_lane_provenance(payload, lane_id=lane_id, retrieved_at_ns=time.time_ns())
@@ -68,6 +78,17 @@ def _enrich_lane_payload(payload: dict[str, Any], *, lane_id: str) -> dict[str, 
 # serialize on this single lock. Deliberately coarse: no server restructure,
 # no per-store locking; responses are sent after releasing the lock.
 LEDGER_ROUTE_LOCK = threading.Lock()
+
+
+def with_engine_lock(payload: dict[str, Any], read_lock: Any) -> dict[str, Any]:
+    """Every Screener response that offers the engine picker also says whether the choice may change now.
+
+    The picker's choices travel in an ``ai`` block that lists ``engines``; that block gains ``engine_lock``. The
+    lock is read only when such a block is present."""
+    ai = payload.get("ai") if isinstance(payload, dict) else None
+    if not isinstance(ai, dict) or "engines" not in ai or "engine_lock" in ai:
+        return payload
+    return {**payload, "ai": {**ai, "engine_lock": read_lock()}}
 
 
 class UiApiHandler(BaseHTTPRequestHandler):
@@ -91,6 +112,12 @@ class UiApiHandler(BaseHTTPRequestHandler):
         status: HTTPStatus = HTTPStatus.OK,
         deprecated_successor: str | None = None,
     ) -> None:
+        if status == HTTPStatus.OK and self.path.split("?")[0].startswith("/screener"):
+            from .screener_freshness import project_screener_response
+            from datetime import UTC, datetime
+
+            payload = project_screener_response(self.path, payload, now=datetime.now(UTC).isoformat().replace("+00:00", "Z"))
+            payload = with_engine_lock(payload, self._engine_lock)
         try:
             assert_no_secrets_in_payload(payload)
         except Exception as exc:
@@ -123,6 +150,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-IMP-Session")
         self.end_headers()
 
+    def _engine_lock(self) -> dict[str, Any]:
+        """Whether the machine-wide AI engine choice may change now. An unreadable loop state locks it."""
+        from .screener_reevaluation import reevaluation_service
+
+        try:
+            return reevaluation_service(self.store).engine_lock()
+        except Exception:  # noqa: BLE001 - fail closed: never switch a model under a loop whose state is unknown
+            return {"locked": True, "reason": "REEVALUATION_STATE_UNKNOWN"}
+
     def _authorize_request(
         self,
         method: str,
@@ -143,6 +179,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 auth.code.value,
                 auth.message,
                 status=authorization_http_status(auth),
+            )
+            return False
+        # Current-market Screener/discovery has no admitted replay implementation.
+        # Refuse before imports, singleton caches, provider demand, or mutations;
+        # serving store authority outranks browser state and configured credentials.
+        current_market_route = (
+            path == "/screener" or path.startswith("/screener/")
+            or path == "/discover" or path.startswith("/discover/")
+        )
+        if current_market_route and (
+            getattr(self.store, "controlled_replay", False)
+            or getattr(self.store, "data_mode", "UNKNOWN") not in {"LIVE_OBSERVATIONAL", "BROKER_DELAYED"}
+        ):
+            self._send_error_json(
+                "MODE_BLOCKED", "Current-market Screener is unavailable in replay; no provider request was made.",
+                status=HTTPStatus.FORBIDDEN,
             )
             return False
         return True
@@ -245,7 +297,7 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     return
                 self._send_json(preview)
                 return
-            if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth"):
+            if path in ("/screener/order-flow", "/screener/cvd", "/screener/depth", "/screener/order-flow-series"):
                 from .screener_specialist import specialist_service
                 from .screener_multi import multi_screener_service
                 from .screener_universes import US_EQUITIES, universe_spec
@@ -258,7 +310,8 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 except ValueError:
                     row = None
                     spec = None
-                panel = {"/screener/order-flow": "order_flow", "/screener/cvd": "cvd", "/screener/depth": "level2"}[path]
+                panel = {"/screener/order-flow": "order_flow", "/screener/cvd": "cvd", "/screener/depth": "level2",
+                         "/screener/order-flow-series": "order_flow"}[path]
                 if row is None or spec is None or panel not in spec.panels:
                     self._send_error_json("SCREENER_PANEL_INVALID", "A valid instrument is required", status=HTTPStatus.BAD_REQUEST)
                     return
@@ -270,9 +323,23 @@ class UiApiHandler(BaseHTTPRequestHandler):
                     service = crypto_specialist_service()
                 else:
                     service = specialist_service()
-                builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
-                           "/screener/depth": service.depth}[path]
-                payload = builder(instrument)
+                if path == "/screener/order-flow-series":
+                    try:
+                        if any(len(query.get(name, [])) > 1 for name in ("range", "resolution", "start", "end")):
+                            raise ValueError("DUPLICATE_FLOW_PARAMETER")
+                        payload = service.order_flow_series(instrument,
+                            range_name=(query.get("range") or ["5m"])[0],
+                            resolution=(query.get("resolution") or ["auto"])[0],
+                            start_ms=int(query["start"][0]) if "start" in query else None,
+                            end_ms=int(query["end"][0]) if "end" in query else None)
+                    except (ValueError, OverflowError):
+                        self._send_error_json("SCREENER_FLOW_RANGE_INVALID", "Invalid flow range or resolution",
+                                              status=HTTPStatus.BAD_REQUEST)
+                        return
+                else:
+                    builder = {"/screener/order-flow": service.order_flow, "/screener/cvd": service.cvd,
+                               "/screener/depth": service.depth}[path]
+                    payload = builder(instrument)
                 payload["instrument_id"] = canonical_instrument
                 self._send_json(payload)
                 return
@@ -291,6 +358,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
                                                        timeframe=(query.get("timeframe") or ["5m"])[0],
                                                        scope=(query.get("scope") or ["EXTENDED"])[0])
                                if path == "/screener/chart" else preview_service().futures_context(instrument))
+                except ValueError as exc:
+                    self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                if payload is None:
+                    self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(payload)
+                return
+            if path == "/screener/connectivity":
+                from .screener_connectivity import ConnectivityService
+
+                try:
+                    payload = ConnectivityService().read(
+                        (query.get("instrument") or [""])[0],
+                        (query.get("universe") or ["US_EQUITIES"])[0])
                 except ValueError as exc:
                     self._send_error_json("SCREENER_PANEL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                     return
@@ -367,6 +449,181 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 from .screener_remedies import setup_checklist
 
                 self._send_json(setup_checklist())
+                return
+            if path.startswith("/evaluation/prospective/"):
+                try:
+                    from .prospective_evaluation import evaluation_service
+                    service = evaluation_service(self.store)
+                    first = lambda key: (query.get(key) or [None])[0]
+                    identifier = first("run_id")
+                    if path == "/evaluation/prospective/runs":
+                        payload = {"runs": service.repository.list(service.account, before=first("before"), limit=int(first("limit") or 25))}
+                    elif path.startswith("/evaluation/prospective/runs/"):
+                        identifier = path.removeprefix("/evaluation/prospective/runs/")
+                        payload = service.summary(service.get(identifier), finalized=True)
+                    else:
+                        run = service.get(identifier) if identifier else service.project(cutoff=first("cutoff"), evidence_class=first("evidence_class"))
+                        if path == "/evaluation/prospective/summary":
+                            payload = service.summary(run, finalized=bool(identifier))
+                        elif path == "/evaluation/prospective/records":
+                            payload = service.records(run, offset=int(first("offset") or 0), limit=int(first("limit") or 25),
+                                                      dimension=first("dimension"), label=first("label"))
+                        elif path == "/evaluation/prospective/detail":
+                            payload = service.detail(run, first("evaluation_id"))
+                        else:
+                            raise ValueError("EVALUATION_ROUTE_NOT_FOUND")
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PROSPECTIVE_EVALUATION_UNAVAILABLE", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path == "/screener/action-decisions":
+                from .screener_action import action_service
+                instrument = (query.get("instrument") or [""])[0]
+                if not instrument or len(instrument)>120:
+                    self._send_error_json("INVALID_ACTION_HISTORY", "Instrument required", status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json({"schema_version":"action-history/1.0.0", "decisions":action_service(self.store).history(instrument)})
+                return
+            if path == "/screener/trade-lifecycles" or path.startswith("/screener/trade-lifecycles/"):
+                # OCT1-10 reads: one derived lifecycle per candidate or Paper episode. No model, no provider, no mutation.
+                try:
+                    from .screener_lifecycle import lifecycle_service
+                    first = lambda key: (query.get(key) or [None])[0]
+                    service = lifecycle_service(self.store)
+                    if path == "/screener/trade-lifecycles":
+                        payload = service.list(run_id=first("run_id"), closed_limit=int(first("closed_limit") or 5),
+                                               closed_before=int(first("closed_before")) if first("closed_before") else None)
+                    else:
+                        payload = service.detail(path.removeprefix("/screener/trade-lifecycles/"), run_id=first("run_id"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    missing = str(exc) == "LIFECYCLE_NOT_FOUND"
+                    self._send_error_json("SCREENER_LIFECYCLE_NOT_FOUND" if missing else "SCREENER_LIFECYCLE_INVALID", str(exc),
+                                          status=HTTPStatus.NOT_FOUND if missing else HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path in ("/paper/risk-control/sma-stop", "/paper/risk-control/sma-stop/history", "/paper/risk-control/sma-stop/config",
+                        "/paper/risk-control/sma-stop/evaluation"):
+                # OCT1-08 reads: persisted stop state, bounded stop events, policy and the replay receipt. No mutation.
+                try:
+                    first = lambda key: (query.get(key) or [None])[0]
+                    operation = path.rsplit("/", 1)[1]
+                    if operation == "evaluation":
+                        from ..research.sma_stop_evaluation import read_receipt
+                        payload = read_receipt()
+                    else:
+                        from .paper_risk_control import risk_control_service
+                        service = risk_control_service(self.store)
+                        if operation == "config":
+                            payload = service.config_view()
+                        elif operation == "history":
+                            payload = service.history(first("instrument"), limit=int(first("limit") or 20),
+                                                      before=int(first("before")) if first("before") else None)
+                        else:
+                            payload = service.status(first("instrument"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path in PAPER_AUTOMATION_READ_PATHS:
+                # AUTO-01 reads: controller state, audit history and the behaviour report. No model, no provider, no mutation.
+                # The set is derived from the same capability table that authorizes them.
+                try:
+                    from .paper_automation import paper_automation_service
+                    first = lambda key: (query.get(key) or [None])[0]
+                    service = paper_automation_service(self.store)
+                    operation = path.rsplit("/", 1)[1]
+                    if operation == "status":
+                        payload = service.status()
+                    elif operation == "report":
+                        payload = service.report()
+                    else:
+                        payload = service.history(limit=int(first("limit") or 50), before=int(first("before")) if first("before") else None,
+                                                  kind=first("kind"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history"):
+                # OCT1-07 reads: frozen snapshots, loop liveness and bounded cycle receipts. No model, no mutation.
+                try:
+                    first = lambda key: (query.get(key) or [None])[0]
+                    if path == "/screener/next-session":
+                        from .screener_next_session import next_session_service
+                        service = next_session_service(self.store)
+                        if first("id"):
+                            payload = service.read(first("id"))
+                        elif first("instrument") and len(first("instrument")) <= 120:
+                            payload = {"schema_version": "next-session-history/1.0.0", "snapshots": service.history(first("instrument"))}
+                        else:
+                            raise ValueError("INVALID_NEXT_SESSION_REQUEST")
+                    else:
+                        from .screener_reevaluation import reevaluation_service
+                        service = reevaluation_service(self.store)
+                        if path.endswith("/status"):
+                            payload = service.status(readiness=first("readiness") == "1")
+                        else:
+                            payload = service.history(limit=int(first("limit") or 20), before=float(first("before")) if first("before") else None,
+                                                      session_date=first("session_date"))
+                except (ValueError, TypeError, KeyError) as exc:
+                    self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                    return
+                self._send_json(payload)
+                return
+            if path == "/screener/ai-screener/preview":
+                # AI Screener preview reconstructs the active scope and estimates cost; it never calls a model.
+                from .screener_ai import read_ai_screener_preview
+
+                try:
+                    body = {key: (json.loads((query.get(key) or ["null"])[0]) if key == "filters" else (query.get(key) or [None])[0])
+                            for key in ("universe", "search", "sort", "descending", "filters", "result_set", "view", "screen", "method")}
+                    body["universe"] = body["universe"] or "US_EQUITIES"
+                    body["search"] = body["search"] or ""
+                    body["view"] = body["view"] or "Overview"
+                    body["screen"] = body["screen"] or ""
+                    body["descending"] = body["descending"] not in ("0", "false", "no")
+                    body["filters"] = body["filters"] if isinstance(body["filters"], list) else []
+                    if body['method'] is None:
+                        body.pop('method')
+                    if query.get('local_model_id'):
+                        body['local_model_id'] = query['local_model_id'][0]
+                    self._send_json(read_ai_screener_preview(body))
+                except (ValueError, TypeError, json.JSONDecodeError) as exc:
+                    self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            if path.startswith("/screener/ai-screener/runs/"):
+                # Run status the server actually knows: stage, elapsed time and, once finished, the result. Never calls a model.
+                from .screener_ai_runs import ai_screener_runs
+
+                account = self.store.paper_ledger.paper_account_id
+                run_id = path.removeprefix("/screener/ai-screener/runs/")
+                if run_id == "active":
+                    self._send_json(ai_screener_runs().current(account))
+                    return
+                if run_id.endswith("/coverage"):
+                    # One run's receipts and per-row accounting, from the ledger. Reads only.
+                    try:
+                        receipts = ai_screener_runs().coverage(
+                            account, run_id.removesuffix("/coverage"), row_class=(query.get("class") or [None])[0],
+                            offset=int((query.get("offset") or ["0"])[0]), limit=int((query.get("limit") or ["200"])[0]))
+                    except ValueError as exc:
+                        self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                        return
+                    if receipts is None:
+                        self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "No full-universe run with this id exists for this account",
+                                              status=HTTPStatus.NOT_FOUND)
+                        return
+                    self._send_json(receipts)
+                    return
+                run = ai_screener_runs().read(account, run_id)
+                if run is None:
+                    self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
+                                          status=HTTPStatus.NOT_FOUND)
+                    return
+                self._send_json(run)
                 return
             if path == "/screener/news/synthesis/preview":
                 # AI status and the pre-click cost of a paid synthesis; a read that never calls a model.
@@ -534,6 +791,46 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if path == "/paper/sessions":
                 self._send_json(paper_projections.list_paper_sessions(self.store))
+                return
+            if path in {"/paper/trades", "/paper/equity-history"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
+                from . import paper_experiment
+
+                query = parse_qs(parsed.query)
+
+                def _q(name: str) -> str | None:
+                    value = query.get(name, [None])[0]
+                    return str(value) if value else None
+
+                try:
+                    limit_raw = _q("limit")
+                    if path == "/paper/experiments":
+                        payload = paper_experiment.list_experiments_payload(
+                            self.store, limit=int(limit_raw) if limit_raw else 25
+                        )
+                    elif path == "/paper/experiments/current":
+                        payload = paper_experiment.current_experiment_payload(self.store)
+                    elif path == "/paper/trades":
+                        payload = paper_experiment.trades_payload(
+                            self.store,
+                            experiment_id=_q("experiment_id"),
+                            cursor=_q("cursor"),
+                            limit=int(limit_raw) if limit_raw else 25,
+                        )
+                    elif path == "/paper/equity-history":
+                        before_raw = _q("before")
+                        payload = paper_experiment.equity_history_payload(
+                            self.store,
+                            experiment_id=_q("experiment_id"),
+                            before=int(before_raw) if before_raw else None,
+                            limit=int(limit_raw) if limit_raw else 50,
+                        )
+                    else:
+                        payload = paper_experiment.experiment_payload(
+                            self.store, path.removeprefix("/paper/experiments/")
+                        )
+                    self._send_json(payload)
+                except ValueError as exc:
+                    self._send_error_json("PAPER_EXPERIMENT_READ_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             if path == "/symbols/search":
                 query_text = (query.get("q") or [""])[0]
@@ -1421,6 +1718,21 @@ class UiApiHandler(BaseHTTPRequestHandler):
             return
         if not self._authorize_request("POST", path, parse_qs(parsed.query), body):
             return
+        if path in ("/evaluation/prospective/runs", "/evaluation/prospective/rerun"):
+            try:
+                from .prospective_evaluation import evaluation_service
+                service = evaluation_service(self.store)
+                if path.endswith("/rerun"):
+                    if set(body) != {"run_id"}:
+                        raise ValueError("INVALID_EVALUATION_REQUEST")
+                    payload = service.reproduce(body["run_id"])
+                else:
+                    payload = service.create(body)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PROSPECTIVE_EVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+                return
+            self._send_json(payload)
+            return
         if path in ("/screener/window", "/screener/window/release"):
             from .screener_projections import release_screener_window, update_screener_window
 
@@ -1495,10 +1807,15 @@ class UiApiHandler(BaseHTTPRequestHandler):
             from .screener_news import select_synthesis_engine
 
             engine, model = body.get("engine"), body.get("model")
+            # The choice applies to every AI feature on this machine; it never changes under a running loop.
+            lock = self._engine_lock()
+            if lock["locked"]:
+                self._send_error_json("SYNTHESIS_ENGINE_LOCKED", f"The AI engine cannot be changed now: {lock['reason']}", status=HTTPStatus.CONFLICT)
+                return
             try:
                 if not isinstance(engine, str) or not (model is None or isinstance(model, str)):
                     raise ValueError("SYNTHESIS_ENGINE_INVALID")
-                self._send_json(select_synthesis_engine(engine, model))
+                self._send_json({**select_synthesis_engine(engine, model), "engine_lock": lock})
             except ValueError as exc:
                 self._send_error_json("SYNTHESIS_ENGINE_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
@@ -1524,6 +1841,96 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 return
             if result is None:
                 self._send_error_json("SCREENER_PANEL_UNKNOWN_INSTRUMENT", "Instrument is not in the current Screener universe", status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(result)
+            return
+        if path in ("/screener/action-decision/preview", "/screener/action-decision/run", "/screener/action-decision/handoff"):
+            from .screener_action import action_service
+            try:
+                service = action_service(self.store)
+                operation = path.rsplit("/",1)[1]
+                self._send_json(getattr(service, operation)(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_ACTION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/screener/next-session/draft", "/screener/next-session/lock", "/screener/next-session/observe", "/screener/next-session/evaluate"):
+            # OCT1-07: explicit freeze/lock/observe/evaluate. Prices are read server-side; no order path.
+            from .screener_next_session import next_session_service
+            try:
+                self._send_json(getattr(next_session_service(self.store), path.rsplit("/", 1)[1])(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_NEXT_SESSION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/paper/risk-control/sma-stop/configure", "/paper/risk-control/sma-stop/evaluate"):
+            # OCT1-08: bounded stop policy and Evaluate Stop Now. A stop monitor only: no order, preview or submit.
+            from .paper_risk_control import risk_control_service
+            try:
+                service = risk_control_service(self.store)
+                self._send_json(service.configure(body) if path.endswith("/configure") else service.evaluate_now(body))
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_RISK_CONTROL_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith(PAPER_AUTOMATION_BASE):
+            # AUTO-01: owner policy, explicit arming and controls for unattended internal Paper simulation.
+            # The controller reaches orders only through the canonical preview and submit; no broker route exists here.
+            # The dispatchable set is derived from the single capability table (route_policy.PAPER_AUTOMATION_CAPABILITIES),
+            # so a POST can never reach a read operation. Authorization already ran in policy_for_route: an operation absent
+            # from that table, or a wrong method on a real one, matches no entry and keeps the global read-only fallthrough
+            # capability. Fail-closed for mutations therefore rests on this refusal, made before any service call.
+            from .paper_automation import paper_automation_service
+            operation = path.removeprefix(PAPER_AUTOMATION_BASE)
+            if operation not in PAPER_AUTOMATION_POST_OPERATIONS:
+                self._send_error_json("UI_ROUTE_NOT_FOUND", f"Unknown path: {path}", status=HTTPStatus.NOT_FOUND)
+                return
+            try:
+                service = paper_automation_service(self.store)
+                if operation in ("configure", "arm", "emergency-stop"):
+                    result = getattr(service, operation.replace("-", "_"))(body)
+                elif body not in ({}, None):
+                    raise ValueError("INVALID_AUTOMATION_REQUEST")
+                else:
+                    result = getattr(service, operation)()
+                self._send_json(result)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("PAPER_AUTOMATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path in ("/screener/reevaluation/configure", "/screener/reevaluation/start", "/screener/reevaluation/stop", "/screener/reevaluation/run-once"):
+            # OCT1-07: operator-controlled cadence. Nothing here starts on its own or submits anything.
+            from .screener_reevaluation import reevaluation_service
+            try:
+                service = reevaluation_service(self.store)
+                operation = path.rsplit("/", 1)[1]
+                if operation == "configure":
+                    result = service.configure(body)
+                elif body not in ({}, None):
+                    raise ValueError("INVALID_REEVALUATION_REQUEST")
+                else:
+                    result = {"start": service.start, "stop": service.stop, "run-once": service.run_once}[operation]()
+                self._send_json(result)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_REEVALUATION_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+        if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
+            # Operator Stop: no further model call starts. A call already sent is not cancelled and stays charged.
+            from .screener_ai_runs import ai_screener_runs
+
+            stopped = ai_screener_runs().stop(self.store.paper_ledger.paper_account_id,
+                                              path.removeprefix("/screener/ai-screener/runs/").removesuffix("/stop"))
+            if stopped is None:
+                self._send_error_json("SCREENER_AI_RUN_UNKNOWN", "This AI Screener run is not tracked by this server process",
+                                      status=HTTPStatus.NOT_FOUND)
+                return
+            self._send_json(stopped)
+            return
+        if path == "/screener/ai-screener":
+            # OCT1-04: explicit operator action only; never expose this as GET or a prefetchable query.
+            # The run continues on the server; this returns its id at once and joins a run already in progress.
+            from .screener_ai_runs import ai_screener_runs
+
+            try:
+                result = ai_screener_runs().start(self.store.paper_ledger.paper_account_id, body)
+            except (ValueError, TypeError, KeyError) as exc:
+                self._send_error_json("SCREENER_AI_INVALID", str(exc), status=HTTPStatus.BAD_REQUEST)
                 return
             self._send_json(result)
             return
@@ -1734,6 +2141,22 @@ class UiApiHandler(BaseHTTPRequestHandler):
                 self._send_json(payload)
             except ValueError as exc:
                 self._send_error_json("PAPER_SESSION_OPEN_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
+            return
+
+        if path == "/paper/experiments" or (path.startswith("/paper/experiments/") and path.endswith("/close")):
+            from . import paper_experiment
+
+            try:
+                with LEDGER_ROUTE_LOCK:
+                    if path == "/paper/experiments":
+                        payload = paper_experiment.create_experiment(self.store, body)
+                    else:
+                        payload = paper_experiment.close_experiment(
+                            self.store, path.removeprefix("/paper/experiments/").removesuffix("/close")
+                        )
+                self._send_json(payload)
+            except ValueError as exc:
+                self._send_error_json("PAPER_EXPERIMENT_COMMAND_FAILED", str(exc), status=HTTPStatus.BAD_REQUEST)
             return
 
         if path == "/paper/sessions/close":

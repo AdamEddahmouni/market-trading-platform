@@ -1,0 +1,314 @@
+{
+  "base_sha": "42088bcbb3fbebc98af7d317df03dc5ea565d7cf",
+  "branch": "codex/oct1-10-trade-lifecycle-screener",
+  "browser": {
+    "explicit_workspace_submits": 3,
+    "extra_scenarios": [
+      "NO_ACTION: selected candidate, conflicts and gaps visible, flat, no Paper execution",
+      "ENTER not executed: decision is not a fill and never a position",
+      "Stale mark: P&L is labelled stale, never current",
+      "Active position not in the latest run stays visible with its original lineage",
+      "EXIT not filled: position still open, Paper close not submitted, deterministic origin",
+      "Multiple episodes of one symbol: one closed, one new, no cross-contamination"
+    ],
+    "live_submissions": 0,
+    "receipt": "artifacts/oct1-10-browser.json",
+    "receipt_sha256": "27d2d66e4859caee42a548816645d3e0137334813d56c7cec789eb13487dfb16",
+    "required_steps": 39,
+    "scheduled_reevaluation_worker": "NOT_EXERCISED; HOLD via explicit evaluation; real repository join covered by backend",
+    "screenshots": {
+      "artifacts/oct1-10/oct1-10-closed-lifecycle.png": "a240f4eeba4de7ea98d885429b67367956970189eb22e29beb3c894c47281004",
+      "artifacts/oct1-10/oct1-10-open-position.png": "9d518ad36610728df09023ed8acec4398836d5d58b5816414fb4a93a886ca565"
+    }
+  },
+  "canonical_validation": {
+    "changed": {
+      "errors": 0,
+      "failures": 0,
+      "local_receipt": ".local/oct1-10-validation/changed.json",
+      "passes": 5919,
+      "receipt_sha256": "f9cced54cdb7bff58f57ba659fbbb9f9aec0537220176dd9da1e62aa06cad722",
+      "skips": 35,
+      "status": "passed",
+      "tests_run": 5954,
+      "timing": {
+        "baseline_median_seconds": null,
+        "classification": "INSUFFICIENT_DATA",
+        "gating_policy": "OBSERVE_ONLY",
+        "incremental_attribution": "UNKNOWN: no same-workload OCT1-09 comparison performed",
+        "percentage_delta": null
+      },
+      "wall_seconds": 324.616572799976
+    },
+    "fast": {
+      "errors": 0,
+      "failures": 0,
+      "local_receipt": ".local/oct1-10-validation/fast.json",
+      "passes": 23,
+      "receipt_sha256": "557043605e925f326ce9fe5155cc3594695d44f413b073d8567e69e3bfa4ecc2",
+      "skips": 0,
+      "status": "passed",
+      "tests_run": 23,
+      "timing": {
+        "baseline_median_seconds": 1.821,
+        "classification": "SEVERE_REGRESSION",
+        "gating_policy": "OBSERVE_ONLY",
+        "incremental_attribution": "UNKNOWN: no same-workload OCT1-09 comparison performed",
+        "percentage_delta": 52.81
+      },
+      "wall_seconds": 2.7826610999763943
+    },
+    "full": {
+      "errors": 0,
+      "failures": 0,
+      "local_receipt": ".local/oct1-10-validation/full.json",
+      "passes": 8060,
+      "receipt_sha256": "8c4a25009d441d80f0e4e5dfeaa29571b066f141e137c3b1edc1adae35e56fe1",
+      "skips": 53,
+      "status": "passed",
+      "tests_run": 8113,
+      "timing": {
+        "baseline_median_seconds": 198.882,
+        "classification": "SEVERE_REGRESSION",
+        "gating_policy": "OBSERVE_ONLY",
+        "incremental_attribution": "UNKNOWN: no same-workload OCT1-09 comparison performed",
+        "percentage_delta": 107.257
+      },
+      "wall_seconds": 412.19648700003745
+    }
+  },
+  "classification": "SOFTWARE_CONTROLLED",
+  "focused_backend": {
+    "errors": 0,
+    "failures": 0,
+    "local_receipt": ".local/oct1-10-validation/focused-unsandboxed.log",
+    "passes": 42,
+    "receipt_sha256": "b1b0fd0d680aa6504a350734bddeed3a73c97966129c79512f0d6b238bc2f66d",
+    "skips": 0,
+    "status": "passed",
+    "tests_run": 42,
+    "wall_seconds": 13.631735200004186
+  },
+  "focused_backend_split": {
+    "pure": 10,
+    "service_http": 32
+  },
+  "frontend": {
+    "ai_screener_panel": 14,
+    "api_schema": 12,
+    "bundle": {
+      "budget_kib": 130,
+      "build_seconds": 19.01,
+      "initial_gzip_kib": 100.63,
+      "receipt_sha256": "c792737d3e92eeaf18208d0974e9d37e059be11ad0c0e1765d2b0807393d9333",
+      "status": "passed"
+    },
+    "complete": {
+      "errors": 0,
+      "failures": 0,
+      "files": 178,
+      "receipt_sha256": "fbec0571ce719010b5f208798f9f549eb394708899ae2b5007f3a182ab460251",
+      "seconds": 112.83,
+      "tests": 1370
+    },
+    "lifecycle_card_detail": 17
+  },
+  "known_limitations": [
+    "Active Paper experiment only; closed experiments not read; legacy session has no fills/P&L projection",
+    "No persisted unsubmitted-preview state",
+    "Existing per-instrument history reads newest 100 decisions; latest-loop reevaluation and stop event reads are bounded at 100",
+    "Mark quality reuses ledger; no independent age threshold; existing portfolio mark refresh can update stored marks",
+    "Ambiguous manual-episode decisions reported as lineage unavailable rather than guessed",
+    "Separate position_epoch() instrument-scoping issue unchanged; lifecycle joins stop_state_id and does not call position_epoch()",
+    "Scheduled reevaluation worker not exercised in browser; no prospective-market or profitability validation",
+    "Timing flags retained as observe-only; no incremental regression attribution established"
+  ],
+  "oct1_11_started": false,
+  "performance": {
+    "active_managed_list": {
+      "active_managed": 1,
+      "classification": "SOFTWARE_CONTROLLED",
+      "max_ms": 1.331,
+      "mean_ms": 0.475,
+      "p95_ms": 0.95,
+      "payload_bytes": 8279,
+      "samples": 30,
+      "selected": 1
+    },
+    "recovered": {
+      "bounds": {
+        "active_managed": 25,
+        "decisions": 50,
+        "evidence_per_category": 8,
+        "prior_episodes": 5,
+        "recent_closed": 20,
+        "selected": 5,
+        "timeline_events": 200,
+        "unlinked": 10
+      },
+      "browser": {
+        "list_poll_interval_seconds": 15,
+        "requests_per_panel_refresh": 1,
+        "requests_to_expand_one_lifecycle": 1
+      },
+      "classification": "SOFTWARE_CONTROLLED",
+      "dataset": {
+        "closed_episodes": 12,
+        "decisions_for_instrument": 33,
+        "fills": 26,
+        "ledger_events": 158,
+        "open_positions": 2,
+        "stop_events": 6
+      },
+      "detail_projection_closed": {
+        "decisions": 2,
+        "max_ms": 70.444,
+        "mean_ms": 7.538,
+        "p95_ms": 7.371,
+        "payload_bytes": 22498,
+        "samples": 30,
+        "timeline_events": 7
+      },
+      "detail_projection_open": {
+        "decisions": 9,
+        "evidence_items": 3,
+        "max_ms": 9.927,
+        "mean_ms": 6.164,
+        "p95_ms": 8.843,
+        "payload_bytes": 53156,
+        "prior_episodes": 5,
+        "prior_episodes_truncated": 7,
+        "samples": 30,
+        "timeline_events": 19
+      },
+      "list_projection": {
+        "active_managed": 0,
+        "max_ms": 85.889,
+        "mean_ms": 15.307,
+        "p95_ms": 22.912,
+        "payload_bytes": 68977,
+        "recent_closed": 12,
+        "samples": 30,
+        "selected": 2,
+        "unlinked": 0
+      },
+      "method": "in-process time.perf_counter over the production TradeLifecycleService; SQLite local state; controlled fixtures for clock, bars, marks, candidates and model",
+      "model_calls_by_reads": 0,
+      "not_market_evidence": true,
+      "provider_calls_by_reads": 0,
+      "schema_version": "oct1-10-performance/1.0.0"
+    }
+  },
+  "recovery": {
+    "browser_binding": "Recovered receipt and screenshots; hashes bound retrospectively during closeout, not recorded by original browser run",
+    "canonical_ladder": "Recovered completed receipts; unchanged production and test source",
+    "production_source_changed_on_resume": false,
+    "staged_implementation_preserved": true
+  },
+  "retained_non_green_attempts": [
+    {
+      "classification": "INTERMITTENT",
+      "failures": 5,
+      "files": [
+        "App.test.tsx",
+        "Participants.test.tsx"
+      ],
+      "isolation_passes": 93,
+      "origin": "user resume record",
+      "raw_prior_ui_receipt": "UNAVAILABLE"
+    },
+    {
+      "attempt": "resume sandbox UI",
+      "cause": "Windows EPERM realpath; unchanged unsandboxed run passed",
+      "classification": "ENVIRONMENT",
+      "errors": 171,
+      "receipt_sha256": "e9d3aebb1f6f2384cf32e7f6686e01b201aa4c1f5a1449a5b4e76c63617ea793",
+      "tests": 0
+    },
+    {
+      "attempt": "resume sandbox focused",
+      "cause": "Temporary audit database access denied; unchanged unsandboxed run passed",
+      "classification": "ENVIRONMENT",
+      "errors": 64,
+      "failures": 0,
+      "passes": 10,
+      "receipt_sha256": "8b7d36dfdcf2b849cb0fee45d0a27069cd3a06d741f1cb1cb2c9cedcfd3d9565",
+      "tests_run": 42
+    },
+    {
+      "attempt": "sandbox root guards",
+      "cause": "Temporary Git init config denied; unchanged unsandboxed nine tests passed",
+      "classification": "ENVIRONMENT",
+      "errors": 1,
+      "tests": 9
+    },
+    {
+      "attempt": "earlier partial browser",
+      "classification": "UNKNOWN",
+      "completed_steps": 37,
+      "disposition": "Incomplete attempt retained locally; subsequent complete 39+6 receipt accepted",
+      "receipt_sha256": "e78db77da570fff34fc2e4218ef134fd8fce0d20c349c2387411924e313b964e"
+    },
+    {
+      "attempt": "two invalid focused selector invocations",
+      "cause": "Router requires exact method selectors; corrected without source/test changes",
+      "classification": "ENVIRONMENT",
+      "tests": 0
+    }
+  ],
+  "review": {
+    "blocking_findings": 0,
+    "episode_identity": "TE-hash(account,experiment,instrument,opening fill); LC-hash(account,run,instrument)",
+    "joins": "Fill/decision/stop state IDs, account filtered histories; no ticker-only episode join",
+    "network": "One list request per refresh, one detail per expansion; 15-second visible polling; existing action-assessment requests unchanged",
+    "response_safety": "Abort signals and lifecycle/run/state cache identities; old-run selected cards require matching run"
+  },
+  "schema_version": "oct1-10-acceptance/1.0.0",
+  "semantic_truth": {
+    "accounting_and_stop_authorities_reused": true,
+    "active_prior_position_visible": true,
+    "deterministic_stop_is_not_ai": true,
+    "enter_is_not_fill": true,
+    "exit_is_not_closed": true,
+    "frozen_historical_evidence": true,
+    "no_inference_on_lifecycle_reads": true,
+    "orphan_is_not_ai_governed": true,
+    "paper_is_not_live_capital": true,
+    "same_symbol_episodes_isolated": true,
+    "stale_is_not_current": true
+  },
+  "source_hash_basis": "Git index bytes (LF); compared with final working source",
+  "source_sha256": {
+    "src/market_platform_foundation/intelligence/inference/trade_lifecycle.py": "3328fbcb23b32ed2f6ab5488932988548f5631bdf99b7ecf0df2c3362258e0ca",
+    "src/market_platform_foundation/platform/security/route_policy.py": "bddeec9ccf525b70120964bce6875579dd79b01032bd5c72f097c01241ab4263",
+    "src/market_platform_foundation/ui_api/screener_lifecycle.py": "0d157cefed2bde10e34050b4fdac00332acc3e98d0207f6a0c53a9b37b87dc87",
+    "src/market_platform_foundation/ui_api/server.py": "015b5a18aabb633f44bec346de4877eb587708734bd31ab39f3287e038c47117",
+    "tests/acceptance/harness_trade_lifecycle.py": "4496219157bbd596a1e74daaf777fb2995d6b7ee51e2f84884f74908525d94bc",
+    "tests/intelligence/test_trade_lifecycle.py": "4917b25dfde9943c0c7edf07582742cdfaf23a332655b9fe25fd8732de0013f9",
+    "tests/trading_correctness/test_trade_lifecycle.py": "dc2c8ec65b200740502c87fcc9ffdd4a4ec3e27c852c5939c020cebc2553e15a",
+    "tools/research/measure_oct1_10_performance.py": "c407b9b70de11337c207aa7eb3536b770786c0f49a26bcc73c7e733628b32b3c",
+    "tools/ui1/oct1_10_browser.cjs": "689cac91d296f83d9bd2123105887db0c3c419a8cf7ade53e9712eb909592e55",
+    "ui/src/api/screenerLifecycle.test.ts": "aa642ba90479165014cb497cf82ba3ecb8c26785c69a7859863181830e29b685",
+    "ui/src/api/screenerLifecycle.ts": "2c843efe8188025ed8005fd628c55006d29a8984f7a1f300c7c49fafabbe3941",
+    "ui/src/components/screener/lifecycle/LifecycleCard.test.tsx": "a9bbf8851b15213b1a8ac97584f050014adffc0605e2266db80da2fb8603f617",
+    "ui/src/components/screener/lifecycle/LifecycleCard.tsx": "1563cd731629f243a0fa8bc7695c0257654c9302a6d9b7a262ca0a59adeb8b00",
+    "ui/src/components/screener/lifecycle/LifecycleDetail.tsx": "fc2bb151dc5312f4ef8a709cfbfe1056ffd43f9f51b865337f9ede9464d854e8",
+    "ui/src/components/screener/lifecycle/TradeLifecycleGroups.tsx": "d5eecb38ffcabc48530f6da73536aa3e1e2519af40b91f9178cb5022e18e9d04",
+    "ui/src/components/screener/lifecycle/lifecycleFixture.ts": "16f00ce218df7f31e8a5e702e83ad844928e67ee83eabb657bb260837015c8ef",
+    "ui/src/components/screener/lifecycle/lifecyclePresentation.ts": "19159353b50842e3902d94fd6553f4f78501b5b784dc2bc44f42dde33f23032d",
+    "ui/src/components/screener/panels/ActionDecisionPanel.tsx": "3917fd3965b5efe49efa16c9ac677675330b0c7b76ee7eb86af42b1706d46f72",
+    "ui/src/components/screener/panels/AiScreenerPanel.test.tsx": "3dc9a6143e09ef531fdb80f6fcc2b466b2c484d9d203754022c8c97535c03973",
+    "ui/src/components/screener/panels/AiScreenerPanel.tsx": "f1fd8c4a17260642dec435535a9e927e4e7338c9a7843a4c8c9eb7d90067b123",
+    "ui/src/components/screener/panels/dock.css": "fe437be303589b624f4bab3c404d2f21587fbdfbc85b8a3dfb91e56d8e137789"
+  },
+  "static_gates": {
+    "docs_links": "passed: 291 governance files",
+    "format": "passed: working/index diff checks",
+    "history_guard": "passed",
+    "monorepo_manifest": "passed",
+    "python_compile": "passed: recovered lint telemetry",
+    "root_guard_tests": "9 passed",
+    "typescript": "passed: recovered lint telemetry",
+    "workflow_lint": "passed: actionlint 1.7.12, three root workflows"
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "model": "controlled fixture; not a real model runtime",
+  "model_latency_ms": null,
+  "scenario": {
+    "intake_candidates": 5,
+    "tracked_candidates": 5,
+    "held_positions": 1,
+    "storage": "SQLite local state (WAL)"
+  },
+  "no_material_change_cycle": {
+    "samples": 60,
+    "min_ms": 0.879,
+    "p50_ms": 0.984,
+    "p95_ms": 1.524,
+    "max_ms": 3.291,
+    "model_calls": 0,
+    "evidence_reads_per_cycle": 1
+  },
+  "material_cycle": {
+    "samples": 30,
+    "min_ms": 2.441,
+    "p50_ms": 4.263,
+    "p95_ms": 8.779,
+    "max_ms": 43.687,
+    "model_calls_per_cycle": "<= 3 (cap); observed 1-2",
+    "fixture_tokens_per_action_call": {
+      "input": 250,
+      "output": 120
+    }
+  },
+  "scheduler": {
+    "first_cycle_start_drift_ms": 0,
+    "lease_acquire": {
+      "samples": 100,
+      "min_ms": 0.065,
+      "p50_ms": 0.07,
+      "p95_ms": 0.123,
+      "max_ms": 0.199
+    },
+    "heartbeat": {
+      "samples": 100,
+      "min_ms": 0.063,
+      "p50_ms": 0.067,
+      "p95_ms": 0.11,
+      "max_ms": 0.384
+    },
+    "overlap": "impossible: single worker thread + non-blocking cycle lock (CYCLE_IN_PROGRESS)"
+  },
+  "storage": {
+    "receipt_bytes": {
+      "min": 2036,
+      "median": 2036,
+      "max": 2503,
+      "bound": 32000
+    },
+    "receipt_write": {
+      "samples": 100,
+      "min_ms": 0.038,
+      "p50_ms": 0.044,
+      "p95_ms": 0.074,
+      "max_ms": 0.105
+    },
+    "history_query_limit_20": {
+      "samples": 100,
+      "min_ms": 0.146,
+      "p50_ms": 0.155,
+      "p95_ms": 0.231,
+      "max_ms": 0.339
+    }
+  },
+  "projection": {
+    "basis": "request volume only; no pricing metadata used, so this is not a cost",
+    "at_60s": {
+      "session_minutes": 390,
+      "cycles": 390,
+      "per_cycle_cap": 3,
+      "hourly_cap": 30,
+      "daily_cap": 120,
+      "worst_case_model_calls": 120
+    },
+    "at_120s": {
+      "session_minutes": 390,
+      "cycles": 195,
+      "per_cycle_cap": 3,
+      "hourly_cap": 30,
+      "daily_cap": 120,
+      "worst_case_model_calls": 120
+    },
+    "uncapped_naive_60s_five_candidates": 2340,
+    "note": "caps: 3/cycle, 30/hour, 120/day per loop, in addition to the provider daily request/token budget"
+  }
+}

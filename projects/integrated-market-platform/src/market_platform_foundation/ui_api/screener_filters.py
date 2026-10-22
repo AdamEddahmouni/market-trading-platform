@@ -179,7 +179,6 @@ def validate_filters(raw: Any, *, universe: str = US_EQUITIES) -> list[dict[str,
 
 Observe = Callable[[dict[str, Any], str], Any]
 
-
 def field_value(row: dict[str, Any], field: str) -> Any:
     """A row's own value: text from the row, numbers from its field envelope."""
 
@@ -194,15 +193,34 @@ def _matches(row: dict[str, Any], rule: dict[str, Any], observe: Observe = field
     if _CATALOG[field]["type"] == "text":
         observed = str(observed).casefold()
         wanted = [v.casefold() for v in wanted] if operator in ("in", "not_in") else wanted.casefold()
-        return {"eq": lambda: observed == wanted, "ne": lambda: observed != wanted,
-                "in": lambda: observed in wanted, "not_in": lambda: observed not in wanted,
-                "contains": lambda: wanted in observed}[operator]()
+        if operator == "eq":
+            return observed == wanted
+        if operator == "ne":
+            return observed != wanted
+        if operator == "in":
+            return observed in wanted
+        if operator == "not_in":
+            return observed not in wanted
+        if operator == "contains":
+            return wanted in observed
+        raise KeyError(operator)
     if not isinstance(observed, (int, float)) or not math.isfinite(observed):
         return False
-    return {"eq": lambda: observed == wanted, "ne": lambda: observed != wanted,
-            "gt": lambda: observed > wanted, "gte": lambda: observed >= wanted,
-            "lt": lambda: observed < wanted, "lte": lambda: observed <= wanted,
-            "between": lambda: wanted[0] <= observed <= wanted[1]}[operator]()
+    if operator == "eq":
+        return observed == wanted
+    if operator == "ne":
+        return observed != wanted
+    if operator == "gt":
+        return observed > wanted
+    if operator == "gte":
+        return observed >= wanted
+    if operator == "lt":
+        return observed < wanted
+    if operator == "lte":
+        return observed <= wanted
+    if operator == "between":
+        return wanted[0] <= observed <= wanted[1]
+    raise KeyError(operator)
 
 
 def apply_filters(rows: list[dict[str, Any]], rules: list[dict[str, Any]],

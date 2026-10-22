@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
+from market_platform_foundation.intelligence.inference.anthropic_models import THINKING_HEADROOM  # noqa: E402
 from market_platform_foundation.intelligence.inference.anthropic_synthesis import (  # noqa: E402
     BUDGET_RELATIVE, DEFAULT_MODEL, TOOL_NAME, AnthropicSynthesisProvider, BudgetedProvider, DailyBudget,
     build_paid_provider,
@@ -75,15 +76,47 @@ def run(synth):
 
 
 class RequestShapeTests(unittest.TestCase):
-    def test_forced_schema_tool_current_model_and_bounded_output(self):
+    def test_candidate_reduction_enables_strict_instrument_specific_tool_schema(self):
+        from tests.intelligence.test_ai_screener import candidate, output, NOW
+        from market_platform_foundation.intelligence.inference.candidate_reduction import CandidateReducer
+        calls = []
+        c = candidate()
+        def poster(url, body, headers, timeout):
+            request = json.loads(body)
+            calls.append(request)
+            return 200, json.dumps({'content': [{'type': 'tool_use', 'name': TOOL_NAME, 'input': output(c)}],
+                                    'usage': {'input_tokens': 100, 'output_tokens': 50}}).encode()
+        provider = AnthropicSynthesisProvider(api_key='controlled', model='claude-haiku-4-5-20251001', poster=poster)
+        result = CandidateReducer(provider=provider, clock=lambda: 1790953200.0).reduce({}, [c], NOW)
+        self.assertEqual(result['state'], 'CURRENT')
+        tool = calls[0]['tools'][0]
+        self.assertTrue(tool['strict'])
+        choice = tool['input_schema']['properties']['candidates']['items']
+        self.assertEqual(choice['properties']['candidate_key']['enum'], [0])
+        self.assertEqual(choice['properties']['supporting_refs']['items']['type'], 'integer')
+        def check(schema):
+            if isinstance(schema, dict):
+                self.assertFalse({'minimum', 'maximum', 'maxItems', 'uniqueItems', 'maxLength'} & schema.keys())
+                self.assertLessEqual(schema.get('minItems', 0), 1)
+                self.assertNotIn('anyOf', schema)
+                if 'const' in schema:
+                    self.assertNotIsInstance(schema['const'], (list, dict))
+                for value in schema.values(): check(value)
+            elif isinstance(schema, list):
+                for value in schema: check(value)
+        check(tool['input_schema'])
+
+    def test_schema_tool_current_model_and_bounded_output(self):
         transport = FakeClaude(tool_input=lambda ids: grounded(ids))
         _, synth = paid(transport)
         result = run(synth)
         self.assertEqual((result["state"], result["runtime"], result["model_id"]), ("CURRENT", "PAID_API", DEFAULT_MODEL))
         url, body, headers, timeout = transport.requests[0]
         self.assertEqual(DEFAULT_MODEL, "claude-sonnet-5-5")
-        self.assertEqual((body["temperature"], body["max_tokens"], timeout), (0, 2048, 45.0))
-        self.assertEqual(body["tool_choice"], {"type": "tool", "name": TOOL_NAME})
+        # The default model rejects an explicit temperature and a forced tool call, and reasons before it answers.
+        self.assertNotIn("temperature", body)
+        self.assertEqual((body["max_tokens"], timeout), (2048 + THINKING_HEADROOM, 45.0))
+        self.assertEqual(body["tool_choice"], {"type": "auto", "disable_parallel_tool_use": True})
         refs = body["tools"][0]["input_schema"]["properties"]["observed_facts"]["items"]["properties"]["refs"]["items"]
         self.assertEqual(refs["enum"], ["s1", "s2", "s3"])                     # refs limited to the packet
         self.assertEqual((headers["x-api-key"], headers["anthropic-version"]), ("test-key", "2023-06-01"))
@@ -107,6 +140,48 @@ class RequestShapeTests(unittest.TestCase):
 
 
 class BudgetTests(unittest.TestCase):
+    def test_failed_budget_persistence_blocks_reservation_before_generation(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            budget = DailyBudget(Path(directory) / "quota.json", clock=Clock())
+            with patch("market_platform_foundation.local_state.external_cache.write_json_atomic", side_effect=OSError("fixture")):
+                with self.assertRaises(OSError):
+                    budget.reserve(1000)
+
+    def test_unreadable_budget_state_cannot_reset_already_reserved_usage(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "quota.json"
+            budget = DailyBudget(path, max_requests=1, max_tokens=10)
+            self.assertIsNone(budget.reserve(10))
+            for malformed in ("{truncated", "[]"):
+                with self.subTest(malformed=malformed):
+                    path.write_text(malformed, encoding="utf-8")
+                    with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                        budget.reserve(10)
+                    with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                        DailyBudget(path, max_requests=1, max_tokens=10)
+                    self.assertEqual(path.read_text(encoding="utf-8"), malformed)
+            with patch.object(Path, "read_text", side_effect=PermissionError("controlled read failure")):
+                with self.assertRaisesRegex(ValueError, "SYNTHESIS_BUDGET_STATE_UNREADABLE"):
+                    budget.reserve(10)
+
+    def test_engine_switch_instances_share_releases_and_spent_usage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "quota.json"
+            clock = Clock()
+            first = DailyBudget(path, max_tokens=10000, clock=clock)
+            self.assertTrue(first.hold("run", requests=4, tokens=8000)["held"])
+            second = DailyBudget(path, max_tokens=10000, clock=clock)
+            self.assertIsNone(first.reserve(1000, hold="run"))
+            first.settle(1000, 700, 50)
+            first.release("run")
+            self.assertEqual(second.status()["held_tokens"], 0)
+            self.assertEqual(second.status()["tokens"], 750)
+            self.assertIsNone(second.reserve(2000))
+            self.assertEqual(first.status()["tokens"], 2750)
+            self.assertEqual(first.status()["requests"], 2)
+
     def test_request_limit_refuses_before_any_network_call(self):
         transport = FakeClaude(tool_input=lambda ids: grounded(ids))
         clock = Clock()

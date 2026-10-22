@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping, Sequence
 
+from .models import response_provenance
+
 
 LANES_BY_SCREEN: dict[str, tuple[str, ...]] = {
     "SHORT_SQUEEZE_DISCOVERY": ("SQUEEZE",),
@@ -320,7 +322,7 @@ def aggregate_candidate_sets(
                 "run_id": str(payload.get("run_id") or ""),
                 "received_at": set_received_at,
                 "available_time_ns": available_ns,
-                "candidate": dict(raw_candidate.get("provenance") or {}),
+                "candidate": response_provenance(raw_candidate.get("provenance")),
             }
             existing = merged.get(symbol)
             if existing is None:

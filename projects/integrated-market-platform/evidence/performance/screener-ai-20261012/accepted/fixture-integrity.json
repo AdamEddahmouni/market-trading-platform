@@ -1,0 +1,86 @@
+[
+  {
+    "path": "short-squeeze-core/apps/__init__.py",
+    "sha256": "24b242586c38d0139a8bcb81cee5617b15e6b83e8c159559a64155edfbc2c6cf",
+    "bytes": 269,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/__init__.py",
+    "sha256": "42cea287acb63dc557233c803537f09aa85a2e107c4f5dba7b24a0c118989baa",
+    "bytes": 584,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/__init__.py",
+    "sha256": "2ad1a76b1a2435df3281c0c35c33d6df2c3dc76ffe6c94c5b379f60bc2e062c3",
+    "bytes": 434,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/adam_v1.py",
+    "sha256": "efb6bf7f7e38fd649f6fecb919e694597fe11871c47d5738d58dc10fee5f82fb",
+    "bytes": 10443,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/comparison.py",
+    "sha256": "427b5983961358bf7a64cdb527090938403138169386e2b64ca3d0d77eacfe14",
+    "bytes": 476,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/legacy.py",
+    "sha256": "4ff74003b0eea5143cd10b1ef1432d8f44289cff1120f0e7d458e8c05c186189",
+    "bytes": 2786,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/peer_reference.py",
+    "sha256": "10733de82f2662aed84f835c393972838150f025f5500fb2c48f72ed3d827e10",
+    "bytes": 2235,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/enums.py",
+    "sha256": "2b711ca494a36fe2d0bddfb44bc3a49a3dc40626192d38ee833492db8dd28ab4",
+    "bytes": 589,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/evidence.py",
+    "sha256": "c5669b49a035db53f8062463d6be04dda26f92c1b7bfa4bd064a3f99c3339767",
+    "bytes": 2167,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/models.py",
+    "sha256": "64df1e1c15bfb957fdb09cbeffadd51f9fab122a906cebe76e7634e3c5f49d41",
+    "bytes": 1997,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/apps/research_screener/methodologies/normalization.py",
+    "sha256": "aa8c0b28dfd7e8212bad71622353a37289a2f6ee5d24d858f33fc6d6e52d6eb1",
+    "bytes": 411,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  },
+  {
+    "path": "short-squeeze-core/tests/fixtures/validation/outcome_amendment/biya_market_bars_intraday.jsonl",
+    "sha256": "6895533aa441ae309bd944ae9ad2acab81b348ce972db7e4287bcff264389e3a",
+    "bytes": 8046257,
+    "runtime_matches_backup": true,
+    "independent_validation_copy": true
+  }
+]

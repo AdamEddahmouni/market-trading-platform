@@ -255,10 +255,11 @@ class NewsIngestHttpTests(unittest.TestCase):
         self.assertEqual(body["action"], "WATCHED")
 
     def test_http_post_rejects_oversized_body(self) -> None:
+        # Require rejection before any payload arrives; unread bytes can race a Windows TCP close.
         response = self._request(
             "POST",
             NEWS_INGEST_ROUTE,
-            body=b"{}",
+            body=b"",
             content_length=NEWS_INGEST_MAX_BODY_BYTES + 1,
         )
         self.assertEqual(response.status, 413)

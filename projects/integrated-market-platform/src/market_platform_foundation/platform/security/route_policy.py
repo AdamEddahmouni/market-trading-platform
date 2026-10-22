@@ -36,6 +36,39 @@ CANARY_ADMIN_COMMANDS = frozenset(
     }
 )
 
+# AUTO-01 owner policy, arming and controls: the single source of truth for both capability (below) and the
+# API's dispatch tables (ui_api/server.py). Keeping one table is what makes drift impossible: an operation
+# present in only one of two hand-written tables would otherwise fall through to the read-only default and be
+# authorized with a weaker capability than it needs. ``arm``/``start``/``resume`` let the server submit
+# internal Paper orders unattended, so they carry the order capability; storing a policy or reducing what the
+# controller may do never grants order authority.
+PAPER_AUTOMATION_BASE = "/paper/automation/"
+PAPER_AUTOMATION_CAPABILITIES: dict[str, tuple[str, str]] = {
+    "status": ("GET", "audit.read"),
+    "history": ("GET", "audit.read"),
+    "report": ("GET", "audit.read"),
+    "configure": ("POST", "state.write"),
+    "disarm": ("POST", "state.write"),
+    "pause": ("POST", "state.write"),
+    "stop": ("POST", "state.write"),
+    "emergency-stop": ("POST", "state.write"),
+    "arm": ("POST", "paper.order.submit"),
+    "start": ("POST", "paper.order.submit"),
+    "resume": ("POST", "paper.order.submit"),
+}
+PAPER_AUTOMATION_READ_PATHS = frozenset(
+    PAPER_AUTOMATION_BASE + operation
+    for operation, (method, _capability) in PAPER_AUTOMATION_CAPABILITIES.items()
+    if method == "GET"
+)
+
+
+def paper_automation_operations(method: str) -> frozenset[str]:
+    """The automation operations dispatchable for one HTTP method, from the single capability table."""
+    method_upper = method.upper()
+    return frozenset(operation for operation, (verb, _capability) in PAPER_AUTOMATION_CAPABILITIES.items()
+                     if verb == method_upper)
+
 
 def policy_for_route(method: str, path: str) -> RoutePolicy:
     method_upper = method.upper()
@@ -46,6 +79,42 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
     if path == "/security/readiness":
         return RoutePolicy(capability="security.config.read")
 
+    if path.startswith("/evaluation/prospective/"):
+        # Evaluation artifacts have state-write authority only; never order authority.
+        return RoutePolicy(capability="audit.read" if method_upper == "GET" or path.endswith("/rerun") else "state.write",
+                           account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decisions" and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/preview" and method_upper == "POST":
+        return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/run" and method_upper == "POST":
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path == "/screener/action-decision/handoff" and method_upper == "POST":
+        return RoutePolicy(capability="paper.order.submit", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if (path == "/screener/trade-lifecycles" or path.startswith("/screener/trade-lifecycles/")) and method_upper == "GET":
+        # OCT1-10 derived read model over the Paper ledger and decision records. Read only.
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/screener/next-session", "/screener/reevaluation/status", "/screener/reevaluation/history") and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/screener/next-session/draft", "/screener/next-session/lock", "/screener/next-session/observe",
+                "/screener/next-session/evaluate", "/screener/reevaluation/configure", "/screener/reevaluation/start",
+                "/screener/reevaluation/stop", "/screener/reevaluation/run-once") and method_upper == "POST":
+        # Decision cadence only: none of these carries paper.order.submit.
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/paper/risk-control/sma-stop", "/paper/risk-control/sma-stop/history", "/paper/risk-control/sma-stop/config",
+                "/paper/risk-control/sma-stop/evaluation") and method_upper == "GET":
+        return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path in ("/paper/risk-control/sma-stop/configure", "/paper/risk-control/sma-stop/evaluate") and method_upper == "POST":
+        # Stop monitor only: neither route carries paper.order.submit.
+        return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+    if path.startswith(PAPER_AUTOMATION_BASE):
+        # Derived from PAPER_AUTOMATION_CAPABILITIES: this resolver and the API dispatch tables share one table.
+        # An unknown operation or a mismatched method matches nothing here and falls through to the defaults
+        # below, so it never inherits another operation's capability.
+        operation = path.removeprefix(PAPER_AUTOMATION_BASE)
+        declared = PAPER_AUTOMATION_CAPABILITIES.get(operation)
+        if declared is not None and declared[0] == method_upper:
+            return RoutePolicy(capability=declared[1], account_scope=AccountScopeKind.PAPER_LEDGER)
     if method_upper == "GET":
         if path in {
             "/context",
@@ -88,6 +157,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/sessions":
             return RoutePolicy(capability="state.read")
+        if path in {"/paper/trades", "/paper/equity-history"} or path == "/paper/experiments" or path.startswith("/paper/experiments/"):
+            return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.PAPER_PORTFOLIO)
         if path == "/paper/trace":
             return RoutePolicy(capability="audit.read", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/strategy-profitability":
@@ -95,6 +166,9 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/captures":
             return RoutePolicy(capability="audit.read")
         if path.startswith("/assistant/conversations"):
+            return RoutePolicy(capability="state.read")
+        if path == "/screener/ai-screener/preview" or path.startswith("/screener/ai-screener/runs/"):
+            # Preview and run status are reads: neither starts a run nor calls a model.
             return RoutePolicy(capability="state.read")
         if path == "/canary/snapshot" or path == "/canary/reconciliation":
             return RoutePolicy(capability="state.read", account_scope=AccountScopeKind.QUERY_ACCOUNT_ID)
@@ -112,6 +186,12 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/screener/news/synthesis":
             # Operator-initiated model call (paid API or on-demand local model); never a render-time read.
             return RoutePolicy(capability="state.write")
+        if path == "/screener/ai-screener":
+            # Explicit candidate reduction is a bounded inference action, never a render-time read.
+            return RoutePolicy(capability="state.write")
+        if path.startswith("/screener/ai-screener/runs/") and path.endswith("/stop"):
+            # Operator Stop of this account's own run: it prevents further model calls and grants nothing.
+            return RoutePolicy(capability="state.write")
         if path == "/screener/news/synthesis/engine":
             # Operator choice of synthesis engine and model, saved in the IMP cache; calls no model.
             return RoutePolicy(capability="state.write")
@@ -122,6 +202,8 @@ def policy_for_route(method: str, path: str) -> RoutePolicy:
         if path == "/paper/orders/cancel":
             return RoutePolicy(capability="paper.order.cancel", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path == "/paper/sessions" or path == "/paper/sessions/close":
+            return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
+        if path == "/paper/experiments" or (path.startswith("/paper/experiments/") and path.endswith("/close")):
             return RoutePolicy(capability="state.write", account_scope=AccountScopeKind.PAPER_LEDGER)
         if path.startswith("/operator/"):
             if path == "/operator/config/provider":

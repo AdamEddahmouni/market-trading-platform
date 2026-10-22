@@ -1,0 +1,597 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "base": "55fbc2207d14e0852f3f45296fdc3c1ef6df3a58",
+  "live_rth_acceptance": "NOT_OBSERVED_MARKET_CLOSED",
+  "performance": {
+    "overlay_20": {
+      "iterations": 150,
+      "median_ms": 0.0125,
+      "p95_ms": 0.0266
+    },
+    "overlay_100": {
+      "iterations": 150,
+      "median_ms": 0.0579,
+      "p95_ms": 0.0633
+    },
+    "freshness_20": {
+      "iterations": 150,
+      "median_ms": 0.4773,
+      "p95_ms": 1.0688
+    },
+    "candidate_gate_20": {
+      "iterations": 150,
+      "median_ms": 1.5003,
+      "p95_ms": 2.5161
+    }
+  },
+  "quote_overlay_provider_requests": 0,
+  "preview_model_calls": 0,
+  "empty_grounded_model_calls": 0,
+  "controlled_survivor_model_calls": 1,
+  "paper_submits": 0,
+  "live_submits": 0,
+  "before": {
+    "source": "FINVIZ_ELITE",
+    "price": 240,
+    "observed_at": null,
+    "reason": "NO_OBSERVATION_TIME"
+  },
+  "after": {
+    "source": "MOOMOO_OPEND",
+    "price": 240.27,
+    "observed_at": "2026-10-06T18:05:23Z",
+    "received_at": "2026-10-06T18:05:23.500000Z",
+    "freshness": "CURRENT",
+    "eligible": true
+  },
+  "focused_backend": {
+    "run": 10,
+    "passed": 10,
+    "skipped": 0,
+    "failures": 0,
+    "errors": 0
+  },
+  "browser": {
+    "classification": "SOFTWARE_CONTROLLED",
+    "production_build": true,
+    "intake": 3,
+    "selected": 1,
+    "source": "MOOMOO_OPEND",
+    "symbol": "AMD",
+    "price": 120.12,
+    "observed_at": "2026-10-07T04:20:03.202006Z",
+    "received_at": "2026-10-07T04:20:03.402006Z",
+    "reference_run_model_delta": 0,
+    "live_run_model_delta": 1,
+    "stale_run_model_delta": 0,
+    "action_reference_price": 120.12,
+    "action_state": "REVALIDATION_REQUIRED",
+    "action_blockers": [
+      "POSITION_SNAPSHOT_STALE",
+      "PAPER_AUTHORITY_UNAVAILABLE"
+    ],
+    "active_subscriptions": 3,
+    "ledger_events_before": 2,
+    "ledger_events_after": 2,
+    "paper_submits": 0,
+    "live_submits": 0
+  },
+  "operator_configuration_audit": {
+    "ai_selection": {
+      "engine": "auto",
+      "model": null,
+      "source": "AUTOMATIC"
+    },
+    "finnhub_configured": true,
+    "newsapi_configured": true,
+    "read_only": true,
+    "network_calls": 0
+  },
+  "ui_validation": {
+    "files": 179,
+    "tests": 1374,
+    "passed": 1374,
+    "failures": 0,
+    "seconds": 113.79,
+    "command": "npm test -- --maxWorkers=1 --minWorkers=1 --no-file-parallelism",
+    "earlier_concurrent_failures": 5
+  },
+  "validation": {
+    "FAST": {
+      "status": "passed",
+      "tests_run": 23,
+      "passes": 23,
+      "skips": 0,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 3.0069612999795936,
+      "skip_details": [],
+      "performance": {
+        "classification": "SEVERE_REGRESSION",
+        "gating_policy": "OBSERVE_ONLY",
+        "observed_wall_seconds": 3.006961,
+        "baseline_median_seconds": 1.821,
+        "absolute_delta_seconds": 1.185961,
+        "percentage_delta": 65.127,
+        "threshold_crossed": "severe_regression_ratio",
+        "regression_masking_risk": false
+      }
+    },
+    "FULL": {
+      "status": "passed",
+      "tests_run": 8154,
+      "passes": 8101,
+      "skips": 53,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 645.6956755000283,
+      "skip_details": [
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_attention_items",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_available_with_seeded_demo_state",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_workspace_symbol_detail",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/donor_bridge/test_catalyst_bridge.py::CatalystBridgeTests::test_workspace_unknown_symbol",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_explore_bridge.py::ExploreBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "futures bridge not running on :8788",
+          "selector": "tests/donor_bridge/test_futures_bridge.py::FuturesBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_workspace_squeeze.py::WorkspaceSqueezeBridgeTests::test_available_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/donor_bridge/test_workspace_squeeze.py::WorkspaceSqueezeBridgeTests::test_biya_replay_only_when_server_up",
+          "suite_id": "donor_bridge"
+        },
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/integration/test_catalyst_lane_acceptance_tool.py::CatalystLaneAcceptanceToolTests::test_live_projection_when_state_seeded",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "FuturesX bridge not running on :8788",
+          "selector": "tests/integration/test_futures_lane_acceptance_tool.py::FuturesLaneAcceptanceToolTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/integration/test_squeeze_lane_acceptance.py::SqueezeLaneAcceptanceTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "fixture produced clean report",
+          "selector": "tests/intelligence/test_build01_20_lifecycle.py::Build0120LifecycleTests::test_contaminated_candidate_blocked",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::DurableEnrichmentOutboxBehaviorTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::MemoryDurableEnrichmentOutboxTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_duplicate_key_idempotency",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_indexes_exist",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_inmemory_mongo_parity",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_malformed_direct_insert_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_schema_bootstrap_twice",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_batch_getters",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_delayed_event_excluded",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_event_as_of_boundary",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_health",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_not_mutated_on_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_order_independence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_invalid_limit_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_iter_events_by_availability_range",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_limit_enforced",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_round_trip_all_record_types",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_secondary_queries",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_snapshot_does_not_embed_events",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no automated findings for baseline report",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_identity_deterministic",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_round_trip",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_conflict_on_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_idempotent_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestCorruptionResponse::test_fatal_blocks_mode_transition",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestCorruptionResponse::test_fatal_blocks_mode_transition",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "append-only trigger prevented corruption injection",
+          "selector": "tests/of01/test_integrity.py::TestIntegrity::test_record_hash_mismatch_detected",
+          "suite_id": "of01"
+        },
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected",
+          "suite_id": "phase0"
+        },
+        {
+          "reason": "foreign-platform classification is for non-Windows hosts",
+          "selector": "tests/platform/test_artifact_path_resolver.py::ArtifactPathResolverTests::test_foreign_windows_path_classified_on_linux",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "v3 run artifacts not present on this host",
+          "selector": "tests/platform/test_fill_price_realism_v1.py::FillPriceRealismUnitTests::test_resolve_v3_run_dir_from_sibling_worktree",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "upstream provider unavailable in offline audit run",
+          "selector": "tests/synthetic/test_skip.py::SkippedTests::test_offline",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "probe fixture must be skipped",
+          "selector": "tests/synthetic/test_skip.py::_SkippedProbe::test_later",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_health",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_latest_scalar_preserves_pit_and_skips_missing_values",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoCatalogRepositoryConformanceTests::test_round_trip_vertical_slice_records",
+          "suite_id": "xa04"
+        },
+        {
+          "reason": "SKIPPED_ENVIRONMENT_UNAVAILABLE",
+          "selector": "tests/xa04/test_xa04_persistence_mongo_integration.py::MongoRestartDurabilityTests::test_restart_preserves_semantic_state",
+          "suite_id": "xa04"
+        }
+      ],
+      "performance": {
+        "classification": "SEVERE_REGRESSION",
+        "gating_policy": "OBSERVE_ONLY",
+        "observed_wall_seconds": 645.695676,
+        "baseline_median_seconds": 198.882,
+        "absolute_delta_seconds": 446.813676,
+        "percentage_delta": 224.663,
+        "threshold_crossed": "severe_regression_ratio",
+        "regression_masking_risk": false
+      }
+    },
+    "CHANGED": {
+      "status": "passed",
+      "tests_run": 5100,
+      "passes": 5065,
+      "skips": 35,
+      "failures": 0,
+      "errors": 0,
+      "wall_seconds": 291.97827359999064,
+      "skip_details": [
+        {
+          "reason": "leftover donor catalyst demo state not seeded",
+          "selector": "tests/integration/test_catalyst_lane_acceptance_tool.py::CatalystLaneAcceptanceToolTests::test_live_projection_when_state_seeded",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "FuturesX bridge not running on :8788",
+          "selector": "tests/integration/test_futures_lane_acceptance_tool.py::FuturesLaneAcceptanceToolTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "squeeze FROZEN_DEMO server not running on :8787",
+          "selector": "tests/integration/test_squeeze_lane_acceptance.py::SqueezeLaneAcceptanceTests::test_live_projection_when_donor_up",
+          "suite_id": "integration"
+        },
+        {
+          "reason": "fixture produced clean report",
+          "selector": "tests/intelligence/test_build01_20_lifecycle.py::Build0120LifecycleTests::test_contaminated_candidate_blocked",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::DurableEnrichmentOutboxBehaviorTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "sqlite-only",
+          "selector": "tests/intelligence/test_durable_enrichment_outbox.py::MemoryDurableEnrichmentOutboxTests::test_restart_persistence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_duplicate_key_idempotency",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_indexes_exist",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_inmemory_mongo_parity",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_malformed_direct_insert_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoIntegrationExtras::test_schema_bootstrap_twice",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_batch_getters",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_conflict_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_delayed_event_excluded",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_event_as_of_boundary",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_health",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_idempotent_write_same_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_not_mutated_on_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_input_order_independence",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_invalid_limit_rejected",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_iter_events_by_availability_range",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_limit_enforced",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_not_found_returns_none",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_round_trip_all_record_types",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_secondary_queries",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "IMP_TEST_MONGODB_URI not configured",
+          "selector": "tests/intelligence/test_persistence_mongo_integration.py::MongoRepositoryConformanceTests::test_snapshot_does_not_embed_events",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no automated findings for baseline report",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_identity_deterministic",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchFindingTests::test_finding_round_trip",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_conflict_on_same_id_different_content",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "no findings",
+          "selector": "tests/intelligence/test_research_experiments.py::ResearchPersistenceTests::test_idempotent_put",
+          "suite_id": "intelligence"
+        },
+        {
+          "reason": "symlink creation is unavailable",
+          "selector": "tests/phase0/test_distribution.py::DistributionTests::test_symlink_or_reparse_escape_is_rejected",
+          "suite_id": "phase0"
+        },
+        {
+          "reason": "foreign-platform classification is for non-Windows hosts",
+          "selector": "tests/platform/test_artifact_path_resolver.py::ArtifactPathResolverTests::test_foreign_windows_path_classified_on_linux",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "v3 run artifacts not present on this host",
+          "selector": "tests/platform/test_fill_price_realism_v1.py::FillPriceRealismUnitTests::test_resolve_v3_run_dir_from_sibling_worktree",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "upstream provider unavailable in offline audit run",
+          "selector": "tests/synthetic/test_skip.py::SkippedTests::test_offline",
+          "suite_id": "platform"
+        },
+        {
+          "reason": "probe fixture must be skipped",
+          "selector": "tests/synthetic/test_skip.py::_SkippedProbe::test_later",
+          "suite_id": "platform"
+        }
+      ],
+      "performance": {
+        "classification": "INSUFFICIENT_DATA",
+        "gating_policy": "OBSERVE_ONLY"
+      }
+    }
+  }
+}

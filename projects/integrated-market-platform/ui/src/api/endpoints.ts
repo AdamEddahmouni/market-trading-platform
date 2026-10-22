@@ -27,6 +27,10 @@ import {
   WorkspaceInstitutionalFlowResponseSchema,
   WorkspaceEvidenceResponseSchema,
   PaperPortfolioResponseSchema,
+  PaperEquityHistoryResponseSchema,
+  PaperExperimentCommandSchema,
+  PaperExperimentCurrentSchema,
+  PaperTradesResponseSchema,
   PaperOrderHistoryPageSchema,
   PaperOrderPreviewResponseSchema,
   PaperOrderSubmitResponseSchema,
@@ -146,6 +150,18 @@ export const api = {
   },
   getPaperPortfolio: (viewMode: "DEMO" | "PAPER" = "PAPER") =>
     fetchJson(`/paper/portfolio?view_mode=${viewMode}`, PaperPortfolioResponseSchema),
+  getPaperExperimentCurrent: () => fetchJson("/paper/experiments/current", PaperExperimentCurrentSchema),
+  createPaperExperiment: () =>
+    postJson("/paper/experiments", { execution_mode: "INTERNAL_SIMULATION" }, PaperExperimentCommandSchema),
+  closePaperExperiment: (experimentId: string) =>
+    postJson(`/paper/experiments/${encodeURIComponent(experimentId)}/close`, {}, PaperExperimentCommandSchema),
+  getPaperTrades: (params?: { cursor?: string; limit?: number }) => {
+    const query = new URLSearchParams({ limit: String(params?.limit ?? 25) });
+    if (params?.cursor) query.set("cursor", params.cursor);
+    return fetchJson(`/paper/trades?${query.toString()}`, PaperTradesResponseSchema);
+  },
+  getPaperEquityHistory: (limit = 10) =>
+    fetchJson(`/paper/equity-history?limit=${limit}`, PaperEquityHistoryResponseSchema),
   getPaperForwardTests: (accountId?: string) => {
     const query = accountId ? `?account_id=${encodeURIComponent(accountId)}` : "";
     return fetchRawJson(`/paper/forward-tests${query}`);

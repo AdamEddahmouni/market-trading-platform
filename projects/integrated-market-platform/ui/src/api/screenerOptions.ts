@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson } from "./fetchJson";
 import type { ScreenerUniverse } from "./screener";
@@ -45,6 +46,7 @@ const Fields = z.object({ bid: z.boolean(), ask: z.boolean(), last: z.boolean(),
   iv: z.boolean(), delta: z.boolean(), gamma: z.boolean(), theta: z.boolean(), vega: z.boolean(), rho: z.boolean() });
 export type OptionsFields = z.infer<typeof Fields>;
 const OptionsSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-options/1.0.0"), generated_at: z.string().nullable(),
   instrument_id: z.string(), universe: z.enum(["US_EQUITIES", "US_ETFS"]), symbol: z.string(), view: z.enum(["chain", "summary"]),
   market_session: z.string(), capability: z.record(z.string()),

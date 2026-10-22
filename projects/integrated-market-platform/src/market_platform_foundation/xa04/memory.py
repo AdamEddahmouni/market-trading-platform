@@ -108,6 +108,19 @@ class InMemoryCrossAssetCatalogRepository:
             self._subject_index.setdefault(envelope.source_subject_id, set()).add(envelope.observation_id)
         return result
 
+    def latest_scalar_observation_as_of(
+        self, decision_time: str, *, canonical_indicator_id: str
+    ) -> AdmittedObservation | None:
+        from market_platform_foundation.xa02.admission import eligible_at_decision_time
+        from market_platform_foundation.xa02.enums import AdmissionStatus
+
+        rows = self.list_scalar_observations_for_indicator(canonical_indicator_id)
+        return max(
+            (row for row in rows if eligible_at_decision_time(row, decision_time)
+             and row.admission_status == AdmissionStatus.ADMITTED and row.normalized_value is not None),
+            key=lambda row: (row.available_time, row.observation_id), default=None,
+        )
+
     def get_admission_envelope(self, observation_id: str) -> AdmissionEnvelope | None:
         return self._get(AdmissionEnvelope, observation_id)
 

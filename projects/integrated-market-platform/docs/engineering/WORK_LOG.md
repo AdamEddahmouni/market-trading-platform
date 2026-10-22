@@ -1,5 +1,101 @@
 # IMP Work Log
 
+## 2026-10-12 — Autonomous Paper operations (AUTO-01)
+
+Added one server-owned controller that runs the existing authorities
+unattended for internal Paper simulation: the full-universe AI run, the
+reevaluation cycle, the Action Decision gate, the SMA stop monitor and the
+canonical Paper handoff, preview, risk and submit. It needs a complete owner
+policy (no defaults) and a separate recorded arming; it holds a per-account
+lease, renews it inside the cycle, records downtime without backfill, and
+resumes after a restart only if every start check passes again. Candidates
+come only from complete full-universe selections; unattended model calls need
+the owner's local or paid authorization and a paid run carries an owner cap
+that refuses before any hold. One Action Decision is one order; an exit whose
+order ended unfilled is decided again with backoff. Emergency Stop latches,
+cancels working automation orders and never liquidates.
+
+Three existing behaviours changed. Action handoff now gates at the cutoff of
+its own position snapshot (it failed `POSITION_SNAPSHOT_STALE` whenever the
+clock advanced between two reads). The reevaluation status field
+`paper_execution` may be `AUTOMATION_POLICY`. The response leak guard treats
+`max_paid_tokens_per_day` as a whole-number count.
+
+Integration closed the same day: PR #496 merged normally into `origin/main` at
+`bb46e716` after every protected CI check passed. Two review findings were
+repaired before merge — a superseded generation could lose its self-latch to
+`disarm → configure → re-arm → start` while its cycle was finishing (now fenced
+by the arming+run generation, with the latch recorded as
+`EMERGENCY_LATCH_SUPERSEDED` and a deterministic regression test), and a closed
+session could hide a simultaneous blocker (the last evaluating cycle's blockers
+are now carried into the read with provenance, so the panel names both). The
+automation capability table and the route dispatch were reduced to one source,
+so an operation can no longer drift into read-only privilege. Focused AUTO-01
+suites are 117 backend tests; `validate full` is 8,728 tests / 59 skipped / 0
+failures / 0 errors and `imp.py closure` exits 0; the UI suite is 1,440 tests
+with typecheck and production build clean. The portable runtime source was then
+synchronized from the accepted git objects (186 files, 78 preimages, every
+hash verified, UI rebuilt and re-verified). Live-provider unattended behaviour
+remains `NOT_OBSERVED`, and the workstation restart that loads the synchronized
+source is the one outstanding owner action.
+
+Not implemented: any liquidation rule (daily-loss, close or emergency), and
+any way to mint the governed Opportunity an ENTER still requires. 106 new
+backend tests (35 policy, 8 universe, 63 trading-correctness) and 12 UI tests use
+controlled fixtures; a live regular-session run is `NOT_OBSERVED`. See
+[Autonomous Paper operations](../architecture/PAPER_AUTOMATION.md).
+
+## 2026-10-11 — Performance comparability and import boundaries (P8)
+
+Recovered an interrupted performance sprint and finished it on the portable
+SSD from short-path worktrees. The budget reporter no longer compares a run
+against a baseline taken on a different test population: it reports
+`INSUFFICIENT_DATA` with the reason and both raw timings; the recorded
+baseline is unchanged. Intelligence facades export lazily, and scikit-learn
+loads when a model is fitted instead of at backend API import (3.78 s to
+1.47 s). Finviz recovery waiters return when the in-flight recovery ends
+instead of polling for 60 s. Tests that reproduce tracked evidence write to
+the temporary directory unless `IMP_REFRESH_TRACKED_EVIDENCE=1`.
+
+FULL on unchanged `a1f9a3a1`: 8,513 tests, 523.6 s. FULL on this branch:
+8,528 tests, 434.9 s, 0 failures, 0 tracked files modified. Live Screener,
+local-model inference, paid inference, and frontend were not measured and no
+improvement is claimed for them. See
+[P8 evidence](../audits/performance-engineering-p8/README.md) and the
+[portable workstation runbook](PORTABLE_WORKSTATION.md).
+
+## 2026-10-11 — Live startup identity recovery
+
+Resolve the serving data identity before loading persistent Paper state. Keep
+live research operational and Paper execution blocked when no compatible
+active session exists, without creating an account or reopening closed history.
+Focused loading regressions cover live and controlled replay startup, absent
+admission, incompatible replay history, and closed simulated-capital history.
+Existing preview, risk, freshness, execution, and provider gates remain in force.
+
+## 2026-10-08 — Local runtime safety and validation
+
+PR #487 merged at `930c0e0b` after nine successful checks; merge parents and
+implementation ancestry verified. The next focused feature extends the existing
+local adapter with pinned artifact verification, bounded CPU candidate profiles,
+one resource-readiness contract, commit/OS-peak monitoring, owned startup/Stop
+cleanup and cross-process launch lease. The original frozen 52-case benchmark
+gains append-only attempts, shared cumulative budget, once-only frozen holdout
+and offline economic planning. Staged preview displays resource refusal.
+
+Actual pilot: 2.49 GiB available, below unchanged 4 GiB floor; zero starts and
+generation requests. No accepted profile or quality/savings claim. Exhaustive
+default, experimental isolation and activation OFF preserved. See
+[runtime contract](../architecture/SCREENER_AI_LOCAL_RUNTIME_VALIDATION.md) and
+[acceptance receipt](../../artifacts/ai-screener-local-runtime-validation.json).
+
+FULL closure exposed an existing Windows shared-console interruption during
+process-supervision acceptance cleanup. The unchanged 23-test module passes
+with an isolated worker process group. Added that Windows-only launch isolation
+to the validator and a regression that failed before the fix; test inventory,
+assertions and safety gates are unchanged. Earlier interrupted FULL receipts
+are retained and do not count as completion.
+
 > **Donor-era entries: SUPERSEDED — HISTORICAL · AUTHORIZATION BASIS SUPERSEDED**
 >
 > Entries from the donor era (2026-08-14 through the correction) predate the
@@ -31,6 +127,323 @@ Append a new section at the **top** of [Entries](#entries) (newest first). Use t
 ```
 
 For large features, also add or update a completion note under `docs/superpowers/plans/` when a formal plan exists.
+
+---
+
+## 2026-10-08 — Local-first experimental AI Screener
+
+| Field | Value |
+|-------|-------|
+| **Status** | implemented — local validation complete; experimental, methodology approval and operational activation OFF |
+| **Area** | Screener intelligence, local state, UI, controlled research |
+| **Summary** | Separate versioned qualification/premium engine preserves exhaustive defaults and Action rejection. Full fixture accounting through 20,000 passes; Qwen admission resource blocked, quality/economics unproven, approval/activation OFF. |
+| **Key files** | [Method](../architecture/SCREENER_AI_LOCAL_FIRST_EXPERIMENTAL.md), [acceptance](../../artifacts/ai-screener-local-first-acceptance.json), staged orchestration/qualification/storage and Main Screener UI |
+| **Tests** | FAST 23 passed; CHANGED 6,270 run (35 skipped, 0 failures, 0 errors); FULL 8,431 run (53 skipped, 0 failures, 0 errors); UI 1,414 tests / 180 files at two workers; typecheck, build, bundle budget, lint, docs links pass. Implementation commit `231be2dd`. |
+| **Evidence** | Frozen protocol; zero paid/real local generations; resource refusal and review retained. October 7 evidence and dirty original preserved. |
+
+
+## 2026-10-08 — Full-universe AI inference budget efficiency
+
+| Field | Value |
+|-------|-------|
+| **Status** | implementation complete; validation and protected integration recorded in the acceptance receipt |
+| **Area** | AI Screener inference, evidence, shared quota and UI accounting |
+| **Summary** | Exact context reuse persists successful answers and avoids buying reusable batch/global comparisons. Each request retains its canonical manifest. Quota transactions coordinate processes and fail closed on malformed state; unknown usage remains charged. Optional lossless input columns and context fitting remain off pending real-provider quality controls. |
+| **Key files** | Candidate reducer, evidence compaction, inference identity, durable inference cache, shared quota, coverage planner/ledger, run progress and existing Screener UI |
+| **Tests** | Focused regression and downstream controlled lifecycle tests; complete validation and benchmark totals in the new acceptance receipt. Initial integration failures and their repair are retained there. Oversized-length HTTP fixtures now require rejection before any payload arrives, eliminating a reproduced Windows unread-body close race without changing production HTTP handling or weakening the 413 assertions. |
+| **Related** | [Budget-efficiency contract](../architecture/SCREENER_AI_BUDGET_EFFICIENCY.md), [acceptance receipt](../../artifacts/ai-screener-budget-efficiency-acceptance.json) |
+| **Notes** | SOFTWARE_CONTROLLED. Cold 4,630-row runs remain above default allowance; 94 cold calls become zero fully reusable calls and two after one changed candidate. No paid generation, model switch, active Paper campaign or Live authority. Historical October 7 evidence is preserved. |
+
+## 2026-10-07 — Full-universe Screener final defect closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` (implementation, final local validation and observed protected CI; canonical integration verified separately after normal merge) |
+| **Area** | AI Screener completeness, budget, persistence and restart diagnostics |
+| **Summary** | Retrieved the original independent review. Finalists excluded from global comparison now block a completed selection. Candidate publication and the terminal receipt roll back together. Budget instances reload shared usage and releases, local-engine recovery releases paid holds, and failed reservation persistence blocks generation. Completed selection reads survive tracker restart. Provider-count context overflow and Stop during the final in-flight request cannot publish a completed selection. |
+| **Key files** | `screener_ai_coverage.py`, `screener_ai_runs.py`, `screener_ai.py`, `anthropic_synthesis.py`, `ai_screener_coverage.py`, `action_decisions.py`, associated regression tests and acceptance tool |
+| **Tests** | Red/green controlled regressions; final exact-source totals and original failed-run disposition are recorded in `artifacts/ai-screener-full-universe-acceptance.json`. Final checks include the corrected partial-selection UI copy, isolated durable-ledger route fixtures, and fail-closed unreadable persisted quota state. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md) |
+| **Notes** | SOFTWARE/CONTROLLED only; no paid generation, no prospective campaign, no real Paper submission and no Live-capital authority. Unrelated dirty performance artifacts are excluded. [PR #485](https://github.com/AdamEddahmouni/market-trading-platform/pull/485) records normal protected integration. |
+
+## 2026-10-07 — AI Screener full-universe coverage, bounded batches and global selection
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` |
+| **Area** | `backend`, `ui/screener`, `docs` |
+| **Summary** | An AI Screener run read only the first 50 rows of the sorted Screener result, so about 99% of a 4,630-row universe never reached the model and "no candidates" described only the head of the list. A run now enumerates the whole pinned result set, classifies every row with the existing evidence gates, sends each eligible row to the model in bounded batches ordered by identity, and compares batch finalists until one request holds them all (`ai-screener-coverage/1.0.0`). Only that final answer is stored as a candidate run. The whole plan is held against the shared budget before the first call; a plan that does not fit calls no model. |
+| **Key files** | New: `src/market_platform_foundation/ui_api/screener_ai_coverage.py`, `ui_api/screener_ai_universe.py`, `intelligence/inference/coverage_plan.py`, `local_state/ai_screener_coverage.py`, `tools/ai_screener_full_universe_acceptance.py`, `ui/src/components/screener/ai/AiCoverage.tsx`, `docs/architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md`. Changed: `ui_api/screener_ai.py`, `ui_api/screener_ai_runs.py`, `ui_api/server.py`, `intelligence/inference/anthropic_synthesis.py`, `candidate_reduction.py`, `run_progress.py`, `platform/security/route_policy.py`, `platform/security/leak_audit.py`, `ui/src/api/screenerAi.ts`, `AiStatusStrip.tsx`, `AiRunProgress.tsx`, `AiScreenerPanel.tsx`, `ScreenerPage.tsx`. |
+| **Tests** | Recorded in `artifacts/ai-screener-full-universe-acceptance.json` (`validation`), from runs on the implementation commit. |
+| **Related** | [Coverage contract](../architecture/SCREENER_AI_FULL_UNIVERSE_COVERAGE.md); [single-request contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md); the PR 484 entry below, whose "NOT closure of the full-universe blind-spot issue" this closes. |
+| **Notes** | Token estimates changed for every paid AI operation: input is now bounded from UTF-8 bytes below the provider's measured bytes per token (the former three-characters rule under-counted every Claude model), so reservations are larger and refusals come earlier. Measured limit: a controlled 50-row packet is about 96,000 bytes, so under the default 200,000-token / 30-request allowance only a query with about 50 eligible rows (Sonnet/Opus) or about 100 (Haiku) completes; larger queries end `AI_COVERAGE_BUDGET_INSUFFICIENT` before any call. A local model has no cap. Not done: no paid generation under this method; no resume after restart; automatic reevaluation passes keep the single-request method; the packet shape (about a third of a candidate is its fixed missing-capability list) is unchanged, so a more compact wire remains a separate, unstarted change. `ui/ai-right-rail-tab` (unmerged) edits the same UI files and will need a rebase. |
+
+## 2026-10-07 — Preserve usable news before empty candidate coverage during packing
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented in isolated repair checkout; live deployment requires protected integration and an explicit new software epoch |
+| **Area** | backend AI Screener evidence packing |
+| **Summary** | The active campaign's 20-row packet had no news or sentiment references because packing removed all stories before thinning provider status. Packing now releases coverage detail on candidates without admitted stories first, and repeats that step when story thinning empties another candidate. The 96 KB bound and deterministic story ordering remain enforced. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_news_evidence.py`, `tests/intelligence/test_news_candidate_evidence.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | New controlled 20-row price/volume regression failed with zero retained stories before the correction; afterward it retains 3 NEWS and 3 SENTIMENT items in a 93,489-byte packet. All 29 tests in the two directly affected candidate/evidence modules passed; documentation links passed for 292 governance files. Broader manifest-selected validation is delegated to protected CI to avoid contention with the active RTH runtime. |
+| **Related** | [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#limits-and-lifecycle) |
+| **Notes** | Controlled fixtures remain separate from prospective receipts. No live runtime, historical input, model, prompt, candidate cap, source-time gate, risk rule or Paper account was changed during preparation. This repairs evidence delivery and makes no claim that the model must select candidates. |
+
+---
+
+## 2026-10-07 — AI engine picker safety (Phase 1d of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend (`ui_api/server.py`, `ui_api/screener_reevaluation.py`, `ui_api/screener_ai.py`, `intelligence/inference/synthesis_engines.py`), `ui/screener` engine pickers |
+| **Summary** | In the 2026-10-07 session the engine dropdown switched the model for the whole machine immediately, with no confirmation, in the middle of a session. The engine route now refuses a change while a reevaluation loop holds its lease (409 `SYNTHESIS_ENGINE_LOCKED`, also when the loop state cannot be read); both pickers ask for confirmation and say the change is machine-wide before anything is sent; each engine states the context window IMP starts it with, and the AI Screener preview says per engine whether the current packet fits. The status strip shows the selected engine. |
+| **Key files** | `src/market_platform_foundation/ui_api/{server,screener_reevaluation,screener_ai}.py`, `src/market_platform_foundation/intelligence/inference/synthesis_engines.py`, `ui/src/components/screener/ai/{EngineSwitch.tsx,AiStatusStrip.tsx}`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `ui/src/components/screener/news/SynthesisControl.tsx`, `ui/src/api/{screenerAi,screenerNews}.ts`, `tests/platform/test_synthesis_engine_safety.py` (new), `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_synthesis_engine_safety.py` (red-first, 10: context window per engine, packet fit including "unknown claims nothing", lease lock in this and another process, route refusal with nothing saved, unreadable loop state fails closed); `AiScreenerPanel.test.tsx` (+3) and `News.test.tsx` (+1, 2 updated) for confirmation, cancel, lock and fit wording |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1d; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md#engine-choice) |
+| **Notes** | No methodology change: no prompt, packet, threshold or loop logic is touched; the loop only gains a read of its own lease. Hosted engines state no context window because IMP records none; their fit is reported as unknown rather than assumed. An unfit engine stays selectable after the warning because the same setting also serves News synthesis, whose packets are small. Stopping the loop releases the lock. **Defect fixed here:** the status strip change merged earlier today named two budget fields `tokens_left` and `per_run_tokens`; the name-based response guard blocks integer values under names containing `token`, so `GET /screener/ai-screener/runs/active` would have answered 500 for any paid engine (a local engine has no budget and was unaffected). The strip's tests used an engine without a budget over HTTP. The fields are now `headroom`, `run_size` and `run_size_basis` (`screener-ai-screener-runs/1.2.0`), new fields in this change avoid the pattern (`context_window`, `packet_size`), the guard is unchanged, and a regression test reads the status for a budgeted engine through the real handler. |
+
+---
+
+## 2026-10-07 — AI status strip on the Main Screener (Phase 1b of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | `ui/screener` (`ai/AiStatusStrip.tsx`, `ScreenerPage.tsx`), backend `ui_api/screener_ai_runs.py` |
+| **Summary** | The AI Screener's state was only visible inside a bottom dock panel. A persistent strip now sits under the Screener header: idle, running (stage, measured time, model, candidate count, typical latency and timeout), waiting for budget, blocked or not configured (reason in plain words with the code), the last pass with its selection count and an evidence-expiry countdown, the scheduled loop's next cycle, and the shared budget in runs-left terms. `GET /screener/ai-screener/runs/active` (now `1.1.0`) adds `state`, `ai` and `budget` so the strip and the panel share one poll. |
+| **Key files** | `ui/src/components/screener/ai/{AiStatusStrip.tsx,AiStatusStrip.test.tsx,useAiScreenerRuns.ts}`, `ui/src/components/screener/{ScreenerPage.tsx,ScreenerPage.test.tsx,screener.css}`, `ui/src/api/screenerAi.ts`, `src/market_platform_foundation/ui_api/{screener_ai_runs,screener_ai}.py`, `tests/platform/test_screener_ai_runs.py`, `tests/support/controlled_ai_run.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_runs.py` (red-first, +4: budget in runs-left terms only after a reservation was held, waiting for budget, exhausted / not configured / blocked, running and local engine); `ui/src/components/screener/ai/AiStatusStrip.test.tsx` (13, every strip state); `ScreenerPage.test.tsx` (+2: strip placement and Open, hidden where the universe has no AI Screener) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1b; [AI Screener run status](#2026-10-07--ai-screener-run-status-phase-1a-of-the-coverage-and-visibility-plan) |
+| **Notes** | No methodology change and no new model path. Runs left are counted from the last reservation actually held for the model; before any run has reserved tokens the strip shows requests left and says the run size is not yet measured. "Next automatic cycle" is the loop's next scheduled cycle; a cycle re-runs the AI Screener only when the candidate list changed materially. The strip shows no control that cancels a model call in flight, because a blocking call cannot be cancelled truthfully. Not yet done from Phase 1: row badges, the AI tab in the right rail, run history, engine picker safety. Local note: `Participants.test.tsx` "opens Institutional & Whale" timed out on this machine with and without this change while a live session shared it; it is left to CI. |
+
+---
+
+## 2026-10-07 — Discovery responses no longer trip the secret-leak guard; two browser acceptance scripts repaired
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend discovery responses (`discovery/models.py`, `discovery/mixed.py`, `ui_api/discovery_projections.py`), `tools/ui1` |
+| **Summary** | Found in the 2026-10-07 session: the Radar read (`GET /discover/mixed`) answered 500 with `UI_SECRET_LEAK_BLOCKED`. Cause: the discovery engine attaches the Finviz export's per-column field inventory to every candidate's provenance, and two of that table's column names (`source_authority_label`, `authority_note`) contain `auth`, which the name-based response guard blocks by design. Both discovery responses passed candidate provenance through unchanged; their tests used a hand-written provenance without the inventory, so only a real export reached the guard. The responses now carry the inventory's summary (`field_count`, `categories`); the capture file keeps the full table. Also repaired: `oct1_09_browser.cjs` clicked an ambiguous `Prepare Paper Exit` (now scoped to the `Current decision` region), and `oct1_11_browser.cjs` ignored `IMP_CHROMIUM_PATH`. |
+| **Key files** | `src/market_platform_foundation/discovery/{models,mixed}.py`, `src/market_platform_foundation/ui_api/discovery_projections.py`, `tests/platform/test_discovery_response_leak_gate.py` (new), `tools/ui1/oct1_09_browser.cjs`, `tools/ui1/oct1_11_browser.cjs` |
+| **Tests** | `tests/platform/test_discovery_response_leak_gate.py` (red-first, 4, built from real `DiscoveryEngine` output: the capture keeps the inventory and the guard still rejects it as a response; Radar candidates and a screen-run response pass the guard; a secret under another provenance key is still blocked) |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 4; [pre-RTH readiness](../superpowers/plans/2026-10-07-oct1-13-pre-rth-readiness.md) |
+| **Notes** | The guard (`platform/security/leak_audit.py`) and its allowlist are unchanged. Capture files and their replay equivalence are unchanged. `GET /discover/run` had the same defect and is fixed by the same change. The two browser scripts were syntax-checked only; running them needs the built UI and was deferred until after the 2026-10-07 session close because a live session shares this machine. |
+
+---
+
+## 2026-10-07 — AI Screener run status (Phase 1a of the coverage and visibility plan)
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend (`ui_api/screener_ai_runs.py`, `intelligence/inference/run_progress.py`), `ui/screener` AI Screener panel |
+| **Summary** | An AI Screener run used to be one HTTP request held open by the panel, with a button label as the only sign of work; closing the panel or reloading lost it. `POST /screener/ai-screener` now returns a tracked run at once and the work continues on the server. `GET /screener/ai-screener/runs/{run_id}` and `/runs/active` report the stage the server is really in (`SCOPE`, `NEWS`, `EVIDENCE`, `PACKET`, `BUDGET_RESERVED`, `MODEL_CALL`, `VALIDATION`, `STORED`) with measured elapsed time, and the result once finished. One run per account: a second click joins the run in progress. The panel polls status, shows stage progress with the request timeout and the measured typical latency for the model, and re-attaches after a reload. |
+| **Key files** | `src/market_platform_foundation/ui_api/screener_ai_runs.py` (new), `src/market_platform_foundation/intelligence/inference/run_progress.py` (new), `ui_api/{screener_ai,server}.py`, `intelligence/inference/{candidate_reduction,anthropic_synthesis}.py`, `platform/security/route_policy.py`, `ui/src/api/screenerAi.ts`, `ui/src/components/screener/ai/{useAiScreenerRuns.ts,AiRunProgress.tsx}`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `tests/support/controlled_ai_run.py`, `tests/acceptance/harness_{action_decision,reevaluation}.py`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | `tests/platform/test_screener_ai_runs.py` (red-first, 14: stage order from a controlled slow engine, reservation reported only when held, refused reservation and cached answer claim no model call, join, re-attach, account isolation, stable failure codes, HTTP contract); `ui/src/api/screenerAi.test.ts` and `ui/src/components/screener/panels/AiScreenerPanel.test.tsx` |
+| **Related** | [Plan](../superpowers/plans/2026-10-07-ai-screener-coverage-and-visibility.md) Phase 1a; [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md) |
+| **Notes** | No methodology change: the packet, prompt, model call, validation, cache identity, budget reservation and stored result are byte-for-byte what `ScreenerAiService.run` produced before; stage reporting only observes. The plan listed `EVIDENCE` before `NEWS`; the code reads news before taking the evidence cutoff, so stages are reported in that real order rather than reordering the work. Tracked runs are in-process: a server restart ends an in-flight run. The panel now keeps a result for the same Screener query across a list refresh (it used to withdraw it) and says the list has refreshed. Not yet done from Phase 1: the persistent strip, row badges and AI tab, run history, engine picker safety. Browser acceptance against the built UI was deferred until after the 2026-10-07 session close because a live session shares this machine. |
+
+---
+
+## 2026-10-07 — OCT1-13 AI Screener packet bound on a full live window
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend/AI Screener evidence packet (`ui_api/screener_news_evidence.py::fit_news`) |
+| **Summary** | Found in the first minutes of the 2026-10-07 regular session on canonical `746b93f8`: with all 20 window rows carrying current Moomoo evidence, the read-only preview packet was 95.6 KB with every story already thinned, and the run, which adds order-flow evidence, was refused before inference with `EVIDENCE_PACKET_BOUND_EXCEEDED`. Thinning could only remove stories, so once none were left the request failed. `fit_news` now continues the same deterministic thinning into the per-provider status detail of candidates that carry no story (highest instrument id first, only as many as the cap needs), marked `GLOBAL_PACKET_STATUS_CAP`. |
+| **Tests** | `tests/intelligence/test_news_candidate_evidence.py` (red-first: a full window with no story left fits instead of failing; a window that fits is untouched; evidence that cannot fit still fails closed) |
+| **Related** | [QUOTE push observation time](#2026-10-07--oct1-13-quote-push-observation-time) |
+| **Notes** | The 96 KB cap, intake cap, prompt, model, thresholds and evidence requirements are unchanged; no evidence item is removed and a packet that already fit is byte-identical. Known limit kept as is: stories are still thinned before status detail, so a full live window reaches the model with no news stories. |
+
+## 2026-10-07 — OCT1-13 QUOTE push observation time
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; protected integration receipts belong to the owning PR |
+| **Area** | backend/market-data L1 cache (`market_data/observational_state.py`) |
+| **Summary** | Found in the pre-RTH readiness check on live OpenD and confirmed in the 2026-10-06 regular-session capture: OpenD's QUOTE push has `data_date`/`data_time` and no `update_time`, so every push left the L1 quote with no provider clock. Actively traded symbols (NVDA, INTC, MRVL in the capture) were `BLOCKED: NO_OBSERVATION_TIME` between the 2 s snapshot polls while quiet symbols stayed admissible. A push now dates its quote from `data_date` + `data_time` when the price shown is the regular-session `last_price`. A pre-market, after-hours or overnight price, a clock ahead of receipt, a time with no date and a snapshot's own `update_time` are unchanged. |
+| **Tests** | `tests/market_data/test_live_p21.py` (two red-first store tests), `tests/platform/test_screener_live_price.py` (push between polls reaches the row and candidate evidence as CURRENT with the provider clock) |
+| **Related** | [Live price evidence](../superpowers/plans/2026-10-07-screener-live-price-evidence.md) |
+| **Notes** | Freshness policy, thresholds, session price selection and admission are unchanged. The regular-session push was not observable before the open: its shape comes from the 2026-10-06 capture and the existing live-derived fixture. Outside the regular session a push still shows the previous session's print for symbols whose `data_time` is not the close; it is now dated as such and reads stale instead of live. |
+
+## 2026-10-07 — OCT1-12 scheduled reevaluation hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented and locally accepted; protected integration receipts belong to the owning PR |
+| **Area** | backend/intelligence reevaluation loop, local-state lease and receipts, Paper mark subscription |
+| **Summary** | Every held Paper position is evaluated each cycle (rotating above `max_held_per_cycle`), reads its own evidence when it leaves the intake or selection, and keeps a server-side quote subscription with no page open. A failed evidence read ends `REEVALUATION_BLOCKED` and still runs the SMA stop monitor. Scheduled cycles are lease-fenced and renew the lease before model calls. Model-call caps follow the Paper account across reconfigured scopes. Quote recovery is dwelled so a flapping quote cannot buy a model call per recovery. |
+| **Tests** | Ten red-first regressions and three lock-in tests in `tests/intelligence/test_reevaluation.py`; six cycle tests on the real Screener row/cache evidence path in `tests/platform/test_reevaluation_live_evidence.py`; canonical totals in the receipt |
+| **Related** | [Reevaluation contract](../architecture/SCREENER_REEVALUATION.md), [acceptance](../../artifacts/oct1-12-acceptance.json) |
+| **Notes** | SOFTWARE_CONTROLLED only; LIVE_RTH_ACCEPTANCE = NOT_OBSERVED_MARKET_CLOSED. No preview, handoff, order or submit path added; Paper stays the explicit handoff; Live unchanged. Selected candidates that are not held are still quoted only while a Screener window owns them. Mark-age enforcement, Paper cost realism and Screener page work were not started. |
+
+## 2026-10-07 — SMA position epoch instrument/episode scoping
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; validation and protected integration receipts in linked report |
+| **Area** | backend/risk, Paper stop persistence, action/lifecycle projections |
+| **Summary** | Corrected the OCT1-10 retained stop epoch limitation using canonical account/experiment/instrument/opening-fill identity, guarded legacy migration and current-episode reads, scoped lifecycle history and deterministic EXIT lineage. |
+| **Tests** | Five red regression assertions; focused 257 passed; CHANGED 5,512 run / 43 skipped / zero failures/errors; UI 1,374 passed; production build/typecheck passed. Final FULL/static/integration evidence in repair report/receipt. |
+| **Related** | [SMA position epoch scoping](../superpowers/plans/2026-10-07-sma-position-epoch-scoping.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; no formula/methodology change, no automatic Paper/Live submit or breach model call; no subsequent lane started. |
+
+## 2026-10-07 — Screener live price evidence convergence
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented; validation and protected integration receipts in linked report |
+| **Area** | backend/screener, intelligence/candidate evidence, UI/screener |
+| **Summary** | Join existing equity/ETF OpenD L1 observations into backend rows after snapshot ordering so the AI gate consumes the same price/source clock as the table. Preserve Finviz reference fields, source clock integrity, immutable history and execution gates. |
+| **Key files** | Screener projections/multi/AI, candidate reduction, ScreenerPage and AI panel; controlled regression and loopback harness |
+| **Tests** | Red/green price and carried-book clock regressions; canonical and UI totals recorded in receipt |
+| **Related** | [Price convergence report](../superpowers/plans/2026-10-07-screener-live-price-evidence.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; LIVE_RTH_ACCEPTANCE = NOT_OBSERVED_MARKET_CLOSED; zero Paper/Live submits. No unrelated tracker work. |
+
+## 2026-10-06 — OCT1-11 prospective outcome evaluation
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented and locally accepted; protected integration receipts belong to PR467 and the OCT1-11 tracker record |
+| **Area** | backend/evaluation, local-state, UI/portfolio |
+| **Summary** | Immutable outcome runs and deterministic Paper metrics reuse canonical decision, next-session, accounting and lifecycle authorities. Explicit cohorts, exclusions, sparse-equity limits and source reconstruction preserve evidence. |
+| **Key files** | `evaluation/`, `local_state/evaluations.py`, `ui_api/prospective_evaluation.py`, `ui/src/components/evaluation/` |
+| **Tests** | FAST 23; CHANGED 6042/35 skips/0 failures/errors; FULL 8143/53 skips/0 failures/errors (421.317s); 31 final focused backend cases; UI 1372/179 files; browser 29 grouped steps covering 40 scenarios; static/docs/guard/build pass. Prior failures and observe-only severe timings retained. |
+| **Related** | [Plan](../superpowers/plans/2026-10-06-oct1-11-prospective-evaluation.md), [contracts](../architecture/PROSPECTIVE_OUTCOME_EVALUATION.md) |
+| **Notes** | Actual OCT1-09 window: NO_QUALIFYING_ENTRY; zero AI decisions/trades, one equity point, insufficient evidence. No live capital or FTEP authority. |
+
+## 2026-10-06 — OCT1-10 final AI-selected trade lifecycle Screener
+
+| Field | Value |
+|-------|-------|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-10 PR/task ledger |
+| **Area** | Screener UI, lifecycle read model, documentation |
+| **Summary** | Consolidates candidate evidence, decisions, Paper entry/position/exit, OCT1-08 SMA stop and OCT1-09 P&L into one derived trader-facing lifecycle. Opening-fill/account/experiment identities isolate same-symbol episodes; prior managed positions remain visible. |
+| **Key files** | `intelligence/inference/trade_lifecycle.py`, `ui_api/screener_lifecycle.py`, `ui/src/components/screener/lifecycle/`, `artifacts/oct1-10-acceptance.json` |
+| **Validation** | Focused backend 42/42; complete UI 1,370/1,370; recovered FAST 23 run, CHANGED 5,954 run/35 skipped, FULL 8,113 run/53 skipped, zero failures/errors; browser 39+6; static/docs/build/guard gates pass. Timing SEVERE_REGRESSION retained, observe-only. |
+| **Related** | [Contract](../architecture/SCREENER_TRADE_LIFECYCLE.md), [acceptance report](../superpowers/plans/2026-10-06-oct1-10-trade-lifecycle-screener.md) |
+| **Notes** | SOFTWARE_CONTROLLED only; separate `position_epoch()` scoping issue unchanged; no automatic Paper/Live submit, no OCT1-11 work. |
+
+## 2026-10-06 — OCT1-09 $100K Paper portfolio experiment and P&L lifecycle
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-09 report/PR/task ledger |
+| **Area** | paper ledger, portfolio ledger, risk financial check, local-state, ui-api, security route policy, Paper Portfolio and Workspace UI, docs |
+| **Summary** | One explicit, persistent, versioned $100,000.00 simulated-capital account (`PaperPortfolioExperimentV1`) shared by every instrument. Experiment accounts use a portfolio-scoped account identity (v2) with no instrument in it; legacy sessions keep their instrument-scoped id, pooled position and single mark byte-stable. Per-instrument quantity, cost basis, entry time and mark; valuation `equity = cash + sum(quantity x own mark)` with CURRENT / DEGRADED / PARTIAL / UNAVAILABLE quality and no zero-valued missing mark; fill-level trade history with position effect, realized P&L and decision lineage; reserved cash and no-leverage buying power; sells beyond holdings and derivative orders refused; explicit create, restore without re-seed, fail-closed close; append-only equity snapshots; seven bounded routes. UI shows the experiment, the live-data vs simulated-execution boundary, summary, positions, trades, assumptions and the Workspace account context. Default Paper cash is unchanged. |
+| **Key files** | `paper/experiment.py`, `local_state/paper_experiments.py`, `ui_api/paper_experiment.py`; additive changes in `paper/ledger.py`, `paper/execution.py`, `portfolio/ledger.py`, `risk/financial.py`, `local_state/startup.py`, `ui_api/{paper_projections,live_projections,store,server}.py`, `platform/security/route_policy.py`; UI `PaperExperimentPanel.tsx`, `paperExperimentPresentation.ts`, `PaperExperimentContextStrip.tsx`, `api/{schemas,endpoints,hooks}.ts`, `paper/paperDecisionSourceSnapshot.ts`; `tests/trading_correctness/test_paper_experiment_{accounting,api}.py`, `tests/support/paper_experiment_feed.py`, `tests/acceptance/harness_paper_experiment.py`, `tools/ui1/oct1_09_browser.cjs`; `artifacts/oct1-09-{acceptance,browser,performance,prospective}.json` |
+| **Validation** | FAST 23/23; CHANGED 5,970 tests, 35 skipped, 0 failures, 0 errors (325.8 s); FULL 8,071 tests / 53 skipped / 0 failures / 0 errors (521.0 s); new backend 70/70; complete UI 1,337/1,337 (176 files); lint, typecheck, format, build and bundle budget (100.61 KiB initial), docs links, monorepo and history guards passed; controlled Chromium acceptance 33/33 steps plus 6 extra scenarios on the production bundle with two real process restarts. |
+| **Related** | [OCT1-09 report](../superpowers/plans/2026-10-06-oct1-09-100k-paper-portfolio.md), [experiment contract](../architecture/PAPER_PORTFOLIO_EXPERIMENT.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [stop contract](../architecture/PAPER_SMA_TRAILING_STOP.md) |
+| **Notes** | Prospective live-market session on 2026-10-06 (experiment `PPE-1CA4528C6CA5C2409D745EDA5FC3BF1F`, Moomoo live observational data, internal simulation): AI Screener `NO_GROUNDED_CANDIDATES / INSUFFICIENT_EVIDENCE`, action `SELECTED_CANDIDATE_REQUIRED`, result `NO_QUALIFYING_ENTRY`, zero orders, zero trades, zero paid model calls, equity $100,000.00, restored unchanged across two restarts. No entry was forced. Upstream limitation, not changed here: the Screener's admissible price evidence was the Finviz snapshot without an observation timestamp, which the OCT1-03 freshness gate correctly excluded. The realized lifecycle is therefore proven under controlled fixtures only. No profitability claim. OCT1-10 and OCT1-11 were not started. |
+
+---
+
+## 2026-10-06 — OCT1-08 SMA trailing-stop risk control and replay evaluation
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-08 report/PR/task ledger |
+| **Area** | risk, local-state, ui-api, intelligence action/reevaluation, research, security route policy, Paper Workspace UI, docs |
+| **Summary** | Deterministic server-owned SMA trailing-stop monitor for open Paper positions: versioned policy, per-position-episode state, exact integer SMA on completed bars, direction-aware rounding, monotonic trailing enforced in policy and storage, no same-bar look-ahead, warm-up/stale/gap states. A breach is a server risk condition that yields EXIT without a model call, bypasses the OCT1-07 dwell and model gates, and appends an immutable decision and trace; the model can neither select nor veto it. No native stop order and no automatic submit: exit goes through the existing explicit Paper handoff with ledger quantity. Frozen point-in-time replay comparison against raw-price trail, fixed initial stop and no-trail with matched initial risk. |
+| **Key files** | `risk/sma_trailing_stop.py`, `local_state/sma_trailing_stop.py`, `ui_api/paper_risk_control.py`, `research/sma_stop_evaluation.py`, `tools/research/run_oct1_08_sma_stop_evaluation.py`; additive changes in `intelligence/inference/action_decision.py`, `intelligence/inference/reevaluation.py`, `ui_api/screener_action.py`, `ui_api/screener_reevaluation.py`, `ui_api/server.py`, `platform/security/route_policy.py`; UI `api/paperRiskControl.ts`, `PaperTrailingStopPanel.tsx`, `buildPaperTrailingStopModel.ts`, `SmaStopEvaluationTable.tsx`, `ActionDecisionPanel.tsx`; `evidence/historical-research/oct1-08-sma-trailing-stop-replay-v1/` |
+| **Validation** | FAST 23/23; CHANGED 3,580 tests / 31 skipped / 0 failures / 0 errors (275.157 s); FULL 8,001 / 53 skipped / 0 / 0 (414.533 s); focused backend 163/163 (73 new); complete UI 1,313/1,313 (173 files); lint, typecheck, format, build and bundle budget (99.73 KiB initial), docs links, monorepo and history guards passed; controlled Chromium acceptance 27/27 steps. Timing classifications are observe-only and unchanged in kind. |
+| **Related** | [OCT1-08 report](../superpowers/plans/2026-10-06-oct1-08-sma-trailing-stop.md), [stop contract](../architecture/PAPER_SMA_TRAILING_STOP.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [reevaluation contract](../architecture/SCREENER_REEVALUATION.md) |
+| **Notes** | Replay result `INSUFFICIENT_EVIDENCE` (one instrument, five sessions, 59 evaluable episodes): stops cut adverse excursion and drawdown against holding to the close and also cut return; no superiority claim; `NOT_CALIBRATED`. Prospective Paper observation, live provider cadence and a real one-minute loop were `NOT_EXECUTED`. The stop is observed only while the loop runs or on request. OCT1-09, OCT1-10 and OCT1-11 were not started. |
+
+---
+
+## 2026-10-06 — OCT1-07 next-session snapshots and governed reevaluation
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented and locally validated; protected integration receipts belong to the OCT1-07 report/PR/task ledger |
+| **Area** | intelligence, local-state, ui-api, security route policy, Screener UI, docs |
+| **Summary** | Freeze an OCT1-06 action decision for the next US market session (calendar-derived target, frozen evaluation policy, lock immutability, append-only observations, signal/execution outcome split). Operator-started reevaluation loop: one core cycle shared by Run Once and the worker, material-change gate before any model call, existing positions first, bounded candidate refresh, duplicate-entry and churn suppression with safety precedence, hard model-call caps, requested vs effective cadence with per-capability clocks, single-owner lease, liveness, and `NOT_OBSERVED` gaps with no backfill. No order, preview, handoff or submit path. |
+| **Key files** | `intelligence/inference/reevaluation.py`, `local_state/reevaluation.py`, `ui_api/screener_next_session.py`, `ui_api/screener_reevaluation.py`, `ui_api/server.py`, `platform/security/route_policy.py`; UI `api/screenerReevaluation.ts`, `NextSessionPanel.tsx`, `ReevaluationPanel.tsx`; additive hooks in `screener_action.py` and `screener_ai.py` |
+| **Validation** | FAST 23/23; CHANGED 5,841 tests / 35 skipped / 0 failures / 0 errors (349.656 s); FULL 7,928 / 53 skipped / 0 / 0 (423.718 s); focused backend 183/183 (63 new); complete single-worker UI 1,296/1,296 (171 files); lint, typecheck, format, build and bundle budget, docs links, monorepo and history guards passed; controlled Chromium acceptance 27/27 steps. Intermittent non-green attempts (one `WinError 10053` HTTP test, parallel-run App/Participants UI tests) passed in isolation and are retained in the report. Timing classifications are observe-only and unchanged in kind. |
+| **Related** | [OCT1-07 report](../superpowers/plans/2026-10-06-oct1-07-reevaluation.md), [reevaluation contract](../architecture/SCREENER_REEVALUATION.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [forward-test bridge](../architecture/PAPER_FORWARD_TESTING_BRIDGE.md) |
+| **Notes** | SOFTWARE_CONTROLLED on an accelerated controlled clock. Real 60-second loop, local/hosted model runtime and live provider cadence were `NOT_EXECUTED`; one-minute real-time behaviour is not claimed. Calendar covers 2025–2026 without early closes; US equities/ETFs only. No strategy, accuracy or profitability claim. OCT1-08, OCT1-09, OCT1-10 and OCT1-11 were not started. |
+
+---
+
+## 2026-10-05 — OCT1-06 explicit action decisions
+
+| Field | Value |
+|---|---|
+| **Status** | Implemented; validation and protected integration receipts belong to the OCT1-06 report/PR/task ledger |
+| **Area** | intelligence, local-state, ui-api, Paper boundaries, Screener UI, docs |
+| **Summary** | Dedicated bounded proposal inference, deterministic position-aware states/conditions, immutable PIT evidence and trace/history, existing Opportunity selection and explicit Workspace Paper preview/close handoff. Both Paper boundaries revalidate action source; entry reuses existing PreTradeRiskEngine and interactive risk. |
+| **Validation** | Backend boundary/restart/budget tests, actual controlled browser/HTTP/Workspace scenarios, full UI suite, FAST/CHANGED/FULL, lint/typecheck/build/budget and governance links; exact final counts, timing classifications and initial failures are retained in the acceptance ledger. |
+| **Related** | [OCT1-06 report](../superpowers/plans/2026-10-04-oct1-06-action-decision.md), [action contract](../architecture/SCREENER_ACTION_DECISION.md), [Paper lifecycle](../architecture/PAPER_DECISION_LIFECYCLE.md) |
+| **Notes** | SOFTWARE_CONTROLLED. Real local runtime unconfigured; hosted inference not executed. No model sizing/risk override, automatic submit, Live execution or broad Paper campaign. OCT1-07, OCT1-08 and OCT1-09 were not started. |
+
+---
+
+## 2026-10-03 — OCT1-05 News and sentiment evidence integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented and locally validated` — canonical integration/check/SHA evidence belongs to the OCT1-05 PR/task ledger |
+| **Area** | `intelligence`, `news`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Reused S11 receipts/clustering/matching/caches/FinBERT as bounded NEWS/SENTIMENT evidence in OCT1-04. Explicit 4h references, provenance, native-flow gates, deterministic pairwise states and mandatory conflict refs; human-readable evidence and existing News drilldown. Preview performs no provider/scorer work, instrument acquisition is cache-only. |
+| **Tests** | Expanded backend 133/133, FAST 23/23, UI 1,281/1,281 plus final focused 31/31, lint/typecheck/build/budget and controlled Chromium acceptance passed. Initial FULL 7,835 tests had one MATLAB transient failure and one HTTP WinError10053; both passed isolation. Final corrected-source FULL: 7,838 tests, 53 skips, zero failures/errors in 394.232367s; complete one-worker UI 1,281/1,281 (168 files), unchanged assertions/timeouts. Final clock regressions passed. Failed sandboxed CHANGED retained. |
+| **Related** | [OCT1-05 acceptance](../superpowers/plans/2026-10-03-oct1-05-news-evidence-integration.md), [S11 News authority](SCREENER_S11_NEWS.md) |
+| **Notes** | Existing real local FinBERT revision f6449ddda85e scored three sentences; guarded NewsAPI DELAYED and Finnhub CURRENT reads/cache hits verified independently. Finviz/RSS live gates OFF, SEC unconfigured. SOFTWARE_CONTROLLED acceptance confers no empirical, forecast or execution authority. OCT1-06 was not started. |
+
+---
+
+## 2026-10-03 — OCT1-04 AI Screener candidate reduction and resumed closure
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — validation complete; canonical integration/check/SHA ledger belongs to [PR #460](https://github.com/AdamEddahmouni/market-trading-platform/pull/460) and the OCT1-04 Notion task |
+| **Area** | `intelligence`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added an explicit operator-triggered AI Screener that reads at most the first 20 active Screener rows, projects allowlisted evidence, rechecks freshness at one cutoff, and returns at most five validated grounded candidates. Preview is provider-free; POST is the only inference trigger and reuses the News provider and shared budget. |
+| **Key files** | `intelligence/inference/candidate_reduction.py`, `intelligence/inference/schema_dispatch.py`, `ui_api/screener_ai.py`, `ui_api/server.py`, `ui/src/components/screener/panels/AiScreenerPanel.tsx`, `docs/architecture/SCREENER_AI_CANDIDATE_REDUCTION.md` |
+| **Tests** | Recovered backend 13/13 + 139/139 retained; current AI backend 18/18; registry 67/67; complete FULL 7,822 tests, 7,769 passes, 53 skips, zero failures/errors (71 suites); CI CHANGED 5,677 tests, 37 skips, zero failures/errors. Isolated UI 92/92; Screener/App/API 331/331; complete final UI 1,276/1,276 (168 files). Lint/typecheck and production build/budget PASS (99.70 KiB initial gzip). Prior launcher assertion fixed; seven App async failures classified INTERMITTENT after repeated isolation and complete-suite passes. Controlled actual UI/HTTP acceptance PASS. Initial non-green FULL/CHANGED and 22-selector environment/transient rerun retained. FULL timing 542.343s remains SEVERE_REGRESSION versus 198.882s baseline. |
+| **Related** | [OCT1-04 plan](../superpowers/plans/2026-10-02-oct1-04-ai-screener.md), [AI Screener contract](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md), [freshness contract](../architecture/SCREENER_DECISION_FRESHNESS.md) |
+| **Notes** | SOFTWARE_CONTROLLED only. Exact covered-fields clocks gate quote/technical/rates row facts; unconsumed specialist capabilities remain missing. Existing local model is not configured; hosted acceptance was not executed. No retrieval, execution, portfolio, target, forecast, new provider, model download, separate budget or autonomous loop. Notion OCT1-04 task was verified and moved to In progress; Done requires remote-main integration verification. OCT1-05/06 were not started. |
+
+---
+
+## 2026-10-02 — OCT1-03 Screener decision freshness
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — canonical integration/check/SHA ledger recorded in the OCT1-03 PR and Notion task |
+| **Area** | `market-data`, `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added source/clock/policy-aware per-capability freshness, independent delivery mode and current/reference eligibility. Corrected symbol-silence flow, timeframe-aware cached bars, directional freshness, Treasury observation labels and client deadline withdrawal. The deterministic consumer gate excludes stale critical inputs at decision cutoff. |
+| **Key files** | `market_data/freshness_contract.py`, `ui_api/screener_freshness.py`, Screener API projection boundary, shared DecisionFreshness indicator and schemas, preview/panels/row labels |
+| **Tests** | Focused backend 44 + 125 passed; complete UI 1268/1268 (166 files); Screener UI/API 259/259; final indicator/connectivity 17/17; lint/typecheck/build/budget passed; controlled Edge acceptance 15 assertions, zero page errors. FULL ledger in linked plan. |
+| **Related** | [OCT1-03 audit and validation](../superpowers/plans/2026-10-02-oct1-03-decision-freshness.md), [canonical consumer contract](../architecture/SCREENER_DECISION_FRESHNESS.md) |
+| **Notes** | SOFTWARE_CONTROLLED; no provider freshness empirical claim. Unknown cadence remains explicit. Initial bundle 99.70 KiB gzip (+0.01 KiB); projection 80-row p95 2.172ms, 500-row p95 9.723ms. No AI synthesis, new providers, trading changes or OCT1-04. |
+
+## 2026-10-02 — OCT1-02 cross-asset connectivity
+
+| Field | Value |
+|-------|-------|
+| **Status** | `implemented` — validation complete; canonical PR/check/merge ledger is recorded in the OCT1-02 tracker |
+| **Area** | `backend/ui-api`, `ui/screener`, `docs` |
+| **Summary** | Added a bounded selected-instrument projection over existing XA identity/reference catalog and Options/Futures/Bonds services, with inspectable graph, relationship table and source clocks. Unsupported relationships remain absent; comparison requires explicit compatible observed-return windows. |
+| **Key files** | `screener_connectivity.py`, `screenerConnectivity.ts`, `ConnectivityPanel.tsx`, existing Screener route/capability/dock wiring |
+| **Tests** | Backend connectivity 14 PASS and repository review regressions PASS; canonical full closure 7,786 tests (7,733 passed, 53 skipped, zero failures/errors); complete UI 1,258 PASS; typecheck/build/budget/docs PASS; controlled browser PASS |
+| **Related** | [OCT1-02 implementation and validation](../superpowers/plans/2026-10-02-oct1-02-cross-asset-connectivity.md) |
+| **Notes** | Base `d8d8d998`; dedicated `codex/oct1-02-cross-asset-connectivity`. Console closure attempts interrupted; detached closure completed. Timing telemetry reported SEVERE_REGRESSION (467.313 s vs 198.882 s baseline), an observe-only finding. No OCT1-03, AI synthesis or execution-authority changes. |
+
+## 2026-10-02 — OCT1-01 canonical integration
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — code integrated into local canonical main; remote publication verified separately in the final integration report/tracker |
+| **Area** | `backend/order-flow`, `ui/screener`, `docs` |
+| **Summary** | Recovered the interrupted OCT1-only candidate on `f4ec0bb4`; committed it as `9d184619292871258a36ec48cf75e2624b957cd7` and fast-forwarded main. Original lane `17ca93fc20e26cd5b748f06da54c2534b1ad93fd` remains distinct. UTC/ET compatibility reconciled; seven inherited Screener commits excluded. |
+| **Tests** | Backend 57/57 before and after landing; UI focused 27/27 and resume 48/48; complete serial UI 1,251/1,251; typecheck PASS; recovered build/budget PASS (99.69 KiB initial gzip); two Windows cleanup selectors pass on rerun. Original failed logs retained. |
+| **Related** | [Canonical integration addendum](../superpowers/plans/2026-10-01-oct1-01-flow-history.md#canonical-integration--2026-10-02) |
+| **Notes** | Dirty older main preserved on `codex/hold-main-pre-oct1-01-20261002`; local files verified unchanged. Runtime-local history limitations accepted. No new empirical or execution authority. OCT1-02 not started. |
 
 ---
 
@@ -103,6 +516,32 @@ For large features, also add or update a completion note under `docs/superpowers
 
 - Launcher chips still read "· unavailable" for panels a universe does not offer; left as is (pinned by tests).
 - Futures quotes and bars remain unavailable without a futures quote entitlement; the state is shown, not hidden.
+
+## 2026-10-01 — OCT1-01 retained flow history and final audit
+
+| Field | Value |
+|-------|-------|
+| **Status** | `complete` — `OCT1_01_MERGE_READY`; baseline failures retained |
+| **Area** | `backend/order-flow`, `ui/screener`, `docs` |
+| **Summary** | Order Flow and CVD share bounded runtime-local temporal aggregates independent of the recent 500-print tape. Range/resolution controls, progressive detail, pan/zoom, Fit and Go Live preserve historical viewports and disclose partial capture, gaps, sources and classification coverage. Current context continues refreshing during historical inspection; historical gap notices use inspected coverage and fresh blocked authority hides cached detail. |
+| **Key files** | `order_flow/history.py`, equity/Kraken admission paths, `ui_api/screener_specialist.py`, `ui_api/server.py`, shared `FlowHistory.tsx`, `CvdChart.tsx`, `FlowTimeControls.tsx`, `flowDetailWindow.ts` and regression tests; all 23 paths listed in closure notes |
+| **Tests** | Final S4 57/57; focused UI 27/27; complete UI 1,251/1,251 (164 files); typecheck, production build, bundle budget, format and lint pass. Initial gzip 99.69 KiB. Controlled actual `/screener` browser repeat passes. FULL inventory: 71/71 suites, 7,786 tests, 7,732 pass, 52 existing skips, two confirmed baseline IBKR failures, zero errors; acceptance 79/79 under Windows process isolation. Interrupted commands remain non-green and separately recorded. |
+| **Related** | [Temporal contract](../architecture/ORDER_FLOW_TEMPORAL_HISTORY.md), [final audit and closure](../superpowers/plans/2026-10-01-oct1-01-flow-history.md) |
+| **Notes** | Branch `codex/oct1-01-flow-history`, exact base `cbfc40b37b0444a3362fccfe87892112aef92686`; isolated worktree excludes original checkout changes. Two IBKR structural violations match exact base. Boundary timing/file-lock failures reproduce on base in ten repeated runs. Resource-sensitive UI failures subsequently pass all four affected files (161/161) and full UI. No campaign, provider/execution authority or live evidence changed; no main merge. |
+
+Final read-only review found no remaining actionable OCT1 regression. Browser
+acceptance covers seconds to Session, zoom, historical drag, stable refresh with
+advancing current context, Go Live, Fit, explicit 09:30 requested/10:42 available
+capture and an injected gap, Order Flow histogram and symbol change. This uses
+synthetic admitted prints and is SOFTWARE_CONTROLLED evidence only. Ignored
+`.local/oct1-01-closeout-*` holds raw logs, comparisons, screenshots and results.
+The 234,000-print fixture retains 23,400 observed seconds, projects 390 minute
+points in 0.397 seconds and uses 33.5 MiB traced peak memory. Runtime restart,
+calendar-day rollover or instrument eviction starts a new capture; complete
+morning/restart history is not promised. Coarse visible totals include whole
+intersecting buckets. No unrelated persistence or baseline fixes were added.
+
+---
 
 ## 2026-10-01 — US equities filter and sort by Bid, Ask, Spread %
 
@@ -6277,3 +6716,206 @@ For large features, also add or update a completion note under `docs/superpowers
 | Item | Area | Notes |
 |------|------|-------|
 | Master-account login before Mode Launcher | `ui/auth` | User idea: single login provisions connected broker/data APIs; not concrete yet |
+# 2026-10-07 — Repair AI candidate contracts and missing market evidence
+
+The live Screener had repeated zero results and an INVALID_OUTPUT /
+MISSING_EVIDENCE_MISMATCH after the prior news-packing correction. Candidate
+output schemas allowed arbitrary missing strings and cross-instrument references,
+and the Claude tool was forced but not strict. Corrected instrument-specific
+strict schemas preserve all backend validation and now retain bounded rejection
+diagnostics. Result expiry now follows selected cited evidence rather than an
+unselected intake row's deadline. The existing OpenD snapshot adapter supplies
+provider-clocked current change versus previous close on explicit Run; Preview
+stays cache-only and unknown/stale/future observations stay blocked. The user's
+explicit follow-up authorized resolving remaining runtime issues and the
+previously flagged intake limit: intake is 50 with a matching320KB packet, still
+at most 5 selected and no broker authority. This is a new software/method epoch;
+previous prospective evidence and budget usage must remain immutable.
+
+Validation: regression reproductions failed on the old schema, expiry, intake,
+diagnostics and absent snapshot integration; 89 focused offline tests passed
+across candidate/news/provider/async/live-price modules. Protected CI owns
+manifest affected suites and mandatory fast invariants before deployment.
+
+## 2026-10-07 — Live strict-schema compatibility correction
+
+PR481's first real50-instrument scan had48 sufficient candidates and318356 packet bytes but was refused before generation: no tokens billed, request count8 preserved. A free count diagnostic reproduced Anthropic's precise rejection: complex array constants are unsupported. Encode only fixed missing/weak lists as scalar JSON constants and decode before unchanged canonical validation. The corrected request is accepted by the free count endpoint at174375 input tokens. News refresh took30 seconds; acquire provider-timed snapshots afterwards to preserve their60-second lifetime. No thresholds, model, prompt version, Paper account or live-capital authority change.90 focused regressions passed; acquisition-order assertions and protected CI cover the follow-up. Preserve SHA1e247065 and its restart interval as an intermediate software epoch.
+
+## 2026-10-07 — Bounded candidate grammar correction
+
+PR482's real 50-instrument request was rejected before generation because the
+vendor could not compile its large strict grammar. Token counting had accepted
+the request but did not establish grammar compatibility. Replace repeated
+per-instrument branches and long reference enums with a flat strict schema:
+packet-local integer candidate keys and integer evidence references. Each key
+explicitly binds the instrument and fixed missing/weak metadata carried in the
+packet. Decode those bindings and apply every existing canonical evidence,
+ownership, conflict, freshness, rank and action-language guard. The output
+schema hash remains in receipt/cache lineage. Preserve the model, prompt
+version, evidence/risk thresholds, intake bound and Paper authority.
+
+Validation: 91 focused offline regressions passed, including cross-instrument
+references, invalid key types and canonical metadata decoding. The exact
+replacement schema compiled in a vendor schema-only request (HTTP 200;
+2,276 input tokens and one truncated output token). This probe produced no
+canonical candidates and is not a successful live-market workflow. Shared
+usage remains 310,047 tokens and 13 requests. The Codex usage interruption
+prevented deployment during RTH; October 7 was finalized at its fixed 20:00Z
+cutoff with zero decisions/trades, insufficient evidence and matching source
+and metric reproduction. Later deployment must remain outside that closed
+prospective epoch. Protected CI owns affected suites and mandatory invariants.
+
+## 2026-10-07 — AI candidate wire and Claude request compatibility closure
+
+PR483 shipped a flat schema with packet-global evidence indices under prompt
+v2, which still told the model to list `weak_refs` and `missing_capabilities`
+that the schema no longer had. The provider also sent every Claude model one
+body: temperature 0 and a forced tool call, which Sonnet 5.5 (the default) and
+Opus 5.5 reject with a 400 for every task. Replace global indices with
+candidate-local ones (`ai-screener-wire/3.0.0`), so no wire value can name
+another instrument's evidence; decode exactly, then run the unchanged canonical
+validator; record the decode or validation stage of a rejection. Add prompt v3
+for this wire with a field-list regression against the schema and packet; v1
+and v2 are untouched. Build Claude requests from one capability table
+(`anthropic_models.py`); refuse a model with no known request shape with
+`MODEL_REQUEST_CONTRACT_UNSUPPORTED` before any request, never substituting
+another; reject a reply without the tool call. Add a free token-count
+preflight built from the same request. The stored result shape, thresholds,
+intake bound, Paper, Action Decision, reevaluation and SMA are unchanged. The
+October 7 Haiku request is byte-identical. See
+[SCREENER_AI_CANDIDATE_REDUCTION.md](../architecture/SCREENER_AI_CANDIDATE_REDUCTION.md).
+
+Provider diagnostics on the controlled 50-candidate packet (319,719 bytes),
+recorded in `artifacts/ai-screener-provider-contract-closure.json`: the exact
+request counts 120,235 input tokens on Haiku 4.5 and 177,826 on Sonnet 5.5 and
+Opus 5.5; the schema is accepted and its grammar compiles on all three. The
+two superseded schemas fail as they did live (complex constants refused;
+per-instrument branches counted, then refused as too large to compile). Both
+5.5 models refuse the old forced tool call and temperature. The probes billed
+3,494 input tokens and one output token; no candidate generation ran, so the
+reasoning headroom, the 45-second timeout on the reasoning models and
+end-to-end output on any model remain unmeasured. The 50-row intake is NOT
+closure of the full-universe blind-spot issue.
+# 2026-10-09 — Laptop local Qwen registry
+
+Added explicit experimental Screener selection for official Qwen3-0.6B and
+Qwen3-1.7B Q8_0 pins alongside preserved Qwen3-4B Q4_K_M. Official smaller GGUF
+repositories expose Q8_0 only at the verified revisions. New installer verifies
+artifact/runtime integrity in the external IMP cache, using relative manifests.
+Model-specific KV/weight estimates preserve the 4 GiB floor, 6 GiB process cap
+and 1.5 GiB uncalibrated reserve. Pilot/development admission refused both models;
+zero launches/generations and holdout unconsumed. Quality and premium savings
+remain NOT PROVEN. Independent review fixes cover owned runtime handoff,
+per-identity verification caching and persisted-manifest offline validation.
+No paid engine setting, operational methodology approval, trading authority,
+campaign state or PC migration changed. Validation and acceptance evidence:
+[laptop model receipt](../../artifacts/ai-screener-laptop-local-models-acceptance.json).
+
+# 2026-10-10 — Portable workstation readiness corrections
+
+Closed controlled-replay current-market Screener/discovery access at the HTTP
+authority boundary and frontend entry. Added fresh-context, authority-loss,
+Finviz sink/credential recovery and replay provider-health regressions.
+Restricted public Finviz secret-audit exceptions to finite status values and
+integer counters. Fixed the IBKR delayed snapshot race with bounded polling,
+request cancellation and a fresh contract identity for repeated snapshots.
+Existing current-market route fixtures now declare observational authority.
+
+Independent review caught the low-level Finviz recovery bypass and reused IBKR
+ticker risk; both corrections passed regression coverage. Complete frontend
+tests, typecheck and production bundle-budget build passed locally. Backend
+checkpoint and protected integration receipts are tracked with the sprint.
+OpenD's existing listener failed a fresh API handshake before lifecycle testing;
+operator vendor restart/login remains required. No order submission was added
+to provider probes. The migration backup and unrelated source work remain
+preserved; SSD launchers and workstation-specific dependency repairs are
+separate from these canonical source changes.
+
+Follow-up independent lifecycle review reproduced a stale-PID/other-checkout
+ownership match. Launcher v2 now saves birth identity and exact command paths;
+partial cleanup remains visible and blocks restart/update. Control status uses
+the same ownership check. Direct custom Finviz login transports now check
+replay authority before construction and every request, including mode changes.
+The source checkpoint at 4f0e5214 passed 8,471 tests (59 classified skips, no
+failures/errors); final incremental checks cover these subsequent corrections.
+The 514-second checkpoint crossed the stored severe performance-regression
+threshold; this sprint does not claim workstation performance qualification.
+
+# 2026-10-10 — Portable sprint recovery and replay startup closure
+
+Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
+38075666627 artifact imp-python-changed (11678149758) contains 19 platform
+failures: the fake npm path was Windows-absolute but host-relative on Linux,
+and the strengthened process ownership predicate correctly rejected it. The
+host-native absolute fixture retains spaces and all shutdown safety assertions;
+relative runtime identities have explicit rejection coverage.
+
+Independent review identified a further replay startup bypass. Settings loaders
+could restore Live gates removed by the launch profile and promote the serving
+store to Live despite controlled replay. Synthetic regressions reproduced this
+without provider calls. Startup now reapplies replay restrictions after both
+settings loaders, strips restored provider/execution gates, independently refuses
+Live store composition, and denies current-market routes for replay-marked stores
+even when a contradictory Live data-mode label is present.
+
+Isolated changed validation exposed two news-fixture errors and one Windows
+job-probe false positive. The news fixture now explicitly supplies its intended
+in-memory repository, avoiding inherited SQLite selection and recursion through
+its InMemory put_event spy. The Windows probe checks STILL_ACTIVE using the
+actual exit code; an openable retained process object is not a surviving process.
+Both fixtures passed focused reproduction after correction; no production
+security/correctness assertion was weakened.
+
+Historical restoration is verified read-only against recorded hash and every
+pre-test table/row, with the affected audit copy retained. Recovery validation
+never loads operator settings, isolates state/cache/secrets and fails on any
+historical hash change. Fresh OpenD authentication/SPY reads recovered after
+vendor restart. IBKR read-only SPY history and two delayed snapshots passed.
+Final exact-source closure and protected integration evidence remain separate
+receipts; physical drive remount/second-PC and full entitlement certification
+are not inferred from local fixtures.
+
+
+## Portable Finviz health authority audit follow-up
+
+Actual SSD acceptance after PR #490 integration reproduced HTTP 500 for Finviz health: the fail-closed response audit rejected the documented source authority matrix. The source now admits only exact field/value assignments at authority.matrix.<field>.authority; generic paths, unknown fields/enums, wrong assignments, numeric values and credential strings remain blocked. A real-handler regression uses synthetic isolated credentials and forbids provider requests. The initial seven-test reproduction had two failures; the completed regression covers nine cases. Credentials and historical hashes remained unchanged during the stopped acceptance.
+
+The subsequent branch checkout traversed the development fixture junction and removed its 12-file thin runtime target. All 12 files (8,068,648 bytes) were restored byte-for-byte from the preserved backup; historical state, credentials and models were outside that operation. RUN_DEV now uses an independently owned managed copy, with source hashes, alias refusal and pruning/relocation tests, so Git can prune developer fixtures without reaching runtime data. Launcher/config preimages and incident receipts are retained. The final focused health/operator/discovery regression passed all 17 tests with isolated state and unchanged historical hashes.
+
+
+## Portable Finviz exact-path acceptance closure
+
+Independent continuation review reproduced a dotted-key collision in the PR #491 public authority exception. The audit now retains actual mapping/list path segments for that exception, rejects unsupported matrix authority value types and placeholders, and keeps recursive and textual secret scanning active. Scoped regressions retain the initial failures and cover dotted lookalikes, unsupported values and sensitive sibling metadata. This only completes the portable workstation health acceptance; no provider execution or adjacent feature is enabled.
+
+
+### Portable aggregate provider health audit recovery
+
+The SSD observational acceptance exposed `/provider/health` nesting the documented Finviz authority matrix under `finviz`. Accept the same exact public field/value assignments at this second documented structural path. Keep arbitrary nesting, dotted/case/list lookalikes, unsupported values, unknown fields, credentials and sibling secrets blocked. Add real aggregate HTTP coverage without provider calls and nested negative regressions; no execution or provider authority change.
+
+
+## 2026-10-12 — Screener/AI performance sprint recovery
+
+Recovered the original `codex/screener-ai-performance-20261012` worktree from
+the accepted PR #494 merge `d47e3c9e`. Preserved all prior measurements and
+unrelated historical artifacts. New regressions reproduced missed dynamic
+credential regex matches, malformed AI membership behavior and filter error
+timing changes. Removed the unsafe credential prefilter and restored baseline
+AI projection; retained direct filter branches with baseline short-circuit
+semantics. Unicode audit rendering now scans actual characters. Bounded key
+classification caching includes policy identity and handles string subclasses.
+
+Performance tools now record complete fixture/value, method, environment and
+clean measured-source identities. Full-universe production paging must match
+all admitted values and order. UI measurements use shared production hooks,
+real React memo invalidation and source-derived fixtures (62 entries / 73
+columns), replacing the earlier synthetic constant counts. Historical audit
+findings remain intact; the executable closure inventory appends the two new
+tool paths to its existing performance owner. Current ownership routes are in
+`SCREENER_AI_PERFORMANCE.md` and the existing validation manifest.
+
+All 12 restored runtime fixtures matched backup hashes (8,068,648 bytes), with
+independent validation copies and no runtime junction. Focused parity/tooling
+and the complete 1,427-test UI suite passed during recovery. Exact final
+CHANGED/FULL, independent review, paired timings, protected integration and
+portable runtime acceptance require their own final receipts; the earlier
+2,880-test checkpoint and provisional speedups do not establish acceptance.

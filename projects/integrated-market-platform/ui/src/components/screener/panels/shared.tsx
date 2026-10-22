@@ -1,7 +1,10 @@
+import { DecisionFreshness, currentFreshness, useDecisionNow } from "../DecisionFreshness";
+import type { DecisionEvidence } from "../../../api/decisionFreshness";
 import { Component, createContext, createElement, Fragment, lazy, useCallback, useContext, useEffect, useState, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import type { PanelId, ScreenerFilter, ScreenerQuote, ScreenerRow, ScreenerUniverse } from "../../../api/screener";
+import type { AiScreenerScope } from "../../../api/screenerAi";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { PANEL_TITLES } from "./registry";
@@ -16,6 +19,9 @@ export type SpecialistSelection = {
   settledId: string | null;
   quote: ScreenerQuote | undefined;
   filters: ScreenerFilter[];
+  screenerScope: AiScreenerScope;
+  openInstrument: (instrumentId: string) => void;
+  openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   demand: PanelDemand | null;
   actions: PanelActions;
 };
@@ -29,7 +35,8 @@ export type PanelActions = {
 const noop = () => undefined;
 export const SpecialistContext = createContext<SpecialistSelection>({
   row: null, universe: "US_EQUITIES", supportedPanels: new Set<PanelId>(["order_flow", "cvd", "level2", "charts", "futures", "options"]),
-  settledId: null, quote: undefined, filters: [], demand: null, actions: { close: noop, move: noop, resize: noop },
+  settledId: null, quote: undefined, filters: [], screenerScope: { universe: "US_EQUITIES", search: "", sort: "volume", descending: true, filters: [] },
+  openInstrument: noop, demand: null, actions: { close: noop, move: noop, resize: noop },
 });
 export const useSelection = () => useContext(SpecialistContext);
 
@@ -156,6 +163,7 @@ export function StateBadge({ state, label }: { state: PanelState | string; label
 }
 
 type FrameProps = {
+  decisionInputs?: DecisionEvidence[];
   id: PanelId;
   detail?: ReactNode;
   state?: PanelState | string | null;
@@ -168,15 +176,18 @@ type FrameProps = {
 };
 
 /** Compact panel header: title, instrument · class · provider, state, and the panel's own clock. */
-export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentScoped = true, children }: FrameProps) {
+export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentScoped = true, children, decisionInputs }: FrameProps) {
   const { row: selected, actions } = useSelection();
   const row = instrumentScoped ? selected : null;
   const title = PANEL_TITLES[id];
+  const now = useDecisionNow(decisionInputs);
+  const primary = decisionInputs?.find(item => item.capability === id);
+  const effectiveState = primary ? currentFreshness(primary, now) : state;
   return <section className="screener-panel" id={`screener-panel-${id}`} tabIndex={-1} aria-label={`${title}${row ? ` for ${row.symbol}` : ""}`}>
     <header className="screener-panel-header">
       <div className="screener-panel-title"><h2>{title}</h2>
         <span className="screener-panel-meta">{instrumentScoped ? (row ? row.symbol : "No selection") : "Workstation"}{detail ? <> · {detail}</> : null}</span></div>
-      <div className="screener-panel-status">{state ? <StateBadge state={state} label={stateLabel} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
+      <div className="screener-panel-status">{effectiveState ? <StateBadge state={effectiveState} label={primary ? undefined : stateLabel} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
       <div className="screener-panel-actions" role="group" aria-label={`${title} layout`}>
         <button type="button" onClick={() => actions.move(id, "left")} aria-label={`Move ${title} to the previous group`} title="Move to previous group">‹</button>
         <button type="button" onClick={() => actions.move(id, "right")} aria-label={`Move ${title} to the next group`} title="Move to next group">›</button>
@@ -186,7 +197,7 @@ export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentSco
         <button type="button" onClick={() => actions.close(id)} aria-label={`Close ${title}`} title="Close">×</button>
       </div>
     </header>
-    <div className="screener-panel-body">{children}</div>
+    <div className="screener-panel-body"><DecisionFreshness inputs={decisionInputs} />{children}</div>
   </section>;
 }
 

@@ -1,3 +1,4 @@
+import { DecisionInputs } from "./decisionFreshness";
 import { z } from "zod";
 import { fetchJson, postJson } from "./fetchJson";
 import { RemedySchema } from "./screenerSetup";
@@ -85,6 +86,7 @@ const Brief = z.object({
 export type NewsBrief = z.infer<typeof Brief>;
 
 export const NewsFeedSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-news/1.0.0"),
   generated_at: Iso, universe: ScreenerUniverseSchema, window: Window, state: FeedState, reason: z.string().nullable(),
   /** The one step behind the feed state (e.g. start OpenD when the ETF/Futures catalog is down). */
@@ -119,6 +121,11 @@ export type SynthesisBudget = z.infer<typeof Budget>;
 /** One operator-selectable synthesis engine: its models (first = default) and whether it can run now. */
 const Engine = z.object({ id: z.string(), label: z.string(), runtime: z.enum(["LOCAL_MODEL", "PAID_API"]),
   models: z.array(z.string()), default_model: z.string().nullable(),
+  // The context window IMP starts the model with; null where none is recorded (never "unlimited").
+  context_window: z.number().nullable().optional(),
+  // Per offered model, whether the AI Screener's request contract can run on it; null where the server states none.
+  model_contracts: z.array(z.object({ model: z.string(), ai_screener_compatible: z.boolean(), reason: z.string().nullable(),
+    unsupported_capability: z.string().nullable().optional() }).passthrough()).nullable().optional(),
   state: z.enum(["AVAILABLE", "NOT_CONFIGURED"]), reason: z.string().nullable() }).passthrough();
 export type SynthesisEngine = z.infer<typeof Engine>;
 const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVAILABLE"]), reason: z.string().nullable(),
@@ -128,7 +135,10 @@ const AiStatus = z.object({ state: z.enum(["AVAILABLE", "NOT_CONFIGURED", "UNAVA
   /** The operator's choice ("auto" until one is picked) and every engine the picker offers. */
   engine: z.string().optional(), engine_model: z.string().nullable().optional(),
   engine_source: z.enum(["OPERATOR", "ENVIRONMENT", "AUTOMATIC"]).optional(),
-  engines: z.array(Engine).optional() }).passthrough();
+  engines: z.array(Engine).optional(),
+  // The engine choice is machine-wide and cannot change while a scheduled loop runs; the server enforces it.
+  engine_lock: z.object({ locked: z.boolean(), reason: z.string().nullable() }).optional() }).passthrough();
+export const AiStatusSchema = AiStatus;
 export type AiStatus = z.infer<typeof AiStatus>;
 
 const TimelineBucket = z.object({ start: Iso, positive: z.number(), neutral: z.number(), negative: z.number(),
@@ -137,6 +147,7 @@ export type SentimentTimelineBucket = z.infer<typeof TimelineBucket>;
 const AnalysisItem = z.object({ text: z.string(), source: z.string(), as_of: Iso.nullable(), story_id: z.string().nullable() }).passthrough();
 export type NewsAnalysisItem = z.infer<typeof AnalysisItem>;
 export const InstrumentNewsSchema = z.object({
+  decision_inputs: DecisionInputs,
   schema_version: z.literal("screener-news-instrument/1.0.0"),
   generated_at: Iso, universe: ScreenerUniverseSchema,
   instrument: z.object({ instrument_id: z.string(), symbol: z.string(), label: z.string() }).passthrough(),

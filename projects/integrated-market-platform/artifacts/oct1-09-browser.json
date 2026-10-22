@@ -1,0 +1,435 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "evidence_class": "SOFTWARE_CONTROLLED",
+  "not_market_evidence": true,
+  "not_a_profitability_claim": true,
+  "fixtures": [
+    "completed-bar feed",
+    "marks",
+    "candidate receipt",
+    "model proposal",
+    "governed Opportunity",
+    "auth"
+  ],
+  "production": [
+    "experiment service",
+    "Paper preview/submit route",
+    "pre-trade risk",
+    "bar-conservative simulator",
+    "Paper ledger",
+    "SQLite local state",
+    "action decision service",
+    "UI"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "name": "Open Paper Portfolio with no experiment",
+      "state": "NO_ACTIVE_PAPER_EXPERIMENT",
+      "heading": "No active Paper experiment"
+    },
+    {
+      "step": 2,
+      "name": "Create OCT1-09 experiment (explicit)",
+      "experiment_id": "PPE-74513B2B981F08D08CE8093E3E0D4FE5",
+      "paper_account_id": "D008E14574F91DF549E6AFD17B69A95076A799C489BB8C649EE652D6B75F5B07",
+      "schema_version": "paper-portfolio-experiment/1.0.0"
+    },
+    {
+      "step": 3,
+      "name": "Verify $100,000.00",
+      "initial_capital_minor": 10000000,
+      "cash": "$100,000.00",
+      "equity": "$100,000.00"
+    },
+    {
+      "step": 4,
+      "name": "Verify SIMULATED execution",
+      "execution": "Internal Paper simulation (INTERNAL)",
+      "live_capital": "No",
+      "header": "OCT1-09 PAPER EXPERIMENT · SIMULATED CAPITAL"
+    },
+    {
+      "step": 5,
+      "name": "Verify actual data-mode label",
+      "data_mode": "FIXTURE_REPLAY",
+      "label": "FIXTURE REPLAY DATA (NOT LIVE MARKET DATA) + SIMULATED PAPER EXECUTION",
+      "claims_live_data": false
+    },
+    {
+      "step": 6,
+      "name": "Navigate from AI candidate to decision assessment",
+      "run_id": "controlled-1791316149114477900",
+      "instrument": "AAPL"
+    },
+    {
+      "step": 7,
+      "name": "Controlled governed ENTER",
+      "decision_id": "AD-93401c941da1d176b1b1926dfed9aee6c27e459c6bc3bd32bdbd979ca1a29eba",
+      "action_state": "ENTER",
+      "opportunity_id": "controlled-opportunity-1791316149114477900",
+      "evidence_snapshot_id": "AS-7326b05d48d84dfb2bdb4818fba0a2ac6d5b5fede9da0ae8db18eba37d156ed9"
+    },
+    {
+      "step": 8,
+      "name": "Prepare preview in Workspace with experiment context",
+      "url": "http://127.0.0.1:15109/workspace/AAPL",
+      "context": "Experiment: OCT1-09 Paper experiment · simulated capital STATUS ACTIVE INITIAL $100,000.00 CASH $100,000.00 BUYING POWER $100,000.00 CURRENT POSITION Flat in AAPL FIXTURE REPLAY DATA (NOT LIVE MARKET DATA) + SIMULATED PAPER EXECUTION. Live capital: No. All capital is simulated. Account D008E14574F9…",
+      "quantity": 6,
+      "side": "BUY",
+      "sizing_note": "Governed entry risk approves at most 6 AAPL shares at 150.00 on this account; a larger request is reduced and must be re-previewed (covered by tests/intelligence/test_action_decision.py)."
+    },
+    {
+      "step": 9,
+      "name": "Verify risk",
+      "governed_entry_risk": "APPROVE",
+      "approved_quantity": 6,
+      "interactive_risk": "PASS",
+      "ledger_events_added_by_preview": 0,
+      "operator_confirmed_side_and_quantity": true
+    },
+    {
+      "step": 10,
+      "name": "Explicit Paper submit",
+      "submit_route": "POST /paper/orders",
+      "submit_attempts": 1,
+      "order_id": "18D4CA496D87B83ED2C6C8E86C423E8BAA0DCA8138EBDDEA19BC09EC52CB5280"
+    },
+    {
+      "step": 11,
+      "name": "Verify simulated fill",
+      "fill_id": "E5141F2D74C2A66DA46D879C738A38568D3B45B34811CD9C781AEA945959584E",
+      "fill_kind": "SIMULATED_FILL",
+      "quantity": 6,
+      "fill_price": "150.00",
+      "is_market_truth": false,
+      "lineage": {
+        "ACTION_DECISION": "AD-93401c941da1d176b1b1926dfed9aee6c27e459c6bc3bd32bdbd979ca1a29eba",
+        "ACTION_SNAPSHOT": "AS-7326b05d48d84dfb2bdb4818fba0a2ac6d5b5fede9da0ae8db18eba37d156ed9",
+        "CANDIDATE_RUN": "controlled-1791316149114477900",
+        "OPPORTUNITY": "controlled-opportunity-1791316149114477900",
+        "DECISION_TRACE": "EDTR-3F1511E9B30ED80EDF87DD650E9010AC158F502FD939DD6708145A9671ABDE7F",
+        "PAPER_PREVIEW": "FDC87ADCAE6677680654274501A725971CA4B390C2D45737B23D1E7A8DDBCDD0",
+        "PAPER_EXPERIMENT": "PPE-74513B2B981F08D08CE8093E3E0D4FE5"
+      },
+      "risk_decision_id": "RISK-a38384cc9a84733a46f7f714fd6b9a47f46feb2c0121671549cb10fb4bbc5249",
+      "decision_source": "AI_DECISION_GOVERNED"
+    },
+    {
+      "step": 12,
+      "name": "Verify cash decreased",
+      "cash_before": "$100,000.00",
+      "cash_after": "$99,100.00",
+      "arithmetic": "100000.00 - 6 x 150.00 - 0.00 costs"
+    },
+    {
+      "step": 13,
+      "name": "Verify position appeared",
+      "row": "AAPL LONG 6 $150.00 Oct 06, 15:49:10 EDT Unavailable No mark — not valued Unavailable Unavailable Stop monitor in Workspace"
+    },
+    {
+      "step": 14,
+      "name": "Verify quantity",
+      "quantity": 6
+    },
+    {
+      "step": 15,
+      "name": "Verify average entry",
+      "average_entry": "$150.00",
+      "cost_basis_minor": 90000
+    },
+    {
+      "step": 16,
+      "name": "Apply/update mark",
+      "instrument": "AAPL",
+      "mark": "$155.00",
+      "provider": "CONTROLLED_FIXTURE",
+      "quality": "PASS"
+    },
+    {
+      "step": 17,
+      "name": "Verify unrealized P&L",
+      "unrealized": "+$30.00",
+      "arithmetic": "6 x (155.00 - 150.00)",
+      "equity": "$100,030.00"
+    },
+    {
+      "step": 18,
+      "name": "Open and mark second instrument in the same account",
+      "instrument": "NVDA",
+      "quantity": 50,
+      "fill_price": "240.00",
+      "mark": "236.00",
+      "paper_account_id": "D008E14574F91DF549E6AFD17B69A95076A799C489BB8C649EE652D6B75F5B07",
+      "same_account": true,
+      "decision_source": "MANUAL_TEST"
+    },
+    {
+      "step": 19,
+      "name": "Verify independent marks",
+      "AAPL": {
+        "mark": "$155.00",
+        "unrealized": "+$30.00"
+      },
+      "NVDA": {
+        "mark": "$236.00",
+        "unrealized": "−$200.00"
+      }
+    },
+    {
+      "step": 20,
+      "name": "Verify aggregate equity",
+      "cash": "$87,100.00",
+      "position_value": "$12,730.00",
+      "equity": "$99,830.00",
+      "arithmetic": "87100.00 + 6 x 155.00 + 50 x 236.00",
+      "paper_pnl": "−$170.00"
+    },
+    {
+      "step": 21,
+      "name": "Partially close first position",
+      "side": "SELL",
+      "quantity": 2,
+      "fill_price": "155.00",
+      "position_after": 4,
+      "position_effect": "REDUCE"
+    },
+    {
+      "step": 22,
+      "name": "Verify realized P&L",
+      "realized": "+$10.00",
+      "arithmetic": "2 x (155.00 - 150.00)",
+      "cash": "$87,410.00"
+    },
+    {
+      "step": 23,
+      "name": "Verify remaining unrealized P&L",
+      "remaining_quantity": 4,
+      "remaining_average_entry": "$150.00",
+      "remaining_cost_basis": "$600.00",
+      "AAPL_unrealized": "+$20.00",
+      "NVDA_unrealized": "−$200.00",
+      "total_unrealized": "−$180.00",
+      "equity": "$99,830.00",
+      "identity": "100000.00 + 10.00 realized − 180.00 unrealized"
+    },
+    {
+      "step": 24,
+      "name": "Prepare final governed EXIT",
+      "decision_id": "AD-fc14f23593d4b187f80a04c988c7fac042993c595619dbe95fd54e6af773235c",
+      "action_state": "EXIT",
+      "ticket_quantity": 4,
+      "ticket_side": "SELL",
+      "quantity_authority": "Paper ledger (per-instrument position)"
+    },
+    {
+      "step": 25,
+      "name": "Submit Paper close (explicit)",
+      "fill_id": "2DDC83C9B05B630924166E6BC024693A673F01B747BEBA84B808315F515AA234",
+      "quantity": 4,
+      "fill_price": "153.00",
+      "realized_delta": "+$12.00",
+      "decision_source": "AI_DECISION_GOVERNED"
+    },
+    {
+      "step": 26,
+      "name": "Verify flat",
+      "open_positions": 0,
+      "AAPL": "closed by governed EXIT",
+      "NVDA": "closed from operator ticket at 236.00 (realized −$200.00)"
+    },
+    {
+      "step": 27,
+      "name": "Verify final realized P&L",
+      "realized": "−$178.00",
+      "arithmetic": "(+10.00 AAPL partial) + (+12.00 AAPL exit) + (−200.00 NVDA)",
+      "cash": "$99,822.00",
+      "equity": "$99,822.00",
+      "flat_identity": "equity == cash"
+    },
+    {
+      "step": 28,
+      "name": "Verify trade history",
+      "rows": 5,
+      "effects": [
+        "AAPL BUY 6 OPEN",
+        "NVDA BUY 50 OPEN",
+        "AAPL SELL 2 REDUCE",
+        "AAPL SELL 4 CLOSE",
+        "NVDA SELL 50 CLOSE"
+      ],
+      "realized_deltas_minor": [
+        0,
+        0,
+        1000,
+        1200,
+        -20000
+      ],
+      "decision_drilldown": "entry row shows action decision AD-93401c941da1d176b1b1926dfed9aee6c27e459c6bc3bd32bdbd979ca1a29eba",
+      "order_history_rows": 5
+    },
+    {
+      "step": 29,
+      "name": "Verify commission/fees",
+      "commission_total_minor": 0,
+      "fees_total_minor": 0,
+      "commission_policy": "$0.00 per share (none charged)",
+      "fee_policy": "$0.00 per order (none charged)",
+      "slippage": "NOT_SEPARATELY_MODELED",
+      "fill_model": "simulation.bar_conservative · phase7.bar-conservative/1.1.0"
+    },
+    {
+      "step": 30,
+      "name": "Restart backend (real process restart, same state directory)",
+      "pid_before": 8540,
+      "pid_after": 14572,
+      "state_dir": "isolated IMP_STATE_DIR"
+    },
+    {
+      "step": 31,
+      "name": "Verify exact portfolio restore",
+      "experiment_id": "PPE-74513B2B981F08D08CE8093E3E0D4FE5",
+      "paper_account_id": "D008E14574F91DF549E6AFD17B69A95076A799C489BB8C649EE652D6B75F5B07",
+      "cash_minor": 9982200,
+      "equity_minor": 9982200,
+      "realized_pnl_minor": -17800,
+      "trades_identical": true,
+      "equity_history_identical": true,
+      "reseeded": false,
+      "new_experiment_created": false
+    },
+    {
+      "step": 32,
+      "name": "Retry duplicate submission: no duplicate accounting",
+      "idempotency_key": "workspace-ticket-c2362a61-bc98-4cc4-8fde-ebcb659d74a2",
+      "duplicate": true,
+      "order_id": "3EE2EDC587F0D474CBC6A328AB1D541AC3132B693F13FE7BAB30734C1C35E7FB",
+      "trades": 5,
+      "cash_minor": 9982200,
+      "ledger_events_added": 0,
+      "after_restart": true
+    },
+    {
+      "step": 33,
+      "name": "Confirm zero Live-capital submissions",
+      "live_route_attempts": 0,
+      "live_execution_env": null,
+      "broker_paper_env": null,
+      "execution_mode": "INTERNAL_SIMULATION",
+      "every_fill_kind": "SIMULATED_FILL"
+    }
+  ],
+  "extra_scenarios": [
+    {
+      "name": "Missing mark is never valued at zero",
+      "quality": "UNAVAILABLE",
+      "total_equity": "Unavailable",
+      "unrealized": "Unavailable",
+      "position_row": "AAPL LONG 6 $150.00 Oct 06, 15:49:10 EDT Unavailable No mark — not valued Unavailable Unavailable Stop monitor in Workspace"
+    },
+    {
+      "name": "One unmarked position makes total equity unavailable (PARTIAL)",
+      "marked": [
+        "AAPL"
+      ],
+      "unmarked": [
+        "NVDA"
+      ],
+      "total_equity": "Unavailable"
+    },
+    {
+      "name": "Stale mark degrades the valuation and stays identified",
+      "quality": "DEGRADED",
+      "instrument": "NVDA",
+      "mark_quality": "STALE",
+      "equity_still_shown": "$99,830.00"
+    },
+    {
+      "name": "Experiment close blocked with open positions; nothing liquidated",
+      "reason": "OPEN_POSITIONS_REMAIN",
+      "positions_after": 2
+    },
+    {
+      "name": "Process restart with two open positions: same experiment, no re-seed, marks restored as not current",
+      "pid_before": 10924,
+      "pid_after": 8540,
+      "experiment_id": "PPE-74513B2B981F08D08CE8093E3E0D4FE5",
+      "cash_minor": 8741000,
+      "equity_minor": 9983000,
+      "valuation_quality": "DEGRADED",
+      "mark_quality": "RESTORED",
+      "trades_identical": true
+    },
+    {
+      "name": "Flat experiment closes; final values frozen and history still readable",
+      "status": "CLOSED",
+      "final_equity_minor": 9982200,
+      "final_cash_minor": 9982200,
+      "trade_count": 5
+    }
+  ],
+  "live_submissions": 0,
+  "experiment": {
+    "experiment_id": "PPE-74513B2B981F08D08CE8093E3E0D4FE5",
+    "paper_account_id": "D008E14574F91DF549E6AFD17B69A95076A799C489BB8C649EE652D6B75F5B07",
+    "initial_capital_minor": 10000000,
+    "data_mode": "FIXTURE_REPLAY",
+    "execution_mode": "INTERNAL_SIMULATION"
+  },
+  "arithmetic": [
+    {
+      "event": "create",
+      "cash": "100000.00",
+      "equity": "100000.00"
+    },
+    {
+      "event": "BUY 6 AAPL @ 150.00 (governed ENTER, sized inside the governed pre-trade risk approval)",
+      "cash": "99100.00"
+    },
+    {
+      "event": "mark AAPL 155.00",
+      "unrealized": "+30.00",
+      "equity": "100030.00"
+    },
+    {
+      "event": "BUY 50 NVDA @ 240.00 (operator ticket)",
+      "cash": "87100.00"
+    },
+    {
+      "event": "mark NVDA 236.00",
+      "unrealized": "+30.00 AAPL, -200.00 NVDA",
+      "equity": "99830.00",
+      "paper_pnl": "-170.00"
+    },
+    {
+      "event": "SELL 2 AAPL @ 155.00 (operator ticket)",
+      "cash": "87410.00",
+      "realized": "+10.00",
+      "unrealized": "+20.00 AAPL, -200.00 NVDA",
+      "equity": "99830.00"
+    },
+    {
+      "event": "SELL 4 AAPL @ 153.00 (governed EXIT)",
+      "cash": "88022.00",
+      "realized": "+22.00"
+    },
+    {
+      "event": "SELL 50 NVDA @ 236.00 (operator ticket)",
+      "cash": "99822.00",
+      "realized": "-178.00",
+      "unrealized": "0.00",
+      "equity": "99822.00",
+      "paper_pnl": "-178.00"
+    }
+  ],
+  "metrics": {
+    "explicit_ui_submits": 5,
+    "simulated_fills": 5,
+    "duplicate_retry_submits": 1,
+    "duplicate_fills": 0,
+    "live_attempts": 0,
+    "process_restarts": 2,
+    "submit_route_attempts_since_last_restart": 1,
+    "note": "Harness counters are in-memory and reset on each process restart; fills are counted from the persisted ledger."
+  }
+}

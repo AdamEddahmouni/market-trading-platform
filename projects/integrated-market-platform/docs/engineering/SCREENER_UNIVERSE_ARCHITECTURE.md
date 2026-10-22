@@ -95,6 +95,22 @@ example XA-01 `COMMODITY_SPOT`) may exist for context, macro relationships, or
 pricing references; they do not justify a duplicate universe without a later
 explicit owner decision. There is no `COMMODITIES` registry entry.
 
+## Selected Cross-Asset context (OCT1-02)
+
+The `connectivity` specialist panel follows the selected row in US Equities,
+ETFs, Futures and Bonds; it does not add a universe. Read-only
+`GET /screener/connectivity` projects existing XA identities and supported
+Options/Futures/Rates relationships into a bounded graph, equivalent accessible
+table and detail inspector. Crypto is outside this four-domain projection.
+
+Structural relations, XA reference metadata, versioned contextual mappings and
+explicit observed-direction comparisons retain distinct classes, source clocks,
+basis and provenance. Contextual relevance is not directional evidence or
+causality. Missing observations and unsupported relationships remain explicit;
+reference contexts withhold execution. Production daily-change fields lack
+compatible return windows and cannot produce confirming/conflicting conclusions.
+See the [OCT1-02 contract and evidence](../superpowers/plans/2026-10-02-oct1-02-cross-asset-connectivity.md).
+
 ## Intelligence layers — never universes
 
 These are cross-instrument evidence and analytics, delivered through views,

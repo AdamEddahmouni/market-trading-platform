@@ -1,0 +1,441 @@
+"""AUTO-01 pure autonomous Paper automation policy: owner configuration, sizing bounds, risk gates, status.
+
+No clock, provider, model, ledger or order access. Nothing here is a default trading
+setting: every risk, schedule and spending field is supplied by the owner, and a
+missing one is an incomplete policy, not a silently chosen value.
+"""
+from __future__ import annotations
+
+from enum import StrEnum
+
+from .hashing import input_hash_from_dict
+
+POLICY_SCHEMA = 'paper-automation-policy/1.0.0'
+UNIVERSE_FINGERPRINT_SCHEMA = 'universe-fingerprint/1.0.0'
+ARM_ACKNOWLEDGEMENT = 'ARM_PAPER_ONLY_AUTOMATION'
+# The stop monitor, the completed-bar feed and the fill model are regular-session contracts.
+SUPPORTED_SESSIONS = ('REGULAR',)
+# The experiment account values share positions only.
+SUPPORTED_UNIVERSES = ('US_EQUITIES', 'US_ETFS')
+# The governed handoff and the deterministic exit are MARKET_NOW_IF_GATES_PASS.
+SUPPORTED_ORDER_TYPES = ('MARKET',)
+REGULAR_SESSION_MINUTES = 390
+
+
+class AutomationStatus(StrEnum):
+    NOT_CONFIGURED = 'NOT_CONFIGURED'
+    DISARMED = 'DISARMED'
+    STOPPED = 'STOPPED'
+    PAUSED = 'PAUSED'
+    EMERGENCY_STOPPED = 'EMERGENCY_STOPPED'
+    WAITING_FOR_MARKET = 'WAITING_FOR_MARKET'
+    BLOCKED_BY_AUTHORITY = 'BLOCKED_BY_AUTHORITY'
+    BLOCKED_BY_DATA = 'BLOCKED_BY_DATA'
+    BLOCKED_BY_RISK = 'BLOCKED_BY_RISK'
+    BLOCKED_BY_BUDGET = 'BLOCKED_BY_BUDGET'
+    RUNNING = 'RUNNING'
+    ERROR = 'ERROR'
+
+
+class UniverseDecision(StrEnum):
+    """The four outcomes of one adaptive full-universe scheduling decision.
+
+    RUN starts an evaluation; DEFER can start later, possibly without any owner action;
+    SKIP has nothing worth paying for because the current selection is still valid; BLOCK
+    cannot start without a change the controller cannot make on its own (exhausted daily
+    allowance, closed session). Every one of them carries its exact reason codes.
+    """
+    RUN = 'RUN'
+    DEFER = 'DEFER'
+    SKIP = 'SKIP'
+    BLOCK = 'BLOCK'
+
+
+class IntentState(StrEnum):
+    CREATED = 'CREATED'
+    PREVIEWED = 'PREVIEWED'
+    SUBMITTED = 'SUBMITTED'
+    BLOCKED = 'BLOCKED'      # refused before any order existed; a later decision may be tried again
+    DEFERRED = 'DEFERRED'    # required evidence unavailable; nothing was forced
+    FAILED = 'FAILED'
+
+
+# An intent in one of these states already produced (or may have produced) an order: never repeated.
+INTENT_TERMINAL = frozenset({IntentState.SUBMITTED})
+
+# Adaptive full-universe scheduling is optional and additive. A body that omits these keys keeps the exact
+# fixed minimum-separation behaviour of the original schema, with the same policy id; supplying them enables
+# the adaptive policy in ``should_run_universe`` and yields a new policy id, as any content change must.
+# ``universe_evaluation_interval_seconds`` is the MINIMUM SEPARATION between two broad runs; it was always a
+# floor, and this only names it.
+_SCHEDULE_OPTIONAL = dict(universe_max_age_seconds=int, universe_material_change_trigger=bool,
+                          universe_max_runs_per_day=int)
+_SECTIONS = dict(
+    schedule=dict(sessions=list, cadence_seconds=int, universe_evaluation_interval_seconds=int,
+                  no_new_entries_minutes_before_close=int),
+    risk=dict(max_position_notional_minor=int, max_aggregate_exposure_minor=int, max_open_positions=int,
+              max_daily_loss_minor=int, max_per_trade_risk_minor=int, assumed_adverse_move_bps=int,
+              allowed_universes=list, order_types=list, allow_long=bool, allow_short=bool,
+              allow_entries=bool, allow_exits=bool),
+    exits=dict(on_stop_breach=bool, on_thesis_exit=bool),
+    ai=dict(allow_local_inference=bool, allow_paid_inference=bool, max_paid_requests_per_day=int,
+            max_paid_tokens_per_day=int),
+    emergency_stop=dict(max_consecutive_failures=int),
+)
+# Every allowed key per section, required and optional. Unknown keys are still rejected, never ignored.
+_ALLOWED = {section: set(fields) for section, fields in _SECTIONS.items()}
+_ALLOWED['schedule'] = set(_SECTIONS['schedule']) | set(_SCHEDULE_OPTIONAL)
+_INT_BOUNDS = dict(
+    cadence_seconds=(60, 3600), universe_evaluation_interval_seconds=(300, 86400),
+    no_new_entries_minutes_before_close=(0, REGULAR_SESSION_MINUTES),
+    universe_max_age_seconds=(300, 86400), universe_max_runs_per_day=(1, 100),
+    max_position_notional_minor=(1, 10 ** 13), max_aggregate_exposure_minor=(1, 10 ** 13), max_open_positions=(1, 50),
+    max_daily_loss_minor=(1, 10 ** 13), max_per_trade_risk_minor=(1, 10 ** 13), assumed_adverse_move_bps=(1, 10000),
+    max_paid_requests_per_day=(0, 100000), max_paid_tokens_per_day=(0, 10 ** 10), max_consecutive_failures=(1, 20),
+)
+
+
+def required_fields():
+    """Every owner decision the policy needs, as section.field paths."""
+    return ['scope', *(f'{section}.{field}' for section, fields in _SECTIONS.items() for field in fields)]
+
+
+def optional_fields():
+    """Owner decisions that enable adaptive scheduling. Omitting one is a choice, never a default."""
+    return sorted(f'schedule.{field}' for field in _SCHEDULE_OPTIONAL)
+
+
+def build_policy(body, *, account_id, experiment_id, initial_capital_minor, ledger_policy):
+    """Validate one complete owner policy and bind it to one Paper experiment account.
+
+    Missing fields are named together (``AUTOMATION_POLICY_INCOMPLETE:a,b``) so the
+    owner is asked once. Unknown fields are rejected, not ignored.
+    """
+    if not isinstance(body, dict) or set(body) - {'scope', *_SECTIONS}:
+        raise ValueError('AUTOMATION_POLICY_INVALID')
+    if not account_id or not experiment_id:
+        raise ValueError('AUTOMATION_PAPER_EXPERIMENT_REQUIRED')
+    missing = [] if isinstance(body.get('scope'), dict) else ['scope']
+    for section, fields in _SECTIONS.items():
+        value = body.get(section)
+        if not isinstance(value, dict):
+            missing.extend(f'{section}.{field}' for field in fields)
+            continue
+        if set(value) - _ALLOWED[section]:
+            raise ValueError('AUTOMATION_POLICY_INVALID')
+        missing.extend(f'{section}.{field}' for field in fields if field not in value)
+    if missing:
+        raise ValueError('AUTOMATION_POLICY_INCOMPLETE:' + ','.join(missing))
+    policy = dict(scope=dict(body['scope']))
+    for section, fields in _SECTIONS.items():
+        policy[section] = {}
+        for field, kind in fields.items():
+            value = body[section][field]
+            if type(value) is not kind:
+                raise ValueError('AUTOMATION_POLICY_FIELD_INVALID:' + f'{section}.{field}')
+            if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
+                raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'{section}.{field}')
+            policy[section][field] = list(value) if kind is list else value
+    for field, kind in _SCHEDULE_OPTIONAL.items():
+        if field not in body['schedule']:
+            continue
+        value = body['schedule'][field]
+        if type(value) is not kind:
+            raise ValueError('AUTOMATION_POLICY_FIELD_INVALID:' + f'schedule.{field}')
+        if field in _INT_BOUNDS and not _INT_BOUNDS[field][0] <= value <= _INT_BOUNDS[field][1]:
+            raise ValueError('AUTOMATION_POLICY_FIELD_OUT_OF_RANGE:' + f'schedule.{field}')
+        policy['schedule'][field] = value
+    schedule, risk, ai = policy['schedule'], policy['risk'], policy['ai']
+    for field, allowed, code in (('sessions', SUPPORTED_SESSIONS, 'AUTOMATION_SESSION_UNSUPPORTED'),):
+        if not schedule[field] or len(set(schedule[field])) != len(schedule[field]) or set(schedule[field]) - set(allowed):
+            raise ValueError(code)
+    for field, allowed, code in (('allowed_universes', SUPPORTED_UNIVERSES, 'AUTOMATION_INSTRUMENT_SCOPE_UNSUPPORTED'),
+                                 ('order_types', SUPPORTED_ORDER_TYPES, 'AUTOMATION_ORDER_TYPE_UNSUPPORTED')):
+        if not risk[field] or len(set(risk[field])) != len(risk[field]) or set(risk[field]) - set(allowed):
+            raise ValueError(code)
+    if policy['scope'].get('universe') not in risk['allowed_universes']:
+        raise ValueError('AUTOMATION_SCOPE_OUTSIDE_ALLOWED_INSTRUMENTS')
+    if policy['scope'].get('method') == 'STAGED_LOCAL_FIRST_EXPERIMENTAL':
+        raise ValueError('EXPERIMENTAL_METHOD_UNAPPROVED')  # separately gated; never reachable from automation
+    if risk['allow_short'] and not ledger_policy.get('allow_short', False):
+        raise ValueError('AUTOMATION_SHORT_NOT_PERMITTED_BY_PAPER_ACCOUNT')
+    if not (risk['allow_long'] or risk['allow_short']) and risk['allow_entries']:
+        raise ValueError('AUTOMATION_ENTRY_DIRECTION_REQUIRED')
+    if risk['max_position_notional_minor'] > risk['max_aggregate_exposure_minor']:
+        raise ValueError('AUTOMATION_POSITION_EXCEEDS_AGGREGATE_EXPOSURE')
+    if risk['max_aggregate_exposure_minor'] > int(initial_capital_minor):
+        raise ValueError('AUTOMATION_EXPOSURE_EXCEEDS_PAPER_CAPITAL')  # the experiment account has no leverage
+    if schedule['universe_evaluation_interval_seconds'] < schedule['cadence_seconds']:
+        raise ValueError('AUTOMATION_SCHEDULE_INVALID')
+    if schedule.get('universe_max_age_seconds') is not None \
+            and schedule['universe_max_age_seconds'] < schedule['universe_evaluation_interval_seconds']:
+        # A maximum useful age below the minimum separation can never be reached without first waiting out the
+        # separation, so it is a contradiction rather than a tighter schedule.
+        raise ValueError('AUTOMATION_SCHEDULE_INVALID')
+    if ai['allow_paid_inference'] and not (ai['max_paid_requests_per_day'] and ai['max_paid_tokens_per_day']):
+        raise ValueError('AUTOMATION_PAID_SPENDING_LIMIT_REQUIRED')
+    if not ai['allow_paid_inference'] and (ai['max_paid_requests_per_day'] or ai['max_paid_tokens_per_day']):
+        raise ValueError('AUTOMATION_PAID_SPENDING_NOT_AUTHORIZED')
+    policy.update(schema_version=POLICY_SCHEMA, account_id=str(account_id), experiment_id=str(experiment_id),
+                  initial_capital_minor=int(initial_capital_minor),
+                  execution=dict(mode='INTERNAL_SIMULATION', provider='INTERNAL', live_capital=False),
+                  ledger_risk_policy_id=str(ledger_policy.get('risk_policy_identity_hash', '')))
+    policy['policy_id'] = 'PAP-' + input_hash_from_dict(policy)[:32]
+    return policy
+
+
+def spending_gate(policy, engine):
+    """Whether this policy lets the selected engine be called at all. A refusal sends no request."""
+    if engine.get('state') == 'NOT_CONFIGURED':
+        return dict(allowed=False, reason='MODEL_UNAVAILABLE')
+    ai = policy['ai']
+    if engine.get('runtime') == 'LOCAL_MODEL':
+        return dict(allowed=bool(ai['allow_local_inference']),
+                    reason=None if ai['allow_local_inference'] else 'AUTONOMOUS_LOCAL_INFERENCE_NOT_AUTHORIZED')
+    if not ai['allow_paid_inference']:
+        return dict(allowed=False, reason='AUTONOMOUS_SPENDING_NOT_AUTHORIZED')
+    budget = engine.get('budget')
+    if not budget:
+        # A paid engine whose usage cannot be read is never assumed to have headroom.
+        return dict(allowed=False, reason='AUTONOMOUS_SPENDING_BUDGET_UNREADABLE')
+    if engine.get('state') != 'AVAILABLE':
+        return dict(allowed=False, reason=engine.get('reason') or 'MODEL_UNAVAILABLE')
+    # The owner's cap applies to the shared daily usage itself: it can only tighten the existing allowance.
+    used_requests = int(budget.get('requests', 0)) + int(budget.get('held_requests') or 0)
+    used_tokens = int(budget.get('tokens', 0)) + int(budget.get('held_tokens') or 0)
+    if used_requests >= min(ai['max_paid_requests_per_day'], int(budget['max_requests'])) \
+            or used_tokens >= min(ai['max_paid_tokens_per_day'], int(budget['max_tokens'])):
+        return dict(allowed=False, reason='AUTONOMOUS_SPENDING_LIMIT_REACHED')
+    return dict(allowed=True, reason=None)
+
+
+def exposure_minor(positions):
+    """Gross marked exposure. None when any open position has no mark: an unknown is never zero."""
+    total = 0
+    for position in positions:
+        if not position.get('quantity'):
+            continue
+        mark = position.get('mark_minor')
+        if not isinstance(mark, int) or mark <= 0:
+            return None
+        total += abs(int(position['quantity'])) * mark
+    return total
+
+
+def entry_risk_blockers(policy, *, positions, valuation, day_start_equity_minor, pending_orders, minutes_to_close):
+    """Portfolio-level reasons a new entry may not be attempted now. Exits are never gated here."""
+    risk, blockers = policy['risk'], []
+    if not risk['allow_entries']:
+        blockers.append('AUTOMATION_ENTRIES_DISABLED')
+    held = [p for p in positions if p.get('quantity')]
+    if len(held) >= risk['max_open_positions']:
+        blockers.append('MAX_OPEN_POSITIONS_REACHED')
+    exposure = exposure_minor(held)
+    if exposure is None or valuation.get('quality') != 'CURRENT' or valuation.get('equity_minor') is None:
+        blockers.append('PORTFOLIO_VALUATION_NOT_CURRENT')
+    elif exposure >= risk['max_aggregate_exposure_minor']:
+        blockers.append('MAX_AGGREGATE_EXPOSURE_REACHED')
+    equity = valuation.get('equity_minor')
+    if day_start_equity_minor is None:
+        blockers.append('DAY_START_EQUITY_UNAVAILABLE')
+    elif equity is not None and day_start_equity_minor - equity >= risk['max_daily_loss_minor']:
+        blockers.append('MAX_DAILY_LOSS_REACHED')
+    if pending_orders:
+        blockers.append('WORKING_ORDERS_PRESENT')
+    if minutes_to_close is None or minutes_to_close <= policy['schedule']['no_new_entries_minutes_before_close']:
+        blockers.append('ENTRY_WINDOW_CLOSED')
+    return blockers
+
+
+def size_entry(policy, *, price_minor, positions, buying_power_minor, ledger_policy):
+    """Largest whole quantity inside every owner and Paper-account bound, and which bound binds.
+
+    ``max_per_trade_risk_minor`` bounds the loss of an adverse move of the owner's
+    ``assumed_adverse_move_bps``. It is a sizing bound, not a loss guarantee: a stop is
+    not a guaranteed fill. The existing pre-trade risk engine and Paper risk path still
+    decide independently afterwards and may only reduce this quantity.
+    """
+    risk = policy['risk']
+    if not isinstance(price_minor, int) or price_minor <= 0:
+        return dict(quantity=0, binding='REFERENCE_PRICE_UNAVAILABLE', bounds={})
+    exposure = exposure_minor(positions)
+    if exposure is None:
+        return dict(quantity=0, binding='PORTFOLIO_VALUATION_NOT_CURRENT', bounds={})
+    bounds = dict(
+        MAX_POSITION_NOTIONAL=risk['max_position_notional_minor'] // price_minor,
+        MAX_PER_TRADE_RISK=(risk['max_per_trade_risk_minor'] * 10000 // risk['assumed_adverse_move_bps']) // price_minor,
+        MAX_AGGREGATE_EXPOSURE=max(0, risk['max_aggregate_exposure_minor'] - exposure) // price_minor,
+        BUYING_POWER=max(0, int(buying_power_minor)) // price_minor,
+        PAPER_ACCOUNT_MAX_ORDER_SHARES=int(ledger_policy['max_order_shares']),
+        PAPER_ACCOUNT_MAX_POSITION_SHARES=int(ledger_policy['max_position_shares']),
+    )
+    binding = min(bounds, key=lambda name: (bounds[name], name))
+    return dict(quantity=int(bounds[binding]), binding=binding, bounds=bounds)
+
+
+def decision_permitted(policy, decision):
+    """Whether the owner's policy lets this already-gated Action Decision reach the Paper adapter."""
+    state, risk = decision.get('action_state'), policy['risk']
+    if state == 'ENTER':
+        if not risk['allow_entries']:
+            return 'AUTOMATION_ENTRIES_DISABLED'
+        if decision.get('direction') == 'LONG' and not risk['allow_long']:
+            return 'AUTOMATION_LONG_NOT_PERMITTED'
+        if decision.get('direction') == 'SHORT' and not risk['allow_short']:
+            return 'AUTOMATION_SHORT_NOT_PERMITTED'
+        if decision.get('direction') not in ('LONG', 'SHORT'):
+            return 'AUTOMATION_DIRECTION_UNAVAILABLE'
+        if (decision.get('instrument') or {}).get('universe') not in risk['allowed_universes']:
+            return 'AUTOMATION_INSTRUMENT_NOT_ALLOWED'
+        return None
+    if state == 'EXIT':
+        if not risk['allow_exits']:
+            return 'AUTOMATION_EXITS_DISABLED'
+        server = bool(decision.get('server_exit'))
+        if server and not policy['exits']['on_stop_breach']:
+            return 'AUTOMATION_STOP_EXIT_DISABLED'
+        if not server and not policy['exits']['on_thesis_exit']:
+            return 'AUTOMATION_THESIS_EXIT_DISABLED'
+        return None
+    return 'ACTION_NOT_EXECUTABLE'
+
+
+def derive_status(*, configured, armed, desired, emergency, error, blockers, session_eligible):
+    """One primary state. RUNNING only when the controller can evaluate evidence and act on it."""
+    if not configured:
+        return AutomationStatus.NOT_CONFIGURED
+    if emergency:
+        return AutomationStatus.EMERGENCY_STOPPED
+    if not armed:
+        return AutomationStatus.DISARMED
+    if desired == 'STOPPED':
+        return AutomationStatus.STOPPED
+    if desired == 'PAUSED':
+        return AutomationStatus.PAUSED
+    if error:
+        return AutomationStatus.ERROR
+    for category, status in (('AUTHORITY', AutomationStatus.BLOCKED_BY_AUTHORITY),):
+        if any(b['category'] == category for b in blockers):
+            return status
+    if not session_eligible:
+        return AutomationStatus.WAITING_FOR_MARKET
+    for category, status in (('DATA', AutomationStatus.BLOCKED_BY_DATA), ('RISK', AutomationStatus.BLOCKED_BY_RISK),
+                             ('BUDGET', AutomationStatus.BLOCKED_BY_BUDGET)):
+        if any(b['category'] == category for b in blockers):
+            return status
+    return AutomationStatus.RUNNING
+
+
+def intent_identity(account_id, decision_id):
+    """One Paper intent per Action Decision per account: the order's idempotency key."""
+    return 'PAI-' + input_hash_from_dict(dict(account=account_id, decision=decision_id))[:40]
+
+
+def universe_fingerprint(*, scope_hash, session_date, universe_count=None):
+    """The facts a complete selection is only valid for, as a small comparable record.
+
+    Only things the controller can observe without paying for a model. ``universe_count`` is
+    ``None`` whenever the current row count has not been read, and an unobserved fact is
+    never reported as a change: the scheduler does not invent membership movement it did
+    not see. ``scope_hash`` and ``session_date`` are always known, so a new trading session
+    or a changed Screener scope is always a material change of the evaluated universe.
+    """
+    return dict(schema=UNIVERSE_FINGERPRINT_SCHEMA, scope=scope_hash, session_date=session_date,
+                universe_count=universe_count)
+
+
+def universe_material_change(prior, current):
+    """Reason codes for a material difference between two universe fingerprints; empty means unchanged.
+
+    ``prior is None`` is the absence of a completed selection, not a change; the scheduler
+    treats that case as its own RUN reason instead of a material change.
+    """
+    if prior is None or current is None:
+        return []
+    reasons = []
+    if current.get('session_date') != prior.get('session_date'):
+        reasons.append('NEW_SESSION')
+    if current.get('scope') != prior.get('scope'):
+        reasons.append('SCOPE_CHANGED')
+    before, after = prior.get('universe_count'), current.get('universe_count')
+    if before is not None and after is not None and before != after:
+        reasons.append('UNIVERSE_MEMBERSHIP_CHANGED')
+    return reasons
+
+
+def should_run_universe(facts):
+    """Pure adaptive decision: should the full-universe AI evaluation start now?
+
+    Deterministic and side-effect free: it reads only facts the controller already computed and
+    never touches the clock, a provider, a model, the ledger or a repository. Distinct from the
+    fixed ``universe_evaluation_interval_seconds`` timer it replaces, it separates four outcomes
+    and always states the exact reason:
+
+    * ``DEFER`` — worth running, but not now and possibly without any owner action (an active run,
+      a retry backoff, an unhealthy provider, the minimum separation not yet elapsed).
+    * ``SKIP`` — nothing worth paying for: the last complete selection is still inside its maximum
+      useful age and the evaluation inputs have not materially changed.
+    * ``BLOCK`` — cannot start without a change the controller cannot make itself (the daily run
+      limit or the daily allowance is exhausted, the plan cannot fit the remaining allowance, the
+      session is not eligible).
+    * ``RUN`` — start one now.
+
+    An owner policy that supplies no adaptive fields keeps the legacy behaviour exactly: after the
+    minimum separation elapses the run happens (``UNIVERSE_MIN_SEPARATION_ELAPSED``).
+    """
+    schedule = facts['schedule']
+    now = float(facts['now'])
+    minimum = int(schedule['universe_evaluation_interval_seconds'])
+    max_age = schedule.get('universe_max_age_seconds')
+
+    def verdict(decision, codes, next_eligible=None, **detail):
+        return dict(decision=str(decision), reason_codes=list(dict.fromkeys(codes)),
+                    next_eligible_epoch=next_eligible, detail=detail)
+
+    if facts.get('active_run_id'):
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_RUN_ACTIVE'], run_id=facts['active_run_id'])
+    if facts.get('session_label') not in (facts.get('sessions') or ()):
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_SESSION_NOT_ELIGIBLE'],
+                       session_label=facts.get('session_label'))
+    backoff_until = facts.get('backoff_until')
+    if backoff_until is not None and now < float(backoff_until):
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_RETRY_BACKOFF'], next_eligible=float(backoff_until),
+                       consecutive_failures=facts.get('consecutive_failures'),
+                       last_failure_code=facts.get('last_failure_code'))
+    gate = facts.get('provider_gate') or {}
+    if not gate.get('allowed'):
+        reason = gate.get('reason') or 'UNIVERSE_RESOURCE_GATE'
+        if gate.get('kind') == 'BUDGET':
+            return verdict(UniverseDecision.BLOCK, [reason], gate='DAILY_ALLOWANCE')
+        return verdict(UniverseDecision.DEFER, [reason], gate='PROVIDER_HEALTH')
+    cap = schedule.get('universe_max_runs_per_day')
+    started = int((facts.get('runs_today') or {}).get('started') or 0)
+    if cap is not None and started >= int(cap):
+        # A higher interval cannot fix this: the owner's own daily workload ceiling has been spent.
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_DAILY_RUN_LIMIT_REACHED'],
+                       runs_started=started, runs_per_day=int(cap))
+    feasibility = facts.get('feasibility') or {}
+    if feasibility and feasibility.get('feasible') is False:
+        # A plan that cannot fit today's remaining allowance cannot fit later today either: usage only grows.
+        return verdict(UniverseDecision.BLOCK, ['UNIVERSE_PLAN_INFEASIBLE'], **feasibility)
+    last_started = facts.get('last_started_epoch')
+    if last_started is not None and now - float(last_started) < minimum:
+        return verdict(UniverseDecision.DEFER, ['UNIVERSE_MIN_SEPARATION'], next_eligible=float(last_started) + minimum,
+                       remaining_seconds=int(minimum - (now - float(last_started))), minimum_separation_seconds=minimum)
+    complete = facts.get('last_complete')
+    if complete is None or complete.get('finished_at_epoch') is None:
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_NO_COMPLETE_SELECTION'])
+    reasons = list(facts.get('material_change') or [])
+    if schedule.get('universe_material_change_trigger') and reasons:
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_MATERIAL_CHANGE', *reasons], material_change=reasons)
+    if max_age is None:
+        # Legacy policy: no maximum useful age was configured, so the minimum separation is the whole schedule.
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_MIN_SEPARATION_ELAPSED'], minimum_separation_seconds=minimum)
+    age = now - float(complete['finished_at_epoch'])
+    if age >= int(max_age):
+        return verdict(UniverseDecision.RUN, ['UNIVERSE_SELECTION_MAX_AGE_EXCEEDED'],
+                       selection_age_seconds=int(age), max_age_seconds=int(max_age))
+    return verdict(UniverseDecision.SKIP, ['UNIVERSE_SELECTION_FRESH_AND_UNCHANGED'],
+                   next_eligible=float(complete['finished_at_epoch']) + int(max_age),
+                   selection_age_seconds=int(age), max_age_seconds=int(max_age),
+                   material_change=reasons or ['NO_MATERIAL_CHANGE_OBSERVED'])

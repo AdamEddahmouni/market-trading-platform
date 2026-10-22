@@ -204,6 +204,16 @@ class FinbertSentiment:
             return
         self._ensure_loaded()
 
+    def cached_scores(self, texts: Sequence[str]) -> list[dict[str, Any]]:
+        """Preview-only read: never load the model or run inference."""
+        model = self._model
+        results = []
+        for raw in texts:
+            text = " ".join(str(raw or "").encode("utf-8", "replace").decode("utf-8").split())[:MAX_TEXT_CHARS]
+            cached = self._cache.get((model.revision, hashlib.sha256(text.encode("utf-8")).hexdigest())) if model else None
+            results.append(cached.to_dict() if cached else {**_unscored("NOT_SCORED"), "reason": self.status().get("reason") or "NOT_CACHED"})
+        return results
+
     def score(self, texts: Sequence[str]) -> list[dict[str, Any]]:
         """One result per text: a SCORED dict, or an explicit non-scored state."""
 

@@ -13,6 +13,7 @@ import urllib.error
 import urllib.request
 from http.server import ThreadingHTTPServer
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -787,7 +788,7 @@ class MixedSafetyInvariantTests(unittest.TestCase):
 
 class MixedRouteTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.handler = type("MixedBoundHandler", (UiApiHandler,), {"store": object()})
+        self.handler = type("MixedBoundHandler", (UiApiHandler,), {"store": SimpleNamespace(data_mode="LIVE_OBSERVATIONAL")})
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), self.handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()

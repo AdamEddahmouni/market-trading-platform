@@ -6,6 +6,7 @@ import sys
 import time
 import unittest
 from pathlib import Path
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -84,6 +85,8 @@ class ScreenerS1Tests(unittest.TestCase):
         clock = [1000.0]
         service = ScreenerService(source_factory=Source, runtime_getter=lambda **_: None,
                                   quote_transport_getter=lambda: transport, monotonic=lambda: clock[0])
+        # The provider clock is frozen; wall-clock age must not change fixture admission.
+        service._quotes._wall = lambda: datetime(2026, 10, 1, 16, tzinfo=UTC)
         self.assertEqual(service.read()["snapshot"], None)
         self.assertEqual(transport.calls, [])  # no bid/ask in the query: no snapshot is taken
 

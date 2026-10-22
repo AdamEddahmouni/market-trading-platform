@@ -69,15 +69,15 @@ class HostedChatSynthesisProvider:
 
     def request_body(self, packet: IntelligenceInputPacket, rendered_prompt: str,
                      config: IntelligenceInferenceConfig) -> dict:
-        from .screener_synthesis import output_json_schema
+        from .schema_dispatch import schema_for_packet
 
         body: dict = {
             "model": self.model_id,
             "max_completion_tokens": int(config.max_tokens) + self.reasoning_headroom,
             "response_format": {"type": "json_schema", "json_schema": {
                 "name": "screener_synthesis", "strict": True,
-                "schema": output_json_schema([article.event_id for article in packet.articles])}},
-            "messages": [{"role": "system", "content": "You write grounded news syntheses. Use only the supplied stories "
+                "schema": schema_for_packet(packet)}},
+            "messages": [{"role": "system", "content": "You write grounded evidence syntheses. Use only the supplied packet "
                                                        "and return JSON matching the schema."},
                          {"role": "user", "content": rendered_prompt}],
         }

@@ -1,0 +1,38 @@
+{
+  "classification": "SOFTWARE_CONTROLLED",
+  "action_service": {
+    "samples": 30,
+    "min_ms": 2.3176000104285777,
+    "p50_ms": 5.5355999793391675,
+    "p95_ms": 8.833499974571168,
+    "max_ms": 69.42980003077537
+  },
+  "context_build": {
+    "samples": 30,
+    "min_ms": 0.246,
+    "p50_ms": 0.392,
+    "p95_ms": 0.75,
+    "max_ms": 1.87
+  },
+  "packet_bytes": {
+    "min": 3639,
+    "max": 3639
+  },
+  "record_bytes": 8507,
+  "sqlite_persist": {
+    "samples": 100,
+    "min_ms": 0.11449999874457717,
+    "p50_ms": 0.20119998953305185,
+    "p95_ms": 0.5051000043749809,
+    "max_ms": 0.6259000510908663
+  },
+  "sqlite_readback": {
+    "samples": 100,
+    "min_ms": 0.055500015150755644,
+    "p50_ms": 0.08144997991621494,
+    "p95_ms": 0.18259999342262745,
+    "max_ms": 1.167299982625991
+  },
+  "model_latency_ms": null,
+  "model": "controlled fixture; not real runtime"
+}

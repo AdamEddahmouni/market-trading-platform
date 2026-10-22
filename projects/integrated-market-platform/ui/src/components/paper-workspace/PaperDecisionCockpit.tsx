@@ -7,11 +7,13 @@ import type { PaperOrderDraft } from "../paper-now/paperOrderDraft";
 import { buildPaperDecisionSnapshot, type EvidenceQueryPhase } from "./buildPaperDecisionSnapshot";
 import { buildPaperHandoffModel } from "./buildPaperHandoffModel";
 import { buildPaperRiskContext } from "./buildPaperRiskContext";
+import { PaperExperimentContextStrip } from "./PaperExperimentContextStrip";
 import { PaperHandoffPanel } from "./PaperHandoffPanel";
 import { PaperDecisionSnapshotPanel } from "./PaperDecisionSnapshot";
 import { PaperOrderAcknowledgementPanel } from "./PaperOrderAcknowledgementPanel";
 import { PaperPreviewStatus } from "./PaperPreviewStatus";
 import { PaperRiskContext } from "./PaperRiskContext";
+import { PaperTrailingStopPanel } from "./PaperTrailingStopPanel";
 import { PaperWhatMattersNow } from "./PaperWhatMattersNow";
 import type { PaperOrderAcknowledgement } from "./paperOrderAcknowledgement";
 import type { PaperPreviewPresentationState } from "./paperPreviewPresentation";
@@ -72,6 +74,7 @@ export function PaperDecisionCockpit({
       <div className="paper-cockpit-context">
         <PaperHandoffPanel handoff={handoff} evidenceAsOf={evidenceAsOf} />
         <PaperRiskContext model={riskContext} />
+        <PaperTrailingStopPanel instrumentId={instrumentId} paperActionsAvailable={paperActionsAvailable} />
         <details className="paper-context-detail" data-testid="decision-context-detail">
           <summary>Decision evidence and market context</summary>
           <div className="paper-context-detail-body">
@@ -90,6 +93,7 @@ export function PaperDecisionCockpit({
       </div>
 
       <div className="paper-cockpit-action">
+        <PaperExperimentContextStrip portfolio={portfolio} instrumentId={instrumentId} />
         <PaperPreviewStatus state={previewState} />
         {acknowledgement ? (
           <PaperOrderAcknowledgementPanel
