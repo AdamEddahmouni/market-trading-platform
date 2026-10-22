@@ -108,12 +108,13 @@ def market_session(epoch):
 
 class PaperAutomationService:
     def __init__(self, store, *, repository=None, reevaluation=None, runs=None, clock=time.time, owner_id=None,
-                 session=market_session, provider_health=None, submit_lock=None):
+                 session=market_session, provider_health=None, submit_lock=None, lease_wait=None):
         self.store = store
         self.repository = repository or paper_automation_repository()
         self._reevaluation, self._runs = reevaluation, runs
         self.clock = clock
         self.owner_id = owner_id or uuid.uuid4().hex
+        self.lease_wait = lease_wait  # tests pace the in-cycle lease keeper; by default it waits in real time
         self.session = session
         self._provider_health = provider_health
         self._submit_lock = submit_lock
@@ -445,8 +446,13 @@ class PaperAutomationService:
                 return summary
             policy = self.repository.get_policy(controller['policy_id'])
             work = dict(controller)
+            from .screener_reevaluation import LeaseKeeper
             try:
-                self._cycle(work, policy, summary, now, scheduled, missed)
+                # A driven model call can outlast the lease. Without renewal the controller would read
+                # CONTROLLER_NOT_ALIVE mid-cycle and another process could take it over; Stop, Emergency Stop,
+                # Disarm or a takeover end the renewals for good.
+                with LeaseKeeper(self.heartbeat, LEASE_SECONDS / 3, wait=self.lease_wait):
+                    self._cycle(work, policy, summary, now, scheduled, missed)
                 work.update(consecutive_failures=0)
             except Exception as exc:  # a failed cycle is recorded, never silently retried
                 code = _code(exc)
