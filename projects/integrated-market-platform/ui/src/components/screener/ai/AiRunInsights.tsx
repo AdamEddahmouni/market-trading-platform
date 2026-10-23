@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { aiScopeKey, fetchAiScreenerHistory, type AiScreenerHistoryRun, type AiScreenerReason, type AiScreenerScope } from "../../../api/screenerAi";
 import { compactTokens } from "../news/SynthesisControl";
 import { ErrorDetail, etClock } from "../panels/shared";
+import { universeText } from "../screenerText";
 import { plainReason } from "./AiStatusStrip";
 
 const CAPABILITY: Record<string, string> = { QUOTE: "Quote", TECHNICALS: "Technicals", ORDER_FLOW: "Order flow", NEWS: "News", SENTIMENT: "Sentiment",
@@ -57,7 +58,7 @@ export function AiRunHistory({ scope }: { scope: AiScreenerScope }) {
         const other = aiScopeKey(run.scope as AiScreenerScope) !== question;
         const tokens = (run.tokens_input ?? 0) + (run.tokens_output ?? 0);
         return <tr key={run.candidate_run_id} className={other ? "ai-run-history-other" : undefined}>
-          <th scope="row">{etClock(run.generated_at)}{other ? ` · other scope (${run.scope.universe ?? "unknown"})` : ""}</th>
+          <th scope="row">{etClock(run.generated_at)}{other ? ` · other scope (${universeText(run.scope.universe) || "unknown"})` : ""}</th>
           <td>{run.model_id ?? "none"}{run.runtime ? ` · ${run.runtime === "LOCAL_MODEL" ? "local" : "paid"}` : ""}</td>
           <td title={run.reason ?? run.state}>{run.state === "CURRENT" ? "selected" : run.state === "NO_GROUNDED_CANDIDATES" ? "nothing selected" : plainReason(run.reason ?? run.state)}</td>
           <td>{run.selected_count} of {run.intake_count ?? "?"}{run.selected.length ? ` · ${run.selected.map((pick) => pick.instrument_id).join(", ")}` : ""}</td>
