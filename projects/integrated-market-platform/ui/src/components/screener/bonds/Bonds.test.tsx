@@ -276,7 +276,7 @@ describe("Bonds universe", () => {
     expect(within(panel).getByRole("img", { name: /Treasury yield curve by maturity/ })).toBeInTheDocument();
     expect(within(panel).getByText("Upward sloping")).toBeInTheDocument();
     expect(within(panel).getByText(/not this security's yield/)).toBeInTheDocument();
-    expect(within(panel).getAllByText(/FRED not configured · FRED API key not configured/, { selector: "p" })).toHaveLength(2);
+    expect(within(panel).getAllByText(/FRED not configured · FRED key not saved; add it in Setup/, { selector: "p" })).toHaveLength(2);
     expect(within(panel).getAllByText(/licensed TRACE feed required/).length).toBeGreaterThan(0);
     expect(within(panel).getByRole("table", { name: "Published par yields by tenor" })).toBeInTheDocument();
     await waitFor(() => expect(mocks.rates).toHaveBeenLastCalledWith("XA01:NOTE", expect.anything()));
@@ -328,7 +328,11 @@ describe("Bonds universe", () => {
       TREASURY: { state: "UNAVAILABLE", count: 0 }, CORPORATE: { state: "CORPORATE_COVERAGE_UNAVAILABLE", count: null } },
       provider_health: [{ provider: "US_TREASURY_FISCAL_DATA", state: "NOT_CONFIGURED", reason: "TREASURY_NOT_CONFIGURED" }] }));
     mount();
-    expect(await screen.findByText(/U.S. Treasury Fiscal Data is not enabled/)).toBeInTheDocument();
+    expect(await screen.findByText(/U.S. Treasury Fiscal Data is switched off/)).toBeInTheDocument();
+    // Sprint 3 item 42: a switched-off source is fixed by a setting, never by retrying; the setting sits in a collapsed how-to.
+    expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
+    expect(screen.getByText("How to turn it on")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/set IMP_/);
     expect(screen.getByText(/— results/)).toBeInTheDocument();
   });
 });

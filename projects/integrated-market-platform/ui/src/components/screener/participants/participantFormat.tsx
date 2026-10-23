@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
+import { stampText } from "../screenerText";
 import type { CongressMember, CongressTransaction, DisclosedAmount, ParticipantProvider } from "../../../api/screenerParticipants";
 
 /** Plain-language states. A provider state is never presented as an absence of disclosures. */
@@ -15,9 +15,9 @@ const STATE_TEXT: Record<string, string> = {
 export const stateText = (state: string) => STATE_TEXT[state] ?? state.replace(/_/g, " ").toLowerCase();
 
 const REASON_TEXT: Record<string, string> = {
-  IMP_EDGAR_LIVE_NOT_SET: "SEC EDGAR live access is off (IMP_EDGAR_LIVE)",
-  SEC_USER_AGENT_NOT_SET: "SEC requires a User-Agent with a contact email (SEC_USER_AGENT)",
-  IMP_PUBLIC_RECORDS_LIVE_NOT_SET: "Official public-record access is off (IMP_PUBLIC_RECORDS_LIVE)",
+  IMP_EDGAR_LIVE_NOT_SET: "SEC EDGAR is switched off; saving the SEC contact identity in Setup turns it on",
+  SEC_USER_AGENT_NOT_SET: "SEC needs your name and a contact email; save them in Setup",
+  IMP_PUBLIC_RECORDS_LIVE_NOT_SET: "Official public-record access is switched off",
   SENATE_EFD_REQUIRES_INTERACTIVE_TERMS_ACCEPTANCE: "Senate eFD needs the operator to accept its terms and import reports",
   OPERATOR_ATTESTATION_MISSING: "Senate import has no operator terms-acceptance record", SENATE_EFD_IMPORT_DIR_MISSING: "Senate import folder not found",
   SOME_REPORTS_FAILED: "Some imported reports could not be read", NO_REPORT_PARSED: "No imported report could be read",
@@ -56,16 +56,8 @@ export const signed = (value: number | null | undefined) => (value == null ? "�
 export const short = (value: number | null | undefined) => (value == null ? "—" : compact.format(value));
 /** A disclosed band, never a point value. */
 export const amountText = (amount: DisclosedAmount | null | undefined) => amount?.display ?? "Amount not parsed";
-const stampFormat = new Intl.DateTimeFormat("en-CA", { timeZone: LOCAL_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
-  hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
-/** Timestamps print as a date and time on the machine's own clock; dates print as given. */
-export function stamp(iso: string | null | undefined): string {
-  if (!iso) return "—";
-  const moment = new Date(iso);
-  if (Number.isNaN(moment.getTime())) return iso;
-  const part = Object.fromEntries(stampFormat.formatToParts(moment).map((item) => [item.type, item.value]));
-  return `${part.year}-${part.month}-${part.day} ${part.hour}:${part.minute} ${LOCAL_SUFFIX}`;
-}
+/** Timestamps print in the Screener's one ET format; a calendar date prints as a date. */
+export const stamp = (iso: string | null | undefined): string => stampText(iso);
 
 export const OWNER_TEXT: Record<string, string> = { SELF: "Member", SPOUSE: "Spouse", JOINT: "Joint", DEPENDENT_CHILD: "Dependent child" };
 export const TYPE_TEXT: Record<string, string> = { PURCHASE: "Purchase", SALE: "Sale", SALE_PARTIAL: "Partial sale", EXCHANGE: "Exchange" };

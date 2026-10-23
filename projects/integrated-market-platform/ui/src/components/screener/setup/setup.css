@@ -1,6 +1,9 @@
 .setup-remedy{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
 .setup-remedy strong{font-weight:700}
 .setup-remedy.compact{font-size:11px}
+.setup-howto{display:block;margin-top:4px;font-size:11px}
+.setup-howto summary{cursor:pointer;color:#9fc3e6}
+.setup-howto code{font-size:11px}
 .setup-connect{display:inline-flex;flex-wrap:wrap;align-items:center;gap:6px}
 .setup-connect-button{padding:3px 9px;border-color:#4b7bb0;background:#1d3246;color:#dcebff;font-weight:600}
 .setup-connect-button:hover:not(:disabled){background:#264262}
