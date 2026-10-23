@@ -19,6 +19,7 @@
 - A tooltip never replaces a control's name: put hints in `aria-describedby`, not `title` on the control
 - A code shown as words keeps the raw code in `title` (the Screener's `<Code>` and `codeWords` in `screenerText.tsx`), so it can still be searched; the words never depend on the tooltip
 - A disabled choice says why in visible text linked by `aria-describedby` (the Screener's "Not available yet" built-in screens), not only in `title`
+- On/off settings are `role="switch"` buttons with `aria-checked` (Setup's keyless source switches): the visible label names the state, the result is announced in a `role="status"` line linked by `aria-describedby`, and a switch the API's environment controls is disabled with a visible note saying where to change it
 - Times are `<time dateTime>` elements (`<Stamp>`): the text reads in ET, the attribute is the exact instant, and the tooltip gives UTC and the machine's local time
 - Color not sole indicator of state (use text/icons/badges)
 - NavShell: `aria-label` on mode-specific link descriptions
