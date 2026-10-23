@@ -7,15 +7,13 @@ import { pricePrecision } from "../panels/shared";
 import { classifyZones } from "../srClassify";
 import { PreviewNewsSection } from "../news/PreviewNewsSection";
 import "./crypto.css";
-import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
+import { ET_ZONE, Stamp } from "../screenerText";
 
 type Props = { row: ScreenerRow | null; filters: ScreenerFilter[]; screenLabel: string | null;
   overlay: boolean; width?: number; paneRef?: Ref<HTMLElement>; onClose: () => void;
   newsSupported?: boolean; onOpenNews?: () => void };
 type Timeframe = "1m" | "5m" | "15m";
 const frames: Timeframe[] = ["1m", "5m", "15m"];
-const stampFormat = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-const stamp = (value: string | null | undefined) => value ? `${stampFormat.format(new Date(value))} ${LOCAL_SUFFIX}` : "unavailable";
 const number = (value: number | null | undefined, digits = 2) => value == null ? "—" : value.toLocaleString("en-US", { maximumFractionDigits: digits });
 
 export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, paneRef, onClose, newsSupported = false, onOpenNews }: Props) {
@@ -49,16 +47,16 @@ export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, 
             <div className="wide"><dt>Bid / ask</dt><dd>{number(current("bid"), precision)} / {number(current("ask"), precision)}</dd></div>
             <div className="wide"><dt>Spread</dt><dd>{current("spread_pct") == null ? "—" : `${number(current("spread_pct"), 4)}%`}</dd></div>
             <div className="wide"><dt>24h high / low</dt><dd>{number(current("high_24h"), precision)} / {number(current("low_24h"), precision)}</dd></div></dl>
-          <p className="screener-preview-meta">Kraken public spot · REST quote {data.quote.state.toLowerCase()} · universe snapshot {stamp(data.snapshot_as_of)}</p>
+          <p className="screener-preview-meta">Kraken public spot · REST quote {data.quote.state.toLowerCase()} · universe snapshot <Stamp iso={data.snapshot_as_of} fallback="unavailable" /></p>
           <p className="screener-preview-meta">Quote values remain in {row.quote_asset}. UTC day change uses the midnight UTC open.</p>
         </section>
         <section className="crypto-preview-section" aria-label="Spot chart"><h3>24/7 chart</h3><div role="group" aria-label="Chart timeframe" className="screener-segment">
           {frames.map((item) => <button key={item} type="button" aria-pressed={timeframe === item} onClick={() => setTimeframe(item)}>{item}</button>)}</div>
           {data.bars.state === "CURRENT" && data.bars.bars.length > 0
             ? <PreviewChart bars={data.bars.bars} forming={data.bars.forming} support={zones?.support ?? null} resistance={zones?.resistance ?? null}
-                label={`${row.symbol} · ${timeframe} · Kraken spot · ${LOCAL_SUFFIX}`} timeZone={LOCAL_ZONE} precision={precision} />
+                label={`${row.symbol} · ${timeframe} · Kraken spot · ET`} timeZone={ET_ZONE} precision={precision} />
             : <p role="status">Bars unavailable · {data.bars.reason ?? data.bars.state}</p>}
-          <p className="screener-preview-meta">{data.bars.bar_count} complete bars · last close {stamp(data.bars.latest_complete_bar_end)}</p>
+          <p className="screener-preview-meta">{data.bars.bar_count} complete bars · last close <Stamp iso={data.bars.latest_complete_bar_end} fallback="unavailable" /></p>
         </section>
         <section className="crypto-preview-section" aria-label="Pair structure"><h3>Structure</h3>
           <dl className="screener-key-data"><div><dt>Status</dt><dd>{data.instrument.status}</dd></div>
@@ -67,9 +65,9 @@ export function CryptoQuickPreview({ row, filters, screenLabel, overlay, width, 
             <div><dt>Quote increment</dt><dd>{data.instrument.quote_increment ?? "unavailable"} {row.quote_asset}</dd></div>
             <div className="wide"><dt>Minimum order</dt><dd>{data.instrument.min_order_size ?? "unavailable"} {row.base_asset}</dd></div></dl></section>
         <section className="crypto-preview-section" aria-label="Source and clocks"><h3>Source · clock</h3>
-          <p className="screener-preview-meta">Provider Kraken public spot REST · catalog {stamp(data.instrument.catalog_as_of)}</p>
-          <p className="screener-preview-meta">Quote received {stamp(data.quote.fields.price?.as_of)} · the venue ticker carries no event timestamp</p>
-          <p className="screener-preview-meta">Bars received {stamp(data.bars.received_at)}</p></section>
+          <p className="screener-preview-meta">Provider Kraken public spot REST · catalog <Stamp iso={data.instrument.catalog_as_of} fallback="unavailable" /></p>
+          <p className="screener-preview-meta">Quote received <Stamp iso={data.quote.fields.price?.as_of} fallback="unavailable" /> · the venue ticker carries no event timestamp</p>
+          <p className="screener-preview-meta">Bars received <Stamp iso={data.bars.received_at} fallback="unavailable" /></p></section>
         <section className="crypto-preview-section" aria-label="Why it matched"><h3>Why it matched</h3>{data.why.matched.items.length
           ? <ul>{data.why.matched.items.map((item) => <li key={item.filter_id}>{item.text}</li>)}</ul> : <p>No active filters.</p>}</section>
       </>}

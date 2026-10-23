@@ -3,6 +3,7 @@ import type { AiScreenerRun, AiScreenerRuns, AiScreenerScope } from "../../../ap
 import { reevaluationStatus, stopReevaluation, type ReevaluationStatus } from "../../../api/screenerReevaluation";
 import { compactTokens } from "../news/SynthesisControl";
 import { ErrorDetail, etClock, useNow } from "../panels/shared";
+import { codeWords } from "../screenerText";
 import { coverageStatusText } from "./AiCoverage";
 import { currentStageText, modelCallContext, modelCallInFlight, progressText } from "./AiRunProgress";
 import { fitText } from "./EngineSwitch";
@@ -16,7 +17,7 @@ export const LOOP_STATUS_KEY = ["screener-reevaluation-status"] as const;
  */
 const BUSY_HEARTBEAT_MS = 10 * 60_000;
 
-/** Reason codes in plain words; the code stays visible underneath so it can be searched. */
+/** Reason codes in plain words. The code itself is in the strip's tooltip, so it can still be searched. */
 const REASONS: Record<string, string> = {
   SYNTHESIS_DAILY_BUDGET_EXHAUSTED: "today's model budget is used up",
   SYNTHESIS_DAILY_TOKEN_LIMIT: "the run would exceed today's token budget",
@@ -32,7 +33,17 @@ const REASONS: Record<string, string> = {
   EVIDENCE_PROVIDER_UNAVAILABLE: "the quote source returned nothing, so no row could be assessed",
   SYNTHESIS_RUN_HOLD_EXHAUSTED: "a request outgrew the budget held for this run",
 };
-export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ? `${REASONS[code]} (${code})` : code;
+export const plainReason = (code: string | null | undefined) => !code ? "no reason reported" : REASONS[code] ?? codeWords(code).toLowerCase();
+/** The raw reason codes behind the strip's line, for its tooltip. */
+function reasonCodes(data: AiScreenerRuns) {
+  const latest = data.latest;
+  const summary = latest?.summary;
+  const codes = data.state === "RUNNING" ? []
+    : data.state !== "IDLE" ? [data.ai.reason]
+    : [latest?.error?.code, summary?.coverage && !summary.coverage.selection_complete ? summary.coverage.status : null,
+      summary && summary.state !== "CURRENT" && summary.state !== "NO_GROUNDED_CANDIDATES" ? summary.reason ?? summary.state : null];
+  return [...new Set(codes.filter((code): code is string => Boolean(code)))];
+}
 
 /** "2:13", or "1:02:13" past the hour. */
 export function countdown(ms: number) {
@@ -122,13 +133,14 @@ export default function AiStatusStrip({ scope, onOpen }: { scope: AiScreenerScop
   const preview = useAiScreenerPreview(scope, data?.state === "IDLE");
   const tooLarge = blockingFit(preview.data);
   const line = data ? `${mainText(data, loopText(loop.data, loop.isError, now), now)}${call ? ` · ${call}` : ""}` : null;
+  const codes = data ? reasonCodes(data) : [];
   return <section className={`ai-strip ${data ? data.state.toLowerCase() : "unknown"}`} aria-label="AI status">
     <span className="ai-strip-tag">AI</span><span className="ai-strip-dot" aria-hidden="true" />
     {/* The engine every AI panel on this machine uses; a run in progress names its own model in the line itself. */}
     {data && data.state !== "RUNNING" && data.ai.model_id && <span className="ai-strip-engine" title="The engine used by every AI panel on this machine">
       {data.ai.model_id} · {data.ai.runtime === "LOCAL_MODEL" ? "local" : "paid"}</span>}
     {/* Not a live region: this line changes every second while a model works, and announcing that would drown everything else. */}
-    {line !== null ? <p className="ai-strip-main" title={line}>{line}</p>
+    {line !== null ? <p className="ai-strip-main" title={codes.length ? `${line}\nReason code: ${codes.join(", ")}` : line}>{line}</p>
       : runs.isError ? <p className="ai-strip-main">Status unavailable; a run may still be in progress on the server.<ErrorDetail error={runs.error} /></p>
       : <p className="ai-strip-main">Checking AI status…</p>}
     {data && budgetText(data) && <p className="ai-strip-budget" title={budgetDetail(data)}>{budgetText(data)}</p>}

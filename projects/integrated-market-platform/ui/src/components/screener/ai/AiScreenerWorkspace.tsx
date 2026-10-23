@@ -18,6 +18,7 @@ import { tradeLifecycles } from "../../../api/screenerLifecycle";
 import LifecycleCard from "../lifecycle/LifecycleCard";
 import TradeLifecycleGroups, { LifecycleBoundary } from "../lifecycle/TradeLifecycleGroups";
 import { age, ErrorDetail, PanelMessage, useNow } from "../panels/shared";
+import { Code, codeWords, filtersText, Stamp, stampText, universeText } from "../screenerText";
 import "../panels/dock.css";
 
 const keyFor = (scope: AiScreenerScope) => JSON.stringify(scope);
@@ -28,21 +29,33 @@ function EvidenceCard({ title, evidence }: { title: string; evidence: Record<str
     return <details className="ai-screener-evidence"><summary>{story.headline} · NEWS</summary><dl>
       <div><dt>Evidence</dt><dd>{title} · story {story.story_id}</dd></div>
       <div><dt>Source / publisher</dt><dd>{story.sources?.map((source: Record<string, any>) => `${source.provider_id}: ${source.publisher}`).join(" · ")} · {story.source_count} sources / {story.provider_count} providers (syndication)</dd></div>
-      <div><dt>Published</dt><dd>{story.published_at ? `${story.published_at} · ${age(story.published_at)} ago` : `Publication time unknown · retrieval proxy ${story.first_retrieved_at}`}; latest publication {story.latest_published_at ?? "unknown"}</dd></div>
-      <div><dt>Component clocks</dt><dd>{story.sources?.map((source: Record<string, any>) => `${source.provider_id}: available ${source.available_at ?? "unknown"}, retrieved ${source.retrieved_at ?? "unknown"}, ingested ${source.ingested_at ?? "unknown"}`).join(" · ")}</dd></div>
+      <div><dt>Published</dt><dd>{story.published_at ? `${stampText(story.published_at)} · ${age(story.published_at)} ago` : `Publication time unknown · retrieval proxy ${stampText(story.first_retrieved_at)}`}; latest publication {story.latest_published_at ? stampText(story.latest_published_at) : "unknown"}</dd></div>
+      <div><dt>Component clocks</dt><dd>{story.sources?.map((source: Record<string, any>) => `${source.provider_id}: available ${source.available_at ? stampText(source.available_at) : "unknown"}, retrieved ${source.retrieved_at ? stampText(source.retrieved_at) : "unknown"}, ingested ${source.ingested_at ? stampText(source.ingested_at) : "unknown"}`).join(" · ")}</dd></div>
       <div><dt>Relevance</dt><dd>{story.match_confidence} · {story.match_basis} · {story.categories?.map((category: Record<string, any>) => category.label ?? category.id).join(", ") || "Uncategorized"} · window {story.window}</dd></div>
       <div><dt>Sentiment</dt><dd>{story.sentiment?.label ?? "NOT_SCORED"} · state {story.sentiment?.state} · {story.sentiment?.model_id ?? "FinBERT unavailable"} · revision {story.sentiment?.model_revision ?? "unknown"} · {story.sentiment?.sentiment_version} · {story.sentiment?.basis}; probabilities {JSON.stringify(story.sentiment?.probabilities)}</dd></div>
-      <div><dt>Freshness</dt><dd>{story.coverage_state} · {evidence.freshness_status} · {evidence.role} · valid until {evidence.valid_until}</dd></div>
+      <div><dt>Freshness</dt><dd><Code code={story.coverage_state} /> · <Code code={evidence.freshness_status} /> · <Code code={evidence.role} /> · valid until <Stamp iso={evidence.valid_until} /></dd></div>
     </dl></details>;
   }
   return <details className="ai-screener-evidence"><summary>{title} · {evidence.capability}</summary>
     <dl>{evidence.capability === "QUOTE" && <div><dt>Price</dt><dd>{typeof evidence.facts?.price === "number" ? `$${evidence.facts.price.toFixed(2)}` : "unavailable"}</dd></div>}<div><dt>Facts</dt><dd><code>{JSON.stringify(evidence.facts)}</code></dd></div>
-      <div><dt>Source</dt><dd>{evidence.source ?? "unavailable"}</dd></div>
-      <div><dt>Observed</dt><dd>{evidence.as_of ?? "unknown"}</dd></div>
-      <div><dt>Received</dt><dd>{evidence.received_at ?? "unknown"}</dd></div>
-      <div><dt>Freshness</dt><dd>{evidence.freshness_status} · {evidence.decision_admissibility} · {evidence.role}</dd></div>
+      <div><dt>Source</dt><dd>{evidence.source ? <Code code={evidence.source} /> : "unavailable"}</dd></div>
+      <div><dt>Observed</dt><dd><Stamp iso={evidence.as_of} fallback="unknown" /></dd></div>
+      <div><dt>Received</dt><dd><Stamp iso={evidence.received_at} fallback="unknown" /></dd></div>
+      <div><dt>Freshness</dt><dd><Code code={evidence.freshness_status} /> · <Code code={evidence.decision_admissibility} /> · <Code code={evidence.role} /></dd></div>
     </dl></details>;
 }
+
+/** The selected engine by its menu label ("Local model", "Anthropic Claude"), never the provider id. */
+function engineName(ai: AiStatus) {
+  const selected = ai.engines?.find((engine) => engine.id === ai.engine);
+  if (selected) return selected.label;
+  if (!ai.provider_id) return "not configured";
+  return ai.runtime === "LOCAL_MODEL" ? "local model" : codeWords(ai.provider_id.replace(/^local\./, ""));
+}
+/** A run's scope in words: "US Equities · Overview · Short Squeeze screen". */
+const scopeName = (scope: { universe?: string | null; view?: unknown; screen?: unknown }) =>
+  [universeText(scope.universe ?? "US_EQUITIES"), typeof scope.view === "string" && scope.view ? scope.view : "Overview",
+    typeof scope.screen === "string" && scope.screen ? `${scope.screen} screen` : "unsaved screen"].join(" · ");
 
 function EngineChoice({ ai, fit, onChanged }: { ai: AiStatus; fit: EngineFit[]; onChanged: (next: AiStatus) => void }) {
   const [busy, setBusy] = useState(false);
@@ -50,7 +63,7 @@ function EngineChoice({ ai, fit, onChanged }: { ai: AiStatus; fit: EngineFit[]; 
   // Choosing an option only proposes it: the engine is machine-wide, so nothing is sent until it is confirmed.
   const [pending, setPending] = useState<PendingEngine | null>(null);
   const selected = ai.engines?.find((engine) => engine.id === ai.engine);
-  if (!ai.engines?.length) return <span className="ai-screener-meta">Engine {ai.provider_id ?? "unconfigured"}</span>;
+  if (!ai.engines?.length) return <span className="ai-screener-meta" title={ai.provider_id ?? undefined}>Engine {engineName(ai)}</span>;
   const value = `${ai.engine ?? "auto"}|${ai.engine_model ?? selected?.default_model ?? ""}`;
   const locked = engineLockText(ai);
   const fitFor = (id: string) => fit.find((item) => item.engine === id);
@@ -87,13 +100,15 @@ type Props = {
   openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   /** Opens (or focuses) a specialist panel in the dock. */
   openPanel?: (id: PanelId) => void;
+  /** The Screener's own filter chip text; without it a filter's field id reads as words. */
+  describeFilter?: (rule: { field: string; operator: string; value: unknown }) => string;
 };
 
 /**
  * The AI Screener's home: run controls, results, decisions, reevaluation and run history. It is mounted once, in the
  * right rail's AI tab, so its own timers (reevaluation, Paper automation, decisions) never run twice.
  */
-export default function AiScreenerWorkspace({ visible, screenerScope: baseScope, openInstrument, openNews, openPanel }: Props) {
+export default function AiScreenerWorkspace({ visible, screenerScope: baseScope, openInstrument, openNews, openPanel, describeFilter }: Props) {
   const [method, setMethod] = useState<NonNullable<AiScreenerScope['method']>>('EXHAUSTIVE_EXISTING');
   const [localModelId, setLocalModelId] = useState('Qwen/Qwen3-4B-GGUF:Q4_K_M');
   const experimental = method === 'STAGED_LOCAL_FIRST_EXPERIMENTAL';
@@ -156,16 +171,17 @@ export default function AiScreenerWorkspace({ visible, screenerScope: baseScope,
       <details><summary>Runtime admission measurements</summary><pre>{JSON.stringify(preview.data.staged.local_model, null, 2)}</pre></details>
     </section>}
     <div className="ai-screener-toolbar">
-      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {screenerScope.universe} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · {experimental ? "every eligible row receives a local assessment; unresolved cases advance to premium review" : "a run assesses every matched row and sends each eligible row to the model in batches of up to " + (preview.data?.max_intake ?? 50)}</p></div>
+      <div><strong>AI Screener</strong><p className="ai-screener-meta">Scope: {universeText(screenerScope.universe)} · {preview.data ? `${preview.data.matched_count.toLocaleString()} matched` : "checking scope"} · {experimental ? "every eligible row receives a local assessment; unresolved cases advance to premium review" : "a run assesses every matched row and sends each eligible row to the model in batches of up to " + (preview.data?.max_intake ?? 50)}</p></div>
       {ai && <EngineChoice ai={ai} fit={preview.data?.engine_fit ?? []} onChanged={(next) => { setAiOverride(next); void preview.refetch(); }} />}
     </div>
-    <p className="ai-screener-meta">View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "Unsaved"} · search {screenerScope.search || "all"} · sort {screenerScope.sort} {screenerScope.descending ? "descending" : "ascending"} · result set {screenerScope.result_set ?? "unavailable"} · filters {JSON.stringify(screenerScope.filters)}</p>
+    <p className="ai-screener-meta" title={`Result set ${screenerScope.result_set ?? "unavailable"}`}>View {screenerScope.view ?? "Overview"} · screen {screenerScope.screen || "unsaved"} · search {screenerScope.search ? `"${screenerScope.search}"` : "all"} · sorted by {codeWords(screenerScope.sort ?? "default").toLowerCase()} {screenerScope.descending ? "descending" : "ascending"} · {filtersText(screenerScope.filters, describeFilter)}</p>
     {start.isError && <PanelMessage tone="error" role="alert">AI Screener run failed. Retry explicitly.<ErrorDetail error={start.error} /></PanelMessage>}
     {runs.isError && <PanelMessage tone="error" role="alert">AI Screener run status is unavailable; a run may still be in progress on the server.<ErrorDetail error={runs.error} /></PanelMessage>}
     {preview.isPending && <PanelMessage>Preparing the bounded internal evidence scope…</PanelMessage>}
     {preview.isError && <PanelMessage tone="error" role="alert">AI Screener status unavailable. <button type="button" onClick={() => void preview.refetch()}>Retry</button></PanelMessage>}
-    {ai && <p className="ai-screener-meta">Provider {ai.provider_id ?? "none"} · model {ai.model_id ?? "none"} · runtime {ai.runtime ?? "not configured"} · {ai.runtime === "PAID_API" ? "shared paid budget" : "no API cost"}.</p>}
-    {ai?.budget && <p className="ai-screener-meta">Daily shared budget: {ai.budget.requests}/{ai.budget.max_requests} requests · {ai.budget.tokens}/{ai.budget.max_tokens} tokens · UTC day {ai.budget.day}.</p>}
+    {ai && <p className="ai-screener-meta" title={`Provider ${ai.provider_id ?? "none"} · runtime ${ai.runtime ?? "not configured"}`}>
+      Engine {engineName(ai)} · model {ai.model_id ?? "none"} · {!ai.runtime ? "not configured" : ai.runtime === "PAID_API" ? "paid API, shared daily budget" : "local model, no API cost"}.</p>}
+    {ai?.budget && <p className="ai-screener-meta">Daily shared budget: {ai.budget.requests.toLocaleString()}/{ai.budget.max_requests.toLocaleString()} requests · {compactTokens(ai.budget.tokens)}/{compactTokens(ai.budget.max_tokens)} tokens · UTC day {ai.budget.day}.</p>}
     {estimate && <p className="ai-screener-meta">Preview of the first {estimate.intake_count} rows only (about one batch; the run plans every batch before any model call) · {estimate.sufficient_count} sufficiently grounded · packet {estimate.packet_bytes.toLocaleString()} bytes · {estimate.cached ? "cached, no model cost" : estimate.tokens != null ? `worst-case ≈ ${compactTokens(estimate.tokens)} tokens` : "cost estimate unavailable"}.</p>}
     {preview.data?.news_coverage && <details><summary>News coverage · cached preview · no acquisition or scoring</summary>
       {preview.data.news_coverage.map((item) => <p key={item.instrument_id}>{item.instrument_id} · {item.state} · {item.story_count} stories · {item.window} · sentiment {item.sentiment.state} · {item.providers.map((p) => `${p.id}: ${p.state}`).join(" · ")}</p>)}
@@ -180,9 +196,10 @@ export default function AiScreenerWorkspace({ visible, screenerScope: baseScope,
       title="No further model call starts. A call already sent is not cancelled and its tokens stay charged.">{active.stop_requested ? "Stopping after the call in flight…" : "Stop run"}</button>}
     {stop.isError && <PanelMessage tone="error" role="alert">Could not stop the run.<ErrorDetail error={stop.error} /></PanelMessage>}
     {active && start.data?.joined && start.data.run_id === active.run_id && <PanelMessage>Joined the run already in progress; no second run was started.</PanelMessage>}
-    {active && aiScopeKey(active.scope) !== questionKey && <PanelMessage tone="warn">This run answers a different Screener scope ({active.scope.universe}, method {active.scope.method ?? "EXHAUSTIVE_EXISTING"}). One run at a time per account.</PanelMessage>}
+    {active && aiScopeKey(active.scope) !== questionKey && <PanelMessage tone="warn">
+      <span title={`Method ${active.scope.method ?? "EXHAUSTIVE_EXISTING"}`}>A run for {scopeName(active.scope)} is in progress. One run at a time: start this view's run when it finishes.</span></PanelMessage>}
     {!active && mine?.state === "FAILED" && <PanelMessage tone="error" role="alert">AI Screener run failed{mine.error?.stage ? ` while ${(STAGE_LABEL[mine.error.stage] ?? mine.error.stage).toLowerCase()}` : ""}{mine.error ? ` · ${mine.error.code}` : ""}. No result was recorded. Retry explicitly.</PanelMessage>}
-    {!active && latest && !mine && <PanelMessage>The latest run answered a different Screener scope ({latest.scope.universe}). Run AI Screener to answer this one.</PanelMessage>}
+    {!active && latest && !mine && <PanelMessage>The latest run was for {scopeName(latest.scope)}, not this view. Run AI Screener for this one.</PanelMessage>}
     {mine?.state === "COMPLETED" && detail.isError && <PanelMessage tone="error" role="alert">The result of the latest run is no longer held by the server. Rerun AI Screener.<ErrorDetail error={detail.error} /></PanelMessage>}
     {!experimental && screenerScope.settled !== false && <ReevaluationPanel key={scopeKey} scope={screenerScope} />}
     {/* The Paper controller and its Emergency Stop are independent of the Screener scope, so this panel stays mounted
@@ -194,8 +211,8 @@ export default function AiScreenerWorkspace({ visible, screenerScope: baseScope,
       {value.universe_coverage && <CoverageSummary coverage={value.universe_coverage} />}
       {value.universe_coverage && mine && <CoverageReceipts runId={mine.run_id} />}
       {value.staged && <section aria-label="Experimental accounting"><p>{value.staged.status} · approval {value.staged.approval_status} · local coverage {value.staged.local_coverage_complete ? "complete" : "incomplete"} · accounting {value.staged.reconciled ? "reconciled" : "incomplete"}</p>{Object.entries(value.staged.counters).map(([name, count]) => <p key={name}>{name.replace(/_/g, " ")}: {count}</p>)}<details><summary>Whole premium pool budget plan and model lineage</summary><pre>{JSON.stringify({ budget: value.staged.premium_plan, local: value.staged.local_model, premium: value.staged.premium_model }, null, 2)}</pre></details></section>}
-      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} {value.staged ? "local assessments" : "rows sent to the model"}{value.universe_coverage || value.staged ? "" : " (single-request method: only the head of the sorted result was read)"} · {value.simulated ? "SOFTWARE_CONTROLLED fixture" : value.runtime} · valid until {value.valid_until}</p>
-      <p className="ai-screener-meta">{value.state} · {value.provider_id} · {value.model_id} · prompt {value.prompt_id} v{value.prompt_version} · cutoff {value.decision_cutoff} · {value.cache === "HIT" ? "cache hit" : `${value.latency_ms ?? "—"} ms`}</p>
+      <p className="ai-screener-meta">Selected {value.candidates.length} of {value.intake_count} {value.staged ? "local assessments" : "rows sent to the model"}{value.universe_coverage || value.staged ? "" : " (single-request method: only the head of the sorted result was read)"} · {value.simulated ? <span title="SOFTWARE_CONTROLLED">test fixture, no model</span> : <span title={value.runtime ?? undefined}>{value.runtime === "LOCAL_MODEL" ? "local model" : value.runtime === "PAID_API" ? "paid API" : codeWords(value.runtime).toLowerCase()}</span>} · valid until <Stamp iso={value.valid_until} /></p>
+      <p className="ai-screener-meta" title={`Provider ${value.provider_id} · prompt ${value.prompt_id} v${value.prompt_version}`}><Code code={value.state} /> · model {value.model_id} · evidence cutoff <Stamp iso={value.decision_cutoff} /> · {value.cache === "HIT" ? "served from cache" : `${value.latency_ms ?? "—"} ms`}</p>
       {mine && <p className="ai-screener-meta">Run took {(mine.elapsed_ms / 1000).toFixed(1)}s on the server{value.result_set && screenerScope.result_set && value.result_set !== screenerScope.result_set ? " · the Screener list has refreshed since; this result is as of its cutoff" : ""}.</p>}
       {value.state === "INCOMPLETE" ? <>
         <PanelMessage tone="warn" role="status">This run did not finish, so it is not a selection from the whole universe. {value.limitations.join(" ")}</PanelMessage>
@@ -215,7 +232,7 @@ export default function AiScreenerWorkspace({ visible, screenerScope: baseScope,
             const news = candidate?.news;
             return <section aria-label={`News and sentiment for ${selection.instrument_id}`}>
               <h4>News / Sentiment</h4>
-              <p>{news ? `${news.state} · ${news.story_count} stories · ${news.window} · snapshot ${news.snapshot_at}` : "NEWS missing · SENTIMENT unavailable"}</p>
+              <p>{news ? `${codeWords(news.state)} · ${news.story_count} stories · ${news.window} · snapshot ${stampText(news.snapshot_at)}` : "News missing · sentiment unavailable"}</p>
               {news && <><p>Coverage: {news.providers.map((p) => `${p.id}: ${p.state}${p.reason ? ` (${p.reason})` : ""}`).join(" · ")}</p>
                 <p>Headline language: {news.sentiment.dominant ?? "NOT_SCORED"} · {news.sentiment.state} · {news.sentiment.reason} · scored {news.sentiment.scored}, unscored {news.sentiment.unscored}</p>
                 <details><summary>FinBERT model and aggregation</summary><p>{news.sentiment.model_id ?? "Model unavailable"} · revision {news.sentiment.model_revision ?? "unknown"} · {news.sentiment.sentiment_version} · {news.sentiment.basis}</p><p>{news.sentiment.method}</p><p>{JSON.stringify(news.sentiment.counts)}</p></details>

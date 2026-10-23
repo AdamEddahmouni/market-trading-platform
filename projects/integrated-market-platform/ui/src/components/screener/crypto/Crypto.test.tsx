@@ -3,7 +3,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ScreenerPage } from "../ScreenerPage";
-import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
 import { marketClock, marketPrice, marketVolume, pricePrecision, providerLabel, signedMarketVolume, spreadBps } from "../panels/shared";
 
 const mocks = vi.hoisted(() => ({
@@ -48,7 +47,6 @@ beforeAll(() => {
 
 const AS_OF = "2026-09-27T12:00:00Z"; // a Sunday: Crypto is open, US equities are not
 // Crypto clocks read the machine's own time zone, so expectations are computed in it.
-const localHms = (iso: string) => new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso));
 const f = (value: number | null, basis?: string) => ({ value, source: "KRAKEN_SPOT_PUBLIC", state: value === null ? "UNAVAILABLE" : "SNAPSHOT",
   as_of: value === null ? null : AS_OF, ...(basis ? { basis } : {}) });
 const pair = (symbol: string, id: string, base: string, quote: string, increment: string, price: number | null) => ({
@@ -69,7 +67,8 @@ const page = (rows = [BTC, SHIB, DARK]) => ({
   source_error: null, provider_health: [{ provider: "KRAKEN_SPOT_PUBLIC", role: "CATALOG", state: "CURRENT", reason: null }], rows,
 });
 const cryptoViews = {
-  Overview: ["symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct", "venue"],
+  // Sprint 3 item 35: like the server, the venue is named in the footer and is not a default column.
+  Overview: ["symbol", "price", "change_pct", "quote_volume", "bid", "ask", "spread_pct"],
   Performance: ["symbol", "price", "change_pct", "high_24h", "low_24h", "base_volume", "quote_volume"],
   Liquidity: ["symbol", "bid", "ask", "spread_pct", "quote_volume", "trade_count", "venue"],
   Custom: ["symbol", "base_asset", "quote_asset", "price", "change_pct", "quote_volume"],
@@ -178,7 +177,7 @@ describe("Crypto universe", () => {
     await screen.findByText("BTC/USD", { selector: ".screener-symbol strong" });
     expect(screen.getByRole("combobox", { name: "Screener universe" })).toHaveValue("CRYPTO");
     expect(mocks.fetch).toHaveBeenCalledWith(expect.objectContaining({ universe: "CRYPTO" }), expect.anything(), expect.anything());
-    expect(headers()).toEqual(["Pair", "Price", "UTC day %", "24h Quote Vol", "Bid", "Ask", "Spread %", "Venue"]);
+    expect(headers()).toEqual(["Pair", "Price", "UTC day %", "24h Quote Vol", "Bid", "Ask", "Spread %"]);
     // Resize handles name the header the viewer sees, not the shared equity label.
     expect(screen.getByRole("separator", { name: "Resize Pair" })).toBeInTheDocument();
     expect(screen.getByRole("separator", { name: "Resize UTC day %" })).toBeInTheDocument();
@@ -188,8 +187,10 @@ describe("Crypto universe", () => {
     expect(within(dark).getAllByText("—").length).toBeGreaterThan(2); // missing price stays missing, never 0
     expect(screen.getAllByText("24/7").length).toBeGreaterThan(0);
     expect(screen.queryByText(/RTH|Pre-market|After hours|Market Cap|Float|Sector/)).not.toBeInTheDocument();
-    expect(screen.getAllByText("KRAKEN").length).toBeGreaterThan(0);
-    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && /^Universe as of \d{1,2}:\d{2}:\d{2}.* \(\S+ ago\)$/.test(element.textContent ?? ""))).toBeInTheDocument(); // the machine's wall clock, like every universe
+    // No Venue column by default; the footer source line names the venue once.
+    expect(screen.queryByRole("columnheader", { name: /Venue/ })).toBeNull();
+    expect(document.querySelector(".screener-footer")?.textContent?.match(/Kraken/gi) ?? []).toHaveLength(1);
+    expect(screen.getByText((_, element) => element?.tagName === "SPAN" && /^Universe as of (\w{3} \d{1,2} )?\d{2}:\d{2}(:\d{2})? ET \(.+ ago\)$/.test(element.textContent ?? ""))).toBeInTheDocument(); // ET, like every universe (Sprint 3 item 33)
   });
 
   it("labels visible-row venue REST quotes as snapshots, never as live or unavailable", async () => {
@@ -244,7 +245,10 @@ describe("Crypto universe", () => {
       result_count: 0, unfiltered_count: 0, result_set_id: null, source_error: "CRYPTO_NOT_CONFIGURED",
       provider_health: [{ provider: "KRAKEN_SPOT_PUBLIC", role: "CATALOG", state: "NOT_CONFIGURED", reason: "CRYPTO_NOT_CONFIGURED" }] });
     mount();
-    expect(await screen.findByText(/Kraken public market data is not enabled/)).toBeInTheDocument();
+    expect(await screen.findByText(/Kraken public market data is switched off/)).toBeInTheDocument();
+    // The footer reads the source state in words, the code on hover (never "not_configured").
+    expect(screen.getByTitle("NOT_CONFIGURED", { exact: true })).toHaveTextContent(/^Source not configured · /);
+    expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
     expect(screen.queryByText(/could not be refreshed/)).not.toBeInTheDocument();
     expect(screen.queryByText("BTC/USD", { selector: ".screener-symbol strong" })).not.toBeInTheDocument();
   });
@@ -262,7 +266,7 @@ describe("Crypto universe", () => {
     await screen.findByText("BTC/USD", { selector: ".screener-symbol strong" });
     await waitFor(() => expect(panel("order_flow")).not.toBeNull());
     expect(panel("charts")).toBeNull();
-    expect(headers()).toEqual(["Pair", "Price", "UTC day %", "24h Quote Vol", "Bid", "Ask", "Spread %", "Venue"]);
+    expect(headers()).toEqual(["Pair", "Price", "UTC day %", "24h Quote Vol", "Bid", "Ask", "Spread %"]);
 
     fireEvent.change(screen.getByRole("combobox", { name: "Screener universe" }), { target: { value: "US_EQUITIES" } });
     // US Equities comes back with its own dock and its own last columns.
@@ -287,7 +291,7 @@ describe("Crypto universe", () => {
     }
   });
 
-  it("renders Kraken order flow as the venue taker side on the machine clock", async () => {
+  it("renders Kraken order flow as the venue taker side in ET", async () => {
     mount();
     await select("BTC/USD");
     fireEvent.click(launcher().getByRole("button", { name: "Order Flow" }));
@@ -299,9 +303,9 @@ describe("Crypto universe", () => {
     expect(within(panel).queryByText(/not a known buyer or seller/)).not.toBeInTheDocument();
     expect(within(panel).getByText("Buy")).toBeInTheDocument(); // native, not "Inf. Buy"
     expect(within(panel).getByText("+0.3")).toBeInTheDocument(); // fractional BTC net, not "+0"
-    expect(within(panel).getByText(localHms("2026-09-27T12:00:05Z"))).toBeInTheDocument(); // tape time
+    expect(within(panel).getByText("08:00:05")).toBeInTheDocument(); // tape time, ET
     expect(within(panel).getByText(/Kraken/)).toBeInTheDocument();
-    expect(within(panel).getByText(new RegExp(`last print ${localHms("2026-09-27T12:00:05Z")} ${LOCAL_SUFFIX}`))).toBeInTheDocument();
+    expect(within(panel).getByText(/last print 08:00:05 ET/)).toBeInTheDocument();
   });
 
   it("shows the checksummed venue book and hides a book that failed the checksum", async () => {
@@ -348,8 +352,8 @@ describe("Crypto presentation helpers", () => {
     expect(marketPrice(83000.1, { price_increment: "0.1" } as never, "CRYPTO")).toBe("83,000.10");
     expect(marketPrice(12.345, null, "US_EQUITIES")).toBe("12.35");
   });
-  it("reads the machine clock for Crypto and ET for US markets, and names providers", () => {
-    expect(marketClock("CRYPTO").clock("2026-09-27T12:00:05Z")).toBe(`${localHms("2026-09-27T12:00:05Z")} ${LOCAL_SUFFIX}`);
+  it("reads ET for Crypto and US markets alike, and names providers", () => {
+    expect(marketClock("CRYPTO").clock("2026-09-27T12:00:05Z")).toBe("08:00:05 ET");
     expect(marketClock("US_EQUITIES").clock("2026-09-27T12:00:05Z")).toBe("08:00:05 ET");
     expect(providerLabel("KRAKEN")).toBe("Kraken");
     expect(providerLabel(null)).toBe("No provider");

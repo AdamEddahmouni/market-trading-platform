@@ -53,7 +53,7 @@ export function ConnectButton({ provider, label }: { provider: string; label: st
   </span>;
 }
 
-function CopyCommand({ command }: { command: string }) {
+export function CopyCommand({ command }: { command: string }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
@@ -73,6 +73,29 @@ const OPEND_DOWN = new Set(["OPEND_UNAVAILABLE", "OPEN_D_NOT_RUNNING"]);
 /** Start OpenD from wherever a live panel says it is unreachable. Renders nothing for any other reason. */
 export function OpenDConnect({ reason }: { reason: string | null | undefined }) {
   return reason && OPEND_DOWN.has(reason) ? <> <ConnectButton provider="opend" label="Start OpenD" /></> : null;
+}
+
+/**
+ * Sources switched on only by an API environment setting, by the reason code that reports them off. Messages name the
+ * source in words; the setting itself appears only inside "How to turn it on".
+ */
+export const ENV_SWITCHES: Readonly<Record<string, { source: string; setting: string }>> = {
+  IMP_TREASURY_LIVE_NOT_SET: { source: "U.S. Treasury Fiscal Data", setting: "IMP_TREASURY_LIVE" },
+  TREASURY_NOT_CONFIGURED: { source: "U.S. Treasury Fiscal Data", setting: "IMP_TREASURY_LIVE" },
+  CRYPTO_NOT_CONFIGURED: { source: "Kraken public market data", setting: "IMP_CRYPTO_LIVE" },
+  IMP_OPENFIGI_LIVE_NOT_SET: { source: "OpenFIGI lookups", setting: "IMP_OPENFIGI_LIVE" },
+  IMP_PUBLIC_RECORDS_LIVE_NOT_SET: { source: "Official public records", setting: "IMP_PUBLIC_RECORDS_LIVE" },
+  IMP_NEWS_RSS_LIVE_NOT_SET: { source: "Public RSS feeds", setting: "IMP_NEWS_RSS_LIVE" },
+  FINVIZ_LIVE_DISABLED: { source: "Finviz Elite", setting: "IMP_FINVIZ_LIVE" },
+};
+
+/** The one place a switch's setting name is shown: collapsed, with the line to copy and the restart step. */
+export function HowToTurnOn({ reason }: { reason: string | null | undefined }) {
+  const entry = reason ? ENV_SWITCHES[reason] : undefined;
+  if (!entry) return null;
+  return <details className="setup-howto"><summary>How to turn it on</summary>
+    <span>Add this line to the API environment (or <code>.private/providers.env</code>), then restart the API:</span>{" "}
+    <CopyCommand command={`${entry.setting}=1`} /></details>;
 }
 
 /** What a degraded state means and the one step that clears it. The raw reason code stays available on hover. */

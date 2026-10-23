@@ -67,8 +67,9 @@ describe("run history", () => {
     expect(rows[0]).toHaveTextContent("09:58:12 ETclaude-haiku-4-5 · paidnothing selected0 of 2044k10.8sremoved EQ:BBB");
     expect(rows[1]).toHaveTextContent("09:50:00 ETclaude-haiku-4-5 · paidselected1 of 20 · EQ:BBBcached—added EQ:BBB · removed EQ:AAA");
     // A pass for another Screener query is listed, marked, and never compared with this one.
-    expect(rows[2]).toHaveTextContent("09:45:00 ET · other scope (US_EQUITIES)");
-    expect(rows[2]).toHaveTextContent("the run would exceed today's token budget (SYNTHESIS_DAILY_TOKEN_LIMIT)");
+    expect(rows[2]).toHaveTextContent("09:45:00 ET · other scope (US Equities)");
+    expect(rows[2]).toHaveTextContent("the run would exceed today's token budget");
+    expect(rows[2].querySelector('td[title="SYNTHESIS_DAILY_TOKEN_LIMIT"]')).not.toBeNull();
     expect(rows[2]).toHaveTextContent("first stored pass of this query");
     expect(rows[2]).toHaveClass("ai-run-history-other");
   });

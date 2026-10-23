@@ -1,11 +1,12 @@
+import { stampText } from "../screenerText";
 import type { SqueezeMetric, SqueezePayload } from "../../../api/screenerSqueeze";
 import { squeezeStateLabel } from "../../squeeze/SqueezeLifecycle";
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 });
 const date = (value: string | null) => {
   if (!value) return "No source time";
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${new Date(`${value}T12:00:00Z`).toLocaleDateString("en-US", { timeZone: "UTC", dateStyle: "medium" })} trade date`;
-  return `${new Date(value).toLocaleString("en-US", { timeZone: "America/New_York", dateStyle: "medium", timeStyle: "short" })} ET`;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return `${stampText(value)} trade date`;
+  return stampText(value);
 };
 const words = (code: string) => code.replace(/_/g, " ").toLowerCase();
 /** Reasons the operator can act on are spelled out; the rest read as words. */

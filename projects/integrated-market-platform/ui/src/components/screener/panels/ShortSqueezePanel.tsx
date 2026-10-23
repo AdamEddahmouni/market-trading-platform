@@ -1,3 +1,4 @@
+import { sessionText } from "../screenerText";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchScreenerSqueeze } from "../../../api/screenerSqueeze";
@@ -18,7 +19,7 @@ export default function ShortSqueezePanel({ api }: IDockviewPanelProps) {
   });
   const data = query.data?.instrument_id === row?.instrument.instrument_id && query.data?.universe === universe ? query.data : undefined;
   const gate = selectionGate("short_squeeze", row, settledId);
-  return <PanelFrame decisionInputs={data?.decision_inputs} id="short_squeeze" detail={data ? `${data.market_session.replace(/_/g, " ").toLowerCase()} · source clocks below` : null}
+  return <PanelFrame decisionInputs={data?.decision_inputs} id="short_squeeze" detail={data ? `${sessionText(data.market_session)} · source clocks below` : null}
     clock={data?.generated_at ? <>Assessed {etClock(data.generated_at)} (<Age iso={data.generated_at} staleMs={75_000} /> ago)</> : null}>
     {universe !== "US_EQUITIES" ? <PanelMessage>Short Squeeze evidence is available for US equities only.</PanelMessage> : gate ??
       (query.isError && !data ? <PanelMessage tone="error" role="alert">Squeeze evidence unavailable.<ErrorDetail error={query.error} /> <button type="button" onClick={() => void query.refetch()}>Retry</button></PanelMessage>

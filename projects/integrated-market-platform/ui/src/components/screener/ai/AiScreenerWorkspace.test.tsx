@@ -408,7 +408,7 @@ describe("AI Screener panel", () => {
     mocks.preview.mockResolvedValue(preview);
     finish(finishedRun({ ...result, valid_until: "2099-01-01T00:00:00Z", scope: { ...scope, search: "B" } as AiScreenerResult["scope"] }));
     renderPanel();
-    expect(await screen.findByText("The latest run answered a different Screener scope (US_EQUITIES). Run AI Screener to answer this one.")).toBeInTheDocument();
+    expect(await screen.findByText("The latest run was for US Equities · Overview · unsaved screen, not this view. Run AI Screener for this one.")).toBeInTheDocument();
     expect(screen.queryByRole("region", { name: "AI Screener result" })).toBeNull();
     expect(mocks.detail).not.toHaveBeenCalled();
   });
@@ -561,8 +561,12 @@ it("displays the exact current price, provider, observation and receive clocks u
   renderPanel();
   fireEvent.click(await screen.findByRole("button", { name: "Run AI Screener" }));
   expect(await screen.findByText("$240.27")).toBeInTheDocument();
-  expect(screen.getByText("MOOMOO_OPEND")).toBeInTheDocument();
-  expect(screen.getByText("2026-10-06T18:05:23Z")).toBeInTheDocument();
-  expect(screen.getByText("2026-10-06T18:05:23.500Z")).toBeInTheDocument();
-  expect(screen.getByText("CURRENT · ADMISSIBLE · CURRENT_MARKET")).toBeInTheDocument();
+  // Sprint 3 item 29: codes read as words with the code on hover; the clocks are ET <time> elements with the exact instant.
+  const card = within(screen.getByTitle("MOOMOO_OPEND").closest("dl")!);
+  expect(screen.getByTitle("MOOMOO_OPEND")).toHaveTextContent("Moomoo OpenD");
+  expect(document.querySelector('time[datetime="2026-10-06T18:05:23Z"]')).toHaveTextContent(/^(Oct 6 )?14:05(:23)? ET$/);
+  expect(document.querySelector('time[datetime="2026-10-06T18:05:23.500Z"]')).toHaveTextContent(/ ET$/);
+  expect(card.getByTitle("CURRENT")).toHaveTextContent("Current");
+  expect(card.getByTitle("ADMISSIBLE")).toHaveTextContent("Admissible");
+  expect(card.getByTitle("CURRENT_MARKET")).toHaveTextContent("Current market");
 });

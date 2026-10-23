@@ -1,5 +1,8 @@
+import { codeWords, distinctJoin, exchangeText, fieldDigits, filterText, fixedText, msIso, priceText, sessionHint, sessionText, stampText } from "./screenerText";
 import { useAvailableFilters, useScreenSnapshot } from "./screenerRenderMemo";
-import { currentFreshness, useDecisionNow } from "./DecisionFreshness";
+import { currentFreshness, deliveryText, freshnessText, useDecisionNow } from "./DecisionFreshness";
+import { ConfigureButton } from "./setup/ProviderConfig";
+import { ENV_SWITCHES, HowToTurnOn } from "./setup/Remedy";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -189,8 +192,8 @@ const quoteKeys = new Set(["price", "volume", "bid", "ask", "spread_pct", "base_
 // Load the next server page this many rows before the loaded end is scrolled into view.
 const PREFETCH_ROWS = 60;
 const resultSetChanged = (error: unknown) => (error as { code?: string } | null)?.code === "SCREENER_RESULT_SET_CHANGED";
-// Every universe reads the machine's own wall clock here.
-const clock = (value: string, _universe?: ScreenerUniverse) => new Date(value).toLocaleTimeString();
+// The Screener's one time format (ET); the universe argument stays for callers.
+const clock = (value: string, _universe?: ScreenerUniverse) => stampText(value);
 const COVERAGE_ORDER = ["TREASURY", "CORPORATE", "AGENCY", "MUNICIPAL", "SECURITIZED"];
 const coverageRank = (category: string) => (COVERAGE_ORDER.indexOf(category) + 1) || COVERAGE_ORDER.length + 1;
 export function fieldFor(row: ScreenerRow, key: ColumnKey, quote?: ScreenerQuote) {
@@ -204,18 +207,27 @@ function FreshnessDot({ quote, row }: { quote?: ScreenerQuote; row: ScreenerRow 
   const evidence = quote?.decision_inputs?.[0] ?? row.decision_inputs?.find((item) => (item.covered_fields as string[] | undefined)?.includes("price")) ?? row.decision_inputs?.[0];
   const now = useDecisionNow(quote?.decision_inputs ?? row.decision_inputs);
   if (evidence) {
-    const freshness = currentFreshness(evidence, now).replace(/_/g, " ");
-    const label = `${evidence.delivery_mode.replace(/_/g, " ")} · ${freshness}`;
-    return <span className="screener-row-freshness" aria-label={label} title={`${label} · ${evidence.source ?? "source unavailable"} · ${evidence.basis} · as of ${evidence.as_of ?? "unknown"} · ${evidence.decision_admissibility} · ${evidence.reason_codes.join(" · ")}`}>{freshness}</span>;
+    const state = currentFreshness(evidence, now);
+    const freshness = freshnessText(state);
+    const label = `${deliveryText(evidence.delivery_mode)} · ${freshness}`;
+    const title = distinctJoin([label, evidence.source ?? "source unavailable", codeWords(evidence.basis).toLowerCase(),
+      `as of ${stampText(evidence.as_of ?? null)}`, codeWords(evidence.decision_admissibility).toLowerCase()]);
+    // The words above, then every raw code so it can still be searched.
+    const codes = [evidence.delivery_mode, state, evidence.basis, evidence.decision_admissibility, ...evidence.reason_codes];
+    return <span className="screener-row-freshness" aria-label={label} title={`${title}\nCodes: ${codes.join(", ")}`}>{freshness}</span>;
   }
   if (!quote) return null;
   const label = FRESHNESS[quote.state] ?? "Quote unavailable";
   const detail = [label, quote.reason?.replace(/_/g, " ").toLowerCase(), quote.age_ms != null ? `${Math.round(quote.age_ms / 1000)}s old` : null].filter(Boolean).join(" · ");
   return <i className={`screener-fresh ${FRESHNESS[quote.state] ? quote.state.toLowerCase() : "unavailable"}`} role="img" aria-label={label} title={detail} />;
 }
-function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false) {
+function valueText(field: ScreenerField | undefined, format: (typeof definitions)[number]["format"], signed = false, key?: ColumnKey) {
   if (!field || field.value === null) return "—";
-  if (format === "price") return field.value.toFixed(2);
+  // Quote prices keep four decimals below $1, as Quick Preview does; EPS is an accounting figure and keeps two.
+  if (format === "price") return key === "eps_ttm" ? field.value.toFixed(2) : priceText(field.value);
+  // A column of ratios lines up: RSI 21.4 / 35.4, RVOL 2.30 / 72.17, Short Ratio 0.40 (never "0").
+  const digits = key ? fieldDigits(key) : undefined;
+  if (digits !== undefined) return fixedText(field.value, digits);
   if (format === "percent") return `${signed && field.value > 0 ? "+" : ""}${field.value.toFixed(2)}%`;
   if (format === "rate") return `${field.value.toFixed(3)}%`;
   if (format === "fixed2") return field.value.toFixed(2);
@@ -663,7 +675,8 @@ export function ScreenerPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activityQueries.map((item) => item.dataUpdatedAt).join(","), activityBuckets, universe]);
   // The name under the symbol is dropped when its own column is already on screen.
-  const inlineName = columnVisibility[universe === "CRYPTO" ? "venue" : "company"] !== true;
+  // The name under a symbol is dropped when its own column shows it. Crypto has one venue for every pair and the pair is its own name.
+  const inlineName = universe !== "CRYPTO" && columnVisibility.company !== true;
   const aiScreenerScope = useMemo<AiScreenerScope>(() => ({
     universe, search, sort: effectiveSort, descending, filters, result_set: firstPage?.result_set_id ?? null,
     view, screen: selectedScreenId, settled: query.isSuccess && !query.isFetching && !firstPage?.source_error,
@@ -677,21 +690,24 @@ export function ScreenerPage() {
       const item = row.original;
       if (definition.key === "symbol") return <span className="screener-symbol"><FreshnessDot quote={quotes[item.instrument.instrument_id]} row={item} /><strong>{item.symbol}</strong>
         {newsBadges && <NewsBadge row={newsActivity.rows[item.instrument.instrument_id]} pending={newsActivity.pending.has(item.instrument.instrument_id)}
-          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<AiRowBadge marks={aiMarks} instrumentId={item.instrument.instrument_id} />{inlineName && <small>{universe === "CRYPTO" ? item.venue : item.company}</small>}</span>;
+          symbol={item.symbol} onOpen={() => openNewsFor(item.instrument.instrument_id)} />}<AiRowBadge marks={aiMarks} instrumentId={item.instrument.instrument_id} />{universe === "FUTURES" && item.lead && <span className="screener-front-badge" title="Front (lead) contract for its root">Front</span>}{inlineName && <small>{item.company}</small>}</span>;
       if (textColumns.has(definition.key)) {
         const raw = item[definition.key as TextKey] ?? null;
         // Venue codes arrive market-prefixed ("US_NASDAQ"); the universe already says the market.
-        const value = definition.key === "exchange" && raw ? raw.replace(/^US_/, "") : raw;
+        const value = definition.key === "exchange" ? exchangeText(raw) || null : raw;
         const reason = definition.key === "reference_tenor" && !value && item.reference_reason ? item.reference_reason.replace(/_/g, " ").toLowerCase() : null;
         return <span title={reason ?? definition.title ?? value ?? "Unavailable"}>{value || "—"}</span>;
       }
-      if (definition.key === "lead") return <span>{item.lead ? "Lead" : "—"}</span>;
+      if (definition.key === "lead") return <span title="Front (lead) contract for its root">{item.lead ? "Front" : "—"}</span>;
       const field = fieldFor(item, definition.key, quotes[item.instrument.instrument_id]);
       const tone = definition.key === "change_pct" && field?.value != null
         ? field.value > 0 ? "screener-positive" : field.value < 0 ? "screener-negative" : "" : "";
-      const detail = field ? [field.source, field.state, field.basis, field.provider_as_of || field.as_of ? `observed ${field.provider_as_of ?? field.as_of}` : "observation time unknown", field.received_ns ? `received ${new Date(field.received_ns / 1e6).toISOString()}` : null].filter(Boolean).join(" · ") : "Unavailable";
-      return <span className={tone} title={definition.title ? `${definition.title}\n${detail}` : detail}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
-        ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct")}</span>;
+      const detail = field ? distinctJoin([field.source, field.state && codeWords(field.state).toLowerCase(), field.basis && codeWords(field.basis).toLowerCase(), field.provider_as_of || field.as_of ? `observed ${stampText(field.provider_as_of ?? field.as_of)}` : "observation time unknown", field.received_ns ? `received ${stampText(msIso(field.received_ns / 1e6))}` : null]) : "Unavailable";
+      // The words above, then the raw codes so they can still be searched.
+      const codes = field ? [field.state, field.basis].filter(Boolean).join(", ") : "";
+      const cellTitle = `${definition.title ? `${definition.title}\n` : ""}${detail}${codes ? `\nCodes: ${codes}` : ""}`;
+      return <span className={tone} title={cellTitle}>{universe === "CRYPTO" && definition.format === "price" && field?.value != null
+        ? marketPrice(field.value, item, universe) : valueText(field, definition.format, definition.key === "change_pct", definition.key)}</span>;
     },
   })), [quotes, referenceOnly, universe, newsBadges, newsActivity, inlineName, aiMarks]);
   const table = useReactTable({ data: rows, columns, getCoreRowModel: getCoreRowModel(), getRowId: (row) => row.instrument.instrument_id,
@@ -904,7 +920,8 @@ export function ScreenerPage() {
     if (!definition) return;
     setDraftField(field);
     // A number is screened by a threshold far more often than by an exact value ("Short Float at least 20").
-    const threshold = definition.type === "number" ? definition.operators.find((operator) => operator === "gte" || operator === "gt") : undefined;
+    // "At least" first: the server lists gt before gte, so taking the first match opened at "Greater than".
+    const threshold = definition.type === "number" ? ["gte", "gt"].find((operator) => definition.operators.includes(operator)) : undefined;
     setDraftOperator(existing?.operator ?? threshold ?? definition.operators[0]);
     setDraftValue(existing ? String(Array.isArray(existing.value) ? existing.value[0] : existing.value) : "");
     setDraftSecond(existing && Array.isArray(existing.value) ? String(existing.value[1]) : "");
@@ -997,15 +1014,20 @@ export function ScreenerPage() {
       urlUpdate({ screen: null });
     } catch { setConfigError("Unable to delete this screen."); }
   };
-  const labelFilter = (rule: ScreenerFilter) => {
-    const definition = catalogEntry(rule.field);
-    const operator = { eq: "=", ne: "≠", gt: ">", gte: "≥", lt: "<", lte: "≤", between: "", in: "in", not_in: "not in", contains: "contains" }[rule.operator] ?? rule.operator;
-    const value = Array.isArray(rule.value) ? rule.value.join(rule.operator === "between" ? "–" : ", ") : String(rule.value);
-    return `${definition?.label ?? rule.field} ${operator} ${definition?.unit === "USD" ? "$" : ""}${value}${definition?.unit === "percent" ? "%" : ""}`.replace(/\s+/g, " ").trim();
-  };
-  const rawSession = universe === "FUTURES" ? windowSession ?? firstPage?.market_session : firstPage?.market_session;
-  // Crypto is continuous: "24/7", never an equity session label.
-  const session = rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ").toLowerCase() ?? "—";
+  const labelFilter = (rule: { field: string; operator: string; value: unknown }) => filterText(rule, catalogEntry(rule.field));
+  // Futures read one source only: the quote window's session, which the server derives from the visible contracts'
+  // own market states. The page's PROVIDER_SPECIFIC describes the universe, not the rows, so mixing the two flipped.
+  const rawSession = universe === "FUTURES" ? windowSession : firstPage?.market_session;
+  // One label everywhere (header badge, toolbar, footer). Futures report a session per contract: "Mixed sessions"
+  // names how many visible contracts are in each, instead of a badge that seems to flip on its own.
+  const session = sessionText(rawSession);
+  const sessionCounts = universe === "FUTURES" ? Object.values(quotes).reduce<Record<string, number>>((counts, quote) => {
+    if (quote.session_state) counts[quote.session_state] = (counts[quote.session_state] ?? 0) + 1;
+    return counts;
+  }, {}) : {};
+  const sessionTitle = rawSession === "MIXED" && Object.keys(sessionCounts).length
+    ? `${sessionHint(rawSession)} Visible contracts: ${Object.entries(sessionCounts).map(([state, count]) => `${count} ${sessionText(state).toLowerCase()}`).join(" · ")}.`
+    : sessionHint(rawSession);
   const quoteStates = Object.values(quotes).map((quote) => quote.state);
   const quoteReasons = Object.values(quotes).map((quote) => quote.reason);
   const quoteLabel = quoteError ? "unavailable" :
@@ -1019,7 +1041,7 @@ export function ScreenerPage() {
       <label className="screener-search"><span className="sr-only">Search instruments</span>
         <input ref={searchRef} value={search} onChange={(event) => { setSearch(event.target.value); urlUpdate({ q: event.target.value || null }, true); }}
           onKeyDown={(event) => { if (event.key === "Escape") { setSearch(""); urlUpdate({ q: null }, true); event.currentTarget.blur(); } }}
-          placeholder={universe === "FUTURES" ? "Search root, contract or description /" : universe === "CRYPTO" ? "Search pair, base or quote /" : referenceOnly ? "Search CUSIP, description, type or maturity /" : "Search symbol or name /"} /></label><span className="screener-market-badge" title="Market session">{rawSession === "24_7" ? "24/7" : rawSession?.replace(/_/g, " ") ?? "MARKET"}</span>
+          placeholder={universe === "FUTURES" ? "Search root, contract or description /" : universe === "CRYPTO" ? "Search pair, base or quote /" : referenceOnly ? "Search CUSIP, description, type or maturity /" : "Search symbol or name /"} /></label><span className="screener-market-badge" title={sessionTitle}>{session}</span>
       <ExitPlatformButton className="screener-control" /></header>
     {supportedPanels.has("ai_screener") && <ScreenerErrorBoundary label="AI status" resetKey={universe}>
       <AiStatusStrip scope={aiScreenerScope} onOpen={openAiRail} /></ScreenerErrorBoundary>}
@@ -1034,7 +1056,7 @@ export function ScreenerPage() {
     }}>{(config.data?.universes ?? [
       { id: "US_EQUITIES", label: "US Equities" }, { id: "FUTURES", label: "Futures" }, { id: "US_ETFS", label: "ETFs" },
       { id: "CRYPTO", label: "Crypto" },
-    ]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><span>Session <strong>{session}</strong></span>
+    ]).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label><span title={sessionTitle}>Session <strong>{session}</strong></span>
       <div className="screener-toolbar-end"><button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setScreenOpen(!screenOpen); setColumnOpen(false); setFilterOpen(false); }} aria-expanded={screenOpen} aria-haspopup="dialog">{selectedName}{changed ? " *" : ""} ▾</button>
         <button type="button" className="screener-control screener-primary" disabled={!config.data?.persistence_available} onClick={(event) => { transientTrigger.current = event.currentTarget; setSaveName(selectedSaved?.name ?? ""); setSaveMode(selectedSaved ? "save" : "save-as"); }}>Save</button>
         <button type="button" className="screener-control" onClick={(event) => { transientTrigger.current = event.currentTarget; setColumnOpen(!columnOpen); setFilterOpen(false); setScreenOpen(false); }} aria-expanded={columnOpen} aria-haspopup="dialog">Columns</button>
@@ -1066,7 +1088,12 @@ export function ScreenerPage() {
     {screenOpen && <div ref={popoverRef} className="screener-popover screener-screen-popover" role="dialog" aria-label="Saved screens">
       <button type="button" className="screener-popover-close" onClick={() => closeTransient()} aria-label="Close saved screens">×</button>
       <h3>My Screens</h3>{config.data?.saved.length ? config.data.saved.map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe, view: null, sort: null, dir: null }); closeTransient(); }}>{item.name} · {config.data?.universes?.find((spec) => spec.id === item.universe)?.label ?? item.universe}</button>) : <span className="screener-popover-note">No personal screens</span>}
-      <h3>Built-in</h3>{config.data?.presets.map((item) => <button key={item.id} type="button" disabled={item.status !== "SUPPORTED"} title={item.reason ?? undefined} onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); closeTransient(); }}>{item.name}{item.status !== "SUPPORTED" ? " · unavailable" : ""}</button>)}
+      <h3>Built-in</h3>{config.data?.presets.filter((item) => item.status === "SUPPORTED").map((item) => <button key={item.id} type="button" onClick={() => { loadedScreen.current = null; setSelectedScreenId(item.id); urlUpdate({ screen: item.id, universe: item.universe ?? "US_EQUITIES", view: null, sort: null, dir: null }); closeTransient(); }}>{item.name}</button>)}
+      {/* Screens that cannot run yet say why in the list itself, not only on hover; no setting turns them on. */}
+      {config.data?.presets.some((item) => item.status !== "SUPPORTED") && <><h3>Not available yet</h3>
+        {config.data.presets.filter((item) => item.status !== "SUPPORTED").map((item) => <div key={item.id} className="screener-preset-unavailable">
+          <button type="button" disabled aria-describedby={`screener-preset-reason-${item.id}`}>{item.name}</button>
+          <small id={`screener-preset-reason-${item.id}`}>{item.reason ?? "Its condition needs data the universe snapshot does not carry."}</small></div>)}</>}
       {selectedSaved && <div className="screener-popover-actions"><button type="button" onClick={() => { setSaveName(selectedSaved.name); setSaveMode("rename"); setScreenOpen(false); }}>Rename</button><button type="button" onClick={() => { void removeSaved(); }}>Delete</button></div>}
       {selectedPreset && changed && <button type="button" onClick={() => { setFilters(selectedPreset.filters); setView("Overview"); setColumnVisibility(viewVisibility("Overview", activeViews)); closeTransient(); }}>Reset preset</button>}
     </div>}
@@ -1121,15 +1148,18 @@ export function ScreenerPage() {
           <span>{firstPage?.source_error === "NOT_CONFIGURED"
             ? "Finviz access is not configured for this workstation."
             : firstPage?.source_error === "TREASURY_NOT_CONFIGURED"
-              ? "U.S. Treasury Fiscal Data is not enabled for this workstation (set IMP_TREASURY_LIVE=1)."
+              ? "U.S. Treasury Fiscal Data is switched off on this workstation."
             : firstPage?.source_error === "CRYPTO_NOT_CONFIGURED"
-              ? "Kraken public market data is not enabled for this workstation (set IMP_CRYPTO_LIVE=1)."
+              ? "Kraken public market data is switched off on this workstation."
             : firstPage?.source_error === "CLASSIFICATION_UNAVAILABLE"
               ? "ETF membership cannot be verified: the Finviz classification that separates ETFs from REITs and closed-end funds is unavailable."
             : snapshotQuery && firstPage?.source_error
               ? `A complete ${activeSpec?.label ?? "universe"} market snapshot could not be taken, so market filters and sorts cannot be evaluated across the universe. Remove them to browse the catalog.`
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
-          <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>
+          {/* A switched-off or unconfigured source is fixed by a setting, never by retrying; Retry is for failures only. */}
+          {firstPage?.source_error === "NOT_CONFIGURED" ? <ConfigureButton provider="finviz" label="Enter Finviz token" />
+            : firstPage?.source_error && ENV_SWITCHES[firstPage.source_error] ? <HowToTurnOn reason={firstPage.source_error} />
+            : <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>}
         </div> :
         rows.length === 0 ? <div className="screener-message">No instruments match {filters.length ? "these filters or this search" : "this search"}.</div> :
         <div className="screener-virtual" style={{ height: virtualizer.getTotalSize(), width: table.getTotalSize() }}>
@@ -1169,7 +1199,7 @@ export function ScreenerPage() {
       onPointerDown={(event) => { event.preventDefault(); closePreview(); }} />}
     {previewOpen && (!narrow || selectedRow || (aiRailTab === "ai" && aiRequested)) && <RightRail tab={aiRailTab} onTab={setRailTab}
       aiSupported={aiSupported} overlay={narrow} width={previewWidth} paneRef={previewRef} onClose={closePreview}
-      screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openPanel={launchPanel}
+      screenerScope={aiScreenerScope} openInstrument={openAiInstrument} openNews={openAiNews} openPanel={launchPanel} describeFilter={labelFilter}
       preview={(!narrow || selectedRow) && <QuickPreview row={selectedRow} quote={selected ? quotes[selected] : undefined} filters={filters} universe={universe}
         screenLabel={selectedScreenId ? `${selectedName}${changed ? " (modified)" : ""}` : null} overlay={false}
         onClose={closePreview} onOpen={open}
@@ -1206,8 +1236,8 @@ export function ScreenerPage() {
       {firstPage?.coverage && <span title="Categories without a permitted source are reported, never counted">{Object.entries(firstPage.coverage).sort(([a], [b]) => coverageRank(a) - coverageRank(b)).map(([category, item]) =>
         `${category.charAt(0) + category.slice(1).toLowerCase()} ${item.count != null ? item.count.toLocaleString() : "unavailable"}`).join(" · ")}</span>}
       <span>Quotes {!streamingQuotes ? "none · publication data" : universe === "FUTURES" && quoteLabel === "unavailable" && quoteReasons.includes("MOOMOO_QUOTE_NOT_ENTITLED") ? "unavailable · entitlement required" : quoteLabel}</span>
-      <span>Market {session}</span>
+      <span title={sessionTitle}>Session {session}</span>
       <span>Universe {firstPage?.universe_as_of ? <>as of {clock(firstPage.universe_as_of, universe)} (<Age iso={firstPage.universe_as_of} /> ago)</> : "unavailable"}</span>
-      <span>Source {firstPage?.provider_health[0]?.state.toLowerCase() ?? "checking"} · {sourceLabel(activeSpec?.source)}</span></footer>
+      <span title={firstPage?.provider_health[0]?.state}>Source {firstPage?.provider_health[0] ? codeWords(firstPage.provider_health[0].state).toLowerCase() : "checking"} · {sourceLabel(activeSpec?.source)}</span></footer>
   </section>;
 }

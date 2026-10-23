@@ -17,6 +17,9 @@
 - Drawers (the Screener's right rail below 1280px): a dimmed backdrop marks the rest of the page as inactive; Escape or a press on the backdrop closes the drawer and returns focus to where the user was (the grid)
 - Text is never smaller than 11px in the Screener (`screenerTypeScale.test.ts`); controls inherit the page font
 - A tooltip never replaces a control's name: put hints in `aria-describedby`, not `title` on the control
+- A code shown as words keeps the raw code in `title` (the Screener's `<Code>` and `codeWords` in `screenerText.tsx`), so it can still be searched; the words never depend on the tooltip
+- A disabled choice says why in visible text linked by `aria-describedby` (the Screener's "Not available yet" built-in screens), not only in `title`
+- Times are `<time dateTime>` elements (`<Stamp>`): the text reads in ET, the attribute is the exact instant, and the tooltip gives UTC and the machine's local time
 - Color not sole indicator of state (use text/icons/badges)
 - NavShell: `aria-label` on mode-specific link descriptions
 

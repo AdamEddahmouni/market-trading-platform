@@ -80,6 +80,17 @@ class ScreenerFilterTests(unittest.TestCase):
         presets[0]["filters"].clear()
         self.assertTrue(builtin_presets()[0]["filters"])
 
+    def test_each_unsupported_preset_names_the_data_it_needs(self):
+        unsupported = [p for p in builtin_presets() if p["status"] == "UNSUPPORTED"]
+        self.assertTrue(unsupported)
+        reasons = [p["reason"] for p in unsupported]
+        # One specific reason per screen, in words: no shared generic sentence, no internal names.
+        self.assertEqual(len(set(reasons)), len(reasons))
+        for preset in unsupported:
+            with self.subTest(preset=preset["id"]):
+                self.assertTrue(preset["reason"].startswith("Needs "))
+                self.assertNotRegex(preset["reason"], r"[A-Z]{2,}_[A-Z]|contract")
+
     def test_service_applies_filters_before_sort_and_window(self):
         class Source:
             def fetch_export(self, *, filter_expr, columns):

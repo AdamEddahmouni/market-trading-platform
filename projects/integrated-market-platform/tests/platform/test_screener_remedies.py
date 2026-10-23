@@ -40,9 +40,16 @@ class RemedyTextTests(unittest.TestCase):
         self.assertIn("contact email", sec["step"])
         self.assertEqual(sec["action"], {"kind": "CONFIGURE", "provider": "sec", "label": "Set SEC identity"})
         self.assertEqual(remedy_for("IMP_EDGAR_LIVE_NOT_SET")["action"]["provider"], "sec")
+        # A switch-only source says what to do in words; the setting is the line to copy, never part of the sentence.
         for code, flag in (("IMP_NEWS_RSS_LIVE_NOT_SET", "IMP_NEWS_RSS_LIVE=1"), ("FINVIZ_LIVE_DISABLED", "IMP_FINVIZ_LIVE=1"),
                            ("IMP_PUBLIC_RECORDS_LIVE_NOT_SET", "IMP_PUBLIC_RECORDS_LIVE=1")):
-            self.assertIn(flag, remedy_for(code)["step"], code)
+            remedy = remedy_for(code)
+            self.assertEqual(remedy["action"], {"kind": "COMMAND", "command": flag}, code)
+            self.assertNotIn("IMP_", remedy["step"], code)
+            self.assertIn("restart the API", remedy["step"], code)
+        no_news = remedy_for("NO_NEWS_PROVIDER_CONFIGURED")
+        self.assertNotIn("IMP_", no_news["step"])
+        self.assertEqual(no_news["action"], {"kind": "COMMAND", "command": "IMP_NEWS_RSS_LIVE=1"})
         self.assertEqual(remedy_for("IMP_NEWSAPI_LIVE_NOT_SET")["action"],
                          {"kind": "CONFIGURE", "provider": "newsapi", "label": "Enter key"})
 
@@ -94,7 +101,9 @@ class FeedRemedyTests(unittest.TestCase):
         payload = service(rss_env={}).feed(universe="US_ETFS")
         rss = next(item for item in payload["providers"] if item["id"] == "rss")
         self.assertEqual(rss["state"], "LIVE_DISABLED")
-        self.assertIn("IMP_NEWS_RSS_LIVE=1", rss["remedy"]["step"])
+        # Sprint 3 item 30: the step is words; the setting is the command to copy.
+        self.assertNotIn("IMP_", rss["remedy"]["step"])
+        self.assertEqual(rss["remedy"]["action"], {"kind": "COMMAND", "command": "IMP_NEWS_RSS_LIVE=1"})
 
     def test_sentiment_model_status_carries_remedy(self):
         payload = service(sentiment=FinbertSentiment(model_path="")).feed(universe="US_EQUITIES")

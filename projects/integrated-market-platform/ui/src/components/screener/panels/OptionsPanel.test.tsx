@@ -247,6 +247,8 @@ describe("S7 Options panel", () => {
     fireEvent.click(launcher().getByRole("button", { name: "Options" }));
     fireEvent.click(launcher().getByRole("button", { name: "CVD" }));
     expect(await screen.findByText("Options source not configured for this workstation.")).toBeInTheDocument();
+    // Sprint 3 item 32: one state badge, in the frame's header; never a second copy beside it.
+    expect(screen.getByRole("region", { name: "Options for AAPL" }).querySelectorAll(".screener-panel-state")).toHaveLength(1);
     await selectRow("NVDA");
     expect(await screen.findByText("No current option contracts returned for this instrument.")).toBeInTheDocument();
     await selectRow("TSLA");

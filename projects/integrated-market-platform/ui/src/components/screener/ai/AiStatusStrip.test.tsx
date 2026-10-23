@@ -53,6 +53,7 @@ const onOpen = vi.fn();
 const mount = (value = scope) => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
   <AiStatusStrip scope={value} onOpen={onOpen} /></QueryClientProvider>);
 const strip = () => screen.getByRole("region", { name: "AI status" });
+const mainLine = () => strip().querySelector(".ai-strip-main")!;
 
 beforeEach(() => {
   api.loop.mockResolvedValue(loop("NOT_CONFIGURED", "Not configured"));
@@ -101,7 +102,8 @@ describe("AI status strip", () => {
       coverage: coverage({ status: "AI_COVERAGE_BUDGET_INSUFFICIENT", ai_evaluated_count: 0, ai_coverage_pct: 0, eligible_count: 4_605, batches_planned: 93, batches_completed: 0,
         coverage_complete: false, selection_complete: false }) }) }));
     const view = mount();
-    await waitFor(() => expect(strip()).toHaveTextContent("last pass 09:58:12 ET incomplete · 0 of 4,605 eligible rows AI-evaluated (today's budget cannot pay for every eligible row plus the global comparison (AI_COVERAGE_BUDGET_INSUFFICIENT))"));
+    await waitFor(() => expect(strip()).toHaveTextContent("last pass 09:58:12 ET incomplete · 0 of 4,605 eligible rows AI-evaluated (today's budget cannot pay for every eligible row plus the global comparison)"));
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: AI_COVERAGE_BUDGET_INSUFFICIENT"));
     expect(strip()).not.toHaveTextContent("selected ·");
     view.unmount();
     api.runs.mockResolvedValue(status({ interrupted: [{ run_id: "dead", status: "INTERRUPTED", reason: "SERVER_RESTARTED_DURING_RUN", finished_at: "2026-10-07T13:00:00Z",
@@ -110,25 +112,28 @@ describe("AI status strip", () => {
     await waitFor(() => expect(strip()).toHaveTextContent("Interrupted · the server restarted during the run · 2 model calls had finished · 1 had no recorded outcome and stays charged. Nothing was resumed."));
   });
 
-  it("states an expired result, a failed pass and a pass that gave no result in plain words with the code", async () => {
+  it("states an expired result, a failed pass and a pass that gave no result in plain words, with the code on hover", async () => {
     api.runs.mockResolvedValue(status({ latest: finished({ state: "CURRENT", selected: picked, valid_until: ahead(-5_000) }) }));
     const view = mount();
     await waitFor(() => expect(strip()).toHaveTextContent("2 selected · 150 AI-evaluated of 4,630 rows · evidence expired · automatic passes not configured"));
     view.unmount();
     api.runs.mockResolvedValue(status({ latest: run({ state: "FAILED", stage: null, finished_at: "2026-10-07T13:58:12Z", error: { code: "EVIDENCE_PACKET_BOUND_EXCEEDED", stage: "PACKET" } }) }));
     const second = mount();
-    await waitFor(() => expect(strip()).toHaveTextContent("Idle · last pass 09:58:12 ET failed (too much evidence for one call (EVIDENCE_PACKET_BOUND_EXCEEDED))"));
+    await waitFor(() => expect(strip()).toHaveTextContent("Idle · last pass 09:58:12 ET failed (too much evidence for one call)"));
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: EVIDENCE_PACKET_BOUND_EXCEEDED"));
     second.unmount();
     api.runs.mockResolvedValue(status({ latest: finished({ state: "UNAVAILABLE", reason: "SYNTHESIS_DAILY_TOKEN_LIMIT", coverage: null }) }));
     mount();
-    await waitFor(() => expect(strip()).toHaveTextContent("last pass 09:58:12 ET gave no result (the run would exceed today's token budget (SYNTHESIS_DAILY_TOKEN_LIMIT))"));
+    await waitFor(() => expect(strip()).toHaveTextContent("last pass 09:58:12 ET gave no result (the run would exceed today's token budget)"));
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: SYNTHESIS_DAILY_TOKEN_LIMIT"));
   });
 
   it("waiting for budget: says why and when the budget resets, and offers no run", async () => {
     api.runs.mockResolvedValue(status({ state: "WAITING_FOR_BUDGET", ai: { state: "UNAVAILABLE", reason: "SYNTHESIS_DAILY_BUDGET_EXHAUSTED", provider_id: "anthropic.messages",
       model_id: "claude-haiku-4-5", runtime: "PAID_API" }, budget: { ...budget, tokens: 200_000, headroom: 0, runs_left: 0 } }));
     mount();
-    await waitFor(() => expect(strip()).toHaveTextContent(/Waiting for budget · today's model budget is used up \(SYNTHESIS_DAILY_BUDGET_EXHAUSTED\) · resets \d\d:\d\d:\d\d ET \(in (4:59:5\d|5:00:00)\)/));
+    await waitFor(() => expect(strip()).toHaveTextContent(/Waiting for budget · today's model budget is used up · resets \d\d:\d\d:\d\d ET \(in (4:59:5\d|5:00:00)\)/));
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: SYNTHESIS_DAILY_BUDGET_EXHAUSTED"));
     expect(within(strip()).queryByRole("button", { name: "Run now" })).toBeNull();
   });
 
@@ -141,12 +146,17 @@ describe("AI status strip", () => {
   it("blocked and not configured name the reason; a local model has no API cost", async () => {
     api.runs.mockResolvedValue(status({ state: "BLOCKED", budget: null, ai: { state: "UNAVAILABLE", reason: "LOCAL_MODEL_UNREACHABLE", provider_id: "local", model_id: "small", runtime: "LOCAL_MODEL" } }));
     const view = mount();
-    await waitFor(() => expect(strip()).toHaveTextContent("Blocked · LOCAL_MODEL_UNREACHABLE"));
+    await waitFor(() => expect(strip()).toHaveTextContent("Blocked · local model unreachable"));
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: LOCAL_MODEL_UNREACHABLE"));
     expect(strip()).toHaveTextContent("Local model · no API cost");
+    // Sprint 3 item 29: no internal names on the strip itself.
+    expect(strip()).not.toHaveTextContent(/LOCAL_MODEL|\([A-Z][A-Z0-9]+(_[A-Z0-9]+)+\)|\d{4}-\d{2}-\d{2}T/);
     view.unmount();
     api.runs.mockResolvedValue(status({ state: "NOT_CONFIGURED", budget: null, ai: { state: "NOT_CONFIGURED", reason: "ANTHROPIC_API_KEY_NOT_SET", provider_id: null, model_id: null, runtime: null } }));
     mount();
-    await waitFor(() => expect(strip()).toHaveTextContent("Not configured · no API key is set for the selected engine (ANTHROPIC_API_KEY_NOT_SET)"));
+    await waitFor(() => expect(strip()).toHaveTextContent("Not configured · no API key is set for the selected engine"));
+    expect(strip()).not.toHaveTextContent("ANTHROPIC_API_KEY_NOT_SET");
+    expect(mainLine()).toHaveAttribute("title", expect.stringContaining("Reason code: ANTHROPIC_API_KEY_NOT_SET"));
     expect(strip().querySelector(".ai-strip-budget")).toBeNull();
     expect(within(strip()).queryByRole("button", { name: "Run now" })).toBeNull();
   });
@@ -258,9 +268,9 @@ describe("strip wording helpers", () => {
     expect(countdown(3_723_000)).toBe("1:02:03");
   });
 
-  it("keeps the code beside the plain words and passes unknown codes through", () => {
-    expect(plainReason("EVIDENCE_PACKET_BOUND_EXCEEDED")).toBe("too much evidence for one call (EVIDENCE_PACKET_BOUND_EXCEEDED)");
-    expect(plainReason("SOMETHING_NEW")).toBe("SOMETHING_NEW");
+  it("reads known codes as plain words and unknown codes as words, never with the code appended", () => {
+    expect(plainReason("EVIDENCE_PACKET_BOUND_EXCEEDED")).toBe("too much evidence for one call");
+    expect(plainReason("SOMETHING_NEW")).toBe("something new");
     expect(plainReason(null)).toBe("no reason reported");
   });
 });

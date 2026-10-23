@@ -1,5 +1,77 @@
 # IMP Work Log
 
+## 2026-10-22 — Screener Sprint 3: plain language and formatting
+
+Items 27–35 and 40–43 of the 2026-10-22 visual pass, stacked on Sprint 2.
+Wording and formatting only: no methodology, AI or Paper behaviour changes.
+Each raw code stays in a tooltip, so it can still be searched.
+
+- **Shared text (`screenerText.tsx`).** `codeWords` reads a code as words
+  (`FUTURE_CONTRACT` → "Future contract") and `<Code>` keeps the code in
+  `title`. `stampText` / `<Stamp>` give one time format, always ET 24-hour
+  ("14:03:38 ET" today, "Oct 21 14:03 ET" on another day), with UTC and the
+  machine's clock on hover. `sessionText`, `filterText`, `exchangeText`,
+  `universeText` and `distinctJoin` replace per-panel copies.
+  `screenerTimeFormat.test.ts` fails on raw `toLocaleTimeString`,
+  `toLocaleString()` or `toISOString()` in Screener sources.
+- **Times in ET everywhere (33).** Crypto included (owner's choice):
+  `marketClock` always returns ET, and the crypto preview, participants, news,
+  bonds and rates panels use `stampText`.
+- **Freshness (27).** `DecisionFreshness` is one collapsed "Data freshness"
+  section below the content, with a roll-up badge ("All current", "2 stale ·
+  1 unavailable", worst first). Each input reads as one line in words; its
+  record is one level down. `PanelFrame` also shows the roll-up in the header
+  when an input is not current. The server's eligibility logic is unchanged.
+- **Cross-Asset (28) and AI (29).** Asset classes, kinds, states,
+  relationships, bases and versions read as words. The AI strip no longer
+  appends "(CODE)": the code is in the line's tooltip. The workspace shows
+  filters as chip text, not JSON; names the engine as "Local model" or by its
+  label, not by provider id or `LOCAL_MODEL`; and names the other run's scope
+  in words.
+- **Switched-off sources (30, 42).** The API remedy is words plus a COMMAND
+  action with the setting (`screener_remedies._flag`). Finviz
+  `NOT_CONFIGURED` shows "Enter Finviz token". A source switched off by an
+  environment setting shows a collapsed "How to turn it on" (`HowToTurnOn`,
+  `ENV_SWITCHES`). "Retry source" is only offered for other errors. PR D adds
+  Setup switches for the keyless sources.
+- **Session (31).** One label in the header, toolbar and footer. Futures read
+  only the quote window's session, which describes the visible contracts.
+  "Mixed sessions" has a tooltip with a count per session. An unknown session
+  reads "Unknown" everywhere (it was "Market" in the header, "—" in the
+  footer, and "Session Session unknown" for Crypto).
+- **Repeats (32).** Options shows one state badge. Institutional states a
+  source reason shared by several sections once (`SharedReasonContext`).
+  Flow history says "nothing captured in this range yet" instead of "—–—".
+  Grid tooltips drop repeated parts ("snapshot · snapshot").
+- **Numbers (34).** Fixed decimals per field (RSI 1; RVOL, P/E, Short Ratio 2,
+  with "<0.01" for tiny non-zero values). Prices under $1 show 4 decimals in
+  the grid and Quick Preview alike.
+- **Columns (35).** The futures lead contract is a "Front" badge in the symbol
+  cell, and crypto venue is named once in the footer. Both left the default and
+  Overview views. They stay in Contract and Liquidity, because a field outside
+  every view could not be a saved column or sort.
+- **Built-in screens (40).** The five that cannot run have their own reason
+  from the server (`_UNSUPPORTED_REASONS`). They are listed under "Not available
+  yet", with the reason shown inline and linked by `aria-describedby`.
+- **Price filter (41).** A new number filter opens at "At least". The server
+  lists `gt` before `gte`, so the old first-match rule opened at "Greater
+  than".
+- **News (43).** The Type column was empty for almost every story, so it is
+  gone; the "Official filing" badge sits before the headline. Provider notices
+  state each provider in words, with the reason codes on hover. The footer
+  reads "Source not configured", not "not_configured".
+- Tests:
+  - updated pins: DecisionFreshness, the AI strip, workspace and history,
+    Bonds, Crypto, Participants, Connectivity and ScreenerPage;
+  - new component tests for each item;
+  - Python: per-preset reasons, the view change, and that Finviz "-" parses
+    to missing.
+
+  `validate changed` passed: 2,125 tests, 8 skipped, 0 failures.
+- Checked in a browser at 1600×900, 1280×720 and 800×600 against the isolated
+  backend. Data-dependent items need a live check after the next release:
+  freshness inputs, Cross-Asset, AI results, and the Futures mixed session.
+
 ## 2026-10-22 — Screener Sprint 2: layout
 
 Items 19–26 of the 2026-10-22 visual pass, stacked on the right-rail AI tab

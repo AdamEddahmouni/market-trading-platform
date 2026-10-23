@@ -42,7 +42,9 @@ def _configure(provider: str, label: str = "Configure") -> dict[str, Any]:
 
 
 def _flag(flag: str, what: str) -> dict[str, Any]:
-    return _remedy(f"{what} is switched off", f"Set {flag}=1 in the API environment, {RESTART}.")
+    """A source switched on only by an API environment setting. The step is words; the setting is the command to copy."""
+
+    return _remedy(f"{what} is switched off", f"Add the line below to the API environment, {RESTART}.", _command(f"{flag}=1"))
 
 
 def _key(title: str, step: str, provider: str, label: str = "Enter key") -> dict[str, Any]:
@@ -84,7 +86,8 @@ REMEDIES: dict[str, dict[str, Any]] = {
     "IMP_PUBLIC_RECORDS_LIVE_NOT_SET": _flag("IMP_PUBLIC_RECORDS_LIVE", "Public records"),
     "IMP_SENATE_EFD_LIVE_NOT_SET": _flag("IMP_SENATE_EFD_LIVE", "Automatic Senate eFD downloads"),
     "NO_NEWS_PROVIDER_CONFIGURED": _remedy("No news provider is switched on",
-                                           f"Enable at least one source (RSS is free: IMP_NEWS_RSS_LIVE=1), {RESTART}."),
+                                           f"Switch on at least one source. Public RSS feeds are free: add the line below to the "
+                                           f"API environment, {RESTART}.", _command("IMP_NEWS_RSS_LIVE=1")),
     # Keys
     "NEWSAPI_API_KEY_NOT_SET": _key("NewsAPI has no key", "Save a free Developer key in Setup.", "newsapi"),
     "FINNHUB_API_KEY_NOT_SET": _key("Finnhub has no key", "Save a free account key in Setup.", "finnhub"),

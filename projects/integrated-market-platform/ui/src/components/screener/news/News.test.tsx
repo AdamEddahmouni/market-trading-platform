@@ -248,7 +248,13 @@ describe("S11 Screener News view", () => {
     expect(within(table).getByText("Negative")).toBeInTheDocument();
     expect(within(table).getByText("not scored")).toBeInTheDocument();
     expect(within(table).getByText("model not configured")).toBeInTheDocument();
-    expect(within(table).getByText("Official filing")).toBeInTheDocument();
+    // Sprint 3 item 28: no reason codes in visible text.
+    expect(document.body.innerText ?? document.body.textContent).not.toMatch(/\b[A-Z]{2,}(_[A-Z0-9]+)+\b(?!=)/);
+    // Sprint 3 item 43: no Type column (it was empty for almost every story); the filing badge sits before its headline.
+    expect(within(table).getAllByRole("columnheader").map((item) => item.textContent)).toEqual(["Time", "Instruments", "Headline", "Source", "Category", "Sentiment"]);
+    const filing = within(table).getByText("Official filing");
+    expect(filing.closest(".news-headline-line")).toHaveTextContent(/^Official filing.*Form 8-K filed/);
+    expect(within(table).getAllByText("Official filing")).toHaveLength(1);
     // A context match is distinguished by text, not colour alone.
     expect(within(table).getByRole("button", { name: /Filter news by NVDA \(exact entity · context match/ })).toHaveTextContent("NVDA ctx");
     expect(within(table).queryByText(/bullish|bearish|buy|sell/i)).toBeNull();
@@ -297,7 +303,9 @@ describe("S11 Screener News view", () => {
     expect(screen.getByText("Sentiment model").parentElement).toHaveTextContent("Sentiment model not configured");
     // Partial: the not-current providers are named, never folded into "available".
     const notice = screen.getByText("Partial coverage").parentElement!;
-    expect(notice).toHaveTextContent(/NewsAPI \(not configured · IMP_NEWSAPI_LIVE_NOT_SET\); Finnhub \(rate limited · HTTP_429\)/);
+    // Sprint 3 item 28: states in words; the reason codes stay on hover.
+    expect(notice).toHaveTextContent(/NewsAPI \(not configured\); Finnhub \(rate limited\)/);
+    expect(within(notice).getByTitle("IMP_NEWSAPI_LIVE_NOT_SET, HTTP_429")).toBeInTheDocument();
   });
 
   it("names a delayed development-plan provider with its terms and a loading local model", async () => {
@@ -335,7 +343,8 @@ describe("S11 Screener News view", () => {
     const alert = await screen.findByRole("alert");
     expect(alert).toHaveTextContent("News providers are not configured for US Equities");
     expect(alert).toHaveTextContent("not an absence of news");
-    expect(alert).toHaveTextContent("Finviz Elite (not configured · FINVIZ_TOKEN_NOT_SET)");
+    expect(alert).toHaveTextContent("Finviz Elite (not configured)");
+    expect(within(alert).getByTitle(/FINVIZ_TOKEN_NOT_SET/)).toBeInTheDocument();
     expect(screen.queryByText(/No stories in this window/)).toBeNull();
   });
 

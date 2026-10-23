@@ -1,3 +1,4 @@
+import { stampText } from "../screenerText";
 import { useQuery } from "@tanstack/react-query";
 import type { IDockviewPanelProps } from "dockview-react";
 import { fetchRatesCurve, type FredItem, type NyFedRate, type RatesCurvePayload } from "../../../api/screenerBonds";
@@ -113,7 +114,7 @@ export default function RatesCurvePanel({ api }: IDockviewPanelProps) {
             <h3>Source clocks</h3>
             <ul className="bond-sources">{data.sources.map((source) => <li key={source.id}><span>{source.label}</span>
               <span className={`bond-source-state ${(source.state ?? "unavailable").toLowerCase()}`}>{sourceState(source)}</span>
-              <small>{source.as_of ? (source.as_of.length > 10 ? new Date(source.as_of).toLocaleString() : isoDate(source.as_of)) : reasonLabel(source.reason)}</small></li>)}</ul>
+              <small>{source.as_of ? (source.as_of.length > 10 ? stampText(source.as_of) : isoDate(source.as_of)) : reasonLabel(source.reason)}</small></li>)}</ul>
           </section>
         </div>
       </div>}

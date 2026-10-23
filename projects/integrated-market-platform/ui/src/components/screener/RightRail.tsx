@@ -33,6 +33,8 @@ type Props = {
   openInstrument: (instrumentId: string) => void;
   openNews?: (instrumentId: string, identity: Record<string, string>) => void;
   openPanel?: (id: PanelId) => void;
+  /** The Screener's own filter chip text, so the AI tab names filters the same way. */
+  describeFilter?: (rule: { field: string; operator: string; value: unknown }) => string;
 };
 
 /**
@@ -40,7 +42,7 @@ type Props = {
  * mounts on first visit and then stays mounted while hidden, so switching tabs keeps a run's progress and any open
  * decision on screen.
  */
-export default function RightRail({ tab, onTab, aiSupported, overlay, width, paneRef, onClose, preview, screenerScope, openInstrument, openNews, openPanel }: Props) {
+export default function RightRail({ tab, onTab, aiSupported, overlay, width, paneRef, onClose, preview, screenerScope, openInstrument, openNews, openPanel, describeFilter }: Props) {
   const active = aiSupported ? tab : "preview";
   const [aiMounted, setAiMounted] = useState(active === "ai");
   useEffect(() => { if (active === "ai") setAiMounted(true); }, [active]);
@@ -72,7 +74,7 @@ export default function RightRail({ tab, onTab, aiSupported, overlay, width, pan
       }}>
       {aiMounted && <ScreenerErrorBoundary label="AI Screener">
         <Suspense fallback={<PanelMessage>Loading AI Screener…</PanelMessage>}>
-          <AiScreenerWorkspace visible={active === "ai"} screenerScope={screenerScope} openInstrument={openInstrument} openNews={openNews} openPanel={openPanel} />
+          <AiScreenerWorkspace visible={active === "ai"} screenerScope={screenerScope} openInstrument={openInstrument} openNews={openNews} openPanel={openPanel} describeFilter={describeFilter} />
         </Suspense>
       </ScreenerErrorBoundary>}
     </div>}

@@ -385,6 +385,71 @@ describe("ScreenerPage", () => {
     mount();
     expect(await screen.findByRole("alert")).toHaveTextContent("Screener source unavailable");
     expect(screen.getByRole("alert")).toHaveTextContent("Finviz access is not configured");
+    // Sprint 3 item 42: a configuration error is fixed in Setup, never by retrying.
+    expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: /Enter Finviz token/ })).toBeInTheDocument();
+  });
+
+  it("lists built-in screens that cannot run in their own group, each with its reason inline", async () => {
+    const reason = "Needs the pre-market gap and a catalyst flag, which the universe snapshot does not carry.";
+    mocks.config.mockResolvedValue({ ...(await mocks.config()), presets: [
+      { id: "UNUSUAL_VOLUME_DISCOVERY", name: "Unusual Volume", version: "1.0.0", status: "SUPPORTED", reason: null, filters: [{ id: "u", field: "rel_volume", operator: "gt", value: 2 }] },
+      { id: "GAP_CATALYST_DISCOVERY", name: "Gap / Catalyst", version: "1.0.0", status: "UNSUPPORTED", reason, filters: [] }] });
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Unsaved Screen/ }));
+    const dialog = screen.getByRole("dialog", { name: "Saved screens" });
+    expect(within(dialog).getByRole("heading", { name: "Not available yet" })).toBeInTheDocument();
+    const gap = within(dialog).getByRole("button", { name: "Gap / Catalyst" });
+    expect(gap).toBeDisabled();
+    expect(gap).toHaveAccessibleDescription(reason);
+    expect(within(dialog).getByText(reason)).toBeVisible();
+    expect(dialog).not.toHaveTextContent("· unavailable");
+    expect(within(dialog).getByRole("button", { name: "Unusual Volume" })).toBeEnabled();
+  });
+
+  it("opens a new Price filter at At least, never Equals", async () => {
+    mocks.config.mockResolvedValue({ ...(await mocks.config()), catalog: [{ field: "price", label: "Price", category: "Price & Movement", type: "number",
+      unit: "USD", operators: ["eq", "gt", "gte", "lt", "lte", "between"], universes: ["US_EQUITIES"], availability: "SNAPSHOT" }] });
+    mount();
+    await screen.findByText("AAPL");
+    fireEvent.click(screen.getByRole("button", { name: /Add Filter/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Price" }));
+    const operator = screen.getByRole("combobox", { name: "Filter operator" }) as HTMLSelectElement;
+    expect(operator.value).toBe("gte");
+    expect(operator.selectedOptions[0]).toHaveTextContent("At least");
+  });
+
+  it("names the session once, the same way in the header, toolbar and footer", async () => {
+    mount();
+    await screen.findByText("AAPL");
+    expect(document.querySelector(".screener-market-badge")).toHaveTextContent(/^Regular session$/);
+    const sessions = Array.from(document.querySelectorAll("span[title]")).filter((item) => /^Session /.test(item.textContent ?? ""));
+    expect(sessions.map((item) => item.textContent)).toEqual(["Session Regular session", "Session Regular session"]);
+    expect(document.body.textContent).not.toMatch(/\bREGULAR\b/);
+  });
+
+  it("Futures: the session comes from the visible contracts only, Mixed explains itself, and the lead contract is a Front badge", async () => {
+    mockS5();
+    mocks.window.mockResolvedValue({ market_session: "MIXED", active: 0, cap: 32, quotes: {
+      "XA01-FUTURE-ESZ26": { state: "UNAVAILABLE", reason: "PROVIDER_UNAVAILABLE", fields: {}, session_state: "TRADING" },
+      "XA01-FUTURE-NQZ26": { state: "UNAVAILABLE", reason: "PROVIDER_UNAVAILABLE", fields: {}, session_state: "CLOSED" } } });
+    mount("/screener?universe=FUTURES");
+    await screen.findByText("ESZ26");
+    const badge = document.querySelector(".screener-market-badge")!;
+    await waitFor(() => expect(badge).toHaveTextContent(/^Mixed sessions$/));
+    expect(badge.getAttribute("title")).toContain("Visible contracts: 1 trading · 1 market closed.");
+    // The page's universe-wide PROVIDER_SPECIFIC never shows once the window has answered.
+    expect(document.body.textContent).not.toMatch(/Per contract|PROVIDER_SPECIFIC|PROVIDER SPECIFIC/);
+    const sessions = Array.from(document.querySelectorAll("span[title]")).filter((item) => /^Session /.test(item.textContent ?? ""));
+    expect(sessions.map((item) => item.textContent)).toEqual(["Session Mixed sessions", "Session Mixed sessions"]);
+    expect(within(rowOf("ESZ26") as HTMLElement).getByText("Front", { selector: ".screener-front-badge" })).toHaveAttribute("title", "Front (lead) contract for its root");
+  });
+
+  it("offers Retry for a transient source failure and refreshes on it", async () => {
+    mocks.fetch.mockResolvedValueOnce({ ...payload, rows: [], result_count: 0, source_error: "PROVIDER_UNAVAILABLE" });
+    mount();
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not be refreshed");
     fireEvent.click(screen.getByRole("button", { name: "Retry source" }));
     await waitFor(() => expect(mocks.fetch).toHaveBeenCalledWith(...called({ sort: "volume" }, { refresh: true })));
     await waitFor(() => expect(screen.getByText("AAPL")).toBeInTheDocument(), { timeout: 3_000 });
@@ -535,9 +600,11 @@ describe("ScreenerPage", () => {
     mount();
     await screen.findByText("AAPL");
     const badge = document.querySelector(".screener-row-freshness")!;
-    expect(badge).toHaveTextContent(/^UNKNOWN$/);
-    expect(badge).toHaveAttribute("aria-label", "PUBLICATION BASED · UNKNOWN");
-    expect(badge).toHaveAttribute("title", expect.stringContaining("PUBLICATION BASED · UNKNOWN · Finviz Elite · SNAPSHOT_TIME"));
+    // Sprint 3 item 27: words on the badge and in its name; the tooltip reads in words, then lists the raw codes.
+    expect(badge).toHaveTextContent(/^freshness unknown$/);
+    expect(badge).toHaveAttribute("aria-label", "published · freshness unknown");
+    expect(badge).toHaveAttribute("title", expect.stringContaining("published · freshness unknown · Finviz Elite · snapshot time"));
+    expect(badge).toHaveAttribute("title", expect.stringContaining("Codes: PUBLICATION_BASED, UNKNOWN, SNAPSHOT_TIME, DEGRADED, NO_PROVIDER_CLOCK"));
   });
 
   it("keeps the search hint to one space before the slash", async () => {
