@@ -242,6 +242,108 @@ class SecretCredentialTests(StoreCase):
         self.assertNotIn("IMP_BROKER_PAPER_EXECUTION", managed_names())
 
 
+class SwitchTests(StoreCase):
+    """Keyless public sources: one observational gate, switched from Setup (PR D)."""
+
+    def test_switch_on_and_off_writes_one_line_and_keeps_every_other_line(self) -> None:
+        self.private.write_text(f"# operator notes\nFINNHUB_API_KEY={SECRET}\nUNREGISTERED_THING=1\n", encoding="utf-8")
+        store = self.store()
+        result = store.switch("treasury", True)
+        self.assertEqual((result["switch"], result["gates_enabled"], result["gates_removed"]), ("ON", ["IMP_TREASURY_LIVE"], []))
+        self.assertEqual(result["applies"], "NEXT_REQUEST")
+        self.assertEqual(self.environ["IMP_TREASURY_LIVE"], "1")
+        text = self.private.read_text(encoding="utf-8")
+        self.assertIn("IMP_TREASURY_LIVE=1", text)
+        for kept in ("# operator notes", f"FINNHUB_API_KEY={SECRET}", "UNREGISTERED_THING=1"):
+            self.assertIn(kept, text)
+        payload = store.payload()
+        self.assertEqual(_provider(payload, "treasury")["state"], "ON")
+        self.assertEqual(_provider(payload, "treasury")["switch"],
+                         {"name": "IMP_TREASURY_LIVE", "on": True, "source": "PRIVATE_FILE", "editable": True})
+        # The response carries names only.
+        self.assertNotIn(SECRET, json.dumps(result))
+
+        result = store.switch("treasury", False)
+        self.assertEqual((result["switch"], result["gates_enabled"], result["gates_removed"]), ("OFF", [], ["IMP_TREASURY_LIVE"]))
+        self.assertNotIn("IMP_TREASURY_LIVE", self.private.read_text(encoding="utf-8"))
+        self.assertNotIn("IMP_TREASURY_LIVE", self.environ)
+        self.assertEqual(_provider(store.payload(), "treasury")["state"], "OFF")
+        self.assertIn(f"FINNHUB_API_KEY={SECRET}", self.private.read_text(encoding="utf-8"))
+
+    def test_switching_to_the_current_state_changes_nothing(self) -> None:
+        store = self.store()
+        self.assertEqual(store.switch("kraken", False)["gates_removed"], [])
+        self.assertFalse(self.private.exists())
+        store.switch("kraken", True)
+        self.assertEqual(store.switch("kraken", True)["gates_enabled"], [])
+
+    def test_off_overrides_a_repository_env_file_that_switches_it_on(self) -> None:
+        self.env_file.write_text("IMP_CRYPTO_LIVE=1\n", encoding="utf-8")
+        store = self.store()
+        self.assertEqual(_provider(store.payload(), "kraken")["state"], "ON")
+        store.switch("kraken", False)
+        self.assertIn("IMP_CRYPTO_LIVE=0", self.private.read_text(encoding="utf-8"))
+        self.assertEqual(_provider(store.payload(), "kraken")["state"], "OFF")
+
+    def test_a_gate_the_environment_sets_is_refused_and_reported_read_only(self) -> None:
+        self.environ["IMP_NEWS_RSS_LIVE"] = "1"
+        store = self.store()
+        switch = _provider(store.payload(), "rss")["switch"]
+        self.assertEqual((switch["on"], switch["source"], switch["editable"]), (True, "ENVIRONMENT", False))
+        for on in (True, False):
+            with self.assertRaises(ConfigError) as ctx:
+                store.switch("rss", on)
+            self.assertEqual((ctx.exception.code, ctx.exception.setting), ("SETTING_OVERRIDDEN_BY_ENVIRONMENT", "IMP_NEWS_RSS_LIVE"))
+        self.assertFalse(self.private.exists())
+        self.assertEqual(self.environ["IMP_NEWS_RSS_LIVE"], "1")
+
+    def test_unknown_and_non_switchable_providers_are_refused(self) -> None:
+        store = self.store()
+        # Finviz live is a path-A preflight blocker; Senate eFD needs the terms attestation; keyed providers switch
+        # on by saving their key; brokers are never switchable.
+        for provider in ("finviz", "senate_efd", "sec", "newsapi", "tradier", "ibkr", "opend", "anthropic", "nope", ""):
+            with self.subTest(provider=provider), self.assertRaises(ConfigError) as ctx:
+                store.switch(provider, True)
+            self.assertEqual(ctx.exception.code, "PROVIDER_NOT_SWITCHABLE")
+        self.assertFalse(self.private.exists())
+
+    def test_only_keyless_observational_read_gates_are_switchable(self) -> None:
+        switchable = {entry.provider: entry.live_gates for entry in PROVIDERS_BY_ID.values() if entry.switchable}
+        self.assertEqual(switchable, {
+            "rss": ("IMP_NEWS_RSS_LIVE",), "public_records": ("IMP_PUBLIC_RECORDS_LIVE",), "treasury": ("IMP_TREASURY_LIVE",),
+            "kraken": ("IMP_CRYPTO_LIVE",), "openfigi": ("IMP_OPENFIGI_LIVE",)})
+        for entry in PROVIDERS_BY_ID.values():
+            if entry.switchable:
+                self.assertIn(entry.access, ("FREE",), entry.provider)
+                self.assertFalse(any(setting.required for setting in entry.settings), entry.provider)
+        for gate in ("IMP_FINVIZ_LIVE", "IMP_SENATE_EFD_LIVE", "IMP_LIVE_EXECUTION", "IMP_BROKER_PAPER_EXECUTION",
+                     "IMP_PAPER_EXECUTION", "IMP_BROKER_LIVE_EXECUTION", "IMP_PAPER_AUTOMATION_ENABLED"):
+            self.assertNotIn(gate, managed_names(), gate)
+
+    def test_openfigi_key_and_switch_are_independent(self) -> None:
+        store = self.store()
+        result = store.write("openfigi", {"OPENFIGI_API_KEY": SECRET})
+        # Its key is optional, so saving it switches nothing: the lookup switch is its own choice.
+        self.assertEqual(result["gates_enabled"], [])
+        self.assertEqual(_provider(store.payload(), "openfigi")["state"], "CONFIGURED")
+        self.assertFalse(_provider(store.payload(), "openfigi")["switch"]["on"])
+        store.switch("openfigi", True)
+        self.assertTrue(_provider(store.payload(), "openfigi")["switch"]["on"])
+
+    def test_route_rejects_a_switch_with_values_and_an_unknown_switch(self) -> None:
+        with mock.patch.object(operator_projections, "default_store", return_value=self.store()):
+            for body, code in (({"provider": "rss", "switch": "ON", "values": {"X": "y"}}, "SWITCH_WITH_VALUES_CONFLICT"),
+                               ({"provider": "rss", "switch": "ON", "clear": ["X"]}, "SWITCH_WITH_VALUES_CONFLICT"),
+                               ({"provider": "rss", "switch": True}, "INVALID_SWITCH"),
+                               ({"provider": "finviz", "switch": "ON"}, "PROVIDER_NOT_SWITCHABLE")):
+                with self.subTest(body=body), self.assertRaisesRegex(ValueError, code):
+                    operator_projections.save_provider_config(body)
+            response = operator_projections.save_provider_config({"provider": "rss", "switch": "ON"})
+        self.assertEqual((response["result"]["switch"], response["result"]["gates_enabled"]), ("ON", ["IMP_NEWS_RSS_LIVE"]))
+        self.assertEqual(_provider(response, "rss")["state"], "ON")
+        self.assertEqual(self.private.read_text(encoding="utf-8"), "IMP_NEWS_RSS_LIVE=1\n")
+
+
 class PrecedenceTests(StoreCase):
     def test_environment_setting_is_reported_read_only_and_never_shadowed(self) -> None:
         self.environ["SEC_USER_AGENT"] = "Ops Env env@acme.test"
@@ -306,6 +408,9 @@ class RegistryShapeTests(unittest.TestCase):
             self.assertEqual(provider["verification"], "ON_FIRST_USE")
             if provider["configurable"]:
                 self.assertTrue(provider["fields"], provider["provider"])
+            elif provider["switchable"]:
+                # A keyless source: no fields, one switch (off without a private file).
+                self.assertEqual((provider["fields"], provider["state"], provider["switch"]["on"]), ([], "OFF", False))
             else:
                 self.assertEqual(provider["state"], "EXTERNAL")
                 self.assertTrue(provider["external_setup"])
@@ -452,6 +557,21 @@ class HttpRouteTests(unittest.TestCase):
                          ("OPERATOR_CONFIG_ORIGIN_REJECTED", "AUTH_ERROR"))
         self.assertNotIn("GEMINI_API_KEY", self.store.private_path.read_text(encoding="utf-8")
                          if self.store.private_path.exists() else "")
+
+    def test_cross_site_switch_is_refused_before_anything_is_written(self) -> None:
+        status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "ON"},
+                                    {"Origin": "https://evil.example"})
+        self.assertEqual(status, 403, text)
+        self.assertEqual(json.loads(text)["reason_code"], "OPERATOR_CONFIG_ORIGIN_REJECTED")
+        self.assertNotIn("IMP_CRYPTO_LIVE", self.store.private_path.read_text(encoding="utf-8")
+                         if self.store.private_path.exists() else "")
+        status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "ON"},
+                                    {"Origin": "http://localhost:5177"})
+        self.assertEqual(status, 200, text)
+        self.assertEqual(json.loads(text)["result"]["switch"], "ON")
+        status, text = self.request("POST", "/operator/config/provider", {"provider": "kraken", "switch": "OFF"},
+                                    {"Origin": "http://localhost:5177"})
+        self.assertEqual((status, json.loads(text)["result"]["gates_removed"]), (200, ["IMP_CRYPTO_LIVE"]))
 
     def test_validation_and_override_errors_are_readable_and_value_free(self) -> None:
         status, text = self.request("POST", "/operator/config/provider",
