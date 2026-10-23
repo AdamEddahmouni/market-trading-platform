@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { CongressTransaction, LastReport, ParticipantInstrument, ParticipantSection, PositioningReport, PositioningView,
   RootCoverage } from "../../../api/screenerParticipants";
 import { amountText, ClassTag, CongressTable, count, memberTitle, money, reasonText, short, signed, SourceLink, stamp, StateTag, stateText } from "./participantFormat";
@@ -25,16 +25,35 @@ type LobbyingFiling = { filing_uuid: string; filing_type_display: string; filing
 
 const as = <T,>(section: ParticipantSection | undefined) => (section ?? { state: "UNAVAILABLE", reason: null }) as ParticipantSection & T;
 
+/**
+ * A reason the whole panel already states once at its top (for example SEC EDGAR switched off). Sections with that
+ * reason drop their own chip and sentence instead of repeating it.
+ */
+export const SharedReasonContext = createContext<string | null>(null);
+
+/** The source reason shared by two or more non-current sections, stated once by the panel. */
+export function sharedSourceReason(sections: Record<string, ParticipantSection | undefined>): string | null {
+  const counts = new Map<string, number>();
+  for (const section of Object.values(sections)) {
+    if (section?.reason && ["LIVE_DISABLED", "NOT_CONFIGURED", "UNAVAILABLE"].includes(section.state)) counts.set(section.reason, (counts.get(section.reason) ?? 0) + 1);
+  }
+  const [reason, count] = [...counts.entries()].sort((a, b) => b[1] - a[1])[0] ?? [null, 0];
+  return count >= 2 ? reason : null;
+}
+
 export function Section({ title, state, reason, cls, children }: { title: string; state?: string; reason?: string | null;
   cls?: "OBSERVED" | "DERIVED"; children: ReactNode }) {
+  const shared = useContext(SharedReasonContext);
   return <section className="participant-section" aria-label={title}>
-    <h3>{title}{cls ? <ClassTag value={cls} /> : null}{state ? <StateTag state={state} reason={reason} /> : null}</h3>{children}</section>;
+    <h3>{title}{cls ? <ClassTag value={cls} /> : null}{state && !(shared && reason === shared) ? <StateTag state={state} reason={reason} /> : null}</h3>{children}</section>;
 }
 
 /** Any non-content state explains itself; a provider state is never shown as "no disclosures". */
 export function StateNote({ section, empty }: { section: ParticipantSection; empty: string }) {
+  const shared = useContext(SharedReasonContext);
   if (section.state === "NO_DISCLOSURES") return <p className="participant-note">{empty}</p>;
   if (["PUBLICATION_CURRENT", "CURRENT_AS_FILED", "CURRENT"].includes(section.state)) return null;
+  if (shared && section.reason === shared) return <p className="participant-note">Not loaded: see the source note above.</p>;
   return <p className="participant-note" role="status">{reasonText(section.reason) || "State"} · {section.state === "PENDING"
     ? "loading from the official source" : "this is a source state, not an absence of disclosures"}.</p>;
 }

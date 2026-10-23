@@ -1,3 +1,4 @@
+import { msIso } from "../screenerText";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchFlowSeries, type FlowRange, type FlowResolution } from "../../../api/screenerPanels";
@@ -53,14 +54,17 @@ export default function FlowHistory({ instrument, universe, visible, mode }: {
     ...detailData.points,
   ].sort((a, b) => a.time_ms - b.time_ms) : data?.points ?? [], [data?.points, detailData?.points, fineCoverage]);
   const market = marketClock(universe), signed = (n: number) => signedMarketVolume(n, universe);
-  const clock = (ms: number | null) => market.clock(ms == null ? null : new Date(ms).toISOString());
+  const clock = (ms: number | null) => market.clock(ms == null ? null : msIso(ms));
+  // A span with no ends says so in words, never "—–—".
+  const span = (from: number | null | undefined, to: number | null | undefined, none: string) =>
+    from == null && to == null ? none : `${from == null ? "start unknown" : clock(from)}–${to == null ? "now" : clock(to)}`;
   // A fresh blocked base response must also hide any cached historical detail.
   const coverage = data?.coverage && requested && !requested.live && fineCoverage ? fineCoverage : data?.coverage;
   const selected = points.filter(p => !viewport || (p.end_ms > viewport.from && p.time_ms <= viewport.to));
   const delta = selected.reduce((sum, p) => sum + p.delta, 0), trades = selected.reduce((sum, p) => sum + p.trade_count, 0);
   const classified = selected.reduce((sum, p) => sum + p.classified_volume, 0), unknown = selected.reduce((sum, p) => sum + p.unknown_volume, 0);
   const pct = classified + unknown ? classified / (classified + unknown) * 100 : null;
-  const summary = `Visible ${clock(viewport?.from ?? coverage?.actual_start_ms ?? null)}–${clock(viewport?.to ?? coverage?.actual_end_ms ?? null)} · net signed flow ${signed(delta)} · ${trades.toLocaleString()} trades · classified ${pct == null ? "—" : `${pct.toFixed(0)}%`} · unknown volume ${marketVolume(unknown, universe)}.`;
+  const summary = `Visible ${span(viewport?.from ?? coverage?.actual_start_ms, viewport?.to ?? coverage?.actual_end_ms, "no capture")} · net signed flow ${signed(delta)} · ${trades.toLocaleString()} trades · classified ${pct == null ? "—" : `${pct.toFixed(0)}%`} · unknown volume ${marketVolume(unknown, universe)}.`;
   return <section className="screener-flow-history" aria-label={mode === "cvd" ? "Captured CVD history" : "Signed flow history"}>
     <FlowTimeControls range={range} resolution={resolution} crypto={universe === "CRYPTO"}
       onRange={value => { setRange(value); setViewport(null); setRequested(null); }} onResolution={setResolution} />
@@ -69,7 +73,7 @@ export default function FlowHistory({ instrument, universe, visible, mode }: {
     {!data ? <PanelMessage>Loading captured flow history…</PanelMessage> : <>
       {!coverage ? <PanelMessage tone="warn">{reasonText(data.reason) || data.state}</PanelMessage> : <>
         <p className={coverage.complete ? "screener-panel-note" : "screener-flow-coverage"}>
-          Requested {clock(coverage.requested_start_ms)}–{clock(coverage.requested_end_ms)} · available capture {clock(coverage.actual_start_ms)}–{clock(coverage.actual_end_ms)}.
+          Requested {span(coverage.requested_start_ms, coverage.requested_end_ms, "no range")} · {coverage.actual_start_ms == null && coverage.actual_end_ms == null ? "nothing captured in this range yet" : `available capture ${span(coverage.actual_start_ms, coverage.actual_end_ms, "")}`}.
           {coverage.complete ? " Continuous subscribed capture." : " Partial capture; missing history is not reconstructed."}
           {coverage.truncated ? " History retention truncated." : ""}
           {coverage.dropped_late_trades ? ` ${coverage.dropped_late_trades} late arrivals excluded outside the correction window.` : ""}
