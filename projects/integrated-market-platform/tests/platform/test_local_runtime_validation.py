@@ -591,6 +591,35 @@ class ControlledLifecycleTests(unittest.TestCase):
         self.assertEqual(lease.read_text(encoding='utf-8'),'another owner')
         spawn.assert_not_called()
 
+    def test_lease_left_by_a_dead_owner_is_set_aside_and_retaken(self):
+        # 2026-10-21: a crashed API process left its lease behind and every later start refused.
+        import os
+        import time
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        process=FakeProcess()
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:process)
+        server._ours=lambda:None;server.enforce_admission=True
+        lease=self.harness.manifest.runtime_path.parent/'imp-local-runtime.lock'
+        lease.write_text('{"owner_pid": 31944}',encoding='utf-8')
+        old=time.time()-server._startup_timeout_s-120
+        os.utime(lease,(old,old))
+        with patch('market_platform_foundation.intelligence.inference.local_runtime.readiness',return_value={'rejection_reason':None}):
+            self.assertEqual(server.ensure_running(),'LOCAL_RUNTIME_START_TIMEOUT')  # spawned: the lease was retaken
+        aside=list(lease.parent.glob('imp-local-runtime.lock.stale-*'))
+        self.assertEqual([path.read_text(encoding='utf-8') for path in aside],['{"owner_pid": 31944}'])
+        self.assertFalse(lease.exists())  # released again when the failed start was stopped
+
+    def test_stopping_owner_never_removes_a_lease_a_later_owner_took(self):
+        import json
+        from tests.intelligence.test_local_synthesis_provider import FakeProcess
+        server=self.harness.server(lambda *a:(503,b''),lambda command,**kw:FakeProcess())
+        lease=self.harness.manifest.runtime_path.parent/'imp-local-runtime.lock'
+        server._runtime_lease=(lease,json.dumps({'owner_pid':1,'token':'mine'}))
+        lease.write_text(json.dumps({'owner_pid':2,'token':'theirs'}),encoding='utf-8')
+        server.stop()
+        self.assertIn('theirs',lease.read_text(encoding='utf-8'))
+        self.assertIsNone(server._runtime_lease)
+
 
 def json_bytes(value):
     import json

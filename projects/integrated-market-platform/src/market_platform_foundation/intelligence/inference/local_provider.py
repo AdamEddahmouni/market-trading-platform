@@ -229,14 +229,14 @@ class LocalLlamaServer:
                      # warm slot can exceed the process ceiling before cache eviction.
                      '--cache-ram','0']
             lease=self.manifest.runtime_path.parent/'imp-local-runtime.lock'
+            body=json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile,
+                             'token':os.urandom(8).hex(),'at':datetime.now(UTC).isoformat()})
             try:
-                with lease.open('x',encoding='utf-8') as stream:
-                    stream.write(json.dumps({'owner_pid':os.getpid(),'profile':self.manifest.execution_profile}))
-            except FileExistsError:
-                return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
+                if not self._take_lease(lease,body) and not (self._reclaim_stale_lease(lease) and self._take_lease(lease,body)):
+                    return 'LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED'
             except OSError:
                 return 'LOCAL_RUNTIME_OWNERSHIP_UNAVAILABLE'
-            self._runtime_lease=lease
+            self._runtime_lease=(lease,body)
         log = open(self._log_path, "wb") if self._log_path else subprocess.DEVNULL  # noqa: SIM115
         try:
             self._process = self._spawn(args, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
@@ -299,8 +299,46 @@ class LocalLlamaServer:
                 process.wait(timeout=10)
         self._process = None  # ownership ends only after confirmed exit
         if self._runtime_lease is not None:
-            self._runtime_lease.unlink(missing_ok=True)
+            lease,body=self._runtime_lease
+            try:
+                ours=lease.read_text(encoding='utf-8')==body
+            except FileNotFoundError:
+                ours=False
+            if ours:lease.unlink(missing_ok=True)  # never remove a lease a later owner reclaimed
             self._runtime_lease=None
+
+    @staticmethod
+    def _take_lease(lease: Path, body: str) -> bool:
+        try:
+            with lease.open('x',encoding='utf-8') as stream:
+                stream.write(body)
+        except FileExistsError:
+            return False
+        return True
+
+    def _reclaim_stale_lease(self, lease: Path) -> bool:
+        """Set aside a lease left by an owner that died (crash, reboot) without releasing it.
+
+        Only reached when nothing answers on the model port. A live owner holds a silent port only
+        while its server starts, so a lease older than the startup window has no live server behind it.
+        The lease is renamed, not deleted, and a lease that changed under the rename is put back."""
+
+        try:
+            seen=lease.read_text(encoding='utf-8')
+            age=time.time()-lease.stat().st_mtime
+        except FileNotFoundError:
+            return True
+        if age<=self._startup_timeout_s+60:
+            return False
+        aside=lease.with_name(f'{lease.name}.stale-{time.time_ns()}')
+        try:
+            os.replace(lease,aside)
+        except FileNotFoundError:
+            return True
+        if aside.read_text(encoding='utf-8')!=seen:  # a fresh owner took the lease between read and rename
+            if self._take_lease(lease,aside.read_text(encoding='utf-8')):aside.unlink(missing_ok=True)
+            return False
+        return True
 
     def stop(self) -> None:
         with self._lock:

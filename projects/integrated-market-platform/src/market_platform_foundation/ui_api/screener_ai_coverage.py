@@ -71,6 +71,9 @@ PLAN_DRIFT_MARGIN = 1.05
 # a lower ratio removes more evidence per attempt, so fewer attempts are needed.
 CONTEXT_FIT_ATTEMPTS = 2
 CONTEXT_FIT_BYTES_PER_TOKEN = 2.5
+# 2026-10-23 crypto: six finalists in pairs and byes, both pairs' answers rejected, and the run ended with every
+# entrant advanced. A round that advances everyone is followed by at most this many freshly paired rounds.
+NO_PROGRESS_ROUNDS = 2
 _LIMITATIONS = {
     COMPLETE_NO_SELECTION: "Every eligible row was evaluated and compared; no candidate was selected.",
     NO_ELIGIBLE_ROWS: "Every row was assessed; none had an admissible current price plus additional strong evidence, so no model was called.",
@@ -376,9 +379,13 @@ class ScreenerAiCoverage:
         pool = list(dict.fromkeys(item["instrument_id"] for item in run.finalists))
         number = 0
         local = getattr(self._provider, "runtime", None) == "LOCAL_MODEL"
+        stalled = 0
         while True:
             number += 1
-            groups = chunks(fair_order(f"{run.scope['result_set']}|round-{number}", pool))
+            # Once the exact count has refused a comparison size, a round is planned in groups one smaller, so a round
+            # is not first planned at the intake size and then halved down to pairs and byes.
+            size = run.refused_group - 1 if local and run.refused_group else MAX_INTAKE
+            groups = chunks(fair_order(f"{run.scope['result_set']}|round-{number}", pool), size)
             winners: list[str] = []
             final: dict[str, Any] | None = None
             answers: list[dict[str, Any]] = []
@@ -421,13 +428,24 @@ class ScreenerAiCoverage:
                         run.sliced = True  # not every eligible row was compared: never a global selection
                         index += 1
                         continue
-                    if local and outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED" and len(group) > 1 and not outcome["dropped"]:
-                        run.refused_group = min(run.refused_group or len(group), len(group))
-                        # The exact send-time gate refused this comparison even after thinning: compare it in two
-                        # halves, in the same fair order. Each half is its own request on evidence acquired for it.
-                        half = math.ceil(len(group) / 2)
-                        groups[index:index + 1] = [group[:half], group[half:]]
-                        continue
+                    if local and outcome["failure"] == "LOCAL_CONTEXT_EXCEEDED" and (self._slice or not outcome["dropped"]):
+                        # In a slice the dropped finalists were deferred above; the rest of the group is still compared.
+                        sendable = [key for key in group if key not in outcome["dropped"]]
+                        if len(sendable) > 1:
+                            if len(sendable) > 2:
+                                # A pair is thinned before it is refused, so a refused pair never shrinks later rounds.
+                                run.refused_group = min(run.refused_group or len(sendable), len(sendable))
+                            # The exact send-time gate refused this comparison even after thinning: compare it in two
+                            # halves, in the same fair order. Each half is its own request on evidence acquired for it.
+                            half = math.ceil(len(sendable) / 2)
+                            groups[index:index + 1] = [sendable[:half], sendable[half:]]
+                            continue
+                        if self._slice:
+                            # One finalist whose own packet does not fit even thinned: deferred to a later slice with
+                            # its reason, never selected; the slice stays a selection among the rows it compared.
+                            self._defer_finalists(run, {key: [UNPROCESSED, ["COMPARISON_CONTEXT_EXCEEDED"]] for key in sendable})
+                            index += 1
+                            continue
                     return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "GLOBAL_REDUCTION_INCOMPLETE:" + outcome["failure"])
                 final = outcome["result"]
                 if final is not None:
@@ -449,6 +467,11 @@ class ScreenerAiCoverage:
                     # Within the selection cap, each entrant was compared and kept by its own group; the union is
                     # recorded as exactly that, with every member answer, and is final only if each is current.
                     return self._final(run, self._union(run, answers))
+                if size > 1 and stalled < NO_PROGRESS_ROUNDS:
+                    # The next round's fair order is salted by its number, so its groups pair different entrants.
+                    stalled += 1
+                    pool = list(dict.fromkeys(winners))
+                    continue
                 return self._terminal(run, PROVISIONAL_PARTIAL_COVERAGE, "GLOBAL_COMPARISON_NO_PROGRESS")
             if run.excluded_finalists and admitted:
                 # Required finalists were not compared. Neither a winner nor an abstention

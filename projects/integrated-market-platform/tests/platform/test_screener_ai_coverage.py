@@ -1334,9 +1334,10 @@ class ReductionSplitTests(unittest.TestCase):
         reconciled(self, h.block, 8)
         self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
         self.assertEqual(h.selected(), [instrument_id(7)])
-        # 8 is refused, then 4; every later group of 4 is split without a request (two in round 1, one in round 2).
-        self.assertEqual(Narrow.refused, 2)
-        self.assertEqual((h.block["reduction"]["smallest_refused_group"], h.block["reduction"]["presplit_groups"]), (4, 2))
+        # 8 is refused, then 4; the other group of 4 in round 1 is split without a request. Round 2 is planned one
+        # smaller, in a group of 3, which is refused once; nothing of 3 or more is sent again.
+        self.assertEqual(Narrow.refused, 3)
+        self.assertEqual((h.block["reduction"]["smallest_refused_group"], h.block["reduction"]["presplit_groups"]), (3, 1))
 
     def _rejecting(self, bad):
         class RejectsOne(Ticking):
@@ -1414,6 +1415,76 @@ class ReductionSplitTests(unittest.TestCase):
         self.assertEqual(budgets, [], "a multi-finalist comparison was thinned")
         self.assertEqual(h.block["status"], "GLOBAL_SELECTION_COMPLETE")
         self.assertEqual(h.block["reduction"]["finalists_excluded_count"], 0)
+
+    @staticmethod
+    def _local(refuse, *, keep_both=False, jump=0.0):
+        """A local engine whose first pass sends one row per request; comparisons are the requests of two or more.
+
+        ``refuse`` decides which comparison packets the exact count refuses; ``jump`` advances the clock once, at the
+        first refusal, so evidence observed only once goes stale before the halves are sent."""
+        from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
+        from tests.support.coverage_universe import strength
+        pending = [jump]
+
+        class Local(Ticking):
+            comparing = False
+
+            def on_call(self, call, packet):
+                ids = [c["instrument"]["instrument_id"] for c in packet.candidates]
+                self.comparing = self.comparing or len(ids) > 1
+                if self.comparing and refuse(ids):
+                    from dataclasses import replace
+                    self.clock[0] += pending.pop() if pending else 0.0
+                    return replace(self.failure("LOCAL_CONTEXT_EXCEEDED"), tokens_input=9000, inference_dispatched=False)
+                if len(ids) == 2 and not keep_both:
+                    self.clock[0] += self.step
+                    best = max(packet.candidates, key=lambda c: (strength(c), c["instrument"]["instrument_id"]))
+                    return ProviderInferenceResponse(answer(packet.candidates, [best]), self.provider_id, self.model_id,
+                                                     tokens_input=1000, tokens_output=100, latency_ms=1, simulated=True)
+                return super().on_call(call, packet)
+        return Local
+
+    def test_in_a_slice_an_oversized_comparison_with_a_stale_finalist_is_still_split(self):
+        # 2026-10-23 equities: the first comparison group had four finalists stale at its cutoff and was over the
+        # window; the split rule skipped groups with a dropped finalist, so the run ended GLOBAL_REDUCTION_INCOMPLETE.
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2, jump=61.0)(clock, step=0.1)
+        rows = universe(100, strong={5: 90.0, 6: 91.0, 7: 92.0, 8: 92.5, 9: 92.7, 60: 93.0, 61: 93.5, 99: 95.0})
+        h = Harness([], provider, clock=lambda: clock[0], reader=ClockReader(rows, lambda: clock[0], frozen=(99,)))
+        h.run(slice_plan={"deadline_epoch": NOW + 10000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(61)])  # the strongest finalist still current at the comparison
+        self.assertEqual(h.block["slice"]["deferred_finalists"], 1)
+        failed = [r for r in h.calls() if r["stage"] == "GLOBAL_REDUCTION" and r["outcome"] == "FAILED"]
+        self.assertTrue(any(r["dropped"] and len(r["instrument_ids"]) > 2 for r in failed),
+                        "no oversized comparison had a dropped finalist")
+
+    def test_in_a_slice_a_finalist_too_large_to_compare_alone_is_deferred(self):
+        bad = instrument_id(60)
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2 or bad in ids)(clock, step=0.1)
+        h = Harness(universe(100, strong={5: 90.0, 6: 91.0, 60: 93.0, 99: 95.0}), provider, clock=lambda: clock[0])
+        h.run(slice_plan={"deadline_epoch": NOW + 10000, "epoch": 1, "last_evaluated": {}})
+        self.assertEqual(h.block["status"], "SLICE_SELECTION_COMPLETE")
+        self.assertEqual(h.selected(), [instrument_id(99)])
+        self.assertEqual(h.block["slice"]["deferred_finalists"], 1)
+        self.assertEqual(h.block["counts"]["reasons"]["UNPROCESSED:COMPARISON_CONTEXT_EXCEEDED"], 1)
+
+    def test_a_round_that_advances_everyone_is_retried_with_new_pairs_a_bounded_number_of_times(self):
+        # 2026-10-23 crypto: one round in pairs and byes advanced all six finalists and the run ended at once.
+        from market_platform_foundation.ui_api.screener_ai_coverage import NO_PROGRESS_ROUNDS
+        clock = [NOW]
+        provider = self._local(lambda ids: len(ids) > 2, keep_both=True)(clock, step=0.1)
+        h = Harness(universe(100, strong={index: 90.0 + index / 10 for index in range(0, 100, 10)}), provider,
+                    clock=lambda: clock[0])
+        h.run()
+        self.assertGreater(h.block["finalist_count"], 5)
+        self.assertEqual((h.block["status"], h.block["reason"]), ("PROVISIONAL_PARTIAL_COVERAGE", "GLOBAL_COMPARISON_NO_PROGRESS"))
+        self.assertEqual(h.block["reduction"]["rounds_completed"], 1 + NO_PROGRESS_ROUNDS)
+        rounds = [record for record in h.calls() if record["stage"] == "GLOBAL_REDUCTION" and record.get("outcome") == "COMPLETED"]
+        pairs = {(record["round"], frozenset(record["instrument_ids"])) for record in rounds if len(record["instrument_ids"]) == 2}
+        self.assertGreater(len({pair for _, pair in pairs}), len([1 for number, _ in pairs if number == 1]),
+                           "later rounds compared the same pairs again")
 
 
 if __name__ == "__main__":
