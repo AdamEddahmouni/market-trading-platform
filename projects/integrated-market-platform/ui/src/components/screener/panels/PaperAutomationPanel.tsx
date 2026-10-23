@@ -1,3 +1,4 @@
+import { msIso, stampText } from "../screenerText";
 import { useEffect, useRef, useState } from "react";
 import type { AiScreenerScope } from "../../../api/screenerAi";
 import { armPaperAutomation, configurePaperAutomation, disarmPaperAutomation, emergencyStopPaperAutomation, paperAutomationHistory,
@@ -220,7 +221,7 @@ export default function PaperAutomationPanel({ scope }: { scope: AiScreenerScope
             <p>{scheduling.adaptive ? "Adaptive" : "Fixed minimum separation only"} · minimum separation {scheduling.policy.min_separation_seconds}s{scheduling.policy.max_age_seconds != null ? ` · a selection stays useful for ${scheduling.policy.max_age_seconds}s` : ""}{scheduling.policy.material_change_trigger ? " · re-runs on a material universe change" : ""}{scheduling.policy.max_runs_per_day != null ? ` · at most ${scheduling.policy.max_runs_per_day} runs per UTC day` : ""} · runs today {scheduling.runs_today.started}{scheduling.runs_today.limit != null ? ` of ${scheduling.runs_today.limit}` : ""}</p>
             {scheduling.last_complete_fingerprint ? <p>Last complete selection from session {scheduling.last_complete_fingerprint.session_date}{scheduling.last_complete_fingerprint.universe_count != null ? ` (${scheduling.last_complete_fingerprint.universe_count} rows read)` : ""}.</p> : <p>No complete full-universe selection has been adopted yet.</p>}
             {scheduling.last_decision ? <p>Last decision <strong>{words(scheduling.last_decision.decision)}</strong> at {text(scheduling.last_decision.at_iso)} because {scheduling.last_decision.reason_codes.map(words).join(", ")}{scheduling.next_eligible ? ` · next eligible ${scheduling.next_eligible}` : ""}.</p> : <p>No scheduling decision has been recorded yet.</p>}
-            {scheduling.failure ? <p>Last run was not adoptable ({scheduling.failure.code}), {scheduling.failure.count} in a row; the next attempt waits until {new Date(scheduling.failure.backoff_until * 1000).toISOString()}.</p> : null}
+            {scheduling.failure ? <p>Last run was not adoptable ({scheduling.failure.code}), {scheduling.failure.count} in a row; the next attempt waits until {stampText(msIso(scheduling.failure.backoff_until * 1000))}.</p> : null}
           </>}
 
           <h4>AI evaluation</h4>
