@@ -47,6 +47,13 @@ def _flag(flag: str, what: str) -> dict[str, Any]:
     return _remedy(f"{what} is switched off", f"Add the line below to the API environment, {RESTART}.", _command(f"{flag}=1"))
 
 
+def _switch(provider: str, what: str) -> dict[str, Any]:
+    """A keyless public source with a Setup switch (``operator_config`` ``switchable``): no command to copy."""
+
+    return _remedy(f"{what} is switched off", "Turn it on in Setup; it applies to the next request.",
+                   _configure(provider, "Turn on in Setup"))
+
+
 def _key(title: str, step: str, provider: str, label: str = "Enter key") -> dict[str, Any]:
     return _remedy(title, step, _configure(provider, label))
 
@@ -82,12 +89,17 @@ REMEDIES: dict[str, dict[str, Any]] = {
     "IMP_FINNHUB_LIVE_NOT_SET": _key("Finnhub is switched off", "Save a Finnhub key in Setup; saving it switches Finnhub on.",
                                      "finnhub"),
     "FINVIZ_LIVE_DISABLED": _flag("IMP_FINVIZ_LIVE", "Finviz Elite"),
-    "IMP_NEWS_RSS_LIVE_NOT_SET": _flag("IMP_NEWS_RSS_LIVE", "Public RSS feeds"),
-    "IMP_PUBLIC_RECORDS_LIVE_NOT_SET": _flag("IMP_PUBLIC_RECORDS_LIVE", "Public records"),
+    # Keyless public sources: switched on from Setup (Finviz and Senate eFD stay environment settings).
+    "IMP_NEWS_RSS_LIVE_NOT_SET": _switch("rss", "Public RSS feeds"),
+    "IMP_PUBLIC_RECORDS_LIVE_NOT_SET": _switch("public_records", "Public records"),
+    "IMP_TREASURY_LIVE_NOT_SET": _switch("treasury", "U.S. Treasury Fiscal Data"),
+    "TREASURY_NOT_CONFIGURED": _switch("treasury", "U.S. Treasury Fiscal Data"),
+    "CRYPTO_NOT_CONFIGURED": _switch("kraken", "Kraken public market data"),
+    "IMP_OPENFIGI_LIVE_NOT_SET": _switch("openfigi", "OpenFIGI lookups"),
     "IMP_SENATE_EFD_LIVE_NOT_SET": _flag("IMP_SENATE_EFD_LIVE", "Automatic Senate eFD downloads"),
     "NO_NEWS_PROVIDER_CONFIGURED": _remedy("No news provider is switched on",
-                                           f"Switch on at least one source. Public RSS feeds are free: add the line below to the "
-                                           f"API environment, {RESTART}.", _command("IMP_NEWS_RSS_LIVE=1")),
+                                           "Switch on at least one source. Public RSS feeds are free and need no key.",
+                                           _configure("rss", "Turn on RSS in Setup")),
     # Keys
     "NEWSAPI_API_KEY_NOT_SET": _key("NewsAPI has no key", "Save a free Developer key in Setup.", "newsapi"),
     "FINNHUB_API_KEY_NOT_SET": _key("Finnhub has no key", "Save a free account key in Setup.", "finnhub"),
