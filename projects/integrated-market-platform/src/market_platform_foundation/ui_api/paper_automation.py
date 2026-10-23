@@ -52,6 +52,8 @@ _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
 # After an exit order ends without closing the position, the next exit order for that instrument waits
 # cadence * 2^n, capped here. A new order always needs a new Action Decision; this only spaces them out.
 EXIT_BACKOFF_CAP_SECONDS = 900
+# Open equity positions are closed once this close to the regular-session bell (owner policy 2026-10-23).
+EOD_FLATTEN_MINUTES = 10  # two 300 s cadence slots, so a slow cycle still lands inside the window
 # After a full-universe run ends without adopting a selection, the next attempt waits cadence * 2^n, capped here.
 # A run that fails for a lasting reason is not relaunched every cycle.
 UNIVERSE_BACKOFF_CAP_SECONDS = 900
@@ -759,6 +761,7 @@ class PaperAutomationService:
         if unhealthy:
             summary['execution'] = 'WITHHELD_PROVIDER_UNHEALTHY'
             return
+        self._eod_flatten(work, policy, summary, session, now)
         self._execute_pending(work, policy, summary, session)
 
     # --- full-universe AI evaluation -----------------------------------------------------------
@@ -1289,7 +1292,7 @@ class PaperAutomationService:
                 # Disarm or Emergency Stop that flips state cannot land between this guard and the order.
                 if not self._still_permitted(work):
                     return finish(IntentState.BLOCKED, ['AUTOMATION_HALTED_BY_OPERATOR'], quantity=quantity, side=draft['side'])
-                submission = paper_projections.submit_paper_order(self.store, dict(body(quantity), preview_id=preview['preview_id']))['submission']
+                submission = self._submit(dict(body(quantity), preview_id=preview['preview_id']))
         except ValueError as exc:
             code = _code(exc)
             deferred = any(code.startswith(prefix) for prefix in _DEFER_CODES)
@@ -1314,6 +1317,61 @@ class PaperAutomationService:
                 backoff[decision['instrument_id']] = dict(count=count, until=self.clock() + delay, last_order_state=str(order.get('state')))
                 self.reevaluation.request_redecision(decision['instrument_id'], 'EXIT_ORDER_ENDED_UNFILLED')
         return outcome
+
+    def _submit(self, body):
+        """The controller's only order route: the canonical Workspace Paper submit, under the caller's submit lock."""
+        from . import paper_projections
+        return paper_projections.submit_paper_order(self.store, body)['submission']
+
+    def _eod_flatten(self, work, policy, summary, session, now):
+        """Owner policy 2026-10-23: open equity positions close in the last minutes of the regular session.
+
+        One MARKET close per instrument per session date through the canonical preview and submit, idempotent on
+        the ledger. Crypto is never flattened. A remainder left working is cancelled by the next reconciliation.
+        """
+        minutes = session.get('minutes_to_close')
+        if session.get('label') != 'REGULAR' or minutes is None or minutes > EOD_FLATTEN_MINUTES:
+            return
+        from . import paper_projections
+        ledger = self.store.paper_ledger
+        if not self.actions._authority():
+            return
+        working = {str(o.get('instrument_id')) for o in ledger.project_orders() if str(o.get('state')) in _WORKING}
+        for position in ledger.project_positions():
+            iid, held = str(position.get('instrument_id')), quantity_number(position.get('quantity') or 0)
+            if held <= 0 or iid in working:
+                continue
+            instrument = paper_projections._admit_focus_instrument(self.store, iid)
+            if instrument.get('instrument_kind') == 'CRYPTO_PAIR':
+                continue
+            key = 'PAI-EOD-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid, day=session['session_date']))[:32]
+            if ledger.lookup_idempotent_order(key):
+                continue
+            body = dict(instrument_id=iid, side='SELL', quantity=quantity_wire(held), order_type='MARKET', client_order_id=key,
+                        idempotency_key=key, correlation_id='lane:order-flow',
+                        decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',
+                                                      headline='End-of-day flatten (owner policy)', source_time=int(now * 1e9),
+                                                      reasons=[dict(code='PAPER_AUTOMATION_EOD_FLATTEN', label=session['session_date']),
+                                                               dict(code='PAPER_AUTOMATION_POLICY', label=policy['policy_id']),
+                                                               dict(code='PAPER_AUTOMATION_ARMING', label=work['arming']['arming_id'])]))
+            outcome = dict(instrument_id=iid, action='EOD_FLATTEN', quantity=quantity_wire(held), client_order_id=key)
+            try:
+                preview = paper_projections.preview_paper_order(self.store, body)['preview']
+                if preview.get('risk_status') != 'PASS':
+                    outcome.update(outcome='BLOCKED', reason_codes=['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8])
+                else:
+                    with self.submit_lock():
+                        if not self._still_permitted(work):
+                            outcome.update(outcome='NOT_ATTEMPTED', reason_codes=['AUTOMATION_HALTED_BY_OPERATOR'])
+                        else:
+                            submission = self._submit(dict(body, preview_id=preview['preview_id']))
+                            order = submission.get('order') or {}
+                            outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
+                                           reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'])
+            except ValueError as exc:
+                outcome.update(outcome='BLOCKED', reason_codes=[_code(exc)])
+            self._event('PAPER_EOD_FLATTEN', **outcome)
+            summary['actions'].append(outcome)
 
     def _cancel_order(self, order_id, reason):
         from . import paper_projections

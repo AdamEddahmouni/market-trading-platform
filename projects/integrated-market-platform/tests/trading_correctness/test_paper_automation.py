@@ -725,6 +725,47 @@ class RiskTests(AutoBase):
         self.assertIn('NO_GOVERNED_OPPORTUNITY', decision['blocker_codes'])
         self.assertTrue(all(o['outcome'] == 'BLOCKED' for o in outcomes))
 
+    def test_ai_direct_admits_a_gated_entry_without_an_opportunity(self):
+        from unittest import mock
+        a = self.auto
+        a.quote('AAPL', 150, 2)  # no Opportunity minted: the gated model proposal is the entry basis
+        with mock.patch.dict(os.environ, {'IMP_PAPER_AI_DIRECT': '1'}):
+            a.go()
+            a.cycle()
+            a.select('AAPL')
+            outcomes = [o for _ in range(3) for o in a.cycle()['actions']]
+        decision = next(d for d in a.actions.history('AAPL') if d['action_state'] == 'ENTER')
+        self.assertNotIn('NO_GOVERNED_OPPORTUNITY', decision['blocker_codes'])
+        self.assertTrue(decision['evidence_snapshot']['context']['ai_direct'])
+        submitted = [o for o in outcomes if o['outcome'] == 'SUBMITTED']
+        self.assertEqual([(o['action'], o['side']) for o in submitted], [('ENTER', 'BUY')])
+        self.assertGreater(a.position('AAPL')['quantity'], 0)
+        order = self.automation_orders()[0]
+        self.assertEqual(order['correlation_id'], 'lane:order-flow')
+        # The existing pre-trade engine still sized it against an in-memory Opportunity that is never persisted.
+        self.assertEqual([o for o in self.store.strategy_repository.list_opportunities() if o.opportunity_id.startswith('OPP-AID-')], [])
+
+    def test_eod_flatten_closes_equity_positions_once_near_the_bell(self):
+        self.enter()
+        a = self.auto
+        a.minutes_to_close = 8
+        a.quote('AAPL', 151, 2)
+        flattened = [o for o in a.cycle(400)['actions'] if o['action'] == 'EOD_FLATTEN']
+        self.assertEqual([(o['outcome'], o['quantity']) for o in flattened], [('SUBMITTED', 6)])
+        self.assertIsNone(a.position('AAPL'))
+        self.assertIn('PAPER_EOD_FLATTEN', [e['kind'] for e in a.events()])
+        again = a.cycle(60)
+        self.assertEqual([o for o in again['actions'] if o['action'] == 'EOD_FLATTEN'], [])
+        self.assertEqual(len([o for o in a.orders() if str(o.get('client_order_id') or '').startswith('PAI-EOD-')]), 1)
+
+    def test_eod_flatten_waits_for_the_window(self):
+        self.enter()
+        a = self.auto
+        a.minutes_to_close = 60
+        a.quote('AAPL', 151, 2)
+        self.assertEqual([o for o in a.cycle(400)['actions'] if o['action'] == 'EOD_FLATTEN'], [])
+        self.assertEqual(a.position('AAPL')['quantity'], 6)
+
 
 class ExitTests(AutoBase):
     def with_stop(self):

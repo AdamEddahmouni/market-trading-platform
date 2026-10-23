@@ -22,6 +22,7 @@ from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.prompts import PromptRegistry
 from ..local_state.action_decisions import action_repository
 from ..market_data.freshness_contract import timestamp
+from .paper_ai_direct import ai_direct_enabled, direct_opportunity
 from ..rt01.execution_decision_trace.recorder import ExecutionDecisionTraceDraft, materialize_execution_decision_trace
 from ..rt01.execution_decision_trace.runtime import execution_decision_trace_repository
 from ..rt01.execution_decision_trace.types import EligibilityDecisionSnapshot, ExecutionDecisionKind, RuleEvaluationOutcome, RuleEvaluationV1
@@ -163,6 +164,7 @@ class ScreenerActionService:
                        opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id'),admission=forecast_admission),
                        forecast_admission=forecast_admission,
                        authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
+                       ai_direct=ai_direct_enabled(ledger),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
         risk = self._risk_facts(body['instrument_id'])
         if risk: context['risk_control'] = risk
@@ -404,7 +406,12 @@ class ScreenerActionService:
             max_position_notional_minor=int(ledger.policy['max_position_shares'])*price,
             price_scale=scale,currency=ledger.policy.get('currency','USD'),max_portfolio_snapshot_age_ns=30_000_000_000)
         portfolio=snapshot_from_paper_ledger(ledger,captured_at_ns=now)
-        opportunity=self.store.strategy_repository.get_opportunity(record['opportunity_id'])
+        if record['opportunity_id']:
+            opportunity=self.store.strategy_repository.get_opportunity(record['opportunity_id'])
+        elif (record.get('evidence_snapshot') or {}).get('context',{}).get('ai_direct') and ai_direct_enabled(ledger):
+            opportunity=direct_opportunity(record)
+        else:
+            raise ValueError('NO_GOVERNED_OPPORTUNITY')
         engine=PreTradeRiskEngine()
         proposal=engine.build_proposal(opportunity=opportunity,policy=policy,portfolio=portfolio,
             quote=MarketQuoteV1(record['instrument_id'],price,price,int(timestamp(record['reference_quote']['as_of']).timestamp()*1e9)),proposal_time_ns=now,

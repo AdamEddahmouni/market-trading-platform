@@ -392,7 +392,8 @@ def gate_proposal(proposal, candidate, context, *, now):
         state = 'EXIT' if position['state'] in ('LONG','SHORT') else 'REVALIDATION_REQUIRED'
     elif state == 'EXIT' and not any(by_id[c]['status']=='MET' for c in proposal['exit_conditions']):
         blockers.append('EXIT_CONDITION_NOT_MET'); state = 'REVALIDATION_REQUIRED'
-    if not context.get('opportunity') and state == 'ENTER': blockers.append('NO_GOVERNED_OPPORTUNITY')
+    # AI-direct (owner-authorized, internal simulation only): the gated proposal itself is the entry basis.
+    if not context.get('opportunity') and state == 'ENTER' and not context.get('ai_direct'): blockers.append('NO_GOVERNED_OPPORTUNITY')
     if context.get('opportunity') and state=='ENTER' and context['opportunity'].get('side') != proposal['direction']:
         blockers.append('OPPORTUNITY_DIRECTION_MISMATCH')
     if not context.get('authority'): blockers.append('PAPER_AUTHORITY_UNAVAILABLE')
