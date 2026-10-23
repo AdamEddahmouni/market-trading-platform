@@ -44,6 +44,13 @@
 .setup-config-unlocks ul{margin:3px 0 0;padding-left:18px;color:#d4dfeb}
 .setup-config-restart{margin:6px 0;color:#f0c36b}
 .setup-config-external{margin:6px 0;color:#b8c8d8}
+.setup-config-switch{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin:8px 0}
+.setup-config-switch-label{font-weight:600}
+.setup-switch{min-width:52px;padding:3px 10px;border:1px solid #3a4a5c;border-radius:999px;background:#18212c;color:#b8c8d8;font-size:12px;cursor:pointer}
+.setup-switch.on{border-color:#3f8f5f;background:#1d3a2a;color:#d8f5e2}
+.setup-switch:disabled{cursor:not-allowed;opacity:.6}
+.setup-switch:focus-visible{outline:2px solid #6aa8ff;outline-offset:2px}
+.setup-config-switch .setup-config-status{flex-basis:100%}
 .setup-config-form{display:flex;flex-direction:column;gap:10px}
 .setup-config-field{display:flex;flex-direction:column;gap:3px}
 .setup-config-field label{font-weight:600;color:#e1eaf4}

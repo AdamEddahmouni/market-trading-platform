@@ -1,5 +1,55 @@
 # IMP Work Log
 
+## 2026-10-22 — Setup switches for keyless sources (Sprint 3 item 30, part 2)
+
+Stacked on Sprint 3 (PR C).
+
+- **Registry (`operator_config.py`).** `ProviderSetup.switchable`. New keyless entries, each with exactly one read
+  gate:
+
+  | Entry | Gate |
+  |---|---|
+  | `rss` | `IMP_NEWS_RSS_LIVE` |
+  | `treasury` | `IMP_TREASURY_LIVE` |
+  | `kraken` | `IMP_CRYPTO_LIVE` |
+  | `public_records` | `IMP_PUBLIC_RECORDS_LIVE` |
+
+  OpenFIGI gains `IMP_OPENFIGI_LIVE`. Its optional key still switches nothing on.
+- **Not switchable.** Finviz live stays an environment setting (`path_a_rth_preflight.py` treats it as a blocker).
+  Senate eFD still needs the terms attestation. Execution, broker, Paper and billing gates are never registered.
+- **Store.** `ProviderConfigStore.switch(provider, on)` writes `GATE=1` to `.private/providers.env`, or removes the
+  line. When the repository `.env` would still switch the gate on, it writes `GATE=0`. It then syncs the process
+  environment, and it refuses a gate the environment sets (`SETTING_OVERRIDDEN_BY_ENVIRONMENT`). The response carries
+  names only.
+- **When it applies.** Every one of these sources reads the live `os.environ` on each request, before any cache, so
+  `applies` is `NEXT_REQUEST`:
+  - Kraken: `screener_crypto._catalog`;
+  - Treasury and the NY Fed: `screener_bonds.enabled`;
+  - OpenFIGI: `openfigi.enabled`;
+  - RSS: `rss_feeds.enabled`;
+  - public records: `public_records.http.live_state`.
+
+  RSS and public records also refresh the News and Participants services.
+- **Route.** The same `POST /operator/config/provider`, so the loopback-origin check and `security.config.write` still
+  apply. The body is `{provider, switch: "ON"|"OFF"}`; combining it with `values` or `clear` is refused.
+- **UI.**
+  - Setup shows a `role="switch"` with the unlocks list.
+  - A gate the environment sets is read-only, with "Set in the API environment".
+  - The provider queries refresh after a switch.
+  - Remedies for these sources are a CONFIGURE action, "Turn on in Setup"; the environment how-to stays for Finviz
+    only.
+  - The Screener page owns the switch dialog opened from a source error, so the dialog and its result line stay open
+    when switching the source on replaces the error message.
+- Browser check against the isolated backend. Treasury was switched on in the disposable store: the dialog said
+  "switched on … no restart needed", and the Bonds page changed to the network-refused state on the next request.
+  Treasury was then switched back off. Kraken, which that backend pins in its environment, showed the read-only
+  switch with "Set in the API environment".
+- Tests:
+  - Python store tests: on and off, other lines kept, the `.env` override, refusal when the environment sets the gate,
+    refusal for unknown and non-switchable providers, switch combined with values refused, the switchable allowlist,
+    and the cross-site route refusal;
+  - vitest: the switch, the POST body, the environment-controlled state, a refused switch, and the remedy button.
+
 ## 2026-10-22 — Screener Sprint 3: plain language and formatting
 
 Items 27–35 and 40–43 of the 2026-10-22 visual pass, stacked on Sprint 2.

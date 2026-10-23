@@ -15,6 +15,13 @@ A provider that keeps a validated credential in its own private store (Finviz) i
 "PROVIDER_STORE" when none of the three holds the setting, so Setup never calls a working provider
 "not set". Only presence is read from that store.
 
+Keyless public sources (RSS, Treasury, Kraken, official public records, OpenFIGI) have no setting to
+save, only one observational read gate. Those marked ``switchable`` may be switched on or off from
+Setup (:meth:`ProviderConfigStore.switch`): it writes ``GATE=1`` to the private file or removes that
+line, under the same environment-override refusal. Nothing else is switchable. Finviz live stays an
+environment setting because the path-A preflight treats it as a blocker; Senate eFD downloads need
+the operator's terms attestation; execution, broker, Paper and billing gates are never registered.
+
 Most provider code reads ``os.environ``. At API start :func:`bootstrap_process_environment` copies
 registered settings from the private file into the process environment without overriding it, and
 every UI write updates that copy, so a saved value reaches the next request without a restart. The
@@ -144,6 +151,8 @@ class ProviderSetup:
     refresh: tuple[str, ...] = ()
     # Providers configured outside IMP (native login, local process, legal attestation).
     external_setup: str = ""
+    # A keyless public source whose one live gate the operator may switch from Setup (see the module docstring).
+    switchable: bool = False
 
     @property
     def configurable(self) -> bool:
@@ -167,11 +176,25 @@ PROVIDERS: tuple[ProviderSetup, ...] = (
         refresh=("news", "participants"),
     ),
     ProviderSetup(
+        "public_records", "Official public records", "REGULATORY", "FREE",
+        "Keyless official U.S. government sources: House Clerk disclosures, USAspending.gov awards and "
+        "Lobbying Disclosure Act filings. No account or key.",
+        ("House periodic transaction reports (Congress)", "Federal awards and lobbying filings (Congress & Government)"),
+        live_gates=("IMP_PUBLIC_RECORDS_LIVE",), refresh=("participants",), switchable=True,
+    ),
+    ProviderSetup(
         "newsapi", "NewsAPI", "NEWS", "FREE_ACCOUNT",
         "Headline search. The free Developer plan is limited to 100 requests a day and delayed articles.",
         ("NewsAPI headlines in News",),
         (Setting("NEWSAPI_API_KEY", "API key", "API_KEY", True, help=_KEY_HELP),),
         live_gates=("IMP_NEWSAPI_LIVE",), refresh=("news",),
+    ),
+    ProviderSetup(
+        "rss", "Public RSS feeds", "NEWS", "FREE",
+        "Public news and press-release RSS feeds. No account or key. The sec.gov feeds also send the SEC "
+        "contact identity above.",
+        ("Public RSS headlines in News", "SEC press releases (with the SEC contact identity)"),
+        live_gates=("IMP_NEWS_RSS_LIVE",), refresh=("news",), switchable=True,
     ),
     ProviderSetup(
         "finnhub", "Finnhub", "NEWS", "FREE_ACCOUNT",
@@ -203,10 +226,24 @@ PROVIDERS: tuple[ProviderSetup, ...] = (
         live_gates=("IMP_EIA_LIVE",),
     ),
     ProviderSetup(
+        "treasury", "U.S. Treasury Fiscal Data", "MARKET_DATA", "FREE",
+        "The Treasury's public Fiscal Data API and the New York Fed's published rates. No account or key.",
+        ("Bonds universe (Treasury securities and auctions)", "Rates & Curve: Treasury yields, NY Fed rates, SOMA holdings"),
+        live_gates=("IMP_TREASURY_LIVE",), switchable=True,
+    ),
+    ProviderSetup(
+        "kraken", "Kraken public market data", "MARKET_DATA", "FREE",
+        "Kraken's public spot market data: pairs, tickers, trades and the order book. No account or key; "
+        "IMP never connects to a Kraken account.",
+        ("Crypto universe (Kraken spot pairs)", "Crypto order flow and order book"),
+        live_gates=("IMP_CRYPTO_LIVE",), switchable=True,
+    ),
+    ProviderSetup(
         "openfigi", "OpenFIGI", "MARKET_DATA", "FREE",
         "Bond identifier lookups work without a key; a free key raises the rate limit.",
-        ("Higher OpenFIGI lookup limit (Bonds)",),
+        ("Bond identifier lookups (Bonds Quick Preview)", "Higher OpenFIGI lookup limit with a key"),
         (Setting("OPENFIGI_API_KEY", "API key (optional)", "API_KEY", True, required=False, help=_KEY_HELP),),
+        live_gates=("IMP_OPENFIGI_LIVE",), switchable=True,
     ),
     ProviderSetup(
         "noaa", "NOAA Climate Data Online", "MARKET_DATA", "FREE_ACCOUNT",
@@ -331,6 +368,10 @@ def _present(value: str | None) -> bool:
     return bool(text) and text.upper() not in PLACEHOLDERS
 
 
+def _enabled(value: str | None) -> bool:
+    return (value or "").strip().lower() in {"1", "true", "yes"}
+
+
 def _rewrite(path: Path, updates: Mapping[str, str | None]) -> None:
     """Atomically set (str) or delete (None) exactly these lines; every other line is kept as written."""
 
@@ -438,8 +479,9 @@ class ProviderConfigStore:
     def _provider_status(self, entry: ProviderSetup, private: Mapping[str, str], env_file: Mapping[str, str]) -> dict[str, Any]:
         fields = [self._field_status(setting, private, env_file) for setting in entry.settings]
         required = [item for item in fields if item["required"]]
+        switch = self._switch_status(entry, private, env_file)
         if not entry.configurable:
-            state = "EXTERNAL"
+            state = ("ON" if switch["on"] else "OFF") if switch else "EXTERNAL"
         elif required and all(item["configured"] for item in required):
             state = "CONFIGURED"
         elif not required and any(item["configured"] for item in fields):
@@ -448,11 +490,8 @@ class ProviderConfigStore:
             state = "PARTIAL"
         else:
             state = "OPTIONAL" if not required else "NEEDS_SETUP"
-        gates = []
-        for gate in entry.live_gates:
-            value = self._effective(gate, private, env_file) or ""
-            gates.append({"name": gate, "enabled": value.strip().lower() in {"1", "true", "yes"},
-                          "source": self.source(gate, private, env_file)})
+        gates = [{"name": gate, "enabled": _enabled(self._effective(gate, private, env_file)),
+                  "source": self.source(gate, private, env_file)} for gate in entry.live_gates]
         return {
             "provider": entry.provider,
             "label": entry.label,
@@ -464,12 +503,24 @@ class ProviderConfigStore:
             "external_setup": entry.external_setup or None,
             "state": state,
             "live_gates": gates,
+            "switchable": entry.switchable,
+            "switch": switch,
             "applies": entry.applies,
             "applies_note": entry.applies_note or None,
             # No provider is probed on save: a paid key must not spend money to prove itself.
             "verification": "ON_FIRST_USE",
             "fields": fields,
         }
+
+    def _switch_status(self, entry: ProviderSetup, private: Mapping[str, str], env_file: Mapping[str, str]) -> dict[str, Any] | None:
+        """The one gate a switchable provider exposes: on or off, where that comes from, and whether Setup may change it."""
+
+        if not entry.switchable:
+            return None
+        gate = entry.live_gates[0]
+        source = self.source(gate, private, env_file)
+        return {"name": gate, "on": _enabled(self._effective(gate, private, env_file)), "source": source,
+                "editable": source != SOURCE_ENVIRONMENT}
 
     def _field_status(self, setting: Setting, private: Mapping[str, str], env_file: Mapping[str, str]) -> dict[str, Any]:
         source = self.source(setting.name, private, env_file)
@@ -554,6 +605,44 @@ class ProviderConfigStore:
             "cleared": sorted(name for name, value in updates.items() if value is None and name in allowed),
             "gates_enabled": sorted(gates_on),
             "gates_removed": sorted(gates_off),
+            "applies": entry.applies,
+            "verification": "ON_FIRST_USE",
+            "refresh": list(entry.refresh),
+        }
+
+    def switch(self, provider: str, on: bool) -> dict[str, Any]:
+        """Switch a keyless provider's one observational read gate. Returns names only.
+
+        On writes ``GATE=1`` to the private file. Off removes that line; if the repository ``.env``
+        would still switch the gate on, it writes ``GATE=0`` instead, since the private file takes
+        precedence. A gate the process environment sets is refused, as for every setting."""
+
+        entry = PROVIDERS_BY_ID.get(str(provider or "").strip().lower())
+        if entry is None or not entry.switchable or len(entry.live_gates) != 1:
+            raise ConfigError("PROVIDER_NOT_SWITCHABLE")
+        gate = entry.live_gates[0]
+        if gate in self._external():
+            raise ConfigError("SETTING_OVERRIDDEN_BY_ENVIRONMENT", gate)
+
+        with self._lock:
+            private, env_file = _read_values(self.private_path), self._env_file()
+            was_on = _enabled(self._effective(gate, private, env_file))
+            if on:
+                update: str | None = "1"
+            else:
+                update = "0" if _enabled(env_file.get(gate)) else None
+            if private.get(gate) != update:
+                _rewrite(self.private_path, {gate: update})
+            self._sync({gate}, _read_values(self.private_path), env_file)
+
+        changed = was_on != on
+        return {
+            "provider": entry.provider,
+            "switch": "ON" if on else "OFF",
+            "saved": [],
+            "cleared": [],
+            "gates_enabled": [gate] if on and changed else [],
+            "gates_removed": [gate] if not on and changed else [],
             "applies": entry.applies,
             "verification": "ON_FIRST_USE",
             "refresh": list(entry.refresh),

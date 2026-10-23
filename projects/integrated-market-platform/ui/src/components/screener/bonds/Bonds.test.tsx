@@ -329,10 +329,13 @@ describe("Bonds universe", () => {
       provider_health: [{ provider: "US_TREASURY_FISCAL_DATA", state: "NOT_CONFIGURED", reason: "TREASURY_NOT_CONFIGURED" }] }));
     mount();
     expect(await screen.findByText(/U.S. Treasury Fiscal Data is switched off/)).toBeInTheDocument();
-    // Sprint 3 item 42: a switched-off source is fixed by a setting, never by retrying; the setting sits in a collapsed how-to.
+    // Sprint 3 item 42: a switched-off source is fixed by its Setup switch (PR D), never by retrying.
     expect(screen.queryByRole("button", { name: "Retry source" })).toBeNull();
-    expect(screen.getByText("How to turn it on")).toBeInTheDocument();
-    expect(screen.getByRole("alert")).not.toHaveTextContent(/set IMP_/);
+    expect(within(screen.getByRole("alert")).getByRole("button", { name: "Turn on in Setup" })).toHaveAttribute("aria-haspopup", "dialog");
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/IMP_/);
+    // The page owns the dialog, so it stays open when switching the source on replaces this message.
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Turn on in Setup" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(screen.getByText(/— results/)).toBeInTheDocument();
   });
 });
