@@ -1,4 +1,4 @@
-import { DecisionFreshness, currentFreshness, useDecisionNow } from "./DecisionFreshness";
+import { DecisionFreshness, currentFreshness, freshnessText, useDecisionNow } from "./DecisionFreshness";
 import { lazy, memo, Suspense, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScreenerPreview, type ScreenerFilter, type ScreenerPreview, type ScreenerQuote, type ScreenerRow, type ScreenerUniverse } from "../../api/screener";
@@ -9,6 +9,7 @@ import { PreviewSqueeze } from "./squeeze/PreviewSqueeze";
 import { PreviewNews } from "./news/PreviewNews";
 import { classifyZones, type ClassifiedZone } from "./srClassify";
 import { methodText } from "./panels/shared";
+import { exchangeText, fieldDigits, fixedText } from "./screenerText";
 
 const PreviewChart = lazy(() => import("./PreviewChart"));
 // S12: loaded only when the Participants tab is opened.
@@ -43,14 +44,14 @@ const time = (iso: string | null | undefined, short = false) => iso ? `${(short 
 function keyValue(unit: string, field: string, value: number | null) {
   if (value == null) return "—";
   if (unit === "boolean") return value ? "Yes" : "No";
-  if (unit === "days") return `${Math.round(value)} days`;
+  if (unit === "days") return fieldDigits(field) !== undefined ? `${fixedText(value, fieldDigits(field)!)} days` : `${Math.round(value)} days`;
   if (unit === "contracts") return compact.format(value);
   if (unit === "points") return value.toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
   if (unit === "USD") return field === "market_cap" ? `$${compact.format(value)}` : `$${money(value)}`;
   if (unit === "percent") return pct(value, field === "change_pct");
   if (unit === "shares") return compact.format(value);
   if (unit === "ratio") return `${value.toFixed(2)}×`;
-  return value.toFixed(field === "rsi_14" ? 1 : 2);
+  return fixedText(value, fieldDigits(field) ?? 2);
 }
 function barStateLabel(state: string) {
   return ({ CURRENT: "Current", DELAYED: "Delayed", SESSION_CLOSED: "Session closed · last session", STALE: "Stale", UNAVAILABLE: "Unavailable" } as Record<string, string>)[state] ?? state;
@@ -253,10 +254,10 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
         <div className="screener-preview-quote">
           <strong>{headerPrice == null ? "—" : `${universe === "FUTURES" ? "" : "$"}${money(headerPrice)}`}</strong>
           {change != null && <span className={change > 0 ? "screener-positive" : change < 0 ? "screener-negative" : ""} title={universe === "US_EQUITIES" ? "Finviz snapshot change" : "Provider quote change"}>{pct(change, true)}</span>}
-          <span className={`screener-state ${livePrice != null ? "live" : delayedPrice != null ? "delayed" : "snapshot"}`}>{livePrice != null ? "L1 live" : delayedPrice != null ? "Delayed" : quoteFreshness === "STALE" || quote?.state === "STALE" ? "L1 stale" : quoteEvidence ? `L1 ${quoteFreshness?.replace(/_/g, " ").toLowerCase()} · decision blocked` : universe === "FUTURES" ? "Quote unavailable" : universe === "US_ETFS" && data?.market_session === "CLOSED" ? "Session closed · no current quote" : universe === "US_ETFS" ? "Quote awaiting provider" : "Snapshot"}</span>
+          <span className={`screener-state ${livePrice != null ? "live" : delayedPrice != null ? "delayed" : "snapshot"}`}>{livePrice != null ? "L1 live" : delayedPrice != null ? "Delayed" : quoteFreshness === "STALE" || quote?.state === "STALE" ? "L1 stale" : quoteEvidence ? `L1 ${freshnessText(quoteFreshness ?? "UNKNOWN")} · decision blocked` : universe === "FUTURES" ? "Quote unavailable" : universe === "US_ETFS" && data?.market_session === "CLOSED" ? "Session closed · no current quote" : universe === "US_ETFS" ? "Quote awaiting provider" : "Snapshot"}</span>
         </div>
       </div>
-      {universe === "FUTURES" && <p className="screener-preview-meta">Root {row.root ?? "—"} · {row.exchange?.replace(/^US_/, "") ?? "Exchange unavailable"} · expires {row.expiry ?? "unknown"}</p>}
+      {universe === "FUTURES" && <p className="screener-preview-meta">Root {row.root ?? "—"} · {exchangeText(row.exchange) || "Exchange unavailable"} · expires {row.expiry ?? "unknown"}</p>}
       <div className="screener-preview-controls">
         {universe !== "FUTURES" && <><div role="group" aria-label="Chart timeframe" className="screener-segment">{TIMEFRAMES.map((item) =>
           <button key={item} type="button" aria-pressed={timeframe === item} onClick={() => setTimeframe(item)}>{item}</button>)}</div>
@@ -273,7 +274,6 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
               {" "}<button type="button" onClick={() => void preview.refetch()} disabled={preview.isFetching}>{preview.isFetching ? "Retrying…" : "Retry"}</button></div>}
             <p className="screener-preview-meta">{bars?.timeframe} · {bars?.session_scope === "RTH" ? "RTH" : bars?.session_scope === "PROVIDER_SPECIFIC" ? "Futures session" : "Extended"} · {barStateLabel(bars?.state ?? "UNAVAILABLE")}{universe !== "FUTURES" ? " · Moomoo OpenD" : bars?.provider === "IBKR" ? " · IBKR delayed data" : ""}{bars?.latest_complete_bar_end ? ` · last bar ${time(bars.latest_complete_bar_end, true)}` : ""}</p>
           </section>
-          <DecisionFreshness inputs={[...(quote?.decision_inputs ?? []), ...(data.decision_inputs ?? []).filter(item => item.capability !== "quote")]} />
           <Levels preview={data} price={price} priceSource={priceSource} />
           <div className="screener-preview-tabs" role="tablist" aria-label="Preview details" onKeyDown={onTabKey}>
             {tabs.map((item) => <button key={item.id} ref={(element) => { tabRefs.current[item.id] = element; }} type="button" role="tab"
@@ -289,6 +289,7 @@ function QuickPreviewInner({ row, universe, quote, filters, screenLabel, overlay
                       <PreviewParticipants row={row} settledId={requestId} universe={universe} institutional={institutionalSupported}
                         government={governmentSupported} onOpen={onOpenParticipants} /></Suspense> : <Futures preview={data} />}
           </div>
+          <DecisionFreshness inputs={[...(quote?.decision_inputs ?? []), ...(data.decision_inputs ?? []).filter(item => item.capability !== "quote")]} />
         </>}
       <footer className="screener-preview-footer"><button type="button" className="screener-control screener-primary" onClick={() => onOpen(row)}>Open Instrument</button></footer>
     </>}

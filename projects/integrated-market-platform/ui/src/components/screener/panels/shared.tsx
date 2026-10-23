@@ -1,4 +1,4 @@
-import { DecisionFreshness, currentFreshness, useDecisionNow } from "../DecisionFreshness";
+import { DecisionFreshness, currentFreshness, freshnessRollup, useDecisionNow } from "../DecisionFreshness";
 import type { DecisionEvidence } from "../../../api/decisionFreshness";
 import { Component, createContext, createElement, Fragment, lazy, useCallback, useContext, useEffect, useState, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -8,7 +8,7 @@ import type { AiScreenerScope } from "../../../api/screenerAi";
 import type { PanelDemand, PanelState } from "../../../api/screenerPanels";
 import { SchemaMismatchError } from "../../../api/fetchJson";
 import { PANEL_TITLES } from "./registry";
-import { LOCAL_SUFFIX, LOCAL_ZONE } from "../localZone";
+import { ET_ZONE, stampTitle } from "../screenerText";
 
 /** One canonical selection drives every panel; panels never pick their own ticker. */
 export type SpecialistSelection = {
@@ -61,15 +61,12 @@ export const etDay = (iso: string | null | undefined) => iso ? `${etShort.format
 export const compact = (value: number) => compactFormat.format(value);
 export const signedCompact = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : ""}${compactFormat.format(Math.abs(value))}`;
 export const money = (value: number) => value >= 1 ? value.toFixed(2) : value.toFixed(4);
-const localTime = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false });
-const localShort = new Intl.DateTimeFormat("en-US", { timeZone: LOCAL_ZONE, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false });
-export const localClock = (iso: string | null | undefined) => iso ? `${localTime.format(new Date(iso))} ${LOCAL_SUFFIX}` : "—";
-export const localDay = (iso: string | null | undefined) => iso ? `${localShort.format(new Date(iso))} ${LOCAL_SUFFIX}` : "—";
-/** Crypto trades 24/7 with no market session: its panels read the machine's own clock; US markets read ET. */
-export const marketClock = (universe: ScreenerUniverse): { clock: typeof etClock; day: typeof etDay; suffix: string; zone: string } =>
-  universe === "CRYPTO"
-    ? { clock: localClock, day: localDay, suffix: ` ${LOCAL_SUFFIX}`, zone: LOCAL_ZONE }
-    : { clock: etClock, day: etDay, suffix: " ET", zone: "America/New_York" };
+const ET_CLOCK = { clock: etClock, day: etDay, suffix: " ET", zone: ET_ZONE };
+/**
+ * Every universe reads ET, Crypto included, so one Screener never shows two clocks; the machine's own time is in
+ * each timestamp's tooltip (`stampTitle`). The universe argument stays for callers that pass it.
+ */
+export const marketClock = (_universe?: ScreenerUniverse): { clock: typeof etClock; day: typeof etDay; suffix: string; zone: string } => ET_CLOCK;
 const PROVIDER_LABELS: Record<string, string> = { MOOMOO: "Moomoo", IBKR: "IBKR", KRAKEN: "Kraken" };
 export const providerLabel = (provider: string | null | undefined) => provider ? PROVIDER_LABELS[provider] ?? provider : "No provider";
 /** Pair prices keep the venue's price increment (sub-cent assets included); US prices keep the dollar format. */
@@ -127,7 +124,7 @@ export function Age({ iso, staleMs, title }: { iso: string | null | undefined; s
   }, [iso, fast]);
   if (!iso || ms === null || Number.isNaN(ms)) return null;
   const stale = staleMs !== undefined && ms > staleMs;
-  return <time className={`screener-age${stale ? " stale" : ""}`} dateTime={iso} title={title ?? `${etClock(iso)}${stale ? " · older than expected" : ""}`}>{age(iso, now)}</time>;
+  return <time className={`screener-age${stale ? " stale" : ""}`} dateTime={iso} title={title ?? `${etClock(iso)} · ${stampTitle(iso)}${stale ? " · older than expected" : ""}`}>{age(iso, now)}</time>;
 }
 
 export const STATE_LABELS: Record<PanelState, string> = {
@@ -185,11 +182,14 @@ export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentSco
   const now = useDecisionNow(decisionInputs);
   const primary = decisionInputs?.find(item => item.capability === id);
   const effectiveState = primary ? currentFreshness(primary, now) : state;
+  // Inputs that are not all current also show in the header: the detail is collapsed below the content.
+  const rollup = freshnessRollup(decisionInputs, now);
   return <section className="screener-panel" id={`screener-panel-${id}`} tabIndex={-1} aria-label={`${title}${row ? ` for ${row.symbol}` : ""}`}>
     <header className="screener-panel-header">
       <div className="screener-panel-title"><h2>{title}</h2>
         <span className="screener-panel-meta">{instrumentScoped ? (row ? row.symbol : "No selection") : "Workstation"}{detail ? <> · {detail}</> : null}</span></div>
-      <div className="screener-panel-status">{effectiveState ? <StateBadge state={effectiveState} label={primary ? undefined : stateLabel} /> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
+      <div className="screener-panel-status">{effectiveState ? <StateBadge state={effectiveState} label={primary ? undefined : stateLabel} /> : null}
+        {rollup && rollup.tone !== "ok" ? <span className={`decision-rollup ${rollup.tone}`} title="Data freshness of this panel's inputs; details at the bottom of the panel">{rollup.text}</span> : null}{clock ? <span className="screener-panel-clock">{clock}</span> : null}</div>
       <div className="screener-panel-actions" role="group" aria-label={`${title} layout`}>
         <button type="button" onClick={() => actions.move(id, "left")} aria-label={`Move ${title} to the previous group`} title="Move to previous group">‹</button>
         <button type="button" onClick={() => actions.move(id, "right")} aria-label={`Move ${title} to the next group`} title="Move to next group">›</button>
@@ -199,7 +199,7 @@ export function PanelFrame({ id, detail, state, stateLabel, clock, instrumentSco
         <button type="button" onClick={() => actions.close(id)} aria-label={`Close ${title}`} title="Close">×</button>
       </div>
     </header>
-    <div className="screener-panel-body"><DecisionFreshness inputs={decisionInputs} />{children}</div>
+    <div className="screener-panel-body">{children}<DecisionFreshness inputs={decisionInputs} /></div>
   </section>;
 }
 

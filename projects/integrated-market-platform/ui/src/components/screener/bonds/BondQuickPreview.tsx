@@ -1,3 +1,4 @@
+import { stampText } from "../screenerText";
 import { DecisionFreshness } from "../DecisionFreshness";
 import { memo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -97,7 +98,6 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
       {preview.isError && !data ? <p className="screener-preview-note" role="alert">Preview unavailable for {row.cusip}. <button type="button" onClick={() => void preview.refetch()}>Retry</button></p> :
         !data ? <p className="screener-preview-note" aria-live="polite">Loading {row.cusip}…</p> :
         <div className="bond-preview-body" tabIndex={0} aria-label={`${row.company} details`}>
-          <DecisionFreshness inputs={data.decision_inputs} />
           {matched && matched.state !== "NO_ACTIVE_FILTERS" && <section className="bond-preview-section" aria-label="Why it matched">
             <h3>Why it matched{screenLabel ? <span className="screener-muted"> · {screenLabel}</span> : null}</h3>
             <ul className="screener-why-list">{matched.items.map((item) => <li key={item.filter_id} className={item.passed ? "pass" : "fail"}>
@@ -108,8 +108,9 @@ function BondQuickPreviewInner({ row, filters, screenLabel, overlay, width, pane
             <h3>Sources</h3>
             <ul className="bond-sources">{data.sources.map((source) => <li key={source.id}>
               <span>{source.label}</span><span className={`bond-source-state ${(source.state ?? "unavailable").toLowerCase()}`}>{sourceState(source)}</span>
-              <small>{source.as_of ? (source.as_of.length > 10 ? new Date(source.as_of).toLocaleString() : isoDate(source.as_of)) : reasonLabel(source.reason)}</small></li>)}</ul>
+              <small>{source.as_of ? (source.as_of.length > 10 ? stampText(source.as_of) : isoDate(source.as_of)) : reasonLabel(source.reason)}</small></li>)}</ul>
           </section>
+          <DecisionFreshness inputs={data.decision_inputs} />
         </div>}
       {newsSupported && <PreviewNewsSection row={row} settledId={requestId} universe="BONDS" onOpenNews={onOpenNews} />}
       <footer className="screener-preview-footer bond-preview-footer">
