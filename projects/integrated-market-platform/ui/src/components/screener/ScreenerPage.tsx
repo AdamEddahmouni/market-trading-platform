@@ -1,8 +1,8 @@
 import { codeWords, distinctJoin, exchangeText, fieldDigits, filterText, fixedText, msIso, priceText, sessionHint, sessionText, stampText } from "./screenerText";
 import { useAvailableFilters, useScreenSnapshot } from "./screenerRenderMemo";
 import { currentFreshness, deliveryText, freshnessText, useDecisionNow } from "./DecisionFreshness";
-import { ConfigureButton } from "./setup/ProviderConfig";
-import { ENV_SWITCHES, HowToTurnOn } from "./setup/Remedy";
+import { ConfigureButton, ProviderConfigDialog } from "./setup/ProviderConfig";
+import { ENV_SWITCHES, HowToTurnOn, SETUP_SWITCHES } from "./setup/Remedy";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useInfiniteQuery, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
@@ -288,6 +288,8 @@ export function ScreenerPage() {
   const [quotes, setQuotes] = useState<Record<string, ScreenerQuote>>({});
   const [quoteError, setQuoteError] = useState(false);
   const [windowSession, setWindowSession] = useState<string | null>(null);
+  // A keyless source's Setup switch opened from the source-error message.
+  const [setupProvider, setSetupProvider] = useState<string | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const clientId = useRef(crypto.randomUUID().replace(/-/g, ""));
@@ -1158,6 +1160,11 @@ export function ScreenerPage() {
               : `The current ${activeSpec?.label ?? "universe"} source could not be refreshed.`}</span>
           {/* A switched-off or unconfigured source is fixed by a setting, never by retrying; Retry is for failures only. */}
           {firstPage?.source_error === "NOT_CONFIGURED" ? <ConfigureButton provider="finviz" label="Enter Finviz token" />
+            // The page owns this dialog: switching the source on replaces this message, and the dialog (with its
+            // result line) must stay open when it does.
+            : firstPage?.source_error && SETUP_SWITCHES[firstPage.source_error]
+              ? <button type="button" className="screener-control setup-connect-button" aria-haspopup="dialog"
+                onClick={() => setSetupProvider(SETUP_SWITCHES[firstPage.source_error!]!)}>Turn on in Setup</button>
             : firstPage?.source_error && ENV_SWITCHES[firstPage.source_error] ? <HowToTurnOn reason={firstPage.source_error} />
             : <button onClick={() => { forceNextRefresh.current = true; void query.refetch(); }}>Retry source</button>}
         </div> :
@@ -1230,6 +1237,7 @@ export function ScreenerPage() {
       </section>
     </>}
     <PanelLauncher open={openPanels} supported={supportedPanels} onLaunch={onLauncher} onReset={resetPanels} resetDisabled={!openPanels.length && dockHeight === DOCK_HEIGHT_DEFAULT} />
+    {setupProvider && <ProviderConfigDialog provider={setupProvider} onClose={() => setSetupProvider(null)} />}
     <footer className="screener-footer"><span>{resultCount?.toLocaleString() ?? "—"}{filters.length && resultCount !== null && firstPage?.unfiltered_count !== undefined ? ` of ${firstPage.unfiltered_count.toLocaleString()}` : ""} results{resultCount !== null && rows.length < resultCount ? ` · ${rows.length.toLocaleString()} loaded` : ""}</span>
       {truncated && <span className="screener-truncated" role="status">{truncated}</span>}
       {firstPage?.snapshot && <span title={`${firstPage.snapshot.priced.toLocaleString()} priced · ${firstPage.snapshot.refused.toLocaleString()} without an entitled quote · filters and order use this snapshot; visible rows stream current quotes`}>Market snapshot {clock(firstPage.snapshot.as_of, universe)} (<Age iso={firstPage.snapshot.as_of} staleMs={300_000} /> ago) · {firstPage.snapshot.priced.toLocaleString()} of {firstPage.snapshot.total.toLocaleString()} priced</span>}

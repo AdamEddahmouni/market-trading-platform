@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProviderConfig } from "../../../api/providerConfig";
 import { ProviderSetupList } from "./ProviderConfig";
 import { RemedyHint } from "./Remedy";
-import { providerConfigPayload, secEntry } from "./providerConfig.fixture";
+import { keylessEntry, providerConfigPayload, secEntry } from "./providerConfig.fixture";
 
 const IDENTITY = "Acme Research Ops Desk ops-desk@acme-research.test";
 const SECRET = "fh-live-7f3a9c2e51d4";
@@ -77,6 +77,60 @@ describe("Provider settings in Setup", () => {
     expect(openai).not.toHaveTextContent("needs setup");
     expect(within(list).getByText("AI synthesis").closest("details")).not.toHaveAttribute("open");
     expect(within(list).getByText("Finviz Elite").closest("li")).toHaveTextContent("not set");
+  });
+
+  it("switches a keyless source on with role=switch, posts only the switch, and refreshes", async () => {
+    mount(<ProviderSetupList enabled />);
+    const list = await screen.findByRole("region", { name: "Provider settings" });
+    const row = within(list).getByText("Kraken public market data").closest("li")!;
+    expect(row).toHaveTextContent("off");
+    const dialog = await openProvider("Turn on Kraken public market data");
+    const toggle = within(dialog).getByRole("switch", { name: "Switched off" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(within(dialog).getByText("Kraken public market data in the Screener")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("textbox")).toBeNull();
+    expect(dialog).not.toHaveTextContent(/restart/i);
+
+    const next = providerConfigPayload({ kraken: keylessEntry("kraken", "Kraken public market data", "IMP_CRYPTO_LIVE", true) });
+    respond = (call) => call.method === "POST" ? saved("kraken", { switch: "ON", gates_enabled: ["IMP_CRYPTO_LIVE"] }, next) : null;
+    fireEvent.click(toggle);
+    const status = await within(dialog).findByText(/Kraken public market data is switched on/);
+    expect(status).toHaveTextContent("applies to the next request; no restart needed");
+    const post = calls.filter((call) => call.method === "POST").at(-1)!;
+    expect(post).toEqual({ url: "/operator/config/provider", method: "POST", body: { provider: "kraken", switch: "ON" } });
+    await waitFor(() => expect(within(dialog).getByRole("switch")).toHaveAttribute("aria-checked", "true"));
+    expect(within(dialog).getByRole("switch", { name: "Switched on" })).toBeEnabled();
+  });
+
+  it("shows a gate the API's environment sets as read-only, and says where to change it", async () => {
+    config = providerConfigPayload({ kraken: keylessEntry("kraken", "Kraken public market data", "IMP_CRYPTO_LIVE", true, "ENVIRONMENT") });
+    mount(<ProviderSetupList enabled />);
+    const dialog = await openProvider("Manage Kraken public market data");
+    const toggle = within(dialog).getByRole("switch", { name: "Switched on" });
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+    expect(toggle).toBeDisabled();
+    expect(dialog).toHaveTextContent("Set in the API environment. Change it there.");
+    fireEvent.click(toggle);
+    expect(calls.some((call) => call.method === "POST")).toBe(false);
+  });
+
+  it("reports a refused switch in words and keeps the state", async () => {
+    mount(<ProviderSetupList enabled />);
+    const dialog = await openProvider("Turn on Kraken public market data");
+    respond = (call) => call.method === "POST"
+      ? { status: 409, body: errorBody("SETTING_OVERRIDDEN_BY_ENVIRONMENT:IMP_CRYPTO_LIVE") } : null;
+    fireEvent.click(within(dialog).getByRole("switch"));
+    expect(await within(dialog).findByText(/The API's environment sets this/)).toBeInTheDocument();
+    expect(within(dialog).getByRole("switch")).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("a switched-off keyless remedy opens that source's switch", async () => {
+    mount(<RemedyHint remedy={{ reason: "CRYPTO_NOT_CONFIGURED", title: "Kraken public market data is switched off",
+      step: "Turn it on in Setup; it applies to the next request.", action: { kind: "CONFIGURE", provider: "kraken", label: "Turn on in Setup" } }} />);
+    fireEvent.click(screen.getByRole("button", { name: "Turn on in Setup" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(await within(dialog).findByRole("heading", { name: "Kraken public market data" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("switch")).toHaveAttribute("aria-checked", "false");
   });
 
   it("configures the SEC identity: explains it, rejects a bad value, saves, and shows it switched on", async () => {
