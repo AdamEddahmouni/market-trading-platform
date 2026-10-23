@@ -67,8 +67,7 @@ Each raw code stays in a tooltip, so it can still be searched.
   - Python: per-preset reasons, the view change, and that Finviz "-" parses
     to missing.
 
-  The 26 failures in `test_screener_ai_coverage` and `test_screener_ai_runs`
-  fail on the Sprint 2 base too, under the disposable validation environment.
+  `validate changed` passed: 2,125 tests, 8 skipped, 0 failures.
 - Checked in a browser at 1600×900, 1280×720 and 800×600 against the isolated
   backend. Data-dependent items need a live check after the next release:
   freshness inputs, Cross-Asset, AI results, and the Futures mixed session.
