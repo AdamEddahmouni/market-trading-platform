@@ -35,7 +35,7 @@ def parse_provider_datetime_ns(value: Any) -> int | None:
     return None
 
 
-def event_time_ns_from_payload(payload: dict[str, Any], *, received_ns: int) -> int:
+def event_time_ns_from_payload(payload: dict[str, Any], *, received_ns: int, quote_trade_time: bool = False) -> int:
     """Best-effort provider event time; never use received time just to look fast.
 
     Quote snapshots often carry session ``data_time`` of ``16:00:00`` (regular-session
@@ -46,6 +46,16 @@ def event_time_ns_from_payload(payload: dict[str, Any], *, received_ns: int) -> 
         parsed = parse_provider_datetime_ns(payload.get(key))
         if parsed is not None:
             return parsed
+    # QUOTE push data_date/data_time dates last_price during the regular session only.
+    # Extended-session prices carry no corresponding clock; keep the fallback explicit.
+    if quote_trade_time:
+        local = datetime.fromtimestamp(received_ns / 1e9, _ET)
+        if (9, 30) <= (local.hour, local.minute) < (16, 0):
+            date, clock = payload.get("data_date"), payload.get("data_time")
+            if date and clock:
+                parsed = parse_provider_datetime_ns(f"{date} {clock}")
+                if parsed is not None:
+                    return parsed
     return received_ns
 
 

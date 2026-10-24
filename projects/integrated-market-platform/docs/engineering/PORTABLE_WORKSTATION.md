@@ -7,8 +7,8 @@
 | Primary Truth Class | `CURRENT_CANONICAL_TRUTH` |
 | Canonical Subject | Source, runtime, backup, and development boundaries of the owner's portable SSD installation |
 | Establishing Milestone | Portable migration and recovery, PRs [#490](https://github.com/AdamEddahmouni/market-trading-platform/pull/490)–[#493](https://github.com/AdamEddahmouni/market-trading-platform/pull/493) |
-| Version | `1.0` |
-| Last Verified | `2026-10-11` |
+| Version | `1.1` |
+| Last Verified | `2026-10-23` (location, services and release practice; the rest unchanged from 2026-10-11) |
 | Supersedes | None |
 | Superseded By | None |
 
@@ -27,6 +27,34 @@ letter is assigned by Windows and can change between mounts and hosts.
 | Migration backup | sibling `IMP-MIGRATION-BACKUP-<timestamp>-<id>/` | Preserved original payload, Python dependencies, models. Read-only source of reuse; never duplicated or edited |
 
 Both folder names are fixed. Keep them side by side.
+
+### Current location and services (2026-10-23)
+
+Since 2026-10-21 both folders live on the owner's PC under `D:\IMP\` (copied
+off the E: SSD; the SSD was returned). Everything IMP-related belongs under
+`D:\IMP\`; Oct 9 PC-setup leftovers are filed in
+`D:\IMP\_legacy-pc-setup-20261009\`. The live Moomoo OpenD runs from its host
+installation in `%APPDATA%\moomoo_OpenD`.
+
+- **The backup is a runtime dependency.** Launchers load the `.venv`
+  site-packages and the FinBERT / Qwen weights from the backup's `payload/`.
+  Never archive, move or delete it.
+- **Store identity pin.** `collector/RUN_COLLECTOR.py` pins the
+  `(st_dev, st_ino)` of `state-normal/imp-state.sqlite3`. A copy to another
+  volume refuses to start (`CANONICAL_STORE_MISSING_OR_REPLACED`) until the
+  pin is updated on purpose.
+- **Scheduled tasks.** `IMP-Platform`, `IMP-PF01-Collector`,
+  `IMP-OpenD-Watchdog`, `IMP-Local-Intelligence`, `IMP-AI-Journal`,
+  `IMP-Evidence-Capture`. On 2026-10-23 the owner stopped everything and all
+  six are **disabled** until the rebuild is approved
+  ([Program Status](../platform/PROGRAM_STATUS.md#current-operating-state-2026-10-23)).
+- **Stop / start.** `RUN_IMP.py stop` (or `STOP_PORTABLE.cmd`) and
+  `RUN_COLLECTOR.py stop`; start through the scheduled tasks. The launcher's
+  readiness wait is 60–300 s depending on how the API fails; a slow first
+  start can be reported as a failure while the API is still coming up.
+- `development/monorepo/` itself sits on an old branch
+  (`codex/portable-workstation-readiness`, 2026-10-09); do not read its docs
+  as current. Work happens in the task worktrees.
 
 ## Which tree is which
 
@@ -125,6 +153,15 @@ named in `DEVELOPMENT-CONFIG.json`; prefer a temporary commit over a stash.
    `destination-tests/<run>/` folder.
 5. Start with `START_PORTABLE.cmd`, check `STATUS_PORTABLE.cmd`, and confirm the
    startup profile is live data with Paper internal simulation only.
+
+**Practice since 2026-10-14 (recorded, not endorsed).** Paper releases R1–R13
+were deployed from unmerged local branches, not from `main`, with
+owner-approved per-release tooling (prepare → rehearse → deploy with rollback
+→ hash-verify) kept in `destination-tests/<run>/release-*/`, preimages in
+`release-backups/<date>-<name>/` and staging copies in `r-*/`. As a result the
+running copy is ahead of `main`; the branch is pushed as a draft backup PR
+rather than merged. Restoring step 1 (merge first, then deploy) is part of the
+owner's rebuild plan.
 
 ## Limits
 

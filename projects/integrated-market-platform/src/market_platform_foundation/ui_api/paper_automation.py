@@ -13,17 +13,25 @@ simulator's active Paper experiment. No broker or live route is imported here.
 """
 from __future__ import annotations
 
+from ..paper.contracts import quantity_number, quantity_wire
+
+import copy
+import json
 import re
+import sqlite3
 import threading
 import time
+import traceback
 import uuid
+from contextvars import ContextVar
+from decimal import Decimal
 from datetime import UTC, datetime
 
 from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.paper_automation import (
     ARM_ACKNOWLEDGEMENT, AutomationStatus, IntentState, build_policy, decision_permitted, derive_status,
     entry_risk_blockers, exposure_minor, intent_identity, optional_fields, required_fields, should_run_universe,
-    size_entry, spending_gate, universe_fingerprint, universe_material_change,
+    size_entry, spending_gate, universe_fingerprint, universe_material_change, universe_scopes,
 )
 from ..local_state.paper_automation import paper_automation_repository
 from ..market_data.freshness_contract import timestamp
@@ -35,15 +43,30 @@ HISTORY_SCHEMA = 'paper-automation-history/1.0.0'
 REPORT_SCHEMA = 'paper-automation-report/1.0.0'
 DRIVER = 'PAPER_AUTOMATION'
 LEASE_SECONDS = 180
+# Consecutive busy/locked shared-store errors outside a cycle's own accounting before the worker ends.
+TRANSIENT_STORE_RETRIES = 5
+LEASE_GRACE_SECONDS = 5  # a restarted process retries this long after its predecessor's lease expiry
 CANDIDATE_QUOTE_CONSUMER = 'paper-automation-candidates'
 _WORKING = ('ACTIVATED', 'WORKING', 'PARTIALLY_FILLED', 'REPLACE_PENDING', 'REPLACED')
 _ENDED_UNFILLED = ('REJECTED', 'CANCELLED', 'EXPIRED', 'RISK_REJECTED')
 # After an exit order ends without closing the position, the next exit order for that instrument waits
 # cadence * 2^n, capped here. A new order always needs a new Action Decision; this only spaces them out.
 EXIT_BACKOFF_CAP_SECONDS = 900
+# Open equity positions are closed once this close to the regular-session bell (owner policy 2026-10-23).
+EOD_FLATTEN_MINUTES = 10  # two 300 s cadence slots, so a slow cycle still lands inside the window
 # After a full-universe run ends without adopting a selection, the next attempt waits cadence * 2^n, capped here.
 # A run that fails for a lasting reason is not relaunched every cycle.
 UNIVERSE_BACKOFF_CAP_SECONDS = 900
+# Rolling slices (local engine): the first pass of a universe run ends at this fraction of the scope's minimum
+# separation, so the slice, its comparison and the other scope's slice all fit one interval. A run that reaches
+# every row inside that time is an ordinary complete run.
+SLICE_FRACTION = 0.4
+# Finished runs a scope keeps for its coverage epoch: their immutable ledger rows give each row's last evaluation.
+EPOCH_RUNS_KEPT = 16
+# A row too large to send alone has had its turn: it cannot be answered this epoch, and waiting on it would starve the rest.
+REFUSED_AT_SEND = 'BATCH_FAILED:LOCAL_CONTEXT_EXCEEDED'
+# An adopted selection is a hypothesis for this many separations; after that it is dropped, never acted on.
+SELECTION_TTL_SEPARATIONS = 2
 # The refusal reasons an unrunnable plan is recorded with: a plan over the owner's cap or the shared allowance.
 UNIVERSE_BUDGET_REASONS = ('AUTONOMOUS_SPENDING_NOT_AUTHORIZED', 'AUTONOMOUS_SPENDING_LIMIT_REACHED',
                            'AUTONOMOUS_SPENDING_BUDGET_UNREADABLE', 'SYNTHESIS_DAILY_REQUEST_LIMIT',
@@ -108,8 +131,9 @@ def market_session(epoch):
 
 class PaperAutomationService:
     def __init__(self, store, *, repository=None, reevaluation=None, runs=None, clock=time.time, owner_id=None,
-                 session=market_session, provider_health=None, submit_lock=None):
+                 session=market_session, provider_health=None, submit_lock=None, sleep=time.sleep):
         self.store = store
+        self.sleep = sleep
         self.repository = repository or paper_automation_repository()
         self._reevaluation, self._runs = reevaluation, runs
         self.clock = clock
@@ -120,14 +144,45 @@ class PaperAutomationService:
         self.cycle_lock = threading.Lock()
         self.control_lock = threading.RLock()
         self.worker = None
+        self._scope_services = {}
+        self._scope_context = ContextVar('paper_scope_' + self.owner_id, default=None)
+        self._session_context = ContextVar('paper_session_' + self.owner_id, default=None)
 
     # --- collaborators (existing authorities) ---------------------------------------
     @property
     def reevaluation(self):
+        scoped = self._scope_context.get()
+        if scoped is not None:
+            return scoped
         if self._reevaluation is None:
             from .screener_reevaluation import reevaluation_service
             self._reevaluation = reevaluation_service(self.store)
         return self._reevaluation
+
+    def _trace_log_path(self):
+        from pathlib import Path
+        return Path(__file__).resolve().parents[3] / '.local' / 'paper-automation-scope-errors.log'
+
+    def _scoped_reevaluation(self, scope):
+        """A bound loop per scope, sharing account authorities and inference budgets."""
+        identity = input_hash_from_dict(scope)
+        if identity not in self._scope_services:
+            from .screener_reevaluation import ReevaluationService
+            base = self.reevaluation
+            self._scope_services[identity] = ReevaluationService(
+                self.store, repository=base.repository, actions=base.actions, ai=base.ai,
+                clock=self.clock, owner_id=self.owner_id + ':' + identity[:12], scope=scope)
+        return self._scope_services[identity]
+
+    def _scope_session(self, scope, epoch):
+        universe = scope.get('universe')
+        if universe in ('US_EQUITIES', 'US_ETFS'):
+            return self.session(epoch)
+        if universe == 'CRYPTO':
+            return dict(label='CONTINUOUS', trading_day=True, session_date=datetime.fromtimestamp(epoch, UTC).astimezone(ET).date().isoformat(),
+                        minutes_to_close=None, calendar='KRAKEN_SPOT_CONTINUOUS')
+        return dict(label='REFERENCE_ONLY' if universe == 'BONDS' else 'PROVIDER_STATE_UNAVAILABLE', trading_day=False,
+                    session_date=datetime.fromtimestamp(epoch, UTC).astimezone(ET).date().isoformat(), minutes_to_close=None)
 
     @property
     def actions(self):
@@ -190,9 +245,24 @@ class PaperAutomationService:
                 reasons.append('PAPER_RISK_POLICY_CHANGED')
         return reasons
 
-    def provider_health(self):
+    def provider_health(self, scope=None):
         if self._provider_health is not None:
             return self._provider_health()
+        if scope and scope.get('universe') == 'CRYPTO':
+            # The controller's usable crypto supply is the owner-authorized Kraken Spot source (IMP_CRYPTO_LIVE);
+            # a verdict without it would strand the scope: candidate demand creation itself needs an admitted run.
+            # The observed in-process stream runtime carries execution-grade forward detail (never a verdict).
+            from ..crypto_market import kraken_stream
+            runtime = kraken_stream._RUNTIME  # observe only; demand creation belongs to the candidate feed
+            stream = dict(connection_state=None, last_received_ns=None, instruments={})
+            if runtime is not None:
+                with runtime._lock:
+                    stream = dict(connection_state=str(runtime.lifecycle.connection_state),
+                                  last_received_ns=runtime.lifecycle.last_received_ns,
+                                  instruments={iid: len(runtime.state.trades_for(iid)) for iid, _cap in set(runtime._consumers)})
+            from .screener_crypto import crypto_supply_health
+            state, reasons, detail = crypto_supply_health()
+            return dict(state=state, reasons=list(reasons), provider='KRAKEN', detail=dict(detail, stream=stream))
         if self.store.data_mode != 'LIVE_OBSERVATIONAL':
             return dict(state='NOT_LIVE', data_mode=str(self.store.data_mode), reasons=[])
         from ..market_data.live_runtime import get_live_runtime
@@ -224,7 +294,10 @@ class PaperAutomationService:
                              experiment_id=experiment['experiment_id'], initial_capital_minor=experiment['initial_capital_minor'],
                              ledger_policy=ledger.policy)
             scope = self.reevaluation.ai._query(body['scope'])
-            policy = build_policy(dict(body, scope=scope), account_id=ledger.paper_account_id, experiment_id=experiment['experiment_id'],
+            normalized = dict(body, scope=scope)
+            if 'scopes' in body:
+                normalized['scopes'] = [dict(item, scope=self.reevaluation.ai._query(item['scope'])) for item in body['scopes']]
+            policy = build_policy(normalized, account_id=ledger.paper_account_id, experiment_id=experiment['experiment_id'],
                                   initial_capital_minor=experiment['initial_capital_minor'], ledger_policy=ledger.policy)
             now = self.clock()
             self.repository.put_policy(policy, now=now)
@@ -291,8 +364,12 @@ class PaperAutomationService:
             now = self.clock()
             self.repository.acquire_lease(controller['account_id'], self.owner_id, now=now, lease_seconds=LEASE_SECONDS)
             try:
-                self.reevaluation.attach_driver(DRIVER, scope=policy['scope'], requested_cadence_seconds=policy['schedule']['cadence_seconds'])
+                for item in universe_scopes(policy):
+                    service = self._scoped_reevaluation(item['scope']) if policy.get('scopes') else self.reevaluation
+                    service.attach_driver(DRIVER, scope=item['scope'], requested_cadence_seconds=policy['schedule']['cadence_seconds'])
             except Exception:
+                for service in self._scope_services.values():
+                    service.detach_driver()
                 self.repository.release_lease(controller['account_id'], self.owner_id)
                 raise
             controller = self._controller()
@@ -378,14 +455,19 @@ class PaperAutomationService:
         """Stop scheduling, stop an AI run in progress, release the loop, the quotes and the lease."""
         if self.worker:
             self.worker.stop()
-        universe = controller.get('universe') or {}
-        if universe.get('active_run_id') and universe.get('origin') == 'AUTOMATION':
-            try:
-                self.runs.stop(controller['account_id'], universe['active_run_id'])  # no further model call starts
-            except Exception:  # noqa: BLE001 - stopping never depends on the run tracker
-                pass
+        states = [controller, *(controller.get('universes') or {}).values()]
+        for state in states:
+            universe = state.get('universe') or {}
+            if universe.get('active_run_id') and universe.get('origin') == 'AUTOMATION':
+                try:
+                    self.runs.stop(controller['account_id'], universe['active_run_id'])
+                except Exception:  # noqa: BLE001 - stopping never depends on the run tracker
+                    pass
+            self._release_candidate_quotes(state.get('subscriptions') or [])
         try:
             self.reevaluation.detach_driver()
+            for service in self._scope_services.values():
+                service.detach_driver()
         except Exception:  # noqa: BLE001
             pass
         self._release_candidate_quotes(controller.get('subscriptions') or [])
@@ -415,6 +497,18 @@ class PaperAutomationService:
             self.start(threaded=threaded)
         except ValueError as exc:
             code = _code(exc)
+            remaining = (controller.get('lease_until') or 0) - self.clock()
+            if code == 'AUTOMATION_ALREADY_OWNED' and 0 < remaining <= LEASE_SECONDS and controller.get('owner_id') != self.owner_id:
+                # A restarted process meets its predecessor's unexpired lease (a stop does not run the predecessor's
+                # cleanup). The contract is to wait that lease out once, then take the same atomic start: a live
+                # owner that keeps renewing still wins, and every start check is evaluated again at that time.
+                self._event('STARTUP_RESUME_WAITING_FOR_LEASE', lease_until=_iso(controller['lease_until']),
+                            wait_seconds=round(remaining + LEASE_GRACE_SECONDS, 3))
+                if threaded:
+                    threading.Thread(target=self._resume_after_lease, args=(remaining + LEASE_GRACE_SECONDS, True),
+                                     name='paper-automation-resume', daemon=True).start()
+                    return dict(resumed=False, reason='WAITING_FOR_PREVIOUS_LEASE')
+                return self._resume_after_lease(remaining + LEASE_GRACE_SECONDS, False)
             self._event('STARTUP_RESUME_REFUSED', reason=code)
             with self.control_lock:
                 fresh = self._controller()
@@ -422,6 +516,30 @@ class PaperAutomationService:
                 self._save(fresh)
             return dict(resumed=False, reason=code)
         self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'])
+        return dict(resumed=True, reason=None)
+
+    def _resume_after_lease(self, wait_seconds, threaded):
+        """The one retry after a predecessor's lease. Re-reads everything; a refusal is recorded as before."""
+        self.sleep(max(0.0, float(wait_seconds)))
+        controller = self.repository.get_controller(self._account())
+        if controller is None or not controller.get('arming') or controller['desired_state'] != 'RUNNING' or controller.get('emergency'):
+            # The operator stopped, paused, disarmed or latched it while this process waited: nothing is resumed.
+            reason = 'NOT_ARMED' if controller is None or not controller.get('arming') else 'NOT_RUNNING_BEFORE_RESTART'
+            self._event('STARTUP_RESUME_REFUSED', reason=reason)
+            return dict(resumed=False, reason=reason)
+        if self.worker and self.worker.alive():
+            return dict(resumed=True, reason=None)
+        try:
+            self.start(threaded=threaded)
+        except ValueError as exc:
+            code = _code(exc)
+            self._event('STARTUP_RESUME_REFUSED', reason=code)
+            with self.control_lock:
+                fresh = self._controller()
+                fresh['last_error'] = dict(at=_iso(self.clock()), code=code)
+                self._save(fresh)
+            return dict(resumed=False, reason=code)
+        self._event('STARTUP_RESUMED', run_id=self._controller()['run']['run_id'], after_lease_wait=True)
         return dict(resumed=True, reason=None)
 
     # --- the cycle --------------------------------------------------------------------------
@@ -459,7 +577,7 @@ class PaperAutomationService:
             session = summary['session'] or {}
             status = derive_status(configured=True, armed=True, desired='RUNNING', emergency=bool(work.get('emergency')),
                                    error=bool(summary['error']), blockers=summary['blockers'],
-                                   session_eligible=session.get('label') in policy['schedule']['sessions'])
+                                   session_eligible=summary.get('session_eligible', session.get('label') in policy['schedule']['sessions']))
             summary.update(status=str(status), completed_at=_iso(completed), duration_ms=int(round((completed - now) * 1000)))
             # Operator commands issued while the cycle ran win; only cycle-owned fields are written back. The
             # control lock makes this read-modify-write atomic against a Pause, Stop, Disarm or Emergency Stop.
@@ -474,7 +592,7 @@ class PaperAutomationService:
                               or fresh.get('desired_state') != 'RUNNING'
                               or fresh.get('owner_id') != self.owner_id)
                 if not superseded:
-                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'subscriptions', 'exit_backoff'):
+                    for key in ('consecutive_failures', 'last_error', 'day', 'universe', 'universes', 'last_universe_started_epoch', 'subscriptions', 'exit_backoff'):
                         fresh[key] = work.get(key)
                     if summary['error'] is None:
                         fresh['last_error'] = None
@@ -516,9 +634,71 @@ class PaperAutomationService:
             summary['blockers'].append(dict(category=category, code=code))
 
     def _cycle(self, work, policy, summary, now, scheduled, missed):
+        if not policy.get('scopes'):
+            return self._cycle_scope(work, policy, summary, now, scheduled, missed)
         for code in self.paper_identity(policy):
             self._block(summary, 'AUTHORITY', code)
-        session = self.session(now)
+        if summary['blockers']:
+            return
+        states = copy.deepcopy(work.get('universes') or {})
+        primary = policy['scope']['universe']
+        if primary not in states:
+            states[primary] = {key: copy.deepcopy(work.get(key)) for key in ('universe', 'subscriptions', 'exit_backoff', 'last_cycle')}
+        summary['universes'], summary['session_eligible'] = {}, False
+        for item in universe_scopes(policy):
+            universe = item['scope']['universe']
+            state = states.setdefault(universe, {})
+            scoped = dict(work, **state)
+            # The day-start loss anchor and risk remain account-wide, independent of venue session boundaries.
+            scoped['day'] = work.get('day')
+            scoped['_global_universe_active'] = any((value.get('universe') or {}).get('active_run_id')
+                                                    for key, value in states.items() if key != universe)
+            scoped['_peer_waiting'] = self._peer_waiting(policy, states, universe, now)
+            selected = dict(policy, scope=item['scope'], schedule=dict(policy['schedule'], sessions=item['sessions']))
+            receipt = dict(actions=[], blockers=[], error=None, session=None, universe=None, provider=None)
+            token = self._scope_context.set(self._scoped_reevaluation(item['scope']))
+            session_token = self._session_context.set(self._scope_session(item['scope'], now))
+            try:
+                self._cycle_scope(scoped, selected, receipt, now, scheduled, missed)
+                state.update(last_error=None, consecutive_failures=0)
+            except Exception as exc:
+                receipt['error'] = _code(exc)
+                import pathlib as _pathlib
+                with _pathlib.Path(self._trace_log_path()).open('a', encoding='utf-8') as _log:
+                    _log.write('=== %s scope=%s failure=%s\n' % (_iso(now), item['scope'].get('universe'), receipt['error']))
+                    _log.write(traceback.format_exc())
+                self._block(receipt, 'DATA', receipt['error'])
+                state['consecutive_failures'] = int(state.get('consecutive_failures') or 0) + 1
+                state['last_error'] = dict(at=_iso(now), code=receipt['error'])
+            finally:
+                self._session_context.reset(session_token)
+                self._scope_context.reset(token)
+            for key in ('universe', 'subscriptions', 'exit_backoff'):
+                state[key] = scoped.get(key)
+            state['last_cycle'] = receipt
+            work['day'] = scoped.get('day')
+            started = (scoped.get('universe') or {}).get('last_started_epoch')
+            if started is not None:
+                work['last_universe_started_epoch'] = max(work.get('last_universe_started_epoch') or 0, started)
+            summary['universes'][universe] = receipt
+            summary['actions'].extend(receipt['actions'])
+            eligible = (receipt.get('session') or {}).get('label') in item['sessions']
+            summary['session_eligible'] |= eligible
+            if eligible:
+                for blocker in receipt['blockers']:
+                    summary['blockers'].append(dict(blocker, universe=universe))
+            if scoped.get('emergency'):
+                work['emergency'] = scoped['emergency']
+                break
+        work['universes'] = states
+        # Preserve the primary legacy projection; authoritative per-scope records are additive.
+        work['universe'] = (states.get(primary) or {}).get('universe')
+        summary['session'] = dict(label='MULTI_UNIVERSE', eligible=summary['session_eligible'])
+
+    def _cycle_scope(self, work, policy, summary, now, scheduled, missed):
+        for code in self.paper_identity(policy):
+            self._block(summary, 'AUTHORITY', code)
+        session = self._session_context.get() or self.session(now)
         summary['session'] = session
         if summary['blockers']:
             return  # the account is not the one that was armed: nothing is evaluated and nothing is ordered
@@ -535,12 +715,13 @@ class PaperAutomationService:
                 summary['blockers'].extend(blocker for blocker in carried if blocker not in summary['blockers'])
                 summary['blockers_from_cycle_id'] = previous.get('blockers_from_cycle_id') or previous.get('cycle_id')
                 summary['blockers_observed_at'] = previous.get('blockers_observed_at') or previous.get('completed_at')
+            self._reconcile_universe_run(work, policy, summary, now)
             return
         from . import paper_projections
         paper_projections.maybe_release_execution_gate(self.store)  # the existing live-health gate; grants nothing on its own
         if not self.actions._authority():
             self._block(summary, 'AUTHORITY', 'PAPER_AUTHORITY_UNAVAILABLE')
-        health = self.provider_health()
+        health = self.provider_health(policy['scope'])
         summary['provider'] = health
         for code in health.get('reasons') or []:
             self._block(summary, 'DATA', code)
@@ -565,7 +746,10 @@ class PaperAutomationService:
         self._universe(work, policy, summary, now, session, gate)
         self._candidate_quotes(work, summary)
         from ..intelligence.inference.reevaluation import ReevaluationTrigger
-        receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=gate)
+        # Action decisions are not withheld while a universe run is active: the local runtime admits one request at a
+        # time, so a decision waits behind at most the batch in flight and is then measured on its own fresh evidence.
+        model_gate = gate
+        receipt = self.reevaluation.driven_cycle(ReevaluationTrigger.SCHEDULED_CADENCE, scheduled, missed=missed, model_gate=model_gate)
         summary['reevaluation'] = dict(cycle_id=receipt['cycle_id'], cycle_status=receipt['cycle_status'], reason_codes=receipt['reason_codes'][:12],
                                        position_count=receipt['position_count'], candidate_count=receipt['candidate_count'],
                                        model_call_count=receipt['model_call_count'], candidate_source=receipt.get('candidate_source'),
@@ -577,6 +761,7 @@ class PaperAutomationService:
         if unhealthy:
             summary['execution'] = 'WITHHELD_PROVIDER_UNHEALTHY'
             return
+        self._eod_flatten(work, policy, summary, session, now)
         self._execute_pending(work, policy, summary, session)
 
     # --- full-universe AI evaluation -----------------------------------------------------------
@@ -627,13 +812,45 @@ class PaperAutomationService:
             backoff_until=failure.get('backoff_until'), consecutive_failures=failure.get('count'), last_failure_code=failure.get('code'))
         return facts, fingerprint
 
-    def _universe(self, work, policy, summary, now, session, gate):
-        """One adaptive scheduling decision, then at most one run. Never a fixed timer dressed up as one."""
+    def _peer_waiting(self, policy, states, universe, now):
+        """True when another scope, inside its own session, waited on the shared run slot at its latest cycle and
+        last started before this one did: this scope then yields one cycle so it cannot take the freed slot first.
+
+        Scopes run in policy order and each closes only its own run handle, so the cycle in which a run finishes
+        shows that run to every scope evaluated before its owner. Without this, a continuous scope whose slice
+        outlasts the minimum separation restarts in that same cycle and a session-limited peer never gets a turn.
+        A peer's decision older than two cadences, or a peer outside its session, never makes anyone wait.
+        """
+        mine = (states.get(universe, {}).get('universe') or {}).get('last_started_epoch') or 0
+        horizon = 2 * int(policy['schedule'].get('cadence_seconds') or 300)
+        for item in universe_scopes(policy):
+            peer = item['scope']['universe']
+            if peer == universe:
+                continue
+            state = states.get(peer, {}).get('universe') or {}
+            decision = state.get('last_decision') or {}
+            if decision.get('decision') != 'DEFER' or (decision.get('detail') or {}).get('run_id') != 'SHARED_ACCOUNT_RUN_ACTIVE':
+                continue
+            try:
+                decided = datetime.fromisoformat(str(decision.get('at_iso')).replace('Z', '+00:00')).timestamp()
+            except ValueError:
+                continue
+            if now - decided > horizon or (state.get('last_started_epoch') or 0) >= mine:
+                continue
+            if self._scope_session(item['scope'], now).get('label') in item['sessions']:
+                return True
+        return False
+
+    def _reconcile_universe_run(self, work, policy, summary, now):
+        """Close this scope's run handle once its run has finished or its owner is gone; a running run keeps it.
+
+        Runs outside the scope's session too: another scope reads this handle as the shared account's active run,
+        so a finished run must not keep it after the close. Nothing is started, evaluated or ordered here.
+        """
         universe = dict(work.get('universe') or {})
-        account = work['account_id']
         active = universe.get('active_run_id')
         if active:
-            snapshot = self.runs.read(account, active)
+            snapshot = self.runs.read(work['account_id'], active)
             if snapshot is None:
                 # The process that owned the run is gone. The run tracker closes it INTERRUPTED on its next write.
                 universe.update(active_run_id=None, last_result=dict(run_id=active, status='INTERRUPTED', reason='SERVER_RESTARTED_DURING_RUN',
@@ -643,21 +860,38 @@ class PaperAutomationService:
                 summary['universe'] = dict(state='RUNNING', run_id=active, stage=snapshot.get('stage'), progress=snapshot.get('progress'))
             else:
                 universe.update(active_run_id=None, last_result=self._finish_universe(snapshot, universe, now=now, policy=policy))
+        work['universe'] = universe
+        return universe
+
+    def _universe(self, work, policy, summary, now, session, gate):
+        """One adaptive scheduling decision, then at most one run. Never a fixed timer dressed up as one."""
+        universe = self._reconcile_universe_run(work, policy, summary, now)
+        account = work['account_id']
         result = universe.get('last_result') or {}
         if result.get('status') == 'AI_COVERAGE_BUDGET_INSUFFICIENT':
             self._block(summary, 'BUDGET', 'AI_COVERAGE_BUDGET_INSUFFICIENT')
         engine = self.reevaluation.engine_state()
         facts, fingerprint = self._universe_facts(policy, universe, now=now, session=session, gate=gate, engine=engine)
+        if work.get('_global_universe_active'):
+            facts['active_run_id'] = 'SHARED_ACCOUNT_RUN_ACTIVE'
         decision = should_run_universe(facts)
+        if decision['decision'] == 'RUN' and work.get('_peer_waiting'):
+            # Only a run yields: a block or deferral keeps its own reason.
+            decision = dict(decision='DEFER', reason_codes=['UNIVERSE_PEER_WAITING'], next_eligible_epoch=None,
+                            detail=dict(run_id='SHARED_ACCOUNT_PEER_WAITING'))
         previous = universe.get('last_decision') or {}
         universe['last_decision'] = dict(decision, at_iso=_iso(now), next_eligible_iso=_iso(decision['next_eligible_epoch']))
         if decision['decision'] == 'RUN' and not universe.get('active_run_id') and gate['allowed']:
             limit = self._remaining_allowance(policy, engine)
-            started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION')
+            slice_plan = self._slice_plan(universe, policy, now, engine)
+            started = self.runs.start(account, policy['scope'], spend_limit=limit, origin='AUTOMATION',
+                                      **({'slice_plan': slice_plan} if slice_plan else {}))
             universe.update(active_run_id=started['run_id'], last_started_epoch=now, withheld=None, run_fingerprint=fingerprint,
                             origin='OPERATOR' if started.get('joined') else 'AUTOMATION')
             self._event('UNIVERSE_RUN_STARTED', run_id=started['run_id'], joined=bool(started.get('joined')), spend_limit=limit,
-                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'])
+                        engine=started.get('engine'), decision='RUN', reason_codes=decision['reason_codes'],
+                        slice=None if not slice_plan else dict(epoch=slice_plan['epoch'], deadline=_iso(slice_plan['deadline_epoch']),
+                                                               rows_with_prior_evaluation=len(slice_plan['last_evaluated'])))
             summary['universe'] = dict(state='STARTED', run_id=started['run_id'])
         elif decision['decision'] != 'RUN':
             kind = {'DEFER': 'UNIVERSE_RUN_DEFERRED', 'SKIP': 'UNIVERSE_RUN_SKIPPED', 'BLOCK': 'UNIVERSE_RUN_BLOCKED'}[decision['decision']]
@@ -676,6 +910,66 @@ class PaperAutomationService:
                                        decision=decision, next_due=_iso(decision['next_eligible_epoch']))
         work['universe'] = universe
 
+    def _slice_plan(self, universe, policy, now, engine):
+        """A rolling slice for the local engine: a first-pass deadline and each row's last evaluation. None otherwise."""
+        if engine.get('runtime') != 'LOCAL_MODEL':
+            return None
+        epoch = universe.get('epoch') or dict(number=1, started_at=_iso(now), started_epoch=now, completed=0, runs=[])
+        universe['epoch'] = epoch
+        separation = int(policy['schedule']['universe_evaluation_interval_seconds'])
+        return dict(deadline_epoch=now + separation * SLICE_FRACTION, epoch=epoch['number'], last_evaluated=self._last_evaluated(epoch),
+                    last_turn=self._last_evaluated(epoch, turns=True))
+
+    def _row_records(self, run_id):
+        records = getattr(self.runs, 'row_records', None)
+        if callable(records):
+            return records(run_id)
+        outcomes = getattr(self.runs, 'row_outcomes', None)
+        return {key: (name, []) for key, name in (outcomes(run_id) if callable(outcomes) else {}).items()}
+
+    @staticmethod
+    def _had_turn(name, reasons):
+        """The model answered (accepted or rejected), or the row alone could not be sent. A row merely not reached
+        (deferred, stopped) has not had its turn."""
+        return name in ('AI_EVALUATED', 'AI_REJECTED') or name == 'UNPROCESSED' and REFUSED_AT_SEND in reasons
+
+    def _last_evaluated(self, epoch, *, turns=False):
+        """Instrument id -> when its most recent kept run evaluated it (or, with ``turns``, gave it its turn), from
+        those runs' immutable ledger rows."""
+        last = {}
+        for item in epoch.get('runs') or []:
+            for key, (name, reasons) in self._row_records(item['run_id']).items():
+                if name == 'AI_EVALUATED' or turns and self._had_turn(name, reasons):
+                    last[key] = float(item['evaluated_epoch'])
+        return last
+
+    def _advance_epoch(self, universe, record, now):
+        """Add a finished run to the scope's coverage epoch; the epoch completes when every row this run found
+        eligible has had its turn since the epoch began. A row the validator keeps rejecting, or one too large to
+        send, would otherwise hold the epoch open for ever and head every slice. The report keeps evaluated and
+        turns apart. Returns what the receipt reports."""
+        epoch = universe.get('epoch')
+        if epoch is None:
+            return None
+        # A row this run evaluated was evaluated no earlier than the run started, on this controller's clock.
+        evaluated_at = float(universe.get('last_started_epoch') or now)
+        epoch['runs'] = [*(epoch.get('runs') or []), dict(run_id=record['run_id'], evaluated_epoch=evaluated_at)][-EPOCH_RUNS_KEPT:]
+        rows = self._row_records(record['run_id'])
+        eligible = [key for key, (name, _) in rows.items() if name in ('AI_EVALUATED', 'AI_REJECTED', 'UNPROCESSED', 'ELIGIBLE')]
+        start = float(epoch['started_epoch'])
+        last, turns = self._last_evaluated(epoch), self._last_evaluated(epoch, turns=True)
+        evaluated = sum(1 for key in eligible if last.get(key, -1.0) >= start)
+        taken = sum(1 for key in eligible if turns.get(key, -1.0) >= start)
+        report = dict(number=epoch['number'], eligible=len(eligible), evaluated_in_epoch=evaluated, turns_in_epoch=taken,
+                      completed=epoch.get('completed', 0))
+        if eligible and taken == len(eligible):
+            epoch.update(number=epoch['number'] + 1, started_epoch=now, started_at=_iso(now), completed=int(epoch.get('completed') or 0) + 1,
+                         last_completed_at=_iso(now))
+            report.update(epoch_completed=True, completed=epoch['completed'])
+            self._event('UNIVERSE_EPOCH_COMPLETED', number=report['number'], eligible=report['eligible'], evaluated=evaluated,
+                        turns=taken, run_id=record['run_id'])
+        return report
+
     def _finish_universe(self, snapshot, universe, *, now, policy):
         """Record what the run really covered. Only a complete selection is adopted; a partial one never is."""
         result = snapshot.get('result') or {}
@@ -691,22 +985,31 @@ class PaperAutomationService:
                       tokens_input=(coverage.get('budget') or {}).get('tokens_input'),
                       tokens_output=(coverage.get('budget') or {}).get('tokens_output'),
                       model_calls=coverage.get('model_calls'), candidate_run_id=result.get('run_id') if result.get('candidates') else None,
-                      required=(coverage.get('plan') or {}).get('required'), adopted=False)
-        if record['coverage_complete'] and record['selection_complete']:
+                      required=(coverage.get('plan') or {}).get('required'), adopted=False,
+                      slice_complete=bool(coverage.get('slice_complete')), slice=coverage.get('slice'),
+                      ai_rejected_count=coverage.get('ai_rejected_count'))
+        record['epoch'] = self._advance_epoch(universe, record, now)
+        complete = record['coverage_complete'] and record['selection_complete']
+        if complete or (record['slice_complete'] and record['status'] == 'SLICE_SELECTION_COMPLETE'):
             try:
-                self.reevaluation.adopt_selection(result)
+                ttl = SELECTION_TTL_SEPARATIONS * int(policy['schedule']['universe_evaluation_interval_seconds'])
+                self.reevaluation.adopt_selection(result, ttl_seconds=ttl)
                 record['adopted'] = True
                 universe.update(adopted_run_id=result.get('run_id'), adopted_at=record['finished_at'])
-                # The selection is only valid for the inputs it was produced from, so the fingerprint observed when
-                # the run started becomes the baseline the next decision compares against.
-                universe.update(last_complete=dict(run_id=record['run_id'], finished_at_epoch=min(_epoch(record['finished_at'], now), now),
-                                                   finished_at=record['finished_at'], universe_count=record['universe_count'],
-                                                   candidate_run_id=record['candidate_run_id']),
-                                last_complete_fingerprint=universe.get('run_fingerprint'))
                 universe.pop('failure', None)
             except ValueError as exc:
                 record['adoption_refused'] = _code(exc)
-        else:
+        if complete and record['adopted']:
+            # The selection is only valid for the inputs it was produced from, so the fingerprint observed when
+            # the run started becomes the baseline the next decision compares against.
+            universe.update(last_complete=dict(run_id=record['run_id'], finished_at_epoch=min(_epoch(record['finished_at'], now), now),
+                                               finished_at=record['finished_at'], universe_count=record['universe_count'],
+                                               candidate_run_id=record['candidate_run_id']),
+                            last_complete_fingerprint=universe.get('run_fingerprint'))
+        elif record['slice_complete']:
+            # A finished slice is the method working as designed; the next slice starts after the separation.
+            universe.pop('failure', None)
+        elif not complete:
             # A partial, failed, stopped or interrupted run is not retried every cycle: it backs off.
             failure = universe.get('failure') or {}
             count = int(failure.get('count') or 0) + 1
@@ -715,16 +1018,38 @@ class PaperAutomationService:
         self._event('UNIVERSE_RUN_FINISHED', **record)
         return record
 
+    def _crypto_stream_runtime(self, *, create):
+        """The CRYPTO scope's own in-process Kraken Spot evidence stream.
+
+        Kraken Spot is public and unauthenticated, but persistence stays one-owner: when this process holds the
+        canonical kraken collector writer, only the existing runtime (if any) is observed, never a second
+        collector stream. With no local kraken writer the controller may create demand for the pairs it owns.
+        """
+        from ..market_data.persistence import active_writer
+        from ..crypto_market import kraken_stream
+        if not create:
+            return kraken_stream._RUNTIME
+        writer = active_writer()
+        if writer is not None and 'kraken' in writer.sources:
+            return kraken_stream._RUNTIME
+        from ..crypto_market.kraken_stream import kraken_stream_runtime
+        from .screener_crypto import _stream_pair
+        return kraken_stream_runtime(_stream_pair)
+
     # --- server-owned candidate quotes ----------------------------------------------------------
     def _candidate_quotes(self, work, summary):
         """Selected candidates keep a quote without any browser window. Held instruments are already owned by the loop."""
-        if self.store.data_mode != 'LIVE_OBSERVATIONAL':
+        universe = (self.reevaluation.bound_scope or {}).get('universe')
+        if self.store.data_mode != 'LIVE_OBSERVATIONAL' or universe not in (None, 'US_EQUITIES', 'US_ETFS', 'CRYPTO'):
+            return
+        if universe == 'CRYPTO':
+            self._crypto_candidate_quotes(work, summary)
             return
         from ..market_data.live_runtime import get_live_runtime
         runtime = get_live_runtime(create=False)
         if runtime is None:
             return
-        loop = self.reevaluation.repository.latest_loop(work['account_id']) or {}
+        loop = self.reevaluation._loop() or {}
         wanted = [*(loop.get('selected') or []), *((loop.get('pending_selection') or {}).get('chosen') or [])]
         wanted = list(dict.fromkeys(wanted))[:10]
         current = list(work.get('subscriptions') or [])
@@ -742,8 +1067,42 @@ class PaperAutomationService:
                 summary.setdefault('quote_refusals', []).append(dict(instrument_id=iid, reason=str(results[0].get('reason'))))
         work['subscriptions'] = kept
 
+    def _crypto_candidate_quotes(self, work, summary):
+        """Crypto candidates subscribe the controller's own Kraken Spot evidence stream (BOOK+TRADES)."""
+        runtime = self._crypto_stream_runtime(create=True)
+        if runtime is None:
+            summary.setdefault('quote_refusals', []).append(dict(universe='CRYPTO', reason='CRYPTO_RUNTIME_UNAVAILABLE'))
+            return
+        loop = self.reevaluation._loop() or {}
+        wanted = [*(loop.get('selected') or []), *((loop.get('pending_selection') or {}).get('chosen') or [])]
+        wanted = list(dict.fromkeys(wanted))[:10]
+        current = list(work.get('subscriptions') or [])
+        self._release_candidate_quotes([iid for iid in current if iid not in wanted])
+        kept = [iid for iid in current if iid in wanted]
+        for iid in [i for i in wanted if i not in kept]:
+            try:
+                results = runtime.subscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+            except Exception:  # noqa: BLE001 - a failed subscribe leaves that candidate without a current quote
+                results = [dict(accepted=False, reason='SUBSCRIBE_FAILED')]
+            if all(r.get('accepted') for r in results):
+                kept.append(iid)
+            else:
+                # Venue refusal or unresolvable pair: recorded, never worked around. The candidate stays unquoted.
+                summary.setdefault('quote_refusals', []).append(dict(universe='CRYPTO', instrument_id=iid, reason=str(results[0].get('reason'))))
+        work['subscriptions'] = kept
+
     def _release_candidate_quotes(self, instruments):
         if not instruments or self.store.data_mode != 'LIVE_OBSERVATIONAL':
+            return
+        if (self.reevaluation.bound_scope or {}).get('universe') == 'CRYPTO':
+            runtime = self._crypto_stream_runtime(create=False)
+            if runtime is None:
+                return
+            for iid in instruments:
+                try:
+                    runtime.unsubscribe(instrument_id=iid, capabilities=['BOOK', 'TRADES'], consumer_id=CANDIDATE_QUOTE_CONSUMER)
+                except Exception:  # noqa: BLE001
+                    pass
             return
         from ..market_data.live_runtime import get_live_runtime
         runtime = get_live_runtime(create=False)
@@ -774,7 +1133,7 @@ class PaperAutomationService:
     def _execute_pending(self, work, policy, summary, session):
         ledger = self.store.paper_ledger
         now = _iso(self.clock())
-        loop = self.reevaluation.repository.latest_loop(work['account_id']) or {}
+        loop = self.reevaluation._loop() or {}
         positions = [p for p in ledger.project_positions() if p.get('quantity')]
         held = [p['instrument_id'] for p in positions]
         queue = []
@@ -805,6 +1164,7 @@ class PaperAutomationService:
 
     def execute_decision(self, decision, policy, work, session):
         """Walk one gated Action Decision through the canonical Paper preview and submit. Never a second time."""
+        from . import paper_projections
         ledger, repo = self.store.paper_ledger, self.repository
         account, decision_id, state = ledger.paper_account_id, decision['decision_id'], decision['action_state']
         intent_id = intent_identity(account, decision_id)
@@ -826,12 +1186,12 @@ class PaperAutomationService:
         def finish(state_name, codes, **extra):
             codes = list(dict.fromkeys(codes))
             previous = (existing or {}).get('state'), tuple((existing or {}).get('reason_codes') or [])
-            intent.update(state=str(state_name), reason_codes=codes, updated_at=_iso(self.clock()), updated_epoch=self.clock(), **extra)
+            intent.update(state=str(state_name), reason_codes=codes, updated_at=_iso(self.clock()), updated_epoch=self.clock(), **{k: quantity_wire(v) if k in ('quantity', 'filled_quantity') else v for k,v in extra.items()})
             repo.put_intent(intent, now=self.clock())
             if previous == (str(state_name), tuple(codes)):
                 return None  # the same refusal for the same reason is recorded once, not every cycle
             outcome = dict(base, outcome=str(state_name), reason_codes=codes,
-                           **{k: extra[k] for k in ('quantity', 'side', 'order_id', 'order_state', 'filled_quantity', 'fill_price_minor', 'sizing') if k in extra})
+                           **{k: quantity_wire(extra[k]) if k in ('quantity', 'filled_quantity') else extra[k] for k in ('quantity', 'side', 'order_id', 'order_state', 'filled_quantity', 'fill_price_minor', 'sizing') if k in extra})
             self._event('PAPER_INTENT_' + str(state_name), **outcome)
             return outcome
 
@@ -840,7 +1200,7 @@ class PaperAutomationService:
             # A crash after the ledger wrote the order and before this record: adopt it, never submit again.
             order = ledger.lookup_order(recorded) or {}
             return finish(IntentState.SUBMITTED, ['RECOVERED_EXISTING_ORDER'], order_id=recorded, order_state=order.get('state'),
-                          filled_quantity=int(order.get('cumulative_filled_quantity') or 0))
+                          filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or 0))
         identity = self.paper_identity(policy)
         if identity or not self.actions._authority():
             return finish(IntentState.BLOCKED, identity or ['PAPER_AUTHORITY_UNAVAILABLE'])
@@ -854,7 +1214,7 @@ class PaperAutomationService:
         if state == 'ENTER':
             blockers = entry_risk_blockers(policy, positions=positions, valuation=ledger.project_valuation(),
                                            day_start_equity_minor=(work.get('day') or {}).get('start_equity_minor'),
-                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'))
+                                           pending_orders=pending, minutes_to_close=session.get('minutes_to_close'), session_label=session.get('label'))
             if blockers:
                 return finish(IntentState.BLOCKED, blockers)
         backoff = work.get('exit_backoff') or {}
@@ -872,20 +1232,21 @@ class PaperAutomationService:
                 # asked to decide again from current inputs, and that new decision gets its own single order.
                 self.reevaluation.request_redecision(decision['instrument_id'], code)
             return finish(IntentState.DEFERRED, [code])
-        quantity, sizing = int(draft['quantity']), None
+        quantity, sizing = quantity_number(draft['quantity']), None
+        instrument = paper_projections._admit_focus_instrument(self.store, draft['instrumentId'])
         if state == 'ENTER':
             from ..numeric import decimal_to_minor_units
-            scale = int(ledger.policy.get('price_scale', 100))
+            scale = int(instrument.get('price_scale', ledger.policy.get('price_scale', 100)))
             reference = (decision.get('reference_quote') or {}).get('source_value')
             price = decimal_to_minor_units(str(reference), scale=scale) if isinstance(reference, (int, float)) and reference > 0 else None
             sizing = size_entry(policy, price_minor=price, positions=positions,
-                                buying_power_minor=ledger.project_account()['buying_power_minor'], ledger_policy=ledger.policy)
-            quantity = sizing['quantity']
+                                buying_power_minor=ledger.project_account()['buying_power_minor'], ledger_policy=ledger.policy, instrument=instrument)
+            quantity = quantity_number(sizing['quantity'])
             carried = intent.get('pretrade_approved_quantity')
-            if isinstance(carried, int) and 0 < carried < quantity:
+            if carried is not None and 0 < quantity_number(carried) < quantity:
                 # An earlier attempt was reduced by the pre-trade risk engine and could not be re-previewed then.
-                sizing = dict(sizing, pretrade_reduced_from=quantity, binding='PRETRADE_RISK_ENGINE')
-                quantity = carried
+                sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
+                quantity = quantity_number(carried)
             if quantity < 1:
                 return finish(IntentState.BLOCKED, ['SIZING_BELOW_MINIMUM', sizing['binding']], sizing=sizing)
         correlation = str(draft['sourceAttentionId'])
@@ -899,7 +1260,7 @@ class PaperAutomationService:
             snapshot['source_module'] = snapshot['source_id']
 
         def body(units):
-            return dict(instrument_id=draft['instrumentId'], side=draft['side'], quantity=units, order_type='MARKET',
+            return dict(instrument_id=draft['instrumentId'], side=draft['side'], quantity=quantity_wire(units), order_type='MARKET',
                         client_order_id=intent_id, idempotency_key=intent_id, correlation_id=correlation, decision_source_snapshot=snapshot)
 
         from ..intelligence.persistence.errors import RepositoryError
@@ -907,12 +1268,12 @@ class PaperAutomationService:
         try:
             preview = paper_projections.preview_paper_order(self.store, body(quantity))['preview']
             risk = preview.get('action_risk_decision') or {}
-            approved = int(risk.get('approved_quantity') or 0)
+            approved = quantity_number(risk.get('approved_quantity') or 0)
             if state == 'ENTER' and risk.get('decision') in ('APPROVE', 'REDUCE') and 0 < approved < quantity:
                 # The existing sizing authority reduced the order: the documented step is a fresh preview at that size.
-                sizing = dict(sizing, pretrade_reduced_from=quantity, binding='PRETRADE_RISK_ENGINE')
+                sizing = dict(sizing, pretrade_reduced_from=quantity_wire(quantity), binding='PRETRADE_RISK_ENGINE')
                 quantity = approved
-                intent['pretrade_approved_quantity'] = approved
+                intent['pretrade_approved_quantity'] = quantity_wire(approved)
                 try:
                     preview = paper_projections.preview_paper_order(self.store, body(quantity))['preview']
                 except RepositoryError:
@@ -923,7 +1284,7 @@ class PaperAutomationService:
             if preview.get('risk_status') != 'PASS':
                 return finish(IntentState.BLOCKED, ['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8],
                               quantity=quantity, side=draft['side'], sizing=sizing)
-            intent.update(state=str(IntentState.PREVIEWED), preview_id=preview['preview_id'], quantity=quantity, side=draft['side'],
+            intent.update(state=str(IntentState.PREVIEWED), preview_id=preview['preview_id'], quantity=quantity_wire(quantity), side=draft['side'],
                           updated_at=_iso(self.clock()), updated_epoch=self.clock())
             repo.put_intent(intent, now=self.clock())
             with self.submit_lock():
@@ -931,7 +1292,7 @@ class PaperAutomationService:
                 # Disarm or Emergency Stop that flips state cannot land between this guard and the order.
                 if not self._still_permitted(work):
                     return finish(IntentState.BLOCKED, ['AUTOMATION_HALTED_BY_OPERATOR'], quantity=quantity, side=draft['side'])
-                submission = paper_projections.submit_paper_order(self.store, dict(body(quantity), preview_id=preview['preview_id']))['submission']
+                submission = self._submit(dict(body(quantity), preview_id=preview['preview_id']))
         except ValueError as exc:
             code = _code(exc)
             deferred = any(code.startswith(prefix) for prefix in _DEFER_CODES)
@@ -940,7 +1301,7 @@ class PaperAutomationService:
         fill = submission.get('fill') or {}
         outcome = finish(IntentState.SUBMITTED, ['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION', *(order.get('reason_codes') or [])][:8],
                          quantity=quantity, side=draft['side'], sizing=sizing, order_id=submission.get('order_id'), order_state=order.get('state'),
-                         filled_quantity=int(order.get('cumulative_filled_quantity') or fill.get('fill_quantity') or 0),
+                         filled_quantity=quantity_wire(order.get('cumulative_filled_quantity') or fill.get('fill_quantity') or 0),
                          fill_price_minor=fill.get('fill_price_minor'), preview_id=preview['preview_id'],
                          risk_decision_id=submission.get('risk_decision_id'), fill_kind='SIMULATED_FILL', is_market_truth=False)
         if str(order.get('state')) in _WORKING:
@@ -956,6 +1317,61 @@ class PaperAutomationService:
                 backoff[decision['instrument_id']] = dict(count=count, until=self.clock() + delay, last_order_state=str(order.get('state')))
                 self.reevaluation.request_redecision(decision['instrument_id'], 'EXIT_ORDER_ENDED_UNFILLED')
         return outcome
+
+    def _submit(self, body):
+        """The controller's only order route: the canonical Workspace Paper submit, under the caller's submit lock."""
+        from . import paper_projections
+        return paper_projections.submit_paper_order(self.store, body)['submission']
+
+    def _eod_flatten(self, work, policy, summary, session, now):
+        """Owner policy 2026-10-23: open equity positions close in the last minutes of the regular session.
+
+        One MARKET close per instrument per session date through the canonical preview and submit, idempotent on
+        the ledger. Crypto is never flattened. A remainder left working is cancelled by the next reconciliation.
+        """
+        minutes = session.get('minutes_to_close')
+        if session.get('label') != 'REGULAR' or minutes is None or minutes > EOD_FLATTEN_MINUTES:
+            return
+        from . import paper_projections
+        ledger = self.store.paper_ledger
+        if not self.actions._authority():
+            return
+        working = {str(o.get('instrument_id')) for o in ledger.project_orders() if str(o.get('state')) in _WORKING}
+        for position in ledger.project_positions():
+            iid, held = str(position.get('instrument_id')), quantity_number(position.get('quantity') or 0)
+            if held <= 0 or iid in working:
+                continue
+            instrument = paper_projections._admit_focus_instrument(self.store, iid)
+            if instrument.get('instrument_kind') == 'CRYPTO_PAIR':
+                continue
+            key = 'PAI-EOD-' + input_hash_from_dict(dict(account=ledger.paper_account_id, instrument=iid, day=session['session_date']))[:32]
+            if ledger.lookup_idempotent_order(key):
+                continue
+            body = dict(instrument_id=iid, side='SELL', quantity=quantity_wire(held), order_type='MARKET', client_order_id=key,
+                        idempotency_key=key, correlation_id='lane:order-flow',
+                        decision_source_snapshot=dict(source_type='workspace_lane', source_id='order-flow', source_module='order-flow',
+                                                      headline='End-of-day flatten (owner policy)', source_time=int(now * 1e9),
+                                                      reasons=[dict(code='PAPER_AUTOMATION_EOD_FLATTEN', label=session['session_date']),
+                                                               dict(code='PAPER_AUTOMATION_POLICY', label=policy['policy_id']),
+                                                               dict(code='PAPER_AUTOMATION_ARMING', label=work['arming']['arming_id'])]))
+            outcome = dict(instrument_id=iid, action='EOD_FLATTEN', quantity=quantity_wire(held), client_order_id=key)
+            try:
+                preview = paper_projections.preview_paper_order(self.store, body)['preview']
+                if preview.get('risk_status') != 'PASS':
+                    outcome.update(outcome='BLOCKED', reason_codes=['PAPER_PREVIEW_RISK_' + str(preview.get('decision')), *preview.get('reason_codes', [])][:8])
+                else:
+                    with self.submit_lock():
+                        if not self._still_permitted(work):
+                            outcome.update(outcome='NOT_ATTEMPTED', reason_codes=['AUTOMATION_HALTED_BY_OPERATOR'])
+                        else:
+                            submission = self._submit(dict(body, preview_id=preview['preview_id']))
+                            order = submission.get('order') or {}
+                            outcome.update(outcome='SUBMITTED', order_id=submission.get('order_id'), order_state=order.get('state'),
+                                           reason_codes=['PAPER_ORDER_SUBMITTED_INTERNAL_SIMULATION'])
+            except ValueError as exc:
+                outcome.update(outcome='BLOCKED', reason_codes=[_code(exc)])
+            self._event('PAPER_EOD_FLATTEN', **outcome)
+            summary['actions'].append(outcome)
 
     def _cancel_order(self, order_id, reason):
         from . import paper_projections
@@ -1176,6 +1592,7 @@ class AutomationWorker:
         self.finished = False
         self.exit_reason = None
         self.slot, self.missed = anchor, 0
+        self.transient_failures = 0
 
     def start(self):
         self.thread = threading.Thread(target=self.run, name='imp-paper-automation', daemon=True)
@@ -1187,13 +1604,30 @@ class AutomationWorker:
     def alive(self):
         return not self.finished and not self.stop_event.is_set() and (self.thread is None or self.thread.is_alive())
 
+    def _heartbeat(self):
+        """The lease renewal; a transient shared-store error is retried at the next wait, never fatal at once."""
+        try:
+            alive = self.service.heartbeat()
+        except sqlite3.OperationalError as exc:
+            self._transient(exc, 'HEARTBEAT')
+            return True  # the lease is unchanged by a failed write; its expiry still bounds every other owner
+        self.transient_failures = 0
+        return alive
+
+    def _transient(self, exc, phase):
+        """Record a busy/locked shared-store error with its traceback; end the worker after too many in a row."""
+        self.transient_failures += 1
+        _record_worker_fault(self.service, exc, phase=phase, transient=True, consecutive=self.transient_failures, slot=self.slot)
+        if self.transient_failures >= TRANSIENT_STORE_RETRIES:
+            raise exc
+
     def run(self, max_cycles=None):
         service, done = self.service, 0
         try:
             while not self.stop_event.is_set() and (max_cycles is None or done < max_cycles):
                 while not self.stop_event.is_set() and self.slot - service.clock() > 0:
                     self.wait(min(self.slot - service.clock(), LEASE_SECONDS / 3))
-                    if not service.heartbeat():
+                    if not self._heartbeat():
                         self.exit_reason = 'AUTOMATION_LEASE_LOST'
                         return
                 if self.stop_event.is_set():
@@ -1203,12 +1637,13 @@ class AutomationWorker:
                 if stalled > 0:
                     self.missed += stalled  # the runtime was not scheduling: unobserved, never reconstructed
                     self.slot += stalled * self.cadence
-                if not service.heartbeat():
+                if not self._heartbeat():
                     self.exit_reason = 'AUTOMATION_LEASE_LOST'
                     return
                 try:
                     summary = service.run_cycle(scheduled=self.slot, missed=self.missed)
                     self.missed = 0
+                    self.transient_failures = 0
                     if summary.get('skipped') and service._controller()['desired_state'] == 'STOPPED':
                         break
                 except ValueError as exc:
@@ -1216,12 +1651,18 @@ class AutomationWorker:
                         self.exit_reason = _code(exc)
                         return
                     self.missed += 1
+                except sqlite3.OperationalError as exc:
+                    # Raised outside the cycle's own failure accounting (lease renewal, controller read or the
+                    # cycle-owned write-back). That slot is unobserved, like a missed slot; nothing is backfilled.
+                    self._transient(exc, 'CYCLE')
+                    self.missed += 1
                 done += 1
                 finished = service.clock()
                 steps = max(1, -int(-(finished - self.slot) // self.cadence))  # first slot at or after the finish
                 self.missed += steps - 1
                 self.slot += steps * self.cadence
         except Exception as exc:  # the worker died: say so in liveness instead of looking merely idle
+            _record_worker_fault(service, exc, phase='WORKER_EXIT', transient=False, consecutive=self.transient_failures, slot=self.slot)
             try:
                 with service.control_lock:
                     current = service._controller()
@@ -1232,6 +1673,25 @@ class AutomationWorker:
             self.finished = True
         finally:
             self.finished = self.finished or max_cycles is None or self.stop_event.is_set() or self.exit_reason is not None
+
+
+def _record_worker_fault(service, exc, *, phase, transient, consecutive, slot):
+    """Append one traceback with its lease context to the worker fault log. Never raises.
+
+    Holds the exception class, its message (bounded), the stack, the owner, the lease expiry in memory and the
+    slot; no environment, credential or request body is read."""
+    try:
+        from pathlib import Path
+        path = Path(service._trace_log_path()).with_name('paper-automation-worker-errors.log')
+        path.parent.mkdir(parents=True, exist_ok=True)
+        header = dict(at=_iso(service.clock()), phase=phase, transient=transient, consecutive=consecutive,
+                      exception=type(exc).__name__, message=str(exc)[:300], owner_id=getattr(service, 'owner_id', None),
+                      slot=_iso(slot) if isinstance(slot, (int, float)) else None, thread=threading.current_thread().name)
+        with path.open('a', encoding='utf-8') as log:
+            log.write('=== ' + json.dumps(header, sort_keys=True) + '\n')
+            log.write(''.join(traceback.format_exception(type(exc), exc, exc.__traceback__)))
+    except Exception:  # noqa: BLE001 - the fault record never replaces the fault
+        pass
 
 
 def paper_automation_service(store):

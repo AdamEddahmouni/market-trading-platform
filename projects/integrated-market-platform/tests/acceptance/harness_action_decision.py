@@ -24,7 +24,7 @@ from market_platform_foundation.intelligence.persistence.memory import InMemoryI
 from market_platform_foundation.intelligence.contracts.opportunity import OpportunityV1
 from market_platform_foundation.intelligence.contracts.common import IntelligenceScope, QualitySummary
 from market_platform_foundation.intelligence.inference.provider import ProviderInferenceResponse
-from tests.intelligence.test_action_decision import candidate, proposal
+from tests.intelligence.test_action_decision import candidate, proposal, wire
 from tests.support.controlled_ai_run import start_controlled_run
 
 def iso(value): return datetime.fromtimestamp(value,UTC).isoformat().replace('+00:00','Z')
@@ -33,11 +33,11 @@ class FixtureModel:
     provider_id='oct1-06.fixture'; model_id='controlled-proposal'; runtime='LOCAL_MODEL'
     calls=0
     state='NO_ACTION'
-    def infer(self,*args,**kwargs):
+    def infer(self,packet,*args,**kwargs):
         self.calls+=1
         p=proposal(self.state)
         p['conflicting_refs']=['news-conflict']
-        return ProviderInferenceResponse(json.dumps(p),self.provider_id,self.model_id,simulated=True,tokens_input=250,tokens_output=120,latency_ms=1)
+        return ProviderInferenceResponse(wire(p,packet.candidates[0]),self.provider_id,self.model_id,simulated=True,tokens_input=250,tokens_output=120,latency_ms=1)
 
 class Handler(UiApiHandler):
     def _authorize_request(self,*args,**kwargs): return True  # test-only, not auth acceptance

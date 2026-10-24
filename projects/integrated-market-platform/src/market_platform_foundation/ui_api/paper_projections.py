@@ -157,8 +157,9 @@ def build_paper_portfolio_payload(store: ReplayStore, *, view_mode: str | None =
     orders = ledger.project_orders()
     fills = ledger.project_fills()
     risk = ledger.project_risk()
-    gross_exposure = sum(abs(int(row.get("quantity", 0))) for row in positions)
-    net_exposure = sum(int(row.get("quantity", 0)) for row in positions)
+    from ..paper.contracts import quantity_number, quantity_wire
+    gross_exposure = quantity_wire(sum(abs(quantity_number(row.get("quantity", 0))) for row in positions))
+    net_exposure = quantity_wire(sum(quantity_number(row.get("quantity", 0)) for row in positions))
     observation_time = _paper_observation_time(store)
     if identity.is_demo_view():
         positions = []
@@ -276,16 +277,30 @@ def build_paper_trace_payload(
     )
 
 
-def _parse_order_body(body: dict[str, Any], store: ReplayStore) -> dict[str, Any]:
+def _parse_order_body(body: dict[str, Any], store: ReplayStore, *, instrument: dict[str, Any] | None = None,
+                      validate_quantity: bool = True) -> dict[str, Any]:
     from ..paper.decision_source import (
         parse_decision_source_snapshot,
         validate_snapshot_against_correlation,
     )
 
     side = str(body.get("side", "")).upper()
-    quantity = int(body.get("quantity", 0))
-    if quantity <= 0:
-        raise ValueError("ORDER_QUANTITY_INVALID")
+    if not validate_quantity:
+        # Body checks that precede instrument resolution; quantity needs the admitted instrument.
+        quantity = None
+    elif instrument and instrument.get("instrument_kind") == "CRYPTO_PAIR":
+        from ..paper.contracts import order_quantity, serialized_quantity
+        quantity = serialized_quantity(order_quantity(body.get("quantity", 0), instrument), instrument)
+    else:
+        raw_quantity = body.get("quantity", 0)
+        if isinstance(raw_quantity, bool) or (isinstance(raw_quantity, float) and not raw_quantity.is_integer()):
+            raise ValueError("ORDER_QUANTITY_INVALID")
+        try:
+            quantity = int(raw_quantity)
+        except (TypeError, ValueError, OverflowError):
+            raise ValueError("ORDER_QUANTITY_INVALID") from None
+        if quantity <= 0:
+            raise ValueError("ORDER_QUANTITY_INVALID")
     if side not in {"BUY", "SELL"}:
         raise ValueError("ORDER_SIDE_INVALID")
     order_type = str(body.get("order_type", "MARKET")).upper()
@@ -316,6 +331,7 @@ def _parse_order_body(body: dict[str, Any], store: ReplayStore) -> dict[str, Any
         "order_type": order_type,
         "quantity": quantity,
         "side": side,
+        "_instrument": instrument,
     }
 
 
@@ -351,6 +367,9 @@ def _assert_live_execution_allowed(store: ReplayStore, *, submit: bool = False) 
     # Explicit over inherited: no deployment-level PIT adversarial verification
     # exists at runtime, so pass None (gate records ATTESTED, never a fake
     # PASS). Flip to True only when a verified PIT result backs this deployment.
+    refresh = getattr(runtime, "refresh_capabilities", None)
+    if callable(refresh):
+        refresh()  # the probe's freshness is decided now, not when the process started
     gate = evaluate_internal_simulation_gates(
         runtime=runtime,
         probe_stale=runtime.capability_registry.is_stale,
@@ -477,6 +496,7 @@ def _preview_binding_context(
             "limit_price_minor": parsed["limit_price_minor"],
             "currency": ledger.policy.get("currency", "USD"),
             "quantity_unit": "SHARES",
+            **({"instrument": parsed["_instrument"]} if (parsed.get("_instrument") or {}).get("instrument_kind") == "CRYPTO_PAIR" else {}),
         }
     )
     return {
@@ -569,9 +589,18 @@ def _admit_focus_instrument(store: ReplayStore, focus: str) -> dict[str, Any]:
         instrument_id=focus,
         symbol=focus,
     )
-    for key in ("instrument_kind", "tradability", "contract_multiplier", "currency"):
-        if admitted.get(key) is not None:
-            ref[key] = admitted[key]
+    if admitted.get("instrument_kind") == "CRYPTO_PAIR":
+        from .screener_crypto import cached_execution_economics
+        ref.update(admitted)
+        ref.update(cached_execution_economics(str(admitted["instrument_id"]), venue=str(admitted["venue"])))
+        if str(ref.get("currency", "")).upper() != "USD" or str(store.paper_ledger.policy.get("currency", "USD")).upper() != "USD":
+            raise ValueError("INSUFFICIENT_SETTLEMENT_CURRENCY")
+        # The ledger's exact target identity remains the server-resolved focus.
+        ref.update(instrument_id=focus, symbol=focus)
+    else:
+        for key in ("instrument_kind", "tradability", "contract_multiplier", "currency"):
+            if admitted.get(key) is not None:
+                ref[key] = admitted[key]
     return ref
 
 
@@ -582,11 +611,12 @@ def _preview_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, 
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
     _assert_live_execution_allowed(store, submit=False)
-    parsed = _parse_order_body(body, store)
-    focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    _parse_order_body(body, store, validate_quantity=False)
+    focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
+    instrument = _admit_focus_instrument(store, focus)
+    parsed = _parse_order_body(body, store, instrument=instrument)
     from .screener_action import action_service
     action_record = action_service(store).validate_order_source(parsed, focus)
-    instrument = _admit_focus_instrument(store, focus)
     paper_experiment.assert_experiment_instrument_supported(store, instrument)
     observation_time = _paper_observation_time(store, instrument_id=focus)
     margin_facts = _resolve_order_margin_facts(
@@ -760,11 +790,12 @@ def _submit_paper_order(store: ReplayStore, body: dict[str, Any]) -> dict[str, A
     paper_experiment.assert_experiment_order_allowed(store)
     live_projections.apply_live_marks_to_ledger(store)
     maybe_release_execution_gate(store)
-    parsed = _parse_order_body(body, store)
+    _parse_order_body(body, store, validate_quantity=False)
     _assert_live_execution_allowed(store, submit=True)
-    focus = _require_order_instrument(store, parsed["explicit_instrument"])
+    focus = _require_order_instrument(store, body.get("instrument_id") or body.get("symbol"))
     from .screener_action import action_service
     instrument = _admit_focus_instrument(store, focus)
+    parsed = _parse_order_body(body, store, instrument=instrument)
     paper_experiment.assert_experiment_instrument_supported(store, instrument)
     existing_order_id = store.paper_ledger.lookup_idempotent_order(parsed["idempotency_key"])
     if existing_order_id:

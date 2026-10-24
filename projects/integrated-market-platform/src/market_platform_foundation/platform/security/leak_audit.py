@@ -54,6 +54,8 @@ _PUBLIC_POLICY_TOKEN_KEYS: frozenset[str] = frozenset(
         "boundary_token",
         "provider_status_token",
         "token_status",
+        # AI Screener plan: how input tokens were counted (EXACT_AT_SEND_ONLY, ...).
+        "token_basis",
     )
 )
 
@@ -112,6 +114,9 @@ _MODEL_TOKEN_COUNT_KEYS: frozenset[str] = frozenset(
         "reserved_reasoning_tokens",
         "reserved_reasoning_tokens_total",
         "available_token_budget",
+        # Exact local send-time counts: refused-before-generation input and the task's configured output maximum.
+        "counted_not_sent_tokens",
+        "configured_max_tokens",
         # AUTO-01 owner policy: the daily paid-inference allowance, a whole-number count.
         "max_paid_tokens_per_day",
     )

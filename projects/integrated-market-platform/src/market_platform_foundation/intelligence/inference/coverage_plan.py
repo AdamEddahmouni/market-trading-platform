@@ -26,9 +26,11 @@ EVIDENCE_UNAVAILABLE = 'EVIDENCE_UNAVAILABLE'
 PROVIDER_UNAVAILABLE = 'PROVIDER_UNAVAILABLE'
 AWAITING_EVIDENCE = 'AWAITING_EVIDENCE'
 AI_EVALUATED = 'AI_EVALUATED'
+# The model answered this row and the unchanged validator rejected the answer: evaluated, never grounded.
+AI_REJECTED = 'AI_REJECTED'
 UNPROCESSED = 'UNPROCESSED'
 # Where each class lands in the reconciliation. A row is in exactly one bucket.
-BUCKETS = {AI_EVALUATED: 'evaluated', INELIGIBLE: 'ineligible', UNSUPPORTED: 'ineligible',
+BUCKETS = {AI_EVALUATED: 'evaluated', AI_REJECTED: 'evaluated', INELIGIBLE: 'ineligible', UNSUPPORTED: 'ineligible',
            EVIDENCE_STALE: 'evidence_blocked', EVIDENCE_UNAVAILABLE: 'evidence_blocked',
            PROVIDER_UNAVAILABLE: 'evidence_blocked', AWAITING_EVIDENCE: 'evidence_blocked',
            ELIGIBLE: 'unprocessed', UNPROCESSED: 'unprocessed'}
@@ -125,6 +127,6 @@ def reconciles(counts: dict[str, Any], universe: int) -> bool:
     return counts['evaluated'] + counts['ineligible'] + counts['evidence_blocked'] + counts['unprocessed'] == universe
 
 
-__all__ = ['AI_EVALUATED', 'AWAITING_EVIDENCE', 'BUCKETS', 'ELIGIBLE', 'EVIDENCE_STALE', 'EVIDENCE_UNAVAILABLE',
+__all__ = ['AI_EVALUATED', 'AI_REJECTED', 'AWAITING_EVIDENCE', 'BUCKETS', 'ELIGIBLE', 'EVIDENCE_STALE', 'EVIDENCE_UNAVAILABLE',
            'INELIGIBLE', 'INTAKE_METHOD_VERSION', 'METHOD_NAME', 'METHOD_VERSION', 'PROVIDER_UNAVAILABLE', 'UNPROCESSED',
            'UNSUPPORTED', 'budget_requirement', 'chunks', 'classify', 'fair_order', 'reconciles', 'reduction_rounds', 'tally']

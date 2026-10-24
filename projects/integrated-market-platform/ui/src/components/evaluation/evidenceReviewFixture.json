@@ -1,0 +1,715 @@
+{
+ "journal": {
+  "account_id": "4CC831CE25EF922464A12BED6870839E24E07660D031ADB31E92C859AE29A886",
+  "authority": {
+   "budget_reserved": false,
+   "execution_authority": false,
+   "inference_calls": 0,
+   "ledger_mutation": false,
+   "provider_calls": 0,
+   "trading_mutation": false
+  },
+  "day": "2026-10-13",
+  "day_basis": "America/New_York",
+  "items": [
+   {
+    "action": {
+     "action_state": "ENTER",
+     "blocker_codes": [],
+     "evaluation_bias": null,
+     "execution_readiness": "PREVIEW_ALLOWED",
+     "model_proposal": {
+      "conflicting_refs": [
+       "news-conflict"
+      ],
+      "direction": "LONG",
+      "entry_conditions": [
+       "CURRENT_QUOTE",
+       "DIRECTION_SUPPORTED"
+      ],
+      "exit_conditions": [
+       "THESIS_REVERSED",
+       "DECISION_EXPIRED"
+      ],
+      "hold_conditions": [
+       "THESIS_CONTINUES"
+      ],
+      "missing_capabilities": [
+       "OPTIONS"
+      ],
+      "proposal_state": "ENTER",
+      "rationale": "Observed positive price change supports this assessment.",
+      "schema_version": "action-proposal/1.0.0",
+      "supporting_refs": [
+       "q",
+       "t"
+      ],
+      "uncertainties": [],
+      "weak_refs": []
+     },
+     "operator_action": null,
+     "rationale": "Observed positive price change supports this assessment.",
+     "reason_codes": [
+      "BOUNDED_PROPOSAL_ACCEPTED"
+     ]
+    },
+    "candidate_run_id": "run-1",
+    "decision_id": "AD-c8ffc9ca977386f31b30a782d17e1bb92620b5339a840097611b9b82b44b60e6",
+    "decision_snapshot_hash": "1907CE4B84F6B974DF58470DA730EAA15245AB37EB71D9CB130B14AACFD136AC",
+    "decision_time": "2026-10-14T00:17:01.534875Z",
+    "decision_trace_id": "EDTR-5BD60631EE864BCFA575109BD5010005AC0587C28A303218C1660B011D6F9129",
+    "evidence_count": 3,
+    "evidence_ids": [
+     "q",
+     "t",
+     "news-conflict"
+    ],
+    "evidence_snapshot_id": "AS-1cd2c6bfe3ccbbfd36d92898d5d7a03c95d1260c403a421517c210a70facec10",
+    "instrument_id": "AAPL",
+    "later_evidence": {
+     "evaluation_id": "DE-AD-c8ffc9ca977386f31b30a782d17e1bb92620b5339a840097611b9b82b44b60e6",
+     "evidence_class": "SOFTWARE_CONTROLLED",
+     "execution_outcome": {
+      "average_entry_minor": "15000",
+      "commission_minor": 0,
+      "costs_minor": 0,
+      "entry_fill_ids": [
+       "04139FFB468EF3B4DF2CAC9EEE8D38A431686089338BEDE6F527B7C368BFC862"
+      ],
+      "entry_time": "2026-10-14T00:17:01.534881Z",
+      "executed_notional_minor": 90000,
+      "exit_fill_ids": [],
+      "exit_time": null,
+      "fees_minor": 0,
+      "fill_model_versions": [
+       "phase7.bar-conservative/1.1.0"
+      ],
+      "gross_pnl_minor": 0,
+      "holding_seconds": null,
+      "lineage_valid": true,
+      "mark_quality": "UNAVAILABLE_AT_FROZEN_CUTOFF",
+      "net_pnl_minor": 0,
+      "quantity": 6,
+      "realized_includes_costs": true,
+      "source_fingerprint": "15d9a84a1f7b2d23636e9be9df3d3365dabb76859615f71b63f922cc0acd6088",
+      "state": "OPEN",
+      "unrealized_pnl_minor": null
+     },
+     "limitations": [
+      "MODEL_VERSION_UNAVAILABLE"
+     ],
+     "signal_outcomes": [],
+     "status": "AVAILABLE",
+     "trade_episode_id": "TE-edb9e923ccaa15afe57bcaf4d2dc1390"
+    },
+    "missing_information": [],
+    "mode": "PAPER",
+    "opportunity_id": "opp-run-1"
+   }
+  ],
+  "later_evidence_source": "PROSPECTIVE_EVALUATION_PROJECTION",
+  "mode": "PAPER",
+  "observation_as_of": "2026-10-14T00:17:06.534875Z",
+  "operator_action_source": "DECISION_TRACE_NOT_READ_BY_THIS_VIEW",
+  "operator_reviews": "NOT_READ_BY_THIS_VIEW",
+  "realized_pnl_source": "PAPER_LEDGER_EPISODE_IN_LATER_EVIDENCE_NOT_COMPUTED_HERE",
+  "research_outcomes": "NOT_READ_BY_THIS_VIEW",
+  "schema_version": "evidence-review-journal/1",
+  "source": "ACTION_DECISION_RECEIPTS",
+  "unjournaled": []
+ },
+ "knowledge": {
+  "as_of": "2026-10-14T07:30:00Z",
+  "authority": {
+   "budget_reserved": false,
+   "execution_authority": false,
+   "inference_calls": 0,
+   "ledger_mutation": false,
+   "provider_calls": 0,
+   "trading_mutation": false
+  },
+  "availability_basis": "LATEST_OF_OBSERVATION_INGESTION_AND_SAVED_AVAILABILITY",
+  "count": 3,
+  "include_revisions": false,
+  "limit": 50,
+  "records": [
+   {
+    "article_id": "c66f30f840041b5f8de7458914d12f7a500f775faec11139fd99b425edaf2c7e",
+    "available_time": "2026-10-14T06:00:00Z",
+    "evidence_class": "SOFTWARE_FIXTURE_ONLY",
+    "first_observed_time": "2026-10-14T00:10:00Z",
+    "headline": "AAPL reports earnings",
+    "instruments": [
+     "AAPL"
+    ],
+    "license": "SYNTHETIC_FIXTURE",
+    "provider_id": "finviz",
+    "published_time": "2026-10-13T23:00:00Z",
+    "record_id": "c66f30f840041b5f8de7458914d12f7a500f775faec11139fd99b425edaf2c7e:54eb1833993413cfa8e467deff25b25e7d215a28c806c6c5f11d321bf7820a41",
+    "retrieved_time": "2026-10-14T06:00:00Z",
+    "source_id": "wire",
+    "source_reference": "evidence-review/synthetic/1",
+    "summary": "Revenue was 12 (corrected)",
+    "supersedes_record_id": "c66f30f840041b5f8de7458914d12f7a500f775faec11139fd99b425edaf2c7e",
+    "url": "https://example.test/wire-1"
+   },
+   {
+    "article_id": "f5a2cafd91b1e270fc77cb0fd1c5406fdf06753e7307e8e13e641bc9050a971d",
+    "available_time": "2026-10-14T05:00:00Z",
+    "evidence_class": "SOFTWARE_FIXTURE_ONLY",
+    "first_observed_time": "2026-10-14T05:00:00Z",
+    "headline": "NVDA supply note",
+    "instruments": [
+     "AAPL"
+    ],
+    "license": "SYNTHETIC_FIXTURE",
+    "provider_id": "finviz",
+    "published_time": "2026-10-13T23:00:00Z",
+    "record_id": "f5a2cafd91b1e270fc77cb0fd1c5406fdf06753e7307e8e13e641bc9050a971d",
+    "retrieved_time": "2026-10-14T05:00:00Z",
+    "source_id": "wire",
+    "source_reference": "evidence-review/synthetic/1",
+    "summary": "Revenue was 10",
+    "supersedes_record_id": null,
+    "url": "https://example.test/wire-3"
+   },
+   {
+    "article_id": "c1a7da37007a1f1a2053f54252b56085d4eed1b12d29d5969bfb07a93ac275b4",
+    "available_time": "2026-10-14T02:00:00Z",
+    "evidence_class": "SOFTWARE_FIXTURE_ONLY",
+    "first_observed_time": "2026-10-14T02:00:00Z",
+    "headline": "MSFT guidance",
+    "instruments": [
+     "AAPL"
+    ],
+    "license": "SYNTHETIC_FIXTURE",
+    "provider_id": "finviz",
+    "published_time": "2026-10-13T23:00:00Z",
+    "record_id": "c1a7da37007a1f1a2053f54252b56085d4eed1b12d29d5969bfb07a93ac275b4",
+    "retrieved_time": "2026-10-14T02:00:00Z",
+    "source_id": "wire",
+    "source_reference": "evidence-review/synthetic/1",
+    "summary": "Revenue was 10",
+    "supersedes_record_id": null,
+    "url": "https://example.test/wire-2"
+   }
+  ],
+  "schema_version": "evidence-review-knowledge/1",
+  "store": {
+   "latest_ingested_time": "2026-10-14T06:00:00Z",
+   "reason": null,
+   "records": 4,
+   "state": "AVAILABLE"
+  }
+ },
+ "plan": {
+  "authority": {
+   "budget_reserved": false,
+   "execution_authority": false,
+   "inference_calls": 0,
+   "ledger_mutation": false,
+   "provider_calls": 0,
+   "trading_mutation": false
+  },
+  "availability_basis": "OPERATOR_ASSUMPTION_FOR_PREVIEW",
+  "bounds": {
+   "max_backlog": 100,
+   "max_requests": 2,
+   "max_tokens": 200000
+  },
+  "budget": {
+   "day": "2026-10-14",
+   "held_requests": 0,
+   "held_tokens": 0,
+   "max_requests": 30,
+   "max_tokens": 200000,
+   "requests": 0,
+   "tokens": 0,
+   "usage_overrun": false
+  },
+  "budget_basis": "RECORDED_USAGE_OF_THE_PLANNED_DAY",
+  "budget_reserved": false,
+  "candidates": 3,
+  "candidates_truncated": false,
+  "clock_source": "SERVER_CLOCK",
+  "collection_independent": true,
+  "deferred": [
+   {
+    "available_time": "2026-10-14T06:00:00Z",
+    "headline": "AAPL reports earnings",
+    "reason": "REQUEST_BOUND",
+    "record_id": "c66f30f840041b5f8de7458914d12f7a500f775faec11139fd99b425edaf2c7e:54eb1833993413cfa8e467deff25b25e7d215a28c806c6c5f11d321bf7820a41",
+    "source_id": "wire",
+    "worst_case_tokens": 5140
+   }
+  ],
+  "deferred_reasons": [
+   {
+    "count": 1,
+    "reason": "REQUEST_BOUND"
+   }
+  ],
+  "dry_run": true,
+  "estimate_basis": "STORED_BYTES_PLUS_OPERATOR_ALLOWANCE",
+  "evidence_as_of": "2026-10-14T07:30:00Z",
+  "inference_calls": 0,
+  "model": {
+   "availability": "NOT_PROBED",
+   "configuration_reason": null,
+   "configured": true,
+   "engine": "anthropic",
+   "model": "claude-haiku-4-5-20251001",
+   "runtime": "PAID_API",
+   "selection_source": "OPERATOR"
+  },
+  "model_route": {
+   "availability_verified": false,
+   "engine": "anthropic",
+   "evidence": "OFFLINE_REGISTRY_AND_SUPPLIED_FACTS",
+   "model": "claude-haiku-4-5-20251001",
+   "provider_calls": 0,
+   "reason": null,
+   "request_contract_supported": true,
+   "state": "ASSUMED_FOR_PREVIEW"
+  },
+  "paid_inference_permitted": false,
+  "planned": [
+   {
+    "available_time": "2026-10-14T02:00:00Z",
+    "headline": "MSFT guidance",
+    "record_id": "c1a7da37007a1f1a2053f54252b56085d4eed1b12d29d5969bfb07a93ac275b4",
+    "source_id": "wire",
+    "worst_case_tokens": 5110
+   },
+   {
+    "available_time": "2026-10-14T05:00:00Z",
+    "headline": "NVDA supply note",
+    "record_id": "f5a2cafd91b1e270fc77cb0fd1c5406fdf06753e7307e8e13e641bc9050a971d",
+    "source_id": "wire",
+    "worst_case_tokens": 5113
+   }
+  ],
+  "planned_for": "2026-10-14T07:30:00Z",
+  "planned_requests": 2,
+  "planned_tokens": 10223,
+  "processed_state": "NO_COMPLETED_ANALYSIS_RECORDED",
+  "request_allowance": 4096,
+  "resource_basis": "NOT_EVALUATED",
+  "schema_version": "evidence-review-plan/1",
+  "session": {
+   "allowed": true,
+   "local_time": "2026-10-14T03:30:00-04:00",
+   "reason": null,
+   "session_date": "2026-10-14",
+   "timezone": "America/New_York",
+   "trading_day_basis": "EXISTING_HOLIDAY_TABLE",
+   "window": "CATCH_UP"
+  },
+  "spending_basis": "RECORDED_DAILY_REQUEST_AND_TOKEN_BUDGET_ONLY",
+  "store": {
+   "latest_ingested_time": "2026-10-14T06:00:00Z",
+   "reason": null,
+   "records": 4,
+   "state": "AVAILABLE"
+  },
+  "unscanned_count": 0,
+  "unscanned_reason": null
+ },
+ "replay": {
+  "ai_output_admitted_samples": 0,
+  "as_of": "2026-09-09T14:10:00Z",
+  "authority": {
+   "budget_reserved": false,
+   "execution_authority": false,
+   "inference_calls": 0,
+   "ledger_mutation": false,
+   "provider_calls": 0,
+   "trading_mutation": false
+  },
+  "available": [
+   {
+    "clocks": [
+     "2026-09-09T13:00:00Z",
+     "2026-09-09T13:30:00Z",
+     "2026-09-09T14:00:00Z",
+     "2026-09-09T14:05:00Z",
+     "2026-09-09T14:10:00Z",
+     "2026-09-09T14:30:00Z",
+     "2026-09-09T15:00:00Z",
+     "2026-09-09T15:30:00Z",
+     "2026-09-09T16:00:00Z",
+     "2026-09-09T16:30:00Z",
+     "2026-09-09T17:00:00Z",
+     "2026-09-09T17:30:00Z"
+    ],
+    "replay_date": "2026-09-09"
+   }
+  ],
+  "comparison": {
+   "any_policy_difference": true,
+   "basis": "SAME_AS_OF_SNAPSHOT_FOR_EVERY_POLICY",
+   "performance_ranking": null,
+   "ranking_status": "NOT_A_PERFORMANCE_RANKING"
+  },
+  "config_hash": "0F1D0C19145F2A0D841C348F5ED8B8F1A71554D0181D213F2705F4375460EAD3",
+  "coverage": {
+   "decision_samples": 6,
+   "eligible_samples": 6,
+   "withheld_inference": 3,
+   "withheld_news": 1
+  },
+  "decisions": [
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T13:00:00Z",
+    "feature_snapshot_id": "FTRSNAP-A64D450D6BA1B82A",
+    "instrument_id": "ES",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-AB7A8E352BFF2BA3",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-FB38DBA30366B51A",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-70210218D402EDAB",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": false,
+    "sample_id": "eval-007"
+   },
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T13:00:00Z",
+    "feature_snapshot_id": "FTRSNAP-6165341DCE4EBCC1",
+    "instrument_id": "ACME",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [
+     "BE4E6EB1430966574EE7894A01DBADDD"
+    ],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-2F4AB78B4294C50E",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-644CAACE05C76E59",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-4F007F8DFF59BC1A",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": true,
+    "sample_id": "eval-013"
+   },
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T13:30:00Z",
+    "feature_snapshot_id": "FTRSNAP-A49E1B6ABD419B61",
+    "instrument_id": "ES",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [
+     "0F8CE913223868397EE39A9746E91445"
+    ],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-CDA5833193001B48",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-A890A008F872FB4D",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-93C04215A6523633",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": false,
+    "sample_id": "eval-008"
+   },
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T14:00:00Z",
+    "feature_snapshot_id": "FTRSNAP-16D415266EBE005E",
+    "instrument_id": "ES",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [
+     "00932C1E7C667C9429CB1C06A74AE58D"
+    ],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-32E89E368B9CDCCD",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-54089A636EE83662",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-29F5A1903996C71C",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": true,
+    "sample_id": "eval-001"
+   },
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T14:05:00Z",
+    "feature_snapshot_id": "FTRSNAP-6C68DEA7DF014017",
+    "instrument_id": "ES",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [
+     "00932C1E7C667C9429CB1C06A74AE58D"
+    ],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-A34A64A157A76059",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-04E932BB4CBC6952",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-45421A5DEE6CB3AF",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": true,
+    "sample_id": "eval-009"
+   },
+   {
+    "ai_output_admitted": false,
+    "as_of": "2026-09-09T14:10:00Z",
+    "feature_snapshot_id": "FTRSNAP-4FA104C03DEAB979",
+    "instrument_id": "ES",
+    "market_snapshot_ref": "fixture/news_strategy_evaluation/1.0.0",
+    "news_event_ids": [
+     "B8690DA9EFE9BAF0E6AC5FB7C6670799"
+    ],
+    "policies": [
+     {
+      "classification": "BASELINE_DETERMINISTIC",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-8A9831636239C00E",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_deterministic_baseline",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "AI_ENHANCED",
+      "decision": "POSITIVE_DIRECTIONAL_BIAS",
+      "decision_id": "EVDEC-14C7D0BBE47A3346",
+      "directional_units": 1,
+      "inference_record_ids": [],
+      "policy_id": "news_ai_enhanced",
+      "policy_version": "1.0.0"
+     },
+     {
+      "classification": "BASELINE_NAIVE",
+      "decision": "NEUTRAL",
+      "decision_id": "EVDEC-478203445C8F1C25",
+      "directional_units": 0,
+      "inference_record_ids": [],
+      "policy_id": "news_naive_reference",
+      "policy_version": "1.0.0"
+     }
+    ],
+    "policies_differ": true,
+    "sample_id": "eval-012"
+   }
+  ],
+  "evidence_class": "SOFTWARE_FIXTURE_ONLY",
+  "gaps": [],
+  "limitations": [
+   "SOFTWARE_FIXTURE_ONLY",
+   "INCOMPLETE_CURATED_MARKET_COVERAGE",
+   "FIXTURE_INSTRUMENT_SELECTION_NOT_SURVIVORSHIP_CONTROLLED",
+   "NO_FILL_OR_COST_MODEL",
+   "NO_REALIZED_PNL_OR_STRATEGY_EDGE_CLAIM",
+   "LEGACY_MARKET_RECEIPT_TIME_UNKNOWN",
+   "FIXTURE_AI_OUTPUT_NOT_ADMITTED_WITHOUT_ARTICLE_LINEAGE"
+  ],
+  "market_data_ref": "fixture/news_strategy_evaluation/1.0.0",
+  "rebuild_identical": true,
+  "replay_date": "2026-09-09",
+  "schema_version": "evidence-review-replay/1",
+  "simulation_only": true,
+  "snapshot_hash": "341D7F2362D7AB96203DF4D24097EC47689B1837084B57C94FA1C30C31FAFEF0",
+  "timezone": "America/New_York"
+ },
+ "status": {
+  "authority": {
+   "budget_reserved": false,
+   "execution_authority": false,
+   "inference_calls": 0,
+   "ledger_mutation": false,
+   "provider_calls": 0,
+   "trading_mutation": false
+  },
+  "collection": {
+   "collection_supervision": {
+    "enabled": false,
+    "state": "DISABLED"
+   },
+   "market_persistence": {
+    "enabled": false,
+    "state": "DISABLED"
+   },
+   "market_supply": {
+    "enabled": false,
+    "state": "DISABLED"
+   },
+   "raw_collection": {
+    "enabled": false,
+    "state": "DISABLED"
+   }
+  },
+  "collection_independent_of_inference_pause": true,
+  "knowledge": {
+   "latest_ingested_time": "2026-10-14T06:00:00Z",
+   "reason": null,
+   "records": 4,
+   "state": "AVAILABLE"
+  },
+  "model": {
+   "availability": "NOT_PROBED",
+   "configuration_reason": null,
+   "configured": true,
+   "engine": "anthropic",
+   "model": "claude-haiku-4-5-20251001",
+   "runtime": "PAID_API",
+   "selection_source": "OPERATOR"
+  },
+  "schedule": [
+   {
+    "end": "03:30",
+    "inference_allowed": false,
+    "start": "20:00",
+    "window": "INFERENCE_PAUSE"
+   },
+   {
+    "end": "04:00",
+    "inference_allowed": true,
+    "start": "03:30",
+    "window": "CATCH_UP"
+   },
+   {
+    "end": "09:30",
+    "inference_allowed": true,
+    "start": "04:00",
+    "window": "PREMARKET"
+   },
+   {
+    "end": "16:00",
+    "inference_allowed": true,
+    "start": "09:30",
+    "window": "REGULAR"
+   },
+   {
+    "end": "20:00",
+    "inference_allowed": true,
+    "start": "16:00",
+    "window": "AFTER_HOURS"
+   }
+  ],
+  "schedule_applies_to": "TRADING_DAYS",
+  "schedule_timezone": "America/New_York",
+  "schema_version": "evidence-review-status/1",
+  "server_time": "2026-10-14T07:30:00Z",
+  "session": {
+   "allowed": true,
+   "local_time": "2026-10-14T03:30:00-04:00",
+   "reason": null,
+   "session_date": "2026-10-14",
+   "timezone": "America/New_York",
+   "trading_day_basis": "EXISTING_HOLIDAY_TABLE",
+   "window": "CATCH_UP"
+  }
+ }
+}

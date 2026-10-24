@@ -53,6 +53,19 @@ def finviz_live_enabled() -> bool:
     return os.environ.get("IMP_FINVIZ_LIVE", "").strip().lower() in ("1", "true", "yes")
 
 
+FINVIZ_FEEDS = ("SCREENER", "NEWS", "OPTIONS")
+
+
+def finviz_feed_disabled(feed: str) -> bool:
+    """An operator can withhold one Finviz feed (``IMP_FINVIZ_<FEED>_LIVE=0``) without the others.
+
+    Only an explicit off value disables a feed; the master ``IMP_FINVIZ_LIVE`` gate still governs all of them.
+    """
+    if feed not in FINVIZ_FEEDS:
+        raise ValueError("FINVIZ_FEED_UNKNOWN")
+    return os.environ.get(f"IMP_FINVIZ_{feed}_LIVE", "").strip().lower() in ("0", "false", "no")
+
+
 def _dedupe_paths(paths: Iterable[Path]) -> tuple[Path, ...]:
     seen: set[str] = set()
     ordered: list[Path] = []

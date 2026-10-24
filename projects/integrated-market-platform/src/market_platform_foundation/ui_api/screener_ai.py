@@ -262,6 +262,8 @@ class ScreenerAiService:
                 observations.extend(flow_observation(row, universe, now=now))
             candidate = build_candidate(row.get('instrument', {}), observations, now=now)
             candidate['instrument']['company'] = str(row.get('company') or '')[:120]
+            # Provider rows omit the screener universe; policy and handoff gates read it from the candidate.
+            candidate['instrument'].setdefault('universe', universe)
             candidates.append(candidate)
         return candidates, rows
 
@@ -328,7 +330,7 @@ class ScreenerAiService:
 
     def run_universe(self, body: dict[str, Any], *, run_id: str, account_id: str,
                      should_stop: Callable[[], bool] = lambda: False,
-                     spend_limit: dict[str, int] | None = None) -> dict[str, Any]:
+                     spend_limit: dict[str, int] | None = None, slice_plan: dict[str, Any] | None = None) -> dict[str, Any]:
         """The operator's Run: every row of the active query accounted for, eligible rows reduced in bounded
         batches, finalists compared globally. ``run`` above remains the single-request method the automatic
         passes use; it reads only the head of the sorted result and never claims coverage."""
@@ -338,7 +340,7 @@ class ScreenerAiService:
             from .screener_ai_staged import ScreenerAiStaged
             return ScreenerAiStaged(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop)
         return ScreenerAiCoverage(self).run(body, run_id=run_id, account_id=account_id, should_stop=should_stop,
-                                            spend_limit=spend_limit)
+                                            spend_limit=spend_limit, slice_plan=slice_plan)
 
     def release_hold(self, run_id: str) -> dict[str, int] | None:
         """Return a dead run's unused paid hold even if the selected engine is now local."""

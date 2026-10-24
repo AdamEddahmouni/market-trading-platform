@@ -28,6 +28,57 @@ IMP already had read-only `news/aggregator.py` (Finviz + NewsAPI + Finnhub) with
 
 ## Canonical event contract
 
+### PF-01 continuous raw collection
+
+`news/collection.py` extends the existing S11 provider lifecycle. Explicitly
+enabled collection runs in the UI API backend, independently of browser demand,
+market hours, sentiment, synthesis, Paper policies, and execution. It calls only
+`ScreenerNewsService.collect_raw`, reusing provider gates, adapters, background
+cache single-flight, TTLs, RSS catalog and the NewsAPI daily request guard.
+
+The default is disabled. Activation requires an existing absolute `IMP_STATE_DIR`
+with `imp-state.sqlite3`, explicitly selected existing providers, and confirmation
+of provider access and storage rights. No providers or entitlements are enabled
+by collection configuration. Symbol sources require an explicit list of at most
+20 symbols; there are at most 64 jobs. Intervals cannot be shorter than existing
+provider TTLs. One job runs per step, bounded to 1,000 records / 2 MiB of normalized
+payload. A 512 MiB database-plus-WAL ceiling blocks further acquisition without
+deleting history. This is an acquisition bound, not a retention policy.
+
+Local-state schema v12 adds `news_collection_records` and
+`news_collection_jobs`. Records preserve the canonical article, original clocks,
+source identity, quality flags and source-type/availability provenance. Missing
+publication time remains unknown. Provider/source-scoped canonical dedupe keeps
+the first immutable receipt across polling, universe reuse and restarts; later
+edits to the same provider identity are not substituted for original evidence.
+The record batch and success checkpoint commit atomically. These raw records do
+not enter opportunity detectors, research campaigns, or AI evidence automatically.
+
+Durable job state contains last attempt/success, next due time, failure count,
+provider state, insertion/duplicate/rejection counts and known recovery gaps.
+Leases prevent simultaneous workers claiming the same job and expire after 120
+seconds following interruption. Each source is its own job, including each RSS
+catalog feed, so a failing source backs off alone: up to one hour for an outage,
+up to one day for credentials, quota or configuration. A response that stored
+some items and rejected others is `PARTIAL`, neither a success nor a backoff.
+Storage/path identity is checked before acquisition and writing; a replaced
+store blocks, an unreadable one is retried within a bound, and neither creates
+an empty DB.
+
+Restart performs one overdue acquisition through the adapter's existing bounded
+rolling window. Finnhub/NewsAPI reuse their seven-day default search;
+RSS/Finviz/SEC reuse current/recent results. This does not certify interval
+completeness, pagination, removed RSS entries, or historical point-in-time access.
+Downtime exceeding two intervals remains `UNVERIFIED_ROLLING_WINDOW` even after
+a successful response. No backdated acquisition or invented values are allowed.
+
+`GET /provider/health` includes `raw_collection` from actual worker/checkpoint
+evidence, without starting collection. Closing the browser or frontend does not
+stop the backend worker; stopping the backend does. No OS service, startup task,
+sleep/power-loss continuity, market-feed subscription expansion or recorder
+activation is installed by this feature. See the
+[PF-01 operating runbook](../operations/PF01_RAW_COLLECTION.md).
+
 `NewsArticleEvent` (`news/contracts.py`) is the normalized authority.
 
 | Field | Semantics |

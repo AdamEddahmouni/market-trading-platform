@@ -7,8 +7,8 @@ account: a second start joins the run in progress.
 
 A run is ``ScreenerAiService.run_universe`` for the scope: the full-universe method. Its receipts are
 written to the coverage ledger as it goes, so a restart finds the run it killed and closes it as
-INTERRUPTED; nothing is resumed. Stop prevents the next model call; a call already sent is not cancelled,
-because the provider offers no confirmed cancellation, and its tokens stay charged.
+INTERRUPTED; nothing is resumed. Stop reaches owned local generation and its resource monitor reaps the
+owned process. Hosted calls have no confirmed cancellation and their tokens stay charged.
 
 A service without ``run_universe`` (an acceptance harness carrying a prebuilt result) runs its ``run``.
 """
@@ -60,7 +60,8 @@ def _coverage(result: dict[str, Any]) -> dict[str, Any] | None:
         return None
     keys = ("method_version", "status", "reason", "universe_count", "assessed_count", "eligible_count", "ai_evaluated_count",
             "ai_coverage_pct", "batches_planned", "batches_completed", "model_calls", "finalist_count", "selected_count",
-            "coverage_complete", "selection_complete", "reconciled", "counts", "budget", "reduction", "efficiency")
+            "coverage_complete", "selection_complete", "reconciled", "counts", "budget", "reduction", "efficiency",
+            "slice_complete", "slice", "ai_rejected_count")
     return {key: block.get(key) for key in keys}
 
 
@@ -68,7 +69,8 @@ def _summary(result: dict[str, Any]) -> dict[str, Any]:
     """What a status strip needs from a finished run, without the evidence packet."""
     coverage = _coverage(result)
     # Only a completed global selection (or a single-request result) names a stored candidate run.
-    stored = result.get("method") != "STAGED_LOCAL_FIRST_EXPERIMENTAL" and (coverage is None or coverage["status"] == "GLOBAL_SELECTION_COMPLETE")
+    stored = result.get("method") != "STAGED_LOCAL_FIRST_EXPERIMENTAL" and (
+        coverage is None or coverage["status"] in ("GLOBAL_SELECTION_COMPLETE", "SLICE_SELECTION_COMPLETE"))
     return {
         "method": result.get("method", "EXHAUSTIVE_EXISTING"), "staged": result.get("staged"),
         "coverage": coverage, "provisional_count": len(result.get("provisional") or []),
@@ -159,11 +161,11 @@ class AiScreenerRuns:
         return screener_ai_service()
 
     def start(self, account_id: str, body: dict[str, Any], *, spend_limit: dict[str, int] | None = None,
-              origin: str = "OPERATOR") -> dict[str, Any]:
+              origin: str = "OPERATOR", slice_plan: dict[str, Any] | None = None) -> dict[str, Any]:
         """Start a run for this account, or join the one already in progress. ValueError for an invalid scope.
 
         ``spend_limit`` (AUTO-01) caps what a run started without an operator may hold; a joined run keeps the
-        terms it was started under."""
+        terms it was started under. ``slice_plan`` makes an automation run a rolling slice (local engine only)."""
         service = self._service()
         scope = service.validate_scope(body)
         self._recover(service)
@@ -182,7 +184,8 @@ class AiScreenerRuns:
                    "timeout_seconds": engine["timeout_seconds"], "stages": [], "intake_count": None,
                    "sufficient_count": None, "packet_bytes": None, "result": None, "error": None,
                    "progress": {}, "stop": threading.Event(), "stop_requested_at": None,
-                   "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin}
+                   "spend_limit": dict(spend_limit) if spend_limit is not None else None, "origin": origin,
+                   "slice_plan": dict(slice_plan) if slice_plan else None}
             self._active[account_id] = run
             self._runs[run["run_id"]] = run
             _LIVE.add(run["run_id"])
@@ -191,6 +194,26 @@ class AiScreenerRuns:
             snapshot = self._snapshot(run)
         threading.Thread(target=self._work, args=(service, run, scope), name="imp-ai-screener-run", daemon=True).start()
         return snapshot
+
+    def row_records(self, run_id: str) -> dict[str, tuple[str, list[str]]]:
+        """Each row's final class and reasons in a finished run, from its immutable ledger rows."""
+        from ..local_state.ai_screener_coverage import coverage_ledger
+
+        records: dict[str, tuple[str, list[str]]] = {}
+        for record in coverage_ledger().records(run_id, "rows"):
+            if record.get("phase") == "FINAL":
+                records.update((row[0], (row[1], list(row[2] if len(row) > 2 else []))) for row in record.get("rows") or [])
+        return records
+
+    def row_outcomes(self, run_id: str) -> dict[str, str]:
+        """Each row's final class in a finished run, from its immutable ledger rows. Empty when there are none."""
+        from ..local_state.ai_screener_coverage import coverage_ledger
+
+        outcomes: dict[str, str] = {}
+        for record in coverage_ledger().records(run_id, "rows"):
+            if record.get("phase") == "FINAL":
+                outcomes.update((row[0], row[1]) for row in record.get("rows") or [])
+        return outcomes
 
     def read(self, account_id: str, run_id: str) -> dict[str, Any] | None:
         """One of this account's tracked runs, with its full result once finished."""
@@ -259,7 +282,7 @@ class AiScreenerRuns:
                 "result": restored if result else None, "error": None}
 
     def stop(self, account_id: str, run_id: str) -> dict[str, Any] | None:
-        """Ask this account's run to start no further model call. A call already sent finishes and stays charged;
+        """Stop further calls and signal owned local generation. Hosted calls remain charged;
         completed receipts are kept. Stopping a finished run changes nothing."""
         self._recover(self._service())
         with self._lock:
@@ -369,6 +392,8 @@ class AiScreenerRuns:
                 full = getattr(service, "run_universe", None)
                 # Passed only when set, so a harness service with the original signature keeps working.
                 extra = {"spend_limit": run["spend_limit"]} if run.get("spend_limit") is not None else {}
+                if run.get("slice_plan"):
+                    extra["slice_plan"] = run["slice_plan"]
                 result = (full(scope, run_id=run["run_id"], account_id=run["account_id"], should_stop=run["stop"].is_set, **extra)
                           if callable(full) else service.run(scope))
         except Exception as exc:  # noqa: BLE001 - a run must always end; only a stable code leaves this process

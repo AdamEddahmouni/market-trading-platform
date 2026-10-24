@@ -21,7 +21,7 @@ from market_platform_foundation.ui_api.screener_action import ScreenerActionServ
 from market_platform_foundation.ui_api.screener_ai import ScreenerAiService
 from market_platform_foundation.ui_api.screener_projections import ScreenerService
 from market_platform_foundation.ui_api.screener_reevaluation import ReevaluationService
-from tests.intelligence.test_action_decision import proposal
+from tests.intelligence.test_action_decision import proposal, wire
 from tests.platform.test_screener_s18 import CandidateProvider, News
 
 T0 = datetime(2026, 10, 6, 18, 5, 24, tzinfo=UTC).timestamp()  # Tuesday 14:05 ET, regular session
@@ -57,7 +57,7 @@ class LiveProvider(CandidateProvider):
         candidate = packet.candidates[0]
         value.update(supporting_refs=[e['evidence_id'] for e in candidate['current_market_evidence']],
                      missing_capabilities=[m['capability'] for m in candidate['missing']])
-        return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id, simulated=True,
+        return ProviderInferenceResponse(wire(value, candidate), self.provider_id, self.model_id, simulated=True,
                                          tokens_input=250, tokens_output=120, latency_ms=1)
 
 

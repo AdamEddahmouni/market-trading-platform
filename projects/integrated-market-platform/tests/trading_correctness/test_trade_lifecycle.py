@@ -33,7 +33,7 @@ from market_platform_foundation.ui_api.paper_risk_control import SmaStopService
 from market_platform_foundation.ui_api.screener_action import ScreenerActionService
 from market_platform_foundation.ui_api.screener_lifecycle import TradeLifecycleService
 from market_platform_foundation.ui_api.server import UiApiHandler
-from tests.intelligence.test_action_decision import candidate, proposal
+from tests.intelligence.test_action_decision import candidate, proposal, wire
 from tests.trading_correctness.test_paper_experiment_api import _Base
 
 MINUTE = 60_000_000_000
@@ -58,7 +58,7 @@ class Model:
         value = proposal(self.state, None if self.state == 'NO_ACTION' else 'LONG')
         value['conflicting_refs'] = sorted({r for a in packet_candidate['alignments'] if a['result'] == 'CONFLICTING' for r in a['sentiment_refs']})
         value['missing_capabilities'] = [m['capability'] for m in packet_candidate['missing']]
-        return ProviderInferenceResponse(json.dumps(value), self.provider_id, self.model_id, simulated=True, tokens_input=1, tokens_output=1, latency_ms=1)
+        return ProviderInferenceResponse(wire(value, packet_candidate), self.provider_id, self.model_id, simulated=True, tokens_input=1, tokens_output=1, latency_ms=1)
 
 
 class _Lifecycle(_Base):

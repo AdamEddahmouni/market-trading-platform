@@ -269,6 +269,67 @@ class SnapshotQuotePollTests(unittest.TestCase):
         self.assertEqual(calls, ["snapshot", "quote"])
         self.assertEqual(enqueued[0]["payload"]["last_price"], 333.0)
 
+    def _held(self, ctx, sub_list):
+        ctx.query_subscription.side_effect = lambda is_all_conn=True: (
+            (0, {"sub_list": sub_list}) if is_all_conn is False else (0, {"sub_list": {"QUOTE": ["US.AAPL"]}}))
+
+    def test_subscription_lost_to_an_opend_relaunch_is_re_subscribed(self) -> None:
+        push_feed, feed, clock, _ = self._feed()
+        ft, ctx, _ = self._ctx(snapshot_ok=True)
+        self._held(ctx, {})  # the relaunched OpenD holds nothing for this connection; another connection still does
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(ctx.subscribe.call_count, 1)
+        clock[0] += push_feed.SUBSCRIPTION_AUDIT_NS
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(ctx.subscribe.call_count, 2)
+        self.assertEqual(feed.subscription_audit_repairs, 1)
+        ctx.query_subscription.assert_called_with(is_all_conn=False)
+
+    def test_held_subscription_is_not_re_subscribed(self) -> None:
+        push_feed, feed, clock, _ = self._feed()
+        ft, ctx, _ = self._ctx(snapshot_ok=True)
+        self._held(ctx, {"QUOTE": ["US.AAPL"]})
+        feed._sync_subscriptions(ctx, ft)
+        clock[0] += push_feed.SUBSCRIPTION_AUDIT_NS
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(ctx.subscribe.call_count, 1)
+        self.assertEqual(feed.subscription_audit_repairs, 0)
+
+    def test_unreadable_audit_changes_nothing(self) -> None:
+        push_feed, feed, clock, _ = self._feed()
+        ft, ctx, _ = self._ctx(snapshot_ok=True)
+        ctx.query_subscription.return_value = (-1, "busy")
+        feed._sync_subscriptions(ctx, ft)
+        clock[0] += push_feed.SUBSCRIPTION_AUDIT_NS
+        feed._sync_subscriptions(ctx, ft)
+        self.assertEqual(ctx.subscribe.call_count, 1)
+
+    def test_a_run_of_failed_polls_ends_the_session_so_it_reconnects(self) -> None:
+        push_feed, feed, clock, _ = self._feed()
+        ft, ctx, _ = self._ctx(snapshot_ok=False)
+        ctx.get_stock_quote.side_effect = lambda codes: (-1, "disconnected")
+        self._held(ctx, {"QUOTE": ["US.AAPL"]})
+        feed._sync_subscriptions(ctx, ft)
+        clock[0] += push_feed.FEED_STALL_NS - push_feed.SNAPSHOT_INTERVAL_NS
+        feed._sync_subscriptions(ctx, ft)  # failing, but not yet for the whole stall interval
+        clock[0] += push_feed.SNAPSHOT_INTERVAL_NS
+        with self.assertRaisesRegex(RuntimeError, "MOOMOO_FEED_STALLED"):
+            feed._sync_subscriptions(ctx, ft)
+
+    def test_a_successful_poll_restarts_the_stall_interval(self) -> None:
+        push_feed, feed, clock, _ = self._feed()
+        ft, ctx, _ = self._ctx(snapshot_ok=False)
+        healthy = [False]
+        ctx.get_stock_quote.side_effect = lambda codes: (0, [{"code": "US.AAPL", "last_price": 333.0}]) if healthy[0] else (-1, "x")
+        self._held(ctx, {"QUOTE": ["US.AAPL"]})
+        feed._sync_subscriptions(ctx, ft)
+        clock[0] += push_feed.FEED_STALL_NS - push_feed.SNAPSHOT_INTERVAL_NS
+        healthy[0] = True
+        feed._sync_subscriptions(ctx, ft)
+        healthy[0] = False
+        clock[0] += push_feed.FEED_STALL_NS - push_feed.SNAPSHOT_INTERVAL_NS
+        feed._sync_subscriptions(ctx, ft)  # failing again, but less than one full interval since the success
+
     def test_session_price_follows_the_snapshot_update_time(self) -> None:
         from market_platform_foundation.market_data.observational_state import _session_last_price
 

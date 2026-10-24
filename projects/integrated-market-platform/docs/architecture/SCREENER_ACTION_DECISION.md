@@ -20,8 +20,29 @@ Preview, opening panels, history reads, navigation and the expiry clock never
 infer. Candidate reduction retains its separate task and prompt. No new provider,
 budget, subscription, scheduler, broker path or risk engine is introduced.
 
-`SCREENER_ACTION_DECISION` uses `screener.action_decision.v1` (prompt 1.0.0),
+`SCREENER_ACTION_DECISION` uses `screener.action_decision.v2` (prompt 2.0.0),
 `action-proposal/1.0.0` and server policy `action-decision-policy/1.0.0`.
+
+The model writes the wire `action-proposal-wire/2.0.0`, not the proposal itself:
+`evidence_stance` gives every supplied evidence ID exactly one of SUPPORTING,
+CONFLICTING or CONTEXT. `decode_wire` rebuilds the canonical
+`action-proposal/1.0.0`, and the unchanged `parse_proposal` still decides
+acceptance. Under v1 the model wrote two free lists, which a grammar cannot keep
+disjoint, and every October 17–18 decision was rejected as `INVALID_SUPPORT`
+because one reference sat in both. The stance enums restate the validator's own
+rules: weak evidence offers only CONFLICTING/CONTEXT, and a conflicting sentiment
+reference offers only CONFLICTING. `weak_refs` and `missing_capabilities` had
+exactly one acceptable value, the candidate's own sets, so the server states
+them. A missing, extra, duplicated or unknown stance key is `SCHEMA_INVALID`.
+The wire's `uncertainties` is at most six distinct strings of at most 400
+characters: at temperature 0 the model repeated condition ids up to the 24-item
+cap and the validator rejected the duplicates (`LIST_INVALID`, October 18). The
+validator's own bounds are unchanged. A replay of production inputs also showed
+the model quoting evidence values in its rationale (correctly rejected as
+`UNSUPPORTED_EXECUTION_OR_LEVEL`); a style example in the prompt removed the
+values but was copied verbatim into unrelated decisions, so it was not adopted.
+The v1 prompt stays registered so earlier records keep their prompt identity.
+
 Local and hosted adapters use the dedicated JSON schema; hosted calls use the
 same persisted daily budget as News and candidate reduction. The browser supplies
 only run/instrument IDs and an optional existing Opportunity ID. It cannot supply
@@ -106,6 +127,24 @@ retries return the prior acknowledgement; fresh submissions recheck action,
 preview and authority again after waiting for an eligible bar. EXIT reuses existing
 Paper close risk; it never fabricates a new entry Opportunity for liquidation.
 
+## Forecast admission evidence
+
+Every reconstructed Action context records `forecast_admission`
+(`paper-forecast-admission/1.0.0`) with the actual instrument, candidate run,
+decision cutoff and evidence identities. Disabled forecasting and instruments
+without a model are `UNAVAILABLE`; refused artifacts and negative mint outcomes
+are `REJECTED` with their existing reason codes. Unexpected failures are `ERROR`
+with a safe exception type. The complete mint outcome, when present, is retained
+under `outcome`; unavailable forecasts cannot be mistaken for policy rejections.
+
+An explicitly requested repository Opportunity is validated through the existing
+gate and records `NOT_REQUESTED` for forecasting, plus its matched Opportunity
+identity. Diagnostics never create an Opportunity or bypass identity, evidence,
+freshness, risk or submit checks. The immutable Action evidence snapshot keeps
+these diagnostics. Attempt clocks and transitions such as `MINTED` to `EXISTING`
+are excluded from the stable inference-input hash; the actual Opportunity stays
+in that hash and under all existing revalidation gates.
+
 ## Immutable evidence, history and API
 
 ActionDecisionV1 (`action-decision/1.0.0`) contains action/previous state and IDs,
@@ -164,3 +203,29 @@ select it, and the prohibition on model-authored stops, SMA rules, trailing
 logic and numeric levels above is unchanged. The decision record carries
 `server_exit` (policy, stop state, active and previous stop, trigger price,
 time and evidence) and a null model.
+
+## Model-selected structured reasoning wire
+
+The local Action Decision prompt `screener.action_decision.v3` uses
+`action-proposal-wire/3.0.0`. The model chooses the proposal state, direction,
+each evidence stance, rationale basis references, assessment and applicable
+uncertainty codes. The server renders those choices as model judgments using
+bounded vocabulary. It does not add a market fact, choose an action or convert
+a refusal into permission. Numeric facts remain in the immutable cited evidence.
+
+Unknown or duplicate basis references, unknown assessments and inapplicable
+uncertainty codes are refused. An explicit insufficient or uncertain assessment
+paired with ENTER, HOLD or EXIT is rejected. A genuine NO_ACTION stays NO_ACTION.
+The selected wire is retained as `model_reasoning_wire` beside an accepted
+canonical proposal for audit. Legacy v2 wire decoding is retained and still
+passes its original free text through the same validator.
+
+The canonical `parse_proposal`, `gate_proposal`, source clock rules, evidence
+strength, position legality, forecast/opportunity requirement and execution
+authority are unchanged. A structurally valid model answer may still be blocked
+or downgraded by those independent gates. Historical model replay is software
+evaluation and cannot mint a current signal or a production order.
+
+Workspace rejects unsupported fractional or boolean quantities before integer
+conversion instead of silently truncating them. This guard preserves current
+quantity policy and is not itself complete fractional crypto admission.

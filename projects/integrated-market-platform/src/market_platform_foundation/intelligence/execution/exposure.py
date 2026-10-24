@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from decimal import Decimal, ROUND_CEILING
+
 from .types import ExposureSnapshot, PaperPortfolioSnapshotV1, PaperPositionSnapshot
 
 
@@ -74,7 +76,7 @@ def projected_positions_after_trade(
                     instrument_id=instrument_id,
                     symbol=symbol,
                     quantity=projected_qty,
-                    market_value_minor=abs(projected_qty) * reference_price_minor,
+                    market_value_minor=int((abs(Decimal(projected_qty)) * reference_price_minor).to_integral_value(rounding=ROUND_CEILING)),
                 )
             )
     if not replaced and projected_qty != 0:
@@ -83,7 +85,7 @@ def projected_positions_after_trade(
                 instrument_id=instrument_id,
                 symbol=symbol,
                 quantity=projected_qty,
-                market_value_minor=abs(projected_qty) * reference_price_minor,
+                market_value_minor=int((abs(Decimal(projected_qty)) * reference_price_minor).to_integral_value(rounding=ROUND_CEILING)),
             )
         )
     return tuple(rows)

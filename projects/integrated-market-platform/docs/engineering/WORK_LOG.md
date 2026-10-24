@@ -1,5 +1,249 @@
 # IMP Work Log
 
+## 2026-10-23 — Status reconciliation and owner decisions after shutdown
+
+The owner shut the workstation down after the session (controller clean stop
+19:29 ET; all six `IMP-*` scheduled tasks disabled) and asked for the project
+overview to be checked against the real code and state. Verified read-only:
+the deployed copy is R12 `e8892eb3`; R13 `7f0a07e4` is undeployed; the Paper
+line is not on `origin/main` (`b4743f68`); the Paper account has never had an
+order or fill; Moomoo stored no rows on 10-21 or 10-23; `database is locked`
+recurred on 10-23; the AI Journal guard checks the paid budget even with the
+local engine. #504 and #506 fail two UI tests each (earlier notes said green).
+The `C:\Users\Adam\.git` that broke two `test_git_ref.py` discovery tests was
+the owner's own July `cursor` repository, moved to `C:\Users\Adam\cursor`; both
+tests pass. The 6.08 GB archived backend log was zipped to 50 MB.
+`PROGRAM_STATUS.md` gains a current operating-state section and
+[Owner decisions 2026-10-23](../platform/OWNER_DECISIONS_20261023.md) records
+the eleven answers and the rebuild order. Docs only; no behavior change.
+
+## 2026-10-23 — R13: reclaim a dead owner's runtime lock; comparisons fit the local window
+
+From 10-21 11:16 ET every local AI batch failed
+`LOCAL_RUNTIME_ALREADY_OWNED_OR_INTERRUPTED`: the runtime lock was created with
+exclusive-create and its owner (pid 31944) had died before a reboot. The lock
+is now set aside and retaken when its recorded owner is gone, and a stopping
+owner never removes a lock a later owner took. With the full universe, the
+equity run failed `GLOBAL_REDUCTION_INCOMPLETE:LOCAL_CONTEXT_EXCEEDED` (171
+provisional finalists in an 8,192-token window): after a refused comparison,
+groups are planned one smaller than the smallest refused size, a finalist too
+large to compare alone is deferred within the slice, and a round that advances
+everyone is retried with new pairs at most twice. Five regression tests; one
+existing assertion updated. Commit `7f0a07e4`; validated, rehearsal tooling in
+`destination-tests/20261023-full-paper/release-r13/`; **not deployed** (owner
+chose to keep the workstation off).
+
+## 2026-10-23 — R12: owner-authorized AI-direct Paper entries and end-of-day flatten
+
+With `IMP_PAPER_AI_DIRECT=1`, Paper execution on and an internal-simulation
+ledger, an AI ENTER no longer needs a governed Opportunity
+(`NO_GOVERNED_OPPORTUNITY` is the only gate bypassed); grounding, direction,
+quote, authority and pre-trade risk gates still apply. `_eod_flatten` submits
+one idempotent market SELL per long equity position 10 minutes before the
+regular close (client ids `PAI-EOD-`); crypto is skipped. Known gaps: skipped
+when the provider is unhealthy, and it also closes manual positions. Deployed
+10-23 as `e8892eb3` with policy `PAP-8b83faf0…` (all US equities and crypto,
+$5k / 15 / $75k / $2k, long only, SMA 20 × 1m). Result for the day: zero
+fills; see the 10-23 reconciliation entry above.
+
+## 2026-10-21 — Installation moved from the E: SSD to D:\IMP
+
+The portable root and its migration-backup sibling were copied to `D:\IMP`
+(file counts and store hashes verified), the 9 absolute junctions and 40 git
+worktrees repaired, the six scheduled tasks re-registered with D: paths, and
+the collector's canonical-store identity pin updated for the new volume. The
+backup folder stays unpacked beside the portable root because launchers load
+packages and model weights from it.
+
+## 2026-10-20 — Shared universe run slot: a waiting in-session scope gets the next turn
+
+Scopes run in policy order (US_EQUITIES, then CRYPTO), and each closes only its
+own run handle. In the cycle where a crypto slice finishes, the equity scope
+still sees that run and defers `SHARED_ACCOUNT_RUN_ACTIVE`. The crypto scope
+then restarts in the same cycle whenever its slice outlasted the 30-minute
+separation. As a result, equities reached the model only after short crypto
+slices. On 2026-10-20 the first equity run of the session started at 09:53 ET,
+and only because the crypto slice failed. Now a scope that would RUN yields one
+cycle (`UNIVERSE_PEER_WAITING`) when another scope deferred on the shared slot
+at its latest cycle, is inside its own session, and last started earlier. A
+deferral older than two cadences never makes a scope wait. A blocked or deferred
+decision keeps its own reason. R10 deployed 09:12 ET.
+Evidence: `destination-tests/20261020-market-day/`.
+
+## 2026-10-19 — R9: Paper universe gate, order-parse order, Moomoo feed self-healing
+
+Production crypto and equity provider rows carry no `instrument.universe`, so
+`decision_permitted` refused every production ENTER as
+`AUTOMATION_INSTRUMENT_NOT_ALLOWED` and the crypto handoff never loaded pair
+economics; the shared test fixture adds a universe, which hid it. Candidates now
+record the universe of the run that built them; a missing universe still fails
+closed. The fractional-quantity integration parsed order bodies only after
+instrument admission; non-quantity body checks run in their original position
+again.
+
+On 2026-10-19 OpenD hung at 04:06 ET and was relaunched at 04:10. The collector
+and platform quote contexts stayed CONNECTED with no data for the rest of the
+session (Moomoo stream records: none between about 05:00 and 19:15 ET; all
+7,800 forecast-corpus decisions refused `REFERENCE_SOURCE_STALE`). The push feed
+now audits this connection's subscriptions with OpenD every 60 s and
+re-subscribes any it no longer holds, and ends the session for a fresh
+reconnect after 120 s without a successful quote poll. Regression tests cover
+both paths. Fresh paired benchmark of the compact structured rationale wire:
+27/27 valid proposals against 13/27 for v2. Changed validation against R8:
+6,622 tests, only the two inherited `test_git_ref` failures.
+Evidence: `destination-tests/20261019-r9-closure-release/`.
+
+## 2026-10-18 — Explicit forecast admission evidence in Action Decisions
+
+Forecast absence, artifact rejection and unexpected failure were discarded by
+the Action service. Per-build local evidence now distinguishes UNAVAILABLE,
+REJECTED and ERROR, binds candidate/run/evidence identities and the decision
+clock, and preserves mint outcomes in immutable Action snapshots. Explicit
+repository Opportunity requests record NOT_REQUESTED for forecasting. Actual
+Opportunity gates and risk authority are unchanged; diagnostic clocks and
+MINTED-to-EXISTING transitions do not change the stable inference-input hash.
+Seven original regression methods failed in eight subcases before repair;
+additional registry-state and mint-status controls cover fail-closed behavior.
+Combined Action and forecast verification: 133/133 tests passed; docs links and
+diff checks passed.
+Evidence: task workspace `forecast-closure-20261018/admission-*.log` and
+`focused-tests-admission.log`. No production state or real model was touched.
+
+## 2026-10-18 — Retry-safe forecast recovery publication
+
+Independent review reproduced a partial-scan defect: recovery appended pending
+rows before later files were validated. Retries could duplicate pending identities
+and, after expiry, append two conflicting unlabelable outcomes. Recovery now stages
+pending rows, grid state and counters until the full scan succeeds. Existing
+append-written outcomes are rediscovered on retry, including a simulated close
+failure after append. RED: two failing cases and one idempotence control passing;
+GREEN: 89 focused forecast tests pass. No corpus, policy or production state was
+modified during repair.
+
+## 2026-10-18 — Forecast pending-label recovery across restart
+
+Read-only corpus reconciliation found 52 accepted decisions without any label,
+all October 14 and inside existing quality exclusions. The recorder's pending
+list was memory-only. Startup recovery now restores unresolved future horizons
+from compact durable decision references, preserves their original clocks and
+existing labels, and restores the last recorded grid. Past horizons are explicitly
+unlabelable with a current recovery timestamp; lost terminal evidence is never
+invented. Recovery has a hard 10,000-decision per-file/pending bound. Corrected
+grid-aligned regression cases fail 4/4 on the preceding implementation and pass
+4/4 after repair; the combined forecast suite passes 86/86. No canonical corpus
+was modified in development; controlled restart artifacts stayed in temporary
+fixture directories. Raw-stream SQL audit also found equity L1 without ticks and
+crypto trades without quote/book records, so no additional complete compatible
+feature corpus was established.
+
+## 2026-10-18 — Forecast runtime admission and lossless corpus guards
+
+Isolated copies of real W11 artifacts reproduced a runtime admission gap: changing
+only `eligible` to true loaded an artifact with ten holdout samples despite the
+unchanged minimum of sixty. Runtime now independently checks stored holdout
+scores, the fixed rule, instrument identity, finite skill and matching integer
+counts before existing artifact hash checks. Corpus tests reproduced silent
+boolean/string/float coercion and conflicting duplicate replacement; the loader
+now rejects these inputs, unknown schemas and mismatched snapshot identities.
+Identical duplicates remain idempotent. RED: 22 failed subcases, no errors;
+GREEN: 82 selected forecast tests passed. The real three-file corpus was rebuilt
+without activation before and after these changes; no artifact qualifies.
+Evidence is under the task workspace `forecast-closure-20261018/`; the preexisting
+W11 build and canonical corpus remain unchanged. Historical development work was
+excluded. No model service, production activation or order submission occurred.
+
+## 2026-10-18 — Action Decision stance wire and slice starvation
+
+All 46 production Action Decisions after R4 were `INVALID_SUPPORT`: the model
+listed one reference as both supporting and conflicting, which two free lists
+cannot prevent in a grammar. R6 (`f3859ab1`, prompt `screener.action_decision.v2`)
+asks for one stance per evidence reference; `decode_wire` rebuilds the canonical
+proposal and the unchanged validator decides. After R6 every crypto slice ended
+within about 14 requests on the half-rejected breaker: the epoch's remaining
+rows were news-heavy (about two thirds `UNGROUNDED_NEWS_CLAIM`), rejected rows
+never counted as evaluated, so they headed every slice and held the epoch open.
+R7 (`8f4c0721`) orders slices by each row's last turn (answered, rejected or
+refused at send), completes an epoch when every row has had its turn (evaluated
+and turns reported apart), and in a slice stops dispatch only when 20 answers
+include none accepted. The next slice (`f46d8737`) finished in about 19 minutes
+with 5 picks adopted. Replaying the first v2 decisions against the loopback
+model at temperature 0 reproduced them: one repeated condition ids in
+`uncertainties` to the 24-item cap (`LIST_INVALID`), one quoted evidence values
+in its rationale (`UNSUPPORTED_EXECUTION_OR_LEVEL`, correctly rejected). R8
+(`211823e6`) bounds the wire's uncertainties to six distinct strings; the next
+decision on that pick was the first accepted proposal, a governed `NO_ACTION`.
+A prompt style example removed quoted values but was copied verbatim into
+unrelated decisions and was not adopted. RED→GREEN for each release; focused
+suites 433/434, 256/256 and 229/229 (the one error is the inherited
+`StagedTests` Monitor); `validate changed` failures all on the recorded
+baseline. A one-time read-only check of the Monday 2026-10-19 equity open is
+scheduled (`equity_open_check.py`). Evidence:
+`destination-tests/20261016-paper-ai-throughput/` (`release-r6..r8`,
+`r7-decision-replay*`).
+
+## 2026-10-17 — Paper AI throughput: GPU profile, send-time counts, rolling slices
+
+Production runs on the CPU profile answered one crypto row in about 87 s
+(median, run `65210e15`, 118/118 batches EXPIRED against the unchanged 60 s
+quote lifetime), and two equity/crypto runs refused 1,333 of 1,334 packets
+with `LOCAL_CONTEXT_EXCEEDED` after about 415 s of up-front token planning.
+R1 (`a3c0432e`) adds the benchmarked `vulkan-8192/1` profile (all layers on the
+RTX 2070 SUPER, CPU as the visible fail-closed fallback; context, model,
+runtime pin, timeout and memory ceilings unchanged), counts local requests
+exactly once at send with a window-sized output allowance and a per-candidate
+floor, thins reference news to fit, counts only dispatched tokens, and records
+worker fault tracebacks with a transient-store retry. In production the first
+R1 crypto run answered 375/375 batches inside the TTL (p50 1.6 s, 0 EXPIRED,
+0 refused). R2 makes validator rejections row-level, splits over-window
+comparisons, adds rolling slices with coverage epochs for automation runs,
+adopts completed slices as labelled hypotheses with a two-separation lifetime,
+separates scopes by their own last start and stops withholding Action
+Decisions during universe runs. RED: 18 new tests failed on `a3c0432e`; GREEN:
+407 focused tests, one baseline error (`StagedTests` Monitor). Evidence:
+`destination-tests/20261016-paper-ai-throughput/`.
+
+Production observation drove four further releases the same evening. R2 also
+re-ages the Moomoo probe in-process; the collector renewed it outside a session
+(19:54:53Z) and the running platform adopted it without a restart. The first
+slice (`d9b3fe3e`) produced the first governed selection
+(`SLICE_SELECTION_COMPLETE`, adopted), which exposed: the run read refused by the
+leak audit (`token_basis`, fixed in R2), crypto picks never decided because
+adoption stored no search text (R3), Action Decision answers the validator always
+rejected because the grammar was looser than it (R4, per-field bounds), a
+50→3 refusal cascade in comparisons (R4, pre-split), and news-heavy rows whose
+pairs do not fit and whose rejected comparison answers ended the slice (R5,
+slice-only deferral and pair thinning). Remaining: no instrument passes the
+forecast holdout rule (holdout 10 of the required 60), so ENTER stays
+`NO_GOVERNED_OPPORTUNITY`; news-bearing rows draw `UNGROUNDED_NEWS_CLAIM` on
+about 45% of answers; Action Decisions still fail `INVALID_SUPPORT` when the
+model lists a reference as both supporting and conflicting.
+
+## 2026-10-15 — Post-memory-recovery activation repairs
+
+Reproduced the October 15 crypto failure from its immutable packet: Qwen copied
+the v3.4.0 news/FinBERT example into a market-only BILLY/USD result and cited
+weak volume as support. v3.4.1 replaces that example with evidence-conditional
+instructions. The flat generation schema excludes universally weak positions while preserving
+the existing strict-provider grammar bound; the canonical validator is unchanged
+and still requires two strong support references.
+Unsupported claims, weak support and cross-instrument references remain rejected.
+
+Warm-runtime allocation logging identified b11269's default 8 GiB host prompt
+cache and a 6.24 GiB working-set transient while saving snapshots. Managed
+profiles disable only that extra cache. The CPU-repacking allocation exceeded
+the original 1.5 GiB overhead prediction, so admission uses a 2 GiB allowance.
+Model artifact, 8192 context, batch/threads/GPU, 6 GiB process/commit ceilings and
+4 GiB system floor are preserved. New tests were observed failing before fixes.
+Operational completion, real responses, deployment hashes and any remaining
+blocker are recorded separately in the task's activation-completion evidence;
+engineering test success does not claim autonomous selection or trading success.
+Final focused verification: 192 inference/grounding/resource tests and 262
+Paper/universe/authority/journal/isolation tests passed. Fresh final-schema
+BTC/USD was CURRENT after real local inference; ETH/USD grounded output expired
+under the unchanged quote lifetime. Broader baseline failures remain separately
+recorded; the temporary shared-schema minimum regression was corrected.
+
+
 ## 2026-10-12 — Autonomous Paper operations (AUTO-01)
 
 Added one server-owned controller that runs the existing authorities
@@ -6771,6 +7015,33 @@ failures/errors); final incremental checks cover these subsequent corrections.
 The 514-second checkpoint crossed the stored severe performance-regression
 threshold; this sprint does not claim workstation performance qualification.
 
+# 2026-10-12 — PF-01 isolated raw collection implementation
+
+Recovered the Samsung SSD baseline and verified that locally accepted
+`b4743f68c4f213358dacb6207572a12079602b00` contains the autonomous Paper branch.
+The serving non-Git source copy remains at that older Paper implementation;
+unfinished spending-authorization and Screener/launcher worktrees are preserved.
+
+Added opt-in raw collection through existing S11 adapters/cache and local_state
+SQLite, without AI, sentiment, opportunity detection or trading dispatch.
+Schema v12 adds immutable raw article receipts and transactional job progress.
+Bounded jobs, restart leases, backoff, explicit downtime gaps, storage refusal
+and evidence-based status extend the existing backend lifecycle. NewsAPI quota
+persistence fails closed; raised HTTP errors retain their status classification.
+
+Final isolated FULL passed 8,786 tests with 59 classified skips, zero failures
+and zero errors. The selected existing-news/PF-01 regression passed all 94 tests.
+Three stale schema-version assertions were advanced to v12 with prior-table
+checks preserved. Separate read-only review findings about pending leases,
+backoff and initial gaps were reproduced and corrected before final validation.
+
+Focused regressions retain the initial missing-path failure and the duplicate /
+HTTP-429 reproductions. Verification uses disposable databases and preserved SSD
+Python dependencies; no normal-state migration, provider probe, deployment,
+OS registration, Paper activation or order is performed. Actual overnight,
+entitlement, complete market capture and physical SSD remount remain separate
+acceptance gaps. See [PF-01 operation](../operations/PF01_RAW_COLLECTION.md).
+
 # 2026-10-10 — Portable sprint recovery and replay startup closure
 
 Recovered PR #490 at 93578507131c06d8fc1598b4c8845aa80a4d7a08. Workflow
@@ -6849,3 +7120,345 @@ and the complete 1,427-test UI suite passed during recovery. Exact final
 CHANGED/FULL, independent review, paired timings, protected integration and
 portable runtime acceptance require their own final receipts; the earlier
 2,880-test checkpoint and provisional speedups do not establish acceptance.
+
+## 2026-10-12 — PF-01B isolated market-stream persistence
+
+Continued accepted base with all 15 verified PF-01 news files in a separate SSD
+worktree. Added default-off, bounded SQLite capture at existing moomoo/current-bar
+and Kraken selected-pair boundaries, immutable revisions, committed watermarks,
+writer leases, gap evidence and existing provider-health projection. Schema 13
+retains news schema 12 and all earlier state. Fixed failed-begin lock release and
+failed-commit rollback in the shared transaction helper, with offline regressions.
+See the [operating contract](../operations/PF01B_MARKET_PERSISTENCE.md) and task
+PF-01B evidence report for exact final commands/results. No merge, deployment,
+production migration, provider activation, AI call or trading activation.
+
+## 2026-10-13 — PF-01 integration hardening and collection supervision
+
+Continued the combined PF-01A/PF-01B tree in a third SSD worktree. Added a
+default-off headless `--collect-only` entry point and a bounded-restart
+supervisor (`tools/platform/pf01_supervisor.py`, plan-only unless `--run`) that
+keeps durable lease, crash and exit-code evidence and registers no task or
+service. Neither entry point migrates a store; both refuse one that is not at
+the current schema.
+
+Corrected lifecycle and evidence defects found by reproduction and independent
+review: a second writer worker on repeated start, news shutdown reported paused
+with a live worker, undercounted overflow rejections, malformed selected Kraken
+trades without gap evidence (including targets selected by provider symbol),
+news writes after lease expiry, a news startup race that could recreate a
+missing store, unclosed read-only supervisor connections, repeated bar windows
+overflowing the writer queue, and gap hooks firing for unselected sources.
+`run_ui_api.main` selects the headless path only for an explicit flag.
+
+The headless process acquires no market subscriptions, so it does not supply the
+market writer; continuous headless market capture remains unimplemented and
+needs a separately approved source-demand design and provider entitlement. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md).
+No merge, deployment, canonical migration, provider request, AI call, trading
+activation or real overnight run.
+
+## 2026-10-13 — PF-01 supervision hardening
+
+Closed the five behaviours the PF-01 review left open, from `151a8c6f` in a
+fourth SSD worktree. The supervisor's lifetime three-crash budget is now three
+restarts per rolling hour with doubling backoff, a reset after 30 minutes of
+child uptime, a latch after three exhausted windows and an operator reset
+command. Database contention is retried by the worker that hit it and no longer
+ends the child or spends a restart; replaced, full or corrupt storage still
+stops at once. The market writer takes an operating-system owner lock with its
+run lease, so a restart after a crash no longer waits out the 120-second lease
+and a live owner is still never overridden. A writer with nothing to store owns
+nothing, so an idle headless process cannot block the serving backend's writer,
+and a backend that finds a live owner starts and waits instead of failing. Each
+RSS feed is its own collection job, so one failing or unconfigured feed backs
+off alone.
+
+Changed behaviour to know about: RSS job IDs are now `rss:<feed>:<universe>`;
+a writer may report `IDLE`, `RETRYING` or `WAITING_FOR_OWNERSHIP`; the state
+directory gains an empty `imp-state.sqlite3.market-writer.lock` file; the
+supervisor may report `COOLDOWN` or `STORAGE_WAIT`. No schema change.
+
+Offline only: no deployment, migration, provider request, subscription, paid
+call or trading. Headless market supply is still not implemented and no real
+overnight run has been observed. See
+[PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md),
+[market persistence](../operations/PF01B_MARKET_PERSISTENCE.md) and
+[raw collection](../operations/PF01_RAW_COLLECTION.md).
+
+## 2026-10-13 — PF-01 certification follow-up and headless market supply
+
+From `89647a61` in a fifth SSD worktree. Two things.
+
+Supervision. An independent re-review confirmed the six medium fixes and the
+five supervision behaviours, and confirmed one reliability defect: a child that
+fails after 16 to 29 minutes never filled the rolling window and never reached
+the 30-minute healthy reset, so it was restarted for ever. The supervisor now
+also counts child failures since the last healthy period and latches
+`PERSISTENT_CHILD_FAILURE` at nine. Three smaller review findings were fixed: a
+corrupt store is `SCHEMA_CHECK_STORAGE_INVALID` rather than a missing migration,
+`--serve` with `--collect-only` exits with the permanent code, and a writer that
+owns nothing no longer spends its retry budget during a storage outage.
+
+Headless market supply. The collection-only child can now hold explicitly
+configured demand on the existing OpenD and Kraken subscription authorities, so
+the durable writer receives data without a browser. It is default off, bounded
+by the persistence selection, and gated by the provider live flags, an operator
+confirmation of data rights per source and, for moomoo, the existing capability
+probe. While another process owns the market writer it stands by without
+subscribing. `/provider/health` reports it as `market_supply`.
+
+Changed behaviour to know about: evidence rows gain `unhealthy_failures`; the
+state database gains a reserved `__pf01_market_supply__` job row when supply
+runs; `pf01_supervisor.py --status` includes `market_supply`; the plan's
+`market_source_demand` is `DISABLED`, `EXPLICIT_TARGETS_CONFIGURED` or the
+refusal reason. No schema change.
+
+A final independent review of the first implementation led to these
+corrections before closure: the OpenD disconnect gap is written once per lost
+session instead of on every failed retry (retries were renewing an idle
+writer's ownership for the length of an outage); the moomoo probe is read from
+its file before the OpenD runtime is created and re-read while running; other
+provider preferences, a fixture feed and dotted tickers are refused; a
+disconnected feed's remembered subscriptions and checkpoints from an earlier
+run no longer read as `COLLECTING`.
+
+Offline only, against synthetic provider transports: no deployment, migration,
+provider request, subscription, entitlement probe, paid call or trading. No
+account entitlement is verified and no real overnight run has been observed.
+See [PF-01 collection supervision](../operations/PF01_COLLECTION_SUPERVISION.md)
+and [market persistence](../operations/PF01B_MARKET_PERSISTENCE.md).
+
+## 2026-10-13 — PF-01F observation accounting and bounded capacity
+
+Continued from verified PF-01E commit 3578d5b0 in isolated SSD worktrees. The
+previous 38-observation high-rate discrepancy split into 36 OpenD ticks and
+two Kraken trades. Producer callback/enqueue counts were not an external
+exactly-once delivery boundary. Bounded provider draining retains selected
+demand until already observed work is drained; writer admission/status
+reconciliation and incomplete-shutdown evidence preserve uncertainty.
+
+Added read-only SQLite page/index/WAL and per-source accounting, pure runtime
+capacity decisions and explicit workload forecasts. The 512 MiB default and
+8 MiB reserve remain; no history is expired/deleted, raw data is not sampled,
+and no independent historical store is introduced. Smaller synthetic payload
+measurements are separate from conservative planning assumptions. Current bar
+updates/revisions are not advertised as a completed-bar-only capture profile.
+
+Independently re-reviewed PF-01E high/medium fixes; the four original Windows
+spawn tests passed unchanged in the authorized shell. A further supply status
+file-identity issue was corrected. Deployment/rollback and default-off overnight
+acceptance artifacts preserve serving source differences and explicit provider,
+target, cost, storage and host prerequisites. Actual account entitlements,
+production deployment and a real overnight run remain unverified; no provider
+probe, live subscription, paid request, trading or canonical migration occurred.
+
+## 2026-10-13 — PF-01F final-review shutdown corrections
+
+Resumed the interrupted PF-01F integration at 66f30cdb. The final independent
+review had found that Kraken's `UNVERIFIED` shutdown result never reached supply
+health or the child exit, and that buffered WebSocket control frames could
+outlive the receive deadline. Both are corrected with regressions, together
+with the supervisor discarding a stopped child's exit code and a capacity
+warning that could raise out of writer status (an existing storage-ceiling test
+had been failing on the integrated source).
+
+A second independent review of those corrections reproduced two more cases,
+also corrected: a venue-refused pair made every clean stop read incomplete, and
+a socket lost by the receiver thread just before the stop read clean. A console
+interrupt no longer masks an incomplete drain, a failing child handle is
+recorded, and a reused stream does not inherit an earlier shutdown verdict.
+Changed-suite validation then showed the repository closure audit rejecting the
+unclassified `tools/market_data_capacity.py`; it is now classified with the
+other operations tooling.
+Remaining limits are stated in PF01B_MARKET_PERSISTENCE.md. Synthetic
+transports only; no provider, subscription, migration, deployment or trading.
+
+## 2026-10-13 — PF-01G release candidate hardening
+
+Continued from PF-01F 512d0fac. The supervisor's fixed 15 s stop wait was
+shorter than the child's own bounded stop stages; it is now derived from those
+stage constants (59.25 s, below the 120 s lease), with a repeated OpenD stop, an
+unbounded stalled-reconcile lock wait and an uninterruptible reconnect backoff
+removed. An independent review of the last PF-01F corrections found no high
+finding; its medium and low findings (unacknowledged Kraken subscribe closed as
+acknowledged, CLI exit code after an unverified stop, missing exit code
+accepted) are corrected with regressions.
+
+The intermittent real-process supervision test was a product defect: a fetch
+on the shared SQLite connection outside its lock overwrote the result code of
+another thread's failing BEGIN IMMEDIATE, so a busy store was reported as
+"not an error", classified unrecoverable and ended the child. Status and lease
+reads now fetch inside the lock, a transaction that did not start raises, and a
+lost code is retried within the existing bound.
+
+Added a read-only `pf01_supervisor.py --preflight` (READY, BLOCKED, UNKNOWN,
+NOT VERIFIED) that contacts no provider and starts nothing, capacity readiness
+profiles, provider prerequisites and the attended sequence in
+PF01G_RELEASE_CANDIDATE.md. Synthetic transports and disposable stores only; no
+provider, subscription, canonical migration, deployment or trading.
+
+A final independent review (accept with fixes, no high finding) led to: an
+interrupt during an in-loop child stop keeps the child handle and is recorded
+as unverified instead of a clean operator stop; a news worker that outlives
+its join ends the child non-zero; the preflight validates the stored market
+selection, requires real hashes in the release manifest, separates UNKNOWN
+(unreadable, exit 2) from NOT VERIFIED (operator evidence, exit 3) and lists
+what it does not inspect.
+
+## 2026-10-13 — Professor intelligence offline integration
+
+Owner-selected four-area sprint on PF-01G `1877b8f8380c9838d44d60da0c3e7c8ab5f3b6be`, isolated integration and worker trees. Durable news revision/as-of retrieval, bounded Eastern inference planning, immutable decision/outcome/review journal, and receipt-aware selected-day replay now share an offline demonstration through existing contracts. Independent review findings received regression tests and repairs. No schema migration, deployment, source activation, inference, trading, calibration, promotion or push/merge performed. Implementation-session receipts are in the chat workspace `imp-sprint-evidence/logs/`; final validation, preservation receipts and the report are in the portable workstation's `destination-tests/20261013-profint-recovery/`.
+
+The first complete FULL run failed one unchanged PF-01 test, `test_status_exception_does_not_kill_reconciliation_worker` (2 reconcile errors, 3 expected). Cause: a test race, not a worker defect. A supply step requests under the lock and publishes status after releasing it, so the third request is visible before its status failure is counted; the test waited for the request and could leave its failing-status patch inside that gap, after which the count stays at two. The original logic failed 24 of 300 isolated runs and every run with the worker held in the gap. The test now waits for the failures themselves and keeps every original assertion; a second test pins the request-before-count ordering. `headless_supply.py` is unchanged.
+
+Behavior and limits: [Professor intelligence integration](../operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md). Frozen research evidence and Item 9 remain unchanged. This is synthetic software evidence, not October 14 market observation or empirical strategy validation.
+
+## 2026-10-13 — Professor integration operator surface and release candidate
+
+On `d20e6a62`. The four sprint capabilities were libraries with no operator access. Added `ui_api/evidence_review.py` and five read-only `/evaluation/evidence/*` routes (`audit.read`), and an Evidence review section on the existing Outcome evaluation page: stored news as known at a cutoff, the catch-up dry-run plan with its deferral reasons, the day's Action Decision receipts as frozen journal entries beside later Paper and next-session evidence, and the fixture day replayed for the three policies. Nothing in it calls a provider or model, reserves budget, writes state or grants authority. The UI test fixture is the service's own output and a Python test holds it to the service.
+
+Wiring the journal to real receipts found one defect in it: it required shared evidence between a decision and its Opportunity, which the action service does not require for an operator-selected Opportunity, so every such ENTER receipt was refused (`JOURNAL_OPPORTUNITY_LINEAGE_MISMATCH`). A receipt that froze and names its Opportunity is now accepted on identity and clock; an unnamed or separately supplied Opportunity still needs shared evidence.
+
+The eleven other `wait_until` call sites in `test_pf01_headless_supply.py` were checked for the request-before-effect race corrected earlier. Ten wait on the asserted value or assert after a join. One (total committed rows, then tick rows) was suspected and could not be made to fail when forced, so it is unchanged.
+
+An independent review of the surface (accept with fixes) found that two documented plan states returned HTTP 500: deferral reason codes were response keys, and `TOKEN_BOUND` and `TOKEN_ESTIMATE_NOT_VERIFIED` look like credentials to the response secret audit. Reasons are now a list, checked over HTTP. The same review led to: assumed model access no longer reads as verified; the plan states which spending policy it consulted and which it did not, reports backlog beyond its bound, and uses limits only for a later UTC day; the knowledge view counts only what was stored by the cutoff and reports the reader's scan bound as unavailable; the replay refuses days outside the fixture and clocks the server has not reached, and says that the fixture's AI output is not admitted; an unreadable receipt can no longer fail a whole journal day; and a receipt owns its Opportunity only when it names it and its snapshot id is that snapshot's digest.
+
+No deployment, canonical migration, provider contact, inference, trading or push. Evidence, release package, rehearsal and the October 14 approval package: portable workstation `destination-tests/20261013-rc-integration/`. Behavior: [Professor intelligence integration](../operations/PROFESSOR_INTELLIGENCE_INTEGRATION.md).
+
+### 2026-10-13 — professor release closure tooling
+
+Preserved the standalone apply/backup/migration helpers used by profint-rc1 under tools/release_candidate. The helpers exclude only their own process; failed or malformed Windows process inventories now refuse the operation. Normalize slash spelling when identifying a serving process. No application, canonical state, provider or trading activation occurred. Seven offline guard regressions passed after the expected red failures, including a separate reviewer reproduction of an unreadable process command line. The final consolidated acceptance report and package are maintained in the coordinator's release-closure evidence folder. The four prior process-spawn errors remain environment-blocked.
+
+## 2026-10-13 — Authorized operational certification correction
+
+Final candidate 2a0fbbe8 was recertified in an authorized Windows terminal: 9,203 tests, 9,135 passes, 59 skips, zero failures, nine errors, exit 1. Eight errors were Windows temporary path length failures; they pass unchanged with shorter disposable paths. The remaining existing canonical closure regression reproduced an unclassified tools/release_candidate directory. Added only that directory to the existing retained qualification/operations tooling scope; no existing classification or product behavior changed. The nine-case reproduction had eight passes and one classification error before this correction. Full recertification remains pending; no production deployment, migration, paid AI or trading is implied by this entry. Evidence is in the coordinator operational-release-20261013 directory.
+
+## 2026-10-16 — Paper coverage cancellation and measured inference receipts
+
+Recovered deployed baseline `ecd6fe2e` and the original Paper experiment without a reset.
+Coverage planning already reacquires evidence per request and final comparison; final expired
+selections still fail closed. The 300-second limit is per local generation HTTP request,
+not a universe deadline. Ten later successful crypto batches averaged 83.577 seconds;
+the 1,463-request plan projects to 33.965 serial hours, before added acquisition/failures.
+This is a measured capacity mismatch with the existing 1,800-second interval, not activation success.
+
+Corrected a demonstrated dropped Stop callback between coverage and CandidateReducer generation.
+Cancellation now reaches first-pass and comparison inference, stops slot/shared-result waiting,
+and is not cached as a provider failure that poisons the next run. A cancelled request is
+unprocessed; a stopped run cannot persist an actionable selection. Added additive local request
+receipts separating slot wait, readiness, exact templating/tokenization, generation, runtime
+prefill/decode timings when available, grounding validation, thread CPU, and resource samples.
+No raw model text is persisted by this instrumentation. Hosted cancellation/accounting is unchanged.
+
+Regressions were observed failing before correction for generation/comparison Stop propagation,
+slot cancellation, shared-result waiting, and cancellation-cache isolation. Independent read-only
+review identified the latter two and accepted the corrected combined diff. Runtime acceptance
+and final test/deployment counts are recorded in the coordinator's `activation-timeout-20261016`
+evidence directory; no full-universe completion or Paper order is implied by fixture tests.
+Model/runtime pins, 8,192 context, 300-second generation timeout, 6 GiB process ceiling,
+4 GiB reserve, source clocks, quote freshness, grounding, account, policy and schedule remain unchanged.
+
+A frozen replay of the first deployed timeout then reproduced the semantic cause:
+one limitation string repeated to 6,277 characters (37 repeated phrases) until the
+unchanged 300-second generation deadline. The canonical parser already rejects
+strings longer than 1,200 characters, but the local grammar had no matching bound.
+The local provider now copies the shared schema and applies those existing string,
+list and candidate-count bounds; hosted schemas and the parser are unchanged.
+The grammar revision participates in local cache identity. Both new regressions
+failed before the correction; 103 relevant tests then passed. The same frozen
+packet returned 233 tokens in 156.642 seconds and passed unchanged validation;
+peak process memory was 5,638,422,528 bytes. This was a historical streaming
+diagnostic, with concurrent offline verification, not a current-market selection
+or a controlled benchmark speedup. Its 111.383-second prefill still exceeds the
+60-second quote lifetime; expiry continues to reject stale final selections.
+
+The broad check caught six capacity-fixture errors introduced by assuming every
+candidate-task packet has a candidates attribute. Existing minimal packets have
+only a placeholder schema. The provider now treats the absent list as empty for
+the private optional schema bound; production packets retain their actual count.
+No existing test or validation assertion was changed to accommodate the repair.
+
+Canonical ordinary equity acceptance on release 0240518a returned a grounded
+response in 236.914 seconds, including 200.726 seconds of prefill and 30.786 of
+generation; its evidence correctly expired. The next request-time exact-context
+refusal discarded the healthy runtime before dispatch, forcing a cold restart.
+Extended the existing count-refusal retention rule to this same no-dispatch case;
+all resource, operational and Stop failures still terminate the process. A new
+regression failed before repair; 69 lifecycle/capacity checks then passed.
+
+The actual Stop check ended the coverage run 125 milliseconds after its request,
+with owned model exit confirmed. It also revealed that the cancelled in-flight
+row retained the ELIGIBLE display class although aggregate unprocessed accounting
+was conservative. A strengthened regression reproduced 70 unprocessed rows instead
+of all 120. The stop branch now classifies submitted cancelled rows UNPROCESSED too.
+Immutable historical receipts are retained; no old coverage result is rewritten.
+
+After release e02e7c82 restarted the controller at 16:40 ET, CRYPTO deferred with
+SHARED_ACCOUNT_RUN_ACTIVE although no AI run existed. The persisted US_EQUITIES
+scope still held the handle of an equity run stopped at 17:09:57Z; outside its
+session the scope returned before reconciling that handle, so the finished run
+would have deferred CRYPTO until the next regular equity session. The existing
+reconciliation (finished, gone or running) now also runs in the closed-session
+branch; it starts, evaluates and orders nothing, and a running run still defers
+the other scopes. A new regression failed before the repair.
+
+The operator Stop of ordinary CRYPTO run 7a349123 during exact token planning
+ended it 387 milliseconds after the request and reaped the owned model process,
+but the run was recorded FAILED and 1,288 already-planned rows were labelled
+UNPROCESSED:PROVIDER_PREFLIGHT_REJECTED. The count refusal carried the Stop
+reason, and the planning caller treated every refusal as a provider rejection.
+A Stop reaching the exact count now classifies planned rows STOPPED_BY_OPERATOR
+and ends the run STOPPED, matching the batch and comparison stop paths. A new
+regression failed before the repair. The historical receipt is unchanged.
+
+
+## 2026-10-18 — Crypto fill-history and closed realized-P&L projection
+
+- Reproduced canonical crypto fills missing from trade history because the legacy equity entry projection excludes them. Added exact crypto read-side replay through the existing canonical fill accounting function; no execution, risk, admission, forecast, controller, or account mutation was introduced.
+- Reproduced closed crypto realized P&L disappearing when the zero position leaves the canonical open-position map. Account reporting now retains immutable crypto fill deltas, including partial close, restart and subminor accumulation. Existing equity history representation remains unchanged.
+- Added controlled regressions for exact quantity/price/cost/P&L history, partial fills, duplicate/read-only/restart behavior, subminor P&L accumulation, and mixed equity compatibility. RED evidence is retained. Final combined exact-crypto/controller/accounting/governance/market/derivative/parity/P3.1 suites passed 251/251, including six new regression tests. Documentation link validation checked 308 files successfully. Full integrated closure remains the release coordinator checkpoint.
+- Fractional autonomous admission remains incomplete: Workspace quantity parsing/preview, Action and stop position handling, BUILD22 quantity contracts and its native-unit minimum, admitted instrument economics, and cancellation receipts still require coherent treatment. This projection repair does not relax or reinterpret those gates.
+
+## 2026-10-18 — Structured Action Decision reasoning and quantity refusal
+
+Recovered R8 serving hashes (2,295 files, zero differences), source4fbf1a9b and
+the original Paper account/controller. The complete since-R6 audit found88
+decisions:70 model calls,39 valid proposals,31 rejected responses and18
+deterministic no-call safety records. All22 ENTER states lacked a governed
+opportunity; no production order or fill is implied.
+
+The v3 model wire represents reasoning as selected references, stances,
+assessment and uncertainty codes. Rendering preserves those choices and refuses
+an insufficient/uncertain assessment paired with an actionable proposal. The
+canonical parser, action gate, conditions and snapshot rules are AST-identical
+to the recovered baseline. New regressions cover malformed/Unicode inputs,
+refusal preservation, evidence/stance requirements, audit representation,
+freshness and every offered uncertainty's rendered text. Historical paired
+pinned-model receipts are preserved by the coordinator under
+`imp-closure-20261018/benchmark-02`; final measurements and proof limitations
+belong to that closeout, not to generated fixture trades.
+
+Reproduced Workspace's unsupported fractional input truncation and boolean
+acceptance; now these fail closed under the current whole-unit boundary rather
+than changing requested quantity. The guarded boundary does not claim complete
+crypto quantity compatibility. No protected policy, model pin, resource ceiling,
+quote lifetime, account reset, Live route or paid inference was introduced.
+- Review follow-up: a duplicate crypto fill with explicit two-cent fees exposed aggregate fees being counted twice while canonical cash and history remained idempotent. Added the nonzero-cost assertion (RED), deduplicated derivative account cost projection by immutable fill id, and passed 82/82 exact-crypto/derivative/equity-accounting focused tests.
+
+## 2026-10-18 — Affected validation fixture reconciliation
+
+Changed-path validation ran 6,594 tests with three failures and one error;
+all four reproduce on starting source 4fbf1a9b. Repaired two stale fixtures
+inside the selected model/scheduler validation path: the passive fake monitor
+now implements its existing check method, leaving the real packet cancellation
+assertions intact; the optional-policy field test includes the already-supported
+scopes field and explicitly asserts it is not required. No production monitor,
+policy field, scheduler, cancellation or authority behavior changed.
+
+The remaining Git discovery fixture failures arise when Windows temporary
+directories inherit the unrelated C:/Users/Adam Git root. Final validation uses
+a short task-specific temporary directory outside that repository; this also
+avoids inherited Windows temporary-path length failures without changing the
+tests or Git discovery implementation. Baseline failures and subsequent results
+are retained in the coordinator evidence.

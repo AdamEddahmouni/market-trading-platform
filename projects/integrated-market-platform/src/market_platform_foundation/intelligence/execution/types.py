@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
+from decimal import Decimal
+from ...paper.contracts import quantity_number, quantity_wire
 
 from ..contracts.common import INTELLIGENCE_SCHEMA_VERSION, ContractReference, validate_id, validate_schema_version, validate_timestamp_ns
 from ...canonical import canonical_bytes, sha256_bytes
@@ -64,10 +66,11 @@ class OrderReadyStatus(StrEnum):
 class PaperPositionSnapshot:
     instrument_id: str
     symbol: str
-    quantity: int
+    quantity: int | Decimal
     market_value_minor: int
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "quantity", quantity_number(self.quantity))
         validate_id(self.instrument_id, field_name="instrument_id")
         if self.quantity == 0:
             raise ValueError("POSITION_QUANTITY_ZERO")
@@ -78,10 +81,11 @@ class PaperOpenOrderSnapshot:
     order_id: str
     instrument_id: str
     side: str
-    quantity: int
+    quantity: int | Decimal
     opportunity_id: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "quantity", quantity_number(self.quantity))
         validate_id(self.order_id, field_name="order_id")
         validate_id(self.instrument_id, field_name="instrument_id")
         if self.side not in {"BUY", "SELL"}:
@@ -191,9 +195,9 @@ class RiskDecisionV1:
     execution_policy_id: str
     portfolio_snapshot_id: str
     decision_time_ns: int
-    requested_quantity: int
+    requested_quantity: int | Decimal
     requested_notional_minor: int
-    approved_quantity: int
+    approved_quantity: int | Decimal
     approved_notional_minor: int
     decision: RiskDecisionKind
     reason_codes: tuple[RiskReasonCode, ...] = ()
@@ -203,6 +207,8 @@ class RiskDecisionV1:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "requested_quantity", quantity_number(self.requested_quantity))
+        object.__setattr__(self, "approved_quantity", quantity_number(self.approved_quantity))
         validate_id(self.risk_decision_id, field_name="risk_decision_id")
         validate_schema_version(self.schema_version)
         validate_timestamp_ns(self.decision_time_ns, field_name="decision_time_ns")
@@ -224,7 +230,7 @@ class OrderReadyV1:
     decision_time_ns: int
     instrument_id: str
     symbol: str
-    approved_quantity: int
+    approved_quantity: int | Decimal
     approved_notional_minor: int
     status: OrderReadyStatus
     execution_authority: str
@@ -235,6 +241,7 @@ class OrderReadyV1:
     lineage_refs: tuple[ContractReference, ...] = ()
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "approved_quantity", quantity_number(self.approved_quantity))
         validate_id(self.order_ready_id, field_name="order_ready_id")
         validate_schema_version(self.schema_version)
         for value, field_name in (
@@ -276,7 +283,7 @@ def order_ready_id(
     body = {
         "allocation_decision_id": allocation_decision_id,
         "approved_notional_minor": approved_notional_minor,
-        "approved_quantity": approved_quantity,
+        "approved_quantity": quantity_wire(approved_quantity),
         "decision_time_ns": decision_time_ns,
         "risk_decision_id": risk_decision_id,
         "status": status_value,

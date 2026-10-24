@@ -15,18 +15,50 @@ class CorruptStateError(ValueError):
     """SQLite integrity_check failed; original file is preserved."""
 
 
+# SQLite primary result codes a bounded retry can outlast: BUSY, LOCKED, IOERR, CANTOPEN, PROTOCOL.
+_TRANSIENT_SQLITE_CODES = frozenset({5, 6, 10, 14, 15})
+
+
+def transient_storage_error(exc: BaseException) -> bool:
+    """True for contention or I/O conditions that a bounded retry may outlast.
+
+    Corruption, schema, constraint, identity and disk-full failures are never transient.
+    """
+    if isinstance(exc, sqlite3.OperationalError):
+        code = getattr(exc, "sqlite_errorcode", None)
+        if code == 0:
+            # "not an error": another thread used this shared connection before the failing call's
+            # code was read, so the real code is gone. Seen only under contention; retry is bounded.
+            return True
+        if code is not None:
+            return code & 0xFF in _TRANSIENT_SQLITE_CODES
+        text = str(exc).lower()
+        return any(token in text for token in ("locked", "busy", "disk i/o", "unable to open"))
+    return isinstance(exc, OSError)
+
+
 class LocalStateConnection:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, require_existing: bool = False,
+                 expected_identity: tuple[int, int] | None = None) -> None:
         self.path = path
         self._lock = threading.RLock()
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if require_existing:
+            if not self.path.is_file():
+                raise FileNotFoundError("STATE_STORAGE_MISSING")
+        else:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(
-            str(self.path),
+            self.path.resolve().as_uri() + "?mode=rw" if require_existing else str(self.path),
+            uri=require_existing,
             check_same_thread=False,
             isolation_level=None,
         )
         self._conn.row_factory = sqlite3.Row
         try:
+            if expected_identity is not None:
+                stat = self.path.stat()
+                if (stat.st_dev, stat.st_ino) != expected_identity:
+                    raise FileNotFoundError('STATE_STORAGE_REPLACED')
             self._configure()
             self._verify_or_raise()
             apply_migrations(self._conn)
@@ -49,6 +81,19 @@ class LocalStateConnection:
     def execute(self, sql: str, params: tuple[Any, ...] = ()) -> sqlite3.Cursor:
         with self._lock:
             return self._conn.execute(sql, params)
+
+    def fetchone(self, sql: str, params: tuple[Any, ...] = ()) -> Any:
+        """Read one row with the fetch inside the connection lock.
+
+        Fetching from the cursor ``execute`` returned steps the shared connection outside the lock,
+        which can replace the result code of another thread's failing statement.
+        """
+        with self._lock:
+            return self._conn.execute(sql, params).fetchone()
+
+    def fetchall(self, sql: str, params: tuple[Any, ...] = ()) -> list[Any]:
+        with self._lock:
+            return self._conn.execute(sql, params).fetchall()
 
     def executemany(self, sql: str, seq: list[tuple[Any, ...]]) -> sqlite3.Cursor:
         with self._lock:
@@ -101,13 +146,25 @@ class StateTransaction:
 
     def __enter__(self) -> LocalStateConnection:
         self.connection._lock.acquire()
-        self.connection._conn.execute("BEGIN IMMEDIATE")
+        try:
+            self.connection._conn.execute("BEGIN IMMEDIATE")
+            if not self.connection._conn.in_transaction:
+                # A refused BEGIN whose failure was lost must not let the body run in autocommit.
+                raise sqlite3.OperationalError("database is locked: transaction did not start")
+        except Exception:
+            self.connection._lock.release()
+            raise
         return self.connection
 
     def __exit__(self, exc_type: type[BaseException] | None, exc: BaseException | None, tb: Any) -> None:
         try:
             if exc_type is None:
-                self.connection._conn.execute("COMMIT")
+                try:
+                    self.connection._conn.execute("COMMIT")
+                except Exception:
+                    if self.connection._conn.in_transaction:
+                        self.connection._conn.execute("ROLLBACK")
+                    raise
             else:
                 self.connection._conn.execute("ROLLBACK")
         finally:

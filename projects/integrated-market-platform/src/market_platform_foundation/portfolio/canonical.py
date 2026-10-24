@@ -353,8 +353,15 @@ class PortfolioPosition:
     observed_at_ns: int = 0
     data_status: str = "FRESH"
     valuation: PositionValuation | None = None
+    # None means a legacy/provider snapshot did not record reserved margin.
+    reserved_margin_native: Decimal | None = None
 
     def __post_init__(self) -> None:
+        if self.reserved_margin_native is not None:
+            reserved = _as_decimal(self.reserved_margin_native, field_name="reserved_margin_native")
+            if reserved < 0:
+                raise PortfolioError(PortfolioErrorCode.INVALID_POSITION_ECONOMICS, "reserved margin must be nonnegative", {})
+            object.__setattr__(self, "reserved_margin_native", reserved)
         if not self.instrument_id or not str(self.instrument_id).strip():
             raise PortfolioError(PortfolioErrorCode.INVALID_INSTRUMENT, "instrument_id required", {})
         if not self.native_currency or not str(self.native_currency).strip():
@@ -396,6 +403,7 @@ class PortfolioPosition:
         for key, value in (
             ("average_cost", self.average_cost),
             ("cost_basis", self.cost_basis),
+            ("reserved_margin_native", self.reserved_margin_native),
         ):
             if value is not None:
                 body[key] = format(value, "f")
@@ -427,6 +435,8 @@ class PortfolioPosition:
             observed_at_ns=int(payload.get("observed_at_ns", 0)),
             data_status=str(payload.get("data_status", "FRESH")),
             valuation=PositionValuation.from_dict(valuation_payload) if isinstance(valuation_payload, Mapping) else None,
+            reserved_margin_native=_as_decimal(payload["reserved_margin_native"], field_name="reserved_margin_native")
+            if payload.get("reserved_margin_native") is not None else None,
         )
 
 
@@ -518,6 +528,7 @@ class PositionInput:
     source_time_ns: int = 0
     observed_at_ns: int = 0
     data_status: str = "FRESH"
+    reserved_margin_native: Decimal | None = None
 
     def __post_init__(self) -> None:
         # Validate eagerly so a bad input can never reach the store.
@@ -536,6 +547,7 @@ class PositionInput:
             source_time_ns=self.source_time_ns,
             observed_at_ns=self.observed_at_ns,
             data_status=self.data_status,
+            reserved_margin_native=self.reserved_margin_native,
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -554,6 +566,7 @@ class PositionInput:
             source_time_ns=self.source_time_ns,
             observed_at_ns=self.observed_at_ns,
             data_status=self.data_status,
+            reserved_margin_native=self.reserved_margin_native,
         ).to_dict()
 
     @classmethod
@@ -575,6 +588,8 @@ class PositionInput:
             source_time_ns=int(payload.get("source_time_ns", 0)),
             observed_at_ns=int(payload.get("observed_at_ns", 0)),
             data_status=str(payload.get("data_status", "FRESH")),
+            reserved_margin_native=_as_decimal(payload["reserved_margin_native"], field_name="reserved_margin_native")
+            if payload.get("reserved_margin_native") is not None else None,
         )
 
 
@@ -615,6 +630,18 @@ class CanonicalPortfolio:
         rejected before any store mutation. Zero quantities are removed
         deterministically (see module docs for zero-position semantics).
         """
+        position = self._prepare_position(position_input)
+        with self._lock:
+            if position.quantity == 0:
+                self._positions.pop(position.instrument_id, None)
+            else:
+                self._positions[position.instrument_id] = position
+            self._source_time_ns = max(self._source_time_ns, position.source_time_ns)
+            self._observed_at_ns = max(self._observed_at_ns, position.observed_at_ns)
+            return self._positions.get(position.instrument_id, position)
+
+    @staticmethod
+    def _prepare_position(position_input: PositionInput) -> PortfolioPosition:
         from .admission import assert_position_admissible
         from .instrument_economics import assert_derivative_position_economics
 
@@ -630,7 +657,7 @@ class CanonicalPortfolio:
             quantity_unit=position_input.quantity_unit,
             multiplier=position_input.multiplier,
         )
-        position = PortfolioPosition(
+        return PortfolioPosition(
             instrument_id=position_input.instrument_id,
             asset_class=position_input.asset_class,
             instrument_kind=position_input.instrument_kind,
@@ -645,15 +672,29 @@ class CanonicalPortfolio:
             source_time_ns=position_input.source_time_ns,
             observed_at_ns=position_input.observed_at_ns,
             data_status=position_input.data_status,
+            reserved_margin_native=position_input.reserved_margin_native,
         )
+
+    def apply_fill_state(self, position_input: PositionInput, cash_delta: Decimal) -> None:
+        """Commit a precomputed fill position and cash balance together.
+
+        All validation and candidate construction finish before either store
+        changes. The enclosing Paper account submit lock serializes the fill's
+        read/compute phase; this lock makes its final write indivisible.
+        """
+        position = self._prepare_position(position_input)
+        amount = _as_decimal(cash_delta, field_name="cash_delta")
         with self._lock:
+            current = self._cash.get(position.native_currency)
+            settled = (current.settled if current is not None else Decimal("0")) + amount
+            balance = CashBalance(currency=position.native_currency, settled=settled)
             if position.quantity == 0:
                 self._positions.pop(position.instrument_id, None)
             else:
                 self._positions[position.instrument_id] = position
+            self._cash[balance.currency] = balance
             self._source_time_ns = max(self._source_time_ns, position.source_time_ns)
             self._observed_at_ns = max(self._observed_at_ns, position.observed_at_ns)
-            return self._positions.get(position.instrument_id, position)
 
     def get_position(self, instrument_id: str) -> PortfolioPosition | None:
         with self._lock:

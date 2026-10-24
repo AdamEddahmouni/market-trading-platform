@@ -15,6 +15,7 @@ resource model exists (G3 §29–32, §66). No margin model is invented.
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
 from typing import Any, Mapping
 
 from ..portfolio.canonical import QuantityUnit
@@ -75,6 +76,8 @@ def working_order_obligations_by_currency(
     closed where a price is genuinely required. ``exclude_order_id`` removes
     one order's own obligation (replace recheck).
     """
+    if callable(getattr(ledger, "working_order_obligations_by_currency", None)):
+        return ledger.working_order_obligations_by_currency(exclude_order_id=exclude_order_id)
     buckets: dict[str, int] = {}
     for order in ledger.project_orders():
         state = str(order.get("state", ""))
@@ -242,25 +245,43 @@ def order_intent_financial_check(
     return UNSUPPORTED_RISK_MODEL, facts
 
 
-def _order_working_remaining(order: Mapping[str, Any]) -> int:
+def _order_working_remaining(order: Mapping[str, Any]) -> int | Decimal:
     """Canonical working remainder for an open order (G3 §36).
 
     Prefers the projection's ``working_remaining`` (requested/authorized minus
     cumulative filled); falls back to ``remaining_quantity`` for legacy
     callers, then to the original desired quantity only when no fill state
     exists at all. Never conflates original requested quantity with the
-    remaining quantity after partial fills.
+    remaining quantity after partial fills. Fractional remainders stay exact:
+    integral text truncation would understate a reserved fractional sell and
+    could overcommit the same shares twice.
     """
     working = order.get("working_remaining")
     if working is not None:
-        return max(0, int(working))
+        return max(Decimal(0), _exact_remainder(working))
     legacy = order.get("remaining_quantity")
     if legacy is not None:
-        return max(0, int(legacy))
-    return max(0, int(order.get("desired_quantity", 0)))
+        return max(Decimal(0), _exact_remainder(legacy))
+    return max(Decimal(0), _exact_remainder(order.get("desired_quantity", 0)))
 
 
-def reserved_sell_quantity_for(ledger: Any, instrument_id: str) -> int:
+def _exact_remainder(value: Any) -> int | Decimal:
+    """Exact numeric read for order bookkeeping; floats and booleans fail closed."""
+    if isinstance(value, bool):
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    if isinstance(value, (int, Decimal)):
+        number = Decimal(value)
+    else:
+        try:
+            number = Decimal(str(value).strip())
+        except (InvalidOperation, ValueError, TypeError):
+            raise ValueError("ORDER_QUANTITY_INVALID") from None
+    if not number.is_finite():
+        raise ValueError("ORDER_QUANTITY_INVALID")
+    return number
+
+
+def reserved_sell_quantity_for(ledger: Any, instrument_id: str) -> int | Decimal:
     """Quantity of one instrument already reserved by its open sell orders."""
     total = 0
     for order in ledger.project_orders():

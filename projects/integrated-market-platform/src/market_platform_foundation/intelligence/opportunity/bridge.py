@@ -190,9 +190,14 @@ def bridge_strategy_match_to_opportunity(
         metadata={**assessment.metadata, "strategy_match_ref": match.match_id},
     )
     if opportunity is not None:
+        lineage = _append_ref(opportunity.lineage_refs, match_ref)
+        # The evidence the match was evaluated on stays reachable from the Opportunity it minted, so a consumer
+        # can require shared immutable evidence instead of trusting a symbol.
+        for evidence_ref in match.source_evidence_refs:
+            lineage = _append_ref(lineage, evidence_ref)
         opportunity = replace(
             opportunity,
-            lineage_refs=_append_ref(opportunity.lineage_refs, match_ref),
+            lineage_refs=lineage,
             metadata={**opportunity.metadata, "strategy_match_ref": match.match_id},
         )
         # Attach operator decision provenance after strategy_match lineage is bound.

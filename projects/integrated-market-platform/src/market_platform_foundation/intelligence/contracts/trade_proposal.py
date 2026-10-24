@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from ...paper.contracts import quantity_number, quantity_wire
+
 from dataclasses import dataclass, field
 from typing import Any
+from decimal import Decimal
 
 from .common import (
     INTELLIGENCE_SCHEMA_VERSION,
@@ -29,7 +32,7 @@ class TradeProposalV1:
     execution_policy_id: str
     instrument_id: str
     side: str
-    requested_quantity: int
+    requested_quantity: int | Decimal
     requested_notional_minor: int
     reference_price_minor: int
     proposal_time_ns: int
@@ -40,6 +43,7 @@ class TradeProposalV1:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "requested_quantity", quantity_number(self.requested_quantity))
         validate_id(self.proposal_id, field_name="proposal_id")
         validate_schema_version(self.schema_version)
         validate_id(self.opportunity_id, field_name="opportunity_id")
@@ -75,7 +79,7 @@ def trade_proposal_v1_to_dict(record: TradeProposalV1) -> dict[str, Any]:
         "execution_policy_id": record.execution_policy_id,
         "instrument_id": record.instrument_id,
         "side": record.side,
-        "requested_quantity": record.requested_quantity,
+        "requested_quantity": quantity_wire(record.requested_quantity),
         "requested_notional_minor": record.requested_notional_minor,
         "reference_price_minor": record.reference_price_minor,
         "proposal_time_ns": record.proposal_time_ns,
@@ -99,7 +103,7 @@ def trade_proposal_v1_from_dict(payload: dict[str, Any]) -> TradeProposalV1:
         execution_policy_id=str(payload["execution_policy_id"]),
         instrument_id=str(payload["instrument_id"]),
         side=str(payload["side"]),
-        requested_quantity=int(payload["requested_quantity"]),
+        requested_quantity=quantity_number(payload["requested_quantity"]),
         requested_notional_minor=int(payload["requested_notional_minor"]),
         reference_price_minor=int(payload["reference_price_minor"]),
         proposal_time_ns=int(payload["proposal_time_ns"]),

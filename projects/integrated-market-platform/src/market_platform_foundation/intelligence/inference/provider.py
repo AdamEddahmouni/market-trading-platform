@@ -35,6 +35,7 @@ class ProviderInferenceResponse:
     parsing_status: ParsingStatus = ParsingStatus.VALID
     simulated: bool = False
     inference_dispatched: bool | None = None
+    diagnostics: dict[str, Any] | None = None
 
 
 class InferenceProvider(Protocol):

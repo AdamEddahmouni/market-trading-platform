@@ -321,7 +321,16 @@ def _apply_portfolio_marks(store: ReplayStore, runtime: Any) -> None:
     for position in ledger.project_positions():
         instrument_id = str(position["instrument_id"])
         mark = None
-        if runtime is not None and store.data_mode == "LIVE_OBSERVATIONAL":
+        if position.get("instrument_kind") == "CRYPTO_PAIR":
+            # Observe the already-owned crypto stream at the instrument's native
+            # scale. This read creates no runtime, subscription or provider fetch.
+            from .paper_market_evidence import PaperMarketEvidence
+            instrument = ledger.instrument_for(instrument_id)
+            quote = PaperMarketEvidence().quote(instrument_id, universe="CRYPTO", instrument=instrument)
+            if quote.get("admissible"):
+                mark = dict(mark_minor=quote["last_price_minor"], mark_provider=quote["source"],
+                    mark_as_of_ns=quote["as_of_time_ns"], mark_quality="PASS", freshness_ms=0)
+        elif runtime is not None and store.data_mode == "LIVE_OBSERVATIONAL":
             mark = runtime.live_mark_for(instrument_id)
             if mark is None:
                 try:

@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from typing import Any
+from ...paper.contracts import quantity_wire
 
 from ..contracts.common import ContractReference, contract_reference_to_dict
 from ..contracts.trade_proposal import TradeProposalV1
@@ -57,7 +58,7 @@ def portfolio_snapshot_identity_payload(snapshot: PaperPortfolioSnapshotV1) -> d
         [
             {
                 "instrument_id": pos.instrument_id,
-                "quantity": pos.quantity,
+                "quantity": quantity_wire(pos.quantity),
                 "market_value_minor": pos.market_value_minor,
             }
             for pos in snapshot.positions
@@ -70,7 +71,7 @@ def portfolio_snapshot_identity_payload(snapshot: PaperPortfolioSnapshotV1) -> d
                 "order_id": order.order_id,
                 "instrument_id": order.instrument_id,
                 "side": order.side,
-                "quantity": order.quantity,
+                "quantity": quantity_wire(order.quantity),
                 "opportunity_id": order.opportunity_id,
             }
             for order in snapshot.open_orders
@@ -113,7 +114,7 @@ def derive_trade_proposal_id(
         "execution_policy_id": execution_policy_id,
         "instrument_id": instrument_id,
         "side": side,
-        "requested_quantity": requested_quantity,
+        "requested_quantity": quantity_wire(requested_quantity),
         "reference_price_minor": reference_price_minor,
         "proposal_time_ns": proposal_time_ns,
     }
@@ -133,7 +134,7 @@ def derive_risk_decision_id(
         "execution_policy_id": execution_policy_id,
         "portfolio_snapshot_id": portfolio_snapshot_id,
         "decision_time_ns": decision_time_ns,
-        "requested_quantity": trade_proposal.requested_quantity,
+        "requested_quantity": quantity_wire(trade_proposal.requested_quantity),
         "reference_price_minor": trade_proposal.reference_price_minor,
     }
     return _sha256_prefix("RISK", payload)

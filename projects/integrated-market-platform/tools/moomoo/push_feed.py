@@ -8,6 +8,7 @@ Callbacks enqueue a minimal envelope and return. Normalization/admission run on 
 
 from __future__ import annotations
 
+import math
 import sys
 import threading
 import time
@@ -46,6 +47,14 @@ SUBSCRIBE_RETRY_NS = 15_000_000_000
 UNSUBSCRIBE_RETRY_NS = 5_000_000_000
 SNAPSHOT_INTERVAL_NS = 2_000_000_000  # 15 calls / 30 s, under OpenD's 60 / 30 s snapshot limit
 SNAPSHOT_MAX_CODES = 400  # OpenD's per-call snapshot code limit
+# An OpenD relaunch can leave this context connected while the new OpenD holds none of its subscriptions;
+# audit what OpenD actually holds, and treat a run of failed polls as a dead session that must reconnect.
+SUBSCRIPTION_AUDIT_NS = 60_000_000_000
+FEED_STALL_NS = 120_000_000_000
+# Stop bounds. headless_supply.MOOMOO_STOP_SECONDS is their sum.
+CONNECTION_JOIN_SECONDS = 5.0
+PROCESSOR_DRAIN_SECONDS = 5.0
+PROCESSOR_JOIN_SECONDS = 6.0  # the drain, plus one batch in flight
 
 CAP_TO_SUBTYPE_NAME = {
     "US_EQUITY_L1": "QUOTE",
@@ -54,22 +63,28 @@ CAP_TO_SUBTYPE_NAME = {
 }
 
 
+def _finite(row: dict[str, Any]) -> dict[str, Any]:
+    # OpenD frames mark absent numbers (e.g. a snapshot's pe_ratio overnight) as NaN. Absent is None:
+    # stored evidence is strict JSON, and one NaN would otherwise reject the whole observation.
+    return {key: None if isinstance(value, float) and not math.isfinite(value) else value for key, value in row.items()}
+
+
 def payload_rows(data: Any) -> list[dict[str, Any]]:
     if data is None:
         return []
     if hasattr(data, "to_dict") and hasattr(data, "columns"):
         records = data.to_dict(orient="records")
-        return [dict(row) for row in records]
+        return [_finite(dict(row)) for row in records]
     if isinstance(data, list):
         rows: list[dict[str, Any]] = []
         for item in data:
             if hasattr(item, "to_dict") and not hasattr(item, "columns"):
-                rows.append(dict(item.to_dict()))
+                rows.append(_finite(dict(item.to_dict())))
             elif isinstance(item, dict):
-                rows.append(item)
+                rows.append(_finite(item))
         return rows
     if isinstance(data, dict):
-        return [data]
+        return [_finite(data)]
     return []
 
 
@@ -94,6 +109,9 @@ class MoomooPushFeed:
         default_factory=lambda: BoundedIngestQueue(max_size=ingest_queue_max_size())
     )
     _stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _processor_stop_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    _shutdown_state: str = field(default="NOT_REQUESTED", repr=False)
+    _processed_records: int = 0
     _connection_thread: threading.Thread | None = field(default=None, repr=False)
     _processor_thread: threading.Thread | None = field(default=None, repr=False)
     _subscribed_subtypes: set[tuple[str, str]] = field(default_factory=set, repr=False)
@@ -110,6 +128,9 @@ class MoomooPushFeed:
     subscription_errors: dict[tuple[str, str], dict[str, Any]] = field(default_factory=dict, repr=False)
     _retry_after_ns: dict[tuple[str, str], int] = field(default_factory=dict, repr=False)
     _next_snapshot_ns: int = field(default=0, repr=False)
+    _next_audit_ns: int | None = field(default=None, repr=False)
+    _last_poll_ok_ns: int | None = field(default=None, repr=False)
+    subscription_audit_repairs: int = 0
     clock: Callable[[], int] = field(default=time.time_ns, repr=False)
     trade_api_counters: dict[str, int] = field(
         default_factory=lambda: {
@@ -125,11 +146,14 @@ class MoomooPushFeed:
         if self._connection_thread and self._connection_thread.is_alive():
             return
         self._stop_event.clear()
+        self._processor_stop_event.clear()
+        self._shutdown_state = "NOT_REQUESTED"
         self._processor_thread = threading.Thread(
             target=drain_queue_worker,
             kwargs={
                 "queue": self.queue,
-                "stop_event": self._stop_event,
+                "stop_event": self._processor_stop_event,
+                "drain_seconds": PROCESSOR_DRAIN_SECONDS,
                 "handler": self._process_envelope,
             },
             name="moomoo-ingest-processor",
@@ -140,7 +164,37 @@ class MoomooPushFeed:
         self._connection_thread.start()
 
     def stop(self) -> None:
+        """Quiesce callbacks before draining accepted ingest; keep the writer alive until this returns."""
+        # A stop that already spent its bound is only re-checked: waiting again would double the
+        # delay and count one uncertainty interval twice.
+        repeated = self._shutdown_state == "UNVERIFIED"
         self._stop_event.set()
+        connection = self._connection_thread
+        if connection is not None and connection is not threading.current_thread():
+            connection.join(timeout=0 if repeated else CONNECTION_JOIN_SECONDS)
+        self._processor_stop_event.set()
+        processor = self._processor_thread
+        if processor is not None and processor is not threading.current_thread():
+            processor.join(timeout=0 if repeated else PROCESSOR_JOIN_SECONDS)
+        incomplete = bool((connection and connection.is_alive()) or (processor and processor.is_alive()) or self.queue.depth())
+        self._shutdown_state = "UNVERIFIED" if incomplete else "DRAINED"
+        if incomplete:
+            self.last_error = "MOOMOO_SHUTDOWN_INCOMPLETE"
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and 'moomoo' in writer.sources and not repeated:
+                writer.gap('MOOMOO_SHUTDOWN_INCOMPLETE')  # uncertainty interval, not a fabricated trade count
+            raise RuntimeError("MOOMOO_SHUTDOWN_INCOMPLETE")
+
+    def subscription_state(self, instrument_id: str, capability: str) -> str:
+        """ACTIVE once OpenD accepted the subscription on this connection; REFUSED while it declines; else PENDING."""
+
+        instrument = instrument_id.upper()
+        code = KNOWN_INSTRUMENTS.get(instrument, {}).get("provider_symbol") or f"US.{instrument}"
+        key = (code, CAP_TO_SUBTYPE_NAME.get(capability, ""))
+        if key in self._subscribed_subtypes:
+            return "ACTIVE"
+        return "REFUSED" if key in self.subscription_errors else "PENDING"
 
     def metrics(self) -> dict[str, Any]:
         quote_lag = list(self._lag_samples.get("US_EQUITY_L1") or [])
@@ -149,6 +203,8 @@ class MoomooPushFeed:
         processing = list(self._processing_lag_ns)
         return {
             **self.queue.metrics(),
+            "records_processed": self._processed_records,
+            "shutdown_state": self._shutdown_state,
             "callback_lag_ms_max": _percentile_ms(quote_lag + trade_lag + book_lag, 1.0),
             "callback_lag_ms_p50": _percentile_ms(quote_lag + trade_lag + book_lag, 0.5),
             "callback_lag_ms_p95": _percentile_ms(quote_lag + trade_lag + book_lag, 0.95),
@@ -180,7 +236,8 @@ class MoomooPushFeed:
                 self.last_error = f"OpenD not reachable at {moomoo_host()}:{moomoo_port()}"
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                # Interruptible: a stop during a reconnect backoff has no session and nothing to drain.
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
                 continue
             if self.on_reconnecting and attempt > 0:
@@ -192,7 +249,7 @@ class MoomooPushFeed:
                 self.last_error = str(exc)
                 if self.on_disconnected:
                     self.on_disconnected(self.last_error)
-                time.sleep(reconnect_backoff_seconds(attempt))
+                self._stop_event.wait(reconnect_backoff_seconds(attempt))
                 attempt += 1
 
     def _run_session(self) -> None:
@@ -202,6 +259,8 @@ class MoomooPushFeed:
         self._subscribed_subtypes.clear()
         self._retry_after_ns.clear()
         self._next_snapshot_ns = 0
+        self._next_audit_ns = None
+        self._last_poll_ok_ns = None
         self._first_push_seen.clear()
         self._last_sequence.clear()
         from opend_quote_transport import open_quote_context  # same directory; never the leaking sync ctor
@@ -297,6 +356,7 @@ class MoomooPushFeed:
             if subtype_name:
                 desired.add((code, subtype_name))
         now = self.clock()
+        self._audit_subscriptions(quote_ctx, ft, now)
         for key in sorted(desired - self._subscribed_subtypes):
             code, subtype_name = key
             if self._retry_after_ns.get(key, 0) > now:
@@ -327,11 +387,18 @@ class MoomooPushFeed:
             # provider update_time. OpenD allows 60 snapshot calls per 30 s, so poll on a fixed cadence.
             self._next_snapshot_ns = now + SNAPSHOT_INTERVAL_NS
             ret_s, snapshot = quote_ctx.get_market_snapshot(quote_codes[:SNAPSHOT_MAX_CODES])
+            ret_q = None
             if ret_s == ft.RET_OK:
                 rows = payload_rows(snapshot)
             else:
                 ret_q, quote_data = quote_ctx.get_stock_quote(quote_codes)
                 rows = payload_rows(quote_data) if ret_q == ft.RET_OK else []
+            if ft.RET_OK in (ret_s, ret_q):
+                self._last_poll_ok_ns = now
+            elif self._last_poll_ok_ns is None:
+                self._last_poll_ok_ns = now  # the stall interval starts at the first failed poll
+            elif now - self._last_poll_ok_ns >= FEED_STALL_NS:
+                raise RuntimeError("MOOMOO_FEED_STALLED: no successful quote poll for %ds" % ((now - self._last_poll_ok_ns) // 1_000_000_000))
             for payload in rows:
                 self._enqueue_from_payload(
                     capability="US_EQUITY_L1",
@@ -352,6 +419,27 @@ class MoomooPushFeed:
                 # it and retry; discarding it here would leak provider quota.
                 self._retry_after_ns[key] = now + UNSUBSCRIBE_RETRY_NS
 
+    def _audit_subscriptions(self, quote_ctx: Any, ft: Any, now: int) -> None:
+        """Forget subscriptions OpenD no longer holds for this connection, so the sync re-subscribes them."""
+        if self._next_audit_ns is None:
+            self._next_audit_ns = now + SUBSCRIPTION_AUDIT_NS
+        if not self._subscribed_subtypes or now < self._next_audit_ns:
+            return
+        self._next_audit_ns = now + SUBSCRIPTION_AUDIT_NS
+        try:
+            ret, data = quote_ctx.query_subscription(is_all_conn=False)  # this connection only
+            held_lists = data["sub_list"] if ret == ft.RET_OK else None
+            held = {(str(code), str(name)) for name, codes in held_lists.items() for code in codes} if held_lists is not None else None
+        except (TypeError, ValueError, KeyError, AttributeError):
+            held = None  # an unreadable answer proves nothing; the poll-stall check still covers a dead context
+        if held is None:
+            return
+        lost = self._subscribed_subtypes - held
+        if lost:
+            self._subscribed_subtypes -= lost
+            self.subscription_audit_repairs += len(lost)
+            self.last_error = "MOOMOO_SUBSCRIPTIONS_LOST: %d re-subscribing" % len(lost)
+
     def _enqueue_from_payload(
         self,
         *,
@@ -363,7 +451,7 @@ class MoomooPushFeed:
         code = str(payload.get("code") or "")
         instrument = code.split(".")[-1] if code else ""
         received = time.time_ns()
-        event_ns = event_time_ns_from_payload(payload, received_ns=received)
+        event_ns = event_time_ns_from_payload(payload, received_ns=received, quote_trade_time=capability == "US_EQUITY_L1")
         channel = f"{generation}:{instrument}:{capability}"
         is_first = channel not in self._first_push_seen
         if is_first:
@@ -384,6 +472,7 @@ class MoomooPushFeed:
                 "received_time_ns": received,
                 "ingested_time_ns": received,
             },
+            "source_time_basis": "RECEIPT_FALLBACK" if event_ns == received else "PROVIDER_EVENT_TIME",
             "first_push_class": first_kind,
             "instrument_id": instrument.upper(),
             "is_cached": first_kind == "CACHED",
@@ -415,5 +504,12 @@ class MoomooPushFeed:
             self._processing_lag_ns = self._processing_lag_ns[-500:]
         try:
             self.on_record(record)
+            self._processed_records += 1
         except Exception:
             self._handler_errors += 1
+            from market_platform_foundation.market_data.persistence import active_writer
+            writer = active_writer()
+            if writer is not None and writer.selects(record):
+                writer.gap('MOOMOO_INGEST_FAILURE',
+                           stream=f"moomoo:{record.get('instrument_id')}:{record.get('capability')}",
+                           received_ns=record.get('clocks', {}).get('received_time_ns'))

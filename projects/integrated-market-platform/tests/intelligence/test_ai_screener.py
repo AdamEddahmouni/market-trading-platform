@@ -50,6 +50,59 @@ class Stub:
 
 
 class AiScreenerTests(unittest.TestCase):
+    def test_cancelled_duplicate_waiter_leaves_the_original_request_running(self):
+        import threading
+        from concurrent.futures import TimeoutError
+        from datetime import datetime
+        entered, release, stop = threading.Event(), threading.Event(), threading.Event()
+        class Blocked(Stub):
+            def infer(self, packet, *, rendered_prompt, config):
+                entered.set()
+                if not release.wait(3):
+                    raise RuntimeError('test owner not released')
+                return super().infer(packet, rendered_prompt=rendered_prompt, config=config)
+        provider = Blocked()
+        reducer = CandidateReducer(provider=provider, clock=lambda: datetime.fromisoformat(NOW.replace('Z', '+00:00')).timestamp())
+        def shared_call():
+            from market_platform_foundation.intelligence.inference.run_progress import observing
+            with observing(lambda stage, detail: stop.set() if detail.get('shared') else None):
+                return reducer.reduce({}, [candidate()], NOW, should_stop=stop.is_set)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            owner = pool.submit(reducer.reduce, {}, [candidate()], NOW)
+            self.assertTrue(entered.wait(1))
+            shared = pool.submit(shared_call)
+            try:
+                result = shared.result(timeout=.5)
+                completed_before_release = True
+            except TimeoutError:
+                completed_before_release = False
+            finally:
+                release.set()
+            owner_result = owner.result(timeout=2)
+            result = shared.result(timeout=2)
+        self.assertTrue(completed_before_release, 'cancelled duplicate waited for the original generation')
+        self.assertEqual(result['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(owner_result['state'], 'CURRENT')
+        self.assertEqual(provider.calls, 1)
+
+    def test_cancelled_generation_does_not_poison_a_new_run_of_the_same_current_packet(self):
+        from datetime import datetime
+        from market_platform_foundation.intelligence.inference.errors import InferenceErrorCode
+        class CancelledOnce(Stub):
+            def infer(self, packet, *, rendered_prompt, config):
+                if self.calls == 0:
+                    self.calls += 1
+                    return ProviderInferenceResponse('', self.provider_id, self.model_id,
+                        error_code=InferenceErrorCode.PROVIDER_UNAVAILABLE, error_message='STOPPED_BY_OPERATOR', inference_dispatched=True)
+                return super().infer(packet, rendered_prompt=rendered_prompt, config=config)
+        provider = CancelledOnce()
+        reducer = CandidateReducer(provider=provider, clock=lambda: datetime.fromisoformat(NOW.replace('Z', '+00:00')).timestamp())
+        first = reducer.reduce({}, [candidate()], NOW)
+        second = reducer.reduce({}, [candidate()], NOW)
+        self.assertEqual(first['reason'], 'STOPPED_BY_OPERATOR')
+        self.assertEqual(second['state'], 'CURRENT')
+        self.assertEqual(provider.calls, 2)
+
     def test_flat_wire_key_preserves_canonical_metadata_and_rejects_unrelated_refs(self):
         c = candidate()
         other = build_candidate({'instrument_id':'EQ:B'}, [('QUOTE',observation(),{'price':42},[]),

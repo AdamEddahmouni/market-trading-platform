@@ -47,9 +47,18 @@ def project_screener_response(path: str, payload: dict, *, now: str) -> dict:
         if source == 'FINVIZ_ELITE' and not publication:
             clock = value.get('provider_as_of')
         from .screener_projections import QUOTE_EVENT_STALE_MS
-        ttl = QUOTE_EVENT_STALE_MS if mode in ('REALTIME', 'DELAYED') else None
+        # A self-refreshing snapshot quote has the same staleness authority as an event clock: age
+        # measured from the provider observation (``as_of``) against the platform decision threshold.
+        # Kraken Spot crypto rows are exactly that; without a threshold every row falls to
+        # UNKNOWN_FRESHNESS_POLICY and no universal run can ever admit a candidate.
+        if mode in ('REALTIME', 'DELAYED'):
+            ttl, policy = QUOTE_EVENT_STALE_MS, 'L1_EVENT_V1'
+        elif mode == 'SNAPSHOT' and market and state != 'UNAVAILABLE':
+            ttl, policy = QUOTE_EVENT_STALE_MS, 'SNAPSHOT_REFRESH_V1'
+        else:
+            ttl, policy = None, 'UNKNOWN_POLICY'
         return {**value, 'decision_evidence': add(name, source, mode, clock, state='SESSION_CLOSED' if session == 'CLOSED' and market else state,
-                ttl=ttl, policy='L1_EVENT_V1' if ttl else 'UNKNOWN_POLICY',
+                ttl=ttl, policy=policy,
                 basis='OBSERVATION_DATE' if publication else 'PROVIDER_AS_OF', reference=publication or not market,
                 fetched_at=value.get('fetched_at') or (value.get('as_of') if source == 'FINVIZ_ELITE' else None),
                 received_at=value.get('received_at') or _iso(value.get('received_ns')))}

@@ -51,6 +51,7 @@ _CAPTURE_FIELD_KEYS = frozenset(
         "schema_version",
         "sequence",
         "source_capability",
+        "source_time_basis",
     }
 )
 

@@ -1,6 +1,9 @@
 """Explicit decision requests, server reconstruction, history and Paper drafts."""
 from __future__ import annotations
 
+from decimal import Decimal, ROUND_CEILING
+from ..paper.contracts import quantity_number, quantity_wire
+
 import json
 import copy
 import threading
@@ -10,7 +13,7 @@ from datetime import UTC, datetime
 from ..intelligence.contracts.common import ContractReference
 from ..intelligence.inference.action_decision import (
     ActionDecisionV1, POLICY_ID, PROMPT_ID, SCHEMA, build_conditions,
-    gate_proposal, output_schema, parse_proposal, server_exit_condition, snapshot_evidence,
+    decode_wire, gate_proposal, parse_proposal, server_exit_condition, snapshot_evidence, reasoned_wire_schema as wire_schema,
 )
 from ..intelligence.inference.candidate_reduction import ScreenerEvidencePacket
 from ..intelligence.inference.config import IntelligenceInferenceConfig
@@ -19,6 +22,7 @@ from ..intelligence.inference.hashing import input_hash_from_dict
 from ..intelligence.inference.prompts import PromptRegistry
 from ..local_state.action_decisions import action_repository
 from ..market_data.freshness_contract import timestamp
+from .paper_ai_direct import ai_direct_enabled, direct_opportunity
 from ..rt01.execution_decision_trace.recorder import ExecutionDecisionTraceDraft, materialize_execution_decision_trace
 from ..rt01.execution_decision_trace.runtime import execution_decision_trace_repository
 from ..rt01.execution_decision_trace.types import EligibilityDecisionSnapshot, ExecutionDecisionKind, RuleEvaluationOutcome, RuleEvaluationV1
@@ -48,12 +52,12 @@ class ScreenerActionService:
         ledger = self.store.paper_ledger
         rows = [p for p in ledger.project_positions() if p['instrument_id']==instrument]
         if len(rows)>1: raise ValueError('AMBIGUOUS_POSITION')
-        quantity = rows[0]['quantity'] if rows else 0
+        quantity = quantity_number(rows[0]['quantity']) if rows else 0
         if rows and rows[0].get('side')=='SHORT': quantity=-abs(quantity)
         pending = any(o.get('instrument_id')==instrument and o.get('state') not in ('FILLED','CANCELLED','REJECTED','EXPIRED','RISK_REJECTED') for o in ledger.project_orders())
         # The internal ledger is projected synchronously. Deferred restoration is
         # explicitly unavailable until the existing runtime revalidates it.
-        return dict(state='LONG' if quantity>0 else 'SHORT' if quantity<0 else 'FLAT', quantity=quantity,
+        return dict(state='LONG' if quantity>0 else 'SHORT' if quantity<0 else 'FLAT', quantity=quantity_wire(quantity),
                     snapshot_at=None if getattr(self.store,'execution_deferred',False) else now,
                     account_id=ledger.paper_account_id, session_id=ledger.session_id,
                     source='PAPER_LEDGER', pending=pending)
@@ -71,28 +75,68 @@ class ScreenerActionService:
         return bool(paper_execution_env_enabled() and ledger.execution_authority in PAPER_EXECUTION_AUTHORITIES
                     and ledger.execution_mode=='INTERNAL_SIMULATION' and not getattr(self.store,'execution_deferred',False))
 
-    def _opportunity(self, candidate, cutoff, requested=None):
+    def _opportunity(self, candidate, cutoff, requested=None, *, admission=None):
         """Require shared immutable evidence lineage AND exact instrument identity.
 
         Symbol similarity alone never creates Opportunity authority.
         """
+        evidence = admission if admission is not None else {}
+        evidence.update(schema_version='paper-forecast-admission/1.0.0',
+                        instrument_id=candidate['instrument']['instrument_id'], decision_time_ns=cutoff,
+                        evidence_ids=sorted({e['evidence_id'] for e in
+                                             (*candidate.get('current_market_evidence',()),
+                                              *candidate.get('reference_evidence',())) if e.get('evidence_id')}),
+                        status='UNAVAILABLE', reason_codes=['FORECAST_DISABLED'])
+        evidence.setdefault('candidate_run_id',candidate.get('run_id'))
         repo = getattr(self.store,'strategy_repository',None)
         listing = getattr(repo,'list_opportunities',None)
-        if not listing: return None
+        if not listing:
+            evidence['reason_codes']=['STRATEGY_REPOSITORY_UNAVAILABLE']
+            return None
+        # The candidate's id, or the exact canonical id derived from its own instrument record (asset class and
+        # venue included). Both name this one instrument; no other symbol can produce either.
+        identities = {candidate['instrument']['instrument_id']}
+        try:
+            from ..strategy.path_a_live_forecast import qualified_instrument_id
+            identities.add(qualified_instrument_id(candidate['instrument']))
+        except (KeyError, ValueError):
+            pass
         if requested:
+            evidence.update(status='NOT_REQUESTED',reason_codes=['EXPLICIT_OPPORTUNITY_LOOKUP'])
             record = repo.get_opportunity(requested)
-            if record is None or candidate['instrument']['instrument_id'] not in record.scope.instrument_ids:
+            if record is None or not identities.intersection(record.scope.instrument_ids):
                 raise ValueError('OPPORTUNITY_IDENTITY_MISMATCH')
             from ..intelligence.execution.engine import _validate_opportunity_gate
             _validate_opportunity_gate(record, decision_time_ns=cutoff, scenario_id=None)
             from ..intelligence.contracts.opportunity import opportunity_v1_to_dict
+            evidence['matched_opportunity_id']=record.opportunity_id
             return opportunity_v1_to_dict(record)
+        try:
+            # When an activated live forecast covers this instrument, it gets one governed chance to mint an
+            # Opportunity from this very candidate's evidence before the lookup. Off by default; never fails the lookup.
+            from .paper_live_forecast import live_forecast_hook
+            hook = live_forecast_hook(admission=evidence)
+            if hook is not None:
+                outcome = hook.ensure_opportunity(self.store, dict(candidate,run_id=evidence.get('candidate_run_id')), cutoff)
+                statuses={'FORECAST_UNAVAILABLE':'UNAVAILABLE','NOT_MATCHED':'REJECTED','SUPPRESSED':'REJECTED'}
+                if (not isinstance(outcome,dict) or outcome.get('status') not in
+                        {'UNAVAILABLE','REJECTED','MINTED','EXISTING','THROTTLED','ERROR',*statuses}
+                        or outcome.get('instrument_id',evidence['instrument_id'])!=evidence['instrument_id']):
+                    evidence.update(status='ERROR',reason_codes=['FORECAST_OUTCOME_INVALID'])
+                else:
+                    evidence.update(status=statuses.get(outcome['status'],outcome['status']),
+                                    reason_codes=copy.deepcopy(outcome.get('reason_codes') or [outcome['status']]),
+                                    outcome=copy.deepcopy(outcome))
+        except Exception as exc:  # noqa: BLE001 - diagnostics cannot manufacture Opportunity authority
+            evidence.update(status='ERROR',reason_codes=['FORECAST_ADMISSION_UNEXPECTED_ERROR'],
+                            error_type=type(exc).__name__)
         refs = {e['evidence_id'] for e in (*candidate['current_market_evidence'],*candidate['reference_evidence'])}
-        matches = [o for o in listing() if candidate['instrument']['instrument_id'] in o.scope.instrument_ids
+        matches = [o for o in listing() if identities.intersection(o.scope.instrument_ids)
                    and o.created_at_ns <= cutoff and (o.valid_until_ns is None or o.valid_until_ns>cutoff)
                    and refs.intersection(r.id for r in o.lineage_refs)]
         if len(matches)!=1: return None
         from ..intelligence.contracts.opportunity import opportunity_v1_to_dict
+        evidence['matched_opportunity_id']=matches[0].opportunity_id
         return opportunity_v1_to_dict(matches[0])
 
     def _build(self, body):
@@ -115,9 +159,12 @@ class ScreenerActionService:
         ledger = self.store.paper_ledger
         from ..paper.preview import portfolio_state_revision
         authority = self._authority()
+        forecast_admission=dict(candidate_run_id=body['run_id'])
         context = dict(position=self._position(body['instrument_id'],now), candidate_valid_until=run['valid_until'],
-                       opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id')),
+                       opportunity=self._opportunity(candidate,int(timestamp(now).timestamp()*1e9),body.get('opportunity_id'),admission=forecast_admission),
+                       forecast_admission=forecast_admission,
                        authority=authority, allow_short=bool(ledger.policy.get('allow_short',False)),
+                       ai_direct=ai_direct_enabled(ledger),
                        portfolio_revision=portfolio_state_revision(ledger), risk_policy=copy.deepcopy(ledger.policy))
         risk = self._risk_facts(body['instrument_id'])
         if risk: context['risk_control'] = risk
@@ -125,12 +172,15 @@ class ScreenerActionService:
         prompt = PromptRegistry().get_by_id(PROMPT_ID)
         conditions = build_conditions(candidate,context,now)
         stable_context = json.loads(json.dumps(context)); stable_context['position'].pop('snapshot_at',None)
+        # Attempt clocks and MINTED -> EXISTING are diagnostic transitions. The actual
+        # Opportunity remains in the material input hash and all existing gates.
+        stable_context.pop('forecast_admission',None)
         material = dict(candidate=candidate, candidate_input_hash=run['input_hash'], candidate_rank=pick['rank'],
                         context=stable_context, policy_id=POLICY_ID, prompt_hash=prompt.content_hash,
                         provider_id=getattr(provider,'provider_id',None),model_id=getattr(provider,'model_id',None))
         digest = input_hash_from_dict(material)
         data = dict(decision_cutoff=now,candidate=candidate,selection=pick,context=context,conditions=conditions)
-        encoded = json.dumps(data,sort_keys=True,allow_nan=False)
+        encoded = json.dumps(data,sort_keys=True,allow_nan=False,separators=(',',':'))
         if len(encoded.encode('utf-8'))>96000: raise ValueError('ACTION_PACKET_BOUND_EXCEEDED')
         return dict(run=run,pick=pick,candidate=candidate,context=context,conditions=conditions,provider=provider,
                     prompt=prompt,now=now,digest=digest,data=data,encoded=encoded,
@@ -164,6 +214,7 @@ class ScreenerActionService:
             if latest and latest[0]['input_hash']==b['digest'] and timestamp(latest[0]['valid_until'])>timestamp(now):
                 return dict(latest[0],cache='HIT')
             proposal, error, response = None,None,None
+            reasoning_wire = None
             # OCT1-08: a breached stop is a server risk exit. It needs no model call and no model can veto it;
             # the gate still reports every Paper-preview blocker without erasing the EXIT.
             server_exit = server_exit_condition(b['conditions'])
@@ -172,15 +223,19 @@ class ScreenerActionService:
             elif revalidation_reason: error=str(revalidation_reason)[:64]
             elif provider is None: error='LOCAL_NOT_CONFIGURED'
             else:
-                schema = output_schema(b['candidate'],b['conditions'])
-                rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema))
+                schema = wire_schema(b['candidate'],b['conditions'])
+                rendered = b['prompt'].template.replace('{{evidence_json}}',b['encoded']).replace('{{output_schema}}',json.dumps(schema,separators=(',',':')))
                 config = IntelligenceInferenceConfig(prompt_id=PROMPT_ID,default_task_type=IntelligenceTaskType.SCREENER_ACTION_DECISION,
                     max_tokens=2000, timeout_seconds=300 if getattr(provider,'runtime','')=='LOCAL_MODEL' else 45)
                 packet = ScreenerEvidencePacket(IntelligenceTaskType.SCREENER_ACTION_DECISION,identity,b['digest'],now,
                     b['context'],[b['candidate']],schema)
                 response = provider.infer(packet,rendered_prompt=rendered,config=config)
                 if response.error_code: error=response.error_code.value
-                else: proposal,error=parse_proposal(response.raw_text,b['candidate'],b['conditions'])
+                else:
+                    canonical,error=decode_wire(response.raw_text,b['candidate'],b['conditions'])
+                    if not error:
+                        proposal,error=parse_proposal(canonical,b['candidate'],b['conditions'])
+                        if not error: reasoning_wire=json.loads(response.raw_text)
             finished = _iso(self.clock())
             if not error and self._build(body)['digest'] != b['digest']:
                 error = 'ACTION_INPUT_CHANGED_DURING_INFERENCE'
@@ -212,7 +267,7 @@ class ScreenerActionService:
                           instrument=b['candidate']['instrument'],decision_time=now,evaluated_at=finished,valid_until=valid_until,
                           previous_decision_id=prior['decision_id'] if prior else None,previous_state=prior['action_state'] if prior else None,
                           position=b['context']['position'],direction=proposal['direction'] if proposal else None,
-                          model_proposal=proposal,rationale=proposal['rationale'] if proposal else
+                          model_reasoning_wire=reasoning_wire,model_proposal=proposal,rationale=proposal['rationale'] if proposal else
                               'Deterministic SMA trailing-stop risk condition. Server-authored; no model call.' if server_exit else 'Decision requires revalidation: '+str(error),
                           opportunity_id=(b['context']['opportunity'] or {}).get('opportunity_id'),
                           evidence_snapshot_id=snapshot_id,evidence_snapshot=snapshot,model=model,
@@ -287,7 +342,7 @@ class ScreenerActionService:
         if current['execution_readiness']!='PREVIEW_ALLOWED': raise ValueError('ACTION_HANDOFF_BLOCKED')
         state=record['action_state']
         if state not in ('ENTER','EXIT'): raise ValueError('ACTION_NOT_HANDOFF_ELIGIBLE')
-        quantity=abs(b['context']['position']['quantity']) if state=='EXIT' else 1
+        quantity=quantity_wire(abs(quantity_number(b['context']['position']['quantity']))) if state=='EXIT' else 1
         # Entry uses the existing minimal operator draft (one unit), not model
         # sizing. Workspace always runs its independent preview/risk pipeline.
         side=('SELL' if b['context']['position']['state']=='LONG' else 'BUY') if state=='EXIT' else ('BUY' if record['direction']=='LONG' else 'SELL')
@@ -313,7 +368,7 @@ class ScreenerActionService:
         draft=self.handoff(dict(decision_id=ids[0]))
         if draft['instrumentId']!=instrument or draft['side']!=parsed['side']:
             raise ValueError('ACTION_ORDER_IDENTITY_MISMATCH')
-        if record['action_state']=='EXIT' and draft['quantity']!=parsed['quantity']:
+        if record['action_state']=='EXIT' and quantity_number(draft['quantity'])!=quantity_number(parsed['quantity']):
             raise ValueError('ACTION_EXIT_QUANTITY_CHANGED')
         return record
 
@@ -333,7 +388,15 @@ class ScreenerActionService:
         ledger=self.store.paper_ledger
         now=int(timestamp(_iso(self.clock())).timestamp()*1e9)
         scale=int(ledger.policy.get('price_scale',100))
-        price=decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
+        from .paper_projections import _admit_focus_instrument
+        instrument = parsed.get('_instrument') or (_admit_focus_instrument(self.store, record['instrument_id']) if record['instrument'].get('universe') == 'CRYPTO' else {})
+        fractional = instrument.get('instrument_kind') == 'CRYPTO_PAIR'
+        if fractional:
+            native_scale = int(instrument['price_scale'])
+            native_price = int((Decimal(str(record['reference_quote']['source_value'])) * native_scale).to_integral_value(rounding=ROUND_CEILING))
+            price = int((Decimal(native_price) * scale / native_scale).to_integral_value(rounding=ROUND_CEILING))
+        else:
+            price = decimal_to_minor_units(str(record['reference_quote']['source_value']),scale=scale)
         # Existing BUILD 22 defaults govern NAV/exposure; ledger hard caps remain
         # an additional independent authority in the interactive preview below.
         policy=build_execution_policy(allow_short=bool(ledger.policy.get('allow_short',False)),
@@ -343,12 +406,17 @@ class ScreenerActionService:
             max_position_notional_minor=int(ledger.policy['max_position_shares'])*price,
             price_scale=scale,currency=ledger.policy.get('currency','USD'),max_portfolio_snapshot_age_ns=30_000_000_000)
         portfolio=snapshot_from_paper_ledger(ledger,captured_at_ns=now)
-        opportunity=self.store.strategy_repository.get_opportunity(record['opportunity_id'])
+        if record['opportunity_id']:
+            opportunity=self.store.strategy_repository.get_opportunity(record['opportunity_id'])
+        elif (record.get('evidence_snapshot') or {}).get('context',{}).get('ai_direct') and ai_direct_enabled(ledger):
+            opportunity=direct_opportunity(record)
+        else:
+            raise ValueError('NO_GOVERNED_OPPORTUNITY')
         engine=PreTradeRiskEngine()
         proposal=engine.build_proposal(opportunity=opportunity,policy=policy,portfolio=portfolio,
             quote=MarketQuoteV1(record['instrument_id'],price,price,int(timestamp(record['reference_quote']['as_of']).timestamp()*1e9)),proposal_time_ns=now,
             instrument_id=record['instrument_id'],symbol=record['instrument']['symbol'],
-            allocation_desired_quantity=parsed['quantity'],lineage_refs=(ContractReference('ActionDecisionV1',record['decision_id']),))
+            allocation_desired_quantity=parsed['quantity'],instrument=instrument if fractional else None,lineage_refs=(ContractReference('ActionDecisionV1',record['decision_id']),))
         submitted=set()
         for order in ledger.project_orders():
             source=order.get('decision_source_snapshot') or {}
